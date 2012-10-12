@@ -65,36 +65,6 @@ int32 dq_grad( FMField *out, FMField *state, int32 offset,
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
-
-  return( ret );
-}
-
-#undef __FUNC__
-#define __FUNC__ "dq_grad_extra"
-int32 dq_grad_extra( FMField *out, FMField *state, int32 offset,
-                     Mapping *sg, int32 *conn, int32 nEl, int32 nEP )
-{
-  int32 ii, nQP, ret = RET_OK;
-  FMField *st = 0;
-
-  state->val = FMF_PtrFirst( state ) + offset;
-
-  nQP = sg->bfGM->nLev;
-
-  fmf_createAlloc( &st, 1, 1, nEP, out->nCol );
-
-  for (ii = 0; ii < nEl; ii++) {
-    FMF_SetCell( out, ii );
-    FMF_SetCell( sg->bfGM, ii );
-
-    ele_extractNodalValuesNBN( st, state, conn + nEP * ii );
-    fmf_mulAB_n1( out, sg->bfGM, st );
-
-    ERR_CheckGo( ret );
-  }
-
- end_label:
   fmf_freeDestroy( &st );
 
   return( ret );

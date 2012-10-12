@@ -12,7 +12,7 @@ from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator, is_active_bc
 from sfepy.fem.mappings import get_physical_qps
-from sfepy.fem.evaluate_variable import eval_real, eval_real_extra, eval_complex
+from sfepy.fem.evaluate_variable import eval_real, eval_complex
 
 is_state = 0
 is_virtual = 1
@@ -1802,11 +1802,7 @@ class FieldVariable(Variable):
             shape = self.get_data_shape(ig, integral, integration, region.name)
 
             if self.dtype == nm.float64:
-                if integration != 'surface_extra':
-                    out = eval_real(vec, conn, geo, mode, shape, bf)
-
-                else:
-                    out = eval_real_extra(vec, conn, geo, mode, shape, bf)
+                out = eval_real(vec, conn, geo, mode, shape, bf)
 
             else:
                 out = eval_complex(vec, conn, geo, mode, shape, bf)

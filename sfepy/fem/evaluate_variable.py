@@ -47,36 +47,6 @@ def eval_real(vec, conn, geo, mode, shape, bf=None):
 
     return out
 
-def eval_real_extra(vec, conn, geo, mode, shape, bf=None):
-    """
-    Evaluate basic derived quantities of a real variable given its DOF
-    vector, connectivity and reference mapping. This function works for
-    'surface_extra' integration type.
-    """
-    n_fa, n_qp, dim, n_en, n_comp = shape
-    dtype = nm.float64
-
-    if mode == 'val':
-        function = terms.dq_state_in_qp
-
-        out = nm.empty((n_fa, n_qp, n_comp, 1), dtype=dtype)
-        if bf is not None:
-            function(out, vec, bf, conn)
-        else:
-            function(out, vec, geo.bf, conn)
-
-    elif mode == 'grad':
-        function = terms.dq_grad_extra
-
-        out = nm.empty((n_fa, n_qp, dim, n_comp), dtype=dtype)
-        function(out, vec, geo, conn)
-
-    else:
-        raise ValueError('unsupported variable evaluation mode! (%s)'
-                         % mode)
-
-    return out
-
 def eval_complex(vec, conn, geo, mode, shape, bf=None):
     """
     Evaluate basic derived quantities of a complex variable given its DOF

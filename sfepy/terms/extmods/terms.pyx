@@ -28,11 +28,6 @@ cdef extern from 'terms.h':
          'dq_grad'(FMField *out, FMField *state, int32 offset,
                    Mapping *vg, int32 *conn, int32 nEl, int32 nEP)
 
-    cdef int32 _dq_grad_extra \
-         'dq_grad_extra'(FMField *out, FMField *state, int32 offset,
-                         Mapping *sg,
-                         int32 *conn, int32 nEl, int32 nEP)
-
     cdef int32 _dq_div_vector \
          'dq_div_vector'(FMField *out, FMField *state, int32 offset,
                          Mapping *vg,
@@ -507,21 +502,6 @@ def dq_grad(np.ndarray out not None,
     array2pint2(&_conn, &n_el, &n_ep, conn)
 
     ret = _dq_grad(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
-    return ret
-
-def dq_grad_extra(np.ndarray out not None,
-                  np.ndarray state not None,
-                  CMapping cmap not None,
-                  np.ndarray conn not None):
-    cdef int32 ret
-    cdef FMField _out[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
-
-    array2fmfield4(_out, out)
-    array2fmfield1(_state, state)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-
-    ret = _dq_grad_extra(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
     return ret
 
 def dq_div_vector(np.ndarray out not None,
