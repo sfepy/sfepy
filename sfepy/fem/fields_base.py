@@ -1425,7 +1425,7 @@ class SurfaceField(Field):
         for ig, ap in self.aps.iteritems():
             sg = ap.describe_geometry(self, 'surface', ap.region, integral)
 
-            area = nm.squeeze(sg.area)
+            area = nm.squeeze(sg.volume)
             n_cells = region.get_n_cells(ig, True)
             iels = offset + nm.arange(n_cells, dtype=nm.int32)
             offset += n_cells
