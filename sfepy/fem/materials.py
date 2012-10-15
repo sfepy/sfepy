@@ -28,13 +28,14 @@ class Materials( Container ):
         obj = Materials( objs )
         return obj
 
-    def semideep_copy(self):
+    def semideep_copy(self, reset=True):
         """Copy materials, while external data (e.g. region) remain shared."""
         others = copy(self)
         others.update(OneTypeList(Material))
         for mat in self:
             other = mat.copy(name=mat.name)
-            other.reset()
+            if reset:
+                other.reset()
             others.append(other)
         return others
 
@@ -45,7 +46,7 @@ class Materials( Container ):
             mat.reset()
 
     def time_update(self, ts, equations, problem=None,
-                    force=False, verbose=True):
+                    force=False, clear=True, verbose=True):
         """
         Update material parameters for given time, problem, and equations.
         """
@@ -53,7 +54,7 @@ class Materials( Container ):
         tt = time.clock()
         for mat in self:
             if verbose: output(' ', mat.name)
-            mat.time_update(ts, equations, problem, force=force)
+            mat.time_update(ts, equations, problem, force=force, clear=clear)
         if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
 ##
@@ -286,7 +287,7 @@ class Material( Struct ):
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 
-    def time_update(self, ts, equations, problem=None, force=False):
+    def time_update(self, ts, equations, problem=None, force=False, clear=True):
         """
         Evaluate material parameters in physical quadrature points.
 
@@ -298,7 +299,9 @@ class Material( Struct ):
                           or self.datas and (self.kind == 'stationary')):
             return
 
-        self.datas = {}
+        if clear:
+            self.datas = {}
+
         for key, term in self.iter_terms(equations):
             self.update_data(key, ts, equations, term, problem=problem)
 
