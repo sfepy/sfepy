@@ -321,6 +321,7 @@ class PETScKrylovSolver( LinearSolver ):
                 'precond_side' : 'left', # ksp_pc_side
                 'eps_a' : 1e-12, # abstol
                 'eps_r' : 1e-12, # rtol
+                'eps_d' : 1e5, # divtol
                 'i_max' : 1000, # maxits
             }
         """
@@ -332,7 +333,8 @@ class PETScKrylovSolver( LinearSolver ):
                       precond_side=get('precond_side', None),
                       i_max=get('i_max', 100),
                       eps_a=get('eps_a', 1e-8),
-                      eps_r=get('eps_r', 1e-8)) + common
+                      eps_r=get('eps_r', 1e-8),
+                      eps_d=get('eps_d', 1e5)) + common
 
     def __init__( self, conf, **kwargs ):
         try:
@@ -377,6 +379,7 @@ class PETScKrylovSolver( LinearSolver ):
         eps_a = get_default(eps_a, self.eps_a)
         eps_r = get_default(eps_r, self.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
+        eps_d = self.conf.eps_d
 
         # There is no use in caching matrix in the solver - always set as new.
         pmtx, psol, prhs = self.set_matrix(mtx)
@@ -384,7 +387,7 @@ class PETScKrylovSolver( LinearSolver ):
         ksp = self.ksp
         ksp.setOperators(pmtx)
         ksp.setFromOptions() # PETSc.Options() not used yet...
-        ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=i_max)
+        ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
 
         # Set PETSc rhs, solve, get solution from PETSc solution.
         if x0 is not None:
@@ -434,6 +437,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
                 'sub_precond' : 'icc', # sub_pc_type
                 'eps_a' : 1e-12, # abstol
                 'eps_r' : 1e-12, # rtol
+                'eps_d' : 1e5, # divtol
                 'i_max' : 1000, # maxits
             }
         """
@@ -453,6 +457,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         eps_a = get_default(eps_a, self.eps_a)
         eps_r = get_default(eps_r, self.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
+        eps_d = self.conf.eps_d
 
         petsc = self.petsc
 
@@ -462,7 +467,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         ksp = self.ksp
         ksp.setOperators(pmtx)
         ksp.setFromOptions() # PETSc.Options() not used yet...
-        ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=i_max)
+        ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
 
         output_dir = tempfile.mkdtemp()
 
