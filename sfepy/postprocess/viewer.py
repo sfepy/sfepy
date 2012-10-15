@@ -30,7 +30,7 @@ from sfepy.base.base import (insert_as_static_method, output,
                              get_arguments, get_default, Struct, basestr)
 from sfepy.linalg import cycle
 from sfepy.solvers.ts import get_print_info
-from sfepy.postprocess.utils import mlab
+from sfepy.postprocess.utils import mlab, get_data_ranges
 from sfepy.postprocess.sources import create_file_source, FileSource
 
 def get_glyphs_scale_factor(rng, rel_scaling, bbox):
@@ -368,6 +368,7 @@ class Viewer(Struct):
             is_subdomains = False
 
         self.source = source = self.file_source()
+        data_ranges = get_data_ranges(source, return_only=True)
 
         # Hack to prevent mayavi switching to point scalar on source
         # change.
@@ -447,10 +448,12 @@ class Viewer(Struct):
                 ir, ic = ic, ir
             if ii == n_data: break
             family, kind, name = names[ii]
+            data_range = data_ranges[name]
 
             is_magnitude = False
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
-            output(family, kind, name, position)
+            output(family, kind, name, 'at', position)
+            output('range: %.2e %.2e l2 norm range: %.2e %.2e' % data_range[3:])
 
             if name in domain_specific:
                 ds = domain_specific[name]
