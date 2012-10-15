@@ -232,7 +232,7 @@ class ProblemDefinition( Struct ):
         """
         conf = get_default(conf, self.conf)
 
-        if options and options.output_filename_trunk:
+        if options and getattr(options, 'output_filename_trunk', None):
             default_output_dir, of = op.split(options.output_filename_trunk)
             default_trunk = io.get_trunk(of)
 
@@ -241,7 +241,7 @@ class ProblemDefinition( Struct ):
             default_output_dir = get_default_attr(conf.options,
                                                   'output_dir', None)
 
-        if options and options.output_format:
+        if options and getattr(options, 'output_format', None):
             default_output_format = options.output_format
 
         else:
