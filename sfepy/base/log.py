@@ -2,11 +2,16 @@ import time
 import os
 import atexit
 
+try:
+    from multiprocessing import Process, Pipe
+
+except ImportError:
+    Process = None
+
 import numpy as nm
 
 from sfepy.base.base import sfepy_config_dir, ordered_iteritems
 from sfepy.base.base import output, get_default, set_defaults, Output, Struct
-from sfepy.base.tasks import Process, Pipe
 from sfepy.linalg import cycle
 
 _msg_no_live = """warning: log plot is disabled, install matplotlib
