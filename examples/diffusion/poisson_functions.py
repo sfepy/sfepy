@@ -1,17 +1,29 @@
 r"""
 Poisson equation with source term.
 
-Example demonstrating use of functions for defining material parameters,
-regions, parameter variables or boundary conditions.
-
 Find :math:`u` such that:
 
 .. math::
     \int_{\Omega} c \nabla v \cdot \nabla u
-    = - \int_{\Omega_L} f v p
+    = - \int_{\Omega_L} b v = - \int_{\Omega_L} f v p
     \;, \quad \forall v \;,
 
-where :math:`p` is a given function and :math:`f` is a load parameter.
+where :math:`b(x) = f(x) p(x)`, :math:`p` is a given FE field and :math:`f` is
+a given general function of space.
+
+This example demonstrates use of functions for defining material parameters,
+regions, parameter variables or boundary conditions. Notably, it demonstrates
+the following:
+
+1. How to define a material parameter by an arbitrary function - see the
+   function :func:`get_pars()` that evaluates :math:`f(x)` in quadrature
+   points.
+2. How to define a known function that belongs to a given FE space (field) -
+   this function, :math:`p(x)`, is defined in a FE sense by its nodal values
+   only - see the function :func:`get_load_variable()`.
+
+In order to define the load :math:`b(x)` directly, the term ``dw_volume_dot``
+should be replaced by ``dw_volume_integrate``.
 """
 import numpy as nm
 from sfepy import data_dir
@@ -58,33 +70,37 @@ integrals = {
 equations = {
     'Laplace equation' :
     """dw_laplace.i1.Omega( m.c, v, u )
-     = - dw_volume_dot.i1.Omega_L( load.val, v, p )"""
+     = - dw_volume_dot.i1.Omega_L( load.f, v, p )"""
 }
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton',
-                {'i_max'      : 1,
-                 'eps_a'      : 1e-10,
-                 }),
+    'newton' : ('nls.newton', {
+        'i_max'      : 1,
+        'eps_a'      : 1e-10,
+    }),
 }
 
 def get_pars(ts, coors, mode=None, **kwargs):
     """
-    We can define the coefficient `load.val` as a function of space.
+    Evaluate the coefficient `load.f` in quadrature points `coors` using a
+    function of space.
 
     For scalar parameters, the shape has to be set to `(coors.shape[0], 1, 1)`.
     """
     if mode == 'qp':
-        x = coors[:,0]
+        x = coors[:, 0]
 
         val = 55.0 * (x - 0.05)
 
         val.shape = (coors.shape[0], 1, 1)
-        return {'val' : val}
+        return {'f' : val}
 
 def get_middle_ball(coors, domain=None):
-    x, y, z = coors[:,0], coors[:,1], coors[:,2]
+    """
+    Get the :math:`\Omega_L` region as a function of mesh coordinates.
+    """
+    x, y, z = coors[:, 0], coors[:, 1], coors[:, 2]
 
     r1 = nm.sqrt((x - 0.025)**2.0 + y**2.0 + z**2)
     r2 = nm.sqrt((x - 0.075)**2.0 + y**2.0 + z**2)
@@ -93,14 +109,21 @@ def get_middle_ball(coors, domain=None):
     return flag
 
 def get_load_variable(ts, coors, region=None):
+    """
+    Define nodal values of 'p' in the nodal coordinates `coors`.
+    """
     y = coors[:,1]
 
     val = 5e5 * y
 
     return val
 
-def get_ebc(coor, amplitude):
-    z = coor[:,2]
+def get_ebc(coors, amplitude):
+    """
+    Define the essential boundary conditions as a function of coordinates
+    `coors` of region nodes.
+    """
+    z = coors[:, 2]
     val = amplitude * nm.sin(z * 2.0 * nm.pi)
     return val
 
