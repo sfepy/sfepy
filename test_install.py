@@ -31,7 +31,7 @@ def check_output(cmd):
 
     return out
 
-def report(out, name, line, item, value, eps=None):
+def report(out, name, line, item, value, eps=None, return_item=False):
     """
     Check that `item` at `line` of the output string `out` is equal
     to `value`. If not, print the output.
@@ -71,7 +71,11 @@ def report(out, name, line, item, value, eps=None):
         fd.write(out)
         fd.write('*' * 55)
 
-    return ok
+    if return_item:
+        return ok, status[item]
+
+    else:
+        return ok
 
 usage = '%prog' + '\n' + __doc__
 
@@ -147,14 +151,14 @@ def main():
     t1 = time.time()
 
     out, err = check_output('python ./runTests.py')
-    tok = report(out, 'tests', -2, 7, '0')
+    tok, failed = report(out, 'tests', -2, 7, '0', return_item=True)
     tok = {True : 'ok', False : 'fail'}[tok]
 
     t2 = time.time()
 
     fd = open('test_install_times.log', 'a+')
-    fd.write('%s: examples: %.2f [s] (%d), tests: %.2f [s] (%s)\n'
-             % (time.ctime(t0), t1 - t0, eok, t2 - t1, tok))
+    fd.write('%s: examples: %.2f [s] (%d), tests: %.2f [s] (%s: %s)\n'
+             % (time.ctime(t0), t1 - t0, eok, t2 - t1, tok, failed))
     fd.close()
 
 if __name__ == '__main__':
