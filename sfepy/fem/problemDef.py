@@ -1008,8 +1008,8 @@ class ProblemDefinition( Struct ):
                          integrals=None,
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
-                         mode='eval', var_dict=None, extra_args=None,
-                         verbose=True, **kwargs):
+                         mode='eval', var_dict=None, strip_variables=True,
+                         extra_args=None, verbose=True, **kwargs):
         """
         Create evaluable object (equations and corresponding variables)
         from the `expression` string. Convenience function calling
@@ -1060,10 +1060,12 @@ class ProblemDefinition( Struct ):
             'el_avg' element averages and 'eval' means integration over
             each term region.
         var_dict : dict, optional
-            The variables (dictionary of (variable name) : (Variable
-            instance)) to be used in the expression. Use this if the
-            name of a variable conflicts with one of the parameters of
-            this method.
+            The variables (dictionary of (variable name) : (Variable instance))
+            to be used in the expression. Use this if the name of a variable
+            conflicts with one of the parameters of this method.
+        strip_variables : bool
+            If False, the variables in `var_dict` or `kwargs` not present in
+            the expression are added to the actual variables as a context.
         extra_args : dict, optional
             Extra arguments to be passed to terms in the expression.
         verbose : bool
@@ -1103,6 +1105,7 @@ class ProblemDefinition( Struct ):
         from sfepy.fem.equations import get_expression_arg_names
 
         variables = get_default(var_dict, {})
+        var_context = get_default(var_dict, {})
 
         if try_equations and self.equations is not None:
             # Make a copy, so that possible variable caches are preserved.
@@ -1137,7 +1140,7 @@ class ProblemDefinition( Struct ):
                     msg = 'inconsistent variable name! (%s == %s)' \
                           % (val.name, key)
                     raise ValueError(msg)
-                variables[val.name] = val
+                var_context[val.name] = variables[val.name] = val
                 _kwargs.pop(key)
 
             elif isinstance(val, Material):
@@ -1165,6 +1168,11 @@ class ProblemDefinition( Struct ):
                                mode=mode, extra_args=extra_args, verbose=verbose,
                                kwargs=kwargs)
 
+        if not strip_variables:
+            variables = out[1]
+            variables.extend([var for var in var_context.itervalues()
+                              if var not in variables])
+
         equations = out[0]
         mode = 'update' if not copy_materials else 'normal'
         equations.time_update_materials(self.ts, mode=mode, problem=self,
@@ -1177,8 +1185,8 @@ class ProblemDefinition( Struct ):
                  ebcs=None, epbcs=None, lcbcs=None,
                  ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
-                 var_dict=None, ret_variables=False, verbose=True,
-                 extra_args=None, **kwargs):
+                 var_dict=None, strip_variables=True, ret_variables=False,
+                 verbose=True, extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         `self.create_evaluable()` and
@@ -1215,6 +1223,7 @@ class ProblemDefinition( Struct ):
                                     ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                     ts=ts, functions=functions,
                                     mode=mode, var_dict=var_dict,
+                                    strip_variables=strip_variables,
                                     extra_args=extra_args,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
