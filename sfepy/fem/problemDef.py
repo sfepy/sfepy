@@ -493,13 +493,14 @@ class ProblemDefinition( Struct ):
         if ts is not None:
             self.ts.set_from_ts(ts)
 
-    def update_materials(self, ts=None):
+    def update_materials(self, ts=None, mode='normal'):
         """
         Update materials used in equations.
         """
         if self.equations is not None:
             self.update_time_stepper(ts)
-            self.equations.time_update_materials(self.ts, self)
+            self.equations.time_update_materials(self.ts, mode=mode,
+                                                 problem=self)
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
@@ -673,7 +674,7 @@ class ProblemDefinition( Struct ):
     def init_time( self, ts ):
         self.update_time_stepper(ts)
         self.equations.init_time( ts )
-        self.update_materials()
+        self.update_materials(mode='force')
 
     def advance(self, ts=None):
         self.update_time_stepper(ts)
@@ -1164,9 +1165,10 @@ class ProblemDefinition( Struct ):
                                mode=mode, extra_args=extra_args, verbose=verbose,
                                kwargs=kwargs)
 
-        if copy_materials:
-            equations = out[0]
-            equations.time_update_materials(self.ts, self, verbose=verbose)
+        equations = out[0]
+        mode = 'update' if not copy_materials else 'normal'
+        equations.time_update_materials(self.ts, mode=mode, problem=self,
+                                        verbose=verbose)
 
         return out
 

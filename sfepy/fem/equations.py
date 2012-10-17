@@ -238,11 +238,25 @@ class Equations( Container ):
 
         return graph_changed
 
-    def time_update_materials(self, ts, problem=None, verbose=True):
+    def time_update_materials(self, ts, mode='normal', problem=None,
+                              verbose=True):
         """
         Update data materials for current time and possibly also state.
+
+        Parameters
+        ----------
+        ts : TimeStepper instance
+            The time stepper.
+        mode : 'normal', 'update' or 'force'
+            The update mode, see
+            :func:`sfepy.fem.materials.Material.time_update()`.
+        problem : ProblemDefinition instance, optional
+            The problem that can be passed to user functions as a context.
+        verbose : bool
+            If False, reduce verbosity.
         """
-        self.materials.time_update(ts, self, problem=problem, verbose=verbose)
+        self.materials.time_update(ts, self, mode=mode, problem=problem,
+                                   verbose=verbose)
 
     def setup_initial_conditions(self, ics, functions):
         self.variables.setup_initial_conditions(ics, functions)

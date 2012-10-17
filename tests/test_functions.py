@@ -105,19 +105,20 @@ class Test( TestCommon ):
 
         conf_mat1 = conf.get_item_by_name('materials', 'mf1')
         mat1 = Material.from_conf(conf_mat1, problem.functions)
-        mat1.time_update(ts, None, problem)
+        mat1.time_update(ts, None, mode='normal', problem=problem)
 
         coors = problem.domain.get_mesh_coors()
         assert_(nm.all(coors[:,0] == mat1.get_data(None, None, 'x_0')))
 
         conf_mat2 = conf.get_item_by_name('materials', 'mf2')
         mat2 = Material.from_conf(conf_mat2, problem.functions)
-        mat2.time_update(ts, None, problem)
+        mat2.time_update(ts, None, mode='normal', problem=problem)
 
         assert_(nm.all(coors[:,1] == mat2.get_data(None, None, 'x_1')))
 
         materials = problem.get_materials()
-        materials.time_update(ts, problem.equations, problem)
+        materials.time_update(ts, problem.equations, mode='normal',
+                              problem=problem)
         mat3 = materials['mf3']
         key = mat3.get_keys(region_name='Omega')[0]
 
