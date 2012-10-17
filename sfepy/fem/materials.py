@@ -45,16 +45,29 @@ class Materials( Container ):
         for mat in self:
             mat.reset()
 
-    def time_update(self, ts, equations, problem=None,
-                    force=False, clear=True, verbose=True):
+    def time_update(self, ts, equations, mode='normal', problem=None,
+                    verbose=True):
         """
         Update material parameters for given time, problem, and equations.
+
+        Parameters
+        ----------
+        ts : TimeStepper instance
+            The time stepper.
+        equations : Equations instance
+            The equations using the materials.
+        mode : 'normal', 'update' or 'force'
+            The update mode, see :func:`Material.time_update()`.
+        problem : ProblemDefinition instance, optional
+            The problem that can be passed to user functions as a context.
+        verbose : bool
+            If False, reduce verbosity.
         """
         if verbose: output('updating materials...')
         tt = time.clock()
         for mat in self:
             if verbose: output(' ', mat.name)
-            mat.time_update(ts, equations, problem, force=force, clear=clear)
+            mat.time_update(ts, equations, mode=mode, problem=problem)
         if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
 ##
@@ -109,7 +122,7 @@ class Material( Struct ):
         **kwargs : keyword arguments, optional
             Constant material values passed by their names.
         """
-        Struct.__init__(self, name=name, kind=kind)
+        Struct.__init__(self, name=name, kind=kind, is_constant=False)
 
         if (function is not None) and ((values is not None) or len(kwargs)):
             msg = 'material can have function or values but not both! (%s)' \
@@ -132,6 +145,7 @@ class Material( Struct ):
             if (key0 and (not key0.startswith('.'))
                 and isinstance(values[key0], dict)):
                 self.function = ConstantFunctionByRegion(values)
+                self.is_constant = True
 
             else:
                 all_values = {}
@@ -140,6 +154,7 @@ class Material( Struct ):
                 all_values.update(kwargs)
 
                 self.function = ConstantFunction(all_values)
+                self.is_constant = True
 
         else: # => both values and function are None
             msg = 'material %s: neither function nor values given! (%s)' \
@@ -255,6 +270,8 @@ class Material( Struct ):
         problem : ProblemDefinition, optional
             The problem definition for which the update occurs.
         """
+        if 'special' in self.datas: return
+
         # Special function values (e.g. flags).
         if problem is not None:
             coors = problem.get_mesh_coors()
@@ -280,27 +297,49 @@ class Material( Struct ):
         problem : ProblemDefinition, optional
             The problem definition for which the update occurs.
         """
-        # Special constant values.
-        if self.flags.get('special_constant'):
-            datas = self.function(None, None, mode='special_constant',
-                                  problem=problem, equations=equations)
-            self.datas['special_constant'] = datas
-            self.constant_names.update(datas.keys())
+        if 'special_constant' in self.datas: return
+        if not self.flags.get('special_constant'): return
 
-    def time_update(self, ts, equations, problem=None, force=False, clear=True):
+        # Special constant values.
+        datas = self.function(None, None, mode='special_constant',
+                              problem=problem, equations=equations)
+        self.datas['special_constant'] = datas
+        self.constant_names.update(datas.keys())
+
+    def time_update(self, ts, equations, mode='normal', problem=None):
         """
         Evaluate material parameters in physical quadrature points.
 
-        Setting `force` to True forces the update to be done. If `force`
-        is False, do nothing, if ``self.mode == 'user'`` or ``self.kind
-        == 'stationary'`` and the parameters are already set.
+        Parameters
+        ----------
+        ts : TimeStepper instance
+            The time stepper.
+        equations : Equations instance
+            The equations using the materials.
+        mode : 'normal', 'update' or 'force'
+            The update mode. In 'force' mode, ``self.datas`` is cleared and all
+            updates are redone. In 'update' mode, existing data are preserved
+            and new can be added. The 'normal' mode depends on other
+            attributes: for stationary (``self.kind == 'stationary'``)
+            materials and materials in 'user' mode, nothing is done if
+            ``self.datas`` is not empty. For time-dependent materials
+            (``self.kind == 'time-dependent'``, the default) that are not
+            constant, i.e., are given by a user function, 'normal' mode behaves
+            like 'force' mode. For constant materials it behaves like 'update'
+            mode - existing data are reused.
+        problem : ProblemDefinition instance, optional
+            The problem that can be passed to user functions as a context.
         """
-        if not force and ((self.mode == 'user')
-                          or self.datas and (self.kind == 'stationary')):
-            return
-
-        if clear:
+        if mode == 'force':
             self.datas = {}
+
+        elif self.datas:
+            if mode == 'normal':
+                if (self.mode == 'user') or (self.kind == 'stationary'):
+                    return
+
+                elif not self.is_constant:
+                    self.datas = {}
 
         for key, term in self.iter_terms(equations):
             self.update_data(key, ts, equations, term, problem=problem)
