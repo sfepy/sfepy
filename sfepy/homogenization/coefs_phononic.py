@@ -55,6 +55,19 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
 
     return eigenmomenta
 
+def get_ranges(freq_range, eigs):
+    """
+    Get an eigenvalue range slice and a corresponding initial frequency range
+    within a given frequency range.
+    """
+    mine, maxe = freq_range
+    ii = nm.where((eigs > (mine**2.)) & (eigs < (maxe**2.)))[0]
+    freq_range_initial = nm.sqrt(eigs[ii])
+    eig_range = (ii[0], ii[-1] + 1) # +1 as it is a slice.
+    eig_range = slice(*eig_range)
+
+    return freq_range_initial, eig_range
+
 def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
                    fixed_freq_range, freq_eps):
     """
@@ -72,8 +85,7 @@ def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
     n_eigs = eigs.shape[0]
 
     output('masked resonance frequencies in range:')
-    valid_slice = slice(*eig_range)
-    output(nm.where(valid[valid_slice] == False)[0])
+    output(nm.where(valid[eig_range] == False)[0])
 
     if fixed_freq_range is None:
         min_freq, max_freq = freq_range[0], freq_range[-1]
@@ -81,12 +93,12 @@ def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
         prev_freq = min_freq - margins[0]
         next_freq = max_freq + margins[1]
 
-        if eig_range[0] > 0:
-            prev_freq = max(nm.sqrt(eigs[eig_range[0] - 1]) + freq_eps,
+        if eig_range.start > 0:
+            prev_freq = max(nm.sqrt(eigs[eig_range.start - 1]) + freq_eps,
                             prev_freq)
 
-        if eig_range[1] < n_eigs:
-            next_freq = min(nm.sqrt(eigs[eig_range[1]]) - freq_eps,
+        if eig_range.stop < n_eigs:
+            next_freq = min(nm.sqrt(eigs[eig_range.stop]) - freq_eps,
                             next_freq)
 
         prev_freq = max(freq_eps, prev_freq)
@@ -95,7 +107,7 @@ def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
     else:
         prev_freq, next_freq = fixed_freq_range
 
-    freq_range = freq_range[valid[valid_slice]]
+    freq_range = freq_range[valid[eig_range]]
     freq_range_margins = nm.r_[prev_freq, freq_range, next_freq]
 
     return freq_range, freq_range_margins
@@ -952,13 +964,12 @@ class BandGaps(MiniAppBase):
         self.fix_eig_range(eigs.shape[0])
 
         if opts.fixed_freq_range is not None:
-            mine, maxe = opts.fixed_freq_range
-            ii = nm.where((eigs > (mine**2.)) & (eigs < (maxe**2.)))[0]
-            freq_range_initial = nm.sqrt(eigs[ii])
-            opts.eig_range = (ii[0], ii[-1] + 1) # +1 as it is a slice.
+            (freq_range_initial,
+             opts.eig_range) = get_ranges(opts.fixed_freq_range, eigs)
 
         else:
-            freq_range_initial = nm.sqrt(eigs[slice(*opts.eig_range)])
+            opts.eig_range = slice(*opts.eig_range)
+            freq_range_initial = nm.sqrt(eigs[opts.eig_range])
 
         output('initial freq. range     : [%8.3f, %8.3f]'
                % tuple(freq_range_initial[[0, -1]]))
@@ -984,7 +995,7 @@ class BandGaps(MiniAppBase):
         logs, gaps, kinds = opts.detect_fun(mass, freq_info, opts, mtx_b=mtx_b)
 
         bg = Struct(name='band_gaps', logs=logs, gaps=gaps, kinds=kinds,
-                    valid=ema.valid, eig_range=slice(*opts.eig_range),
+                    valid=ema.valid, eig_range=opts.eig_range,
                     n_eigs=eigs.shape[0], n_zeroed=ema.n_zeroed,
                     freq_range_initial=freq_info.freq_range_initial,
                     freq_range=freq_info.freq_range,
