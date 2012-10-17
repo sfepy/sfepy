@@ -115,6 +115,28 @@ def split_chunks(indx):
         chunks.append(chunk)
     return chunks
 
+def get_log_freqs(f0, f1, df, freq_eps, n_point_min, n_point_max):
+    """
+    Get logging frequencies.
+
+    The frequencies get denser towards the interval boundaries.
+    """
+    f_delta = f1 - f0
+    f_mid = 0.5 * (f0 + f1)
+
+    if (f1 - f0) > (2.0 * freq_eps):
+        num = min(n_point_max, max(n_point_min, (f1 - f0) / df))
+        a = nm.linspace(0., 1., num)
+        log_freqs = f0 + freq_eps \
+                    + 0.5 * (nm.sin((a - 0.5) * nm.pi) + 1.0) \
+                    * (f1 - f0 - 2.0 * freq_eps)
+
+    else:
+        log_freqs = nm.array([f_mid - 1e-8 * f_delta,
+                              f_mid + 1e-8 * f_delta])
+
+    return log_freqs
+
 def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
     """
     Detect band gaps given solution to eigenproblem (eigs,
@@ -149,18 +171,7 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
         f0, f1 = fm[[ii, ii+1]]
         output('interval: ]%.8f, %.8f[...' % (f0, f1))
 
-        f_delta = f1 - f0
-        f_mid = 0.5 * (f0 + f1)
-        if (f1 - f0) > (2.0 * opts.freq_eps):
-            num = min(1000, max(100, (f1 - f0) / df))
-            a = nm.linspace(0., 1., num)
-            log_freqs = f0 + opts.freq_eps \
-                        + 0.5 * (nm.sin((a - 0.5) * nm.pi) + 1.0) \
-                        * (f1 - f0 - 2.0 * opts.freq_eps)
-
-        else:
-            log_freqs = nm.array([f_mid - 1e-8 * f_delta,
-                                  f_mid + 1e-8 * f_delta])
+        log_freqs = get_log_freqs(f0, f1, df, opts.freq_eps, 100, 1000)
 
         output('n_logged: %d' % log_freqs.shape[0])
 
