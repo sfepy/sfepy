@@ -565,13 +565,16 @@ class RigidOperator(LCBCOperator):
 
         self.mtx = self.mtx[indx]
 
-def _save_normals(filename, normals, region, mesh):
-        nn = nm.zeros_like(mesh.coors)
-        nmax = region.all_vertices.shape[0]
-        nn[region.all_vertices] = normals[:nmax]
-        out = {'normals' : Struct(name = 'output_data',
-                                  mode = 'vertex', data = nn)}
-        mesh.write(filename, out=out, io='auto')
+def _save_vectors(filename, vectors, region, mesh, data_name):
+    """
+    Save vectors defined in region nodes as vector data in mesh vertices.
+    """
+    nv = nm.zeros_like(mesh.coors)
+    nmax = region.all_vertices.shape[0]
+    nv[region.all_vertices] = vectors[:nmax]
+
+    out = {data_name : Struct(name='output_data', mode='vertex', data=nv)}
+    mesh.write(filename, out=out, io='auto')
 
 class NoPenetrationOperator(LCBCOperator):
     """
@@ -586,7 +589,7 @@ class NoPenetrationOperator(LCBCOperator):
         normals = compute_nodal_normals(nodes, region, field)
 
         if filename is not None:
-            _save_normals(filename, normals, region, field.domain.mesh)
+            _save_vectors(filename, normals, region, field.domain.mesh, 'n')
 
         ii = nm.abs(normals).argmax(1)
         n_nod, dim = normals.shape
@@ -660,7 +663,7 @@ class NormalDirectionOperator(LCBCOperator):
         normals = compute_nodal_normals(nodes, region, field)
 
         if filename is not None:
-            _save_normals(filename, normals, region, field.domain.mesh)
+            _save_vectors(filename, normals, region, field.domain.mesh, 'n')
 
         n_nod, dim = normals.shape
 
