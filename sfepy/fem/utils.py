@@ -99,6 +99,81 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     else:
         return normals
 
+def _get_edge_path(graph, seed, mask, cycle=False):
+    """
+    Get a path in an edge graph starting with seed. The mask is incremented by
+    one at positions of the path vertices.
+    """
+    if mask[seed]:
+        return []
+
+    path = [seed]
+    mask[seed] = 1
+
+    row = graph[seed].indices
+    nv = len(row)
+    while nv:
+        if nv == 2:
+            if mask[row[0]]:
+                if mask[row[1]]:
+                    if cycle:
+                        path.append(seed)
+                    break
+
+                else:
+                    vert = row[1]
+
+            else:
+                vert = row[0]
+
+        elif mask[row[0]]:
+            break
+
+        else:
+            vert = row[0]
+
+        path.append(vert)
+        mask[vert] = 1
+
+        row = graph[vert].indices
+        nv = len(row)
+
+    path = nm.array(path, dtype=nm.int32)
+
+    return path
+
+def get_edge_paths(graph, mask):
+    """
+    Get all edge paths in a graph with non-masked vertices. The mask is
+    updated.
+    """
+    nodes = nm.unique(graph.indices)
+    npv = nm.diff(graph.indptr)
+
+    if npv.max() > 2:
+        raise ValueError('more than 2 edges sharing a vertex!')
+
+    seeds = nm.where(npv == 1)[0]
+
+    # 1. get paths.
+    paths = []
+    for seed in seeds:
+        path = _get_edge_path(graph, seed, mask)
+        if len(path):
+            paths.append(path)
+
+    # 2. get possible remaing cycles.
+    while 1:
+        ii = nm.where(mask[nodes] == 0)[0]
+        if not len(ii):
+            break
+
+        path = _get_edge_path(graph, nodes[ii[0]], mask, cycle=True)
+        if len(path):
+            paths.append(path)
+
+    return paths
+
 def extend_cell_data(data, domain, rname, val=None, is_surface=False):
     """
     Extend cell data defined in a region to the whole domain.
