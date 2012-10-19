@@ -660,14 +660,11 @@ class NormalDirectionOperator(LCBCOperator):
         dim = field.shape[0]
         assert_(len(dof_names) == dim)
 
-        normals = compute_nodal_normals(nodes, region, field)
+        vectors = self.get_vectors(nodes, region, field, filename=filename)
 
-        if filename is not None:
-            _save_vectors(filename, normals, region, field.domain.mesh, 'n')
+        n_nod, dim = vectors.shape
 
-        n_nod, dim = normals.shape
-
-        data = normals.ravel()
+        data = vectors.ravel()
         rows = nm.arange(data.shape[0])
         cols = nm.repeat(nm.arange(n_nod), dim)
 
@@ -675,6 +672,14 @@ class NormalDirectionOperator(LCBCOperator):
 
         self.n_dof = n_nod
         self.mtx = mtx.tocsr()
+
+    def get_vectors(self, nodes, region, field, filename=None):
+        normals = compute_nodal_normals(nodes, region, field)
+
+        if filename is not None:
+            _save_vectors(filename, normals, region, field.domain.mesh, 'n')
+
+        return normals
 
 class IntegralMeanValueOperator(LCBCOperator):
     """
