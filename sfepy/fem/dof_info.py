@@ -10,7 +10,7 @@ import scipy.sparse as sp
 from sfepy.base.base import (output, assert_, get_default_attr,
                              Container, Struct, basestr)
 from sfepy.base.compat import unique
-from sfepy.fem.utils import compute_nodal_normals
+from sfepy.fem.utils import compute_nodal_normals, compute_nodal_edge_dirs
 from sfepy.fem.functions import Function
 from sfepy.fem.conditions import EssentialBC
 
@@ -681,6 +681,26 @@ class NormalDirectionOperator(LCBCOperator):
 
         return normals
 
+class EdgeDirectionOperator(NormalDirectionOperator):
+    """
+    Transformation matrix operator for edges direction LCBCs.
+
+    The substitution (in 3D) is:
+
+    .. math::
+        [u_1, u_2, u_3]^T = [d_1, d_2, d_3]^T w,
+
+    where :math:`\ul{d}` is an edge direction vector averaged into a node. The
+    new DOF is :math:`w`.
+    """
+    def get_vectors(self, nodes, region, field, filename=None):
+        edirs = compute_nodal_edge_dirs(nodes, region, field)
+
+        if filename is not None:
+            _save_vectors(filename, edirs, region, field.domain.mesh, 'e')
+
+        return edirs
+
 class IntegralMeanValueOperator(LCBCOperator):
     """
     Transformation matrix operator for integral mean value LCBCs.
@@ -758,6 +778,12 @@ class LCBCOperators(Container):
             op = NormalDirectionOperator('%d_normal_direction' % len(self),
                                          nmaster, region, field, dofs,
                                          filename=filename)
+
+        elif kind == 'edge_direction':
+            filename = get_default_attr(bc, 'filename', None)
+            op = EdgeDirectionOperator('%d_edge_direction' % len(self),
+                                       nmaster, region, field, dofs,
+                                       filename=filename)
 
         elif kind == 'integral_mean_value':
             filename = get_default_attr(bc, 'filename', None)
