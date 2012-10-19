@@ -174,6 +174,51 @@ def get_edge_paths(graph, mask):
 
     return paths
 
+def compute_nodal_edge_dirs(nodes, region, field, return_imap=False):
+    """
+    Nodal edge directions are computed by simple averaging of direction vectors
+    of edges a node is contained in. Edges are assumed to be straight and a
+    node must be on a single edge (a border node) or shared by exactly two
+    edges.
+    """
+    coors = region.domain.mesh.coors
+    dim = coors.shape[1]
+
+    graph = region.get_edge_graph()
+
+    imap = prepare_remap(nodes, nodes.max() + 1)
+    mask = nm.zeros_like(imap)
+
+    try:
+        paths = get_edge_paths(graph, mask)
+
+    except ValueError:
+        raise ValueError('more than 2 edges sharing a vertex in region %s!'
+                         % region.name)
+
+    # All nodes must have an edge direction.
+    if not nm.all(mask[nodes]):
+        raise ValueError('region %s has not complete edges!' % region.name)
+
+    edge_dirs = nm.zeros((nodes.shape[0], dim), dtype=nm.float64)
+    for path in paths:
+        pcoors = coors[path]
+
+        edirs = nm.diff(pcoors, axis=0)
+        la.normalize_vectors(edirs, eps=1e-12)
+
+        im = imap[nm.c_[path[:-1], path[1:]]]
+        for ii, edir in enumerate(edirs):
+            edge_dirs[im[ii]] += edir
+
+    la.normalize_vectors(edge_dirs, eps=1e-12)
+
+    if return_imap:
+        return edge_dirs, imap
+
+    else:
+        return edge_dirs
+
 def extend_cell_data(data, domain, rname, val=None, is_surface=False):
     """
     Extend cell data defined in a region to the whole domain.
