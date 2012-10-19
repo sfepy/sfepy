@@ -865,3 +865,30 @@ class Region( Struct ):
                 chf[self.all_vertices] = 1.0
 
         return chf
+
+    def get_edge_graph(self):
+        """
+        Return the graph of region edges as a sparse matrix having uid(k) + 1
+        at (i, j) if vertex[i] is connected with vertex[j] by the edge k.
+        """
+        from scipy.sparse import csr_matrix
+
+        ed = self.domain.ed
+
+        rows, cols, vals = [], [], []
+        for ig, edges in self.edges.iteritems():
+            e_verts = ed.facets[edges]
+
+            vals.append(ed.uid_i[edges] + 1)
+            rows.append(e_verts[:, 0])
+            cols.append(e_verts[:, 1])
+
+        vals, indx = nm.unique(nm.concatenate(vals), return_index=True)
+        rows = nm.concatenate(rows)[indx]
+        cols = nm.concatenate(cols)[indx]
+
+        num = self.all_vertices.max() + 1
+        graph = csr_matrix((vals, (rows, cols)), shape=(num, num))
+        graph = graph + graph.T
+
+        return graph
