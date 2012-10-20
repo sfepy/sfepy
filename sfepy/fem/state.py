@@ -245,25 +245,60 @@ class State(Struct):
                                               var_info, extend,
                                               linearization=linearization)
 
-    def get_scaled_norm(self, vec):
+    def get_weighted_norm(self, vec, weights=None, return_weights=False):
         """
-        Return the scaled norm of DOF vector `vec`.
+        Return the weighted norm of DOF vector `vec`.
 
-        Each component of `vec` is scaled by the norm of the
-        corresponding state part, or 1 if the norm is zero.
+        By default, each component of `vec` is weighted by the 1/norm of the
+        corresponding state part, or 1 if the norm is zero. Alternatively, the
+        weights can be provided explicitly using `weights` argument.
+
+        Parameters
+        ----------
+        vec : array
+            The DOF vector corresponding to the variables.
+        weights : dict, optional
+            If given, the weights are used instead of the norms of the state
+            parts. Keys of the dictionary must be equal to the names of
+            variables comprising the DOF vector.
+        return_weights: bool
+            If True, return also the used weights.
+
+        Returns
+        -------
+        norm : float
+            The weighted norm.
+        weights : dict, optional
+            If `return_weights` is True, the used weights.
 
         Examples
         --------
-        >>> err = state0.get_scaled_norm(state() - state0())
+        >>> err = state0.get_weighted_norm(state() - state0())
         """
-        parts = self.get_parts()
+        if weights is None:
+            parts = self.get_parts()
 
-        norm = 0.0
-        for key, part in parts.iteritems():
+            weights = {}
+            for key, part in parts.iteritems():
+                pnorm = nm.linalg.norm(part)
+                if pnorm < 10.0 * nm.finfo(nm.float64).eps:
+                    pnorm = 1.0
+                weights[key] = 1.0 / pnorm
+
+        else:
+            if set(weights.keys()) != self.variables.state:
+                raise ValueError('weights keys have to be in %s!'
+                                 % self.variables.state)
+
+        wvec = vec.copy()
+        for key in weights.iterkeys():
             indx = self.variables.get_indx(key)
-            pnorm = nm.linalg.norm(part)
-            if pnorm < 10.0 * nm.finfo(nm.float64).eps:
-                pnorm = 1.0
-            norm += nm.linalg.norm(vec[indx]) / 1.0
+            wvec[indx] *= weights[key]
 
-        return norm
+        norm = nm.linalg.norm(wvec)
+
+        if return_weights:
+            return norm, weights
+
+        else:
+            return norm
