@@ -40,8 +40,8 @@ def transform_plot_data(datas, plot_transform, conf):
         tdata = data.copy()
         if plot_transform is not None:
             tdata = fun(tdata, *plot_transform[1:])
-        dmin = min(dmin, tdata.min())
-        dmax = max(dmax, tdata.max())
+        dmin = min(dmin, nm.nanmin(tdata))
+        dmax = max(dmax, nm.nanmax(tdata))
         tdatas.append(tdata)
     dmin, dmax = min(dmax - 1e-8, dmin), max(dmin + 1e-8, dmax)
     return (dmin, dmax), tdatas
