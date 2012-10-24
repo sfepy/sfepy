@@ -272,11 +272,12 @@ class EquationMap(Struct):
         self.eqi = nm.arange(self.var_di.n_dof, dtype=nm.int32)
         self.eq_ebc = nm.empty((0,), dtype=nm.int32)
 
-        self.n_eq = self.eqi.shape[0]
-        self.n_ebc = self.eq_ebc.shape[0]
-
         self.master = nm.empty((0,), dtype=nm.int32)
         self.slave = nm.empty((0,), dtype=nm.int32)
+
+        self.n_eq = self.eqi.shape[0]
+        self.n_ebc = self.eq_ebc.shape[0]
+        self.n_epbc = self.master.shape[0]
 
     def map_equations(self, bcs, field, ts, functions, problem=None,
                       warn=False):
