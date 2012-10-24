@@ -51,8 +51,7 @@ class Probe(Struct):
 
         self.set_n_point(n_point)
 
-        self.options = Struct()
-        self.set_options(close_limit=0.1, size_hint=None)
+        self.options = Struct(close_limit=0.1, size_hint=None)
 
         self.is_refined = False
 
