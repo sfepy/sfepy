@@ -38,10 +38,11 @@ from optparse import OptionParser
 import numpy as nm
 
 import sfepy
-from sfepy.base.base import output, get_default_attr, assert_, Struct
-from sfepy.base.ioutils import read_array, edit_filename
+from sfepy.base.base import output, get_default_attr, assert_
+from sfepy.base.ioutils import edit_filename
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.fem import MeshIO, ProblemDefinition
+from sfepy.fem.probes import write_results, read_results
 
 usage = """%prog [generation options] <input file> <results file>
 %prog [postprocessing options] <probe file> <figure file>
@@ -159,62 +160,9 @@ def generate_probes(filename_input, filename_results, options,
             if results is not None:
                 txt_filename = edit_filename(filename, new_ext='.txt')
 
-                fd = open(txt_filename, 'w')
-                fd.write('\n'.join(probe.report()) + '\n')
-                for key, res in results.iteritems():
-                    pars, vals = res
-                    fd.write('\n# %s\n' % key)
-
-                    if vals.ndim == 1:
-                        aux = nm.hstack((pars[:,None], vals[:,None]))
-
-                    else:
-                        aux = nm.hstack((pars[:,None], vals))
-
-                    nm.savetxt(fd, aux)
-                fd.close()
+                write_results(txt_filename, probe, results)
 
                 output('data ->', os.path.normpath(txt_filename))
-
-def read_header(fd):
-    """
-    Read the probe data header from file descriptor fd.
-    """
-    header = Struct(name='probe_data_header')
-    header.probe_class = fd.readline().strip()
-
-    aux = fd.readline().strip().split(':')[1]
-    header.n_point = int(aux.strip().split()[0])
-
-    details = []
-    while 1:
-        line = fd.readline().strip()
-
-        if line == '-----':
-            break
-        else:
-            details.append(line)
-    header.details = '\n'.join(details)
-
-    return header
-
-def get_data_name(fd):
-    """
-    Try to read next data name in file fd.
-    """
-    name = None
-    while 1:
-        try:
-            line = fd.readline()
-            if (len(line) == 0): break
-            if len(line) == 1: continue
-        except:
-            raise StopIteration
-
-        name = line.strip().split()
-        if (len(name) == 2) and (name[0] == '#'):
-            name = name[1]
-            yield name
 
 def integrate_along_line(x, y, is_radial=False):
     """
@@ -240,19 +188,13 @@ def postprocess(filename_input, filename_results, options):
     """
     from matplotlib import pyplot as plt
 
-    only_names = options.only_names
-
-    fd = open(filename_input, 'r')
-
-    header = read_header(fd)
+    header, results = read_results(filename_input,
+                                   only_names=options.only_names)
     output(header)
 
     fig = plt.figure()
-    for name in get_data_name(fd):
-        if (only_names is not None) and (name not in only_names): continue
-
-        data = read_array(fd, header.n_point, 2, nm.float64)
-        pars, vals = data[:,0], data[:,1]
+    for name, result in results.iteritems():
+        pars, vals = result[:, 0], result[:, 1]
 
         ii = nm.where(nm.isfinite(vals))[0]
         # Nans only at the edges.
@@ -274,7 +216,6 @@ def postprocess(filename_input, filename_results, options):
     plt.legend()
 
     fig.savefig(filename_results)
-    fd.close()
 
 def main():
     parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)

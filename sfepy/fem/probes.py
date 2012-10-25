@@ -8,9 +8,128 @@ try:
 except ImportError:
     from scipy.spatial import KDTree
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import output, get_default, basestr, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
 from sfepy.fem.mesh import make_inverse_connectivity
+
+def write_results(filename, probe, results):
+    """
+    Write probing results into a file.
+
+    Parameters
+    ----------
+    filename : str or file object
+        The output file name.
+    probe : Probe subclass instance
+        The probe used to obtain the results.
+    results : dict
+        The dictionary of probing results. Keys are data names, values are
+        the probed values.
+    """
+    fd = open(filename, 'w') if isinstance(filename, basestr) else filename
+
+    fd.write('\n'.join(probe.report()) + '\n')
+    for key, result in results.iteritems():
+        pars, vals = result
+        fd.write('\n# %s %d\n' % (key, vals.shape[-1]))
+
+        if vals.ndim == 1:
+            aux = nm.hstack((pars[:,None], vals[:,None]))
+
+        else:
+            aux = nm.hstack((pars[:,None], vals))
+
+        nm.savetxt(fd, aux)
+
+    if isinstance(filename, basestr):
+        fd.close()
+
+def read_results(filename, only_names=None):
+    """
+    Read probing results from a file.
+
+    Parameters
+    ----------
+    filename : str or file object
+        The probe results file name.
+
+    Returns
+    -------
+    header : Struct instance
+        The probe data header.
+    results : dict
+        The dictionary of probing results. Keys are data names, values are
+        the probed values.
+    """
+    from sfepy.base.ioutils import read_array
+
+    only_names = get_default(only_names, [])
+
+    fd = open(filename, 'r') if isinstance(filename, basestr) else filename
+
+    header = read_header(fd)
+    results = {}
+    for name, nc in get_data_name(fd):
+        if name not in only_names: continue
+
+        result = read_array(fd, header.n_point, nc + 1, nm.float64)
+        results[name] = result
+
+    return header, results
+
+def read_header(fd):
+    """
+    Read the probe data header from file descriptor fd.
+
+    Returns
+    -------
+    header : Struct instance
+        The probe data header.
+    """
+    header = Struct(name='probe_data_header')
+    header.probe_class = fd.readline().strip()
+
+    aux = fd.readline().strip().split(':')[1]
+    header.n_point = int(aux.strip().split()[0])
+
+    details = []
+    while 1:
+        line = fd.readline().strip()
+
+        if line == '-----':
+            break
+        else:
+            details.append(line)
+    header.details = '\n'.join(details)
+
+    return header
+
+def get_data_name(fd):
+    """
+    Try to read next data name in file fd.
+
+    Returns
+    -------
+    name : str
+        The data name.
+    nc : int
+        The number of data columns.
+    """
+    name = None
+    while 1:
+        try:
+            line = fd.readline()
+            if (len(line) == 0): break
+            if len(line) == 1: continue
+        except:
+            raise StopIteration
+
+        line = line.strip().split()
+        if (len(line) == 3) and (line[0] == '#'):
+            name = line[1]
+            nc = int(line[2])
+
+            yield name, nc
 
 class Probe(Struct):
     """
