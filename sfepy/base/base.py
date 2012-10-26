@@ -182,7 +182,7 @@ def try_imports(imports, fail_msg=None):
             exec imp
             break
 
-        except Exception as inst:
+        except Exception, inst:
             msgs.append(str(inst))
 
     else:
