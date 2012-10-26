@@ -246,7 +246,8 @@ class ProblemConf( Struct ):
 
     @staticmethod
     def from_file(filename, required=None, other=None, verbose=True,
-                  define_args=None, override=None, setup=True):
+                  define_args=None, override=None, setup=True,
+                  pass_override_to_define=False):
         """
         Loads the problem definition from a file.
 
@@ -282,7 +283,10 @@ class ProblemConf( Struct ):
             else:
                 if isinstance(define_args, str):
                     define_args = ProblemConf.dict_from_string(define_args)
-
+                if pass_override_to_define:
+                    if pass_override_to_define is True:
+                       pass_override_to_define = 'conf'
+                    define_args[pass_override_to_define]=override
                 if isinstance(define_args, dict):
                     define_dict = funmod.__dict__["define"](**define_args)
 
@@ -298,24 +302,36 @@ class ProblemConf( Struct ):
 
         return obj
 
+
+    @staticmethod
+    def from_options(options, filename=None, required=None, other=None,
+                          verbose=True,  setup=True):
+        define_dict = ProblemConf.dict_from_string(options.conf)
+        if options.app_options:
+            if not 'options' in override:
+                define_dict['options'] = {}
+
+            override_options = ProblemConf.dict_from_string(options.app_options)
+            define_dict['options'].update(override_options)
+
+        obj = ProblemConf(define_dict, filename=filename, \
+                          required=required, other=other, verbose=verbose, \
+                          setup=setup)
+        
+        return obj
+    
+
     @staticmethod
     def from_file_and_options(filename, options, required=None, other=None,
-                          verbose=True, define_args=None, setup=True):
+                          verbose=True, define_args=None, override=None, setup=True):
         """
         Utility function, a wrapper around ProblemConf.from_file() with
         possible override taken from `options`.
         """
-        override = ProblemConf.dict_from_string(options.conf)
-        if options.app_options:
-            if not 'options' in override:
-                override['options'] = {}
-
-            override_options = ProblemConf.dict_from_string(options.app_options)
-            override['options'].update(override_options)
-
+        from_opts=ProblemConf.from_file_and_options(options, override = override, setup=False);
         obj = ProblemConf.from_file(filename, required=required, other=other,
                                     verbose=verbose, define_args=define_args,
-                                    override=override, setup=setup)
+                                    override=from_opts, setup=setup)
         return obj
 
     @staticmethod
