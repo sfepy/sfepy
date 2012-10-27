@@ -231,6 +231,42 @@ transforms = {
     'functions' : transform_functions,
 }
 
+def dict_from_string(string):
+    """
+    Parse `string` and return a dictionary that can be used to
+    construct/override a ProblemConf instance.
+    """
+    if string is None:
+        return {}
+
+    if isinstance(string, dict):
+        return string
+
+    parser = create_bnf()
+
+    out = {}
+    for r in parser.parseString(string):
+      out.update(r)
+
+    return out
+
+def dict_from_options(options):
+    """
+    Return a dictionary that can be used to construct/override a ProblemConf
+    instance based on `options`.
+
+    See ``--conf`` and ``--options`` options of the ``simple.py`` script.
+    """
+    override = dict_from_string(options.conf)
+    if options.app_options:
+        if not 'options' in override:
+            override['options'] = {}
+
+        override_options = dict_from_string(options.app_options)
+        override['options'].update(override_options)
+
+    return override
+
 ##
 # 27.10.2005, c
 class ProblemConf( Struct ):
@@ -281,7 +317,7 @@ class ProblemConf( Struct ):
 
             else:
                 if isinstance(define_args, str):
-                    define_args = ProblemConf.dict_from_string(define_args)
+                    define_args = dict_from_string(define_args)
 
                 if isinstance(define_args, dict):
                     define_dict = funmod.__dict__["define"](**define_args)
@@ -300,19 +336,12 @@ class ProblemConf( Struct ):
 
     @staticmethod
     def from_file_and_options(filename, options, required=None, other=None,
-                          verbose=True, define_args=None, setup=True):
+                              verbose=True, define_args=None, setup=True):
         """
         Utility function, a wrapper around ProblemConf.from_file() with
         possible override taken from `options`.
         """
-        override = ProblemConf.dict_from_string(options.conf)
-        if options.app_options:
-            if not 'options' in override:
-                override['options'] = {}
-
-            override_options = ProblemConf.dict_from_string(options.app_options)
-            override['options'].update(override_options)
-
+        override = dict_from_options(options)
         obj = ProblemConf.from_file(filename, required=required, other=other,
                                     verbose=verbose, define_args=define_args,
                                     override=override, setup=setup)
@@ -333,26 +362,6 @@ class ProblemConf( Struct ):
                           override, setup=setup)
 
         return obj
-
-    @staticmethod
-    def dict_from_string(string):
-        """
-        Parse `string` and return a dictionary that can be used to
-        construct/override a ProblemConf instance.
-        """
-        if string is None:
-            return {}
-
-        if isinstance(string, dict):
-            return string
-
-        parser = create_bnf()
-
-        out = {}
-        for r in parser.parseString(string):
-          out.update(r)
-
-        return out
 
     def __init__(self, define_dict, funmod=None, filename=None,
                  required=None, other=None, verbose=True, override=None,
