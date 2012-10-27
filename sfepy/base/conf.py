@@ -367,7 +367,7 @@ class ProblemConf( Struct ):
                  required=None, other=None, verbose=True, override=None,
                  setup=True):
         if override:
-            if isinstance(override, ProblemConf):
+            if isinstance(override, Struct):
                 override = override.__dict__
             define_dict = update_dict_recursively(define_dict, override, True)
 
