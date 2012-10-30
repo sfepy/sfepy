@@ -280,16 +280,18 @@ class Struct( object ):
         well as list or tuple attributes only several edge items are
         printed if their length is greater than the threshold value 20.
         """
+        return self._str()
+
+    def _str(self, keys=None, threshold=20):
         ss = '%s' % self.__class__.__name__
         if hasattr(self, 'name'):
             ss += ':%s' % self.name
         ss += '\n'
 
-        threshold = 20
+        if keys is None:
+            keys = self.__dict__.keys()
 
-        keys = self.__dict__.keys()
-        str_attrs = sorted(self.get_default_attr('_str_attrs',
-                                                 keys))
+        str_attrs = sorted(self.get_default_attr('_str_attrs', keys))
         printed_keys = []
         for key in str_attrs:
             if key[-1] == '.':
@@ -301,8 +303,9 @@ class Struct( object ):
             printed_keys.append(key)
 
             try:
-                val = self.__dict__[key]
-            except KeyError:
+                val = getattr(self, key)
+
+            except AttributeError:
                 continue
 
             if isinstance(val, Struct):
@@ -311,6 +314,7 @@ class Struct( object ):
                     if hasattr(val, 'name'):
                         ss += ':%s' % val.name
                     ss += '\n'
+
                 else:
                     aux = '\n' + str(val)
                     aux = aux.replace('\n', '\n    ');
@@ -332,7 +336,8 @@ class Struct( object ):
                 ss += '  %s:\n    tuple: %s\n' % (key, sval)
 
             elif isinstance(val, nm.ndarray):
-                ss += '  %s:\n    %s array of %s\n' % (key, val.shape, val.dtype)
+                ss += '  %s:\n    %s array of %s\n' \
+                      % (key, val.shape, val.dtype)
 
             elif isinstance(val, sp.spmatrix):
                 ss += '  %s:\n    %s spmatrix of %s, %d nonzeros\n' \
@@ -390,6 +395,12 @@ class Struct( object ):
             else:
                 setattr( self, key, val )
         return self
+
+    def str_class(self):
+        """
+        As __str__(), but for class attributes.
+        """
+        return self._str(self.__class__.__dict__.keys())
 
     # 08.03.2005, c
     def str_all( self ):
