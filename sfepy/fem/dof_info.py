@@ -522,19 +522,17 @@ class LCBCOperator(Struct):
         master = nm.intersect1d(dofs, master)
         if len(master) == 0: return
 
+        # Remove rows with master DOFs.
         remove = nm.searchsorted(nm.sort(dofs), master)
         keep = nm.setdiff1d(nm.arange(len(dofs)), remove)
 
         mtx = self.mtx[keep]
-        mtx.sort_indices()
 
         # Remove empty columns, update new DOF count.
-        icm = nm.diff(nm.r_[-1, mtx.indices]) - 1
-        offset = nm.cumsum(icm)
-        mtx.indices -= offset
-        self.mtx = sp.csr_matrix((mtx.data, mtx.indices, mtx.indptr),
-                                 shape=(mtx.shape[0],
-                                        mtx.indices.max() + 1))
+        mtx = mtx.tocsc()
+        indptr = nm.unique(mtx.indptr)
+        self.mtx = sp.csc_matrix((mtx.data, mtx.indices, indptr),
+                                 shape=(mtx.shape[0], indptr.shape[0] - 1))
         self.n_dof = self.mtx.shape[1]
 
 class RigidOperator(LCBCOperator):
