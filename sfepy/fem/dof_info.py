@@ -9,7 +9,6 @@ import scipy.sparse as sp
 
 from sfepy.base.base import (output, assert_, get_default_attr,
                              Container, Struct, basestr)
-from sfepy.base.compat import unique
 from sfepy.fem.utils import compute_nodal_normals, compute_nodal_edge_dirs
 from sfepy.fem.functions import Function
 from sfepy.fem.conditions import EssentialBC
@@ -36,7 +35,7 @@ def expand_nodes_to_equations(nods, dof_names, all_dof_names):
     DOF names must be already canonized.
     """
     dpn = len(all_dof_names)
-    
+
     eq = nm.array([], dtype=nm.int32)
     for dof in dof_names:
         idof = all_dof_names.index(dof)
@@ -78,7 +77,6 @@ def group_chains(chain_list):
             ## print ii, chain, chain_list
         ## print '->', chain
         ## print chain_list
-        ## pause()
 
         chains.append(list(chain))
 
@@ -123,7 +121,7 @@ class DofInfo(Struct):
         var : Variable instance
             The variable to append.
         active : bool, optional
-            When True, only active (non-constrained) DOFs are considered. 
+            When True, only active (non-constrained) DOFs are considered.
         """
         name = var.name
         if name in self.var_names:
@@ -185,11 +183,11 @@ class DofInfo(Struct):
         var_name : str
             The name of the variable.
         """
-        return Struct(name = '%s_dof_info' % var_name,
-                      var_name = var_name,
-                      n_dof = self.n_dof[var_name],
-                      indx = self.indx[var_name],
-                      details = self.details[var_name])
+        return Struct(name='%s_dof_info' % var_name,
+                      var_name=var_name,
+                      n_dof=self.n_dof[var_name],
+                      indx=self.indx[var_name],
+                      details=self.details[var_name])
 
     def get_subset_info(self, var_names):
         """
@@ -337,12 +335,9 @@ class EquationMap(Struct):
                 ntype = 'EPBC'
                 region = bc.regions[0]
 
-            ## print ir, key, bc
-            ## debug()
-
             if warn:
-                clean_msg = ('warning: ignoring nonexistent' \
-                             ' %s node (%s) in ' % (ntype, self.var_di.var_name))
+                clean_msg = ('warning: ignoring nonexistent %s node (%s) in '
+                             % (ntype, self.var_di.var_name))
             else:
                 clean_msg = None
 
@@ -383,14 +378,12 @@ class EquationMap(Struct):
                 region = bc.regions[1]
                 slave_nod_list = field.get_dofs_in_region(region, clean=True,
                                                           warn=clean_msg)
-                ## print master_nod_list
-                ## print slave_nod_list
 
                 nmaster = nm.unique(nm.hstack(master_nod_list))
                 # Treat fields not covering the whole domain.
                 if nmaster[0] == -1:
                     nmaster = nmaster[1:]
-                    
+
                 nslave = nm.unique(nm.hstack(slave_nod_list))
                 # Treat fields not covering the whole domain.
                 if nslave[0] == -1:
@@ -411,8 +404,8 @@ class EquationMap(Struct):
 
                 fun = functions[bc.match]
                 i1, i2 = fun(mcoor, scoor)
-               ## print nm.c_[mcoor[i1], scoor[i2]]
-               ## print nm.c_[nmaster[i1], nslave[i2]] + 1
+                ## print nm.c_[mcoor[i1], scoor[i2]]
+                ## print nm.c_[nmaster[i1], nslave[i2]] + 1
 
                 meq = expand_nodes_to_equations(nmaster[i1], bc.dofs[0],
                                                 self.dof_names)
@@ -422,28 +415,21 @@ class EquationMap(Struct):
                 m_assigned = nm.where(master_slave[meq] != 0)[0]
                 s_assigned = nm.where(master_slave[seq] != 0)[0]
                 if m_assigned.size or s_assigned.size: # Chain EPBC.
-                    ## print m_assigned, meq[m_assigned]
-                    ## print s_assigned, seq[s_assigned]
-
                     aux = master_slave[meq[m_assigned]]
                     sgn = nm.sign(aux)
                     om_chain = zip(meq[m_assigned], (aux - sgn) * sgn)
-                    ## print om_chain
                     chains.extend(om_chain)
 
                     aux = master_slave[seq[s_assigned]]
                     sgn = nm.sign(aux)
                     os_chain = zip(seq[s_assigned], (aux - sgn) * sgn)
-                    ## print os_chain
                     chains.extend(os_chain)
 
                     m_chain = zip(meq[m_assigned], seq[m_assigned])
-                    ## print m_chain
                     chains.extend(m_chain)
 
                     msd = nm.setdiff1d(s_assigned, m_assigned)
                     s_chain = zip(meq[msd], seq[msd])
-                    ## print s_chain
                     chains.extend(s_chain)
 
                     msa = nm.union1d(m_assigned, s_assigned)
@@ -454,10 +440,7 @@ class EquationMap(Struct):
                 else:
                     master_slave[meq] = seq + 1
                     master_slave[seq] = - meq - 1
-                ## print 'ms', master_slave
-                ## print chains
 
-        ## print master_slave
         chains = group_chains(chains)
         resolve_chains(master_slave, chains)
 
@@ -468,8 +451,6 @@ class EquationMap(Struct):
         self.slave = master_slave[self.master] - 1
 
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
-        ## print self.eq_ebc.shape
-        ## pause()
         self.eq[self.eq_ebc] = -2
         self.eq[self.master] = -1
         self.eqi = nm.compress(self.eq >= 0, self.eq)
@@ -496,7 +477,7 @@ class EquationMap(Struct):
         """
         # EBC.
         rows = self.eqi
-        cols = nm.arange(self.n_eq, dtype=nm.int32) 
+        cols = nm.arange(self.n_eq, dtype=nm.int32)
 
         # EPBC.
         ic = self.eq[self.slave]
@@ -615,8 +596,6 @@ class NoPenetrationOperator(LCBCOperator):
         for idim in xrange(dim):
             ic = nm.where(ii == idim)[0]
             if len(ic) == 0: continue
-            ## print ic
-            ## print idim
 
             ir = list(irs.difference([idim]))
             nn = nm.empty((len(ic), dim - 1), dtype=nm.float64)
@@ -630,15 +609,11 @@ class NoPenetrationOperator(LCBCOperator):
                 cols.append(ics[ik])
                 data.append(nn[:,ik])
 
-            ones = nm.ones( (nn.shape[0],), dtype = nm.float64 )
+            ones = nm.ones((nn.shape[0],), dtype=nm.float64)
             for ik, il in enumerate(ir):
                 rows.append(dim * ic + il)
                 cols.append(ics[ik])
                 data.append(ones)
-
-        ## print rows
-        ## print cols
-        ## print data
 
         rows = nm.concatenate(rows)
         cols = nm.concatenate(cols)
@@ -649,12 +624,6 @@ class NoPenetrationOperator(LCBCOperator):
 
         self.n_dof = n_np_dof
         self.mtx = mtx.tocsr()
-
-        ## import pylab
-        ## from sfepy.base.plotutils import spy
-        ## spy( mtx )
-        ## print mtx
-        ## pylab.show()
 
 class NormalDirectionOperator(LCBCOperator):
     """
@@ -852,7 +821,6 @@ def make_global_lcbc_operator(lcbc_ops, adi, new_only=False):
     n_free = {}
     n_new = {}
     for var_name, lcbc_op in lcbc_ops.iteritems():
-        ## print var_name, lcbc_op
         if lcbc_op is None: continue
 
         indx = adi.indx[var_name]
@@ -866,13 +834,13 @@ def make_global_lcbc_operator(lcbc_ops, adi, new_only=False):
     if n_dof_new == 0:
         return None, None
 
-    ii = nm.nonzero( eq_lcbc )[0]
+    ii = nm.nonzero(eq_lcbc)[0]
     n_constrained = ii.shape[0]
     n_dof_free = n_dof - n_constrained
     n_dof_reduced = n_dof_free + n_dof_new
-    output( 'dofs: total %d, free %d, constrained %d, new %d'\
-            % (n_dof, n_dof_free, n_constrained, n_dof_new) )
-    output( ' -> reduced %d' % (n_dof_reduced) )
+    output('dofs: total %d, free %d, constrained %d, new %d'\
+            % (n_dof, n_dof_free, n_constrained, n_dof_new))
+    output(' -> reduced %d' % (n_dof_reduced))
 
     lcdi = DofInfo('lcbc_active_state_dof_info')
     fdi = DofInfo('free_dof_info')
@@ -927,7 +895,7 @@ def make_global_lcbc_operator(lcbc_ops, adi, new_only=False):
         mtx_lc = sp.coo_matrix((data, (rows, cols)),
                                shape=(n_dof, n_dof_reduced))
 
-        ir = nm.where( eq_lcbc == 0 )[0]
+        ir = nm.where(eq_lcbc == 0)[0]
 
         ic = nm.empty((n_dof_free,), dtype=nm.int32)
         for var_name in adi.var_names:
@@ -941,11 +909,5 @@ def make_global_lcbc_operator(lcbc_ops, adi, new_only=False):
         mtx_lc = mtx_lc + mtx_lc2
 
     mtx_lc = mtx_lc.tocsr()
-
-    ## import pylab
-    ## from sfepy.base.plotutils import spy
-    ## spy( mtx_lc )
-    ## print mtx_lc
-    ## pylab.show()
 
     return mtx_lc, lcdi
