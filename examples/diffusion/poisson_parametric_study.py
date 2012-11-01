@@ -5,7 +5,7 @@ This example demonstrates parametric study capabilities of Application
 classes. In particular (written in the strong form):
 
 .. math::
-    c \nabla t = f \mbox{ in } \Omega,
+    c \Delta t = f \mbox{ in } \Omega,
 
     t = 2 \mbox{ on } \Gamma_1 \;,
     t = -2 \mbox{ on } \Gamma_2 \;,
