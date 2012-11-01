@@ -45,6 +45,138 @@ def get_logging_conf(conf):
 def name_to_key(name, ii):
     return name + (':%d' % ii)
 
+def read_log(filename):
+    """
+    Read data saved by :class:`Log` into a text file.
+
+    Parameters
+    ----------
+    filename : str
+        The name of a text log file.
+
+    Returns
+    -------
+    log : dict
+        The log with data names as keys and ``(xs, ys, vlines)`` as values.
+    info : dict
+        The log plot configuration with subplot numbers as keys.
+    """
+    log = {}
+    info = {}
+
+    fd = open(filename, 'r')
+
+    last_it = 0
+    for line in fd:
+        if line[0] == '#':
+            ls = line.split(':')
+            if ls[0] == '# groups':
+                n_gr = int(ls[1])
+                for ig in range(n_gr):
+                    fd.next()
+                    line_info = fd.next()
+                    xlabel, ylabel, yscales = line_info.split(',')
+
+                    line_names = fd.next()
+                    names = line_names.split(':')[1]
+
+                    info[ig] = (xlabel.split(':')[1].strip().strip('"'),
+                                ylabel.split(':')[1].strip().strip('"'),
+                                yscales.split(':')[1].strip().strip('"'),
+                                [name.strip().strip('"')
+                                 for name in names.split(',')])
+
+            continue
+
+        ls = line.split(':')
+
+        key = ls[0]
+        xs, ys, vlines = log.setdefault(key, ([], [], []))
+
+        if len(ls) == 2:
+            vlines.append(last_it)
+
+        else:
+            iteration, val = int(ls[1]), float(ls[2])
+            xs.append(iteration)
+            ys.append(val)
+
+            last_it = iteration
+
+    fd.close()
+
+    for key, (xs, ys, vlines) in log.iteritems():
+        log[key] = (nm.array(xs), nm.array(ys), nm.array(vlines))
+
+    return log, info
+
+def plot_log(fig_num, log, info, xticks=None, yticks=None):
+    """
+    Plot log data returned by :func:`read_log()` into a specified figure.
+
+    Parameters
+    ----------
+    fig_num : int
+        The figure number.
+    log : dict
+        The log with data names as keys and ``(xs, ys, vlines)`` as values.
+    info : dict
+        The log plot configuration with subplot numbers as keys.
+    xticks : list of arrays, optional
+        The list of x-axis ticks (array or None) for each subplot.
+    yticks : list of arrays, optional
+        The list of y-axis ticks (array or None) for each subplot.
+    """
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(fig_num)
+    fig.clf()
+
+    n_gr = len(info)
+    n_col = min(5.0, nm.fix(nm.sqrt(n_gr)))
+    if int(n_col) == 0:
+        n_row = 0
+
+    else:
+        n_row = int(nm.ceil(n_gr / n_col))
+        n_col = int(n_col)
+
+    if xticks is None:
+        xticks = [None] * n_gr
+
+    if yticks is None:
+        yticks = [None] * n_gr
+
+    for ii, (xlabel, ylabel, yscale, names) in info.iteritems():
+        ax = fig.add_subplot(n_row, n_col, ii + 1)
+        ax.set_yscale(yscale)
+
+        if xlabel:
+            ax.set_xlabel(xlabel)
+
+        if ylabel:
+            ax.set_ylabel(ylabel)
+
+        for name in names:
+            xs, ys, vlines = log[name]
+            ax.plot(xs, ys)
+
+            for x in vlines:
+                ax.axvline(x, color='g')
+
+        if xticks[ii] is not None:
+            ax.set_xticks(xticks[ii])
+
+        else:
+            ax.locator_params(axis='x', nbins=10)
+
+        if yticks[ii] is not None:
+            ax.set_yticks(yticks[ii])
+
+        ax.legend(names, loc='best')
+
+    plt.tight_layout(pad=0.5)
+
 class Log(Struct):
     """
     Log data and (optionally) plot them in the second process via
