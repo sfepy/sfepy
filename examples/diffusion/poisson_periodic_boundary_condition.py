@@ -22,7 +22,6 @@ Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 """
 
 from sfepy import data_dir
-from sfepy.base.base import output
 import numpy as nm
 import sfepy.fem.periodic as per
 
@@ -43,18 +42,19 @@ def cylinder_material_func(ts, coors, problem, mode=None, **kwargs):
     material in the cylinder.
     """
     if mode == 'qp':
-        if ts.step in range(0, 5):
-            # The power is turned on in the first 5 steps only
-            Power = nm.ones(len(coors[:, 0]))*Power_per_volume
+        shape = (coors.shape[0], 1, 1)
+
+        power = nm.empty(shape, dtype=nm.float64)
+        if ts.step < 5:
+            # The power is turned on in the first 5 steps only.
+            power.fill(power_per_volume)
+
         else:
-            Power = nm.zeros(len(coors[:, 0]))
-        Power.shape = (coors.shape[0], 1, 1)
+            power.fill(0.0)
 
-        conductivity = nm.ones(len(coors[:, 0]))* conductivity_cylinder
-        conductivity.shape = (coors.shape[0], 1, 1)
+        conductivity = nm.ones(shape) * conductivity_cylinder
+        capacity = nm.ones(shape) * capacity_cylinder
 
-        capacity = nm.ones(len(coors[:, 0]))*capacity_cylinder
-        capacity.shape = (coors.shape[0], 1, 1) 
         return {'power' : power, 'capacity' : capacity,
                 'conductivity' : conductivity}
 
@@ -142,6 +142,6 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'ts' : 'ts',
+    'output_dir' : 'output',
     'save_steps' : -1,
 }
-
