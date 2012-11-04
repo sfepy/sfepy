@@ -34,7 +34,7 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
 
     opts = conf.options = dict_to_struct(app_options, flag=(1,)) + conf.options
 
-    output_prefix = opts.get_default_attr('output_prefix', None)
+    output_prefix = opts.get('output_prefix', None)
     if output_prefix is None:
         output_prefix = output.prefix
 
@@ -265,7 +265,7 @@ class PDESolverApp(Application):
         Application options setup. Sets default values for missing
         non-compulsory options.
         """
-        get = options.get_default_attr
+        get = options.get
 
         output_dir = get('output_dir', '.')
         if not os.path.exists(output_dir):
@@ -312,8 +312,7 @@ class PDESolverApp(Application):
     def setup_options( self ):
         self.app_options = PDESolverApp.process_options(self.conf.options)
 
-        assign_standard_hooks(self, self.app_options.get_default_attr,
-                              self.conf)
+        assign_standard_hooks(self, self.app_options.get, self.conf)
 
         # Override default equations, if use_equations is set.
         if hasattr(self.conf, 'equations'):

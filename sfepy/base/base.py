@@ -291,7 +291,7 @@ class Struct( object ):
         if keys is None:
             keys = self.__dict__.keys()
 
-        str_attrs = sorted(self.get_default_attr('_str_attrs', keys))
+        str_attrs = sorted(self.get('_str_attrs', keys))
         printed_keys = []
         for key in str_attrs:
             if key[-1] == '.':
@@ -422,9 +422,16 @@ class Struct( object ):
     def to_dict( self ):
         return copy( self.__dict__ )
 
-    def get(self, key, default):
-        """A dict-like get for Struct attributes."""
-        return self.__dict__.get(key, default)
+    def get(self, key, default=None, msg_if_none=None):
+        """
+        A dict-like get() for Struct attributes.
+        """
+        out = getattr(self, key, default)
+
+        if (out is None) and (msg_if_none is not None):
+            raise ValueError(msg_if_none)
+
+        return out
 
     def update(self, other, **kwargs):
         """
@@ -436,13 +443,11 @@ class Struct( object ):
             other = other.to_dict()
         self.__dict__.update(other, **kwargs)
 
-    def get_default_attr( self, key, default = None, msg_if_none = None ):
-        """Behaves like dict.get() if msg_if_none is None."""
-        return get_default_attr( self, key, default, msg_if_none )
-
-    def set_default_attr( self, key, default = None ):
-        """Behaves like dict.setdefault()."""
-        return self.__dict__.setdefault( key, default )
+    def set_default(self, key, default=None):
+        """
+        Behaves like dict.setdefault().
+        """
+        return self.__dict__.setdefault(key, default)
 
     def copy(self, deep=False, name=None):
         """Make a (deep) copy of self.

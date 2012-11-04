@@ -6,7 +6,7 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import dict_from_keys_init, select_by_names
-from sfepy.base.base import output, get_default, get_default_attr, Struct
+from sfepy.base.base import output, get_default, Struct
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
@@ -65,7 +65,7 @@ class ProblemDefinition( Struct ):
     @staticmethod
     def from_conf(conf, init_fields=True, init_equations=True,
                   init_solvers=True):
-        if conf.options.get_default_attr('absolute_mesh_path', False):
+        if conf.options.get('absolute_mesh_path', False):
             conf_dir = None
         else:
             conf_dir = op.dirname(conf.funmod.__file__)
@@ -74,13 +74,13 @@ class ProblemDefinition( Struct ):
 
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
-        trans_mtx = conf.options.get_default_attr('mesh_coors_transform', None)
+        trans_mtx = conf.options.get('mesh_coors_transform', None)
 
         if trans_mtx is not None:
             mesh.transform_coors(trans_mtx)
 
         domain = Domain(mesh.name, mesh)
-        if get_default_attr(conf.options, 'ulf', False):
+        if conf.options.get('ulf', False):
             domain.mesh.coors_act = domain.mesh.coors.copy()
 
         obj = ProblemDefinition('problem_from_conf', conf=conf,
@@ -238,20 +238,16 @@ class ProblemDefinition( Struct ):
 
         else:
             default_trunk = None
-            default_output_dir = get_default_attr(conf.options,
-                                                  'output_dir', None)
+            default_output_dir = conf.options.get('output_dir', None)
 
         if options and getattr(options, 'output_format', None):
             default_output_format = options.output_format
 
         else:
-            default_output_format = get_default_attr(conf.options,
-                                                    'output_format', None)
+            default_output_format = conf.options.get('output_format', None)
 
-        default_file_per_var = get_default_attr(conf.options,
-                                                'file_per_var', None)
-        default_float_format = get_default_attr(conf.options,
-                                                'float_format', None)
+        default_file_per_var = conf.options.get('file_per_var', None)
+        default_float_format = conf.options.get('float_format', None)
         default_linearization = Struct(kind='strip')
 
         self.setup_output(output_filename_trunk=default_trunk,
@@ -359,8 +355,7 @@ class ProblemDefinition( Struct ):
         Fields and Regions have to be already set.
         """
         conf_equations = get_default(conf_equations,
-                                     self.conf.get_default_attr('equations',
-                                                                None))
+                                     self.conf.get('equations', None))
 
         self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
@@ -476,7 +471,7 @@ class ProblemDefinition( Struct ):
         integrals : Integrals instance
             The requested integrals.
         """
-        conf_integrals = self.conf.get_default_attr('integrals', {})
+        conf_integrals = self.conf.get('integrals', {})
         integrals = Integrals.from_conf(conf_integrals)
 
         if names is not None:
@@ -913,7 +908,7 @@ class ProblemDefinition( Struct ):
 
         if presolve:
             tt = time.clock()
-        if get_default_attr(ls_conf, 'needs_problem_instance', False):
+        if ls_conf.get('needs_problem_instance', False):
             extra_args = {'problem' : self}
         else:
             extra_args = {}
@@ -924,13 +919,13 @@ class ProblemDefinition( Struct ):
             tt = time.clock() - tt
             output('presolve: %.2f [s]' % tt)
 
-        if get_default_attr(nls_conf, 'needs_problem_instance', False):
+        if nls_conf.get('needs_problem_instance', False):
             extra_args = {'problem' : self}
         else:
             extra_args = {}
         ev = self.get_evaluator()
 
-        if get_default_attr(self.conf.options, 'ulf', False):
+        if self.conf.options.get('ulf', False):
             self.nls_iter_hook = ev.new_ulf_iteration
 
         nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,

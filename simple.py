@@ -14,7 +14,7 @@ repeated runs for varying some of the simulation parameters - see
 from optparse import OptionParser
 
 import sfepy
-from sfepy.base.base import output, get_default_attr
+from sfepy.base.base import output
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.applications import PDESolverApp
 
@@ -134,7 +134,7 @@ def main():
                                              define_args=options.define_args)
 
     opts = conf.options
-    output_prefix = get_default_attr(opts, 'output_prefix', 'sfepy:')
+    output_prefix = opts.get('output_prefix', 'sfepy:')
 
     app = PDESolverApp(conf, options, output_prefix)
     if hasattr(opts, 'parametric_hook'): # Parametric study.

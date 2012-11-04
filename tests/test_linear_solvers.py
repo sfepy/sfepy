@@ -139,7 +139,7 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 07.05.2008
     def test_solvers( self ):
-        from sfepy.base.base import IndexedStruct, get_default_attr
+        from sfepy.base.base import IndexedStruct
         import os.path as op
 
         solver_confs = self._list_linear_solvers( self.problem.solver_confs )
@@ -147,8 +147,8 @@ class Test( TestCommon ):
         ok = True
         tt = []
         for solver_conf in solver_confs:
-            method = get_default_attr( solver_conf, 'method', '' )
-            precond = get_default_attr( solver_conf, 'precond', '' )
+            method = solver_conf.get('method', '')
+            precond = solver_conf.get('precond', '')
             name = ' '.join( (solver_conf.name, solver_conf.kind,
                               method, precond) ).rstrip()
             self.report( name )

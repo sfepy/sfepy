@@ -254,7 +254,7 @@ class AcousticBandGapsApp(HomogenizationApp):
         Application options setup. Sets default values for missing
         non-compulsory options.
         """
-        get = options.get_default_attr
+        get = options.get
 
         default_plot_options = {'show' : True,'legend' : False,}
 
@@ -338,7 +338,7 @@ class AcousticBandGapsApp(HomogenizationApp):
         Application options setup for phase velocity computation. Sets default
         values for missing non-compulsory options.
         """
-        get = options.get_default_attr
+        get = options.get
 
         incident_wave_dir=get('incident_wave_dir', None,
                               'missing "incident_wave_dir" in options!')
@@ -373,9 +373,9 @@ class AcousticBandGapsApp(HomogenizationApp):
         opts = self.app_options
         conf = self.problem.conf
         coefs_name = opts.coefs
-        coef_info = conf.get_default_attr(opts.coefs, None,
-                                          'missing "%s" in problem description!'
-                                          % opts.coefs)
+        coef_info = conf.get(opts.coefs, None,
+                             'missing "%s" in problem description!'
+                             % opts.coefs)
 
         if options.detect_band_gaps:
             # Compute band gaps coefficients and data.
@@ -435,8 +435,8 @@ class AcousticBandGapsApp(HomogenizationApp):
                    if key.startswith('band_gaps')
                    or key.startswith('dispersion')]
         for ii, key in enumerate(bg_keys):
-            bg = coefs.get_default_attr(key)
-            log_save_name = bg.get_default_attr('log_save_name', None)
+            bg = coefs.get(key)
+            log_save_name = bg.get('log_save_name', None)
             if log_save_name is not None:
                 filename = op.join(self.problem.output_dir, log_save_name)
                 bg.save_log(filename, opts.float_format, bg)
@@ -452,7 +452,7 @@ class AcousticBandGapsApp(HomogenizationApp):
             keys = [key for key in coefs.to_dict()
                     if key.startswith('phase_velocity')]
             for key in keys:
-                output('%s:' % key, coefs.get_default_attr(key))
+                output('%s:' % key, coefs.get(key))
 
         return coefs
 
@@ -468,7 +468,7 @@ class AcousticBandGapsApp(HomogenizationApp):
         plt.rcParams.update(plot_rsc['params'])
 
         for ii, key in enumerate(bg_keys):
-            bg = coefs.get_default_attr(key)
+            bg = coefs.get(key)
 
             plot_labels =  opts.plot_labels.get(key, opts.plot_labels)
 
@@ -507,7 +507,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
         for ii, key in enumerate(bg_keys):
             pas_key = key.replace('dispersion', 'polarization_angles')
-            pas = coefs.get_default_attr(pas_key)
+            pas = coefs.get(pas_key)
 
             aux = transform_plot_data(pas,
                                       opts.plot_transform_angle,
@@ -515,7 +515,7 @@ class AcousticBandGapsApp(HomogenizationApp):
             plot_range, pas = aux
 
 
-            bg = coefs.get_default_attr(key)
+            bg = coefs.get(key)
 
             fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds,
                             bg.freq_range_margins, plot_range,

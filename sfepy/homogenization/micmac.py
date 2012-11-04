@@ -20,8 +20,8 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     conf = ProblemConf.from_file(micro_filename, required, other, verbose=False)
     if coefs_filename is None:
-        coefs_filename = conf.options.get_default_attr('coefs_filename', 'coefs')
-        coefs_filename = op.join(conf.options.get_default_attr('output_dir', '.'),
+        coefs_filename = conf.options.get('coefs_filename', 'coefs')
+        coefs_filename = op.join(conf.options.get('output_dir', '.'),
                                  coefs_filename) + '.h5'
 
     if not regenerate:

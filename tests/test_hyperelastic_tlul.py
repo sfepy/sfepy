@@ -37,8 +37,7 @@ class Test(TestCommon):
                                     save_regions_as_groups=False,
                                     save_field_meshes=False,
                                     solve_not=False)
-            assign_standard_hooks(self, test_conf.options.get_default_attr,
-                                  test_conf)
+            assign_standard_hooks(self, test_conf.options.get, test_conf)
 
             self.report( 'hyperelastic formulation: %s' % (hp, ) )
 

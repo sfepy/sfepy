@@ -67,7 +67,7 @@ class HyperElasticBase(Term):
     def compute_stress(self, mat, family_data, **kwargs):
         out = nm.empty_like(family_data.green_strain)
 
-        get = family_data.get_default_attr
+        get = family_data.get
         fargs = [get(name, msg_if_none=_msg_missing_data)
                  for name in self.family_data_names]
 
@@ -80,7 +80,7 @@ class HyperElasticBase(Term):
         shape[-1] = shape[-2]
         out = nm.empty(shape, dtype=nm.float64)
 
-        get = family_data.get_default_attr
+        get = family_data.get
         fargs = [get(name, msg_if_none=_msg_missing_data)
                  for name in self.family_data_names]
 

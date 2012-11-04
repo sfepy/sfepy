@@ -151,7 +151,7 @@ def transform_fields( adict ):
             d2['field_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
-            c2.set_default_attr('dtype', nm.float64)
+            c2.set_default('dtype', nm.float64)
             if c2.dtype in dtypes:
                 c2.dtype = dtypes[c2.dtype]
             d2['field_'+c2.name] = c2

@@ -27,11 +27,11 @@ class MiniAppBase(Struct):
         Struct.__init__(self, name=name, problem=problem, **kwargs)
 
         self.problem.clear_equations()
-        self.set_default_attr('requires', [])
-        self.set_default_attr('is_linear', False)
-        self.set_default_attr('dtype', nm.float64)
-        self.set_default_attr('term_mode', None)
-        self.set_default_attr('set_volume', 'total')
+        self.set_default('requires', [])
+        self.set_default('is_linear', False)
+        self.set_default('dtype', nm.float64)
+        self.set_default('term_mode', None)
+        self.set_default('set_volume', 'total')
 
         # Application-specific options.
         self.app_options = self.process_options()
@@ -95,10 +95,10 @@ class CorrMiniApp(MiniAppBase):
     def __init__(self, name, problem, kwargs):
         MiniAppBase.__init__(self, name, problem, kwargs)
         self.output_dir = self.problem.output_dir
-        self.set_default_attr('save_name', '(not_set)')
-        self.set_default_attr('dump_name', self.save_name)
-        self.set_default_attr('dump_variables', [])
-        self.set_default_attr('save_variables', self.dump_variables)
+        self.set_default('save_name', '(not_set)')
+        self.set_default('dump_name', self.save_name)
+        self.set_default('dump_variables', [])
+        self.set_default('save_variables', self.dump_variables)
 
         self.save_name = os.path.normpath(os.path.join(self.output_dir,
                                                          self.save_name))
@@ -108,10 +108,10 @@ class CorrMiniApp(MiniAppBase):
     def setup_output(self, save_format=None, dump_format=None,
                       post_process_hook=None, file_per_var=None):
         """Instance attributes have precedence!"""
-        self.set_default_attr('dump_format', dump_format)
-        self.set_default_attr('save_format', save_format)
-        self.set_default_attr('post_process_hook', post_process_hook)
-        self.set_default_attr('file_per_var', file_per_var)
+        self.set_default('dump_format', dump_format)
+        self.set_default('save_format', save_format)
+        self.set_default('post_process_hook', post_process_hook)
+        self.set_default('file_per_var', file_per_var)
 
     def get_save_name_base(self):
         return self.save_name
@@ -287,7 +287,7 @@ class CorrNN(CorrMiniApp):
     def __init__(self, name, problem, kwargs):
         """When dim is not in kwargs, problem dimension is used."""
         CorrMiniApp.__init__(self, name, problem, kwargs)
-        self.set_default_attr('dim', problem.get_dim())
+        self.set_default('dim', problem.get_dim())
 
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -295,7 +295,7 @@ class CorrNN(CorrMiniApp):
         problem.set_equations(self.equations)
 
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get_default_attr('lcbcs', []))
+                           lcbc_names=self.get('lcbcs', []))
 
         problem.update_materials(problem.ts)
 
@@ -338,7 +338,7 @@ class CorrN(CorrMiniApp):
     def __init__(self, name, problem, kwargs):
         """When dim is not in kwargs, problem dimension is used."""
         CorrMiniApp.__init__(self, name, problem, kwargs)
-        self.set_default_attr('dim', problem.get_dim())
+        self.set_default('dim', problem.get_dim())
 
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -346,7 +346,7 @@ class CorrN(CorrMiniApp):
         problem.set_equations(self.equations)
 
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get_default_attr('lcbcs', []))
+                           lcbc_names=self.get('lcbcs', []))
 
         problem.update_materials(problem.ts)
 
@@ -396,7 +396,7 @@ class CorrOne(CorrMiniApp):
         problem.set_equations(self.equations)
 
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get_default_attr('lcbcs', []))
+                           lcbc_names=self.get('lcbcs', []))
 
         problem.update_materials(problem.ts)
 
@@ -468,7 +468,7 @@ class CorrEqPar(CorrOne):
     def __init__(self, name, problem, kwargs):
         """When dim is not in kwargs, problem dimension is used."""
         CorrMiniApp.__init__(self, name, problem, kwargs)
-        self.set_default_attr('dim', len(self.eq_pars))
+        self.set_default('dim', len(self.eq_pars))
 
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -484,7 +484,7 @@ class CorrEqPar(CorrOne):
             problem.set_equations(eqns)
 
             problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                               lcbc_names=self.get_default_attr('lcbcs', []))
+                               lcbc_names=self.get('lcbcs', []))
 
             problem.update_materials(problem.ts)
 
@@ -613,7 +613,7 @@ class PressureEigenvalueProblem(CorrMiniApp):
 
         problem.set_equations(self.equations)
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get_default_attr('lcbcs', []))
+                           lcbc_names=self.get('lcbcs', []))
         problem.update_materials()
 
         mtx = problem.equations.eval_tangent_matrices(problem.create_state()(),
@@ -638,7 +638,7 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
 
         problem.set_equations(equations)
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get_default_attr('lcbcs', []))
+                           lcbc_names=self.get('lcbcs', []))
         problem.update_materials() # Assume parameters constant in time.
 
     def compute_correctors(self, evp, sign, state0, ts, dump_name, save_name,
@@ -950,7 +950,7 @@ class CoefNN(MiniAppBase):
     def __init__(self, name, problem, kwargs):
         """When dim is not in kwargs, problem dimension is used."""
         MiniAppBase.__init__(self, name, problem, kwargs)
-        self.set_default_attr('dim', problem.get_dim())
+        self.set_default('dim', problem.get_dim())
 
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -995,7 +995,7 @@ class CoefN(MiniAppBase):
     def __init__(self, name, problem, kwargs):
         """When dim is not in kwargs, problem dimension is used."""
         MiniAppBase.__init__(self, name, problem, kwargs)
-        self.set_default_attr('dim', problem.get_dim())
+        self.set_default('dim', problem.get_dim())
 
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)

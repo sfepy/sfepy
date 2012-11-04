@@ -7,8 +7,8 @@ class CorrRegion( CorrMiniApp ):
 
     def __init__( self, name, problem, kwargs ):
         CorrMiniApp.__init__( self, name, problem, kwargs )
-        self.set_default_attr( 'Nreg', len(self.regions.values()[0]) )
-        self.set_default_attr( 'ebcs_list', False )
+        self.set_default('Nreg', len(self.regions.values()[0]))
+        self.set_default('ebcs_list', False)
 
     def get_variables( self, ir, data ):
         return iter([])

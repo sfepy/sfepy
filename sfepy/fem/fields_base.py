@@ -316,8 +316,8 @@ class Field(Struct):
                                       name_attr='family_name')
         table = Field._all
 
-        space = conf.get_default_attr('space', 'H1')
-        poly_space_base = conf.get_default_attr('poly_space_base', 'lagrange')
+        space = conf.get('space', 'H1')
+        poly_space_base = conf.get('poly_space_base', 'lagrange')
 
         key = space + '_' + poly_space_base
 
@@ -418,8 +418,8 @@ class Field(Struct):
             self.force_bubble = False
 
     def _setup_kind(self):
-        name = self.get_default_attr('family_name', None,
-                                     'An abstract Field method called!')
+        name = self.get('family_name', None,
+                        'An abstract Field method called!')
         aux = name.split('_')
         self.space = aux[1]
         self.poly_space_base = aux[2]

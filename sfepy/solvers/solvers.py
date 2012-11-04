@@ -5,9 +5,8 @@ from sfepy.base.base import get_default, Struct
 
 def make_get_conf(conf, kwargs):
     def _get_conf_item(name, default=None, msg_if_none=None):
-        return kwargs.get(name,
-                          conf.get_default_attr(name, default=default,
-                                                msg_if_none=msg_if_none))
+        return kwargs.get(name, conf.get(name, default=default,
+                                         msg_if_none=msg_if_none))
 
     return _get_conf_item
 
@@ -40,7 +39,7 @@ class Solver(Struct):
         """
         Ensures conf contains 'name' and 'kind'.
         """
-        get = conf.get_default_attr
+        get = conf.get
         name = get('name', None, 'missing "name" in options!')
         kind = get('kind', None, 'missing "kind" in options!')
         verbose = get('verbose', False)

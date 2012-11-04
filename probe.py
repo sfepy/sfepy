@@ -38,7 +38,7 @@ from optparse import OptionParser
 import numpy as nm
 
 import sfepy
-from sfepy.base.base import output, get_default_attr, assert_
+from sfepy.base.base import output, assert_
 from sfepy.base.ioutils import edit_filename
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.fem import MeshIO, ProblemDefinition
@@ -85,7 +85,7 @@ def generate_probes(filename_input, filename_results, options,
     opts = conf.options
 
     if options.auto_dir:
-        output_dir = get_default_attr(opts, 'output_dir', '.')
+        output_dir = opts.get_('output_dir', '.')
         filename_results = os.path.join(output_dir, filename_results)
 
     output('results in: %s' % filename_results)

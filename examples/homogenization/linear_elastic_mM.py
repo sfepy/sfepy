@@ -1,6 +1,6 @@
 import os
 from sfepy import data_dir
-from sfepy.base.base import debug, nm
+from sfepy.base.base import nm
 from sfepy.homogenization.micmac import get_homog_coefs_linear
 from sfepy.homogenization.recovery import save_recovery_region, recover_micro_hook
 
@@ -21,7 +21,7 @@ def post_process( out, pb, state, extend = False ):
                                        mode = 'cell', data = stress,
                                        dofs = None )
 
-        if pb.conf.options.get_default_attr('recover_micro', False):
+        if pb.conf.options.get('recover_micro', False):
 
             rname = pb.conf.options.recovery_region
             region = pb.domain.regions[rname]

@@ -3,8 +3,7 @@ from collections import deque
 
 import numpy as nm
 
-from sfepy.base.base import (real_types, complex_types,
-                             assert_, get_default, get_default_attr,
+from sfepy.base.base import (real_types, complex_types, assert_, get_default,
                              output, OneTypeList, Container, Struct, basestr)
 import sfepy.linalg as la
 from sfepy.fem.integrals import Integral
@@ -648,7 +647,7 @@ class Variable( Struct ):
         else:
             raise ValueError('variable kind is 2 or 3 words! (%s)' % conf.kind)
 
-        history = get_default_attr(conf, 'history', None)
+        history = conf.get('history', None)
         if history is not None:
             try:
                 history = int(history)
@@ -658,13 +657,13 @@ class Variable( Struct ):
                 raise ValueError('history must be integer >= 0! (got "%s")'
                                  % history)
 
-        n_components = conf.get_default_attr('n_components', None)
+        n_components = conf.get('n_components', None)
 
-        order = conf.get_default_attr('order', None)
+        order = conf.get('order', None)
         if order is not None:
             order = int(order)
 
-        primary_var_name = conf.get_default_attr('dual', None)
+        primary_var_name = conf.get('dual', None)
         if primary_var_name is None:
             if hasattr(conf, 'like'):
                 primary_var_name = get_default(conf.like, '(set-to-None)')
@@ -672,7 +671,7 @@ class Variable( Struct ):
             else:
                 primary_var_name = None
 
-        special = conf.get_default_attr('special', None)
+        special = conf.get('special', None)
 
         if family == 'field':
             try:

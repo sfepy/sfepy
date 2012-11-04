@@ -43,7 +43,7 @@ class HomogenizationEngine(PDESolverApp):
 
     @staticmethod
     def process_options(options):
-        get = options.get_default_attr
+        get = options.get
 
         return Struct(coefs=get('coefs', None,
                                 'missing "coefs" in options!'),

@@ -7,8 +7,7 @@ Helper functions for the equation mapping.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import (output, assert_, get_default_attr,
-                             Container, Struct, basestr)
+from sfepy.base.base import output, assert_, Container, Struct, basestr
 from sfepy.fem.utils import compute_nodal_normals, compute_nodal_edge_dirs
 from sfepy.fem.functions import Function
 from sfepy.fem.conditions import EssentialBC
@@ -750,25 +749,25 @@ class LCBCOperators(Container):
                                nmaster, field, dofs, self.eq_map.dof_names)
 
         elif kind == 'no_penetration':
-            filename = get_default_attr(bc, 'filename', None)
+            filename = bc.get('filename', None)
             op = NoPenetrationOperator('%d_no_penetration' % len(self),
                                        nmaster, region, field, dofs,
                                        filename=filename)
 
         elif kind == 'normal_direction':
-            filename = get_default_attr(bc, 'filename', None)
+            filename = bc.get('filename', None)
             op = NormalDirectionOperator('%d_normal_direction' % len(self),
                                          nmaster, region, field, dofs,
                                          filename=filename)
 
         elif kind == 'edge_direction':
-            filename = get_default_attr(bc, 'filename', None)
+            filename = bc.get('filename', None)
             op = EdgeDirectionOperator('%d_edge_direction' % len(self),
                                        nmaster, region, field, dofs,
                                        filename=filename)
 
         elif kind == 'integral_mean_value':
-            filename = get_default_attr(bc, 'filename', None)
+            filename = bc.get('filename', None)
             op = IntegralMeanValueOperator('%d_integral_mean_value' % len(self),
                                            nmaster, region, field, dofs,
                                            filename=filename)

@@ -42,7 +42,7 @@ class SchroedingerApp(PDESolverApp):
         save_eig_vectors : (from_largest, from_smallest) or None
             If None, save all.
         """
-        get = options.get_default_attr
+        get = options.get
 
         n_electron = get('n_electron', 5)
         n_eigs = guess_n_eigs(n_electron, n_eigs=get('n_eigs', None))

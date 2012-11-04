@@ -28,7 +28,7 @@ def get_logging_conf(conf):
         The dictionary {'plot' : <figure_file>, 'text' : <text_log_file>}. One
         or both values can be None.
     """
-    get = conf.get_default_attr
+    get = conf.get
 
     log = get('log', None)
 

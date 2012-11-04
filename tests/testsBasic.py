@@ -33,8 +33,7 @@ class TestInput(TestCommon):
             cls = TestInput
         test = cls(test_conf=test_conf, conf=conf, options=options)
 
-        assign_standard_hooks(test, test_conf.options.get_default_attr,
-                              test_conf)
+        assign_standard_hooks(test, test_conf.options.get, test_conf)
 
         name = test.get_output_name_trunk()
         test.solver_options = Struct(output_filename_trunk=name,

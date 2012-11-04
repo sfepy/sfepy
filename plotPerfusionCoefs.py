@@ -10,7 +10,7 @@ except:
 
 import numpy as nm
 
-from sfepy.base.base import import_file, get_default_attr
+from sfepy.base.base import import_file
 from sfepy.homogenization.coefficients import Coefficients
 
 ##
@@ -85,8 +85,8 @@ def load_coefs( filename ):
         tex_names = options['tex_names']
 
     else:
-        plot_info = get_default_attr(coefs, 'plot_info', {})
-        tex_names = get_default_attr(coefs, 'tex_names', {})
+        plot_info = coefs.get('plot_info', {})
+        tex_names = coefs.get('tex_names', {})
 
     return coefs, plot_info, tex_names
 

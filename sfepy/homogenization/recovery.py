@@ -2,7 +2,7 @@ import os
 
 import numpy as nm
 
-from sfepy.base.base import get_default, get_default_attr, Struct
+from sfepy.base.base import get_default, Struct
 from sfepy.base.ioutils import get_print_info
 from sfepy.fem import extend_cell_data
 from sfepy.homogenization.utils import coor_to_sym
@@ -496,16 +496,15 @@ def recover_micro_hook( micro_filename, region, macro,
                                           init_equations=False,
                                           init_solvers=False)
 
-    coefs_filename = pb.conf.options.get_default_attr('coefs_filename', 'coefs')
-    output_dir = pb.conf.options.get_default_attr('output_dir', '.')
+    coefs_filename = pb.conf.options.get('coefs_filename', 'coefs')
+    output_dir = pb.conf.options.get('output_dir', '.')
     coefs_filename = op.join(output_dir, coefs_filename) + '.h5'
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5( coefs_filename )
     corrs = get_correctors_from_file( dump_names = coefs.dump_names ) 
 
-    recovery_hook = get_default_attr( pb.conf.options,
-                                      'recovery_hook', None )
+    recovery_hook = pb.conf.options.get('recovery_hook', None)
 
     if recovery_hook is not None:
         recovery_hook = pb.conf.get_function(recovery_hook)
@@ -528,7 +527,7 @@ def recover_micro_hook( micro_filename, region, macro,
             micro_name = pb.get_output_name(extra='recovered_'\
                                             + recovery_file_tag + suffix)
             filename = op.join(output_dir, op.basename(micro_name))
-            fpv = pb.conf.options.get_default_attr('file_per_var', False)
+            fpv = pb.conf.options.get('file_per_var', False)
             pb.save_state(filename, out=out,
                           file_per_var=fpv)
 

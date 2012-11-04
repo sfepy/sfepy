@@ -2,8 +2,7 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import output, get_default, OneTypeList, Struct,\
-     get_default_attr, basestr
+from sfepy.base.base import output, get_default, OneTypeList, Struct, basestr
 from sfepy.fem import Equations, Variables, Region, Integral, Integrals
 from sfepy.fem.fields_base import setup_dof_conns, setup_extra_data
 
@@ -27,7 +26,7 @@ class BasicEvaluator( Evaluator ):
         vec = self.make_full_vec(vec)
         pb.equations.set_variables_from_state(vec)
 
-        upd_vars = get_default_attr(pb.conf.options, 'mesh_update_variables', None)
+        upd_vars = pb.conf.options.get('mesh_update_variables', None)
         for varname in upd_vars:
             try:
                 state = pb.equations.variables[varname]

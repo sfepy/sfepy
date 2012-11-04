@@ -488,7 +488,7 @@ class Term(Struct):
 
     def setup(self):
         self.char_fun = CharacteristicFunction(self.region)
-        self.function = self.get_default_attr('function', None)
+        self.function = Struct.get(self, 'function', None)
 
         self.step = 0
         self.dt = 1.0

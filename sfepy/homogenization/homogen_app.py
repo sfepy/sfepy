@@ -46,7 +46,7 @@ class HomogenizationApp( HomogenizationEngine ):
         Application options setup. Sets default values for missing
         non-compulsory options.
         """
-        get = options.get_default_attr
+        get = options.get
 
         volume = get('volume', None)
         volumes = get('volumes', None)

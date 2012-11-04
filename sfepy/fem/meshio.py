@@ -1403,8 +1403,8 @@ class HDF5MeshIO( MeshIO ):
             for key, val in out.iteritems():
     #            print key
                 dofs = get_default(val.dofs, (-1,))
-                shape = val.get_default_attr('shape', val.data.shape)
-                var_name = val.get_default_attr('var_name', 'None')
+                shape = val.get('shape', val.data.shape)
+                var_name = val.get('var_name', 'None')
 
                 group_name = '__' + key.translate( self._tr )
                 data_group = fd.createGroup(step_group, group_name,

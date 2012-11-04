@@ -493,7 +493,7 @@ class SimpleEVP(CorrMiniApp):
 
         problem.set_equations(self.equations)
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get_default_attr('lcbcs', []))
+                           lcbc_names=self.get('lcbcs', []))
         problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
@@ -723,7 +723,7 @@ class Eigenmomenta(MiniAppBase):
 
     def process_options(self):
         options = dict_to_struct(self.options)
-        get = options.get_default_attr
+        get = options.get
 
         return Struct(var_name=get('var_name', None,
                                    'missing "var_name" in options!'),

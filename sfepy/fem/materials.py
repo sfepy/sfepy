@@ -2,7 +2,7 @@ import time
 from copy import copy
 
 from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
-                             output, get_default_attr, get_default, basestr)
+                             output, get_default, basestr)
 from functions import ConstantFunction, ConstantFunctionByRegion
 
 
@@ -91,11 +91,11 @@ class Material( Struct ):
         """
         Construct Material instance from configuration.
         """
-        kind = get_default_attr(conf, 'kind', 'time-dependent')
-        flags = get_default_attr(conf, 'flags', {})
+        kind = conf.get('kind', 'time-dependent')
+        flags = conf.get('flags', {})
 
-        function = get_default_attr(conf, 'function', None)
-        values = get_default_attr(conf, 'values', None)
+        function = conf.get('function', None)
+        values = conf.get('values', None)
 
         if isinstance(function, basestr):
             function = functions[function]
