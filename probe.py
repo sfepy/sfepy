@@ -91,8 +91,10 @@ def generate_probes(filename_input, filename_results, options,
     output('results in: %s' % filename_results)
 
     io = MeshIO.any_from_filename(filename_results)
-    all_data = io.read_data(options.step)
+    step = options.step if options.step >= 0 else io.read_last_step()
+    all_data = io.read_data(step)
     output('loaded:', all_data.keys())
+    output('from step:', step)
 
     if options.only_names is None:
         data = all_data
