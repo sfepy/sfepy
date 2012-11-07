@@ -282,6 +282,11 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
 
           ez_setup.py scikits.umfpack-5.1.0-py2.7-win32.egg
 
+#. Download the `cython`_ zip archive, extract it and install::
+
+          cd cython_<version>/
+          python setup.py build --compiler=mingw32
+
 #. Either `download`_ the latest sfepy tarball and extract it to your
    convenient location in Hard disk, Lets assume it's extracted in C:/.
 
