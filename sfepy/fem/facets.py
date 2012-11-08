@@ -376,6 +376,15 @@ class Facets(Struct):
 
         return out
 
+    def setup_group_interfaces(self):
+        """
+        Setup facets that create boundary between different element
+        groups.
+        """
+        if not hasattr(self, 'group_interfaces'):
+            self.group_interfaces = \
+              self.find_group_interfaces(return_surface=False)[0]
+
     def mark_surface_facets(self):
         """
         flag: 0 .. inner, 2 .. edge, 3 .. triangle, 4 .. quadrangle
