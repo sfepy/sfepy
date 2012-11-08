@@ -672,6 +672,12 @@ class Region( Struct ):
         self.ig_map = ig_map
         self.ig_map_i = ig_map_i
 
+        if self.domain.shape.dim == 2:
+            self.domain.ed.setup_group_interfaces()
+
+        elif self.domain.shape.dim == 3:
+            self.domain.fa.setup_group_interfaces()
+
     def get_mirror_region(self):
         return self.mirror_region, self.ig_map, self.ig_map_i
 

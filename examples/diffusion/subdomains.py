@@ -11,7 +11,7 @@ Find :math:`p_1`, :math:`p_2` such that:
     \;, \quad \forall q_1 \;,
 
     \int_{\Omega_2} c_{21} \nabla q_2 \cdot \nabla p_2
-    = \int_{\Gamma_{12}} q_2 (\tr(p_1) - p_2 - c_{22})
+    = \int_{\Gamma_{12}} q_2 (p_2 - \tr(p_1) - c_{22})
     \;, \quad \forall q_2 \;.
 """
 from sfepy import data_dir
@@ -69,7 +69,7 @@ equations = {
      = 0""",
     'eq_2' :
     """dw_laplace.ivol.Omega2( one2.one, q2, p2 )
-     + dw_jump.isurf.Gamma12_2( jump2.val, q2, tr(p1), p2 )
+     + dw_jump.isurf.Gamma12_2( jump2.val, q2, p2, tr(p1) )
      = 0""",
 }
 
