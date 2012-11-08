@@ -631,7 +631,7 @@ def gen_mesh_from_voxels(voxels, dims, etype='q'):
 
     dims = dims.squeeze()
     dim = len(dims)
-    nddims = nm.array(voxels.shape) + 1
+    nddims = nm.array(voxels.shape) + 2
 
     nodemtx = nm.zeros(nddims, dtype=nm.int32)
 
