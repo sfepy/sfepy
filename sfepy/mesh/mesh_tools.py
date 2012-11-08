@@ -1,7 +1,7 @@
 from sfepy.fem import Domain
 import scipy.sparse as sps
-import scipy as sc
 import numpy as nm
+from sfepy.base.compat import factorial
 
 def elems_q2t(el):
 
@@ -99,7 +99,7 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
         vol = 0.0
         bc = nm.zeros((dim, ), dtype=nm.double)
         mtx = nm.ones((dim + 1, dim + 1), dtype=nm.double)
-        mul = 1.0 / sc.factorial(dim)
+        mul = 1.0 / factorial(dim)
         if dim == 3:
             mul *= -1.0
 
