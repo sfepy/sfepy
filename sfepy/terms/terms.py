@@ -137,29 +137,13 @@ def create_arg_parser():
 
     trace = Group(Literal('tr') + Literal('(').suppress() + variable \
                   + Literal(')').suppress())
-    
+
     generalized_var = derivative | trace | variable
 
     args = StringStart() + delimitedList(generalized_var) + StringEnd()
 
     return args
 
-def reorder_dofs_on_mirror(adof, dc, mirror_dc):
-    nadof = nm.zeros_like(adof)
-    for ifc in range(len(dc)):
-        fc = dc[ifc]
-        mfc = mirror_dc[ifc]
-        ndrange = range(len(fc));
-        lmap = -nm.ones((len(fc),), dtype=nm.int32)
-        for ind in ndrange:
-            for j in ndrange:
-                if mfc[ind] == fc[j]:
-                    lmap[ind] = j
-                    break;
-        nadof[ifc,:] = adof[ifc,lmap]
-
-    return nadof
-##
 # 22.01.2006, c
 class CharacteristicFunction( Struct ):
     ##
@@ -183,7 +167,7 @@ class CharacteristicFunction( Struct ):
                 yield out, chunk
             else:
                 yield out, els[chunk]
-                
+
         self.local_chunk = None
 
     ##
@@ -191,7 +175,7 @@ class CharacteristicFunction( Struct ):
     # 27.02.2007
     def set_current_group( self, ig ):
         self.ig = ig
-        
+
     ##
     # 05.09.2006, c
     def get_local_chunk( self ):
@@ -545,7 +529,7 @@ class Term(Struct):
 
     def setup_args(self, **kwargs):
         self._kwargs = kwargs
-        
+
         self.args = []
         for arg_name in self.arg_names:
             if isinstance(arg_name, basestr):
