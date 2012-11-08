@@ -11,7 +11,7 @@ class FESurface(Struct):
         self.name = get_default(name, 'surface_data_%s' % region.name)
 
         face_indices = region.fis[ig]
-        
+
         faces = efaces[face_indices[:,1]]
         if faces.size == 0:
             raise ValueError('region with group with no faces! (%s)'
@@ -26,7 +26,6 @@ class FESurface(Struct):
 
         econn = nm.empty(faces.shape, dtype=nm.int32)
         for ir, face in enumerate( faces ):
-#            print ir, face, ee[ir,face]
             econn[ir] = ee[ir,face]
 
         ef = econn.flat
@@ -36,7 +35,7 @@ class FESurface(Struct):
         aux[nodes] = nm.arange(len(nodes), dtype=nm.int32)
         leconn = aux[econn].copy()
         assert_(nm.alltrue(nodes[leconn] == econn))
-        
+
         n_fa, n_fp = face_indices.shape[0], faces.shape[1]
         face_type = 's%d' % n_fp
 
@@ -58,38 +57,43 @@ class FESurface(Struct):
         """
         Setup mirror surface connectivity required to integrate over a
         mirror region.
-
-        Notes
-        -----
-        Works only for linear 2D problems so far.
         """
-        dim = region.domain.shape.dim
 
         facets = region.domain.get_facets(force_faces=True)[1]
         mregion, ig_map, ig_map_i = region.get_mirror_region()
-
         mig = ig_map_i[self.ig]
 
-        off = nm.cumsum(nm.r_[0, facets.n_obj])
-        ii = region.get_surface_entities(self.ig) - off[self.ig]
-        mii = mregion.get_surface_entities(mig) - off[mig]
+        grp_int = facets.group_interfaces
 
-        ori = facets.oris[self.ig][ii]
-        mori = facets.oris[mig][mii]
+        ofaces = region.get_surface_entities(self.ig)
+        mfaces = mregion.get_surface_entities(mig)
 
-        n_fp = facets.n_fps[self.ig]
+        ooris = facets.oris[self.ig]
+        moris = facets.oris[mig]
 
-        if dim == 2:
-            assert_(((ori + mori) == 1).all())
+        oori_maps = facets.ori_maps[self.ig]
+        mori_maps = facets.ori_maps[mig]
 
-            if self.n_fp > n_fp:
-                raise NotImplementedError
+        self.meconn = nm.zeros_like(self.econn)
+        self.mleconn = nm.zeros_like(self.leconn)
 
-            self.meconn = self.econn[:, ::-1].copy()
-            self.mleconn = self.leconn[:, ::-1].copy()
+        for idx, ifc in enumerate(ofaces):
+            aux = nm.where(grp_int[:,0] == ifc)[0]
+            if len(aux) == 0:
+                aux = nm.where(grp_int[:,1] == ifc)[0]
+                mifc = grp_int[aux[0],0]
 
-        else:
-            raise NotImplementedError
+            else:
+                mifc = grp_int[aux[0],1]
+
+            midx = nm.where(mfaces == mifc)[0][0]
+
+            ogslice = facets.indx[self.ig]
+            mgslice = facets.indx[mig]
+            omap = oori_maps[ooris[ifc - ogslice.start]][1]
+            mmap = mori_maps[moris[mifc - mgslice.start]][1]
+            self.meconn[idx,omap] = self.econn[midx,mmap]
+            self.mleconn[idx,omap] = self.leconn[midx,mmap]
 
     def get_connectivity(self, local=False, is_trace=False):
         """
