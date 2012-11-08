@@ -1,8 +1,9 @@
 """
 This module contains functions that have different names or behavior
-depending on NumPy version.
+depending on NumPy and Scipy versions.
 """
 import numpy as nm
+import scipy as sc
 
 __all__ = ['in1d', 'unique']
 
@@ -18,3 +19,12 @@ try:
 
 except TypeError:
     unique = nm.unique1d
+
+
+try:
+    factorial = sc.factorial
+
+except AttributeError:
+    import scipy.misc as scm
+
+    factorial = scm.factorial
