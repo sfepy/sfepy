@@ -17,10 +17,17 @@ from sfepy.base.log_plotter import LogPlotter
 _msg_no_live = """warning: log plot is disabled, install matplotlib
          (use GTKAgg backend) and multiprocessing"""
 
-def get_logging_conf(conf):
+def get_logging_conf(conf, log_name='log'):
     """
-    Check for a logging configuration ('log' attribute) in conf. Supply default
-    values if necessary.
+    Check for a log configuration ('log' attribute by default) in
+    `conf`. Supply default values if necessary.
+
+    Parameters
+    ----------
+    conf : Struct
+        The configuration object.
+    log_name : str, optional
+        The name of the log configuration attribute in `conf`.
 
     Returns
     -------
@@ -28,9 +35,7 @@ def get_logging_conf(conf):
         The dictionary {'plot' : <figure_file>, 'text' : <text_log_file>}. One
         or both values can be None.
     """
-    get = conf.get
-
-    log = get('log', None)
+    log = conf.get(log_name, None)
 
     default_log = {'text' : None, 'plot' : None}
 
