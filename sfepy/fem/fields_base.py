@@ -19,7 +19,8 @@ from sfepy.base.base import Struct, basestr
 import fea
 from sfepy.fem.mesh import Mesh
 from sfepy.fem.meshio import convert_complex_output
-from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
+from sfepy.fem.utils import (extend_cell_data, prepare_remap, invert_remap,
+                             get_min_value)
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.integrals import Integral
 from sfepy.fem.linearizer import get_eval_dofs, get_eval_coors, create_output
@@ -635,10 +636,13 @@ class Field(Struct):
         smallest value in `dofs` if `fill_value` is None.
         """
         if fill_value is None:
-            if dofs.shape[1] > 1: # Vector.
-                fill_value = nm.amin(nm.abs(dofs))
-            else: # Scalar.
-                fill_value = nm.amin(dofs)
+            if nm.isrealobj(dofs):
+                fill_value = get_min_value(dofs)
+
+            else:
+                # Complex values - treat real and imaginary parts separately.
+                fill_value = get_min_value(dofs.real)
+                fill_value += 1j * get_min_value(dofs.imag)
 
         if self.approx_order != 0:
             indx = self.get_vertices()

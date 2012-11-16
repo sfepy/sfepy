@@ -219,6 +219,19 @@ def compute_nodal_edge_dirs(nodes, region, field, return_imap=False):
     else:
         return edge_dirs
 
+def get_min_value(dofs):
+    """
+    Get a reasonable minimal value of DOFs suitable for extending over a
+    whole domain.
+    """
+    if dofs.shape[1] > 1: # Vector.
+        val = 0.0
+
+    else: # Scalar.
+        val = dofs.min()
+
+    return val
+
 def extend_cell_data(data, domain, rname, val=None, is_surface=False):
     """
     Extend cell data defined in a region to the whole domain.
