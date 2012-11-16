@@ -141,7 +141,7 @@ class SurfaceJumpTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Gamma} q (p_1 - p_2 - c)
+        \int_{\Gamma} c\, q (p_1 - p_2)
 
     :Arguments:
         - material : :math:`c`
@@ -150,11 +150,11 @@ class SurfaceJumpTerm(Term):
         - state_2  : :math:`p_2`
     """
     name = 'dw_jump'
-    arg_types = ('material', 'virtual', 'state_1', 'state_2')
+    arg_types = ('opt_material', 'virtual', 'state_1', 'state_2')
     integration = 'surface'
 
     @staticmethod
-    def function(out, jump, bf1, bf2, sg, fmode):
+    def function(out, jump, mul, bf1, bf2, sg, fmode):
         bf_t = nm.tile(sg.bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
 
         if fmode == 0:
@@ -166,7 +166,11 @@ class SurfaceJumpTerm(Term):
         else:
             vec = - bf_t * bf2
 
-        status = sg.integrate(out, vec)
+        if mul is None:
+            status = sg.integrate(out, vec)
+
+        else:
+            status = sg.integrate(out, mul * vec)
 
         return status
 
@@ -179,7 +183,7 @@ class SurfaceJumpTerm(Term):
         if diff_var is None:
             val1 = self.get(state1, 'val')
             val2 = self.get(state2, 'val')
-            jump = val1 - val2 - coef
+            jump = val1 - val2
             fmode = 0
 
         else:
@@ -191,4 +195,4 @@ class SurfaceJumpTerm(Term):
             else:
                 fmode = 2
 
-        return jump, sg1.bf, sg2.bf, sg, fmode
+        return jump, coef, sg1.bf, sg2.bf, sg, fmode
