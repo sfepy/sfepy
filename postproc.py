@@ -49,7 +49,8 @@ help = {
     'list_ranges' :
     'do not plot, only list names and ranges of all data',
     'step' :
-    'set the time step [default: %default]',
+    'set the time step, negative indices are allowed, -1 means the last step'
+    ' [default: %default]',
     'no_show' :
     'do not call mlab.show()',
     'no_offscreen' :

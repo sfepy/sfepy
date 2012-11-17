@@ -26,7 +26,7 @@ except ImportError:
 
 from dataset_manager import DatasetManager
 
-from sfepy.base.base import (insert_as_static_method, output,
+from sfepy.base.base import (insert_as_static_method, output, assert_,
                              get_arguments, get_default, Struct, basestr)
 from sfepy.linalg import cycle
 from sfepy.solvers.ts import get_print_info
@@ -840,7 +840,8 @@ class Viewer(Struct):
 
         self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
-        has_several_steps = (nm.diff(self.file_source.get_step_range()) > 0)[0]
+        step_range = self.file_source.get_step_range()
+        has_several_steps = (nm.diff(step_range) > 0)[0]
 
         if gui is not None:
             gui.has_several_steps = has_several_steps
@@ -849,6 +850,10 @@ class Viewer(Struct):
             self.set_step = set_step = SetStep()
             set_step._viewer = self
             set_step._source = self.file_source
+            step = step if step >= 0 else step_range[1] + step + 1
+            assert_(step_range[0] <= step <= step_range[1],
+                    msg='invalid time step! (%d <= %d <= %d)'
+                    % (step_range[0], step, step_range[1]))
             set_step.step = step
             self.file_source.setup_notification(set_step, 'file_changed')
 
