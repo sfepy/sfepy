@@ -1,15 +1,5 @@
 #!/usr/bin/env python
-from optparse import OptionParser
-import os
-import glob
-
-import sfepy
-from sfepy.base.base import assert_, get_default, output, nm
-from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
-from sfepy.postprocess.domain_specific import DomainSpecificPlot
-
-usage = """%prog [options] filename
-
+"""
 This is a script for quick Mayavi-based visualizations of finite element
 computations results.
 
@@ -25,7 +15,7 @@ Examples
 
   - create animation (forces offscreen rendering) from
     output-tests/test_time_poisson.*.vtk
-    
+
     $ python postproc.py output-tests/test_time_poisson.*.vtk -a mov
 
   - create animation (forces offscreen rendering) from
@@ -34,27 +24,64 @@ Examples
     The range specification for the displacements 'u' is required, as
     output-tests/test_hyperelastic.00.vtk contains only zero
     displacements which leads to invisible glyph size.
-    
+
     $ python postproc.py output-tests/test_hyperelastic.*.vtk \
-                         --ranges=u,0,0.02 -a mov 
+                         --ranges=u,0,0.02 -a mov
 
   - same as above, but slower frame rate
 
     $ python postproc.py output-tests/test_hyperelastic.*.vtk \
                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
-
 """
+from optparse import OptionParser, OptionGroup
+import os
+import glob
+
+import sfepy
+from sfepy.base.base import assert_, get_default, output, nm
+from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
+from sfepy.postprocess.domain_specific import DomainSpecificPlot
+
+usage = '%prog [options] filename\n' + __doc__.rstrip()
 
 help = {
-    'list_ranges' :
-    'do not plot, only list names and ranges of all data',
-    'step' :
-    'set the time step, negative indices are allowed, -1 means the last step'
-    ' [default: %default]',
+    'filename' :
+    'view image file name [default: "view.png"]',
+    'output_dir' :
+    'output directory for saving view images; ignored when -o option is' \
+    ' given, as the directory part of the filename is taken instead' \
+    ' [default: "."]',
     'no_show' :
     'do not call mlab.show()',
     'no_offscreen' :
     'force no offscreen rendering for --no-show',
+    'anim_format' :
+    'if set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is' \
+    ' installed and results of multiple time steps are given, an animation is' \
+    ' created in the same directory as the view images',
+    'ffmpeg_options' :
+    'ffmpeg animation encoding options (enclose in "") [default: "%default"]',
+
+    'step' :
+    'set the time step, negative indices are allowed, -1 means the last step'
+    ' [default: %default]',
+    'watch' :
+    'watch the results file for changes (single file mode only)',
+    'all' :
+    'draw all data (normally, node_groups and mat_id are omitted)',
+    'only_names' :
+    'draw only named data',
+    'list_ranges' :
+    'do not plot, only list names and ranges of all data',
+    'ranges' :
+    'force data ranges [default: automatic from data]',
+
+    'resolution' :
+    'image resolution in NxN format [default: shorter axis: 600;'\
+    ' depends on layout: for rowcol it is 800x600]',
+    'layout' :
+    'layout for multi-field plots, one of: rowcol, colrow, row, col' \
+    ' [default: %default]',
     'is_3d' :
     '3d plot mode',
     'view' :
@@ -68,9 +95,21 @@ help = {
     ' (axes, orientation axes, scalar bar labels) [default: %default]',
     'bgcolor' :
     'background color [default: %default]',
-    'layout' :
-    'layout for multi-field plots, one of: rowcol, colrow, row, col' \
-    ' [default: %default]',
+    'anti_aliasing' :
+    'value of anti-aliasing [default: mayavi2 default]',
+
+    'is_scalar_bar' :
+    'show scalar bar for each data',
+    'is_wireframe' :
+    'show wireframe of mesh surface for each data',
+    'group_names' :
+    'superimpose plots of data in each group',
+    'subdomains' :
+    'superimpose surfaces of subdomains over each data;' \
+    ' example value: mat_id,0,None,True',
+    'domain_specific' :
+    'domain specific drawing functions and configurations',
+
     'scalar_mode' :
     'mode for plotting scalars with --3d, one of: cut_plane, iso_surface,'\
     ' both [default: %default]',
@@ -82,12 +121,6 @@ help = {
     ' [default: %default]',
     'clamping' :
     'glyph clamping mode',
-    'ranges' :
-    'force data ranges [default: automatic from data]',
-    'is_scalar_bar' :
-    'show scalar bar for each data',
-    'is_wireframe' :
-    'show wireframe of mesh surface for each data',
     'opacity' :
     'opacity in [0.0, 1.0]. Can be given either globally'
     ' as a single float, or per module, e.g.'
@@ -96,36 +129,6 @@ help = {
     ' arrows_surface, glyphs. [default: 1.0]',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
-    'watch' :
-    'watch the results file for changes (single file mode only)',
-    'filename' :
-    "view image file name [default: 'view.png']",
-    'output_dir' :
-    "output directory for saving view images; ignored when -o option is" \
-    " given, as the directory part of the filename is taken instead" \
-    " [default: '.']",
-    'anim_format' :
-    'if set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is' \
-    ' installed and results of multiple time steps are given, an animation is' \
-    ' created in the same directory as the view images',
-    'ffmpeg_options' :
-    'ffmpeg animation encoding options (enclose in "") [default: %default]',
-    'resolution' :
-    'image resolution in NxN format [default: shorter axis: 600;'\
-    ' depends on layout: for rowcol it is 800x600]',
-    'all' :
-    'draw all data (normally, node_groups and mat_id are omitted)',
-    'only_names' :
-    'draw only named data',
-    'group_names' :
-    'superimpose plots of data in each group',
-    'subdomains' :
-    'superimpose surfaces of subdomains over each data;' \
-    ' example value: mat_id,0,None,True',
-    'anti_aliasing' :
-    'value of anti-aliasing [default: mayavi2 default]',
-    'domain_specific' :
-    'domain specific drawing functions and configurations',
 }
 
 def parse_view(option, opt, value, parser):
@@ -252,110 +255,125 @@ def view_file(filename, filter_names, options, view=None):
 
     return view
 
-                
 def main():
-    parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option("-l", "--list-ranges",
-                      action="store_true", dest="list_ranges",
-                      default=False, help=help['list_ranges'])
-    parser.add_option("-n", "--no-show",
-                      action="store_false", dest="show",
-                      default=True, help=help['no_show'])
-    parser.add_option("", "--no-offscreen",
-                      action="store_false", dest="offscreen",
-                      default=None, help=help['no_offscreen'])
-    parser.add_option("--3d",
-                      action="store_true", dest="is_3d",
-                      default=False, help=help['is_3d'])
-    parser.add_option("--view", type='str',
-                      metavar='angle,angle[,distance[,focal_point]]',
-                      action="callback", dest="view",
-                      callback=parse_view, help=help['view'])
-    parser.add_option("--roll", type='float', metavar='angle',
-                      action="store", dest="roll",
-                      default=0.0, help=help['roll'])
-    parser.add_option("--fgcolor", metavar='R,G,B',
-                      action="store", dest="fgcolor",
-                      default='0.0,0.0,0.0', help=help['fgcolor'])
-    parser.add_option("--bgcolor", metavar='R,G,B',
-                      action="store", dest="bgcolor",
-                      default='1.0,1.0,1.0', help=help['bgcolor'])
-    parser.add_option("--layout", metavar='layout',
-                      action="store", dest="layout",
-                      default='rowcol', help=help['layout'])
-    parser.add_option("--scalar-mode", metavar='mode',
-                      action="store", dest="scalar_mode",
-                      default='iso_surface', help=help['scalar_mode'])
-    parser.add_option("--vector-mode", metavar='mode',
-                      action="store", dest="vector_mode",
-                      default='arrows_norm', help=help['vector_mode'])
-    parser.add_option("-s", "--scale-glyphs", type='float', metavar='scale',
-                      action="store", dest="rel_scaling",
-                      default=0.05, help=help['rel_scaling'])
-    parser.add_option("--clamping",
-                      action="store_true", dest="clamping",
-                      default=False, help=help['clamping'])
-    parser.add_option("--ranges", type='str',
-                      metavar='name1,min1,max1:name2,min2,max2:...',
-                      action="callback", dest="ranges",
-                      callback=parse_ranges, help=help['ranges'])
-    parser.add_option("-b", "--scalar-bar",
-                      action="store_true", dest="is_scalar_bar",
-                      default=False, help=help['is_scalar_bar'])
-    parser.add_option("", "--wireframe",
-                      action="store_true", dest="is_wireframe",
-                      default=False, help=help['is_wireframe'])
-    parser.add_option("--opacity", type='str', metavar='opacity',
-                      action="callback", dest="opacity",
-                      callback=parse_opacity, help=help['opacity'])
-    parser.add_option("--rel-text-width", type='float', metavar='width',
-                      action="store", dest="rel_text_width",
-                      default=0.02, help=help['rel_text_width'])
-    parser.add_option("-w", "--watch",
-                      action="store_true", dest="watch",
-                      default=False, help=help['watch'])
-    parser.add_option("-o", "--output", metavar='filename',
-                      action="store", dest="filename",
-                      default=None, help=help['filename'])
-    parser.add_option("--output-dir", metavar='directory',
-                      action="store", dest="output_dir",
-                      default=None, help=help['output_dir'])
-    parser.add_option("-a", "--animation", metavar='<ffmpeg-supported format>',
-                      action="store", dest="anim_format",
-                      default=None, help=help['anim_format'])
-    parser.add_option("", "--ffmpeg-options", metavar='"<ffmpeg options>"',
-                      action="store", dest="ffmpeg_options",
-                      default='-r 10 -sameq',
-                      help=help['ffmpeg_options'])
-    parser.add_option("-r", "--resolution", type='str', metavar='resolution',
-                      action="callback", dest="resolution",
-                      callback=parse_resolution, help=help['resolution'])
-    parser.add_option("--all",
-                      action="store_true", dest="all",
-                      default=False, help=help['all'])
-    parser.add_option("--only-names", metavar='list of names',
-                      action="store", dest="only_names",
-                      default=None, help=help['only_names'])
-    parser.add_option("--group-names", type='str', metavar='name1,...,nameN:...',
-                      action="callback", dest="group_names",
-                      callback=parse_group_names, help=help['group_names'])
-    parser.add_option("--subdomains", type='str',
-                      metavar='mat_id_name,threshold_limits,single_color',
-                      action="callback", dest="subdomains_args",
-                      callback=parse_subdomains, default=None,
-                      help=help['subdomains'])
-    parser.add_option("--step", type='int', metavar='step',
-                      action="store", dest="step",
-                      default=0, help=help['step'])
-    parser.add_option("--anti-aliasing", type='int', metavar='value',
-                      action="store", dest="anti_aliasing",
-                      default=None, help=help['anti_aliasing'])
-    parser.add_option("-d", "--domain-specific", type='str',
-                      metavar="'var_name0,function_name0," \
-                              "par0=val0,par1=val1,...:var_name1,...'",
-                      action="callback", dest="domain_specific",
-                      callback=parse_domain_specific, default=None,
-                      help=help['domain_specific'])
+    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
+
+    group = OptionGroup(parser, 'Output Options')
+    group.add_option('-o', '--output', metavar='filename',
+                     action='store', dest='filename',
+                     default=None, help=help['filename'])
+    group.add_option('--output-dir', metavar='directory',
+                     action='store', dest='output_dir',
+                     default=None, help=help['output_dir'])
+    group.add_option('-n', '--no-show',
+                     action='store_false', dest='show',
+                     default=True, help=help['no_show'])
+    group.add_option('', '--no-offscreen',
+                     action='store_false', dest='offscreen',
+                     default=None, help=help['no_offscreen'])
+    group.add_option('-a', '--animation', metavar='<ffmpeg-supported format>',
+                     action='store', dest='anim_format',
+                     default=None, help=help['anim_format'])
+    group.add_option('', '--ffmpeg-options', metavar='<ffmpeg options>',
+                     action='store', dest='ffmpeg_options',
+                     default='-r 10 -sameq',
+                     help=help['ffmpeg_options'])
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, 'Data Options')
+    group.add_option('--step', type='int', metavar='step',
+                     action='store', dest='step',
+                     default=0, help=help['step'])
+    group.add_option('-w', '--watch',
+                     action='store_true', dest='watch',
+                     default=False, help=help['watch'])
+    group.add_option('--all',
+                     action='store_true', dest='all',
+                     default=False, help=help['all'])
+    group.add_option('--only-names', metavar='list of names',
+                     action='store', dest='only_names',
+                     default=None, help=help['only_names'])
+    group.add_option('-l', '--list-ranges',
+                     action='store_true', dest='list_ranges',
+                     default=False, help=help['list_ranges'])
+    group.add_option('--ranges', type='str',
+                     metavar='name1,min1,max1:name2,min2,max2:...',
+                     action='callback', dest='ranges',
+                     callback=parse_ranges, help=help['ranges'])
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, 'View Options')
+    group.add_option('-r', '--resolution', type='str', metavar='resolution',
+                     action='callback', dest='resolution',
+                     callback=parse_resolution, help=help['resolution'])
+    group.add_option('--layout', metavar='layout',
+                     action='store', dest='layout',
+                     default='rowcol', help=help['layout'])
+    group.add_option('--3d',
+                     action='store_true', dest='is_3d',
+                     default=False, help=help['is_3d'])
+    group.add_option('--view', type='str',
+                     metavar='angle,angle[,distance[,focal_point]]',
+                     action='callback', dest='view',
+                     callback=parse_view, help=help['view'])
+    group.add_option('--roll', type='float', metavar='angle',
+                     action='store', dest='roll',
+                     default=0.0, help=help['roll'])
+    group.add_option('--fgcolor', metavar='R,G,B',
+                     action='store', dest='fgcolor',
+                     default='0.0,0.0,0.0', help=help['fgcolor'])
+    group.add_option('--bgcolor', metavar='R,G,B',
+                     action='store', dest='bgcolor',
+                     default='1.0,1.0,1.0', help=help['bgcolor'])
+    group.add_option('--anti-aliasing', type='int', metavar='value',
+                     action='store', dest='anti_aliasing',
+                     default=None, help=help['anti_aliasing'])
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, 'Custom Plots Options')
+    group.add_option('-b', '--scalar-bar',
+                     action='store_true', dest='is_scalar_bar',
+                     default=False, help=help['is_scalar_bar'])
+    group.add_option('', '--wireframe',
+                     action='store_true', dest='is_wireframe',
+                     default=False, help=help['is_wireframe'])
+    group.add_option('--group-names', type='str', metavar='name1,...,nameN:...',
+                     action='callback', dest='group_names',
+                     callback=parse_group_names, help=help['group_names'])
+    group.add_option('--subdomains', type='str',
+                     metavar='mat_id_name,threshold_limits,single_color',
+                     action='callback', dest='subdomains_args',
+                     callback=parse_subdomains, default=None,
+                     help=help['subdomains'])
+    group.add_option('-d', '--domain-specific', type='str',
+                     metavar='"var_name0,function_name0,' \
+                             'par0=val0,par1=val1,...:var_name1,..."',
+                     action='callback', dest='domain_specific',
+                     callback=parse_domain_specific, default=None,
+                     help=help['domain_specific'])
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, 'Mayavi Options')
+    group.add_option('--scalar-mode', metavar='mode',
+                     action='store', dest='scalar_mode',
+                     default='iso_surface', help=help['scalar_mode'])
+    group.add_option('--vector-mode', metavar='mode',
+                     action='store', dest='vector_mode',
+                     default='arrows_norm', help=help['vector_mode'])
+    group.add_option('-s', '--scale-glyphs', type='float', metavar='scale',
+                     action='store', dest='rel_scaling',
+                     default=0.05, help=help['rel_scaling'])
+    group.add_option('--clamping',
+                     action='store_true', dest='clamping',
+                     default=False, help=help['clamping'])
+    group.add_option('--opacity', type='str', metavar='opacity',
+                     action='callback', dest='opacity',
+                     callback=parse_opacity, help=help['opacity'])
+    group.add_option('--rel-text-width', type='float', metavar='width',
+                     action='store', dest='rel_text_width',
+                     default=0.02, help=help['rel_text_width'])
+    parser.add_option_group(group)
+
     options, args = parser.parse_args()
 
     if len(args) >= 1:
@@ -404,7 +422,7 @@ def main():
             file_source.set_step(options.step)
             for key, val in get_data_ranges(file_source()).iteritems():
                 all_ranges.setdefault(key, []).append(val[3:])
-            
+
         if len(filenames) > 1:
             print 'summary of ranges:'
             for key, ranges in all_ranges.iteritems():
@@ -416,7 +434,7 @@ def main():
         if len(filenames) == 1:
             filenames = filenames[0]
 
-        view = view_file(filenames, filter_names, options)        
+        view = view_file(filenames, filter_names, options)
 
     if options.anim_format is not None:
         view.encode_animation(options.filename, options.anim_format,
