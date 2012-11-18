@@ -70,12 +70,12 @@ Useful Git commands
 * log ::
 
     git log --pretty=format:"%s%n%b%n" release_2009.1..HEAD
-    git shortlog -s -n release_2010.1..HEAD
 
 * who has contributed since <date>::
 
     git log --after=<date> | grep Author | sort | uniq
     git log release_2012.1..HEAD | grep Author | sort -k3 | uniq
+    git shortlog -s -n release_2012.3..HEAD
 
     git rev-list --committer="Name Surname" --since=6.months.ago HEAD | wc
     git rev-list --author="Name Surname" --since=6.months.ago HEAD | wc
