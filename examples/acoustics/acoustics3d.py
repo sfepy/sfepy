@@ -8,11 +8,11 @@ using traces of variables.
 Find two complex acoustic pressures :math:`p_1`, :math:`p_2` such that:
 
 .. math::
-    \int_{\Omega} k^2 q p - \int_{\Omega} \nabla q \cdot \nabla p
-    - i w \int_{\Gamma_{out}} 1/c q p
-    + i w \int_{\Gamma_2} \rho/Z q (p_2 - p_1)
-    + i w \int_{\Gamma_1} \rho/Z q (p_1 - p_2)
-    = i w \rho int_{\Gamma_{in}} v_n q
+    \int_{\Omega} k^2 q p - \int_{\Omega} \nabla q \cdot \nabla p \\
+    - i w/c \int_{\Gamma_{out}} q p
+    + i w \rho/Z \int_{\Gamma_2} q (p_2 - p_1)
+    + i w \rho/Z \int_{\Gamma_1}  q (p_1 - p_2) \\
+    = i w \rho \int_{\Gamma_{in}} v_n q
     \;, \quad \forall q \;.
 """
 
@@ -30,8 +30,10 @@ w = 2.0 * freq
 k1 = w / c
 rhoc1 = rho * c
 
-coef_k = (1.0 + 0.1472 * (freq / R)**(-0.577)) + 1j * (-0.1734 * (freq / R)**(-0.595))
-coef_r = (1.0 + 0.0855 * (freq / R)**(-0.754)) + 1j * (-0.0765 * (freq / R)**(-0.732))
+coef_k = ((1.0 + 0.1472 * (freq / R)**(-0.577))
+          + 1j * (-0.1734 * (freq / R)**(-0.595)))
+coef_r = ((1.0 + 0.0855 * (freq / R)**(-0.754))
+          + 1j * (-0.0765 * (freq / R)**(-0.732)))
 
 k2 = k1 * coef_k
 rhoc2 = rhoc1 * coef_r
@@ -42,7 +44,8 @@ dh = 2.49e-3
 por = 0.08
 
 # acoustic impedance
-Z = rho * c / por * (0.006 + 1j * k1 * (tw + 0.375 * dh * (1 + rhoc2/rhoc1 * k2/k1)))
+Z = rho * c / por * (0.006 + 1j * k1 * (tw + 0.375 * dh
+                                        * (1 + rhoc2/rhoc1 * k2/k1)))
 
 regions = {
     'Omega': ('all', {}),
