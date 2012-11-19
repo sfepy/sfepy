@@ -809,11 +809,11 @@ sfepy.base package
    src/sfepy/base/goptions
    src/sfepy/base/ioutils
    src/sfepy/base/log
+   src/sfepy/base/log_plotter
    src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
    src/sfepy/base/progressbar
    src/sfepy/base/reader
-   src/sfepy/base/tasks
    src/sfepy/base/testing
 
 sfepy.fem package
