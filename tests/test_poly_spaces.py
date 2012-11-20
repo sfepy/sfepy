@@ -36,18 +36,19 @@ rots = {
     '3_8' : None,
 }
 
-def _gen_common_data(order, gels, report):
+def _gen_common_data(orders, gels, report):
     import sfepy
     from sfepy.base.base import Struct
     from sfepy.linalg import combine
     from sfepy.fem import Mesh, Domain, Field, FieldVariable, Integral
     from sfepy.fem.global_interp import get_ref_coors
 
-    integral = Integral('i', order=order)
-
     for geom, poly_space_base in combine([['2_4', '3_8'],
                                           ['lagrange', 'lobatto']]):
         report('geometry: %s, base: %s' % (geom, poly_space_base))
+
+        order = orders[geom]
+        integral = Integral('i', order=order)
 
         mesh0 = Mesh.from_file('meshes/elements/%s_2.mesh' % geom,
                                prefix_dir=sfepy.data_dir)
@@ -122,13 +123,13 @@ class Test(TestCommon):
 
     def test_continuity(self):
         ok = True
-        order = 3
+        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 3, '3_8' : 2}
 
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
              ap, ps, rrc, crc, vec,
-             edofs, fdofs) in _gen_common_data(order, self.gels, self.report):
+             edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
             if poly_space_base == 'lagrange':
                 rbf = ps.eval_base(rrc)
@@ -173,13 +174,13 @@ class Test(TestCommon):
         from sfepy.fem.mappings import VolumeMapping
 
         ok = True
-        order = 3
+        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 3, '3_8' : 2}
 
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
              ap, ps, rrc, crc, vec,
-             edofs, fdofs) in _gen_common_data(order, self.gels, self.report):
+             edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
             conn = mesh.conns[0]
             gel = self.gels[geom]
 
