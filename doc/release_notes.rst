@@ -1,5 +1,314 @@
 # created: 20.07.2007 (-1)
 
+.. _2012.3-2012.4:
+
+from 2012.3 to 2012.4
+=====================
+
+- initial implementation of elements with hierarchical basis:
+
+  - merge hierarchic branch
+  - fields and approximations:
+
+    - split fields.py into fields_base.py, fields_nodal.py
+    - new VolumeField, H1NodalMixin
+    - new H1NodalVolumeField, H1DiscontinuousField, H1NodalSurfaceField
+    - prepend underscore to non-API methods
+    - new H1HierarchicVolumeField (fields_hierarchic.py)
+    - move ._setup_esurface(), .create_mesh() into Field
+    - new Field.from_args()
+    - move setting DOFs from a function to a field method
+
+      - new H1NodalMixin.set_dofs(), update EquationMap.map_equations()
+
+    - add merge argument to Field.get_dofs_in_region_group()
+    - new H1HierarchicVolumeField.set_dofs() - hack for constant values
+    - define edge orientation (ap.ori) in H1HierarchicVolumeField
+    - new code for face orientations
+
+      - update H1HierarchicVolumeField._setup_facet_dofs()
+      - new LobattoTensorProductPolySpace._get_counts(), ._get_face_axes_nodes()
+      - update LobattoTensorProductPolySpace.__init__(), _define_nodes(),
+        ._eval_base()
+
+    - update Approximation for facet orientation, add ori attribute
+    - new Approximation.clear_qp_base()
+    - add iels argument to Approximation.get_base()
+    - new Approximation.get_poly_space(), update .get_base()
+
+  - bases and mappings:
+
+    - update CVolumeMapping.describe() for basis per element
+    - update VolumeMapping.get_mapping() for facet orientation argument
+    - update PolySpace.eval_base() for facet orientation argument
+    - support edge orientation in LobattoTensorProductPolySpace._eval_base()
+    - add node_orders attribute to LobattoTensorProductPolySpace
+    - add force_axis argument to PolySpace.eval_base()
+    - use force_axis argument to fix Lagrange basis computations
+    - fix gradient mode in eval_lobatto_tensor_product()
+    - ensure c-contiguity in PolySpace.eval_base()
+    - update PolySpace.any_from_args() for no simplex Lobatto class
+    - raise error for surface mapping with hierarchical basis
+
+  - facets and geometry elements:
+
+    - new Facets.get_orientation()
+    - fix axes orientation of 6th face of 3_8
+    - new GeometryElement.get_grid()
+
+      - new _get_grid_1_2(), _get_grid_2_3(), _get_grid_2_4(), _get_grid_3_4(),
+        _get_grid_3_8()
+
+  - linearization of higher order fields:
+
+    - update linearizer.py for hierarchic basis
+
+      - remove bf argument of DOF evaluation functions (use ps instead)
+      - update get_eval_dofs() - add ps (poly. space) and ori (facet
+        orientation) arguments
+      - update create_output()
+      - update Field.linearize(), eval_dofs() for updated linearizer.py
+
+    - create linearized output for an expression
+
+      - new create_expression_output()
+      - new get_eval_expression(), eval_in_els_and_qp()
+
+  - scripts:
+
+    - update script/plot_condition_numbers.py
+    - update script/save_basis.py for meshes (global basis)
+
+      - new --lin-options, --dofs, --permutations, --plot-dofs options
+      - support gradients in mesh mode
+      - require output directory, print help by default
+
+  - examples and tests:
+
+    - new tests/test_normals.py - check surface normal orientations
+    - new tests/test_poly_spaces.py - check hierarchic and nodal basis
+      continuity
+    - add two-element meshes
+    - update examples/diffusion/sinbc.py to use hierarchical basis
+
+  - miscellaneous updates:
+
+    - new prepare_translate()
+    - new GeometryElement.get_conn_permutations()
+    - new make_h1_projection_data()
+    - generalize sym2dim()
+    - new sfepy/postprocess/plot_dofs.py
+
+      - new _get_axes(), plot_mesh(), plot_global_dofs(), plot_local_dofs()
+
+    - update filename attribute in UserMeshIO.read()
+
+- unify C/Cython structures for volume and surface mappings:
+
+  - merge surfvol branch
+  - rename geometry.[ch] -> refmaps.[ch]
+  - merge VolumeGeometry and SurfaceGeometry into Mapping
+  - merge CVolumeMapping and CSurfaceMapping into CMapping
+  - update sfepy/fem/extmods/setup.py
+  - update map_print(), small fixes in map_describe(), map_integrate()
+  - update terms for Mapping
+  - update VolumeMapping, SurfaceMapping for CMapping
+  - miscellaneous updates for CMapping
+  - remove eval_real_extra(), dq_grad_extra()
+  - remove dw_surface_dot_vector(), dw_surface_dot_scalar()
+
+    - update dw_volume_dot_vector(), dw_volume_dot_scalar(),
+      DotProductVolumeTerm
+    - update docstring of DotProductSurfaceTerm
+
+  - remove remaining references to CMapping.area
+  - new CauchyStrainSTerm (ev_cauchy_strain_s)
+
+- problem descriptions:
+
+  - replace getattr() calls with ProblemConf.get_function()
+
+    - fix for functions defined inside define() and not on the problem
+      description module level
+
+  - add allow_tuple, free_word arguments to create_bnf()
+  - allow deferred setup of ProblemConf - add setup argument to .__init__()
+  - update ProblemDefinition.setup_default_output() for missing options
+
+- data probing:
+
+  - new Probe.set_n_point(), update .__init__()
+  - allow extrapolation in probes
+
+    - new Probe.set_options() - set close limit, update .__init__(), .probe()
+
+  - probe.py: new --close-limit option, update generate_probes(), clean up
+  - update generate_probes() to support multiple figures per probe hook
+  - add size_hint to Probe.set_options(), fix refinement for multiple calls
+
+    - new Probe.reset_refinement() - called in .probe()
+
+  - new write_results(), read_results(), update generate_probes(),
+    postprocess()
+  - move read_header(), get_data_name() to sfepy/fem/probes.py, update
+  - new dict_from_options(), update ProblemConf.from_file_and_options()
+
+    - make dict_from_string a standalone function
+
+  - generalize override in ProblemConf.__init__()
+  - update generate_probes() to support -1 as last step
+
+- base:
+
+  - new edit_tuple_strings(), add recur argument to edit_dict_strings()
+  - update edit_dict_strings() for lists of replacements and tuple values
+  - update assert_() for custom messages
+  - add overwrite_by_none argument to update_dict_recursively()
+  - remove sfepy/base/tasks.py
+  - new edit_filename() utility function
+  - new Struct._str(), .str_class(), update .__str__()
+  - simplify dict-like methods of Struct
+
+    - replace Struct.get_default_attr() with updated Struct.get()
+    - rename .set_default_attr() -> set_default()
+
+- logging:
+
+  - split sfepy/base/log.py - new sfepy/base/log_plotter.py, clean up
+
+    - rename ProcessPlotter -> LogPlotter
+
+  - implement reading and plotting of Log text output
+
+    - new read_log(), plot_log()
+
+  - add log_name argument to get_logging_conf(), update docstring
+
+- materials:
+
+  - update Materials, Material for optional clearing of material data
+  - improve updating of material parameters
+
+    - update Materials.time_update() - force and clear arguments replaced by
+      mode argument
+    - update Material.__init__(), .update_special_data(),
+      .update_special_constant_data(), .time_update()
+
+- phononic materials:
+
+  - new get_log_freqs(), update detect_band_gaps()
+  - new get_ranges(), update cut_freq_range(), BandGaps.__call__()
+
+    - opts.eig_range is a slice now
+
+  - update transform_plot_data() to work with nan values
+
+- linear combination boundary conditions:
+
+  - rename _save_normals() -> _save_vectors(), update
+  - new Region.get_edge_graph()
+  - new get_edge_paths(), _get_edge_path()
+  - new compute_nodal_edge_dirs()
+  - new NormalDirectionOperator.get_vectors(), update .__init__()
+  - new EdgeDirectionOperator, new 'edge_direction' LCBC
+
+    - update LCBCOperators.add_from_bc()
+
+  - fix and simplify LCBCOperator.treat_pbcs()
+
+    - LCBCs combined with EPBCs in common nodes work correctly now,
+      in particular for non-penetration conditions with general normals
+
+- scripts:
+
+  - remove obsolete scripts:
+
+    - mesh_to_vtk.py, hfm3_mesh.py, convert.py, edit_neu.py, make_spkg.py,
+      spymatrix.py
+
+  - new script/sync_module_docs.py
+  - script/save_basis.py: fix --plot-dofs for no --permutations, update help
+  - update script/gen_gallery.py for custom visualizations
+  - script/plot_condition_numbers.py: report number of quadrature points
+
+- simple.py:
+
+  - clean up, add docstring
+  - new --save-ebc-nodes option, change meaning of --save-ebc
+
+    - update solve_pde(), save_only(), PDESolverApp.call()
+    - update generate_images(), test_hyperelastic_tlul.py, testsBasic.py
+
+- postproc.py:
+
+  - group options, clean up, use docstring for help
+  - allow negative time steps in Viewer.call_mlab()
+
+    - Python-like indexing from the last step
+    - check that step is in the range available
+
+  - update step help message
+
+- solvers:
+
+  - fix arguments in TimeStepper.from_conf()
+  - fix ScipyFMinSolver.__call__() for old scipy (0.7.2)
+  - add divergence tolerance option to PETSc solvers
+
+- miscellaneous updates:
+
+  - fix examples in script/config.py
+  - new sfepy/postprocess/plot_facets.py
+
+    - new plot_geometry(), plot_edges(), plot_faces(), draw_arrow()
+
+  - new get_perpendiculars()
+  - move .setup_coors() to Field, fix vertex indices
+  - new Region.get_vertices_of_cells(), update .update_vertices()
+  - fix VolumeField._setup_vertex_dofs() for superfluous vertices
+  - fix VolumeField.average_qp_to_vertices() for superfluous vertices
+  - new RadialVector, ExplicitRadialMesh, update RadialHyperbolicMesh,
+    RadialMesh
+  - new H1NodalSurfaceField.interp_v_vals_to_n_vals() - initial stub
+  - fix ProblemDefinition.save_ebc() for EBCs needing ProblemDefinition
+    instance
+  - report (initial) data ranges in Viewer.build_mlab_pipeline()
+  - allow context variables in ProblemDefinition.evaluate()
+
+    - add strip_variables argument to .evaluate(), .create_evaluable()
+
+  - rename State.get_scaled_norm() -> get_weighted_norm()
+
+    - fix weighting by state parts, add weights, return_weights arguments
+
+  - fix EquationMap._init_empty() to initialize n_epbc
+  - clean up sfepy/fem/dof_info.py
+  - fix gen_mesh_from_voxels()
+  - remove unused function: reorder_dofs_on_mirror
+  - fix integration over mirror surface
+  - treat separately real and imaginary fill value parts in Field.extend_dofs()
+
+    - new get_min_value() - fill value is 0 for vectors, minimum for scalars
+
+  - fix dw_jump term, use the (optional) material parameter as a multiplier
+
+- examples and tests:
+
+  - update docstrings in examples/diffusion/poisson_functions.py
+  - report number of failed tests in test_install.py
+  - new example with field-dependent diffusion coefficient + test
+    (examples/diffusion/poisson_field_dependent_material.py)
+  - new diffusion example with periodic boundary conditions + test
+    (examples/diffusion/poisson_periodic_boundary_condition.py)
+  - new tests for field dependent and periodic diffusion examples
+  - new acoustic 3d example (examples/acoustics/acoustics3d.py) + test
+  - remove examples/diffusion/subdomains.py + test
+
+- docs:
+
+  - include scripts in developer guide
+  - sync module index of developer guide with current sources
+
 .. _2012.2-2012.3:
 
 from 2012.2 to 2012.3
