@@ -1,6 +1,12 @@
 News
 ====
 
+* **21.11.2012** Version 2012.4 released (initial support for hierarchical
+  basis on quadrilateral and brick elements, unified C/Cython structures for
+  reference mappings, new linear combination boundary condition: edge
+  direction, new examples showing some advanced features, etc.), see
+  :ref:`release notes <2012.3-2012.4>`.
+
 * **12.09.2012** Version 2012.3 released (several new terms, material
   parameters can be defined per region using region names, base function values
   can be defined per element, support for global options, etc.), see
@@ -21,12 +27,5 @@ News
   term argument type, updated Lagrangian formulation for large
   deformations, automatic generation of gallery of examples, etc.), see
   :ref:`release notes <2011.3-2011.4>`.
-
-* **10.08.2011** Version 2011.3 released (major update of terms aiming at
-  easier usage and definition while retaining original C functions,
-  overriding problem description items on command line, improved
-  developer guide, Primer tutorial - a step-by-step walk-through of the
-  process to solve a simple mechanics problem, etc.), see
-  :ref:`release notes <2011.2-2011.3>`.
 
 For historians: see :ref:`archived_news`.

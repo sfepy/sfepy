@@ -3,6 +3,13 @@
 Archived News
 =============
 
+* **10.08.2011** Version 2011.3 released (major update of terms aiming at
+  easier usage and definition while retaining original C functions,
+  overriding problem description items on command line, improved
+  developer guide, Primer tutorial - a step-by-step walk-through of the
+  process to solve a simple mechanics problem, etc.), see
+  :ref:`release notes <2011.2-2011.3>`.
+
 * **31.05.2011** Version 2011.2 released (experimental implementation of
   terms aiming at easier usage and definition of new terms,
   Mooney-Rivlin membrane term, update build system to use exclusively
