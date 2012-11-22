@@ -1019,8 +1019,13 @@ class ViewerGUI(HasTraits):
 
     def _button_view_fired(self):
         self.scene.camera.print_traits()
-        print 'view:', mlab.view()
-        print 'roll:', mlab.roll()
+        view = mlab.view()
+        roll = mlab.roll()
+        print 'view:', view
+        print 'roll:', roll
+        print 'as args: --view=%.2e,%.2e,%.2e,%.2e,%.2e,%.2e --roll=%.2e' \
+              % (view[:3] + tuple(view[3]) + (roll,))
+
 
     def _button_make_animation_fired(self):
         view = mlab.view()
