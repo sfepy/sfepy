@@ -308,7 +308,7 @@ class ProblemConf( Struct ):
                           verbose=True,  setup=True):
         define_dict = ProblemConf.dict_from_string(options.conf)
         if options.app_options:
-            if not 'options' in override:
+            if not 'options' in define_dict:
                 define_dict['options'] = {}
 
             override_options = ProblemConf.dict_from_string(options.app_options)
