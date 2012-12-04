@@ -74,6 +74,10 @@ cdef extern from 'terms.h':
          'dq_ul_he_stress_bulk'(FMField *out,FMField *mat,
                                 FMField *detF)
 
+    cdef int32 _dq_tl_he_stress_bulk_active \
+         'dq_tl_he_stress_bulk_active'(FMField *out,FMField *mat,
+                                       FMField *detF, FMField *vecInvCS)
+
     cdef int32 _dq_tl_he_stress_neohook \
          'dq_tl_he_stress_neohook'(FMField *out, FMField *mat,
                                    FMField *detF, FMField *trC,
@@ -100,6 +104,10 @@ cdef extern from 'terms.h':
 
     cdef int32 _dq_ul_he_tan_mod_bulk \
          'dq_ul_he_tan_mod_bulk'(FMField *out, FMField *mat, FMField *detF)
+
+    cdef int32 _dq_tl_he_tan_mod_bulk_active \
+         'dq_tl_he_tan_mod_bulk_active'(FMField *out, FMField *mat,
+                                        FMField *detF, FMField *vecInvCS)
 
     cdef int32 _dq_tl_he_tan_mod_neohook \
          'dq_tl_he_tan_mod_neohook'(FMField *out, FMField *mat,
@@ -648,6 +656,21 @@ def dq_ul_he_stress_bulk(np.ndarray out not None,
     ret = _dq_ul_he_stress_bulk(_out, _mat, _det_f)
     return ret
 
+def dq_tl_he_stress_bulk_active(np.ndarray out not None,
+                                np.ndarray mat not None,
+                                np.ndarray det_f not None,
+                                np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_he_stress_bulk_active(_out, _mat, _det_f, _vec_inv_cs)
+    return ret
+
 def dq_tl_he_stress_neohook(np.ndarray out not None,
                             np.ndarray mat not None,
                             np.ndarray det_f not None,
@@ -751,6 +774,21 @@ def dq_ul_he_tan_mod_bulk(np.ndarray out not None,
     array2fmfield4(_det_f, det_f)
 
     ret = _dq_ul_he_tan_mod_bulk(_out, _mat, _det_f)
+    return ret
+
+def dq_tl_he_tan_mod_bulk_active(np.ndarray out not None,
+                                 np.ndarray mat not None,
+                                 np.ndarray det_f not None,
+                                 np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_he_tan_mod_bulk_active(_out, _mat, _det_f, _vec_inv_cs)
     return ret
 
 def dq_tl_he_tan_mod_neohook(np.ndarray out not None,

@@ -117,6 +117,28 @@ class BulkPenaltyTLTerm(HyperElasticTLBase):
     stress_function = staticmethod(terms.dq_tl_he_stress_bulk)
     tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_bulk)
 
+class BulkActiveTLTerm(HyperElasticTLBase):
+    r"""
+    Hyperelastic bulk active term. Stress :math:`S_{ij} = A J C_{ij}^{-1}`,
+    where :math:`A` is the activation in :math:`[0, F_{\rm max}]`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`A`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+
+    name = 'dw_tl_bulk_active'
+    family_data_names = ['det_f', 'sym_inv_c']
+
+    stress_function = staticmethod(terms.dq_tl_he_stress_bulk_active)
+    tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_bulk_active)
+
 class BulkPressureTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic bulk pressure term. Stress

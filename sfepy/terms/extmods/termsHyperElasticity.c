@@ -652,6 +652,39 @@ int32 dq_ul_he_stress_bulk( FMField *out,FMField *mat,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dq_tl_he_stress_bulk_active"
+int32 dq_tl_he_stress_bulk_active( FMField *out,FMField *mat,
+                                   FMField *detF, FMField *vecCG )
+{
+  int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
+  float64 *pmat, *pstress, *pCG, *pdetF;
+
+  nQP = detF->nLev;
+  sym = out->nRow;
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    pdetF = FMF_PtrCell( detF, ii );
+
+    pstress = FMF_PtrCell( out, ii );
+    pmat = FMF_PtrCell( mat, ii );
+
+    pCG = FMF_PtrCell( vecCG, ii );
+    for (iqp = 0; iqp < nQP; iqp++) {
+      // Volumetric part.
+      for (ir = 0; ir < sym; ir++) {
+        pstress[ir] = pmat[iqp] * pdetF[iqp] * pCG[ir];
+      }
+      pstress += sym;
+      pCG += sym;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dq_he_stress_neohook"
 int32 dq_he_stress_neohook( FMField *out, FMField *mat,
 			    FMField *detF, FMField *trC, FMField *vecCG,
@@ -930,6 +963,59 @@ int32 dq_ul_he_tan_mod_bulk( FMField *out, FMField *mat, FMField *detF )
  end_label:
   fmf_freeDestroy( &ikjl );
   fmf_freeDestroy( &iljk );
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_tl_he_tan_mod_bulk_active"
+int32 dq_tl_he_tan_mod_bulk_active( FMField *out, FMField *mat,
+                                    FMField *detF, FMField *vecInvCS )
+{
+  int32 ii, nQP, ir, ic, iqp, sym, ret = RET_OK;
+  float64 cmat;
+  float64 *pd;
+  float64 *pmat;
+  float64 *pinvC, *pdetF, *pinvC2_ikjl, *pinvC2_iljk;
+  FMField *invC2_ikjl = 0, *invC2_iljk = 0;
+
+  sym = out->nRow;
+  nQP = out->nLev;
+
+  fmf_createAlloc( &invC2_ikjl, 1, nQP, sym, sym );
+  fmf_createAlloc( &invC2_iljk, 1, nQP, sym, sym );
+
+  pinvC2_ikjl = FMF_PtrCurrent( invC2_ikjl );
+  pinvC2_iljk = FMF_PtrCurrent( invC2_iljk );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vecInvCS, ii );
+    pdetF = FMF_PtrCell( detF, ii );
+    pinvC = FMF_PtrCell( vecInvCS, ii );
+    pd = FMF_PtrCell( out, ii );
+    pmat = FMF_PtrCell( mat, ii );
+
+    geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
+    geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
+
+    for (iqp = 0; iqp < nQP; iqp++) {
+      cmat = pmat[iqp] * pdetF[iqp];
+      for (ir = 0; ir < sym; ir++) {
+	for (ic = 0; ic < sym; ic++) {
+	  pd[sym*ir+ic]
+	    = cmat * pinvC[sym*iqp+ir] * pinvC[sym*iqp+ic]
+	    - cmat * (pinvC2_ikjl[sym*(sym*iqp+ir)+ic]
+                      + pinvC2_iljk[sym*(sym*iqp+ir)+ic]);
+	}
+      }
+      pd += sym * sym;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &invC2_ikjl );
+  fmf_freeDestroy( &invC2_iljk );
 
   return( ret );
 }

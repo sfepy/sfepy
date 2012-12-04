@@ -30,6 +30,9 @@ int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
 int32 dq_ul_he_stress_bulk( FMField *out,FMField *mat,
 			    FMField *detF );
 
+int32 dq_tl_he_stress_bulk_active( FMField *out,FMField *mat,
+                                   FMField *detF, FMField *vecCG );
+
 int32 dq_tl_he_stress_neohook( FMField *out, FMField *mat,
 			       FMField *detF, FMField *trC, FMField *vecInvCS );
 
@@ -49,6 +52,9 @@ int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
 			     FMField *detF, FMField *vecInvCS );
 
 int32 dq_ul_he_tan_mod_bulk( FMField *out, FMField *mat, FMField *detF );
+
+int32 dq_tl_he_tan_mod_bulk_active( FMField *out, FMField *mat,
+                                    FMField *detF, FMField *vecInvCS );
 
 int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
 				FMField *detF, FMField *trC, FMField *vecInvCS );
