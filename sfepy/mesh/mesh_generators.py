@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import output, assert_
+from sfepy.base.base import output, assert_, Struct
 from sfepy.base.progressbar import MyBar
 from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import cycle
@@ -377,6 +377,38 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     else:
         return mesh_out
 
+""" Base class for generation meshes of various shape to file 
+    its descendants in creator subdir mush implements the
+    __call__ method, that write new mesh to file
+"""
+
+class Mish_mesh_creator(Struct):
+    class arg:
+        def __init__(self, pos):
+            self.pos = pos
+        def __call__(self, args, input):
+            return args[self.pos]
+
+    def retype(self, args, types, defaults):
+        out=list(args)
+        out.extend(defaults[len(args):len(defaults)])
+        for i,x in enumerate(out):
+            if isinstance(x, self.arg):
+               out[i]=x(out,args)
+        out = [type(value) for type, value in zip(types, out) ]
+        return tuple(out)
+
+    def __init__(self, input_args):
+        self.args = self.retype(input_args, self.arg_formats, self.arg_defaults)
+
+    def suggest_filename(self): 
+        if hasattr(self,'filename_pattern'):
+           return self.filename_pattern % tuple(self.args)
+        return self.__class__.name + str(args).replace(', ', '_')
+    
+    def force_suffix(self):
+        return None        
+
 def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
                   verbose=False):
     """
@@ -384,83 +416,50 @@ def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
     directory if it does not exist and return path to it.
     """
     import os
-    from sfepy import data_dir
-
-    defdir = os.path.join(data_dir, 'meshes')
     if mesh_dir is None:
+        from sfepy import data_dir
+        defdir = os.path.join(data_dir, 'meshes')
         mesh_dir = defdir
-
-    def retype(args, types, defaults):
-        args=list(args)
-        args.extend(defaults[len(args):len(defaults)])
-        return tuple([type(value) for type, value in zip(types, args) ])
-
-    if kind == 'sphere':
-        default = [5, 41, args[0]]
-        args = retype(args, [float, int, float], default)
-        mesh_pattern = os.path.join(mesh_dir, 'sphere-%.2f-%.2f-%i')
-
+   
+    
+    """ get all class names from creators submodule """
+    import pkgutil
+    import sfepy.mesh.creators as creators
+    formats = [name for _, name, _ in pkgutil.iter_modules(creators.__path__)]
+    
+    """ find the class that begin with kind - allow to use shortcut, e.g. c for cube etc."""
+    import bisect
+    i = bisect.bisect(formats, kind)
+    if i>0 and formats[i-1]==kind:
+       i-=1
     else:
-        assert_(kind == 'cube')
-
-        args = retype(args,
-                      (int, float, int, float, int, float),
-                      (args[0], args[1], args[0], args[1], args[0], args[1]))
-        mesh_pattern = os.path.join(mesh_dir, 'cube-%i_%.2f-%i_%.2f-%i_%.2f')
-
+       assert_(kind == formats[i][0:len(kind)],'Unkwnown mesh format %s' % kind)
+       kind = formats[i]
+    
     if verbose:
-        output(args)
+        output(args) 
+   
+    """ find the right creator """ 
+    from sfepy.base.base import debug
+    __import__('sfepy.mesh.creators.' + kind)
+    creator=getattr(creators,kind)
+    creator=getattr(creator,kind.title())(args)
+    sufix = creator.force_suffix() or suffix
+    filename = os.path.join(mesh_dir, creator.suggest_filename() )
 
-    filename = mesh_pattern % args
+    """ return cached mesh """
     if not force_create:
         if os.path.exists(filename): return filename
         if os.path.exists(filename + '.mesh') : return filename + '.mesh'
         if os.path.exists(filename + '.vtk'): return filename + '.vtk'
 
-    if kind == 'cube':
-        filename = filename + suffix
-        ensure_path(filename)
-
-        output('creating new cube mesh')
-        output('(%i nodes in %.2f) x (%i nodes in %.2f) x (%i nodes in %.2f)'
-               % args)
-        output('to file %s...' % filename)
-
-        mesh = gen_block_mesh(args[1::2], args[0::2],
-                              (0.0, 0.0, 0.0), name=filename)
-        mesh.write(filename, io='auto')
-        output('...done')
-
-    else:
-        import subprocess
-        filename = filename + '.mesh'
-        ensure_path(filename)
-
-        output('creating new sphere mesh (%i nodes, r=%.2f) and gradation %d'
-               % args)
-        output('to file %s...' % filename)
-
-        f = open(os.path.join(defdir, 'quantum', 'sphere.geo'))
-        tmpfile = os.path.join(data_dir, 'tmp', 'sphere.geo.temp')
-        ff = open(tmpfile, "w")
-        ff.write("""
-R = %i.0;
-n = %i.0;
-dens = %f;
-""" % args)
-        ff.write(f.read())
-        f.close()
-        ff.close()
-        subprocess.call(['gmsh', '-3', tmpfile, '-format', 'mesh',
-                         '-o', filename])
-
-        output('...done')
-
+    filename = filename + suffix
+    creator(filename)   
     return filename
 
 def gen_mesh_from_string(mesh_name, mesh_dir):
     import re
-    result = re.match('^\\s*([a-zA-Z]+)[:\\(]([^\\):]*)[:\\)](\\*)?\\s*$',
+    result = re.match('^\\s*([a-zA-Z]+)[:\\(]([^\\):]*)[:\\)](\\*|!)?\\s*$',
                       mesh_name)
 
     if result is None:
@@ -469,7 +468,7 @@ def gen_mesh_from_string(mesh_name, mesh_dir):
     else:
         args = re.split(',', result.group(2))
         kind = result.group(1)
-        return gen_misc_mesh(mesh_dir, result.group(3)=='*', kind, args)
+        return gen_misc_mesh(mesh_dir, result.group(3) is not None, kind, args)
 
 def gen_mesh_from_goem(geo, a=None, quadratic=False, verbose=True,
                        refine=False, polyfilename='./meshgen.poly',
