@@ -48,15 +48,8 @@ class BasicEvaluator( Evaluator ):
     def eval_residual( self, vec, is_full = False ):
         if not is_full:
             vec = self.make_full_vec( vec )
-        try:
-            pb = self.problem
-            vec_r = pb.equations.eval_residuals(vec)
 
-        except StopIteration, exc:
-            status = exc.args[0]
-            output( 'error %d in term "%s" of equation "%s"!'\
-                    % (status, exc.args[1].name, exc.args[2].desc) )
-            raise ValueError
+        vec_r = self.problem.equations.eval_residuals(vec)
 
         return vec_r
 
@@ -66,22 +59,14 @@ class BasicEvaluator( Evaluator ):
 
         if not is_full:
             vec = self.make_full_vec( vec )
-        try:
-            pb = self.problem
-            if mtx is None:
-                mtx = pb.mtx_a
-            mtx = pb.equations.eval_tangent_matrices(vec, mtx)
 
-        except StopIteration, exc:
-            status = exc.args[0]
-            output( ('error %d in term "%s" of derivative of equation "%s"'
-                     + ' with respect to variable "%s"!')\
-                    % (status,
-                       exc.args[1].name, exc.args[2].desc, exc.args[3] ) )
-            raise ValueError
+        pb = self.problem
+        if mtx is None:
+            mtx = pb.mtx_a
+        mtx = pb.equations.eval_tangent_matrices(vec, mtx)
 
         if self.matrix_hook is not None:
-            mtx = self.matrix_hook(mtx, self.problem, call_mode='basic')
+            mtx = self.matrix_hook(mtx, pb, call_mode='basic')
 
         return mtx
 
