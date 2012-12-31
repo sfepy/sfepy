@@ -30,7 +30,7 @@ from sfepy.solvers.nls import Newton
 
 ##
 # 29.01.2006, c
-class ProblemDefinition( Struct ):
+class ProblemDefinition(Struct):
     """
     Problem definition, the top-level class holding all data necessary to solve
     a problem.
@@ -92,13 +92,13 @@ class ProblemDefinition( Struct ):
         obj.clear_equations()
 
         if init_fields:
-            obj.set_fields( conf.fields )
+            obj.set_fields(conf.fields)
 
             if init_equations:
                 obj.set_equations(conf.equations, user={'ts' : obj.ts})
 
         if init_solvers:
-            obj.set_solvers( conf.solvers, conf.options )
+            obj.set_solvers(conf.solvers, conf.options)
 
         return obj
 
@@ -291,7 +291,7 @@ class ProblemDefinition( Struct ):
         if self.output_dir and not op.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
-    def set_regions( self, conf_regions=None,
+    def set_regions(self, conf_regions=None,
                      conf_materials=None, functions=None):
         conf_regions = get_default(conf_regions, self.conf.regions)
         functions = get_default(functions, self.functions)
@@ -335,11 +335,11 @@ class ProblemDefinition( Struct ):
             conf_variables = select_by_names(self.conf.variables, variable_names)
 
         if not only_conf:
-            self.set_variables( conf_variables )
+            self.set_variables(conf_variables)
 
         return conf_variables
 
-    def clear_equations( self ):
+    def clear_equations(self):
         self.integrals = None
         self.equations = None
         self.ebcs = None
@@ -390,29 +390,29 @@ class ProblemDefinition( Struct ):
         Choose which solvers should be used. If solvers are not set in
         `options`, use first suitable in `conf_solvers`.
         """
-        conf_solvers = get_default( conf_solvers, self.conf.solvers )
+        conf_solvers = get_default(conf_solvers, self.conf.solvers)
         self.solver_confs = {}
         for key, val in conf_solvers.iteritems():
             self.solver_confs[val.name] = val
-        
-        def _find_suitable( prefix ):
+
+        def _find_suitable(prefix):
             for key, val in self.solver_confs.iteritems():
-                if val.kind.find( prefix ) == 0:
+                if val.kind.find(prefix) == 0:
                     return val
             return None
 
-        def _get_solver_conf( kind ):
+        def _get_solver_conf(kind):
             try:
                 key = options[kind]
                 conf = self.solver_confs[key]
             except:
-                conf = _find_suitable( kind + '.' )
+                conf = _find_suitable(kind + '.')
             return conf
 
-        self.ts_conf = _get_solver_conf( 'ts' )
-        self.nls_conf = _get_solver_conf( 'nls' )
-        self.ls_conf = _get_solver_conf( 'ls' )
-        info =  'using solvers:'
+        self.ts_conf = _get_solver_conf('ts')
+        self.nls_conf = _get_solver_conf('nls')
+        self.ls_conf = _get_solver_conf('ls')
+        info = 'using solvers:'
         if self.ts_conf:
             info += '\n                ts: %s' % self.ts_conf.name
         if self.nls_conf:
@@ -420,7 +420,7 @@ class ProblemDefinition( Struct ):
         if self.ls_conf:
             info += '\n                ls: %s' % self.ls_conf.name
         if info != 'using solvers:':
-            output( info )
+            output(info)
 
     def set_solvers_instances(self, ls=None, nls=None):
         """
@@ -433,23 +433,15 @@ class ProblemDefinition( Struct ):
 
         self.solvers = Struct(name='solvers', ls=ls, nls=nls)
 
-    ##
-    # Utility functions below.
-    ##
-
-    ##
-    # 17.10.2007, c
-    def get_solver_conf( self, name ):
+    def get_solver_conf(self, name):
         return self.solver_confs[name]
 
-    ##
-    # c: 13.06.2008, r: 13.06.2008
-    def get_default_ts( self, t0 = None, t1 = None, dt = None, n_step = None,
-                      step = None ):
-        t0 = get_default( t0, 0.0 )
-        t1 = get_default( t1, 1.0 )
-        dt = get_default( dt, 1.0 )
-        n_step = get_default( n_step, 1 )
+    def get_default_ts(self, t0=None, t1=None, dt=None, n_step=None,
+                       step=None):
+        t0 = get_default(t0, 0.0)
+        t1 = get_default(t1, 1.0)
+        dt = get_default(dt, 1.0)
+        n_step = get_default(n_step, 1)
 
         ts = TimeStepper(t0, t1, dt, n_step, step=step)
 
@@ -535,7 +527,7 @@ class ProblemDefinition( Struct ):
         if graph_changed or (self.mtx_a is None) or create_matrix:
             self.mtx_a = self.equations.create_matrix_graph()
             ## import sfepy.base.plotutils as plu
-            ## plu.spy( self.mtx_a )
+            ## plu.spy(self.mtx_a)
             ## plu.plt.show()
 
     def set_bcs(self, ebcs=None, epbcs=None, lcbcs=None):
@@ -570,7 +562,7 @@ class ProblemDefinition( Struct ):
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
-    def setup_ic( self, conf_ics = None, functions = None ):
+    def setup_ic(self, conf_ics=None, functions=None):
         conf_ics = get_default(conf_ics, self.conf.ics)
         ics = Conditions.from_conf(conf_ics, self.domain.regions)
 
@@ -582,17 +574,17 @@ class ProblemDefinition( Struct ):
                    lcbc_names=None, create_matrix=False):
 
         if ebc_names is not None:
-            conf_ebc = select_by_names( self.conf.ebcs, ebc_names )
+            conf_ebc = select_by_names(self.conf.ebcs, ebc_names)
         else:
             conf_ebc = None
 
         if epbc_names is not None:
-            conf_epbc = select_by_names( self.conf.epbcs, epbc_names )
+            conf_epbc = select_by_names(self.conf.epbcs, epbc_names)
         else:
             conf_epbc = None
 
         if lcbc_names is not None:
-            conf_lcbc = select_by_names( self.conf.lcbcs, lcbc_names )
+            conf_lcbc = select_by_names(self.conf.lcbcs, lcbc_names)
         else:
             conf_lcbc = None
 
@@ -600,16 +592,13 @@ class ProblemDefinition( Struct ):
         self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
                               self.functions, create_matrix)
 
-    def get_timestepper( self ):
+    def get_timestepper(self):
         return self.ts
 
     def create_state(self):
         return State(self.equations.variables)
 
-    ##
-    # 26.07.2006, c
-    # 22.08.2006
-    def get_mesh_coors( self ):
+    def get_mesh_coors(self):
         return self.domain.get_mesh_coors()
 
     def set_mesh_coors(self, coors, update_fields=False, actual=False,
@@ -654,7 +643,7 @@ class ProblemDefinition( Struct ):
         self.set_fields(self.conf.fields)
         self.set_equations(self.conf.equations, user={'ts' : self.ts})
 
-    def get_dim( self, get_sym = False ):
+    def get_dim(self, get_sym=False):
         """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is
         True).
         """
@@ -664,11 +653,9 @@ class ProblemDefinition( Struct ):
         else:
             return dim
 
-    ##
-    # c: 02.04.2008, r: 02.04.2008
-    def init_time( self, ts ):
+    def init_time(self, ts):
         self.update_time_stepper(ts)
-        self.equations.init_time( ts )
+        self.equations.init_time(ts)
         self.update_materials(mode='force')
 
     def advance(self, ts=None):
@@ -729,7 +716,7 @@ class ProblemDefinition( Struct ):
 
             for var in itervars():
                 rname = var.field.region.name
-                if meshes.has_key( rname ):
+                if meshes.has_key(rname):
                     mesh = meshes[rname]
                 else:
                     mesh = Mesh.from_region(var.field.region, self.domain.mesh,
@@ -788,20 +775,20 @@ class ProblemDefinition( Struct ):
         self.save_state(filename, out=out, fill_value=default)
         output('...done')
 
-    def save_regions( self, filename_trunk, region_names = None ):
+    def save_regions(self, filename_trunk, region_names=None):
         """Save regions as meshes."""
 
         if region_names is None:
             region_names = self.domain.regions.get_names()
 
-        output( 'saving regions...' )
+        output('saving regions...')
         for name in region_names:
             region = self.domain.regions[name]
-            output( name )
+            output(name)
             aux = Mesh.from_region(region, self.domain.mesh)
-            aux.write( '%s_%s.mesh' % (filename_trunk, region.name),
-                       io = 'auto' )
-        output( '...done' )
+            aux.write('%s_%s.mesh' % (filename_trunk, region.name),
+                      io='auto')
+        output('...done')
 
     def save_regions_as_groups(self, filename_trunk, region_names=None):
         """Save regions in a single mesh but mark them by using different
@@ -821,7 +808,7 @@ class ProblemDefinition( Struct ):
             If given, only the listed regions are saved.
         """
 
-        output( 'saving regions as groups...' )
+        output('saving regions as groups...')
         aux = self.domain.mesh.copy()
         n_ig = c_ig = 0
 
@@ -846,9 +833,8 @@ class ProblemDefinition( Struct ):
 
             mask = nm.zeros((n_nod, 1), dtype=nm.float64)
             mask[region.all_vertices] = 1.0
-            out[name] = Struct(name = 'region',
-                               mode = 'vertex', data = mask,
-                               var_name = name, dofs = None)
+            out[name] = Struct(name='region', mode='vertex', data=mask,
+                               var_name=name, dofs=None)
 
             if region.has_cells():
                 for ig in region.igs:
@@ -857,23 +843,21 @@ class ProblemDefinition( Struct ):
                     c_ig += 1
 
         try:
-            aux.write( '%s.%s' % (filename_trunk, self.output_format), io='auto',
-                       out=out)
+            aux.write('%s.%s' % (filename_trunk, self.output_format), io='auto',
+                      out=out)
         except NotImplementedError:
             # Not all formats support output.
             pass
 
-        output( '...done' )
+        output('...done')
 
-    ##
-    # c: 03.07.2007, r: 27.02.2008
-    def save_field_meshes( self, filename_trunk ):
+    def save_field_meshes(self, filename_trunk):
 
-        output( 'saving field meshes...' )
+        output('saving field meshes...')
         for field in self.fields:
-            output( field.name )
-            field.write_mesh( filename_trunk + '_%s' )
-        output( '...done' )
+            output(field.name)
+            field.write_mesh(filename_trunk + '_%s')
+        output('...done')
 
     def get_evaluator(self, reuse=False):
         """
@@ -900,11 +884,11 @@ class ProblemDefinition( Struct ):
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
                      mtx=None, presolve=False):
         """Create and initialize solvers."""
-        ls_conf = get_default( ls_conf, self.ls_conf,
-                               'you must set linear solver!' )
+        ls_conf = get_default(ls_conf, self.ls_conf,
+                              'you must set linear solver!')
 
-        nls_conf = get_default( nls_conf, self.nls_conf,
-                              'you must set nonlinear solver!' )
+        nls_conf = get_default(nls_conf, self.nls_conf,
+                               'you must set nonlinear solver!')
 
         if presolve:
             tt = time.clock()
@@ -933,16 +917,12 @@ class ProblemDefinition( Struct ):
                                    lin_solver=ls, iter_hook=self.nls_iter_hook,
                                    status=nls_status, **extra_args)
 
-        self.solvers = Struct( name = 'solvers', ls = ls, nls = nls )
+        self.solvers = Struct(name='solvers', ls=ls, nls=nls)
 
-    ##
-    # c: 04.04.2008, r: 04.04.2008
-    def get_solvers( self ):
-        return getattr( self, 'solvers', None )
+    def get_solvers(self):
+        return getattr(self, 'solvers', None)
 
-    ##
-    # c: 04.04.2008, r: 04.04.2008
-    def is_linear( self ):
+    def is_linear(self):
         nls_conf = get_default(None, self.nls_conf,
                                'you must set nonlinear solver!')
         aux = Solver.any_from_conf(nls_conf)
@@ -951,11 +931,9 @@ class ProblemDefinition( Struct ):
         else:
             return False
 
-    ##
-    # c: 13.06.2008, r: 13.06.2008
-    def set_linear( self, is_linear ):
-        nls_conf = get_default( None, self.nls_conf,
-                              'you must set nonlinear solver!' )
+    def set_linear(self, is_linear):
+        nls_conf = get_default(None, self.nls_conf,
+                               'you must set nonlinear solver!')
         if is_linear:
             nls_conf.problem = 'linear'
         else:
@@ -1276,9 +1254,9 @@ class ProblemDefinition( Struct ):
 
         return materials
 
-    def init_variables( self, state ):
+    def init_variables(self, state):
         """Initialize variables with history."""
-        self.equations.variables.init_state( state )
+        self.equations.variables.init_state(state)
 
     def get_variables(self, auto_create=False):
         if self.equations is not None:
