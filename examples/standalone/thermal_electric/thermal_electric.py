@@ -111,7 +111,6 @@ def main():
     from sfepy.base.base import output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.fem import ProblemDefinition
-    from sfepy.applications import solve_evolutionary
 
     output.prefix = 'therel:'
 
@@ -133,7 +132,8 @@ def main():
     problem.set_equations({'eq' : conf.equations['2']})
     phi_var = problem.get_variables()['phi_known']
     phi_var.data_from_any(state_el())
-    solve_evolutionary(problem)
+    time_solver = problem.get_time_solver()
+    time_solver()
 
     output('results saved in %s' % problem.get_output_name(suffix = '*'))
 

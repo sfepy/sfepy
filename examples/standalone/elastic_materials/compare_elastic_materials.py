@@ -159,8 +159,6 @@ def store_top_u( displacements ):
     return _store
 
 def solve_branch(problem, branch_function):
-    from sfepy.applications import solve_evolutionary
-
     displacements = {}
     for key, eq in problem.conf.equations.iteritems():
         problem.set_equations( {key : eq} )
@@ -168,10 +166,12 @@ def solve_branch(problem, branch_function):
         load = problem.get_materials()['load']
         load.set_function(branch_function)
 
+        time_solver = problem.get_time_solver()
+
         out = []
-        solve_evolutionary(problem, save_results=False,
-                           step_hook=store_top_u(out))
-        displacements[key] = nm.array( out, dtype = nm.float64 )
+        time_solver(save_results=False, step_hook=store_top_u(out))
+        displacements[key] = nm.array(out, dtype=nm.float64)
+
     return displacements
 
 usage = """%prog [options]"""
