@@ -98,7 +98,7 @@ class NonlinearSolver(Solver):
         Solver.__init__(self, conf=conf, fun=fun, fun_grad=fun_grad,
                         lin_solver=lin_solver, iter_hook=iter_hook,
                         status=status, **kwargs)
-    
+
     def __call__(self, state0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
         raise ValueError('called an abstract NonlinearSolver instance!')
@@ -108,19 +108,12 @@ class TimeSteppingSolver(Solver):
     Abstract time stepping solver class.
     """
 
-    def __init__(self, conf, step_fun=None, step_args=None, **kwargs):
-        Solver.__init__(self, conf=conf,
-                        step_fun=step_fun, step_args=step_args, **kwargs)
+    def __init__(self, conf, **kwargs):
+        Solver.__init__(self, conf=conf, **kwargs)
 
-    def __call__(self, state0=None, conf=None, step_fun=None, step_args=None ):
+    def __call__(self, state0=None, save_results=True, step_hook=None,
+                 post_process_hook=None, nls_status=None):
         raise ValueError('called an abstract TimeSteppingSolver instance!')
-
-    def set_step_fun(self, step_fun, step_args=None):
-        """
-        Set time step function and its optional arguments.
-        """
-        self.step_fun = step_fun
-        self.step_args = get_default(step_args, ())
 
 class OptimizationSolver(Solver):
     """
@@ -147,7 +140,7 @@ class EigenvalueSolver(Solver):
         Solver.__init__(self, conf=conf, mtx_a=mtx_a, mtx_b=mtx_b,
                         n_eigs=n_eigs, eigenvectors=eigenvectors,
                         status=status)
-                         
+
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
         raise ValueError('called an abstract EigenvalueSolver instance!')

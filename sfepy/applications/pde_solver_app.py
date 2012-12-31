@@ -1,12 +1,10 @@
 import os
-import numpy as nm
 
 from sfepy.base.base import output, dict_to_struct, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 import sfepy.base.ioutils as io
 from sfepy.fem import ProblemDefinition
 from sfepy.fem.meshio import MeshIO
-from sfepy.fem.mass_operator import MassOperator
 from application import Application
 
 def solve_pde(conf, options=None, nls_status=None, **app_options):
@@ -76,176 +74,6 @@ def save_only(conf, save_names, problem=None):
 
     if save_names.ebc_nodes is not None:
         problem.save_ebc(save_names.ebc_nodes, force=True)
-
-def solve_stationary(problem, save_results=True, ts=None,
-                     post_process_hook=None,
-                     nls_status=None):
-    """
-    Solve a stationary problem.
-    """
-    if ts is None:
-        try:
-            ts = problem.get_time_solver().ts
-        except ValueError:
-            pass
-
-    problem.time_update(ts)
-    state = problem.solve(nls_status=nls_status)
-
-    if save_results:
-        problem.save_state(problem.get_output_name(), state,
-                           post_process_hook=post_process_hook,
-                           file_per_var=None)
-
-    return state
-
-def prepare_matrix(problem, state):
-    """
-    Pre-assemble tangent system matrix.
-    """
-    problem.update_materials()
-
-    ev = problem.get_evaluator()
-    try:
-        mtx = ev.eval_tangent_matrix(state(), is_full=True)
-
-    except ValueError:
-        output('matrix evaluation failed, giving up...')
-        raise
-
-    return mtx
-
-def prepare_save_data(ts, conf):
-    try:
-        save_steps = conf.options.save_steps
-    except:
-        save_steps = -1
-
-    if save_steps == -1:
-        save_steps = ts.n_step
-
-    is_save = nm.linspace(0, ts.n_step - 1, save_steps).astype(nm.int32)
-    is_save = nm.unique(is_save)
-
-    return ts.suffix, is_save
-
-def make_implicit_step(ts, state0, problem, nls_status=None):
-    problem.time_update(ts)
-
-    if ts.step == 0:
-        state0.apply_ebc()
-        state = state0.copy(deep=True)
-
-        if not ts.is_quasistatic:
-            problem.init_time(ts)
-
-            ev = problem.get_evaluator()
-            try:
-                vec_r = ev.eval_residual(state(), is_full=True)
-            except ValueError:
-                output('initial residual evaluation failed, giving up...')
-                raise
-            else:
-                err = nm.linalg.norm(vec_r)
-                output('initial residual: %e' % err)
-
-        if problem.is_linear():
-            mtx = prepare_matrix(problem, state)
-
-        else:
-            mtx = None
-
-        # Initialize solvers (and possibly presolve the matrix).
-        presolve = mtx is not None
-        problem.init_solvers(nls_status=nls_status, mtx=mtx, presolve=presolve)
-
-        # Initialize variables with history.
-        state0.init_history()
-        if ts.is_quasistatic:
-            # Ordinary solve.
-            state = problem.solve(state0=state0)
-
-    else:
-        if (ts.step == 1) and ts.is_quasistatic and problem.is_linear():
-            mtx = prepare_matrix(problem, state0)
-            problem.init_solvers(nls_status=nls_status, mtx=mtx)
-
-        state = problem.solve(state0=state0)
-
-    return state
-
-def make_explicit_step(ts, state0, problem, mass, nls_status=None):
-    problem.time_update(ts)
-
-    if ts.step == 0:
-        state0.apply_ebc()
-        state = state0.copy(deep=True)
-
-        problem.init_time(ts)
-
-        # Initialize variables with history.
-        state0.init_history()
-
-    ev = problem.get_evaluator()
-    try:
-        vec_r = ev.eval_residual(state0(), is_full=True)
-    except ValueError:
-        output('residual evaluation failed, giving up...')
-        raise
-    else:
-        err = nm.linalg.norm(vec_r)
-        output('residual: %e' % err)
-
-    if ts.step > 0:
-        variables = problem.get_variables()
-        vec_rf = variables.make_full_vec(vec_r, force_value=0.0)
-
-        rhs = -ts.dt * vec_rf + mass.action(state0())
-
-        vec = mass.inverse_action(rhs)
-
-        state = state0.copy(preserve_caches=True)
-        state.set_full(vec)
-        state.apply_ebc()
-
-    return state
-
-def solve_evolutionary(problem, time_solver=None,
-                       save_results=True, return_history=False,
-                       step_hook=None, post_process_hook=None,
-                       nls_status=None):
-    """
-    Solve an evolutionary problem.
-
-    TODO:  return_history
-    """
-    if time_solver is None:
-        time_solver = problem.get_time_solver(step_fun=make_implicit_step,
-                                              step_args=(problem, nls_status))
-
-    suffix, is_save = prepare_save_data(time_solver.ts, problem.conf)
-
-    state0 = problem.create_state()
-    problem.setup_ic()
-    state0.apply_ic()
-
-    ii = 0
-    for ts, state in time_solver(state0):
-
-        if step_hook is not None:
-            step_hook(problem, ts, state)
-
-        if save_results and (is_save[ii] == ts.step):
-            filename = problem.get_output_name(suffix=suffix % ts.step)
-            problem.save_state(filename, state,
-                               post_process_hook=post_process_hook,
-                               file_per_var=None,
-                               ts=ts)
-            ii += 1
-
-        problem.advance(ts)
-
-    return state
 
 def assign_standard_hooks(obj, get, conf):
     """
@@ -377,28 +205,12 @@ class PDESolverApp(Application):
         if options.solve_not:
             return None, None, None
 
-        if hasattr(self.conf.options, 'ts'):
-            time_solver = problem.get_time_solver()
-            if time_solver.name == 'ts.simple': # Implicit time stepping.
-                time_solver.set_step_fun(make_implicit_step,
-                                         (problem, nls_status))
+        time_solver = problem.get_time_solver()
 
-            else: # Explicit time stepping.
-                mass = MassOperator(problem, time_solver.conf)
-
-                time_solver.set_step_fun(make_explicit_step,
-                                         (problem, mass, nls_status))
-
-            state = solve_evolutionary(problem, time_solver,
-                                       save_results=opts.save_results,
-                                       step_hook=self.step_hook,
-                                       post_process_hook=self.post_process_hook)
-
-        else: # Stationary problem.
-            state = solve_stationary(problem,
-                                     save_results=opts.save_results,
-                                     post_process_hook=self.post_process_hook,
-                                     nls_status=nls_status)
+        state = time_solver(save_results=opts.save_results,
+                            step_hook=self.step_hook,
+                            post_process_hook=self.post_process_hook,
+                            nls_status=nls_status)
 
         if self.post_process_hook_final is not None: # User postprocessing.
             self.post_process_hook_final(problem, state)

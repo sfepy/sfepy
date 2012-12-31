@@ -410,8 +410,12 @@ class ProblemDefinition(Struct):
             return conf
 
         self.ts_conf = _get_solver_conf('ts')
+        if self.ts_conf is None:
+            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
+
         self.nls_conf = _get_solver_conf('nls')
         self.ls_conf = _get_solver_conf('ls')
+
         info = 'using solvers:'
         if self.ts_conf:
             info += '\n                ts: %s' % self.ts_conf.name
@@ -1220,7 +1224,7 @@ class ProblemDefinition(Struct):
         """
         ts_conf = get_default(ts_conf, self.ts_conf,
                               'you must set time-stepping solver!')
-        ts_solver = Solver.any_from_conf(ts_conf, **kwargs)
+        ts_solver = Solver.any_from_conf(ts_conf, problem=self, **kwargs)
         self.ts = ts_solver.ts
 
         return ts_solver
