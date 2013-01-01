@@ -21,9 +21,13 @@ from linear_elastic import \
      filename_mesh, materials, regions, fields, ebcs, \
      integrals, solvers
 
+def print_times(problem, state):
+    print nm.array(problem.ts.times)
+
 options = {
     'ts' : 'ts',
     'save_steps' : -1,
+    'post_process_hook_final' : print_times,
 }
 
 variables = {
@@ -41,10 +45,6 @@ def ebc_sin(ts, coors, **kwargs):
     val = 0.01 * nm.sin(2.0*nm.pi*ts.nt)
     return nm.tile(val, (coors.shape[0],))
 
-functions = {
-    'ebc_sin' : (ebc_sin,),
-}
-
 equations = {
     'balance_of_forces in time' :
     """dw_volume_dot.i1.Omega( solid.c, v, du/dt )
@@ -52,17 +52,31 @@ equations = {
 }
 
 solvers.update({
-    'ts' : ('ts.simple',
-            {'t0' : 0.0,
-             't1' : 1.0,
-             'dt' : None,
-             'n_step' : 101
-             }),
+    'ts' : ('ts.adaptive', {
+        't0' : 0.0,
+        't1' : 1.0,
+        'dt' : None,
+        'n_step' : 101,
+
+        'adapt_fun' : 'adapt_time_step',
+    }),
 })
+
+def adapt_time_step(ts, status, adt, problem):
+    if ts.time > 0.5:
+        ts.set_time_step(0.1)
+
+    return True
 
 # Pre-assemble and factorize the matrix prior to time-stepping.
 newton = solvers['newton']
-newton[1].update({'problem' : 'linear'})
+newton[1].update({'problem' : 'nonlinear'}) # Change of time step changes
+                                            # matrix!
 
 ls = solvers['ls']
 ls[1].update({'presolve' : True})
+
+functions = {
+    'ebc_sin' : (ebc_sin,),
+    'adapt_time_step' : (adapt_time_step,),
+}
