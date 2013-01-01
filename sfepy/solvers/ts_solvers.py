@@ -3,10 +3,10 @@ Time stepping solvers.
 """
 import numpy as nm
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import output, Struct, IndexedStruct, basestr
 from sfepy.solvers.solvers import make_get_conf, TimeSteppingSolver
 from sfepy.fem.mass_operator import MassOperator
-from sfepy.solvers.ts import TimeStepper
+from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
 class StationarySolver(TimeSteppingSolver):
     """
@@ -170,6 +170,78 @@ def make_explicit_step(ts, state0, problem, mass, nls_status=None):
 
     return state
 
+def get_min_dt(adt):
+    red = adt.red
+    while red >= adt.red_max:
+        red *= adt.red_factor
+
+    dt = adt.dt0 * red
+
+    return dt
+
+def adapt_time_step(ts, status, adt, problem=None):
+    """
+    Adapt the time step of `ts` according to the exit status of the
+    nonlinear solver.
+
+    The time step dt is reduced, if the nonlinear solver did not converge. If it
+    converged in less then a specified number of iterations for several time
+    steps, the time step is increased. This is governed by the following
+    parameters:
+
+    - red_factor : time step reduction factor
+    - red_max : maximum time step reduction factor
+    - inc_factor : time step increase factor
+    - inc_on_iter : increase time step if the nonlinear solver converged in
+      less than this amount of iterations...
+    - inc_wait : ...for this number of consecutive time steps
+
+    Parameters
+    ----------
+    ts : VariableTimeStepper instance
+        The time stepper.
+    status : IndexedStruct instance
+        The nonlinear solver exit status.
+    adt : Struct instance
+        The adaptivity parameters of the time solver:
+    problem : ProblemDefinition instance, optional
+        This canbe used in user-defined adaptivity functions. Not used here.
+
+    Returns
+    -------
+    is_break : bool
+        If True, the adaptivity loop should stop.
+    """
+    is_break = False
+
+    if status.condition == 0:
+        if status.n_iter <= adt.inc_on_iter:
+            adt.wait += 1
+
+            if adt.wait > adt.inc_wait:
+                if adt.red < 1.0:
+                    adt.red = adt.red * adt.inc_factor
+                    ts.set_time_step(adt.dt0 * adt.red)
+                    output('+++++ new time step: %e +++++' % ts.dt)
+                adt.wait = 0
+
+        else:
+            adt.wait = 0
+
+        is_break = True
+
+    else:
+        adt.red = adt.red * adt.red_factor
+        if adt.red < adt.red_max:
+            is_break = True
+
+        else:
+            ts.set_time_step(adt.dt0 * adt.red)
+            output('----- new time step: %e -----' % ts.dt)
+            adt.wait = 0
+
+    return is_break
+
 class SimpleTimeSteppingSolver(TimeSteppingSolver):
     """
     Implicit time stepping solver with a fixed time step.
@@ -273,5 +345,101 @@ class ExplicitTimeSteppingSolver(SimpleTimeSteppingSolver):
         """
         state = make_explicit_step(ts, state0, self.problem, self.mass,
                                    nls_status=nls_status)
+
+        return state
+
+class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
+    """
+    Implicit time stepping solver with an adaptive time step.
+
+    Either the built-in or user supplied function can be used to adapt the time
+    step.
+    """
+    name = 'ts.adaptive'
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Process configuration options.
+        """
+        get = make_get_conf(conf, kwargs)
+        common = SimpleTimeSteppingSolver.process_conf(conf, kwargs)
+
+        adt = Struct(red_factor=get('dt_red_factor', 0.2),
+                     red_max=get('dt_red_max', 1e-3),
+                     inc_factor=get('dt_inc_factor', 1.25),
+                     inc_on_iter=get('dt_inc_on_iter', 4),
+                     inc_wait=get('dt_inc_wait', 5),
+                     red=1.0, wait=0, dt0=0.0)
+
+        return Struct(adapt_fun=get('adapt_fun', adapt_time_step),
+                      adt=adt) + common
+
+    def __init__(self, conf, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, **kwargs)
+
+        self.ts = VariableTimeStepper.from_conf(self.conf)
+
+        self.adt = adt = self.conf.adt
+        adt.dt0 = self.ts.get_default_time_step()
+        self.ts.set_n_digit_from_min_dt(get_min_dt(adt))
+
+        self.format = '====== time %e (dt %e, wait %d, step %d of %d) ====='
+
+        if isinstance(self.conf.adapt_fun, basestr):
+            self.adapt_time_step = self.problem.functions[self.conf.adapt_fun]
+
+        else:
+            self.adapt_time_step = self.conf.adapt_fun
+
+    def __call__(self, state0=None, save_results=True, step_hook=None,
+                 post_process_hook=None, nls_status=None):
+        """
+        Solve the time-dependent problem.
+        """
+        problem = self.problem
+        ts = self.ts
+
+        if state0 is None:
+            state0 = get_initial_state(problem)
+
+        ii = 0
+        for step, time in ts:
+            output(self.format % (time, ts.dt, self.adt.wait,
+                                  step + 1, ts.n_step))
+
+            state = self.solve_step(ts, state0, nls_status=nls_status)
+            state0 = state.copy(deep=True)
+
+            if step_hook is not None:
+                step_hook(problem, ts, state)
+
+            if save_results:
+                filename = problem.get_output_name(suffix=ts.suffix % ts.step)
+                problem.save_state(filename, state,
+                                   post_process_hook=post_process_hook,
+                                   file_per_var=None,
+                                   ts=ts)
+                ii += 1
+
+            problem.advance(ts)
+
+        return state
+
+    def solve_step(self, ts, state0, nls_status=None):
+        """
+        Solve a single time step.
+        """
+        status = IndexedStruct(n_iter=0, condition=0)
+        while 1:
+            state = make_implicit_step(ts, state0, self.problem,
+                                       nls_status=status)
+
+            is_break = self.adapt_time_step(ts, status, self.adt, self.problem)
+            if is_break:
+                break
+
+        if nls_status is not None:
+            nls_status.update(status)
 
         return state

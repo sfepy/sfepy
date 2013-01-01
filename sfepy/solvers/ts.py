@@ -102,6 +102,12 @@ class VariableTimeStepper(TimeStepper):
     Time stepper class with a variable time step.
     """
 
+    @staticmethod
+    def from_conf(conf):
+        return VariableTimeStepper(conf.t0, conf.t1, dt=conf.dt,
+                                   n_step=conf.n_step,
+                                   is_quasistatic=conf.quasistatic)
+
     def set_from_data(self, t0, t1, dt=None, n_step=None, step=None):
         self.t0, self.t1 = t0, t1
 
@@ -123,19 +129,22 @@ class VariableTimeStepper(TimeStepper):
 
         self.set_step(step)
 
+    def set_from_ts(self, ts, step=None):
+        self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step0, step=0)
+
+    def set_n_digit_from_min_dt(self, dt):
+        n_step = self._get_n_step(self.t0, self.t1, dt)
+        self.n_digit, self.format, self.suffix = get_print_info(n_step)
+
     def set_step(self, step=0, nt=0.0):
-        self.dts = []
+        if step > 0:
+            raise ValueError('cannot set step > 0 in VariableTimeStepper!')
+
         self.step = 0
+        self.nt = 0.0
+        self.dts = []
+        self.times = [self.t0]
         self.n_step = 1
-
-        if step is None:
-            self.times = [self.t0 + self.dt0 * nt]
-            self.nt = nt
-
-        else:
-            nt = float(step) / (self.n_step0 - 1)
-            self.times = [self.t0 + self.dt0 * nt]
-            self.nt = nt
 
     def get_default_time_step(self):
         return self.dt0
@@ -146,14 +155,17 @@ class VariableTimeStepper(TimeStepper):
     def __iter__(self):
         """
         ts.step, ts.time is consistent with step, time returned here
-        ts.nt is normalized time in [0, 1]
+        ts.nt is normalized time in [0, 1].
         """
         self.set_step(0)
 
-        while self.nt < 1.0:
+        while 1:
             self.time = self.times[self.step]
 
             yield self.step, self.time
+
+            if self.nt >= 1.0:
+                break
 
             self.step += 1
             self.time += self.dt
