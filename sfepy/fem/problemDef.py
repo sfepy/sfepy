@@ -482,7 +482,7 @@ class ProblemDefinition(Struct):
 
     def update_time_stepper(self, ts):
         if ts is not None:
-            self.ts.set_from_ts(ts)
+            self.ts = ts
 
     def update_materials(self, ts=None, mode='normal'):
         """
