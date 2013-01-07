@@ -2,7 +2,7 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from homogen import HomogenizationApp
+from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
 import tables as pt
 from sfepy.fem.meshio import HDF5MeshIO
