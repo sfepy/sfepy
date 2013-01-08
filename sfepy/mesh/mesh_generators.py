@@ -7,7 +7,7 @@ from sfepy.linalg import cycle
 from sfepy.fem.mesh import Mesh
 from sfepy.mesh.mesh_tools import elems_q2t
 
-def gen_block_mesh(dims, shape, centre, name='block'):
+def gen_block_mesh(dims, shape, centre, mat_id=0, name='block', verbose=True):
     """
     Generate a 2D or 3D block mesh. The dimension is determined by the
     lenght of the shape argument.
@@ -20,9 +20,12 @@ def gen_block_mesh(dims, shape, centre, name='block'):
         Shape (counts of nodes in x, y, z) of the block mesh.
     centre : array of 2 or 3 floats
         Centre of the block.
-
+    mat_id : int, optional
+        The material id of all elements.
     name : string
         Mesh name.
+    verbose : bool
+        If True, show progress of the mesh generation.
 
     Returns
     -------
@@ -44,7 +47,7 @@ def gen_block_mesh(dims, shape, centre, name='block'):
     n_nod = nm.prod(shape)
     coors = nm.zeros((n_nod, dim), dtype = nm.float64)
 
-    bar = MyBar("       nodes:")
+    bar = MyBar("       nodes:", verbose=verbose)
     bar.init(n_nod)
     for ii, ic in enumerate(cycle(shape)):
         grid[tuple(ic)] = ii
@@ -54,11 +57,12 @@ def gen_block_mesh(dims, shape, centre, name='block'):
     bar.update(ii + 1)
 
     n_el = nm.prod(shape - 1)
-    mat_id = nm.zeros((n_el,), dtype = nm.int32)
+    mat_ids = nm.empty((n_el,), dtype = nm.int32)
+    mat_ids.fill(mat_id)
 
     if (dim == 2):
         conn = nm.zeros((n_el, 4), dtype = nm.int32)
-        bar = MyBar("       elements:")
+        bar = MyBar("       elements:", verbose=verbose)
         bar.init(n_el)
         for ii, (ix, iy) in enumerate(cycle(shape - 1)):
             conn[ii,:] = [grid[ix  ,iy], grid[ix+1,iy  ],
@@ -70,7 +74,7 @@ def gen_block_mesh(dims, shape, centre, name='block'):
 
     else:
         conn = nm.zeros((n_el, 8), dtype = nm.int32)
-        bar = MyBar("       elements:")
+        bar = MyBar("       elements:", verbose=verbose)
         bar.init(n_el)
         for ii, (ix, iy, iz) in enumerate(cycle(shape - 1)):
             conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
@@ -82,12 +86,12 @@ def gen_block_mesh(dims, shape, centre, name='block'):
         bar.update(ii + 1)
         desc = '3_8'
 
-    mesh = Mesh.from_data(name, coors, None, [conn], [mat_id], [desc])
+    mesh = Mesh.from_data(name, coors, None, [conn], [mat_ids], [desc])
     return mesh
 
 def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                       is_open=False, open_angle=0.0, non_uniform=False,
-                      name='cylinder'):
+                      name='cylinder', verbose=True):
     """
     Generate a cylindrical mesh along an axis. Its cross-section can be
     ellipsoidal.
@@ -104,22 +108,20 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         directions) of the cylinder mesh.
     centre : array of 3 floats
         Centre of the cylinder.
-
     force_hollow : boolean
         Force hollow mesh even if inner radii a1 = b1 = 0.
-
     is_open : boolean
         Generate an open cylinder segment.
     open_angle : float
         Opening angle in radians.
-
     non_uniform : boolean
         If True, space the mesh nodes in radial direction so that the element
         volumes are (approximately) the same, making thus the elements towards
         the outer surface thinner.
-
     name : string
         Mesh name.
+    verbose : bool
+        If True, show progress of the mesh generation.
 
     Returns
     -------
@@ -167,7 +169,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         rbs = nm.linspace(b1, b2, nr)
 
     # This is 3D only...
-    bar = MyBar("       nodes:")
+    bar = MyBar("       nodes:", verbose=verbose)
     bar.init(n_nod)
     ii = 0
     for ix in range(nr):
@@ -190,7 +192,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     n_el = (nr - 1) * nnfi * (nl - 1)
     conn = nm.zeros((n_el, 8), dtype=nm.int32)
 
-    bar = MyBar("       elements:")
+    bar = MyBar("       elements:", verbose=verbose)
     bar.init(n_el)
     ii = 0
     for (ix, iy, iz) in cycle([nr-1, nnfi, nl-1]):
