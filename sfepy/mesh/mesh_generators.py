@@ -4,7 +4,7 @@ from sfepy.base.base import output, assert_
 from sfepy.base.progressbar import MyBar
 from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import cycle
-from sfepy.fem.mesh import Mesh
+from sfepy.fem.mesh import find_map, Mesh
 from sfepy.mesh.mesh_tools import elems_q2t
 
 def gen_block_mesh(dims, shape, centre, mat_id=0, name='block', verbose=True):
@@ -223,6 +223,147 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         coors = coors[:,[2,0,1]]
 
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_id], [desc])
+    return mesh
+
+def _spread_along_axis(axis, coors, tangents, grading_fun):
+    """
+    Spread the coordinates along the given axis using the grading function, and
+    the tangents in the other two directions.
+    """
+    oo = list(set([0, 1, 2]).difference([axis]))
+    c0, c1, c2 = coors[:, axis], coors[:, oo[0]], coors[:, oo[1]]
+
+    out = nm.empty_like(coors)
+    out[:, axis] = grading_fun(c0)
+
+    nc = c0 - c0.min()
+
+    mi, ma = c1.min(), c1.max()
+    n1 = 2 * (c1 - mi) / (ma - mi) - 1
+    out[:, oo[0]] = c1 + n1 * nc * tangents[oo[0]]
+
+    mi, ma = c2.min(), c2.max()
+    n2 = 2 * (c2 - mi) / (ma - mi) - 1
+    out[:, oo[1]] = c2 + n2 * nc * tangents[oo[1]]
+
+    return out
+
+def _get_extension_side(side, grading_fun, mat_id,
+                        b_dims, b_shape, e_dims, e_shape, centre):
+    """
+    Get a mesh extending the given side of a block mesh.
+    """
+    # Pure extension dimensions.
+    pe_dims = 0.5 * (e_dims - b_dims)
+    coff = 0.5 * (b_dims + pe_dims)
+    cc = centre + coff * nm.eye(3)[side]
+
+    if side == 0: # x axis.
+        dims = [pe_dims[0], b_dims[1], b_dims[2]]
+        shape = [e_shape, b_shape[1], b_shape[2]]
+        tangents = [0, pe_dims[1] / pe_dims[0], pe_dims[2] / pe_dims[0]]
+
+    elif side == 1: # y axis.
+        dims = [b_dims[0], pe_dims[1], b_dims[2]]
+        shape = [b_shape[0], e_shape, b_shape[2]]
+        tangents = [pe_dims[0] / pe_dims[1], 0, pe_dims[2] / pe_dims[1]]
+
+    elif side == 2: # z axis.
+        dims = [b_dims[0], b_dims[1], pe_dims[2]]
+        shape = [b_shape[0], b_shape[1], e_shape]
+        tangents = [pe_dims[0] / pe_dims[2], pe_dims[1] / pe_dims[2], 0]
+
+    e_mesh = gen_block_mesh(dims, shape, cc, mat_id=mat_id, verbose=False)
+    e_mesh.coors[:] = _spread_along_axis(side, e_mesh.coors, tangents,
+                                         grading_fun)
+
+    return e_mesh
+
+def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
+                            grading_fun=None, name=None):
+    """
+    Generate a 3D mesh with a central block and (coarse) extending side meshes.
+
+    The resulting mesh is again a block. Each of the components has a different
+    material id.
+
+    Parameters
+    ----------
+    b_dims : array of 3 floats
+        The dimensions of the central block.
+    b_shape : array of 3 ints
+        The shape (counts of nodes in x, y, z) of the central block mesh.
+    e_dims : array of 3 floats
+        The dimensions of the complete block (central block + extensions).
+    e_shape : int
+        The count of nodes of extending blocks in the direction from the
+        central block.
+    centre : array of 3 floats
+        The centre of the mesh.
+    grading_fun : callable, optional
+        A function that can be used to shift nodes in the extension axis
+        directions to allow smooth grading of element sizes from the centre.
+        The grading function must not make edges shorter than the shortest edge
+        of the central block, otherwise the merge check will fail.
+    name : string, optional
+        The mesh name.
+
+    Returns
+    -------
+    mesh : Mesh instance
+    """
+    b_dims = nm.asarray(b_dims, dtype=nm.float64)
+    b_shape = nm.asarray(b_shape, dtype=nm.int32)
+    e_dims = nm.asarray(e_dims, dtype=nm.float64)
+    centre = nm.asarray(centre, dtype=nm.float64)
+
+    def _get_grading(x):
+        return x
+    grading_fun = _get_grading if grading_fun is None else grading_fun
+
+    b_mesh = gen_block_mesh(b_dims, b_shape, centre, mat_id=0, verbose=False)
+
+    # 'x' extension.
+    e_mesh = _get_extension_side(0, grading_fun, 10,
+                                 b_dims, b_shape, e_dims, e_shape, centre)
+    mesh = b_mesh + e_mesh
+
+    # Mirror by 'x'.
+    e_mesh.coors[:, 0] = (2 * centre[0]) - e_mesh.coors[:, 0]
+    e_mesh.mat_ids[0].fill(11)
+    mesh = mesh + e_mesh
+
+    # 'y' extension.
+    e_mesh = _get_extension_side(1, grading_fun, 20,
+                                 b_dims, b_shape, e_dims, e_shape, centre)
+    mesh = mesh + e_mesh
+
+    # Mirror by 'y'.
+    e_mesh.coors[:, 1] = (2 * centre[1]) - e_mesh.coors[:, 1]
+    e_mesh.mat_ids[0].fill(21)
+    mesh = mesh + e_mesh
+
+    # 'z' extension.
+    e_mesh = _get_extension_side(2, grading_fun, 30,
+                                 b_dims, b_shape, e_dims, e_shape, centre)
+    mesh = mesh + e_mesh
+
+    # Mirror by 'z'.
+    e_mesh.coors[:, 2] = (2 * centre[2]) - e_mesh.coors[:, 2]
+    e_mesh.mat_ids[0].fill(31)
+    mesh = mesh + e_mesh
+
+    if name is not None:
+        mesh.name = name
+
+    # Verify that no nodes are closer than the shortest edge of the central
+    # block.
+    eps = 0.99 * (b_dims / (b_shape - 1)).min()
+    cmap = find_map(mesh.coors, nm.zeros((0, 3)), eps=eps, allow_double=True)
+
+    if cmap.size:
+        raise ValueError('Merge of meshes failed! (%d)' % cmap.size)
+
     return mesh
 
 def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
