@@ -533,6 +533,22 @@ class Mesh(Struct):
         """
         return Struct.copy(self, deep=True, name=name)
 
+    def __add__(self, other):
+        """
+        Merge the two meshes, assuming they have the same number and kind of
+        element groups.
+        """
+        cmap = find_map(self.coors, other.coors)
+        aux = merge_mesh(self.coors, self.ngroups, self.conns, self.mat_ids,
+                         other.coors, other.ngroups, other.conns, other.mat_ids,
+                         cmap)
+        coors, ngroups, conns, mat_ids = aux
+
+        mesh = Mesh.from_data(self.name + ' + ' + other.name,
+                              coors, ngroups, conns, mat_ids, self.descs)
+
+        return mesh
+
     def _set_shape_info(self):
         self.n_nod, self.dim = self.coors.shape
         self.n_els = nm.array([conn.shape[0] for conn in self.conns])
