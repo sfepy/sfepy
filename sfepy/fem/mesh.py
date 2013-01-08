@@ -52,9 +52,14 @@ def find_map(x1, x2, eps=1e-8, allow_double=False, join=True):
     else:
         return i1, i2
 
-def merge_mesh(x1, ngroups1, conns1, x2, ngroups2, conns2, cmap, eps=1e-8):
+def merge_mesh(x1, ngroups1, conns1, mat_ids1, x2, ngroups2, conns2, mat_ids2,
+               cmap, eps=1e-8):
     """
     Merge two meshes in common coordinates found in x1, x2.
+
+    Notes
+    -----
+    Assumes the same number and kind of element groups in both meshes!
     """
     n1 = x1.shape[0]
     n2 = x2.shape[0]
@@ -73,11 +78,19 @@ def merge_mesh(x1, ngroups1, conns1, x2, ngroups2, conns2, cmap, eps=1e-8):
     ngroups = nm.r_[ngroups1, ngroups2[i2]]
 
     conns = []
-    for ii in xrange(len(conns1)):
-        conn = nm.vstack((conns1[ii], remap[conns2[ii]]))
+    for ii, conn1 in enumerate(conns1):
+        conn = nm.vstack((conn1, remap[conns2[ii]]))
         conns.append(conn)
 
-    return xx, ngroups, conns
+    mat_ids = None
+    if (mat_ids1 is not None) and (mat_ids2 is not None):
+        mat_ids = []
+
+        for ii, mm1 in enumerate(mat_ids1):
+            mm = nm.concatenate((mm1, mat_ids2[ii]))
+            mat_ids.append(mm)
+
+    return xx, ngroups, conns, mat_ids
 
 def fix_double_nodes(coor, ngroups, conns, eps):
     """
