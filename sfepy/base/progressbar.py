@@ -320,15 +320,18 @@ class ProgressBar(object):
 class MyBar:
     """Encapsulation of a nice progress bar"""
 
-    def __init__(self,text):
+    def __init__(self, text, verbose=True):
         self.text=text
+        self.verbose = verbose
 
     def init(self,max):
-        widgets=[self.text, ' ', Percentage(), ' ', Bar(), ' ', ETA()]
-        self.pbar=ProgressBar(widgets=widgets,maxval=max).start()
+        if self.verbose:
+            widgets=[self.text, ' ', Percentage(), ' ', Bar(), ' ', ETA()]
+            self.pbar=ProgressBar(widgets=widgets,maxval=max).start()
 
     def update(self,i):
-        self.pbar.update(i)
+        if self.verbose:
+            self.pbar.update(i)
 
 def progressbar(text="calculating", maxval=100):
     """
