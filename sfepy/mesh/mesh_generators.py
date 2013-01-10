@@ -4,7 +4,7 @@ from sfepy.base.base import output, assert_
 from sfepy.base.progressbar import MyBar
 from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import cycle
-from sfepy.fem.mesh import find_map, Mesh
+from sfepy.fem.mesh import Mesh
 from sfepy.mesh.mesh_tools import elems_q2t
 
 def gen_block_mesh(dims, shape, centre, mat_id=0, name='block', verbose=True):
@@ -234,9 +234,12 @@ def _spread_along_axis(axis, coors, tangents, grading_fun):
     c0, c1, c2 = coors[:, axis], coors[:, oo[0]], coors[:, oo[1]]
 
     out = nm.empty_like(coors)
-    out[:, axis] = grading_fun(c0)
 
-    nc = c0 - c0.min()
+    mi, ma = c0.min(), c0.max()
+    nc0 = (c0 - mi) / (ma - mi)
+    out[:, axis] = oc0 = grading_fun(nc0) * (ma - mi) + mi
+
+    nc = oc0 - oc0.min()
 
     mi, ma = c1.min(), c1.max()
     n1 = 2 * (c1 - mi) / (ma - mi) - 1
@@ -277,7 +280,7 @@ def _get_extension_side(side, grading_fun, mat_id,
     e_mesh.coors[:] = _spread_along_axis(side, e_mesh.coors, tangents,
                                          grading_fun)
 
-    return e_mesh
+    return e_mesh, shape
 
 def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
                             grading_fun=None, name=None):
@@ -301,10 +304,11 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
     centre : array of 3 floats
         The centre of the mesh.
     grading_fun : callable, optional
-        A function that can be used to shift nodes in the extension axis
-        directions to allow smooth grading of element sizes from the centre.
-        The grading function must not make edges shorter than the shortest edge
-        of the central block, otherwise the merge check will fail.
+        A function of :math:`x \in [0, 1]` that can be used to shift nodes in
+        the extension axis directions to allow smooth grading of element sizes
+        from the centre. The default function is :math:`x**p` with :math:`p`
+        determined so that the element sizes next to the central block have the
+        size of the shortest edge of the central block.
     name : string, optional
         The mesh name.
 
@@ -317,15 +321,22 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
     e_dims = nm.asarray(e_dims, dtype=nm.float64)
     centre = nm.asarray(centre, dtype=nm.float64)
 
-    def _get_grading(x):
-        return x
-    grading_fun = _get_grading if grading_fun is None else grading_fun
+    # Pure extension dimensions.
+    pe_dims = 0.5 * (e_dims - b_dims)
+    # Central block element sizes.
+    dd = (b_dims / (b_shape - 1))
+    # The "first x" going to grading_fun.
+    nc = 1.0 / (e_shape - 1)
+    # Grading power and function.
+    power = nm.log(dd.min() / pe_dims.min()) / nm.log(nc)
+    grading_fun = (lambda x: x**power) if grading_fun is None else grading_fun
 
+    # Central block mesh.
     b_mesh = gen_block_mesh(b_dims, b_shape, centre, mat_id=0, verbose=False)
 
     # 'x' extension.
-    e_mesh = _get_extension_side(0, grading_fun, 10,
-                                 b_dims, b_shape, e_dims, e_shape, centre)
+    e_mesh, xs = _get_extension_side(0, grading_fun, 10,
+                                     b_dims, b_shape, e_dims, e_shape, centre)
     mesh = b_mesh + e_mesh
 
     # Mirror by 'x'.
@@ -334,8 +345,8 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
     mesh = mesh + e_mesh
 
     # 'y' extension.
-    e_mesh = _get_extension_side(1, grading_fun, 20,
-                                 b_dims, b_shape, e_dims, e_shape, centre)
+    e_mesh, ys = _get_extension_side(1, grading_fun, 20,
+                                     b_dims, b_shape, e_dims, e_shape, centre)
     mesh = mesh + e_mesh
 
     # Mirror by 'y'.
@@ -344,8 +355,8 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
     mesh = mesh + e_mesh
 
     # 'z' extension.
-    e_mesh = _get_extension_side(2, grading_fun, 30,
-                                 b_dims, b_shape, e_dims, e_shape, centre)
+    e_mesh, zs = _get_extension_side(2, grading_fun, 30,
+                                     b_dims, b_shape, e_dims, e_shape, centre)
     mesh = mesh + e_mesh
 
     # Mirror by 'z'.
@@ -356,13 +367,13 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
     if name is not None:
         mesh.name = name
 
-    # Verify that no nodes are closer than the shortest edge of the central
-    # block.
-    eps = 0.99 * (b_dims / (b_shape - 1)).min()
-    cmap = find_map(mesh.coors, nm.zeros((0, 3)), eps=eps, allow_double=True)
-
-    if cmap.size:
-        raise ValueError('Merge of meshes failed! (%d)' % cmap.size)
+    # Verify merging by checking the number of nodes.
+    n_nod = (nm.prod(nm.maximum(b_shape - 2, 0)) + 2 * nm.prod(xs)
+             + 2 * (max(ys[0] - 2, 0) * ys[1] * ys[2])
+             + 2 * (max(zs[0] - 2, 0) * max(zs[1] - 2, 0) * zs[2]))
+    if n_nod != mesh.n_nod:
+        raise ValueError('Merge of meshes failed! (%d == %d)'
+                         % (n_nod, mesh.n_nod))
 
     return mesh
 
