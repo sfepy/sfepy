@@ -363,9 +363,8 @@ class ProblemConf( Struct ):
             return string
 
         parser = create_bnf()
-
         out = {}
-        for r in parser.parseString(string):
+        for r in parser.parseString(string, parseAll=True):
           out.update(r)
 
         return out
