@@ -192,6 +192,11 @@ def try_imports(imports, fail_msg=None):
 
     return locals()
 
+def python_shell():
+    import code
+    frame=sys._getframe(1)
+    code.interact(local=frame.f_locals)
+
 def assert_(condition, msg='assertion failed!'):
     if not condition:
         raise ValueError(msg)
