@@ -245,8 +245,8 @@ def dict_from_string(string):
     parser = create_bnf()
 
     out = {}
-    for r in parser.parseString(string):
-      out.update(r)
+    for r in parser.parseString(string, parseAll=True):
+        out.update(r)
 
     return out
 
