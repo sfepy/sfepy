@@ -164,9 +164,6 @@ class RadialVector(object):
         values = self._get_values_from_object(vector)
         return RadialVector(self.mesh, self.values / values)
 
-    def __call__(self, r):
-        return self.mesh.interpolate(self.values, r)
-
     def __getitem__(self, r):
         return self.values[r]
 
