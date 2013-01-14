@@ -6,36 +6,10 @@ from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        delimitedList, nums, alphas, alphas8bit, alphanums,
                        Keyword)
 
-(lparen, rparen, lbrack, rbrack,
- lbrace, rbrace, colon) = map(Suppress, '()[]{}:')
-
-integer = Combine(Optional(oneOf('+ -')) + Word(nums)).setName('integer')
-cvt_int = lambda toks: int(toks[0])
-integer.setParseAction(cvt_int)
-
-boolean = Keyword('False', caseless=True)
-cvt_bool =  lambda toks: toks[0].lower == 'true'
-boolean.setParseAction(cvt_bool)
-
-none = Keyword('None', caseless=True)
-cvt_none =  lambda toks: [None]
-none.setParseAction(cvt_none)
-
-real = Combine(Optional(oneOf('+ -'))+ Word(nums)
-               + '.' + Optional(Word(nums))
-               + Optional('e' + Optional(oneOf('+ -'))
-                          + Word(nums))).setName('real')
-cvt_real = lambda toks: float(toks[0])
-real.setParseAction(cvt_real)
-
-array_index = Word(nums) + Optional(colon + integer + Optional(colon + integer))
-cvt_array_index = lambda toks: int(toks[0]) if len(toks) == 1 else slice(*toks)
-array_index.setParseAction(cvt_array_index)
-
-word_free = Word(alphas8bit + '_-/.+**' + alphanums)
-word_strict = Word(alphas8bit + alphas, alphas8bit + alphanums + '_' )
-
 def create_bnf(allow_tuple=False, free_word=False):
+    word_free = Word(alphas8bit + '_-/.+**' + alphanums)
+    word_strict = Word(alphas8bit + alphas, alphas8bit + alphanums + '_' )
+
     word = word_free if free_word else word_strict
     defs = standard_structs(word)
 
@@ -50,9 +24,34 @@ def list_of(element, *elements):
     lst = delimitedList(element)
     return lst + Optional(Suppress(','))
 
-def standard_structs(word=None):
-    if word is None:
-       word = strict_word
+def standard_structs(word):
+    (lparen, rparen, lbrack, rbrack,
+     lbrace, rbrace, colon) = map(Suppress, '()[]{}:')
+
+    integer = Combine(Optional(oneOf('+ -')) + Word(nums)).setName('integer')
+    cvt_int = lambda toks: int(toks[0])
+    integer.setParseAction(cvt_int)
+
+    boolean = Keyword('False', caseless=True)
+    cvt_bool =  lambda toks: toks[0].lower == 'true'
+    boolean.setParseAction(cvt_bool)
+
+    none = Keyword('None', caseless=True)
+    cvt_none =  lambda toks: [None]
+    none.setParseAction(cvt_none)
+
+    real = Combine(Optional(oneOf('+ -'))+ Word(nums)
+                   + '.' + Optional(Word(nums))
+                   + Optional('e' + Optional(oneOf('+ -'))
+                              + Word(nums))).setName('real')
+    cvt_real = lambda toks: float(toks[0])
+    real.setParseAction(cvt_real)
+
+    array_index = Word(nums) + Optional(colon + integer
+                                        + Optional(colon + integer))
+    cvt_array_index = lambda toks: int(toks[0]) if len(toks) == 1 \
+                      else slice(*toks)
+    array_index.setParseAction(cvt_array_index)
 
     tuple_str = Forward()
     list_str = Forward()
