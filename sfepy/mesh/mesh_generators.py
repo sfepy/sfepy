@@ -98,8 +98,6 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
     Parameters
     ----------
-    axis: one of 'x', 'y', 'z'
-        The axis of the cylinder.
     dims : array of 5 floats
         Dimensions of the cylinder: inner surface semi-axes a1, b1, outer
         surface semi-axes a2, b2, length.
@@ -108,6 +106,8 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         directions) of the cylinder mesh.
     centre : array of 3 floats
         Centre of the cylinder.
+    axis: one of 'x', 'y', 'z'
+        The axis of the cylinder.
     force_hollow : boolean
         Force hollow mesh even if inner radii a1 = b1 = 0.
     is_open : boolean
@@ -186,7 +186,6 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                     if iy > 0:
                         grid[ix,iy,iz] = grid[ix,0,iz]
                         ii -= 1
-    print
     assert_(ii == n_nod)
 
     n_el = (nr - 1) * nnfi * (nl - 1)
@@ -211,7 +210,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
         if not (ii % 100):
             bar.update(ii)
-    print
+
     mat_id = nm.zeros((n_el,), dtype = nm.int32)
     desc = '3_8'
 
