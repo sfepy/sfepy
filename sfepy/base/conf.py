@@ -307,17 +307,16 @@ class ProblemConf( Struct ):
     def from_options(options, filename=None, required=None, other=None,
                           verbose=True,  setup=True):
         define_dict = ProblemConf.dict_from_string(options.conf)
-        if options.app_options:
-            if not 'options' in define_dict:
-                define_dict['options'] = {}
+        if not 'options' in define_dict:
+            define_dict['options'] = {}
 
+        if options.app_options:
             override_options = ProblemConf.dict_from_string(options.app_options)
             define_dict['options'].update(override_options)
 
         obj = ProblemConf(define_dict, filename=filename, \
                           required=required, other=other, verbose=verbose, \
                           setup=setup)
-        
         return obj
     
 
