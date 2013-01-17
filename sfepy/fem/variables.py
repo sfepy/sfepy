@@ -149,15 +149,6 @@ class Variables( Container ):
                 self.ordered_virtual[ii] = var.dual_var_name
                 ii += 1
 
-    ##
-    # 26.07.2007, c
-    def get_names( self, kind = None ):
-        if kind is None:
-            names = [var.name for var in self]
-        else:
-            names = [var.name for var in self if var.is_kind( kind )]
-        return names
-
     def has_virtuals(self):
         return len(self.virtual) > 0
 
@@ -292,27 +283,6 @@ class Variables( Container ):
             if ics is None: continue
 
             var.setup_initial_conditions(ics, self.di, functions)
-
-    ##
-    # c: 09.01.2008, r: 09.01.2008
-    def get_nodes_of_global_dofs( self, igdofs ):
-        """not stripped..."""
-        di = self.di
-        
-        nods = nm.empty( (0,), dtype = nm.int32 )
-        for ii in self.state:
-            var = self[ii]
-            indx = di.indx[var.name]
-            igdof = igdofs[(igdofs >= indx.start) & (igdofs < indx.stop)]
-            ivdof = igdof - indx.start
-            inod = ivdof / var.n_components
-            nods = nm.concatenate( (nods, inod) )
-##             print var.name, indx
-##             print igdof
-##             print ivdof
-##             print inod
-##             pause()
-        return nods
 
     def setup_adof_conns( self ):
         """Translate dofs to active dofs.
@@ -845,12 +815,6 @@ class Variable( Struct ):
     def is_kind( self, kind ):
         return eval( 'self.is_%s()' % kind )
 
-    ##
-    # 26.07.2006, c
-    def is_non_state_field( self ):
-        return (is_field in self.flags)\
-               and not (self.is_state() or self.is_virtual())
-
     def is_real( self ):
         return self.dtype in real_types
 
@@ -1256,30 +1220,6 @@ class FieldVariable(Variable):
                 self.adof_conns[akey] = create_adof_conn(eq, dc, indx)
 
         adof_conns.update(self.adof_conns)
-
-    def get_global_node_tab(self, dc_type, ig, is_trace=False):
-
-        if self.n_components == 1:
-
-            if not is_trace:
-                region_name = dc_type.region_name
-                aig = ig
-
-            else:
-                aux = self.field.domain.regions[dc_type.region_name]
-                region, _, ig_map = aux.get_mirror_region()
-                region_name = region.name
-                aig = ig_map[ig]
-
-            key = (self.field.name, self.n_components, region_name,
-                   dc_type.type, aig)
-            dc = self.field.dof_conns[key]
-            inod = self.field.get_vertices()
-            nodtab = inod[dc];
-        else:
-            raise NotImplementedError
-
-        return nodtab
 
     def get_dof_conn(self, dc_type, ig, active=False, is_trace=False):
         """Get active dof connectivity of a variable.
