@@ -47,7 +47,7 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
             eigenmomenta[ii, :] = 0.0
 
         else:
-            var.data_from_any(vec_phi.copy())
+            var.set_data(vec_phi.copy())
 
             val = eval_equations(equations, variables)
 

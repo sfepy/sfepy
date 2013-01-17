@@ -75,7 +75,7 @@ def do_interpolation(m2, m1, data, field_name, force=False):
     else:
         coors = u2.field.get_coor()
         vals = u1.evaluate_at(coors, close_limit=0.5)
-        u2.data_from_any(vals)
+        u2.set_data(vals)
 
     return u1, u2
 
