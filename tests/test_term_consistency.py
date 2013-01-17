@@ -116,7 +116,7 @@ class Test(TestCommon):
                 var = variables[var_name]
                 n_dof = var.field.n_nod * var.field.shape[0]
                 aux = nm.arange(n_dof, dtype=nm.float64)
-                var.data_from_data(aux)
+                var.set_data(aux)
 
             if prefix == 'd':
                 val1 = pb.evaluate(term1, var_dict=variables.as_dict())
@@ -155,7 +155,7 @@ class Test(TestCommon):
 
         vec = nm.arange(var.n_dof, dtype=var.dtype)
 
-        var.data_from_any(vec)
+        var.set_data(vec)
 
         val1 = problem.evaluate('dw_diffusion.i1.Omega( m2.K, us, us )',
                                 mode='eval', us=var)
@@ -207,7 +207,7 @@ class Test(TestCommon):
         us = problem.get_variables()['us']
         vec = nm.empty(us.n_dof, dtype=us.dtype)
         vec[:] = 1.0
-        us.data_from_any(vec)
+        us.set_data(vec)
 
         expr = 'ev_surface_integrate.isurf.Left( us )'
         val = problem.evaluate(expr, us=us)
@@ -217,7 +217,7 @@ class Test(TestCommon):
 
         ps1 = FieldVariable('ps1', 'parameter', us.get_field(), 1,
                             primary_var_name='(set-to-None)')
-        ps1.data_from_any(vec)
+        ps1.set_data(vec)
 
         expr = 'ev_surface_integrate.isurf.Left( ps1 )'
         val = problem.evaluate(expr, ps1=ps1)
@@ -233,7 +233,7 @@ class Test(TestCommon):
 
         var = problem.create_variables(['us'])['us']
         val = nm.arange(var.n_dof, dtype=var.dtype)
-        var.data_from_any(val)
+        var.set_data(val)
 
         val1 = problem.evaluate('ev_grad.i1.Omega( us )', us=var, mode='el_avg')
         self.report('ev_grad(el_avg): min, max:', val1.min(), val1.max())
@@ -256,7 +256,7 @@ class Test(TestCommon):
 
         var = problem.create_variables(['uv'])['uv']
         val = nm.arange(var.n_dof, dtype=var.dtype)
-        var.data_from_any(val)
+        var.set_data(val)
 
         val1 = problem.evaluate('ev_div.i1.Omega( uv )', uv=var, mode='el_avg')
         self.report('ev_div(el_avg): min, max:', val1.min(), val1.max())

@@ -42,7 +42,7 @@ class Test(TestCommon):
 
         coors = self.field.get_coor()
         vals = nm.sin(2.0 * nm.pi * coors[:,0] * coors[:,1])
-        source.data_from_any(vals)
+        source.set_data(vals)
 
         name = op.join(self.options.out_dir,
                        'test_projection_tri_quad_source.vtk')

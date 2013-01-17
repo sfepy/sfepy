@@ -191,7 +191,7 @@ def main():
             vec.fill(0.0)
             vec[ip] = 1.0
 
-            var.data_from_any(vec)
+            var.set_data(vec)
 
             if options.derivative == 0:
                 out = var.create_output(vec, linearization=lin)

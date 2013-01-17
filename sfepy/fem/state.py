@@ -180,7 +180,7 @@ class State(Struct):
                 raise ValueError('cannot set full DOF vector with LCBCs!')
 
             self.variables.set_state_part(self.vec, vec, var_name)
-            var.data_from_state(self.vec, self.variables.get_indx(var_name))
+            var.set_data(self.vec, self.variables.get_indx(var_name))
 
     def __call__(self, var_name=None):
         """

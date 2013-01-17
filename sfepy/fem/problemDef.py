@@ -1070,13 +1070,13 @@ class ProblemDefinition(Struct):
         of 'u' - let's use all ones.
 
         >>> vec = nm.ones((variables['u'].n_dof,), dtype=nm.float64)
-        >>> variables['u'].data_from_any(vec)
+        >>> variables['u'].set_data(vec)
         >>> vec_qp = eval_equations(equations, variables, mode='qp')
 
         Try another vector:
 
         >>> vec = 3 * nm.ones((variables['u'].n_dof,), dtype=nm.float64)
-        >>> variables['u'].data_from_any(vec)
+        >>> variables['u'].set_data(vec)
         >>> vec_qp = eval_equations(equations, variables, mode='qp')
         """
         from sfepy.fem.equations import get_expression_arg_names
