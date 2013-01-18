@@ -20,6 +20,7 @@ supported_formats = {
     '.h5'   : 'hdf5',
      # Order is important, avs_ucd does not guess -> it is the default.
     '.inp'  : ('abaqus', 'ansys_cdb', 'avs_ucd'),
+    '.dat'  : 'ansys_cdb',
     '.hmascii'  : 'hmascii',
     '.mesh3d'   : 'mesh3d',
     '.bdf'  : 'nastran',
@@ -1765,14 +1766,14 @@ class Mesh3DMeshIO( MeshIO ):
 
 def mesh_from_groups(mesh, ids, coors, ngroups,
                      tris, mat_tris, quads, mat_quads,
-                     tetras, mat_tetras, hexas, mat_hexas):
+                     tetras, mat_tetras, hexas, mat_hexas, remap=None):
     ids = nm.asarray(ids, dtype=nm.int32)
     coors = nm.asarray(coors, dtype=nm.float64)
 
-    n_nod = coors.shape[0]
-
-    remap = nm.zeros((ids.max()+1,), dtype=nm.int32)
-    remap[ids] = nm.arange(n_nod, dtype=nm.int32)
+    if remap is None:
+        n_nod = coors.shape[0]
+        remap = nm.zeros((ids.max()+1,), dtype=nm.int32)
+        remap[ids] = nm.arange(n_nod, dtype=nm.int32)
 
     tris = remap[nm.array(tris, dtype=nm.int32)]
     quads = remap[nm.array(quads, dtype=nm.int32)]
@@ -2442,6 +2443,8 @@ class ANSYSCDBMeshIO( MeshIO ):
         coors = []
         tetras = []
         hexas = []
+        qtetras = []
+        qhexas = []
 
         fd = open(self.filename, 'r')
 
@@ -2462,17 +2465,16 @@ class ANSYSCDBMeshIO( MeshIO ):
                 ii0, ii1 = idx[0]
                 while True:
                     row = fd.readline()
-                    if row[0] == '!':
+                    if (row[0] == '!') or (row[:2] == '-1'):
                         break
                     line = [float(row[i0:i1]) for i0, i1 in idx[ic:]]
                     ids.append(int(row[ii0:ii1]))
                     coors.append(line)
 
             elif (kw == 'eblock'):
-                if len(row) <= 2: # no solid keyword
+                if (len(row) <= 2) or row[2] != 'solid': # no solid keyword
                     continue
 
-                ilast = int(row[3]) - 1
                 fmt = fd.readline()
                 fmt = [fmt.strip()[1:-1]]
                 idx, dtype = self.make_format(fmt)
@@ -2483,7 +2485,7 @@ class ANSYSCDBMeshIO( MeshIO ):
                 ic0 = 11
                 while True:
                     row = fd.readline()
-                    if int(row[ien0:ien1]) == ilast:
+                    if (row[0] == '!') or (row[:2] == '-1'):
                         break
 
                     line = [int(row[imi0:imi1])]
@@ -2494,19 +2496,76 @@ class ANSYSCDBMeshIO( MeshIO ):
                     if n_nod == 4:
                         tetras.append(line)
 
-                    else:
+                    elif n_nod == 8:
                         hexas.append(line)
+
+                    elif n_nod == 10:
+                        row = fd.readline()
+                        line.extend(int(row[i0:i1])
+                                    for i0, i1 in idx[:2])
+                        qtetras.append(line)
+
+                    elif n_nod == 20:
+                        row = fd.readline()
+                        line.extend(int(row[i0:i1])
+                                    for i0, i1 in idx[:12])
+                        qhexas.append(line)
+
+                    else:
+                        raise ValueError('unsupported element type! (%d nodes)'
+                                         % n_nod)
 
         fd.close()
 
+        coors = nm.array(coors, dtype=nm.float64)
+
         tetras = nm.array(tetras, dtype=nm.int32)
+        if len(tetras):
+            mat_ids_tetras = tetras[:, 0]
+            tetras = tetras[:, 1:]
+
+        else:
+            mat_ids_tetras = nm.array([])
+
         hexas = nm.array(hexas, dtype=nm.int32)
+        if len(hexas):
+            mat_ids_hexas = hexas[:, 0]
+            hexas = hexas[:, 1:]
+
+        else:
+            mat_ids_hexas = nm.array([])
+
+        if len(qtetras):
+            qtetras = nm.array(qtetras, dtype=nm.int32)
+            tetras.shape = (max(0, tetras.shape[0]), 4)
+            tetras = nm.r_[tetras, qtetras[:, 1:5]]
+            mat_ids_tetras = nm.r_[mat_ids_tetras, qtetras[:, 0]]
+
+        if len(qhexas):
+            qhexas = nm.array(qhexas, dtype=nm.int32)
+            hexas.shape = (max(0, hexas.shape[0]), 8)
+            hexas = nm.r_[hexas, qhexas[:, 1:9]]
+            mat_ids_hexas = nm.r_[mat_ids_hexas, qhexas[:, 0]]
+
+        if len(qtetras) or len(qhexas):
+            ii = nm.union1d(tetras.ravel(), hexas.ravel())
+            n_nod = len(ii)
+
+            remap = nm.zeros((ii.max()+1,), dtype=nm.int32)
+            remap[ii] = nm.arange(n_nod, dtype=nm.int32)
+
+            ic = nm.searchsorted(ids, ii)
+            coors = coors[ic]
+
+        else:
+            remap = None
+
         ngroups = nm.zeros(len(coors), dtype=nm.int32)
 
         mesh = mesh_from_groups(mesh, ids, coors, ngroups,
                                 [], [], [], [],
-                                tetras[:, 1:], tetras[:, 0],
-                                hexas[:, 1:], hexas[:, 0])
+                                tetras, mat_ids_tetras,
+                                hexas, mat_ids_hexas, remap=remap)
 
         return mesh
 
