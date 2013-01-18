@@ -19,7 +19,7 @@ supported_formats = {
     '.txt'  : 'comsol',
     '.h5'   : 'hdf5',
      # Order is important, avs_ucd does not guess -> it is the default.
-    '.inp'  : ('abaqus', 'avs_ucd'),
+    '.inp'  : ('abaqus', 'ansys_cdb', 'avs_ucd'),
     '.hmascii'  : 'hmascii',
     '.mesh3d'   : 'mesh3d',
     '.bdf'  : 'nastran',
@@ -2385,6 +2385,29 @@ class ANSYSCDBMeshIO( MeshIO ):
     format = 'ansys_cdb'
 
     @staticmethod
+    def guess(filename):
+        fd = open(filename, 'r')
+
+        for ii in xrange(1000):
+            row = fd.readline()
+            if not row: break
+            if len(row) == 0: continue
+
+            row = row.split(',')
+            kw = row[0].lower()
+
+            if (kw == 'nblock'):
+                ok = True
+                break
+
+        else:
+            ok = False
+
+        fd.close()
+
+        return ok
+
+    @staticmethod
     def make_format(format):
         idx = [];
         dtype = [];
@@ -2413,67 +2436,77 @@ class ANSYSCDBMeshIO( MeshIO ):
 
     def read_dimension( self, ret_fd = False ):
         return 3
-    
-    def read(self, mesh, **kwargs):
 
+    def read(self, mesh, **kwargs):
         ids = []
         coors = []
-        elems = []
+        tetras = []
+        hexas = []
 
-        fd = open( self.filename, 'r' )
+        fd = open(self.filename, 'r')
 
         while True:
             row = fd.readline()
             if not row: break
             if len(row) == 0: continue
-            
-            row = row.split(',')
 
-            if (row[0] == 'NBLOCK'):
-                nval = int(row[1])
-                attr = row[2]
-                format = fd.readline()
-                format = format.strip()[1:-1].split(',')
-                idx, dtype = self.make_format(format)
-                
+            row = row.split(',')
+            kw = row[0].lower()
+
+            if (kw == 'nblock'):
+                # Solid keyword -> 3, otherwise 1 is the starting coors index.
+                ic = 3 if  len(row) == 3 else 1
+                fmt = fd.readline()
+                fmt = fmt.strip()[1:-1].split(',')
+                idx, dtype = self.make_format(fmt)
+                ii0, ii1 = idx[0]
                 while True:
                     row = fd.readline()
-                    if row[0] == 'N':
+                    if row[0] == '!':
+                        break
+                    line = [float(row[i0:i1]) for i0, i1 in idx[ic:]]
+                    ids.append(int(row[ii0:ii1]))
+                    coors.append(line)
+
+            elif (kw == 'eblock'):
+                if len(row) <= 2: # no solid keyword
+                    continue
+
+                ilast = int(row[3]) - 1
+                fmt = fd.readline()
+                fmt = [fmt.strip()[1:-1]]
+                idx, dtype = self.make_format(fmt)
+
+                imi0, imi1 = idx[0] # Material id.
+                inn0, inn1 = idx[8] # Number of nodes in line.
+                ien0, ien1 = idx[10] # Element number.
+                ic0 = 11
+                while True:
+                    row = fd.readline()
+                    if int(row[ien0:ien1]) == ilast:
                         break
 
-                    line = []
-                    for ival in range(nval):
-                        db, de = idx[ival]
-                        line.append(row[db:de])
+                    line = [int(row[imi0:imi1])]
+                    n_nod = int(row[inn0:inn1])
 
-                    ids.append(int(line[0]))
-                    coors.append([float( coor ) for coor in line[3:]])
-                    
-            elif (row[0] == 'EBLOCK'):
-                nval = int(row[1])
-                attr = row[2]
-                nel = int(row[3])
-                format = fd.readline()
-                elems = read_array(fd, nel, nval, nm.int32)
+                    line.extend(int(row[i0:i1])
+                                for i0, i1 in idx[ic0 : ic0 + n_nod])
+                    if n_nod == 4:
+                        tetras.append(line)
+
+                    else:
+                        hexas.append(line)
 
         fd.close()
 
-        tetras_idx = nm.where(elems[:,8] == 4)[0]
-        hexas_idx = nm.where(elems[:,8] == 8)[0]
-        el_hexas = elems[hexas_idx,11:]
-        el_tetras = elems[tetras_idx,11:]
-        # hack for stupid export filters
-        if el_hexas[0,-4] == el_hexas[0,-1]:
-            el_tetras = el_hexas[:,[0,1,2,4]]
-            tetras_idx = hexas_idx
-            hexas_idx = []
-            el_hexas = []
+        tetras = nm.array(tetras, dtype=nm.int32)
+        hexas = nm.array(hexas, dtype=nm.int32)
+        ngroups = nm.zeros(len(coors), dtype=nm.int32)
 
-        ngroups = nm.zeros((len(coors),), dtype = nm.int32)
         mesh = mesh_from_groups(mesh, ids, coors, ngroups,
                                 [], [], [], [],
-                                el_tetras, elems[tetras_idx,0],
-                                el_hexas, elems[hexas_idx,0])
+                                tetras[:, 1:], tetras[:, 0],
+                                hexas[:, 1:], hexas[:, 0])
 
         return mesh
 
