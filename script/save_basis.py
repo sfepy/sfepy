@@ -178,6 +178,10 @@ def main():
             ax = pd.plot_mesh(None, mesh.coors, mesh.conns[0], group.gel.edges)
             ax = pd.plot_global_dofs(ax, field.get_coor(), field.aps[0].econn)
             ax = pd.plot_local_dofs(ax, field.get_coor(), field.aps[0].econn)
+            if options.dofs is not None:
+                ax = pd.plot_nodes(ax, field.get_coor(), field.aps[0].econn,
+                                   field.aps[0].interp.poly_spaces['v'].nodes,
+                                   get_dofs(options.dofs, var.n_dof))
             pd.plt.show()
 
         output('dofs: %d' % var.n_dof)
