@@ -17,8 +17,8 @@ ParseException # Needed for importing elsewhere.
 
 op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
            'OA_IntersectN', 'OA_IntersectE']
-eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_NOG',
-              'E_ONIR', 'E_NI', 'E_EI1', 'E_EI2']
+eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_NOG', 'E_ONIR', 'E_NI', 'E_NOSET',
+              'E_EBF', 'E_EOG', 'E_EI1', 'E_EI2', 'E_EOSET']
 kw_codes = ['KW_All', 'KW_Region']
 
 def to_stack(stack):
@@ -112,14 +112,15 @@ def create_bnf(stack):
     element = Literal('element')
     elements = Literal('elements')
     group = Literal('group')
+    _set = Literal('set')
     surface = Literal('surface')
 
-    ident = Word(alphas, alphanums + "_")
+    ident = Word(alphas + '_', alphanums + "_")
 
-    function = Word(alphas, alphanums + '_')
+    function = Word(alphas + '_', alphanums + '_')
     function = Group(function).setParseAction(join_tokens)
 
-    region = Combine(Literal('r.') + Word(alphas, '_' + alphas + nums))
+    region = Combine(Literal('r.') + Word(alphas + '_', '_' + alphas + nums))
     region = Group(Optional(_copy, default='nocopy') + region)
     region.setParseAction(replace('KW_Region', keep=True))
 
@@ -143,7 +144,7 @@ def create_bnf(stack):
         replace('E_EBF', keep=True))
     eog = Group(elements + _of + group + Word(nums)).setParseAction(
         replace('E_EOG', keep=True))
-    nog = Group(nodes + _of + group + (Word(nums) | ident)).setParseAction(
+    nog = Group(nodes + _of + group + Word(nums)).setParseAction(
         replace('E_NOG', keep=True))
     onir = Group(node + _in + region).setParseAction(
         replace_with_region('E_ONIR', 2))
@@ -155,11 +156,15 @@ def create_bnf(stack):
               + inumber + rpar.suppress())
     ei2 = Group(element + delimitedList(etuple)).setParseAction(
         replace('E_EI2', keep=True))
+    noset = Group(nodes + _of + _set + (Word(nums) | ident)).setParseAction(
+        replace('E_NOSET', keep=True))
+    eoset = Group(elements + _of + _set + (Word(nums) | ident)).setParseAction(
+        replace('E_EOSET', keep=True))
 
     region_expression = Forward()
 
     atom1 = (_all | region | ni | onir | nos | nir | nbf
-             | ei1 | ei2 | ebf | eog | nog)
+             | ei1 | ei2 | ebf | eog | nog | noset | eoset)
     atom1.setParseAction(to_stack(stack))
     atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)
