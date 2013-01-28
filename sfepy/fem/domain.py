@@ -103,28 +103,30 @@ def region_leaf(domain, regions, rdef, functions):
             region.set_cells( out )
 
         elif token == 'E_EOG':
-
-            group = int( details[3] )
+            group = int(details[3])
 
             ig = domain.mat_ids_to_i_gs[group]
             group = domain.groups[ig]
-            region.set_from_group( ig, group.vertices, group.shape.n_el )
+            region.set_from_group(ig, group.vertices, group.shape.n_el)
+
+        elif token == 'E_EOSET':
+            raise NotImplementedError('element sets not implemented!')
 
         elif token == 'E_NOG':
-
-            try:
-                group = int(details[3])
-                group_nodes = nm.where(domain.mesh.ngroups == group)[0]
-
-            except ValueError:
-                try:
-                    group_nodes = domain.mesh.nodal_bcs[details[3]]
-
-                except KeyError:
-                    msg = 'undefined nodal group! (%s)' % details[3]
-                    raise ValueError(msg)
+            group = int(details[3])
+            group_nodes = nm.where(domain.mesh.ngroups == group)[0]
 
             region.set_vertices(group_nodes)
+
+        elif token == 'E_NOSET':
+            try:
+                set_nodes = domain.mesh.nodal_bcs[details[3]]
+
+            except KeyError:
+                msg = 'undefined nodal set! (%s)' % details[3]
+                raise ValueError(msg)
+
+            region.set_vertices(set_nodes)
 
         elif token == 'E_ONIR':
             aux = regions[details[3][2:]]
