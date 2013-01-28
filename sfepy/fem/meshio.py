@@ -2445,6 +2445,7 @@ class ANSYSCDBMeshIO( MeshIO ):
         hexas = []
         qtetras = []
         qhexas = []
+        nodal_bcs = {}
 
         fd = open(self.filename, 'r')
 
@@ -2515,6 +2516,16 @@ class ANSYSCDBMeshIO( MeshIO ):
                         raise ValueError('unsupported element type! (%d nodes)'
                                          % n_nod)
 
+            elif kw == 'cmblock':
+                if row[2].lower() != 'node': # Only node sets support.
+                    continue
+
+                n_nod = int(row[3])
+                fd.readline() # Format line not needed.
+
+                nods = read_array(fd, n_nod, 1, nm.int32)
+                nodal_bcs[row[1].strip()] = nods.ravel()
+
         fd.close()
 
         coors = nm.array(coors, dtype=nm.float64)
@@ -2558,7 +2569,9 @@ class ANSYSCDBMeshIO( MeshIO ):
             coors = coors[ic]
 
         else:
-            remap = None
+            n_nod = coors.shape[0]
+            remap = nm.zeros((nm.array(ids).max() + 1,), dtype=nm.int32)
+            remap[ids] = nm.arange(n_nod, dtype=nm.int32)
 
         ngroups = nm.zeros(len(coors), dtype=nm.int32)
 
@@ -2566,6 +2579,10 @@ class ANSYSCDBMeshIO( MeshIO ):
                                 [], [], [], [],
                                 tetras, mat_ids_tetras,
                                 hexas, mat_ids_hexas, remap=remap)
+
+        mesh.nodal_bcs = {}
+        for key, nods in nodal_bcs.iteritems():
+            mesh.nodal_bcs[key] = remap[nods]
 
         return mesh
 
