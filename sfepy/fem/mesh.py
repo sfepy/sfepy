@@ -481,7 +481,8 @@ class Mesh(Struct):
         return mesh
 
     @staticmethod
-    def from_data(name, coors, ngroups, conns, mat_ids, descs, igs=None):
+    def from_data(name, coors, ngroups, conns, mat_ids, descs,
+                  igs=None, nodal_bcs=None):
         """
         Create a mesh from mesh data.
         """
@@ -492,7 +493,8 @@ class Mesh(Struct):
                        ngroups=ngroups,
                        conns=[conns[ig] for ig in igs],
                        mat_ids=[mat_ids[ig] for ig in igs],
-                       descs=[descs[ig] for ig in igs])
+                       descs=[descs[ig] for ig in igs],
+                       nodal_bcs=nodal_bcs)
         mesh._set_shape_info()
         return mesh
 
@@ -510,6 +512,7 @@ class Mesh(Struct):
             If not None, the filename is relative to that directory.
         """
         Struct.__init__(self, name=name, **kwargs)
+        self.nodal_bcs = {}
 
         if filename is None:
             self.io = None
@@ -654,7 +657,8 @@ class Mesh(Struct):
             igs = range(len(self.conns))
 
         aux_mesh = Mesh.from_data(self.name, coors, self.ngroups,
-                                  self.conns, self.mat_ids, self.descs, igs)
+                                  self.conns, self.mat_ids, self.descs,
+                                  igs=igs, nodal_bcs=self.nodal_bcs)
         io.set_float_format(float_format)
         io.write(filename, aux_mesh, out, **kwargs)
 
