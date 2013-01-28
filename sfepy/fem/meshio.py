@@ -1292,8 +1292,16 @@ class HDF5MeshIO(MeshIO):
             mat_ids.append(group.mat_id.read())
             descs.append(group.desc.read())
 
+        node_sets_groups = mesh_group.node_sets
+        nodal_bcs = {}
+        for group in node_sets_groups:
+            key = group.key.read()
+            nods = group.nods.read()
+            nodal_bcs[key] = nods
+
         fd.close()
-        mesh._set_data(coors, ngroups, conns, mat_ids, descs)
+        mesh._set_data(coors, ngroups, conns, mat_ids, descs,
+                       nodal_bcs=nodal_bcs)
 
         return mesh
 
@@ -1323,6 +1331,16 @@ class HDF5MeshIO(MeshIO):
                                'material id')
                 fd.createArray(conn_group, 'desc', mesh.descs[ig],
                                'element Type')
+
+            node_sets_groups = fd.createGroup(mesh_group, 'node_sets',
+                                             'node sets groups')
+            ii = 0
+            for key, nods in mesh.nodal_bcs.iteritems():
+                group = fd.createGroup(node_sets_groups, 'group%d' % ii,
+                                       'node sets group')
+                fd.createArray(group, 'key', key, 'key')
+                fd.createArray(group, 'nods', nods, 'nods')
+                ii += 1
 
             if ts is not None:
                 ts_group = fd.createGroup('/', 'ts', 'time stepper')
