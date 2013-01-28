@@ -780,29 +780,8 @@ class ProblemDefinition(Struct):
         output('...done')
 
     def save_regions(self, filename_trunk, region_names=None):
-        """Save regions as meshes."""
-
-        if region_names is None:
-            region_names = self.domain.regions.get_names()
-
-        output('saving regions...')
-        for name in region_names:
-            region = self.domain.regions[name]
-            output(name)
-            aux = Mesh.from_region(region, self.domain.mesh)
-            aux.write('%s_%s.mesh' % (filename_trunk, region.name),
-                      io='auto')
-        output('...done')
-
-    def save_regions_as_groups(self, filename_trunk, region_names=None):
-        """Save regions in a single mesh but mark them by using different
-        element/node group numbers.
-
-        If regions overlap, the result is undetermined, with exception of the
-        whole domain region, which is marked by group id 0.
-
-        Region masks are also saved as scalar point data for output formats
-        that support this.
+        """
+        Save regions as meshes.
 
         Parameters
         ----------
@@ -811,49 +790,27 @@ class ProblemDefinition(Struct):
         region_names : list, optional
             If given, only the listed regions are saved.
         """
+        filename = '%s.mesh' % filename_trunk
+        self.domain.save_regions(filename, region_names=region_names)
 
-        output('saving regions as groups...')
-        aux = self.domain.mesh.copy()
-        n_ig = c_ig = 0
+    def save_regions_as_groups(self, filename_trunk, region_names=None):
+        """
+        Save regions in a single mesh but mark them by using different
+        element/node group numbers.
 
-        n_nod = self.domain.shape.n_nod
+        See :func:`Domain.save_regions_as_groups()
+        <sfepy.fem.domain.Domain.save_regions_as_groups()>` for more details.
 
-        # The whole domain region should go first.
-        names = get_default(region_names, self.domain.regions.get_names())
-        for name in names:
-            region = self.domain.regions[name]
-            if region.all_vertices.shape[0] == n_nod:
-                names.remove(region.name)
-                names = [region.name] + names
-                break
-
-        out = {}
-        for name in names:
-            region = self.domain.regions[name]
-            output(region.name)
-
-            aux.ngroups[region.all_vertices] = n_ig
-            n_ig += 1
-
-            mask = nm.zeros((n_nod, 1), dtype=nm.float64)
-            mask[region.all_vertices] = 1.0
-            out[name] = Struct(name='region', mode='vertex', data=mask,
-                               var_name=name, dofs=None)
-
-            if region.has_cells():
-                for ig in region.igs:
-                    ii = region.get_cells(ig)
-                    aux.mat_ids[ig][ii] = c_ig
-                    c_ig += 1
-
-        try:
-            aux.write('%s.%s' % (filename_trunk, self.output_format), io='auto',
-                      out=out)
-        except NotImplementedError:
-            # Not all formats support output.
-            pass
-
-        output('...done')
+        Parameters
+        ----------
+        filename_trunk : str
+            The output filename without suffix.
+        region_names : list, optional
+            If given, only the listed regions are saved.
+        """
+        filename = '%s.%s' % (filename_trunk, self.output_format)
+        self.domain.save_regions_as_groups(filename,
+                                           region_names=region_names)
 
     def save_field_meshes(self, filename_trunk):
 
