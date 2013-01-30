@@ -70,3 +70,16 @@ class Test(TestCommon):
         ok = (b == [2, 10]).all()
 
         return ok
+
+    def test_geometry(self):
+        import numpy as nm
+        from sfepy.linalg import get_face_areas
+
+        a1 = get_face_areas([[0, 1, 2, 3]],
+                            [[0, 0], [1, 0], [1, 1], [0, 1]])
+
+        a2 = get_face_areas([[0, 1, 2, 3]],
+                            [[0, 0, 2], [1, 0, 2], [1, 1, 2], [0, 1, 2]])
+        ok = nm.allclose([a1, a2], [1, 1], rtol=0, atol=1e-15)
+
+        return ok

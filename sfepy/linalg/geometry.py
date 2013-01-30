@@ -223,6 +223,48 @@ def get_perpendiculars(vec):
 
     return out
 
+def get_face_areas(faces, coors):
+    """
+    Get areas of planar convex faces in 2D and 3D.
+
+    Parameters
+    ----------
+    faces : array, shape (n, m)
+        The indices of `n` faces with `m` vertices into `coors`.
+    coors : array
+        The coordinates of face vertices.
+
+    Returns
+    -------
+    areas : array
+        The areas of the faces.
+    """
+    faces = nm.asarray(faces)
+    coors = nm.asarray(coors)
+
+    n_v = faces.shape[1]
+
+    if n_v == 3:
+        aux = coors[faces]
+        v1 = aux[:, 1, :] - aux[:, 0, :]
+        v2 = aux[:, 2, :] - aux[:, 0, :]
+        if coors.shape[1] == 3:
+            areas = 0.5 * norm(nm.cross(v1, v2))
+
+        else:
+            areas = 0.5 * nm.abs(nm.cross(v1, v2))
+
+    elif n_v == 4:
+        areas1 = get_face_areas(faces[:, [0, 1, 2]], coors)
+        areas2 = get_face_areas(faces[:, [0, 2, 3]], coors)
+
+        areas = areas1 + areas2
+
+    else:
+        raise ValueError('unsupported faces! (%d vertices)' % n_v)
+
+    return areas
+
 def rotation_matrix2d(angle):
     """
     Construct a 2D (plane) rotation matrix corresponding to `angle`.
