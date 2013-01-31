@@ -822,6 +822,9 @@ class Variable( Struct ):
     def is_complex( self ):
         return self.dtype in complex_types
 
+    def is_finite(self, step=0, derivative=None, dt=None):
+        return nm.isfinite(self(step=step, derivative=derivative, dt=dt)).all()
+
     def get_primary_name(self):
         if self.is_state():
             name = self.name
