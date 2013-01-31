@@ -466,9 +466,24 @@ class Region( Struct ):
                 # Points to fa.facets.
                 self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
 
+        self.delete_zero_faces()
         self.update_shape()
 
         self.is_complete = True
+
+    def delete_zero_faces(self, eps=1e-14):
+        """
+        Delete faces with zero area.
+        """
+        from sfepy.linalg import get_face_areas
+
+        fa = self.domain.fa
+
+        for ig, faces in self.faces.iteritems():
+            fav = fa.facets[faces]
+
+            areas = get_face_areas(fav, self.domain.mesh.coors)
+            self.faces[ig] = faces[areas > eps]
 
     def update_shape(self):
         """
