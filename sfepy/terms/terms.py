@@ -4,7 +4,7 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import (as_float_or_complex, get_default, assert_,
-                             Container, Struct, basestr)
+                             Container, Struct, basestr, goptions)
 from sfepy.base.compat import in1d
 
 # Used for imports in term files.
@@ -1481,6 +1481,12 @@ class Term(Struct):
 
         else:
             out = (vals, iels)
+
+        if goptions['check_term_finiteness']:
+            assert_(nm.isfinite(out[0]).all(),
+                    msg='%+.2e * %s.%d.%s(%s) term values not finite!'
+                    % (self.sign, self.name, self.integral.order,
+                       self.region.name, self.arg_str))
 
         if ret_status:
             out = out + (status,)
