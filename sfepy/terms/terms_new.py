@@ -72,7 +72,7 @@ class NewTerm(Term):
         sh = val_qp.shape
         val = nm.zeros((sh[0], 1, sh[2], sh[3]), dtype=val_qp.dtype)
         if shape_kind == 'volume':
-            chunk = self.region.cells[self.char_fun.ig]
+            chunk = self.region.get_cells(self.char_fun.ig)
             chunk = nm.arange(sh[0], dtype=nm.int32)
             geo.integrate_chunk(val, val_qp, chunk)
 

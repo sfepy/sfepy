@@ -227,7 +227,9 @@ class Approximation( Struct ):
                 conn = self.econn
 
             else:
-                conn = nm.take(self.econn, region.cells[self.ig], axis=0)
+                aux = integration == 'volume'
+                cells = region.get_cells(self.ig, true_cells_only=aux)
+                conn = nm.take(self.econn, cells, axis=0)
 
         return conn
 
@@ -335,7 +337,7 @@ class Approximation( Struct ):
 
             qp = self.get_qp('v', integral)
 
-            iels = region.cells[self.ig]
+            iels = region.get_cells(self.ig)
 
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']

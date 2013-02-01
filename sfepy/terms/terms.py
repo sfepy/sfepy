@@ -157,7 +157,7 @@ class CharacteristicFunction( Struct ):
 
     def __call__(self, chunk_size, shape_in, zero=False, set_shape=True,
                   ret_local_chunk=False, dtype=nm.float64):
-        els = self.region.cells[self.ig]
+        els = self.region.get_cells(self.ig)
         for out, chunk in vector_chunk_generator( els.shape[0], chunk_size,
                                                   shape_in, zero, set_shape,
                                                   dtype ):
@@ -1055,7 +1055,7 @@ class Term(Struct):
         shape_kind = get_shape_kind(self.integration)
         ig = self.char_fun.ig
 
-        cells = self.region.cells[ig]
+        cells = self.region.get_cells(ig, true_cells_only=False)
         if shape_kind == 'surface':
             cells = nm.arange(cells.shape[0], dtype=nm.int32)
 
@@ -1074,7 +1074,7 @@ class Term(Struct):
 
         for ig in igs:
             if self.integration == 'volume':
-                if not len(self.region.cells[ig]): continue
+                if not len(self.region.get_cells(ig)): continue
             self.set_current_group( ig )
             yield ig
 
