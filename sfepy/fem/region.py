@@ -218,10 +218,6 @@ class Region(Struct):
                     aux = nm.sum(mask[conn], 1, dtype=nm.int32)
                     rcells = nm.where(aux == conn.shape[1])[0]
                     self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-                    self.true_cells[ig] = True
-
-                else:
-                    self.true_cells[ig] = False
 
         self.must_update = False
 
@@ -251,7 +247,6 @@ class Region(Struct):
         """
         self.igs = [ig]
         self.cells = {ig : nm.arange(n_cell, dtype=nm.int32)}
-        self.true_cells[ig] = True
         self.vertices = {ig: vertices.copy()}
         self.all_vertices = vertices.copy()
         self.must_update = False
@@ -316,10 +311,6 @@ class Region(Struct):
                 aux = nm.sum(mask[conn], 1, dtype=nm.int32)
                 rcells = nm.where(aux == conn.shape[1])[0]
                 self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-                self.true_cells[ig] = True
-
-            else:
-                self.true_cells[ig] = False
 
         self.all_vertices = nm.unique(nm.hstack(all_vertices))
 
@@ -427,11 +418,11 @@ class Region(Struct):
                 mask.fill(False)
                 mask[vv] = True
 
-                conn = group.conn
-                aux = nm.sum(mask[conn], 1, dtype=nm.int32)
-                rcells = nm.where(aux == conn.shape[1])[0]
-                self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-                self.true_cells[ig] = True
+                if self.can_cells:
+                    conn = group.conn
+                    aux = nm.sum(mask[conn], 1, dtype=nm.int32)
+                    rcells = nm.where(aux == conn.shape[1])[0]
+                    self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
 
                 if self.domain.shape.dim == 3:
                     self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
@@ -451,6 +442,9 @@ class Region(Struct):
 
                 # Points to fa.facets.
                 self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
+
+        for ig in self.igs:
+            self.true_cells[ig] = self.can_cells
 
         self.delete_zero_faces()
         self.update_shape()
@@ -773,7 +767,17 @@ class Region(Struct):
         else:
             return self.faces[ig]
 
-    def get_cells(self, ig):
+    def get_cells(self, ig, true_cells_only=True):
+        """
+        Get cells of the region.
+
+        Raises ValueError if true_cells_only is True and the cells are not true
+        cells (e.g. surface integration region).
+        """
+        if true_cells_only and not self.true_cells[ig]:
+            msg = 'region %s has not true cells! (surface integration?)' \
+                  % self.name
+            raise ValueError(msg)
         return self.cells[ig]
 
     def iter_cells(self):

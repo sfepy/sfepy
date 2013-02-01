@@ -279,14 +279,14 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False):
             if ig in region.igs:
                 n_cell = region.shape[ig].n_cell
                 ir = offs[ig]
-                edata[ii+region.cells[ig]] = data[ir:ir+n_cell]
+                edata[ii+region.get_cells(ig)] = data[ir:ir+n_cell]
 
     else:
         for group in domain.iter_groups():
             ig = group.ig
             ii = eoffs[ig]
             if ig in region.igs:
-                cells = region.cells[ig]
+                cells = region.get_cells(ig)
                 ucells = nm.unique(cells)
 
                 avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]
