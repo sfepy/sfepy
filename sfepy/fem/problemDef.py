@@ -102,14 +102,23 @@ class ProblemDefinition(Struct):
 
         return obj
 
+    def update_fields_by_equations(self, equations):
+        variables = equations.variables
+        for field in [var.get_field() for var in variables]:
+            self.fields[field.name] = field
+
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
                  nls=None, ls=None, ts=None, auto_solvers=True):
         self.name = name
         self.conf = conf
-        self.functions = functions
 
         self.reset()
+
+        self.functions = functions
+        self.fields = fields
+        self.equations = equations
+        self.domain = domain
 
         self.ts = get_default(ts, self.get_default_ts())
 
@@ -117,28 +126,16 @@ class ProblemDefinition(Struct):
             if equations is None:
                 raise ValueError('missing equations in auto_conf mode!')
 
-            self.equations = equations
-
             if fields is None:
-                variables = self.equations.variables
-                fields = {}
-                for field in [var.get_field() for var in variables]:
-                    fields[field.name] = field
-
-            self.fields = fields
+                self.fields = {}
+                self.update_fields_by_equations(equations)
 
             if domain is None:
-                domain = self.fields.values()[0].domain
-
-            self.domain = domain
+                self.domain = self.fields.values()[0].domain
 
             if conf is None:
                 self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
 
-        else:
-            self.domain = domain
-            self.fields = fields
-            self.equations = equations
 
         if auto_solvers:
             if ls is None:
