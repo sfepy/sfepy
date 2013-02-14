@@ -225,7 +225,8 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
 
 def eval_equations(equations, variables, preserve_caches=False,
-                   mode='eval', dw_mode='vector', term_mode=None):
+                   mode='eval', dw_mode='vector', term_mode=None,
+                   verbose=True):
     """
     Evaluate the equations.
 
@@ -261,7 +262,7 @@ def eval_equations(equations, variables, preserve_caches=False,
             asm_obj = equations.create_stripped_state_vector()
 
         else:
-            asm_obj = equations.create_matrix_graph()
+            asm_obj = equations.create_matrix_graph(verbose=verbose)
 
     if not preserve_caches:
         equations.invalidate_term_caches()

@@ -109,6 +109,9 @@ class ProblemDefinition(Struct):
         self.conf = conf
         self.functions = functions
 
+        if not hasattr(self.conf, 'verbose'):
+           conf.verbose = True
+
         self.reset()
 
         self.ts = get_default(ts, self.get_default_ts())
@@ -347,13 +350,19 @@ class ProblemDefinition(Struct):
         self.lcbcs = None
 
     def set_equations(self, conf_equations=None, user=None,
-                      keep_solvers=False, make_virtual=False):
+                      keep_solvers=None, make_virtual=False,
+                      clear_old=True, verbose=True
+                      ):
         """
         Set equations of the problem using the `equations` problem
         description entry.
 
         Fields and Regions have to be already set.
+
+        set clear_old parametr to True to add equations
         """
+        if verbose is None: verbose = self.conf.verbose
+
         conf_equations = get_default(conf_equations,
                                      self.conf.get('equations', None))
 
@@ -368,10 +377,15 @@ class ProblemDefinition(Struct):
                                         self.domain.regions,
                                         materials, self.integrals,
                                         user=user,
-                                        make_virtual=make_virtual)
+                                        make_virtual=make_virtual,
+                                        verbose=verbose)
+        if clear_old:
+           self.equations = equations
+        else:
+           self.equations.extends(equations)
 
-        self.equations = equations
-
+        if keep_solvers is None: 
+            keep_solvers = not clear_old
         if not keep_solvers:
             self.solvers = None
 
@@ -484,18 +498,20 @@ class ProblemDefinition(Struct):
         if ts is not None:
             self.ts = ts
 
-    def update_materials(self, ts=None, mode='normal'):
+    def update_materials(self, ts=None, mode='normal', verbose=None):
         """
         Update materials used in equations.
         """
+        if verbose is None: verbose = self.conf.verbose
         if self.equations is not None:
             self.update_time_stepper(ts)
             self.equations.time_update_materials(self.ts, mode=mode,
-                                                 problem=self)
+                                                 problem=self, verbose=verbose)
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
-                         lcbcs=None, functions=None, create_matrix=False):
+                         lcbcs=None, functions=None, create_matrix=False,
+                         verbose=None):
         """
         Update equations for current time step.
 
@@ -520,16 +536,18 @@ class ProblemDefinition(Struct):
             The user functions for boundary conditions, materials,
             etc. If not given, `self.functions` are used.
         """
+        if verbose is None: verbose = self.conf.verbose
         self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
 
         graph_changed = self.equations.time_update(self.ts,
                                                    ebcs, epbcs, lcbcs,
-                                                   functions, self)
+                                                   functions, self,
+                                                   verbose = verbose)
         self.graph_changed = graph_changed
 
         if graph_changed or (self.mtx_a is None) or create_matrix:
-            self.mtx_a = self.equations.create_matrix_graph()
+            self.mtx_a = self.equations.create_matrix_graph(verbose = verbose)
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
             ## plu.plt.show()
@@ -943,7 +961,7 @@ class ProblemDefinition(Struct):
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
                          mode='eval', var_dict=None, strip_variables=True,
-                         extra_args=None, verbose=True, **kwargs):
+                         extra_args=None, verbose=None, **kwargs):
         """
         Create evaluable object (equations and corresponding variables)
         from the `expression` string. Convenience function calling
@@ -1037,6 +1055,7 @@ class ProblemDefinition(Struct):
         >>> vec_qp = eval_equations(equations, variables, mode='qp')
         """
         from sfepy.fem.equations import get_expression_arg_names
+        if verbose is None: verbose = self.conf.verbose
 
         variables = get_default(var_dict, {})
         var_context = get_default(var_dict, {})
@@ -1120,7 +1139,7 @@ class ProblemDefinition(Struct):
                  ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
                  var_dict=None, strip_variables=True, ret_variables=False,
-                 verbose=True, extra_args=None, **kwargs):
+                 verbose=None, extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         `self.create_evaluable()` and
@@ -1148,6 +1167,9 @@ class ProblemDefinition(Struct):
             The variables that were created to evaluate
             the expression. Only provided if `ret_variables` is True.
         """
+        if verbose is None: 
+           verbose = self.conf.verbose 
+
         aux = self.create_evaluable(expression,
                                     try_equations=try_equations,
                                     auto_init=auto_init,
@@ -1164,7 +1186,8 @@ class ProblemDefinition(Struct):
 
         out = eval_equations(equations, variables,
                              preserve_caches=preserve_caches,
-                             mode=mode, dw_mode=dw_mode, term_mode=term_mode)
+                             mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                             verbose=verbose)
 
         if ret_variables:
             out = (out, variables)
