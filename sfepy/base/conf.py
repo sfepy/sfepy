@@ -531,6 +531,34 @@ class ProblemConf( Struct ):
                     raise ValueError('function %s cannot be found!' % name)
 
         return fun
-
+    
     def edit( self, key, newval ):
         self.__dict__[key] = transforms[key]( newval )
+
+    """ Overide values with given problem conf """
+    def add_conf(self, conf):
+        for x in conf.__dict__:
+            his = conf.__dict__[x]    
+            my = getattr(self, x, None)     
+            if isinstance(my, dict) and isinstance(his, dict):
+               my.update(his)
+            else:
+               setattr(self, x, his)
+
+    """ Add missing values from given problem conf """
+    def add_missing(self, conf):
+        for x in conf.__dict__:
+            his = conf.__dict__[x]    
+            my = getattr(self, x, None)
+            if isinstance(my, dict) and isinstance(his, dict):
+               for key in his:     
+                  if not my.has_key(key): 
+                     my[key]=his[key]
+            elif my is None:
+               setattr(self, x, his)
+
+                    
+
+
+
+                

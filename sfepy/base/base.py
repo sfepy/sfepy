@@ -495,8 +495,7 @@ class Container( Struct ):
         Struct.__init__( self, **kwargs )
 
         if objs is not None:
-            self._objs = objs
-            self.update()
+            self.update(objs)
         else:
             self._objs = []
             self.names = []
@@ -504,7 +503,7 @@ class Container( Struct ):
     def update( self, objs = None ):
         if objs is not None:
             self._objs = objs
-
+            
         self.names = [obj.name for obj in self._objs]
 
     def __setitem__(self, ii, obj):
@@ -562,6 +561,12 @@ class Container( Struct ):
         """
         for obj in objs:
             self.append(obj)
+
+    def add_missing(self, objs):
+        """ add only those that not currently present """
+        for obj in objs:
+            if not obj.name in self.names:
+               self.append(obj)      
 
     def get(self, ii, default=None, msg_if_none=None):
         """
