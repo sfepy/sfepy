@@ -2,6 +2,9 @@ from sfepy.fem import Domain
 import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial
+from sfepy.base.base import output
+from numpy.core import intc
+from numpy.linalg import lapack_lite
 
 def elems_q2t(el):
 
@@ -87,6 +90,25 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
         return coors
 
+    def dets_fast(a):
+        m = a.shape[0]
+        n = a.shape[1]
+        lapack_routine = lapack_lite.dgetrf
+        pivots = nm.zeros((m, n), intc)
+        flags = nm.arange(1, n + 1).reshape(1, -1)
+        for i in xrange(m):
+            tmp = a[i]
+            lapack_routine(n, n, tmp, n, pivots[i], 0)
+        sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
+        idx = nm.arange(n)
+        d = a[:, idx, idx]
+        absd = nm.absolute(d)
+        sign *= nm.multiply.reduce(d / absd, axis=1)
+        nm.log(absd, absd)
+        logdet = nm.add.reduce(absd, axis=-1)
+
+        return sign * nm.exp(logdet)
+
     def get_volume(el, nd):
 
         dim = nd.shape[1]
@@ -96,23 +118,27 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
         if etype == '2_4' or etype == '3_8':
             el = elems_q2t(el)
 
-        vol = 0.0
-        bc = nm.zeros((dim, ), dtype=nm.double)
-        mtx = nm.ones((dim + 1, dim + 1), dtype=nm.double)
+        nel = el.shape[0]
+
+        #bc = nm.zeros((dim, ), dtype=nm.double)
         mul = 1.0 / factorial(dim)
         if dim == 3:
             mul *= -1.0
 
-        for iel in el:
-            mtx[:,:-1] = nd[iel,:]
-            ve = mul * nm.linalg.det(mtx)
-            vol += ve
-            bc += ve * mtx.sum(0)[:-1] / nnd
+        mtx = nm.ones((nel, dim + 1, dim + 1), dtype=nm.double)
+        mtx[:,:,:-1] = nd[el,:]
+        vols = mul * dets_fast(mtx.copy()) # copy() ???
+        vol = vols.sum()
+        bc = nm.dot(vols, mtx.sum(1)[:,:-1] / nnd)
 
         bc /= vol
 
         return vol, bc
 
+    import time
+
+    output('smoothing...')
+    tt = time.clock()
 
     domain = Domain('mesh', mesh)
 
@@ -139,30 +165,47 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
             node_group[aux] = 4
 
         # generate costs matrix
-        costs = sps.lil_matrix((n_nod, n_nod), dtype=nm.double)
-        for ied in range(edges.mtx.shape[0]):
-            cc = edges.mtx.getrow(ied).indices[0]
-            n1, n2 = edges.facets[cc,:]
-            if node_group[n2] >= node_group[n1]:
-                costs[n1, n2] = 1.0
-
-            if node_group[n1] >= node_group[n2]:
-                costs[n2, n1] = 1.0
+        mtx_ed = edges.mtx.tocoo()
+        _, idxs = nm.unique(mtx_ed.row, return_index=True)
+        aux = edges.facets[mtx_ed.col[idxs]]
+        fc1 = aux[:,0]
+        fc2 = aux[:,1]
+        idxs = nm.where(node_group[fc2] >= node_group[fc1])
+        rows1 = fc1[idxs]
+        cols1 = fc2[idxs]
+        idxs = nm.where(node_group[fc1] >= node_group[fc2])
+        rows2 = fc2[idxs]
+        cols2 = fc1[idxs]
+        crows = nm.concatenate((rows1, rows2))
+        ccols = nm.concatenate((cols1, cols2))
+        costs = sps.coo_matrix((nm.ones_like(crows), (crows, ccols)),
+                               shape=(n_nod, n_nod),
+                               dtype=nm.double)
 
         # generate weights matrix
-        aux = sps.lil_matrix((n_nod, n_nod), dtype=nm.double)
-        aux.setdiag(1.0 / costs.sum(1))
-        weights = (aux * costs).tocsr()
+        idxs = range(n_nod)
+        aux = sps.coo_matrix((1.0 / nm.asarray(costs.sum(1)).squeeze(),
+                              (idxs, idxs)),
+                             shape=(n_nod, n_nod),
+                             dtype=nm.double)
+
+        #aux.setdiag(1.0 / costs.sum(1))
+        weights = (aux.tocsc() * costs.tocsc()).tocsr()
 
     coors = taubin(mesh.coors, weights, lam, mu, n_iter)
 
-    if volume_corr:
+    output('...done in %.2f s' % (time.clock() - tt))
 
+    if volume_corr:
+        output('rescaling...')
         volume0, bc = get_volume(mesh.conns[0], mesh.coors)
         volume, _ = get_volume(mesh.conns[0], coors)
 
         scale = volume0 / volume
+        output('scale factor: %.2f' % scale)
 
         coors = (coors - bc) * scale + bc
+
+        output('...done in %.2f s' % (time.clock() - tt))
 
     return coors

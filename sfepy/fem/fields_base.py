@@ -1248,7 +1248,7 @@ class VolumeField(Field):
             vg = ap.describe_geometry(self, 'volume', ap.region, integral)
 
             volume = nm.squeeze(vg.volume)
-            iels = ap.region.cells[ig]
+            iels = ap.region.get_cells(ig)
 
             data_e = nm.zeros((volume.shape[0], 1, nc, 1), dtype=nm.float64)
             vg.integrate(data_e, data_qp[iels])

@@ -114,7 +114,7 @@ def post_process(out, problem, mtx_phi):
     for key in out.keys():
         ii = int(key[1:])
         vec = mtx_phi[:,ii].copy()
-        var.data_from_any(vec)
+        var.set_data(vec)
 
         strain = problem.evaluate('ev_cauchy_strain.i1.Y_c(u)', u=var,
                                   verbose=False, mode='el_avg')

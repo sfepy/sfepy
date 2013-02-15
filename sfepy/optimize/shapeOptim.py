@@ -280,7 +280,7 @@ class ShapeOptimFlowCase( Struct ):
         shape = (n_mesh_nod, dim)
         for ii, nu in enumerate(self.generate_mesh_velocity(shape, idsgs)):
             pbar.update(ii)
-            self.ofg_variables['Nu'].data_from_any(nu.ravel())
+            self.ofg_variables['Nu'].set_data(nu.ravel())
 
             ## from sfepy.base.ioutils import write_vtk
             ## cc = nla.norm( vec_nu )
@@ -339,7 +339,7 @@ class ShapeOptimFlowCase( Struct ):
         coors0 = domain.mesh.coors
 
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), [idsg] ):
-            check1_variables['Nu'].data_from_any(nu.ravel())
+            check1_variables['Nu'].set_data(nu.ravel())
 
             aux = eval_equations(check1_equations, check1_variables,
                                  term_mode=1)

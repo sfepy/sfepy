@@ -63,6 +63,18 @@
    - Fish heart model: http://sfepy.org/fish_heart
    - Phononic materials: http://sfepy.org/phononic
 
+   Support
+   -------
+
+   Work on SfePy is partially supported by the following projects:
+
+   - project GA108/11/0853 (Nanostructures with transition metals: Towards
+     ab-initio material design) of Czech Science Foundation,
+   - project GA106/09/0740 (Microstructure oriented hierarchical modeling of
+     brain perfusion for CT based cerebral blood flow evaluation) of Czech
+     Science Foundation,
+   - project NT13326 of Ministry of Health of the Czech Republic.
+
 .. _documentation:
 
 Documentation

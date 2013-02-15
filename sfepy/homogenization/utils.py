@@ -294,4 +294,4 @@ def set_nonlin_states(variables, nl_state, problem):
                 pvar_names.append(ivar)
         states = var_fun(problem, pvar_names, variables)
         for ivar in pvar_names:
-            variables[ivar].data_from_any(states[ivar])
+            variables[ivar].set_data(states[ivar])

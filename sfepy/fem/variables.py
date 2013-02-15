@@ -149,15 +149,6 @@ class Variables( Container ):
                 self.ordered_virtual[ii] = var.dual_var_name
                 ii += 1
 
-    ##
-    # 26.07.2007, c
-    def get_names( self, kind = None ):
-        if kind is None:
-            names = [var.name for var in self]
-        else:
-            names = [var.name for var in self if var.is_kind( kind )]
-        return names
-
     def has_virtuals(self):
         return len(self.virtual) > 0
 
@@ -292,27 +283,6 @@ class Variables( Container ):
             if ics is None: continue
 
             var.setup_initial_conditions(ics, self.di, functions)
-
-    ##
-    # c: 09.01.2008, r: 09.01.2008
-    def get_nodes_of_global_dofs( self, igdofs ):
-        """not stripped..."""
-        di = self.di
-        
-        nods = nm.empty( (0,), dtype = nm.int32 )
-        for ii in self.state:
-            var = self[ii]
-            indx = di.indx[var.name]
-            igdof = igdofs[(igdofs >= indx.start) & (igdofs < indx.stop)]
-            ivdof = igdof - indx.start
-            inod = ivdof / var.n_components
-            nods = nm.concatenate( (nods, inod) )
-##             print var.name, indx
-##             print igdof
-##             print ivdof
-##             print inod
-##             pause()
-        return nods
 
     def setup_adof_conns( self ):
         """Translate dofs to active dofs.
@@ -526,39 +496,40 @@ class Variables( Container ):
                         raise KeyError('unknown variable! (%s)' % key)
 
                 else:
-                    var.data_from_any(val, step=step,
-                                      preserve_caches=preserve_caches)
+                    var.set_data(val, step=step,
+                                 preserve_caches=preserve_caches)
 
         elif isinstance(data, nm.ndarray):
-            self.data_from_state(data, preserve_caches=preserve_caches)
+            self.check_vector_size(data)
+
+            for ii in self.state:
+                var = self[ii]
+                var.set_data(data, self.di.indx[var.name],
+                             preserve_caches=preserve_caches)
 
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    def data_from_state(self, state=None, preserve_caches=False):
-        self.check_vector_size(state)
-
-        for ii in self.state:
-            var = self[ii]
-            var.data_from_state(state, self.di.indx[var.name],
-                                preserve_caches=preserve_caches)
-
-    def non_state_data_from_state(self, var_names, state, var_names_state):
+    def set_data_from_state(self, var_names, state, var_names_state):
+        """
+        Set variables with names in `var_names` from state variables with names
+        in `var_names_state` using DOF values in the state vector `state`.
+        """
         self.check_vector_size(state)
 
         if isinstance(var_names, basestr):
             var_names = [var_names]
             var_names_state = [var_names_state]
 
-        for ii, var_name in enumerate( var_names ):
+        for ii, var_name in enumerate(var_names):
             var_name_state = var_names_state[ii]
+
             if self[var_name_state].is_state():
-                self[var_name].data_from_data( state,
-                                               self.di.indx[var_name_state] )
+                self[var_name].set_data(state, self.di.indx[var_name_state])
+
             else:
                 msg = '%s is not a state part' % var_name_state
-                raise IndexError( msg )
-
+                raise IndexError(msg)
 
     def state_to_output(self, vec, fill_value=None, var_info=None,
                         extend=True, linearization=None):
@@ -845,33 +816,14 @@ class Variable( Struct ):
     def is_kind( self, kind ):
         return eval( 'self.is_%s()' % kind )
 
-    ##
-    # 26.07.2006, c
-    def is_non_state_field( self ):
-        return (is_field in self.flags)\
-               and not (self.is_state() or self.is_virtual())
-
     def is_real( self ):
         return self.dtype in real_types
 
     def is_complex( self ):
         return self.dtype in complex_types
 
-    def init_data(self, step=0):
-        """
-        Initialize the dof vector data of time step `step` to zeros.
-        """
-        if self.is_state_or_parameter():
-            data = nm.zeros((self.n_dof,), dtype=self.dtype)
-            self.data_from_any(data, step=step)
-
-    def set_constant(self, val):
-        """
-        Set the variable to a constant value.
-        """
-        data = nm.empty((self.n_dof,), dtype=self.dtype)
-        data.fill(val)
-        self.data_from_any(data)
+    def is_finite(self, step=0, derivative=None, dt=None):
+        return nm.isfinite(self(step=step, derivative=derivative, dt=dt)).all()
 
     def get_primary_name(self):
         if self.is_state():
@@ -921,20 +873,38 @@ class Variable( Struct ):
                 if len(steps) and (steps[0] is not None):
                     step_cache.pop(steps[-1])
 
-    def data_from_state(self, state=None, indx=None, step=0,
-                        preserve_caches=False):
-        """step: 0 = current,  """
-        if (not self.is_state()) or (state is None): return
+    def init_data(self, step=0):
+        """
+        Initialize the dof vector data of time step `step` to zeros.
+        """
+        if self.is_state_or_parameter():
+            data = nm.zeros((self.n_dof,), dtype=self.dtype)
+            self.set_data(data, step=step)
 
-        self.data_from_any(state, indx, step, preserve_caches)
+    def set_constant(self, val):
+        """
+        Set the variable to a constant value.
+        """
+        data = nm.empty((self.n_dof,), dtype=self.dtype)
+        data.fill(val)
+        self.set_data(data)
 
-    def data_from_data( self, data = None, indx = None, step = 0 ):
-        if (not self.is_non_state_field()) or (data is None): return
+    def set_data(self, data=None, indx=None, step=0,
+                 preserve_caches=False):
+        """
+        Set data (vector of DOF values) of the variable.
 
-        self.data_from_any(data, indx, step)
-
-    def data_from_any(self, data=None, indx=None, step=0,
-                      preserve_caches=False):
+        Parameters
+        ----------
+        data : array
+            The vector of DOF values.
+        indx : int, optional
+            If given, `data[indx]` is used.
+        step : int, optional
+            The time history step, 0 (default) = current.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of the variable.
+        """
         data = data.ravel()
 
         if indx is None:
@@ -1257,30 +1227,6 @@ class FieldVariable(Variable):
 
         adof_conns.update(self.adof_conns)
 
-    def get_global_node_tab(self, dc_type, ig, is_trace=False):
-
-        if self.n_components == 1:
-
-            if not is_trace:
-                region_name = dc_type.region_name
-                aig = ig
-
-            else:
-                aux = self.field.domain.regions[dc_type.region_name]
-                region, _, ig_map = aux.get_mirror_region()
-                region_name = region.name
-                aig = ig_map[ig]
-
-            key = (self.field.name, self.n_components, region_name,
-                   dc_type.type, aig)
-            dc = self.field.dof_conns[key]
-            inod = self.field.get_vertices()
-            nodtab = inod[dc];
-        else:
-            raise NotImplementedError
-
-        return nodtab
-
     def get_dof_conn(self, dc_type, ig, active=False, is_trace=False):
         """Get active dof connectivity of a variable.
         
@@ -1341,10 +1287,10 @@ class FieldVariable(Variable):
             nods = nm.unique(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
-            self.data_from_any(setter(ts, coor, region=region))
+            self.set_data(setter(ts, coor, region=region))
             output('data of %s set by %s()' % (self.name, setter_name))
 
-    def data_from_qp(self, data_qp, integral, step=0):
+    def set_data_from_qp(self, data_qp, integral, step=0):
         """
         Set DOFs of variable using values in quadrature points
         corresponding to the given integral.
@@ -2011,7 +1957,7 @@ class FieldVariable(Variable):
     def set_from_mesh_vertices(self, data):
         """Set the variable using values at the mesh vertices."""
         ndata = self.field.interp_v_vals_to_n_vals(data)
-        self.data_from_any(ndata)
+        self.set_data(ndata)
 
 ##         print data.shape
 ##         print ndata.shape
@@ -2120,7 +2066,7 @@ class FieldVariable(Variable):
         flag_same_mesh = self.has_same_mesh(other)
 
         if flag_same_mesh == 'same':
-            self.data_from_any(other())
+            self.set_data(other())
             return
 
         if strategy == 'interpolation':
@@ -2155,10 +2101,10 @@ class FieldVariable(Variable):
                                  close_limit=close_limit)
 
         if strategy == 'interpolation':
-            self.data_from_any(vals)
+            self.set_data(vals)
 
         elif strategy == 'projection':
-            self.data_from_projection(vals)
+            raise NotImplementedError('unsupported strategy! (%s)' % strategy)
 
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)

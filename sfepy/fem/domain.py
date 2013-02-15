@@ -1,3 +1,6 @@
+"""
+Computational domain, consisting of the mesh and regions.
+"""
 import time
 import re
 
@@ -12,29 +15,21 @@ from sfepy.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.fem.fe_surface import FESurface
 import fea
 
-##
-# 14.06.2006, c
-# 15.06.2006
-# 19.02.2007
-# 02.03.2007
-# 02.05.2007
-# 30.05.2007
-# 05.06.2007
 def region_leaf(domain, regions, rdef, functions):
     """
     Create/setup a region instance according to rdef.
     """
-    def _region_leaf( level, op ):
+    def _region_leaf(level, op):
 
         token, details = op['token'], op['orig']
 
         if token != 'KW_Region':
-            parse_def = token + '<' + ' '.join( details ) + '>'
+            parse_def = token + '<' + ' '.join(details) + '>'
             region = Region('leaf', rdef, domain, parse_def=parse_def)
 
         if token == 'KW_Region':
             details = details[1][2:]
-            aux = regions.find( details )
+            aux = regions.find(details)
             if not aux:
                 raise ValueError, 'region %s does not exist' % details
             else:
@@ -44,15 +39,15 @@ def region_leaf(domain, regions, rdef, functions):
                     region = aux
 
         elif token == 'KW_All':
-            region.set_vertices( nm.arange( domain.mesh.n_nod,
-                                            dtype = nm.int32 ) )
+            region.set_vertices(nm.arange(domain.mesh.n_nod, dtype=nm.int32))
+
         elif token == 'E_NIR':
             where = details[2]
 
             if where[0] == '[':
-                out = nm.array( eval( where ), dtype = nm.int32 )
-                assert_( nm.amin( out ) >= 0 )
-                assert_( nm.amax( out ) < domain.mesh.n_nod )
+                out = nm.array(eval(where), dtype=nm.int32)
+                assert_(nm.amin(out) >= 0)
+                assert_(nm.amax(out) < domain.mesh.n_nod)
             else:
                 coors = domain.get_mesh_coors()
                 x = coors[:,0]
@@ -63,24 +58,23 @@ def region_leaf(domain, regions, rdef, functions):
                     z = None
                 coor_dict = {'x' : x, 'y' : y, 'z': z}
 
-                out = nm.where( eval( where, {}, coor_dict ) )[0]
-            region.set_vertices( out )
+                out = nm.where(eval(where, {}, coor_dict))[0]
+            region.set_vertices(out)
 
         elif token == 'E_NOS':
-
             if domain.fa: # 3D.
                 fa = domain.fa
             else:
                 fa = domain.ed
 
             flag = fa.mark_surface_facets()
-            ii = nm.where( flag > 0 )[0]
+            ii = nm.where(flag > 0)[0]
             aux = nm.unique(fa.facets[ii])
             if aux[0] == -1: # Triangular faces have -1 as 4. point.
                 aux = aux[1:]
 
             region.can_cells = False
-            region.set_vertices( aux )
+            region.set_vertices(aux)
 
         elif token == 'E_NBF':
             where = details[2]
@@ -90,7 +84,7 @@ def region_leaf(domain, regions, rdef, functions):
             fun = functions[where]
             out = fun(coors, domain=domain)
 
-            region.set_vertices( out )
+            region.set_vertices(out)
 
         elif token == 'E_EBF':
             where = details[2]
@@ -100,35 +94,37 @@ def region_leaf(domain, regions, rdef, functions):
             fun = functions[where]
             out = fun(coors, domain=domain)
 
-            region.set_cells( out )
+            region.set_cells(out)
 
         elif token == 'E_EOG':
-
-            group = int( details[3] )
+            group = int(details[3])
 
             ig = domain.mat_ids_to_i_gs[group]
             group = domain.groups[ig]
-            region.set_from_group( ig, group.vertices, group.shape.n_el )
+            region.set_from_group(ig, group.vertices, group.shape.n_el)
+
+        elif token == 'E_EOSET':
+            raise NotImplementedError('element sets not implemented!')
 
         elif token == 'E_NOG':
-
-            try:
-                group = int(details[3])
-                group_nodes = nm.where(domain.mesh.ngroups == group)[0]
-
-            except ValueError:
-                try:
-                    group_nodes = domain.mesh.nodal_bcs[details[3]]
-
-                except KeyError:
-                    msg = 'undefined nodal group! (%s)' % details[3]
-                    raise ValueError(msg)
+            group = int(details[3])
+            group_nodes = nm.where(domain.mesh.ngroups == group)[0]
 
             region.set_vertices(group_nodes)
 
+        elif token == 'E_NOSET':
+            try:
+                set_nodes = domain.mesh.nodal_bcs[details[3]]
+
+            except KeyError:
+                msg = 'undefined nodal set! (%s)' % details[3]
+                raise ValueError(msg)
+
+            region.set_vertices(set_nodes)
+
         elif token == 'E_ONIR':
             aux = regions[details[3][2:]]
-            region.set_vertices( aux.all_vertices[0:1] )
+            region.set_vertices(aux.all_vertices[0:1])
 
         elif token == 'E_NI':
             region.set_vertices(nm.array([int(ii) for ii in details[1:]],
@@ -149,7 +145,7 @@ def region_leaf(domain, regions, rdef, functions):
             region.set_cells(cells)
 
         else:
-            output( 'token "%s" unkown - check regions!' % token )
+            output('token "%s" unkown - check regions!' % token)
             raise NotImplementedError
         return region
 
@@ -158,26 +154,25 @@ def region_leaf(domain, regions, rdef, functions):
 def region_op(level, op, item1, item2):
     token = op['token']
     if token == 'OA_SubN':
-        return item1.sub_n( item2 )
+        return item1.sub_n(item2)
     elif token == 'OA_SubE':
-        return item1.sub_e( item2 )
+        return item1.sub_e(item2)
     elif token == 'OA_AddN':
-        return item1.add_n( item2 )
+        return item1.add_n(item2)
     elif token == 'OA_AddE':
-        return item1.add_e( item2 )
+        return item1.add_e(item2)
     elif token == 'OA_IntersectN':
-        return item1.intersect_n( item2 )
+        return item1.intersect_n(item2)
     elif token == 'OA_IntersectE':
-        return item1.intersect_e( item2 )
+        return item1.intersect_e(item2)
     else:
         raise NotImplementedError, token
 
-##
-# 17.07.2006, c
-class Domain( Struct ):
+class Domain(Struct):
     """
     Domain is divided into groups, whose purpose is to have homogeneous
-    data shapes."""
+    data shapes.
+    """
 
     def __init__(self, name, mesh, verbose=False):
         """Create a Domain.
@@ -201,21 +196,17 @@ class Domain( Struct ):
         for gel in geom_els.itervalues():
             key = gel.get_interpolation_name()
 
-            gel.interp = interps.setdefault(key,
-                                            fea.Interpolant(key, gel))
+            gel.interp = interps.setdefault(key, fea.Interpolant(key, gel))
             gel = gel.surface_facet
             if gel is not None:
                 key = gel.get_interpolation_name()
-                gel.interp = interps.setdefault(key,
-                                                fea.Interpolant(key, gel))
+                gel.interp = interps.setdefault(key, fea.Interpolant(key, gel))
 
-        Struct.__init__(self,
-                        name = name,
-                        mesh = mesh,
-                        geom_els = geom_els,
-                        geom_interps = interps)
+        Struct.__init__(self, name=name, mesh=mesh, geom_els=geom_els,
+                        geom_interps=interps)
+
         self.mat_ids_to_i_gs = {}
-        for ig, mat_id in enumerate( mesh.mat_ids ):
+        for ig, mat_id in enumerate(mesh.mat_ids):
             self.mat_ids_to_i_gs[mat_id[0]] = ig
 
         self.setup_groups()
@@ -224,20 +215,19 @@ class Domain( Struct ):
         self.reset_regions()
         self.clear_surface_groups()
 
-    def setup_groups( self ):
-
+    def setup_groups(self):
         n_nod, dim = self.mesh.coors.shape
-        self.shape = Struct( n_gr = len( self.mesh.conns ), n_el = 0,
-                             n_nod = n_nod, dim = dim )
+        self.shape = Struct(n_gr=len(self.mesh.conns), n_el=0,
+                            n_nod=n_nod, dim=dim)
         self.groups = {}
-        for ii in range( self.shape.n_gr ):
+        for ii in range(self.shape.n_gr):
             gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
             conn = self.mesh.conns[ii]
-            vertices = nm.unique( conn )
+            vertices = nm.unique(conn)
 
             n_vertex = vertices.shape[0]
             n_el, n_ep = conn.shape
-            n_edge = gel.n_edge           
+            n_edge = gel.n_edge
             n_edge_total = n_edge * n_el
 
             if gel.dim == 3:
@@ -251,26 +241,19 @@ class Domain( Struct ):
                            n_face=n_face, n_face_total=n_face_total,
                            dim=self.mesh.dims[ii])
 
-            self.groups[ii] = Struct( ig = ii,
-                                      vertices = vertices,
-                                      conn = conn,
-                                      gel = gel,
-                                      shape = shape )
+            self.groups[ii] = Struct(ig=ii, vertices=vertices, conn=conn,
+                                      gel=gel, shape=shape)
             self.shape.n_el += n_el
 
-    ##
-    # c: 22.11.2007, r: 25.03.2008
-    def iter_groups( self, igs = None ):
+    def iter_groups(self, igs=None):
         if igs is None:
-            for ig in xrange( self.shape.n_gr ): # sorted by ig.
+            for ig in xrange(self.shape.n_gr): # sorted by ig.
                 yield self.groups[ig]
         else:
             for ig in igs:
                 yield ig, self.groups[ig]
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
-    def get_cell_offsets( self ):
+    def get_cell_offsets(self):
         offs = {}
         off = 0
         for group in self.iter_groups():
@@ -290,7 +273,7 @@ class Domain( Struct ):
 
     def get_mesh_bounding_box(self):
         """
-        Return the bounding box of the underlying mesh. 
+        Return the bounding box of the underlying mesh.
 
         Returns
         -------
@@ -342,7 +325,7 @@ class Domain( Struct ):
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
-                if nm.alltrue( flag == 0 ):
+                if nm.alltrue(flag == 0):
                     if itry > 0: output('...corrected')
                     itry = -1
                     break
@@ -356,9 +339,9 @@ class Domain( Struct ):
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
 
-    def has_faces( self ):
-        return sum( [group.shape.n_face
-                     for group in self.iter_groups()] ) > 0
+    def has_faces(self):
+        return sum([group.shape.n_face
+                    for group in self.iter_groups()]) > 0
 
     def setup_facets(self, create_edges=True, create_faces=True,
                      verbose=False):
@@ -401,15 +384,19 @@ class Domain( Struct ):
             return self.ed, self.fa
 
     def reset_regions(self):
-        """Reset the list of regions associated with the domain."""
+        """
+        Reset the list of regions associated with the domain.
+        """
         self.regions = OneTypeList(Region)
         self._region_stack = []
         self._bnf = create_bnf(self._region_stack)
 
     def create_region(self, name, select, flags=None, check_parents=True,
                       functions=None, add_to_regions=True):
-        """Region factory constructor. Append the new region to
-        self.regions list."""
+        """
+        Region factory constructor. Append the new region to
+        self.regions list.
+        """
         if flags is None:
             flags = {}
 
@@ -437,23 +424,23 @@ class Domain( Struct ):
             fb = re.compile('^group +\d+(\s+\d+)*$').match(forbid)
             if fb:
                 groups = forbid[5:].strip().split()
-                forbid = [int( ii ) for ii in groups]
+                forbid = [int(ii) for ii in groups]
             else:
                 raise ValueError('bad forbid! (%s)' % forbid)
             forbidden_igs = [self.mat_ids_to_i_gs[mat_id] for mat_id in forbid]
             region.delete_groups(forbidden_igs)
 
         region.switch_cells(flags.get('can_cells', True))
-            
+
         region.complete_description(self.ed, self.fa)
 
         if add_to_regions:
             self.regions.append(region)
 
         return region
-            
+
     def create_regions(self, region_defs, functions=None):
-        output( 'creating regions...' )
+        output('creating regions...')
         tt = time.clock()
 
         self.reset_regions()
@@ -462,8 +449,7 @@ class Domain( Struct ):
         # Sort region definitions by dependencies.
         graph, name_to_sort_name = get_dependency_graph(region_defs)
         sorted_regions = sort_by_dependency(graph)
-##         print sorted_regions
-        
+
         ##
         # Define regions.
         for name in sorted_regions:
@@ -476,35 +462,112 @@ class Domain( Struct ):
                                         functions=functions)
             output(' ', region.name)
 
-        output( '...done in %.2f s' % (time.clock() - tt) )
+        output('...done in %.2f s' % (time.clock() - tt))
 
         return self.regions
 
-    ##
-    # 31.07.2007, c
-    def get_element_diameters( self, ig, cells, vg, mode, square = True ):
+    def save_regions(self, filename, region_names=None):
+        """
+        Save regions as individual meshes.
+
+        Parameters
+        ----------
+        filename : str
+            The output filename.
+        region_names : list, optional
+            If given, only the listed regions are saved.
+        """
+        import os
+
+        if region_names is None:
+            region_names = self.regions.get_names()
+
+        trunk, suffix = os.path.splitext(filename)
+
+        output('saving regions...')
+        for name in region_names:
+            region = self.regions[name]
+            output(name)
+            aux = self.mesh.from_region(region, self.mesh)
+            aux.write('%s_%s%s' % (trunk, region.name, suffix),
+                      io='auto')
+        output('...done')
+
+    def save_regions_as_groups(self, filename, region_names=None):
+        """
+        Save regions in a single mesh but mark them by using different
+        element/node group numbers.
+
+        If regions overlap, the result is undetermined, with exception of the
+        whole domain region, which is marked by group id 0.
+
+        Region masks are also saved as scalar point data for output formats
+        that support this.
+
+        Parameters
+        ----------
+        filename : str
+            The output filename.
+        region_names : list, optional
+            If given, only the listed regions are saved.
+        """
+
+        output('saving regions as groups...')
+        aux = self.mesh.copy()
+        n_ig = c_ig = 0
+        n_nod = self.shape.n_nod
+
+        # The whole domain region should go first.
+        names = (region_names if region_names is not None
+                 else self.regions.get_names())
+        for name in names:
+            region = self.regions[name]
+            if region.all_vertices.shape[0] == n_nod:
+                names.remove(region.name)
+                names = [region.name] + names
+                break
+
+        out = {}
+        for name in names:
+            region = self.regions[name]
+            output(region.name)
+
+            aux.ngroups[region.all_vertices] = n_ig
+            n_ig += 1
+
+            mask = nm.zeros((n_nod, 1), dtype=nm.float64)
+            mask[region.all_vertices] = 1.0
+            out[name] = Struct(name='region', mode='vertex', data=mask,
+                               var_name=name, dofs=None)
+
+            if region.has_cells():
+                for ig in region.igs:
+                    ii = region.get_cells(ig)
+                    aux.mat_ids[ig][ii] = c_ig
+                    c_ig += 1
+
+        aux.write(filename, io='auto', out=out)
+        output('...done')
+
+    def get_element_diameters(self, ig, cells, vg, mode, square=True):
         group = self.groups[ig]
-        diameters = nm.empty( (len( cells ), 1, 1, 1), dtype = nm.float64 )
+        diameters = nm.empty((len(cells), 1, 1, 1), dtype=nm.float64)
         if vg is None:
-            diameters.fill( 1.0 )
+            diameters.fill(1.0)
         else:
-            vg.get_element_diameters( diameters, group.gel.edges,
-                                    self.get_mesh_coors().copy(), group.conn,
-                                    cells, mode )
+            vg.get_element_diameters(diameters, group.gel.edges,
+                                     self.get_mesh_coors().copy(), group.conn,
+                                     cells, mode)
         if square:
             out = diameters.squeeze()
         else:
-            out = nm.sqrt( diameters.squeeze() )
+            out = nm.sqrt(diameters.squeeze())
 
         return out
-            
-    ##
-    # 29.08.2007, re-c from 00.01.18, r: 26.03.2008
-    def surface_faces( self ):
 
+    def surface_faces(self):
         if not self.fa:
-            print "no faces defined!"
-            raise ValueError
+            raise ValueError("no faces defined!")
 
         fa = self.fa
         flag = fa.mark_surface_facets()
@@ -512,12 +575,12 @@ class Domain( Struct ):
         surf_faces = []
         itri = nm.where(flag == 3)[0]
         if itri.size:
-            surf_faces.append( fa.facets[itri,:3] )
+            surf_faces.append(fa.facets[itri,:3])
         itet = nm.where(flag == 4)[0]
         if itet.size:
-            surf_faces.append( fa.facets[itet,:4] )
+            surf_faces.append(fa.facets[itet,:4])
 
-        isurf = nm.where( flag >= 1 )[0]
+        isurf = nm.where(flag >= 1)[0]
         if isurf.size:
             lst = fa.indices[isurf]
 

@@ -61,7 +61,7 @@ def probe_hook(data, probe, label, problem):
 
     def get_it(name, var_name):
         var = problem.create_variables([var_name])[var_name]
-        var.data_from_any(data[name].data)
+        var.set_data(data[name].data)
 
         pars, vals = probe(var)
         vals = vals.squeeze()

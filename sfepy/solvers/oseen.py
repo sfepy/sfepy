@@ -251,7 +251,7 @@ class Oseen( NonlinearSolver ):
         ns, ii = stabil.function.function.get_maps()
 
         variables = problem.get_variables()
-        update_var = variables.non_state_data_from_state
+        update_var = variables.set_data_from_state
         make_full_vec = variables.make_full_vec
 
         print 'problem size:'
