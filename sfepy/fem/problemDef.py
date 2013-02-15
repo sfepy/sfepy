@@ -584,14 +584,13 @@ class ProblemDefinition(Struct):
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
-    def setup_ic(self, conf_ics=None, functions=None, verbose=None):
-        if verbose is None: verbose=self.conf.verbose
+    def setup_ic(self, conf_ics=None, functions=None):
         conf_ics = get_default(conf_ics, self.conf.ics)
         ics = Conditions.from_conf(conf_ics, self.domain.regions)
 
         functions = get_default(functions, self.functions)
 
-        self.equations.setup_initial_conditions(ics, functions, verbose)
+        self.equations.setup_initial_conditions(ics, functions)
 
     def select_bcs(self, ebc_names=None, epbc_names=None,
                    lcbc_names=None, create_matrix=False):
