@@ -121,7 +121,8 @@ def create_bnf(stack):
     function = Word(alphas + '_', alphanums + '_')
     function = Group(function).setParseAction(join_tokens)
 
-    region = Combine(Literal('r.') + Word(alphas + '_', '_' + alphas + nums))
+    region = Combine(Literal('r.') + Word(alphas + '_',
+                                          '_' + alphas + nums + '.'))
     region = Group(Optional(_copy, default='nocopy') + region)
     region.setParseAction(replace('KW_Region', keep=True))
 
