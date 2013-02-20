@@ -848,6 +848,8 @@ class Region(Struct):
         """
         Return the graph of region edges as a sparse matrix having uid(k) + 1
         at (i, j) if vertex[i] is connected with vertex[j] by the edge k.
+
+        Degenerate edges are ignored.
         """
         from scipy.sparse import csr_matrix
 
@@ -856,6 +858,9 @@ class Region(Struct):
         rows, cols, vals = [], [], []
         for ig, edges in self.edges.iteritems():
             e_verts = ed.facets[edges]
+            ii = nm.where(e_verts[:, 0] != e_verts[:, 1])[0]
+            edges = edges[ii]
+            e_verts = e_verts[ii]
 
             vals.append(ed.uid_i[edges] + 1)
             rows.append(e_verts[:, 0])
@@ -867,6 +872,10 @@ class Region(Struct):
 
         num = self.all_vertices.max() + 1
         graph = csr_matrix((vals, (rows, cols)), shape=(num, num))
+
+        nnz = graph.nnz
+        # Symmetrize.
         graph = graph + graph.T
+        assert_(graph.nnz == 2 * nnz)
 
         return graph
