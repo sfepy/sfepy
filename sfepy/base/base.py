@@ -891,6 +891,23 @@ class Output(Struct):
     
 output = Output('sfepy:')
 
+def configure_output(options):
+    """
+    Configure the standard :function:`output()` function using
+    `output_log_name` and `output_screen` attributes of `options`.
+
+    Parameters
+    ----------
+    options : Struct or dict
+        The options with `output_screen` and `output_log_name` items. Defaults
+        are provided if missing.
+    """
+    output_screen = options.get('output_screen', True)
+    output_log_name = options.get('output_log_name', None)
+
+    output.set_output(filename=output_log_name, quiet=not output_screen,
+                      combined=output_screen and (output_log_name is not None))
+
 def print_structs(objs):
     """Print Struct instances in a container, works recursively. Debugging
     utility function."""
