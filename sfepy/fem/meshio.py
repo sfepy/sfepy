@@ -1292,12 +1292,18 @@ class HDF5MeshIO(MeshIO):
             mat_ids.append(group.mat_id.read())
             descs.append(group.desc.read())
 
-        node_sets_groups = mesh_group.node_sets
         nodal_bcs = {}
-        for group in node_sets_groups:
-            key = group.key.read()
-            nods = group.nods.read()
-            nodal_bcs[key] = nods
+        try:
+            node_sets_groups = mesh_group.node_sets
+
+        except:
+            pass
+
+        else:
+            for group in node_sets_groups:
+                key = group.key.read()
+                nods = group.nods.read()
+                nodal_bcs[key] = nods
 
         fd.close()
         mesh._set_data(coors, ngroups, conns, mat_ids, descs,
