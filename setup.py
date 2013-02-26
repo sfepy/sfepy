@@ -52,19 +52,18 @@ def configuration(parent_package='',top_path=None):
     aux_scripts = [
         'blockgen.py',
         'config.py',
-        'convert.py',
         'convert_mesh.py',
         'cylindergen.py',
         'edit_identifiers.py',
-        'edit_neu.py',
         'evalForms.py',
         'eval_tl_forms.py',
         'gen_gallery.py',
         'gen_lobatto_pyx.py',
         'gen_term_table.py',
         'plot_condition_numbers.py',
+        'save_basis.py',
         'show_authors.py',
-        'spymatrix.py'
+        'sync_module_docs.py',
     ]
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
 
