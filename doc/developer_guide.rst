@@ -866,7 +866,6 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/extmods/assemble
    src/sfepy/fem/extmods/bases
    src/sfepy/fem/extmods/lobatto
-   src/sfepy/fem/extmods/lobatto_template
    src/sfepy/fem/extmods/mappings
    src/sfepy/fem/extmods/mesh
 
