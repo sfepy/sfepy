@@ -29,6 +29,10 @@ omits = [
     'site_cfg_template.py',
 ]
 
+omits_pyx = [
+    'lobatto_template.pyx',
+]
+
 doc_template = """%s
 %s
 
@@ -63,7 +67,8 @@ def main():
                   if os.path.basename(ii) not in omits)
     sources.update(ii for ii in
                    locate_files('*.pyx',
-                                root_dir=os.path.join(top_dir, 'sfepy')))
+                                root_dir=os.path.join(top_dir, 'sfepy'))
+                   if os.path.basename(ii) not in omits_pyx)
     scripts = set(ii for ii in
                   locate_files('*.py',
                                root_dir=os.path.join(top_dir, 'script'))
