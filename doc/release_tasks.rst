@@ -6,6 +6,14 @@ A few notes on what to do during a release.
 Things to check before a release
 --------------------------------
 
+#. synchronize module documentation (dry run)::
+
+     $ ./script/sync_module_docs.py doc/src/ . -n
+
+#. regenerate gallery page::
+
+    $ script/gen_gallery.py -l ../doc-devel
+
 #. create temporary/testing tarball::
 
      $ python setup.py sdist
@@ -44,10 +52,6 @@ Things to check before a release
 
    then remove the installed files so that they do not interfere with
    the local build
-
-#. regenerate gallery page::
-
-    $ script/gen_gallery.py -l ../doc-devel
 
 #. create final tarball
 
