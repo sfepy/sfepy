@@ -711,7 +711,7 @@ How To Make a Release
 .. toctree::
    :maxdepth: 2
 
-   release_tasks.rst
+   release_tasks
 
 .. _using-git:
 
@@ -963,7 +963,7 @@ sfepy.postprocess package
    src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/domain_specific
    src/sfepy/postprocess/plot_dofs
-   src/sfepy/postprocess/plot_facets.rst
+   src/sfepy/postprocess/plot_facets
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
@@ -984,6 +984,7 @@ sfepy.solvers package
    src/sfepy/solvers/semismooth_newton
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts
+   src/sfepy/solvers/ts_solvers
 
 sfepy.terms package
 ^^^^^^^^^^^^^^^^^^^
