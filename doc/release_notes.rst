@@ -1,5 +1,128 @@
 # created: 20.07.2007 (-1)
 
+.. _2012.4-2013.1:
+
+from 2012.4 to 2013.1
+=====================
+
+- solvers:
+
+  - move time stepping solvers to new sfepy/solvers/ts_solvers.py
+  - redesign time stepping, unify use of stationary and evolutionary solvers:
+
+    - new StationarySolver
+    - update PDESolverApp.call()
+    - update TimeSteppingSolver - change __init__(), __call__() arguments,
+      remove .set_step_fun()
+    - remove solve_stationary(), solve_evolutionary()
+    - move prepare_matrix(), prepare_save_data(), make_implicit_step(),
+      make_explicit_step() into sfepy/solvers/ts_solvers.py
+    - new get_initial_state()
+    - update SimpleTimeSteppingSolver.__call__() to implement fully the time
+      stepping loop, new .solve_step()
+    - update ExplicitTimeSteppingSolver, new .solve_step
+
+  - new AdaptiveTimeSteppingSolver - implicit adaptive time stepping solver:
+
+    - new get_min_dt(), adapt_time_step()
+    - new VariableTimeStepper.from_conf(), .set_from_ts(),
+      .set_n_digit_from_min_dt()
+    - update VariableTimeStepper.set_step() to allow only step = 0
+    - update VariableTimeStepper.__iter__() to include t1
+
+- input-output:
+
+  - fix ANSYSCDBMeshIO.read(), guess it with .inp suffix:
+
+    - new .guess()
+    - for mixed element meshes and coordinates without "solid" keyword
+
+  - allow quadratic elements in ANSYSCDBMeshIO.read(), strip extra nodes:
+
+    - allow more format variants
+    - add remap argument to mesh_from_groups()
+    - add .dat suffix
+
+  - update ANSYSCDBMeshIO.read() to support nodes of boundary conditions
+  - support node sets (nodes of boundary conditions) in HDF5MeshIO.read(),
+    .write()
+
+  - fix omitting nodes of boundary conditions in Mesh.write()
+  - add nodal_bcs argument to Mesh.from_data()
+  - update HDF5MeshIO.read() for old meshes without node_sets group
+
+- mesh, domain, regions:
+
+  - support mat_ids in merge_mesh()
+  - new Mesh.__add__() to merge meshes
+  - add verbose argument to gen_block_mesh(), gen_cylinder_mesh()
+  - new gen_extended_block_mesh() mesh generator
+  - fix smooth_mesh() - improve efficiency
+  - support nodes and elements of set in create_bnf()
+  - update region_leaf() and test for "nodes of set" selector:
+
+    - prepare for "elements of set" selector
+    - nodes of group support only int id
+
+  - move bodies of functions for saving regions from ProblemDefinition to
+    Domain:
+
+    - new Domain.save_regions(), .save_regions_as_groups()
+    - update ProblemDefinition.save_regions(), .save_regions_as_groups()
+
+  - new Region.delete_zero_faces(), used in .complete_description()
+  - use Region.get_cells() instead of direct access to cells
+
+    - true cells are checked in Region.get_cells() if needed
+    - true_cells attribute is properly initialized in
+      Region.complete_description()
+
+  - allow dot in set names in create_bnf()
+  - allow dot in region names
+  - fix Region.get_edge_graph() for degenerate edges
+
+- fields, variables:
+
+  - update setting of variables data (use Variable.set_data())
+  - rename/update Variables.non_state_data_from_state() ->
+    .set_data_from_state()
+  - rename/update Variable.data_from_any() -> .set_data()
+  - rename FieldVariable.data_from_qp() -> .set_data_from_qp()
+  - new Variable.is_finite()
+
+- new terms:
+
+  - dw_tl_bulk_active (active bulk pressure term)
+
+- miscellaneous updates:
+
+  - make view button to print view and roll as arguments of postproc.py
+  - set ts directly in ProblemDefinition.update_time_stepper()
+  - add verbose argument to MyBar progress bar
+  - allow to run python shell from debugger
+  - more grammar elements available in parse_conf.py
+  - radial mesh - fixes, integrals and derivatives
+  - new get_face_areas() + test
+  - new global option 'check_term_finiteness'
+  - check finiteness in Term.evaluate()
+  - fix compute_nodal_normals() for degenerate elements, check for zero normals
+  - new configure_output()
+  - remove many unused functions, code clean up
+
+- scripts:
+
+  - script/save_basis.py: plot nodes of selected dofs, new plot_nodes()
+  - script/convert_mesh.py: new --center option
+
+- examples and tests:
+
+  - update linear_elastic_damping.py example to use adaptive time stepping
+  - new tests/test_mesh_generators.py - test basic mesh generators
+
+- docs:
+
+  - add support section to main page
+
 .. _2012.3-2012.4:
 
 from 2012.3 to 2012.4
