@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **05.12.2011** Version 2011.4 released (cython used instead of swig to
+  interface C code, many terms unified thanks to new optional material
+  term argument type, updated Lagrangian formulation for large
+  deformations, automatic generation of gallery of examples, etc.), see
+  :ref:`release notes <2011.3-2011.4>`.
+
 * **10.08.2011** Version 2011.3 released (major update of terms aiming at
   easier usage and definition while retaining original C functions,
   overriding problem description items on command line, improved
