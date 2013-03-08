@@ -81,6 +81,10 @@ void sys_keyboardEnableRaw( void );
 void sys_keyboardDisableRaw( void );
 void sys_pause( void );
 
+#ifndef __SDIR__
+  #define __SDIR__ ""
+#endif
+
 /*!
   @par Revision history:
   - 06.03.2003, c
