@@ -3,6 +3,8 @@
 
 .. include:: links.inc
 
+.. _developer_guide:
+
 Developer Guide
 ===============
 
@@ -112,6 +114,8 @@ for specialists working in the respective fields.
 The `fem/` is the heart of the code, while the `terms/` contains the
 particular integral forms usable to build equations - new term writers
 should look there.
+
+.. _how_to_contribute:
 
 How to Contribute
 -----------------

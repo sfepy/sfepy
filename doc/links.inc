@@ -10,6 +10,7 @@
 .. _sfepy: http://sfepy.org
 .. _sfepy web site: http://sfepy.org
 .. _sfepy mailing list: http://groups.google.com/group/sfepy-devel
+.. _our mailing list: http://groups.google.com/group/sfepy-devel
 .. _sfepy issues: https://github.com/sfepy/sfepy/issues
 .. _issues: https://github.com/sfepy/sfepy/issues
 .. _sfepy download: http://code.google.com/p/sfepy/wiki/Downloads?tm=2
