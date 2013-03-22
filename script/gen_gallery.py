@@ -159,11 +159,12 @@ def generate_images(images_dir, examples_dir):
             else:
                 views = default_views
 
-            if problem.ts_conf is None:
+            tsolver = problem.get_time_solver()
+            if tsolver.ts is None:
                 suffix = None
 
             else:
-                suffix = problem.ts.suffix % problem.ts.step
+                suffix = tsolver.ts.suffix % tsolver.ts.step
 
             filename = problem.get_output_name(suffix=suffix)
 
