@@ -132,6 +132,28 @@ int32 fmf_pretend( FMField *obj,
   return( RET_OK );
 }
 
+/*
+  No `(obj->nAlloc >= 0)` check - assumes `obj` to be a FMField with
+  unallocated data meant to point to some buffer.
+*/
+int32 fmf_pretend_nc( FMField *obj,
+                      int32 nCell, int32 nLev, int32 nRow, int32 nCol,
+                      float64 *data )
+{
+  obj->nCell = nCell;
+  obj->nLev = nLev;
+  obj->nRow = nRow;
+  obj->nCol = nCol;
+  obj->val =  obj->val0 = data;
+  obj->nAlloc = -1;
+  obj->offset = 0;
+  obj->nColFull = obj->nCol;
+  obj->cellSize = obj->nLev * obj->nRow * obj->nCol;
+
+  return( RET_OK );
+}
+
+
 #undef __FUNC__
 #define __FUNC__ "fmfr_pretend"
 /*!
