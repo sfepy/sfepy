@@ -55,7 +55,7 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['bases.pyx']
+    src = ['bases.pyx', 'lagrange.c']
     config.add_extension('bases',
                          sources=src,
                          libraries=['sfepy_common'],
