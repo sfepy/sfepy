@@ -846,6 +846,10 @@ class Viewer(Struct):
         if gui is not None:
             gui.has_several_steps = has_several_steps
 
+        self.reload_source = reload_source = ReloadSource()
+        reload_source._viewer = self
+        reload_source._source = self.file_source
+
         if has_several_steps:
             self.set_step = set_step = SetStep()
             set_step._viewer = self
@@ -855,10 +859,17 @@ class Viewer(Struct):
                     msg='invalid time step! (%d <= %d <= %d)'
                     % (step_range[0], step, step_range[1]))
             set_step.step = step
-            self.file_source.setup_notification(set_step, 'file_changed')
+
+            if self.watch:
+                self.file_source.setup_notification(set_step, 'file_changed')
 
             if gui is not None:
                 gui.set_step = set_step
+
+        else:
+            if self.watch:
+                self.file_source.setup_notification(reload_source,
+                                                    'reload_source')
 
         self.options.update(get_arguments(omit = ['self', 'file_source']))
 
@@ -885,6 +896,7 @@ class Viewer(Struct):
                            show_label=False, style='custom'),
                 ),
                 HGroup(spring,
+                       Item('button_reload', show_label=False),
                        Item('button_view', show_label=False),
                        Item('button_make_snapshots', show_label=False,
                             enabled_when='has_several_steps == True'),
@@ -941,6 +953,29 @@ class SetStep(HasTraits):
 
         self.file_changed = False
 
+class ReloadSource(HasTraits):
+
+    _viewer = Instance(Viewer)
+    _source = Instance(FileSource)
+
+    reload_source = Bool(False)
+
+    def _reload_source_changed(self, old, new):
+        if new == True:
+            ext = os.path.splitext(self._source.filename)[1]
+            if ext == 'vtk':
+                while 1:
+                    # Wait for the file to be completely written.
+                    fd = open(self._source.filename, 'r')
+                    ch = fd.read(1)
+                    fd.close()
+                    if ch == '#':
+                        break
+
+            self._viewer.set_source_filename(self._source.filename)
+
+        self.reload_source = False
+
 def make_animation(filename, view, roll, anim_format, options,
                    reuse_viewer=None):
     output_dir = tempfile.mkdtemp()
@@ -996,6 +1031,7 @@ class ViewerGUI(HasTraits):
     has_several_steps = Bool(False)
     viewer = Instance(Viewer)
     set_step = Instance(SetStep)
+    button_reload = Button('reload')
     button_view = Button('print view')
     button_make_animation = Button('make animation')
     button_make_snapshots = Button('make snapshots')
@@ -1014,6 +1050,9 @@ class ViewerGUI(HasTraits):
 
         scene.foreground = fgcolor
         scene.background = bgcolor
+
+    def _button_reload_fired(self):
+        self.viewer.reload_source.reload_source = True
 
     def _button_view_fired(self):
         self.scene.camera.print_traits()
