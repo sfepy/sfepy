@@ -142,6 +142,12 @@ class VTKFileSource(FileSource):
         self.filename = filename
         vis_source.base_file_name = filename
 
+        # Force re-read.
+        vis_source.reader.modified()
+        vis_source.update()
+        # Propagate changes in the pipeline.
+        vis_source.data_changed = True
+
     def get_step_range(self):
         return (0, 0)
 
