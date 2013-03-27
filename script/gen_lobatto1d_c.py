@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Generate lobatto.pyx file.
+Generate lobatto1d.c and lobatto1h.c files.
 """
 import sys
 sys.path.append('.')
@@ -14,15 +14,17 @@ import matplotlib.pyplot as plt
 from sfepy import top_dir
 from sfepy.base.ioutils import InDir
 
+hdef = 'float64 %s(float64 x);\n'
+
 cdef = """
-cdef float64 %s(float64 x):
-    return %s
+float64 %s(float64 x)
+{
+  return(%s);
+}
 """
 
 fun_list = """
-cdef fun %s[%d]
-
-%s[:] = [%s]
+const fun %s[%d] = {%s};
 """
 
 def gen_lobatto(max_order):
@@ -135,9 +137,20 @@ def plot_polys(fig, polys, var_name='x'):
         vy = [float(poly.subs(x, xx)) for xx in vx]
         plt.plot(vx, vy)
 
+def append_declarations(out, cpolys, comment, cvar_name, shift=0):
+    names = []
+    out.append('\n// %s functions.\n' % comment)
+    for ii, cpoly in enumerate(cpolys):
+        name = '%s_%03d' % (cvar_name, ii + shift)
+        function = hdef % name
+        out.append(function)
+        names.append(name)
+
+    return names
+
 def append_polys(out, cpolys, comment, cvar_name, var_name='x', shift=0):
     names = []
-    out.append('\n# %s functions.\n' % comment)
+    out.append('\n// %s functions.\n' % comment)
     for ii, cpoly in enumerate(cpolys):
         name = '%s_%03d' % (cvar_name, ii + shift)
         function = cdef % (name, cpoly.replace(var_name, 'x'))
@@ -149,13 +162,11 @@ def append_polys(out, cpolys, comment, cvar_name, var_name='x', shift=0):
 def append_lists(out, names, length):
     args = ', '.join(['&%s' % name for name in names])
     name = names[0][:-4]
-    _list = fun_list % (name, length, name, args)
+    _list = fun_list % (name, length, args)
     out.append(_list)
 
-usage = """%prog [options]
+usage = '%prog [options]\n' + __doc__.rstrip()
 
-Generate lobatto.pyx file.
-"""
 help = {
     'max_order' :
     'maximum order of polynomials [default: %default]',
@@ -193,13 +204,36 @@ def main():
         plt.show()
 
     indir = InDir(os.path.join(top_dir, 'sfepy/fem/extmods/'))
-    fd = open(indir('lobatto_template.pyx'), 'r')
+
+    fd = open(indir('lobatto1d_template.h'), 'r')
+    template = fd.read()
+    fd.close
+
+    fd = open(indir('lobatto1d.h'), 'w')
+
+    out = []
+
+    append_declarations(out, clobs, 'Lobatto', 'lobatto')
+    append_declarations(out, cdlobs, 'Derivatives of Lobatto', 'd_lobatto')
+
+    append_declarations(out, ckerns, 'Kernel', 'kernel',
+                        shift=2)
+    append_declarations(out, cdkerns, 'Derivatives of kernel', 'd_kernel',
+                        shift=2)
+
+    append_declarations(out, clegs, 'Legendre', 'legendre')
+    append_declarations(out, cdlegs, 'Derivatives of Legendre', 'd_legendre')
+
+    fd.write(template.replace('// REPLACE_TEXT', ''.join(out)))
+
+    fd.close()
+
+
+    fd = open(indir('lobatto1d_template.c'), 'r')
     template = fd.read()
     fd.close()
 
-    filename = indir('lobatto.pyx')
-
-    fd = open(filename, 'w')
+    fd = open(indir('lobatto1d.c'), 'w')
 
     out = []
 
@@ -222,9 +256,9 @@ def main():
                                     'Derivatives of Legendre', 'd_legendre',
                                     var_name='y')
 
-    out.append('\n# Lists of functions.\n')
+    out.append('\n// Lists of functions.\n')
 
-    out.append('\ncdef int32 max_order = %d\n' % max_order)
+    out.append('\nconst int32 max_order = %d;\n' % max_order)
 
     append_lists(out, names_lobatto, max_order + 1)
     append_lists(out, names_d_lobatto, max_order + 1)
@@ -235,7 +269,7 @@ def main():
     append_lists(out, names_legendre, max_order + 1)
     append_lists(out, names_d_legendre, max_order + 1)
 
-    fd.write(template.replace('REPLACE_TEXT', ''.join(out)))
+    fd.write(template.replace('// REPLACE_TEXT', ''.join(out)))
 
     fd.close()
 
