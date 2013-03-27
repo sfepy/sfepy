@@ -796,7 +796,7 @@ class LobattoTensorProductPolySpace(PolySpace):
         """
         See PolySpace.eval_base().
         """
-        from extmods.lobatto import eval_lobatto_tensor_product as ev
+        from extmods.lobatto_bases import eval_lobatto_tensor_product as ev
         c_min, c_max = self.bbox[:, 0]
 
         base = ev(coors, self.nodes, c_min, c_max, self.order, diff)
