@@ -80,6 +80,9 @@ int32 fmf_freeDestroy( FMField **p_obj );
 int32 fmf_pretend( FMField *obj,
 		   int32 nCell, int32 nLev, int32 nRow, int32 nCol,
 		   float64 *data );
+int32 fmf_pretend_nc( FMField *obj,
+                      int32 nCell, int32 nLev, int32 nRow, int32 nCol,
+                      float64 *data );
 int32 fmfr_pretend( FMField *obj,
 		    int32 nLev, int32 nRow, int32 nCol,
 		    float64 *data, int32 offset, int32 nColFull );

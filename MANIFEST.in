@@ -6,5 +6,6 @@ prune doc/html
 exclude doc/logo/*.vtk
 exclude doc/publish.py
 
-include sfepy/fem/extmods/lobatto_template.pyx
+include sfepy/fem/extmods/lobatto1d_template.c
+include sfepy/fem/extmods/lobatto1d_template.h
 include sfepy/fem/extmods/version.h.in

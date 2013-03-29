@@ -19,7 +19,7 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    common_src = ['fmfield.c', 'geometry.c', 'geommech.c', 'common_python.c']
+    common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
     common_src = [op.join('../../fem/extmods', ii) for ii in common_src]
 
     csrc = [op.split(ii)[1] for ii in glob.glob('sfepy/terms/extmods/*.c')]
