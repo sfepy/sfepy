@@ -12,6 +12,11 @@ int32 dw_surface_dot_vectornormscalar(FMField *out,
                                       Mapping *rsg,
                                       Mapping *csg,
                                       int32 isDiff);
+int32 dw_surface_dot_scalarnormvector(FMField *out,
+                                      FMField *coef, FMField *val_qp,
+                                      Mapping *rsg,
+                                      Mapping *csg,
+                                      int32 isDiff);
 int32 dw_volume_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
                             Mapping *rvg, Mapping *cvg,
                             int32 isDiff );

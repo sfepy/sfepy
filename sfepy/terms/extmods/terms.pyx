@@ -261,6 +261,13 @@ cdef extern from 'terms.h':
                                            Mapping *csg,
                                            int32 isDiff)
 
+    cdef int32 _dw_surface_dot_scalarnormvector \
+         'dw_surface_dot_scalarnormvector'(FMField *out,
+                                           FMField *coef, FMField *val_qp,
+                                           Mapping *rsg,
+                                           Mapping *csg,
+                                           int32 isDiff)
+
     cdef int32 _dw_volume_dot_vector \
          'dw_volume_dot_vector'(FMField *out, FMField *coef, FMField *val_qp,
                                 Mapping *rvg, Mapping *cvg,
@@ -1349,6 +1356,24 @@ def dw_surface_dot_vectornormscalar(np.ndarray out not None,
     array2fmfield4(_val_qp, val_qp)
 
     ret = _dw_surface_dot_vectornormscalar(_out, _coef, _val_qp,
+                                           rcmap.geo, ccmap.geo, is_diff)
+    return ret
+
+def dw_surface_dot_scalarnormvector(np.ndarray out not None,
+                                    np.ndarray coef not None,
+                                    np.ndarray val_qp not None,
+                                    CMapping rcmap not None,
+                                    CMapping ccmap not None,
+                                    int32 is_diff):
+
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _val_qp[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_val_qp, val_qp)
+
+    ret = _dw_surface_dot_scalarnormvector(_out, _coef, _val_qp,
                                            rcmap.geo, ccmap.geo, is_diff)
     return ret
 
