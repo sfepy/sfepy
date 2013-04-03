@@ -11,16 +11,15 @@ from sfepy.base.compat import in1d
 from sfepy.terms.extmods import terms
 
 from sfepy.linalg import split_range
-#from sfepy.base.ioutils import read_cache_data, write_cache_data
 
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
-_match_var = re.compile( '^virtual$|^state(_[_a-zA-Z0-9]+)?$'\
-                        + '|^parameter(_[_a-zA-Z0-9]+)?$' ).match
-_match_state = re.compile( '^state(_[_a-zA-Z0-9]+)?$' ).match
-_match_parameter = re.compile( '^parameter(_[_a-zA-Z0-9]+)?$' ).match
-_match_material = re.compile( '^material(_[_a-zA-Z0-9]+)?$' ).match
-_match_material_opt = re.compile( '^opt_material(_[_a-zA-Z0-9]+)?$' ).match
-_match_material_root = re.compile( '(.+)\.(.*)' ).match
+_match_var = re.compile('^virtual$|^state(_[_a-zA-Z0-9]+)?$'\
+                        + '|^parameter(_[_a-zA-Z0-9]+)?$').match
+_match_state = re.compile('^state(_[_a-zA-Z0-9]+)?$').match
+_match_parameter = re.compile('^parameter(_[_a-zA-Z0-9]+)?$').match
+_match_material = re.compile('^material(_[_a-zA-Z0-9]+)?$').match
+_match_material_opt = re.compile('^opt_material(_[_a-zA-Z0-9]+)?$').match
+_match_material_root = re.compile('(.+)\.(.*)').match
 
 def get_shape_kind(integration):
     """
@@ -101,27 +100,27 @@ def split_complex_args(args):
 
     return newargs
 
-def vector_chunk_generator( total_size, chunk_size, shape_in,
-                            zero = False, set_shape = True, dtype = nm.float64 ):
+def vector_chunk_generator(total_size, chunk_size, shape_in,
+                           zero=False, set_shape=True, dtype=nm.float64):
     if not chunk_size:
         chunk_size = total_size
-    shape = list( shape_in )
+    shape = list(shape_in)
 
-    sizes = split_range( total_size, chunk_size )
-    ii = nm.array( 0, dtype = nm.int32 )
+    sizes = split_range(total_size, chunk_size)
+    ii = nm.array(0, dtype=nm.int32)
     for size in sizes:
-        chunk = nm.arange( size, dtype = nm.int32 ) + ii
+        chunk = nm.arange(size, dtype=nm.int32) + ii
         if set_shape:
             shape[0] = size
         if zero:
-            out = nm.zeros( shape, dtype = dtype )
+            out = nm.zeros(shape, dtype=dtype)
         else:
-            out = nm.empty( shape, dtype = dtype )
+            out = nm.empty(shape, dtype=dtype)
         yield out, chunk
         ii += size
 
 def create_arg_parser():
-    from pyparsing import Combine, Literal, Word, delimitedList, Group, \
+    from pyparsing import Literal, Word, delimitedList, Group, \
          StringStart, StringEnd, Optional, nums, alphas, alphanums
 
     inumber = Word("+-"+nums, nums)
@@ -145,10 +144,9 @@ def create_arg_parser():
     return args
 
 # 22.01.2006, c
-class CharacteristicFunction( Struct ):
-    ##
-    # c: 22.01.2006, r: 09.05.2008
-    def __init__( self, region ):
+class CharacteristicFunction(Struct):
+
+    def __init__(self, region):
         self.igs = region.igs
         self.region = region
         self.i_current = None
@@ -156,11 +154,11 @@ class CharacteristicFunction( Struct ):
         self.ig = None
 
     def __call__(self, chunk_size, shape_in, zero=False, set_shape=True,
-                  ret_local_chunk=False, dtype=nm.float64):
+                 ret_local_chunk=False, dtype=nm.float64):
         els = self.region.get_cells(self.ig)
-        for out, chunk in vector_chunk_generator( els.shape[0], chunk_size,
-                                                  shape_in, zero, set_shape,
-                                                  dtype ):
+        for out, chunk in vector_chunk_generator(els.shape[0], chunk_size,
+                                                 shape_in, zero, set_shape,
+                                                 dtype):
             self.local_chunk = chunk
 
             if ret_local_chunk:
@@ -170,15 +168,10 @@ class CharacteristicFunction( Struct ):
 
         self.local_chunk = None
 
-    ##
-    # 11.08.2006, c
-    # 27.02.2007
-    def set_current_group( self, ig ):
+    def set_current_group(self, ig):
         self.ig = ig
 
-    ##
-    # 05.09.2006, c
-    def get_local_chunk( self ):
+    def get_local_chunk(self):
         return self.local_chunk
 
 class ConnInfo(Struct):
@@ -296,7 +289,7 @@ class Terms(Container):
             raise ValueError('cannot add Terms with %s!' % other)
 
         return out
-        
+
     def __radd__(self, other):
         return self + other
 
@@ -332,38 +325,27 @@ class Terms(Container):
         for term in self:
             term.assign_args(variables, materials, user)
 
-    ##
-    # 24.07.2006, c
-    # 02.08.2006
-    def get_variable_names( self ):
+    def get_variable_names(self):
         out = []
         for term in self:
-            out.extend( term.get_variable_names() )
-        return list( set( out ) )
+            out.extend(term.get_variable_names())
+        return list(set(out))
 
-    ##
-    # 24.07.2006, c
-    # 02.08.2006
-    def get_material_names( self ):
+    def get_material_names(self):
         out = []
         for term in self:
-            out.extend( term.get_material_names() )
-        return list( set( out ) )
+            out.extend(term.get_material_names())
+        return list(set(out))
 
-    ##
-    # 24.07.2006, c
-    # 02.08.2006
-    def get_user_names( self ):
+    def get_user_names(self):
         out = []
         for term in self:
-            out.extend( term.get_user_names() )
-        return list( set( out ) )
+            out.extend(term.get_user_names())
+        return list(set(out))
 
-    ##
-    # 11.08.2006, c
-    def set_current_group( self, ig ):
+    def set_current_group(self, ig):
         for term in self:
-            term.char_fun.set_current_group( ig )
+            term.char_fun.set_current_group(ig)
 
 class Term(Struct):
     name = ''
@@ -385,17 +367,16 @@ class Term(Struct):
             constructor = term_table[name]
 
         else:
-            msg = "term '%s' is not in %s" % (name,
-                                              sorted(term_table.keys()))
+            msg = "term '%s' is not in %s" % (name, sorted(term_table.keys()))
             raise ValueError(msg)
 
         obj = constructor(name, arg_str, integral, region, **kwargs)
         return obj
-        
+
     @staticmethod
     def from_desc(constructor, desc, region, integrals=None):
         from sfepy.fem import Integrals
-        
+
         if integrals is None:
             integrals = Integrals()
 
@@ -541,13 +522,16 @@ class Term(Struct):
         self.classify_args()
         self.check_args()
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """Subclasses either implement __call__ or plug in a proper _call()."""
-        return self._call( diff_var, chunk_size, **kwargs )
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        """
+        Subclasses either implement __call__ or plug in a proper _call().
+        """
+        return self._call(diff_var, chunk_size, **kwargs)
 
-    def _call( self, diff_var = None, chunk_size = None, **kwargs ):
-        msg = 'base class method "_call" called for %s' % self.__class__.__name__
-        raise RuntimeError( msg )
+    def _call(self, diff_var=None, chunk_size=None, **kwargs):
+        msg = 'base class method "_call" called for %s' \
+              % self.__class__.__name__
+        raise RuntimeError(msg)
 
     def assign_args(self, variables, materials, user=None):
         """
@@ -589,13 +573,13 @@ class Term(Struct):
         A state variable can be in place of a parameter variable and
         vice versa.
         """
-        self.names = Struct(name = 'arg_names',
-                            material = [], variable = [], user = [],
-                            state = [], virtual = [], parameter = [])
+        self.names = Struct(name='arg_names',
+                            material=[], variable=[], user=[],
+                            state=[], virtual=[], parameter=[])
 
         msg = "variable '%s' requested by term '%s' does not exist!"
 
-        # check for "opt_material"
+        # Check for "opt_material".
         if isinstance(self.arg_types[0], tuple):
             arg_types = self.arg_types[0]
         else:
@@ -620,20 +604,20 @@ class Term(Struct):
             assert_(len(self.modes) == len(self.arg_types))
             # Find matching call signature.
             matched = []
-            for it, arg_types in enumerate( self.arg_types ):
+            for it, arg_types in enumerate(self.arg_types):
                 failed = False
-                for ii, arg_type in enumerate( arg_types ):
+                for ii, arg_type in enumerate(arg_types):
                     name = self.arg_names[ii]
-                    if _match_var( arg_type ):
+                    if _match_var(arg_type):
                         names = self.names.variable
                         var = self.args[ii]
 
-                        if _match_state( arg_type ) and \
+                        if _match_state(arg_type) and \
                                var.is_state_or_parameter():
                             pass
                         elif (arg_type == 'virtual') and var.is_virtual():
                             pass
-                        elif _match_parameter( arg_type ) and \
+                        elif _match_parameter(arg_type) and \
                                  var.is_state_or_parameter():
                             pass
                         else:
@@ -641,52 +625,52 @@ class Term(Struct):
                             break
 
                 if not failed:
-                    matched.append( it )
+                    matched.append(it)
 
-            if len( matched ) == 1:
+            if len(matched) == 1:
                 i_match = matched[0]
                 arg_types = self.arg_types[i_match]
                 self.mode = self.modes[i_match]
-            elif len( matched ) == 0:
+            elif len(matched) == 0:
                 msg = 'cannot match arguments! (%s)' % self.arg_names
-                raise ValueError( msg )
+                raise ValueError(msg)
             else:
                 msg = 'ambiguous arguments! (%s)' % self.arg_names
-                raise ValueError( msg )
+                raise ValueError(msg)
         else:
             arg_types = self.arg_types
             self.mode = None
 
         # Set actual argument types.
-        self.ats = list( arg_types )
+        self.ats = list(arg_types)
 
-        for ii, arg_type in enumerate( arg_types ):
+        for ii, arg_type in enumerate(arg_types):
             name = self.arg_names[ii]
-            if _match_var( arg_type ):
+            if _match_var(arg_type):
                 names = self.names.variable
                 var = self.args[ii]
 
-                if _match_state( arg_type ) and \
+                if _match_state(arg_type) and \
                        var.is_state_or_parameter():
-                    self.names.state.append( name )
+                    self.names.state.append(name)
                 elif (arg_type == 'virtual') and var.is_virtual():
-                    self.names.virtual.append( name )
-                elif _match_parameter( arg_type ) and \
+                    self.names.virtual.append(name)
+                elif _match_parameter(arg_type) and \
                          var.is_state_or_parameter():
-                    self.names.parameter.append( name )
+                    self.names.parameter.append(name)
 
-            elif _match_material( arg_type ) or \
-                     _match_material_opt( arg_type ):
+            elif _match_material(arg_type) or \
+                     _match_material_opt(arg_type):
                 names = self.names.material
 
             else:
                 names = self.names.user
-            names.append( name )
+            names.append(name)
 
-        self.n_virtual = len( self.names.virtual )
+        self.n_virtual = len(self.names.virtual)
         if self.n_virtual > 1:
-            raise ValueError( 'at most one virtial variable is allowed! (%d)'\
-                              % self.n_virtual )
+            raise ValueError('at most one virtial variable is allowed! (%d)'
+                             % self.n_virtual)
 
         self.set_arg_types()
 
@@ -697,7 +681,7 @@ class Term(Struct):
         else:
             self.itype = self.raw_itype
 
-    def set_arg_types( self ):
+    def set_arg_types(self):
         pass
 
     def check_args(self):
@@ -748,10 +732,8 @@ class Term(Struct):
         variables = self.get_state_variables()
         return [var.name for var in variables]
 
-    ##
-    # 26.07.2007, c
-    def get_parameter_names( self ):
-        return copy( self.names.parameter )
+    def get_parameter_names(self):
+        return copy(self.names.parameter)
 
     def get_conn_key(self):
         """The key to be used in DOF connectivity information."""
@@ -813,17 +795,17 @@ class Term(Struct):
             else:
                 ps_tg = v_tg
 
-            val = ConnInfo(virtual = vvar, virtual_igs = v_igs,
-                           state = svar, state_igs = s_igs,
-                           primary = svar, primary_igs = s_igs,
-                           has_virtual = True,
-                           has_state = True,
-                           is_trace = is_trace,
-                           dc_type = dc_type,
-                           v_tg = v_tg,
-                           ps_tg = ps_tg,
-                           region = region,
-                           all_vars = all_vars)
+            val = ConnInfo(virtual=vvar, virtual_igs=v_igs,
+                           state=svar, state_igs=s_igs,
+                           primary=svar, primary_igs=s_igs,
+                           has_virtual=True,
+                           has_state=True,
+                           is_trace=is_trace,
+                           dc_type=dc_type,
+                           v_tg=v_tg,
+                           ps_tg=ps_tg,
+                           region=region,
+                           all_vars=all_vars)
             vals.append(val)
 
         pvars += aux_pvars
@@ -840,32 +822,32 @@ class Term(Struct):
             else:
                 ps_tg = v_tg
 
-            val = ConnInfo(virtual = vvar, virtual_igs = v_igs,
-                           state = None, state_igs = [],
-                           primary = pvar.get_primary(), primary_igs = p_igs,
-                           has_virtual = vvar is not None,
-                           has_state = False,
-                           is_trace = is_trace,
-                           dc_type = dc_type,
-                           v_tg = v_tg,
-                           ps_tg = ps_tg,
-                           region = region,
-                           all_vars = all_vars)
+            val = ConnInfo(virtual=vvar, virtual_igs=v_igs,
+                           state=None, state_igs=[],
+                           primary=pvar.get_primary(), primary_igs=p_igs,
+                           has_virtual=vvar is not None,
+                           has_state=False,
+                           is_trace=is_trace,
+                           dc_type=dc_type,
+                           v_tg=v_tg,
+                           ps_tg=ps_tg,
+                           region=region,
+                           all_vars=all_vars)
             vals.append(val)
 
         if vvar and (len(vals) == 0):
             # No state, parameter variables, just the virtual one.
-            val = ConnInfo(virtual = vvar, virtual_igs = v_igs,
-                           state = vvar.get_primary(), state_igs = v_igs,
-                           primary = vvar.get_primary(), primary_igs = v_igs,
-                           has_virtual = True,
-                           has_state = False,
-                           is_trace = False,
-                           dc_type = dc_type,
-                           v_tg = v_tg,
-                           ps_tg = v_tg,
-                           region = region,
-                           all_vars = all_vars)
+            val = ConnInfo(virtual=vvar, virtual_igs=v_igs,
+                           state=vvar.get_primary(), state_igs=v_igs,
+                           primary=vvar.get_primary(), primary_igs=v_igs,
+                           has_virtual=True,
+                           has_state=False,
+                           is_trace=False,
+                           dc_type=dc_type,
+                           v_tg=v_tg,
+                           ps_tg=v_tg,
+                           region=region,
+                           all_vars=all_vars)
             vals.append(val)
 
         return vals
@@ -901,7 +883,6 @@ class Term(Struct):
         for at in arg_types:
             ii = ats.index(at)
             arg_name = self.arg_names[ii]
-            ## print at, ii, arg_name
             if isinstance(arg_name, basestr):
                 if arg_name in kwargs:
                     args.append(kwargs[arg_name])
@@ -910,7 +891,6 @@ class Term(Struct):
                     args.append(self.args[ii])
 
             else:
-                ## print self.names.material
                 mat, par_name = self.args[ii]
                 if mat is not None:
                     mat_data = mat.get_data((region_name, self.integral_name),
@@ -922,10 +902,10 @@ class Term(Struct):
 
         return args
 
-    def get_kwargs( self, keys, **kwargs ):
+    def get_kwargs(self, keys, **kwargs):
         """Extract arguments from **kwargs listed in keys (default is
         None)."""
-        return [kwargs.get( name ) for name in keys]
+        return [kwargs.get(name) for name in keys]
 
     def get_arg_name(self, arg_type, full=False, join=None):
         """
@@ -1037,14 +1017,10 @@ class Term(Struct):
         return Struct(name='dof_conn_info', type=self.dof_conn_type,
                       region_name=self.region.name)
 
-    ##
-    # c: 16.02.2007, r: 15.01.2008
-    def set_current_group( self, ig ):
-        self.char_fun.set_current_group( ig )
+    def set_current_group(self, ig):
+        self.char_fun.set_current_group(ig)
 
-    ##
-    # 02.03.2007, c
-    def igs( self ):
+    def igs(self):
         return self.char_fun.igs
 
     def get_assembling_cells(self, shape=None):
@@ -1064,9 +1040,7 @@ class Term(Struct):
 
         return cells
 
-    ##
-    # c: 05.12.2007, r: 15.01.2008
-    def iter_groups( self ):
+    def iter_groups(self):
         if self.dof_conn_type == 'point':
             igs = self.igs()[0:1]
         else:
@@ -1075,27 +1049,28 @@ class Term(Struct):
         for ig in igs:
             if self.integration == 'volume':
                 if not len(self.region.get_cells(ig)): continue
-            self.set_current_group( ig )
+            self.set_current_group(ig)
             yield ig
 
-    def time_update( self, ts ):
+    def time_update(self, ts):
         if ts is not None:
             self.step = ts.step
             self.dt = ts.dt
             self.is_quasistatic = ts.is_quasistatic
 
     def advance(self, ts):
-        """Advance to the next time step. Implemented in subclasses."""
-        pass
+        """
+        Advance to the next time step. Implemented in subclasses.
+        """
 
-    def get_vector( self, variable ):
+    def get_vector(self, variable):
         """Get the vector stored in `variable` according to self.arg_steps
         and self.arg_derivatives. Supports only the backward difference w.r.t.
         time."""
 
         name = variable.name
-        return variable( step = self.arg_steps[name],
-                         derivative = self.arg_derivatives[name] )
+        return variable(step=self.arg_steps[name],
+                        derivative=self.arg_derivatives[name])
 
     def get_approximation(self, variable, get_saved=False):
         """
@@ -1263,7 +1238,6 @@ class Term(Struct):
         setup_dof_conns(conn_info)
 
         materials = self.get_materials(join=True)
-        ## print materials
 
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
@@ -1539,10 +1513,8 @@ class Term(Struct):
                 rdc = vvar.get_dof_conn(dc_type, ig, active=True)
 
                 is_trace = self.arg_traces[svar.name]
-                ## print dc_type, ig, is_trace
                 cdc = svar.get_dof_conn(dc_type, ig, active=True,
                                         is_trace=is_trace)
-                ## print svar.name, cdc.shape
                 assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 
                 sign = 1.0
@@ -1558,7 +1530,3 @@ class Term(Struct):
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
-
-##     def get_quadrature_orders(self):
-##         """Curently, it just takes the order of the term integral."""
-##         return self.integral.order
