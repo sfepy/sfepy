@@ -13,13 +13,51 @@ from sfepy.terms.extmods import terms
 from sfepy.linalg import split_range
 
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
-_match_var = re.compile('^virtual$|^state(_[_a-zA-Z0-9]+)?$'\
-                        + '|^parameter(_[_a-zA-Z0-9]+)?$').match
+_match_virtual = re.compile('^virtual$').match
 _match_state = re.compile('^state(_[_a-zA-Z0-9]+)?$').match
 _match_parameter = re.compile('^parameter(_[_a-zA-Z0-9]+)?$').match
 _match_material = re.compile('^material(_[_a-zA-Z0-9]+)?$').match
 _match_material_opt = re.compile('^opt_material(_[_a-zA-Z0-9]+)?$').match
 _match_material_root = re.compile('(.+)\.(.*)').match
+
+def get_arg_kinds(arg_types):
+    """
+    Translate `arg_types` of a Term to a canonical form.
+
+    Parameters
+    ----------
+    arg_types : tuple of strings
+        The term argument types, as given in the `arg_types` attribute.
+
+    Returns
+    -------
+    arg_kinds : list of strings
+        The argument kinds - one of 'virtual_variable', 'state_variable',
+        'parameter_variable', 'opt_material', 'user'.
+    """
+    arg_kinds = []
+    for ii, arg_type in enumerate(arg_types):
+        if _match_virtual(arg_type):
+            arg_kinds.append('virtual_variable')
+
+        elif _match_state(arg_type):
+            arg_kinds.append('state_variable')
+
+        elif _match_parameter(arg_type):
+            arg_kinds.append('parameter_variable')
+
+        elif _match_material(arg_type):
+            arg_kinds.append('material')
+
+        elif _match_material_opt(arg_type):
+            arg_kinds.append('opt_material')
+            if ii > 0:
+                msg = 'opt_material at position %d, must be at 0!' % ii
+                raise ValueError(msg)
+        else:
+            arg_kinds.append('user')
+
+    return arg_kinds
 
 def get_shape_kind(integration):
     """
@@ -577,94 +615,72 @@ class Term(Struct):
                             material=[], variable=[], user=[],
                             state=[], virtual=[], parameter=[])
 
-        msg = "variable '%s' requested by term '%s' does not exist!"
-
-        # Check for "opt_material".
+        # Prepare for 'opt_material' - just prepend a None argument if needed.
         if isinstance(self.arg_types[0], tuple):
             arg_types = self.arg_types[0]
+
         else:
             arg_types = self.arg_types
 
-        matched = 0
-        for ii, arg_type in enumerate(arg_types):
-            if _match_material_opt(arg_type):
-                matched += 1
-                if ii > 0:
-                    msg = 'opt_material at position %d, must be at 0!' % ii
-                    raise ValueError(msg)
-                if not(isinstance(self.args[ii], tuple)):
-                    self.args.insert(ii, (None, None))
-                    self.arg_names.insert(ii, (None, None))
-
-        if matched > 1:
-            msg = 'only one opt_material allowed, %d given!' % matched
-            raise ValueError(msg)
+        if len(arg_types) == (len(self.args) + 1):
+            self.args.insert(0, (None, None))
+            self.arg_names.insert(0, (None, None))
 
         if isinstance(self.arg_types[0], tuple):
             assert_(len(self.modes) == len(self.arg_types))
-            # Find matching call signature.
+            # Find matching call signature using variable arguments - material
+            # and user arguments are ignored!
             matched = []
             for it, arg_types in enumerate(self.arg_types):
-                failed = False
-                for ii, arg_type in enumerate(arg_types):
-                    name = self.arg_names[ii]
-                    if _match_var(arg_type):
-                        names = self.names.variable
-                        var = self.args[ii]
-
-                        if _match_state(arg_type) and \
-                               var.is_state_or_parameter():
-                            pass
-                        elif (arg_type == 'virtual') and var.is_virtual():
-                            pass
-                        elif _match_parameter(arg_type) and \
-                                 var.is_state_or_parameter():
-                            pass
-                        else:
-                            failed = True
-                            break
-
-                if not failed:
-                    matched.append(it)
+                arg_kinds = get_arg_kinds(arg_types)
+                if self._check_variables(arg_kinds):
+                    matched.append((it, arg_kinds))
 
             if len(matched) == 1:
-                i_match = matched[0]
+                i_match, arg_kinds = matched[0]
                 arg_types = self.arg_types[i_match]
                 self.mode = self.modes[i_match]
+
             elif len(matched) == 0:
                 msg = 'cannot match arguments! (%s)' % self.arg_names
                 raise ValueError(msg)
+
             else:
                 msg = 'ambiguous arguments! (%s)' % self.arg_names
                 raise ValueError(msg)
+
         else:
             arg_types = self.arg_types
+            arg_kinds = get_arg_kinds(self.arg_types)
             self.mode = None
+
+            if not self._check_variables(arg_kinds):
+                raise ValueError('cannot match variables! (%s)'
+                                 % self.arg_names)
 
         # Set actual argument types.
         self.ats = list(arg_types)
 
-        for ii, arg_type in enumerate(arg_types):
+        for ii, arg_kind in enumerate(arg_kinds):
             name = self.arg_names[ii]
-            if _match_var(arg_type):
+            if arg_kind.endswith('variable'):
                 names = self.names.variable
-                var = self.args[ii]
 
-                if _match_state(arg_type) and \
-                       var.is_state_or_parameter():
-                    self.names.state.append(name)
-                elif (arg_type == 'virtual') and var.is_virtual():
+                if arg_kind == 'virtual_variable':
                     self.names.virtual.append(name)
-                elif _match_parameter(arg_type) and \
-                         var.is_state_or_parameter():
+
+                elif arg_kind == 'state_variable':
+                    self.names.state.append(name)
+
+                elif arg_kind == 'parameter_variable':
                     self.names.parameter.append(name)
 
-            elif _match_material(arg_type) or \
-                     _match_material_opt(arg_type):
+            elif arg_kind.endswith('material'):
                 names = self.names.material
 
             else:
                 names = self.names.user
+
             names.append(name)
 
         self.n_virtual = len(self.names.virtual)
@@ -680,6 +696,19 @@ class Term(Struct):
             self.itype = 'd'
         else:
             self.itype = self.raw_itype
+
+    def _check_variables(self, arg_kinds):
+        for ii, arg_kind in enumerate(arg_kinds):
+            if arg_kind.endswith('variable'):
+                var = self.args[ii]
+                check = {'virtual_variable' : var.is_virtual,
+                         'state_variable' : var.is_state_or_parameter,
+                         'parameter_variable' : var.is_state_or_parameter}
+                if not check[arg_kind]():
+                    return False
+
+        else:
+            return True
 
     def set_arg_types(self):
         pass
