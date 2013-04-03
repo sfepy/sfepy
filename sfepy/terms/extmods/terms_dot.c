@@ -2,12 +2,12 @@
 #include "geommech.h"
 
 #undef __FUNC__
-#define __FUNC__ "dw_surface_dot_vectornormscalar"
-int32 dw_surface_dot_vectornormscalar(FMField *out,
-                                      FMField *coef, FMField *val_qp,
-                                      Mapping *rsg,
-                                      Mapping *csg,
-                                      int32 isDiff)
+#define __FUNC__ "dw_surface_v_dot_n_s"
+int32 dw_surface_v_dot_n_s(FMField *out,
+                           FMField *coef, FMField *val_qp,
+                           Mapping *rsg,
+                           Mapping *csg,
+                           int32 isDiff)
 {
   int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;
@@ -40,6 +40,59 @@ int32 dw_surface_dot_vectornormscalar(FMField *out,
       FMF_SetCell(val_qp, ii);
       bf_actt(aux1, rsg->bf, csg->normal);
       fmf_mulAB_nn(aux2, aux1, val_qp);
+      fmf_mul(aux2, coef->val);
+      fmf_sumLevelsMulF(out, aux2, rsg->det->val);
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy(&aux1);
+  fmf_freeDestroy(&aux2);
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_surface_s_v_dot_n"
+int32 dw_surface_s_v_dot_n(FMField *out,
+                           FMField *coef, FMField *val_qp,
+                           Mapping *rsg,
+                           Mapping *csg,
+                           int32 isDiff)
+{
+  int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
+  FMField *aux1 = 0, *aux2 = 0;
+
+  nQP = rsg->det->nLev;
+  dim = csg->normal->nRow;
+  nEPR = rsg->bf->nCol;
+  nEPC = csg->bf->nCol;
+
+  if (isDiff) {
+    fmf_createAlloc(&aux2, 1, nQP, nEPR, dim * nEPC);
+    fmf_createAlloc(&aux1, 1, nQP, dim * nEPC, 1);
+  } else {
+    fmf_createAlloc(&aux2, 1, nQP, nEPR, 1);
+    fmf_createAlloc(&aux1, 1, nQP, 1, 1);
+  }
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell(out, ii);
+    FMF_SetCellX1(coef, ii);
+    FMF_SetCell(rsg->det, ii);
+    FMF_SetCellX1(rsg->bf, ii);
+
+    if (isDiff) {
+      FMF_SetCellX1(csg->bf, ii);
+      bf_actt(aux1, csg->bf, csg->normal);
+      fmf_mulATBT_nn(aux2, rsg->bf, aux1);
+      fmf_mul(aux2, coef->val);
+      fmf_sumLevelsMulF(out, aux2, rsg->det->val);
+    } else {
+      FMF_SetCell(val_qp, ii);
+      fmf_mulATB_nn(aux1, csg->normal, val_qp);
+      fmf_mulATB_nn(aux2, rsg->bf, aux1);
       fmf_mul(aux2, coef->val);
       fmf_sumLevelsMulF(out, aux2, rsg->det->val);
     }

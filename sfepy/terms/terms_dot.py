@@ -73,9 +73,13 @@ class DotProductVolumeTerm(Term):
         return status
 
     def check_shapes(self, mat, virtual, state):
+        is_vector_scalar = ((virtual.n_components == 1)
+            and (state.n_components == state.dim))\
+            or ((virtual.n_components == virtual.dim)
+            and (state.n_components == 1))
+
         assert_((virtual.n_components == state.n_components)
-                or ((virtual.n_components == 1)
-                    and (state.n_components == state.dim)))
+                or is_vector_scalar)
 
         if mat is not None:
             n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
@@ -103,7 +107,12 @@ class DotProductVolumeTerm(Term):
                 fmode = 1
 
             if state.n_components > 1:
-                fun = terms.dw_volume_dot_vector
+                if ((self.integration == 'volume')
+                    or (virtual.n_components > 1)):
+                    fun = terms.dw_volume_dot_vector
+
+                else:
+                    fun = terms.dw_surface_s_v_dot_n
 
             else:
                 if ((self.integration == 'volume')
@@ -111,7 +120,7 @@ class DotProductVolumeTerm(Term):
                     fun = terms.dw_volume_dot_scalar
 
                 else:
-                    fun = terms.dw_surface_dot_vectornormscalar
+                    fun = terms.dw_surface_v_dot_n_s
 
             return mat, val_qp, vgeo, sgeo, fun, fmode
 
@@ -149,6 +158,7 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
         \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
         \mbox{ , }
         \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
+        \int_\Gamma q \ul{n} \cdot \ul{u} \mbox{ , }
         \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
         \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
         \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
