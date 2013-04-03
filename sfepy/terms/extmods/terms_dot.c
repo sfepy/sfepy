@@ -2,12 +2,12 @@
 #include "geommech.h"
 
 #undef __FUNC__
-#define __FUNC__ "dw_surface_dot_vectornormscalar"
-int32 dw_surface_dot_vectornormscalar(FMField *out,
-                                      FMField *coef, FMField *val_qp,
-                                      Mapping *rsg,
-                                      Mapping *csg,
-                                      int32 isDiff)
+#define __FUNC__ "dw_surface_v_dot_n_s"
+int32 dw_surface_v_dot_n_s(FMField *out,
+                           FMField *coef, FMField *val_qp,
+                           Mapping *rsg,
+                           Mapping *csg,
+                           int32 isDiff)
 {
   int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;
@@ -54,12 +54,12 @@ int32 dw_surface_dot_vectornormscalar(FMField *out,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_surface_dot_scalarvectornorm"
-int32 dw_surface_dot_scalarnormvector(FMField *out,
-                                      FMField *coef, FMField *val_qp,
-                                      Mapping *rsg,
-                                      Mapping *csg,
-                                      int32 isDiff)
+#define __FUNC__ "dw_surface_s_v_dot_n"
+int32 dw_surface_s_v_dot_n(FMField *out,
+                           FMField *coef, FMField *val_qp,
+                           Mapping *rsg,
+                           Mapping *csg,
+                           int32 isDiff)
 {
   int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;

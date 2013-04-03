@@ -112,7 +112,7 @@ class DotProductVolumeTerm(Term):
                     fun = terms.dw_volume_dot_vector
 
                 else:
-                    fun = terms.dw_surface_dot_scalarnormvector
+                    fun = terms.dw_surface_s_v_dot_n
 
             else:
                 if ((self.integration == 'volume')
@@ -120,7 +120,7 @@ class DotProductVolumeTerm(Term):
                     fun = terms.dw_volume_dot_scalar
 
                 else:
-                    fun = terms.dw_surface_dot_vectornormscalar
+                    fun = terms.dw_surface_v_dot_n_s
 
             return mat, val_qp, vgeo, sgeo, fun, fmode
 
