@@ -16,3 +16,5 @@ contribute, not just code:
 - You can blog about how you use SfePy (let us know!).
 - You can help with improving our documentation and these pages.
 - ...
+
+Additional ideas can be found at `our wiki`_.

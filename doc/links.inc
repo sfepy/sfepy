@@ -17,6 +17,7 @@
 .. _download: http://code.google.com/p/sfepy/wiki/Downloads?tm=2
 .. _sfepy git repository: https://github.com/sfepy/sfepy
 .. _sfepy tarball: http://github.com/sfepy/sfepy/tarball/master
+.. _our wiki: https://github.com/sfepy/sfepy/wiki
 
 .. other links
 
