@@ -32,7 +32,7 @@
 
 .. _enthought python distribution: http://www.enthought.com/products/epd.php
 .. _epd: http://www.enthought.com/products/epd.php
-.. _python(x,y): http://www.pythonxy.com
+.. _python(x,y): http://code.google.com/p/pythonxy
 
 .. _cython: http://cython.org
 .. _ipython: http://ipython.org

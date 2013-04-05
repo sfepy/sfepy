@@ -30,7 +30,7 @@ free Python(x,y) [2] can be used too, but pyparsing has to be installed
 manually, see [3] for step-by-step instructions.
 
 [1] http://www.enthought.com/products/epd.php
-[2] http://www.pythonxy.com/foreword.php
+[2] http://code.google.com/p/pythonxy
 [3] http://docs.sfepy.org/doc/introduction.html#running-on-windows-using-python-x-y
 
 SfePy can be used without any installation (see In-place compilation...) by
