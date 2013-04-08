@@ -296,7 +296,7 @@ class Struct( object ):
         if keys is None:
             keys = self.__dict__.keys()
 
-        str_attrs = sorted(self.get('_str_attrs', keys))
+        str_attrs = sorted(Struct.get(self, '_str_attrs', keys))
         printed_keys = []
         for key in str_attrs:
             if key[-1] == '.':
