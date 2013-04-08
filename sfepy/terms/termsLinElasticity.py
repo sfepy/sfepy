@@ -97,7 +97,7 @@ class LinearElasticTerm(Term):
 
 class SDLinearElasticTerm(Term):
     r"""
-    Sensitivity analasys of of linear elasticity.
+    Sensitivity analysis of the linear elastic term.
 
     :Definition:
 
@@ -105,7 +105,9 @@ class SDLinearElasticTerm(Term):
         \int_{\Omega} \hat{D}_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
 
     .. math::
-        \hat{D}_{ijkl} = D_{ijkl}(\nabla \cdot \ul{\Vcal}) - D_{ijkq}{\partial \Vcal_l \over \partial x_q} - D_{iqkl}{\partial \Vcal_j \over \partial x_q}
+        \hat{D}_{ijkl} = D_{ijkl}(\nabla \cdot \ul{\Vcal})
+        - D_{ijkq}{\partial \Vcal_l \over \partial x_q}
+        - D_{iqkl}{\partial \Vcal_j \over \partial x_q}
 
     :Arguments:
         - material    : :math:`D_{ijkl}`

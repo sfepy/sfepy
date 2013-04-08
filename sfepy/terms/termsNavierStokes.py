@@ -193,12 +193,12 @@ class StokesTerm(Term):
     :Arguments 1:
         - material : :math:`c` (optional)
         - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{p}`
+        - state    : :math:`p`
 
     :Arguments 2:
         - material : :math:`c` (optional)
         - state    : :math:`\ul{u}`
-        - virtual  : :math:`\ul{q}`
+        - virtual  : :math:`q`
 
     :Arguments 3:
         - material    : :math:`c` (optional)
@@ -295,7 +295,7 @@ class GradTerm(Term):
         (\nabla p)|_{qp} \mbox{ or } \nabla \ul{w}|_{qp}
 
     :Arguments:
-        - state : :math:`p` or :math:`\ul{w}`
+        - parameter : :math:`p` or :math:`\ul{w}`
     """
     name = 'ev_grad'
     arg_types = ('parameter',)
@@ -350,7 +350,7 @@ class DivTerm(Term):
         (\nabla \cdot \ul{u})|_{qp}
 
     :Arguments:
-        - state : :math:`\ul{u}`
+        - parameter : :math:`\ul{u}`
     """
     name = 'ev_div'
     arg_types = ('parameter',)
