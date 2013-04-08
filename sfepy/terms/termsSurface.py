@@ -59,13 +59,13 @@ class SufaceNormalDotTerm(Term):
     def dw_fun(out, material, bf, sg):
         bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
         bf_t = nm.ascontiguousarray(bf_t)
-        aux = dot_sequences(material, sg.normal)
+        aux = dot_sequences(material, sg.normal, 'ATB')
         status = sg.integrate(out, bf_t * aux)
         return status
 
     @staticmethod
     def d_fun(out, material, val, sg):
-        aux = dot_sequences(material, sg.normal)
+        aux = dot_sequences(material, sg.normal, 'ATB')
         status = sg.integrate(out, val * aux)
         return status
 
