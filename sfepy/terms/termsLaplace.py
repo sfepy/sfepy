@@ -38,7 +38,7 @@ class DiffusionTerm(Term):
         vg, _ = self.get_mapping(state)
 
         if mat is None:
-            if self.name == 'dw_laplace':
+            if self.name in ('dw_laplace', 'dw_st_pspg_p'):
                 n_el, n_qp, _, _, _ = self.get_data_shape(state)
                 mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
@@ -194,7 +194,7 @@ class DiffusionCoupling(Term):
 
     @staticmethod
     def d_fun(out, mat, val, grad, vg):
-        out_qp = grad * mat * val
+        out_qp = val * dot_sequences(mat, grad, 'ATB')
 
         status = vg.integrate(out, out_qp)
 

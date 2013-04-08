@@ -468,7 +468,7 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
 
         aux = nm.array([0], ndmin=4, dtype=nm.float64)
 
-        return aux, weight, 0.0, sg.bf, sg, 1
+        return aux, weight, 0.0, sg, 1
 
 class SDGradDivStabilizationTerm(Term):
     r"""

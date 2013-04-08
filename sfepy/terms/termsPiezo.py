@@ -77,7 +77,7 @@ class PiezoCouplingTerm(Term):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-    def get_eval_shape(self, vvar, svar,
+    def get_eval_shape(self, mat, vvar, svar,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
 
