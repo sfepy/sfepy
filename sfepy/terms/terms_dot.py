@@ -36,6 +36,13 @@ class DotProductVolumeTerm(Term):
     name = 'dw_volume_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
+                   'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : 'D, D'},
+                  {'opt_material' : None}]
     modes = ('weak', 'eval')
 
     @staticmethod
@@ -201,6 +208,9 @@ class BCNewtonTerm(DotProductSurfaceTerm):
     """
     name = 'dw_bc_newton'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
+    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
+                  'virtual' : (1, 'state'), 'state' : 1}
+    mode = 'weak'
 
     def check_shapes(self, alpha, p_outer, virtual, state):
         pass

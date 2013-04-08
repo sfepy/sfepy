@@ -21,6 +21,8 @@ class DiffusionSATerm(Term):
     """
     name = 'd_diffusion_sa'
     arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_v')
+    arg_shapes = {'material' : 'D, D',
+                  'parameter_q' : 1, 'parameter_p' : 1, 'parameter_v' : 'D'}
 
     function = staticmethod(terms.d_diffusion_sa)
 
@@ -64,6 +66,8 @@ class SurfaceLaplaceLayerTerm(Term):
     name = 'dw_surface_laplace'
     arg_types = [('material', 'virtual', 'state'),
                  ('material', 'parameter_2', 'parameter_1')]
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
     modes = ('weak', 'eval')
     integration = 'surface'
 
@@ -138,6 +142,8 @@ class SurfaceCoupleLayerTerm(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
     modes = ('bv_ns', 'nv_bs', 'eval')
     integration = 'surface'
 

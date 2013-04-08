@@ -46,6 +46,8 @@ class LinearElasticTerm(Term):
     name = 'dw_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : 'S, S', 'virtual' : ('D', 'state'),
+                  'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
     modes = ('weak', 'eval')
 ##     symbolic = {'expression': expr,
 ##                 'map' : {'u' : 'state', 'D_sym' : 'material'}}
@@ -114,6 +116,9 @@ class SDLinearElasticTerm(Term):
     name = 'd_sd_lin_elastic'
     arg_types = ('material', 'parameter_w', 'parameter_u',
                  'parameter_mesh_velocity')
+    arg_shapes = {'material' : 'S, S',
+                  'parameter_w' : 'D', 'parameter_u' : 'D',
+                  'parameter_mesh_velocity' : 'D'}
     function = terms.d_lin_elastic
 
     @staticmethod
@@ -192,6 +197,8 @@ class LinearElasticIsotropicTerm(Term):
     """
     name = 'dw_lin_elastic_iso'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
+    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic_iso)
 
@@ -335,6 +342,8 @@ class LinearPrestressTerm(Term):
     name = 'dw_lin_prestress'
     arg_types = (('material', 'virtual'),
                  ('material', 'parameter'))
+    arg_shapes = {'material' : 'S, 1', 'virtual' : ('D', None),
+                  'parameter' : 'D'}
     modes = ('weak', 'eval')
 
     def check_shapes(self, mat, virtual):
@@ -399,6 +408,8 @@ class LinearStrainFiberTerm(Term):
     """
     name = 'dw_lin_strain_fib'
     arg_types = ('material_1', 'material_2', 'virtual')
+    arg_shapes = {'material_1' : 'S, S', 'material_2' : 'D, 1',
+                  'virtual' : ('D', None)}
 
     function = staticmethod(terms.dw_lin_strain_fib)
 
@@ -447,6 +458,7 @@ class CauchyStrainTerm(Term):
     """
     name = 'ev_cauchy_strain'
     arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 'D'}
 
     @staticmethod
     def function(out, strain, vg, fmode):
@@ -533,6 +545,7 @@ class CauchyStressTerm(Term):
     """
     name = 'ev_cauchy_stress'
     arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
 
     @staticmethod
     def function(out, coef, strain, mat, vg, fmode):
@@ -598,6 +611,7 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     """
     name = 'ev_cauchy_stress_th'
     arg_types = ('ts', 'material', 'parameter')
+    arg_shapes = {}
 
     def get_fargs(self, ts, mats, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -656,6 +670,7 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     """
     name = 'ev_cauchy_stress_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'parameter')
+    arg_shapes = {}
 
     def get_fargs(self, ts, mat0, mat1, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

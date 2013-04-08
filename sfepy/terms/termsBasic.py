@@ -38,6 +38,10 @@ class IntegrateVolumeTerm(Term):
     """
     name = 'ev_volume_integrate'
     arg_types = ('opt_material', 'parameter')
+    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 1},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'parameter' : 'D'},
+                  {'opt_material' : None}]
 
     @staticmethod
     def function(out, val_qp, vg, fmode):
@@ -113,6 +117,10 @@ class IntegrateSurfaceTerm(Term):
     """
     name = 'ev_surface_integrate'
     arg_types = ('opt_material', 'parameter')
+    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 1},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'parameter' : 'D'},
+                  {'opt_material' : None}]
     integration = 'surface'
 
     @staticmethod
@@ -175,6 +183,8 @@ class IntegrateVolumeOperatorTerm(Term):
     """
     name = 'dw_volume_integrate'
     arg_types = ('opt_material', 'virtual')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
+                  {'opt_material' : None}]
 
     @staticmethod
     def function(out, material, bf, geo):
@@ -209,6 +219,8 @@ class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
     """
     name = 'dw_surface_integrate'
     arg_types = ('opt_material', 'virtual')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
+                  {'opt_material' : None}]
     integration = 'surface'
 
 class VolumeTerm(Term):
@@ -225,6 +237,7 @@ class VolumeTerm(Term):
     """
     name = 'd_volume'
     arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 1}
 
     @staticmethod
     def function(out, geo):
@@ -258,6 +271,7 @@ class SurfaceTerm(VolumeTerm):
     """
     name = 'd_surface'
     arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 1}
     integration = 'surface'
 
 class VolumeSurfaceTerm(Term):
@@ -275,6 +289,7 @@ class VolumeSurfaceTerm(Term):
     """
     name = 'd_volume_surface'
     arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 1}
     integration = 'surface'
 
     function = staticmethod(terms.d_volume_surface)
@@ -359,6 +374,10 @@ class IntegrateMatTerm(Term):
     """
     name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
+    arg_shapes = [{'material' : '1, 1', 'parameter' : 1},
+                  {'material' : 'D, D'},
+                  {'material' : 'S, S'},
+                  {'material' : 'D, S'}]
 
     @staticmethod
     def function(out, mat, geo, fmode):
@@ -398,6 +417,7 @@ class SumNodalValuesTerm(Term):
     """
     name = 'd_sum_vals'
     arg_types = ('parameter',)
+    arg_shapes = [{'parameter' : 1}, {'parameter' : 'D'}]
 
     @staticmethod
     def function(out, vec):

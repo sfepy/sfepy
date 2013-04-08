@@ -23,6 +23,8 @@ class LinearTractionTerm( Term ):
     """
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
+    arg_shapes = [{'material' : 'S, 1', 'virtual' : ('D', None)},
+                  {'material' : 'D, 1'}, {'material' : '1, 1'}]
     integration = 'surface'
 
     function = staticmethod(terms.dw_surface_ltr)
@@ -49,6 +51,7 @@ class SufaceNormalDotTerm(Term):
     name = 'dw_surface_ndot'
     arg_types = (('material', 'virtual'),
                  ('material', 'parameter'))
+    arg_shapes = {'material' : 'D, 1', 'virtual' : (1, None), 'parameter' : 1}
     modes = ('weak', 'eval')
     integration = 'surface'
 
@@ -110,6 +113,8 @@ class SDSufaceNormalDotTerm(Term):
     """
     name = 'd_sd_surface_ndot'
     arg_types = ('material', 'parameter', 'parameter_mesh_velocity')
+    arg_shapes = {'material' : 'D, 1', 'parameter' : 1,
+                  'parameter_mesh_velocity' : 'D'}
     integration = 'surface'
 
     @staticmethod
@@ -151,6 +156,9 @@ class SurfaceJumpTerm(Term):
     """
     name = 'dw_jump'
     arg_types = ('opt_material', 'virtual', 'state_1', 'state_2')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None),
+                   'state_1' : 1, 'state_2' : 1},
+                  {'opt_material' : None}]
     integration = 'surface'
 
     @staticmethod

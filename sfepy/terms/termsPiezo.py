@@ -31,6 +31,10 @@ class PiezoCouplingTerm(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
+    arg_shapes = {'material' : 'D, S',
+                  'virtual/grad' : ('D', None), 'state/grad' : 1,
+                  'virtual/div' : (1, None), 'state/div' : 'D',
+                  'parameter_v' : 'D', 'parameter_s' : 1}
     modes = ('grad', 'div', 'eval')
 
     def get_fargs(self, mat, vvar, svar,
