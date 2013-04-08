@@ -388,7 +388,9 @@ class Terms(Container):
 class Term(Struct):
     name = ''
     arg_types = ()
+    arg_shapes = {}
     integration = 'volume'
+    geometries = ['2_3', '2_4', '3_4', '3_8']
 
     @staticmethod
     def new(name, integral, region, **kwargs):
