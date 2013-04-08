@@ -118,8 +118,8 @@ class SDSufaceNormalDotTerm(Term):
     integration = 'surface'
 
     @staticmethod
-    def d_fun(out, material, val_p, div_mv, sg):
-        aux = dot_sequences(material, sg.normal)
+    def function(out, material, val_p, div_mv, sg):
+        aux = dot_sequences(material, sg.normal, 'ATB')
         aux2 = dot_sequences(aux, div_mv)
         status = sg.integrate(out, val_p * aux2)
         return status
@@ -129,15 +129,14 @@ class SDSufaceNormalDotTerm(Term):
         sg, _ = self.get_mapping(par)
 
         val_p = self.get(par, 'val')
-        div_mv = self.get(par_mv, 'div')
-
+        div_mv = self.get(par_mv, 'div', integration='surface_extra')
         return mat, val_p, div_mv, sg
 
-    def get_eval_shape(self, mat, virtual,
+    def get_eval_shape(self, mat, par, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_mv)
 
-        return (n_el, 1, 1, 1), virtual.dtype
+        return (n_el, 1, 1, 1), par.dtype
 
 class SurfaceJumpTerm(Term):
     r"""
