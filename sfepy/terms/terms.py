@@ -1231,7 +1231,7 @@ class Term(Struct):
                                       integration, region.name)
         return out
 
-    def get(self, variable, quantity_name, bf=None,
+    def get(self, variable, quantity_name, bf=None, integration=None,
             step=None, time_derivative=None):
         """
         Get the named quantity related to the variable.
@@ -1246,10 +1246,11 @@ class Term(Struct):
         step = get_default(step, self.arg_steps[name])
         time_derivative = get_default(time_derivative,
                                       self.arg_derivatives[name])
+        integration = get_default(integration, self.geometry_types[name])
 
         data = variable.evaluate(self.char_fun.ig, mode=quantity_name,
                                  region=self.region, integral=self.integral,
-                                 integration=self.geometry_types[name],
+                                 integration=integration,
                                  step=step, time_derivative=time_derivative,
                                  is_trace=self.arg_traces[name], bf=bf)
         return data
