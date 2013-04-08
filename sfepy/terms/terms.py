@@ -1292,6 +1292,10 @@ class Term(Struct):
             terms.errclear()
             raise ValueError
 
+        if status:
+            terms.errclear()
+            raise ValueError('term evaluation failed! (%s)' % self.name)
+
         return status
 
     def eval_real(self, shape, fargs, mode='eval', term_mode=None,
