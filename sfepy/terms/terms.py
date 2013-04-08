@@ -652,7 +652,7 @@ class Term(Struct):
         else:
             arg_types = self.arg_types
             arg_kinds = get_arg_kinds(self.arg_types)
-            self.mode = None
+            self.mode = Struct.get(self, 'mode', None)
 
             if not self._check_variables(arg_kinds):
                 raise ValueError('cannot match variables! (%s)'
