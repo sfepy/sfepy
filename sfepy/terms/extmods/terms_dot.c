@@ -329,7 +329,7 @@ int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
                           int32 isDiff )
 {
   int32 ii, nc, nEPV, nEPS, dim, nQP, ret = RET_OK;
-  FMField *gtf = 0, *ctf = 0;
+  FMField *gtf = 0, *ctf = 0, *ct = 0;
 
   nQP = vvg->bfGM->nLev;
   dim = vvg->bfGM->nRow;
@@ -341,6 +341,10 @@ int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
     fmf_createAlloc( &gtf, 1, nQP, nEPS, dim * nEPV );
     if (nc > 1) {
       fmf_createAlloc( &ctf, 1, nQP, dim, dim * nEPV );
+      fmf_createAlloc( &ct, 1, nQP, dim, dim );
+    } else {
+      // Gc^T.
+      fmf_createAlloc( &ctf, 1, nQP, nEPS, dim );
     }
   } else {
     fmf_createAlloc( &gtf, 1, nQP, nEPS, 1 );
@@ -359,11 +363,16 @@ int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
       FMF_SetCellX1( vvg->bf, ii );
 
       if (nc == 1) {
-        bf_ract( gtf, vvg->bf, svg->bfGM );
+        // Transpose Gc.
+        fmf_mulATC( ctf, svg->bfGM, 1.0 );
+        // Gc^T Phi.
+        bf_ract( gtf, vvg->bf, ctf );
         fmf_mul( gtf, coef->val );
       } else {
+        // Transpose C.
+        fmf_mulATC( ct, coef, 1.0 );
         // Gc^T C^T Phi.
-        bf_ract( ctf, vvg->bf, coef );
+        bf_ract( ctf, vvg->bf, ct );
         fmf_mulATB_nn( gtf, svg->bfGM, ctf );
       }
     } else {
@@ -385,6 +394,7 @@ int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
  end_label:
   fmf_freeDestroy( &gtf );
   fmf_freeDestroy( &ctf );
+  fmf_freeDestroy( &ct );
 
   return( ret );
 }
