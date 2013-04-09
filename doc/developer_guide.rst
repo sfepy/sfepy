@@ -558,7 +558,9 @@ Argument types
 The argument types can be ("[_*]" denotes an optional suffix):
 
 - `'material[_*]'` for a material parameter, i.e. any function that can
-  be can evaluated in quadrature points and that is not a variable.
+  be can evaluated in quadrature points and that is not a variable;
+- `'opt_material[_*]'` for an optional material parameter, that can be left
+  out - there can be only one in a term and it must be the first argument;
 - `'virtual'` for a virtual (test) variable (no value defined), `'weak'`
   evaluation mode;
 - `'state[_*]'` for state (unknown) variables (have value), `'weak'`
@@ -631,52 +633,108 @@ The `get_fargs()` method has always the same structure of arguments:
 
 The `get_fargs()` method returns arguments for `function()`.
 
+Additional attributes
+^^^^^^^^^^^^^^^^^^^^^
+
+These attributes are used mostly in connection with the
+`tests/test_term_call_modes.py` test for automatic testing of term calls.
+
+- `arg_shapes` attribute - the possible shapes of term arguments;
+- `geometries` attribute - the list of reference element geometries that the
+  term supports;
+- `mode` attribute - the default evaluation mode.
+
+Argument shapes
+"""""""""""""""
+
+The argument shapes are specified using a dict of the following form::
+
+    arg_shapes = {'material' : 'D, D', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
+
+The keys are the argument types listed in the `arg_types` attribute, for
+example::
+
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+
+The values are the shapes containing either integers, or 'D' (for space
+dimension) or 'S' (symmetric storage size corresponding to the space
+dimension).  For materials, the shape is a string `'nr, nc'` or a single value,
+denoting a special-valued term, or `None` denoting an optional material that is
+left out. For state and parameter variables, the shape is a single value. For
+virtual variables, the shape is a tuple of a single shape value and a
+name of the corresponding state variable; the name can be `None`.
+
+When several alternatives are possible, a list of dicts can be used. For
+convenience, only the shapes of arguments that change w.r.t. a previous dict
+need to be included, as the values of the other shapes are taken from the
+previous dict. For example, the following corresponds to a case, where an
+optional material has either the shape (1, 1) in each point, or is left out::
+
+    arg_types = ('opt_material', 'parameter')
+    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 1},
+                  {'opt_material' : None}]
+
+Geometries
+""""""""""
+
+The default that most terms use is a list of all the geometries::
+
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+In that case, the attribute needs not to be define explicitly.
+
 Example
 ^^^^^^^
 
 Let us now discuss the implementation of a simple weak term
-`dw_volume_integrate_w` defined as :math:`\int_\Omega c q`, where
-:math:`c` is a weight (material parameter) and :math:`q` is a virtual
-variable. This term is implemented as follows::
+`dw_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is a
+weight (material parameter) and :math:`q` is a virtual variable. This term is
+implemented as follows::
 
-    class IntegrateVolumeOperatorWTerm(Term):
+    class IntegrateVolumeOperatorTerm(Term):
         r"""
-        :Description:
         Volume integral of a test function weighted by a scalar function
         :math:`c`.
 
-
         :Definition:
+
         .. math::
-            \int_\Omega c q
+            \int_\Omega q \mbox{ or } \int_\Omega c q
 
         :Arguments:
-            material : :math:`c`,
-            virtual  : :math:`q`
+            - material : :math:`c` (optional)
+            - virtual  : :math:`q`
         """
-        name = 'dw_volume_integrate_w'
-        arg_types = ('material', 'virtual')
+        name = 'dw_volume_integrate'
+        arg_types = ('opt_material', 'virtual')
+        arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
+                      {'opt_material' : None}]
 
         @staticmethod
-        def function(out, mat, bf, geo):
+        def function(out, material, bf, geo):
             bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
             bf_t = nm.ascontiguousarray(bf_t)
-            status = geo.integrate(out, mat * bf_t)
-
+            if material is not None:
+                status = geo.integrate(out, material * bf_t)
+            else:
+                status = geo.integrate(out, bf_t)
             return status
 
-        def get_fargs(self, mat, virtual,
+        def get_fargs(self, material, virtual,
                       mode=None, term_mode=None, diff_var=None, **kwargs):
             assert_(virtual.n_components == 1)
             geo, _ = self.get_mapping(virtual)
 
-            return mat, geo.bf, geo
+            return material, geo.bf, geo
 
-- lines 2-15: the docstring - always write one!
-- line 16: the name of the term, that can be referred to in equations;
-- line 17: the argument types - here the term takes a single material
+- lines 2-14: the docstring - always write one!
+- line 15: the name of the term, that can be referred to in equations;
+- line 16: the argument types - here the term takes a single material
   parameter, and a virtual variable;
-- lines 19-25: the term function
+- lines 17-18: the possible argument shapes
+- lines 20-28: the term function
 
   - its arguments are:
 
@@ -687,20 +745,20 @@ variable. This term is implemented as follows::
       a reference element and
     - a reference element (geometry) mapping `geo`.
 
-  - line 21: transpose the base function and tile it so that is has
+  - line 22: transpose the base function and tile it so that is has
     the correct shape - it is repeated for each element;
-  - line 22: ensure C contiguous order;
-  - line 23: perform numerical integration in C - `geo.integrate()`
+  - line 23: ensure C contiguous order;
+  - lines 24-27: perform numerical integration in C - `geo.integrate()`
     requires the C contiguous order;
-  - line 25: return the status.
+  - line 28: return the status.
 
-- lines 27-32: prepare arguments for the function above:
+- lines 30-35: prepare arguments for the function above:
 
-  - line 29: verify that the variable is scalar, as our implementation
+  - line 32: verify that the variable is scalar, as our implementation
     does not support vectors;
-  - line 30: get reference element mapping corresponding to the virtual
+  - line 33: get reference element mapping corresponding to the virtual
     variable;
-  - line 32: return the arguments for the function.
+  - line 35: return the arguments for the function.
 
 Concluding remarks
 ^^^^^^^^^^^^^^^^^^
