@@ -343,6 +343,12 @@ class VectorDotGradScalarTerm(Term):
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'state', 'virtual'),
                  ('opt_material', 'parameter_v', 'parameter_s'))
+    arg_shapes = [{'opt_material' : '1, 1',
+                   'virtual/v_weak' : ('D', None), 'state/v_weak' : 1,
+                   'virtual/s_weak' : (1, None), 'state/s_weak' : 'D',
+                   'parameter_v' : 'D', 'parameter_s' : 1},
+                  {'opt_material' : 'D, D'},
+                  {'opt_material' : None}]
     modes = ('v_weak', 's_weak', 'eval')
 
     def check_shapes(self, coef, vvar, svar):
@@ -424,6 +430,7 @@ class ScalarDotGradIScalarTerm(Term):
     """
     name = 'dw_s_dot_grad_i_s'
     arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'), 'state' : 1}
 
     @staticmethod
     def dw_fun(out, bf, vg, idx):

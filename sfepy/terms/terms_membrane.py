@@ -83,6 +83,10 @@ class TLMembraneTerm(Term):
     name = 'dw_tl_membrane'
     arg_types = ('material_a1', 'material_a2', 'material_h0',
                  'virtual', 'state')
+    arg_shapes = {'material_a1' : '1, 1', 'material_a2' : '1, 1',
+                  'material_h0' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
     integration = 'surface'
 
     @staticmethod

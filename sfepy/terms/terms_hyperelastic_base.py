@@ -23,6 +23,8 @@ class HyperElasticBase(Term):
     This is not a proper Term!
     """
     arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
+                  'state' : 'D'}
 
     @staticmethod
     def integrate(out, val_qp, vg, fmode):
@@ -250,6 +252,7 @@ class DeformationGradientTerm(Term):
     """
     name = 'dq_def_grad'
     arg_types = ('state',)
+    arg_shapes = {'state' : 'D'}
 
     function = staticmethod(terms.dq_def_grad)
 
