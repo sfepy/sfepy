@@ -76,9 +76,16 @@ class TLMembraneTerm(Term):
     r"""
     Mooney-Rivlin membrane with plain stress assumption.
 
+    The membrane has a uniform initial thickness :math:`h_0` and obeys a
+    hyperelastic material law with strain energy by Mooney-Rivlin: :math:`\Psi
+    = a_1 (I_1 - 3) + a_2 (I_2 - 3)`.
+
     :Arguments:
-        - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{u}`
+        - material_a1 : :math:`a_1`
+        - material_a2 : :math:`a_2`
+        - material_h0 : :math:`h_0`
+        - virtual     : :math:`\ul{v}`
+        - state       : :math:`\ul{u}`
     """
     name = 'dw_tl_membrane'
     arg_types = ('material_a1', 'material_a2', 'material_h0',

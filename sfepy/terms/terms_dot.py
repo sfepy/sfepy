@@ -327,12 +327,12 @@ class VectorDotGradScalarTerm(Term):
     :Arguments 1:
         - material : :math:`c` or :math:`\ull{M}` (optional)
         - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{p}`
+        - state    : :math:`p`
 
     :Arguments 2:
         - material : :math:`c` or :math:`\ull{M}` (optional)
         - state    : :math:`\ul{u}`
-        - virtual  : :math:`\ul{q}`
+        - virtual  : :math:`q`
 
     :Arguments 3:
         - material    : :math:`c` or :math:`\ull{M}` (optional)
