@@ -433,24 +433,38 @@ class ScalarDotGradIScalarTerm(Term):
     arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'), 'state' : 1}
 
     @staticmethod
-    def dw_fun(out, bf, vg, idx):
+    def dw_fun(out, bf, vg, grad, idx, fmode):
         cc = nm.ascontiguousarray
         bft = cc(nm.tile(bf, (out.shape[0], 1, 1, 1)))
-        status = terms.mulATB_integrate(out, bft,
-                                        cc(vg.bfg[:,:,idx:(idx + 1),:]), vg)
+
+        if fmode == 0:
+            status = terms.mulATB_integrate(out, bft,
+                                            cc(grad[..., idx:idx+1, :]), vg)
+
+        else:
+            status = terms.mulATB_integrate(out, bft,
+                                            cc(vg.bfg[:,:,idx:(idx + 1),:]), vg)
 
         return status
 
     def get_fargs(self, material, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if mode == 'weak':
+            if diff_var is None:
+                grad = self.get(state, 'grad')
+                fmode = 0
+
+            else:
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
             ap, vg = self.get_approximation(virtual)
             aps, vgs = self.get_approximation(state)
 
             bf = aps.get_base('v', 0, self.integral)
             idx = int(material[0, 0, 0, 0])
 
-            return bf, vg, idx
+            return bf, vg, grad, idx, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
