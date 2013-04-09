@@ -1867,8 +1867,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 #undef __FUNC__
 #define __FUNC__ "dq_def_grad"
 int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
-		   int32 *conn, int32 nEl, int32 nEP,
-		   int32 *elList, int32 elList_nRow, int32 mode )
+		   int32 *conn, int32 nEl, int32 nEP, int32 mode )
 {
   int32 ii, iel, id, iqp, nQP, dim, ret = RET_OK;
   FMField *st = 0, *mtxF = 0;
@@ -1883,17 +1882,15 @@ int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
     fmf_createAlloc( &mtxF, 1, nQP, dim, dim );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < nEl; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->bfGM, ii );
 
     // Deformation gradient.
-    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+    ele_extractNodalValuesNBN( st, state, conn + nEP * ii );
     if (mode == 1) {
       fmf_mulATBT_1n( mtxF, st, vg->bfGM );
-     
+
       for (iqp = 0; iqp < nQP; iqp++) {
 	for (id = 0; id < dim; id++) {
 	  mtxF->val[dim*(dim*iqp+id)+id] += 1.0;
@@ -1911,15 +1908,14 @@ int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
 	  out->val[dim*(dim*iqp+id)+id] += 1.0;
 	}
       }
-
     }
 
     ERR_CheckGo( ret );
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
-  fmf_freeDestroy( &mtxF ); 
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &mtxF );
 
   return( ret );
 }
