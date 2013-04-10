@@ -1586,7 +1586,7 @@ int32 dw_ul_volume( FMField *out, FMField *detF,
   nQP = vgv->bfGM->nLev;
   nEPu = vgv->bfGM->nCol;
   dim = vgv->bfGM->nRow;
-  nEPp = vgs->bf->nRow;
+  nEPp = vgs->bf->nCol;
 
   if (mode == 0) {
     fmf_createAlloc( &aux, 1, nQP, 1, 1 );
