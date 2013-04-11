@@ -112,8 +112,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      int32 mode );
 
 int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
-		   int32 *conn, int32 nEl, int32 nEP,
-		   int32 *elList, int32 elList_nRow, int32 mode );
+		   int32 *conn, int32 nEl, int32 nEP, int32 mode );
 
 int32 he_residuum_from_mtx(FMField *out, FMField *mtxD,
 			   FMField *state,

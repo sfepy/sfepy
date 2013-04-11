@@ -23,6 +23,8 @@ class LinearTractionTerm( Term ):
     """
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
+    arg_shapes = [{'material' : 'S, 1', 'virtual' : ('D', None)},
+                  {'material' : 'D, 1'}, {'material' : '1, 1'}]
     integration = 'surface'
 
     function = staticmethod(terms.dw_surface_ltr)
@@ -49,6 +51,7 @@ class SufaceNormalDotTerm(Term):
     name = 'dw_surface_ndot'
     arg_types = (('material', 'virtual'),
                  ('material', 'parameter'))
+    arg_shapes = {'material' : 'D, 1', 'virtual' : (1, None), 'parameter' : 1}
     modes = ('weak', 'eval')
     integration = 'surface'
 
@@ -56,13 +59,13 @@ class SufaceNormalDotTerm(Term):
     def dw_fun(out, material, bf, sg):
         bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
         bf_t = nm.ascontiguousarray(bf_t)
-        aux = dot_sequences(material, sg.normal)
+        aux = dot_sequences(material, sg.normal, 'ATB')
         status = sg.integrate(out, bf_t * aux)
         return status
 
     @staticmethod
     def d_fun(out, material, val, sg):
-        aux = dot_sequences(material, sg.normal)
+        aux = dot_sequences(material, sg.normal, 'ATB')
         status = sg.integrate(out, val * aux)
         return status
 
@@ -110,11 +113,13 @@ class SDSufaceNormalDotTerm(Term):
     """
     name = 'd_sd_surface_ndot'
     arg_types = ('material', 'parameter', 'parameter_mesh_velocity')
+    arg_shapes = {'material' : 'D, 1', 'parameter' : 1,
+                  'parameter_mesh_velocity' : 'D'}
     integration = 'surface'
 
     @staticmethod
-    def d_fun(out, material, val_p, div_mv, sg):
-        aux = dot_sequences(material, sg.normal)
+    def function(out, material, val_p, div_mv, sg):
+        aux = dot_sequences(material, sg.normal, 'ATB')
         aux2 = dot_sequences(aux, div_mv)
         status = sg.integrate(out, val_p * aux2)
         return status
@@ -124,15 +129,14 @@ class SDSufaceNormalDotTerm(Term):
         sg, _ = self.get_mapping(par)
 
         val_p = self.get(par, 'val')
-        div_mv = self.get(par_mv, 'div')
-
+        div_mv = self.get(par_mv, 'div', integration='surface_extra')
         return mat, val_p, div_mv, sg
 
-    def get_eval_shape(self, mat, virtual,
+    def get_eval_shape(self, mat, par, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_mv)
 
-        return (n_el, 1, 1, 1), virtual.dtype
+        return (n_el, 1, 1, 1), par.dtype
 
 class SurfaceJumpTerm(Term):
     r"""
@@ -151,6 +155,9 @@ class SurfaceJumpTerm(Term):
     """
     name = 'dw_jump'
     arg_types = ('opt_material', 'virtual', 'state_1', 'state_2')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None),
+                   'state_1' : 1, 'state_2' : 1},
+                  {'opt_material' : None}]
     integration = 'surface'
 
     @staticmethod

@@ -182,8 +182,7 @@ cdef extern from 'terms.h':
 
     cdef int32 _dq_def_grad \
          'dq_def_grad'(FMField *out, FMField *state, Mapping *vg,
-                       int32 *conn, int32 nEl, int32 nEP,
-                       int32 *elList, int32 elList_nRow, int32 mode)
+                       int32 *conn, int32 nEl, int32 nEP, int32 mode)
 
     cdef int32 _he_residuum_from_mtx \
          'he_residuum_from_mtx'(FMField *out, FMField *mtxD,
@@ -1054,19 +1053,16 @@ def dq_def_grad(np.ndarray out not None,
                 np.ndarray state not None,
                 CMapping cmap not None,
                 np.ndarray conn not None,
-                np.ndarray el_list not None,
                 int32 mode):
     cdef int32 ret
     cdef FMField _out[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+    cdef int32 *_conn, n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state, state)
     array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _dq_def_grad(_out, _state, cmap.geo,
-                       _conn, n_el, n_ep, _el_list, n_el2, mode)
+    ret = _dq_def_grad(_out, _state, cmap.geo, _conn, n_el, n_ep, mode)
     return ret
 
 def he_residuum_from_mtx(np.ndarray out not None,

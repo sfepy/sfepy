@@ -23,6 +23,8 @@ class HyperElasticBase(Term):
     This is not a proper Term!
     """
     arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
+                  'state' : 'D'}
 
     @staticmethod
     def integrate(out, val_qp, vg, fmode):
@@ -234,9 +236,11 @@ class HyperElasticBase(Term):
 
 class DeformationGradientTerm(Term):
     r"""
-    Deformation gradient :math:`F` in quadrature points for
+    Deformation gradient :math:`\ull{F}` in quadrature points for
     `term_mode='def_grad'` (default) or the jacobian :math:`J` if
     `term_mode='jacobian'`.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
 
@@ -246,33 +250,48 @@ class DeformationGradientTerm(Term):
         \ul{x} = \ul{X} + \ul{u} \;, J = \det{(\ull{F})}
 
     :Arguments:
-        - state : :math:`\ul{u}`
+        - parameter : :math:`\ul{u}`
     """
-    name = 'dq_def_grad'
-    arg_types = ('state',)
+    name = 'ev_def_grad'
+    arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 'D'}
 
-    function = staticmethod(terms.dq_def_grad)
+    @staticmethod
+    def function(out, vec, vg, econn, term_mode, fmode):
+        d = 1 if term_mode == 'jacobian' else vg.dim
+        out_qp = nm.empty((out.shape[0], vg.n_qp, d, d), dtype=out.dtype)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        state, = self.get_args(**kwargs)
-        term_mode = kwargs.get('term_mode', 'dq_def_grad')
+        mode = 1 if term_mode == 'jacobian' else 0
+        terms.dq_def_grad(out_qp, vec, vg, econn, mode)
 
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-
-        if diff_var is None:
-            if term_mode == 'def_grad':
-                shape = (chunk_size, n_qp, dim, dim)
-                mode = 0
-
-            elif term_mode == 'jacobian':
-                shape = (chunk_size, n_qp, 1, 1)
-                mode = 1
+        if fmode == 2:
+            out[:] = out_qp
+            status = 0
 
         else:
-            raise StopIteration
+            status = vg.integrate(out, out_qp, fmode)
 
-        vec = state()
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = self.function(out, vec, vg, ap.econn, chunk, mode)
-            yield out, chunk, status
+        return status
+
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, vg = self.get_approximation(parameter)
+
+        vec = self.get_vector(parameter)
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+
+        return vec, vg, ap.econn, term_mode, fmode
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        if mode != 'qp':
+            n_qp = 1
+
+        if term_mode == 'jacobian':
+            return (n_el, n_qp, 1, 1), parameter.dtype
+
+        else: # 'def_grad'
+            return (n_el, n_qp, dim, dim), parameter.dtype

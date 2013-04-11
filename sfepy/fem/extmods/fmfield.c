@@ -368,6 +368,41 @@ int32 fmf_mulAC( FMField *objR, FMField *objA, float64 val )
 }
 
 #undef __FUNC__
+#define __FUNC__ "fmf_mulATC"
+/*!
+  objR = const * objA^T
+*/
+int32 fmf_mulATC( FMField *objR, FMField *objA, float64 val )
+{
+  int32 ir, ic, il;
+  int32 wa;
+  float64 *pr, *pa;
+
+#ifdef DEBUG_FMF
+  if ((objR->nRow != objA->nCol) || (objR->nCol != objA->nRow)
+      || (objR->nLev != objA->nLev)) {
+    errput( ErrHead "ERR_BadMatch: (%d %d %d) == (%d %d %d)^T * (1)\n",
+	    objR->nLev, objR->nRow, objR->nCol,
+	    objA->nLev, objA->nRow, objA->nCol );
+  }
+#endif
+
+  wa = objA->nCol;
+  for (il = 0; il < (objR->nLev); il++) {
+    pr = objR->val + objR->nCol * objR->nRow * il;
+    pa = objA->val + objA->nCol * objA->nRow * il;
+    for (ir = 0; ir < objR->nRow; ir++) {
+      for (ic = 0; ic < objR->nCol; ic++) {
+	pr[ic] = pa[wa*ic+ir] * val;
+      }
+      pr += objR->nCol;
+    }
+  }
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
 #define __FUNC__ "fmf_mulAF"
 /*!
   objR = val * objA

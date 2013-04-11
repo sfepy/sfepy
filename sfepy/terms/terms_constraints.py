@@ -28,6 +28,10 @@ class NonPenetrationTerm(Term):
     name = 'dw_non_penetration'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'state', 'virtual'))
+    arg_shapes = [{'opt_material' : '1, 1',
+                   'virtual/grad' : ('D', None), 'state/grad' : 1,
+                   'virtual/div' : (1, None), 'state/div' : 'D'},
+                  {'opt_material' : None}]
     modes = ('grad', 'div')
     integration = 'surface'
 

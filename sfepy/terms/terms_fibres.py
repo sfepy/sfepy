@@ -54,6 +54,10 @@ class FibresActiveTLTerm(HyperElasticTLBase):
     name = 'dw_tl_fib_a'
     arg_types = ('material_1', 'material_2', 'material_3',
                  'material_4', 'material_5', 'virtual', 'state')
+    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
+                  'material_3' : '1, 1', 'material_4' : 'D, 1',
+                  'material_5' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
     family_data_names = ['green_strain']
 
     def get_fargs(self, mat1, mat2, mat3, mat4, mat5, virtual, state,

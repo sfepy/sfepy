@@ -99,6 +99,7 @@ int32 fmfc_mulC( FMField *obj, float64 val );
 int32 fmf_mul( FMField *obj, float64 *val );
 
 int32 fmf_mulAC( FMField *objR, FMField *objA, float64 val );
+int32 fmf_mulATC( FMField *objR, FMField *objA, float64 val );
 int32 fmf_mulAF( FMField *objR, FMField *objA, float64 *val );
 int32 fmf_mulATF( FMField *objR, FMField *objA, float64 *val );
 int32 fmf_mulAB_nn( FMField *objR, FMField *objA, FMField *objB );

@@ -21,6 +21,8 @@ class DiffusionSATerm(Term):
     """
     name = 'd_diffusion_sa'
     arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_v')
+    arg_shapes = {'material' : 'D, D',
+                  'parameter_q' : 1, 'parameter_p' : 1, 'parameter_v' : 'D'}
 
     function = staticmethod(terms.d_diffusion_sa)
 
@@ -64,6 +66,9 @@ class SurfaceLaplaceLayerTerm(Term):
     name = 'dw_surface_laplace'
     arg_types = [('material', 'virtual', 'state'),
                  ('material', 'parameter_2', 'parameter_1')]
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
+    geometries = ['2_3', '2_4']
     modes = ('weak', 'eval')
     integration = 'surface'
 
@@ -74,13 +79,14 @@ class SurfaceLaplaceLayerTerm(Term):
 
         sd = aps.surface_data[self.region.name]
         bfg = ap.get_base(sd.face_type, 1, self.integral)
+        bfg4 = bfg.reshape((1,) + bfg.shape)
 
         elvol = nm.sum(sgs.det, axis=1)
         vol = nm.tile(elvol[:,nm.newaxis], (1, sgs.det.shape[1], 1, 1))
 
         if mode == 'weak':
             if diff_var is None:
-                vec = self.get(state, 'val', bfun=bfg) / vol
+                vec = self.get(state, 'val', bf=bfg4) / vol
                 fmode = 0
 
             else:
@@ -90,8 +96,8 @@ class SurfaceLaplaceLayerTerm(Term):
             return vec, mat, bfg, sgs, fmode
 
         elif mode == 'eval':
-            vec1 = self.get(state, 'val', bfun=bfg) / vol
-            vec2 = self.get(virtual, 'val', bfun=bfg) / vol
+            vec1 = self.get(state, 'val', bf=bfg4) / vol
+            vec2 = self.get(virtual, 'val', bf=bfg4) / vol
 
             return vec1, vec2, mat, sgs
 
@@ -138,6 +144,9 @@ class SurfaceCoupleLayerTerm(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
+    geometries = ['2_3', '2_4']
     modes = ('bv_ns', 'nv_bs', 'eval')
     integration = 'surface'
 
@@ -152,6 +161,7 @@ class SurfaceCoupleLayerTerm(Term):
         sd = aps.surface_data[self.region.name]
         bf = ap.get_base(sd.face_type, 0, self.integral)
         bfg = ap.get_base(sd.face_type, 1, self.integral)
+        bfg4 = bfg.reshape((1,) + bfg.shape)
 
         elvol = nm.sum(sgs.det, axis=1)
         vol = nm.tile(elvol[:,nm.newaxis], (1, sgs.det.shape[1], 1, 1))
@@ -168,7 +178,7 @@ class SurfaceCoupleLayerTerm(Term):
 
             if diff_var is None:
                 if self.mode == 'nv_bs':
-                    vec = self.get(state, 'val', bfun=bfg) / vol
+                    vec = self.get(state, 'val', bf=bfg4) / vol
                 else:
                     vec = self.get(state, 'val')
                 fmode = 0
@@ -181,7 +191,7 @@ class SurfaceCoupleLayerTerm(Term):
 
         elif mode == 'eval':
             vec1 = self.get(state, 'val')
-            vec2 = self.get(virtual, 'val', bfun=bfg) / vol
+            vec2 = self.get(virtual, 'val', bf=bfg4) / vol
             nmat = mat.reshape((mat.shape[0], mat.shape[1],
                                 1, nm.max(mat.shape[2:])))
 

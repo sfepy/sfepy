@@ -28,6 +28,8 @@ class DivGradTerm(Term):
     name = 'dw_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                  'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
     modes = ('weak', 'eval')
 
     function = staticmethod(terms.term_ns_asm_div_grad)
@@ -107,6 +109,8 @@ class ConvectTerm(Term):
     """
     name = 'dw_convect'
     arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.term_ns_asm_convect)
 
@@ -140,6 +144,8 @@ class LinearConvectTerm(Term):
     """
     name = 'dw_lin_convect'
     arg_types = ('virtual', 'parameter', 'state')
+    arg_shapes = {'virtual' : ('D', 'state'), 'parameter' : 'D', 'state' : 'D'}
+    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_lin_convect)
 
@@ -187,12 +193,12 @@ class StokesTerm(Term):
     :Arguments 1:
         - material : :math:`c` (optional)
         - virtual  : :math:`\ul{v}`
-        - state    : :math:`\ul{p}`
+        - state    : :math:`p`
 
     :Arguments 2:
         - material : :math:`c` (optional)
         - state    : :math:`\ul{u}`
-        - virtual  : :math:`\ul{q}`
+        - virtual  : :math:`q`
 
     :Arguments 3:
         - material    : :math:`c` (optional)
@@ -203,6 +209,11 @@ class StokesTerm(Term):
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'state', 'virtual'),
                  ('opt_material', 'parameter_v', 'parameter_s'))
+    arg_shapes = [{'opt_material' : '1, 1',
+                   'virtual/grad' : ('D', None), 'state/grad' : 1,
+                   'virtual/div' : (1, None), 'state/div' : 'D',
+                   'parameter_v' : 'D', 'parameter_s' : 1},
+                  {'opt_material' : None}]
     modes = ('grad', 'div', 'eval')
 
     @staticmethod
@@ -284,10 +295,11 @@ class GradTerm(Term):
         (\nabla p)|_{qp} \mbox{ or } \nabla \ul{w}|_{qp}
 
     :Arguments:
-        - state : :math:`p` or :math:`\ul{w}`
+        - parameter : :math:`p` or :math:`\ul{w}`
     """
     name = 'ev_grad'
     arg_types = ('parameter',)
+    arg_shapes = [{'parameter' : 1}, {'parameter' : 'D'}]
 
     @staticmethod
     def function(out, grad, vg, fmode):
@@ -338,10 +350,11 @@ class DivTerm(Term):
         (\nabla \cdot \ul{u})|_{qp}
 
     :Arguments:
-        - state : :math:`\ul{u}`
+        - parameter : :math:`\ul{u}`
     """
     name = 'ev_div'
     arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 'D'}
 
     @staticmethod
     def function(out, div, vg, fmode):
@@ -389,6 +402,8 @@ class DivOperatorTerm(Term):
     """
     name = 'dw_div'
     arg_types = ('opt_material', 'virtual')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None)},
+                  {'opt_material' : None}]
 
     @staticmethod
     def function(out, mat, vg):
@@ -428,6 +443,8 @@ class GradDivStabilizationTerm(Term):
     """
     name = 'dw_st_grad_div'
     arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
+                  'state' : 'D'}
 
     function = staticmethod(terms.dw_st_grad_div)
 
@@ -482,6 +499,9 @@ class PSPGCStabilizationTerm(Term):
     """
     name = 'dw_st_pspg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, None),
+                  'parameter' : 'D', 'state' : 'D'}
+    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_pspg_c)
 
@@ -520,6 +540,9 @@ class SUPGPStabilizationTerm(Term):
     """
     name = 'dw_st_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : ('D', None),
+                  'parameter' : 'D', 'state' : 1}
+    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_supg_p)
 
@@ -559,6 +582,9 @@ class SUPGCStabilizationTerm(Term):
     """
     name = 'dw_st_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
+    arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
+                  'parameter' : 'D', 'state' : 'D'}
+    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_supg_c)
 

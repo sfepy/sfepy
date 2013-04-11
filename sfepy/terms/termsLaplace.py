@@ -27,6 +27,8 @@ class DiffusionTerm(Term):
     name = 'dw_diffusion'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : 'D, D', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
     modes = ('weak', 'eval')
     symbolic = {'expression': 'div( K * grad( u ) )',
                 'map' : {'u' : 'state', 'K' : 'material'}}
@@ -36,7 +38,7 @@ class DiffusionTerm(Term):
         vg, _ = self.get_mapping(state)
 
         if mat is None:
-            if self.name == 'dw_laplace':
+            if self.name in ('dw_laplace', 'dw_st_pspg_p'):
                 n_el, n_qp, _, _, _ = self.get_data_shape(state)
                 mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
@@ -98,6 +100,9 @@ class LaplaceTerm(DiffusionTerm):
     name = 'dw_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : 'D, D', 'virtual' : (1, 'state'),
+                   'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
+                  {'opt_material' : None}]
     modes = ('weak', 'eval')
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'opt_material'}}
@@ -156,6 +161,7 @@ class DiffusionRTerm(Term):
     """
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
+    arg_shapes = {'material' : 'D, 1', 'virtual' : (1, None)}
     function = staticmethod(terms.dw_permeability_r)
 
     def get_fargs(self, mat, virtual,
@@ -182,11 +188,13 @@ class DiffusionCoupling(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : 'D, 1', 'virtual' : (1, 'state'),
+                  'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1}
     modes = ('weak0', 'weak1', 'eval')
 
     @staticmethod
     def d_fun(out, mat, val, grad, vg):
-        out_qp = grad * mat * val
+        out_qp = val * dot_sequences(mat, grad, 'ATB')
 
         status = vg.integrate(out, out_qp)
 
@@ -285,6 +293,7 @@ class DiffusionVelocityTerm( Term ):
     """
     name = 'ev_diffusion_velocity'
     arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'D, D', 'parameter' : 1}
 
     @staticmethod
     def function(out, grad, mat, vg, fmode):
@@ -343,6 +352,7 @@ class SurfaceFluxTerm(Term):
     """
     name = 'd_surface_flux'
     arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'D, D', 'parameter' : 1}
     integration = 'surface_extra'
 
     function = staticmethod(terms.d_surface_flux)

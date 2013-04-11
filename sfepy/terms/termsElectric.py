@@ -16,6 +16,7 @@ class ElectricSourceTerm( Term ):
     """
     name = 'dw_electric_source'
     arg_types = ('material', 'virtual', 'parameter')
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, None), 'parameter' : 1}
 
     function = staticmethod(terms.dw_electric_source)
 

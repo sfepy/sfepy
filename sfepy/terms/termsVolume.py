@@ -16,6 +16,8 @@ class LinearVolumeForceTerm(Term):
     """
     name = 'dw_volume_lvf'
     arg_types = ('material', 'virtual')
+    arg_shapes = [{'material' : 'D, 1', 'virtual' : ('D', None)},
+                  {'material' : '1, 1', 'virtual' : (1, None)}]
 
     function = staticmethod(terms.dw_volume_lvf)
 

@@ -261,6 +261,7 @@ class BulkPressureULTerm(HyperElasticULBase):
 
     name = 'dw_ul_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
+    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D', 'state_p' : 1}
     family_data_names = ['det_f', 'sym_b']
 
     family_function = staticmethod(terms.dq_finite_strain_ul)
@@ -549,6 +550,7 @@ class VolumeULTerm(HyperElasticULBase):
     """
     name = 'dw_ul_volume'
     arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual' : (1, None), 'state' : 'D'}
     family_data_names = ['mtx_f', 'det_f']
 
     function = staticmethod(terms.dw_ul_volume)
@@ -606,6 +608,8 @@ class CompressibilityULTerm(HyperElasticULBase):
     """
     name = 'dw_ul_compressible'
     arg_types = ('material', 'virtual', 'state', 'parameter_u')
+    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'), 'state' : 1,
+                  'parameter_u' : 'D'}
     family_data_names = ['mtx_f', 'det_f']
 
     function = staticmethod(terms.dw_volume_dot_scalar)

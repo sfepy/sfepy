@@ -39,6 +39,11 @@ class BiotTerm(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
+    arg_shapes = {'material' : 'S, 1',
+                  'virtual/grad' : ('D', None), 'state/grad' : 1,
+                  'virtual/div' : (1, None), 'state/div' : 'D',
+                  'parameter_v' : 'D', 'parameter_s' : 1}
+
     modes = ('grad', 'div', 'eval')
 
     def get_fargs(self, mat, vvar, svar,
@@ -116,6 +121,7 @@ class BiotStressTerm(CauchyStressTerm):
     """
     name = 'ev_biot_stress'
     arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'S, 1', 'parameter' : 1}
 
     @staticmethod
     def function(out, val_qp, mat, vg, fmode):
@@ -169,6 +175,7 @@ class BiotTHTerm(BiotTerm, THTerm):
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
                  ('ts', 'material', 'state', 'virtual'))
+    arg_shapes = {}
     modes = ('grad', 'div')
 
     def get_fargs(self, ts, mats, vvar, svar,
@@ -237,6 +244,7 @@ class BiotETHTerm(BiotTerm, ETHTerm):
     name = 'dw_biot_eth'
     arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),
                  ('ts', 'material_0', 'material_1', 'state', 'virtual'))
+    arg_shapes = {}
     modes = ('grad', 'div')
 
     def get_fargs(self, ts, mat0, mat1, vvar, svar,

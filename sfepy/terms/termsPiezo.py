@@ -31,6 +31,10 @@ class PiezoCouplingTerm(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
+    arg_shapes = {'material' : 'D, S',
+                  'virtual/grad' : ('D', None), 'state/grad' : 1,
+                  'virtual/div' : (1, None), 'state/div' : 'D',
+                  'parameter_v' : 'D', 'parameter_s' : 1}
     modes = ('grad', 'div', 'eval')
 
     def get_fargs(self, mat, vvar, svar,
@@ -73,7 +77,7 @@ class PiezoCouplingTerm(Term):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-    def get_eval_shape(self, vvar, svar,
+    def get_eval_shape(self, mat, vvar, svar,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
 

@@ -156,6 +156,7 @@ class BulkPressureTLTerm(HyperElasticTLBase):
     """
     name = 'dw_tl_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
+    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D', 'state_p' : 1}
     family_data_names = ['det_f', 'sym_inv_c']
 
     family_function = staticmethod(terms.dq_finite_strain_tl)
@@ -268,6 +269,7 @@ class VolumeTLTerm(HyperElasticTLBase):
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual' : (1, None), 'state' : 'D'}
     family_data_names = ['mtx_f', 'det_f', 'sym_inv_c']
 
     function = staticmethod(terms.dw_tl_volume)
@@ -333,6 +335,8 @@ class DiffusionTLTerm(HyperElasticTLBase):
     """
     name = 'dw_tl_diffusion'
     arg_types = ('material_1', 'material_2', 'virtual', 'state', 'parameter')
+    arg_shapes = {'material_1' : 'D, D', 'material_2' : '1, 1',
+                  'virtual' : (1, 'state'), 'state' : 1, 'parameter' : 'D'}
     family_data_names = ['mtx_f', 'det_f']
 
     function = staticmethod(terms.dw_tl_diffusion)
@@ -394,6 +398,8 @@ class SurfaceTractionTLTerm(HyperElasticBase):
     """
     name = 'dw_tl_surface_traction'
     arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : 'D, D', 'virtual' : ('D', 'state'),
+                  'state' : 'D'}
     family_data_names = ['det_f', 'inv_f']
     integration = 'surface_extra'
 
