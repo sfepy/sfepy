@@ -372,7 +372,7 @@ _gallery_template = """\
     	margin: auto;
 	    display: inline;
     	}
-	.figure .caption .referenceinternal {
+	.figure .caption .reference internal {
 	    width: 170px;
 	    text-align: center !important;
 	}
@@ -440,7 +440,7 @@ _link_template_old = """\
 _link_template = """\
 <div class="figure">
 <a class="reference external image-reference" href="../%s"><img alt="%s" src="%s" /></a>
-<p class="caption"><a class="referenceinternal" href="../%s"><em>%s</em></a></p>
+<p class="caption"><a class="reference internal" href="../%s"><em>%s</em></a></p>
 </div>
 <div class="toctree-wrapper compound">
 </div>
@@ -513,7 +513,7 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
                                          thumbnail_name,link,docstring[0]+'.')
                 lines.append(line)
 	if(len(lines)!=0):
-		div_lines.append(_div_line % (dirname+"div", dirnamenew.title(),dirname,'\n'.join(lines)))
+		div_lines.append(_div_line % (dirname, dirnamenew.title(),dirname,'\n'.join(lines)))
 		sidebar.append(sidebarline)
     fd = open(output_filename, 'w')
     #print _gallery_template %("a","b")	
