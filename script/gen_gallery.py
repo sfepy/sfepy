@@ -316,131 +316,18 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     return dir_map
 
-_gallery_template = """\
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>SfePy: simple finite elements in Python &mdash; SfePy 2013.1-git-7f7b180d163ba5281904131b9d48197c50270719 documentation</title>
-    
-    <link rel="stylesheet" href="../_static/sfepy.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '',
-        VERSION:     '2013.1-git-7f7b180d163ba5281904131b9d48197c50270719',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
-    <script type="text/javascript" src="../_static/jquery.js"></script>
-    <script type="text/javascript" src="../_static/underscore.js"></script>
-    <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="SfePy 2013.1-git-7f7b180d163ba5281904131b9d48197c50270719 documentation" href="#" />
-    <link rel="next" title="Introduction" href="introduction.html" />
- 
-<script type="text/javascript">
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-3540566-4']);
-  _gaq.push(['_setDomainName', '.sfepy.org']);
-  _gaq.push(['_trackPageview']);
-</script>
-<style type="text/css">
-	a {
-    	color: #355F7C;
-    	text-decoration: none;
-    	word-wrap: break-word;
-	}
-
-	.figure {
-	    float: left;
-	    margin: 30px;
-	    width: auto;
-	    height: 200px;
-	    width: 180px;
-	}
-	.figure img {
-    	max-width: 160px;
-    	max-height: 160px;
-    	margin: auto;
-	    display: inline;
-    	}
-	.figure .caption .reference internal {
-	    width: 170px;
-	    text-align: center !important;
-	}
-</style>
-  </head>
-  <body>
-<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
-  <a href="#"><img src="../_static/sfepy_logo_title_small.png" border="0" height="70px" alt="SfePy"/></a>
-  <a href="http://www.zcu.cz/ntc/en/"><img src="../_static/ntc_logo.png" align="right" border="0" height="80px" alt="NTC"/></a>
-</div>
-
-    <div class="related"><ul></ul></div>
-      <div class="sphinxsidebar">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="#">SfePy Gallery</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">SfePy Gallery</a><ul>
-%s
-</ul>
-
-        </div>
-      </div>
-
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          <div class="body">
-            
-  <div class="section" id="sfepy-simple-finite-elements-in-python">
-	<h1>SfePy Gallery<a class="headerlink" href="#" title="Permalink to this headline"></a></h1>
-	
-
-	%s
-          </div>
-        </div>
-      </div>
-      <div class="clearer"></div>
-    </div>
-    <div class="related"><ul></ul></div> 
-    <div class="footer">
-        &copy; Copyright 2010, Robert Cimrman and Contributors.
-      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
-    </div>
-<div class="footer">This page uses <a href="http://analytics.google.com/">
-Google Analytics</a> to collect statistics. You can disable it by blocking
-the JavaScript coming from www.google-analytics.com.
-<script type="text/javascript">
-  (function() {
-    var ga = document.createElement('script');
-    ga.src = ('https:' == document.location.protocol ?
-              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    ga.setAttribute('async', 'true');
-    document.documentElement.firstChild.appendChild(ga);
-  })();
-</script>
-</div>
-
-  </body>
-</html>
-"""
-
-_link_template_old = """\
-<a href="%s"><img src="%s" border="0" alt="%s"/></a>
-"""
+_gallery_template_file = os.path.join(os.getcwd(),'doc/gallery_template.html')
+_gallery_template_open = open(_gallery_template_file,'r')
+_gallery_template = _gallery_template_open.readlines()
+_gallery_template = ''.join(_gallery_template)
 _link_template = """\
 <div class="figure">
-<a class="reference external image-reference" href="../%s"><img alt="%s" src="%s" /></a>
-<p class="caption"><a class="reference internal" href="../%s"><em>%s</em></a></p>
+<a class="reference external image-reference" href="../%s">
+<img alt="%s" src="%s" />
+</a>
+<p class="caption">
+<a class="reference internal" href="../%s"><em>%s</em></a>
+</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>
@@ -448,7 +335,8 @@ _link_template = """\
 _side_links="<li><a class='reference internal' href='#%s'>%s</a></li>"
 _div_line ="""\
 <div class="section" id="%s">
-<h2>%s<a class="headerlink" href="#%s" title="Permalink to this headline"></a></h2>
+<h2>%s<a class="headerlink" href="\#%s" title="Permalink to this headline">
+</a></h2>
 %s
 <div style="clear: both"></div></div>
 """
@@ -479,8 +367,7 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
     sidebar = []
     for dirname, filenames in ordered_iteritems(dir_map):
         full_dirname = os.path.join(rst_dir, dirname)
-	#print dirname, filenames
-	dirnamenew = dirname.replace("_"," ")
+        dirnamenew = dirname.replace("_"," ")
         sidebarline = _side_links % (dirname, dirnamenew.title())
         lines = []
         for ex_filename, rst_filename in filenames:
@@ -504,22 +391,22 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
                                                             '')[1:]
                 path_to_file = os.path.join(examples_dir,ebase)
                 docstring = get_default(import_file(path_to_file).__doc__,
-                                    'missing description!')
-		docstring = docstring.replace('e.g.', 'eg:')
+                                        'missing description!')
+                docstring = docstring.replace('e.g.', 'eg:')
                 docstring = docstring.split('.')
-                #line = _link_template % (link,os.path.splitext(ebase)[0],
-                #                         thumbnail_name,link,os.path.splitext(ebase)[0])
                 line = _link_template % (link,os.path.splitext(ebase)[0],
                                          thumbnail_name,link,docstring[0]+'.')
                 lines.append(line)
-	if(len(lines)!=0):
-		div_lines.append(_div_line % (dirname, dirnamenew.title(),dirname,'\n'.join(lines)))
-		sidebar.append(sidebarline)
+
+        if(len(lines)!=0):
+            div_lines.append(_div_line % (dirname, dirnamenew.title(),
+                                          dirname, '\n'.join(lines)))
+            sidebar.append(sidebarline)
+
     fd = open(output_filename, 'w')
-    #print _gallery_template %("a","b")	
     fd.write(_gallery_template % ('\n'.join(sidebar), '\n'.join(div_lines)))
     fd.close()
-  
+
     output('...done')
 
 usage = """%prog [options]
@@ -582,4 +469,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
