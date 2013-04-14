@@ -259,7 +259,7 @@ class PyAMGSolver( LinearSolver ):
             msg =  'cannot import pyamg!'
             raise ImportError( msg )
 
-        LinearSolver.__init__(self, conf, eps_r=conf.eps_r, mg=None, **kwargs)
+        LinearSolver.__init__(self, conf, mg=None, **kwargs)
 
         try:
             solver = getattr( pyamg, self.conf.method )
@@ -277,7 +277,7 @@ class PyAMGSolver( LinearSolver ):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
 
-        eps_r = get_default(eps_r, self.eps_r)
+        eps_r = get_default(eps_r, self.conf.eps_r)
 
         if (self.mg is None) or (mtx is not self.mtx):
             self.mg = self.solver(mtx)
@@ -345,8 +345,7 @@ class PETScKrylovSolver( LinearSolver ):
             msg = 'cannot import petsc4py!'
             raise ImportError( msg )
 
-        LinearSolver.__init__(self, conf, eps_a=conf.eps_a, eps_r=conf.eps_r,
-                              petsc=PETSc, pmtx=None, **kwargs)
+        LinearSolver.__init__(self, conf, petsc=PETSc, pmtx=None, **kwargs)
 
         ksp = PETSc.KSP().create()
 
@@ -376,8 +375,8 @@ class PETScKrylovSolver( LinearSolver ):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
 
-        eps_a = get_default(eps_a, self.eps_a)
-        eps_r = get_default(eps_r, self.eps_r)
+        eps_a = get_default(eps_a, self.conf.eps_a)
+        eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
@@ -454,8 +453,8 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         from sfepy import base_dir, data_dir
         from sfepy.base.ioutils import ensure_path
 
-        eps_a = get_default(eps_a, self.eps_a)
-        eps_r = get_default(eps_r, self.eps_r)
+        eps_a = get_default(eps_a, self.conf.eps_a)
+        eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
