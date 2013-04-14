@@ -542,6 +542,7 @@ class Domain(Struct):
 
             if region.has_cells():
                 for ig in region.igs:
+                    if not region.true_cells[ig]: continue
                     ii = region.get_cells(ig)
                     aux.mat_ids[ig][ii] = c_ig
                     c_ig += 1
