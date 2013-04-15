@@ -32,6 +32,7 @@ issues/
 # Generated files:
 *.c
 *.h
+*.gch
 VERSION
 tmp/terms.*
 samples/*
