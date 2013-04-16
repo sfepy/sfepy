@@ -63,6 +63,12 @@
    - Fish heart model: http://sfepy.org/fish_heart
    - Phononic materials: http://sfepy.org/phononic
 
+   Related Projects
+   ----------------
+
+   - Semi-automatic generation of finite element meshes from CT/MR scans stored
+     in the DICOM file format: http://sfepy.org/dicom2fem
+
    Support
    -------
 
