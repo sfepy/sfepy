@@ -5,7 +5,7 @@
 
 .. only:: html
 
-   SfePy: simple finite elements in Python
+   SfePy: Simple Finite Elements in Python
    =======================================
 
    SfePy is a software for solving systems of coupled partial differential
