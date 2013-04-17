@@ -164,7 +164,7 @@ def generate_images(images_dir, examples_dir):
                 suffix = None
 
             else:
-                suffix = tsolver.ts.suffix % tsolver.ts.step
+                suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
 
             filename = problem.get_output_name(suffix=suffix)
 
