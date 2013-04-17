@@ -341,7 +341,7 @@ _div_line ="""\
 <div style="clear: both"></div></div>
 """
 def generate_gallery_html(examples_dir, output_filename, gallery_dir,
-                          rst_dir, thumbnails_dir, dir_map, link_prefix=''):
+                          rst_dir, thumbnails_dir, dir_map, link_prefix):
     """
     Generate the gallery html file with thumbnail images and links to
     examples.
@@ -404,7 +404,8 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
             sidebar.append(sidebarline)
 
     fd = open(output_filename, 'w')
-    fd.write(_gallery_template % ('\n'.join(sidebar), '\n'.join(div_lines)))
+    fd.write(_gallery_template % ((link_prefix,) * 7
+                                  + ('\n'.join(sidebar), '\n'.join(div_lines))))
     fd.close()
 
     output('...done')
@@ -444,7 +445,8 @@ def main():
                       help=help['output_filename'])
     parser.add_option('-l', '--link-prefix', metavar='prefix',
                       action='store', dest='link_prefix',
-                      default='', help=help['link_prefix'])
+                      default='http://sfepy.org/doc-devel',
+                      help=help['link_prefix'])
     (options, args) = parser.parse_args()
 
     examples_dir = os.path.realpath(options.examples_dir)
