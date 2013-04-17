@@ -345,7 +345,7 @@ class Viewer(Struct):
                             vector_mode='arrows_norm',
                             rel_scaling=None, clamping=False,
                             ranges=None, is_scalar_bar=False,
-                            is_wireframe=False, opacity=1.0,
+                            is_wireframe=False, opacity=None,
                             subdomains_args=None,
                             rel_text_width=None,
                             filter_names=None, group_names=None,
@@ -678,7 +678,7 @@ class Viewer(Struct):
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
-                  opacity=1.0, subdomains_args=None, rel_text_width=None,
+                  opacity=None, subdomains_args=None, rel_text_width=None,
                   fig_filename='view.png', resolution=None,
                   filter_names=None, only_names=None, group_names=None, step=0,
                   anti_aliasing=None, domain_specific=None):
