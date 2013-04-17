@@ -17,15 +17,6 @@ sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-##
-# 22.09.2005, c
-# 24.10.2005
-if sys.version[:5] < '2.4.0':
-    def sorted( sequence ):
-        tmp = copy( sequence )
-        tmp.sort()
-        return tmp
-
 if sys.version[0] < '3':
     basestr = basestring
 
