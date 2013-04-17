@@ -164,7 +164,7 @@ def generate_images(images_dir, examples_dir):
                 suffix = None
 
             else:
-                suffix = tsolver.ts.suffix % tsolver.ts.step
+                suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
 
             filename = problem.get_output_name(suffix=suffix)
 
@@ -316,36 +316,32 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     return dir_map
 
-_gallery_template = """\
-<html>
-<head>
-  <title>SfePy gallery</title>
-  <link rel="stylesheet" href="%s/_static/default.css" type="text/css" />
-</head>
-
-<body>
-  <div class="related">
-    &nbsp; &nbsp; www.sfepy.org
-  </div>
-
-<div class="body">
-
-<h3>... click on any image to see full size image and example problem definition file</h3>
-<br/>
-
-%s
-
-</div>
-</body>
-</html>
-"""
-
+_gallery_template_file = os.path.join(os.getcwd(),'doc/gallery_template.html')
+_gallery_template_open = open(_gallery_template_file,'r')
+_gallery_template = _gallery_template_open.readlines()
+_gallery_template = ''.join(_gallery_template)
 _link_template = """\
-<a href="%s"><img src="%s" border="0" alt="%s"/></a>
+<div class="figure">
+<a class="reference external image-reference" href="../%s">
+<img alt="%s" src="%s" />
+</a>
+<p class="caption">
+<a class="reference internal" href="../%s"><em>%s</em></a>
+</p>
+</div>
+<div class="toctree-wrapper compound">
+</div>
 """
-
-def generate_gallery_html(output_filename, gallery_dir,
-                          rst_dir, thumbnails_dir, dir_map, link_prefix=''):
+_side_links="<li><a class='reference internal' href='#%s'>%s</a></li>"
+_div_line ="""\
+<div class="section" id="%s">
+<h2>%s<a class="headerlink" href="\#%s" title="Permalink to this headline">
+</a></h2>
+%s
+<div style="clear: both"></div></div>
+"""
+def generate_gallery_html(examples_dir, output_filename, gallery_dir,
+                          rst_dir, thumbnails_dir, dir_map, link_prefix):
     """
     Generate the gallery html file with thumbnail images and links to
     examples.
@@ -367,10 +363,13 @@ def generate_gallery_html(output_filename, gallery_dir,
     """
     output('generating %s...' % output_filename)
 
-    lines = []
+    div_lines=[]
+    sidebar = []
     for dirname, filenames in ordered_iteritems(dir_map):
         full_dirname = os.path.join(rst_dir, dirname)
-
+        dirnamenew = dirname.replace("_"," ")
+        sidebarline = _side_links % (dirname, dirnamenew.title())
+        lines = []
         for ex_filename, rst_filename in filenames:
             full_rst_filename = os.path.join(full_dirname, rst_filename)
 
@@ -390,12 +389,23 @@ def generate_gallery_html(output_filename, gallery_dir,
 
                 thumbnail_name = thumbnail_filename.replace(gallery_dir,
                                                             '')[1:]
-                line = _link_template % (link, thumbnail_name,
-                                         os.path.splitext(ebase)[0])
+                path_to_file = os.path.join(examples_dir,ebase)
+                docstring = get_default(import_file(path_to_file).__doc__,
+                                        'missing description!')
+                docstring = docstring.replace('e.g.', 'eg:')
+                docstring = docstring.split('.')
+                line = _link_template % (link,os.path.splitext(ebase)[0],
+                                         thumbnail_name,link,docstring[0]+'.')
                 lines.append(line)
 
+        if(len(lines)!=0):
+            div_lines.append(_div_line % (dirname, dirnamenew.title(),
+                                          dirname, '\n'.join(lines)))
+            sidebar.append(sidebarline)
+
     fd = open(output_filename, 'w')
-    fd.write(_gallery_template % (link_prefix, '\n'.join(lines)))
+    fd.write(_gallery_template % ((link_prefix,) * 7
+                                  + ('\n'.join(sidebar), '\n'.join(div_lines))))
     fd.close()
 
     output('...done')
@@ -435,7 +445,8 @@ def main():
                       help=help['output_filename'])
     parser.add_option('-l', '--link-prefix', metavar='prefix',
                       action='store', dest='link_prefix',
-                      default='', help=help['link_prefix'])
+                      default='http://sfepy.org/doc-devel',
+                      help=help['link_prefix'])
     (options, args) = parser.parse_args()
 
     examples_dir = os.path.realpath(options.examples_dir)
@@ -448,14 +459,13 @@ def main():
 
     thumbnails_dir = os.path.join(images_dir, 'thumbnails')
     rst_dir = os.path.join(gallery_dir, 'examples')
-
     if not options.no_images:
         generate_images(images_dir, examples_dir)
         generate_thumbnails(thumbnails_dir, images_dir)
 
     dir_map = generate_rst_files(rst_dir, examples_dir, images_dir)
 
-    generate_gallery_html(output_filename, gallery_dir,
+    generate_gallery_html(examples_dir,output_filename, gallery_dir,
                           rst_dir, thumbnails_dir, dir_map,
                           link_prefix=options.link_prefix)
 
