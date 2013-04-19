@@ -151,6 +151,39 @@ def points_in_simplex(coors, s_coors, eps=1e-8):
                          & (bc[idim,:] < (1.0 + eps)), True, False)
     return flag
 
+def flag_points_in_polygon2d(polygon, coors):
+    """
+    Test if points are in a 2D polygon.
+
+    Parameters
+    ----------
+    polygon : array, (:, 2)
+        The polygon coordinates.
+    coors: array, (:, 2)
+        The coordinates of points.
+
+    Returns
+    -------
+    flag : bool array
+        The flag that is True for points that are in the polygon.
+
+    Notes
+    -----
+    This is a semi-vectorized version of [1].
+
+    [1] PNPOLY - Point Inclusion in Polygon Test, W. Randolph Franklin (WRF)
+    """
+    flag = nm.zeros(coors.shape[0], dtype=nm.bool)
+    nv = polygon.shape[0]
+    px, py = coors[:, 0], coors[:, 1]
+    for ii in xrange(nv):
+        vix, viy = polygon[ii, 0], polygon[ii, 1]
+        vjx, vjy = polygon[ii-1, 0], polygon[ii-1, 1]
+        aux = nm.where((viy > py) != (vjy > py))
+        flag[aux] = nm.where((px[aux] < (vjx - vix)
+                              * (py[aux] - viy) / (vjy - viy) + vix),
+                             ~flag[aux], flag[aux])
+    return flag
 
 def inverse_element_mapping(coors, e_coors, eval_base, ref_coors,
                             suppress_errors=False):
