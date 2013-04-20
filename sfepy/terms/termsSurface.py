@@ -2,6 +2,7 @@ import numpy as nm
 
 from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
+from sfepy.mechanics.contact_planes import ContactPlane
 
 ##
 # 22.08.2006, c
@@ -34,6 +35,98 @@ class LinearTractionTerm( Term ):
         sg, _ = self.get_mapping(virtual)
 
         return traction, sg
+
+class ContactPlaneTerm(Term):
+    r"""
+    Small deformation contact plane term with linear penetration penalty.
+
+    The plane is given by an anchor point :math:`\ul{A}` and a normal
+    :math:`\ul{n}`. The contact occurs in points that orthogonally project onto
+    the plane into a polygon given by orthogonal projections of boundary points
+    :math:`\{\ul{B}_i\}`, :math:`i = 1, \dots, N_B` on the plane. In such
+    points, a penetration distance :math:`d(\ul{u}) = (\ul{X} + \ul{u} -
+    \ul{A}, \ul{n})` is computed, and if it is positive, a force :math:`k
+    d(\ul{u})^+ \ul{n}` is applied.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot k d(\ul{u})^+ \ul{n}
+
+    :Arguments:
+        - material_k : :math:`k`
+        - material_n : :math:`\ul{n}`
+        - material_a : :math:`\ul{A}`
+        - material_b : :math:`\{\ul{B}_i\}`, :math:`i = 1, \dots, N_B`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+    """
+    name = 'dw_contact_plane'
+    arg_types = ('material_k', 'material_n', 'material_a', 'material_b',
+                 'virtual', 'state')
+    integration = 'surface'
+
+    def __init__(self, *args, **kwargs):
+        Term.__init__(self, *args, **kwargs)
+
+        self.cp = None
+
+    @staticmethod
+    def function(out, force, normal, geo, fmode):
+        bf = geo.bf[0]
+        nbf = bf * normal[None, :, None]
+        nbf.shape = (bf.shape[0], bf.shape[2] * normal.shape[0])
+
+        if fmode == 0:
+            out_qp = force * nbf[None, :, :, None]
+
+        else:
+            nbf2 = nbf[:, :, None] * nbf[:, None, :]
+            out_qp = force * nbf2[None, :, :, :]
+
+        status = geo.integrate(out, nm.ascontiguousarray(out_qp))
+
+        return status
+
+    def get_fargs(self, stiffness, normal, anchor, bounds, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(virtual)
+
+        if self.cp is None:
+            self.cp = ContactPlane(anchor, normal, bounds)
+
+        ig = self.char_fun.ig
+        qps = self.get_physical_qps()
+        qp_coors = qps.values[ig]
+        u_qp = self.get(state, 'val').reshape(qp_coors.shape)
+
+        # Deformed QP coordinates.
+        coors = u_qp + qp_coors
+
+        force = nm.zeros(coors.shape[0], dtype=nm.float64)
+
+        # Active points in contact change with displacements!
+        ii = self.cp.mask_points(coors)
+
+        if diff_var is None:
+            if ii.any():
+                dist = self.cp.get_distance(coors[ii])
+                # Force in the plane normal direction.
+                force[ii] = nm.where(dist > 0.0, stiffness * dist, 0.0)
+
+            fmode = 0
+
+        else:
+            if ii.any():
+                dist = self.cp.get_distance(coors[ii])
+                # Force in the plane normal direction derivative.
+                force[ii] = nm.where(dist > 0.0, stiffness, 0.0)
+
+            fmode = 1
+
+        force.shape = qps.shape[ig][:2] + (1, 1)
+
+        return force, self.cp.normal, sg, fmode
 
 class SufaceNormalDotTerm(Term):
     r"""
