@@ -30,7 +30,7 @@ class ContactPlane(Struct):
             bounds2d = rbounds[:, :2]
 
         assert_(nm.allclose(nm.dot(mtx, self.normal), e3,
-                            rtol=0.0, atol=1e-14))
+                            rtol=0.0, atol=1e-12))
 
         self.adotn = nm.dot(self.anchor, self.normal)
 
