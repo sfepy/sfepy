@@ -32,7 +32,7 @@ class ContactPlane(Struct):
         assert_(nm.allclose(nm.dot(mtx, self.normal), e3,
                             rtol=0.0, atol=1e-14))
 
-        self.ranchor = nm.dot(mtx, self.anchor)
+        self.adotn = nm.dot(self.anchor, self.normal)
 
         self.rot_angle = rot_angle
         self.mtx = mtx
@@ -45,8 +45,7 @@ class ContactPlane(Struct):
         return la.flag_points_in_polygon2d(self.bounds2d, points2d)
 
     def get_distance(self, points):
-        mm = la.insert_strided_axis(self.mtx, 0, points.shape[0])
-        dist = la.dot_sequences(mm, points)[:, 2] - self.ranchor[2]
+        dist = la.dot_sequences(points, self.normal) - self.adotn
 
         return dist
 
