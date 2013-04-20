@@ -35,8 +35,9 @@ from sfepy import data_dir
 filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
 stiffness = 1e5
-dn = 0.2
-ds = 0.25
+dn = 0.2 # x or y component magnitude of normals.
+ds = 0.25 # Boundary polygon size in horizontal directions.
+az = 0.4 # Anchor z coordinate.
 
 options = {
     'ts' : 'ts',
@@ -58,34 +59,34 @@ materials = {
     'cp0' : ({
         'k' : stiffness,
         '.n' : [dn, 0.0, 1.0],
-        '.a' : [0.0, 0.0, 0.4],
-        '.bs' : [[0.0, 0.0, 0.5],
-                 [-ds, -ds, 0.5],
-                 [-ds, ds, 0.5]],
+        '.a' : [0.0, 0.0, az],
+        '.bs' : [[0.0, 0.0, az],
+                 [-ds, -ds, az],
+                 [-ds, ds, az]],
     },),
     'cp1' : ({
         'k' : stiffness,
         '.n' : [-dn, 0.0, 1.0],
-        '.a' : [0.0, 0.0, 0.4],
-        '.bs' : [[0.0, 0.0, 0.5],
-                 [ds, -ds, 0.5],
-                 [ds, ds, 0.5]],
+        '.a' : [0.0, 0.0, az],
+        '.bs' : [[0.0, 0.0, az],
+                 [ds, -ds, az],
+                 [ds, ds, az]],
     },),
     'cp2' : ({
         'k' : stiffness,
         '.n' : [0.0, dn, 1.0],
-        '.a' : [0.0, 0.0, 0.4],
-        '.bs' : [[0.0, 0.0, 0.5],
-                 [-ds, -ds, 0.5],
-                 [ds, -ds, 0.5]],
+        '.a' : [0.0, 0.0, az],
+        '.bs' : [[0.0, 0.0, az],
+                 [-ds, -ds, az],
+                 [ds, -ds, az]],
     },),
     'cp3' : ({
         'k' : stiffness,
         '.n' : [0.0, -dn, 1.0],
-        '.a' : [0.0, 0.0, 0.4],
-        '.bs' : [[0.0, 0.0, 0.5],
-                 [-ds, ds, 0.5],
-                 [ds, ds, 0.5]],
+        '.a' : [0.0, 0.0, az],
+        '.bs' : [[0.0, 0.0, az],
+                 [-ds, ds, az],
+                 [ds, ds, az]],
     },),
 }
 
