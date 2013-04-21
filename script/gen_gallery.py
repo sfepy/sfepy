@@ -53,7 +53,19 @@ custom = {
             'view' : (-112, 107, 0.32, [0.081, 0.042, 0.082]),
             'roll' : 111,
         },
-    }
+    },
+    'linear_elasticity/elastic_contact_planes.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                'u' : DomainSpecificPlot('plot_displacements',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (-82, 47, 2.8, [-0.01, -0.02, -0.02]),
+            'roll' : -8.4,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    },
 }
 
 def _omit(filename):
