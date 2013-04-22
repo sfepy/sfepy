@@ -26,6 +26,9 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
             elif sh == 'S':
                 return sym
 
+            elif sh == 'N': # General number ;)
+                return 5
+
             else:
                 return int(sh)
 
@@ -92,11 +95,21 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
         elif arg_kind.endswith('material'):
             if sh is None: # Switched-off opt_material.
                 continue
-            shape = _parse_tuple_shape(sh)
-            if len(shape) == 2: # Regular material.
-                values = {'c%d' % ii : nm.ones(shape, dtype=nm.float64)}
 
-            elif len(shape) == 1: # Single scalar as a special value.
+            prefix = ''
+            if isinstance(sh, basestr):
+                aux = sh.split(':')
+                if len(aux) == 2:
+                    prefix, sh = aux
+
+            shape = _parse_tuple_shape(sh)
+            if (len(shape) > 1) or (shape[0] > 1):
+                # Array.
+                values = {'%sc%d' % (prefix, ii)
+                          : nm.ones(shape, dtype=nm.float64)}
+
+            elif (len(shape) == 1) and (shape[0] == 1):
+                # Single scalar as a special value.
                 values = {'.c%d' % ii : 1.0}
 
             else:
