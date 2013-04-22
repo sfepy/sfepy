@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_planes import ContactPlane
@@ -38,23 +39,44 @@ class LinearTractionTerm( Term ):
 
 class ContactPlaneTerm(Term):
     r"""
-    Small deformation contact plane term with linear penetration penalty.
+    Small deformation elastic contact plane term with penetration penalty.
 
     The plane is given by an anchor point :math:`\ul{A}` and a normal
     :math:`\ul{n}`. The contact occurs in points that orthogonally project onto
     the plane into a polygon given by orthogonal projections of boundary points
     :math:`\{\ul{B}_i\}`, :math:`i = 1, \dots, N_B` on the plane. In such
     points, a penetration distance :math:`d(\ul{u}) = (\ul{X} + \ul{u} -
-    \ul{A}, \ul{n})` is computed, and if it is positive, a force :math:`k
-    d(\ul{u})^+ \ul{n}` is applied.
+    \ul{A}, \ul{n})` is computed, and a force :math:`f(d(\ul{u})) \ul{n}` is
+    applied. The force depends on the non-negative parameters :math:`k`
+    (stiffness) and :math:`f_0` (force at zero penetration):
+
+    - If :math:`f_0 = 0`:
+
+      .. math::
+
+         f(d) = 0 \mbox{ for } d \leq 0 \;, \\
+         f(d) = k d \mbox{ for } d > 0 \;.
+
+    - If :math:`f_0 > 0`:
+
+      .. math::
+
+         f(d) = 0 \mbox{ for } d \leq -\frac{2 r_0}{k} \;, \\
+         f(d) = \frac{k^2}{4 r_0} d^2 + k d + r_0
+         \mbox{ for } -\frac{2 r_0}{k} < d \leq 0 \;, \\
+         f(d) = k d + f_0 \mbox{ for } d > 0 \;.
+
+      In this case the dependence :math:`f(d)` is smooth, and a (small) force
+      is applied even for (small) negative penetrations: :math:`-\frac{2
+      r_0}{k} < d \leq 0`.
 
     :Definition:
 
     .. math::
-        \int_{\Gamma} \ul{v} \cdot k d(\ul{u})^+ \ul{n}
+        \int_{\Gamma} \ul{v} \cdot f(d(\ul{u})) \ul{n}
 
     :Arguments:
-        - material_k : :math:`k`
+        - material_f : :math:`[k, f_0]`
         - material_n : :math:`\ul{n}` (special)
         - material_a : :math:`\ul{A}` (special)
         - material_b : :math:`\{\ul{B}_i\}`, :math:`i = 1, \dots, N_B` (special)
@@ -62,9 +84,9 @@ class ContactPlaneTerm(Term):
         - state      : :math:`\ul{u}`
     """
     name = 'dw_contact_plane'
-    arg_types = ('material_k', 'material_n', 'material_a', 'material_b',
+    arg_types = ('material_f', 'material_n', 'material_a', 'material_b',
                  'virtual', 'state')
-    arg_shapes = {'material_k' : '1, 1', 'material_n' : '.: D',
+    arg_shapes = {'material_f' : '1, 2', 'material_n' : '.: D',
                   'material_a' : '.: D', 'material_b' : '.: N, D',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
     geometries = ['3_4', '3_8']
@@ -92,9 +114,29 @@ class ContactPlaneTerm(Term):
 
         return status
 
-    def get_fargs(self, stiffness, normal, anchor, bounds, virtual, state,
+    @staticmethod
+    def smooth_f(d, k, f0, a, eps, diff):
+        ii = nm.where((d > eps) & (d <= 0.0))
+
+        if not diff:
+            out = nm.where(d > 0.0, k * d + f0, 0.0)
+            if ii:
+                di = d[ii]
+                out[ii] = a[ii] * di**2 + k[ii] * di + f0[ii]
+
+        else:
+            out = nm.where(d > 0.0, k, 0.0)
+            if ii:
+                out[ii] = 2 * a[ii] * d[ii] + k[ii]
+
+        return out
+
+    def get_fargs(self, force_pars, normal, anchor, bounds, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
+
+        assert_((force_pars >= 0.0).all(),
+                'force parameters must be non-negative!')
 
         if self.cp is None:
             self.cp = ContactPlane(anchor, normal, bounds)
@@ -112,19 +154,28 @@ class ContactPlaneTerm(Term):
         # Active points in contact change with displacements!
         ii = self.cp.mask_points(coors)
 
+        k = force_pars[..., 0]
+        f0 = force_pars[..., 1]
+        k.shape = f0.shape = force.shape
+
+        ir = f0 >= 1e-14
+        eps = nm.where(ir, - 2.0 * f0 / k, 0.0)
+        a = nm.zeros_like(eps)
+        a[ir] = k[ir]**2 / (4.0 * f0[ir])
+
         if diff_var is None:
             if ii.any():
-                dist = self.cp.get_distance(coors[ii])
+                d = self.cp.get_distance(coors[ii])
                 # Force in the plane normal direction.
-                force[ii] = nm.where(dist > 0.0, stiffness * dist, 0.0)
+                force[ii] = self.smooth_f(d, k[ii], f0[ii], a[ii], eps[ii], 0)
 
             fmode = 0
 
         else:
             if ii.any():
-                dist = self.cp.get_distance(coors[ii])
+                d = self.cp.get_distance(coors[ii])
                 # Force in the plane normal direction derivative.
-                force[ii] = nm.where(dist > 0.0, stiffness, 0.0)
+                force[ii] = self.smooth_f(d, k[ii], f0[ii], a[ii], eps[ii], 1)
 
             fmode = 1
 
