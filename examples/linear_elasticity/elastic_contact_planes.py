@@ -8,7 +8,7 @@ Find :math:`\ul{u}` such that:
 
 .. math::
     \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
-    + \sum_{i=1}^4 \int_{\Gamma_i} \ul{v} \cdot k^i d^i(\ul{u})^+ \ul{n^i}
+    + \sum_{i=1}^4 \int_{\Gamma_i} \ul{v} \cdot f^i(d(\ul{u})) \ul{n^i}
     = 0 \;,
 
 where
@@ -34,7 +34,8 @@ from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
-stiffness = 1e5
+k = 1e5 # Elastic plane stiffness for positive penetration.
+f0 = 1e2 # Force at zero penetration.
 dn = 0.2 # x or y component magnitude of normals.
 ds = 0.25 # Boundary polygon size in horizontal directions.
 az = 0.4 # Anchor z coordinate.
@@ -42,7 +43,7 @@ az = 0.4 # Anchor z coordinate.
 options = {
     'ts' : 'ts',
     'nls' : 'newton',
-    'ls' : 'lsi',
+    'ls' : 'lsd',
 
     'output_format': 'vtk',
 }
@@ -57,7 +58,7 @@ materials = {
         'mu' : 3.846,
     },),
     'cp0' : ({
-        'k' : stiffness,
+        'f' : [k, f0],
         '.n' : [dn, 0.0, 1.0],
         '.a' : [0.0, 0.0, az],
         '.bs' : [[0.0, 0.0, az],
@@ -65,7 +66,7 @@ materials = {
                  [-ds, ds, az]],
     },),
     'cp1' : ({
-        'k' : stiffness,
+        'f' : [k, f0],
         '.n' : [-dn, 0.0, 1.0],
         '.a' : [0.0, 0.0, az],
         '.bs' : [[0.0, 0.0, az],
@@ -73,7 +74,7 @@ materials = {
                  [ds, ds, az]],
     },),
     'cp2' : ({
-        'k' : stiffness,
+        'f' : [k, f0],
         '.n' : [0.0, dn, 1.0],
         '.a' : [0.0, 0.0, az],
         '.bs' : [[0.0, 0.0, az],
@@ -81,7 +82,7 @@ materials = {
                  [ds, -ds, az]],
     },),
     'cp3' : ({
-        'k' : stiffness,
+        'f' : [k, f0],
         '.n' : [0.0, -dn, 1.0],
         '.a' : [0.0, 0.0, az],
         '.bs' : [[0.0, 0.0, az],
@@ -108,10 +109,10 @@ ebcs = {
 equations = {
     'elasticity' :
     """dw_lin_elastic_iso.2.Omega(solid.lam, solid.mu, v, u)
-     + dw_contact_plane.2.Top(cp0.k, cp0.n, cp0.a, cp0.bs, v, u)
-     + dw_contact_plane.2.Top(cp1.k, cp1.n, cp1.a, cp1.bs, v, u)
-     + dw_contact_plane.2.Top(cp2.k, cp2.n, cp2.a, cp2.bs, v, u)
-     + dw_contact_plane.2.Top(cp3.k, cp3.n, cp3.a, cp3.bs, v, u)
+     + dw_contact_plane.2.Top(cp0.f, cp0.n, cp0.a, cp0.bs, v, u)
+     + dw_contact_plane.2.Top(cp1.f, cp1.n, cp1.a, cp1.bs, v, u)
+     + dw_contact_plane.2.Top(cp2.f, cp2.n, cp2.a, cp2.bs, v, u)
+     + dw_contact_plane.2.Top(cp3.f, cp3.n, cp3.a, cp3.bs, v, u)
      = 0""",
 }
 
@@ -123,7 +124,7 @@ solvers = {
         'i_max' : 3000,
     }),
     'newton' : ('nls.newton', {
-        'i_max' : 5,
+        'i_max' : 10,
         'eps_a' : 1e-10,
         'problem' : 'nonlinear',
         'check' : 0,
