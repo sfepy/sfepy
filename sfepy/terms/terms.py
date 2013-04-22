@@ -187,7 +187,6 @@ class CharacteristicFunction(Struct):
     def __init__(self, region):
         self.igs = region.igs
         self.region = region
-        self.i_current = None
         self.local_chunk = None
         self.ig = None
 
