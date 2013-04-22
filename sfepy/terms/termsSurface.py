@@ -55,15 +55,19 @@ class ContactPlaneTerm(Term):
 
     :Arguments:
         - material_k : :math:`k`
-        - material_n : :math:`\ul{n}`
-        - material_a : :math:`\ul{A}`
-        - material_b : :math:`\{\ul{B}_i\}`, :math:`i = 1, \dots, N_B`
+        - material_n : :math:`\ul{n}` (special)
+        - material_a : :math:`\ul{A}` (special)
+        - material_b : :math:`\{\ul{B}_i\}`, :math:`i = 1, \dots, N_B` (special)
         - virtual    : :math:`\ul{v}`
         - state      : :math:`\ul{u}`
     """
     name = 'dw_contact_plane'
     arg_types = ('material_k', 'material_n', 'material_a', 'material_b',
                  'virtual', 'state')
+    arg_shapes = {'material_k' : '1, 1', 'material_n' : '.: D',
+                  'material_a' : '.: D', 'material_b' : '.: N, D',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
     integration = 'surface'
 
     def __init__(self, *args, **kwargs):
