@@ -328,10 +328,9 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     return dir_map
 
-_gallery_template_file = os.path.join(os.getcwd(),'doc/gallery_template.html')
-_gallery_template_open = open(_gallery_template_file,'r')
-_gallery_template = _gallery_template_open.readlines()
-_gallery_template = ''.join(_gallery_template)
+_gallery_template_file = os.path.join(sfepy.top_dir,
+                                      'doc/gallery_template.html')
+
 _link_template = """\
 <div class="figure">
 <a class="reference external image-reference" href="../%s">
@@ -375,6 +374,9 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
     """
     output('generating %s...' % output_filename)
 
+    with open(_gallery_template_file, 'r') as fd:
+        gallery_template = fd.read()
+
     div_lines=[]
     sidebar = []
     for dirname, filenames in ordered_iteritems(dir_map):
@@ -416,8 +418,8 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
             sidebar.append(sidebarline)
 
     fd = open(output_filename, 'w')
-    fd.write(_gallery_template % ((link_prefix,) * 7
-                                  + ('\n'.join(sidebar), '\n'.join(div_lines))))
+    fd.write(gallery_template % ((link_prefix,) * 7
+                                 + ('\n'.join(sidebar), '\n'.join(div_lines))))
     fd.close()
 
     output('...done')
