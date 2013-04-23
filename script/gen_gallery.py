@@ -1,4 +1,37 @@
 #!/usr/bin/env python
+"""
+Generate the images and rst files for gallery of SfePy examples.
+
+The following steps need to be made to regenerate the documentation with the
+updated example files:
+
+1. Generate the files:
+
+   - for sfepy.org deployment::
+
+     $ ./script/gen_gallery.py -l ../doc-devel
+
+   - for local test build run from ./::
+
+     $ ./script/gen_gallery.py -l doc/_build/html/
+
+2. remove doc/examples/::
+
+   $ rm -rf doc/examples/
+
+3. copy gallery/examples/ to doc/::
+
+   $ cp -a gallery/examples/ doc/
+
+4. regenerate the documentation::
+
+   $ python setup.py htmldocs
+
+Additional steps for sfepy.org deployment:
+
+- copy doc/_build/html/ to <sfepy.org>/doc-devel/
+- copy gallery/gallery.html and gallery/images/ to <sfepy.org>/doc-devel/
+"""
 import sys
 sys.path.append( '.' )
 import os
@@ -424,10 +457,8 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
 
     output('...done')
 
-usage = """%prog [options]
+usage = '%prog [options]\n' + __doc__.rstrip()
 
-Generate the images and rst files for gallery of SfePy examples.
-"""
 help = {
     'examples_dir' :
     'directory containing examples [default: %default]',
