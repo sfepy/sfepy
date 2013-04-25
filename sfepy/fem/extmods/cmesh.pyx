@@ -1,13 +1,15 @@
 # -*- Mode: Python -*-
 """
-Low level mesh functions employing element connectivity.
+C Mesh data structures and functions.
 """
 cimport cython
 
 import numpy as np
 cimport numpy as np
 
-from types cimport int32, float64, complex128
+from libc.stdio cimport FILE, stdout
+
+from types cimport uint32, int32, float64, complex128
 
 cdef extern from 'string.h':
     void *memcpy(void *dest, void *src, size_t n)
@@ -16,6 +18,142 @@ cdef extern from 'common.h':
     void *pyalloc(size_t size)
     void pyfree(void *pp)
 
+cdef extern from 'mesh.h':
+    ctypedef struct MeshGeometry:
+        uint32 num
+        uint32 dim
+        float64 *coors
+
+    ctypedef struct MeshTopology:
+        uint32 max_dim
+        uint32 num[16]
+        MeshConnectivity *conn[16]
+
+    ctypedef struct MeshConnectivity:
+        uint32 num
+        uint32 n_incident
+        uint32 *indices
+        uint32 *offsets
+        uint32 offset
+
+    ctypedef struct Mesh:
+        MeshGeometry geometry[1]
+        MeshTopology topology[1]
+
+    cdef int32 mesh_init(Mesh *mesh)
+    cdef int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
+
+    cdef int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
+
+cdef class CConnectivity:
+    cdef MeshConnectivity *conn
+
+    cdef public np.ndarray indices
+    cdef public np.ndarray offsets
+    cdef public int num, n_incident, offset
+
+    def __cinit__(self, num, n_incident):
+        self.num = num
+        self.n_incident = n_incident
+
+        self.offset = 0
+
+    cdef _set_conn(self, MeshConnectivity *conn):
+        # This cannot be in __cinit__, as a C pointer needs to be passed
+        # around.
+        cdef np.ndarray[uint32, mode='c', ndim=1] _indices
+        cdef np.ndarray[uint32, mode='c', ndim=1] _offsets
+        self.conn = conn
+
+        _indices = self.indices = np.empty(self.n_incident, dtype=np.uint32)
+        _offsets = self.offsets = np.empty(self.num + 1, dtype=np.uint32)
+
+        self.conn.indices = &_indices[0]
+        self.conn.offsets = &_offsets[0]
+        self.conn.num = self.num
+        self.conn.n_incident = self.n_incident
+
+    def __str__(self):
+        return 'CConnectivity: num: %d, n_incident %d' \
+               % (self.num, self.n_incident)
+
+cdef class CMesh:
+    cdef Mesh mesh[1]
+
+    cdef readonly np.ndarray coors
+    cdef readonly list conns
+    cdef readonly int n_coor, dim, n_el
+
+    @classmethod
+    def from_mesh(cls, mesh):
+        """
+        Fill data from a Python mesh.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=2] _coors
+        cdef MeshConnectivity *pconn
+
+        self = CMesh()
+
+        # Geometry coordinates.
+        self.n_coor, self.dim = mesh.coors.shape
+        _coors = self.coors = mesh.coors.copy()
+        mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim)
+
+        # Cell-vertex (D -> 0) connectivity.
+        self.n_el = mesh.n_el
+
+        # Length of connectivity.
+        n_incident = (mesh.n_e_ps * mesh.n_els).sum()
+
+        ii = self._get_conn_indx(self.dim, 0)
+        pconn = self.mesh.topology.conn[ii]
+        self.mesh.topology.num[self.dim] = self.n_el
+        cconn = CConnectivity(self.n_el, n_incident)
+        cconn._set_conn(pconn)
+
+        indices = []
+        offsets = []
+        for ig, conn in enumerate(mesh.conns):
+            n_el, n_ep = conn.shape
+
+            off = np.empty(n_el, dtype=np.uint32)
+            off.fill(n_ep)
+            offsets.append(off)
+            indices.append(conn.ravel())
+
+        indices = np.concatenate(indices)
+        offsets = np.concatenate(offsets)
+
+        cconn.indices[:] = indices
+        cconn.offsets[0] = 0
+        cconn.offsets[1:] = np.cumsum(offsets)
+
+        self.conns = [None] * 16
+        self.conns[ii] = cconn
+
+        return self
+
+    def __cinit__(self):
+        mesh_init(self.mesh)
+
+    def _get_conn_indx(self, d1, d2):
+        return self.mesh.topology.max_dim * d1 + d2
+
+    def get_conn(self, d1, d2):
+        ii = self._get_conn_indx(d1, d2)
+        return self.conns[ii]
+
+    def get_cell_conn(self):
+        return self.get_conn(self.dim, 0)
+
+    def __str__(self):
+        return 'CMesh: n_coor: %d, dim %d, n_el %d' \
+               % (self.n_coor, self.dim, self.n_el)
+
+    def cprint(self, int32 header_only=1):
+        mesh_print(self.mesh, stdout, header_only)
+
+## Utils. ##
 cdef extern from 'meshutils.h':
     int32 c_orient_elements \
           'orient_elements'(int32 *flag, int32 flag_n_row,
