@@ -752,7 +752,7 @@ class Mesh(Struct):
         graph : csr_matrix
             The mesh connectivity graph as a SciPy CSR matrix.
         """
-        from extmods.mesh import create_mesh_graph
+        from extmods.cmesh import create_mesh_graph
 
         shape = (self.n_nod, self.n_nod)
         output('graph shape:', shape, verbose=verbose)
