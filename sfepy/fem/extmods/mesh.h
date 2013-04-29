@@ -21,6 +21,9 @@
 #define Cell   3 // D,     0
 #define Facet  4 // D - 1, 1
 
+// Special uint32 values meaning "not set".
+#define UINT32_None -1
+
 typedef struct MeshGeometry {
   uint32 num;
   uint32 dim;

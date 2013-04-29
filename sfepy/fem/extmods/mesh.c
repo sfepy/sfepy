@@ -268,16 +268,77 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   return(ret);
 }
 
+#undef __FUNC__
+#define __FUNC__ "mesh_transpose"
 int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
 {
-  int32 ret = RET_OK;
-  uint32 kk = 0;
+  int32 ret = RET_OK, ok;
+  uint32 n_incident;
+  uint32 ii = 0;
+  uint32 *nd2 = 0, *off = 0, *ptr = 0;
   int32 D = mesh->topology->max_dim;
+  ConnIter ci[1];
   MeshConnectivity *c12 = 0; // d1 -> d2 - to compute
   MeshConnectivity *c21 = 0; // d2 -> d1 - known
 
+  if (d1 >= d2) {
+    errput("d1 must be smaller than d2 in mesh_transpose()!\n");
+    ERR_GotoEnd(RET_Fail);
+  }
+
   c12 = mesh->topology->conn[IJ(D, d1, d2)];
   c21 = mesh->topology->conn[IJ(D, d2, d1)];
+
+  // Count entities of d2 -> d1.
+  conn_alloc(c12, mesh->topology->num[d1], 0);
+  ERR_CheckGo(ret);
+  nd2 = c12->offsets + 1;
+
+  n_incident = 0;
+  conn_iter_init(ci, c21);
+  do {
+    for (ii = 0; ii < ci->num; ii++) {
+      nd2[ci->ptr[ii]]++;
+    }
+    n_incident += ci->num;
+  } while (conn_iter_next(ci));
+
+  // c12->offsets now contains counts - make a cumsum to get offsets.
+  for (ii = 1; ii < c12->num + 1; ii++) {
+    c12->offsets[ii] += c12->offsets[ii-1];
+  }
+
+  // Fill in the indices.
+  conn_alloc(c12, 0, n_incident);
+  ERR_CheckGo(ret);
+  for (ii = 0; ii < c12->n_incident; ii++) {
+    c12->indices[ii] = UINT32_None; // "not set" value.
+  }
+
+  conn_iter_init(ci, c21);
+  do {
+    for (ii = 0; ii < ci->num; ii++) {
+      off = c12->offsets + ci->ptr[ii];
+      ptr = c12->indices + off[0];
+      ok = 0;
+      while (ptr < (c12->indices + off[1])) {
+        if (ptr[0] == ci->ii) { // Already there.
+          ok = 1;
+          break;
+        }
+        if (ptr[0] == UINT32_None) { // Not found & free slot.
+          ptr[0] = ci->ii;
+          ok = 2;
+          break;
+        }
+        ptr++;
+      }
+      if (!ok) {
+        errput("wrong connectivity offsets (internal error)!\n");
+        ERR_GotoEnd(RET_Fail);
+      }
+    }
+  } while (conn_iter_next(ci));
 
  end_label:
   return(ret);
