@@ -11,6 +11,8 @@ from libc.stdio cimport FILE, stdout
 
 from types cimport uint32, int32, float64, complex128
 
+np.import_array()
+
 cdef extern from 'string.h':
     void *memcpy(void *dest, void *src, size_t n)
 
@@ -43,9 +45,19 @@ cdef extern from 'mesh.h':
     cdef int32 mesh_init(Mesh *mesh)
     cdef int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 
+    cdef int32 conn_alloc(MeshConnectivity *conn,
+                          uint32 num, uint32 n_incident)
+    cdef int32 conn_free(MeshConnectivity *conn)
     cdef int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
 
 cdef class CConnectivity:
+    """
+    Notes
+    -----
+
+    The memory is allocated/freed in C - this class just wraps NumPy arrays
+    around that data without copying.
+    """
     cdef MeshConnectivity *conn
 
     cdef public np.ndarray indices
@@ -61,17 +73,19 @@ cdef class CConnectivity:
     cdef _set_conn(self, MeshConnectivity *conn):
         # This cannot be in __cinit__, as a C pointer needs to be passed
         # around.
-        cdef np.ndarray[uint32, mode='c', ndim=1] _indices
-        cdef np.ndarray[uint32, mode='c', ndim=1] _offsets
+        cdef np.npy_intp shape[1]
+
         self.conn = conn
 
-        _indices = self.indices = np.empty(self.n_incident, dtype=np.uint32)
-        _offsets = self.offsets = np.empty(self.num + 1, dtype=np.uint32)
+        shape[0] = <np.npy_intp> self.num + 1
+        self.offsets = np.PyArray_SimpleNewFromData(1, shape,
+                                                    np.NPY_UINT32,
+                                                    <void *> conn.offsets)
 
-        self.conn.indices = &_indices[0]
-        self.conn.offsets = &_offsets[0]
-        self.conn.num = self.num
-        self.conn.n_incident = self.n_incident
+        shape[0] = <np.npy_intp> self.n_incident
+        self.indices = np.PyArray_SimpleNewFromData(1, shape,
+                                                    np.NPY_UINT32,
+                                                    <void *> conn.indices)
 
     def __str__(self):
         return 'CConnectivity: num: %d, n_incident %d' \
@@ -101,13 +115,15 @@ cdef class CMesh:
 
         # Cell-vertex (D -> 0) connectivity.
         self.n_el = mesh.n_el
+        self.mesh.topology.num[self.dim] = self.n_el
 
         # Length of connectivity.
         n_incident = (mesh.n_e_ps * mesh.n_els).sum()
 
         ii = self._get_conn_indx(self.dim, 0)
         pconn = self.mesh.topology.conn[ii]
-        self.mesh.topology.num[self.dim] = self.n_el
+        if conn_alloc(pconn, self.n_el, n_incident):
+            raise MemoryError('cannot allocate D -> 0 connectivity!')
         cconn = CConnectivity(self.n_el, n_incident)
         cconn._set_conn(pconn)
 

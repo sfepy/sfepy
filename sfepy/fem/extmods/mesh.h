@@ -93,6 +93,9 @@ int32 conn_iter_init(ConnIter *iter, MeshConnectivity *conn);
 int32 conn_iter_print(ConnIter *iter, FILE *file);
 int32 conn_iter_print_current(ConnIter *iter, FILE *file);
 int32 conn_iter_next(ConnIter *iter);
+
+int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident);
+int32 conn_free(MeshConnectivity *conn);
 int32 conn_print(MeshConnectivity *conn, FILE *file);
 
 int32 entity_iter_init(EntityIter *iter, int32 dim, MeshTopology *topology);
