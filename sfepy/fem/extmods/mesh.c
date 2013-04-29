@@ -121,6 +121,28 @@ int32 conn_print(MeshConnectivity *conn, FILE *file)
   return(RET_OK);
 }
 
+int32 entity_iter_init(EntityIter *iter, int32 dim, MeshTopology *topology)
+{
+  iter->topology = topology;
+  iter->ii = 0;
+  iter->dim = dim;
+
+  return(RET_OK);
+}
+
+int32 entity_iter_print(EntityIter *iter, FILE *file)
+{
+  fprintf(file, "dim: %d, ii: %d\n", iter->dim, iter->ii);
+
+  return(RET_OK);
+}
+
+int32 entity_iter_next(EntityIter *iter)
+{
+  iter->ii += 1;
+  return (iter->ii < iter->topology->num[iter->dim]);
+}
+
 int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
 {
   MeshGeometry *geometry = mesh->geometry;

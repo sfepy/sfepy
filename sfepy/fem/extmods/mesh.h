@@ -27,9 +27,6 @@ typedef struct MeshGeometry {
   float64 *coors; // Shape: (num, dim) by rows.
 } MeshGeometry;
 
-// #define ci_first(conn) ...
-// #define ci_done(conn)
-// #define ci_next(conn)
 typedef struct MeshConnectivity {
   uint32 num; // MeshTopology->num[i] - number of entities.
   uint32 n_incident; // Total number of incident entities.
@@ -69,6 +66,12 @@ typedef struct MeshTopology {
   MeshConnectivity *conn[16];
 } MeshTopology;
 
+typedef struct EntityIter {
+  uint32 ii;
+  uint32 dim;
+  MeshTopology *topology;
+} EntityIter;
+
 typedef struct Mesh {
   MeshGeometry geometry[1];
   MeshTopology topology[1];
@@ -90,6 +93,10 @@ int32 conn_iter_init(ConnIter *iter, MeshConnectivity *conn);
 int32 conn_iter_print(ConnIter *iter, FILE *file);
 int32 conn_iter_next(ConnIter *iter);
 int32 conn_print(MeshConnectivity *conn, FILE *file);
+
+int32 entity_iter_init(EntityIter *iter, int32 dim, MeshTopology *topology);
+int32 entity_iter_print(EntityIter *iter, FILE *file);
+int32 entity_iter_next(EntityIter *iter);
 
 int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim);
 
