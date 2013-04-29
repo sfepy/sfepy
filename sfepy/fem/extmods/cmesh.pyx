@@ -48,6 +48,8 @@ cdef extern from 'mesh.h':
     cdef int32 conn_alloc(MeshConnectivity *conn,
                           uint32 num, uint32 n_incident)
     cdef int32 conn_free(MeshConnectivity *conn)
+    cdef int32 conn_print(MeshConnectivity *conn, FILE *file)
+
     cdef int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
 
 cdef class CConnectivity:
@@ -90,6 +92,9 @@ cdef class CConnectivity:
     def __str__(self):
         return 'CConnectivity: num: %d, n_incident %d' \
                % (self.num, self.n_incident)
+
+    def cprint(self):
+        conn_print(self.conn, stdout)
 
 cdef class CMesh:
     cdef Mesh mesh[1]
