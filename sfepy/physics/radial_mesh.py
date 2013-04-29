@@ -96,7 +96,7 @@ class RadialVector(object):
         if at is None:
             at = self.mesh
         elif not isinstance(at, RadialMesh):
-            at = RadialMesh(at)
+            at = ExplicitRadialMesh(at)
         val = self.get_extrapolated(precision, grade, attempts)(at.get_coors())
         return RadialVector(at, val)
 
@@ -190,12 +190,18 @@ class RadialMesh(object):
         r = norm_l2_along_axis(coors, axis=1)
         return self.interpolate(potential, r)
 
-    def integrate(self, vector):
+    def integrate(self, vector, norm):
         """
         .. math::
            \int f(r) r^2 dr
         """
-        return simps(vector * self.coors ** 2, self.coors)
+        if norm == 'r2':
+           v = vector * self.coors ** 2
+        elif norm == 'linear':
+           v = vector
+        elif norm == 'spherical' or True:
+           v = vector * self.coors ** 2 * 4 * math.pi
+        return simps(v, self.coors)
 
     def linear_integrate(self, vector):
         """
@@ -220,15 +226,15 @@ class RadialMesh(object):
             r = r[1:]
         return RadialVector(r, v)
 
-    def dot(self, vector_a, vector_b):
+    def dot(self, vector_a, vector_b, norm='spherical'):
         """
         .. math::
            \int f(r) g(r) r^2 dr
         """
-        return self.integrate(vector_a * vector_b)
+        return self.integrate(vector_a * vector_b, norm)
 
-    def norm(self, vector):
-        return np.sqrt(self.vdot(vector, vector))
+    def norm(self, vector, norm = 'spherical'):
+        return np.sqrt(self.dot(vector, vector, norm))
 
     def output_vector(self, vector, filename=None):
         if filename is None:
