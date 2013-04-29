@@ -205,16 +205,17 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
 {
   int32 ret = RET_OK;
   int32 d3 = 0;
-  MeshConnectivity *conn = 0;
   MeshTopology *topology = mesh->topology;
   int32 D = topology->max_dim;
 
   if (topology->num[d1] == 0) {
     mesh_build(mesh, d1);
+    ERR_CheckGo(ret);
   }
 
   if (topology->num[d2] == 0) {
     mesh_build(mesh, d2);
+    ERR_CheckGo(ret);
   }
 
   if (topology->conn[IJ(D, d1, d2)]->num) {
@@ -234,6 +235,7 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
     mesh_setup_connectivity(mesh, d3, d2);
     mesh_intersect(mesh, d1, d2, d3);
   }
+  ERR_CheckGo(ret);
 
  end_label:
   return(ret);
