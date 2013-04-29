@@ -128,7 +128,7 @@ cdef class CMesh:
         cconn.offsets[0] = 0
         cconn.offsets[1:] = np.cumsum(offsets)
 
-        self.conns = [None] * 16
+        self.conns = [None] * (self.mesh.topology.max_dim + 1)**2
         self.conns[ii] = cconn
 
         return self
@@ -137,7 +137,7 @@ cdef class CMesh:
         mesh_init(self.mesh)
 
     def _get_conn_indx(self, d1, d2):
-        return self.mesh.topology.max_dim * d1 + d2
+        return (self.mesh.topology.max_dim + 1) * d1 + d2
 
     def get_conn(self, d1, d2):
         ii = self._get_conn_indx(d1, d2)

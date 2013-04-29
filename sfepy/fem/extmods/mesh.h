@@ -58,7 +58,7 @@ typedef struct ConnIter {
 // d1 = d2 = 0:
 // (d2, i2) is incident to (d1, i1) if both are incident to a common cell
 
-#define IJ(D, d1, d2) (D) * (d1) + (d2)
+#define IJ(D, d1, d2) ((D + 1)) * (d1) + (d2)
 typedef struct MeshTopology {
   uint32 max_dim;
   uint32 num[4]; // Number of entities of given dimension.

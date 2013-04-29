@@ -51,8 +51,8 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
     }
 
     fprintf(file, "topology connectivities:\n");
-    for (ii = 0; ii < 4; ii++) {
-      for (id = 0; id < 4; id++) {
+    for (ii = 0; ii <= D; ii++) {
+      for (id = 0; id <= D; id++) {
         fprintf(file, "incidence %d -> %d:\n", ii, id);
         conn = topology->conn[IJ(D, ii, id)];
         conn_print(conn, file);
