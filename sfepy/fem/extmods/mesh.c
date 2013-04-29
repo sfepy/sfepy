@@ -36,6 +36,10 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 
   fprintf(file, "Mesh %p (vertices: %d dimension: %d)\n",
           mesh, geometry->num, geometry->dim);
+  fprintf(file, "topology: max_dim: %d\n", topology->max_dim);
+  num = topology->num;
+  fprintf(file, "n_cell: %d, n_face: %d, n_edge: %d, n_vertex: %d\n",
+          num[3], num[2], num[1], num[0]);
 
   if (header_only == 0) { // Full print.
     fprintf(file, "vertex coordinates:\n");
@@ -46,11 +50,7 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
       fprintf(file, "\n");
     }
 
-    fprintf(file, "topology: max_dim: %d\n", topology->max_dim);
-    num = topology->num;
-    fprintf(file, "n_cell: %d, n_face: %d, n_edge: %d, n_vertex: %d\n",
-            num[3], num[2], num[1], num[0]);
-
+    fprintf(file, "topology connectivities:\n");
     for (ii = 0; ii < 4; ii++) {
       for (id = 0; id < 4; id++) {
         fprintf(file, "incidence %d -> %d:\n", ii, id);
@@ -130,6 +130,7 @@ int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
   geometry->dim = dim;
 
   mesh->topology->max_dim = dim;
+  mesh->topology->num[0] = num;
 
   return(RET_OK);
 }
