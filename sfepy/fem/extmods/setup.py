@@ -65,7 +65,7 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['cmesh.pyx', 'geomtrans.c', 'meshutils.c', 'sort.c',
+    src = ['cmesh.pyx', 'geomtrans.c', 'mesh.c', 'meshutils.c', 'sort.c',
            'common_python.c']
     config.add_extension('cmesh',
                          sources=src,
