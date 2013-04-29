@@ -52,6 +52,9 @@ cdef extern from 'mesh.h':
 
     cdef int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
 
+    cdef int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
+    cdef int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
+
 cdef class CConnectivity:
     """
     Notes
@@ -156,6 +159,28 @@ cdef class CMesh:
 
     def __cinit__(self):
         mesh_init(self.mesh)
+
+    def setup_connectivity(self, d1, d2):
+        cdef MeshConnectivity *pconn
+
+        ii = self._get_conn_indx(d1, d2)
+        self.conns[ii] = None
+
+        mesh_setup_connectivity(self.mesh, d1, d2)
+
+        pconn = self.mesh.topology.conn[ii]
+        cconn = CConnectivity(pconn.num, pconn.n_incident)
+        cconn._set_conn(pconn)
+
+        self.conns[ii] = cconn
+
+    def free_connectivity(self, d1, d2):
+        cdef MeshConnectivity *pconn
+
+        ii = self._get_conn_indx(d1, d2)
+        self.conns[ii] = None
+
+        mesh_free_connectivity(self.mesh, d1, d2)
 
     def _get_conn_indx(self, d1, d2):
         return (self.mesh.topology.max_dim + 1) * d1 + d2
