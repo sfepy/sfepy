@@ -105,6 +105,7 @@ int32 entity_iter_next(EntityIter *iter);
 int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim);
 
 int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2);
+int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_build(Mesh *mesh, int32 dim);
 int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3);

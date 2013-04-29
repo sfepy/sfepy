@@ -239,6 +239,17 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
   return(ret);
 }
 
+int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
+{
+  int32 D = mesh->topology->max_dim;
+  MeshConnectivity *conn = 0;
+
+  conn = mesh->topology->conn[IJ(D, d1, d2)];
+  conn_free(conn);
+
+  return(RET_OK);
+}
+
 int32 mesh_build(Mesh *mesh, int32 dim)
 {
   int32 ret = RET_OK;
