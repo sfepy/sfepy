@@ -440,6 +440,7 @@ class ScipyBroyden( NonlinearSolver ):
                 'alpha'   : 0.9,
                 'M'       : 5,
                 'w0'      : 0.1,
+                'f_tol'   : 6e-6,
                 'verbose' : True,
             }
         """
@@ -450,6 +451,7 @@ class ScipyBroyden( NonlinearSolver ):
                       i_max=get('i_max', 10),
                       alpha=get('alpha', 0.9),
                       M=get('M', 5),
+                      f_tol=get('f_tol', 6e-6),
                       w0=get('w0', 0.1),
                       verbose=get('verbose', False)) + common
 
@@ -481,13 +483,16 @@ class ScipyBroyden( NonlinearSolver ):
 
         kwargs = {'iter' : conf.i_max,
                   'alpha' : conf.alpha,
-                  'verbose' : conf.verbose}
+                  'verbose' : conf.verbose }
 
         if conf.method == 'broyden_generalized':
             kwargs.update( {'M' : conf.M} )
 
         elif conf.method in ['anderson', 'anderson2']:
             kwargs.update( {'M' : conf.M, 'w0' : conf.w0} )
+
+        if conf.method in ['anderson', 'anderson2', 'broyden', 'broyden2' , 'newton_krylov']:
+            kwargs.update( {'f_tol' : conf.f_tol } )
 
         vec_x = self.solver( fun, vec_x0, **kwargs )
         vec_x = nm.asarray(vec_x)
