@@ -91,6 +91,7 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only);
 
 int32 conn_iter_init(ConnIter *iter, MeshConnectivity *conn);
 int32 conn_iter_print(ConnIter *iter, FILE *file);
+int32 conn_iter_print_current(ConnIter *iter, FILE *file);
 int32 conn_iter_next(ConnIter *iter);
 int32 conn_print(MeshConnectivity *conn, FILE *file);
 

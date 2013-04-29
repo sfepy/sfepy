@@ -86,6 +86,18 @@ int32 conn_iter_print(ConnIter *iter, FILE *file)
   return(RET_OK);
 }
 
+int32 conn_iter_print_current(ConnIter *iter, FILE *file)
+{
+  int32 ii;
+  fprintf(file, "%d:", iter->ii);
+  for (ii = 0; ii < iter->num; ii++) {
+    fprintf(file, " %d", iter->ptr[ii]);
+  }
+  fprintf(file, "\n");
+
+  return(RET_OK);
+}
+
 int32 conn_iter_next(ConnIter *iter)
 {
   iter->ii += 1;
@@ -106,17 +118,12 @@ int32 conn_print(MeshConnectivity *conn, FILE *file)
   if (!conn) return(RET_OK);
 
   fprintf(file, "conn: num: %d, n_incident: %d\n", conn->num, conn->n_incident);
+  if (conn->num == 0) return(RET_OK);
 
   conn_iter_init(iter, conn);
-
-  while (conn_iter_next(iter)) {
-    int32 ii;
-    fprintf(file, "%d:", iter->ii);
-    for (ii = 0; ii < iter->num; ii++) {
-      fprintf(file, " %d", iter->ptr[ii]);
-    }
-    fprintf(file, "\n");
-  }
+  do {
+    conn_iter_print_current(iter, file);
+  } while (conn_iter_next(iter));
 
   return(RET_OK);
 }
