@@ -1276,6 +1276,33 @@ class HDF5MeshIO(MeshIO):
     _rubbish = ''.join([ch for ch in set(_all) - set(_letters)])
     _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
 
+    def read_bounding_box(self, ret_fd=False, ret_dim=False):
+        fd = pt.openFile(self.filename, mode="r")
+
+        mesh_group = fd.root.mesh
+
+        coors = mesh_group.coors.read()
+        bbox = nm.vstack((nm.amin(coors, 0),
+                          nm.amax(coors, 0)))
+
+        if ret_dim:
+            dim = coors.shape[1]
+
+            if ret_fd:
+                return bbox, dim, fd
+
+            else:
+                fd.close()
+                return bbox, dim
+
+        else:
+            if ret_fd:
+                return bbox, fd
+
+            else:
+                fd.close()
+                return bbox
+
     def read(self, mesh, **kwargs):
         fd = pt.openFile(self.filename, mode="r")
 
