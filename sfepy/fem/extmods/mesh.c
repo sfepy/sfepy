@@ -63,52 +63,60 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
   return(RET_OK);
 }
 
-int32 conn_iter_init(ConnIter *iter, MeshConnectivity *conn)
+inline int32 mei_init(MeshEntityIterator *iter, Mesh *mesh, uint32 dim)
 {
-  iter->conn = conn;
-  iter->ii = 0;
+  iter->entity->mesh = mesh;
+  iter->entity->dim = dim;
+  iter->entity->ii = 0;
+  iter->it = 0;
+  iter->ptr = 0;
+  iter->it_end = mesh->topology->num[dim];
 
-  if (iter->conn->num > 0) {
-    iter->num = iter->conn->offsets[1];
-    iter->ptr = iter->conn->indices;
+  return(RET_OK);
+}
+
+inline int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity,
+                           uint32 dim)
+{
+  Mesh *mesh = entity->mesh;
+  int32 D = mesh->topology->max_dim;
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, entity->dim, dim)];
+
+  iter->entity->mesh = mesh;
+  iter->entity->dim = dim;
+  iter->it = 0;
+
+  if (conn->num > 0) {
+    iter->ptr = conn->indices + conn->offsets[entity->ii];
+    iter->it_end = conn->offsets[entity->ii+1] - conn->offsets[entity->ii];
+    iter->entity->ii = iter->ptr[iter->it];
   } else {
-    iter->num = 0;
     iter->ptr = 0;
+    iter->it_end = 0;
+    iter->entity->ii = 0;
   }
 
   return(RET_OK);
 }
 
-int32 conn_iter_print(ConnIter *iter, FILE *file)
+int32 mei_print(MeshEntityIterator *iter, FILE *file)
 {
-  fprintf(file, "ii: %d, num: %d, ptr: %p\n", iter->ii, iter->num, iter->ptr);
-
+  fprintf(file, "it: %d, entity: dim: %d, ii: %d\n",
+          iter->it, iter->entity->dim, iter->entity->ii);
   return(RET_OK);
 }
 
-int32 conn_iter_print_current(ConnIter *iter, FILE *file)
+inline int32 mei_go(MeshEntityIterator *iter)
 {
-  int32 ii;
-  fprintf(file, "%d:", iter->ii);
-  for (ii = 0; ii < iter->num; ii++) {
-    fprintf(file, " %d", iter->ptr[ii]);
-  }
-  fprintf(file, "\n");
-
-  return(RET_OK);
+  return(iter->it < iter->it_end);
 }
 
-int32 conn_iter_next(ConnIter *iter)
+inline int32 mei_next(MeshEntityIterator *iter)
 {
-  iter->ii += 1;
-  if (iter->ii < iter->conn->num) {
-    iter->ptr += iter->num;
+  iter->it += 1;
+  iter->entity->ii = (iter->ptr ? iter->ptr[iter->it] : iter->it);
 
-    uint32 *off = iter->conn->offsets + iter->ii;
-    iter->num = off[1] - off[0];
-  }
-
-  return(iter->ii < iter->conn->num);
+  return(RET_OK);
 }
 
 #undef __FUNC__
@@ -150,41 +158,45 @@ int32 conn_free(MeshConnectivity *conn)
 
 int32 conn_print(MeshConnectivity *conn, FILE *file)
 {
-  ConnIter iter[1];
-
+  int32 ii, ic;
   if (!conn) return(RET_OK);
 
   fprintf(file, "conn: num: %d, n_incident: %d\n", conn->num, conn->n_incident);
-  if (conn->num == 0) return(RET_OK);
 
-  conn_iter_init(iter, conn);
-  do {
-    conn_iter_print_current(iter, file);
-  } while (conn_iter_next(iter));
-
-  return(RET_OK);
-}
-
-int32 entity_iter_init(EntityIter *iter, int32 dim, MeshTopology *topology)
-{
-  iter->topology = topology;
-  iter->ii = 0;
-  iter->dim = dim;
+  for (ii = 0; ii < conn->num; ii++) {
+    fprintf(file, "%d:", ii);
+    for (ic = conn->offsets[ii]; ic < conn->offsets[ii+1]; ic++) {
+      fprintf(file, " %d", conn->indices[ic]);
+    }
+    fprintf(file, "\n");
+  }
 
   return(RET_OK);
 }
 
-int32 entity_iter_print(EntityIter *iter, FILE *file)
+inline int32 conn_set_to_free(MeshConnectivity *conn, uint32 ii,
+                              uint32 incident)
 {
-  fprintf(file, "dim: %d, ii: %d\n", iter->dim, iter->ii);
+  uint32 ok;
+  uint32 *off, *ptr;
 
-  return(RET_OK);
-}
-
-int32 entity_iter_next(EntityIter *iter)
-{
-  iter->ii += 1;
-  return (iter->ii < iter->topology->num[iter->dim]);
+  off = conn->offsets + ii;
+  ptr = conn->indices + off[0];
+  ok = 0;
+  while (ptr < (conn->indices + off[1])) {
+    if (ptr[0] == UINT32_None) { // Not found & free slot.
+      ptr[0] = incident;
+      ok = 1;
+      break;
+    }
+    ptr++;
+  }
+  if (!ok) {
+    errput("no free connectivity position (internal error)!\n");
+    return(RET_Fail);
+  } else {
+    return(RET_OK);
+  }
 }
 
 int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
@@ -272,14 +284,13 @@ int32 mesh_build(Mesh *mesh, int32 dim)
 #define __FUNC__ "mesh_transpose"
 int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
 {
-  int32 ret = RET_OK, ok;
+  int32 ret = RET_OK;
   uint32 n_incident;
-  uint32 ii = 0;
-  uint32 *nd2 = 0, *off = 0, *ptr = 0;
+  uint32 ii;
+  uint32 *nd2 = 0;
   int32 D = mesh->topology->max_dim;
-  ConnIter ci[1];
+  MeshEntityIterator it2[1], it1[1];
   MeshConnectivity *c12 = 0; // d1 -> d2 - to compute
-  MeshConnectivity *c21 = 0; // d2 -> d1 - known
 
   if (d1 >= d2) {
     errput("d1 must be smaller than d2 in mesh_transpose()!\n");
@@ -287,26 +298,24 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   }
 
   c12 = mesh->topology->conn[IJ(D, d1, d2)];
-  c21 = mesh->topology->conn[IJ(D, d2, d1)];
 
   // Count entities of d2 -> d1.
   conn_alloc(c12, mesh->topology->num[d1], 0);
   ERR_CheckGo(ret);
   nd2 = c12->offsets + 1;
 
-  n_incident = 0;
-  conn_iter_init(ci, c21);
-  do {
-    for (ii = 0; ii < ci->num; ii++) {
-      nd2[ci->ptr[ii]]++;
+  for (mei_init(it2, mesh, d2); mei_go(it2); mei_next(it2)) {
+    for (mei_init_conn(it1, it2->entity, d1); mei_go(it1); mei_next(it1)) {
+      nd2[it1->entity->ii]++;
     }
-    n_incident += ci->num;
-  } while (conn_iter_next(ci));
+  }
 
   // c12->offsets now contains counts - make a cumsum to get offsets.
   for (ii = 1; ii < c12->num + 1; ii++) {
     c12->offsets[ii] += c12->offsets[ii-1];
   }
+
+  n_incident = c12->offsets[c12->num];
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
@@ -315,30 +324,12 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
     c12->indices[ii] = UINT32_None; // "not set" value.
   }
 
-  conn_iter_init(ci, c21);
-  do {
-    for (ii = 0; ii < ci->num; ii++) {
-      off = c12->offsets + ci->ptr[ii];
-      ptr = c12->indices + off[0];
-      ok = 0;
-      while (ptr < (c12->indices + off[1])) {
-        if (ptr[0] == ci->ii) { // Already there.
-          ok = 1;
-          break;
-        }
-        if (ptr[0] == UINT32_None) { // Not found & free slot.
-          ptr[0] = ci->ii;
-          ok = 2;
-          break;
-        }
-        ptr++;
-      }
-      if (!ok) {
-        errput("wrong connectivity offsets (internal error)!\n");
-        ERR_GotoEnd(RET_Fail);
-      }
+  for (mei_init(it2, mesh, d2); mei_go(it2); mei_next(it2)) {
+    for (mei_init_conn(it1, it2->entity, d1); mei_go(it1); mei_next(it1)) {
+      conn_set_to_free(c12, it1->entity->ii, it2->entity->ii);
+      ERR_CheckGo(ret);
     }
-  } while (conn_iter_next(ci));
+  }
 
  end_label:
   return(ret);

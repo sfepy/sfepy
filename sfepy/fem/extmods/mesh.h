@@ -24,6 +24,22 @@
 // Special uint32 values meaning "not set".
 #define UINT32_None -1
 
+typedef struct Mesh Mesh;
+
+typedef struct MeshEntity {
+  uint32 dim; // Topological dimension.
+  uint32 ii;  // Local index within entities of the given topological
+              // dimension.
+  Mesh *mesh;
+} MeshEntity;
+
+typedef struct MeshEntityIterator {
+  uint32 it; // Current iteration position.
+  uint32 it_end; // End iteration position.
+  uint32 *ptr; // If given, entity->ii = ptr[it].
+  MeshEntity entity[1];
+} MeshEntityIterator;
+
 typedef struct MeshGeometry {
   uint32 num;
   uint32 dim;
@@ -35,15 +51,7 @@ typedef struct MeshConnectivity {
   uint32 n_incident; // Total number of incident entities.
   uint32 *indices; // Length: num.
   uint32 *offsets; // Length: MeshTopology->num[i] + 1.
-  uint32 offset; // For homogeneous connectivity (e.g. edges). (?)
 } MeshConnectivity;
-
-typedef struct ConnIter {
-  uint32 ii;
-  uint32 num;
-  uint32 *ptr;
-  MeshConnectivity *conn;
-} ConnIter;
 
 // Connectivity defines incidence.
 // conn[IJ[d1, d2]] are entities of dimension d2 incident to entities of
@@ -69,12 +77,6 @@ typedef struct MeshTopology {
   MeshConnectivity *conn[16];
 } MeshTopology;
 
-typedef struct EntityIter {
-  uint32 ii;
-  uint32 dim;
-  MeshTopology *topology;
-} EntityIter;
-
 typedef struct Mesh {
   MeshGeometry geometry[1];
   MeshTopology topology[1];
@@ -92,18 +94,16 @@ int32 mesh_destroy(Mesh **p_mesh);
 int32 mesh_init(Mesh *mesh);
 int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only);
 
-int32 conn_iter_init(ConnIter *iter, MeshConnectivity *conn);
-int32 conn_iter_print(ConnIter *iter, FILE *file);
-int32 conn_iter_print_current(ConnIter *iter, FILE *file);
-int32 conn_iter_next(ConnIter *iter);
+int32 mei_init(MeshEntityIterator *iter, Mesh *mesh, uint32 dim);
+int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity, uint32 dim);
+int32 mei_print(MeshEntityIterator *iter, FILE *file);
+int32 mei_go(MeshEntityIterator *iter);
+int32 mei_next(MeshEntityIterator *iter);
 
 int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident);
 int32 conn_free(MeshConnectivity *conn);
 int32 conn_print(MeshConnectivity *conn, FILE *file);
-
-int32 entity_iter_init(EntityIter *iter, int32 dim, MeshTopology *topology);
-int32 entity_iter_print(EntityIter *iter, FILE *file);
-int32 entity_iter_next(EntityIter *iter);
+int32 conn_set_to_free(MeshConnectivity *conn, uint32 ii, uint32 incident);
 
 int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim);
 
