@@ -342,3 +342,51 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
  end_label:
   return(ret);
 }
+
+inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)
+{
+  int32 ret = RET_OK;
+  Mesh *mesh = entity->mesh;
+  int32 D = mesh->topology->max_dim;
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, entity->dim, dim)];
+
+  if (!conn->num) {
+    errput("required connectivity is not avaliable!\n");
+    ERR_CheckGo(ret);
+  }
+  out->indices = conn->indices + conn->offsets[entity->ii];
+  out->num = conn->offsets[entity->ii + 1] - conn->offsets[entity->ii];
+
+ end_label:
+  return(ret);
+}
+
+inline int32 me_get_incident2(MeshEntity *entity, Indices *out,
+                              MeshConnectivity *conn)
+{
+  out->indices = conn->indices + conn->offsets[entity->ii];
+  out->num = conn->offsets[entity->ii + 1] - conn->offsets[entity->ii];
+
+  return(RET_OK);
+}
+
+inline int32 contains(Indices *i1, Indices *i2)
+{
+  // Check if all indices in i2 are contained in i1.
+  // Brute force search is used.
+  uint32 ii1, ii2, v2, ok;
+
+  for (ii2 = 0; ii2 < i2->num; ii2++) {
+    v2 = i2->indices[ii2];
+    ok = 0;
+    for (ii1 = 0; ii1 < i1->num; ii1++) {
+      if (i1->indices[ii1] == v2) {
+        ok = 1;
+        break;
+      }
+    }
+    if (!ok) return(0);
+  }
+
+  return(1);
+}

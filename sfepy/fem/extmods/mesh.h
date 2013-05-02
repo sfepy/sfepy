@@ -26,6 +26,12 @@
 
 typedef struct Mesh Mesh;
 
+// Pointer to indices + number of items.
+typedef struct Indices {
+  uint32 *indices;
+  uint32 num;
+} Indices;
+
 typedef struct MeshEntity {
   uint32 dim; // Topological dimension.
   uint32 ii;  // Local index within entities of the given topological
@@ -112,6 +118,11 @@ int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_build(Mesh *mesh, int32 dim);
 int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3);
+
+int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim);
+int32 me_get_incident2(MeshEntity *entity, Indices *out,
+                       MeshConnectivity *conn);
+int32 contains(Indices *i1, Indices *i2);
 
 // Mesh entity is given by (dimension, index) or (dim, ii).
 // Index ii is in [0, num[dim] - 1].
