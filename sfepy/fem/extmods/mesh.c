@@ -294,7 +294,7 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
 
   if (d1 >= d2) {
     errput("d1 must be smaller than d2 in mesh_transpose()!\n");
-    ERR_GotoEnd(RET_Fail);
+    ERR_CheckGo(ret);
   }
 
   c12 = mesh->topology->conn[IJ(D, d1, d2)];
