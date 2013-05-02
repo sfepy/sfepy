@@ -335,11 +335,116 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   return(ret);
 }
 
+#undef __FUNC__
+#define __FUNC__ "mesh_intersect"
 int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
 {
   int32 ret = RET_OK;
+  int32 D = mesh->topology->max_dim;
+  uint32 n_incident, ii;
+  uint32 *nd2 = 0;
+  char *mask = 0;
+  MeshEntityIterator it1[1], it2[1], it3[1];
+  Indices ei1[1], ei2[1];
+  MeshConnectivity *c12 = 0; // d1 -> d2 - to compute
+  MeshConnectivity *c10 = 0; // d1 -> 0 - known
+  MeshConnectivity *c20 = 0; // d2 -> 0 - known
+
+  if (d1 < d2) {
+    errput("d1 must be greater or equal to d2 in mesh_intersect()!\n");
+    ERR_CheckGo(ret);
+  }
+
+  c12 = mesh->topology->conn[IJ(D, d1, d2)];
+  if (d1 > d2) {
+    c10 = mesh->topology->conn[IJ(D, d1, 0)];
+    c20 = mesh->topology->conn[IJ(D, d2, 0)];
+  }
+
+  mask = alloc_mem(char, mesh->topology->num[d2]);
+
+  // Count entities of d2 -> d1.
+  conn_alloc(c12, mesh->topology->num[d1], 0);
+  ERR_CheckGo(ret);
+  nd2 = c12->offsets + 1;
+
+  for (mei_init(it1, mesh, d1); mei_go(it1); mei_next(it1)) {
+    // Clear mask for it1 incident entities of dimension d2.
+    for (mei_init_conn(it3, it1->entity, d3); mei_go(it3); mei_next(it3)) {
+      for (mei_init_conn(it2, it3->entity, d2); mei_go(it2); mei_next(it2)) {
+        mask[it2->entity->ii] = 0;
+      }
+    }
+
+    for (mei_init_conn(it3, it1->entity, d3); mei_go(it3); mei_next(it3)) {
+      for (mei_init_conn(it2, it3->entity, d2); mei_go(it2); mei_next(it2)) {
+        if (mask[it2->entity->ii]) continue;
+        mask[it2->entity->ii] = 1;
+
+        if (d1 == d2) {
+          if (it1->entity->ii != it2->entity->ii) {
+            nd2[it1->entity->ii]++;
+          }
+        } else {
+          // Get incident vertices.
+          me_get_incident2(it1->entity, ei1, c10);
+          me_get_incident2(it2->entity, ei2, c20);
+          if (contains(ei1, ei2)) {
+            nd2[it1->entity->ii]++;
+          }
+        }
+      }
+    }
+  }
+
+  // c12->offsets now contains counts - make a cumsum to get offsets.
+  for (ii = 1; ii < c12->num + 1; ii++) {
+    c12->offsets[ii] += c12->offsets[ii-1];
+  }
+
+  n_incident = c12->offsets[c12->num];
+
+  // Fill in the indices.
+  conn_alloc(c12, 0, n_incident);
+  ERR_CheckGo(ret);
+  for (ii = 0; ii < c12->n_incident; ii++) {
+    c12->indices[ii] = UINT32_None; // "not set" value.
+  }
+
+  for (mei_init(it1, mesh, d1); mei_go(it1); mei_next(it1)) {
+    // Clear mask for it1 incident entities of dimension d2.
+    for (mei_init_conn(it3, it1->entity, d3); mei_go(it3); mei_next(it3)) {
+      for (mei_init_conn(it2, it3->entity, d2); mei_go(it2); mei_next(it2)) {
+        mask[it2->entity->ii] = 0;
+      }
+    }
+
+    for (mei_init_conn(it3, it1->entity, d3); mei_go(it3); mei_next(it3)) {
+      for (mei_init_conn(it2, it3->entity, d2); mei_go(it2); mei_next(it2)) {
+        if (mask[it2->entity->ii]) continue;
+        mask[it2->entity->ii] = 1;
+
+        if (d1 == d2) {
+          if (it1->entity->ii != it2->entity->ii) {
+            conn_set_to_free(c12, it1->entity->ii, it2->entity->ii);
+            ERR_CheckGo(ret);
+          }
+        } else {
+          // Get incident vertices.
+          me_get_incident2(it1->entity, ei1, c10);
+          me_get_incident2(it2->entity, ei2, c20);
+          if (contains(ei1, ei2)) {
+            conn_set_to_free(c12, it1->entity->ii, it2->entity->ii);
+            ERR_CheckGo(ret);
+          }
+        }
+      }
+    }
+  }
 
  end_label:
+  free_mem(mask);
+
   return(ret);
 }
 
