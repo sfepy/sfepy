@@ -24,27 +24,11 @@
 // Special uint32 values meaning "not set".
 #define UINT32_None -1
 
-typedef struct Mesh Mesh;
-
 // Pointer to indices + number of items.
 typedef struct Indices {
   uint32 *indices;
   uint32 num;
 } Indices;
-
-typedef struct MeshEntity {
-  uint32 dim; // Topological dimension.
-  uint32 ii;  // Local index within entities of the given topological
-              // dimension.
-  Mesh *mesh;
-} MeshEntity;
-
-typedef struct MeshEntityIterator {
-  uint32 it; // Current iteration position.
-  uint32 it_end; // End iteration position.
-  uint32 *ptr; // If given, entity->ii = ptr[it].
-  MeshEntity entity[1];
-} MeshEntityIterator;
 
 typedef struct MeshGeometry {
   uint32 num;
@@ -87,6 +71,20 @@ typedef struct Mesh {
   MeshGeometry geometry[1];
   MeshTopology topology[1];
 } Mesh;
+
+typedef struct MeshEntity {
+  uint32 dim; // Topological dimension.
+  uint32 ii;  // Local index within entities of the given topological
+              // dimension.
+  Mesh *mesh;
+} MeshEntity;
+
+typedef struct MeshEntityIterator {
+  uint32 it; // Current iteration position.
+  uint32 it_end; // End iteration position.
+  uint32 *ptr; // If given, entity->ii = ptr[it].
+  MeshEntity entity[1];
+} MeshEntityIterator;
 
 typedef struct Region {
   uint32 *vertices;
