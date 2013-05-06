@@ -5,6 +5,7 @@ int32 mesh_init(Mesh *mesh)
 {
   int32 ii;
   MeshTopology *topology = 0;
+  LocalEntities *entities = 0;
 
   topology = mesh->topology;
 
@@ -21,6 +22,23 @@ int32 mesh_init(Mesh *mesh)
   mesh->geometry->num = 0;
   mesh->geometry->dim = 0;
   mesh->geometry->coors = 0;
+
+  entities = mesh->entities;
+  entities->num = MAX_EL_TYPES;
+  memset(entities->_edges, 0, MAX_EL_TYPES * sizeof(MeshConnectivity));
+  for (ii = 0; ii < MAX_EL_TYPES; ii++) {
+    entities->edges[ii] = &entities->_edges[ii];
+    entities->edges[ii]->num = 0;
+    entities->edges[ii]->indices = 0;
+    entities->edges[ii]->offsets = 0;
+  }
+  memset(entities->_faces, 0, MAX_EL_TYPES * sizeof(MeshConnectivity));
+  for (ii = 0; ii < MAX_EL_TYPES; ii++) {
+    entities->faces[ii] = &entities->_faces[ii];
+    entities->faces[ii]->num = 0;
+    entities->faces[ii]->indices = 0;
+    entities->faces[ii]->offsets = 0;
+  }
 
   return(RET_OK);
 }

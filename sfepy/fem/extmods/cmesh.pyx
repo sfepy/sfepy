@@ -38,9 +38,15 @@ cdef extern from 'mesh.h':
         uint32 *offsets
         uint32 offset
 
+    ctypedef struct LocalEntities:
+        uint32 num
+        MeshConnectivity **edges
+        MeshConnectivity **faces
+
     ctypedef struct Mesh:
         MeshGeometry geometry[1]
         MeshTopology topology[1]
+        LocalEntities entities[1]
 
     cdef int32 mesh_init(Mesh *mesh)
     cdef int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
@@ -111,7 +117,10 @@ cdef class CMesh:
 
     cdef readonly np.ndarray coors
     cdef readonly list conns
+    cdef readonly dict entities
     cdef readonly int n_coor, dim, n_el
+
+    cdef readonly dict key_to_index
 
     @classmethod
     def from_mesh(cls, mesh):
@@ -163,6 +172,59 @@ cdef class CMesh:
 
     def __cinit__(self):
         mesh_init(self.mesh)
+
+        self.key_to_index = {
+            '1_2' : 0,
+            '2_3' : 1,
+            '2_4' : 2,
+            '3_4' : 3,
+            '3_8' : 4,
+        }
+
+    def set_local_entities(self, gels):
+        cdef MeshConnectivity *pedges, *pfaces
+
+        self.mesh.entities.num = len(self.key_to_index)
+
+        self.entities = {}
+
+        for key, gel in gels.iteritems():
+            ii = self.key_to_index[key]
+
+            # Reference element edges.
+            if gel.n_edge > 0:
+                n_incident = gel.n_edge * gel.edges.shape[1]
+                cedges = _create_cconn(self.mesh.entities.edges[ii],
+                                       gel.n_edge, n_incident, 'local edge')
+
+                cedges.indices[:] = gel.edges.ravel()
+                cedges.offsets[0] = 0
+                nums = np.empty(gel.n_edge, dtype=np.uint32)
+                nums.fill(gel.edges.shape[1])
+                cedges.offsets[1:] = np.cumsum(nums)
+
+            else:
+                cedges = None
+
+            # Reference element faces.
+            if gel.n_face > 0:
+                n_incident = gel.n_face * gel.faces.shape[1]
+                cfaces = _create_cconn(self.mesh.entities.faces[ii],
+                                       gel.n_face, n_incident, 'local face')
+
+                cfaces.indices[:] = gel.faces.ravel()
+                cfaces.offsets[0] = 0
+                nums = np.empty(gel.n_face, dtype=np.uint32)
+                nums.fill(gel.faces.shape[1])
+                cfaces.offsets[1:] = np.cumsum(nums)
+
+            else:
+                cfaces = None
+
+            self.entities[key] = (cedges, cfaces)
+
+    def get_local_entities(self, key):
+        return self.entities[key]
 
     def setup_connectivity(self, d1, d2):
         cdef MeshConnectivity *pconn
