@@ -184,6 +184,31 @@ def setup_orientation(vecs_tuple):
 
     return roots, vecs, swap_from, swap_to
 
+def create_geometry_elements(names=None):
+    """
+    Utility function to create GeometryElement instances.
+
+    Parameters
+    ----------
+    names : str, optional
+        The names of the entity, one of the keys in geometry_data
+        dictionary. If None, all keys of geometry_data are used.
+
+    Returns
+    -------
+    gels : dict
+        The dictionary of geometry elements with names as keys.
+    """
+    if names is None:
+        names = geometry_data.keys()
+
+    gels = {}
+    for name in names:
+        gel = GeometryElement(name)
+        gels[name] = gel
+
+    return gels
+
 class GeometryElement(Struct):
     """
     The geometric entities of a finite element mesh.
