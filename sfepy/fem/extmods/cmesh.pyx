@@ -28,7 +28,7 @@ cdef extern from 'mesh.h':
 
     ctypedef struct MeshTopology:
         uint32 max_dim
-        uint32 num[16]
+        uint32 num[4]
         MeshConnectivity *conn[16]
 
     ctypedef struct MeshConnectivity:
