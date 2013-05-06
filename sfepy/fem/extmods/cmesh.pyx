@@ -99,6 +99,13 @@ cdef class CConnectivity:
     def cprint(self):
         conn_print(self.conn, stdout)
 
+cdef _create_cconn(MeshConnectivity *pconn, num, n_incident, what):
+    if conn_alloc(pconn, num, n_incident):
+        raise MemoryError('cannot allocate %s connectivity!' % what)
+    cconn = CConnectivity(num, n_incident)
+    cconn._set_conn(pconn)
+    return cconn
+
 cdef class CMesh:
     cdef Mesh mesh[1]
 
@@ -129,11 +136,8 @@ cdef class CMesh:
         n_incident = (mesh.n_e_ps * mesh.n_els).sum()
 
         ii = self._get_conn_indx(self.dim, 0)
-        pconn = self.mesh.topology.conn[ii]
-        if conn_alloc(pconn, self.n_el, n_incident):
-            raise MemoryError('cannot allocate D -> 0 connectivity!')
-        cconn = CConnectivity(self.n_el, n_incident)
-        cconn._set_conn(pconn)
+        cconn = _create_cconn(self.mesh.topology.conn[ii],
+                              self.n_el, n_incident, 'D -> 0')
 
         indices = []
         offsets = []
