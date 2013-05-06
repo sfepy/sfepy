@@ -29,6 +29,7 @@ cdef extern from 'mesh.h':
     ctypedef struct MeshTopology:
         uint32 max_dim
         uint32 num[4]
+        uint32 *cell_types
         MeshConnectivity *conn[16]
 
     ctypedef struct MeshConnectivity:
@@ -116,6 +117,7 @@ cdef class CMesh:
     cdef Mesh mesh[1]
 
     cdef readonly np.ndarray coors
+    cdef readonly np.ndarray cell_types
     cdef readonly list conns
     cdef readonly dict entities
     cdef readonly int n_coor, dim, n_el
@@ -128,6 +130,7 @@ cdef class CMesh:
         Fill data from a Python mesh.
         """
         cdef np.ndarray[float64, mode='c', ndim=2] _coors
+        cdef np.ndarray[uint32, mode='c', ndim=1] _cell_types
         cdef MeshConnectivity *pconn
 
         self = CMesh()
@@ -141,6 +144,9 @@ cdef class CMesh:
         self.n_el = mesh.n_el
         self.mesh.topology.num[self.dim] = self.n_el
 
+        _cell_types = self.cell_types = np.empty(self.n_el, dtype=np.uint32)
+        self.mesh.topology.cell_types = &_cell_types[0]
+
         # Length of connectivity.
         n_incident = (mesh.n_e_ps * mesh.n_els).sum()
 
@@ -150,6 +156,7 @@ cdef class CMesh:
 
         indices = []
         offsets = []
+        ict = 0
         for ig, conn in enumerate(mesh.conns):
             n_el, n_ep = conn.shape
 
@@ -157,6 +164,9 @@ cdef class CMesh:
             off.fill(n_ep)
             offsets.append(off)
             indices.append(conn.ravel())
+
+            self.cell_types[ict:ict+n_el] = self.key_to_index[mesh.descs[ig]]
+            ict += n_el
 
         indices = np.concatenate(indices)
         offsets = np.concatenate(offsets)

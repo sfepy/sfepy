@@ -10,6 +10,7 @@ int32 mesh_init(Mesh *mesh)
   topology = mesh->topology;
 
   topology->max_dim = 0;
+  topology->cell_types = 0;
   memset(topology->num, 0, 16 * sizeof(int32));
   memset(topology->_conn, 0, 16 * sizeof(MeshConnectivity));
   for (ii = 0; ii < 16; ii++) {

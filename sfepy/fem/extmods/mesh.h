@@ -63,6 +63,7 @@ typedef struct MeshConnectivity {
 typedef struct MeshTopology {
   uint32 max_dim;
   uint32 num[4]; // Number of entities of given dimension.
+  uint32 *cell_types; // Cell types = indices to LocalEntities.
   MeshConnectivity _conn[16];
   MeshConnectivity *conn[16];
 } MeshTopology;
