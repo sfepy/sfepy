@@ -140,6 +140,10 @@ int32 me_get_incident2(MeshEntity *entity, Indices *out,
                        MeshConnectivity *conn);
 int32 contains(Indices *i1, Indices *i2);
 
+int32 uint32_sort4(uint32 *p);
+int32 uint32_sort3(uint32 *p);
+int32 uint32_sort2(uint32 *p);
+
 // Mesh entity is given by (dimension, index) or (dim, ii).
 // Index ii is in [0, num[dim] - 1].
 int32 mesh_get_entity(int32 *n_items, int32 dim, int32 ii);

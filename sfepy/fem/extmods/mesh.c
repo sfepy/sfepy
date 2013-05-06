@@ -514,3 +514,69 @@ inline int32 contains(Indices *i1, Indices *i2)
 
   return(1);
 }
+
+#define SwapValues(a, b, work) do {\
+  (work) = (a); (a) = (b); (b) = (work);\
+} while (0)
+
+#define SORT4(p, work) do {\
+  if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
+  if ((p)[1] > (p)[2]) SwapValues((p)[1], (p)[2], (work));\
+  if ((p)[2] > (p)[3]) SwapValues((p)[2], (p)[3], (work));\
+  if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
+  if ((p)[1] > (p)[2]) SwapValues((p)[1], (p)[2], (work));\
+  if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
+} while (0)
+
+#define SORT3(p, work) do {\
+  if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
+  if ((p)[1] > (p)[2]) SwapValues((p)[1], (p)[2], (work));\
+  if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
+} while (0)
+
+#define SORT2(p, work) do {\
+  if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
+} while (0)
+
+inline int32 uint32_sort4(uint32 *p)
+{
+  int32 key = 0;
+  uint32 work;
+
+  if (p[0] < p[1]) key += 1;
+  if (p[0] < p[2]) key += 2;
+  if (p[1] < p[2]) key += 4;
+  if (p[0] < p[3]) key += 8;
+  if (p[1] < p[3]) key += 16;
+  if (p[2] < p[3]) key += 32;
+
+  SORT4(p, work);
+
+  return(key);
+}
+
+inline int32 uint32_sort3(uint32 *p)
+{
+  int32 key = 0;
+  uint32 work;
+
+  if (p[0] < p[1]) key += 1;
+  if (p[0] < p[2]) key += 2;
+  if (p[1] < p[2]) key += 4;
+
+  SORT3(p, work);
+
+  return(key);
+}
+
+inline int32 uint32_sort2(uint32 *p)
+{
+  int32 key = 0;
+  uint32 work;
+
+  if (p[0] < p[1]) key += 1;
+
+  SORT2(p, work);
+
+  return(key);
+}
