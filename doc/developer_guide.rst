@@ -505,35 +505,8 @@ data to the C function.
 Evaluation modes
 ^^^^^^^^^^^^^^^^
 
-A term can support several evaluation modes:
-
-- `'eval'` : evaluate the integral over a region, result has dimension
-  like the quantity integrated;
-
-- `'el_avg'` : element average - result is array of the quantity
-  averaged in each element of a region - this is the mode for
-  postprocessing;
-
-- `'qp'` : quantity interpolated into quadrature points of each element
-  in a region;
-
-- `'weak'` : assemble either the vector or matrix depending on
-  `diff_var` argument (the name of variable to differentiate with
-  respect to).
-
-Not all terms support all the modes, one usually needs to look at the
-sources. There are, however, certain naming conventions:
-
-- `'dw_*'` terms support `'weak'` mode
-- `'dq_*'` terms support `'qp'` mode
-- `'d_*'`, `'di_*'` terms support `'eval'` mode
-- `'ev_*'` terms support `'eval'`, `'el_avg'` and `'qp'` modes
-
-Note that the naming prefixes are due to history when the `mode` argument to
-`Term.evaluate()` was not available. Now they are often redundant, but at least
-one has a notion what is the evaluation purpose of each term. They may
-disappear after some more term unification - "easier_terms" branch already
-resulted in a number of terms disappearing.
+A term can support several evaluation modes, as described in
+:ref:`term_evaluation`.
 
 Basic attributes
 ^^^^^^^^^^^^^^^^

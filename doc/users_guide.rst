@@ -1117,10 +1117,10 @@ where :math:`u \approx \bm{\phi} \bm{u}`, :math:`\nabla u \approx \bm{G}
 :math:`\Omega_h` are approximated by a numerical quadrature, that is named
 :math:`\verb|i1|` in our case.
 
-Term call syntax
-^^^^^^^^^^^^^^^^
+Syntax of Terms in Equations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In general, the syntax of a term call in *SfePy* is::
+The terms in equations are written in form::
 
     <term_name>.<i>.<r>( <arg1>, <arg2>, ... )
 
@@ -1128,6 +1128,168 @@ where ``<i>`` denotes an integral name (i.e. a name of numerical quadrature to
 use) and ``<r>`` marks a region (domain of the integral). In the following,
 ``<virtual>`` corresponds to a test function, ``<state>`` to a unknown function
 and ``<parameter>`` to a known function arguments.
+
+When solving, the individual terms in equations are evaluated in the `'weak'`
+mode. The evaluation modes are described in the next section.
+
+.. _term_evaluation:
+
+Term Evaluation
+---------------
+
+Terms can be evaluated in two ways:
+
+#. implicitly by using them in equations;
+#. explicitly using :func:`ProblemDefinition.evaluate()
+   <sfepy.fem.problemDef.ProblemDefinition.evaluate>`. This way is mostly used
+   in the postprocessing.
+
+Each term supports one or more *evaluation modes*:
+
+- `'weak'` : Assemble (in the finite element sense) either the vector or matrix
+  depending on `diff_var` argument (the name of variable to differentiate with
+  respect to) of :func:`Term.evaluate() <sfepy.terms.terms.Term.evaluate>`.
+  This mode is usually used implicitly when building the linear system
+  corresponding to given equations.
+
+- `'eval'` : The evaluation mode integrates the term (= integral) over a
+  region. The result has the same dimension as the quantity being
+  integrated. This mode can be used, for example, to compute some global
+  quantities during postprocessing such as fluxes or total values of extensive
+  quantities (mass, volume, energy, ...).
+
+- `'el_avg'` : The element average mode results in an array of a quantity
+  averaged in each element of a region. This is the mode for postprocessing.
+
+- `'el'` : The element integral value mode results in an array of a quantity
+  integrated over each element of a region. This mode is supported only by
+  some special terms.
+
+- `'qp'` : The quadrature points mode results in an array of a quantity
+  interpolated into quadrature points of each element in a region. This mode is
+  used when further point-wise calculations with the result are needed. The
+  same element type and number of quadrature points in each element are
+  assumed.
+
+Not all terms support all the modes - consult the documentation of the
+individual terms. There are, however, certain naming conventions:
+
+- `'dw_*'` terms support `'weak'` mode
+- `'dq_*'` terms support `'qp'` mode
+- `'d_*'`, `'di_*'` terms support `'eval'` mode
+- `'ev_*'` terms support `'eval'`, `'el_avg'` and `'qp'` modes
+
+Note that the naming prefixes are due to history when the `mode` argument to
+:func:`ProblemDefinition.evaluate()
+<sfepy.fem.problemDef.ProblemDefinition.evaluate>` and :func:`Term.evaluate()
+<sfepy.terms.terms.Term.evaluate>` was not available. Now they are often
+redundant, but are kept around to indicate the evaluation purpose of each term.
+
+Several examples of using the :func:`ProblemDefinition.evaluate()
+<sfepy.fem.problemDef.ProblemDefinition.evaluate>` function are shown below.
+
+Solution Postprocessing
+-----------------------
+
+A solution to equations given in a problem description file is given by the
+variables of the 'unknown field' kind, that are set in the solution procedure.
+By default, those are the only values that are stored into a results file. The
+solution postprocessing allows computing additional, derived, quantities, based
+on the primary variables values, as well as any other quantities to be stored
+in the results.
+
+Let us illustrate this using several typical examples. Let us assume that the
+postprocessing function is called `'post_process()'`, and is added to options
+as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
+`'post_process_hook_final'`. Then:
+
+- compute stress and strain given the displacements (variable `u`)::
+
+    def post_process(out, problem, state, extend=False):
+        """
+        This will be called after the problem is solved.
+
+        Parameters
+        ----------
+        out : dict
+            The output dictionary, where this function will store additional
+            data.
+        problem : ProblemDefinition instance
+            The current ProblemDefinition instance.
+        state : State instance
+            The computed state, containing FE coefficients of all the unknown
+            variables.
+        extend : bool
+            The flag indicating whether to extend the output data to the whole
+            domain. It can be ignored if the problem is solved on the whole
+            domain already.
+
+        Returns
+        -------
+        out : dict
+            The updated output dictionary.
+        """
+        from sfepy.base.base import Struct
+
+        # Cauchy strain averaged in elements.
+        strain = problem.evaluate('ev_cauchy_strain.i1.Omega(u)',
+                                  mode='el_avg')
+        out['cauchy_strain'] = Struct(name='output_data',
+                                      mode='cell', data=strain,
+                                      dofs=None)
+        # Cauchy stress averaged in elements.
+        stress = problem.evaluate('ev_cauchy_stress.i1.Omega(solid.D, u)',
+                                  mode='el_avg')
+        out['cauchy_stress'] = Struct(name='output_data',
+                                      mode='cell', data=stress,
+                                      dofs=None)
+
+        return out
+
+  The full example is :ref:`linear_elasticity-linear_elastic_probes`.
+
+- compute diffusion velocity given the pressure::
+
+    def post_process(out, pb, state, extend=False):
+        from sfepy.base.base import Struct
+
+        dvel = pb.evaluate('ev_diffusion_velocity.i1.Omega(m.K, p)',
+                           mode='el_avg')
+        out['dvel'] = Struct(name='output_data',
+                             mode='cell', data=dvel, dofs=None)
+
+        return out
+
+  The full example is :ref:`biot-biot_npbc`.
+
+- store values of a non-homogeneous material parameter::
+
+    def post_process(out, pb, state, extend=False):
+        from sfepy.base.base import Struct
+
+        mu = pb.evaluate('ev_integrate_mat.2.Omega(nonlinear.mu, u)',
+                         mode='el_avg', copy_materials=False, verbose=False)
+        out['mu'] = Struct(name='mu', mode='cell', data=mu, dofs=None)
+
+        return out
+
+  The full example is :ref:`linear_elasticity-material_nonlinearity`.
+
+- compute volume of a region (`u` is any variable defined in the region
+  `Omega`)::
+
+    volume = problem.evaluate('d_volume.2.Omega(u)')
+
+Probing
+-------
+
+Probing applies interpolation to output the solution along specified paths. As
+mentioned in :ref:`miscellaneous_options`, it relies on defining two additional
+functions, namely the `'gen_probes'` function, that should create the required
+probes (see :mod:`sfepy.fem.probes`), and the `'probe_hook'` function that
+performs the actual probing of the results for each of the probes. This
+function can return the probing results, as well as a handle to a corresponding
+matplotlib figure. See :doc:`primer` for additional explanation.
 
 Available Solvers
 -----------------
