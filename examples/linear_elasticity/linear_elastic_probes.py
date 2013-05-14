@@ -79,9 +79,9 @@ def post_process(out, problem, state, extend=False):
         The output dictionary, where this function will store additional data.
     problem : ProblemDefinition instance
         The current ProblemDefinition instance.
-    state : array
-        The computed state vector, containing FE coefficients of all the
-        unknown variables.
+    state : State instance
+        The computed state, containing FE coefficients of all the unknown
+        variables.
     extend : bool
         The flag indicating whether to extend the output data to the whole
         domain. It can be ignored if the problem is solved on the whole domain
