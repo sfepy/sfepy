@@ -8,7 +8,7 @@ User's Guide
 This manual provides reference documentation to *SfePy* from a user's
 perspective.
 
-Running a simulation
+Running a Simulation
 --------------------
 
 The following should be run in the top-level directory of the *SfePy* source
@@ -16,7 +16,7 @@ tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions info. The
 ``$`` indicates the command prompt of your terminal.
 
-Basic usage
+Basic Usage
 ^^^^^^^^^^^
 
 * ::
@@ -43,7 +43,7 @@ Basic usage
 
   * Follow the help information printed on startup
 
-Surface extraction
+Surface Extraction
 ^^^^^^^^^^^^^^^^^^
 
 * ::
@@ -118,7 +118,7 @@ The tests are run by the ``runTests.py`` script::
       --filter-more         filter output (suppress all except test result
                             messages)
 
-Common tasks
+Common Tasks
 """"""""""""
 
 * Run all tests, filter output; result files related to the tests can be found
@@ -136,7 +136,7 @@ Common tasks
 
     ./runTests.py tests/test_input_le.py --debug
 
-Computations and examples
+Computations and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The example problems in the ``examples`` directory can be computed by the script
@@ -179,7 +179,7 @@ Parametric study example::
 
     $ ./simple.py examples/diffusion/poisson_parametric_study.py
 
-Common tasks
+Common Tasks
 """"""""""""
 
 * Run a simulation::
@@ -195,7 +195,7 @@ Common tasks
 
     ./simple.py --save-ebc examples/diffusion/poisson.py # -> produces an additional .vtk file with BC visualization
 
-Visualization of results
+Visualization of Results
 ------------------------
 
 The ``postproc.py`` script can be used for quick postprocessing and
@@ -328,7 +328,7 @@ The ``-l`` switch lists information contained in a results file, e.g.::
 
 .. _sec-problem-description-file:
 
-Problem description file
+Problem Description File
 ------------------------
 
 Here we discuss the basic items that users have to specify in their input
@@ -336,7 +336,7 @@ files. For complete examples, see the problem description files in the
 ``examples/`` directory of SfePy.
 
 
-FE mesh
+FE Mesh
 ^^^^^^^
 
 A FE mesh defining a domain geometry can be stored in several formats:
@@ -627,7 +627,7 @@ integration orders can be specified directly in equations, see below.
                     [1./N] * N),
         }
 
-Boundary conditions
+Boundary Conditions
 ^^^^^^^^^^^^^^^^^^^
 
 The boundary conditions apply in a given region given by its name, and,
@@ -672,7 +672,7 @@ time or not.
             'phi' : ('Surface', {'phi.all' : 0.0}),
         }
 
-Initial conditions
+Initial Conditions
 ^^^^^^^^^^^^^^^^^^
 
 Initial conditions are applied prior to the boundary conditions - no special
@@ -861,7 +861,7 @@ the Problem Definition file, so they can invoke the full power of Python. In
 order for *SfePy* to make use of the functions, they must be declared using the
 function keyword. See the examples below.
 
-Defining material parameters
+Defining Material Parameters
 """"""""""""""""""""""""""""
 
 The functions for defining material parameters can work in two modes,
@@ -1157,7 +1157,7 @@ The following solvers are available:
 - 'nls.semismooth_newton': Semismooth Newton method for contact/friction
   problems.
 
-Linear solvers
+Linear Solvers
 ^^^^^^^^^^^^^^
 
 A good linear solver is key to solving efficiently stationary as well as
