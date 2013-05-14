@@ -1123,13 +1123,11 @@ class ProblemDefinition(Struct):
                  verbose=True, extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
-        `self.create_evaluable()` and
-        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations()>`.
+        :func:`ProblemDefinition.create_evaluable` and
+        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations>`.
 
         Parameters
         ----------
-        ... : arguments
-            See docstrings of `self.create_evaluable()`.
         dw_mode : 'vector' or 'matrix'
             The assembling mode for 'weak' evaluation mode.
         term_mode : str
@@ -1139,6 +1137,8 @@ class ProblemDefinition(Struct):
         ret_variables : bool
             If True, return the variables that were created to evaluate
             the expression.
+        other : arguments
+            See docstrings of :func:`ProblemDefinition.create_evaluable`.
 
         Returns
         -------
