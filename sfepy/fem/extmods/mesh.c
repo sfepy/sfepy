@@ -515,6 +515,51 @@ inline int32 contains(Indices *i1, Indices *i2)
   return(1);
 }
 
+inline int32 get_local_connectivity(MeshConnectivity *loc,
+                                    Indices *cell_vertices,
+                                    MeshConnectivity *refloc)
+{
+  uint32 ii, ic;
+
+  for (ii = 0; ii < (refloc->num + 1); ii++) {
+    loc->offsets[ii] = refloc->offsets[ii];
+  }
+
+  for (ii = 0; ii < refloc->num; ii++) {
+    for (ic = refloc->offsets[ii]; ic < refloc->offsets[ii+1]; ic++) {
+      loc->indices[ic] = cell_vertices->indices[refloc->indices[ic]];
+    }
+  }
+
+  return(RET_OK);
+}
+
+inline int32 sort_local_connectivity(MeshConnectivity *loc, uint32 num)
+{
+  uint32 ii, n_item;
+
+  if (num == 0) {
+    num = loc->num;
+  }
+
+  for (ii = 0; ii < num; ii++) {
+    n_item = loc->offsets[ii+1] - loc->offsets[ii];
+    switch (n_item) {
+    case 2:
+      uint32_sort2(loc->indices + loc->offsets[ii]);
+      break;
+    case 3:
+      uint32_sort3(loc->indices + loc->offsets[ii]);
+      break;
+    case 4:
+      uint32_sort4(loc->indices + loc->offsets[ii]);
+      break;
+    }
+  }
+
+  return(RET_OK);
+}
+
 #define SwapValues(a, b, work) do {\
   (work) = (a); (a) = (b); (b) = (work);\
 } while (0)
