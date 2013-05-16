@@ -39,7 +39,7 @@ typedef struct MeshGeometry {
 typedef struct MeshConnectivity {
   uint32 num; // MeshTopology->num[i] - number of entities.
   uint32 n_incident; // Total number of incident entities.
-  uint32 *indices; // Length: num.
+  uint32 *indices; // Length: n_incident.
   uint32 *offsets; // Length: MeshTopology->num[i] + 1.
 } MeshConnectivity;
 
