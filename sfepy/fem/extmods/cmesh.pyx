@@ -245,13 +245,21 @@ cdef class CMesh:
         ii = self._get_conn_indx(d1, d2)
         self.conns[ii] = None
 
+        # This call can create several (intermediate) connectivities.
         mesh_setup_connectivity(self.mesh, d1, d2)
 
-        pconn = self.mesh.topology.conn[ii]
-        cconn = CConnectivity(pconn.num, pconn.n_incident)
-        cconn._set_conn(pconn)
+        self._update_pointers()
 
-        self.conns[ii] = cconn
+    def _update_pointers(self):
+        cdef uint32 ii
+
+        for ii in range((self.mesh.topology.max_dim + 1)**2):
+            pconn = self.mesh.topology.conn[ii]
+            if (pconn.num > 0) and ((self.conns[ii] is None)
+                                    or (pconn.num != self.conns[ii].num)):
+                cconn = CConnectivity(pconn.num, pconn.n_incident)
+                cconn._set_conn(pconn)
+                self.conns[ii] = cconn
 
     def free_connectivity(self, d1, d2):
         cdef MeshConnectivity *pconn
