@@ -534,8 +534,10 @@ inline int32 get_local_connectivity(MeshConnectivity *loc,
   return(RET_OK);
 }
 
-inline int32 sort_local_connectivity(MeshConnectivity *loc, uint32 num)
+inline int32 sort_local_connectivity(MeshConnectivity *loc, uint32 *oris,
+                                     uint32 num)
 {
+  int32 key = -1;
   uint32 ii, n_item;
 
   if (num == 0) {
@@ -546,15 +548,16 @@ inline int32 sort_local_connectivity(MeshConnectivity *loc, uint32 num)
     n_item = loc->offsets[ii+1] - loc->offsets[ii];
     switch (n_item) {
     case 2:
-      uint32_sort2(loc->indices + loc->offsets[ii]);
+      key = uint32_sort2(loc->indices + loc->offsets[ii]);
       break;
     case 3:
-      uint32_sort3(loc->indices + loc->offsets[ii]);
+      key = uint32_sort3(loc->indices + loc->offsets[ii]);
       break;
     case 4:
-      uint32_sort4(loc->indices + loc->offsets[ii]);
+      key = uint32_sort4(loc->indices + loc->offsets[ii]);
       break;
     }
+    oris[ii] = key;
   }
 
   return(RET_OK);

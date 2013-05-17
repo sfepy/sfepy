@@ -143,7 +143,8 @@ int32 contains(Indices *i1, Indices *i2);
 int32 get_local_connectivity(MeshConnectivity *loc,
                              Indices *cell_vertices,
                              MeshConnectivity *refloc);
-int32 sort_local_connectivity(MeshConnectivity *loc, uint32 num);
+int32 sort_local_connectivity(MeshConnectivity *loc, uint32 *oris,
+                              uint32 num);
 
 int32 uint32_sort4(uint32 *p);
 int32 uint32_sort3(uint32 *p);
