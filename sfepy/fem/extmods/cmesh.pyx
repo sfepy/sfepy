@@ -137,6 +137,9 @@ cdef class CMesh:
 
         # Geometry coordinates.
         self.n_coor, self.dim = mesh.coors.shape
+        if (self.dim < 2) or (self.dim > 3):
+            raise ValueError('CMesh geometry dimension must be 2 or 3! (%d)'
+                             % self.dim)
         _coors = self.coors = mesh.coors.copy()
         mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim)
 
