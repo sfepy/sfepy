@@ -19,6 +19,8 @@ cdef extern from 'string.h':
 cdef extern from 'common.h':
     void *pyalloc(size_t size)
     void pyfree(void *pp)
+    void mem_statistics(int lineNo, char *funName,
+                        char *fileName, char *dirName)
 
 cdef extern from 'mesh.h':
     ctypedef struct MeshGeometry:
@@ -285,6 +287,9 @@ cdef class CMesh:
 
     def cprint(self, int32 header_only=1):
         mesh_print(self.mesh, stdout, header_only)
+
+def cmem_statistics():
+    mem_statistics(0, '', '', '')
 
 ## Utils. ##
 cdef extern from 'meshutils.h':
