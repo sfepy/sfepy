@@ -69,6 +69,8 @@ int32 mem_check_ptr(char *p, int lineNo, char *funName,
                     char *fileName, char *dirName);
 void *mem_alloc_mem(size_t size, int lineNo, char *funName,
                     char *fileName, char *dirName);
+void *mem_realloc_mem(void *pp, size_t size, int lineNo, char *funName,
+                      char *fileName, char *dirName);
 void mem_free_mem(void *pp, int lineNo, char *funName,
                   char *fileName, char *dirName);
 void *pyalloc(size_t size);
@@ -97,6 +99,9 @@ void sys_pause(void);
 #define alloc_mem(Type, num) \
   (Type *) mem_alloc_mem((num) * sizeof(Type), \
 			 __LINE__, __FUNC__, __FILE__, __SDIR__)
+#define realloc_mem(p, Type, num)\
+  (Type *) mem_realloc_mem(p, (num) * sizeof(Type), \
+                           __LINE__, __FUNC__, __FILE__, __SDIR__)
 #define free_mem(p) do {\
     mem_free_mem(p, __LINE__, __FUNC__, __FILE__, __SDIR__); } while (0)
 

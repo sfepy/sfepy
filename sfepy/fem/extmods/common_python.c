@@ -181,6 +181,73 @@ void *mem_alloc_mem(size_t size, int lineNo, char *funName,
 }
 
 #undef __FUNC__
+#define __FUNC__ "mem_realloc_mem"
+void *mem_realloc_mem(void *pp, size_t size, int lineNo, char *funName,
+                      char *fileName, char *dirName)
+{
+  char *p = (char *) pp;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  size_t tsize, aux;
+  float64 *endptr;
+  AllocSpace *head;
+  char *phead;
+
+  if (p == 0) return(0);
+
+  if (size == 0) {
+    errput("%s, %s, %s, %d: zero allocation!\n",
+           dirName, fileName, funName, lineNo);
+    ERR_GotoEnd(1);
+  }
+
+  // 1. almost as mem_free_mem().
+  mem_check_ptr(p, lineNo, funName, fileName, dirName);
+  if (ERR_Chk) {
+    ERR_GotoEnd(1);
+  }
+
+  phead = p - hsize;
+  head = (AllocSpace *) phead;
+  head->cookie = AL_AlreadyFreed;
+
+  endptr = (float64 *) (p + head->size);
+  endptr[0] = (float64) AL_AlreadyFreed;
+
+  al_curUsage -= head->size;
+  al_frags--;
+  mem_list_remove(head, al_head);
+
+  // 2. realloc.
+  aux = size % sizeof(float64);
+  size += (aux) ? sizeof(float64) - aux : 0;
+  tsize = size + hsize + sizeof(float64);
+  if ((p = (char *) PyMem_Realloc(phead, tsize)) == 0) {
+    errput("%s, %s, %s, %d: error re-allocating to %zu bytes (current: %zu).\n",
+           dirName, fileName, funName, lineNo, size, al_curUsage);
+    ERR_GotoEnd(1);
+  }
+
+  // 3. almost as mem_alloc_mem().
+  p += hsize;
+  mem_list_new(p, size, al_head, lineNo, funName, fileName, dirName);
+
+  al_curUsage += size;
+  if (al_curUsage > al_maxUsage) {
+    al_maxUsage = al_curUsage;
+  }
+  al_frags++;
+
+  return((void *) p);
+
+ end_label:
+  if (ERR_Chk) {
+    errput(ErrHead "error exit!\n");
+  }
+
+  return(0);
+}
+
+#undef __FUNC__
 #define __FUNC__ "mem_free_mem"
 /*!
   @par Revision history:
