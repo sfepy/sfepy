@@ -287,9 +287,20 @@ cdef class CMesh:
         cdef MeshConnectivity *pconn
 
         ii = self._get_conn_indx(d1, d2)
+        if self.conns[ii] is None:
+            return
+
         self.conns[ii] = None
 
         mesh_free_connectivity(self.mesh, d1, d2)
+        self._update_num()
+
+        max_dim = self.mesh.topology.max_dim
+        if (max_dim > d1 > 0) and (d2 == 0):
+            self.free_connectivity(max_dim, d1)
+
+        if (d1 == max_dim) and (max_dim > d2 > 0):
+            self.free_connectivity(d2, 0)
 
     def _get_conn_indx(self, d1, d2):
         return (self.mesh.topology.max_dim + 1) * d1 + d2
