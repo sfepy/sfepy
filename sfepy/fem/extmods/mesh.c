@@ -165,6 +165,28 @@ int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident)
 }
 
 #undef __FUNC__
+#define __FUNC__ "conn_resize"
+int32 conn_resize(MeshConnectivity *conn, uint32 num, uint32 n_incident)
+{
+  int32 ret = RET_OK;
+
+  conn->num = num;
+  conn->offsets = realloc_mem(conn->offsets, uint32, num + 1);
+  ERR_CheckGo(ret);
+
+  conn->n_incident = n_incident;
+  conn->indices = realloc_mem(conn->indices, uint32, n_incident);
+  ERR_CheckGo(ret);
+
+ end_label:
+  if (ERR_Chk) {
+    errput("conn_resize() failed!");
+  }
+
+  return(ret);
+}
+
+#undef __FUNC__
 #define __FUNC__ "conn_free"
 int32 conn_free(MeshConnectivity *conn)
 {
@@ -189,6 +211,15 @@ int32 conn_print(MeshConnectivity *conn, FILE *file)
     }
     fprintf(file, "\n");
   }
+
+  return(RET_OK);
+}
+
+// Set offsets and indices of conn from other.
+inline int32 conn_set_from(MeshConnectivity *conn, MeshConnectivity *other)
+{
+  memcpy(conn->offsets, other->offsets, (conn->num + 1) * sizeof(uint32));
+  memcpy(conn->indices, other->indices, conn->n_incident * sizeof(uint32));
 
   return(RET_OK);
 }

@@ -123,8 +123,10 @@ int32 mei_go(MeshEntityIterator *iter);
 int32 mei_next(MeshEntityIterator *iter);
 
 int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident);
+int32 conn_resize(MeshConnectivity *conn, uint32 num, uint32 n_incident);
 int32 conn_free(MeshConnectivity *conn);
 int32 conn_print(MeshConnectivity *conn, FILE *file);
+int32 conn_set_from(MeshConnectivity *conn, MeshConnectivity *other);
 int32 conn_set_to_free(MeshConnectivity *conn, uint32 ii, uint32 incident);
 
 int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim);
