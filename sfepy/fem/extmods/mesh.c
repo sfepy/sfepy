@@ -11,6 +11,8 @@ int32 mesh_init(Mesh *mesh)
 
   topology->max_dim = 0;
   topology->cell_types = 0;
+  topology->edge_oris = 0;
+  topology->face_oris = 0;
   memset(topology->num, 0, 16 * sizeof(int32));
   memset(topology->_conn, 0, 16 * sizeof(MeshConnectivity));
   for (ii = 0; ii < 16; ii++) {
@@ -317,16 +319,150 @@ int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
 int32 mesh_build(Mesh *mesh, int32 dim)
 {
   int32 ret = RET_OK;
-  uint32 kk = 0;
+  uint32 n_incident, n_v_max, n_loc;
+  uint32 ii, ic, id, found;
   int32 D = mesh->topology->max_dim;
-  MeshConnectivity *c1 = 0; // D -> d
-  MeshConnectivity *c2 = 0; // d -> 0
+  uint32 facet[4]; // Max. space for single facet.
+  uint32 *oris = 0;
+  uint32 loc_oris[12];
+  uint32 *nDd = 0;
+  uint32 *ptr1 = 0, *ptr2 = 0;
+  uint32 *cell_types = mesh->topology->cell_types;
+  Indices cell_vertices[1];
+  MeshEntityIterator it0[1], it1[1], it2[1];
+  MeshConnectivity *cD0 = 0; // D -> 0 - known
+  MeshConnectivity *cDd = 0; // D -> d - to compute
+  MeshConnectivity *cd0 = 0; // d -> 0 - to compute
+  MeshConnectivity **locs = 0;
+  MeshConnectivity *loc = 0;
+  MeshConnectivity sloc[1]; // Local connectivity with sorted global vertices.
+  MeshConnectivity gloc[1]; // Local connectivity with global vertices.
 
-  c1 = mesh->topology->conn[IJ(D, D, dim)];
-  c2 = mesh->topology->conn[IJ(D, dim, 0)];
+  if (!mesh->topology->conn[IJ(D, D, D)]->num) {
+    mesh_setup_connectivity(mesh, D, D);
+  }
 
+  cD0 = mesh->topology->conn[IJ(D, D, 0)];
+  cDd = mesh->topology->conn[IJ(D, D, dim)];
+  cd0 = mesh->topology->conn[IJ(D, dim, 0)];
+
+  locs = (dim == 1) ? mesh->entities->edges : mesh->entities->faces;
+
+  // Max. number of vertices in facets.
+  n_v_max = (dim == 1) ? 2 : 4;
+
+  // Count entities of D -> d.
+  conn_alloc(cDd, mesh->topology->num[D], 0);
+  ERR_CheckGo(ret);
+  nDd = cDd->offsets + 1;
+
+  for (mei_init(it0, mesh, D); mei_go(it0); mei_next(it0)) {
+    loc = locs[cell_types[it0->it]];
+    nDd[it0->it] = loc->num;
+  }
+
+  // cDd->offsets now contains counts - make a cumsum to get offsets.
+  for (ii = 1; ii < cDd->num + 1; ii++) {
+    cDd->offsets[ii] += cDd->offsets[ii-1];
+  }
+
+  n_incident = cDd->offsets[cDd->num];
+
+  oris = alloc_mem(uint32, n_incident);
+  if (dim == 2) {
+    free_mem(mesh->topology->face_oris);
+    mesh->topology->face_oris = oris;
+  } else {
+    free_mem(mesh->topology->edge_oris);
+    mesh->topology->edge_oris = oris;
+  }
+
+  // Allocate D -> d indices.
+  conn_alloc(cDd, 0, n_incident);
+  ERR_CheckGo(ret);
+  for (ii = 0; ii < cDd->n_incident; ii++) {
+    cDd->indices[ii] = UINT32_None; // "not set" value.
+  }
+
+  // Allocate maximal buffers for d -> 0 arrays.
+  conn_alloc(cd0, n_incident, n_incident * n_v_max);
+
+  // Allocate maximal buffers for local connectivity with sorted global
+  // vertices.
+  conn_alloc(sloc, 12, n_v_max * 12);
+  conn_alloc(gloc, 12, n_v_max * 12);
+
+  id = 0;
+  for (mei_init(it0, mesh, D); mei_go(it0); mei_next(it0)) {
+    // Get vertex sets for local entities of current cell.
+    loc = locs[cell_types[it0->it]];
+    me_get_incident2(it0->entity, cell_vertices, cD0);
+    get_local_connectivity(gloc, cell_vertices, loc);
+    conn_set_from(sloc, gloc);
+    sort_local_connectivity(sloc, loc_oris, loc->num);
+
+    // Iterate over entities in the vertex sets.
+    for (ii = 0; ii < loc->num; ii++) {
+      // ii points to a vertex set in sloc/gloc.
+      n_loc = sloc->offsets[ii+1] - sloc->offsets[ii];
+
+      // Try to find entity in cells visited previously.
+      for (mei_init_conn(it1, it0->entity, D); mei_go(it1); mei_next(it1)) {
+        if (it1->entity->ii >= it0->entity->ii) continue;
+
+        // Iterate over facets of visited cells.
+        for (mei_init_conn(it2, it1->entity, dim); mei_go(it2); mei_next(it2)) {
+          ptr1 = cd0->indices + cd0->offsets[it2->entity->ii];
+          uint32_sort234_copy(facet, ptr1, n_loc);
+          ptr2 = sloc->indices + sloc->offsets[ii];
+          found = 1;
+          for (ic = 0; ic < n_loc; ic++) {
+            if (facet[ic] != ptr2[ic]) {
+              found = 0;
+              break;
+            }
+          }
+          if (found) {
+            // Assign existing entity to D -> d.
+            conn_set_to_free(cDd, it0->entity->ii, it2->entity->ii);
+            goto found_label;
+          }
+        }
+      }
+      // Entity not found - create new.
+
+      // Add it as 'id' to D -> d.
+      conn_set_to_free(cDd, it0->entity->ii, id);
+
+      // Store entity orientation key.
+      oris[id] = loc_oris[ii];
+
+      // Add vertices in gloc to d -> 0.
+      cd0->offsets[id+1] = cd0->offsets[id] + n_loc;
+
+      ptr1 = cd0->indices + cd0->offsets[id];
+      ptr2 = gloc->indices + gloc->offsets[ii];
+      for (ic = 0; ic < n_loc; ic++) {
+        ptr1[ic] = ptr2[ic];
+      }
+
+      // Increment entity counter.
+      id++;
+
+    found_label:
+      ;
+    }
+  }
+  // Update entity count in topology.
+  mesh->topology->num[dim] = id;
+
+  // Strip d -> 0.
+  conn_resize(cd0, id, cd0->offsets[id]);
 
  end_label:
+  conn_free(sloc);
+  conn_free(gloc);
+
   return(ret);
 }
 
@@ -616,6 +752,27 @@ inline int32 sort_local_connectivity(MeshConnectivity *loc, uint32 *oris,
 #define SORT2(p, work) do {\
   if ((p)[0] > (p)[1]) SwapValues((p)[0], (p)[1], (work));\
 } while (0)
+
+inline void uint32_sort234_copy(uint32 *out, uint32 *p, uint32 num)
+{
+  int32 ii;
+  uint32 work;
+
+  for (ii = 0; ii < num; ii++) {
+    out[ii] = p[ii];
+  }
+  switch (num) {
+  case 2:
+    SORT2(out, work);
+    break;
+  case 3:
+    SORT3(out, work);
+    break;
+  case 4:
+    SORT4(out, work);
+    break;
+  }
+}
 
 inline int32 uint32_sort4(uint32 *p)
 {

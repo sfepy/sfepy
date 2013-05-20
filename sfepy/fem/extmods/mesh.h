@@ -64,6 +64,8 @@ typedef struct MeshTopology {
   uint32 max_dim;
   uint32 num[4]; // Number of entities of given dimension.
   uint32 *cell_types; // Cell types = indices to LocalEntities.
+  uint32 *face_oris; // Face orientations.
+  uint32 *edge_oris; // Edge orientations.
   MeshConnectivity _conn[16];
   MeshConnectivity *conn[16];
 } MeshTopology;
@@ -147,7 +149,7 @@ int32 get_local_connectivity(MeshConnectivity *loc,
                              MeshConnectivity *refloc);
 int32 sort_local_connectivity(MeshConnectivity *loc, uint32 *oris,
                               uint32 num);
-
+void uint32_sort234_copy(uint32 *out, uint32 *p, uint32 num);
 int32 uint32_sort4(uint32 *p);
 int32 uint32_sort3(uint32 *p);
 int32 uint32_sort2(uint32 *p);
