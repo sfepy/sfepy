@@ -123,6 +123,7 @@ cdef class CMesh:
     cdef readonly list conns
     cdef readonly dict entities
     cdef readonly int n_coor, dim, n_el
+    cdef readonly np.ndarray num # Numbers of topological entities.
 
     cdef readonly dict key_to_index
 
@@ -183,10 +184,13 @@ cdef class CMesh:
         self.conns = [None] * (self.mesh.topology.max_dim + 1)**2
         self.conns[ii] = cconn
 
+        self._update_num()
+
         return self
 
     def __cinit__(self):
         mesh_init(self.mesh)
+        self.num = np.zeros(4, dtype=np.uint32)
 
         self.key_to_index = {
             '1_2' : 0,
@@ -251,6 +255,7 @@ cdef class CMesh:
         mesh_setup_connectivity(self.mesh, d1, d2)
 
         self._update_pointers()
+        self._update_num()
 
     def _update_pointers(self):
         cdef uint32 ii
@@ -262,6 +267,21 @@ cdef class CMesh:
                 cconn = CConnectivity(pconn.num, pconn.n_incident)
                 cconn._set_conn(pconn)
                 self.conns[ii] = cconn
+
+    def _update_num(self):
+        self.num[0] = self.n_coor
+        self.num[self.mesh.topology.max_dim] = self.n_el
+
+        for idim in range(1, self.mesh.topology.max_dim):
+            ii = self._get_conn_indx(idim, 0)
+            conn = self.conns[ii]
+            if conn is None:
+                self.num[idim] = 0
+                self.mesh.topology.num[idim] = 0
+
+            else:
+                self.num[idim] = conn.num
+                self.mesh.topology.num[idim] = conn.num
 
     def free_connectivity(self, d1, d2):
         cdef MeshConnectivity *pconn
