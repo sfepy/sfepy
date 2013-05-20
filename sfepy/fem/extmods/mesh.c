@@ -308,6 +308,10 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
     } else {
       d3 = 0;
     }
+    if ((d1 > 0) && (d2 == 0)) {
+      errput("connectivity %d -> %d should already exist!\n", d1, d2);
+      ERR_CheckGo(ret);
+    }
     mesh_setup_connectivity(mesh, d1, d3);
     mesh_setup_connectivity(mesh, d3, d2);
     mesh_intersect(mesh, d1, d2, d3);
