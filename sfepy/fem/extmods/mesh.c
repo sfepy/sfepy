@@ -1,6 +1,17 @@
 #include "common.h"
 #include "mesh.h"
 
+static void debprintf(const char *what, ...)
+{
+#ifdef DEBUG_MESH
+  va_list ap;
+
+  va_start(ap, what);
+  vprintf(what, ap);
+  va_end(ap);
+#endif
+}
+
 int32 mesh_init(Mesh *mesh)
 {
   int32 ii;
@@ -272,6 +283,8 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
   MeshTopology *topology = mesh->topology;
   int32 D = topology->max_dim;
 
+  debprintf("request connectivity %d -> %d\n", d1, d2);
+
   if (topology->num[d1] == 0) {
     mesh_build(mesh, d1);
     ERR_CheckGo(ret);
@@ -310,6 +323,8 @@ int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
   int32 D = mesh->topology->max_dim;
   MeshConnectivity *conn = 0;
 
+  debprintf("free connectivity %d -> %d\n", d1, d2);
+
   conn = mesh->topology->conn[IJ(D, d1, d2)];
   conn_free(conn);
 
@@ -337,6 +352,8 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   MeshConnectivity *loc = 0;
   MeshConnectivity sloc[1]; // Local connectivity with sorted global vertices.
   MeshConnectivity gloc[1]; // Local connectivity with global vertices.
+
+  debprintf("build %d\n", dim);
 
   if (!mesh->topology->conn[IJ(D, D, D)]->num) {
     mesh_setup_connectivity(mesh, D, D);
@@ -367,6 +384,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   }
 
   n_incident = cDd->offsets[cDd->num];
+  debprintf("n_incident: %d\n", n_incident);
 
   oris = alloc_mem(uint32, n_incident);
   if (dim == 2) {
@@ -386,6 +404,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
 
   // Allocate maximal buffers for d -> 0 arrays.
   conn_alloc(cd0, n_incident, n_incident * n_v_max);
+  debprintf("max. n_incident_vertex: %d\n", n_incident * n_v_max);
 
   // Allocate maximal buffers for local connectivity with sorted global
   // vertices.
@@ -453,6 +472,8 @@ int32 mesh_build(Mesh *mesh, int32 dim)
       ;
     }
   }
+  debprintf("n_unique: %d, n_incident_vertex: %d\n", id, cd0->offsets[id]);
+
   // Update entity count in topology.
   mesh->topology->num[dim] = id;
 
@@ -478,6 +499,8 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   MeshEntityIterator it2[1], it1[1];
   MeshConnectivity *c12 = 0; // d1 -> d2 - to compute
 
+  debprintf("transpose %d -> %d\n", d1, d2);
+
   if (d1 >= d2) {
     errput("d1 must be smaller than d2 in mesh_transpose()!\n");
     ERR_CheckGo(ret);
@@ -502,6 +525,7 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   }
 
   n_incident = c12->offsets[c12->num];
+  debprintf("n_incident: %d\n", n_incident);
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
@@ -535,6 +559,8 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   MeshConnectivity *c12 = 0; // d1 -> d2 - to compute
   MeshConnectivity *c10 = 0; // d1 -> 0 - known
   MeshConnectivity *c20 = 0; // d2 -> 0 - known
+
+  debprintf("intersect %d -> %d (%d)\n", d1, d2, d3);
 
   if (d1 < d2) {
     errput("d1 must be greater or equal to d2 in mesh_intersect()!\n");
@@ -589,6 +615,7 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   }
 
   n_incident = c12->offsets[c12->num];
+  debprintf("n_incident: %d\n", n_incident);
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
