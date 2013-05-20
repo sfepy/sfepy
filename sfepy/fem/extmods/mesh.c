@@ -157,6 +157,10 @@ int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident)
 {
   int32 ret = RET_OK;
 
+  if ((conn->num > 0) && (conn->n_incident > 0)) {
+    conn_free(conn);
+  }
+
   if (num > 0) {
     conn->num = num;
     conn->offsets = alloc_mem(uint32, num + 1);
@@ -206,6 +210,7 @@ int32 conn_free(MeshConnectivity *conn)
    free_mem(conn->indices);
    free_mem(conn->offsets);
    conn->num = 0;
+   conn->n_incident = 0;
 
    return(RET_OK);
 }
