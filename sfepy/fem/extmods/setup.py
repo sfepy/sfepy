@@ -17,6 +17,8 @@ def configuration(parent_package='', top_path=None):
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
+    if '-DDEBUG_MESH' in site_config.debug_flags():
+        defines.append(('DEBUG_MESH', None))
 
     common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
 

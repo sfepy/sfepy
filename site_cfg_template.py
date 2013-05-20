@@ -17,7 +17,8 @@ compile_flags = '-g -O2'
 # extension modules.
 link_flags = ''
 
-# Can be '' or '-DDEBUG_FMF'. For developers internal use only.
+# Can be '' or one or several from '-DDEBUG_FMF', '-DDEBUG_MESH'. For
+# developers internal use only.
 debug_flags = ''
 
 # Sphinx documentation uses numpydoc extension. Set the path here in case it is
