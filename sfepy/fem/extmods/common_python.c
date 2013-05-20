@@ -67,6 +67,69 @@ static size_t al_maxUsage;
 static size_t al_frags;
 static AllocSpace *al_head = 0;
 
+void mem_list_new(char *p, size_t size, AllocSpace *al_head,
+                  int lineNo, char *funName, char *fileName, char *dirName)
+{
+  float64 *endptr;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  AllocSpace *head = (AllocSpace *) (p - hsize);
+
+  if (al_head) al_head->prev = head;
+  head->next     = al_head;
+  al_head        = head;
+  head->prev     = 0;
+  head->size     = size;
+  head->id       = 1234567;
+  head->lineNo   = lineNo;
+  head->fileName = fileName;
+  head->funName  = funName;
+  head->dirName  = dirName;
+  head->cookie   = AL_CookieValue;
+  endptr         = (float64 *) (p + size);
+  endptr[0]      = (float64) AL_CookieValue;
+}
+
+void mem_list_remove(AllocSpace *head, AllocSpace *al_head)
+{
+  if (head->prev) head->prev->next = head->next;
+  else al_head = head->next;
+
+  if (head->next) head->next->prev = head->prev;
+}
+
+int32 mem_check_ptr(char *p, int lineNo, char *funName,
+                    char *fileName, char *dirName)
+{
+  int32 ret = RET_OK;
+  float64 *endptr;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  AllocSpace *head = (AllocSpace *) (p - hsize);
+
+  if (head->cookie != AL_CookieValue) {
+    errput("%s, %s, %s, %d: ptr: %p, cookie: %d\n",
+           dirName, fileName, funName, lineNo,
+           p, head->cookie);
+    if (head->cookie == AL_AlreadyFreed) {
+      errput("memory was already freed!\n");
+    }
+    ERR_CheckGo(ret);
+  }
+
+  endptr = (float64 *) (p + head->size);
+  if (endptr[0] != AL_CookieValue) {
+    errput("%s %s %s %d:\n",
+           dirName, fileName, funName, lineNo);
+    if (endptr[0] == AL_AlreadyFreed) {
+      errput("already freed!\n");
+    } else {
+      errput("damaged tail!\n");
+    }
+    ERR_CheckGo(ret);
+  }
+
+ end_label:
+  return(ret);
+}
 
 #undef __FUNC__
 #define __FUNC__ "mem_alloc_mem"
@@ -78,43 +141,26 @@ void *mem_alloc_mem(size_t size, int lineNo, char *funName,
                     char *fileName, char *dirName)
 {
   char *p;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   size_t tsize, aux;
-  float64 *endptr;
-  AllocSpace *head;
-  
+
   if (size == 0) {
-    errput( "%s, %s, %s, %d: zero allocation!\n",
-	    dirName, fileName, funName, lineNo );
-    ERR_GotoEnd( 1 );
+    errput("%s, %s, %s, %d: zero allocation!\n",
+           dirName, fileName, funName, lineNo);
+    ERR_GotoEnd(1);
   }
 
-  aux = size % sizeof( float64 );
-  size += (aux) ? sizeof( float64 ) - aux : 0;
-  tsize = size + hsize + sizeof( float64 );
-  if ((p = (char *) PyMem_Malloc( tsize )) == 0) {
-    errput( "%s, %s, %s, %d: error allocating %d bytes (current: %d).\n",
-	    dirName, fileName, funName, lineNo, size, al_curUsage );
-    ERR_GotoEnd( 1 );
+  aux = size % sizeof(float64);
+  size += (aux) ? sizeof(float64) - aux : 0;
+  tsize = size + hsize + sizeof(float64);
+  if ((p = (char *) PyMem_Malloc(tsize)) == 0) {
+    errput("%s, %s, %s, %d: error allocating %zu bytes (current: %zu).\n",
+           dirName, fileName, funName, lineNo, size, al_curUsage);
+    ERR_GotoEnd(1);
   }
-  head = (AllocSpace *) p;
   p += hsize;
 
-  if (al_head) al_head->prev = head;
-  head->next     = al_head;
-  al_head         = head;
-  head->prev     = 0;
-  head->size     = size;
-  head->id       = 1234567;
-  head->lineNo   = lineNo;
-  head->fileName = fileName;
-  head->funName  = funName;
-  head->dirName  = dirName;
-  head->cookie   = AL_CookieValue;
-  endptr         = (float64 *) (p + size);
-  endptr[0]      = (float64) AL_CookieValue;
-
-/*    output( "%d _> ptr: %p, head: %p, end %p\n", hsize, p, head, endptr ); */
+  mem_list_new(p, size, al_head, lineNo, funName, fileName, dirName);
 
   al_curUsage += size;
   if (al_curUsage > al_maxUsage) {
@@ -144,47 +190,29 @@ void mem_free_mem(void *pp, int lineNo, char *funName,
                   char *fileName, char *dirName)
 {
   char *p = (char *) pp;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   float64 *endptr;
   AllocSpace *head;
   char *phead;
 
   if (p == 0) return;
 
+  mem_check_ptr(p, lineNo, funName, fileName, dirName);
+  if (ERR_Chk) {
+    ERR_GotoEnd(1);
+  }
+
   phead = p - hsize;
   head = (AllocSpace *) phead;
-  if (head->cookie != AL_CookieValue) {
-    errput( "%s, %s, %s, %d: ptr: %p, cookie: %d\n",
-	    dirName, fileName, funName, lineNo,
-	    p, head->cookie );
-    if (head->cookie == AL_AlreadyFreed) {
-      errput( "memory was already freed!\n" );
-    }
-    ERR_GotoEnd( 1 );
-  }
   head->cookie = AL_AlreadyFreed;
 
   endptr = (float64 *) (p + head->size);
-  if (endptr[0] != AL_CookieValue) {
-    errput( "%s %s %s %d:\n",
-	    dirName, fileName, funName, lineNo );
-    if (endptr[0] == AL_AlreadyFreed) {
-      errput( "already freed!\n" );
-    } else {
-      errput( "damaged tail!\n" );
-    }
-    ERR_GotoEnd( 1 );
-  }
-
   endptr[0] = (float64) AL_AlreadyFreed;
 
   al_curUsage -= head->size;
   al_frags--;
 
-  if (head->prev) head->prev->next = head->next;
-  else al_head = head->next;
-
-  if (head->next) head->next->prev = head->prev;
+  mem_list_remove(head, al_head);
 
   PyMem_Free(phead);
 

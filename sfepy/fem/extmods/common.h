@@ -62,6 +62,11 @@ typedef enum AllocMode {
   AL_Alloc, AL_Free, AL_Realloc
 } AllocMode;
 
+void mem_list_new(char *p, size_t size, AllocSpace *al_head,
+                  int lineNo, char *funName, char *fileName, char *dirName);
+void mem_list_remove(AllocSpace *head, AllocSpace *al_head);
+int32 mem_check_ptr(char *p, int lineNo, char *funName,
+                    char *fileName, char *dirName);
 void *mem_alloc_mem(size_t size, int lineNo, char *funName,
                     char *fileName, char *dirName);
 void mem_free_mem(void *pp, int lineNo, char *funName,
