@@ -808,7 +808,7 @@ Utility scripts
    src/script/evalForms
    src/script/eval_tl_forms
    src/script/gen_gallery
-   src/script/gen_lobatto_pyx
+   src/script/gen_lobatto1d_c
    src/script/gen_term_table
    src/script/plot_condition_numbers
    src/script/save_basis
@@ -900,22 +900,9 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/extmods/_fmfield
    src/sfepy/fem/extmods/assemble
    src/sfepy/fem/extmods/bases
-   src/sfepy/fem/extmods/lobatto
+   src/sfepy/fem/extmods/lobatto_bases
    src/sfepy/fem/extmods/mappings
    src/sfepy/fem/extmods/mesh
-
-sfepy.mesh package
-^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   src/sfepy/mesh/femlab
-   src/sfepy/mesh/geom_tools
-   src/sfepy/mesh/mesh_generators
-   src/sfepy/mesh/mesh_tools
-   src/sfepy/mesh/meshutils
-   src/sfepy/mesh/splinebox
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -961,12 +948,26 @@ sfepy.mechanics package
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/mechanics/contact_planes
    src/sfepy/mechanics/elastic_constants
    src/sfepy/mechanics/friction
    src/sfepy/mechanics/matcoefs
    src/sfepy/mechanics/membranes
    src/sfepy/mechanics/tensors
    src/sfepy/mechanics/units
+
+sfepy.mesh package
+^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/mesh/femlab
+   src/sfepy/mesh/geom_tools
+   src/sfepy/mesh/mesh_generators
+   src/sfepy/mesh/mesh_tools
+   src/sfepy/mesh/meshutils
+   src/sfepy/mesh/splinebox
 
 sfepy.optimize package
 ^^^^^^^^^^^^^^^^^^^^^^

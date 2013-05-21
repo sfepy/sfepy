@@ -1,6 +1,6 @@
-script/gen_lobatto_pyx.py script
+script/gen_lobatto1d_c.py script
 ================================
 
-.. automodule:: gen_lobatto_pyx
+.. automodule:: gen_lobatto1d_c
    :members:
    :undoc-members:
