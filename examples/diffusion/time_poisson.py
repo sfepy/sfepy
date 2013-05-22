@@ -1,7 +1,6 @@
 r"""
-Transient Laplace equation in time interval
-:math:`t \in [0, t_{\rm final}]` with non-constant initial condition
-given by a function.
+Transient Laplace equation with non-constant initial conditions given by a
+function.
 
 Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 

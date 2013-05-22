@@ -1,6 +1,6 @@
 r"""
 Biot problem - deformable porous medium with the no-penetration boundary
-condition on :math:`\Gamma_{walls}` boundary region.
+condition on a boundary region.
 
 Find :math:`\ul{u}`, :math:`p` such that:
 
@@ -14,6 +14,8 @@ Find :math:`\ul{u}`, :math:`p` such that:
     + \int_{\Omega} K_{ij} \nabla_i q \nabla_j p
     = 0
     \;, \quad \forall q \;,
+
+    \ul{u} \cdot \ul{n} = 0 \mbox{ on } \Gamma_{walls} \;,
 
 where
 

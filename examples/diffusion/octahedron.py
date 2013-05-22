@@ -1,6 +1,6 @@
 r"""
 Diffusion (Laplace-like) equation with non-isotropic diffusion
-coefficient :math:`K`.
+coefficient.
 
 Find :math:`t` such that:
 

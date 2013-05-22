@@ -1,6 +1,6 @@
 r"""
 Biot problem - deformable porous medium with the no-penetration boundary
-condition on :math:`\Gamma_{walls}` boundary region.
+condition on a boundary region enforced using Lagrange multipliers.
 
 The non-penetration condition is enforced weakly using the Lagrange
 multiplier :math:`\lambda`. There is also a rigid body movement
@@ -24,6 +24,8 @@ Find :math:`\ul{u}`, :math:`p` and :math:`\lambda` such that:
     \int_{\Gamma_{walls}} \hat\lambda \ul{n} \cdot \ul{u}
     = 0
     \;, \quad \forall \hat\lambda \;,
+
+    \ul{u} \cdot \ul{n} = 0 \mbox{ on } \Gamma_{walls} \;,
 
 where
 

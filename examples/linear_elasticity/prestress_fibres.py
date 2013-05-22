@@ -1,6 +1,6 @@
 r"""
-Linear elasticity with given prestress in :math:`\Omega_1` and (pre)strain
-fibre reinforcement in :math:`\Omega_2`.
+Linear elasticity with a given prestress in one subdomain and a (pre)strain
+fibre reinforcement in the other.
 
 Find :math:`\ul{u}` such that:
 

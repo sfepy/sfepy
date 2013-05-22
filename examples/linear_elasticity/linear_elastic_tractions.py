@@ -1,6 +1,6 @@
 r"""
-Linear elasticity with pressure traction load on surface
-:math:`\Gamma_{right}` and constrained to one-dimensional motion.
+Linear elasticity with pressure traction load on a surface and constrained to
+one-dimensional motion.
 
 Find :math:`\ul{u}` such that:
 

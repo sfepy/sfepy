@@ -1,6 +1,6 @@
 r"""
-Linear viscoelasticity with pressure traction load on surface
-:math:`\Gamma_{right}` and constrained to one-dimensional motion.
+Linear viscoelasticity with pressure traction load on a surface and constrained
+to one-dimensional motion.
 
 The fading memory terms require an unloaded initial configuration, so the load
 starts in the second time step. The load is then held for the first half of the

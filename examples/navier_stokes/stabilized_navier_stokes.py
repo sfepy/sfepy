@@ -1,6 +1,8 @@
 r"""
 Stabilized Navier-Stokes problem with grad-div, SUPG and PSPG stabilization
-solved by a custom Oseen solver, see [1].
+solved by a custom Oseen solver.
+
+The stabilization terms are described in [1].
 
 [1] G. Matthies and G. Lube. On streamline-diffusion methods of inf-sup stable
 discretisations of the generalised Oseen problem. Number 2007-02 in Preprint
