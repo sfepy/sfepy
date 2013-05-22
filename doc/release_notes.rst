@@ -1,5 +1,147 @@
 # created: 20.07.2007 (-1)
 
+.. _2013.1-2013.2:
+
+from 2013.1 to 2013.2
+=====================
+
+- automatic testing of term calls:
+
+  - merge branch 'i154' - closes #154
+  - define arg_shapes attributes of terms
+  - use new get_arg_kinds() in Term.classify_args() - simplify code
+
+    - new Term._check_variables()
+
+  - update Term.classify_args() to support 'mode' attribute
+  - update Term to support arg_shapes and geometries attributes
+  - fix SurfaceLaplaceLayerTerm, SurfaceCoupleLayerTerm
+  - fix dw_ul_volume() - fixes VolumeULTerm, BulkPressureULTerm
+  - docs: update developer guide - describe new Term attributes
+  - fix and update DeformationGradientTerm
+
+    - rename dq_def_grad -> ev_def_grad
+    - remove DeformationGradientTerm.__call__(), new .function(), .get_fargs(),
+      .get_eval_shape()
+    - update dq_def_grad()
+
+  - fix dw_v_dot_grad_s_sw() (VectorDotGradScalarTerm)
+  - new fmf_mulATC()
+  - fix ScalarDotGradIScalarTerm - add vector mode
+  - fix docstrings of VectorDotGradScalarTerm, TLMembraneTerm
+  - fix SufaceNormalDotTerm - make material shape (D, 1) to be compatible with
+    SDSufaceNormalDotTerm
+  - fix Term.call_function() to clear C errors properly
+  - fix SDSufaceNormalDotTerm
+  - update Term.get() to accept integration argument
+  - fix NSOFSurfMinDPressDiffTerm, DiffusionTerm, DiffusionCoupling,
+    PiezoCouplingTerm
+  - fix docstrings of SDLinearElasticTerm, StokesTerm, GradTerm, DivTerm
+  - new tests/test_term_call_modes.py to automatically test (almost) all terms,
+    skips terms with an empty arg_shapes attribute
+
+- new elastic contact plane term:
+
+  - new flag_points_in_polygon2d()
+  - new ContactPlane - contact plane with polygonal boundary
+
+    - new sfepy/mechanics/contact_planes.py
+    - new plot_polygon(), plot_points()
+
+  - new ContactPlaneTerm (dw_contact_plane)
+  - add custom view for elastic_contact_planes.py example to
+    script/gen_gallery.py
+
+- terms:
+
+  - rename DotTermsDotProductSurfaceTerm functions:
+
+    - dw_surface_dot_vectornormscalar -> dw_surface_s_v_dot_n
+    - dw_surface_dot_scalarnormvector -> dw_surface_v_dot_n_s
+
+  - update DotProductSurfaceTerm: new 'scalar_norm_vector' mode
+
+- postproc.py:
+
+  - force re-read in VTKFileSource.set_filename()
+  - add reload button to ViewerGUI, support watching of vtk files in Viewer
+
+    - new ReloadSource
+    - closes #217
+
+  - fix default opacity in Viewer
+
+- input-output:
+
+  - update VTKMeshIO.write() to mark unfinished write by 'x' in 1. byte
+  - new HDF5MeshIO.read_bounding_box()
+
+- bases:
+
+  - merge branch 'cbases'
+  - move low-level function from bases.pyx to new lagrange.c
+
+    - new sfepy/fem/extmods/lagrange.[ch]
+    - get_barycentric_coors(), get_xi_simplex(), get_xi_tensor(),
+      eval_lagrange_simplex(), eval_lagrange_tensor_product() ('_' prefix from
+      name removed) translated from Cython to C
+    - update bases.pyx, use fmf_pretend_nc(), import FMField directly
+
+  - rename & update script/gen_lobatto_pyx.py -> script/gen_lobatto1d_c.py
+
+    - generate lobatto1d.c and lobatto1h.c
+    - new lobatto1d_template.c, lobatto1d_template.h
+
+  - split lobatto_template.pyx into lobatto_bases.pyx and lobatto.c, low level
+    functions in lobatto.c, as in lagrange.c
+
+- miscellaneous updates:
+
+  - clean up of many modules
+  - new fmf_pretend_nc()
+  - fix dependencies in sfepy/terms/extmods/setup.py - this fixes rebuilding
+    terms.so even when an unrelated file was changed
+  - fix Struct._str() for classes with overloaded .get() (e.g. Term)
+  - fix Domain.save_regions_as_groups() for regions without true cells
+  - fix iterative solvers for tolerances not given in conf - fix PyAMGSolver,
+    PETScKrylovSolver, PETScParallelKrylovSolver
+  - remove compatibility function sorted()
+  - remove unused attribute of CharacteristicFunction
+  - add f_tol tolerance option to ScipyBroyden nonlinear solver
+  - add custom norms to RadialMesh
+
+- tests and examples:
+
+  - new examples/homogenization/perfusion_micro.py + test
+
+    - homogenization of a double-porous medium
+    - new 3D mesh: matrix with two disconnected channels
+
+  - new examples/linear_elasticity/elastic_contact_planes.py + test -
+    demonstrating use of contact plane term
+
+- docs:
+
+  - add development tab, new doc/development.rst
+  - link wiki from development tab
+  - add related projects section
+  - new sections on term evaluation modes and postprocessing/probing
+
+    - move description of term evaluation modes from developer to users guide
+    - update users guide
+    - closes #196
+
+- gallery:
+
+  - improve gen_gallery.py
+
+    - add captions, contents and section titles
+    - move _gallery_template contents to new doc/gallery_template.html
+
+  - fix script/gen_gallery.py for new time stepping
+  - fix output suffix for time-dependent problems in generate_images()
+  - update docstring of gen_gallery.py - describe docs regeneration steps
+
 .. _2012.4-2013.1:
 
 from 2012.4 to 2013.1
