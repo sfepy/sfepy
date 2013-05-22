@@ -30,7 +30,7 @@ updated example files:
 Additional steps for sfepy.org deployment:
 
 - copy doc/_build/html/ to <sfepy.org>/doc-devel/
-- copy gallery/gallery.html and gallery/images/ to <sfepy.org>/doc-devel/
+- copy gallery/gallery.html and gallery/images/ to <sfepy.org>/
 """
 import sys
 sys.path.append( '.' )
