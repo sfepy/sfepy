@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """SfePy: Simple finite elements in Python
 
-SfePy (simple finite elements in Python) is a software, distributed 
-under the BSD license, for solving systems of coupled partial 
-differential equations by the finite element method. The code is based 
+SfePy (simple finite elements in Python) is a software, distributed
+under the BSD license, for solving systems of coupled partial
+differential equations by the finite element method. The code is based
 on NumPy and SciPy packages.
 """
 
