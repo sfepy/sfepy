@@ -136,6 +136,9 @@ def main():
     out, err = check_output('python ./schroedinger.py --2d --hydrogen')
     eok += report(out, '...', -4, -2, '-0.01984415', eps=1e-4)
 
+    out, err = check_output('python ./homogen.py examples/homogenization/perfusion_micro.py')
+    eok += report(out, '...', -7, -1, 'EpA...')
+
     out, err = check_output('python examples/standalone/homogenized_elasticity/rs_correctors.py -n')
     eok += report(out, '...', -2, -1, '1.644e-01]]')
 
