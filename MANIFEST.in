@@ -5,6 +5,7 @@ prune doc/_build
 prune doc/html
 exclude doc/logo/*.vtk
 exclude doc/publish.py
+exclude sfepy/__config__.py
 
 include sfepy/fem/extmods/lobatto1d_template.c
 include sfepy/fem/extmods/lobatto1d_template.h
