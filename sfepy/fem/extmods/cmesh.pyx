@@ -32,6 +32,8 @@ cdef extern from 'mesh.h':
         uint32 max_dim
         uint32 num[4]
         uint32 *cell_types
+        uint32 *face_oris
+        uint32 *edge_oris
         MeshConnectivity *conn[16]
 
     ctypedef struct MeshConnectivity:
@@ -124,6 +126,9 @@ cdef class CMesh:
     cdef readonly dict entities
     cdef readonly int n_coor, dim, n_el
     cdef readonly np.ndarray num # Numbers of topological entities.
+    cdef readonly np.ndarray face_oris # Allocated in C.
+    cdef readonly np.ndarray edge_oris # Allocated in C.
+    cdef readonly np.ndarray facet_oris # face_oris in 3D, edge_oris in 2D
 
     cdef readonly dict key_to_index
 
@@ -244,6 +249,40 @@ cdef class CMesh:
 
     def get_local_entities(self, key):
         return self.entities[key]
+
+    def setup_entities(self):
+        """
+        Set up mesh edge and face connectivities (3D only) as well as their
+        orientations.
+        """
+        cdef np.npy_intp shape[1]
+
+        if not self.entities:
+            msg = 'CMesh.setup_entities() must be called after'\
+                  ' CMesh.set_local_entities()!'
+            raise ValueError(msg)
+
+        self.setup_connectivity(1, 0)
+
+        shape[0] = <np.npy_intp> self.num[1]
+        ptr = self.mesh.topology.edge_oris
+        self.edge_oris = np.PyArray_SimpleNewFromData(1, shape,
+                                                      np.NPY_UINT32,
+                                                      <void *> ptr)
+
+        if self.dim == 3:
+            self.setup_connectivity(2, 0)
+
+            shape[0] = <np.npy_intp> self.num[2]
+            ptr = self.mesh.topology.face_oris
+            self.face_oris = np.PyArray_SimpleNewFromData(1, shape,
+                                                          np.NPY_UINT32,
+                                                          <void *> ptr)
+
+            self.facet_oris = self.face_oris
+
+        else:
+            self.facet_oris = self.edge_oris
 
     def setup_connectivity(self, d1, d2):
         cdef MeshConnectivity *pconn
