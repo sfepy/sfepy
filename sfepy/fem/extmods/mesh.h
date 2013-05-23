@@ -107,10 +107,10 @@ typedef struct MeshEntityIterator {
 } MeshEntityIterator;
 
 typedef struct Region {
-  uint32 *vertices;
-  uint32 *edges;
-  uint32 *faces;
-  uint32 *cells;
+  Indices *vertices;
+  Indices *edges;
+  Indices *faces;
+  Indices *cells;
 } Region;
 
 int32 mesh_create(Mesh **p_mesh);
