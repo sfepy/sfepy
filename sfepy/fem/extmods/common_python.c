@@ -67,6 +67,21 @@ static size_t al_maxUsage;
 static size_t al_frags;
 static AllocSpace *al_head = 0;
 
+size_t mem_get_cur_usage(void)
+{
+  return al_curUsage;
+}
+
+size_t mem_get_max_usage(void)
+{
+  return al_maxUsage;
+}
+
+size_t mem_get_n_frags(void)
+{
+  return al_frags;
+}
+
 void mem_list_new(char *p, size_t size, AllocSpace *al_head,
                   int lineNo, char *funName, char *fileName, char *dirName)
 {

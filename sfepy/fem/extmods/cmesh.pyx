@@ -21,6 +21,9 @@ cdef extern from 'common.h':
     void pyfree(void *pp)
     void mem_statistics(int lineNo, char *funName,
                         char *fileName, char *dirName)
+    size_t mem_get_cur_usage()
+    size_t mem_get_max_usage()
+    size_t mem_get_n_frags()
 
 cdef extern from 'mesh.h':
     ctypedef struct MeshGeometry:
@@ -360,6 +363,13 @@ cdef class CMesh:
 
 def cmem_statistics():
     mem_statistics(0, '', '', '')
+
+def get_cmem_usage():
+    cur_usage = mem_get_cur_usage()
+    max_usage = mem_get_max_usage()
+    n_frags =  mem_get_n_frags()
+
+    return cur_usage, max_usage, n_frags
 
 ## Utils. ##
 cdef extern from 'meshutils.h':
