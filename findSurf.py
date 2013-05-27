@@ -21,7 +21,7 @@ import scipy.sparse as sp
 import sfepy
 from sfepy.base.ioutils import edit_filename
 from sfepy.fem import Mesh, Domain
-from sfepy.fem.extmods.mesh import create_mesh_graph, graph_components
+from sfepy.fem.extmods.cmesh import create_mesh_graph, graph_components
 
 ##
 # 29.08.2007, c

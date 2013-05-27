@@ -1,4 +1,4 @@
-#include <stdarg.h>                                                             
+#include <stdarg.h>
 
 #include "common.h"
 
@@ -12,13 +12,13 @@ static char buf[1024]; /* !!! */
   @par Revision history:
   - 16.02.2004, c
 */
-void output( const char *what, ... )
+void output(const char *what, ...)
 {
   va_list ap;
 
-  va_start( ap, what );
-  vprintf( what, ap );
-  va_end( ap );
+  va_start(ap, what);
+  vprintf(what, ap);
+  va_end(ap);
 }
 
 #undef __FUNC__
@@ -29,21 +29,21 @@ void output( const char *what, ... )
   - 20.02.2004
   - 26.10.2005
 */
-void errput( const char *what, ... )
+void errput(const char *what, ...)
 {
   va_list ap;
 
-  snprintf( buf, 1020, "**ERROR** -> %s", what );
-  va_start( ap, what );
-  vprintf( what, ap );
-  va_end( ap );
-  PyErr_SetString( PyExc_RuntimeError, "ccore error (see above)" );
+  snprintf(buf, 1020, "**ERROR** -> %s", what);
+  va_start(ap, what);
+  vprintf(what, ap);
+  va_end(ap);
+  PyErr_SetString(PyExc_RuntimeError, "ccore error (see above)");
   g_error++;
 }
 
-void errset( const char *msg )
+void errset(const char *msg)
 {
-  PyErr_SetString( PyExc_RuntimeError, msg );
+  PyErr_SetString(PyExc_RuntimeError, msg);
   g_error++;
 }
 
@@ -67,42 +67,31 @@ static size_t al_maxUsage;
 static size_t al_frags;
 static AllocSpace *al_head = 0;
 
-
-#undef __FUNC__
-#define __FUNC__ "mem_alloc_mem"
-/*!
-  @par Revision history:
-  - 17.02.2005, from rcfem2
-*/
-void *mem_alloc_mem( size_t size, int lineNo, char *funName,
-                    char *fileName, char *dirName )
+size_t mem_get_cur_usage(void)
 {
-  char *p;
-  size_t hsize = sizeof( AllocSpaceAlign );
-  size_t tsize, aux;
-  float64 *endptr;
-  AllocSpace *head;
-  
-  if (size == 0) {
-    errput( "%s, %s, %s, %d: zero allocation!\n",
-	    dirName, fileName, funName, lineNo );
-    ERR_GotoEnd( 1 );
-  }
+  return al_curUsage;
+}
 
-  aux = size % sizeof( float64 );
-  size += (aux) ? sizeof( float64 ) - aux : 0;
-  tsize = size + hsize + sizeof( float64 );
-  if ((p = (char *) PyMem_Malloc( tsize )) == 0) {
-    errput( "%s, %s, %s, %d: error allocating %d bytes (current: %d).\n",
-	    dirName, fileName, funName, lineNo, size, al_curUsage );
-    ERR_GotoEnd( 1 );
-  }
-  head = (AllocSpace *) p;
-  p += hsize;
+size_t mem_get_max_usage(void)
+{
+  return al_maxUsage;
+}
+
+size_t mem_get_n_frags(void)
+{
+  return al_frags;
+}
+
+void mem_list_new(char *p, size_t size, AllocSpace *al_head,
+                  int lineNo, char *funName, char *fileName, char *dirName)
+{
+  float64 *endptr;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  AllocSpace *head = (AllocSpace *) (p - hsize);
 
   if (al_head) al_head->prev = head;
   head->next     = al_head;
-  al_head         = head;
+  al_head        = head;
   head->prev     = 0;
   head->size     = size;
   head->id       = 1234567;
@@ -113,8 +102,80 @@ void *mem_alloc_mem( size_t size, int lineNo, char *funName,
   head->cookie   = AL_CookieValue;
   endptr         = (float64 *) (p + size);
   endptr[0]      = (float64) AL_CookieValue;
+}
 
-/*    output( "%d _> ptr: %p, head: %p, end %p\n", hsize, p, head, endptr ); */
+void mem_list_remove(AllocSpace *head, AllocSpace *al_head)
+{
+  if (head->prev) head->prev->next = head->next;
+  else al_head = head->next;
+
+  if (head->next) head->next->prev = head->prev;
+}
+
+int32 mem_check_ptr(char *p, int lineNo, char *funName,
+                    char *fileName, char *dirName)
+{
+  int32 ret = RET_OK;
+  float64 *endptr;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  AllocSpace *head = (AllocSpace *) (p - hsize);
+
+  if (head->cookie != AL_CookieValue) {
+    errput("%s, %s, %s, %d: ptr: %p, cookie: %d\n",
+           dirName, fileName, funName, lineNo,
+           p, head->cookie);
+    if (head->cookie == AL_AlreadyFreed) {
+      errput("memory was already freed!\n");
+    }
+    ERR_CheckGo(ret);
+  }
+
+  endptr = (float64 *) (p + head->size);
+  if (endptr[0] != AL_CookieValue) {
+    errput("%s %s %s %d:\n",
+           dirName, fileName, funName, lineNo);
+    if (endptr[0] == AL_AlreadyFreed) {
+      errput("already freed!\n");
+    } else {
+      errput("damaged tail!\n");
+    }
+    ERR_CheckGo(ret);
+  }
+
+ end_label:
+  return(ret);
+}
+
+#undef __FUNC__
+#define __FUNC__ "mem_alloc_mem"
+/*!
+  @par Revision history:
+  - 17.02.2005, from rcfem2
+*/
+void *mem_alloc_mem(size_t size, int lineNo, char *funName,
+                    char *fileName, char *dirName)
+{
+  char *p;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  size_t tsize, aux;
+
+  if (size == 0) {
+    errput("%s, %s, %s, %d: zero allocation!\n",
+           dirName, fileName, funName, lineNo);
+    ERR_GotoEnd(1);
+  }
+
+  aux = size % sizeof(float64);
+  size += (aux) ? sizeof(float64) - aux : 0;
+  tsize = size + hsize + sizeof(float64);
+  if ((p = (char *) PyMem_Malloc(tsize)) == 0) {
+    errput("%s, %s, %s, %d: error allocating %zu bytes (current: %zu).\n",
+           dirName, fileName, funName, lineNo, size, al_curUsage);
+    ERR_GotoEnd(1);
+  }
+  p += hsize;
+
+  mem_list_new(p, size, al_head, lineNo, funName, fileName, dirName);
 
   al_curUsage += size;
   if (al_curUsage > al_maxUsage) {
@@ -122,16 +183,83 @@ void *mem_alloc_mem( size_t size, int lineNo, char *funName,
   }
   al_frags++;
 
-  memset( p, 0, size );
+  memset(p, 0, size);
 
-  return( (void *) p );
+  return((void *) p);
 
  end_label:
   if (ERR_Chk) {
-    errput( ErrHead "error exit!\n" );
+    errput(ErrHead "error exit!\n");
   }
 
-  return( 0 );
+  return(0);
+}
+
+#undef __FUNC__
+#define __FUNC__ "mem_realloc_mem"
+void *mem_realloc_mem(void *pp, size_t size, int lineNo, char *funName,
+                      char *fileName, char *dirName)
+{
+  char *p = (char *) pp;
+  size_t hsize = sizeof(AllocSpaceAlign);
+  size_t tsize, aux;
+  float64 *endptr;
+  AllocSpace *head;
+  char *phead;
+
+  if (p == 0) return(0);
+
+  if (size == 0) {
+    errput("%s, %s, %s, %d: zero allocation!\n",
+           dirName, fileName, funName, lineNo);
+    ERR_GotoEnd(1);
+  }
+
+  // 1. almost as mem_free_mem().
+  mem_check_ptr(p, lineNo, funName, fileName, dirName);
+  if (ERR_Chk) {
+    ERR_GotoEnd(1);
+  }
+
+  phead = p - hsize;
+  head = (AllocSpace *) phead;
+  head->cookie = AL_AlreadyFreed;
+
+  endptr = (float64 *) (p + head->size);
+  endptr[0] = (float64) AL_AlreadyFreed;
+
+  al_curUsage -= head->size;
+  al_frags--;
+  mem_list_remove(head, al_head);
+
+  // 2. realloc.
+  aux = size % sizeof(float64);
+  size += (aux) ? sizeof(float64) - aux : 0;
+  tsize = size + hsize + sizeof(float64);
+  if ((p = (char *) PyMem_Realloc(phead, tsize)) == 0) {
+    errput("%s, %s, %s, %d: error re-allocating to %zu bytes (current: %zu).\n",
+           dirName, fileName, funName, lineNo, size, al_curUsage);
+    ERR_GotoEnd(1);
+  }
+
+  // 3. almost as mem_alloc_mem().
+  p += hsize;
+  mem_list_new(p, size, al_head, lineNo, funName, fileName, dirName);
+
+  al_curUsage += size;
+  if (al_curUsage > al_maxUsage) {
+    al_maxUsage = al_curUsage;
+  }
+  al_frags++;
+
+  return((void *) p);
+
+ end_label:
+  if (ERR_Chk) {
+    errput(ErrHead "error exit!\n");
+  }
+
+  return(0);
 }
 
 #undef __FUNC__
@@ -140,58 +268,41 @@ void *mem_alloc_mem( size_t size, int lineNo, char *funName,
   @par Revision history:
   - 17.02.2005, from rcfem2
 */
-void mem_free_mem( void *pp, int lineNo, char *funName,
-                  char *fileName, char *dirName )
+void mem_free_mem(void *pp, int lineNo, char *funName,
+                  char *fileName, char *dirName)
 {
   char *p = (char *) pp;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   float64 *endptr;
   AllocSpace *head;
   char *phead;
 
   if (p == 0) return;
 
+  mem_check_ptr(p, lineNo, funName, fileName, dirName);
+  if (ERR_Chk) {
+    ERR_GotoEnd(1);
+  }
+
   phead = p - hsize;
   head = (AllocSpace *) phead;
-  if (head->cookie != AL_CookieValue) {
-    errput( "%s, %s, %s, %d: ptr: %p, cookie: %d\n",
-	    dirName, fileName, funName, lineNo,
-	    p, head->cookie );
-    if (head->cookie == AL_AlreadyFreed) {
-      errput( "memory was already freed!\n" );
-    }
-    ERR_GotoEnd( 1 );
-  }
   head->cookie = AL_AlreadyFreed;
 
   endptr = (float64 *) (p + head->size);
-  if (endptr[0] != AL_CookieValue) {
-    errput( "%s %s %s %d:\n",
-	    dirName, fileName, funName, lineNo );
-    if (endptr[0] == AL_AlreadyFreed) {
-      errput( "already freed!\n" );
-    } else {
-      errput( "damaged tail!\n" );
-    }
-    ERR_GotoEnd( 1 );
-  }
-
   endptr[0] = (float64) AL_AlreadyFreed;
 
   al_curUsage -= head->size;
   al_frags--;
 
-  if (head->prev) head->prev->next = head->next;
-  else al_head = head->next;
+  mem_list_remove(head, al_head);
 
-  if (head->next) head->next->prev = head->prev;
-
-  PyMem_Free( phead );
+  PyMem_Free(phead);
 
   return;
+
  end_label:
   if (ERR_Chk) {
-    errput( ErrHead "error exit!\n" );
+    errput(ErrHead "error exit!\n");
   }
 }
 
@@ -215,20 +326,20 @@ void pyfree(void *pp)
   @par Revision history:
   - 17.02.2005, from rcfem2
 */
-void mem_checkIntegrity( int lineNo, char *funName,
-			 char *fileName, char *dirName )
+void mem_checkIntegrity(int lineNo, char *funName,
+                        char *fileName, char *dirName)
 {
   char *p, *pp;
   size_t cnt, allocated;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   float64 *endptr;
   AllocSpace *head = al_head;
 
-  output( "checking memory integrity in\n" );
-  output( "%s, %s, %s(), %d:\n",
-	  dirName, fileName, funName, lineNo, al_maxUsage, al_curUsage );
-  output( "allocated memory: "FI32" records, usage: "FI32", max: "FI32"\n",
-	  al_frags, al_curUsage, al_maxUsage );
+  output("checking memory integrity in\n");
+  output("%s, %s, %s(), %d:\n",
+         dirName, fileName, funName, lineNo, al_maxUsage, al_curUsage);
+  output("allocated memory: %zu records, usage: %zu, max: %zu\n",
+         al_frags, al_curUsage, al_maxUsage);
   if (head == 0) {
     goto end_label_ok;
   }
@@ -240,50 +351,50 @@ void mem_checkIntegrity( int lineNo, char *funName,
 
     pp = p + hsize;
     if (head->cookie != AL_CookieValue) {
-      errput( "ptr: %p, ptrhead: %p, cookie: %d\n",
-	      pp, p , head->cookie );
+      errput("ptr: %p, ptrhead: %p, cookie: %d\n",
+             pp, p , head->cookie);
       if (head->cookie == AL_AlreadyFreed) {
-	errput( "memory was already freed!\n" );
+        errput("memory was already freed!\n");
       }
-      ERR_GotoEnd( 1 );
+      ERR_GotoEnd(1);
     }
 
     endptr = (float64 *) (pp + head->size);
     if (endptr[0] != AL_CookieValue) {
-      output( "  %s, %s, %s, %d: size: %d, ptr: %p\n",
-	      head->dirName, head->fileName, head->funName, head->lineNo,
-	      head->size, pp );
+      output("  %s, %s, %s, %d: size: %zu, ptr: %p\n",
+             head->dirName, head->fileName, head->funName, head->lineNo,
+             head->size, pp);
       if (endptr[0] == AL_AlreadyFreed) {
-	errput( "already freed!\n" );
+        errput("already freed!\n");
       } else {
-	errput( "damaged tail!\n" );
+        errput("damaged tail!\n");
       }
-      ERR_GotoEnd( 1 );
+      ERR_GotoEnd(1);
     }
     cnt++;
     allocated += head->size;
     if (cnt > al_frags) {
-      errput( "damaged allocation record (overrun)!\n" );
-      ERR_GotoEnd( 1 );
+      errput("damaged allocation record (overrun)!\n");
+      ERR_GotoEnd(1);
     }
     head = head->next;
   }
   if (cnt < al_frags) {
-    errput( "damaged allocation record (underrun)!\n" );
-    ERR_GotoEnd( 1 );
+    errput("damaged allocation record (underrun)!\n");
+    ERR_GotoEnd(1);
   }
   if (allocated != al_curUsage) {
-    errput( "memory leak!? (%d == %d)\n", allocated, al_curUsage );
-    ERR_GotoEnd( 1 );
+    errput("memory leak!? (%zu == %zu)\n", allocated, al_curUsage);
+    ERR_GotoEnd(1);
   }
 
  end_label_ok:
-  output( "memory OK.\n" );
+  output("memory OK.\n");
   return;
 
  end_label:
   if (ERR_Chk) {
-    errput( ErrHead "error exit!\n" );
+    errput(ErrHead "error exit!\n");
   }
 }
 
@@ -294,11 +405,11 @@ void mem_checkIntegrity( int lineNo, char *funName,
   @par Revision history:
   - 17.02.2005, from rcfem2
 */
-void mem_statistics( int lineNo, char *funName,
-		     char *fileName, char *dirName )
+void mem_statistics(int lineNo, char *funName,
+                    char *fileName, char *dirName)
 {
-  output( "%s, %s, %s(), %d: memory max: %d, current: %d\n",
-	  dirName, fileName, funName, lineNo, al_maxUsage, al_curUsage );
+  output("%s, %s, %s(), %d: memory max: %zu, current: %zu\n",
+         dirName, fileName, funName, lineNo, al_maxUsage, al_curUsage);
 }
 
 #undef __FUNC__
@@ -309,49 +420,47 @@ void mem_statistics( int lineNo, char *funName,
   - 17.02.2005, from rcfem2
   - 06.10.2005
 */
-int32 mem_print( FILE *file, int32 mode )
+int32 mem_print(FILE *file, int32 mode)
 {
   size_t cnt = 0;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   AllocSpace *head = al_head;
   char *p;
 
   mode = 0;
-  fprintf( file, "allocated memory: "FI32" records, usage: FI32, max: "FI32"\n",
-	   al_frags, al_curUsage, al_maxUsage );
+  fprintf(file, "allocated memory: %zu records, usage: %zu, max: %zu\n",
+          al_frags, al_curUsage, al_maxUsage);
   if (head == 0) {
     goto end_label_ok;
   }
 
   while (head) {
     p = (char *) head;
-/*      fprintf( file, "%d _> head: %p, end %p\n", hsize, p, */
-/*  	    p + hsize + head->size ); */
-    fprintf( file, "  %s, %s, %s, %d: size: "FI32", ptr: %p\n",
-	     head->dirName, head->fileName, head->funName, head->lineNo,
-	     head->size, p + hsize );
+    fprintf(file, "  %s, %s, %s, %d: size: %zu, ptr: %p\n",
+            head->dirName, head->fileName, head->funName, head->lineNo,
+            head->size, p + hsize);
     cnt++;
     if (cnt > al_frags) {
-      errput( "damaged allocation record (overrun)!\n" );
-      ERR_GotoEnd( 1 );
+      errput("damaged allocation record (overrun)!\n");
+      ERR_GotoEnd(1);
     }
     head = head->next;
   }
   if (cnt < al_frags) {
-    errput( "damaged allocation record (underrun)!\n" );
-    ERR_GotoEnd( 1 );
+    errput("damaged allocation record (underrun)!\n");
+    ERR_GotoEnd(1);
   }
 
  end_label_ok:
-  fprintf( file, "done.\n" );
+  fprintf(file, "done.\n");
 
-  return( RET_OK );
+  return(RET_OK);
 
  end_label:
   if (ERR_Chk) {
-    errput( ErrHead "error exit!\n" );
+    errput(ErrHead "error exit!\n");
   }
-  return( RET_Fail );
+  return(RET_Fail);
 }
 
 #undef __FUNC__
@@ -362,48 +471,46 @@ int32 mem_print( FILE *file, int32 mode )
   - 17.02.2005, from rcfem2
   - 06.10.2005
 */
-int32 mem_printSome( FILE *file, int32 mode, int32 num )
+int32 mem_printSome(FILE *file, int32 mode, int32 num)
 {
   size_t cnt = 0;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   AllocSpace *head = al_head;
   char *p;
 
   mode = 0;
-  fprintf( file,
-	   "allocated memory: "FI32" records, usage: "FI32", max: "FI32"\n",
-	   al_frags, al_curUsage, al_maxUsage );
-  fprintf( file, "printing max: "FI32"\n", num );
+  fprintf(file,
+          "allocated memory: %zu records, usage: %zu, max: %zu\n",
+          al_frags, al_curUsage, al_maxUsage);
+  fprintf(file, "printing max: %d\n", num);
   if (head == 0) {
     goto end_label_ok;
   }
 
   while (head) {
     p = (char *) head;
-/*      fprintf( file, "%d _> head: %p, end %p\n", hsize, p, */
-/*  	    p + hsize + head->size ); */
-    fprintf( file, "  %s, %s, %s, %d: size: "FI32", ptr: %p\n",
-	     head->dirName, head->fileName, head->funName, head->lineNo,
-	     head->size, p + hsize );
+    fprintf(file, "  %s, %s, %s, %d: size: %zu, ptr: %p\n",
+            head->dirName, head->fileName, head->funName, head->lineNo,
+            head->size, p + hsize);
     cnt++;
     if (cnt > al_frags) {
-      errput( "damaged allocation record (overrun)!\n" );
-      ERR_GotoEnd( 1 );
+      errput("damaged allocation record (overrun)!\n");
+      ERR_GotoEnd(1);
     }
     if (cnt == num) break;
     head = head->next;
   }
 
  end_label_ok:
-  fprintf( file, "done.\n" );
+  fprintf(file, "done.\n");
 
-  return( RET_OK );
+  return(RET_OK);
 
  end_label:
   if (ERR_Chk) {
-    errput( ErrHead "error exit!\n" );
+    errput(ErrHead "error exit!\n");
   }
-  return( RET_Fail );
+  return(RET_Fail);
 }
 
 #undef __FUNC__
@@ -416,35 +523,31 @@ int32 mem_printSome( FILE *file, int32 mode, int32 num )
 int32 mem_freeGarbage()
 {
   size_t cnt = 0, frags = al_frags;
-  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof(AllocSpaceAlign);
   char *p;
 
-  output( "freeing garbage.\n" );
+  output("freeing garbage.\n");
   while (al_head) {
     p = (char *) al_head + hsize;
-    free_mem( p );
-/*      output( "  %s, %s, %s, %d: size: %d, ptr: %p\n", */
-/*  	    head->dirName, head->fileName, head->funName, head->lineNo, */
-/*  	    head->size, p + hsize ); */
+    free_mem(p);
     cnt++;
-/*      printf( "%d %d\n", cnt, frags ); */
     if (cnt > frags) {
-      errput( "damaged allocation record (overrun)!\n" );
-      ERR_GotoEnd( 1 );
+      errput("damaged allocation record (overrun)!\n");
+      ERR_GotoEnd(1);
     }
   }
   if (cnt < frags) {
-    errput( "damaged allocation record (underrun)!\n" );
-    ERR_GotoEnd( 1 );
+    errput("damaged allocation record (underrun)!\n");
+    ERR_GotoEnd(1);
   }
 
-  return( RET_OK );
+  return(RET_OK);
 
  end_label:
   if (ERR_Chk) {
-    errput( ErrHead "error exit!\n" );
+    errput(ErrHead "error exit!\n");
   }
-  return( RET_Fail );
+  return(RET_Fail);
 }
 
 #if SFEPY_PLATFORM == 0
@@ -458,15 +561,15 @@ int32 mem_freeGarbage()
   @par Revision history:
   - 21.05.2002, c
 */
-int sys_getch( void )
+int sys_getch(void)
 {
   char ch = 0;
 #if SFEPY_PLATFORM == 0
   if (read (STDERR_FILENO, &ch, 1) < 0) {
-    return( RET_Fail );
+    return(RET_Fail);
   }
 #endif
-  return( ch );
+  return(ch);
 }
 
 #if SFEPY_PLATFORM == 0
@@ -524,7 +627,7 @@ void sys_pause()
   sys_keyboardEnableRaw();
   if (sys_getch() == 'q') {
     sys_keyboardDisableRaw();
-    exit( 1 );
+    exit(1);
   }
   sys_keyboardDisableRaw();
 }

@@ -307,7 +307,7 @@ class Domain(Struct):
         The groups with elements of lower dimension than the space dimension
         are skipped.
         """
-        from extmods.mesh import orient_elements
+        from extmods.cmesh import orient_elements
 
         coors = self.mesh.coors
         for ii, group in self.groups.iteritems():

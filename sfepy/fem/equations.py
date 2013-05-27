@@ -7,7 +7,7 @@ import scipy.sparse as sp
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import debug, OneTypeList, Container, Struct
 from sfepy.fem import Materials, Variables, setup_dof_conns
-from extmods.mesh import create_mesh_graph
+from extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 
 """

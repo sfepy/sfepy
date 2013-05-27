@@ -17,6 +17,8 @@ def configuration(parent_package='', top_path=None):
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
+    if '-DDEBUG_MESH' in site_config.debug_flags():
+        defines.append(('DEBUG_MESH', None))
 
     common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
 
@@ -65,9 +67,9 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['mesh.pyx', 'geomtrans.c', 'meshutils.c', 'sort.c',
+    src = ['cmesh.pyx', 'geomtrans.c', 'mesh.c', 'meshutils.c', 'sort.c',
            'common_python.c']
-    config.add_extension('mesh',
+    config.add_extension('cmesh',
                          sources=src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
