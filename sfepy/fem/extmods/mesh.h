@@ -30,6 +30,13 @@ typedef struct Indices {
   uint32 num;
 } Indices;
 
+// Pointer to mask + number of items.
+typedef struct Mask {
+  char *mask;
+  uint32 num;
+  uint32 n_true;
+} Mask;
+
 typedef struct MeshGeometry {
   uint32 num;
   uint32 dim;
