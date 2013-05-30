@@ -26,6 +26,15 @@ cdef extern from 'common.h':
     size_t mem_get_n_frags()
 
 cdef extern from 'mesh.h':
+    ctypedef struct Indices:
+        uint32 *indices
+        uint32 num
+
+    ctypedef struct Mask:
+        char *mask
+        uint32 num
+        uint32 n_true
+
     ctypedef struct MeshGeometry:
         uint32 num
         uint32 dim
@@ -68,6 +77,9 @@ cdef extern from 'mesh.h':
 
     cdef int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
     cdef int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
+
+    cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
+                                    Indices *entities, int32 dent)
 
 cdef class CConnectivity:
     """
@@ -360,6 +372,37 @@ cdef class CMesh:
 
     def cprint(self, int32 header_only=1):
         mesh_print(self.mesh, stdout, header_only)
+
+    def get_complete(self, int32 dim,
+                     np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                     int32 dent):
+        """
+        Get entities of dimension `dim` that are completely given by entities
+        of dimension `dent` listed in `entities`.
+        """
+        cdef Mask mask[1]
+        cdef Indices _entities[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+        cdef uint32 *_out
+        cdef uint32 ii, ic
+
+        _entities.num = entities.shape[0]
+        _entities.indices = &entities[0]
+
+        mesh_select_complete(self.mesh, mask, dim, _entities, dent)
+
+        out = np.empty(mask.n_true, dtype=np.uint32)
+        _out = &out[0]
+
+        ic = 0
+        for ii in range(mask.num):
+            if mask.mask[ii]:
+                _out[ic] = ii
+                ic += 1
+
+        pyfree(mask.mask)
+
+        return out
 
 def cmem_statistics():
     mem_statistics(0, '', '', '')

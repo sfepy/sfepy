@@ -146,6 +146,13 @@ int32 mesh_build(Mesh *mesh, int32 dim);
 int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3);
 
+// Select entities of dimension `dim` that are completely given by entities of
+// dimension `dent`.
+// Example: mesh_select_complete(mesh, mask, 2, vertices, 0) will select all
+// complete faces, whose vertices are listed in `vertices`.
+int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
+                           Indices *entities, int32 dent);
+
 int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim);
 int32 me_get_incident2(MeshEntity *entity, Indices *out,
                        MeshConnectivity *conn);

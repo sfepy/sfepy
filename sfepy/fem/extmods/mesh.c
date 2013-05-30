@@ -670,6 +670,53 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   return(ret);
 }
 
+#undef __FUNC__
+#define __FUNC__ "mesh_select_complete"
+// Allocates mask->mask.
+int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
+                           Indices *entities, int32 dent)
+{
+  int32 ret = RET_OK;
+  int32 D = mesh->topology->max_dim;
+  uint32 ii, inum;
+  char *ent_mask = 0;
+  MeshEntityIterator it0[1], it1[1];
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dim, dent);
+    ERR_CheckGo(ret);
+  }
+
+  mask->mask = alloc_mem(char, conn->num);
+  mask->num = conn->num;
+  mask->n_true = 0;
+
+  ent_mask = alloc_mem(char, mesh->topology->num[dent]);
+
+  for (ii = 0; ii < entities->num; ii++) {
+    ent_mask[entities->indices[ii]] = 1;
+  }
+
+  for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
+    inum = 0;
+    for (mei_init_conn(it1, it0->entity, dent); mei_go(it1); mei_next(it1)) {
+      if (ent_mask[it1->entity->ii]) inum++;
+    }
+    // Check if all entities with dimension dent incident to entity it0 are set
+    // in ent_mask.
+    if (inum == it1->it_end) {
+      mask->mask[it0->it] = 1;
+      mask->n_true++;
+    }
+  }
+
+ end_label:
+  free_mem(ent_mask);
+
+  return(ret);
+}
+
 inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)
 {
   int32 ret = RET_OK;
