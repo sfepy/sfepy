@@ -82,6 +82,21 @@ class Region(Struct):
 
     Created: 31.10.2005
     """
+    __can = {
+        'cell'        : (1, 1, 1, 1),
+        'face'        : (1, 1, 1, 0),
+        'edge'        : (1, 1, 0, 0),
+        'vertex'      : (1, 0, 0, 0),
+        'cell_only'   : (0, 0, 0, 1),
+        'face_only'   : (0, 0, 1, 0),
+        'edge_only'   : (0, 1, 0, 0),
+        'vertex_only' : (1, 0, 0, 0),
+    }
+
+    __facet_kinds = {
+        2 : {'facet' : 'edge', 'facet_only' : 'edge_only'},
+        3 : {'facet' : 'face', 'facet_only' : 'face_only'},
+    }
 
     @staticmethod
     def from_vertices(vertices, domain, name='region',
@@ -157,7 +172,7 @@ class Region(Struct):
 
         return obj
 
-    def __init__(self, name, definition, domain, parse_def):
+    def __init__(self, name, definition, domain, parse_def, kind='cell'):
         """
         Create region instance.
 
@@ -177,13 +192,28 @@ class Region(Struct):
         -----
         conns, vertex_groups are links to domain data.
         """
+        dim = domain.shape.dim
+
+        if 'facet' in kind:
+            true_kind = self.__facet_kinds[dim][kind]
+
+        else:
+            true_kind = kind
+
+        can = self.__can[true_kind]
+
         Struct.__init__(self,
                         name=name, definition=definition,
-                        n_v_max=domain.shape.n_nod, domain=domain,
-                        parse_def=parse_def, all_vertices=None,
-                        igs=[], vertices={}, edges={}, faces={},
-                        cells={}, fis={},
-                        can_cells=True, true_cells={}, must_update=True,
+                        domain=domain, parse_def=parse_def,
+                        kind=kind, true_kind=true_kind,
+                        n_v_max=domain.shape.n_nod, dim=dim,
+                        igs=[], entities=[None] * dim,
+                        can_vertices=bool(can[0]),
+                        can_edges=bool(can[1]),
+                        can_faces=bool(can[2]),
+                        can_cells=bool(can[3]),
+                        fis={},
+                        must_update=True,
                         is_complete=False,
                         mirror_region=None, ig_map=None,
                         ig_map_i=None)
