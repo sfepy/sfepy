@@ -266,6 +266,7 @@ class CopyData(CorrMiniApp):
         corr_sol = CorrSolution(name=self.name,
                                 state=state,
                                 components=clist)
+
         return corr_sol
 
 class CorrNN(CorrMiniApp):
@@ -823,11 +824,26 @@ class VolumeFractions(MiniAppBase):
 class CoefSymSym(MiniAppBase):
 
     def set_variables_default(variables, ir, ic, mode, set_var, data):
+        def get_corr_state(corr, ir, ic):
+            if hasattr(corr, 'states'):
+                return corr.states[ir,ic]
+
+            else:
+                return corr.state
+
         mode2var = {'row' : 0, 'col' : 1}
         idx = mode2var[mode]
 
-        val = data[set_var[idx][1]].states[ir, ic][set_var[idx][2]]
-        variables[set_var[idx][0]].set_data(val)
+        for (var, req, comp) in [set_var[idx]] + set_var[2:]:
+            if type(req) is tuple:
+                val = get_corr_state(data[req[0]], ir, ic)[comp].copy()
+                for ii in req[1:]:
+                    val += get_corr_state(data[ii], ir, ic)[comp]
+
+            else:
+                val = get_corr_state(data[req], ir, ic)[comp]
+
+            variables[var].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -936,14 +952,29 @@ class CoefDimSym(MiniAppBase):
 class CoefNN(MiniAppBase):
 
     def set_variables_default(variables, ir, ic, mode, set_var, data):
+        def get_corr_state(corr, ii):
+            if hasattr(corr, 'states'):
+                return corr.states[ii]
+
+            else:
+                return corr.state
+
         mode2var = {'row' : 0, 'col' : 1}
 
         if mode == 'col':
             ir = ic
         idx = mode2var[mode]
 
-        val = data[set_var[idx][1]].states[ir][set_var[idx][2]]
-        variables[set_var[idx][0]].set_data(val)
+        for (var, req, comp) in [set_var[idx]] + set_var[2:]:
+            if type(req) is tuple:
+                val = get_corr_state(data[req[0]], ir)[comp].copy()
+                for ii in req[1:]:
+                    val += get_corr_state(data[ii], ir)[comp]
+
+            else:
+                val = get_corr_state(data[req], ir)[comp]
+
+            variables[var].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -987,8 +1018,23 @@ class CoefNN(MiniAppBase):
 class CoefN(MiniAppBase):
 
     def set_variables_default(variables, ir, set_var, data):
+        def get_corr_state(corr, ii):
+            if hasattr(corr, 'states'):
+                return corr.states[ii]
+
+            else:
+                return corr.state
+
         for (var, req, comp) in set_var:
-            variables[var].set_data(data[req].states[ir][comp])
+            if type(req) is tuple:
+                val = get_corr_state(data[req[0]], ir)[comp].copy()
+                for ii in req[1:]:
+                    val += get_corr_state(data[ii], ir)[comp]
+
+            else:
+                val = get_corr_state(data[req], ir)[comp]
+
+            variables[var].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -1027,6 +1073,28 @@ class CoefDim(CoefN):
     pass
 
 class CoefSym(MiniAppBase):
+    def set_variables_default(variables, ir, ic, mode, set_var, data):
+        def get_corr_state(corr, ir, ic):
+            if hasattr(corr, 'states'):
+                return corr.states[ir,ic]
+
+            else:
+                return corr.state
+
+        if mode == 'row':
+
+            for (var, req, comp) in set_var:
+                if type(req) is tuple:
+                    val = get_corr_state(data[req[0]], ir, ic)[comp].copy()
+                    for ii in req[1:]:
+                        val += get_corr_state(data[ii], ir, ic)[comp]
+
+                else:
+                    val = get_corr_state(data[req], ir, ic)[comp]
+
+                variables[var].set_data(val)
+
+    set_variables_default = staticmethod(set_variables_default)
 
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -1107,6 +1175,7 @@ class CoefOne(MiniAppBase):
                                        data)
         else:
             self.set_variables(variables, **data)
+
         val = eval_equations(equations, variables,
                              term_mode=term_mode)
 
@@ -1176,5 +1245,58 @@ class CoefNone(MiniAppBase):
     def __call__(self, volume, problem=None, data=None):
 
         coef = 0.0
+
+        return coef
+
+class CoefExprPar(MiniAppBase):
+    """
+    The coefficient which expression can be parametrized via 'expr_pars',
+    the dimension is given by the number of parameters.
+
+    Example:
+
+        'expression': 'dw_surface_ndot.5.Ys(mat_norm.k%d, corr1)',
+        'expr_pars': [ii for ii in range(dim)],
+        'class': cb.CoefExprPar,
+
+    """
+    def set_variables_default(variables, ir, set_var, data):
+        for (var, req, comp) in set_var:
+            if hasattr(data[req], 'states'):
+                variables[var].set_data(data[req].states[ir][comp])
+
+            else:
+                variables[var].set_data(data[req].state[comp])
+
+    set_variables_default = staticmethod(set_variables_default)
+
+    def __init__(self, name, problem, kwargs):
+        """When dim is not in kwargs, problem dimension is used."""
+        MiniAppBase.__init__(self, name, problem, kwargs)
+        dim = len(self.expr_pars)
+        self.set_default('dim', dim)
+
+    def __call__(self, volume, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+
+        coef = nm.zeros((self.dim,), dtype=self.dtype)
+        term_mode = self.term_mode
+
+        for ir in range(self.dim):
+            expression = self.expression % self.expr_pars[ir]
+            equations, variables = \
+              problem.create_evaluable(expression, term_mode=term_mode)
+
+            if isinstance(self.set_variables, list):
+                self.set_variables_default(variables, ir, self.set_variables,
+                                           data)
+            else:
+                self.set_variables(variables, ir, **data)
+
+            val = eval_equations(equations, variables,
+                                 term_mode=term_mode)
+            coef[ir] = val
+
+        coef /= self._get_volume(volume)
 
         return coef
