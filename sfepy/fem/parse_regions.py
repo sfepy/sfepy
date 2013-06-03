@@ -15,8 +15,10 @@ from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
 
 ParseException # Needed for importing elsewhere.
 
-op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
-           'OA_IntersectN', 'OA_IntersectE']
+op_codes = ['OA_SubV', 'OA_SubE', 'OA_SubF', 'OA_SubC', 'OA_SubS',
+            'OA_AddV', 'OA_AddE', 'OA_AddF', 'OA_AddC', 'OA_AddS',
+            'OA_IntersectV', 'OA_IntersectE', 'OA_IntersectF',
+            'OA_IntersectC', 'OA_IntersectS']
 eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_NOG', 'E_ONIR', 'E_NI', 'E_NOSET',
               'E_EBF', 'E_EOG', 'E_EI1', 'E_EI2', 'E_EOSET']
 kw_codes = ['KW_All', 'KW_Region']
@@ -95,13 +97,24 @@ def create_bnf(stack):
     _by = Literal('by')
     _copy = Literal('copy')
 
-    _mn = Literal('-n').setParseAction(replace('OA_SubN'))
+    _mv = Literal('-v').setParseAction(replace('OA_SubV'))
     _me = Literal('-e').setParseAction(replace('OA_SubE'))
-    _pn = Literal('+n').setParseAction(replace('OA_AddN'))
+    _mf = Literal('-f').setParseAction(replace('OA_SubF'))
+    _mc = Literal('-c').setParseAction(replace('OA_SubC'))
+    _ms = Literal('-s').setParseAction(replace('OA_SubS'))
+    _pv = Literal('+v').setParseAction(replace('OA_AddV'))
     _pe = Literal('+e').setParseAction(replace('OA_AddE'))
-    _inn = Literal('*n').setParseAction(replace('OA_IntersectN'))
+    _pf = Literal('+f').setParseAction(replace('OA_AddF'))
+    _pc = Literal('+c').setParseAction(replace('OA_AddC'))
+    _ps = Literal('+s').setParseAction(replace('OA_AddS'))
+    _inv = Literal('*v').setParseAction(replace('OA_IntersectV'))
     _ine = Literal('*e').setParseAction(replace('OA_IntersectE'))
-    regop = (_mn | _me | _pn | _pe | _inn | _ine)
+    _inf = Literal('*f').setParseAction(replace('OA_IntersectF'))
+    _inc = Literal('*c').setParseAction(replace('OA_IntersectC'))
+    _ins = Literal('*s').setParseAction(replace('OA_IntersectS'))
+    regop = (_mv | _me | _mf | _mc | _ms |
+             _pv | _pe | _pf | _pc | _ps |
+             _inv | _ine | _inf | _inc | _ins)
 
     lpar  = Literal("(").suppress()
     rpar  = Literal(")").suppress()
