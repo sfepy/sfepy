@@ -358,7 +358,7 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
   nQP = vg->bfGM->nLev;
   nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
-  sym = (dim + 1) * dim / 2;
+  sym = mtxD->nRow;
 
   fmf_createAlloc( &std, 1, nQP, 1, sym );
   fmf_createAlloc( &stds, 1, nQP, 1, 1 );
