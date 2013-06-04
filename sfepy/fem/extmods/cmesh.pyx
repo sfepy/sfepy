@@ -312,6 +312,7 @@ cdef class CMesh:
         self._update_num()
 
     def _update_pointers(self):
+        cdef MeshConnectivity *pconn
         cdef uint32 ii
 
         for ii in range((self.mesh.topology.max_dim + 1)**2):
@@ -338,8 +339,6 @@ cdef class CMesh:
                 self.mesh.topology.num[idim] = conn.num
 
     def free_connectivity(self, d1, d2):
-        cdef MeshConnectivity *pconn
-
         ii = self._get_conn_indx(d1, d2)
         if self.conns[ii] is None:
             return
