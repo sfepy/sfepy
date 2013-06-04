@@ -684,6 +684,54 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   return(ret);
 }
 
+uint32 mesh_count_incident(Mesh *mesh, int32 dim,
+                           Indices *entities, int32 dent)
+{
+  uint32 ii, num = 0;
+  uint32 *ptr;
+  int32 D = mesh->topology->max_dim;
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dent, dim);
+    ERR_CheckGo(num);
+  }
+
+  for (ii = 0; ii < entities->num; ii++) {
+    ptr = conn->offsets + entities->indices[ii];
+    num += ptr[1] - ptr[0];
+  }
+
+ end_label:
+  return(num);
+}
+
+// `incident` must be preallocated - use mesh_count_incident().
+int32 mesh_get_incident(Mesh *mesh, Indices *incident, int32 dim,
+                        Indices *entities, int32 dent)
+{
+  int32 ret = RET_OK;
+  uint32 ii;
+  int32 D = mesh->topology->max_dim;
+  MeshEntityIterator it0[1], it1[1];
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dent, dim);
+    ERR_CheckGo(ret);
+  }
+
+  ii = 0;
+  for (mei_init_sub(it0, mesh, entities, dent); mei_go(it0); mei_next(it0)) {
+    for (mei_init_conn(it1, it0->entity, dim); mei_go(it1); mei_next(it1)) {
+      incident->indices[ii++] = it1->entity->ii;
+    }
+  }
+
+ end_label:
+  return(ret);
+}
+
 #undef __FUNC__
 #define __FUNC__ "mesh_select_complete"
 // Allocates mask->mask.
