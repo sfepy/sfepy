@@ -226,267 +226,117 @@ class Region(Struct):
                 self.entities[ii] = nm.empty(0, dtype=nm.uint32)
 
     def light_copy(self, name, parse_def):
-        return Region(name, self.definition, self.domain, parse_def)
+        return Region(name, self.definition, self.domain, parse_def,
+                      kind=self.kind)
 
-    def update_groups(self, force = False):
+    def setup_from_highest(self, dim):
         """
-        Vertices common to several groups are listed only in all of them -
-        fa, ed.unique_indx contain no edge/face duplicates already.
+        Setup entities of topological dimension `dim` using the available
+        entities of the highest topological dimension.
         """
-        if self.must_update or force:
+        if not self.can[dim]: return
 
-            self.igs = []
-            self.vertices = {}
-            self.cells = {}
+        for idim in range(self.dim + 1):
+            if self.entities[idim] is not None:
+                if self.entities[idim].shape[0] > 0:
+                    break
 
-            for group in self.domain.iter_groups():
-                ig = group.ig
-                vv = nm.intersect1d(group.vertices, self.all_vertices)
-                if len(vv) == 0: continue
+        if idim <= dim:
+            msg = 'setup_from_highest() can be used only with dim < %d'
+            raise ValueError(msg % idim)
 
-                self.igs.append(ig)
-                self.vertices[ig] = vv
+        cmesh = self.domain.cmesh
+        cmesh.setup_connectivity(idim, dim)
 
-                if self.can_cells:
-                    mask = nm.zeros(self.n_v_max, nm.int32)
-                    mask[vv] = 1
+        incident = cmesh.get_incident(dim, self.entities[idim], idim)
+        self.entities[dim] = nm.unique(incident)
 
-                    conn = group.conn
-                    aux = nm.sum(mask[conn], 1, dtype=nm.int32)
-                    rcells = nm.where(aux == conn.shape[1])[0]
-                    self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-
-        self.must_update = False
-
-    def update_vertices(self):
-        self.all_vertices, self.vertices = self.get_vertices_of_cells(True)
-
-    def set_vertices(self, vertices):
-
-        self.all_vertices = nm.array(vertices, dtype=nm.int32)
-        self.update_groups(force = True)
-        self.is_complete = False
-
-    def set_cells(self, cells):
-
-        self.igs = []
-        self.cells = {}
-        for ig, rcells in cells.iteritems():
-            self.cells[ig] = nm.array(rcells, dtype=nm.int32, ndmin=1)
-            self.igs.append(ig)
-        self.update_vertices()
-        self.is_complete = False
-        self.must_update = False
-
-    def set_from_group(self, ig, vertices, n_cell):
+    def setup_from_vertices(self, dim):
         """
-        Set region to contain the given element group.
+        Setup entities of topological dimension `dim` using the region
+        vertices.
         """
-        self.igs = [ig]
-        self.cells = {ig : nm.arange(n_cell, dtype=nm.int32)}
-        self.vertices = {ig: vertices.copy()}
-        self.all_vertices = vertices.copy()
-        self.must_update = False
+        if not self.can[dim]: return
 
-    def set_faces(self, faces, igs=None, can_cells=False):
-        """
-        Set region data using given faces. The region description is
-        complete afterwards.
+        cmesh = self.domain.cmesh
+        cmesh.setup_connectivity(dim, 0)
+        vv = self.vertices
+        self.entities[dim] = cmesh.get_complete(dim, vv, 0)
 
-        Parameters
-        ----------
-        faces : array
-            The array with indices to `domain.fa`.
-        igs : list, optional
-            The allowed element groups. Other groups will be ignored,
-            even though the region might have faces in them.
-        can_cells : bool, optional
-            If True, the region can have cells.
-        """
-        faces = nm.asarray(faces)
+    @property
+    def vertices(self):
+        if self.entities[0] is None:
+            self.setup_from_highest(0)
+        return self.entities[0]
 
-        fa = self.domain.fa
-        ed = self.domain.ed
+    @vertices.setter
+    def vertices(self, vals):
+        if self.can_vertices:
+            self.entities[0] = nm.asarray(vals, dtype=nm.uint32)
 
-        indices = fa.indices[faces]
-        facets = fa.facets[faces]
+        else:
+            raise ValueError('region "%s" cannot have vertices!' % self.name)
 
-        faces_igs = indices[:, 0]
+    @property
+    def edges(self):
+        if self.entities[1] is None:
+            self.setup_from_vertices(1)
+        return self.entities[1]
 
-        self.igs = nm.unique(faces_igs)
-        if igs is not None:
-            self.igs = nm.intersect1d(self.igs, igs)
+    @edges.setter
+    def edges(self, vals):
+        if self.can_edges:
+            self.entities[1] = nm.asarray(vals, dtype=nm.uint32)
 
-        all_vertices = []
-        self.vertices = {}
-        self.edges = {}
-        self.faces = {}
-        self.cells = {}
+        else:
+            raise ValueError('region "%s" cannot have edges!' % self.name)
 
-        mask = nm.zeros(self.n_v_max, dtype=nm.bool)
+    @property
+    def faces(self):
+        if self.dim == 2:
+            raise AttributeError('2D region has no faces!')
 
-        for ig, group in self.domain.iter_groups(self.igs):
-            n_fp = fa.n_fps[ig]
+        if self.entities[2] is None:
+            self.setup_from_vertices(2)
+        return self.entities[2]
 
-            ii = faces_igs == ig
+    @faces.setter
+    def faces(self, vals):
+        if self.can_faces:
+            self.entities[2] = nm.asarray(vals, dtype=nm.uint32)
 
-            vv = nm.unique(facets[ii, :n_fp])
-            if len(vv) == 0: continue
+        else:
+            raise ValueError('region "%s" cannot have faces!' % self.name)
 
-            self.vertices[ig] = vv
+    @property
+    def facets(self):
+        if self.dim == 3:
+            return self.faces
 
-            all_vertices.append(vv)
+        else:
+            return self.edges
 
-            self.faces[ig] = faces[ii]
-            self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
+    @facets.setter
+    def facets(self, vals):
+        if self.dim == 3:
+            self.faces = vals
 
-            if can_cells:
-                mask.fill(False)
-                mask[vv] = True
+        else:
+            self.edges = vals
 
-                conn = group.conn
-                aux = nm.sum(mask[conn], 1, dtype=nm.int32)
-                rcells = nm.where(aux == conn.shape[1])[0]
-                self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
+    @property
+    def cells(self):
+        if self.entities[self.dim] is None:
+            self.setup_from_vertices(self.dim)
+        return self.entities[self.dim]
 
-        self.all_vertices = nm.unique(nm.hstack(all_vertices))
-
-        self.update_shape()
-        self.is_complete = True
-        self.must_update = False
-
-    def delete_groups(self, digs):
-        """
-        Delete given element groups from the region.
-        """
-        for ig in digs:
-            _try_delete(self.vertices, ig)
-            _try_delete(self.cells, ig)
-            _try_delete(self.true_cells, ig)
-            _try_delete(self.faces, ig)
-            _try_delete(self.fis, ig)
-            _try_delete(self.edges, ig)
-            try:
-                self.igs.remove(ig)
-            except ValueError:
-                pass
-
-        self.all_vertices = nm.unique(nm.r_[self.vertices.values()])
-
-        self.update_shape()
-
-    def switch_cells(self, can_cells):
+    @cells.setter
+    def cells(self, vals):
         if self.can_cells:
-            self.can_cells = can_cells
-            if not can_cells:
-                self.cells = {}
-        else:
-            self.can_cells = can_cells
-            if can_cells:
-                self.update_groups(force=True)
-
-    def complete_description(self, ed, fa, surface_integral=False):
-        """
-        Complete the region description by listing edges and faces for
-        each element group.
-
-        Parameters
-        ----------
-        ed : Facets instance
-            The edge facets.
-        fa : Facets instance
-            The face facets.
-        surface_integral : bool
-            If True, the each region surface facet (edge in 2D, face in
-            3D) can be listed only in one group. Sub-entities are
-            updated accordingly (vertices in 2D, vertices and edges in
-            3D).
-
-        Notes
-        ------
-        If `surface_integral` is False, `self.edges`, `self.faces` simply
-        list edge/face indices per group (pointers to `ed.facets`,
-        `fa.facets`) - repetitions among groups are possible.
-        """
-        ##
-        # Get edges, faces, etc. par subdomain.
-        mask = nm.zeros(self.n_v_max, dtype=nm.bool)
-
-        self.edges = {}
-        self.faces = {}
-
-        if surface_integral:
-            if self.domain.shape.dim == 2:
-                allowed = nm.ones(ed.n_unique, dtype=nm.bool)
-                facets = ed
-                surf = self.edges
-
-            else:
-                allowed = nm.ones(fa.n_unique, dtype=nm.bool)
-                facets = fa
-                surf = self.faces
-
-            # Get unique surface facets.
-            empty_igs = []
-            for ig, group in self.domain.iter_groups(self.igs):
-                vv = self.vertices[ig]
-                if len(vv) == 0: continue
-
-                mask.fill(False)
-                mask[vv] = True
-
-                ifacets = facets.get_complete_facets(vv, ig, mask)
-                ii = facets.uid_i[ifacets]
-                surf[ig] = ifacets[allowed[ii]]
-                allowed[ii] = False
-
-                if not len(surf[ig]):
-                    empty_igs.append(ig)
-
-            self.delete_groups(empty_igs)
-
-            # Update vertices, cells, and, in 3D, edges.
-            for ig, group in self.domain.iter_groups(self.igs):
-                n_fp = facets.n_fps[ig]
-                vv = nm.unique(facets.facets[surf[ig], :n_fp])
-
-                self.vertices[ig] = vv
-
-                mask.fill(False)
-                mask[vv] = True
-
-                if self.can_cells:
-                    conn = group.conn
-                    aux = nm.sum(mask[conn], 1, dtype=nm.int32)
-                    rcells = nm.where(aux == conn.shape[1])[0]
-                    self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-
-                if self.domain.shape.dim == 3:
-                    self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
+            self.entities[self.dim] = nm.asarray(vals, dtype=nm.uint32)
 
         else:
-            for ig, group in self.domain.iter_groups(self.igs):
-                vv = self.vertices[ig]
-                if len(vv) == 0: continue
-
-                mask.fill(False)
-                mask[vv] = True
-
-                # Points to ed.facets.
-                self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
-
-                if fa is None: continue
-
-                # Points to fa.facets.
-                self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
-
-        for ig in self.igs:
-            self.true_cells[ig] = self.can_cells
-
-        self.delete_zero_faces()
-        self.update_shape()
-
-        self.is_complete = True
+            raise ValueError('region "%s" cannot have cells!' % self.name)
 
     def delete_zero_faces(self, eps=1e-14):
         """
