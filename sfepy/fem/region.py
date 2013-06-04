@@ -192,31 +192,38 @@ class Region(Struct):
         -----
         conns, vertex_groups are links to domain data.
         """
-        dim = domain.shape.dim
-
-        if 'facet' in kind:
-            true_kind = self.__facet_kinds[dim][kind]
-
-        else:
-            true_kind = kind
-
-        can = self.__can[true_kind]
-
         Struct.__init__(self,
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
-                        kind=kind, true_kind=true_kind,
-                        n_v_max=domain.shape.n_nod, dim=dim,
-                        igs=[], entities=[None] * dim,
-                        can_vertices=bool(can[0]),
-                        can_edges=bool(can[1]),
-                        can_faces=bool(can[2]),
-                        can_cells=bool(can[3]),
+                        n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
+                        igs=[], entities=[None] * 4,
                         fis={},
                         must_update=True,
                         is_complete=False,
                         mirror_region=None, ig_map=None,
                         ig_map_i=None)
+        self.set_kind(kind)
+
+    def set_kind(self, kind):
+        self.kind = kind
+        if 'facet' in kind:
+            self.true_kind = self.__facet_kinds[self.dim][kind]
+
+        else:
+            self.true_kind = kind
+
+        can = [bool(ii) for ii in self.__can[self.true_kind]]
+        can[2] = can[2] and (self.dim == 3)
+        self.can = can
+
+        self.can_vertices = can[0]
+        self.can_edges = can[1]
+        self.can_faces = can[2]
+        self.can_cells = can[3]
+
+        for ii, ican in enumerate(self.can):
+            if not ican:
+                self.entities[ii] = nm.empty(0, dtype=nm.uint32)
 
     def light_copy(self, name, parse_def):
         return Region(name, self.definition, self.domain, parse_def)
