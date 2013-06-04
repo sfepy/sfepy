@@ -373,6 +373,17 @@ cdef class CMesh:
     def cprint(self, int32 header_only=1):
         mesh_print(self.mesh, stdout, header_only)
 
+    def get_surface_facets(self):
+        """
+        Get facets (edges in 2D, faces in 3D) on the mesh surface.
+        """
+        self.setup_connectivity(self.dim - 1, self.dim)
+        conn = self.get_conn(self.dim - 1, self.dim)
+
+        ii = np.where(np.diff(conn.offsets) == 1)[0]
+
+        return ii
+
     def get_complete(self, int32 dim,
                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
                      int32 dent):
