@@ -131,6 +131,20 @@ inline int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity,
   return(RET_OK);
 }
 
+inline int32 mei_init_sub(MeshEntityIterator *iter, Mesh *mesh,
+                          Indices *entities, uint32 dim)
+{
+  iter->entity->mesh = mesh;
+  iter->entity->dim = dim;
+  iter->it = 0;
+
+  iter->ptr = entities->indices;
+  iter->it_end = entities->num;
+  iter->entity->ii = iter->ptr[iter->it];
+
+  return(RET_OK);
+}
+
 int32 mei_print(MeshEntityIterator *iter, FILE *file)
 {
   fprintf(file, "it: %d, entity: dim: %d, ii: %d\n",

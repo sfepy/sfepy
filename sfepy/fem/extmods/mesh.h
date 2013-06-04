@@ -127,6 +127,8 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only);
 
 int32 mei_init(MeshEntityIterator *iter, Mesh *mesh, uint32 dim);
 int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity, uint32 dim);
+int32 mei_init_sub(MeshEntityIterator *iter, Mesh *mesh,
+                   Indices *entities, uint32 dim);
 int32 mei_print(MeshEntityIterator *iter, FILE *file);
 int32 mei_go(MeshEntityIterator *iter);
 int32 mei_next(MeshEntityIterator *iter);
