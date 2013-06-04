@@ -78,6 +78,10 @@ cdef extern from 'mesh.h':
     cdef int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
     cdef int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
 
+    cdef uint32 mesh_count_incident(Mesh *mesh, int32 dim,
+                                    Indices *entities, int32 dent)
+    cdef int32 mesh_get_incident(Mesh *mesh, Indices *incident, int32 dim,
+                                 Indices *entities, int32 dent)
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
 
@@ -382,6 +386,30 @@ cdef class CMesh:
         ii = np.where(np.diff(conn.offsets) == 1)[0]
 
         return ii
+
+    def get_incident(self, int32 dim,
+                     np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                     int32 dent):
+        """
+        Get non-unique entities of dimension `dim` that are contained in
+        entities of dimension `dent` listed in `entities`.
+        """
+        cdef Indices _entities[1], _incident[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+        cdef uint32 *_out
+        cdef uint32 num
+
+        _entities.num = entities.shape[0]
+        _entities.indices = &entities[0]
+
+        num = mesh_count_incident(self.mesh, dim, _entities, dent)
+
+        out = np.empty(num, dtype=np.uint32)
+        _incident.num = num
+        _incident.indices = &out[0]
+        mesh_get_incident(self.mesh, _incident, dim, _entities, dent)
+
+        return out
 
     def get_complete(self, int32 dim,
                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
