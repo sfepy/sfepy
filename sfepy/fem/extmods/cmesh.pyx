@@ -369,6 +369,26 @@ cdef class CMesh:
     def get_cell_conn(self):
         return self.get_conn(self.dim, 0)
 
+    def get_conn_as_graph(self, d1, d2):
+        """
+        Get d1 -> d2 connectivity as a sparse matrix graph (values = ones).
+
+        For safety, creates a copy of the connectivity arrays. The connectivity
+        is created if necessary.
+        """
+        import scipy.sparse as sps
+
+        self.setup_connectivity(d1, d2)
+        conn = self.get_conn(d1, d2)
+
+        graph = sps.csr_matrix((np.ones(conn.indices.shape[0], dtype=np.bool),
+                                np.array(conn.indices, copy=True,
+                                         dtype=np.int32),
+                                np.array(conn.offsets, copy=True,
+                                         dtype=np.int32)))
+
+        return graph
+
     def __str__(self):
         return 'CMesh: n_coor: %d, dim %d, n_el %d' \
                % (self.n_coor, self.dim, self.n_el)
