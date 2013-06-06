@@ -105,8 +105,7 @@ class Region(Struct):
     }
 
     @staticmethod
-    def from_vertices(vertices, domain, name='region',
-                      igs=None, can_cells=False, surface_integral=False):
+    def from_vertices(vertices, domain, name='region', kind='cell'):
         """
         Create a new region containing given vertices.
 
@@ -118,55 +117,34 @@ class Region(Struct):
             The domain containing the vertices.
         name : str, optional
             The name of the region.
-        igs : list, optional
-            The allowed element groups. Other groups will be ignored,
-            even though the region might have vertices in them - the
-            same effect the 'forbid' flag has.
-        can_cells : bool, optional
-            If True, the region can have cells.
-        surface_integral : bool, optional
-            If True, then each region surface facet (edge in 2D, face in
-            3D) can be listed only in one group.
+        kind : str, optional
+            The kind of the region.
 
         Returns
         -------
         obj : Region instance
             The new region.
         """
-        obj = Region(name, 'given vertices', domain, '')
-
-        obj.set_vertices(vertices)
-
-        if igs is not None:
-            forbidden = nm.setdiff1d(obj.igs, igs)
-            obj.delete_groups(forbidden)
-
-        obj.switch_cells(can_cells)
-        obj.complete_description(domain.ed, domain.fa,
-                                 surface_integral=surface_integral)
+        obj = Region(name, 'given vertices', domain, '', kind=kind)
+        obj.vertices = vertices
 
         return obj
 
     @staticmethod
-    def from_faces(faces, domain, name='region',
-                   igs=None, can_cells=False):
+    def from_facets(facets, domain, name='region', kind='facet'):
         """
-        Create a new region containing given faces.
+        Create a new region containing given facets.
 
         Parameters
         ----------
-        faces : array
-            The array with indices to `domain.fa`.
+        facets : array
+            The array with indices to unique facets.
         domain : Domain instance
-            The domain containing the faces.
+            The domain containing the facets.
         name : str, optional
             The name of the region.
-        igs : list, optional
-            The allowed element groups. Other groups will be ignored,
-            even though the region might have faces in them - the
-            same effect the 'forbid' flag has.
-        can_cells : bool, optional
-            If True, the region can have cells.
+        kind : str, optional
+            The kind of the region.
 
         Returns
         -------
@@ -174,7 +152,7 @@ class Region(Struct):
             The new region.
         """
         obj = Region(name, 'given faces', domain, '')
-        obj.set_faces(faces, igs=igs, can_cells=can_cells)
+        obj.facets = facets
 
         return obj
 
