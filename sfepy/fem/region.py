@@ -98,6 +98,12 @@ class Region(Struct):
         3 : {'facet' : 'face', 'facet_only' : 'face_only'},
     }
 
+    __op_to_fun = {
+        '+' : nm.union1d,
+        '-' : nm.setdiff1d,
+        '*' : nm.intersect1d,
+    }
+
     @staticmethod
     def from_vertices(vertices, domain, name='region',
                       igs=None, can_cells=False, surface_integral=False):
@@ -343,6 +349,41 @@ class Region(Struct):
         else:
             raise ValueError('region "%s" cannot have cells!' % self.name)
 
+    def eval_op_vertices(self, other, op):
+        parse_def = _join(self.parse_def, '%sv' % op, other.parse_def)
+        tmp = self.light_copy('op', parse_def)
+        tmp.vertices = self.__op_to_fun[op](self.vertices, other.vertices)
+
+        return tmp
+
+    def eval_op_edges(self, other, op):
+        parse_def = _join(self.parse_def, '%se' % op, other.parse_def)
+        tmp = self.light_copy('op', parse_def)
+        tmp.edges = self.__op_to_fun[op](self.edges, other.edges)
+
+        return tmp
+
+    def eval_op_faces(self, other, op):
+        parse_def = _join(self.parse_def, '%sf' % op, other.parse_def)
+        tmp = self.light_copy('op', parse_def)
+        tmp.faces = self.__op_to_fun[op](self.faces, other.faces)
+
+        return tmp
+
+    def eval_op_facets(self, other, op):
+        parse_def = _join(self.parse_def, '%ss' % op, other.parse_def)
+        tmp = self.light_copy('op', parse_def)
+        tmp.facets = self.__op_to_fun[op](self.facets, other.facets)
+
+        return tmp
+
+    def eval_op_cells(self, other, op):
+        parse_def = _join(self.parse_def, '%sc' % op, other.parse_def)
+        tmp = self.light_copy('op', parse_def)
+        tmp.cells = self.__op_to_fun[op](self.cells, other.cells)
+
+        return tmp
+
     def delete_zero_faces(self, eps=1e-14):
         """
         Delete faces with zero area.
@@ -436,76 +477,6 @@ class Region(Struct):
         """
         tmp = self.light_copy('copy', self.parse_def)
         tmp.set_vertices(copy(self.all_vertices))
-        return tmp
-
-    def sub_n(self, other):
-        tmp = self.light_copy('op',
-                              _join(self.parse_def, '-n', other.parse_def))
-        tmp.set_vertices(nm.setdiff1d(self.all_vertices, other.all_vertices))
-
-        return tmp
-
-    def add_n(self, other):
-        tmp = self.light_copy('op',
-                              _join(self.parse_def, '+n', other.parse_def))
-        tmp.set_vertices(nm.union1d(self.all_vertices, other.all_vertices))
-
-        return tmp
-
-    def intersect_n(self, other):
-        tmp = self.light_copy('op',
-                              _join(self.parse_def, '*n', other.parse_def))
-        tmp.set_vertices(nm.intersect1d(self.all_vertices, other.all_vertices))
-
-        return tmp
-
-    def sub_e(self, other):
-        tmp = self.light_copy('op',
-                              _join(self.parse_def, '-e', other.parse_def))
-        for ig in self.igs:
-            if ig not in other.igs:
-                tmp.igs.append(ig)
-                tmp.cells[ig] = self.cells[ig].copy()
-                continue
-
-            aux = nm.setdiff1d(self.cells[ig], other.cells[ig])
-            if not len(aux): continue
-            tmp.cells[ig] = aux
-            tmp.igs.append(ig)
-
-        tmp.update_vertices()
-        return tmp
-
-    def add_e(self, other):
-        tmp = self.light_copy('op',
-                              _join(self.parse_def, '+e', other.parse_def))
-        for ig in self.igs:
-            tmp.igs.append(ig)
-            if ig not in other.igs:
-                tmp.cells[ig] = self.cells[ig].copy()
-                continue
-
-            tmp.cells[ig] = nm.union1d(self.cells[ig], other.cells[ig])
-
-        for ig in other.igs:
-            if ig in tmp.igs: continue
-            tmp.igs.append(ig)
-            tmp.cells[ig] = other.cells[ig].copy()
-
-        tmp.update_vertices()
-        return tmp
-
-    def intersect_e(self, other):
-        tmp = self.light_copy('op',
-                              _join(self.parse_def, '*e', other.parse_def))
-        for ig in self.igs:
-            if ig not in other.igs: continue
-            aux = nm.intersect1d(self.cells[ig], other.cells[ig])
-            if not len(aux): continue
-            tmp.igs.append(ig)
-            tmp.cells[ig] = aux
-
-        tmp.update_vertices()
         return tmp
 
     def setup_mirror_region(self):

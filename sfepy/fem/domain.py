@@ -146,40 +146,27 @@ def region_leaf(domain, regions, rdef, kind, functions):
 
     return _region_leaf
 
-def region_op(level, op, item1, item2):
-    token = op['token']
-    if token == 'OA_SubV':
-        return item1.sub_v(item2)
-    elif token == 'OA_SubE':
-        return item1.sub_e(item2)
-    elif token == 'OA_SubF':
-        return item1.sub_f(item2)
-    elif token == 'OA_SubC':
-        return item1.sub_f(item2)
-    elif token == 'OA_SubS':
-        return item1.sub_s(item2)
-    elif token == 'OA_AddV':
-        return item1.add_v(item2)
-    elif token == 'OA_AddE':
-        return item1.add_e(item2)
-    elif token == 'OA_AddF':
-        return item1.add_f(item2)
-    elif token == 'OA_AddC':
-        return item1.add_c(item2)
-    elif token == 'OA_AddS':
-        return item1.add_s(item2)
-    elif token == 'OA_IntersectV':
-        return item1.intersect_v(item2)
-    elif token == 'OA_IntersectE':
-        return item1.intersect_e(item2)
-    elif token == 'OA_IntersectF':
-        return item1.intersect_f(item2)
-    elif token == 'OA_IntersectC':
-        return item1.intersect_c(item2)
-    elif token == 'OA_IntersectS':
-        return item1.intersect_s(item2)
+def region_op(level, op_code, item1, item2):
+    token = op_code['token']
+    op = {'S' : '-', 'A' : '+', 'I' : '*'}[token[3]]
+
+    if token[-1] == 'V':
+        return item1.eval_op_vertices(item2, op)
+
+    elif token[-1] == 'E':
+        return item1.eval_op_edges(item2, op)
+
+    elif token[-1] == 'F':
+        return item1.eval_op_faces(item2, op)
+
+    elif token[-1] == 'S':
+        return item1.eval_op_facets(item2, op)
+
+    elif token[-1] == 'C':
+        return item1.eval_op_cells(item2, op)
+
     else:
-        raise NotImplementedError, token
+        raise ValueError('unknown region operator token! (%s)' % token)
 
 class Domain(Struct):
     """
