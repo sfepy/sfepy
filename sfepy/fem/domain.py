@@ -42,7 +42,7 @@ def region_leaf(domain, regions, rdef, kind, functions):
         elif token == 'KW_All':
             region.vertices = nm.arange(domain.mesh.n_nod, dtype=nm.uint32)
 
-        elif token == 'E_NIR':
+        elif token == 'E_VIR':
             where = details[2]
 
             if where[0] == '[':
@@ -63,13 +63,13 @@ def region_leaf(domain, regions, rdef, kind, functions):
 
             region.vertices = vertices
 
-        elif token == 'E_NOS':
+        elif token == 'E_VOS':
             facets = domain.cmesh.get_surface_facets()
 
             region.set_kind('facet')
             region.facets = facets
 
-        elif token == 'E_NBF':
+        elif token == 'E_VBF':
             where = details[2]
 
             coors = domain.get_mesh_coors()
@@ -79,7 +79,7 @@ def region_leaf(domain, regions, rdef, kind, functions):
 
             region.vertices = vertices
 
-        elif token == 'E_EBF':
+        elif token == 'E_CBF':
             where = details[2]
 
             coors = domain.get_cells_coors()
@@ -89,7 +89,7 @@ def region_leaf(domain, regions, rdef, kind, functions):
 
             region.cells = cells
 
-        elif token == 'E_EOG':
+        elif token == 'E_COG':
             group = int(details[3])
 
             ig = domain.mat_ids_to_i_gs[group]
@@ -98,16 +98,16 @@ def region_leaf(domain, regions, rdef, kind, functions):
             off = domain.mesh.el_offsets[ig]
             region.cells = off + nm.arange(group.shape.n_el, dtype=nm.uint32)
 
-        elif token == 'E_EOSET':
+        elif token == 'E_COSET':
             raise NotImplementedError('element sets not implemented!')
 
-        elif token == 'E_NOG':
+        elif token == 'E_VOG':
             group = int(details[3])
             vertices = nm.where(domain.mesh.ngroups == group)[0]
 
             region.vertices = vertices
 
-        elif token == 'E_NOSET':
+        elif token == 'E_VOSET':
             try:
                 vertices = domain.mesh.nodal_bcs[details[3]]
 
@@ -117,19 +117,19 @@ def region_leaf(domain, regions, rdef, kind, functions):
 
             region.vertices = vertices
 
-        elif token == 'E_ONIR':
+        elif token == 'E_OVIR':
             aux = regions[details[3][2:]]
             region.vertices = aux.vertices[0:1]
 
-        elif token == 'E_NI':
+        elif token == 'E_VI':
             region.vertices = nm.array([int(ii) for ii in details[1:]],
                                        dtype=nm.uint32)
 
-        elif token == 'E_EI1':
+        elif token == 'E_CI1':
             region.cells = nm.array([int(ii) for ii in details[1:]],
                                     dtype=nm.uint32)
 
-        elif token == 'E_EI2':
+        elif token == 'E_CI2':
             num = len(details[1:]) / 2
 
             cells = []

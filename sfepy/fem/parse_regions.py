@@ -1,9 +1,9 @@
 """
 Grammar for selecting regions of a domain.
 
-Regions serve for selection of certain parts of the computational domain (=
-selection of nodes and elements of a FE mesh). They are used to define the
-boundary conditions, the domains of terms and materials etc.
+Regions serve for selection of certain parts of the computational domain
+represented as a finite element mesh. They are used to define the boundary
+conditions, the domains of terms and materials etc.
 
 Notes
 -----
@@ -19,8 +19,8 @@ op_codes = ['OA_SubV', 'OA_SubE', 'OA_SubF', 'OA_SubC', 'OA_SubS',
             'OA_AddV', 'OA_AddE', 'OA_AddF', 'OA_AddC', 'OA_AddS',
             'OA_IntersectV', 'OA_IntersectE', 'OA_IntersectF',
             'OA_IntersectC', 'OA_IntersectS']
-eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_NOG', 'E_ONIR', 'E_NI', 'E_NOSET',
-              'E_EBF', 'E_EOG', 'E_EI1', 'E_EI2', 'E_EOSET']
+eval_codes = ['E_VIR', 'E_VOS', 'E_VBF', 'E_VOG', 'E_OVIR', 'E_VI', 'E_VOSET',
+              'E_CBF', 'E_COG', 'E_CI1', 'E_CI2', 'E_COSET']
 kw_codes = ['KW_All', 'KW_Region']
 
 def to_stack(stack):
@@ -120,10 +120,10 @@ def create_bnf(stack):
     rpar  = Literal(")").suppress()
 
     _all = Literal('all').setParseAction(replace('KW_All'))
-    node = Literal('node')
-    nodes = Literal('nodes')
-    element = Literal('element')
-    elements = Literal('elements')
+    vertex = Literal('vertex')
+    vertices = Literal('vertices')
+    cell = Literal('cell')
+    cells = Literal('cells')
     group = Literal('group')
     _set = Literal('set')
     surface = Literal('surface')
@@ -150,31 +150,31 @@ def create_bnf(stack):
                  + ZeroOrMore(')'))
     relation = Group(relation).setParseAction(join_tokens)
 
-    nos = Group(nodes + _of + surface).setParseAction(replace('E_NOS'))
-    nir = Group(nodes + _in + relation).setParseAction(
-        replace('E_NIR', keep=True))
-    nbf = Group(nodes + _by + function).setParseAction(
-        replace('E_NBF', keep=True))
-    ebf = Group(elements + _by + function).setParseAction(
-        replace('E_EBF', keep=True))
-    eog = Group(elements + _of + group + Word(nums)).setParseAction(
-        replace('E_EOG', keep=True))
-    nog = Group(nodes + _of + group + Word(nums)).setParseAction(
-        replace('E_NOG', keep=True))
-    onir = Group(node + _in + region).setParseAction(
-        replace_with_region('E_ONIR', 2))
-    ni = Group(node + delimitedList(inumber)).setParseAction(
-        replace('E_NI', keep=True))
-    ei1 = Group(element + delimitedList(inumber)).setParseAction(
-        replace('E_EI1', keep=True))
+    nos = Group(vertices + _of + surface).setParseAction(replace('E_VOS'))
+    nir = Group(vertices + _in + relation).setParseAction(
+        replace('E_VIR', keep=True))
+    nbf = Group(vertices + _by + function).setParseAction(
+        replace('E_VBF', keep=True))
+    ebf = Group(cells + _by + function).setParseAction(
+        replace('E_CBF', keep=True))
+    eog = Group(cells + _of + group + Word(nums)).setParseAction(
+        replace('E_COG', keep=True))
+    nog = Group(vertices + _of + group + Word(nums)).setParseAction(
+        replace('E_VOG', keep=True))
+    onir = Group(vertex + _in + region).setParseAction(
+        replace_with_region('E_OVIR', 2))
+    ni = Group(vertex + delimitedList(inumber)).setParseAction(
+        replace('E_VI', keep=True))
+    ei1 = Group(cell + delimitedList(inumber)).setParseAction(
+        replace('E_CI1', keep=True))
     etuple = (lpar.suppress() + inumber + comma.suppress()
               + inumber + rpar.suppress())
-    ei2 = Group(element + delimitedList(etuple)).setParseAction(
-        replace('E_EI2', keep=True))
-    noset = Group(nodes + _of + _set + set_name).setParseAction(
-        replace('E_NOSET', keep=True))
-    eoset = Group(elements + _of + _set + set_name).setParseAction(
-        replace('E_EOSET', keep=True))
+    ei2 = Group(cell + delimitedList(etuple)).setParseAction(
+        replace('E_CI2', keep=True))
+    noset = Group(vertices + _of + _set + set_name).setParseAction(
+        replace('E_VOSET', keep=True))
+    eoset = Group(cells + _of + _set + set_name).setParseAction(
+        replace('E_VOSET', keep=True))
 
     region_expression = Forward()
 
