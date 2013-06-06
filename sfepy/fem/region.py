@@ -196,7 +196,7 @@ class Region(Struct):
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
-                        igs=[], entities=[None] * 4,
+                        igs=[], entities=[None] * (domain.shape.dim + 1),
                         fis={},
                         must_update=True,
                         is_complete=False,
@@ -213,13 +213,18 @@ class Region(Struct):
             self.true_kind = kind
 
         can = [bool(ii) for ii in self.__can[self.true_kind]]
-        can[2] = can[2] and (self.dim == 3)
-        self.can = can
 
         self.can_vertices = can[0]
         self.can_edges = can[1]
-        self.can_faces = can[2]
-        self.can_cells = can[3]
+
+        if self.dim == 2:
+            self.can = (can[0], can[1], can[3])
+            self.can_cells = can[2]
+
+        else:
+            self.can = can
+            self.can_faces = can[2]
+            self.can_cells = can[3]
 
         for ii, ican in enumerate(self.can):
             if not ican:
