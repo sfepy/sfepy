@@ -82,19 +82,21 @@ def region_leaf(domain, regions, rdef, kind, functions):
         elif token == 'E_EBF':
             where = details[2]
 
-            coors = domain.get_mesh_coors()
+            coors = domain.get_cells_coors()
 
             fun = functions[where]
-            vertices = fun(coors, domain=domain)
+            cells = fun(coors, domain=domain)
 
-            region.cells = vertices
+            region.cells = cells
 
         elif token == 'E_EOG':
             group = int(details[3])
 
             ig = domain.mat_ids_to_i_gs[group]
             group = domain.groups[ig]
-            region.vertices = group.vertices
+
+            off = domain.mesh.el_offsets[ig]
+            region.cells = off + nm.arange(group.shape.n_el, dtype=nm.uint32)
 
         elif token == 'E_EOSET':
             raise NotImplementedError('element sets not implemented!')
