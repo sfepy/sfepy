@@ -450,13 +450,15 @@ cdef class CMesh:
         mesh_select_complete(self.mesh, mask, dim, _entities, dent)
 
         out = np.empty(mask.n_true, dtype=np.uint32)
-        _out = &out[0]
 
-        ic = 0
-        for ii in range(mask.num):
-            if mask.mask[ii]:
-                _out[ic] = ii
-                ic += 1
+        if mask.n_true > 0:
+            _out = &out[0]
+
+            ic = 0
+            for ii in range(mask.num):
+                if mask.mask[ii]:
+                    _out[ic] = ii
+                    ic += 1
 
         pyfree(mask.mask)
 
