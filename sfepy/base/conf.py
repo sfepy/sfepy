@@ -117,11 +117,11 @@ def transform_epbcs(adict):
 def transform_regions(adict):
     d2 = {}
     for ii, (key, conf) in enumerate(adict.iteritems()):
-        if isinstance(conf, tuple):
-            c2 = tuple_to_conf(key, conf, ['select', 'flags'])
-            for flag, val in c2.flags.iteritems():
-                setattr(c2, flag, val)
-            delattr(c2, 'flags')
+        if isinstance(conf, basestr):
+            c2 = Struct(name=key, select=conf)
+            d2['material_%s__%d' % (c2.name, ii)] = c2
+        elif isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf, ['select', 'kind'])
             d2['region_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1(conf)

@@ -446,7 +446,7 @@ class Domain(Struct):
             rdef = region_defs[sort_name]
 
             region = self.create_region(name, rdef.select,
-                                        flags=rdef,
+                                        kind=rdef.get('kind', 'cell'),
                                         check_parents=False,
                                         functions=functions)
             output(' ', region.name)
