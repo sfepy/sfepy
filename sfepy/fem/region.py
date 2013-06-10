@@ -80,6 +80,25 @@ class Region(Struct):
     """
     Region defines a subset of a FE domain.
 
+    Region kinds:
+
+    - cells_only, facet_only, face_only, edge_only, vertex_only - only the
+      specified entities are included, others are empty sets (so that the
+      operators are still defined)
+    - cells, facet, face, edge, vertex - entities of higher dimension are not
+      included
+
+    The 'cells' kind is the most general and it is the default.
+
+    Region set-like operators: + (union), - (difference), * (intersection),
+    followed by one of ('v', 'e', 'f', 'c', and 's') for vertices, edges,
+    faces, cells, and facets.
+
+    Notes
+    -----
+    Functions depending on `ig` are adapters for current code that should be
+    removed after new assembling is done.
+
     Created: 31.10.2005
     """
     __can = {
@@ -180,7 +199,8 @@ class Region(Struct):
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
-                        igs=[], entities=[None] * (domain.shape.dim + 1),
+                        entities=[None] * (domain.shape.dim + 1),
+                        shape=None,
                         fis={},
                         must_update=True,
                         is_complete=False,
@@ -214,6 +234,7 @@ class Region(Struct):
             if not ican:
                 self.entities[ii] = nm.empty(0, dtype=nm.uint32)
 
+        self._igs = None
 
     @property
     def vertices(self):
@@ -373,37 +394,107 @@ class Region(Struct):
         return tmp
 
     def delete_zero_faces(self, eps=1e-14):
+        raise NotImplementedError
+
+    @property
+    def igs(self):
         """
-        Delete faces with zero area.
+        Cell group indices according to region kind.
         """
-        from sfepy.linalg import get_face_areas
+        if self._igs is None:
+            if 'vertex' in self.true_kind:
+                self._igs = self.domain.cmesh.get_igs(self.vertices, 0)
 
-        fa = self.domain.fa
+            elif 'edge' in self.true_kind:
+                self._igs = self.domain.cmesh.get_igs(self.edges, 1)
 
-        for ig, faces in self.faces.iteritems():
-            fav = fa.facets[faces]
+            elif 'face' in self.true_kind:
+                self._igs = self.domain.cmesh.get_igs(self.faces, 2)
 
-            areas = get_face_areas(fav, self.domain.mesh.coors)
-            self.faces[ig] = faces[areas > eps]
+            elif 'cell' in self.true_kind:
+                self._igs = self.domain.cmesh.get_igs(self.cells, self.dim)
+
+        return self._igs
 
     def update_shape(self):
         """
         Update shape of each group according to region vertices, edges,
         faces and cells.
         """
-        aux = nm.array([])
+        get = self.domain.cmesh.get_from_cell_group
 
         self.shape = {}
         for ig in self.igs:
-            n_vertex = self.vertices.get(ig, aux).shape[0]
-            n_edge = self.edges.get(ig, aux).shape[0]
-            n_face = self.faces.get(ig, aux).shape[0]
-            n_cell = self.cells.get(ig, aux).shape[0]
+            n_vertex = get(ig, 0, self.vertices).shape[0]
+            n_edge = get(ig, 1, self.edges).shape[0]
+            n_cell = get(ig, self.dim, self.cells).shape[0]
+            if self.dim == 3:
+                n_face = get(ig, 2, self.faces).shape[0]
+
+            else:
+                n_face = 0
 
             self.shape[ig] = Struct(n_vertex=n_vertex,
                                     n_edge=n_edge,
                                     n_face=n_face,
                                     n_cell=n_cell)
+
+    def get_vertices_of_cells(self):
+        """
+        Return all vertices, that are in some cell of the region.
+        """
+        vertices = self.domain.cmesh.get_incident(0, self.cells, self.dim)
+
+        return nm.unique(vertices)
+
+    def get_vertices(self, ig):
+        out = self.domain.cmesh.get_from_cell_group(ig, 0, self.vertices)
+        return out
+
+    def get_edges(self, ig):
+        out = self.domain.cmesh.get_from_cell_group(ig, 1, self.edges)
+        return out
+
+    def get_faces(self, ig):
+        out = self.domain.cmesh.get_from_cell_group(ig, 2, self.faces)
+        return out
+
+    def get_facets(self, ig):
+        """
+        Return either region edges (in 2D) or faces (in 3D) .
+        """
+        if self.dim == 2:
+            return self.get_edges(ig)
+
+        else:
+            return self.get_faces(ig)
+
+    def get_cells(self, ig, true_cells_only=True):
+        """
+        Get cells of the region.
+
+        Raises ValueError if `true_cells_only` is True and the region kind does
+        not allow cells (e.g. surface integration region). For
+        `true_cells_only` equal to False, cells incident to facets are returned
+        if the region itself contains no cells.
+        """
+        cmesh = self.domain.cmesh
+
+        if self.cells.shape[0] == 0:
+            if true_cells_only:
+                msg = 'region %s has not true cells! (has kind: %s)' \
+                      % (self.name, self.kind)
+                raise ValueError(msg)
+
+            else:
+                cmesh.setup_connectivity(self.dim - 1, self.dim)
+                out = cmesh.get_incident(self.dim, self.facets, self.dim - 1)
+                out = nm.unique(out)
+
+        else:
+            out = cmesh.get_from_cell_group(ig, self.dim, self.cells)
+
+        return out
 
     def setup_face_indices(self, reset=True):
         """
@@ -423,41 +514,6 @@ class Region(Struct):
                 fi = fa.indices[rfaces]
                 assert_(nm.all(fi[:,0] == ig))
                 self.fis[ig] = fi[:,1:].copy()
-
-    def select_cells(self, n_verts):
-        """
-        Select cells containing at least n_verts[ii] vertices per group ii.
-        """
-        if not self.can_cells:
-            raise ValueError('region %s cannot have cells!' % self.name)
-
-        self.cells = {}
-        for ig, group in self.domain.iter_groups(self.igs):
-            vv = self.vertices[ig]
-            if len(vv) == 0: continue
-
-            mask = nm.zeros(self.n_v_max, nm.int32)
-            mask[vv] = 1
-
-            aux = nm.sum(mask[group.conn], 1)
-            rcells = nm.where(aux >= n_verts[ig])[0]
-            self.cells[ig] = rcells
-            self.true_cells[ig] = False
-
-    def select_cells_of_surface(self, reset=True):
-        """
-        Select cells corresponding to faces (or edges in 2D).
-        """
-        if not self.can_cells:
-            raise ValueError('region %s cannot have cells!' % self.name)
-
-        self.setup_face_indices(reset=reset)
-
-        self.cells = {}
-        for ig in self.igs:
-            rcells = self.fis[ig][:,0]
-            self.cells[ig] = nm.ascontiguousarray(rcells)
-            self.true_cells[ig] = False
 
     def setup_mirror_region(self):
         """
@@ -565,64 +621,6 @@ class Region(Struct):
             return sum(self.get_n_cells(ig, is_surface=is_surface)
                        for ig in self.igs)
 
-    def get_vertices_of_cells(self, return_per_group=False):
-        """
-        Return all vertices, that are in some cell of the region.
-
-        Parameters
-        ----------
-        return_per_group : bool
-            It True, return also a dict of vertices per element group.
-        """
-        all_vertices = nm.zeros((0,), dtype=nm.int32)
-        vertices = {}
-        for ig, group in self.domain.iter_groups(self.igs):
-            rcells = self.cells[ig]
-            conn = group.conn
-            nods = conn[rcells,:].ravel()
-            vertices[ig] = nm.unique(nods)
-            all_vertices = nm.unique(nm.r_[all_vertices, vertices[ig]])
-
-        if return_per_group:
-            out = all_vertices, vertices
-
-        else:
-            out = all_vertices
-
-        return out
-
-    def get_vertices(self, ig):
-        return self.vertices[ig]
-
-    def get_edges(self, ig):
-        return self.edges[ig]
-
-    def get_faces(self, ig):
-        return self.faces[ig]
-
-    def get_surface_entities(self, ig):
-        """
-        Return either region edges (in 2D) or faces (in 3D) .
-        """
-        if self.domain.shape.dim == 2:
-            return self.edges[ig]
-
-        else:
-            return self.faces[ig]
-
-    def get_cells(self, ig, true_cells_only=True):
-        """
-        Get cells of the region.
-
-        Raises ValueError if true_cells_only is True and the cells are not true
-        cells (e.g. surface integration region).
-        """
-        if true_cells_only and not self.true_cells[ig]:
-            msg = 'region %s has not true cells! (surface integration?)' \
-                  % self.name
-            raise ValueError(msg)
-        return self.cells[ig]
-
     def iter_cells(self):
         ii = 0
         for ig, cells in self.cells.iteritems():
@@ -639,15 +637,6 @@ class Region(Struct):
             return False
         else:
             return False
-
-    def has_cells_if_can(self):
-        if self.can_cells:
-            for cells in self.cells.itervalues():
-                if cells.size:
-                    return True
-            return False
-        else:
-            return True
 
     def contains(self, other):
         """
