@@ -141,6 +141,7 @@ cdef class CMesh:
 
     cdef readonly np.ndarray coors
     cdef readonly np.ndarray cell_types
+    cdef readonly np.ndarray cell_groups # ig for each cell.
     cdef readonly list conns
     cdef readonly dict entities
     cdef readonly int n_coor, dim, n_el
@@ -184,6 +185,8 @@ cdef class CMesh:
         cconn = _create_cconn(self.mesh.topology.conn[ii],
                               self.n_el, n_incident, 'D -> 0')
 
+        self.cell_groups = np.empty(self.n_el, dtype=np.uint32)
+
         indices = []
         offsets = []
         ict = 0
@@ -196,6 +199,8 @@ cdef class CMesh:
             indices.append(conn.ravel())
 
             self.cell_types[ict:ict+n_el] = self.key_to_index[mesh.descs[ig]]
+            self.cell_groups[ict:ict+n_el] = ig
+
             ict += n_el
 
         indices = np.concatenate(indices)
@@ -463,6 +468,59 @@ cdef class CMesh:
         pyfree(mask.mask)
 
         return out
+
+    def get_from_cell_group(self, int32 ig, int32 dim,
+                            np.ndarray[uint32, mode='c', ndim=1] entities=None):
+        """
+        Get entities of dimension `dim` that are contained in cells of group
+        `ig` and are listed in `entities`. If `entities` is None, all entities
+        are used.
+
+        Adapter function to be removed after new assembling is done.
+        """
+        cdef np.ndarray[uint32, mode='c', ndim=1] cells
+        cdef np.ndarray[uint32, mode='c', ndim=1] candidates
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+
+        cells = np.where(self.cell_groups == ig)[0].astype(np.uint32)
+        if cells.shape[0] == 0:
+            raise ValueError('group %d does not exist!' % ig)
+
+        if dim == self.dim:
+            candidates = cells
+
+        else:
+            self.setup_connectivity(self.dim, dim)
+            candidates = self.get_incident(dim, cells, self.dim)
+
+        if entities is not None:
+            out = np.intersect1d(candidates, entities)
+
+        else:
+            out = candidates
+
+        return out
+
+    def get_igs(self,
+                np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                int32 dim):
+        """
+        Get cell groups of incident to entities of dimension `dim`.
+
+        Adapter function to be removed after new assembling is done.
+        """
+        cdef np.ndarray[uint32, mode='c', ndim=1] cells
+
+        if dim == self.dim:
+            cells = entities
+
+        else:
+            self.setup_connectivity(dim, self.dim)
+            cells = self.get_incident(self.dim, entities, dim)
+
+        igs = np.unique(self.cell_groups[cells])
+
+        return igs
 
 def cmem_statistics():
     mem_statistics(0, '', '', '')
