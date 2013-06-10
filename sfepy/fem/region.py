@@ -214,43 +214,6 @@ class Region(Struct):
             if not ican:
                 self.entities[ii] = nm.empty(0, dtype=nm.uint32)
 
-    def light_copy(self, name, parse_def):
-        return Region(name, self.definition, self.domain, parse_def,
-                      kind=self.kind)
-
-    def setup_from_highest(self, dim):
-        """
-        Setup entities of topological dimension `dim` using the available
-        entities of the highest topological dimension.
-        """
-        if not self.can[dim]: return
-
-        for idim in range(self.dim + 1):
-            if self.entities[idim] is not None:
-                if self.entities[idim].shape[0] > 0:
-                    break
-
-        if idim <= dim:
-            msg = 'setup_from_highest() can be used only with dim < %d'
-            raise ValueError(msg % idim)
-
-        cmesh = self.domain.cmesh
-        cmesh.setup_connectivity(idim, dim)
-
-        incident = cmesh.get_incident(dim, self.entities[idim], idim)
-        self.entities[dim] = nm.unique(incident)
-
-    def setup_from_vertices(self, dim):
-        """
-        Setup entities of topological dimension `dim` using the region
-        vertices.
-        """
-        if not self.can[dim]: return
-
-        cmesh = self.domain.cmesh
-        cmesh.setup_connectivity(dim, 0)
-        vv = self.vertices
-        self.entities[dim] = cmesh.get_complete(dim, vv, 0)
 
     @property
     def vertices(self):
@@ -327,6 +290,40 @@ class Region(Struct):
         else:
             raise ValueError('region "%s" cannot have cells!' % self.name)
 
+    def setup_from_highest(self, dim):
+        """
+        Setup entities of topological dimension `dim` using the available
+        entities of the highest topological dimension.
+        """
+        if not self.can[dim]: return
+
+        for idim in range(self.dim + 1):
+            if self.entities[idim] is not None:
+                if self.entities[idim].shape[0] > 0:
+                    break
+
+        if idim <= dim:
+            msg = 'setup_from_highest() can be used only with dim < %d'
+            raise ValueError(msg % idim)
+
+        cmesh = self.domain.cmesh
+        cmesh.setup_connectivity(idim, dim)
+
+        incident = cmesh.get_incident(dim, self.entities[idim], idim)
+        self.entities[dim] = nm.unique(incident)
+
+    def setup_from_vertices(self, dim):
+        """
+        Setup entities of topological dimension `dim` using the region
+        vertices.
+        """
+        if not self.can[dim]: return
+
+        cmesh = self.domain.cmesh
+        cmesh.setup_connectivity(dim, 0)
+        vv = self.vertices
+        self.entities[dim] = cmesh.get_complete(dim, vv, 0)
+
     def eval_op_vertices(self, other, op):
         parse_def = _join(self.parse_def, '%sv' % op, other.parse_def)
         tmp = self.light_copy('op', parse_def)
@@ -359,6 +356,19 @@ class Region(Struct):
         parse_def = _join(self.parse_def, '%sc' % op, other.parse_def)
         tmp = self.light_copy('op', parse_def)
         tmp.cells = self.__op_to_fun[op](self.cells, other.cells)
+
+        return tmp
+
+    def light_copy(self, name, parse_def):
+        return Region(name, self.definition, self.domain, parse_def,
+                      kind=self.kind)
+
+    def copy(self):
+        """
+        Vertices-based copy.
+        """
+        tmp = self.light_copy('copy', self.parse_def)
+        tmp.vertices = copy(self.vertices)
 
         return tmp
 
@@ -448,14 +458,6 @@ class Region(Struct):
             rcells = self.fis[ig][:,0]
             self.cells[ig] = nm.ascontiguousarray(rcells)
             self.true_cells[ig] = False
-
-    def copy(self):
-        """
-        Vertices-based copy.
-        """
-        tmp = self.light_copy('copy', self.parse_def)
-        tmp.set_vertices(copy(self.all_vertices))
-        return tmp
 
     def setup_mirror_region(self):
         """
