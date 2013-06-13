@@ -385,8 +385,19 @@ class Viewer(Struct):
         names = p_names + c_names
         if only_names is None:
             names = [ii for ii in names if ii[2] not in filter_names]
+
         else:
-            _names = [ii for ii in names if ii[2] in only_names]
+            # Use order of only_names.
+            _names = []
+            aux = [ii[2] for ii in names]
+            for name in only_names:
+                try:
+                    ii = aux.index(name)
+                except ValueError:
+                    output('ignoring nonexistent name: %s' % name)
+                    continue
+                _names.append(names[ii])
+
             if len(_names) != len(only_names):
                 output('warning: some names were not found!')
             if not len(_names):
