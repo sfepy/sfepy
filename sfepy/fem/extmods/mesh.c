@@ -416,8 +416,11 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   debprintf("max. n_incident_vertex: %d\n", n_incident * n_v_max);
 
   // Allocate maximal buffers for local connectivity with sorted global
-  // vertices.
+  // vertices. Counts have to be set to zero to avoid spurious calls to
+  // conn_free()!
+  sloc->num = sloc->n_incident = 0;
   conn_alloc(sloc, 12, n_v_max * 12);
+  gloc->num = gloc->n_incident = 0;
   conn_alloc(gloc, 12, n_v_max * 12);
 
   id = 0;
