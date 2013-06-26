@@ -114,9 +114,9 @@ class RadialVector(object):
         return RadialVector(at, val)
 
     def extrapolated_derivatives(self, at=None, precision=0.0001, attempts=10):
-         """ Smoth the vector by interposing spline curve and return derivatives """
+        """ Smoth the vector by interposing spline curve and return derivatives """
         if at is None:
-            at = self.mesh
+           at = self.mesh
         elif not isinstance(at, RadialMesh):
             at = ExplicitRadialMesh(at)
         val = self.get_extrapolated(precision=0.0001, grade=10,
@@ -151,7 +151,7 @@ class RadialVector(object):
             y = self.get_index(y)
         return RadialVector(self.mesh.slice(x, y), self.values[x:y])
     
-   def interpolate(self, x, kind = None, centre = None):
+    def interpolate(self, x, kind = None, centre = None):
         """ Return values interpolated in given coordinates x.
         Kind of interpolation can be None for linear interpolation or 
         some of scipy.interpolate.interp1d kinds.
@@ -174,8 +174,10 @@ class RadialVector(object):
         """ Return interpolated values at points given by 3d coordinates and centre """
         if centre is None:
           centre = np.zeros((3,))
-        return self.interpolate(x, kind, centre)    def output_vector(self, filename=None):
-        """ """
+        return self.interpolate(x, kind, centre)    
+        
+    def output_vector(self, filename=None):
+        """ Save vector in two columns COORS VALUES"""
         return self.mesh.output_vector(self, filename)
 
     @staticmethod
@@ -252,8 +254,7 @@ class RadialMesh(object):
     """
     Radial mesh.
     """
-    @staticmethod
-    def integral_factor(vector, factor):
+    def integral_factor(self, vector, factor):
         """
         return values multiplied by given integral factor
         It can be 
@@ -307,7 +308,7 @@ class RadialMesh(object):
         .. math::
            \int f(r) r^2 dr
         """
-        v = RadialMesh.integral_factor(vector, factor)
+        v = self.integral_factor(vector, factor)
         return simps(v, self.coors)
 
     def linear_integrate(self, vector):
@@ -325,7 +326,7 @@ class RadialMesh(object):
         from_zero starts to integrate from zero, instead of starting between
         the first two points
         """        
-        v = RadialMesh.integral_factor(vector, factor)
+        v = self.integral_factor(vector, factor)
         r = self.get_coors()
         if from_zero:
             v = cumtrapz(vector, r, initial=vector[0] / 2 * max(0.0, r[0]))
@@ -525,16 +526,16 @@ class RadialHyperbolicMesh(ExplicitRadialMesh):
         """
         if size is None:
             # range, number of points
-            self.size = (ap if not ap is None else jm)
+            self.size_par = (ap if not ap is None else jm)
             self.ap = 1.0
-            self.jm = self.size / jm + self.size
+            self.jm = self.size_par / jm + self.size_par
         else:
             # clasical
-            self.size = size
+            self.size_par = size
             self.jm = jm
             self.ap = ap
 
-        coors = np.arange((0.0 if from_zero else 1.0), self.size + 1,
+        coors = np.arange((0.0 if from_zero else 1.0), self.size_par + 1,
                           dtype=np.float64)
         coors = self.ap * coors / (self.jm - coors)
 
