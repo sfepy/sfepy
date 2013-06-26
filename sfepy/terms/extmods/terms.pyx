@@ -215,6 +215,10 @@ cdef extern from 'terms.h':
     cdef int32 _d_surface_flux \
          'd_surface_flux'(FMField *out, FMField *grad,
                           FMField *mtxD, Mapping *sg, int32 mode)
+    cdef int32 _dw_convect_v_grad_s \
+         'dw_convect_v_grad_s'(FMField *out, FMField *val_v, FMField *grad_s,
+                               Mapping *vvg, Mapping *svg,
+                               int32 isDiff)
 
     cdef int32 _dw_lin_elastic_iso \
          'dw_lin_elastic_iso'(FMField *out, FMField *strain,
@@ -1192,6 +1196,23 @@ def d_surface_flux(np.ndarray out not None,
     array2fmfield4(_mtx_d, mtx_d)
 
     ret = _d_surface_flux(_out, _grad, _mtx_d, cmap.geo, mode)
+    return ret
+
+def dw_convect_v_grad_s(np.ndarray out not None,
+                        np.ndarray val_v not None,
+                        np.ndarray grad_s not None,
+                        CMapping cmap_v not None,
+                        CMapping cmap_s not None,
+                        int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _val_v[1], _grad_s[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_val_v, val_v)
+    array2fmfield4(_grad_s, grad_s)
+
+    ret = _dw_convect_v_grad_s(_out, _val_v, _grad_s,
+                               cmap_v.geo, cmap_s.geo, is_diff)
     return ret
 
 def dw_lin_elastic_iso(np.ndarray out not None,

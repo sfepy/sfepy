@@ -22,9 +22,14 @@ int32 dw_diffusion( FMField *out, FMField *grad,
 		    int32 isDiff );
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 		   FMField *mtxD, Mapping *vg );
+
 int32 dw_permeability_r( FMField *out, FMField *mtxD, Mapping *vg );
 int32 d_surface_flux( FMField *out, FMField *grad,
                       FMField *mtxD, Mapping *sg, int32 mode );
+
+int32 dw_convect_v_grad_s( FMField *out, FMField *val_v, FMField *grad_s,
+                           Mapping *vvg, Mapping *svg,
+                           int32 isDiff );
 
 END_C_DECLS
 

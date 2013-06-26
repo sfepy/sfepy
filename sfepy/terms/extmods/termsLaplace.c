@@ -464,3 +464,77 @@ int32 d_surface_flux( FMField *out, FMField *grad,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "dw_convect_v_grad_s"
+int32 dw_convect_v_grad_s( FMField *out, FMField *val_v, FMField *grad_s,
+                           Mapping *vvg, Mapping *svg,
+                           int32 isDiff )
+{
+  int32 ii, nEPV, nEPS, dim, nQP, ret = RET_OK;
+  FMField *aux = 0, *out_qp = 0, *gst = 0;
+
+  nQP = vvg->bfGM->nLev;
+  dim = vvg->bfGM->nRow;
+  nEPS = svg->bfGM->nCol;
+  nEPV = vvg->bf->nCol;
+
+  if (isDiff == 0) {
+    fmf_createAlloc( &aux, 1, nQP, 1, 1 );
+    fmf_createAlloc( &out_qp, 1, nQP, nEPS, 1 );
+
+  } else if (isDiff == 1) { // d/ds.
+    fmf_createAlloc( &aux, 1, nQP, 1, nEPS );
+    fmf_createAlloc( &out_qp, 1, nQP, nEPS, nEPS );
+
+  } else { // d/dv.
+    fmf_createAlloc( &aux, 1, nQP, 1, dim * nEPV );
+    fmf_createAlloc( &out_qp, 1, nQP, nEPS, dim * nEPV );
+    fmf_createAlloc( &gst, 1, nQP, 1, dim );
+  }
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( out, ii );
+    FMF_SetCellX1( svg->bf, ii );
+
+    if (isDiff == 0) {
+      FMF_SetCell( val_v, ii );
+      FMF_SetCell( grad_s, ii );
+
+      // v^T Psi^T G_c s.
+      fmf_mulATB_nn( aux, val_v, grad_s );
+      // Phi^T v^T Psi^T G_c s.
+      fmf_mulATB_nn( out_qp, svg->bf, aux );
+
+    } else if (isDiff == 1) { // d/ds.
+      FMF_SetCell( val_v, ii );
+      FMF_SetCell( svg->bfGM, ii );
+
+      // v^T Psi^T G_c.
+      fmf_mulATB_nn( aux, val_v, svg->bfGM );
+      // Phi^T v^T Psi^T G_c.
+      fmf_mulATB_nn( out_qp, svg->bf, aux );
+
+    } else { // d/dv.
+      FMF_SetCell( grad_s, ii );
+      FMF_SetCellX1( vvg->bf, ii );
+
+      // s^T G_c^T - transpose grad_s.
+      fmf_mulATC( gst, grad_s, 1.0 );
+      // s^T G_c^T Psi.
+      bf_ract( aux, vvg->bf, gst );
+      // Phi^T s^T G_c^T Psi.
+      fmf_mulATB_nn( out_qp, svg->bf, aux );
+    }
+
+    fmf_sumLevelsMulF( out, out_qp, vvg->det->val );
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &aux );
+  fmf_freeDestroy( &out_qp );
+  fmf_freeDestroy( &gst );
+
+  return( ret );
+}

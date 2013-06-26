@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 
@@ -372,3 +373,45 @@ class SurfaceFluxTerm(Term):
         n_fa, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
         return (n_fa, 1, 1, 1), parameter.dtype
+
+class ConvectVGradSTerm(Term):
+    r"""
+    Scalar gradient term with convective velocity.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} q (\ul{u} \cdot \nabla p)
+
+    :Arguments:
+        - virtual  : :math:`q`
+        - state_v  : :math:`\ul{u}`
+        - state_s  : :math:`p`
+    """
+    name = 'dw_convect_v_grad_s'
+    arg_types = ('virtual', 'state_v', 'state_s')
+    arg_shapes = [{'virtual' : (1, 'state_s'), 'state_v' : 'D', 'state_s' : 1}]
+    function = terms.dw_convect_v_grad_s
+
+    def get_fargs(self, virtual, state_v, state_s,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vvg, _ = self.get_mapping(state_v)
+        svg, _ = self.get_mapping(state_s)
+
+        if diff_var is None:
+            grad_s = self.get(state_s, 'grad')
+            val_v = self.get(state_v, 'val')
+            fmode = 0
+
+        elif diff_var == state_s.name:
+            grad_s = nm.array([0], ndmin=4, dtype=nm.float64)
+            val_v = self.get(state_v, 'val')
+            fmode = 1
+
+        else:
+            assert_(diff_var == state_v.name)
+            grad_s = self.get(state_s, 'grad')
+            val_v = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 2
+
+        return val_v, grad_s, vvg, svg, fmode
