@@ -2,7 +2,7 @@
 Classes for constructing potentials of atoms and molecules.
 """
 import numpy as nm
-
+from sfepy.physics.radial_mesh import RadialVector
 from sfepy.base.base import as_float_or_complex, Container, Struct
 from sfepy.linalg import norm_l2_along_axis
 
@@ -14,21 +14,11 @@ class CompoundPotential(Container):
     def __init__(self, objs=None):
         Container.__init__(self, objs=objs)
 
-        self.update_expression()
-
     def insert(self, ii, obj):
         Container.insert(self, ii, obj)
-        self.update_expression()
 
     def append(self, obj):
         Container.append(self, obj)
-        self.update_expression()
-
-    def update_expression(self):
-        self.expression = []
-        for pot in self:
-            aux = [pot.sign, pot.name, pot.centre]
-            self.expression.append(aux)
 
     def __mul__(self, other):
         out = CompoundPotential()
@@ -151,28 +141,25 @@ class PotentialBase(Struct):
         out = -1.0 * self
         return out
 
-class Potential(PotentialBase):
+
+class BaseSphericalPotential(PotentialBase):
     """
     Single spherically symmetric potential.
     """
 
-    def __init__(self, name, function, centre=None, dim=3, args=None):
+    def __init__(self, name, function, centre=None, dim=3):
         self.name = name
-        self.function = function
-        self.args = args if args is not None else ()
-
         if centre is None:
-            centre = nm.array([0.0] * dim, dtype=nm.float64)
-
-        self.centre = nm.asarray(centre, dtype=nm.float64)
-
+            self.centre = None # nm.array([0.0] * dim, dtype=nm.float64)
+        else:
+            self.centre = nm.asarray(centre, dtype=nm.float64)
         self.sign = 1.0
 
     def __call__(self, coors):
-        r = self.get_distance(coors)
-
-        pot = self.sign * self.function(r, *self.args)
-
+        coors = self.get_distance(coors)
+        pot = self.function(coors)
+        if self.sign != 1.0:
+           pot *= self.sign 
         return pot
 
     def __iter__( self ):
@@ -187,12 +174,59 @@ class Potential(PotentialBase):
         """
         return 1
 
+    def get_centre(self):
+        """ 
+        Return potential centre, for redefining in descendants 
+        """
+        if hasattr(self.centre, 'get_centre'):
+           return self.centre.get_centre()
+        return self.centre
+           
+
     def get_distance(self, coors):
         """
         Get the distance of points with coordinates `coors` of the
         potential centre.
         """
-        return norm_l2_along_axis(coors - self.centre)
+        if len(coors.shape) == 1:
+           return coors           
+        if self.centre is None:
+          return norm_l2_along_axis(coors)  
+        if(hasattr(self.centre, 'get_distance')):
+           return self.centre.get_distance(coors)
+        return norm_l2_along_axis(coors - self.get_centre())
+
+    def get_derivative(self, coors, eps=1e-6):
+        """ 
+        Return its derivative in given coordinates. In this case is numerically computed
+        using \epsilon = eps
+        In case the function is Potential, let the derivation computation on the Potential itself.
+        (so the continuity of potential derivations is retained)
+        """
+        r = self.get_distance(coors)
+        if hasattr(self.function, 'get_derivative'):
+           return self.function.get_derivative(coors, eps)
+        fp1 = self.function(r + eps)
+        fm1 = self.function(r - eps)
+        d1 = (fp1 - fm1) / (2.0 * eps)
+        return d1
+
+    def get_second_derivative(self, coors, eps=1e-6):
+        """ Return its second derivative in given coordinates. In this case is numerically 
+        computed using \epsilon = eps
+        In case the function is Potential, let the derivation computation on the Potential itself.
+        (so the continuity of potential derivations is retained)
+        """
+        r = self.get_distance(coors)
+        if hasattr(self.function, 'get_second_derivative'):
+           return self.function.get_second_derivative(coors, eps)
+        r = self.get_distance(coors)
+        f0 = self.function(r)
+        fp2 = self.function(r + 2.0 * eps)
+        fm2 = self.function(r - 2.0 * eps)
+        # Second derivative w.r.t. r.
+        d2 = (fp2 - 2.0 * f0 + fm2) / (4.0 * eps * eps)
+        return d2        
 
     def get_charge(self, coors, eps=1e-6):
         """
@@ -200,20 +234,48 @@ class Potential(PotentialBase):
         applying Laplacian in spherical coordinates.
         """
         r = self.get_distance(coors)
-
-        args = self.args
-
-        f0 = self.function(r, *args)
-        fp1 = self.function(r + eps, *args)
-        fp2 = self.function(r + 2.0 * eps, *args)
-        fm1 = self.function(r - eps, *args)
-        fm2 = self.function(r - 2.0 * eps, *args)
-
-        # Second derivative w.r.t. r.
-        d2 = (fp2 - 2.0 * f0 + fm2) / (4.0 * eps * eps)
+        d1 = self.get_derivative(r)
+        d2 = self.get_second_derivative(r)
         # First derivative w.r.t. r.
-        d1 = (fp1 - fm1) / (2.0 * eps)
-
         charge = - self.sign / (4.0 * nm.pi) * (d2 + 2.0 * d1 / r)
-
         return charge
+
+
+class SphericalPotential(BaseSphericalPotential):
+    """ spherically symmetric potential given by radial function """
+    def __init__(self, name, function, centre=None, dim=3, args=None):
+        if args:
+           self.function = lambda x: function(x, *args)
+        else:
+           self.function = function
+        super(SphericalPotential, self).__init__(self, name, centre, dim)
+
+class DiscreteSphericalPotential(BaseSphericalPotential):
+     """ spherically symmetric potential given by discrete values """
+     def __init__(self, name, mesh = None, values=None, centre=None, dim=3):
+        if values is None:
+           self.vector = mesh
+        else:
+           self.vector = RadialVector(mesh, values)
+        super(DiscreteSphericalPotential, self).__init__(self, name, centre, dim)
+
+     @property
+     def mesh(self):
+         return self.vector.mesh
+
+     @property
+     def values(self):
+         return self.vector.values
+
+     def function(self, r):
+        return self.vector.interpolate(r)
+        
+     def get_derivative(self, r, eps = None):
+        r = self.get_distance(r)
+        return self.vector.linear_derivation(at = r)
+
+     def get_second_derivative(self, r, eps = None):
+        r = self.get_distance(r)
+        return self.vector.linear_derivation().linear_derivation(at = r) 
+
+  
