@@ -10,15 +10,18 @@ word_free = Word(alphas8bit + '_-/.+**' + alphanums)
 word_strict = Word(alphas8bit + alphas, alphas8bit + alphanums + '_' )
 
 (lparen, rparen, lbrack, rbrack,
-lbrace, rbrace, colon) = map(Suppress, '()[]{}:')
+lbrace, rbrace, colon,equal_sign) = map(Suppress, '()[]{}:=')
 
 integer = Combine(Optional(oneOf('+ -')) + Word(nums)).setName('integer')
 cvt_int = lambda toks: int(toks[0])
 integer.setParseAction(cvt_int)
 
-boolean = Keyword('False', caseless=True)
-cvt_bool =  lambda toks: toks[0].lower == 'true'
-boolean.setParseAction(cvt_bool)
+boolean_true =  Keyword('True', caseless=True)
+boolean_true.setParseAction(lambda x: True)
+boolean_false =  Keyword('False', caseless=True)
+boolean_false.setParseAction(lambda x: False)
+
+boolean = boolean_true | boolean_false
 
 none = Keyword('None', caseless=True)
 
@@ -32,7 +35,7 @@ real = Combine(Optional(oneOf('+ -'))+ Word(nums)
 cvt_real = lambda toks: float(toks[0])
 real.setParseAction(cvt_real)
 
-array_index = Word(nums) + Optional(colon + integer
+array_index = integer + Optional(colon + integer
 				+ Optional(colon + integer))
 cvt_array_index = lambda toks: int(toks[0]) if len(toks) == 1 \
 	      else slice(*toks)
@@ -54,7 +57,7 @@ def list_of(element, *elements):
     lst = delimitedList(element)
     return lst + Optional(Suppress(','))
 
-def standard_structs(word):
+def standard_structs(word = word_free):
 
 
     tuple_str = Forward()
@@ -77,7 +80,7 @@ def standard_structs(word):
     list_str.inner.setParseAction(lambda toks: list(toks))
     list_str << (lbrack + list_str.inner + rbrack)
 
-    dict_entry = Group(list_item + colon + list_item2)
+    dict_entry = Group(list_item + (colon|equal_sign) + list_item2)
     dict_str.inner = list_of(dict_entry)
     dict_str.inner.setParseAction(cvt_dict)
     dict_str << (lbrace + Optional(dict_str.inner) + rbrace)
@@ -85,4 +88,21 @@ def standard_structs(word):
     return {'tuple' : tuple_str,
             'list' : list_str,
             'dict' : dict_str,
-            'list_item' : list_item}
+            'list_item' : list_item,
+            }
+
+def list_dict():
+    defs = standard_structs()
+    i = defs['list_item']
+    arg = i.copy()
+    arg.setParseAction(lambda t: (t[0],))
+    narg = word_strict + (colon | equal_sign) + i
+    narg.setParseAction(lambda t: (t[0], t[1]))
+    return Group(list_of( narg | arg)).setParseAction(lambda t:                     
+         (
+          [x[0] for x in t[0] if len(x) == 1],
+          dict([x for x in t[0] if len(x) > 1])
+         )
+        )
+    
+
