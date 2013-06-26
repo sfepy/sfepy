@@ -49,6 +49,7 @@ regions = {
 
 fields = {
     'temperature' : ('real', 1, 'Omega', 1),
+    'velocity' : ('real', 'vector', 'Omega', 1),
 }
 
 variables = {
@@ -56,6 +57,8 @@ variables = {
     'v' : ('test field',    'temperature', 'u'),
     'p' : ('parameter field', 'temperature',
            {'setter' : 'get_load_variable'}),
+    'w' : ('parameter field', 'velocity',
+           {'setter' : 'get_convective_velocity'}),
 }
 
 ebcs = {
@@ -70,6 +73,7 @@ integrals = {
 equations = {
     'Laplace equation' :
     """dw_laplace.i1.Omega( m.c, v, u )
+     - dw_convect_v_grad_s.i1.Omega( v, w, u )
      = - dw_volume_dot.i1.Omega_L( load.f, v, p )"""
 }
 
@@ -115,6 +119,13 @@ def get_load_variable(ts, coors, region=None):
     y = coors[:,1]
 
     val = 5e5 * y
+    return val
+
+def get_convective_velocity(ts, coors, region=None):
+    """
+    Define nodal values of 'w' in the nodal coordinates `coors`.
+    """
+    val = 100.0 * nm.ones_like(coors)
 
     return val
 
@@ -130,6 +141,7 @@ def get_ebc(coors, amplitude):
 functions = {
     'get_pars' : (get_pars,),
     'get_load_variable' : (get_load_variable,),
+    'get_convective_velocity' : (get_convective_velocity,),
     'get_middle_ball' : (get_middle_ball,),
     'get_ebc' : (lambda ts, coor, bc, problem, **kwargs: get_ebc(coor, 5.0),),
 }
