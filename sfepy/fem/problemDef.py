@@ -113,8 +113,6 @@ class ProblemDefinition(Struct):
         self.name = name
         self.conf = conf
 
-        if not hasattr(self.conf, 'verbose'):
-           conf.verbose = True
 
         self.reset()
 
@@ -139,6 +137,8 @@ class ProblemDefinition(Struct):
             if conf is None:
                 self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
 
+        if not hasattr(self.conf, 'verbose'):
+           self.conf.verbose = True
 
         if auto_solvers:
             if ls is None:
