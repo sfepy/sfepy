@@ -240,7 +240,7 @@ def eval_boundary_diff_vel_grad( problem, uc, pc, equation, region_name,
     state.set_full(uc, 'uc')
     state.set_full(pc, 'pc')
     if pi is not None:
-        problem.variables['Pi'].data_from_data( pi )
+        problem.variables['Pi'].set_data(pi)
 
     problem.time_update( conf_ebc = {}, conf_epbc = {} )
 
@@ -285,7 +285,7 @@ class GPlusCoef( CoefFMOne ):
             var_name = self.variables[0]
             c_name = problem.variables[var_name].primary_var_name
             omega = step_data[c_name].data
-            problem.variables[var_name].data_from_data( omega )
+            problem.variables[var_name].set_data(omega)
 
             val1 = eval_term_op( None, expression,
                                 problem, call_mode = 'd_eval' )

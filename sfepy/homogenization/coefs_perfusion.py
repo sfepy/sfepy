@@ -23,7 +23,7 @@ class CorrRegion( CorrMiniApp ):
             problem.select_variables( self.variables )
             
             for name, val in self.get_variables( ir, data ):
-                problem.variables[name].data_from_data( val )
+                problem.variables[name].set_data(val)
 
             equations = {}
         

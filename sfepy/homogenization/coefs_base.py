@@ -280,7 +280,7 @@ class CorrNN(CorrMiniApp):
 
     def set_variables_default(variables, ir, ic, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].data_from_any(data[req].states[ir,ic][comp])
+            variables[var].set_data(data[req].states[ir,ic][comp])
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -331,7 +331,7 @@ class CorrN(CorrMiniApp):
 
     def set_variables_default(variables, ir, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].data_from_any(data[req].states[ir][comp])
+            variables[var].set_data(data[req].states[ir][comp])
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -386,7 +386,7 @@ class CorrOne(CorrMiniApp):
 
     def set_variables_default(variables, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].data_from_any(data[req].state[comp])
+            variables[var].set_data(data[req].state[comp])
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -772,7 +772,7 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
             state0 = problem.create_state()
             state0.set_full(data[vu].data, vu)
             state0.set_full(data[vp].data, vp)
-            vv[vdp].data_from_data(data['d'+vp].data)
+            vv[vdp].set_data(data['d'+vp].data)
 
             problem.update_time_stepper(ts)
             state = problem.solve(state0)
@@ -827,7 +827,7 @@ class CoefSymSym(MiniAppBase):
         idx = mode2var[mode]
 
         val = data[set_var[idx][1]].states[ir, ic][set_var[idx][2]]
-        variables[set_var[idx][0]].data_from_any(val)
+        variables[set_var[idx][0]].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -943,7 +943,7 @@ class CoefNN(MiniAppBase):
         idx = mode2var[mode]
 
         val = data[set_var[idx][1]].states[ir][set_var[idx][2]]
-        variables[set_var[idx][0]].data_from_any(val)
+        variables[set_var[idx][0]].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -988,7 +988,7 @@ class CoefN(MiniAppBase):
 
     def set_variables_default(variables, ir, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].data_from_any(data[req].states[ir][comp])
+            variables[var].set_data(data[req].states[ir][comp])
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -1091,7 +1091,7 @@ class CoefOne(MiniAppBase):
 
     def set_variables_default(variables, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].data_from_any(data[req].state[comp])
+            variables[var].set_data(data[req].state[comp])
 
     set_variables_default = staticmethod(set_variables_default)
 

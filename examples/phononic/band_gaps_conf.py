@@ -30,7 +30,7 @@ def set_coef_d(variables, ir, ic, mode, pis, corrs_rs):
 
     val = pis.states[ir, ic]['u_m'] + corrs_rs.states[ir, ic]['u_m']
 
-    variables[mode2var[mode]].data_from_any(val)
+    variables[mode2var[mode]].set_data(val)
 
 class BandGapsConf(Struct):
     """

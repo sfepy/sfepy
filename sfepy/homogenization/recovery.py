@@ -234,7 +234,7 @@ def compute_micro_u( corrs, strain, vu, dim, out = None ):
 def compute_stress_strain_u( pb, integral, region, material, vu, data ):
 
     var = pb.create_variables([vu])[vu]
-    var.data_from_any(data)
+    var.set_data(data)
 
     stress = pb.evaluate('ev_cauchy_stress.%s.%s( %s, %s )'
                          % (integral, region, material, vu), verbose=False,
@@ -249,7 +249,7 @@ def compute_stress_strain_u( pb, integral, region, material, vu, data ):
 def add_stress_p( out, pb, integral, region, vp, data ):
 
     var = pb.create_variables([vp])[vp]
-    var.data_from_any(data)
+    var.set_data(data)
 
     press0 = pb.evaluate('ev_volume_integrate.%s.%s( %s )' \
                          % (integral, region, vp), verbose=False,
@@ -353,12 +353,12 @@ def recover_bones( problem, micro_problem, region, eps0,
         meval = micro_problem.evaluate
 
         var_p = variables[vppp1]
-        var_p.data_from_any(p_aux)
+        var_p.set_data(p_aux)
         dvel_m1 = meval('ev_diffusion_velocity.i1.Yc( m.K, %s )' % vppp1,
                         verbose=False, mode='el_avg', **{vppp1 : var_p})
 
         var_p = variables[vpp1]
-        var_p.data_from_any(p_hat)
+        var_p.set_data(p_hat)
         dvel_m2 = meval('ev_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
                         verbose=False, mode='el_avg',
                         **{vpp1 : var_p}) * eps0

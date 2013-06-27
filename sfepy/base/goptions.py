@@ -23,7 +23,8 @@ def validate_bool(val):
         raise ValueError('Could not convert "%s" to boolean!' % val)
 
 default_goptions = {
-    'verbose' : [True, validate_bool]
+    'verbose' : [True, validate_bool],
+    'check_term_finiteness' : [False, validate_bool],
 }
 
 class ValidatedDict(dict):

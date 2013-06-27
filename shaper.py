@@ -81,7 +81,7 @@ def solve_navier_stokes(conf, options):
                 vec_p = state_dp0('r')
                 log( nm.linalg.norm( vec_u ), nm.linalg.norm( vec_p ) )
 
-                dpb.variables.non_state_data_from_state('w_0', state_dp0(), 'w')
+                dpb.variables.set_data_from_state('w_0', state_dp0(), 'w')
                 vec_dp = nls( state_dp0() )
 
                 step += 1

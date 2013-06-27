@@ -164,7 +164,7 @@ def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
 
     val = pis.states[ir, ic]['uc'] + corrs_rs.states[ir, ic]['uc']
 
-    variables[mode2var[mode]].data_from_any(val)
+    variables[mode2var[mode]].set_data(val)
 
 coefs = {
     'E' : {

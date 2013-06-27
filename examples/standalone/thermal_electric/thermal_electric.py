@@ -131,7 +131,7 @@ def main():
     # Then solve the evolutionary heat conduction problem, using state_el.
     problem.set_equations({'eq' : conf.equations['2']})
     phi_var = problem.get_variables()['phi_known']
-    phi_var.data_from_any(state_el())
+    phi_var.set_data(state_el())
     time_solver = problem.get_time_solver()
     time_solver()
 

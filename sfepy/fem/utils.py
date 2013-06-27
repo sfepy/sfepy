@@ -1,7 +1,7 @@
 import numpy as nm
 
 import sfepy.linalg as la
-from extmods.mappings import CMapping
+from sfepy.fem.integrals import Integral
 
 def prepare_remap(indices, n_full):
     """
@@ -45,53 +45,53 @@ def prepare_translate(old_indices, new_indices):
     return translate
 
 def compute_nodal_normals(nodes, region, field, return_imap=False):
-    """Nodal normals are computed by simple averaging of element normals of
-    elements every node is contained in. """
+    """
+    Nodal normals are computed by simple averaging of element normals of
+    elements every node is contained in.
+    """
     dim = field.shape[0]
 
     region.select_cells_of_surface()
 
-    normals = nm.zeros( (nodes.shape[0], dim),
-                        dtype = nm.float64 )
-    mask = nm.zeros( (nodes.max()+1,), dtype = nm.int32 )
-    imap = nm.empty_like( mask )
-    imap.fill( nodes.shape[0] ) # out-of-range index for normals.
-    imap[nodes] = nm.arange( nodes.shape[0], dtype = nm.int32 )
-    
+    field.domain.create_surface_group(region)
+    field._setup_surface_data(region)
+
+    # Custom integral with quadrature points very close to facet vertices.
+    coors = field.gel.surface_facet.coors
+    centre = coors.sum(axis=0) / coors.shape[0]
+    qp_coors = coors + 1e-8 * (centre - coors)
+    # Unit normals -> weights = ones.
+    qp_weights = nm.ones(qp_coors.shape[0], dtype=nm.float64)
+
+    integral = Integral('aux', kind='s', coors=qp_coors, weights=qp_weights)
+
+    normals = nm.zeros((nodes.shape[0], dim), dtype=nm.float64)
+    mask = nm.zeros((nodes.max() + 1,), dtype=nm.int32)
+    imap = nm.empty_like(mask)
+    imap.fill(nodes.shape[0]) # out-of-range index for normals.
+    imap[nodes] = nm.arange(nodes.shape[0], dtype=nm.int32)
+
     for ig, fis in region.fis.iteritems():
-        ap = field.aps[ig]
-        n_fa = fis.shape[0]
-        n_fp = ap.efaces.shape[1]
-        face_type = 's%d' % n_fp
+        cmap, _ = field.get_mapping(ig, region, integral, 'surface')
+        e_normals = cmap.normal[..., 0]
 
-        faces = ap.efaces[fis[:,1]]
-        ee = ap.econn[fis[:,0]]
-        econn = nm.empty( faces.shape, dtype = nm.int32 )
-        for ir, face in enumerate( faces ):
-            econn[ir] = ee[ir,face]
+        sd = field.domain.surface_groups[ig][region.name]
+        econn = sd.get_connectivity()
         mask[econn] += 1
-        # Unit normals -> weights = ones.
-        ps = ap.interp.poly_spaces[face_type]
-        weights = nm.ones((n_fp,), dtype=nm.float64)
-
-        coors = ps.node_coors
-        bf_sg = ps.eval_base(coors, diff=True)
-
-        cmap = CMapping(n_fa, n_fp, dim, n_fp, mode='surface')
-        cmap.describe(field.get_coor(), econn, bf_sg, None, weights)
-
-        e_normals = cmap.normal.squeeze()
 
         # normals[imap[econn]] += e_normals
         im = imap[econn]
-        for ii, en in enumerate( e_normals ):
+        for ii, en in enumerate(e_normals):
             normals[im[ii]] += en
 
     # All nodes must have a normal.
-    if not nm.all( mask[nodes] > 0 ):
-        raise ValueError( 'region %s has not complete faces!' % region.name )
+    if not nm.all(mask[nodes] > 0):
+        raise ValueError('region %s has not complete faces!' % region.name)
 
-    normals /= la.norm_l2_along_axis( normals )[:,nm.newaxis]
+    norm = la.norm_l2_along_axis(normals)[:, nm.newaxis]
+    if (norm < 1e-15).any():
+        raise ValueError('zero nodal normal! (a node in volume?)')
+    normals /= norm
 
     if return_imap:
         return normals, imap
@@ -279,14 +279,14 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False):
             if ig in region.igs:
                 n_cell = region.shape[ig].n_cell
                 ir = offs[ig]
-                edata[ii+region.cells[ig]] = data[ir:ir+n_cell]
+                edata[ii+region.get_cells(ig)] = data[ir:ir+n_cell]
 
     else:
         for group in domain.iter_groups():
             ig = group.ig
             ii = eoffs[ig]
             if ig in region.igs:
-                cells = region.cells[ig]
+                cells = region.get_cells(ig)
                 ucells = nm.unique(cells)
 
                 avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]

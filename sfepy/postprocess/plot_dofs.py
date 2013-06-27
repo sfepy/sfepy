@@ -101,3 +101,43 @@ def plot_local_dofs(ax, coors, econn, show=False):
         plt.show()
 
     return ax
+
+def plot_nodes(ax, coors, econn, ref_nodes, dofs, show=False):
+    """
+    Plot Lagrange reference element nodes corresponding to global DOF numbers
+    given in an extended connectivity.
+    """
+    import numpy as nm
+
+    dim = coors.shape[1]
+    ax = _get_axes(ax, dim)
+
+    eps = 0.2
+    oeps = 1.0 - eps
+    for el in econn:
+        # Element centre.
+        centre = coors[el].sum(0) / el.shape[0]
+
+        for gdof in dofs:
+            if not gdof in el:
+                continue
+            ldof = nm.where(el == gdof)[0]
+            node = ref_nodes[ldof]
+
+            # Shift labels towards the centre.
+            cc = oeps * coors[gdof] + eps * centre
+
+            if dim == 3:
+                cx, cy, cz = cc
+                ax.text(cx, cy, cz, '%s' % node,
+                        color='r', fontsize=8, weight='light')
+
+            else:
+                cx, cy = cc
+                ax.text(cx, cy, '%d' % node,
+                        color='r', fontsize=8, weight='light')
+
+    if show:
+        plt.show()
+
+    return ax

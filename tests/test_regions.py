@@ -20,6 +20,7 @@ class Test(TestCommon):
 
         mesh = Mesh('test mesh',
                     data_dir + '/meshes/various_formats/abaqus_tet.inp')
+        mesh.nodal_bcs['set0'] = [0, 7]
         domain = Domain('test domain', mesh)
 
         conf_functions = {
@@ -40,10 +41,12 @@ class Test(TestCommon):
             'all',
             'nodes of surface',
             'nodes of group 0',
+            'nodes of set set0',
             'nodes in (z < 0.1) & (x < 0.1)',
             'nodes by get_nodes',
             'node 0, 1, 2',
             'elements of group 0',
+            # 'elements of set 0', not implemented...
             'elements by get_elements',
             'element 1, 4, 5',
             'element (0, 1), (0, 4), (0, 5)'
@@ -53,6 +56,7 @@ class Test(TestCommon):
             [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12],
             [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12],
             [0,  1,  3,  7],
+            [0,  7],
             [1,  2,  3,  4,  5,  9, 11],
             [1,  2,  3,  4,  5,  9, 11],
             [0,  1,  2],

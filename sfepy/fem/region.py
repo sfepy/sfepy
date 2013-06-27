@@ -5,68 +5,61 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 
-_depends = re.compile( 'r\.([a-zA-Z_0-9]+)' ).findall
+_depends = re.compile('r\.([a-zA-Z_0-9]+)').findall
 
 def get_parents(selector):
-    """Given a region selector, return names of regions it is based on."""
+    """
+    Given a region selector, return names of regions it is based on.
+    """
     parents = _depends(selector)
 
     return parents
 
 def get_dependency_graph(region_defs):
-    """Return a dependency graph and a name-sort name mapping for given
-    region definitions."""
+    """
+    Return a dependency graph and a name-sort name mapping for given
+    region definitions.
+    """
     graph = {}
     name_to_sort_name = {}
     for sort_name, rdef in region_defs.iteritems():
         name, sel = rdef.name, rdef.select
-##         print sort_name, name, sel
-        if name_to_sort_name.has_key( name ):
+        if name_to_sort_name.has_key(name):
             msg = 'region %s/%s already defined!' % (sort_name, name)
             raise ValueError(msg)
         name_to_sort_name[name] = sort_name
 
-        if not graph.has_key( name ):
+        if not graph.has_key(name):
             graph[name] = [0]
 
         for parent in get_parents(sel):
             graph[name].append(parent)
-##     print graph
+
     return graph, name_to_sort_name
 
-##
-# 15.06.2006, c
-# 17.07.2006
-# 04.09.2006
-def sort_by_dependency( graph ):
-
+def sort_by_dependency(graph):
     out = []
 
-    n_nod = len( graph )
+    n_nod = len(graph)
     idone = 0
     idone0 = -1
     while idone < n_nod:
 
         dep_removed = 0
         for node, deps in graph.iteritems():
-#            print '--', node, deps
-            if (len( deps ) == 1) and not deps[0]:
-                out.append( node )
+
+            if (len(deps) == 1) and not deps[0]:
+                out.append(node)
                 deps[0] = 1
                 idone += 1
-            elif not deps[0]:
-#                print '--->', deps
-                for ii, dep in enumerate( deps[1:] ):
-                    if graph[dep][0]:
-                        ir = deps.index( dep )
-                        deps.pop( ir )
-                        dep_removed += 1
-#                print '---<', deps
 
-##         print graph
-##         print out
-##         print idone, idone0, n_nod, dep_removed
-##         pause()
+            elif not deps[0]:
+
+                for ii, dep in enumerate(deps[1:]):
+                    if graph[dep][0]:
+                        ir = deps.index(dep)
+                        deps.pop(ir)
+                        dep_removed += 1
 
         if (idone <= idone0) and not dep_removed:
             raise ValueError, 'circular dependency'
@@ -74,9 +67,7 @@ def sort_by_dependency( graph ):
 
     return out
 
-##
-# 15.06.2006, c
-def _join( def1, op, def2 ):
+def _join(def1, op, def2):
     return '(' + def1 + ' ' + op + ' ' + def2 + ')'
 
 def _try_delete(obj, ig):
@@ -85,9 +76,12 @@ def _try_delete(obj, ig):
     except KeyError:
         pass
 
-##
-# 31.10.2005, c
-class Region( Struct ):
+class Region(Struct):
+    """
+    Region defines a subset of a FE domain.
+
+    Created: 31.10.2005
+    """
 
     @staticmethod
     def from_vertices(vertices, domain, name='region',
@@ -126,7 +120,7 @@ class Region( Struct ):
             forbidden = nm.setdiff1d(obj.igs, igs)
             obj.delete_groups(forbidden)
 
-        obj.switch_cells(can_cells) 
+        obj.switch_cells(can_cells)
         obj.complete_description(domain.ed, domain.fa,
                                  surface_integral=surface_integral)
 
@@ -194,16 +188,14 @@ class Region( Struct ):
                         mirror_region=None, ig_map=None,
                         ig_map_i=None)
 
-    ##
-    # 15.06.2006, c
-    def light_copy( self, name, parse_def ):
-        return Region( name, self.definition, self.domain, parse_def )
+    def light_copy(self, name, parse_def):
+        return Region(name, self.definition, self.domain, parse_def)
 
-    ##
-    # c: 15.06.2006, r: 04.02.2008
-    def update_groups( self, force = False ):
-        """Vertices common to several groups are listed only in all of them -
-        fa, ed.unique_indx contain no edge/face duplicates already."""
+    def update_groups(self, force = False):
+        """
+        Vertices common to several groups are listed only in all of them -
+        fa, ed.unique_indx contain no edge/face duplicates already.
+        """
         if self.must_update or force:
 
             self.igs = []
@@ -212,47 +204,39 @@ class Region( Struct ):
 
             for group in self.domain.iter_groups():
                 ig = group.ig
-                vv = nm.intersect1d( group.vertices, self.all_vertices )
-                if len( vv ) == 0: continue
+                vv = nm.intersect1d(group.vertices, self.all_vertices)
+                if len(vv) == 0: continue
 
-                self.igs.append( ig )
+                self.igs.append(ig)
                 self.vertices[ig] = vv
 
                 if self.can_cells:
-                    mask = nm.zeros( self.n_v_max, nm.int32 )
+                    mask = nm.zeros(self.n_v_max, nm.int32)
                     mask[vv] = 1
 
                     conn = group.conn
-                    aux = nm.sum( mask[conn], 1, dtype = nm.int32 )
-                    rcells = nm.where( aux == conn.shape[1] )[0]
-                    self.cells[ig] = nm.asarray( rcells, dtype = nm.int32 )
-                    self.true_cells[ig] = True
-
-                else:
-                    self.true_cells[ig] = False
+                    aux = nm.sum(mask[conn], 1, dtype=nm.int32)
+                    rcells = nm.where(aux == conn.shape[1])[0]
+                    self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
 
         self.must_update = False
 
     def update_vertices(self):
         self.all_vertices, self.vertices = self.get_vertices_of_cells(True)
 
-    ##
-    # 15.06.2006, c
-    def set_vertices( self, vertices ):
+    def set_vertices(self, vertices):
 
         self.all_vertices = nm.array(vertices, dtype=nm.int32)
-        self.update_groups( force = True )
+        self.update_groups(force = True)
         self.is_complete = False
 
-    ##
-    # c: 15.06.2006, r: 14.07.2008
-    def set_cells( self, cells ):
+    def set_cells(self, cells):
 
         self.igs = []
         self.cells = {}
         for ig, rcells in cells.iteritems():
-            self.cells[ig] = nm.array( rcells, dtype = nm.int32, ndmin = 1 )
-            self.igs.append( ig )
+            self.cells[ig] = nm.array(rcells, dtype=nm.int32, ndmin=1)
+            self.igs.append(ig)
         self.update_vertices()
         self.is_complete = False
         self.must_update = False
@@ -262,8 +246,7 @@ class Region( Struct ):
         Set region to contain the given element group.
         """
         self.igs = [ig]
-        self.cells = {ig : nm.arange( n_cell, dtype = nm.int32 )}
-        self.true_cells[ig] = True
+        self.cells = {ig : nm.arange(n_cell, dtype=nm.int32)}
         self.vertices = {ig: vertices.copy()}
         self.all_vertices = vertices.copy()
         self.must_update = False
@@ -328,10 +311,6 @@ class Region( Struct ):
                 aux = nm.sum(mask[conn], 1, dtype=nm.int32)
                 rcells = nm.where(aux == conn.shape[1])[0]
                 self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-                self.true_cells[ig] = True
-
-            else:
-                self.true_cells[ig] = False
 
         self.all_vertices = nm.unique(nm.hstack(all_vertices))
 
@@ -359,9 +338,7 @@ class Region( Struct ):
 
         self.update_shape()
 
-    ##
-    # 17.07.2007, c
-    def switch_cells( self, can_cells ):
+    def switch_cells(self, can_cells):
         if self.can_cells:
             self.can_cells = can_cells
             if not can_cells:
@@ -369,8 +346,8 @@ class Region( Struct ):
         else:
             self.can_cells = can_cells
             if can_cells:
-                self.update_groups( force = True )
-        
+                self.update_groups(force=True)
+
     def complete_description(self, ed, fa, surface_integral=False):
         """
         Complete the region description by listing edges and faces for
@@ -441,11 +418,11 @@ class Region( Struct ):
                 mask.fill(False)
                 mask[vv] = True
 
-                conn = group.conn
-                aux = nm.sum(mask[conn], 1, dtype=nm.int32)
-                rcells = nm.where(aux == conn.shape[1])[0]
-                self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
-                self.true_cells[ig] = True
+                if self.can_cells:
+                    conn = group.conn
+                    aux = nm.sum(mask[conn], 1, dtype=nm.int32)
+                    rcells = nm.where(aux == conn.shape[1])[0]
+                    self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
 
                 if self.domain.shape.dim == 3:
                     self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
@@ -466,9 +443,27 @@ class Region( Struct ):
                 # Points to fa.facets.
                 self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
 
+        for ig in self.igs:
+            self.true_cells[ig] = self.can_cells
+
+        self.delete_zero_faces()
         self.update_shape()
 
         self.is_complete = True
+
+    def delete_zero_faces(self, eps=1e-14):
+        """
+        Delete faces with zero area.
+        """
+        from sfepy.linalg import get_face_areas
+
+        fa = self.domain.fa
+
+        for ig, faces in self.faces.iteritems():
+            fav = fa.facets[faces]
+
+            areas = get_face_areas(fav, self.domain.mesh.coors)
+            self.faces[ig] = faces[areas > eps]
 
     def update_shape(self):
         """
@@ -508,27 +503,23 @@ class Region( Struct ):
                 assert_(nm.all(fi[:,0] == ig))
                 self.fis[ig] = fi[:,1:].copy()
 
-    ##
-    # 05.09.2006, c
-    # 22.02.2007
-    # 17.07.2007
-    def select_cells( self, n_verts ):
-        """Select cells containing at least n_verts[ii] vertices per group ii."""
+    def select_cells(self, n_verts):
+        """
+        Select cells containing at least n_verts[ii] vertices per group ii.
+        """
         if not self.can_cells:
-            print 'region %s cannot have cells!' % self.name
-            raise ValueError
+            raise ValueError('region %s cannot have cells!' % self.name)
 
         self.cells = {}
-        for ig, group in self.domain.iter_groups( self.igs ):
+        for ig, group in self.domain.iter_groups(self.igs):
             vv = self.vertices[ig]
-            if len( vv ) == 0: continue
-            
-            mask = nm.zeros( self.n_v_max, nm.int32 )
+            if len(vv) == 0: continue
+
+            mask = nm.zeros(self.n_v_max, nm.int32)
             mask[vv] = 1
 
-            aux = nm.sum( mask[group.conn], 1 )
-            rcells = nm.where( aux >= n_verts[ig] )[0]
-#            print rcells.shape
+            aux = nm.sum(mask[group.conn], 1)
+            rcells = nm.where(aux >= n_verts[ig])[0]
             self.cells[ig] = rcells
             self.true_cells[ig] = False
 
@@ -547,96 +538,79 @@ class Region( Struct ):
             self.cells[ig] = nm.ascontiguousarray(rcells)
             self.true_cells[ig] = False
 
-    ##
-    # 02.03.2007, c
-    def copy( self ):
-        """Vertices-based copy."""
-        tmp = self.light_copy( 'copy', self.parse_def )
-        tmp.set_vertices( copy( self.all_vertices ) )
-        return tmp
-        
-    ##
-    # 15.06.2006, c
-    def sub_n( self, other ):
-        tmp = self.light_copy( 'op',
-                              _join( self.parse_def, '-n', other.parse_def ) )
-        tmp.set_vertices( nm.setdiff1d( self.all_vertices,
-                                       other.all_vertices ) )
-        
+    def copy(self):
+        """
+        Vertices-based copy.
+        """
+        tmp = self.light_copy('copy', self.parse_def)
+        tmp.set_vertices(copy(self.all_vertices))
         return tmp
 
-    ##
-    # 15.06.2006, c
-    def add_n( self, other ):
-        tmp = self.light_copy( 'op',
-                              _join( self.parse_def, '+n', other.parse_def ) )
-        tmp.set_vertices( nm.union1d( self.all_vertices,
-                                     other.all_vertices ) )
-        
+    def sub_n(self, other):
+        tmp = self.light_copy('op',
+                              _join(self.parse_def, '-n', other.parse_def))
+        tmp.set_vertices(nm.setdiff1d(self.all_vertices, other.all_vertices))
+
         return tmp
 
-    ##
-    # 15.06.2006, c
-    def intersect_n( self, other ):
-        tmp = self.light_copy( 'op',
-                              _join( self.parse_def, '*n', other.parse_def ) )
-        tmp.set_vertices( nm.intersect1d( self.all_vertices,
-                                         other.all_vertices ) )
-        
+    def add_n(self, other):
+        tmp = self.light_copy('op',
+                              _join(self.parse_def, '+n', other.parse_def))
+        tmp.set_vertices(nm.union1d(self.all_vertices, other.all_vertices))
+
         return tmp
 
-    ##
-    # c: 15.06.2006, r: 15.04.2008
-    def sub_e( self, other ):
-        tmp = self.light_copy( 'op',
-                              _join( self.parse_def, '-e', other.parse_def ) )
+    def intersect_n(self, other):
+        tmp = self.light_copy('op',
+                              _join(self.parse_def, '*n', other.parse_def))
+        tmp.set_vertices(nm.intersect1d(self.all_vertices, other.all_vertices))
+
+        return tmp
+
+    def sub_e(self, other):
+        tmp = self.light_copy('op',
+                              _join(self.parse_def, '-e', other.parse_def))
         for ig in self.igs:
             if ig not in other.igs:
-                tmp.igs.append( ig )
+                tmp.igs.append(ig)
                 tmp.cells[ig] = self.cells[ig].copy()
                 continue
-            
-            aux = nm.setdiff1d( self.cells[ig], other.cells[ig] )
-            if not len( aux ): continue
+
+            aux = nm.setdiff1d(self.cells[ig], other.cells[ig])
+            if not len(aux): continue
             tmp.cells[ig] = aux
-            tmp.igs.append( ig )
+            tmp.igs.append(ig)
 
         tmp.update_vertices()
         return tmp
 
-    ##
-    # 15.06.2006, c
-    def add_e( self, other ):
-        tmp = self.light_copy( 'op',
-                              _join( self.parse_def, '+e', other.parse_def ) )
+    def add_e(self, other):
+        tmp = self.light_copy('op',
+                              _join(self.parse_def, '+e', other.parse_def))
         for ig in self.igs:
-            tmp.igs.append( ig )
+            tmp.igs.append(ig)
             if ig not in other.igs:
                 tmp.cells[ig] = self.cells[ig].copy()
                 continue
 
-            tmp.cells[ig] = nm.union1d( self.cells[ig],
-                                        other.cells[ig] )
+            tmp.cells[ig] = nm.union1d(self.cells[ig], other.cells[ig])
 
         for ig in other.igs:
             if ig in tmp.igs: continue
-            tmp.igs.append( ig )
+            tmp.igs.append(ig)
             tmp.cells[ig] = other.cells[ig].copy()
 
         tmp.update_vertices()
         return tmp
 
-    ##
-    # 15.06.2006, c
-    # 20.02.2007
-    def intersect_e( self, other ):
-        tmp = self.light_copy( 'op',
-                              _join( self.parse_def, '*e', other.parse_def ) )
+    def intersect_e(self, other):
+        tmp = self.light_copy('op',
+                              _join(self.parse_def, '*e', other.parse_def))
         for ig in self.igs:
             if ig not in other.igs: continue
-            aux = nm.intersect1d( self.cells[ig], other.cells[ig] )
-            if not len( aux ): continue
-            tmp.igs.append( ig )
+            aux = nm.intersect1d(self.cells[ig], other.cells[ig])
+            if not len(aux): continue
+            tmp.igs.append(ig)
             tmp.cells[ig] = aux
 
         tmp.update_vertices()
@@ -665,8 +639,7 @@ class Region( Struct ):
                     ig_map_i[igr] = igc
                     break
             else:
-                raise ValueError('cannot find mirror region group! (%d)' \
-                                 % igr)
+                raise ValueError('cannot find mirror region group! (%d)' % igr)
 
         self.mirror_region = mirror_region
         self.ig_map = ig_map
@@ -775,19 +748,13 @@ class Region( Struct ):
 
         return out
 
-    ##
-    # 22.02.2007, c
-    def get_vertices( self, ig ):
+    def get_vertices(self, ig):
         return self.vertices[ig]
 
-    ##
-    # 05.06.2007, c
-    def get_edges( self, ig ):
+    def get_edges(self, ig):
         return self.edges[ig]
-        
-    ##
-    # 05.06.2007, c
-    def get_faces( self, ig ):
+
+    def get_faces(self, ig):
         return self.faces[ig]
 
     def get_surface_entities(self, ig):
@@ -800,9 +767,17 @@ class Region( Struct ):
         else:
             return self.faces[ig]
 
-    ##
-    # 05.06.2007, c
-    def get_cells( self, ig ):
+    def get_cells(self, ig, true_cells_only=True):
+        """
+        Get cells of the region.
+
+        Raises ValueError if true_cells_only is True and the cells are not true
+        cells (e.g. surface integration region).
+        """
+        if true_cells_only and not self.true_cells[ig]:
+            msg = 'region %s has not true cells! (surface integration?)' \
+                  % self.name
+            raise ValueError(msg)
         return self.cells[ig]
 
     def iter_cells(self):
@@ -811,11 +786,8 @@ class Region( Struct ):
             for iel in cells:
                 yield ig, ii, iel
                 ii += 1
-        
-    ##
-    # created:       28.05.2007
-    # last revision: 11.12.2007
-    def has_cells( self ):
+
+    def has_cells(self):
 
         if self.can_cells:
             for cells in self.cells.itervalues():
@@ -825,7 +797,7 @@ class Region( Struct ):
         else:
             return False
 
-    def has_cells_if_can( self ):
+    def has_cells_if_can(self):
         if self.can_cells:
             for cells in self.cells.itervalues():
                 if cells.size:
@@ -834,13 +806,13 @@ class Region( Struct ):
         else:
             return True
 
-    def contains( self, other ):
-        """Tests only igs for now!!!"""
-        return set( other.igs ).issubset( set( self.igs ) )
+    def contains(self, other):
+        """
+        Tests only igs for now!!!
+        """
+        return set(other.igs).issubset(set(self.igs))
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
-    def get_cell_offsets( self ):
+    def get_cell_offsets(self):
         offs = {}
         off = 0
         for ig in self.igs:
@@ -848,14 +820,14 @@ class Region( Struct ):
             off += self.shape[ig].n_cell
         return offs
 
-    def get_charfun( self, by_cell = False, val_by_id = False ):
+    def get_charfun(self, by_cell=False, val_by_id=False):
         """
         Return the characteristic function of the region as a vector of values
         defined either in the mesh nodes (by_cell == False) or cells. The
         values are either 1 (val_by_id == False) or sequential id + 1.
         """
         if by_cell:
-            chf = nm.zeros( (self.domain.shape.n_el,), dtype = nm.float64 )
+            chf = nm.zeros((self.domain.shape.n_el,), dtype=nm.float64)
             offs = self.get_cell_offsets()
             for ig, cells in self.cells.iteritems():
                 iel = offs[ig] + cells
@@ -864,7 +836,7 @@ class Region( Struct ):
                 else:
                     chf[iel] = 1.0
         else:
-            chf = nm.zeros( (self.domain.shape.n_nod,), dtype = nm.float64 )
+            chf = nm.zeros((self.domain.shape.n_nod,), dtype=nm.float64)
             if val_by_id:
                 chf[self.all_vertices] = self.all_vertices + 1
             else:
