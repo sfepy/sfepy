@@ -110,7 +110,6 @@ class ConvectTerm(Term):
     name = 'dw_convect'
     arg_types = ('virtual', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.term_ns_asm_convect)
 
@@ -145,7 +144,6 @@ class LinearConvectTerm(Term):
     name = 'dw_lin_convect'
     arg_types = ('virtual', 'parameter', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'parameter' : 'D', 'state' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_lin_convect)
 
@@ -501,7 +499,6 @@ class PSPGCStabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : (1, None),
                   'parameter' : 'D', 'state' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_pspg_c)
 
@@ -542,7 +539,6 @@ class SUPGPStabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', None),
                   'parameter' : 'D', 'state' : 1}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_supg_p)
 
@@ -584,7 +580,6 @@ class SUPGCStabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
                   'parameter' : 'D', 'state' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_supg_c)
 

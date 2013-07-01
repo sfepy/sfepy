@@ -94,7 +94,6 @@ class AdjConvect2Term(Term):
     name = 'dw_adj_convect2'
     arg_types = ('virtual', 'state', 'parameter' )
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D', 'parameter' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_adj_convect2)
 
@@ -130,7 +129,6 @@ class SUPGCAdjStabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
                   'state' : 'D', 'parameter' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_adj_supg_c)
 
@@ -166,7 +164,6 @@ class SUPGPAdj1StabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'state', 'parameter')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
                   'state' : 'D', 'parameter' : 1}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_adj1_supg_p)
 
@@ -202,7 +199,6 @@ class SUPGPAdj2StabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     arg_shapes = {'material' : '1, 1', 'virtual' : ('D', 'state'),
                   'state' : 1, 'parameter' : 'D'}
-    geometries = ['3_4', '3_8']
 
     function = staticmethod(terms.dw_st_adj2_supg_p)
 
