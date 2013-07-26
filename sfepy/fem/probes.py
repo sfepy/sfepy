@@ -292,6 +292,8 @@ class Probe(Struct):
 
         while True:
             pars, points = self.get_points(refine_flag)
+            if not nm.isfinite(points).all():
+                raise ValueError('Inf/nan in probe points!')
 
             vals, cells, status = ev(points, strategy='kdtree',
                                      close_limit=self.options.close_limit,
