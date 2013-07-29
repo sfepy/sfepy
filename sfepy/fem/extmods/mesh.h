@@ -153,11 +153,13 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3);
 uint32 mesh_count_incident(Mesh *mesh, int32 dim,
                            Indices *entities, int32 dent);
 
-// Get non-unique entities of dimension `dim` incident to `entities` of
-// dimension `dent`.
+// Get non-unique entities `incident` of dimension `dim` incident to `entities`
+// of dimension `dent`. As each of entities can be in several entities of
+// dimension `dent`, `incident` is stored in MeshConnectivity structure.
 // `incident` must be preallocated - use mesh_count_incident().
 // Returns a subset of a connectivity - entities may be repeated!
-int32 mesh_get_incident(Mesh *mesh, Indices *incident, int32 dim,
+int32 mesh_get_incident(Mesh *mesh,
+                        MeshConnectivity *incident, int32 dim,
                         Indices *entities, int32 dent);
 
 // Select entities of dimension `dim` that are completely given by entities of

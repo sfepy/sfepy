@@ -710,7 +710,8 @@ uint32 mesh_count_incident(Mesh *mesh, int32 dim,
 }
 
 // `incident` must be preallocated - use mesh_count_incident().
-int32 mesh_get_incident(Mesh *mesh, Indices *incident, int32 dim,
+int32 mesh_get_incident(Mesh *mesh,
+                        MeshConnectivity *incident, int32 dim,
                         Indices *entities, int32 dent)
 {
   int32 ret = RET_OK;
@@ -725,10 +726,12 @@ int32 mesh_get_incident(Mesh *mesh, Indices *incident, int32 dim,
   }
 
   ii = 0;
+  incident->offsets[0] = 0;
   for (mei_init_sub(it0, mesh, entities, dent); mei_go(it0); mei_next(it0)) {
     for (mei_init_conn(it1, it0->entity, dim); mei_go(it1); mei_next(it1)) {
       incident->indices[ii++] = it1->entity->ii;
     }
+    incident->offsets[it0->it + 1] = incident->offsets[it0->it] + it1->it_end;
   }
 
  end_label:

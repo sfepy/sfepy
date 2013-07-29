@@ -80,7 +80,8 @@ cdef extern from 'mesh.h':
 
     cdef uint32 mesh_count_incident(Mesh *mesh, int32 dim,
                                     Indices *entities, int32 dent)
-    cdef int32 mesh_get_incident(Mesh *mesh, Indices *incident, int32 dim,
+    cdef int32 mesh_get_incident(Mesh *mesh,
+                                 MeshConnectivity *incident, int32 dim,
                                  Indices *entities, int32 dent)
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
@@ -414,14 +415,17 @@ cdef class CMesh:
 
     def get_incident(self, int32 dim,
                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
-                     int32 dent):
+                     int32 dent, ret_offsets=False):
         """
-        Get non-unique entities of dimension `dim` that are contained in
-        entities of dimension `dent` listed in `entities`.
+        Get non-unique entities `indices` of dimension `dim` that are contained
+        in entities of dimension `dent` listed in `entities`. As each of
+        entities can be in several entities of dimension `dent`, `offsets`
+        array is returned optionally.
         """
-        cdef Indices _entities[1], _incident[1]
-        cdef np.ndarray[uint32, mode='c', ndim=1] out
-        cdef uint32 *_out
+        cdef Indices _entities[1]
+        cdef MeshConnectivity _incident[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] indices
+        cdef np.ndarray[uint32, mode='c', ndim=1] offsets
         cdef uint32 num
 
         _entities.num = entities.shape[0]
@@ -429,12 +433,19 @@ cdef class CMesh:
 
         num = mesh_count_incident(self.mesh, dim, _entities, dent)
 
-        out = np.empty(num, dtype=np.uint32)
-        _incident.num = num
-        _incident.indices = &out[0]
+        indices = np.empty(num, dtype=np.uint32)
+        offsets = np.empty(_entities.num + 1, dtype=np.uint32)
+        _incident.num = _entities.num
+        _incident.n_incident = num
+        _incident.indices = &indices[0]
+        _incident.offsets = &offsets[0]
         mesh_get_incident(self.mesh, _incident, dim, _entities, dent)
 
-        return out
+        if ret_offsets:
+            return indices, offsets
+
+        else:
+            return indices
 
     def get_complete(self, int32 dim,
                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
