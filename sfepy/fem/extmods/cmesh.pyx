@@ -83,6 +83,9 @@ cdef extern from 'mesh.h':
     cdef int32 mesh_get_incident(Mesh *mesh,
                                  MeshConnectivity *incident, int32 dim,
                                  Indices *entities, int32 dent)
+    cdef int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
+                                  Indices *entities, int32 dent,
+                                  MeshConnectivity *incident, int32 dim)
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
 
@@ -446,6 +449,37 @@ cdef class CMesh:
 
         else:
             return indices
+
+    def get_local_ids(self,
+                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                      int32 dent,
+                      np.ndarray[uint32, mode='c', ndim=1] incident not None,
+                      np.ndarray[uint32, mode='c', ndim=1] offsets not None,
+                      int32 dim):
+        """
+        Get local ids of non-unique entities `incident` of dimension `dim`
+        (with given `offsets` per `entities`) incident to `entities` of
+        dimension `dent`, see `mesh_get_incident()`, with respect to
+        `entities`.
+        """
+        cdef Indices _entities[1], _local_ids[1]
+        cdef MeshConnectivity _incident[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+
+        _entities.num = entities.shape[0]
+        _entities.indices = &entities[0]
+
+        _incident.num = _entities.num
+        _incident.n_incident = incident.shape[0]
+        _incident.indices = &incident[0]
+        _incident.offsets = &offsets[0]
+
+        out = np.empty(_incident.n_incident, dtype=np.uint32)
+        _local_ids.num = _incident.n_incident
+        _local_ids.indices = &out[0]
+        mesh_get_local_ids(self.mesh, _local_ids, _entities, dent, _incident, dim)
+
+        return out
 
     def get_complete(self, int32 dim,
                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
