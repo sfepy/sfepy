@@ -201,7 +201,6 @@ class Region(Struct):
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
                         entities=[None] * (domain.shape.dim + 1),
                         shape=None,
-                        fis={},
                         must_update=True,
                         is_complete=False,
                         mirror_region=None, ig_map=None,
@@ -496,24 +495,19 @@ class Region(Struct):
 
         return out
 
-    def setup_face_indices(self, reset=True):
+    def get_facet_indices(self, ig):
         """
-        Initialize an array (per group) of (iel, ifa) for each face.
+        Return an array (per group) of (iel, ifa) for each facet. A facet can
+        be in several 1 (surface) or 2 (inner) cells.
         """
-        if reset or not self.fis:
-            fa = self.domain.get_facets(force_faces=True)[1]
+        cmesh = self.domain.cmesh
+        facets = self.get_facets(ig)
+        cells, offs = cmesh.get_incident(self.dim, facets, self.dim - 1,
+                                         ret_offsets=True)
+        ii = cmesh.get_local_ids(facets, self.dim - 1, cells, offs, self.dim)
+        fis = nm.c_[cells, ii]
 
-            if self.faces:
-                faces = self.faces
-            else:
-                faces = self.edges
-
-            self.fis = {}
-            for ig in self.igs:
-                rfaces = faces[ig]
-                fi = fa.indices[rfaces]
-                assert_(nm.all(fi[:,0] == ig))
-                self.fis[ig] = fi[:,1:].copy()
+        return fis
 
     def setup_mirror_region(self):
         """
