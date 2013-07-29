@@ -738,6 +738,52 @@ int32 mesh_get_incident(Mesh *mesh,
   return(ret);
 }
 
+// `local_ids` must be preallocated to same size as `entities`.
+int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
+                         Indices *entities, int32 dent,
+                         MeshConnectivity *incident, int32 dim)
+{
+  int32 ret = RET_OK;
+  uint32 ii, iind, ic, found;
+  int32 D = mesh->topology->max_dim;
+  MeshEntity entity[1];
+  MeshEntityIterator it1[1];
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dim, dent);
+    ERR_CheckGo(ret);
+  }
+
+  entity->mesh = mesh;
+  entity->dim = dim;
+
+  ii = 0;
+  for (iind = 0; iind < incident->num; iind++) {
+    for (ic = incident->offsets[iind]; ic < incident->offsets[iind+1]; ic++) {
+      entity->ii = incident->indices[ic];
+      // printf("%d: ? %d in %d\n", iind, entities->indices[iind], entity->ii);
+      found = 0;
+      for (mei_init_conn(it1, entity, dent); mei_go(it1); mei_next(it1)) {
+        if (entities->indices[iind] == it1->entity->ii) {
+          local_ids->indices[ii++] = it1->it;
+          // printf("%d -> %d\n", ii, it1->it);
+          found = 1;
+          break; // Degenerate cases - 1. occurrence is returned.
+        }
+      }
+      if (!found) {
+        errput("entity (%d, %d) not found in entity (%d, %d)!\n",
+               entities->indices[iind], dent, entity->ii, dim);
+        ERR_CheckGo(ret);
+      }
+    }
+  }
+
+ end_label:
+  return(ret);
+}
+
 #undef __FUNC__
 #define __FUNC__ "mesh_select_complete"
 // Allocates mask->mask.

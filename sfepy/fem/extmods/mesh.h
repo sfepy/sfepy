@@ -162,6 +162,13 @@ int32 mesh_get_incident(Mesh *mesh,
                         MeshConnectivity *incident, int32 dim,
                         Indices *entities, int32 dent);
 
+// Get local ids of non-unique entities `incident` of dimension `dim` incident
+// to `entities` of dimension `dent`, see `mesh_get_incident()`, with respect
+// to `entities`. `local_ids` must be preallocated to same size as `incident`.
+int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
+                         Indices *entities, int32 dent,
+                         MeshConnectivity *incident, int32 dim);
+
 // Select entities of dimension `dim` that are completely given by entities of
 // dimension `dent`.
 // Example: mesh_select_complete(mesh, mask, 2, vertices, 0) will select all
