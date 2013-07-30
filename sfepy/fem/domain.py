@@ -82,7 +82,7 @@ def region_leaf(domain, regions, rdef, kind, functions):
         elif token == 'E_CBF':
             where = details[2]
 
-            coors = domain.get_cells_coors()
+            coors = domain.get_cell_coors()
 
             fun = functions[where]
             cells = fun(coors, domain=domain)
@@ -276,6 +276,12 @@ class Domain(Struct):
             return self.mesh.coors_act
         else:
             return self.mesh.coors
+
+    def get_cell_coors(self):
+        """
+        Return the coordinates of the centres of mesh cells.
+        """
+        return self.cmesh.get_cell_coors()
 
     def get_mesh_bounding_box(self):
         """
