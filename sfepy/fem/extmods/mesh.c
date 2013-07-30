@@ -831,6 +831,33 @@ int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
   return(ret);
 }
 
+// `coors` must be preallocated.
+int32 mesh_get_cell_coors(Mesh *mesh, float64 *ccoors)
+{
+  int32 D = mesh->topology->max_dim;
+  uint32 id;
+  float64 *ptr = ccoors;
+  float64 *coors = mesh->geometry->coors;
+  MeshEntityIterator it0[1], it1[1];
+
+  for (mei_init(it0, mesh, D); mei_go(it0); mei_next(it0)) {
+    for (id = 0; id < D; id++) {
+      ptr[id] = 0.0;
+    }
+    for (mei_init_conn(it1, it0->entity, 0); mei_go(it1); mei_next(it1)) {
+      for (id = 0; id < D; id++) {
+        ptr[id] += coors[D * it1->entity->ii + id];
+      }
+    }
+    for (id = 0; id < D; id++) {
+      ptr[id] /= (float64) it1->it_end;
+    }
+    ptr += D;
+  }
+
+  return(RET_OK);
+}
+
 inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)
 {
   int32 ret = RET_OK;

@@ -176,6 +176,10 @@ int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
 int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                            Indices *entities, int32 dent);
 
+// Return the coordinates of the centres of mesh cells.
+// `coors` must be preallocated.
+int32 mesh_get_cell_coors(Mesh *mesh, float64 *ccoors);
+
 int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim);
 int32 me_get_incident2(MeshEntity *entity, Indices *out,
                        MeshConnectivity *conn);
