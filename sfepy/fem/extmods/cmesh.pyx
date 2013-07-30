@@ -88,6 +88,7 @@ cdef extern from 'mesh.h':
                                   MeshConnectivity *incident, int32 dim)
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
+    cdef int32 mesh_get_cell_coors(Mesh *mesh, float64 *ccoors)
 
 cdef class CConnectivity:
     """
@@ -566,6 +567,18 @@ cdef class CMesh:
         igs = np.unique(self.cell_groups[cells])
 
         return igs
+
+    def get_cell_coors(self):
+        """
+        Return the coordinates of the centres of mesh cells.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=2] out
+
+        out = np.empty((self.mesh.topology.num[self.dim], self.dim),
+                       dtype=np.float64)
+        mesh_get_cell_coors(self.mesh, &out[0, 0])
+
+        return out
 
 def cmem_statistics():
     mem_statistics(0, '', '', '')
