@@ -234,7 +234,7 @@ class ConnInfo(Struct):
         if self.region is not None:
             for ig in self.region.igs:
                 if self.virtual_igs is not None:
-                    ir = self.virtual_igs.index(ig)
+                    ir = self.virtual_igs.tolist().index(ig)
                     rig = self.virtual_igs[ir]
                 else:
                     rig = None
@@ -246,7 +246,7 @@ class ConnInfo(Struct):
                     ii = ig_map_i[ig]
 
                 if self.state_igs is not None:
-                    ic = self.state_igs.index(ii)
+                    ic = self.state_igs.tolist().index(ii)
                     cig = self.state_igs[ic]
                 else:
                     cig = None
@@ -1067,6 +1067,9 @@ class Term(Struct):
 
         elif shape_kind == 'point':
             cells = nm.arange(shape[0], dtype=nm.int32)
+
+        else:
+            cells = cells.astype(nm.int32)
 
         return cells
 
