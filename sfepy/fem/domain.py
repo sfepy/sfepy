@@ -7,7 +7,6 @@ import re
 import numpy as nm
 
 from sfepy.base.base import output, assert_, OneTypeList, Struct
-from sfepy.fem.facets import Facets
 from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
 from sfepy.fem.parse_regions import create_bnf, visit_stack, ParseException
@@ -217,7 +216,6 @@ class Domain(Struct):
 
         self.setup_groups()
         self.fix_element_orientation()
-        self.setup_facets(verbose=verbose)
         self.reset_regions()
         self.clear_surface_groups()
 
@@ -354,46 +352,6 @@ class Domain(Struct):
     def has_faces(self):
         return sum([group.shape.n_face
                     for group in self.iter_groups()]) > 0
-
-    def setup_facets(self, create_edges=True, create_faces=True,
-                     verbose=False):
-        """
-        Setup the edges and faces (in 3D) of domain elements.
-        """
-        kinds = ['edges', 'faces']
-
-        is_face = self.has_faces()
-        create = [create_edges, create_faces and is_face]
-
-        for ii, kind in enumerate(kinds):
-            if create[ii]:
-                if verbose:
-                    output('setting up domain %s...' % kind)
-
-                tt = time.clock()
-                obj = Facets.from_domain(self, kind)
-                obj.sort_and_orient()
-                obj.setup_unique()
-                obj.setup_neighbours()
-
-                # 'ed' or 'fa'
-                setattr(self, kind[:2], obj)
-
-                if verbose:
-                    output('...done in %.2f s' % (time.clock() - tt))
-
-        if not is_face:
-            self.fa = None
-
-    def get_facets(self, force_faces=False):
-        """
-        Return edge and face descriptions.
-        """
-        if force_faces and not self.fa:
-            return self.ed, self.ed
-
-        else:
-            return self.ed, self.fa
 
     def reset_regions(self):
         """
@@ -559,27 +517,6 @@ class Domain(Struct):
             out = nm.sqrt(diameters.squeeze())
 
         return out
-
-    def surface_faces(self):
-        if not self.fa:
-            raise ValueError("no faces defined!")
-
-        fa = self.fa
-        flag = fa.mark_surface_facets()
-
-        surf_faces = []
-        itri = nm.where(flag == 3)[0]
-        if itri.size:
-            surf_faces.append(fa.facets[itri,:3])
-        itet = nm.where(flag == 4)[0]
-        if itet.size:
-            surf_faces.append(fa.facets[itet,:4])
-
-        isurf = nm.where(flag >= 1)[0]
-        if isurf.size:
-            lst = fa.indices[isurf]
-
-        return lst, surf_faces
 
     def clear_surface_groups(self):
         """
