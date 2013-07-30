@@ -51,8 +51,6 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     """
     dim = field.shape[0]
 
-    region.select_cells_of_surface()
-
     field.domain.create_surface_group(region)
     field._setup_surface_data(region)
 
@@ -71,7 +69,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     imap.fill(nodes.shape[0]) # out-of-range index for normals.
     imap[nodes] = nm.arange(nodes.shape[0], dtype=nm.int32)
 
-    for ig, fis in region.fis.iteritems():
+    for ig in region.igs:
         cmap, _ = field.get_mapping(ig, region, integral, 'surface')
         e_normals = cmap.normal[..., 0]
 

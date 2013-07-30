@@ -427,7 +427,7 @@ class Domain(Struct):
                              region_leaf(self, self.regions, select, kind,
                                          functions))
         region.name = name
-
+        region.update_shape()
 
         if add_to_regions:
             self.regions.append(region)
@@ -517,7 +517,7 @@ class Domain(Struct):
                  else self.regions.get_names())
         for name in names:
             region = self.regions[name]
-            if region.all_vertices.shape[0] == n_nod:
+            if region.vertices.shape[0] == n_nod:
                 names.remove(region.name)
                 names = [region.name] + names
                 break
@@ -527,17 +527,16 @@ class Domain(Struct):
             region = self.regions[name]
             output(region.name)
 
-            aux.ngroups[region.all_vertices] = n_ig
+            aux.ngroups[region.vertices] = n_ig
             n_ig += 1
 
             mask = nm.zeros((n_nod, 1), dtype=nm.float64)
-            mask[region.all_vertices] = 1.0
+            mask[region.vertices] = 1.0
             out[name] = Struct(name='region', mode='vertex', data=mask,
                                var_name=name, dofs=None)
 
             if region.has_cells():
                 for ig in region.igs:
-                    if not region.true_cells[ig]: continue
                     ii = region.get_cells(ig)
                     aux.mat_ids[ig][ii] = c_ig
                     c_ig += 1
@@ -601,8 +600,6 @@ class Domain(Struct):
         for ig in region.igs:
             groups = self.surface_groups.setdefault(ig, {})
             if region.name not in groups:
-                region.select_cells_of_surface(reset=False)
-
                 group = self.groups[ig]
                 gel_faces = group.gel.get_surface_entities()
 

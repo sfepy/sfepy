@@ -726,12 +726,12 @@ class Term(Struct):
             if field is None:
                 continue
 
-            if not nm.all(in1d(self.region.all_vertices,
-                               field.region.all_vertices)):
+            if not nm.all(in1d(self.region.vertices,
+                               field.region.vertices)):
                 msg = ('%s: incompatible regions: (self, field %s)'
                        + '(%s in %s)') %\
                        (self.name, field.name,
-                        self.region.all_vertices, field.region.all_vertices)
+                        self.region.vertices, field.region.vertices)
                 raise ValueError(msg)
 
     def get_variable_names(self):

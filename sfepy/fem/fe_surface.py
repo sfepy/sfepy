@@ -10,7 +10,7 @@ class FESurface(Struct):
         """nodes are sorted by node number -> same order as region.vertices"""
         self.name = get_default(name, 'surface_data_%s' % region.name)
 
-        face_indices = region.fis[ig]
+        face_indices = region.get_facet_indices(ig)
 
         faces = efaces[face_indices[:,1]]
         if faces.size == 0:

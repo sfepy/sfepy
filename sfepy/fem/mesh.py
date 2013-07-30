@@ -466,8 +466,8 @@ class Mesh(Struct):
 
             if save_edges or save_faces:
                 mesh.descs.append({2 : '2_3', 3 : '3_4'}[mesh_in.dim])
-                mesh.mat_ids.append(-nm.ones_like(region.all_vertices))
-                mesh.conns.append(make_point_cells(region.all_vertices,
+                mesh.mat_ids.append(-nm.ones_like(region.vertices))
+                mesh.conns.append(make_point_cells(region.vertices,
                                                    mesh_in.dim))
 
         else:
@@ -476,7 +476,7 @@ class Mesh(Struct):
         mesh._set_shape_info()
 
         if localize:
-            mesh.localize(region.all_vertices)
+            mesh.localize(region.vertices)
 
         return mesh
 

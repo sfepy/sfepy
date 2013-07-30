@@ -301,7 +301,7 @@ def recover_bones( problem, micro_problem, region, eps0,
 
     micro_coor = micro_u.field.get_coor()
 
-    nodes_yc = micro_problem.domain.regions['Yc'].all_vertices
+    nodes_yc = micro_problem.domain.regions['Yc'].vertices
 
     join = os.path.join
     aux = max(problem.domain.shape.n_gr, 2)
@@ -403,11 +403,10 @@ def recover_paraflow( problem, micro_problem, region,
     micro_u = micro_problem.variables[vu]
     micro_coor = micro_u.field.get_coor()
 
-    micro_n_nod = micro_problem.domain.mesh.n_nod
     micro_p = micro_problem.variables[vp]
 
-    nodes_y1 = micro_problem.domain.regions['Y1'].all_vertices
-    nodes_y2 = micro_problem.domain.regions['Y2'].all_vertices
+    nodes_y1 = micro_problem.domain.regions['Y1'].vertices
+    nodes_y2 = micro_problem.domain.regions['Y2'].vertices
 
     to_output = micro_problem.variables.state_to_output
 

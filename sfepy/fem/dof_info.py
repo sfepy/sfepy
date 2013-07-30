@@ -563,8 +563,8 @@ def _save_vectors(filename, vectors, region, mesh, data_name):
     Save vectors defined in region nodes as vector data in mesh vertices.
     """
     nv = nm.zeros_like(mesh.coors)
-    nmax = region.all_vertices.shape[0]
-    nv[region.all_vertices] = vectors[:nmax]
+    nmax = region.vertices.shape[0]
+    nv[region.vertices] = vectors[:nmax]
 
     out = {data_name : Struct(name='output_data', mode='vertex', data=nv)}
     mesh.write(filename, out=out, io='auto')

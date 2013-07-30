@@ -522,7 +522,7 @@ class Region(Struct):
         for reg in self.domain.regions:
             if (reg is not self) and \
                    (len(reg.igs) == len(self.igs)) and \
-                   nm.all(self.all_vertices == reg.all_vertices):
+                   nm.all(self.vertices == reg.vertices):
                 mirror_region = reg
                 break
         else:
@@ -571,13 +571,13 @@ class Region(Struct):
 
         coors = self.domain.get_mesh_coors()
         if kind == 's':
-            coors = coors[self.all_vertices]
+            coors = coors[self.vertices]
 
         gel = self.domain.groups[ig].gel
         conn = self.domain.groups[ig].conn
 
         if kind == 'v':
-            cells = self.cells[ig]
+            cells = self.get_cells(ig)
 
             mapping = VolumeMapping(coors, conn[cells], gel=gel)
 
@@ -629,14 +629,7 @@ class Region(Struct):
                 ii += 1
 
     def has_cells(self):
-
-        if self.can_cells:
-            for cells in self.cells.itervalues():
-                if cells.size:
-                    return True
-            return False
-        else:
-            return False
+        return self.cells.size > 0
 
     def contains(self, other):
         """
@@ -670,9 +663,9 @@ class Region(Struct):
         else:
             chf = nm.zeros((self.domain.shape.n_nod,), dtype=nm.float64)
             if val_by_id:
-                chf[self.all_vertices] = self.all_vertices + 1
+                chf[self.vertices] = self.vertices + 1
             else:
-                chf[self.all_vertices] = 1.0
+                chf[self.vertices] = 1.0
 
         return chf
 
@@ -702,7 +695,7 @@ class Region(Struct):
         rows = nm.concatenate(rows)[indx]
         cols = nm.concatenate(cols)[indx]
 
-        num = self.all_vertices.max() + 1
+        num = self.vertices.max() + 1
         graph = csr_matrix((vals, (rows, cols)), shape=(num, num))
 
         nnz = graph.nnz

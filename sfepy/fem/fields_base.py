@@ -1071,7 +1071,8 @@ class VolumeField(Field):
         """
         Setup the field region geometry.
         """
-        self.gel = self.domain.groups[self.region.igs[0]].gel
+        ig = self.region.domain.cmesh.cell_groups[self.region.cells[0]]
+        self.gel = self.domain.groups[ig].gel
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -1108,9 +1109,9 @@ class VolumeField(Field):
 
         region = self.region
 
-        all_vertices = region.get_vertices_of_cells()
-        remap = prepare_remap(all_vertices, region.n_v_max)
-        n_dof = all_vertices.shape[0]
+        vertices = region.get_vertices_of_cells()
+        remap = prepare_remap(vertices, region.n_v_max)
+        n_dof = vertices.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
@@ -1133,7 +1134,6 @@ class VolumeField(Field):
 
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
-            # Calls reg.select_cells_of_surface(reset=False)...
             self.domain.create_surface_group(reg)
             self._setup_surface_data(reg, is_trace)
 
@@ -1281,8 +1281,6 @@ class SurfaceField(Field):
         ok : bool
             True if the region is usable for the field.
         """
-        region.setup_face_indices()
-
         ok = True
         for ig in region.igs:
             n_cell = region.get_n_cells(ig, True)
@@ -1326,7 +1324,6 @@ class SurfaceField(Field):
             raise ValueError(msg)
 
         reg = info.get_region()
-        reg.select_cells_of_surface(reset=False)
 
         for ig, ap in self.aps.iteritems():
             if ig not in reg.igs: continue
@@ -1359,8 +1356,8 @@ class SurfaceField(Field):
 
         region = self.region
 
-        remap = prepare_remap(region.all_vertices, region.n_v_max)
-        n_dof = region.all_vertices.shape[0]
+        remap = prepare_remap(region.vertices, region.n_v_max)
+        n_dof = region.vertices.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
@@ -1422,7 +1419,7 @@ class SurfaceField(Field):
                                                      data_qp.shape[0])
             raise ValueError(msg)
 
-        n_vertex = len(region.all_vertices)
+        n_vertex = len(region.vertices)
         nc = data_qp.shape[2]
 
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
