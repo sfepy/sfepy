@@ -468,7 +468,7 @@ class Region(Struct):
         else:
             return self.get_faces(ig)
 
-    def get_cells(self, ig, true_cells_only=True):
+    def get_cells(self, ig, true_cells_only=True, offset=True):
         """
         Get cells of the region.
 
@@ -476,6 +476,9 @@ class Region(Struct):
         not allow cells (e.g. surface integration region). For
         `true_cells_only` equal to False, cells incident to facets are returned
         if the region itself contains no cells.
+
+        If `offset` is True, the cell group offset is subtracted from the cell
+        ids.
         """
         cmesh = self.domain.cmesh
 
@@ -492,6 +495,9 @@ class Region(Struct):
 
         else:
             out = cmesh.get_from_cell_group(ig, self.dim, self.cells)
+
+        if offset:
+            out -= self.domain.mesh.el_offsets[ig]
 
         return out
 
