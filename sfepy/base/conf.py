@@ -119,7 +119,7 @@ def transform_regions(adict):
     for ii, (key, conf) in enumerate(adict.iteritems()):
         if isinstance(conf, basestr):
             c2 = Struct(name=key, select=conf)
-            d2['material_%s__%d' % (c2.name, ii)] = c2
+            d2['region_%s__%d' % (c2.name, ii)] = c2
         elif isinstance(conf, tuple):
             c2 = tuple_to_conf(key, conf, ['select', 'kind'])
             d2['region_%s__%d' % (c2.name, ii)] = c2
