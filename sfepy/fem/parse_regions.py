@@ -174,7 +174,7 @@ def create_bnf(stack):
     noset = Group(vertices + _of + _set + set_name).setParseAction(
         replace('E_VOSET', keep=True))
     eoset = Group(cells + _of + _set + set_name).setParseAction(
-        replace('E_VOSET', keep=True))
+        replace('E_COSET', keep=True))
 
     region_expression = Forward()
 
