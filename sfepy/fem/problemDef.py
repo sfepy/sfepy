@@ -379,7 +379,8 @@ class ProblemDefinition(Struct):
         """
         Set equations of the problem to `equations`.
         """
-        self.reset()
+        self.mtx_a = None
+        self.clear_equations()
         self.equations = equations
 
         if not keep_solvers:
