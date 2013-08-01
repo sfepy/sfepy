@@ -88,7 +88,7 @@ cdef extern from 'mesh.h':
                                   MeshConnectivity *incident, int32 dim)
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
-    cdef int32 mesh_get_cell_coors(Mesh *mesh, float64 *ccoors)
+    cdef int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
 
 cdef class CConnectivity:
     """
@@ -568,15 +568,20 @@ cdef class CMesh:
 
         return igs
 
-    def get_cell_coors(self):
+    def get_centroids(self, dim):
         """
-        Return the coordinates of the centres of mesh cells.
+        Return the coordinates of centroids of mesh entities with dimension
+        `dim`.
         """
         cdef np.ndarray[float64, mode='c', ndim=2] out
 
-        out = np.empty((self.mesh.topology.num[self.dim], self.dim),
-                       dtype=np.float64)
-        mesh_get_cell_coors(self.mesh, &out[0, 0])
+        if dim == 0:
+            return self.coors
+
+        else:
+            out = np.empty((self.mesh.topology.num[dim], self.dim),
+                           dtype=np.float64)
+            mesh_get_centroids(self.mesh, &out[0, 0], dim)
 
         return out
 

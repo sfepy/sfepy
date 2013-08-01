@@ -2,7 +2,6 @@
 Computational domain, consisting of the mesh and regions.
 """
 import time
-import re
 
 import numpy as nm
 
@@ -81,7 +80,7 @@ def region_leaf(domain, regions, rdef, kind, functions):
         elif token == 'E_CBF':
             where = details[2]
 
-            coors = domain.get_cell_coors()
+            coors = domain.get_centroids(domain.mesh.dim)
 
             fun = functions[where]
             cells = fun(coors, domain=domain)
@@ -275,11 +274,12 @@ class Domain(Struct):
         else:
             return self.mesh.coors
 
-    def get_cell_coors(self):
+    def get_centroids(self, dim):
         """
-        Return the coordinates of the centres of mesh cells.
+        Return the coordinates of centroids of mesh entities with dimension
+        `dim`.
         """
-        return self.cmesh.get_cell_coors()
+        return self.cmesh.get_centroids(dim)
 
     def get_mesh_bounding_box(self):
         """

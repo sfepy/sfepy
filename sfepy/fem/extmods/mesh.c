@@ -831,8 +831,8 @@ int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
   return(ret);
 }
 
-// `coors` must be preallocated.
-int32 mesh_get_cell_coors(Mesh *mesh, float64 *ccoors)
+// `ccoors` must be preallocated.
+int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
 {
   int32 D = mesh->topology->max_dim;
   uint32 id;
@@ -840,7 +840,7 @@ int32 mesh_get_cell_coors(Mesh *mesh, float64 *ccoors)
   float64 *coors = mesh->geometry->coors;
   MeshEntityIterator it0[1], it1[1];
 
-  for (mei_init(it0, mesh, D); mei_go(it0); mei_next(it0)) {
+  for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
     for (id = 0; id < D; id++) {
       ptr[id] = 0.0;
     }
