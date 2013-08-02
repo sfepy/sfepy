@@ -1059,9 +1059,16 @@ class VolumeField(Field):
             True if the region is usable for the field.
         """
         ok = True
+        domain = region.domain
         for ig in region.igs:
-            shape = region.domain.groups[ig].shape
+            if domain.groups[ig].gel.dim != domain.shape.dim:
+                output('cells with a bad topological dimension! (%d)'
+                       % domain.groups[ig].gel.dim)
+                ok = False
+                break
+            shape = domain.groups[ig].shape
             if region.shape[ig].n_vertex < shape.n_vertex:
+                output('region does not span a whole element group!')
                 ok = False
                 break
 
