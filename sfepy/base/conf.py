@@ -122,6 +122,8 @@ def transform_regions(adict):
             d2['region_%s__%d' % (c2.name, ii)] = c2
         elif isinstance(conf, tuple):
             c2 = tuple_to_conf(key, conf, ['select', 'kind'])
+            if len(conf) == 3:
+                c2.parent = conf[2]
             d2['region_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1(conf)

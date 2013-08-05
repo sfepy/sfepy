@@ -175,7 +175,8 @@ class Region(Struct):
 
         return obj
 
-    def __init__(self, name, definition, domain, parse_def, kind='cell'):
+    def __init__(self, name, definition, domain, parse_def, kind='cell',
+                 parent=None):
         """
         Create region instance.
 
@@ -200,9 +201,7 @@ class Region(Struct):
                         domain=domain, parse_def=parse_def,
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
                         entities=[None] * (domain.shape.dim + 1),
-                        shape=None,
-                        must_update=True,
-                        is_complete=False,
+                        parent=parent, shape=None,
                         mirror_region=None, ig_map=None,
                         ig_map_i=None)
         self.set_kind(kind)

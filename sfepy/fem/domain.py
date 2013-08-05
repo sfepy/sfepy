@@ -361,7 +361,7 @@ class Domain(Struct):
         self._region_stack = []
         self._bnf = create_bnf(self._region_stack)
 
-    def create_region(self, name, select, kind='cell', forbid=None,
+    def create_region(self, name, select, kind='cell', parent=None,
                       check_parents=True, functions=None, add_to_regions=True):
         """
         Region factory constructor. Append the new region to
@@ -385,6 +385,7 @@ class Domain(Struct):
                              region_leaf(self, self.regions, select, kind,
                                          functions))
         region.name = name
+        region.parent = parent
         region.update_shape()
 
         if add_to_regions:
@@ -411,6 +412,7 @@ class Domain(Struct):
 
             region = self.create_region(name, rdef.select,
                                         kind=rdef.get('kind', 'cell'),
+                                        parent=rdef.get('parent', None),
                                         check_parents=False,
                                         functions=functions)
             output(' ', region.name)
