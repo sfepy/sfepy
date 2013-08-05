@@ -201,12 +201,14 @@ class Region(Struct):
                         domain=domain, parse_def=parse_def,
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
                         entities=[None] * (domain.shape.dim + 1),
-                        parent=parent, shape=None,
+                        kind=None, parent=parent, shape=None,
                         mirror_region=None, ig_map=None,
                         ig_map_i=None)
         self.set_kind(kind)
 
     def set_kind(self, kind):
+        if kind == self.kind: return
+
         self.kind = kind
         if 'facet' in kind:
             self.true_kind = self.__facet_kinds[self.dim][kind]

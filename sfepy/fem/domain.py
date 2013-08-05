@@ -385,6 +385,8 @@ class Domain(Struct):
                              region_leaf(self, self.regions, select, kind,
                                          functions))
         region.name = name
+        region.definition = select
+        region.set_kind(kind)
         region.parent = parent
         region.update_shape()
 
