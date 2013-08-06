@@ -293,7 +293,8 @@ cdef class CMesh:
 
         self.setup_connectivity(1, 0)
 
-        shape[0] = <np.npy_intp> self.num[1]
+        ii = self._get_conn_indx(self.mesh.topology.max_dim, 1)
+        shape[0] = <np.npy_intp> self.conns[ii].n_incident
         ptr = self.mesh.topology.edge_oris
         self.edge_oris = np.PyArray_SimpleNewFromData(1, shape,
                                                       np.NPY_UINT32,
@@ -302,7 +303,8 @@ cdef class CMesh:
         if self.dim == 3:
             self.setup_connectivity(2, 0)
 
-            shape[0] = <np.npy_intp> self.num[2]
+            ii = self._get_conn_indx(self.mesh.topology.max_dim, 2)
+            shape[0] = <np.npy_intp> self.conns[ii].n_incident
             ptr = self.mesh.topology.face_oris
             self.face_oris = np.PyArray_SimpleNewFromData(1, shape,
                                                           np.NPY_UINT32,
