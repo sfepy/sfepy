@@ -537,10 +537,16 @@ class Region(Struct):
         """
         Find the corresponding mirror region, set up element mapping.
         """
-        for reg in self.domain.regions:
-            if (reg is not self) and \
-                   (len(reg.igs) == len(self.igs)) and \
-                   nm.all(self.vertices == reg.vertices):
+        regions = self.domain.regions
+
+        parent = regions[self.parent]
+        for reg in regions:
+            mirror_parent = regions.find(reg.parent)
+            if mirror_parent is None: continue
+            if ((reg is not self)
+                and (len(reg.igs) == len(self.igs))
+                and (not len(nm.intersect1d(parent.igs, mirror_parent.igs)))
+                and nm.all(self.vertices == reg.vertices)):
                 mirror_region = reg
                 break
         else:
@@ -548,25 +554,23 @@ class Region(Struct):
 
         ig_map = {}
         ig_map_i = {}
-        for igr in self.igs:
-            for igc in mirror_region.igs:
-                if nm.all(self.vertices[igr] ==
-                          mirror_region.vertices[igc]):
+        for igr in parent.igs:
+            v1 = self.get_vertices(igr)
+            for igc in mirror_parent.igs:
+                v2 = self.get_vertices(igc)
+                if nm.all(v1 == v2):
                     ig_map[igc] = igr
                     ig_map_i[igr] = igc
                     break
             else:
                 raise ValueError('cannot find mirror region group! (%d)' % igr)
 
+        self._igs = parent._igs
+        mirror_region._igs = mirror_parent._igs
+
         self.mirror_region = mirror_region
         self.ig_map = ig_map
         self.ig_map_i = ig_map_i
-
-        if self.domain.shape.dim == 2:
-            self.domain.ed.setup_group_interfaces()
-
-        elif self.domain.shape.dim == 3:
-            self.domain.fa.setup_group_interfaces()
 
     def get_mirror_region(self):
         return self.mirror_region, self.ig_map, self.ig_map_i

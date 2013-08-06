@@ -804,6 +804,7 @@ class Term(Struct):
                                   self.arg_traces.values())
             if is_any_trace:
                 region.setup_mirror_region()
+                self.char_fun.igs = region.igs
 
         vals = []
         aux_pvars = []
