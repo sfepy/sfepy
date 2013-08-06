@@ -490,9 +490,13 @@ class Region(Struct):
                 raise ValueError(msg)
 
             else:
+                # Has to be consistent with get_facet_indices()!
                 cmesh.setup_connectivity(self.dim - 1, self.dim)
                 out = cmesh.get_incident(self.dim, self.facets, self.dim - 1)
-                out = nm.unique(out)
+
+                igs = cmesh.cell_groups[out]
+                ic = nm.where(igs == ig)
+                out = out[ic]
 
         else:
             out = cmesh.get_from_cell_group(ig, self.dim, self.cells)
@@ -502,10 +506,15 @@ class Region(Struct):
 
         return out
 
-    def get_facet_indices(self, ig):
+    def get_facet_indices(self, ig, offset=True, force_ig=True):
         """
         Return an array (per group) of (iel, ifa) for each facet. A facet can
         be in several 1 (surface) or 2 (inner) cells.
+
+        If `offset` is True, the cell group offset is subtracted from the cell
+        ids.
+
+        If `force_ig` is True, only the cells with the given `ig` are used.
         """
         cmesh = self.domain.cmesh
         facets = self.get_facets(ig)
@@ -513,6 +522,14 @@ class Region(Struct):
                                          ret_offsets=True)
         ii = cmesh.get_local_ids(facets, self.dim - 1, cells, offs, self.dim)
         fis = nm.c_[cells, ii]
+
+        if force_ig:
+            igs = cmesh.cell_groups[cells]
+            ic = nm.where(igs == ig)
+            fis = fis[ic]
+
+        if offset:
+            fis[:, 0] -= self.domain.mesh.el_offsets[ig]
 
         return fis
 
