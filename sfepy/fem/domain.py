@@ -208,6 +208,7 @@ class Domain(Struct):
         self.cmesh = CMesh.from_mesh(mesh)
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)
+        self.cmesh.setup_entities()
 
         self.mat_ids_to_i_gs = {}
         for ig, mat_id in enumerate(mesh.mat_ids):
