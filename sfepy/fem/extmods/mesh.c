@@ -479,9 +479,6 @@ int32 mesh_build(Mesh *mesh, int32 dim)
       // Add it as 'id' to D -> d.
       conn_set_to_free(cDd, it0->entity->ii, id);
 
-      // Store entity orientation key.
-      oris[id] = loc_oris[ii];
-
       // Add vertices in gloc to d -> 0.
       cd0->offsets[id+1] = cd0->offsets[id] + n_loc;
 
@@ -495,7 +492,16 @@ int32 mesh_build(Mesh *mesh, int32 dim)
       id++;
 
     found_label:
-      ;
+      // Store entity orientation key to position of the last used item in cDd.
+      ptr1 = cDd->offsets + it0->entity->ii;
+      ic = ptr1[1];
+      while (ic >= ptr1[0]) {
+        if (cDd->indices[ic] != UINT32_None) { // Not found & free slot.
+          break;
+        }
+        ic--;
+      }
+      oris[ic] = loc_oris[ii];
     }
   }
   debprintf("n_unique: %d, n_incident_vertex: %d\n", id, cd0->offsets[id]);
