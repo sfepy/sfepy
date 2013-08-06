@@ -1,6 +1,7 @@
 import numpy as nm
 
-from sfepy.base.base import assert_, get_default, Struct
+from sfepy.base.base import get_default, Struct
+from sfepy.fem.utils import prepare_remap
 
 class FESurface(Struct):
     """Description of a surface of a finite element domain."""
@@ -28,13 +29,9 @@ class FESurface(Struct):
         for ir, face in enumerate( faces ):
             econn[ir] = ee[ir,face]
 
-        ef = econn.flat
-        nodes = nm.unique(ef)
-
-        aux = -nm.ones((nm.max( ef ) + 1,), dtype=nm.int32)
-        aux[nodes] = nm.arange(len(nodes), dtype=nm.int32)
-        leconn = aux[econn].copy()
-        assert_(nm.alltrue(nodes[leconn] == econn))
+        nodes = nm.unique(econn)
+        remap = prepare_remap(nodes, nodes.max() + 1)
+        leconn = remap[econn].copy()
 
         n_fa, n_fp = face_indices.shape[0], faces.shape[1]
         face_type = 's%d' % n_fp
