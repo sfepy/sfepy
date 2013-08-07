@@ -261,11 +261,23 @@ class CopyData(CorrMiniApp):
         else:
             data = problem.get(dn, 'None')
 
-        ndof, ndim = data.shape
-        state = {var_name: data.reshape((ndof * ndim,))}
-        corr_sol = CorrSolution(name=self.name,
-                                state=state,
-                                components=clist)
+        if type(data) is dict:
+            corr_sol = CorrSolution(name=self.name,
+                                    state=data,
+                                    components=clist)
+        else:
+            if data.dtype == nm.object:
+                corr_sol = CorrSolution(name=self.name,
+                                        states=data,
+                                        components=clist)
+
+
+            else:
+                ndof, ndim = data.shape
+                state = {var_name: data.reshape((ndof * ndim,))}
+                corr_sol = CorrSolution(name=self.name,
+                                        state=state,
+                                        components=clist)
 
         return corr_sol
 
@@ -1106,10 +1118,20 @@ class CoefSym(MiniAppBase):
         equations, variables = problem.create_evaluable(self.expression,
                                                         term_mode=term_mode)
 
-        self.set_variables(variables, None, None, 'col', **data)
+        if isinstance(self.set_variables, list):
+            self.set_variables_default(variables, None, None, 'col',
+                                       self.set_variables, data)
+
+        else:
+            self.set_variables(variables, None, None, 'col', **data)
 
         for ii, (ir, ic) in enumerate(iter_sym(dim)):
-            self.set_variables(variables, ir, ic, 'row', **data)
+            if isinstance(self.set_variables, list):
+                self.set_variables_default(variables, ir, ic, 'row',
+                                           self.set_variables, data)
+
+            else:
+                self.set_variables(variables, ir, ic, 'row', **data)
 
             val = eval_equations(equations, variables,
                                  term_mode=term_mode)
