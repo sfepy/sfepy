@@ -20,6 +20,7 @@ import fea
 from sfepy.fem.utils import prepare_remap
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.global_interp import get_ref_coors
+from sfepy.fem.facets import get_facet_dof_permutations
 from sfepy.fem.fields_base import Field, VolumeField, SurfaceField
 from sfepy.fem.extmods.bases import evaluate_in_rc
 
@@ -30,13 +31,15 @@ class H1NodalMixin(Struct):
 
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
-            ed = self.domain.ed
-            self.edge_dof_perms = ed.get_facet_dof_permutations(edge_nodes)
+            n_fp = self.gel.edges.shape[1]
+            self.edge_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
+                                                             edge_nodes)
 
         face_nodes = self.node_desc.face_nodes
         if face_nodes is not None:
-            fa = self.domain.fa
-            self.face_dof_perms = fa.get_facet_dof_permutations(face_nodes)
+            n_fp = self.gel.faces.shape[1]
+            self.face_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
+                                                             face_nodes)
 
     def _setup_edge_dofs(self):
         """
