@@ -82,9 +82,10 @@ class FESurface(Struct):
         omap = ori_map[ooris]
         mmap = ori_map[moris]
 
-        self.meconn = nm.zeros_like(self.econn)
-        for ic, cc in enumerate(self.econn):
-            self.meconn[ic, omap[ic]] = cc[mmap[ic]]
+        n_el, n_ep = self.econn.shape
+        ii = nm.repeat(nm.arange(n_el)[:, None], n_ep, 1)
+        self.meconn = nm.empty_like(self.econn)
+        self.meconn[ii, omap] = self.econn[ii, mmap]
 
         nodes = nm.unique(self.meconn)
         remap = prepare_remap(nodes, nodes.max() + 1)
