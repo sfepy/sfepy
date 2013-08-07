@@ -50,6 +50,7 @@ from sfepy.base.ioutils import (ensure_path, locate_files, remove_files,
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
 omits = [
+    'vibro_acoustic3d_mid.py',
     'linear_elastic_mM.py',
     'time_poisson_explicit.py',
     '__init__.py',
@@ -85,6 +86,20 @@ custom = {
         '_p_2' : {
             'view' : (-112, 107, 0.32, [0.081, 0.042, 0.082]),
             'roll' : 111,
+        },
+    },
+    'acoustics/vibro_acoustic3d.py' : {
+        '_p1' : {
+            'view' : (45.0, 54.7, 1.71, [0.325, 0.1, 0.05]),
+            'roll' : -120,
+        },
+        '_p2' : {
+            'view' : (45.0, 54.7, 2.07, [0.525, 0.1, 0.15]),
+            'roll' : -120,
+        },
+        '_w' : {
+            'view' : (0.0, 0.0, 1.26, [0.315, 0.1, 0.1]),
+            'roll' : 0,
         },
     },
     'linear_elasticity/elastic_contact_planes.py' : {
