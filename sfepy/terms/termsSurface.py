@@ -17,16 +17,18 @@ class LinearTractionTerm( Term ):
     :Definition:
 
     .. math::
-        \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}
+        \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n},
+        \int_{\Gamma} \ul{v} \cdot \ul{n},
 
     :Arguments:
         - material : :math:`\ull{\sigma}`
         - virtual  : :math:`\ul{v}`
     """
     name = 'dw_surface_ltr'
-    arg_types = ('material', 'virtual')
-    arg_shapes = [{'material' : 'S, 1', 'virtual' : ('D', None)},
-                  {'material' : 'D, 1'}, {'material' : '1, 1'}]
+    arg_types = ('opt_material', 'virtual')
+    arg_shapes = [{'opt_material' : 'S, 1', 'virtual' : ('D', None)},
+                  {'opt_material' : 'D, 1'}, {'opt_material' : '1, 1'},
+                  {'opt_material' : None}]
     integration = 'surface'
 
     function = staticmethod(terms.dw_surface_ltr)
@@ -34,6 +36,9 @@ class LinearTractionTerm( Term ):
     def get_fargs(self, traction, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
+
+        if traction is None:
+            traction = nm.zeros((0,0,0,0), dtype=nm.float64)
 
         return traction, sg
 

@@ -21,7 +21,19 @@ int32 dw_surface_ltr( FMField *out, FMField *traction, Mapping *sg )
 
   fmf_createAlloc( &outQP, 1, nQP, dim * nFP, 1 );
 
-  if (traction->nRow == 1) { // Pressure.
+  if (traction->nRow == 0) {
+      for (ii = 0; ii < out->nCell; ii++) {
+        FMF_SetCell( out, ii );
+        FMF_SetCell( sg->normal, ii );
+        FMF_SetCell( sg->det, ii );
+        FMF_SetCellX1( sg->bf, ii );
+
+        bf_actt( outQP, sg->bf, sg->normal );
+
+        fmf_sumLevelsMulF( out, outQP, sg->det->val );
+        ERR_CheckGo( ret );
+      }
+  } else if (traction->nRow == 1) { // Pressure.
     fmf_createAlloc( &pn, 1, nQP, dim, 1 );
 
     for (ii = 0; ii < out->nCell; ii++) {
