@@ -809,6 +809,7 @@ Utility scripts
    src/script/eval_tl_forms
    src/script/gen_gallery
    src/script/gen_lobatto1d_c
+   src/script/gen_mesh_prev
    src/script/gen_term_table
    src/script/plot_condition_numbers
    src/script/save_basis
@@ -900,9 +901,9 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/extmods/_fmfield
    src/sfepy/fem/extmods/assemble
    src/sfepy/fem/extmods/bases
+   src/sfepy/fem/extmods/cmesh
    src/sfepy/fem/extmods/lobatto_bases
    src/sfepy/fem/extmods/mappings
-   src/sfepy/fem/extmods/mesh
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
