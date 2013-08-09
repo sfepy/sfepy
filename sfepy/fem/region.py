@@ -318,7 +318,7 @@ class Region(Struct):
         """
         if not self.can[dim]: return
 
-        for idim in range(self.dim + 1):
+        for idim in range(self.dim, -1, -1):
             if self.entities[idim] is not None:
                 if self.entities[idim].shape[0] > 0:
                     break
