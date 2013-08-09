@@ -239,7 +239,9 @@ class Region(Struct):
     @property
     def vertices(self):
         if self.entities[0] is None:
+            self._access(1)
             self.setup_from_highest(0)
+
         return self.entities[0]
 
     @vertices.setter
@@ -253,7 +255,13 @@ class Region(Struct):
     @property
     def edges(self):
         if self.entities[1] is None:
-            self.setup_from_vertices(1)
+            if 'edge' in self.true_kind:
+                self.setup_from_vertices(1)
+
+            else:
+                self._access(2)
+                self.setup_from_highest(1)
+
         return self.entities[1]
 
     @edges.setter
@@ -270,7 +278,13 @@ class Region(Struct):
             raise AttributeError('2D region has no faces!')
 
         if self.entities[2] is None:
-            self.setup_from_vertices(2)
+            if 'face' in self.true_kind:
+                self.setup_from_vertices(2)
+
+            else:
+                self._access(3)
+                self.setup_from_highest(2)
+
         return self.entities[2]
 
     @faces.setter
@@ -310,6 +324,23 @@ class Region(Struct):
 
         else:
             raise ValueError('region "%s" cannot have cells!' % self.name)
+
+    def _access(self, dim):
+        """
+        Helper to access region entities of dimension `dim`.
+        """
+        if dim == 1:
+            self.edges
+
+        elif dim == 2:
+            if self.dim == 3:
+                self.faces
+
+            else:
+                self.cells
+
+        else:
+            self.cells
 
     def setup_from_highest(self, dim):
         """
