@@ -439,6 +439,13 @@ class Region(Struct):
                                     n_face=n_face,
                                     n_cell=n_cell)
 
+    def get_entities(self, ig, dim):
+        """
+        Return mesh entities of dimension `dim` with cell group `ig`.
+        """
+        out = self.domain.cmesh.get_from_cell_group(ig, dim, self.entities[dim])
+        return out
+
     def get_vertices_of_cells(self):
         """
         Return all vertices, that are in some cell of the region.
