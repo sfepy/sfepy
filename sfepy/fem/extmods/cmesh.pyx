@@ -517,6 +517,24 @@ cdef class CMesh:
 
         return out
 
+    def get_orientations(self, int32 dim, codim=None):
+        """
+        Get orientations of entities of dimension `dim`. Alternatively,
+        co-dimension can be specified using `codim` argument.
+        """
+        if codim is not None:
+            dim = self.dim - codim
+
+        if dim == 1:
+            return self.edge_oris
+
+        elif dim == 2:
+            return self.face_oris
+
+        else:
+            raise ValueError('only edges or faces have orientations! (%d)'
+                             % dim)
+
     def get_from_cell_group(self, int32 ig, int32 dim,
                             np.ndarray[uint32, mode='c', ndim=1] entities=None):
         """
