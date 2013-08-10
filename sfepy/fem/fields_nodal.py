@@ -48,10 +48,9 @@ class H1NodalMixin(Struct):
         if self.node_desc.edge is None:
             return 0, None, None
 
-        return self._setup_facet_dofs(self.domain.ed,
-                                      self.node_desc.edge,
+        return self._setup_facet_dofs(1, self.node_desc.edge,
                                       self.edge_dof_perms,
-                                      self.region.get_edges,
+                                      self.domain.cmesh.edge_oris,
                                       self.n_vertex_dof)
 
     def _setup_face_dofs(self):
@@ -61,14 +60,14 @@ class H1NodalMixin(Struct):
         if self.node_desc.face is None:
             return 0, None, None
 
-        return self._setup_facet_dofs(self.domain.fa,
+        return self._setup_facet_dofs(self.domain.shape.dim - 1,
                                       self.node_desc.face,
                                       self.face_dof_perms,
-                                      self.region.get_faces,
+                                      self.domain.cmesh.face_oris,
                                       self.n_vertex_dof + self.n_edge_dof)
 
-    def _setup_facet_dofs(self, facets, facet_desc, facet_perms,
-                          get_facets, offset):
+    def _setup_facet_dofs(self, dim, facet_desc, facet_perms, facet_oris,
+                          offset):
         """
         Helper function to setup facet DOF connectivity, works for both
         edges and faces.
@@ -76,43 +75,45 @@ class H1NodalMixin(Struct):
         facet_desc = nm.array(facet_desc)
         n_dof_per_facet = facet_desc.shape[1]
 
+        cmesh = self.domain.cmesh
+
+        facets = self.region.entities[dim]
+        ii = nm.arange(facets.shape[0], dtype=nm.int32)
+        all_dofs = offset + expand_nodes_to_dofs(ii, n_dof_per_facet)
+
         # Prepare global facet id remapping to field-local numbering.
-        uids = []
+        remap = prepare_remap(facets, cmesh.num[dim])
+
+        conn = self.region.domain.cmesh.get_conn_as_graph(self.region.dim,
+                                                          dim)
+
+        n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
+
+        oris = cmesh.get_orientations(dim)
         for ig, ap in self.aps.iteritems():
-            ii = get_facets(ig)
-            uid_i = facets.uid_i[ii]
+            group_cells = self.region.get_cells(ig, offset=False)
+            group_conn = conn[group_cells]
+            n_el = group_conn.shape[0]
+            facets_of_cells = remap[group_conn.indices]
 
-            uids.append(uid_i)
-
-        uids = nm.unique(nm.concatenate(uids))
-        n_uid = uids.shape[0]
-        lids = nm.arange(n_uid, dtype=nm.int32)
-        remap = prepare_remap(uids, facets.n_unique)
-
-        all_dofs = offset + expand_nodes_to_dofs(lids, n_dof_per_facet)
-
-        for ig, ap in self.aps.iteritems():
-            ori = facets.oris[ig]
+            ori = oris[group_conn.indices]
             perms = facet_perms[ig][ori]
 
-            ii = get_facets(ig)
-            g_uid = facets.uid_i[ii]
-            uid = remap[g_uid]
-
             # Define global facet dof numbers.
-            gdofs = offset + expand_nodes_to_dofs(uid, n_dof_per_facet)
+            gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
+                                                  n_dof_per_facet)
 
             # Elements of facets.
-            iel = facets.indices[ii, 1]
+            iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+            ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
-            ies = facets.indices[ii, 2]
             # DOF columns in econn for each facet.
             iep = facet_desc[ies]
 
             iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
             ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
 
-        n_dof = n_dof_per_facet * n_uid
+        n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
 
         return n_dof, all_dofs, remap
