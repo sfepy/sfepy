@@ -115,37 +115,6 @@ class LaplaceTerm(DiffusionTerm):
         else:
             self.function = terms.d_laplace
 
-class PermeabilityRTerm(Term):
-    r"""
-    Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
-    use on the right-hand side).
-
-    :Definition:
-
-    .. math::
-        \int_{\Omega} K_{ij} \nabla_j q
-
-    :Arguments:
-        - material : :math:`K_{ij}`
-        - virtual  : :math:`q`
-        - index    : :math:`i`
-    """
-    name = 'dw_permeability_r'
-    arg_types = ('material', 'virtual', 'index')
-
-    function = staticmethod(terms.dw_permeability_r)
-
-    def get_fargs(self, mat, virtual, index,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(virtual)
-
-        if isinstance(index, list):
-            index = index[0]
-
-        mat = nm.ascontiguousarray(mat[...,index:index+1])
-
-        return mat, vg
-
 class DiffusionRTerm(Term):
     r"""
     Diffusion-like term with material parameter :math:`K_{j}` (to
@@ -163,7 +132,7 @@ class DiffusionRTerm(Term):
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
     arg_shapes = {'material' : 'D, 1', 'virtual' : (1, None)}
-    function = staticmethod(terms.dw_permeability_r)
+    function = staticmethod(terms.dw_diffusion_r)
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

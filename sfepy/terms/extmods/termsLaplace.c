@@ -392,12 +392,12 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_permeability_r"
+#define __FUNC__ "dw_diffusion_r"
 /*!
   @par Revision history:
   - c: 23.04.2007, r: 23.01.2008
 */
-int32 dw_permeability_r( FMField *out, FMField *mtxD, Mapping *vg )
+int32 dw_diffusion_r( FMField *out, FMField *mtxD, Mapping *vg )
 {
   int32 ii, nQP, nEP, ret = RET_OK;
   FMField *gtd = 0;

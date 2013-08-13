@@ -210,8 +210,8 @@ cdef extern from 'terms.h':
     cdef int32 _d_diffusion \
          'd_diffusion'(FMField *out, FMField *gradP1, FMField *gradP2,
                        FMField *mtxD, Mapping *vg)
-    cdef int32 _dw_permeability_r \
-         'dw_permeability_r'(FMField *out, FMField *mtxD, Mapping *vg)
+    cdef int32 _dw_diffusion_r \
+         'dw_diffusion_r'(FMField *out, FMField *mtxD, Mapping *vg)
     cdef int32 _d_surface_flux \
          'd_surface_flux'(FMField *out, FMField *grad,
                           FMField *mtxD, Mapping *sg, int32 mode)
@@ -1171,16 +1171,16 @@ def d_diffusion(np.ndarray out not None,
     ret = _d_diffusion(_out, _grad_p1, _grad_p2, _mtx_d, cmap.geo)
     return ret
 
-def dw_permeability_r(np.ndarray out not None,
-                      np.ndarray mtx_d not None,
-                      CMapping cmap not None):
+def dw_diffusion_r(np.ndarray out not None,
+                   np.ndarray mtx_d not None,
+                   CMapping cmap not None):
     cdef int32 ret
     cdef FMField _out[1], _mtx_d[1]
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
 
-    ret = _dw_permeability_r(_out, _mtx_d, cmap.geo)
+    ret = _dw_diffusion_r(_out, _mtx_d, cmap.geo)
     return ret
 
 def d_surface_flux(np.ndarray out not None,

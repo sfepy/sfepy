@@ -23,7 +23,7 @@ int32 dw_diffusion( FMField *out, FMField *grad,
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 		   FMField *mtxD, Mapping *vg );
 
-int32 dw_permeability_r( FMField *out, FMField *mtxD, Mapping *vg );
+int32 dw_diffusion_r( FMField *out, FMField *mtxD, Mapping *vg );
 int32 d_surface_flux( FMField *out, FMField *grad,
                       FMField *mtxD, Mapping *sg, int32 mode );
 
