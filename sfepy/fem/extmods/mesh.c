@@ -118,7 +118,7 @@ inline int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity,
   iter->entity->dim = dim;
   iter->it = 0;
 
-  if (conn->num > 0) {
+  if ((conn->num > 0) && (conn->indices > 0)) {
     iter->ptr = conn->indices + conn->offsets[entity->ii];
     iter->it_end = conn->offsets[entity->ii+1] - conn->offsets[entity->ii];
     iter->entity->ii = iter->ptr[iter->it];
@@ -198,6 +198,9 @@ int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident)
     conn->n_incident = n_incident;
     conn->indices = alloc_mem(uint32, n_incident);
     ERR_CheckGo(ret);
+  } else if (num == 0) { // Empty connectivity.
+    conn->n_incident = n_incident;
+    conn->indices = 0;
   }
 
  end_label:
