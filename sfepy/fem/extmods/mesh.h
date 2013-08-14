@@ -133,6 +133,8 @@ int32 mei_print(MeshEntityIterator *iter, FILE *file);
 int32 mei_go(MeshEntityIterator *iter);
 int32 mei_next(MeshEntityIterator *iter);
 
+int32 ind_print(Indices *ind, FILE *file);
+
 int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident);
 int32 conn_resize(MeshConnectivity *conn, uint32 num, uint32 n_incident);
 int32 conn_free(MeshConnectivity *conn);

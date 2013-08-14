@@ -165,6 +165,19 @@ inline int32 mei_next(MeshEntityIterator *iter)
   return(RET_OK);
 }
 
+int32 ind_print(Indices *ind, FILE *file)
+{
+  int32 ii;
+  if (!ind) return(RET_OK);
+
+  fprintf(file, "indices: num: %d\n", ind->num);
+  for (ii = 0; ii < ind->num; ii++) {
+    fprintf(file, "%d: %d\n", ii, ind->indices[ii]);
+  }
+
+  return(RET_OK);
+}
+
 #undef __FUNC__
 #define __FUNC__ "conn_alloc"
 int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident)
