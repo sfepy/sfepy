@@ -84,19 +84,20 @@ class H1NodalMixin(Struct):
         # Prepare global facet id remapping to field-local numbering.
         remap = prepare_remap(facets, cmesh.num[dim])
 
-        conn = self.region.domain.cmesh.get_conn_as_graph(self.region.dim,
-                                                          dim)
+        cconn = self.region.domain.cmesh.get_conn(self.region.dim, dim)
+        offs = cconn.offsets
 
         n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
 
         oris = cmesh.get_orientations(dim)
         for ig, ap in self.aps.iteritems():
-            group_cells = self.region.get_cells(ig, offset=False)
-            group_conn = conn[group_cells]
-            n_el = group_conn.shape[0]
-            facets_of_cells = remap[group_conn.indices]
+            gcells = self.region.get_cells(ig, offset=False)
+            n_el = gcells.shape[0]
 
-            ori = oris[group_conn.indices]
+            indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
+            facets_of_cells = remap[indices]
+
+            ori = oris[indices]
             perms = facet_perms[ig][ori]
 
             # Define global facet dof numbers.
