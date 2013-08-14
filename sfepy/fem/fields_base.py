@@ -579,12 +579,11 @@ class Field(Struct):
 
         return nods
 
-    def _get_facet_dofs(self, facets, get_facets, remap, dofs, ig):
-        ii = get_facets(ig)
-        g_uid = facets.uid_i[ii]
-        uid = remap[g_uid]
+    def _get_facet_dofs(self, get_facets, remap, dofs, ig):
+        gfacets = get_facets(ig)
+        facets = remap[gfacets]
 
-        return dofs[uid[uid >= 0]].ravel()
+        return dofs[facets[facets >= 0]].ravel()
 
     def get_dofs_in_region_group(self, region, ig, merge=True):
         """
@@ -603,16 +602,14 @@ class Field(Struct):
 
         edofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.edge is not None:
-            edofs = self._get_facet_dofs(self.domain.ed,
-                                         region.get_edges,
+            edofs = self._get_facet_dofs(region.get_edges,
                                          self.edge_remap,
                                          self.edge_dofs, ig)
         dofs.append(edofs)
 
         fdofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.face is not None:
-            fdofs = self._get_facet_dofs(self.domain.fa,
-                                         region.get_faces,
+            fdofs = self._get_facet_dofs(region.get_faces,
                                          self.face_remap,
                                          self.face_dofs, ig)
         dofs.append(fdofs)
