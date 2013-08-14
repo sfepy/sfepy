@@ -407,7 +407,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   }
 
   n_incident = cDd->offsets[cDd->num];
-  debprintf("n_incident: %d\n", n_incident);
+  debprintf("build n_incident (%d -> %d): %d\n", D, dim, n_incident);
 
   oris = alloc_mem(uint32, n_incident);
   if (dim == 2) {
@@ -427,7 +427,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
 
   // Allocate maximal buffers for d -> 0 arrays.
   conn_alloc(cd0, n_incident, n_incident * n_v_max);
-  debprintf("max. n_incident_vertex: %d\n", n_incident * n_v_max);
+  debprintf("build max. n_incident_vertex: %d\n", n_incident * n_v_max);
 
   // Allocate maximal buffers for local connectivity with sorted global
   // vertices. Counts have to be set to zero to avoid spurious calls to
@@ -504,7 +504,8 @@ int32 mesh_build(Mesh *mesh, int32 dim)
       oris[ic] = loc_oris[ii];
     }
   }
-  debprintf("n_unique: %d, n_incident_vertex: %d\n", id, cd0->offsets[id]);
+  debprintf("build n_unique: %d, n_incident (%d -> 0): %d\n",
+            id, dim, cd0->offsets[id]);
 
   // Update entity count in topology.
   mesh->topology->num[dim] = id;
@@ -557,7 +558,7 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   }
 
   n_incident = c12->offsets[c12->num];
-  debprintf("n_incident: %d\n", n_incident);
+  debprintf("transpose n_incident (%d -> %d): %d\n", d1, d2, n_incident);
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
@@ -647,7 +648,7 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   }
 
   n_incident = c12->offsets[c12->num];
-  debprintf("n_incident: %d\n", n_incident);
+  debprintf("intersect n_incident (%d -> %d): %d\n", d1, d2, n_incident);
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
