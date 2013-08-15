@@ -13,7 +13,7 @@ from sfepy.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.fem.fe_surface import FESurface
 import fea
 
-def region_leaf(domain, regions, rdef, kind, functions):
+def region_leaf(domain, regions, rdef, functions):
     """
     Create/setup a region instance according to rdef.
     """
@@ -23,8 +23,7 @@ def region_leaf(domain, regions, rdef, kind, functions):
 
         if token != 'KW_Region':
             parse_def = token + '<' + ' '.join(details) + '>'
-            region = Region('leaf', rdef, domain, parse_def=parse_def,
-                            kind=kind)
+            region = Region('leaf', rdef, domain, parse_def=parse_def)
 
         if token == 'KW_Region':
             details = details[1][2:]
@@ -383,8 +382,7 @@ class Domain(Struct):
             raise
 
         region = visit_stack(stack, region_op,
-                             region_leaf(self, self.regions, select, kind,
-                                         functions))
+                             region_leaf(self, self.regions, select, functions))
         region.name = name
         region.definition = select
         region.set_kind(kind)
