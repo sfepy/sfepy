@@ -97,7 +97,7 @@ class H1NodalMixin(Struct):
             indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
             facets_of_cells = remap[indices]
 
-            ori = oris[indices]
+            ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
             perms = facet_perms[ig][ori]
 
             # Define global facet dof numbers.
