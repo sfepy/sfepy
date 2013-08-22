@@ -8,7 +8,7 @@ from optparse import OptionParser
 import numpy as nm
 
 from sfepy.base.base import output, Struct
-from sfepy.base.ioutils import get_print_info
+from sfepy.base.ioutils import get_print_info, ensure_path
 from sfepy.fem import Mesh, Domain, Field, FieldVariable, Variables
 from sfepy.fem.geometry_element import GeometryElement
 from sfepy.fem.poly_spaces import PolySpace
@@ -143,6 +143,7 @@ def main():
                                   [options.geometry])
 
             name = name_template % ip
+            ensure_path(name)
             mesh.write(name, out=out)
 
             output('...done (%s)' % name)
@@ -210,6 +211,7 @@ def main():
                                                eps=lin.eps)
 
             name = name_template % ip
+            ensure_path(name)
             out['u'].mesh.write(name, out=out)
 
             output('...done (%s)' % name)
