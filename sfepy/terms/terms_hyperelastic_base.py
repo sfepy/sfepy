@@ -28,7 +28,12 @@ class HyperElasticBase(Term):
 
     @staticmethod
     def integrate(out, val_qp, vg, fmode):
-        status = vg.integrate(out, val_qp, fmode)
+        if fmode == 2:
+            out[:] = val_qp
+            status = 0
+
+        else:
+            status = vg.integrate(out, val_qp, fmode)
 
         return status
 
@@ -119,7 +124,7 @@ class HyperElasticBase(Term):
                     stress, tan_mod, fd.mtx_f, fd.det_f, vg, fmode,
                     self.hyperelastic_mode)
 
-        elif mode == 'el_avg':
+        elif mode in ('el_avg', 'qp'):
             if term_mode == 'strain':
                 out_qp = fd.green_strain
 
@@ -130,7 +135,9 @@ class HyperElasticBase(Term):
                 raise ValueError('unsupported term mode in %s! (%s)'
                                  % (self.name, term_mode))
 
-            return self.integrate, out_qp, vg, 1
+            fmode = {'el_avg' : 1, 'qp' : 2}[mode]
+
+            return self.integrate, out_qp, vg, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
@@ -141,7 +148,10 @@ class HyperElasticBase(Term):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
         sym = dim * (dim + 1) / 2
 
-        return (n_el, 1, sym, 1), state.dtype
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, sym, 1), state.dtype
 
     # def _call_hmode( self, diff_var = None, chunk_size = None, **kwargs ):
     #     term_mode, = self.get_kwargs( ['term_mode'], **kwargs )
