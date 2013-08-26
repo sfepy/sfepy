@@ -32,8 +32,12 @@ def ensure_path(filename):
     intermediate directories.
     """
     dirname = os.path.dirname(filename)
-    if dirname and not os.path.exists(dirname):
-        os.makedirs(dirname)
+    if dirname:
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+
+        if not os.path.isdir(dirname):
+            raise IOError('cannot ensure path for "%s"!' % filename)
 
 def locate_files(pattern, root_dir=os.curdir):
     """
