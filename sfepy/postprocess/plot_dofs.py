@@ -18,6 +18,31 @@ def _get_axes(ax, dim):
 
     return ax
 
+def plot_points(ax, coors, vals=None, point_size=20,
+                show_colorbar=False, show=False):
+    """
+    Plot points with given coordinates, optionally colored using `vals` values.
+    """
+    dim = coors.shape[1]
+    ax = _get_axes(ax, dim)
+
+    colors = 'b' if vals is None else vals
+
+    if dim == 3:
+        sc = ax.scatter(coors[:, 0], coors[:, 1], coors[:, 2],
+                        s=point_size, c=colors, alpha=1)
+
+    else:
+        sc = ax.scatter(coors[:, 0], coors[:, 1], s=point_size, c=colors)
+
+    if show_colorbar and (vals is not None):
+        plt.colorbar(sc)
+
+    if show:
+        plt.show()
+
+    return ax
+
 def plot_mesh(ax, coors, conn, edges, show=False):
     """
     Plot a finite element mesh as a wireframe.
