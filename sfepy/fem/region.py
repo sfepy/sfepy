@@ -3,7 +3,7 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import assert_, Struct
+from sfepy.base.base import output, assert_, Struct
 
 _depends = re.compile('r\.([a-zA-Z_0-9.]+)').findall
 
@@ -444,6 +444,10 @@ class Region(Struct):
 
             elif 'cell' in self.true_kind:
                 self._igs = self.domain.cmesh.get_igs(self.cells, self.dim)
+
+            if not len(self._igs):
+                output('warning: region %s of %s kind has empty group indices!'
+                       % (self.name, self.kind))
 
         return self._igs
 
