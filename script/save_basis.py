@@ -30,8 +30,11 @@ help = {
     'mesh' :
     'name of the mesh file - alternative to --geometry [default: %default]',
     'permutations' :
-    'list of geometry element permutations for each element, e.g. 0,1 for'
-    ' two elements, with --mesh option [default: %default]',
+    'list of geometry element permutations for each element, e.g. 0,1 is a'
+    ' single permutation for two elements, 0,1,0,2,1,0 are three permutations'
+    ' for two elements. Special value "all" can be used to save all possible'
+    ' permutations for given reference element. Works only with --mesh option'
+    ' [default: %default]',
     'dofs' :
     'if given, save only the DOFs specified as a comma-separated list'
     ' [default: %default]',
@@ -49,6 +52,69 @@ def get_dofs(dofs, n_total):
         dofs = [int(ii) for ii in dofs.split(',')]
 
     return dofs
+
+def save_basis_on_mesh(mesh, options, output_dir, lin,
+                       permutations=None, suffix=''):
+    domain = Domain('domain', mesh)
+
+    if permutations is not None:
+        for group in domain.iter_groups():
+            perms = group.gel.get_conn_permutations()[permutations]
+            offsets = nm.arange(group.shape.n_el) * group.shape.n_ep
+
+            group.conn[:] = group.conn.take(perms + offsets[:, None])
+
+        domain.setup_facets()
+
+    omega = domain.create_region('Omega', 'all')
+    field = Field.from_args('f', nm.float64, shape=1, region=omega,
+                            approx_order=options.max_order,
+                            poly_space_base=options.basis)
+    var = FieldVariable('u', 'unknown', field, 1)
+
+    if options.plot_dofs:
+        import sfepy.postprocess.plot_dofs as pd
+        group = domain.groups[0]
+        ax = pd.plot_mesh(None, mesh.coors, mesh.conns[0], group.gel.edges)
+        ax = pd.plot_global_dofs(ax, field.get_coor(), field.aps[0].econn)
+        ax = pd.plot_local_dofs(ax, field.get_coor(), field.aps[0].econn)
+        if options.dofs is not None:
+            ax = pd.plot_nodes(ax, field.get_coor(), field.aps[0].econn,
+                               field.aps[0].interp.poly_spaces['v'].nodes,
+                               get_dofs(options.dofs, var.n_dof))
+        pd.plt.show()
+
+    output('dofs: %d' % var.n_dof)
+
+    vec = nm.empty(var.n_dof, dtype=var.dtype)
+    n_digit, _format = get_print_info(var.n_dof, fill='0')
+    name_template = os.path.join(output_dir,
+                                 'dof_%s_%s.vtk' % (_format, suffix))
+    for ip in get_dofs(options.dofs, var.n_dof):
+        output('dof %d...' % ip)
+
+        vec.fill(0.0)
+        vec[ip] = 1.0
+
+        var.set_data(vec)
+
+        if options.derivative == 0:
+            out = var.create_output(vec, linearization=lin)
+
+        else:
+            out = create_expression_output('ev_grad.ie.Elements(u)',
+                                           'u', 'f', {'f' : field}, None,
+                                           Variables([var]),
+                                           mode='qp', verbose=False,
+                                           min_level=lin.min_level,
+                                           max_level=lin.max_level,
+                                           eps=lin.eps)
+
+        name = name_template % ip
+        ensure_path(name)
+        out['u'].mesh.write(name, out=out)
+
+        output('...done (%s)' % name)
 
 def main():
     parser = OptionParser(usage=usage, version='%prog')
@@ -154,67 +220,29 @@ def main():
         output('  dimension: %d, vertices: %d, elements: %d'
                % (mesh.dim, mesh.n_nod, mesh.n_el))
 
-        domain = Domain('domain', mesh)
-
         if options.permutations:
-            permutations = [int(ii) for ii in options.permutations.split(',')]
-            output('using connectivity permutations:', permutations)
-            for group in domain.iter_groups():
-                perms = group.gel.get_conn_permutations()[permutations]
-                offsets = nm.arange(group.shape.n_el) * group.shape.n_ep
-
-                group.conn[:] = group.conn.take(perms + offsets[:, None])
-
-            domain.setup_facets()
-
-        omega = domain.create_region('Omega', 'all')
-        field = Field.from_args('f', nm.float64, shape=1, region=omega,
-                                approx_order=options.max_order,
-                                poly_space_base=options.basis)
-        var = FieldVariable('u', 'unknown', field, 1)
-
-        if options.plot_dofs:
-            import sfepy.postprocess.plot_dofs as pd
-            group = domain.groups[0]
-            ax = pd.plot_mesh(None, mesh.coors, mesh.conns[0], group.gel.edges)
-            ax = pd.plot_global_dofs(ax, field.get_coor(), field.aps[0].econn)
-            ax = pd.plot_local_dofs(ax, field.get_coor(), field.aps[0].econn)
-            if options.dofs is not None:
-                ax = pd.plot_nodes(ax, field.get_coor(), field.aps[0].econn,
-                                   field.aps[0].interp.poly_spaces['v'].nodes,
-                                   get_dofs(options.dofs, var.n_dof))
-            pd.plt.show()
-
-        output('dofs: %d' % var.n_dof)
-
-        vec = nm.empty(var.n_dof, dtype=var.dtype)
-        n_digit, _format = get_print_info(var.n_dof, fill='0')
-        name_template = os.path.join(output_dir, 'dof_%s.vtk' % _format)
-        for ip in get_dofs(options.dofs, var.n_dof):
-            output('dof %d...' % ip)
-
-            vec.fill(0.0)
-            vec[ip] = 1.0
-
-            var.set_data(vec)
-
-            if options.derivative == 0:
-                out = var.create_output(vec, linearization=lin)
+            if options.permutations == 'all':
+                from sfepy.linalg import cycle
+                gel = GeometryElement(mesh.descs[0])
+                n_perms = gel.get_conn_permutations().shape[0]
+                all_permutations = [ii for ii in cycle(mesh.n_el * [n_perms])]
 
             else:
-                out = create_expression_output('ev_grad.ie.Elements(u)',
-                                               'u', 'f', {'f' : field}, None,
-                                               Variables([var]),
-                                               mode='qp', verbose=False,
-                                               min_level=lin.min_level,
-                                               max_level=lin.max_level,
-                                               eps=lin.eps)
+                all_permutations = [int(ii)
+                                    for ii in options.permutations.split(',')]
+                all_permutations = nm.array(all_permutations)
+                np = len(all_permutations)
+                all_permutations.shape = (np / mesh.n_el, mesh.n_el)
 
-            name = name_template % ip
-            ensure_path(name)
-            out['u'].mesh.write(name, out=out)
+            output('using connectivity permutations:\n', all_permutations)
 
-            output('...done (%s)' % name)
+        else:
+            permutations = [None]
+
+        for ip, permutations in enumerate(all_permutations):
+            aux = mesh.copy()
+            save_basis_on_mesh(aux, options, output_dir, lin, permutations,
+                               '_'.join('%d' % ii for ii in permutations))
 
 if __name__ == '__main__':
     main()
