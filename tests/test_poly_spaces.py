@@ -18,22 +18,22 @@ connectivity permutations!
 import numpy as nm
 
 from sfepy.base.testing import TestCommon
+from sfepy.base.base import assert_
 
 rsels = {
+    '2_3' : 'nodes in (y > -0.1) & (y < 0.1)',
     '2_4' : 'nodes in (y > 0.9) & (y < 1.1)',
+    '3_4' : 'nodes in (z > -0.1) & (z < 0.1)',
     '3_8' : 'nodes in (z > 0.9) & (z < 1.1)',
 }
 
 eps = 1e-5
 
 shifts = {
+    '2_3' : nm.array([[0.0, 0.0], [0.0, eps]], dtype=nm.float64),
     '2_4' : nm.array([[0.0, 1.0], [0.0, eps]], dtype=nm.float64),
+    '3_4' : nm.array([[0.0, 0.0, 0.0], [0.0, 0.0, eps]], dtype=nm.float64),
     '3_8' : nm.array([[0.0, 0.0, 1.0], [0.0, 0.0, eps]], dtype=nm.float64),
-}
-
-rots = {
-    '2_4' : None,
-    '3_8' : None,
 }
 
 def _gen_common_data(orders, gels, report):
@@ -43,14 +43,18 @@ def _gen_common_data(orders, gels, report):
     from sfepy.fem import Mesh, Domain, Field, FieldVariable, Integral
     from sfepy.fem.global_interp import get_ref_coors
 
-    for geom, poly_space_base in combine([['2_4', '3_8'],
-                                          ['lagrange', 'lobatto']]):
+    bases = ([ii for ii in combine([['2_4', '3_8'],
+                                    ['lagrange', 'lobatto']])]
+             + [ii for ii in combine([['2_3', '3_4'],
+                                      ['lagrange']])])
+    for geom, poly_space_base in bases:
         report('geometry: %s, base: %s' % (geom, poly_space_base))
 
         order = orders[geom]
         integral = Integral('i', order=order)
 
-        mesh0 = Mesh.from_file('meshes/elements/%s_2.mesh' % geom,
+        aux = '' if geom in ['2_4', '3_8'] else 'z'
+        mesh0 = Mesh.from_file('meshes/elements/%s_2%s.mesh' % (geom, aux),
                                prefix_dir=sfepy.data_dir)
         gel = gels[geom]
 
@@ -59,10 +63,6 @@ def _gen_common_data(orders, gels, report):
         qps, qp_weights = integral.get_qp(gel.surface_facet.name)
         zz = nm.zeros_like(qps[:, :1])
         qps = nm.hstack(([qps] + [zz]))
-
-        rot = rots[geom]
-        if rot is not None:
-            pass
 
         shift = shifts[geom]
         rcoors = nm.ascontiguousarray(qps
@@ -73,6 +73,7 @@ def _gen_common_data(orders, gels, report):
         for ir, pr in enumerate(perms):
             for ic, pc in enumerate(perms):
                 report('ir: %d, ic: %d' % (ir, ic))
+                report('pr: %s, pc: %s' % (pr, pc))
 
                 mesh = mesh0.copy()
                 conn = mesh.conns[0]
@@ -103,9 +104,11 @@ def _gen_common_data(orders, gels, report):
                                                      cache=cache)
                 crc, ccells, cstatus = get_ref_coors(field, ccoors,
                                                      cache=cache)
+                assert_((rstatus == 0).all() and (cstatus == 0).all())
 
                 yield (geom, poly_space_base, qp_weights, mesh, ir, ic,
-                       ap, ps, rrc, crc, vec, edofs, fdofs)
+                       ap, ps, rrc, rcells[0, 1], crc, ccells[0, 1],
+                       vec, edofs, fdofs)
 
 class Test(TestCommon):
 
@@ -128,7 +131,7 @@ class Test(TestCommon):
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
-             ap, ps, rrc, crc, vec,
+             ap, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
             if poly_space_base == 'lagrange':
@@ -149,8 +152,8 @@ class Test(TestCommon):
 
                 evec = vec[ap.econn]
 
-                rvals = nm.dot(rbf, evec[0])
-                cvals = nm.dot(cbf, evec[1])
+                rvals = nm.dot(rbf, evec[rcell])
+                cvals = nm.dot(cbf, evec[ccell])
 
                 _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
                 res[1, ii] = _ok
@@ -179,20 +182,20 @@ class Test(TestCommon):
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
-             ap, ps, rrc, crc, vec,
+             ap, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
             conn = mesh.conns[0]
             gel = self.gels[geom]
 
             geo_ps = ap.interp.get_geom_poly_space('v')
-            rmapping = VolumeMapping(mesh.coors, conn[:1],
+            rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],
                                      poly_space=geo_ps)
             rori = ap.ori[:1] if ap.ori is not None else None
             rvg = rmapping.get_mapping(rrc, qp_weights,
                                        poly_space=ps, ori=rori)
             rbfg = rvg.bfg
 
-            cmapping = VolumeMapping(mesh.coors, conn[1:],
+            cmapping = VolumeMapping(mesh.coors, conn[ccell:ccell+1],
                                      poly_space=geo_ps)
             cori = ap.ori[1:] if ap.ori is not None else None
             cvg = cmapping.get_mapping(crc, qp_weights,
@@ -209,8 +212,8 @@ class Test(TestCommon):
 
                 evec = vec[ap.econn]
 
-                rvals = nm.dot(rbfg, evec[0])[0]
-                cvals = nm.dot(cbfg, evec[1])[0]
+                rvals = nm.dot(rbfg, evec[rcell])[0]
+                cvals = nm.dot(cbfg, evec[ccell])[0]
 
                 okx = nm.allclose(rvals[:, 0], cvals[:, 0],
                                   atol=1e-14, rtol=0.0)
