@@ -103,7 +103,7 @@ def integrate_in_time( coef, ts, scheme = 'forward' ):
     
     return icoef
 
-def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
+def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, kind='facet'):
     """
     Define sides and corner regions for a box aligned with coordinate
     axes.
@@ -120,8 +120,8 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
     eps : float
         A parameter, that should be smaller than the smallest mesh node
         distance.
-    can_cells : bool, optional
-       If given, use its value for the 'can_cells' region flag.
+    kind : bool, optional
+       The region kind.
 
     Returns
     -------
@@ -130,12 +130,6 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
     """
     if rtf is None:
         lbn, rtf = -nm.array(lbn), lbn
-
-    if can_cells is None:
-        flags = {}
-
-    else:
-        flags = {'can_cells' : can_cells}
 
     if dim == 3:
         lbnx, lbny, lbnz = lbn
@@ -146,13 +140,13 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
         lbnx, lbny, lbnz = (lbnx+dx*eps, lbny+dy*eps, lbnz+dz*eps)
         rtfx, rtfy, rtfz = (rtfx-dx*eps, rtfy-dy*eps, rtfz-dz*eps)
         regions = {
-            'Near' : ('nodes in (y < %f)' % lbny, flags),
-            'Far' : ('nodes in (y > %f)' % rtfy, flags),
-            'Bottom' : ('nodes in (z < %f)' % lbnz, flags),
-            'Top' : ('nodes in (z > %f)' % rtfz, flags),
-            'Left' : ('nodes in (x < %f)' % lbnx, flags),
-            'Right' : ('nodes in (x > %f)' % rtfx, flags),
-            'Corners' : ("""nodes in
+            'Near' : ('vertices in (y < %f)' % lbny, kind),
+            'Far' : ('vertices in (y > %f)' % rtfy, kind),
+            'Bottom' : ('vertices in (z < %f)' % lbnz, kind),
+            'Top' : ('vertices in (z > %f)' % rtfz, kind),
+            'Left' : ('vertices in (x < %f)' % lbnx, kind),
+            'Right' : ('vertices in (x > %f)' % rtfx, kind),
+            'Corners' : ("""vertices in
                             ((x < %f) & (y < %f) & (z < %f))
                           | ((x > %f) & (y < %f) & (z < %f))
                           | ((x > %f) & (y > %f) & (z < %f))
@@ -168,7 +162,7 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
                                   lbnx, lbny, rtfz,
                                   rtfx, lbny, rtfz,
                                   rtfx, rtfy, rtfz,
-                                  lbnx, rtfy, rtfz ), flags ),
+                                  lbnx, rtfy, rtfz ), 'vertex'),
         }
     else:
         lbnx, lbny, = lbn
@@ -178,11 +172,11 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
         lbnx, lbny = (lbnx+dx*eps, lbny+dy*eps,)
         rtfx, rtfy = (rtfx-dx*eps, rtfy-dy*eps,)
         regions = {
-            'Bottom' : ('nodes in (y < %f)' % lbny, flags),
-            'Top' : ('nodes in (y > %f)' % rtfy, flags),
-            'Left' : ('nodes in (x < %f)' % lbnx, flags),
-            'Right' : ('nodes in (x > %f)' % rtfx, flags),
-            'Corners' : ("""nodes in
+            'Bottom' : ('vertices in (y < %f)' % lbny, kind),
+            'Top' : ('vertices in (y > %f)' % rtfy, kind),
+            'Left' : ('vertices in (x < %f)' % lbnx, kind),
+            'Right' : ('vertices in (x > %f)' % rtfx, kind),
+            'Corners' : ("""vertices in
                               ((x < %f) & (y < %f))
                             | ((x > %f) & (y < %f))
                             | ((x > %f) & (y > %f))
@@ -190,7 +184,7 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
                             """ % ( lbnx, lbny,
                                     rtfx, lbny,
                                     rtfx, rtfy,
-                                    lbnx, rtfy ), flags),
+                                    lbnx, rtfy ), 'vertex'),
         }
 
     return regions
