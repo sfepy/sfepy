@@ -434,6 +434,14 @@ cdef class CMesh:
         cdef np.ndarray[uint32, mode='c', ndim=1] offsets
         cdef uint32 num
 
+        if not entities.shape[0] > 0:
+            empty = np.empty(0, dtype=np.uint32)
+            if ret_offsets:
+                return empty, empty
+
+            else:
+                return empty
+
         _entities.num = entities.shape[0]
         _entities.indices = &entities[0]
 
@@ -469,6 +477,9 @@ cdef class CMesh:
         cdef MeshConnectivity _incident[1]
         cdef np.ndarray[uint32, mode='c', ndim=1] out
 
+        if not entities.shape[0] > 0:
+            return np.empty(0, dtype=np.uint32)
+
         _entities.num = entities.shape[0]
         _entities.indices = &entities[0]
 
@@ -496,6 +507,9 @@ cdef class CMesh:
         cdef np.ndarray[uint32, mode='c', ndim=1] out
         cdef uint32 *_out
         cdef uint32 ii, ic
+
+        if not entities.shape[0] > 0:
+            return np.empty(0, dtype=np.uint32)
 
         _entities.num = entities.shape[0]
         _entities.indices = &entities[0]
@@ -576,6 +590,9 @@ cdef class CMesh:
         Adapter function to be removed after new assembling is done.
         """
         cdef np.ndarray[uint32, mode='c', ndim=1] cells
+
+        if not entities.shape[0] > 0:
+            return np.empty(0, dtype=np.uint32)
 
         if dim == self.dim:
             cells = entities
