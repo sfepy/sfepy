@@ -510,7 +510,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
     found_label:
       // Store entity orientation key to position of the last used item in cDd.
       ptr1 = cDd->offsets + it0->entity->ii;
-      ic = ptr1[1];
+      ic = ptr1[1] - 1;
       while (ic >= ptr1[0]) {
         if (cDd->indices[ic] != UINT32_None) { // Not found & free slot.
           break;
