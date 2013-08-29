@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from sfepy.postprocess.plot_dofs import _get_axes
 
-def plot_wireframe(ax, cmesh, show=False):
+def plot_wireframe(ax, cmesh, color='k', show=False):
     """
     Plot a finite element mesh as a wireframe using edges connectivity.
     """
@@ -19,10 +19,10 @@ def plot_wireframe(ax, cmesh, show=False):
     for edge_vertices in edges.indices.reshape((edges.num, 2)):
         cc = coors[edge_vertices]
         if dim == 3:
-            ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], 'k')
+            ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], color)
 
         else:
-            ax.plot(cc[:, 0], cc[:, 1], 'k')
+            ax.plot(cc[:, 0], cc[:, 1], color)
 
     if show:
         plt.show()
