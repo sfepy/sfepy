@@ -50,7 +50,6 @@ class H1NodalMixin(Struct):
 
         return self._setup_facet_dofs(1, self.node_desc.edge,
                                       self.edge_dof_perms,
-                                      self.domain.cmesh.edge_oris,
                                       self.n_vertex_dof)
 
     def _setup_face_dofs(self):
@@ -63,11 +62,9 @@ class H1NodalMixin(Struct):
         return self._setup_facet_dofs(self.domain.shape.dim - 1,
                                       self.node_desc.face,
                                       self.face_dof_perms,
-                                      self.domain.cmesh.face_oris,
                                       self.n_vertex_dof + self.n_edge_dof)
 
-    def _setup_facet_dofs(self, dim, facet_desc, facet_perms, facet_oris,
-                          offset):
+    def _setup_facet_dofs(self, dim, facet_desc, facet_perms, offset):
         """
         Helper function to setup facet DOF connectivity, works for both
         edges and faces.
