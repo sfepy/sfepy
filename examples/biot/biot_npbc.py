@@ -61,12 +61,11 @@ def define_regions(filename):
     if filename.find('simple.mesh'):
         dim = 3
         regions = {
-            'Omega' : ('all', {}),
-            'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
-                       {'can_cells' : True}),
-            'Inlet' : ('nodes by cinc_simple0', {'can_cells' : False}),
-            'Outlet' : ('nodes by cinc_simple1', {'can_cells' : False}),
-            'Rigid' : ('nodes by cinc_simple2', {}),
+            'Omega' : 'all',
+            'Walls' : ('vertices of surface -v (r.Outlet +f r.Inlet)', 'facet'),
+            'Inlet' : ('vertices by cinc_simple0', 'facet'),
+            'Outlet' : ('vertices by cinc_simple1', 'facet'),
+            'Rigid' : 'vertices by cinc_simple2',
         }
 
     else:

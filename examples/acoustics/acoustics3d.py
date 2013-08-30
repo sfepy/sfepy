@@ -48,14 +48,14 @@ Z = rho * c / por * (0.006 + 1j * k1 * (tw + 0.375 * dh
                                         * (1 + rhoc2/rhoc1 * k2/k1)))
 
 regions = {
-    'Omega': ('all', {}),
-    'Omega_1': ('elements of group 1', {}),
-    'Omega_2': ('elements of group 2', {}),
-    'Gamma_12' : ('r.Omega_1 *n r.Omega_2', {}),
-    'Gamma_12_1' : ('copy r.Gamma_12', {'forbid' : 'group 2'}),
-    'Gamma_12_2' : ('copy r.Gamma_12', {'forbid' : 'group 1'}),
-    'Gamma_in': ('nodes in (z < 0.001)', {}),
-    'Gamma_out': ('nodes in (z > 0.157)', {}),
+    'Omega' : 'all',
+    'Omega_1' : 'cells of group 1',
+    'Omega_2' : 'cells of group 2',
+    'Gamma_12' : ('r.Omega_1 *v r.Omega_2', 'facet'),
+    'Gamma_12_1' : ('copy r.Gamma_12', 'facet', 'Omega_1'),
+    'Gamma_12_2' : ('copy r.Gamma_12', 'facet', 'Omega_2'),
+    'Gamma_in' : ('vertices in (z < 0.001)', 'facet'),
+    'Gamma_out' : ('vertices in (z > 0.157)', 'facet'),
 }
 
 materials = {
