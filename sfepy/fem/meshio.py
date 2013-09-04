@@ -1867,9 +1867,13 @@ class HypermeshAsciiMeshIO(MeshIO):
         mat_tetras = []
         hexas = []
         mat_hexas = []
+        mat_id = 0
 
         for line in fd:
             if line and (line[0] == '*'):
+                if line[1:10] == 'component':
+                    line = line.strip()[11:-1].split(',')
+                    mat_id = int(line[0])
                 if line[1:5] == 'node':
                     line = line.strip()[6:-1].split(',')
                     ids.append(int(line[0]))
@@ -1877,12 +1881,12 @@ class HypermeshAsciiMeshIO(MeshIO):
 
                 elif line[1:7] == 'tetra4':
                     line = line.strip()[8:-1].split(',')
-                    mat_tetras.append(int(line[1]))
+                    mat_tetras.append(mat_id)
                     tetras.append([int(ic) for ic in line[2:6]])
 
                 elif line[1:6] == 'hexa8':
                     line = line.strip()[7:-1].split(',')
-                    mat_hexas.append(int(line[1]))
+                    mat_hexas.append(mat_id)
                     hexas.append([int(ic) for ic in line[2:10]])
         fd.close()
 
