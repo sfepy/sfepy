@@ -43,7 +43,7 @@ class FESurface(Struct):
 
         self.ig = ig
         self.econn = econn
-        self.fis = face_indices
+        self.fis = nm.ascontiguousarray(face_indices.astype(nm.int32))
         self.n_fa, self.n_fp = n_fa, n_fp
         self.nodes = nodes
         self.leconn = leconn
