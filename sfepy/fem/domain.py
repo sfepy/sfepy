@@ -513,7 +513,7 @@ class Domain(Struct):
         else:
             vg.get_element_diameters(diameters, group.gel.edges,
                                      self.get_mesh_coors().copy(), group.conn,
-                                     cells, mode)
+                                     cells.astype(nm.int32), mode)
         if square:
             out = diameters.squeeze()
         else:
