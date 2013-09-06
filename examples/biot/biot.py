@@ -28,10 +28,10 @@ from sfepy import data_dir
 filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
 regions = {
-    'Omega' : ('all', {}),
-    'Bottom' : ('nodes in (z < -0.4999999)', {}),
-    'Top' : ('nodes in (z > 0.4999999)', {}),
-    'Left' : ('nodes in (x < -0.4999999)', {}),
+    'Omega' : 'all',
+    'Bottom' : ('vertices in (z < -0.4999999)', 'facet'),
+    'Top' : ('vertices in (z > 0.4999999)', 'facet'),
+    'Left' : ('vertices in (x < -0.4999999)', 'facet'),
 }
 
 field_1 = {

@@ -59,10 +59,10 @@ options = {
 # Domain and subdomains.
 default_diameter = 0.25
 regions = {
-    'Omega' : ('all', {}),
-    'Gamma_1' : ('nodes in (x < -0.999)', {}),
-    'Gamma_2' : ('nodes in (x > 0.999)', {}),
-    'Omega_1' : ('nodes by select_circ', {}),
+    'Omega' : 'all',
+    'Gamma_1' : ('vertices in (x < -0.999)', 'facet'),
+    'Gamma_2' : ('vertices in (x > 0.999)', 'facet'),
+    'Omega_1' : 'vertices by select_circ',
 }
 
 # FE field defines the FE approximation: 2_3_P1 = 2D, P1 on triangles.
@@ -151,7 +151,7 @@ def select_circ( x, y, z, diameter ):
 
     n = out.shape[0]
     if n <= 3:
-        raise ValueError( 'too few nodes selected! (%d)' % n )
+        raise ValueError( 'too few vertices selected! (%d)' % n )
 
     return out
 
@@ -191,9 +191,8 @@ def vary_omega1_size( problem ):
         problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ),
                               ['Omega_1'] )
         region = problem.domain.regions['Omega_1']
-        if not region.has_cells_if_can():
-            print region
-            raise ValueError( 'region %s has no cells!' % region.name )
+        if not region.has_cells():
+            raise ValueError('region %s has no cells!' % region.name)
 
         ofn_trunk = ofn_trunk + '_' + (d_format % ii)
         problem.setup_output(output_filename_trunk=ofn_trunk,

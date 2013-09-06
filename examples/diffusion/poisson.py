@@ -33,17 +33,19 @@ material_2 = {
 #! -------
 region_1000 = {
     'name' : 'Omega',
-    'select' : 'elements of group 6',
+    'select' : 'cells of group 6',
 }
 
 region_03 = {
     'name' : 'Gamma_Left',
-    'select' : 'nodes in (x < 0.00001)',
+    'select' : 'vertices in (x < 0.00001)',
+    'kind' : 'facet',
 }
 
 region_4 = {
     'name' : 'Gamma_Right',
-    'select' : 'nodes in (x > 0.099999)',
+    'select' : 'vertices in (x > 0.099999)',
+    'kind' : 'facet',
 }
 
 #! Fields
