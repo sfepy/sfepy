@@ -62,9 +62,9 @@ def define():
     }
 
     regions = {
-        'Omega' : ('all', {}),
-        'Bottom' : ('nodes in (z < 0.1)', {}),
-        'Top' : ('nodes in (z > 2.9)', {}),
+        'Omega' : 'all',
+        'Bottom' : ('vertices in (z < 0.1)', 'facet'),
+        'Top' : ('vertices in (z > 2.9)', 'facet'),
     }
 
     ebcs = {

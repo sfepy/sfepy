@@ -46,11 +46,10 @@ options = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
-               {'can_cells' : False}),
-    'Inlet' : ('nodes by cinc0', {'can_cells' : False}),
-    'Outlet' : ('nodes by cinc1', {'can_cells' : False}),
+    'Omega' : 'all',
+    'Walls' : ('vertices of surface -v (r.Outlet +v r.Inlet)', 'facet'),
+    'Inlet' : ('vertices by cinc0', 'facet'),
+    'Outlet' : ('vertices by cinc1', 'facet'),
 }
 
 fields = {

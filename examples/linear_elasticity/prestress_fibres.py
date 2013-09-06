@@ -37,10 +37,10 @@ from sfepy import data_dir
 filename_mesh = data_dir + '/meshes/3d/block.mesh'
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < -4.99)', {}),
-    'Omega1' : ('nodes in (x < 0.001)', {}),
-    'Omega2' : ('nodes in (x > -0.001)', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < -4.99)', 'facet'),
+    'Omega1' : 'vertices in (x < 0.001)',
+    'Omega2' : 'vertices in (x > -0.001)',
 }
 
 materials = {
