@@ -687,9 +687,10 @@ class Region(Struct):
 
     def iter_cells(self):
         ii = 0
-        for ig, cells in self.cells.iteritems():
-            for iel in cells:
-                yield ig, ii, iel
+        offs = self.domain.mesh.el_offsets
+        for ig, off in enumerate(offs[:-1]):
+            for iel in self.cells[off:offs[ig+1]]:
+                yield ig, ii, iel - off
                 ii += 1
 
     def has_cells(self):
@@ -712,18 +713,16 @@ class Region(Struct):
     def get_charfun(self, by_cell=False, val_by_id=False):
         """
         Return the characteristic function of the region as a vector of values
-        defined either in the mesh nodes (by_cell == False) or cells. The
+        defined either in the mesh vertices (by_cell == False) or cells. The
         values are either 1 (val_by_id == False) or sequential id + 1.
         """
         if by_cell:
             chf = nm.zeros((self.domain.shape.n_el,), dtype=nm.float64)
-            offs = self.get_cell_offsets()
-            for ig, cells in self.cells.iteritems():
-                iel = offs[ig] + cells
-                if val_by_id:
-                    chf[iel] = iel + 1
-                else:
-                    chf[iel] = 1.0
+            if val_by_id:
+                chf[self.cells] = self.cells + 1
+            else:
+                chf[self.cells] = 1.0
+
         else:
             chf = nm.zeros((self.domain.shape.n_nod,), dtype=nm.float64)
             if val_by_id:
