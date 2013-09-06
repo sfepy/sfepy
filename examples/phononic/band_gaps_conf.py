@@ -119,10 +119,10 @@ class BandGapsConf(Struct):
 
     def define_regions(self):
         regions = {
-            'Y' : ('all', {}),
+            'Y' : 'all',
             'Y_m' : self.region_selects.matrix,
             'Y_c' : self.region_selects.inclusion,
-            'Gamma_mc': ('r.Y_m *n r.Y_c', {'can_cells' : False}),
+            'Gamma_mc': ('r.Y_m *v r.Y_c', 'facet'),
         }
 
         regions.update(define_box_regions(self.dim,
@@ -342,8 +342,8 @@ class BandGapsRigidConf(BandGapsConf):
         regions = BandGapsConf.define_regions(self)
         regions['Y_cr'] = regions['Y_c']
         regions.update({
-            'Y_r' : ('nodes by select_yr', {}),
-            'Y_c' : ('r.Y_cr -e r.Y_r', {}),
+            'Y_r' : 'vertices by select_yr',
+            'Y_c' : 'r.Y_cr -c r.Y_r',
         })
         return regions
 

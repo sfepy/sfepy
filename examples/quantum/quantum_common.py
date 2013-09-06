@@ -16,7 +16,8 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
     # Domain $Y_2$.
     region_2 = {
         'name' : 'Surface',
-        'select' : 'nodes of surface',
+        'select' : 'vertices of surface',
+        'kind' : 'facet',
     }
 
     functions = {
