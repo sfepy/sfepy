@@ -45,18 +45,18 @@ region_1000 = {
 
 region_1 = {
     'name' : 'Left',
-    'select' : 'nodes in (x < -0.499)',
-    'can_cells' : True,
+    'select' : 'vertices in (x < -0.499)',
+    'kind' : 'facet',
 }
 region_2 = {
     'name' : 'Right',
-    'select' : 'nodes in (x > 0.499)',
-    'can_cells' : True,
+    'select' : 'vertices in (x > 0.499)',
+    'kind' : 'facet',
 }
 region_3 = {
     'name' : 'Gamma',
-    'select' : 'nodes of surface',
-    'can_cells' : True,
+    'select' : 'vertices of surface',
+    'kind' : 'facet',
 }
 
 ebc_1 = {

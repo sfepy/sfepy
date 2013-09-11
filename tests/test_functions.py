@@ -56,10 +56,10 @@ variables = {
 
 wx = 0.499
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < -%.3f)' % wx, {}),
-    'Right' : ('nodes in (x > %.3f)' % wx, {}),
-    'Circle' : ('nodes by get_circle', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < -%.3f)' % wx, 'facet'),
+    'Right' : ('vertices in (x > %.3f)' % wx, 'facet'),
+    'Circle' : 'vertices by get_circle',
 }
 
 ebcs = {

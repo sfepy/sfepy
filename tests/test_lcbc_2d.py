@@ -12,31 +12,33 @@ region_1000 = {
 # Domain $Y_1$.
 region_1 = {
     'name' : 'Y1',
-    'select' : 'elements of group 1',
+    'select' : 'cells of group 1',
 }
 
 # Domain $Y_2$.
 region_2 = {
     'name' : 'Y2',
-    'select' : 'elements of group 2',
+    'select' : 'cells of group 2',
 }
 
 # Domain $Y_3$.
 region_3 = {
     'name' : 'Y3',
-    'select' : 'nodes in (x > %f) & (x < %f) & (y > %f) & (y < %f)'\
+    'select' : 'vertices in (x > %f) & (x < %f) & (y > %f) & (y < %f)'\
     % (-0.3, 0.3, -0.48, -0.3),
 }
 
 wx = wy = 0.499
 region_10 = {
     'name' : 'Bottom',
-    'select' : 'nodes in (y < %f)' % -wy,
+    'select' : 'vertices in (y < %f)' % -wy,
+    'kind' : 'facet',
 }
 
 region_11 = {
     'name' : 'Top',
-    'select' : 'nodes in (y > %f)' % wy,
+    'select' : 'vertices in (y > %f)' % wy,
+    'kind' : 'facet',
 }
 
 material_1 = {

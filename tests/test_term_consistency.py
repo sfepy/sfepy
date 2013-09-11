@@ -21,8 +21,8 @@ variables = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < -0.499)', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < -0.499)', 'facet'),
 }
 
 integrals = {
