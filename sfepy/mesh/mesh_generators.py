@@ -415,7 +415,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
         if ii == 0:
             oconns[0:nel0,:] = conns
             ocoors[0:nnod0,:] = coors
-            ongrps[0:nnod0] = ngrps
+            ongrps[0:nnod0] = ngrps.squeeze()
             nd_off += nnod0
 
             mapto = s2[m2]
@@ -434,7 +434,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
 
             ocoors[nd_off:(nd_off + nnod0r),:] =\
               (coors[cidx,:] + ii * dd)
-            ongrps[nd_off:(nd_off + nnod0r)] = ngrps[cidx]
+            ongrps[nd_off:(nd_off + nnod0r)] = ngrps[cidx].squeeze()
             oconns[el_off:(el_off + nel0),:] = remap[conns]
             if ret_ndmap:
                 ndmap_out[nd_off:(nd_off + nnod0r)] = cidx[0]
