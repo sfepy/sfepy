@@ -423,17 +423,19 @@ material parameters with the corresponding region of the mesh.
 
     region_1000 = {
         'name' : 'Omega',
-        'select' : 'elements of group 6',
+        'select' : 'cells of group 6',
     }
 
     region_03 = {
         'name' : 'Gamma_Left',
-        'select' : 'nodes in (x < 0.00001)',
+        'select' : 'vertices in (x < 0.00001)',
+        'kind' : 'facet',
     }
 
     region_4 = {
         'name' : 'Gamma_Right',
-        'select' : 'nodes in (x > 0.099999)',
+        'select' : 'vertices in (x > 0.099999)',
+        'kind' : 'facet',
     }
 
 Regions assign names to various parts of the finite element mesh. The region
@@ -703,8 +705,6 @@ Create a domain. The domain allows defining regions or subdomains.
 .. sourcecode:: ipython
 
     In [2]: domain = Domain('domain', mesh)
-    sfepy: setting up domain edges...
-    sfepy: ...done in 0.01 s
 
 Define the regions - the whole domain :math:`\Omega`, where the solution
 is sought, and :math:`\Gamma_1`, :math:`\Gamma_2`, where the boundary
@@ -713,21 +713,24 @@ bounding box to get correct bounds for selecting the boundary edges.
 
 .. sourcecode:: ipython
 
-    In [3]: min_x, max_x = domain.get_mesh_bounding_box()[:,0]
+    In [3]: min_x, max_x = domain.get_mesh_bounding_box()[:, 0]
     In [4]: eps = 1e-8 * (max_x - min_x)
     In [5]: omega = domain.create_region('Omega', 'all')
     In [6]: gamma1 = domain.create_region('Gamma1',
-       ...:                               'nodes in x < %.10f' % (min_x + eps))
+       ...:                               'vertices in x < %.10f' % (min_x + eps),
+       ...:                               'facet')
     In [7]: gamma2 = domain.create_region('Gamma2',
-       ...:                               'nodes in x > %.10f' % (max_x - eps))
+       ...:                               'vertices in x > %.10f' % (max_x - eps),
+       ...:                               'facet')
 
 Next we define the actual finite element approximation using the
 :class:`Field` class.
 
 .. sourcecode:: ipython
 
-    In [8]: field = Field('fu', nm.float64, 'vector', omega,
-       ...:               space='H1', poly_space_base='lagrange', approx_order=2)
+    In [8]: field = Field.from_args('fu', nm.float64, 'vector', omega,
+       ...:                         space='H1', poly_space_base='lagrange',
+       ...:                         approx_order=2)
 
 Using the field `fu`, we can define both the unknown variable :math:`\ub` and
 the test variable :math:`\vb`.
@@ -767,10 +770,6 @@ Now we are ready to define the two terms and build the equations.
     In [17]: t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
     In [18]: eq = Equation('balance', t1 + t2)
     In [19]: eqs = Equations([eq])
-    sfepy: setting up dof connectivities...
-    sfepy: ...done in 0.00 s
-    sfepy: describing geometries...
-    sfepy: ...done in 0.00 s
 
 The equations have to be completed by boundary conditions. Let us clamp
 the left edge :math:`\Gamma_1`, and shift the right edge
@@ -781,10 +780,9 @@ the left edge :math:`\Gamma_1`, and shift the right edge
 
    In [20]: from sfepy.fem.conditions import Conditions, EssentialBC
    In [21]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
-   In [22]: def shift_u_fun(ts, coors, bc=None, shift=0.0):
+   In [22]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
       ....:     val = shift * coors[:,1]**2
       ....:     return val
-      ....:
    In [23]: bc_fun = Function('shift_u_fun', shift_u_fun,
       ....:                   extra_args={'shift' : 0.01})
    In [24]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
@@ -817,12 +815,6 @@ debugging. Let us try saving the regions into a VTK file.
 .. sourcecode:: ipython
 
     In [31]: pb.save_regions_as_groups('regions')
-    sfepy: saving regions as groups...
-    sfepy:   Omega
-    sfepy:   Gamma1
-    sfepy:   Gamma2
-    sfepy:   Gamma1
-    sfepy: ...done
 
 And view them.
 
@@ -830,10 +822,6 @@ And view them.
 
     In [32]: view = Viewer('regions.vtk')
     In [33]: view()
-    sfepy: point scalars Gamma1 [ 0.  0.  0.]
-    sfepy: point scalars Gamma2 [ 11.   0.   0.]
-    sfepy: point scalars Omega [ 22.   0.   0.]
-    Out[33]: <sfepy.postprocess.viewer.ViewerGUI object at 0x93ea5f0>
 
 You should see this:
 
@@ -847,38 +835,11 @@ view the results.
 .. sourcecode:: ipython
 
     In [34]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
-    sfepy: updating materials...
-    sfepy:     m
-    sfepy:     f
-    sfepy: ...done in 0.01 s
-    sfepy: updating variables...
-    sfepy: ...done
-    sfepy: matrix shape: (1815, 1815)
-    sfepy: assembling matrix graph...
-    sfepy: ...done in 0.00 s
-    sfepy: matrix structural nonzeros: 39145 (1.19e-02% fill)
     In [35]: vec = pb.solve()
-    sfepy: nls: iter: 0, residual: 1.343114e+01 (rel: 1.000000e+00)
-    sfepy:   rezidual:    0.00 [s]
-    sfepy:      solve:    0.01 [s]
-    sfepy:     matrix:    0.00 [s]
-    sfepy: nls: iter: 1, residual: 2.567997e-14 (rel: 1.911972e-15)
     In [36]: print nls_status
-    -------> print(nls_status)
-    IndexedStruct
-      condition:
-        0
-      err:
-        2.56799662867e-14
-      err0:
-        13.4311385972
-      time_stats:
-        {'rezidual': 0.0, 'solve': 0.010000000000001563, 'matrix': 0.0}
     In [37]: pb.save_state('linear_elasticity.vtk', vec)
     In [38]: view = Viewer('linear_elasticity.vtk')
     In [39]: view()
-    sfepy: point vectors u [ 0.  0.  0.]
-    Out[39]: <sfepy.postprocess.viewer.ViewerGUI object at 0xad61bf0>
 
 This is the resulting image:
 
@@ -893,8 +854,6 @@ shifting the mesh. Close the previous window and do:
 
     In [56]: view(vector_mode='warp_norm', rel_scaling=2,
        ....:      is_scalar_bar=True, is_wireframe=True)
-    sfepy: point vectors u [ 0.  0.  0.]
-    Out[56]: <sfepy.postprocess.viewer.ViewerGUI object at 0xad61bf0>
 
 And the result is:
 
