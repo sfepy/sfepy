@@ -113,7 +113,7 @@ def main():
     eok += report(out, '...', -11, 5, '4.638192e-18', eps=1e-15)
 
     out, err = check_output('python ./findSurf.py meshes/quantum/cube.node -')
-    eok += report(out, '...', -2, 1, '64247')
+    eok += report(out, '...', -2, 0, '64247')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
     eok += report(out, '...', -6, 2, '208.54511594')
