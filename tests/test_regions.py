@@ -45,12 +45,14 @@ class Test(TestCommon):
             'vertices in (z < 0.1) & (x < 0.1)',
             'vertices by get_vertices',
             'vertex 0, 1, 2',
-            'vertex in r.r',
+            'vertex in r.r6',
             'cells of group 0',
             # 'cells of set 0', not implemented...
             'cells by get_cells',
             'cell 1, 4, 5',
-            'cell (0, 1), (0, 4), (0, 5)'
+            'cell (0, 1), (0, 4), (0, 5)',
+            'copy r.r5',
+            'r.r5',
         ]
 
         vertices = [
@@ -66,13 +68,15 @@ class Test(TestCommon):
             [0,  1,  2,  3,  4,  5,  6,  9, 10, 11],
             [0,  1,  2,  3,  4,  5,  6,  8],
             [0,  1,  2,  3,  4,  5,  6,  8],
+            [1,  2,  3,  4,  5,  9, 11],
+            [1,  2,  3,  4,  5,  9, 11],
         ]
 
         ok = True
         for ii, sel in enumerate(selectors):
             self.report('select:', sel)
-            reg = self.domain.create_region('r', sel, functions=self.functions)
-
+            reg = self.domain.create_region('r%d' % ii, sel,
+                                            functions=self.functions)
             _ok = ((len(reg.vertices) == len(vertices[ii]))
                    and (reg.vertices == vertices[ii]).all())
             self.report('  vertices:', _ok)
