@@ -417,7 +417,7 @@ cdef class CMesh:
 
         ii = np.where(np.diff(conn.offsets) == 1)[0]
 
-        return ii
+        return ii.astype(np.uint32)
 
     def get_incident(self, int32 dim,
                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
