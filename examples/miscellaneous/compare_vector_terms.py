@@ -69,9 +69,9 @@ materials = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Gamma_Left' : ('nodes in (x < %f)' % xmin, {}),
-    'Gamma_Right' : ('nodes in (x > %f)' % xmax, {}),
+    'Omega' : 'all',
+    'Gamma_Left' : ('vertices in (x < %f)' % xmin, 'facet'),
+    'Gamma_Right' : ('vertices in (x > %f)' % xmax, 'facet'),
 }
 
 fields = {
