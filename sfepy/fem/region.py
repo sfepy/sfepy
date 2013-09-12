@@ -741,22 +741,18 @@ class Region(Struct):
         """
         from scipy.sparse import csr_matrix
 
-        ed = self.domain.ed
+        cmesh = self.domain.cmesh
 
-        rows, cols, vals = [], [], []
-        for ig, edges in self.edges.iteritems():
-            e_verts = ed.facets[edges]
-            ii = nm.where(e_verts[:, 0] != e_verts[:, 1])[0]
-            edges = edges[ii]
-            e_verts = e_verts[ii]
+        e_verts = cmesh.get_incident(0, self.edges, 1)
+        e_verts.shape = (e_verts.shape[0] / 2, 2)
 
-            vals.append(ed.uid_i[edges] + 1)
-            rows.append(e_verts[:, 0])
-            cols.append(e_verts[:, 1])
+        ii = nm.where(e_verts[:, 0] != e_verts[:, 1])[0]
+        edges = self.edges[ii]
+        e_verts = e_verts[ii]
 
-        vals, indx = nm.unique(nm.concatenate(vals), return_index=True)
-        rows = nm.concatenate(rows)[indx]
-        cols = nm.concatenate(cols)[indx]
+        vals = edges + 1
+        rows = e_verts[:, 0]
+        cols = e_verts[:, 1]
 
         num = self.vertices.max() + 1
         graph = csr_matrix((vals, (rows, cols)), shape=(num, num))
