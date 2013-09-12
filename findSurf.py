@@ -8,9 +8,7 @@ spherical hole has two surface components. Two surface faces sharing a single
 node belong to one component.
 
 With '-m' option, a mesh of the surface is created and saved in
-'surf_<original mesh file name>.mesh'.
-
-Try ./find_surf.py --help to see more options.
+'<original path>/surf_<original mesh file name>.mesh'.
 """
 import sys
 from optparse import OptionParser
@@ -51,7 +49,7 @@ def get_surface_faces(domain):
         surf_faces.append(_get_facets(vertices_f, offs_f, itet, 4))
 
     cells_c, offs_c = cmesh.get_incident(cmesh.dim, faces, cmesh.dim - 1,
-                                            ret_offsets=True)
+                                         ret_offsets=True)
     ids = cmesh.get_local_ids(faces, cmesh.dim - 1, cells_c, offs_c,
                               cmesh.dim)
     lst = nm.c_[cells_c, ids]
@@ -81,7 +79,8 @@ def surface_components(gr_s, surf_faces):
 
 usage = """%prog [options] filename_in|- filename_out|-
 
-'-' is for stdin, stdout"""
+'-' is for stdin, stdout
+""" + __doc__.rstrip()
 
 def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
