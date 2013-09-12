@@ -82,13 +82,13 @@ class Region(Struct):
 
     Region kinds:
 
-    - cells_only, facet_only, face_only, edge_only, vertex_only - only the
+    - cell_only, facet_only, face_only, edge_only, vertex_only - only the
       specified entities are included, others are empty sets (so that the
       operators are still defined)
-    - cells, facet, face, edge, vertex - entities of higher dimension are not
+    - cell, facet, face, edge, vertex - entities of higher dimension are not
       included
 
-    The 'cells' kind is the most general and it is the default.
+    The 'cell' kind is the most general and it is the default.
 
     Region set-like operators: + (union), - (difference), * (intersection),
     followed by one of ('v', 'e', 'f', 'c', and 's') for vertices, edges,
