@@ -368,95 +368,175 @@ The following geometry elements are supported:
 Regions
 ^^^^^^^
 
-Regions serve to select a certain part of the computational domain (= selection
-of nodes and elements of a FE mesh). They are used to define the boundary
+Regions serve to select a certain part of the computational domain using
+topological entities of the FE mesh. They are used to define the boundary
 conditions, the domains of terms and materials etc.
 
-* Region selection syntax
+Let us denote D the maximal dimension of topological entities. For volume
+meshes it is also the dimension of space the domain is embedded in. Then the
+following topological entities can be defined on the mesh (notation follows
+[Logg2012]_):
 
-  * Entity selections
+.. [Logg2012] A. Logg: Efficient Representation of Computational Meshes. 2012
 
-    * ``all``
-    * ``nodes of surface``
-    * ``nodes of group <integer>``
-    * ``nodes of group <str>`` (if mesh format supports reading boundary
-      condition nodes)
-    * ``nodes in <expr>``
-    * ``nodes by <function>``
-    * ``node <id>[, <id>, ...]``
-    * ``elements of group <integer>``
-    * ``elements by <efunction>``
-    * ``element <id>[, <id>, ...]`` assumes group 0 (ig = 0)
-    * ``element (<ig>, <id>)[, (<ig>, <id>), ...]``
-    * ``r.<name of another region>``
+.. csv-table::
+   :header: topological entity, dimension, co-dimension
+   :widths: 15, 15, 15
 
-  * Notation
+   vertex, 0, D
+   edge, 1, D - 1
+   face, 2, D - 2
+   facet, D - 1, 1
+   cell, D, 0
 
-    * ``<expr>`` is a logical expression like ``(y <= 0.00001) & (x < 0.11)``
-    * ``<function>`` is e.g., ``afunction( x, y, z, otherArgs )``
-    * ``<efunction>`` is e.g., ``efunction( domain )``
+If D = 2, faces are not defined and facets are edges. If D = 3, facets are
+faces.
 
-  * Region operations
+Following the above definitions, a region can be of different `kind`:
 
-    * Node-wise: ``+n``, ``-n``, ``*n`` (union, set difference, intersection)
-    * Element-wise: ``+e``, ``-e``, ``*e`` (union, set difference, intersection)
+- ``cell``, ``facet``, ``face``, ``edge``, ``vertex`` - entities of higher
+  dimension are not included.
+- ``cell_only``, ``facet_only``, ``face_only``, ``edge_only``,
+  ``vertex_only`` - only the specified entities are included, other entities
+  are empty sets, so that set-like operators still work, see below.
+- The ``cell`` kind is the most general and should be used with volume
+  terms. It is also the default if the kind is not specified in region
+  definition.
+- The ``facet`` kind (same as ``edge`` in 2D and ``face`` in 3D) is to be used
+  with boundary (surface integral) terms.
+- The ``vertex`` (same as ``vertex_only``) kind can be used with point-wise
+  defined terms (e.g. point loads).
 
-  * Additional specification:
+The kinds allow a clear distinction between regions of different purpose
+(volume integration domains, surface domains, etc.) and could be uses to lower
+memory usage.
 
-    * 'forbid' : 'group <integer>' - forbid elements of listed groups
-    * 'can_cells' : <boolean> - determines whether a region can have cells (volume in 3D)
+A region definition involves `topological entity selections` combined with
+`set-like operators`. The set-like operators can result in intermediate regions
+that have the ``cell`` kind. The desired kind is set to the final region,
+removing unneeded entities. Most entity selectors are defined in terms of
+vertices and cells - the other entities are computed as needed.
 
-* Region definition syntax
+.. list-table::
+   :widths: 50, 50
+   :header-rows: 1
 
-  * Long syntax: a region is defined by the following Python dictionary
-    (denote optional keys)::
+   * - topological entity selection
+     - explanation
+   * - ``all``
+     - all entities of the mesh
+   * - ``vertices of surface``
+     - surface of the mesh
+   * - ``vertices of group <integer>``
+     - vertices of given group
+   * - ``vertices of set <str>``
+     - vertices of a given named vertex set [#f1]_
+   * - ``vertices in <expr>``
+     - vertices given by an expression [#f2]_
+   * - ``vertices by <function>``
+     - vertices given by a function of coordinates [#f3]_
+   * - ``vertex <id>[, <id>, ...]``
+     - vertices given by their ids
+   * - ``vertex in r.<name of another region>``
+     - any single vertex in the given region
+   * - ``cells of group <integer>``
+     - cells of given group
+   * - ``cells by <efunction>``
+     - cells given by a function of coordinates [#f4]_
+   * - ``cell <id>[, <id>, ...]``,
+     - cells given by their ids (assumes cell group 0)
+   * - ``cell (<ig>, <id>)[, (<ig>, <id>), ...]``
+     - cells given by their (group, id) pairs
+   * - ``copy r.<name of another region>``
+     - a copy of the given region
+   * - ``r.<name of another region>``
+     - a reference to the given region
 
-        region_<number> = {
-            'name' : <name>,
-            'select' : <selection>,
-            ['forbid'] : group <integer>[, <integer>],
-            ['can_cells'] : <boolean>,
-        }
+.. rubric:: topological entity selection footnotes
 
-    * Example definitions::
+.. [#f1] Only if mesh format supports reading boundary condition vertices as
+   vertex sets.
+.. [#f2] ``<expr>`` is a logical expression like ``(y <= 0.1) & (x < 0.2)``. In
+   2D use ``x``, ``y``, in 3D use ``x``, ``y`` and ``z``. ``&`` stands for
+   logical and, ``|`` stands for logical or.
+.. [#f3] ``<function>`` is a function with signature ``fun(coors,
+         domain=None)``, where ``coors`` are coordinates of mesh vertices.
+.. [#f4] ``<efunction>`` is a function with signature ``fun(coors,
+         domain=None)``, where ``coors`` are coordinates of mesh cell
+         centroids.
 
-            region_20 = {
-                'name' : 'Left',
-                'select' : 'nodes in (x < -0.499)'
-            }
-            region_21 = {
-                'name' : 'Right',
-                'select' : 'nodes in (x > 0.499)'
-            }
-            region_31 = {
-                'name' : 'Gamma1',
-                'select' : """(elements of group 1 *n elements of group 4)
-                              +n
-                              (elements of group 2 *n elements of group 4)
-                              +n
-                              ((r.Left +n r.Right) *n elements of group 4)
-                           """,
-                'forbid' : 'group 1 2'
-            }
+.. csv-table::
+   :header: set-like operator, explanation
+   :widths: 20, 20
 
-  * Short syntax::
+   ``+v``, vertex union
+   ``+e``, edge union
+   ``+f``, face union
+   ``+s``, facet union
+   ``+c``, cell union
+   ``-v``, vertex difference
+   ``-e``, edge difference
+   ``-f``, face difference
+   ``-s``, facet difference
+   ``-c``, cell difference
+   ``*v``, vertex intersection
+   ``*e``, edge intersection
+   ``*f``, face intersection
+   ``*s``, facet intersection
+   ``*c``, cell intersection
 
-          regions = {
-              <name> : ( <selection>, {[<additional spec.>]} )
+Region Definition Syntax
+""""""""""""""""""""""""
+
+* Long syntax: a region is defined by the following Python dictionary
+  ([] denote optional keys/values)::
+
+      region_<number> = {
+          'name' : <name>,
+          'select' : <selection>,
+          ['kind'] : <region kind>,
+          ['parent'] : <parent region>,
+      }
+
+  * Example definitions::
+
+          region_0 = {
+              'name' : 'Omega',
+              'select' : 'all',
+          }
+          region_21 = {
+              'name' : 'Right',
+              'select' : 'vertices in (x > 0.99)',
+              'kind' : 'facet',
+          }
+          region_31 = {
+              'name' : 'Gamma1',
+              'select' : """(cells of group 1 *v cells of group 2)
+                            +v r.Right""",
+              'kind' : 'facet',
+              'parent' : 'Omega',
           }
 
-    * Example definitions::
+* Short syntax::
 
         regions = {
-            'Left' : ('nodes in (x < -0.499)', {}),
-            'Right' : ('nodes in (x > 0.499)', {}),
-            'Gamma1' : ("""(elements of group 1 *n elements of group 4)
-                           +n
-                           (elements of group 2 *n elements of group 4)
-                           +n
-                           ((r.Left +n r.Right) *n elements of group 4)""",
-                         {'forbid' : 'group 1 2'}),
+            <name> : (<selection>, [<kind>], [<parent>]),
         }
+
+  or::
+
+        regions = {
+            <name> : <selection>,
+        }
+
+  * Example definitions::
+
+      regions = {
+          'Omega' : 'all',
+          'Right' : ('vertices in (x > 0.99)', 'facet'),
+          'Gamma1' : ("""(cells of group 1 *v cells of group 2)
+                         +v r.Right""", 'facet', 'Omega'),
+      }
 
 Fields
 ^^^^^^
