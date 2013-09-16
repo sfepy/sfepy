@@ -28,6 +28,7 @@ from dataset_manager import DatasetManager
 
 from sfepy.base.base import (insert_as_static_method, output, assert_,
                              get_arguments, get_default, Struct, basestr)
+from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import cycle
 from sfepy.solvers.ts import get_print_info
 from sfepy.postprocess.utils import mlab, get_data_ranges
@@ -273,10 +274,9 @@ class Viewer(Struct):
 
     def save_image(self, filename):
         """Save a snapshot of the current scene."""
-        if self.output_dir and not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
-
         name = os.path.join(self.output_dir, filename)
+        ensure_path(name)
+
         output('saving %s...' % name)
         self.scene.scene.save(name)
         output('...done')
