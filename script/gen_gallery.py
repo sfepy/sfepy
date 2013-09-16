@@ -184,9 +184,7 @@ def generate_images(images_dir, examples_dir):
 
     ensure_path(images_dir + os.path.sep)
 
-    view = Viewer('',
-                  output_dir=output_dir,
-                  offscreen=False)
+    view = Viewer('', offscreen=False)
 
     for ex_filename in locate_files('*.py', examples_dir):
         if _omit(ex_filename): continue
@@ -227,8 +225,8 @@ def generate_images(images_dir, examples_dir):
 
                 fname = edit_filename(filename, suffix=suffix)
                 output('displaying results from "%s"' % fname)
-                output('to "%s"...'
-                       % fig_filename.replace(sfepy.data_dir, '')[1:])
+                disp_name = fig_filename.replace(sfepy.data_dir, '')
+                output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
                 view.filename = fname
                 view(scene=view.scene, show=False, is_scalar_bar=True,
