@@ -35,6 +35,9 @@ def get_dependency_graph(region_defs):
         for parent in get_parents(sel):
             graph[name].append(parent)
 
+        if rdef.get('parent', None) is not None:
+            graph[name].append(rdef.parent)
+
     return graph, name_to_sort_name
 
 def sort_by_dependency(graph):
@@ -56,6 +59,10 @@ def sort_by_dependency(graph):
             elif not deps[0]:
 
                 for ii, dep in enumerate(deps[1:]):
+                    if not dep in graph:
+                        msg = 'dependency %s of region %s does not exist!'
+                        raise ValueError(msg % (dep, node))
+
                     if graph[dep][0]:
                         ir = deps.index(dep)
                         deps.pop(ir)
@@ -432,7 +439,10 @@ class Region(Struct):
         """
         Cell group indices according to region kind.
         """
-        if self._igs is None:
+        if self.parent is not None:
+            self._igs = self.domain.regions[self.parent].igs
+
+        elif self._igs is None:
             if 'vertex' in self.true_kind:
                 self._igs = self.domain.cmesh.get_igs(self.vertices, 0)
 
