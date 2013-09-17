@@ -60,9 +60,9 @@ wc = w * c
 wc2 = w * c2
 
 regions = {
-    'Gamma0': ('all', {}),
-    'Left': ('nodes in (x < 0.001)', {}),
-    'Right': ('nodes in (x > 0.299)', {}),
+    'Gamma0': 'all',
+    'Left': ('vertices in (x < 0.001)', 'facet'),
+    'Right': ('vertices in (x > 0.299)', 'facet'),
     }
 
 fields = {

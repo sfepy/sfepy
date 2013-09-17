@@ -58,17 +58,17 @@ wc = w * c
 wc2 = w * c2
 
 regions = {
-    'Omega1': ('elements of group 1', {}),
-    'Omega2': ('elements of group 2', {}),
-    'GammaIn': ('nodes of group 1', {}),
-    'GammaOut': ('nodes of group 2', {}),
-    'Gamma_aux': ('r.Omega1 *n r.Omega2', {}),
-    'Gamma0_1': ('copy r.Gamma_aux', {'forbid' : 'group 2'}),
-    'Gamma0_2': ('copy r.Gamma_aux', {'forbid' : 'group 1'}),
-    'aux_Left': ('nodes in (x <  0.001)', {}),
-    'aux_Right': ('nodes in (x > 0.299)', {}),
-    'Gamma0_1_Left': ('r.Gamma0_1 *n r.aux_Left', {}),
-    'Gamma0_1_Right': ('r.Gamma0_1 *n r.aux_Right', {}),
+    'Omega1': 'cells of group 1',
+    'Omega2': 'cells of group 2',
+    'GammaIn': ('vertices of group 1', 'face'),
+    'GammaOut': ('vertices of group 2', 'face'),
+    'Gamma_aux': ('r.Omega1 *v r.Omega2', 'face'),
+    'Gamma0_1': ('copy r.Gamma_aux', 'face', 'Omega1'),
+    'Gamma0_2': ('copy r.Gamma_aux', 'face', 'Omega2'),
+    'aux_Left': ('vertices in (x <  0.001)', 'face'),
+    'aux_Right': ('vertices in (x > 0.299)', 'face'),
+    'Gamma0_1_Left': ('r.Gamma0_1 *v r.aux_Left', 'edge'),
+    'Gamma0_1_Right': ('r.Gamma0_1 *v r.aux_Right', 'edge'),
     }
 
 fields = {
