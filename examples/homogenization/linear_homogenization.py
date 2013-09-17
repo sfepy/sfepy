@@ -48,9 +48,9 @@ region_rtf = (1, 1, 1)
 #! -------
 #! Regions, edges, ...
 regions = {
-    'Y' : ('all', {}),
-    'Ym' : ('elements of group 1', {}),
-    'Yc' : ('elements of group 2', {}),
+    'Y' : 'all',
+    'Ym' : 'cells of group 1',
+    'Yc' : 'cells of group 2',
 }
 regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! Materials

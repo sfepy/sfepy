@@ -33,12 +33,12 @@ options = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Omega1' : ('elements of group 1', {}),
-    'Omega2' : ('elements of group 2', {}),
-    'Omega2_Surface': ('r.Omega1 *n r.Omega2', {'can_cells' : False}),
-    'Left' : ('nodes in (x < %f)' % -0.4999, {}),
-    'Right' : ('nodes in (x > %f)' % 0.4999, {}),
+    'Omega' : 'all',
+    'Omega1' : 'cells of group 1',
+    'Omega2' : 'cells of group 2',
+    'Omega2_Surface': ('r.Omega1 *v r.Omega2', 'facet'),
+    'Left' : ('vertices in (x < %f)' % -0.4999, 'facet'),
+    'Right' : ('vertices in (x > %f)' % 0.4999, 'facet'),
 }
 
 materials = {

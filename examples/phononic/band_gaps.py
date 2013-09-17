@@ -31,8 +31,8 @@ density_c = 0.1142 # in 1e4 kg/m3
 mat_pars = Coefficients(D_m=D_m, density_m=density_m,
                         D_c=D_c, density_c=density_c)
 
-region_selects = Struct(matrix=('elements of group 1', {}),
-                        inclusion=('elements of group 2', {}))
+region_selects = Struct(matrix='cells of group 1',
+                        inclusion='cells of group 2')
 
 corrs_save_names = {'evp' : 'evp', 'corrs_rs' : 'corrs_rs'}
 

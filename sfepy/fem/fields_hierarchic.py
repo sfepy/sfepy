@@ -27,7 +27,7 @@ class H1HierarchicVolumeField(VolumeField):
         if self.node_desc.edge is None:
             return 0, None, None
 
-        return self._setup_facet_dofs(self.domain.ed,
+        return self._setup_facet_dofs(1,
                                       self.node_desc.edge,
                                       self.region.get_edges,
                                       self.n_vertex_dof)
@@ -39,12 +39,12 @@ class H1HierarchicVolumeField(VolumeField):
         if self.node_desc.face is None:
             return 0, None, None
 
-        return self._setup_facet_dofs(self.domain.fa,
+        return self._setup_facet_dofs(self.domain.shape.dim - 1,
                                       self.node_desc.face,
                                       self.region.get_faces,
                                       self.n_vertex_dof + self.n_edge_dof)
 
-    def _setup_facet_dofs(self, facets, facet_desc, get_facets, offset):
+    def _setup_facet_dofs(self, dim, facet_desc, get_facets, offset):
         """
         Helper function to setup facet DOF connectivity, works for both
         edges and faces.
@@ -52,50 +52,53 @@ class H1HierarchicVolumeField(VolumeField):
         facet_desc = nm.array(facet_desc)
         n_dof_per_facet = facet_desc.shape[1]
 
+        cmesh = self.domain.cmesh
+
+        facets = self.region.entities[dim]
+        ii = nm.arange(facets.shape[0], dtype=nm.int32)
+        all_dofs = offset + expand_nodes_to_dofs(ii, n_dof_per_facet)
+
         # Prepare global facet id remapping to field-local numbering.
-        uids = []
+        remap = prepare_remap(facets, cmesh.num[dim])
+
+        cconn = self.region.domain.cmesh.get_conn(self.region.dim, dim)
+        offs = cconn.offsets
+
+        n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
+        n_fp = 2 if dim == 1 else self.gel.surface_facet.n_vertex
+
+        oris = cmesh.get_orientations(dim)
         for ig, ap in self.aps.iteritems():
-            ii = get_facets(ig)
-            uid_i = facets.uid_i[ii]
+            gcells = self.region.get_cells(ig, offset=False)
+            n_el = gcells.shape[0]
 
-            uids.append(uid_i)
+            indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
+            facets_of_cells = remap[indices]
 
-        uids = nm.unique(nm.concatenate(uids))
-        n_uid = uids.shape[0]
-        lids = nm.arange(n_uid, dtype=nm.int32)
-        remap = prepare_remap(uids, facets.n_unique)
+            # Define global facet dof numbers.
+            gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
+                                                  n_dof_per_facet)
 
-        all_dofs = offset + expand_nodes_to_dofs(lids, n_dof_per_facet)
-        for ig, ap in self.aps.iteritems():
-            n_fp = facets.n_fps[ig]
+            # Elements of facets.
+            iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+            ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
+
+            # DOF columns in econn for each facet (repeating same values for
+            # each element.
+            iep = facet_desc[ies]
+
+            ap.econn[iel[:, None], iep] = gdofs
+
+            ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
+
             if (n_fp == 2) and (ap.interp.gel.name in ['2_4', '3_8']):
                 tp_edges = ap.interp.gel.edges
                 ecs = ap.interp.gel.coors[tp_edges]
                 # True = positive, False = negative edge orientation w.r.t.
                 # reference tensor product axes.
                 tp_edge_ori = (nm.diff(ecs, axis=1).sum(axis=2) > 0).squeeze()
-
-            else:
-                tp_edge_ori = None
-
-            ori = facets.get_orientation(ig, tp_edge_ori)
-
-            ii = get_facets(ig)
-            g_uid = facets.uid_i[ii]
-            uid = remap[g_uid]
-
-            # Define global facet dof numbers.
-            gdofs = offset + expand_nodes_to_dofs(uid, n_dof_per_facet)
-
-            # Elements of facets.
-            iel = facets.indices[ii, 1]
-
-            ies = facets.indices[ii, 2]
-            # DOF columns in econn for each facet (repeating same values for
-            # each element.
-            iep = facet_desc[ies]
-
-            ap.econn[iel[:, None], iep] = gdofs
+                aux = nm.tile(tp_edge_ori, n_el)
+                ori = nm.where(aux, ori, 1 - ori)
 
             if n_fp == 2: # Edges.
                 # ori == 1 means the basis has to be multiplied by -1.
@@ -152,7 +155,7 @@ class H1HierarchicVolumeField(VolumeField):
 
                 ap.ori[iel[:, None], iep] = eori
 
-        n_dof = n_dof_per_facet * n_uid
+        n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
 
         return n_dof, all_dofs, remap

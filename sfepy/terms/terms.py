@@ -234,7 +234,7 @@ class ConnInfo(Struct):
         if self.region is not None:
             for ig in self.region.igs:
                 if self.virtual_igs is not None:
-                    ir = self.virtual_igs.index(ig)
+                    ir = self.virtual_igs.tolist().index(ig)
                     rig = self.virtual_igs[ir]
                 else:
                     rig = None
@@ -246,7 +246,7 @@ class ConnInfo(Struct):
                     ii = ig_map_i[ig]
 
                 if self.state_igs is not None:
-                    ic = self.state_igs.index(ii)
+                    ic = self.state_igs.tolist().index(ii)
                     cig = self.state_igs[ic]
                 else:
                     cig = None
@@ -726,12 +726,12 @@ class Term(Struct):
             if field is None:
                 continue
 
-            if not nm.all(in1d(self.region.all_vertices,
-                               field.region.all_vertices)):
+            if not nm.all(in1d(self.region.vertices,
+                               field.region.vertices)):
                 msg = ('%s: incompatible regions: (self, field %s)'
                        + '(%s in %s)') %\
                        (self.name, field.name,
-                        self.region.all_vertices, field.region.all_vertices)
+                        self.region.vertices, field.region.vertices)
                 raise ValueError(msg)
 
     def get_variable_names(self):
@@ -804,6 +804,7 @@ class Term(Struct):
                                   self.arg_traces.values())
             if is_any_trace:
                 region.setup_mirror_region()
+                self.char_fun.igs = region.igs
 
         vals = []
         aux_pvars = []
@@ -1068,6 +1069,9 @@ class Term(Struct):
         elif shape_kind == 'point':
             cells = nm.arange(shape[0], dtype=nm.int32)
 
+        else:
+            cells = cells.astype(nm.int32)
+
         return cells
 
     def iter_groups(self):
@@ -1173,9 +1177,13 @@ class Term(Struct):
         Get physical quadrature points corresponding to the term region
         and integral.
         """
-        from sfepy.fem.mappings import get_physical_qps
+        from sfepy.fem.mappings import get_physical_qps, PhysicalQPs
 
-        phys_qps = get_physical_qps(self.region, self.integral)
+        if self.integration == 'point':
+            phys_qps = PhysicalQPs(self.region.igs)
+
+        else:
+            phys_qps = get_physical_qps(self.region, self.integral)
 
         return phys_qps
 

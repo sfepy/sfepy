@@ -3,28 +3,31 @@ Basic uniform mesh refinement functions.
 """
 import numpy as nm
 
-from sfepy.linalg import cycle
 from sfepy.fem import Mesh
 
-def refine_2_3(mesh_in, ed):
+def refine_2_3(mesh_in, cmesh):
     """
     Refines mesh out of triangles by cutting cutting each edge in half
     and making 4 new finer triangles out of one coarser one.
     """
     # Unique edge centres.
-    e_coors, e_uid = ed.get_coors()
-    e_centres = 0.5 * nm.sum(e_coors, axis=1)
+    e_centres = cmesh.get_centroids(cmesh.dim - 1)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres]
 
+    o1 = mesh_in.n_nod
+
+    cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
+    offs = cc.offsets
+
     conns = []
     mat_ids = []
     for ig, conn in enumerate(mesh_in.conns):
-        indx = ed.indx[ig]
+        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
         n_el  = conn.shape[0]
 
-        e_nodes = ed.uid_i[indx].reshape((n_el, 3)) + mesh_in.n_nod
+        e_nodes = cc.indices[offs[off0]:offs[off1]].reshape((n_el, 3)) + o1
 
         c = nm.c_[conn, e_nodes].T
 
@@ -43,18 +46,16 @@ def refine_2_3(mesh_in, ed):
 
     return mesh
 
-def refine_2_4(mesh_in, ed):
+def refine_2_4(mesh_in, cmesh):
     """
     Refines mesh out of quadrilaterals by cutting cutting each edge in
     half and making 4 new finer quadrilaterals out of one coarser one.
     """
     # Unique edge centres.
-    e_coors, e_uid = ed.get_coors()
-    e_centres = 0.5 * nm.sum(e_coors, axis=1)
+    e_centres = cmesh.get_centroids(cmesh.dim - 1)
 
     # Unique element centres.
-    coors = mesh_in.get_element_coors()
-    centres = 0.25 * nm.sum(coors, axis=1)
+    centres = cmesh.get_centroids(cmesh.dim)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres, centres]
@@ -62,15 +63,17 @@ def refine_2_4(mesh_in, ed):
     o1 = mesh_in.n_nod
     o2 = o1 + e_centres.shape[0]
 
+    cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
+    offs = cc.offsets
+
     conns = []
     mat_ids = []
     for ig, conn in enumerate(mesh_in.conns):
-        e_indx = ed.indx[ig]
-        off = mesh_in.el_offsets[ig]
+        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
         n_el  = conn.shape[0]
 
-        e_nodes = ed.uid_i[e_indx].reshape((n_el, 4)) + o1
-        nodes = nm.arange(n_el) + off + o2
+        e_nodes = cc.indices[offs[off0]:offs[off1]].reshape((n_el, 4)) + o1
+        nodes = nm.arange(n_el) + off0 + o2
 
         c = nm.c_[conn, e_nodes, nodes].T
 
@@ -89,7 +92,7 @@ def refine_2_4(mesh_in, ed):
 
     return mesh
 
-def refine_3_4(mesh_in, ed):
+def refine_3_4(mesh_in, cmesh):
     """
     Refines tetrahedra by cutting each edge in half and making 8 new
     finer tetrahedra out of one coarser one. Old nodal coordinates come
@@ -110,19 +113,23 @@ def refine_3_4(mesh_in, ed):
       http://citeseer.ist.psu.edu/bey95tetrahedral.html
     """
     # Unique edge centres.
-    e_coors, e_uid = ed.get_coors()
-    e_centres = 0.5 * nm.sum(e_coors, axis=1)
+    e_centres = cmesh.get_centroids(cmesh.dim - 2)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres]
 
+    o1 = mesh_in.n_nod
+
+    cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 2)
+    offs = cc.offsets
+
     conns = []
     mat_ids = []
     for ig, conn in enumerate(mesh_in.conns):
-        indx = ed.indx[ig]
+        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
         n_el  = conn.shape[0]
 
-        e_nodes = ed.uid_i[indx].reshape((n_el, 6)) + mesh_in.n_nod
+        e_nodes = cc.indices[offs[off0]:offs[off1]].reshape((n_el, 6)) + o1
 
         c = nm.c_[conn, e_nodes].T
 
@@ -145,18 +152,16 @@ def refine_3_4(mesh_in, ed):
 
     return mesh
 
-def refine_3_8(mesh_in, ed, fa):
+def refine_3_8(mesh_in, cmesh):
     """
     Refines hexahedral mesh by cutting cutting each edge in half and
     making 8 new finer hexahedrons out of one coarser one.
     """
     # Unique edge centres.
-    e_coors, e_uid = ed.get_coors()
-    e_centres = 0.5 * nm.sum(e_coors, axis=1)
+    e_centres = cmesh.get_centroids(cmesh.dim - 2)
 
     # Unique face centres.
-    f_coors, f_uid = fa.get_coors()
-    f_centres = 0.25 * nm.sum(f_coors, axis=1)
+    f_centres = cmesh.get_centroids(cmesh.dim - 1)
 
     # Unique element centres.
     coors = mesh_in.get_element_coors()
@@ -169,19 +174,23 @@ def refine_3_8(mesh_in, ed, fa):
     o2 = o1 + e_centres.shape[0]
     o3 = o2 + f_centres.shape[0]
 
+    ecc = cmesh.get_conn(cmesh.dim, cmesh.dim - 2)
+    eoffs = ecc.offsets
+
+    fcc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
+    foffs = fcc.offsets
+
     st = nm.vstack
 
     conns = []
     mat_ids = []
     for ig, conn in enumerate(mesh_in.conns):
-        e_indx = ed.indx[ig]
-        f_indx = fa.indx[ig]
-        off = mesh_in.el_offsets[ig]
+        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
         n_el  = conn.shape[0]
 
-        e_nodes = ed.uid_i[e_indx].reshape((n_el, 12)) + o1
-        f_nodes = fa.uid_i[f_indx].reshape((n_el, 6)) + o2
-        nodes = nm.arange(n_el) + off + o3
+        e_nodes = ecc.indices[eoffs[off0]:eoffs[off1]].reshape((n_el, 12)) + o1
+        f_nodes = fcc.indices[foffs[off0]:foffs[off1]].reshape((n_el, 6)) + o2
+        nodes = nm.arange(n_el) + off0 + o3
 
         c = nm.c_[conn, e_nodes, f_nodes, nodes].T
 

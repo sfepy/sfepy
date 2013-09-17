@@ -65,11 +65,13 @@ functions = {
 
 region_03 = {
     'name' : 'Gamma_Left',
-    'select' : 'nodes by get_line0',
+    'select' : 'vertices by get_line0',
+    'kind' : 'facet',
 }
 region_4 = {
     'name' : 'Gamma_Right',
-    'select' : 'nodes by get_line1',
+    'select' : 'vertices by get_line1',
+    'kind' : 'facet',
 }
 
 ebc_1 = {

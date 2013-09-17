@@ -1,3 +1,12 @@
+"""
+Problem description file handling.
+
+Notes
+-----
+
+Short syntax: key is suffixed with '__<number>' to prevent collisions with long
+syntax keys -> both cases can be used in a single input.
+"""
 import re
 import numpy as nm
 
@@ -15,10 +24,8 @@ _other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
           'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options',
           'integral_[0-9]+|integrals']
 
-##
-# c: 19.02.2008, r: 19.02.2008
 def get_standard_keywords():
-    return copy( _required ), copy( _other )
+    return copy(_required), copy(_other)
 
 def tuple_to_conf(name, vals, order):
     """
@@ -32,15 +39,12 @@ def tuple_to_conf(name, vals, order):
         setattr(conf, key, vals[ii])
     return conf
 
-##
-# Short syntax: key is suffixed with '__<number>' to prevent collisions with
-# long syntax keys -> both cases can be used in a single input.
-def transform_variables( adict ):
+def transform_variables(adict):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['kind', 'field'] )
-            if len( conf ) >= 3:
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf, ['kind', 'field'])
+            if len(conf) >= 3:
                 kind = c2.kind.split()[0]
                 if kind == 'unknown':
                     c2.order = conf[2]
@@ -52,24 +56,24 @@ def transform_variables( adict ):
                     else:
                         c2.like = None
                         c2.special = conf[2]
-                if len( conf ) == 4:
+                if len(conf) == 4:
                     c2.history = conf[3]
             d2['variable_%s__%d' % (c2.name, ii)] = c2
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             d2['variable_'+c2.name] = c2
     return d2
 
-def transform_conditions( adict, prefix ):
+def transform_conditions(adict, prefix):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
             if len(conf) == 2:
                 c2 = tuple_to_conf(key, conf, ['region', 'dofs'])
 
             else:
                 c2 = tuple_to_conf(key, conf, ['region'])
-                
+
                 if isinstance(conf[1], dict):
                     c2.dofs, c2.filename = conf[1:]
 
@@ -79,24 +83,24 @@ def transform_conditions( adict, prefix ):
             d2['%s_%s__%d' % (prefix, c2.name, ii)] = c2
 
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             d2['%s_%s' % (prefix, c2.name)] = c2
 
     return d2
-    
-def transform_ebcs( adict ):
-    return transform_conditions( adict, 'ebc' )
 
-def transform_ics( adict ):
-    return transform_conditions( adict, 'ic' )
+def transform_ebcs(adict):
+    return transform_conditions(adict, 'ebc')
 
-def transform_lcbcs( adict ):
-    return transform_conditions( adict, 'lcbc' )
+def transform_ics(adict):
+    return transform_conditions(adict, 'ic')
 
-def transform_epbcs( adict ):
+def transform_lcbcs(adict):
+    return transform_conditions(adict, 'lcbc')
+
+def transform_epbcs(adict):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
             if len(conf) == 3:
                 c2 = tuple_to_conf(key, conf, ['region', 'dofs', 'match'])
 
@@ -106,43 +110,45 @@ def transform_epbcs( adict ):
 
             d2['epbcs_%s__%d' % (c2.name, ii)] = c2
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             d2['epbcs_%s' % c2.name] = c2
     return d2
 
-def transform_regions( adict ):
+def transform_regions(adict):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['select', 'flags'] )
-            for flag, val in c2.flags.iteritems():
-                setattr( c2, flag, val )
-            delattr( c2, 'flags' )
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, basestr):
+            c2 = Struct(name=key, select=conf)
+            d2['region_%s__%d' % (c2.name, ii)] = c2
+        elif isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf, ['select', 'kind'])
+            if len(conf) == 3:
+                c2.parent = conf[2]
             d2['region_%s__%d' % (c2.name, ii)] = c2
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             d2['region_'+c2.name] = c2
     return d2
 
-def transform_integrals( adict ):
+def transform_integrals(adict):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
             c2 = tuple_to_conf(key, conf, ['kind', 'order'])
             if (c2.order == 'custom') and (len(conf) == 4):
                 c2.vals = conf[2]
                 c2.weights = conf[3]
             d2['integral_%s__%d' % (c2.name, ii)] = c2
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             d2['integral_'+c2.name] = c2
     return d2
 
-def transform_fields( adict ):
+def transform_fields(adict):
     dtypes = {'real' : nm.float64, 'complex' : nm.complex128}
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
             c2 = tuple_to_conf(key, conf,
                                ['dtype', 'shape', 'region', 'approx_order',
                                 'space', 'poly_space_base'])
@@ -150,7 +156,7 @@ def transform_fields( adict ):
                 c2.dtype = dtypes[c2.dtype]
             d2['field_%s__%d' % (c2.name, ii)] = c2
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             c2.set_default('dtype', nm.float64)
             if c2.dtype in dtypes:
                 c2.dtype = dtypes[c2.dtype]
@@ -161,7 +167,7 @@ def transform_materials(adict):
     d2 = {}
     for ii, (key, conf) in enumerate(adict.iteritems()):
         if isinstance(conf, basestr):
-            c2 = Struct(name = key, function = conf)
+            c2 = Struct(name=key, function=conf)
             d2['material_%s__%d' % (c2.name, ii)] = c2
 
         elif isinstance(conf, tuple):
@@ -177,17 +183,17 @@ def transform_materials(adict):
 
     return d2
 
-def transform_solvers( adict ):
+def transform_solvers(adict):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['kind','params'] )
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf, ['kind','params'])
             for param, val in c2.params.iteritems():
-                setattr( c2, param, val )
-            delattr( c2, 'params' )
+                setattr(c2, param, val)
+            delattr(c2, 'params')
             d2['solvers_%s__%d' % (c2.name, ii)] = c2
         else:
-            c2 = transform_to_struct_1( conf )
+            c2 = transform_to_struct_1(conf)
             d2['solvers_'+c2.name] = c2
     return d2
 
@@ -202,16 +208,14 @@ def transform_functions(adict):
             d2['function_'+c2.name] = c2
     return d2
 
-##
-# c: 20.06.2007, r: 18.02.2008
-def transform_to_struct_1( adict ):
-    return dict_to_struct( adict, flag = (1,) )
-def transform_to_i_struct_1( adict ):
-    return dict_to_struct( adict, flag = (1,), constructor = IndexedStruct )
-def transform_to_struct_01( adict ):
-    return dict_to_struct( adict, flag = (0,1) )
-def transform_to_struct_10( adict ):
-    return dict_to_struct( adict, flag = (1,0) )
+def transform_to_struct_1(adict):
+    return dict_to_struct(adict, flag=(1,))
+def transform_to_i_struct_1(adict):
+    return dict_to_struct(adict, flag=(1,), constructor=IndexedStruct)
+def transform_to_struct_01(adict):
+    return dict_to_struct(adict, flag=(0,1))
+def transform_to_struct_10(adict):
+    return dict_to_struct(adict, flag=(1,0))
 
 transforms = {
     'options'   : transform_to_i_struct_1,
@@ -269,7 +273,7 @@ def dict_from_options(options):
 
 ##
 # 27.10.2005, c
-class ProblemConf( Struct ):
+class ProblemConf(Struct):
     """
     Problem configuration, corresponding to an input (problem description
     file). It validates the input using lists of required and other keywords
@@ -277,7 +281,7 @@ class ProblemConf( Struct ):
     by sfepy.base.conf.get_standard_keywords().
 
     ProblemConf instance is used to construct a ProblemDefinition instance via
-    ProblemDefinition.from_conf( conf ).
+    ProblemDefinition.from_conf(conf).
     """
 
     @staticmethod
@@ -309,7 +313,7 @@ class ProblemConf( Struct ):
         Optionally, the define() function can accept additional arguments
         that should be defined using the `define_args` tuple or dictionary.
         """
-        funmod = import_file( filename )
+        funmod = import_file(filename)
 
         if "define" in funmod.__dict__:
             if define_args is None:
@@ -379,104 +383,97 @@ class ProblemConf( Struct ):
                        required=required, other=other)
 
 
-    def setup( self, define_dict = None, funmod = None, filename = None,
-               required = None, other = None ):
+    def setup(self, define_dict=None, funmod=None, filename=None,
+              required=None, other=None):
 
-        define_dict = get_default( define_dict, self.__dict__ )
+        define_dict = get_default(define_dict, self.__dict__)
 
         self._filename = filename
 
-        other_missing = self.validate( required = required, other = other )
+        self.validate(required=required, other=other)
 
         self.transform_input_trivial()
         self._raw = {}
         for key, val in define_dict.iteritems():
-            if isinstance( val, dict ):
-                self._raw[key] = copy( val )
+            if isinstance(val, dict):
+                self._raw[key] = copy(val)
 
         self.transform_input()
         self.funmod = funmod
 
-    ##
-    # 27.10.2005, c
-    # 19.09.2006
-    # 05.06.2007
-    def _validate_helper( self, items, but_nots ):
+    def _validate_helper(self, items, but_nots):
         keys = self.__dict__.keys()
         left_over = keys[:]
         if but_nots is not None:
             for item in but_nots:
-                match = re.compile( '^' + item + '$' ).match
+                match = re.compile('^' + item + '$').match
                 for key in keys:
-                    if match( key ):
-                        left_over.remove( key )
+                    if match(key):
+                        left_over.remove(key)
 
         missing = []
         if items is not None:
             for item in items:
                 found = False
-                match = re.compile( '^' + item + '$' ).match
+                match = re.compile('^' + item + '$').match
                 for key in keys:
-                    if match( key ):
+                    if match(key):
                         found = True
-                        left_over.remove( key )
+                        left_over.remove(key)
                 if not found:
-                    missing.append( item )
+                    missing.append(item)
         return left_over, missing
 
-    ##
-    # c: 27.10.2005, r: 11.07.2008
-    def validate( self, required = None, other = None ):
+    def validate(self, required=None, other=None):
         required_left_over, required_missing \
-                          = self._validate_helper( required, other )
+                            = self._validate_helper(required, other)
         other_left_over, other_missing \
-                       = self._validate_helper( other, required )
+                         = self._validate_helper(other, required)
 
-        assert_( required_left_over == other_left_over )
+        assert_(required_left_over == other_left_over)
 
         if other_left_over and self.verbose:
-            output( 'left over:', other_left_over )
+            output('left over:', other_left_over)
 
         if required_missing:
             raise ValueError('required missing: %s' % required_missing)
 
         return other_missing
 
-    ##
-    # c: 31.10.2005, r: 10.07.2008
-    def transform_input_trivial( self ):
+    def transform_input_trivial(self):
         """Trivial input transformations."""
 
         ##
         # Unordered inputs.
         tr_list = ['([a-zA-Z0-9]+)_[0-9]+']
-        # Keywords not in 'required', but needed even empty (e.g. for run_tests).
+        # Keywords not in 'required', but needed even empty (e.g. for
+        # running tests).
         for key in transforms.keys():
-            if not self.__dict__.has_key( key ):
+            if not self.__dict__.has_key(key):
                 self.__dict__[key] = {}
 
         keys = self.__dict__.keys()
         for item in tr_list:
-            match = re.compile( item ).match
+            match = re.compile(item).match
             for key in keys:
-                obj = match( key )
+                obj = match(key)
                 if obj:
-                    new = obj.group( 1 ) + 's'
+                    new = obj.group(1) + 's'
                     result = {key : self.__dict__[key]}
                     try:
-                        self.__dict__[new].update( result )
+                        self.__dict__[new].update(result)
                     except:
                         self.__dict__[new] = result
-                        
+
                     del self.__dict__[key]
 
-    def transform_input( self ):
+    def transform_input(self):
         keys = self.__dict__.keys()
         for key, transform in transforms.iteritems():
             if not key in keys: continue
-            self.__dict__[key] = transform( self.__dict__[key] )
+            self.__dict__[key] = transform(self.__dict__[key])
 
-    def get_raw( self, key = None ):
+    def get_raw(self, key=None):
         if key is None:
             return self._raw
         else:
@@ -532,5 +529,5 @@ class ProblemConf( Struct ):
 
         return fun
 
-    def edit( self, key, newval ):
-        self.__dict__[key] = transforms[key]( newval )
+    def edit(self, key, newval):
+        self.__dict__[key] = transforms[key](newval)

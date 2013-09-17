@@ -118,7 +118,7 @@ inline int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity,
   iter->entity->dim = dim;
   iter->it = 0;
 
-  if (conn->num > 0) {
+  if ((conn->num > 0) && (conn->indices > 0)) {
     iter->ptr = conn->indices + conn->offsets[entity->ii];
     iter->it_end = conn->offsets[entity->ii+1] - conn->offsets[entity->ii];
     iter->entity->ii = iter->ptr[iter->it];
@@ -127,6 +127,20 @@ inline int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity,
     iter->it_end = 0;
     iter->entity->ii = 0;
   }
+
+  return(RET_OK);
+}
+
+inline int32 mei_init_sub(MeshEntityIterator *iter, Mesh *mesh,
+                          Indices *entities, uint32 dim)
+{
+  iter->entity->mesh = mesh;
+  iter->entity->dim = dim;
+  iter->it = 0;
+
+  iter->ptr = entities->indices;
+  iter->it_end = entities->num;
+  iter->entity->ii = iter->ptr[iter->it];
 
   return(RET_OK);
 }
@@ -151,6 +165,19 @@ inline int32 mei_next(MeshEntityIterator *iter)
   return(RET_OK);
 }
 
+int32 ind_print(Indices *ind, FILE *file)
+{
+  int32 ii;
+  if (!ind) return(RET_OK);
+
+  fprintf(file, "indices: num: %d\n", ind->num);
+  for (ii = 0; ii < ind->num; ii++) {
+    fprintf(file, "%d: %d\n", ii, ind->indices[ii]);
+  }
+
+  return(RET_OK);
+}
+
 #undef __FUNC__
 #define __FUNC__ "conn_alloc"
 int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident)
@@ -171,6 +198,9 @@ int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident)
     conn->n_incident = n_incident;
     conn->indices = alloc_mem(uint32, n_incident);
     ERR_CheckGo(ret);
+  } else if (num == 0) { // Empty connectivity.
+    conn->n_incident = n_incident;
+    conn->indices = 0;
   }
 
  end_label:
@@ -393,7 +423,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   }
 
   n_incident = cDd->offsets[cDd->num];
-  debprintf("n_incident: %d\n", n_incident);
+  debprintf("build n_incident (%d -> %d): %d\n", D, dim, n_incident);
 
   oris = alloc_mem(uint32, n_incident);
   if (dim == 2) {
@@ -413,7 +443,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
 
   // Allocate maximal buffers for d -> 0 arrays.
   conn_alloc(cd0, n_incident, n_incident * n_v_max);
-  debprintf("max. n_incident_vertex: %d\n", n_incident * n_v_max);
+  debprintf("build max. n_incident_vertex: %d\n", n_incident * n_v_max);
 
   // Allocate maximal buffers for local connectivity with sorted global
   // vertices. Counts have to be set to zero to avoid spurious calls to
@@ -465,9 +495,6 @@ int32 mesh_build(Mesh *mesh, int32 dim)
       // Add it as 'id' to D -> d.
       conn_set_to_free(cDd, it0->entity->ii, id);
 
-      // Store entity orientation key.
-      oris[id] = loc_oris[ii];
-
       // Add vertices in gloc to d -> 0.
       cd0->offsets[id+1] = cd0->offsets[id] + n_loc;
 
@@ -481,10 +508,20 @@ int32 mesh_build(Mesh *mesh, int32 dim)
       id++;
 
     found_label:
-      ;
+      // Store entity orientation key to position of the last used item in cDd.
+      ptr1 = cDd->offsets + it0->entity->ii;
+      ic = ptr1[1] - 1;
+      while (ic >= ptr1[0]) {
+        if (cDd->indices[ic] != UINT32_None) { // Not found & free slot.
+          break;
+        }
+        ic--;
+      }
+      oris[ic] = loc_oris[ii];
     }
   }
-  debprintf("n_unique: %d, n_incident_vertex: %d\n", id, cd0->offsets[id]);
+  debprintf("build n_unique: %d, n_incident (%d -> 0): %d\n",
+            id, dim, cd0->offsets[id]);
 
   // Update entity count in topology.
   mesh->topology->num[dim] = id;
@@ -537,7 +574,7 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   }
 
   n_incident = c12->offsets[c12->num];
-  debprintf("n_incident: %d\n", n_incident);
+  debprintf("transpose n_incident (%d -> %d): %d\n", d1, d2, n_incident);
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
@@ -627,7 +664,7 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   }
 
   n_incident = c12->offsets[c12->num];
-  debprintf("n_incident: %d\n", n_incident);
+  debprintf("intersect n_incident (%d -> %d): %d\n", d1, d2, n_incident);
 
   // Fill in the indices.
   conn_alloc(c12, 0, n_incident);
@@ -671,6 +708,177 @@ int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
   free_mem(mask);
 
   return(ret);
+}
+
+uint32 mesh_count_incident(Mesh *mesh, int32 dim,
+                           Indices *entities, int32 dent)
+{
+  uint32 ii, num = 0;
+  uint32 *ptr;
+  int32 D = mesh->topology->max_dim;
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dent, dim);
+    ERR_CheckGo(num);
+  }
+
+  for (ii = 0; ii < entities->num; ii++) {
+    ptr = conn->offsets + entities->indices[ii];
+    num += ptr[1] - ptr[0];
+  }
+
+ end_label:
+  return(num);
+}
+
+// `incident` must be preallocated - use mesh_count_incident().
+int32 mesh_get_incident(Mesh *mesh,
+                        MeshConnectivity *incident, int32 dim,
+                        Indices *entities, int32 dent)
+{
+  int32 ret = RET_OK;
+  uint32 ii;
+  int32 D = mesh->topology->max_dim;
+  MeshEntityIterator it0[1], it1[1];
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dent, dim);
+    ERR_CheckGo(ret);
+  }
+
+  ii = 0;
+  incident->offsets[0] = 0;
+  for (mei_init_sub(it0, mesh, entities, dent); mei_go(it0); mei_next(it0)) {
+    for (mei_init_conn(it1, it0->entity, dim); mei_go(it1); mei_next(it1)) {
+      incident->indices[ii++] = it1->entity->ii;
+    }
+    incident->offsets[it0->it + 1] = incident->offsets[it0->it] + it1->it_end;
+  }
+
+ end_label:
+  return(ret);
+}
+
+// `local_ids` must be preallocated to same size as `entities`.
+int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
+                         Indices *entities, int32 dent,
+                         MeshConnectivity *incident, int32 dim)
+{
+  int32 ret = RET_OK;
+  uint32 ii, iind, ic, found;
+  int32 D = mesh->topology->max_dim;
+  MeshEntity entity[1];
+  MeshEntityIterator it1[1];
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dim, dent);
+    ERR_CheckGo(ret);
+  }
+
+  entity->mesh = mesh;
+  entity->dim = dim;
+
+  ii = 0;
+  for (iind = 0; iind < incident->num; iind++) {
+    for (ic = incident->offsets[iind]; ic < incident->offsets[iind+1]; ic++) {
+      entity->ii = incident->indices[ic];
+      // printf("%d: ? %d in %d\n", iind, entities->indices[iind], entity->ii);
+      found = 0;
+      for (mei_init_conn(it1, entity, dent); mei_go(it1); mei_next(it1)) {
+        if (entities->indices[iind] == it1->entity->ii) {
+          local_ids->indices[ii++] = it1->it;
+          // printf("%d -> %d\n", ii, it1->it);
+          found = 1;
+          break; // Degenerate cases - 1. occurrence is returned.
+        }
+      }
+      if (!found) {
+        errput("entity (%d, %d) not found in entity (%d, %d)!\n",
+               entities->indices[iind], dent, entity->ii, dim);
+        ERR_CheckGo(ret);
+      }
+    }
+  }
+
+ end_label:
+  return(ret);
+}
+
+#undef __FUNC__
+#define __FUNC__ "mesh_select_complete"
+// Allocates mask->mask.
+int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
+                           Indices *entities, int32 dent)
+{
+  int32 ret = RET_OK;
+  int32 D = mesh->topology->max_dim;
+  uint32 ii, inum;
+  char *ent_mask = 0;
+  MeshEntityIterator it0[1], it1[1];
+  MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
+
+  if (!conn->num) {
+    errput("connectivity %d -> %d is not avaliable!\n", dim, dent);
+    ERR_CheckGo(ret);
+  }
+
+  mask->mask = alloc_mem(char, conn->num);
+  mask->num = conn->num;
+  mask->n_true = 0;
+
+  ent_mask = alloc_mem(char, mesh->topology->num[dent]);
+
+  for (ii = 0; ii < entities->num; ii++) {
+    ent_mask[entities->indices[ii]] = 1;
+  }
+
+  for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
+    inum = 0;
+    for (mei_init_conn(it1, it0->entity, dent); mei_go(it1); mei_next(it1)) {
+      if (ent_mask[it1->entity->ii]) inum++;
+    }
+    // Check if all entities with dimension dent incident to entity it0 are set
+    // in ent_mask.
+    if (inum == it1->it_end) {
+      mask->mask[it0->it] = 1;
+      mask->n_true++;
+    }
+  }
+
+ end_label:
+  free_mem(ent_mask);
+
+  return(ret);
+}
+
+// `ccoors` must be preallocated.
+int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
+{
+  int32 D = mesh->topology->max_dim;
+  uint32 id;
+  float64 *ptr = ccoors;
+  float64 *coors = mesh->geometry->coors;
+  MeshEntityIterator it0[1], it1[1];
+
+  for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
+    for (id = 0; id < D; id++) {
+      ptr[id] = 0.0;
+    }
+    for (mei_init_conn(it1, it0->entity, 0); mei_go(it1); mei_next(it1)) {
+      for (id = 0; id < D; id++) {
+        ptr[id] += coors[D * it1->entity->ii + id];
+      }
+    }
+    for (id = 0; id < D; id++) {
+      ptr[id] /= (float64) it1->it_end;
+    }
+    ptr += D;
+  }
+
+  return(RET_OK);
 }
 
 inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)

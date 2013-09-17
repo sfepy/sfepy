@@ -55,23 +55,23 @@ field_2 = {
 # Can use logical operations '&' (and), '|' (or).
 region_1000 = {
     'name' : 'Omega',
-    'select' : 'elements of group 6',
+    'select' : 'cells of group 6',
 }
 
 region_0 = {
     'name' : 'Walls',
-    'select' : 'nodes of surface -n (r.Outlet +n r.Inlet)',
-    'can_cells' : False,
+    'select' : 'vertices of surface -v (r.Outlet +v r.Inlet)',
+    'kind' : 'facet',
 }
 region_1 = {
     'name' : 'Inlet',
-    'select' : 'nodes by cinc0', # In
-    'can_cells' : False,
+    'select' : 'vertices by cinc0', # In
+    'kind' : 'facet',
 }
 region_2 = {
     'name' : 'Outlet',
-    'select' : 'nodes by cinc1', # Out
-    'can_cells' : False,
+    'select' : 'vertices by cinc1', # Out
+    'kind' : 'facet',
 }
 
 ebc_1 = {

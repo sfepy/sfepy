@@ -114,6 +114,15 @@ custom = {
             'opacity' : {'wireframe' : 0.3},
         },
     },
+    'navier_stokes/stokes_slip_bc.py' : {
+        '' : {
+            'view' : (-63, 52, 5.2, [-0.001,  0.52, -0.026]),
+            'roll' : -32,
+            'resolution' : (800, 600),
+            'layout' : 'col',
+            'rel_scaling' : 0.1,
+        },
+    },
 }
 
 def _omit(filename):
@@ -190,9 +199,7 @@ def generate_images(images_dir, examples_dir):
 
     ensure_path(images_dir + os.path.sep)
 
-    view = Viewer('',
-                  output_dir=output_dir,
-                  offscreen=False)
+    view = Viewer('', offscreen=False)
 
     for ex_filename in locate_files('*.py', examples_dir):
         if _omit(ex_filename): continue
@@ -233,8 +240,8 @@ def generate_images(images_dir, examples_dir):
 
                 fname = edit_filename(filename, suffix=suffix)
                 output('displaying results from "%s"' % fname)
-                output('to "%s"...'
-                       % fig_filename.replace(sfepy.data_dir, '')[1:])
+                disp_name = fig_filename.replace(sfepy.data_dir, '')
+                output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
                 view.filename = fname
                 view(scene=view.scene, show=False, is_scalar_bar=True,

@@ -26,6 +26,15 @@ cdef extern from 'common.h':
     size_t mem_get_n_frags()
 
 cdef extern from 'mesh.h':
+    ctypedef struct Indices:
+        uint32 *indices
+        uint32 num
+
+    ctypedef struct Mask:
+        char *mask
+        uint32 num
+        uint32 n_true
+
     ctypedef struct MeshGeometry:
         uint32 num
         uint32 dim
@@ -68,6 +77,18 @@ cdef extern from 'mesh.h':
 
     cdef int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
     cdef int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
+
+    cdef uint32 mesh_count_incident(Mesh *mesh, int32 dim,
+                                    Indices *entities, int32 dent)
+    cdef int32 mesh_get_incident(Mesh *mesh,
+                                 MeshConnectivity *incident, int32 dim,
+                                 Indices *entities, int32 dent)
+    cdef int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
+                                  Indices *entities, int32 dent,
+                                  MeshConnectivity *incident, int32 dim)
+    cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
+                                    Indices *entities, int32 dent)
+    cdef int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
 
 cdef class CConnectivity:
     """
@@ -125,6 +146,7 @@ cdef class CMesh:
 
     cdef readonly np.ndarray coors
     cdef readonly np.ndarray cell_types
+    cdef readonly np.ndarray cell_groups # ig for each cell.
     cdef readonly list conns
     cdef readonly dict entities
     cdef readonly int n_coor, dim, n_el
@@ -168,6 +190,8 @@ cdef class CMesh:
         cconn = _create_cconn(self.mesh.topology.conn[ii],
                               self.n_el, n_incident, 'D -> 0')
 
+        self.cell_groups = np.empty(self.n_el, dtype=np.uint32)
+
         indices = []
         offsets = []
         ict = 0
@@ -180,6 +204,8 @@ cdef class CMesh:
             indices.append(conn.ravel())
 
             self.cell_types[ict:ict+n_el] = self.key_to_index[mesh.descs[ig]]
+            self.cell_groups[ict:ict+n_el] = ig
+
             ict += n_el
 
         indices = np.concatenate(indices)
@@ -267,7 +293,8 @@ cdef class CMesh:
 
         self.setup_connectivity(1, 0)
 
-        shape[0] = <np.npy_intp> self.num[1]
+        ii = self._get_conn_indx(self.mesh.topology.max_dim, 1)
+        shape[0] = <np.npy_intp> self.conns[ii].n_incident
         ptr = self.mesh.topology.edge_oris
         self.edge_oris = np.PyArray_SimpleNewFromData(1, shape,
                                                       np.NPY_UINT32,
@@ -276,7 +303,8 @@ cdef class CMesh:
         if self.dim == 3:
             self.setup_connectivity(2, 0)
 
-            shape[0] = <np.npy_intp> self.num[2]
+            ii = self._get_conn_indx(self.mesh.topology.max_dim, 2)
+            shape[0] = <np.npy_intp> self.conns[ii].n_incident
             ptr = self.mesh.topology.face_oris
             self.face_oris = np.PyArray_SimpleNewFromData(1, shape,
                                                           np.NPY_UINT32,
@@ -300,6 +328,7 @@ cdef class CMesh:
         self._update_num()
 
     def _update_pointers(self):
+        cdef MeshConnectivity *pconn
         cdef uint32 ii
 
         for ii in range((self.mesh.topology.max_dim + 1)**2):
@@ -326,8 +355,6 @@ cdef class CMesh:
                 self.mesh.topology.num[idim] = conn.num
 
     def free_connectivity(self, d1, d2):
-        cdef MeshConnectivity *pconn
-
         ii = self._get_conn_indx(d1, d2)
         if self.conns[ii] is None:
             return
@@ -354,12 +381,246 @@ cdef class CMesh:
     def get_cell_conn(self):
         return self.get_conn(self.dim, 0)
 
+    def get_conn_as_graph(self, d1, d2):
+        """
+        Get d1 -> d2 connectivity as a sparse matrix graph (values = ones).
+
+        For safety, creates a copy of the connectivity arrays. The connectivity
+        is created if necessary.
+        """
+        import scipy.sparse as sps
+
+        self.setup_connectivity(d1, d2)
+        conn = self.get_conn(d1, d2)
+
+        graph = sps.csr_matrix((np.ones(conn.indices.shape[0], dtype=np.bool),
+                                np.array(conn.indices, copy=True,
+                                         dtype=np.int32),
+                                np.array(conn.offsets, copy=True,
+                                         dtype=np.int32)))
+
+        return graph
+
     def __str__(self):
         return 'CMesh: n_coor: %d, dim %d, n_el %d' \
                % (self.n_coor, self.dim, self.n_el)
 
     def cprint(self, int32 header_only=1):
         mesh_print(self.mesh, stdout, header_only)
+
+    def get_surface_facets(self):
+        """
+        Get facets (edges in 2D, faces in 3D) on the mesh surface.
+        """
+        self.setup_connectivity(self.dim - 1, self.dim)
+        conn = self.get_conn(self.dim - 1, self.dim)
+
+        ii = np.where(np.diff(conn.offsets) == 1)[0]
+
+        return ii.astype(np.uint32)
+
+    def get_incident(self, int32 dim,
+                     np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                     int32 dent, ret_offsets=False):
+        """
+        Get non-unique entities `indices` of dimension `dim` that are contained
+        in entities of dimension `dent` listed in `entities`. As each of
+        entities can be in several entities of dimension `dent`, `offsets`
+        array is returned optionally.
+        """
+        cdef Indices _entities[1]
+        cdef MeshConnectivity _incident[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] indices
+        cdef np.ndarray[uint32, mode='c', ndim=1] offsets
+        cdef uint32 num
+
+        if not entities.shape[0] > 0:
+            empty = np.empty(0, dtype=np.uint32)
+            if ret_offsets:
+                return empty, empty
+
+            else:
+                return empty
+
+        _entities.num = entities.shape[0]
+        _entities.indices = &entities[0]
+
+        num = mesh_count_incident(self.mesh, dim, _entities, dent)
+
+        indices = np.empty(num, dtype=np.uint32)
+        offsets = np.empty(_entities.num + 1, dtype=np.uint32)
+        _incident.num = _entities.num
+        _incident.n_incident = num
+        _incident.indices = &indices[0]
+        _incident.offsets = &offsets[0]
+        mesh_get_incident(self.mesh, _incident, dim, _entities, dent)
+
+        if ret_offsets:
+            return indices, offsets
+
+        else:
+            return indices
+
+    def get_local_ids(self,
+                      np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                      int32 dent,
+                      np.ndarray[uint32, mode='c', ndim=1] incident not None,
+                      np.ndarray[uint32, mode='c', ndim=1] offsets not None,
+                      int32 dim):
+        """
+        Get local ids of non-unique entities `incident` of dimension `dim`
+        (with given `offsets` per `entities`) incident to `entities` of
+        dimension `dent`, see `mesh_get_incident()`, with respect to
+        `entities`.
+        """
+        cdef Indices _entities[1], _local_ids[1]
+        cdef MeshConnectivity _incident[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+
+        if not entities.shape[0] > 0:
+            return np.empty(0, dtype=np.uint32)
+
+        _entities.num = entities.shape[0]
+        _entities.indices = &entities[0]
+
+        _incident.num = _entities.num
+        _incident.n_incident = incident.shape[0]
+        _incident.indices = &incident[0]
+        _incident.offsets = &offsets[0]
+
+        out = np.empty(_incident.n_incident, dtype=np.uint32)
+        _local_ids.num = _incident.n_incident
+        _local_ids.indices = &out[0]
+        mesh_get_local_ids(self.mesh, _local_ids, _entities, dent, _incident, dim)
+
+        return out
+
+    def get_complete(self, int32 dim,
+                     np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                     int32 dent):
+        """
+        Get entities of dimension `dim` that are completely given by entities
+        of dimension `dent` listed in `entities`.
+        """
+        cdef Mask mask[1]
+        cdef Indices _entities[1]
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+        cdef uint32 *_out
+        cdef uint32 ii, ic
+
+        if not entities.shape[0] > 0:
+            return np.empty(0, dtype=np.uint32)
+
+        _entities.num = entities.shape[0]
+        _entities.indices = &entities[0]
+
+        mesh_select_complete(self.mesh, mask, dim, _entities, dent)
+
+        out = np.empty(mask.n_true, dtype=np.uint32)
+
+        if mask.n_true > 0:
+            _out = &out[0]
+
+            ic = 0
+            for ii in range(mask.num):
+                if mask.mask[ii]:
+                    _out[ic] = ii
+                    ic += 1
+
+        pyfree(mask.mask)
+
+        return out
+
+    def get_orientations(self, int32 dim, codim=None):
+        """
+        Get orientations of entities of dimension `dim`. Alternatively,
+        co-dimension can be specified using `codim` argument.
+        """
+        if codim is not None:
+            dim = self.dim - codim
+
+        if dim == 1:
+            return self.edge_oris
+
+        elif dim == 2:
+            return self.face_oris
+
+        else:
+            raise ValueError('only edges or faces have orientations! (%d)'
+                             % dim)
+
+    def get_from_cell_group(self, int32 ig, int32 dim,
+                            np.ndarray[uint32, mode='c', ndim=1] entities=None):
+        """
+        Get entities of dimension `dim` that are contained in cells of group
+        `ig` and are listed in `entities`. If `entities` is None, all entities
+        are used.
+
+        Adapter function to be removed after new assembling is done.
+        """
+        cdef np.ndarray[uint32, mode='c', ndim=1] cells
+        cdef np.ndarray[uint32, mode='c', ndim=1] candidates
+        cdef np.ndarray[uint32, mode='c', ndim=1] out
+
+        cells = np.where(self.cell_groups == ig)[0].astype(np.uint32)
+        if cells.shape[0] == 0:
+            raise ValueError('group %d does not exist!' % ig)
+
+        if dim == self.dim:
+            candidates = cells
+
+        else:
+            self.setup_connectivity(self.dim, dim)
+            candidates = self.get_incident(dim, cells, self.dim)
+
+        if entities is not None:
+            out = np.intersect1d(candidates, entities)
+
+        else:
+            out = candidates
+
+        return out
+
+    def get_igs(self,
+                np.ndarray[uint32, mode='c', ndim=1] entities not None,
+                int32 dim):
+        """
+        Get cell groups of incident to entities of dimension `dim`.
+
+        Adapter function to be removed after new assembling is done.
+        """
+        cdef np.ndarray[uint32, mode='c', ndim=1] cells
+
+        if not entities.shape[0] > 0:
+            return np.empty(0, dtype=np.uint32)
+
+        if dim == self.dim:
+            cells = entities
+
+        else:
+            self.setup_connectivity(dim, self.dim)
+            cells = self.get_incident(self.dim, entities, dim)
+
+        igs = np.unique(self.cell_groups[cells])
+
+        return igs
+
+    def get_centroids(self, dim):
+        """
+        Return the coordinates of centroids of mesh entities with dimension
+        `dim`.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=2] out
+
+        if dim == 0:
+            return self.coors
+
+        else:
+            out = np.empty((self.mesh.topology.num[dim], self.dim),
+                           dtype=np.float64)
+            mesh_get_centroids(self.mesh, &out[0, 0], dim)
+
+        return out
 
 def cmem_statistics():
     mem_statistics(0, '', '', '')

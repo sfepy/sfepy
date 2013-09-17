@@ -51,8 +51,8 @@ mat_pars = Coefficients(D_m=D_m, density_m=density_m,
                         D_c=D_c, density_c=density_c,
                         D_r=D_r, density_r=density_r)
 
-region_selects = Struct(matrix=('elements of group 1', {}),
-                        inclusion=('elements of group 2', {}))
+region_selects = Struct(matrix='cells of group 1',
+                        inclusion='cells of group 2')
 
 corrs_save_names = {'evp' : 'evp'}
 

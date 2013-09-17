@@ -74,14 +74,14 @@ variables = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'cylinder' : ('elements of group 444', {}),
-    'fill' : ('elements of group 555', {}),
-    'Gamma_Left' : ('nodes in (x < -2.4999)', {}),
-    'y+' : ('nodes in (y >2.4999)', {}),
-    'y-' : ('nodes in (y <-2.4999)', {}),
-    'z+' : ('nodes in (z >0.4999)', {}),
-    'z-' : ('nodes in (z <-0.4999)', {}),
+    'Omega' : 'all',
+    'cylinder' : 'cells of group 444',
+    'fill' : 'cells of group 555',
+    'Gamma_Left' : ('vertices in (x < -2.4999)', 'facet'),
+    'y+' : ('vertices in (y >2.4999)', 'facet'),
+    'y-' : ('vertices in (y <-2.4999)', 'facet'),
+    'z+' : ('vertices in (z >0.4999)', 'facet'),
+    'z-' : ('vertices in (z <-0.4999)', 'facet'),
 }
 
 ebcs = {

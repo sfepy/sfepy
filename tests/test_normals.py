@@ -44,7 +44,8 @@ class Test(TestCommon):
             mesh = Mesh.from_file('meshes/elements/%s_1.mesh' % geom,
                                   prefix_dir=sfepy.data_dir)
             domain = Domain('domain', mesh)
-            surface = domain.create_region('Surface', 'nodes of surface')
+            surface = domain.create_region('Surface', 'vertices of surface',
+                                           'facet')
             domain.create_surface_group(surface)
 
             sd = domain.surface_groups[0][surface.name]

@@ -21,9 +21,9 @@ variables = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Gamma_Left' : ('nodes in (x < 0.0001)', {}),
-    'Gamma_Right' : ('nodes in (x > 0.999)', {}),
+    'Omega' : 'all',
+    'Gamma_Left' : ('vertices in (x < 0.0001)', 'facet'),
+    'Gamma_Right' : ('vertices in (x > 0.999)', 'facet'),
 }
 
 ebcs = {

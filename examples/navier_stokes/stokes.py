@@ -24,42 +24,45 @@ filename_mesh = data_dir + '/meshes/2d/special/channels_symm944t.mesh'
 if filename_mesh.find( 'symm' ):
     region_1 = {
         'name' : 'Y1',
-        'select' : """elements of group 3""",
+        'select' : """cells of group 3""",
     }
     region_2 = {
         'name' : 'Y2',
-        'select' : """elements of group 4 +e elements of group 6
-                      +e elements of group 8""",
+        'select' : """cells of group 4 +c cells of group 6
+                      +c cells of group 8""",
     }
     region_4 = {
         'name' : 'Y1Y2',
-        'select' : """r.Y1 +e r.Y2""",
+        'select' : """r.Y1 +c r.Y2""",
     }
     region_5 = {
         'name' : 'Walls',
-        'select' : """r.EBCGamma1 +n r.EBCGamma2""",
+        'select' : """r.EBCGamma1 +v r.EBCGamma2""",
+        'kind' : 'facet',
     }
     region_310 = {
         'name' : 'EBCGamma1',
-        'select' : """(elements of group 1 *n elements of group 3)
-                      +n
-                      (elements of group 2 *n elements of group 3)
+        'select' : """(cells of group 1 *v cells of group 3)
+                      +v
+                      (cells of group 2 *v cells of group 3)
                       """,
+        'kind' : 'facet',
     }
     region_320 = {
         'name' : 'EBCGamma2',
-        'select' : """(elements of group 5 *n elements of group 4)
-                      +n
-                      (elements of group 1 *n elements of group 4)
-                      +n
-                      (elements of group 7 *n elements of group 6)
-                      +n
-                      (elements of group 2 *n elements of group 6)
-                      +n
-                      (elements of group 9 *n elements of group 8)
-                      +n
-                      (elements of group 2 *n elements of group 8)
+        'select' : """(cells of group 5 *v cells of group 4)
+                      +v
+                      (cells of group 1 *v cells of group 4)
+                      +v
+                      (cells of group 7 *v cells of group 6)
+                      +v
+                      (cells of group 2 *v cells of group 6)
+                      +v
+                      (cells of group 9 *v cells of group 8)
+                      +v
+                      (cells of group 2 *v cells of group 8)
                       """,
+        'kind' : 'facet',
     }
 
 
@@ -67,19 +70,23 @@ w2 = 0.499
 # Sides.
 region_20 = {
     'name' : 'Left',
-    'select' : 'nodes in (x < %.3f)' % -w2,
+    'select' : 'vertices in (x < %.3f)' % -w2,
+    'kind' : 'facet',
 }
 region_21 = {
     'name' : 'Right',
-    'select' : 'nodes in (x > %.3f)' % w2,
+    'select' : 'vertices in (x > %.3f)' % w2,
+    'kind' : 'facet',
 }
 region_22 = {
     'name' : 'Bottom',
-    'select' : 'nodes in (y < %.3f)' % -w2,
+    'select' : 'vertices in (y < %.3f)' % -w2,
+    'kind' : 'facet',
 }
 region_23 = {
     'name' : 'Top',
-    'select' : 'nodes in (y > %.3f)' % w2,
+    'select' : 'vertices in (y > %.3f)' % w2,
+    'kind' : 'facet',
 }
 
 field_1 = {

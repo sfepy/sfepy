@@ -46,12 +46,12 @@ geom = {3 : '3_4', 2 : '2_3'}[dim]
 x_left, x_right = bbox[:,0]
 
 regions = {
-    'Y' : ('all', {}),
-    'Y1' : ('elements of group 1', {}),
-    'Y2' : ('elements of group 2', {}),
-    'Y2_Surface': ('r.Y1 *n r.Y2', {'can_cells' : False}),
-    'Left' : ('nodes in (x < %f)' % (x_left + 1e-3), {}),
-    'Right' : ('nodes in (x > %f)' % (x_right - 1e-3), {}),
+    'Y' : 'all',
+    'Y1' : 'cells of group 1',
+    'Y2' : 'cells of group 2',
+    'Y2_Surface': ('r.Y1 *v r.Y2', 'facet'),
+    'Left' : ('vertices in (x < %f)' % (x_left + 1e-3), 'facet'),
+    'Right' : ('vertices in (x > %f)' % (x_right - 1e-3), 'facet'),
 }
 
 material_2 = {

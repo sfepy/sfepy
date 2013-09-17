@@ -67,11 +67,13 @@ region_1000 = {
 
 region_1 = {
     'name' : 'Bottom',
-    'select' : 'nodes in (z < -0.499)',
+    'select' : 'vertices in (z < -0.499)',
+    'kind' : 'facet',
 }
 region_2 = {
     'name' : 'Top',
-    'select' : 'nodes in (z > 0.499)',
+    'select' : 'vertices in (z > 0.499)',
+    'kind' : 'facet',
 }
 
 ebc_1 = {

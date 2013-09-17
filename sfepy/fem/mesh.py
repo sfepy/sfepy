@@ -454,21 +454,27 @@ class Mesh(Struct):
                     mesh.conns.append(mesh_in.conns[ig][els,:].copy())
 
             if save_edges:
-                ed = region.domain.ed
+                cmesh = region.domain.cmesh
                 for ig in region.igs:
                     edges = region.get_edges(ig)
+                    if not edges.size: continue
+
+                    verts = cmesh.get_incident(0, edges, 1)
+                    verts.shape = (verts.shape[0] / 2, 2)
+
                     mesh.descs.append('1_2')
-                    mesh.mat_ids.append(ed.data[edges,0] + 1)
-                    mesh.conns.append(ed.data[edges,-2:].copy())
+                    mesh.conns.append(verts)
+
+                    mat_ids = nm.repeat(ig, verts.shape[0])
+                    mesh.mat_ids.append(mat_ids)
 
             if save_faces:
                 mesh._append_region_faces(region)
 
             if save_edges or save_faces:
-                mesh.descs.append({2 : '2_3', 3 : '3_4'}[mesh_in.dim])
-                mesh.mat_ids.append(-nm.ones_like(region.all_vertices))
-                mesh.conns.append(make_point_cells(region.all_vertices,
-                                                   mesh_in.dim))
+                mesh.descs.append('1_1')
+                mesh.mat_ids.append(-nm.ones_like(region.vertices))
+                mesh.conns.append(region.vertices[:, None])
 
         else:
             mesh._append_region_faces(region, force_faces=True)
@@ -476,7 +482,7 @@ class Mesh(Struct):
         mesh._set_shape_info()
 
         if localize:
-            mesh.localize(region.all_vertices)
+            mesh.localize(region.vertices)
 
         return mesh
 
@@ -595,26 +601,24 @@ class Mesh(Struct):
         self.nodal_bcs = get_default(nodal_bcs, {})
 
     def _append_region_faces(self, region, force_faces=False):
-        fa = region.domain.get_facets(force_faces=force_faces)[1]
-        if fa is None:
-            return
+        dim = self.coors.shape[1]
+        if (not force_faces) and (dim == 2): return
 
+        cmesh = region.domain.cmesh
         for ig in region.igs:
-            faces = region.get_surface_entities(ig)
-            fdata = fa.facets[faces]
+            faces = region.get_facets(ig)
+            if not faces.size: continue
 
-            i3 = nm.where(fdata[:,-1] == -1)[0]
-            i4 = nm.where(fdata[:,-1] != -1)[0]
+            verts, offs = cmesh.get_incident(0, faces, cmesh.dim - 1,
+                                             ret_offsets=True)
+            n_fp = offs[1] - offs[0]
+            verts.shape = (verts.shape[0] / n_fp, n_fp)
 
-            if i3.size:
-                self.descs.append('2_3')
-                self.mat_ids.append(fa.indices[i3,0] + 1)
-                self.conns.append(fdata[i3,:-1])
+            self.descs.append('%d_%d' % (dim - 1, n_fp))
+            self.conns.append(verts)
 
-            if i4.size:
-                self.descs.append('2_4')
-                self.mat_ids.append(fa.indices[i4,0] + 1)
-                self.conns.append(fdata[i4])
+            mat_ids = nm.repeat(ig, verts.shape[0])
+            self.mat_ids.append(mat_ids)
 
     def write(self, filename=None, io=None,
               coors=None, igs=None, out=None, float_format=None, **kwargs):

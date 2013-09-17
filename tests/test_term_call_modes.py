@@ -142,7 +142,7 @@ class Test(TestCommon):
             domain = Domain('domain_%s' % mesh.name.replace(data_dir, ''),
                             mesh)
             domain.create_region('Omega', 'all')
-            domain.create_region('Gamma', 'nodes of surface')
+            domain.create_region('Gamma', 'vertices of surface', 'facet')
 
             domains.append(domain)
 

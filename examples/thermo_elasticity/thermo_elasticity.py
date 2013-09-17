@@ -95,8 +95,8 @@ functions = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < -4.99)', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < -4.99)', 'facet'),
 }
 
 fields = {

@@ -14,8 +14,8 @@ integrals = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Gamma' : ('nodes of surface', {'can_cells' : True}),
+    'Omega' : 'all',
+    'Gamma' : ('vertices of surface', 'facet'),
 }
 
 expressions = {

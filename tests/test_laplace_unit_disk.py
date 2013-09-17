@@ -45,13 +45,13 @@ region_1000 = {
 
 region_1 = {
     'name' : 'Centre',
-    'select' : 'nodes in (x < 1e-8) & (x > -1e-8) & (y < 1e-8) & (y > -1e-8)',
+    'select' : 'vertices in (x < 1e-8) & (x > -1e-8) & (y < 1e-8) & (y > -1e-8)',
 }
 
 region_2 = {
     'name' : 'Gamma',
-    'select' : 'nodes of surface',
-    'can_cells' : True,
+    'select' : 'vertices of surface',
+    'kind' : 'facet',
 }
 
 ebc_1 = {

@@ -43,7 +43,7 @@ def recovery_perf(pb, corrs, macro):
 
     varnames = ['pM']
     for ch in channels:
-        nodes_Y[ch] = pb.domain.regions['Y' + ch].all_vertices
+        nodes_Y[ch] = pb.domain.regions['Y' + ch].vertices
         varnames.append('p' + ch)
 
     pvars = pb.create_variables(varnames)
@@ -166,34 +166,28 @@ functions = {
     'match_y_plane': (match_y_plane,),
     }
 
-# forbid groups?
-forbid_grps = ''
 aux = []
 for ch, val in pb_def['channels'].iteritems():
-    forbid_grps += ' %d' % val['mat_el_grp']
     aux.append( 'r.bYM' + ch )
-
-forbid_channels = {'forbid': 'group %s' % forbid_grps}
-forbid_matrix = {'forbid': 'group %d' % pb_def['matrix_mat_el_grp']}
 
 # basic regions
 regions = {
-    'Y': ('all', {}),
-    'YM': ('elements of group %d' % pb_def['matrix_mat_el_grp'],  {}),
+    'Y': 'all',
+    'YM': 'cells of group %d' % pb_def['matrix_mat_el_grp'],
     # periodic boundaries
-    'Pl': ('nodes in (x < 0.001)', {}),
-    'Pr': ('nodes in (x > 0.999)', {}),
-    'PlYM': ('r.Pl *n r.YM', {}),
-    'PrYM': ('r.Pr *n r.YM', {}),
-    'bYMp': ('r.bYp *n r.YM', forbid_channels),
-    'bYMm': ('r.bYm *n r.YM', forbid_channels),
-    'bYMpm': ('r.bYMp +n r.bYMm', forbid_channels),
+    'Pl': ('vertices in (x < 0.001)', 'facet'),
+    'Pr': ('vertices in (x > 0.999)', 'facet'),
+    'PlYM': ('r.Pl *v r.YM', 'facet'),
+    'PrYM': ('r.Pr *v r.YM', 'facet'),
+    'bYMp': ('r.bYp *v r.YM', 'facet', 'YM'),
+    'bYMm': ('r.bYm *v r.YM', 'facet', 'YM'),
+    'bYMpm': ('r.bYMp +v r.bYMm', 'facet', 'YM'),
 }
 
 # matrix/channel boundaries
 regions.update({
-    'bYMchs': (' +n '.join( aux ), forbid_channels),
-    'YMmchs': ('r.YM -n r.bYMchs', {}),
+    'bYMchs': (' +v '.join(aux), 'facet', 'YM'),
+    'YMmchs': 'r.YM -v r.bYMchs',
     })
 
 # boundary conditions Gamma+/-
@@ -211,17 +205,17 @@ all_periodicY = {}
 
 if pb_def['dim'] == 2:
     regions.update( {
-        'bYm': ('nodes in (y < 0.001)', {}),
-        'bYp':  ('nodes in (y > 0.999)', {}),
+        'bYm': ('vertices in (y < 0.001)', 'facet'),
+        'bYp':  ('vertices in (y > 0.999)', 'facet'),
         } )
 if pb_def['dim'] == 3:
     regions.update( {
-        'Pn': ('nodes in (y < 0.001)', {}),
-        'Pf': ('nodes in (y > 0.999)', {}),
-        'PnYM': ('r.Pn *n r.YM', {}),
-        'PfYM': ('r.Pf *n r.YM', {}),
-        'bYm': ('nodes in (z < 0.001)', {}),
-        'bYp':  ('nodes in (z > 0.999)', {}),
+        'Pn': ('vertices in (y < 0.001)', 'facet'),
+        'Pf': ('vertices in (y > 0.999)', 'facet'),
+        'PnYM': ('r.Pn *v r.YM', 'facet'),
+        'PfYM': ('r.Pf *v r.YM', 'facet'),
+        'bYm': ('vertices in (z < 0.001)', 'facet'),
+        'bYp':  ('vertices in (z > 0.999)', 'facet'),
         } )
     # periodic boundary conditions - matrix, Y-direction
     epbcs.update( {
@@ -240,15 +234,15 @@ for ch, val in pb_def['channels'].iteritems():
 
     # channels: YA, fixedYA, bYMA (matrix/channel boundaries)
     regions.update( {
-        'Y' + ch: ('elements of group %d' % val['mat_el_grp'], {}),
-        'bYM' + ch: ('r.YM *n r.Y' + ch, forbid_channels),
-        'PlY' + ch: ('r.Pl *n r.Y' + ch, {}),
-        'PrY' + ch: ('r.Pr *n r.Y' + ch, {}),
+        'Y' + ch: 'cells of group %d' % val['mat_el_grp'],
+        'bYM' + ch: ('r.YM *v r.Y' + ch, 'facet', 'YM'),
+        'PlY' + ch: ('r.Pl *v r.Y' + ch, 'facet'),
+        'PrY' + ch: ('r.Pr *v r.Y' + ch, 'facet'),
         } )
 
     if 'fix_nd_grp' in val:
         regions.update({
-            'fixedY' + ch: ('nodes of group %d' % val['fix_nd_grp'][0], {}),
+            'fixedY' + ch: 'vertices of group %d' % val['fix_nd_grp'][0],
             })
 
     ebcs_eta[ch] = []
@@ -271,8 +265,8 @@ for ch, val in pb_def['channels'].iteritems():
 
     if pb_def['dim'] == 3:
         regions.update({
-                'PnY' + ch: ('r.Pn *n r.Y' + ch, {}),
-                'PfY' + ch: ('r.Pf *n r.Y' + ch, {}),
+                'PnY' + ch: ('r.Pn *v r.Y' + ch, 'facet'),
+                'PfY' + ch: ('r.Pf *v r.Y' + ch, 'facet'),
                 })
         # periodic boundary conditions - channels, Y-direction
         epbcs.update({
@@ -291,20 +285,20 @@ for ch, val in pb_def['channels'].iteritems():
         aux = val['io_nd_grp'][i_io]
         if 'fix_nd_grp' in val and val['fix_nd_grp'][1] == aux:
             regions.update( {
-                'bY%s' % io : ('nodes of group %d +n r.fixedY%s' % (aux, ch),
-                               forbid_matrix),
+                'bY%s' % io : ('vertices of group %d +v r.fixedY%s' % (aux, ch),
+                               'facet', 'Y%s' % io),
                 } )
         else:
             regions.update( {
-                'bY%s' % io : ('nodes of group %d' % aux,
-                               forbid_matrix),
+                'bY%s' % io : ('vertices of group %d' % aux,
+                               'facet', 'Y%s' % io),
             } )
 
         aux_bY.append('r.bY%s' % io)
         reg_io[ch].append('bY%s' % io)
 
     regions.update({
-        'bY' + ch : ( ' +n '.join(aux_bY), forbid_matrix),
+        'bY' + ch : (' +v '.join(aux_bY), 'facet', 'Y' + ch),
         })
 
     # channel: inputs/outputs
@@ -312,7 +306,7 @@ for ch, val in pb_def['channels'].iteritems():
         io = '%s_%d' % (ch, i_io + 1)
         ion = '%s_n%d' % (ch, i_io + 1)
         regions.update({
-            'bY%s' % ion: ('r.bY%s -n r.bY%s' % (ch, io), forbid_matrix),
+            'bY%s' % ion: ('r.bY%s -v r.bY%s' % (ch, io), 'facet', 'Y%s' % ion),
             })
 
         # boundary conditions

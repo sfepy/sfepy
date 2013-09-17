@@ -1,9 +1,9 @@
 """
 Grammar for selecting regions of a domain.
 
-Regions serve for selection of certain parts of the computational domain (=
-selection of nodes and elements of a FE mesh). They are used to define the
-boundary conditions, the domains of terms and materials etc.
+Regions serve for selection of certain parts of the computational domain
+represented as a finite element mesh. They are used to define the boundary
+conditions, the domains of terms and materials etc.
 
 Notes
 -----
@@ -15,10 +15,12 @@ from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
 
 ParseException # Needed for importing elsewhere.
 
-op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
-           'OA_IntersectN', 'OA_IntersectE']
-eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_NOG', 'E_ONIR', 'E_NI', 'E_NOSET',
-              'E_EBF', 'E_EOG', 'E_EI1', 'E_EI2', 'E_EOSET']
+op_codes = ['OA_SubV', 'OA_SubE', 'OA_SubF', 'OA_SubC', 'OA_SubS',
+            'OA_AddV', 'OA_AddE', 'OA_AddF', 'OA_AddC', 'OA_AddS',
+            'OA_IntersectV', 'OA_IntersectE', 'OA_IntersectF',
+            'OA_IntersectC', 'OA_IntersectS']
+eval_codes = ['E_VIR', 'E_VOS', 'E_VBF', 'E_VOG', 'E_OVIR', 'E_VI', 'E_VOSET',
+              'E_CBF', 'E_COG', 'E_CI1', 'E_CI2', 'E_COSET']
 kw_codes = ['KW_All', 'KW_Region']
 
 def to_stack(stack):
@@ -95,22 +97,33 @@ def create_bnf(stack):
     _by = Literal('by')
     _copy = Literal('copy')
 
-    _mn = Literal('-n').setParseAction(replace('OA_SubN'))
+    _mv = Literal('-v').setParseAction(replace('OA_SubV'))
     _me = Literal('-e').setParseAction(replace('OA_SubE'))
-    _pn = Literal('+n').setParseAction(replace('OA_AddN'))
+    _mf = Literal('-f').setParseAction(replace('OA_SubF'))
+    _mc = Literal('-c').setParseAction(replace('OA_SubC'))
+    _ms = Literal('-s').setParseAction(replace('OA_SubS'))
+    _pv = Literal('+v').setParseAction(replace('OA_AddV'))
     _pe = Literal('+e').setParseAction(replace('OA_AddE'))
-    _inn = Literal('*n').setParseAction(replace('OA_IntersectN'))
+    _pf = Literal('+f').setParseAction(replace('OA_AddF'))
+    _pc = Literal('+c').setParseAction(replace('OA_AddC'))
+    _ps = Literal('+s').setParseAction(replace('OA_AddS'))
+    _inv = Literal('*v').setParseAction(replace('OA_IntersectV'))
     _ine = Literal('*e').setParseAction(replace('OA_IntersectE'))
-    regop = (_mn | _me | _pn | _pe | _inn | _ine)
+    _inf = Literal('*f').setParseAction(replace('OA_IntersectF'))
+    _inc = Literal('*c').setParseAction(replace('OA_IntersectC'))
+    _ins = Literal('*s').setParseAction(replace('OA_IntersectS'))
+    regop = (_mv | _me | _mf | _mc | _ms |
+             _pv | _pe | _pf | _pc | _ps |
+             _inv | _ine | _inf | _inc | _ins)
 
     lpar  = Literal("(").suppress()
     rpar  = Literal(")").suppress()
 
     _all = Literal('all').setParseAction(replace('KW_All'))
-    node = Literal('node')
-    nodes = Literal('nodes')
-    element = Literal('element')
-    elements = Literal('elements')
+    vertex = Literal('vertex')
+    vertices = Literal('vertices')
+    cell = Literal('cell')
+    cells = Literal('cells')
     group = Literal('group')
     _set = Literal('set')
     surface = Literal('surface')
@@ -137,31 +150,31 @@ def create_bnf(stack):
                  + ZeroOrMore(')'))
     relation = Group(relation).setParseAction(join_tokens)
 
-    nos = Group(nodes + _of + surface).setParseAction(replace('E_NOS'))
-    nir = Group(nodes + _in + relation).setParseAction(
-        replace('E_NIR', keep=True))
-    nbf = Group(nodes + _by + function).setParseAction(
-        replace('E_NBF', keep=True))
-    ebf = Group(elements + _by + function).setParseAction(
-        replace('E_EBF', keep=True))
-    eog = Group(elements + _of + group + Word(nums)).setParseAction(
-        replace('E_EOG', keep=True))
-    nog = Group(nodes + _of + group + Word(nums)).setParseAction(
-        replace('E_NOG', keep=True))
-    onir = Group(node + _in + region).setParseAction(
-        replace_with_region('E_ONIR', 2))
-    ni = Group(node + delimitedList(inumber)).setParseAction(
-        replace('E_NI', keep=True))
-    ei1 = Group(element + delimitedList(inumber)).setParseAction(
-        replace('E_EI1', keep=True))
+    nos = Group(vertices + _of + surface).setParseAction(replace('E_VOS'))
+    nir = Group(vertices + _in + relation).setParseAction(
+        replace('E_VIR', keep=True))
+    nbf = Group(vertices + _by + function).setParseAction(
+        replace('E_VBF', keep=True))
+    ebf = Group(cells + _by + function).setParseAction(
+        replace('E_CBF', keep=True))
+    eog = Group(cells + _of + group + Word(nums)).setParseAction(
+        replace('E_COG', keep=True))
+    nog = Group(vertices + _of + group + Word(nums)).setParseAction(
+        replace('E_VOG', keep=True))
+    onir = Group(vertex + _in + region).setParseAction(
+        replace_with_region('E_OVIR', 2))
+    ni = Group(vertex + delimitedList(inumber)).setParseAction(
+        replace('E_VI', keep=True))
+    ei1 = Group(cell + delimitedList(inumber)).setParseAction(
+        replace('E_CI1', keep=True))
     etuple = (lpar.suppress() + inumber + comma.suppress()
               + inumber + rpar.suppress())
-    ei2 = Group(element + delimitedList(etuple)).setParseAction(
-        replace('E_EI2', keep=True))
-    noset = Group(nodes + _of + _set + set_name).setParseAction(
-        replace('E_NOSET', keep=True))
-    eoset = Group(elements + _of + _set + set_name).setParseAction(
-        replace('E_EOSET', keep=True))
+    ei2 = Group(cell + delimitedList(etuple)).setParseAction(
+        replace('E_CI2', keep=True))
+    noset = Group(vertices + _of + _set + set_name).setParseAction(
+        replace('E_VOSET', keep=True))
+    eoset = Group(cells + _of + _set + set_name).setParseAction(
+        replace('E_COSET', keep=True))
 
     region_expression = Forward()
 
@@ -177,43 +190,3 @@ def create_bnf(stack):
     region_expression = StringStart() + region_expression + StringEnd()
 
     return region_expression
-
-_test_strs = ['nodes of surface -n r.egion_1',
-             'r.egion_2 +n copy r.egion_1',
-             'nodes in (y <= 0.00001) & (x < 0.11)',
-             'nodes in ((y <= 0.00001) & (x < 0.11))',
-             'nodes in (((y <= 0.00001) & (x < 0.11)))',
-             'nodes in (((0.00001 < y) & (x < 0.11)))',
-             'nodes in (y < 1.0)',
-             'all -n nodes in (y == 0.00001)',
-             'all -n nodes of surface',
-             'all -e r.egion_100',
-             'r.egion_1 -n nodes of surface *e r.egion_8 *n nodes in (y > 0)',
-             'nodes of surface +n nodes by pokus',
-             'elements of group 6 +e nodes by fn2_3c',
-             """r.egion_1 *n (r.egion_2 +e (nodes in (y > 0) *n r.egion_32))
-             -n nodes of surface -e r.egion_5""",
-             'node in r.region_3',
-             'node 10',
-             'elements by afun']
-
-if __name__ == "__main__":
-    test_strs = _test_strs
-
-    stack = []
-    bnf = create_bnf(stack)
-
-    n_fail = 0
-    for test_str in test_strs:
-        print test_str
-        stack[:] = []
-
-        try:
-            out = bnf.parseString(test_str)
-        except:
-            print '...failed!'
-            n_fail += 1
-            continue
-
-        print_stack(stack)
-    print 'failed: %d' % n_fail

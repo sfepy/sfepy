@@ -30,6 +30,13 @@ typedef struct Indices {
   uint32 num;
 } Indices;
 
+// Pointer to mask + number of items.
+typedef struct Mask {
+  char *mask;
+  uint32 num;
+  uint32 n_true;
+} Mask;
+
 typedef struct MeshGeometry {
   uint32 num;
   uint32 dim;
@@ -120,9 +127,13 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only);
 
 int32 mei_init(MeshEntityIterator *iter, Mesh *mesh, uint32 dim);
 int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity, uint32 dim);
+int32 mei_init_sub(MeshEntityIterator *iter, Mesh *mesh,
+                   Indices *entities, uint32 dim);
 int32 mei_print(MeshEntityIterator *iter, FILE *file);
 int32 mei_go(MeshEntityIterator *iter);
 int32 mei_next(MeshEntityIterator *iter);
+
+int32 ind_print(Indices *ind, FILE *file);
 
 int32 conn_alloc(MeshConnectivity *conn, uint32 num, uint32 n_incident);
 int32 conn_resize(MeshConnectivity *conn, uint32 num, uint32 n_incident);
@@ -138,6 +149,38 @@ int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_build(Mesh *mesh, int32 dim);
 int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3);
+
+// Count non-unique entities of dimension `dim` incident to `entities` of
+// dimension `dent`.
+uint32 mesh_count_incident(Mesh *mesh, int32 dim,
+                           Indices *entities, int32 dent);
+
+// Get non-unique entities `incident` of dimension `dim` incident to `entities`
+// of dimension `dent`. As each of entities can be in several entities of
+// dimension `dent`, `incident` is stored in MeshConnectivity structure.
+// `incident` must be preallocated - use mesh_count_incident().
+// Returns a subset of a connectivity - entities may be repeated!
+int32 mesh_get_incident(Mesh *mesh,
+                        MeshConnectivity *incident, int32 dim,
+                        Indices *entities, int32 dent);
+
+// Get local ids of non-unique entities `incident` of dimension `dim` incident
+// to `entities` of dimension `dent`, see `mesh_get_incident()`, with respect
+// to `entities`. `local_ids` must be preallocated to same size as `incident`.
+int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
+                         Indices *entities, int32 dent,
+                         MeshConnectivity *incident, int32 dim);
+
+// Select entities of dimension `dim` that are completely given by entities of
+// dimension `dent`.
+// Example: mesh_select_complete(mesh, mask, 2, vertices, 0) will select all
+// complete faces, whose vertices are listed in `vertices`.
+int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
+                           Indices *entities, int32 dent);
+
+// Return the coordinates of centroids of mesh entities with dimension `dim`.
+// `ccoors` must be preallocated.
+int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim);
 
 int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim);
 int32 me_get_incident2(MeshEntity *entity, Indices *out,

@@ -327,8 +327,8 @@ def eval_in_els_and_qp(expression, ig, iels, coors,
     domain = fields.values()[0].domain
 
     region = Region('Elements', 'given elements', domain, '')
-    region.set_cells({ig : iels})
-    region.complete_description(domain.ed, domain.fa)
+    region.cells = iels + domain.mesh.el_offsets[ig]
+    region.update_shape()
     domain.regions.append(region)
 
     for field in fields.itervalues():

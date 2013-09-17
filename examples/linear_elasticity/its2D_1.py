@@ -35,10 +35,10 @@ options = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < 0.001)', {}),
-    'Bottom' : ('nodes in (y < 0.001)', {}),
-    'Top' : ('node 2', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < 0.001)', 'facet'),
+    'Bottom' : ('vertices in (y < 0.001)', 'facet'),
+    'Top' : ('vertex 2', 'vertex'),
 }
 
 materials = {

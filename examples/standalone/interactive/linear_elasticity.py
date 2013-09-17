@@ -44,9 +44,11 @@ def main():
     eps = 1e-8 * (max_x - min_x)
     omega = domain.create_region('Omega', 'all')
     gamma1 = domain.create_region('Gamma1',
-                                  'nodes in x < %.10f' % (min_x + eps))
+                                  'vertices in x < %.10f' % (min_x + eps),
+                                  'facet')
     gamma2 = domain.create_region('Gamma2',
-                                  'nodes in x > %.10f' % (max_x - eps))
+                                  'vertices in x > %.10f' % (max_x - eps),
+                                  'facet')
 
     field = H1NodalVolumeField('fu', nm.float64, 'vector', omega,
                                approx_order=2)

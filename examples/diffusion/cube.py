@@ -33,7 +33,7 @@ field_1 = {
 if filename_mesh.find('cube_medium_hexa.mesh') >= 0:
     region_1000 = {
         'name' : 'Omega',
-        'select' : 'elements of group 0',
+        'select' : 'cells of group 0',
     }
     integral_1 = {
         'name' : 'i1',
@@ -48,7 +48,7 @@ if filename_mesh.find('cube_medium_hexa.mesh') >= 0:
 elif filename_mesh.find('cube_big_tetra.mesh') >= 0:
     region_1000 = {
         'name' : 'Omega',
-        'select' : 'elements of group 6',
+        'select' : 'cells of group 6',
     }
     integral_1 = {
         'name' : 'i1',
@@ -82,19 +82,23 @@ variable_2 = {
 
 region_0 = {
     'name' : 'Surface',
-    'select' : 'nodes of surface',
+    'select' : 'vertices of surface',
+    'kind' : 'facet',
 }
 region_1 = {
     'name' : 'Bottom',
-    'select' : 'nodes in (z < -0.4999999)',
+    'select' : 'vertices in (z < -0.4999999)',
+    'kind' : 'facet',
 }
 region_2 = {
     'name' : 'Top',
-    'select' : 'nodes in (z > 0.4999999)',
+    'select' : 'vertices in (z > 0.4999999)',
+    'kind' : 'facet',
 }
 region_03 = {
     'name' : 'Left',
-    'select' : 'nodes in (x < -0.4999999)',
+    'select' : 'vertices in (x < -0.4999999)',
+    'kind' : 'facet',
 }
 
 ebc_1 = {

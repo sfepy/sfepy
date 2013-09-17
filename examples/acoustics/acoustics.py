@@ -32,9 +32,9 @@ materials = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Gamma_in' : ('nodes in (x < 0.01)', {}),
-    'Gamma_out' : ('nodes in (x > 0.99)', {}),
+    'Omega' : 'all',
+    'Gamma_in' : ('vertices in (x < 0.01)', 'facet'),
+    'Gamma_out' : ('vertices in (x > 0.99)', 'facet'),
 }
 
 fields = {

@@ -1,6 +1,8 @@
 import numpy as nm
 
-from sfepy.base.base import assert_, get_default, Struct
+from sfepy.base.base import get_default, Struct
+from sfepy.fem.facets import build_orientation_map
+from sfepy.fem.utils import prepare_remap
 
 class FESurface(Struct):
     """Description of a surface of a finite element domain."""
@@ -10,7 +12,7 @@ class FESurface(Struct):
         """nodes are sorted by node number -> same order as region.vertices"""
         self.name = get_default(name, 'surface_data_%s' % region.name)
 
-        face_indices = region.fis[ig]
+        face_indices = region.get_facet_indices(ig)
 
         faces = efaces[face_indices[:,1]]
         if faces.size == 0:
@@ -28,13 +30,9 @@ class FESurface(Struct):
         for ir, face in enumerate( faces ):
             econn[ir] = ee[ir,face]
 
-        ef = econn.flat
-        nodes = nm.unique(ef)
-
-        aux = -nm.ones((nm.max( ef ) + 1,), dtype=nm.int32)
-        aux[nodes] = nm.arange(len(nodes), dtype=nm.int32)
-        leconn = aux[econn].copy()
-        assert_(nm.alltrue(nodes[leconn] == econn))
+        nodes = nm.unique(econn)
+        remap = prepare_remap(nodes, nodes.max() + 1)
+        leconn = remap[econn].copy()
 
         n_fa, n_fp = face_indices.shape[0], faces.shape[1]
         face_type = 's%d' % n_fp
@@ -45,7 +43,7 @@ class FESurface(Struct):
 
         self.ig = ig
         self.econn = econn
-        self.fis = face_indices
+        self.fis = nm.ascontiguousarray(face_indices.astype(nm.int32))
         self.n_fa, self.n_fp = n_fa, n_fp
         self.nodes = nodes
         self.leconn = leconn
@@ -53,47 +51,45 @@ class FESurface(Struct):
         self.bkey = bkey
         self.meconn = self.mleconn = None
 
+        self.ori_map, _, _ = build_orientation_map(self.n_fp)
+
     def setup_mirror_connectivity(self, region):
         """
         Setup mirror surface connectivity required to integrate over a
         mirror region.
-        """
 
-        facets = region.domain.get_facets(force_faces=True)[1]
+        1. Get orientation of the faces:
+           a) for elements in group ig -> ooris (own)
+           b) for elements in group mig -> moris (mirror)
+
+        2. orientation -> permutation.
+        """
         mregion, ig_map, ig_map_i = region.get_mirror_region()
         mig = ig_map_i[self.ig]
 
-        grp_int = facets.group_interfaces
+        oo = self.ori_map
+        ori_map = nm.zeros((nm.max(oo.keys()) + 1, self.n_fp), dtype=nm.int32)
+        ori_map[oo.keys()] = nm.array([ii[1] for ii in oo.values()])
 
-        ofaces = region.get_surface_entities(self.ig)
-        mfaces = mregion.get_surface_entities(mig)
+        conn = region.domain.cmesh.get_conn_as_graph(region.dim, region.dim - 1)
+        oris = region.domain.cmesh.facet_oris
 
-        ooris = facets.oris[self.ig]
-        moris = facets.oris[mig]
+        ofis = region.get_facet_indices(self.ig, offset=False)
+        ooris = oris[conn.indptr[ofis[:, 0]] + ofis[:, 1]]
+        mfis = mregion.get_facet_indices(mig, offset=False)
+        moris = oris[conn.indptr[mfis[:, 0]] + mfis[:, 1]]
 
-        oori_maps = facets.ori_maps[self.ig]
-        mori_maps = facets.ori_maps[mig]
+        omap = ori_map[ooris]
+        mmap = ori_map[moris]
 
-        self.meconn = nm.zeros_like(self.econn)
-        self.mleconn = nm.zeros_like(self.leconn)
+        n_el, n_ep = self.econn.shape
+        ii = nm.repeat(nm.arange(n_el)[:, None], n_ep, 1)
+        self.meconn = nm.empty_like(self.econn)
+        self.meconn[ii, omap] = self.econn[ii, mmap]
 
-        for idx, ifc in enumerate(ofaces):
-            aux = nm.where(grp_int[:,0] == ifc)[0]
-            if len(aux) == 0:
-                aux = nm.where(grp_int[:,1] == ifc)[0]
-                mifc = grp_int[aux[0],0]
-
-            else:
-                mifc = grp_int[aux[0],1]
-
-            midx = nm.where(mfaces == mifc)[0][0]
-
-            ogslice = facets.indx[self.ig]
-            mgslice = facets.indx[mig]
-            omap = oori_maps[ooris[ifc - ogslice.start]][1]
-            mmap = mori_maps[moris[mifc - mgslice.start]][1]
-            self.meconn[idx,omap] = self.econn[midx,mmap]
-            self.mleconn[idx,omap] = self.leconn[midx,mmap]
+        nodes = nm.unique(self.meconn)
+        remap = prepare_remap(nodes, nodes.max() + 1)
+        self.mleconn = remap[self.meconn].copy()
 
     def get_connectivity(self, local=False, is_trace=False):
         """

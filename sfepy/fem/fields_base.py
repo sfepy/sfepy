@@ -579,12 +579,11 @@ class Field(Struct):
 
         return nods
 
-    def _get_facet_dofs(self, facets, get_facets, remap, dofs, ig):
-        ii = get_facets(ig)
-        g_uid = facets.uid_i[ii]
-        uid = remap[g_uid]
+    def _get_facet_dofs(self, get_facets, remap, dofs, ig):
+        gfacets = get_facets(ig)
+        facets = remap[gfacets]
 
-        return dofs[uid[uid >= 0]].ravel()
+        return dofs[facets[facets >= 0]].ravel()
 
     def get_dofs_in_region_group(self, region, ig, merge=True):
         """
@@ -603,23 +602,20 @@ class Field(Struct):
 
         edofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.edge is not None:
-            edofs = self._get_facet_dofs(self.domain.ed,
-                                         region.get_edges,
+            edofs = self._get_facet_dofs(region.get_edges,
                                          self.edge_remap,
                                          self.edge_dofs, ig)
         dofs.append(edofs)
 
         fdofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.face is not None:
-            fdofs = self._get_facet_dofs(self.domain.fa,
-                                         region.get_faces,
+            fdofs = self._get_facet_dofs(region.get_faces,
                                          self.face_remap,
                                          self.face_dofs, ig)
         dofs.append(fdofs)
 
         bdofs = nm.empty((0,), dtype=nm.int32)
-        if ((node_desc.bubble is not None)
-            and region.can_cells and region.true_cells[ig]):
+        if (node_desc.bubble is not None) and region.has_cells():
             ii = region.get_cells(ig)
             group_els = self.bubble_remaps[ig][ii]
             bdofs = self.bubble_dofs[ig][group_els[group_els >= 0]].ravel()
@@ -1078,7 +1074,8 @@ class VolumeField(Field):
         """
         Setup the field region geometry.
         """
-        self.gel = self.domain.groups[self.region.igs[0]].gel
+        ig = self.region.domain.cmesh.cell_groups[self.region.cells[0]]
+        self.gel = self.domain.groups[ig].gel
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -1115,9 +1112,9 @@ class VolumeField(Field):
 
         region = self.region
 
-        all_vertices = region.get_vertices_of_cells()
-        remap = prepare_remap(all_vertices, region.n_v_max)
-        n_dof = all_vertices.shape[0]
+        vertices = region.get_vertices_of_cells()
+        remap = prepare_remap(vertices, region.n_v_max)
+        n_dof = vertices.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
@@ -1140,7 +1137,6 @@ class VolumeField(Field):
 
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
-            # Calls reg.select_cells_of_surface(reset=False)...
             self.domain.create_surface_group(reg)
             self._setup_surface_data(reg, is_trace)
 
@@ -1288,8 +1284,6 @@ class SurfaceField(Field):
         ok : bool
             True if the region is usable for the field.
         """
-        region.setup_face_indices()
-
         ok = True
         for ig in region.igs:
             n_cell = region.get_n_cells(ig, True)
@@ -1333,7 +1327,6 @@ class SurfaceField(Field):
             raise ValueError(msg)
 
         reg = info.get_region()
-        reg.select_cells_of_surface(reset=False)
 
         for ig, ap in self.aps.iteritems():
             if ig not in reg.igs: continue
@@ -1366,8 +1359,8 @@ class SurfaceField(Field):
 
         region = self.region
 
-        remap = prepare_remap(region.all_vertices, region.n_v_max)
-        n_dof = region.all_vertices.shape[0]
+        remap = prepare_remap(region.vertices, region.n_v_max)
+        n_dof = region.vertices.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
@@ -1429,7 +1422,7 @@ class SurfaceField(Field):
                                                      data_qp.shape[0])
             raise ValueError(msg)
 
-        n_vertex = len(region.all_vertices)
+        n_vertex = len(region.vertices)
         nc = data_qp.shape[2]
 
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)

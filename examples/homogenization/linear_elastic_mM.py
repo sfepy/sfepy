@@ -39,7 +39,7 @@ def post_process( out, pb, state, extend = False ):
     return out
 
 def get_elements(coors, domain=None):
-    return {0 : nm.arange(50, domain.shape.n_el, 100)}
+    return nm.arange(50, domain.shape.n_el, 100)
 
 functions = {
     'get_elements' : (get_elements,),
@@ -51,10 +51,10 @@ functions = {
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < 0.001)', {}),
-    'Right' : ('nodes in (x > 0.099)', {}),
-    'Recovery' : ('elements by get_elements', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < 0.001)', 'facet'),
+    'Right' : ('vertices in (x > 0.099)', 'facet'),
+    'Recovery' : 'cells by get_elements',
 }
 
 materials = {

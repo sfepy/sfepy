@@ -20,13 +20,15 @@ variables = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < -0.499)', {}),
-    'LeftStrip' : ('nodes in (x < -0.499) & (y > -0.199) & (y < 0.199)', {}),
-    'LeftFix' : ('r.Left -n r.LeftStrip', {}),
-    'Right' : ('nodes in (x > 0.499)', {}),
-    'RightStrip' : ('nodes in (x > 0.499) & (y > -0.199) & (y < 0.199)', {}),
-    'RightFix' : ('r.Right -n r.RightStrip', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < -0.499)', 'facet'),
+    'LeftStrip' : ('vertices in (x < -0.499) & (y > -0.199) & (y < 0.199)',
+                   'facet'),
+    'LeftFix' : ('r.Left -v r.LeftStrip', 'facet'),
+    'Right' : ('vertices in (x > 0.499)', 'facet'),
+    'RightStrip' : ('vertices in (x > 0.499) & (y > -0.199) & (y < 0.199)',
+                    'facet'),
+    'RightFix' : ('r.Right -v r.RightStrip', 'facet'),
 }
 
 ebcs = {

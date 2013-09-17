@@ -38,9 +38,9 @@ variables = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
-    'Left' : ('nodes in (x < 0.001)', {}),
-    'Right' : ('nodes in (x > 0.099)', {}),
+    'Omega' : 'all',
+    'Left' : ('vertices in (x < 0.001)', 'facet'),
+    'Right' : ('vertices in (x > 0.099)', 'facet'),
 }
 
 ##

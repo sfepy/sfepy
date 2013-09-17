@@ -15,19 +15,23 @@ region_1000 = {
 }
 region_1 = {
     'name' : 'Left',
-    'select' : 'nodes in (x < -0.499)',
+    'select' : 'vertices in (x < -0.499)',
+    'kind' : 'facet',
 }
 region_2 = {
     'name' : 'Right',
-    'select' : 'nodes in (x > 0.499)',
+    'select' : 'vertices in (x > 0.499)',
+    'kind' : 'facet',
 }
 region_22 = {
     'name' : 'Bottom',
-    'select' : 'nodes in (y < -0.499)'
+    'select' : 'vertices in (y < -0.499)',
+    'kind' : 'facet',
 }
 region_23 = {
     'name' : 'Top',
-    'select' : 'nodes in (y > 0.499)'
+    'select' : 'vertices in (y > 0.499)',
+    'kind' : 'facet',
 }
 
 field_1 = {

@@ -171,10 +171,10 @@ The following block of code defines regions on your mesh:
 ::
 
     regions = {
-        'Omega' : ('all', {}),
-        'Left' : ('nodes in (x < 0.001)', {}),
-        'Bottom' : ('nodes in (y < 0.001)', {}),
-        'Top' : ('node 2', {}),
+        'Omega' : 'all',
+        'Left' : ('vertices in (x < 0.001)', 'facet'),
+        'Bottom' : ('vertices in (y < 0.001)', 'facet'),
+        'Top' : ('vertex 2', 'vertex'),
     }
 
 Four regions are defined:

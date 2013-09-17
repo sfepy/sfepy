@@ -15,19 +15,20 @@ def define_regions( filename ):
     regions = {}
     dim = 2
     
-    regions['Y'] = ('all', {})
+    regions['Y'] = 'all'
 
-    eog = 'elements of group %d'
+    eog = 'cells of group %d'
     if filename.find( 'osteonT1' ) >= 0:
         mat_ids = [11, 39, 6, 8, 27, 28, 9, 2, 4, 14, 12, 17, 45, 28, 15]
-        regions['Ym'] = (' +e '.join( (eog % im) for im in  mat_ids ), {})
+        regions['Ym'] = ' +c '.join( (eog % im) for im in  mat_ids )
         wx = 0.865
         wy = 0.499
 
-    regions['Yc'] = ('r.Y -e r.Ym', {})
+    regions['Yc'] = 'r.Y -c r.Ym'
 
     # Sides and corners.
     regions.update( define_box_regions( 2, (wx, wy) ) )
+
     return dim, regions, mat_ids
 
 def get_pars(ts, coor, mode=None, term=None, group_indx=None,

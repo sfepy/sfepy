@@ -92,7 +92,7 @@ materials = {
 }
 
 regions = {
-    'Omega' : ('all', {}),
+    'Omega' : 'all',
 }
 regions.update(define_box_regions(dim, bbox[0], bbox[1], 1e-5))
 

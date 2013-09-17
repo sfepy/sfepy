@@ -21,10 +21,10 @@ from sfepy.base.testing import TestCommon
 from sfepy.base.base import assert_
 
 rsels = {
-    '2_3' : 'nodes in (y > -0.1) & (y < 0.1)',
-    '2_4' : 'nodes in (y > 0.9) & (y < 1.1)',
-    '3_4' : 'nodes in (z > -0.1) & (z < 0.1)',
-    '3_8' : 'nodes in (z > 0.9) & (z < 1.1)',
+    '2_3' : 'vertices in (y > -0.1) & (y < 0.1)',
+    '2_4' : 'vertices in (y > 0.9) & (y < 1.1)',
+    '3_4' : 'vertices in (z > -0.1) & (z < 0.1)',
+    '3_8' : 'vertices in (z > 0.9) & (z < 1.1)',
 }
 
 eps = 1e-5
@@ -84,7 +84,7 @@ def _gen_common_data(orders, gels, report):
 
                 domain = Domain('domain', mesh)
                 omega = domain.create_region('Omega', 'all')
-                region = domain.create_region('Facet', rsels[geom])
+                region = domain.create_region('Facet', rsels[geom], 'facet')
                 field = Field.from_args('f', nm.float64, shape=1,
                                         region=omega, approx_order=order,
                                         poly_space_base=poly_space_base)
