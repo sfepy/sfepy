@@ -140,36 +140,23 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
     output('smoothing...')
     tt = time.clock()
 
-    domain = Domain('mesh', mesh)
-
-    n_nod = mesh.n_nod
-    edges = domain.ed
-
     if weights is None:
+        n_nod = mesh.n_nod
+        domain = Domain('mesh', mesh)
+        cmesh = domain.cmesh
+
         # initiate all vertices as inner - hierarchy = 2
         node_group = nm.ones((n_nod,), dtype=nm.int16) * 2
         # boundary vertices - set hierarchy = 4
         if bconstr:
-            # get "nodes of surface"
-            if domain.fa: # 3D.
-                fa = domain.fa
-            else:
-                fa = domain.ed
-
-            flag = fa.mark_surface_facets()
-            ii = nm.where( flag > 0 )[0]
-            aux = nm.unique(fa.facets[ii])
-            if aux[0] == -1: # Triangular faces have -1 as 4. point.
-                aux = aux[1:]
-
-            node_group[aux] = 4
+            # get "vertices of surface"
+            facets = cmesh.get_surface_facets()
+            f_verts = cmesh.get_incident(0, facets, cmesh.dim - 1)
+            node_group[f_verts] = 4
 
         # generate costs matrix
-        mtx_ed = edges.mtx.tocoo()
-        _, idxs = nm.unique(mtx_ed.row, return_index=True)
-        aux = edges.facets[mtx_ed.col[idxs]]
-        fc1 = aux[:,0]
-        fc2 = aux[:,1]
+        e_verts = cmesh.get_conn(1, 0).indices
+        fc1, fc2 = e_verts[0::2], e_verts[1::2]
         idxs = nm.where(node_group[fc2] >= node_group[fc1])
         rows1 = fc1[idxs]
         cols1 = fc2[idxs]
