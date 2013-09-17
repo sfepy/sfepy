@@ -20,13 +20,13 @@ from sfepy import data_dir
 filename_mesh = data_dir + '/meshes/2d/rectangle_fine_quad.mesh'
 
 regions = {
-    'Omega' : ('all', {}),
-    'Surface' : ('nodes of surface', {}),
-    'Right' : ('nodes in (x > 4.999)', {}),
-    'Bottom' : ('nodes in (y < -9.999)', {}),
-    'Top' : ('nodes in (y > 9.999)', {}),
-    'Walls' : ('r.Top +n r.Right +n r.Bottom', {}),
-    'Driven' : ('r.Surface -n r.Walls', {}),
+    'Omega' : 'all',
+    'Surface' : ('vertices of surface', 'facet'),
+    'Right' : ('vertices in (x > 4.999)', 'facet'),
+    'Bottom' : ('vertices in (y < -9.999)', 'facet'),
+    'Top' : ('vertices in (y > 9.999)', 'facet'),
+    'Walls' : ('r.Top +v r.Right +v r.Bottom', 'facet'),
+    'Driven' : ('r.Surface -v r.Walls', 'facet'),
 }
 
 materials = {
