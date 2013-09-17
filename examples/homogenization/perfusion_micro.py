@@ -286,12 +286,12 @@ for ch, val in pb_def['channels'].iteritems():
         if 'fix_nd_grp' in val and val['fix_nd_grp'][1] == aux:
             regions.update( {
                 'bY%s' % io : ('vertices of group %d +v r.fixedY%s' % (aux, ch),
-                               'facet', 'Y%s' % io),
+                               'facet', 'Y%s' % ch),
                 } )
         else:
             regions.update( {
                 'bY%s' % io : ('vertices of group %d' % aux,
-                               'facet', 'Y%s' % io),
+                               'facet', 'Y%s' % ch),
             } )
 
         aux_bY.append('r.bY%s' % io)
@@ -306,7 +306,7 @@ for ch, val in pb_def['channels'].iteritems():
         io = '%s_%d' % (ch, i_io + 1)
         ion = '%s_n%d' % (ch, i_io + 1)
         regions.update({
-            'bY%s' % ion: ('r.bY%s -v r.bY%s' % (ch, io), 'facet', 'Y%s' % ion),
+            'bY%s' % ion: ('r.bY%s -v r.bY%s' % (ch, io), 'facet', 'Y%s' % ch),
             })
 
         # boundary conditions
@@ -318,7 +318,6 @@ for ch, val in pb_def['channels'].iteritems():
     lcbcs.update({
         'imv' + ch: ('Y' + ch, {'ls%s.all' % ch: 'integral_mean_value'})
         })
-
 
 ###########################################################################
 # materials, fields, variables, integrals
