@@ -202,13 +202,6 @@ class Domain(Struct):
         Struct.__init__(self, name=name, mesh=mesh, geom_els=geom_els,
                         geom_interps=interps)
 
-        from sfepy.fem.geometry_element import create_geometry_elements
-        from sfepy.fem.extmods.cmesh import CMesh
-        self.cmesh = CMesh.from_mesh(mesh)
-        gels = create_geometry_elements()
-        self.cmesh.set_local_entities(gels)
-        self.cmesh.setup_entities()
-
         self.mat_ids_to_i_gs = {}
         for ig, mat_id in enumerate(mesh.mat_ids):
             self.mat_ids_to_i_gs[mat_id[0]] = ig
@@ -217,6 +210,13 @@ class Domain(Struct):
         self.fix_element_orientation()
         self.reset_regions()
         self.clear_surface_groups()
+
+        from sfepy.fem.geometry_element import create_geometry_elements
+        from sfepy.fem.extmods.cmesh import CMesh
+        self.cmesh = CMesh.from_mesh(mesh)
+        gels = create_geometry_elements()
+        self.cmesh.set_local_entities(gels)
+        self.cmesh.setup_entities()
 
     def setup_groups(self):
         n_nod, dim = self.mesh.coors.shape
