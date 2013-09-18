@@ -131,7 +131,8 @@ equations = {
 
 solvers = {
     'ls': ('ls.cm_pb',
-           {'others': ['examples/acoustics/vibro_acoustic3d_mid.py'],
+           {'others': [data_dir
+                       + '/examples/acoustics/vibro_acoustic3d_mid.py'],
             'coupling_variables': ['g0', 'w'],
             'needs_problem_instance': True,
             }),

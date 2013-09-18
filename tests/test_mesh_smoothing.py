@@ -38,8 +38,9 @@ class Test(TestCommon):
     def test_mesh_smoothing(self):
         from sfepy.mesh.mesh_tools import smooth_mesh
         from sfepy.fem.mesh import Mesh
+        from sfepy import data_dir
 
-        mesh = Mesh.from_file('meshes/3d/cylinder.vtk')
+        mesh = Mesh.from_file(data_dir + '/meshes/3d/cylinder.vtk')
         vol0 = get_volume(mesh.conns[0], mesh.coors)
         mesh.coors = smooth_mesh(mesh, n_iter=10)
         vol1 = get_volume(mesh.conns[0], mesh.coors)
