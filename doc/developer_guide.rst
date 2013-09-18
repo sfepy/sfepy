@@ -812,6 +812,7 @@ Utility scripts
    src/script/gen_mesh_prev
    src/script/gen_term_table
    src/script/plot_condition_numbers
+   src/script/plot_mesh
    src/script/save_basis
    src/script/show_authors
    src/script/sync_module_docs
@@ -885,7 +886,7 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/mesh
    src/sfepy/fem/meshio
    src/sfepy/fem/parseEq
-   src/sfepy/fem/parseReg
+   src/sfepy/fem/parse_regions
    src/sfepy/fem/periodic
    src/sfepy/fem/poly_spaces
    src/sfepy/fem/probes
@@ -998,6 +999,7 @@ sfepy.postprocess package
 
    src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/domain_specific
+   src/sfepy/postprocess/plot_cmesh
    src/sfepy/postprocess/plot_dofs
    src/sfepy/postprocess/plot_facets
    src/sfepy/postprocess/sources
