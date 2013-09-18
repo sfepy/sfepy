@@ -264,7 +264,7 @@ def generate_thumbnails(thumbnails_dir, images_dir, scale=0.3):
     output('generating thumbnails...')
     filenames = glob.glob(os.path.join(images_dir, '*.png'))
     for fig_filename in filenames:
-        ebase = fig_filename.replace(sfepy.data_dir, '')[1:]
+        ebase = fig_filename.replace(sfepy.data_dir, '').lstrip(os.path.sep)
         output('"%s"' % ebase)
 
         base = os.path.basename(fig_filename)
