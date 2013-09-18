@@ -2,34 +2,11 @@ import os.path as op
 
 from sfepy.base.testing import TestCommon
 
-def dets_fast(a):
-    import numpy as nm
-    from numpy.linalg import lapack_lite
-    from numpy.core import intc
-
-    m = a.shape[0]
-    n = a.shape[1]
-    lapack_routine = lapack_lite.dgetrf
-    pivots = nm.zeros((m, n), intc)
-    flags = nm.arange(1, n + 1).reshape(1, -1)
-    for i in xrange(m):
-        tmp = a[i]
-        lapack_routine(n, n, tmp, n, pivots[i], 0)
-
-    sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
-    idx = nm.arange(n)
-    d = a[:, idx, idx]
-    absd = nm.absolute(d)
-    sign *= nm.multiply.reduce(d / absd, axis=1)
-    nm.log(absd, absd)
-    logdet = nm.add.reduce(absd, axis=-1)
-
-    return sign * nm.exp(logdet)
-
 def get_volume(el, nd):
     from sfepy.mesh.mesh_tools import elems_q2t
     from sfepy.base.compat import factorial
     import numpy as nm
+    from sfepy.linalg.utils import dets_fast
 
     dim = nd.shape[1]
     nnd = el.shape[1]
@@ -48,9 +25,6 @@ def get_volume(el, nd):
     mtx[:,:,:-1] = nd[el,:]
     vols = mul * dets_fast(mtx.copy())
     vol = vols.sum()
-    bc = nm.dot(vols, mtx.sum(1)[:,:-1] / nnd)
-
-    bc /= vol
 
     return vol
 
