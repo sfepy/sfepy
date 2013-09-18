@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **29.05.2012** Version 2012.2 released (reimplement acoustic band gaps code
+  using the homogenization engine, high order quadrature rules, unify dot
+  product and mass terms, lots of other term updates/fixes, update the PDE
+  solver application, etc.), see :ref:`release notes <2012.1-2012.2>`.
+
 * **27.02.2012** Version 2012.1 released (initial version of linearizer of
   higher order solutions, rewrite variable and evaluate cache history handling,
   lots of term updates/fixes/simplifications, move web front page to sphinx

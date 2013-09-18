@@ -1,6 +1,12 @@
 News
 ====
 
+* **18.09.2013** Version 2013.3 released (implementation of Mesh topology data
+  structures in C, implementation of regions based on C Mesh, MultiProblem
+  solver for conjugate solution of subproblems, new advanced examples
+  (vibro-acoustics, Stokes flow with slip conditions), etc.), see :ref:`release
+  notes <2013.2-2013.3>`.
+
 * **22.05.2013** Version 2013.2 released (automatic testing of term calls (many
   terms fixed w.r.t. corner cases), new elastic contact plane term + example,
   translated low level base functions from Cython to C for reusability,
@@ -22,10 +28,5 @@ News
   parameters can be defined per region using region names, base function values
   can be defined per element, support for global options, etc.), see
   :ref:`release notes <2012.2-2012.3>`.
-
-* **29.05.2012** Version 2012.2 released (reimplement acoustic band gaps code
-  using the homogenization engine, high order quadrature rules, unify dot
-  product and mass terms, lots of other term updates/fixes, update the PDE
-  solver application, etc.), see :ref:`release notes <2012.1-2012.2>`.
 
 For historians: see :ref:`archived_news`.
