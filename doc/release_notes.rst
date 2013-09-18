@@ -1,5 +1,311 @@
 # created: 20.07.2007 (-1)
 
+.. _2013.2-2013.3:
+
+from 2013.2 to 2013.3
+=====================
+
+- new implementation of Mesh topology data structures in C:
+
+  - merge branch 'cmesh'
+  - rename mesh.pyx -> cmesh.pyx
+  - new C mesh data structures:
+
+    - new mesh.c, mesh.h
+    - new MeshGeometry, MeshConnectivity, MeshTopology, Mesh, Region, Indices
+    - mesh construction, printing
+    - new MeshEntity, MeshEntityIterator + related functions
+    - connectivity computation algorithms: mesh_transpose(), mesh_intersect(),
+      mesh_build(), face and edge orientations
+
+  - new CConnectivity, CMesh - cython wrappers of C mesh structures
+  - new functions for getting entities incident to given entity:
+    new Indices, me_get_incident(), me_get_incident2(), contains()
+  - new functions for setting up local entities:
+
+    - Mesh and CMesh: new .entities attribute, new LocalEntities struct
+
+  - support DEBUG_MESH flag in sfepy/fem/extmods/
+  - new debprintf(), use it in mesh connectivity setup functions
+  - new tests/test_cmesh.py - test_cmesh_counts()
+  - miscellaneous updates:
+
+    - clean up common_python.c, common.h, fix size_t format specifiers
+    - new mem_list_new(), mem_list_remove(), mem_check_ptr(), update
+      mem_alloc_mem(), mem_free_mem()
+    - new cmem_statistics() to access mem_statistics() from Python
+    - new mem_get_cur_usage(), mem_get_max_usage(), get_cmem_usage() C functions
+    - new get_cmem_usage()
+
+- new implementation of regions based on CMesh, CMesh improvements
+  (w.r.t. above):
+
+  - merge branch 'regions'
+  - Region (summary):
+
+    - new attributes: kind, true_kind, entities, can, can_vertices, can_edges,
+      can_faces, parent
+    - removed attributes: true_cells, all_vertices
+    - use CMesh
+    - vertices, edges, faces, facets and cells are properties pointing to
+      .entities attribute, automatically created when needed
+
+  - refactor Region, part 1
+
+    - use CMesh
+    - new Region.setup_from_highest(), .setup_from_vertices()
+    - vertices, edges, faces, facets and cells are properties pointing to
+      .entities attribute, automatically created when needed
+
+  - refactor Region, part 2 - update operators
+
+    - remove old operators
+    - new .eval_op_vertices(), .eval_op_edges(), .eval_op_faces(),
+      .eval_op_facets(), .eval_op_cells()
+    - simplify region_op()
+
+  - refactor Region, part 3 - update special constructors
+
+    - update .from_vertices(), update & rename .from_faces() -> .from_facets()
+
+  - refactor Region, part 4 - group compatibility functions
+
+    - new .igs property
+    - update .update_shape(), .get_vertices_of_cells(), .get_vertices(),
+      .get_edges(), .get_faces(), .get_surface_entities() -> .get_facets(),
+      .get_cells()
+    - remove .delete_zero_faces() body, .select_cells(),
+      .select_cells_of_surface(), .has_cells_if_can()
+    - update docstring
+
+  - refactor Region, part 5 - all_vertices -> vertices
+
+    - call region.update_shape() in Domain.create_region()
+    - remove Region.select_cells_of_surface(), .setup_face_indices() calls
+    - update FESurface.__init__()
+    - update VolumeField._setup_geometry()
+    - update Region.create_mapping(), .has_cells()
+
+  - Region (other details):
+
+    - new Region.__can, .__facet_kinds class attributes, add kind to
+      .__init__() arguments
+    - update Region.__init__() - new Region.set_kind()
+    - replace Region.setup_face_indices() with new Region.get_facet_indices()
+    - add group offset in Region.get_cells() by default
+    - update Region.setup_mirror_region() - use parent region information,
+      update term igs in Term.get_conn_info()
+    - new Region.get_entities()
+    - update Region: force creation of region entities to respect region kind
+
+      - new Region._access()
+
+    - warn about empty group indices in Region.igs()
+    - update Region.iter_cells(), .get_charfun()
+    - update Region.get_edge_graph()
+
+  - C mesh:
+
+    - new Mask struct
+    - new mesh_select_complete() C function, new CMesh.get_complete()
+    - new CMesh.get_surface_facets()
+    - new mei_init_sub() C function - connectivity subset iterator
+    - new CMesh.get_incident()- new mesh_count_incident(), mesh_get_incident()
+      C functions
+    - new CMesh.get_conn_as_graph()
+    - new CMesh.get_from_cell_group(), .get_igs() adapter functions
+
+      - for compatibility until new assembling is done
+      - new CMesh.cell_groups attribute, update CMesh.from_mesh()
+
+    - fix uninitialized memory error in mesh_build() - manifested on 32 bit
+      platforms
+    - update CMesh.get_incident() to optionally return offsets, update
+      mesh_get_incident()
+    - new mesh_get_local_ids() C function, CMesh.get_local_ids()
+    - new CMesh.get_cell_coors(), mesh_get_cell_coors() C function
+    - fix facet orientation computation in mesh_build()
+    - fix array sizes in CMesh.setup_entities()
+    - new CMesh.get_orientations()
+    - improve debprintf() messages
+    - new ind_print() C function
+    - fix mei_init_conn(), conn_alloc() for no incident entities
+    - check for zero length entities argument in CMesh - update
+      .get_incident(), .get_local_ids(), .get_complete(), .get_igs()
+    - fix facet orientation computation in mesh_build(), try 2: wrong last index
+    - fix return type of CMesh.get_surface_facets()
+
+  - Domain and Mesh:
+
+    - rename sfepy/fem/parseReg.py -> sfepy/fem/parse_regions.py
+    - update create_bnf() for new region selection operators
+    - update Domain.create_region(), region_leaf(), region_op()
+
+      - construct CMesh instance in Domain.__init__() - new Domain.cmesh
+        attribute
+
+    - remove old testing code in sfepy/fem/parse_regions.py
+    - rename nodes -> vertices, elements -> cells in region selectors - update
+      create_bnf(), region_leaf()
+    - update transform_regions() - replace flags with kind, allow string only,
+      update Domain.create_regions()
+    - new Domain.get_cell_coors() - use in 'cells by function' region selector
+    - remove Facets-related methods from Domain - remove .setup_facets(),
+      .get_facets(), .surface_faces()
+    - generalize mesh_get_cell_coors() -> mesh_get_centroids()
+
+      - generalize CMesh.get_cell_coors() -> .get_centroids(),
+        Domain.get_cell_coors() -> .get_centroids()
+
+    - update transform_regions() for parent field, update
+      Domain.create_region()
+    - set region kind and definition in Domain.create_region()
+    - call CMesh.setup_entities() in Domain.__init__()
+    - remove Facets and most of sfepy/fem/facets.py contents, rename & update
+      _build_orientation_map() -> build_orientation_map()
+    - simplify FESurface.__init__() - use prepare_remap()
+    - update FESurface.setup_mirror_connectivity() for CMesh, create .ori_map
+      in .__init__()
+    - new get_facet_dof_permutations(), permute_facets(),
+      get_dof_orientation_maps() - updated and recombined code from removed
+      Facets
+    - remove for loop in FESurface.setup_mirror_connectivity()
+    - update Domain.refine(), refine_2_3(), refine_2_4(), refine_3_4(),
+      refine_3_8()
+    - make FESurface.fis C-contiguous
+    - update Mesh.from_region(), ._append_region_faces()
+
+  - fields:
+
+    - update H1NodalMixin._setup_facet_orientations()
+    - update H1NodalMixin._setup_facet_dofs() - update ._setup_edge_dofs(),
+      ._setup_face_dofs()
+    - update Field._get_facet_dofs(), .get_dofs_in_region_group()
+    - update H1HierarchicVolumeField._setup_facet_dofs() - update
+      ._setup_edge_dofs(), ._setup_face_dofs()
+    - remove unused facet_oris argument of H1NodalMixin._setup_facet_dofs()
+
+  - terms:
+
+    - adapt data types in ConnInfo.iter_igs(), Term.get_assembling_cells()
+    - fix Term.get_physical_qps() for point integration
+    - update NewTerm.integrate()
+
+  - miscellaneous updates:
+
+    - update define_box_regions()
+    - update eval_in_els_and_qp()
+    - update ConstantFunctionByRegion.get_constants()
+    - new PhysicalQPs.__init__(), update get_physical_qps()
+    - fix edit_filename() to use prefix
+    - allow points and edges in MeditMeshIO, VTKMeshIO
+    - fix Viewer.save_image() for file names with path
+    - update smooth_mesh()
+
+  - examples and tests:
+
+    - update all examples and tests for new region syntax
+    - update tests/test_poly_spaces.py
+    - update tests/test_regions.py: add more selectors, number regions
+    - update test_install.py
+    - new examples/navier_stokes/stokes_slip_bc.py + test
+
+  - scripts:
+
+    - findSurf.py: update and clean up
+
+      - new _get_facets(), get_surface_faces()
+      - improve help message
+
+    - script/gen_gallery.py:
+
+      - fix figure paths in generate_images()
+      - add custom view for stokes_slip_bc.py example
+
+    - new script/plot_mesh.py - basic CMesh plotting
+
+      - new sfepy/postprocess/plot_cmesh.py: new plot_wireframe()
+      - new plot_entities(), label_global_entities(), label_local_entities()
+
+  - configuration:
+
+    - clean up sfepy/base/conf.py
+    - fix key in transform_regions()
+
+  - docs:
+
+    - update primer and tutorial
+    - update users guide
+
+- new MultiProblem solver: allows "conjugate" solution of subproblems
+
+  - merge branch 'subpb' - closes #226
+  - new example that uses MultiProblem solver:
+
+    - new examples/acoustics/vibro_acoustic3d.py,
+      examples/acoustics/vibro_acoustic3d_mid.py
+    - new mesh files meshes/2d/acoustic_wg_mid.vtk, meshes/3d/acoustic_wg.vtk
+
+  - new tests/test_input_vibro_acoustic3d.py
+
+- postprocessing and visualization:
+
+  - update Viewer.build_mlab_pipeline() to display data in only_names order
+  - new plot_points()
+
+- homogenization:
+
+  - update CoefNN, CoefN and CoefSym ("smart" set_variables_default); new
+    CoefExprPar
+  - fix CoefSym and CopyData coefficients
+
+- terms:
+
+  - fix SDLinearElasticTerm, new SDSufaceIntegrateTerm, remove
+    SDSufaceNormalDotTerm
+  - new dw_convect_v_grad_s (ConvectVGradSTerm, scalar gradient term with
+    convective velocity)
+  - update (adjoint) Navier-Stokes terms for 2D, update convect_build_vtg,
+    convect_build_vtbg() for 2D
+  - update LinearTractionTerm: material parameter is now optional (merge branch
+    'ltr_opt_mat' - closes #228)
+  - clean up: remove PermeabilityRTerm
+  - support 'qp' evaluation mode in HyperElasticBase - update .integrate(),
+    .get_fargs(), .get_eval_shape()
+
+- miscellaneous updates:
+
+  - update Mesh.localize() to remove vertices not used in any cell
+  - update Probe.probe() to report non-finite probe points
+  - fix ProblemDefinition.set_equations_instance() for keep_solvers=True
+  - check topological dimension of cells in VolumeField._check_region()
+  - update ensure_path() to raise error on failure
+  - update HypermeshAsciiMeshIO: use component id as material id
+  - fix tiled_mesh1d()
+  - new dets_fast()
+  - update Region.igs to return parent igs if parent exists
+
+    - update get_dependency_graph() to include parent region in dependencies
+    - raise proper error when dependency is missing
+
+- examples and tests:
+
+  - update poisson_functions.py example to use dw_convect_v_grad_s
+  - new examples/navier_stokes/navier_stokes2d.py + test
+  - update tests/test_poly_spaces.py for 2_3, 3_4 geometries, new 2_3_2z.mesh,
+    3_4_2z.mesh
+  - new tests/test_mesh_smoothing.py - mesh smoothing test
+  - clean up and update tests/test_parsing.py for new regions
+
+- scripts:
+
+  - new script/gen_mesh_prev.py: generates mesh previews in a given directory
+  - script/save_basis.py:
+
+    - make sure that output directory exists
+    - enable saving all geometry element permutations - new
+      save_basis_on_mesh()
+
 .. _2013.1-2013.2:
 
 from 2013.1 to 2013.2
