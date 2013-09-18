@@ -56,6 +56,41 @@ def normalize_vectors(vecs, eps=1e-8):
     ii = norms > eps
     vecs[ii] = vecs[ii] / norms[ii][:, None]
 
+def dets_fast(a):
+    """
+    Fast determinant calculation of 3-dimensional array.
+
+    Parameters
+    ----------
+    a : array
+        The input array with shape (m, n, n).
+
+    Returns
+    -------
+    out : array
+        The output array with shape (m,): out[i] = det(a[i, :, :]).
+    """
+    from numpy.linalg import lapack_lite
+    from numpy.core import intc
+
+    m = a.shape[0]
+    n = a.shape[1]
+    lapack_routine = lapack_lite.dgetrf
+    pivots = nm.zeros((m, n), intc)
+    flags = nm.arange(1, n + 1).reshape(1, -1)
+    for i in xrange(m):
+        tmp = a[i]
+        lapack_routine(n, n, tmp, n, pivots[i], 0)
+    sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
+    idx = nm.arange(n)
+    d = a[:, idx, idx]
+    absd = nm.absolute(d)
+    sign *= nm.multiply.reduce(d / absd, axis=1)
+    nm.log(absd, absd)
+    logdet = nm.add.reduce(absd, axis=-1)
+
+    return sign * nm.exp(logdet)
+
 def print_array_info(ar):
     """
     Print array shape and other basic information.
@@ -493,4 +528,3 @@ class MatrixAction( Struct ):
         else:
             print 'cannot make array from MatrixAction of kind %s!' % self.kind
             raise ValueError
-            
