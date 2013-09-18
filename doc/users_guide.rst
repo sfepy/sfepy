@@ -1181,7 +1181,7 @@ The weak formulation of :eq:`eq_laplace` is: Find :math:`T \in V`, such that
 where we assume no fluxes over :math:`\partial \Omega \setminus \Gamma`. In the
 syntax used in *SfePy* input files, this can be written as::
 
-    dw_mass_scalar.i1.Omega( s, dT/dt ) + dw_laplace.i1.Omega( coef, s, T) = 0
+    dw_volume_dot.i1.Omega( s, dT/dt ) + dw_laplace.i1.Omega( coef, s, T) = 0
 
 which directly corresponds to the discrete version of :eq:`eq_wlaplace`: Find
 :math:`\bm{T} \in V_h`, such that
