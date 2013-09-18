@@ -10,9 +10,11 @@ Things to check before a release
 
      $ ./script/sync_module_docs.py doc/src/ . -n
 
-#. regenerate gallery page::
+#. regenerate gallery page and examples::
 
     $ script/gen_gallery.py -l ../doc-devel
+    $ rm -rf doc/examples/
+    $ cp -a gallery/examples/ doc/
 
 #. create temporary/testing tarball::
 
