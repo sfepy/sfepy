@@ -140,7 +140,7 @@ def main():
 
     from sfepy.fem import MeshIO
     import sfepy.linalg as la
-    from sfepy.mechanics.contact_planes import (ContactPlane, plot_polygon,
+    from sfepy.mechanics.contact_bodies import (ContactPlane, plot_polygon,
                                                 plot_points)
 
     conf_dir = os.path.dirname(__file__)
