@@ -49,6 +49,54 @@ class ContactPlane(Struct):
 
         return dist
 
+class ContactSphere(Struct):
+
+    def __init__(self, centre, radius):
+        self.centre = nm.asarray(centre)
+        self.radius = radius
+
+    def mask_points(self, points, eps):
+        dist2 = la.norm_l2_along_axis(points - self.centre, squared=True)
+        radius2 = self.radius**2
+        mask = dist2 <= ((1 + eps)**2) * radius2
+        return mask
+
+    def get_distance(self, points):
+        """
+        Get the penetration distance and normals of points w.r.t. the sphere
+        surface.
+
+        Returns
+        -------
+        d : array
+            The penetration distance.
+        normals : array
+            The normals from the points to the sphere centre.
+        """
+        vecs = self.centre - points
+        dist = la.norm_l2_along_axis(vecs)
+        # Prevent zero division.
+        ii = dist > 1e-8
+        normals = nm.where(ii[:, None], vecs[ii] / dist[ii][:, None],
+                           vecs[ii])
+        return self.radius - dist, normals
+
+    def _get_derivatives(self, points):
+        vecs = self.centre - points
+        dist = la.norm_l2_along_axis(vecs)
+
+        # Distance derivative w.r.t. point coordinates.
+        dd = vecs / dist[:, None]
+
+        normals = dd
+        # Unit normal derivative w.r.t. point coordinates.
+        dim = points.shape[1]
+        ee = nm.eye(dim)[None, ...]
+        nnt = normals[..., None] * normals[..., None, :]
+        dn = - (ee - nnt) / dist[:, None, None]
+
+        return dd, dn
+
 def plot_polygon(ax, polygon):
     from sfepy.postprocess.plot_dofs import _get_axes
 
@@ -85,6 +133,7 @@ def plot_points(ax, points, marker, **kwargs):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
+    # Test and draw the plane.
     anchor = [1, 1, 1]
     normal = [2, -1, 1]
     bounds = [[-2, 0, 0],
@@ -115,5 +164,18 @@ if __name__ == '__main__':
     mask = dist >= 0.0
     ax = plot_points(ax, pps[mask], 'r^', mec='None')
     ax = plot_points(ax, pps[~mask], 'kv', mec='None')
+
+    # Test and draw the sphere.
+    pps = nm.random.rand(5000, 3)
+
+    centre = [0, 0.5, 0.5]
+    radius = 0.8
+    cs = ContactSphere(centre, radius)
+    mask = cs.mask_points(pps, 0.0)
+    dist = cs.get_distance(pps)
+
+    ax = plot_points(None, cs.centre[None, :], 'b*', ms=30)
+    ax = plot_points(ax, pps[mask], 'kv')
+    ax = plot_points(ax, pps[~mask], 'r.')
 
     plt.show()
