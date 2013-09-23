@@ -3,7 +3,7 @@ import numpy as nm
 from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
-from sfepy.mechanics.contact_bodies import ContactPlane
+from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
 
 ##
 # 22.08.2006, c
@@ -193,6 +193,147 @@ class ContactPlaneTerm(Term):
         force.shape = qps.shape[ig][:2] + (1, 1)
 
         return force, self.cp.normal, sg, fmode
+
+class ContactSphereTerm(ContactPlaneTerm):
+    r"""
+    Small deformation elastic contact sphere term with penetration penalty.
+
+    The sphere is given by a centre point :math:`\ul{C}` and a radius
+    :math:`R`. The contact occurs in points that are closer to :math:`\ul{C}`
+    than :math:`R`. In such points, a penetration distance :math:`d(\ul{u}) =
+    R - ||\ul{X} + \ul{u} - \ul{C}||` is computed, and a force
+    :math:`f(d(\ul{u})) \ul{n}(\ul{u})` is applied, where :math:`\ul{n}(\ul{u})
+    = (\ul{X} + \ul{u} - \ul{C}) / ||\ul{X} + \ul{u} - \ul{C}||`. The force
+    depends on the non-negative parameters :math:`k` (stiffness) and
+    :math:`f_0` (force at zero penetration):
+
+    - If :math:`f_0 = 0`:
+
+      .. math::
+
+         f(d) = 0 \mbox{ for } d \leq 0 \;, \\
+         f(d) = k d \mbox{ for } d > 0 \;.
+
+    - If :math:`f_0 > 0`:
+
+      .. math::
+
+         f(d) = 0 \mbox{ for } d \leq -\frac{2 r_0}{k} \;, \\
+         f(d) = \frac{k^2}{4 r_0} d^2 + k d + r_0
+         \mbox{ for } -\frac{2 r_0}{k} < d \leq 0 \;, \\
+         f(d) = k d + f_0 \mbox{ for } d > 0 \;.
+
+      In this case the dependence :math:`f(d)` is smooth, and a (small) force
+      is applied even for (small) negative penetrations: :math:`-\frac{2
+      r_0}{k} < d \leq 0`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot f(d(\ul{u})) \ul{n}(\ul{u})
+
+    :Arguments:
+        - material_f : :math:`[k, f_0]`
+        - material_c : :math:`\ul{C}` (special)
+        - material_r : :math:`R` (special)
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+    """
+    name = 'dw_contact_sphere'
+    arg_types = ('material_f', 'material_c', 'material_r', 'virtual', 'state')
+    arg_shapes = {'material_f' : '1, 2', 'material_c' : '.: D',
+                  'material_r' : '.: 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
+    integration = 'surface'
+
+    def __init__(self, *args, **kwargs):
+        Term.__init__(self, *args, **kwargs)
+
+        self.cs = None
+
+    @staticmethod
+    def function(out, force, normals, fd, geo, fmode):
+        bf = geo.bf[0]
+        nbf = bf * normals
+        nbf.shape = (normals.shape[0], normals.shape[1],
+                     bf.shape[2] * normals.shape[2])
+
+        if fmode == 0:
+            out_qp = force * nbf[..., None]
+
+        else:
+            nbf2 = nbf[..., None] * nbf[..., None, :]
+
+            dim = normals.shape[2]
+            n_ep = bf.shape[2]
+            bb = bf[:, 0]
+            vb = nm.zeros((bf.shape[0], dim, dim * n_ep))
+            for ii in range(dim):
+                vb[:, ii, ii*n_ep:(ii+1)*n_ep] = bb
+            ee = nm.eye(3)[None, ...]
+            eebf2 = dot_sequences(vb, dot_sequences(ee, vb), 'ATB')
+
+            out_qp = force * nbf2
+            if fd is not None:
+                out_qp -= fd * (eebf2[None, :, :, :] - nbf2)
+
+        status = geo.integrate(out, nm.ascontiguousarray(out_qp))
+
+        return status
+
+    def get_fargs(self, force_pars, centre, radius, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(virtual)
+
+        assert_((force_pars >= 0.0).all(),
+                'force parameters must be non-negative!')
+
+        if self.cs is None:
+            self.cs = ContactSphere(centre, radius)
+
+        ig = self.char_fun.ig
+        qps = self.get_physical_qps()
+        qp_coors = qps.values[ig]
+        u_qp = self.get(state, 'val').reshape(qp_coors.shape)
+
+        # Deformed QP coordinates.
+        coors = u_qp + qp_coors
+
+        force = nm.zeros(coors.shape[0], dtype=nm.float64)
+        normals = nm.zeros((coors.shape[0], 3), dtype=nm.float64)
+        fd = None
+
+        k, f0, eps, a = self._get_force_pars(force_pars, force.shape)
+
+        # Active points in contact change with displacements!
+        ii = self.cs.mask_points(coors, nm.abs(eps.min()))
+
+        if diff_var is None:
+            if ii.any():
+                d, normals[ii] = self.cs.get_distance(coors[ii])
+                force[ii] = self.smooth_f(d, k[ii], f0[ii], a[ii], eps[ii], 0)
+
+            fmode = 0
+
+        else:
+            if ii.any():
+                d, normals[ii] = self.cs.get_distance(coors[ii])
+                # Force derivative.
+                force[ii] = self.smooth_f(d, k[ii], f0[ii], a[ii], eps[ii], 1)
+
+                # Force / (R - d).
+                aux = self.smooth_f(d, k[ii], f0[ii], a[ii], eps[ii], 0)
+                fd = nm.zeros_like(force)
+                fd[ii] = aux / (self.cs.radius - d)
+                fd.shape = qps.shape[ig][:2] + (1, 1)
+
+            fmode = 1
+
+        force.shape = qps.shape[ig][:2] + (1, 1)
+        normals.shape = qps.shape[ig][:2] + (3, 1)
+
+        return force, normals, fd, sg, fmode
 
 class SufaceNormalDotTerm(Term):
     r"""
