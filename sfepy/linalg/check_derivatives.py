@@ -21,7 +21,7 @@ def check_fx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
 
     dfx_d = 0.5 * (f1 - f2) / delta
 
-    error = nm.linalg.norm(dfx_a - dfx_d)
+    error = nm.linalg.norm(dfx_a - dfx_d, nm.inf)
 
     print 'analytical:', dfx_a
     print 'difference:', dfx_d
