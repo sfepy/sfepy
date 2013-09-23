@@ -121,17 +121,17 @@ class ContactPlaneTerm(Term):
 
     @staticmethod
     def smooth_f(d, k, f0, a, eps, diff):
-        ii = nm.where((d > eps) & (d <= 0.0))
+        ii = nm.where((d > eps) & (d <= 0.0))[0]
 
         if not diff:
             out = nm.where(d > 0.0, k * d + f0, 0.0)
-            if ii:
+            if len(ii):
                 di = d[ii]
                 out[ii] = a[ii] * di**2 + k[ii] * di + f0[ii]
 
         else:
             out = nm.where(d > 0.0, k, 0.0)
-            if ii:
+            if len(ii):
                 out[ii] = 2 * a[ii] * d[ii] + k[ii]
 
         return out
