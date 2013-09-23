@@ -136,6 +136,19 @@ class ContactPlaneTerm(Term):
 
         return out
 
+    @staticmethod
+    def _get_force_pars(force_pars, shape):
+        k = force_pars[..., 0]
+        f0 = force_pars[..., 1]
+        k.shape = f0.shape = shape
+
+        ir = f0 >= 1e-14
+        eps = nm.where(ir, - 2.0 * f0 / k, 0.0)
+        a = nm.zeros_like(eps)
+        a[ir] = k[ir]**2 / (4.0 * f0[ir])
+
+        return k, f0, eps, a
+
     def get_fargs(self, force_pars, normal, anchor, bounds, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
@@ -156,17 +169,10 @@ class ContactPlaneTerm(Term):
 
         force = nm.zeros(coors.shape[0], dtype=nm.float64)
 
+        k, f0, eps, a = self._get_force_pars(force_pars, force.shape)
+
         # Active points in contact change with displacements!
-        ii = self.cp.mask_points(coors)
-
-        k = force_pars[..., 0]
-        f0 = force_pars[..., 1]
-        k.shape = f0.shape = force.shape
-
-        ir = f0 >= 1e-14
-        eps = nm.where(ir, - 2.0 * f0 / k, 0.0)
-        a = nm.zeros_like(eps)
-        a[ir] = k[ir]**2 / (4.0 * f0[ir])
+        ii = self.cp.mask_points(qp_coors)
 
         if diff_var is None:
             if ii.any():
