@@ -50,6 +50,23 @@ supported_capabilities = {
     'ansys_cdb' : ['r'],
 }
 
+supported_cell_types = {
+    'medit' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
+    'vtk' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
+    'tetgen' : ['tetra4'],
+    'comsol' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'hdf5' : ['user'],
+    'abaqus' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'avs_ucd' : ['tetra4', 'hexa8'],
+    'hmascii' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'mesh3d' : ['tetra4', 'hexa8'],
+    'nastran' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'gambit' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'med' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'ansys_cdb' : ['tetra4', 'hexa8'],
+    'function' : ['user'],
+}
+
 def output_writable_meshes():
     output('Supported writable mesh formats are:')
     for key, val in supported_capabilities.iteritems():

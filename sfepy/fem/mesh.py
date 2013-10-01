@@ -3,7 +3,7 @@ import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import Struct, get_default, output, assert_
-from meshio import MeshIO
+from meshio import MeshIO, supported_cell_types
 
 def make_point_cells(indx, dim):
     conn = nm.zeros((indx.shape[0], dim + 1), dtype=nm.int32)
@@ -418,7 +418,8 @@ class Mesh(Struct):
             else:
                 io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
 
-        output('reading mesh (%s)...' % (io.filename))
+        cell_types = ', '.join(supported_cell_types[io.format])
+        output('reading mesh [%s] (%s)...' % (cell_types, io.filename))
         tt = time.clock()
 
         trunk = io.get_filename_trunk()
