@@ -15,7 +15,8 @@ sys.path.append('.')
 from optparse import OptionParser
 from sfepy.base.base import nm, output
 from sfepy.fem import Mesh, Domain
-from sfepy.fem.meshio import output_writable_meshes, MeshIO
+from sfepy.fem.meshio import (output_writable_meshes, MeshIO,
+                              supported_cell_types)
 
 usage = '%prog [options] filename_in filename_out\n' + __doc__.rstrip()
 
@@ -109,7 +110,8 @@ def main():
     io = MeshIO.for_format(filename_out, format=options.format,
                            writable=True)
 
-    output('writing %s...' % filename_out)
+    cell_types = ', '.join(supported_cell_types[io.format])
+    output('writing [%s] %s...' % (cell_types, filename_out))
     mesh.write(filename_out, io=io)
     output('...done')
 

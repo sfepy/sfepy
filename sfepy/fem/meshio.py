@@ -50,6 +50,23 @@ supported_capabilities = {
     'ansys_cdb' : ['r'],
 }
 
+supported_cell_types = {
+    'medit' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
+    'vtk' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
+    'tetgen' : ['tetra4'],
+    'comsol' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'hdf5' : ['user'],
+    'abaqus' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'avs_ucd' : ['tetra4', 'hexa8'],
+    'hmascii' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'mesh3d' : ['tetra4', 'hexa8'],
+    'nastran' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'gambit' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'med' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
+    'ansys_cdb' : ['tetra4', 'hexa8'],
+    'function' : ['user'],
+}
+
 def output_writable_meshes():
     output('Supported writable mesh formats are:')
     for key, val in supported_capabilities.iteritems():
@@ -1879,6 +1896,10 @@ class HypermeshAsciiMeshIO(MeshIO):
         mat_tetras = []
         hexas = []
         mat_hexas = []
+        quads = []
+        mat_quads = []
+        trias = []
+        mat_trias = []
         mat_id = 0
 
         for line in fd:
@@ -1900,10 +1921,20 @@ class HypermeshAsciiMeshIO(MeshIO):
                     line = line.strip()[7:-1].split(',')
                     mat_hexas.append(mat_id)
                     hexas.append([int(ic) for ic in line[2:10]])
+
+                elif line[1:6] == 'quad4':
+                    line = line.strip()[7:-1].split(',')
+                    mat_quads.append(mat_id)
+                    quads.append([int(ic) for ic in line[2:6]])
+
+                elif line[1:6] == 'tria3':
+                    line = line.strip()[7:-1].split(',')
+                    mat_trias.append(mat_id)
+                    trias.append([int(ic) for ic in line[2:5]])
         fd.close()
 
         mesh = mesh_from_groups(mesh, ids, coors, None,
-                                [], [], [], [],
+                                trias, mat_trias, quads, mat_quads,
                                 tetras, mat_tetras, hexas, mat_hexas)
 
         return mesh
