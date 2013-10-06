@@ -1354,8 +1354,8 @@ def ordered_iteritems(adict):
 
 def dict_to_array(adict):
     """
-    Convert a dictionary of 1D arrays of the same lengths with
-    non-negative integer keys to a single 2D array.
+    Convert a dictionary of nD arrays of the same shapes with
+    non-negative integer keys to a single (n+1)D array.
     """
     keys = adict.keys()
     ik = nm.array(keys, dtype=nm.int32)
@@ -1365,7 +1365,7 @@ def dict_to_array(adict):
         return nm.zeros((0,), dtype=nm.int32)
 
     aux = adict[ik[0]]
-    out = nm.empty((ik.max() + 1, aux.shape[0]), dtype=aux.dtype)
+    out = nm.empty((ik.max() + 1,) + aux.shape, dtype=aux.dtype)
     out.fill(-1)
     for key, val in adict.iteritems():
         out[key] = val
