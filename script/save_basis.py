@@ -55,16 +55,17 @@ def get_dofs(dofs, n_total):
 
 def save_basis_on_mesh(mesh, options, output_dir, lin,
                        permutations=None, suffix=''):
-    domain = Domain('domain', mesh)
-
     if permutations is not None:
-        for group in domain.iter_groups():
-            perms = group.gel.get_conn_permutations()[permutations]
-            offsets = nm.arange(group.shape.n_el) * group.shape.n_ep
+        mesh = mesh.copy()
+        for ig, conn in enumerate(mesh.conns):
+            gel = GeometryElement(mesh.descs[ig])
+            perms = gel.get_conn_permutations()[permutations]
+            n_el, n_ep = conn.shape
+            offsets = nm.arange(n_el) * n_ep
 
-            group.conn[:] = group.conn.take(perms + offsets[:, None])
+            conn[:] = conn.take(perms + offsets[:, None])
 
-        domain.setup_facets()
+    domain = Domain('domain', mesh)
 
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('f', nm.float64, shape=1, region=omega,
@@ -89,7 +90,7 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
     vec = nm.empty(var.n_dof, dtype=var.dtype)
     n_digit, _format = get_print_info(var.n_dof, fill='0')
     name_template = os.path.join(output_dir,
-                                 'dof_%s_%s.vtk' % (_format, suffix))
+                                 'dof_%s%s.vtk' % (_format, suffix))
     for ip in get_dofs(options.dofs, var.n_dof):
         output('dof %d...' % ip)
 
@@ -237,12 +238,17 @@ def main():
             output('using connectivity permutations:\n', all_permutations)
 
         else:
-            permutations = [None]
+            all_permutations = [None]
 
         for ip, permutations in enumerate(all_permutations):
-            aux = mesh.copy()
-            save_basis_on_mesh(aux, options, output_dir, lin, permutations,
-                               '_'.join('%d' % ii for ii in permutations))
+            if permutations is None:
+                suffix = ''
+
+            else:
+                suffix = '_' + '_'.join('%d' % ii for ii in permutations)
+
+            save_basis_on_mesh(mesh, options, output_dir, lin, permutations,
+                               suffix)
 
 if __name__ == '__main__':
     main()

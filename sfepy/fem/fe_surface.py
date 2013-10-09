@@ -51,7 +51,11 @@ class FESurface(Struct):
         self.bkey = bkey
         self.meconn = self.mleconn = None
 
-        self.ori_map, _, _ = build_orientation_map(self.n_fp)
+        if self.n_fp <= 4:
+            self.ori_map, _, _ = build_orientation_map(self.n_fp)
+
+        else:
+            self.ori_map = None
 
     def setup_mirror_connectivity(self, region):
         """

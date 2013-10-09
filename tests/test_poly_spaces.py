@@ -126,7 +126,7 @@ class Test(TestCommon):
 
     def test_continuity(self):
         ok = True
-        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 3, '3_8' : 2}
+        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
 
         bads = []
         bad_families = set()
@@ -177,7 +177,7 @@ class Test(TestCommon):
         from sfepy.fem.mappings import VolumeMapping
 
         ok = True
-        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 3, '3_8' : 2}
+        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
 
         bads = []
         bad_families = set()
@@ -216,17 +216,17 @@ class Test(TestCommon):
                 cvals = nm.dot(cbfg, evec[ccell])[0]
 
                 okx = nm.allclose(rvals[:, 0], cvals[:, 0],
-                                  atol=1e-14, rtol=0.0)
+                                  atol=1e-12, rtol=0.0)
                 if gel.dim == 2:
                     oky = nm.allclose(rvals[:, 1], -cvals[:, 1],
-                                      atol=1e-14, rtol=0.0)
+                                      atol=1e-12, rtol=0.0)
                     _ok = okx and oky
 
                 else:
                     oky = nm.allclose(rvals[:, 1], cvals[:, 1],
-                                      atol=1e-14, rtol=0.0)
+                                      atol=1e-12, rtol=0.0)
                     okz = nm.allclose(rvals[:, 2], -cvals[:, 2],
-                                      atol=1e-14, rtol=0.0)
+                                      atol=1e-12, rtol=0.0)
                     _ok = okx and oky and okz
 
                 res[1, ii] = _ok
