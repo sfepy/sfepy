@@ -32,14 +32,20 @@ class H1NodalMixin(Struct):
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
             n_fp = self.gel.edges.shape[1]
+            nodes = edge_nodes[0][:, [0, 1]]
             self.edge_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             edge_nodes)
+                                                             nodes)
 
         face_nodes = self.node_desc.face_nodes
         if face_nodes is not None:
             n_fp = self.gel.faces.shape[1]
+            # Assume the same number of dofs for element all faces.
+            skey = [key for key in self.interp.poly_spaces.iterkeys()
+                    if key.startswith('s')][0]
+            nn = self.interp.poly_spaces[skey].describe_nodes()
+            nodes = nn.bubble_nodes
             self.face_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             face_nodes)
+                                                             nodes)
 
     def _setup_edge_dofs(self):
         """
