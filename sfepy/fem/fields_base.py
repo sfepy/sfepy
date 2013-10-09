@@ -1123,7 +1123,8 @@ class VolumeField(Field):
             offset = group.shape.n_ep
             cells = region.get_cells(ig)
             ap.econn[:,:offset] = nm.take(remap,
-                                          nm.take(group.conn, cells, axis=0))
+                                          nm.take(group.conn,
+                                                  nm.int32(cells), axis=0))
 
         return n_dof, remap
 
