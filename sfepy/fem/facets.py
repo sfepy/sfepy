@@ -75,7 +75,7 @@ def build_orientation_map(n_fp):
 
     return ori_map, cmps, powers
 
-def get_dof_orientation_maps(n_fp, raw_ori_maps, nodes):
+def get_dof_orientation_maps(n_fp, raw_ori_maps):
     """
     Given description of facet DOF nodes, return the corresponding
     integer coordinates and orientation maps.
@@ -121,7 +121,7 @@ def get_facet_dof_permutations(n_fp, igs, nodes):
     raw_ori_maps = {}
     for ig in igs:
         raw_ori_maps[ig] = ori_map
-    ori_maps = get_dof_orientation_maps(n_fp, raw_ori_maps, nodes)
+    ori_maps = get_dof_orientation_maps(n_fp, raw_ori_maps)
 
     inod = nm.arange(n_fp, dtype=nm.int32)
     int_coors = nodes[0][:, inod]
