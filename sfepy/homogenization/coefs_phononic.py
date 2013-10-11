@@ -812,13 +812,14 @@ class AcousticMassTensor(MiniAppBase):
         fmass = nm.zeros((n_c, n_c), dtype=nm.float64)
 
         num, denom = self.get_coefs(freq)
-        if not nm.isfinite(denom).all():
+        de = 1.0 / denom
+        if not nm.isfinite(de).all():
             raise ValueError('frequency %e too close to resonance!' % freq)
 
         for ir in range(n_c):
             for ic in range(n_c):
                 if ir <= ic:
-                    val = nm.sum((num / denom) * (ema[:, ir] * ema[:, ic]))
+                    val = nm.sum(num * de * (ema[:, ir] * ema[:, ic]))
                     fmass[ir, ic] += val
                 else:
                     fmass[ir, ic] = fmass[ic, ir]
@@ -851,7 +852,7 @@ class AcousticMassLiquidTensor(AcousticMassTensor):
         denom = aux*aux + f2*(self.eta*self.eta)*nm.power(eigs, 2.0)
         return num, denom
 
-class AppliedLoadTensor(MiniAppBase):
+class AppliedLoadTensor(AcousticMassTensor):
     """
     The applied load tensor for a given frequency.
 
@@ -883,16 +884,17 @@ class AppliedLoadTensor(MiniAppBase):
         n_c = ema.shape[1]
         fload = nm.zeros((n_c, n_c), dtype=nm.float64)
 
-        de = (freq**2) - (self.eigs)
+        num, denom = self.get_coefs(freq)
+        de = 1.0 / denom
         if not nm.isfinite(de).all():
             raise ValueError('frequency %e too close to resonance!' % freq)
 
         for ir in range(n_c):
             for ic in range(n_c):
-                val = nm.sum(ema[:, ir] * uema[:, ic] / de)
-                fload[ir, ic] += (freq**2) * val
+                val = nm.sum(num * de * (ema[:, ir] * uema[:, ic]))
+                fload[ir, ic] += val
 
-        eye = nm.eye((n_c, n_c), dtype=nm.float64)
+        eye = nm.eye(n_c, n_c, dtype=nm.float64)
 
         mtx_load = eye - (fload / self.dv_info.total_volume)
 
