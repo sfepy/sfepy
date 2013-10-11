@@ -1364,7 +1364,7 @@ def dict_to_array(adict):
     if ik.shape[0] == 0:
         return nm.zeros((0,), dtype=nm.int32)
 
-    aux = adict[ik[0]]
+    aux = nm.asarray(adict[ik[0]])
     out = nm.empty((ik.max() + 1,) + aux.shape, dtype=aux.dtype)
     out.fill(-1)
     for key, val in adict.iteritems():
