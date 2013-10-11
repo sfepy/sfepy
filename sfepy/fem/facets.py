@@ -1,11 +1,40 @@
 """
-Helper functions related to mesh facets.
+Helper functions related to mesh facets and Lagrange FE approximation.
+
+Line: ori - iter:
+
+0 - iter0
+1 - iter1
+
+Triangle: ori - iter:
+
+0 - iter21
+1 - iter12
+3 - iter02
+4 - iter20
+6 - iter10
+7 - iter01
+
+Possible couples:
+
+1, 4, 7 <-> 0, 3, 6
+
+Square: ori - iter:
+
+ 0 - iter10x01y
+ 7 - iter10y01x
+11 - iter01y01x
+30 - iter01x10y
+33 - iter10x10y
+52 - iter01y10x
+56 - iter10y10x
+63 - iter01x01y
+
+Possible couples:
+
+7, 33, 52, 63 <-> 0, 11, 30, 56
 """
 import numpy as nm
-
-from sfepy.base.base import dict_to_array, assert_
-from sfepy.base.compat import in1d
-from sfepy.linalg import permutations, map_permutations
 
 _quad_ori_groups = {
     0 : 0,
@@ -34,17 +63,6 @@ _quad_ori_groups = {
     63 : 63,
 }
 
-_quad_orientations = {
-    0  : [0, 1, 3, 2],
-    7  : [3, 2, 0, 1],
-    11 : [2, 3, 0, 1],
-    30 : [1, 0, 2, 3],
-    33 : [1, 0, 3, 2],
-    52 : [2, 3, 1, 0],
-    56 : [3, 2, 1, 0],
-    63 : [0, 1, 2, 3],
-}
-
 def build_orientation_map(n_fp):
     """
     The keys are binary masks of the lexicographical ordering of facet
@@ -54,6 +72,8 @@ def build_orientation_map(n_fp):
     used to sort facet vertices lexicographically. Hence `permuted_facet =
     facet[permutation]`.
     """
+    from sfepy.linalg import permutations
+
     indices = range(n_fp)
 
     cmps = [(i1, i2) for i2 in indices for i1 in indices[:i2]]
@@ -75,70 +95,196 @@ def build_orientation_map(n_fp):
 
     return ori_map, cmps, powers
 
-def get_dof_orientation_maps(n_fp, raw_ori_maps):
-    """
-    Given description of facet DOF nodes, return the corresponding
-    integer coordinates and orientation maps.
+def iter0(num):
+    for ir in xrange(num - 1, -1, -1):
+        yield ir
 
-    Notes
-    -----
-    Assumes single facet type in all groups.
-    """
-    if n_fp <= 3: # Simplex facet.
-        ori_maps = raw_ori_maps
+def iter1(num):
+    for ir in xrange(num):
+        yield ir
 
-    else: # Tensor product facet.
-        ori_maps = {}
-        for ig, ori_map in raw_ori_maps.iteritems():
-            ori_maps[ig] = {}
-            for key in ori_map.iterkeys():
-                new_key = _quad_ori_groups[key]
-                ori_maps[ig][key] = [None, _quad_orientations[new_key]]
+ori_line_to_iter = {
+    0 : iter0,
+    1 : iter1,
+}
 
-    return ori_maps
+def make_line_matrix(order):
+    if (order < 2):
+        return nm.zeros((0, 0), dtype=nm.int32)
 
-def permute_facets(facets, ori, ori_map):
-    """
-    Return a copy of `facets` array with vertices sorted lexicographically.
-    """
-    assert_((in1d(nm.unique(ori), ori_map.keys())).all())
+    oo = order - 1
+    mtx = nm.arange(oo, dtype=nm.int32)
 
-    permuted_facets = facets.copy()
+    return mtx
 
-    for key, ori_map in ori_map.iteritems():
-        perm = ori_map[1]
-        ip = nm.where(ori == key)[0]
-        for ic0, ic1 in enumerate(perm):
-            permuted_facets[ip,ic0] = facets[ip,ic1]
+def iter01(num):
+    for ir in xrange(num - 1, -1, -1):
+        for ic in xrange(ir + 1):
+            yield ir, ic
 
-    return permuted_facets
+def iter10(num):
+    for ir in xrange(num - 1, -1, -1):
+        for ic in xrange(ir, -1, -1):
+            yield ir, ic
 
-def get_facet_dof_permutations(n_fp, igs, nodes):
+def iter02(num):
+    for ic in xrange(num):
+        for ir in xrange(num - 1, ic - 1, -1):
+            yield ir, ic
+
+def iter20(num):
+    for ic in xrange(num):
+        for ir in xrange(ic, num):
+            yield ir, ic
+
+def iter12(num):
+    for idiag in xrange(num):
+        irs, ics = nm.diag_indices(num - idiag)
+        for ii in xrange(irs.shape[0] - 1, -1, -1):
+            yield irs[ii] + idiag, ics[ii]
+
+def iter21(num):
+    for idiag in xrange(num):
+        irs, ics = nm.diag_indices(num - idiag)
+        for ii in xrange(irs.shape[0]):
+            yield irs[ii] + idiag, ics[ii]
+
+ori_triangle_to_iter = {
+    0 : iter21,
+    1 : iter12,
+    3 : iter02,
+    4 : iter20,
+    6 : iter10,
+    7 : iter01,
+}
+
+def make_triangle_matrix(order):
+    if (order < 3):
+        return nm.zeros((0, 0), dtype=nm.int32)
+
+    oo = order - 2
+    mtx = nm.zeros((oo, oo), dtype=nm.int32)
+    for ii, (ir, ic) in enumerate(iter01(oo)):
+        mtx[ir, ic] = ii
+
+    return mtx
+
+def iter01x01y(num):
+    for ir in xrange(num):
+        for ic in xrange(num):
+            yield ir, ic
+
+def iter01y01x(num):
+    for ir, ic in iter01x01y(num):
+        yield ic, ir
+
+def iter10x01y(num):
+    for ir in xrange(num - 1, -1, -1):
+        for ic in xrange(num):
+            yield ir, ic
+
+def iter10y01x(num):
+    for ir, ic in iter10x01y(num):
+        yield ic, ir
+
+def iter01x10y(num):
+    for ir in xrange(num):
+        for ic in xrange(num - 1, -1, -1):
+            yield ir, ic
+
+def iter01y10x(num):
+    for ir, ic in iter01x10y(num):
+        yield ic, ir
+
+def iter10x10y(num):
+    for ir in xrange(num - 1, -1, -1):
+        for ic in xrange(num - 1, -1, -1):
+            yield ir, ic
+
+def iter10y10x(num):
+    for ir, ic in iter10x10y(num):
+        yield ic, ir
+
+ori_square_to_iter = {
+    0 : iter10x01y,
+    7 : iter10y01x,
+    11 : iter01y01x,
+    30 : iter01x10y,
+    33 : iter10x10y,
+    52 : iter01y10x,
+    56 : iter10y10x,
+    63 : iter01x01y,
+}
+
+def make_square_matrix(order):
+    if (order < 2):
+        return nm.zeros((0, 0), dtype=nm.int32)
+
+    oo = order - 1
+    mtx = nm.arange(oo * oo, dtype=nm.int32)
+    mtx.shape = (oo, oo)
+
+    return mtx
+
+def get_facet_dof_permutations(n_fp, igs, order):
     """
     Prepare DOF permutation vector for each possible facet orientation.
     """
-    ori_map, _, _ = build_orientation_map(n_fp)
-    raw_ori_maps = {}
-    for ig in igs:
-        raw_ori_maps[ig] = ori_map
-    ori_maps = get_dof_orientation_maps(n_fp, raw_ori_maps)
+    from sfepy.base.base import dict_to_array
 
-    int_coors = nodes
-    ori = nm.empty((int_coors.shape[0],), dtype=nm.int32)
+    if n_fp == 2:
+        mtx = make_line_matrix(order)
+        ori_map = ori_line_to_iter
+        fo = order - 1
+
+    elif n_fp == 3:
+        mtx = make_triangle_matrix(order)
+        ori_map = ori_triangle_to_iter
+        fo = order - 2
+
+    elif n_fp == 4:
+        mtx = make_square_matrix(order)
+        ori_map = {}
+        for key, val in _quad_ori_groups.iteritems():
+            ori_map[key] = ori_square_to_iter[val]
+        fo = order - 1
+
+    else:
+        raise ValueError('unsupported number of facet points! (%d)' % n_fp)
+
     dof_perms = {}
-    for ig, ori_map in ori_maps.iteritems():
+    for ig in igs:
         dof_perms[ig] = {}
-        for key in ori_map.iterkeys():
-            ori.fill(key)
-            permuted_int_coors = permute_facets(int_coors, ori, ori_map)
+        for key, itfun in ori_map.iteritems():
+            dof_perms[ig][key] = [mtx[ii] for ii in itfun(fo)]
 
-            perm = map_permutations(int_coors, permuted_int_coors,
-                                    check_same_items=True)
+        dof_perms[ig] = dict_to_array(dof_perms[ig])
 
-            dof_perms[ig][key] = perm
+    return dof_perms
 
-    adof_perms = {}
-    for ig, val in dof_perms.iteritems():
-        adof_perms[ig] = dict_to_array(val)
+if __name__ == '__main__':
+    order = 5
+    mtx = make_triangle_matrix(order)
+    print mtx
 
-    return adof_perms
+    oo = order - 2
+    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[0](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[1](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[3](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[4](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[6](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[7](oo)]
+
+    order = 4
+    mtx = make_square_matrix(order)
+    print mtx
+
+    oo = order - 1
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[0](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[7](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[11](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[30](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[33](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[52](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[56](oo)]
+    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[63](oo)]

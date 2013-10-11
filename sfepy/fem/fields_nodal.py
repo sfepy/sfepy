@@ -27,25 +27,20 @@ from sfepy.fem.extmods.bases import evaluate_in_rc
 class H1NodalMixin(Struct):
 
     def _setup_facet_orientations(self):
+        order = self.approx_order
         self.node_desc = self.interp.describe_nodes()
 
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
             n_fp = self.gel.edges.shape[1]
-            nodes = edge_nodes[0][:, [0, 1]]
             self.edge_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             nodes)
+                                                             order)
 
         face_nodes = self.node_desc.face_nodes
         if face_nodes is not None:
             n_fp = self.gel.faces.shape[1]
-            # Assume the same number of dofs for element all faces.
-            skey = [key for key in self.interp.poly_spaces.iterkeys()
-                    if key.startswith('s')][0]
-            nn = self.interp.poly_spaces[skey].describe_nodes()
-            nodes = nn.bubble_nodes
             self.face_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             nodes)
+                                                             order)
 
     def _setup_edge_dofs(self):
         """
