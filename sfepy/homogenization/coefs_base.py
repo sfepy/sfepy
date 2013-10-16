@@ -49,8 +49,22 @@ class MiniAppBase(Struct):
         """
 
     def init_solvers(self, problem):
-        """For linear problems, assemble the matrix and try to presolve the
-        linear system."""
+        """
+        Setup solvers. Use local options if these are defined,
+        otherwise use the global ones.
+
+        For linear problems, assemble the matrix and try to presolve the
+        linear system.
+        """
+
+        if hasattr(self, 'solvers'):
+            opts = self.solvers
+
+        else:
+            opts = problem.conf.options
+
+        problem.set_solvers(problem.conf.solvers, opts)
+
         if self.is_linear:
             output('linear problem, trying to presolve...')
             tt = time.clock()
