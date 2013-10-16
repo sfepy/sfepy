@@ -24,6 +24,11 @@ def print_terms():
     print 'Terms: %d available:' % len(tt)
     print sorted(tt.keys())
 
+def print_solvers():
+    from sfepy.solvers import solver_table
+    print 'Solvers: %d available:' % len(solver_table)
+    print sorted(solver_table.keys())
+
 usage = """%prog [options] filename_in\n""" + __doc__.rstrip()
 
 help = {
@@ -60,7 +65,7 @@ help = {
     'solve_not' :
     'do not solve (use in connection with --save-*)',
     'list' :
-    'list data, what can be one of: {terms}',
+    'list data, what can be one of: {terms, solvers}',
 }
 
 def main():
@@ -115,6 +120,10 @@ def main():
     else:
         if options._list == 'terms':
             print_terms()
+
+        elif options._list == 'solvers':
+            print_solvers()
+
         else:
             parser.print_help(),
         return
