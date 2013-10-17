@@ -73,7 +73,8 @@ cdef extern from 'mesh.h':
     cdef int32 conn_free(MeshConnectivity *conn)
     cdef int32 conn_print(MeshConnectivity *conn, FILE *file)
 
-    cdef int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
+    cdef int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim,
+                              int32 tdim)
 
     cdef int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
     cdef int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
@@ -149,7 +150,7 @@ cdef class CMesh:
     cdef readonly np.ndarray cell_groups # ig for each cell.
     cdef readonly list conns
     cdef readonly dict entities
-    cdef readonly int n_coor, dim, n_el
+    cdef readonly int n_coor, dim, n_el, tdim
     cdef readonly np.ndarray num # Numbers of topological entities.
     cdef readonly np.ndarray face_oris # Allocated in C.
     cdef readonly np.ndarray edge_oris # Allocated in C.
@@ -162,11 +163,17 @@ cdef class CMesh:
         """
         Fill data from a Python mesh.
         """
+        cdef uint32 tdim
         cdef np.ndarray[float64, mode='c', ndim=2] _coors
         cdef np.ndarray[uint32, mode='c', ndim=1] _cell_types
         cdef MeshConnectivity *pconn
 
         self = CMesh()
+
+        # Max. topological dimension of cells.
+        tdim = 0
+        for desc in mesh.descs:
+            tdim = max(tdim, int(desc[0]))
 
         # Geometry coordinates.
         self.n_coor, self.dim = mesh.coors.shape
@@ -174,11 +181,12 @@ cdef class CMesh:
             raise ValueError('CMesh geometry dimension must be 2 or 3! (%d)'
                              % self.dim)
         _coors = self.coors = mesh.coors.copy()
-        mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim)
+        mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim, tdim)
 
         # Cell-vertex (D -> 0) connectivity.
         self.n_el = mesh.n_el
-        self.mesh.topology.num[self.dim] = self.n_el
+        self.tdim = tdim
+        self.mesh.topology.num[self.tdim] = self.n_el
 
         _cell_types = self.cell_types = np.empty(self.n_el, dtype=np.uint32)
         self.mesh.topology.cell_types = &_cell_types[0]
@@ -186,7 +194,7 @@ cdef class CMesh:
         # Length of connectivity.
         n_incident = (mesh.n_e_ps * mesh.n_els).sum()
 
-        ii = self._get_conn_indx(self.dim, 0)
+        ii = self._get_conn_indx(self.tdim, 0)
         cconn = _create_cconn(self.mesh.topology.conn[ii],
                               self.n_el, n_incident, 'D -> 0')
 
@@ -300,7 +308,7 @@ cdef class CMesh:
                                                       np.NPY_UINT32,
                                                       <void *> ptr)
 
-        if self.dim == 3:
+        if self.tdim == 3:
             self.setup_connectivity(2, 0)
 
             ii = self._get_conn_indx(self.mesh.topology.max_dim, 2)
@@ -379,7 +387,7 @@ cdef class CMesh:
         return self.conns[ii]
 
     def get_cell_conn(self):
-        return self.get_conn(self.dim, 0)
+        return self.get_conn(self.tdim, 0)
 
     def get_conn_as_graph(self, d1, d2):
         """
@@ -402,8 +410,8 @@ cdef class CMesh:
         return graph
 
     def __str__(self):
-        return 'CMesh: n_coor: %d, dim %d, n_el %d' \
-               % (self.n_coor, self.dim, self.n_el)
+        return 'CMesh: n_coor: %d, dim %d, tdim: %d, n_el %d' \
+               % (self.n_coor, self.dim, self.tdim, self.n_el)
 
     def cprint(self, int32 header_only=1):
         mesh_print(self.mesh, stdout, header_only)
@@ -412,8 +420,8 @@ cdef class CMesh:
         """
         Get facets (edges in 2D, faces in 3D) on the mesh surface.
         """
-        self.setup_connectivity(self.dim - 1, self.dim)
-        conn = self.get_conn(self.dim - 1, self.dim)
+        self.setup_connectivity(self.tdim - 1, self.tdim)
+        conn = self.get_conn(self.tdim - 1, self.tdim)
 
         ii = np.where(np.diff(conn.offsets) == 1)[0]
 
@@ -537,7 +545,7 @@ cdef class CMesh:
         co-dimension can be specified using `codim` argument.
         """
         if codim is not None:
-            dim = self.dim - codim
+            dim = self.tdim - codim
 
         if dim == 1:
             return self.edge_oris
@@ -566,12 +574,12 @@ cdef class CMesh:
         if cells.shape[0] == 0:
             raise ValueError('group %d does not exist!' % ig)
 
-        if dim == self.dim:
+        if dim == self.tdim:
             candidates = cells
 
         else:
-            self.setup_connectivity(self.dim, dim)
-            candidates = self.get_incident(dim, cells, self.dim)
+            self.setup_connectivity(self.tdim, dim)
+            candidates = self.get_incident(dim, cells, self.tdim)
 
         if entities is not None:
             out = np.intersect1d(candidates, entities)
@@ -594,12 +602,12 @@ cdef class CMesh:
         if not entities.shape[0] > 0:
             return np.empty(0, dtype=np.uint32)
 
-        if dim == self.dim:
+        if dim == self.tdim:
             cells = entities
 
         else:
-            self.setup_connectivity(dim, self.dim)
-            cells = self.get_incident(self.dim, entities, dim)
+            self.setup_connectivity(dim, self.tdim)
+            cells = self.get_incident(self.tdim, entities, dim)
 
         igs = np.unique(self.cell_groups[cells])
 
