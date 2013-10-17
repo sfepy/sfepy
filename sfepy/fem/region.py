@@ -203,11 +203,13 @@ class Region(Struct):
         -----
         conns, vertex_groups are links to domain data.
         """
+        tdim = domain.cmesh.tdim
         Struct.__init__(self,
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
-                        entities=[None] * (domain.shape.dim + 1),
+                        tdim=tdim,
+                        entities=[None] * (tdim + 1),
                         kind=None, parent=parent, shape=None,
                         mirror_region=None, ig_map=None,
                         ig_map_i=None)
@@ -218,7 +220,7 @@ class Region(Struct):
 
         self.kind = kind
         if 'facet' in kind:
-            self.true_kind = self.__facet_kinds[self.dim][kind]
+            self.true_kind = self.__facet_kinds[self.tdim][kind]
 
         else:
             self.true_kind = kind
@@ -228,7 +230,7 @@ class Region(Struct):
         self.can_vertices = can[0]
         self.can_edges = can[1]
 
-        if self.dim == 2:
+        if self.tdim == 2:
             self.can = (can[0], can[1], can[3])
             self.can_cells = can[2]
 
@@ -281,7 +283,7 @@ class Region(Struct):
 
     @property
     def faces(self):
-        if self.dim == 2:
+        if self.tdim == 2:
             raise AttributeError('2D region has no faces!')
 
         if self.entities[2] is None:
@@ -304,7 +306,7 @@ class Region(Struct):
 
     @property
     def facets(self):
-        if self.dim == 3:
+        if self.tdim == 3:
             return self.faces
 
         else:
@@ -312,7 +314,7 @@ class Region(Struct):
 
     @facets.setter
     def facets(self, vals):
-        if self.dim == 3:
+        if self.tdim == 3:
             self.faces = vals
 
         else:
@@ -320,14 +322,14 @@ class Region(Struct):
 
     @property
     def cells(self):
-        if self.entities[self.dim] is None:
-            self.setup_from_vertices(self.dim)
-        return self.entities[self.dim]
+        if self.entities[self.tdim] is None:
+            self.setup_from_vertices(self.tdim)
+        return self.entities[self.tdim]
 
     @cells.setter
     def cells(self, vals):
         if self.can_cells:
-            self.entities[self.dim] = nm.asarray(vals, dtype=nm.uint32)
+            self.entities[self.tdim] = nm.asarray(vals, dtype=nm.uint32)
 
         else:
             raise ValueError('region "%s" cannot have cells!' % self.name)
@@ -340,7 +342,7 @@ class Region(Struct):
             self.edges
 
         elif dim == 2:
-            if self.dim == 3:
+            if self.tdim == 3:
                 self.faces
 
             else:
@@ -356,7 +358,7 @@ class Region(Struct):
         """
         if not self.can[dim]: return
 
-        for idim in range(self.dim, -1, -1):
+        for idim in range(self.tdim, -1, -1):
             if self.entities[idim] is not None:
                 if self.entities[idim].shape[0] > 0:
                     break
@@ -453,7 +455,7 @@ class Region(Struct):
                 self._igs = self.domain.cmesh.get_igs(self.faces, 2)
 
             elif 'cell' in self.true_kind:
-                self._igs = self.domain.cmesh.get_igs(self.cells, self.dim)
+                self._igs = self.domain.cmesh.get_igs(self.cells, self.tdim)
 
             if not len(self._igs):
                 output('warning: region %s of %s kind has empty group indices!'
@@ -472,8 +474,8 @@ class Region(Struct):
         for ig in self.igs:
             n_vertex = get(ig, 0, self.vertices).shape[0]
             n_edge = get(ig, 1, self.edges).shape[0]
-            n_cell = get(ig, self.dim, self.cells).shape[0]
-            if self.dim == 3:
+            n_cell = get(ig, self.tdim, self.cells).shape[0]
+            if self.tdim == 3:
                 n_face = get(ig, 2, self.faces).shape[0]
 
             else:
@@ -495,7 +497,7 @@ class Region(Struct):
         """
         Return all vertices, that are in some cell of the region.
         """
-        vertices = self.domain.cmesh.get_incident(0, self.cells, self.dim)
+        vertices = self.domain.cmesh.get_incident(0, self.cells, self.tdim)
 
         return nm.unique(vertices)
 
@@ -515,7 +517,7 @@ class Region(Struct):
         """
         Return either region edges (in 2D) or faces (in 3D) .
         """
-        if self.dim == 2:
+        if self.tdim == 2:
             return self.get_edges(ig)
 
         else:
@@ -543,15 +545,15 @@ class Region(Struct):
 
             else:
                 # Has to be consistent with get_facet_indices()!
-                cmesh.setup_connectivity(self.dim - 1, self.dim)
-                out = cmesh.get_incident(self.dim, self.facets, self.dim - 1)
+                cmesh.setup_connectivity(self.tdim - 1, self.tdim)
+                out = cmesh.get_incident(self.tdim, self.facets, self.tdim - 1)
 
                 igs = cmesh.cell_groups[out]
                 ic = nm.where(igs == ig)
                 out = out[ic]
 
         else:
-            out = cmesh.get_from_cell_group(ig, self.dim, self.cells)
+            out = cmesh.get_from_cell_group(ig, self.tdim, self.cells)
 
         if offset:
             out -= self.domain.mesh.el_offsets[ig]
@@ -570,9 +572,9 @@ class Region(Struct):
         """
         cmesh = self.domain.cmesh
         facets = self.get_facets(ig)
-        cells, offs = cmesh.get_incident(self.dim, facets, self.dim - 1,
+        cells, offs = cmesh.get_incident(self.tdim, facets, self.tdim - 1,
                                          ret_offsets=True)
-        ii = cmesh.get_local_ids(facets, self.dim - 1, cells, offs, self.dim)
+        ii = cmesh.get_local_ids(facets, self.tdim - 1, cells, offs, self.tdim)
         fis = nm.c_[cells, ii]
 
         if force_ig:
