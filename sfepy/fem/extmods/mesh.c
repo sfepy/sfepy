@@ -297,7 +297,8 @@ inline int32 conn_set_to_free(MeshConnectivity *conn, uint32 ii,
   }
 }
 
-int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
+int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim,
+                     int32 tdim)
 {
   MeshGeometry *geometry = mesh->geometry;
 
@@ -305,7 +306,7 @@ int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim)
   geometry->num = num;
   geometry->dim = dim;
 
-  mesh->topology->max_dim = dim;
+  mesh->topology->max_dim = tdim;
   mesh->topology->num[0] = num;
 
   return(RET_OK);

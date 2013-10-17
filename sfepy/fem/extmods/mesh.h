@@ -142,7 +142,8 @@ int32 conn_print(MeshConnectivity *conn, FILE *file);
 int32 conn_set_from(MeshConnectivity *conn, MeshConnectivity *other);
 int32 conn_set_to_free(MeshConnectivity *conn, uint32 ii, uint32 incident);
 
-int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim);
+int32 mesh_set_coors(Mesh *mesh, float64 *coors, int32 num, int32 dim,
+                     int32 tdim);
 
 int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2);
 int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2);
