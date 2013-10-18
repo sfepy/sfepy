@@ -39,7 +39,7 @@ class H1HierarchicVolumeField(VolumeField):
         if self.node_desc.face is None:
             return 0, None, None
 
-        return self._setup_facet_dofs(self.domain.shape.dim - 1,
+        return self._setup_facet_dofs(self.domain.shape.tdim - 1,
                                       self.node_desc.face,
                                       self.region.get_faces,
                                       self.n_vertex_dof + self.n_edge_dof)
@@ -61,7 +61,7 @@ class H1HierarchicVolumeField(VolumeField):
         # Prepare global facet id remapping to field-local numbering.
         remap = prepare_remap(facets, cmesh.num[dim])
 
-        cconn = self.region.domain.cmesh.get_conn(self.region.dim, dim)
+        cconn = self.region.domain.cmesh.get_conn(self.region.tdim, dim)
         offs = cconn.offsets
 
         n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]

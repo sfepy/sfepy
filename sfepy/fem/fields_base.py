@@ -1057,9 +1057,9 @@ class VolumeField(Field):
         ok = True
         domain = region.domain
         for ig in region.igs:
-            if domain.groups[ig].gel.dim != domain.shape.dim:
-                output('cells with a bad topological dimension! (%d)'
-                       % domain.groups[ig].gel.dim)
+            if domain.groups[ig].gel.dim != domain.shape.tdim:
+                output('cells with a bad topological dimension! (%d == %d)'
+                       % (domain.groups[ig].gel.dim, domain.shape.tdim))
                 ok = False
                 break
             shape = domain.groups[ig].shape
