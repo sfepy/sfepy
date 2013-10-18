@@ -6,7 +6,7 @@ import sys
 sys.path.append('.')
 
 from sfepy.base.base import IndexedStruct
-from sfepy.fem import (Mesh, Domain, H1NodalVolumeField, FieldVariable,
+from sfepy.fem import (Mesh, Domain, Field, FieldVariable,
                        Material, Integral, Function, Equation, Equations,
                        ProblemDefinition)
 from sfepy.terms import Term
@@ -50,8 +50,7 @@ def main():
                                   'vertices in x > %.10f' % (max_x - eps),
                                   'facet')
 
-    field = H1NodalVolumeField('fu', nm.float64, 'vector', omega,
-                               approx_order=2)
+    field = Field.from_args('fu', nm.float64, 'vector', omega, approx_order=2)
 
     u = FieldVariable('u', 'unknown', field, mesh.dim)
     v = FieldVariable('v', 'test', field, mesh.dim, primary_var_name='u')
