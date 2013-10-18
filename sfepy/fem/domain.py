@@ -218,6 +218,8 @@ class Domain(Struct):
         self.cmesh.set_local_entities(gels)
         self.cmesh.setup_entities()
 
+        self.shape.tdim = self.cmesh.tdim
+
     def setup_groups(self):
         n_nod, dim = self.mesh.coors.shape
         self.shape = Struct(n_gr=len(self.mesh.conns), n_el=0,

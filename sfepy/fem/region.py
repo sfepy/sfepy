@@ -203,7 +203,7 @@ class Region(Struct):
         -----
         conns, vertex_groups are links to domain data.
         """
-        tdim = domain.cmesh.tdim
+        tdim = domain.shape.tdim
         Struct.__init__(self,
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
