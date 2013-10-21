@@ -83,6 +83,9 @@ class MiniAppBase(Struct):
 
             output('...done in %.2f s' % (time.clock() - tt))
 
+        else:
+            problem.set_linear(False)
+
     def _get_volume(self, volume):
         if isinstance(volume, dict):
             return volume[self.set_volume]
