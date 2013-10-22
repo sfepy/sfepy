@@ -350,6 +350,32 @@ class Approximation( Struct ):
 
             out = vg
 
+        elif gtype == 'plate':
+            import sfepy.mechanics.membranes as mm
+            from sfepy.linalg import dot_sequences
+
+            qp = self.get_qp('v', integral)
+            iels = region.get_cells(self.ig)
+
+            ps = self.interp.poly_spaces['v']
+            bf = self.get_base('v', 0, integral, iels=iels)
+
+            conn = nm.take(group.conn, nm.int32(iels), axis=0)
+            ccoors = coors[conn]
+
+            # Coordinate transformation matrix (transposed!).
+            mtx_t = mm.create_transformation_matrix(ccoors)
+
+            # Transform coordinates to the local coordinate system.
+            coors_loc = dot_sequences((ccoors - ccoors[:, 0:1, :]), mtx_t)
+
+            # Mapping from transformed elements to reference elements.
+            mapping = mm.create_mapping(coors_loc, field.gel, 1)
+            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                     ori=self.ori)
+            vg.mtx_t = mtx_t
+            out = vg
+
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
             assert_(field.approx_order > 0)
 
