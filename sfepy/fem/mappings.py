@@ -50,22 +50,23 @@ class PhysicalQPs(Struct):
 
         return shape
 
-def get_physical_qps(region, integral):
+def get_physical_qps(region, integral, map_kind=None):
     """
     Get physical quadrature points corresponding to the given region
     and integral.
     """
     phys_qps = PhysicalQPs(region.igs)
 
+    map_kind = get_default(map_kind, integral.kind[0])
+
     ii = 0
     for ig in region.igs:
-        gmap = region.create_mapping(integral.kind[0], ig)
+        gmap = region.create_mapping(map_kind, ig)
 
         gel = gmap.get_geometry()
         qp_coors, _ = integral.get_qp(gel.name)
 
         qps = gmap.get_physical_qps(qp_coors)
-
         n_el, n_qp = qps.shape[0], qps.shape[1]
 
         phys_qps.n_per_group[ig] = n_per_group = n_el * n_qp
