@@ -988,7 +988,8 @@ class Term(Struct):
             if self.integration == 'volume':
                 kind = 'v'
 
-            elif 'surface' in self.integration:
+            elif (('surface' in self.integration)
+                  or (self.integration == 'plate')):
                 kind = 's'
 
             elif self.integration == 'point':

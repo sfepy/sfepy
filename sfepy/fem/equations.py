@@ -307,7 +307,7 @@ class Equations( Container ):
             is_surface = rvar.is_surface or cvar.is_surface
 
             dct = info.dc_type.type
-            if not (dct in ('volume', 'scalar') or is_surface
+            if not (dct in ('volume', 'scalar', 'plate') or is_surface
                     or info.is_trace or any_dof_conn):
                 continue
 
