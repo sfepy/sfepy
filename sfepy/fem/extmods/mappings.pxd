@@ -79,3 +79,4 @@ cdef class CMapping:
     cdef public object integral
     cdef public object qp
     cdef public object ps
+    cdef public object mtx_t
