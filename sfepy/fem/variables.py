@@ -1399,7 +1399,7 @@ class FieldVariable(Variable):
             The element group index.
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'surface', 'surface_extra' or 'point'
+        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
             The term integration type.
         region_name : str
             The name of surface region, required when `shape_kind` is
@@ -1429,7 +1429,7 @@ class FieldVariable(Variable):
                 n_en = ap.get_v_data_shape(integral)[-1]
                 data_shape = data_shape[:-1] + (n_en,)
 
-        elif integration == 'volume':
+        elif integration in ('volume', 'plate'):
             data_shape = ap.get_v_data_shape(integral)
 
             # Override ap.region with the required region.
@@ -1684,7 +1684,7 @@ class FieldVariable(Variable):
             The integral defining quadrature points in which the
             evaluation occurs. If None, the first order volume integral
             is created. Must not be None for surface integrations.
-        integration : one of 'volume', 'surface', 'surface_extra'
+        integration : one of 'volume', 'plate', 'surface', 'surface_extra'
             The term integration type. If None, it is derived from
             `integral`.
         step : int, default 0
@@ -1723,7 +1723,7 @@ class FieldVariable(Variable):
             assert_(field.region.contains(region))
 
         if integral is None:
-            if integration in ('surface', 'surface_extra'):
+            if integration in ('plate', 'surface', 'surface_extra'):
                 msg = 'integral must be given for surface integration!'
                 raise ValueError(msg)
 
