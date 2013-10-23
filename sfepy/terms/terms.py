@@ -66,7 +66,7 @@ def get_shape_kind(integration):
     if integration == 'surface':
         shape_kind = 'surface'
 
-    elif integration in ('volume', 'surface_extra'):
+    elif integration in ('volume', 'plate', 'surface_extra'):
         shape_kind = 'volume'
 
     elif integration == 'point':
@@ -1082,7 +1082,7 @@ class Term(Struct):
             igs = self.igs()
 
         for ig in igs:
-            if self.integration == 'volume':
+            if self.integration in ('volume', 'plate'):
                 if not len(self.region.get_cells(ig)): continue
             self.set_current_group(ig)
             yield ig
