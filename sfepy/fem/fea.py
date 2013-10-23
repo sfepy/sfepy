@@ -215,21 +215,24 @@ class Approximation( Struct ):
         ----------
         region : Region instance
             The region, used to index surface and volume connectivities.
-        integration : one of ('volume', 'surface', 'surface_extra')
+        integration : one of ('volume', 'plate', 'surface', 'surface_extra')
             The term integration type.
         """
         if integration == 'surface':
             sd = self.surface_data[region.name]
             conn = sd.get_connectivity(self.is_surface, is_trace=is_trace)
 
-        elif integration in ('volume', 'surface_extra'):
+        elif integration in ('volume', 'plate', 'surface_extra'):
             if region.name == self.region.name:
                 conn = self.econn
 
             else:
-                aux = integration == 'volume'
+                aux = integration in ('volume', 'plate')
                 cells = region.get_cells(self.ig, true_cells_only=aux)
                 conn = nm.take(self.econn, nm.int32(cells), axis=0)
+
+        else:
+            raise ValueError('unsupported term integration! (%s)' % integration)
 
         return conn
 
