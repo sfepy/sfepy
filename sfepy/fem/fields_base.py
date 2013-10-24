@@ -538,7 +538,9 @@ class Field(Struct):
         # Mesh vertex nodes.
         if self.n_vertex_dof:
             indx = self.vertex_remap_i
-            self.coors[:self.n_vertex_dof] = nm.take(coors, indx, axis=0)
+            self.coors[:self.n_vertex_dof] = nm.take(coors,
+                                                     indx.astype(nm.int32),
+                                                     axis=0)
 
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, coors)
@@ -1124,7 +1126,8 @@ class VolumeField(Field):
             cells = region.get_cells(ig)
             ap.econn[:,:offset] = nm.take(remap,
                                           nm.take(group.conn,
-                                                  nm.int32(cells), axis=0))
+                                                  cells.astype(nm.int32),
+                                                  axis=0))
 
         return n_dof, remap
 
