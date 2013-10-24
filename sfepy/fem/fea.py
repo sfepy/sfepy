@@ -229,7 +229,7 @@ class Approximation( Struct ):
             else:
                 aux = integration == 'volume'
                 cells = region.get_cells(self.ig, true_cells_only=aux)
-                conn = nm.take(self.econn, nm.int32(cells), axis=0)
+                conn = nm.take(self.econn, cells.astype(nm.int32), axis=0)
 
         return conn
 
@@ -343,7 +343,7 @@ class Approximation( Struct ):
             ps = self.interp.poly_spaces['v']
             bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(group.conn, nm.int32(iels), axis=0)
+            conn = nm.take(group.conn, iels.astype(nm.int32), axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
                                      ori=self.ori)
