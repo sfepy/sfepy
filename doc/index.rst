@@ -33,8 +33,6 @@
            - http://sfepy.org/doc
          * - Automatically generated gallery
            - http://sfepy.org/gallery/gallery
-         * - Wiki pages, etc.
-           - http://code.google.com/p/sfepy
          * - Mailing list (both user and developer)
            - http://groups.google.com/group/sfepy-devel
          * - Github organization
