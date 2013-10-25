@@ -28,12 +28,12 @@
       .. list-table::
 
          * - Development version documentation
-           - :ref:`here <documentation>`
+           - http://sfepy.org/doc-devel
          * - Latest release version documentation
            - http://sfepy.org/doc
          * - Automatically generated gallery
-           - http://docs.sfepy.org/gallery/gallery
-         * - Downloads, wiki pages, etc.
+           - http://sfepy.org/gallery/gallery
+         * - Wiki pages, etc.
            - http://code.google.com/p/sfepy
          * - Mailing list (both user and developer)
            - http://groups.google.com/group/sfepy-devel
