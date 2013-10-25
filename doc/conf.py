@@ -166,6 +166,8 @@ html_additional_pages = {}
 # If false, no module index is generated.
 #html_use_modindex = True
 
+html_domain_indices = ["py-modindex"]
+
 # If false, no index is generated.
 #html_use_index = True
 
