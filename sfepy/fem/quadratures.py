@@ -145,6 +145,8 @@ class QuadraturePoints(Struct):
                 order = get_actual_order(geometry, order)
                 qp = table[order]
 
+            qp.order = order
+
         else:
             order1d = order
             dim = int(geometry[0])
@@ -153,6 +155,7 @@ class QuadraturePoints(Struct):
             if order <= max_orders[geometry]:
                 order = get_actual_order(geometry, order)
                 qp = table[order]
+                qp.order = order
 
             else:
                 oo = get_actual_order('1_2', order1d)
@@ -177,6 +180,7 @@ class QuadraturePoints(Struct):
                 weights = weights.ravel()
 
                 qp = QuadraturePoints(None, coors=coors, weights=weights)
+                qp.order = oo
 
         return qp
 
