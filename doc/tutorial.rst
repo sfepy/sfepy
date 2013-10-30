@@ -29,6 +29,8 @@ fluid dynamics and other. FEM is based on a very elegant mathematical theory of
 weak solution of PDEs. In this section we will briefly discuss basic ideas
 underlying FEM.
 
+.. _poisson-weak-form-tutorial:
+
 Strong form of Poisson's equation and its integration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -344,6 +346,7 @@ Postprocessing the results
 
 * The right mouse button controls the zoom
 
+.. _poisson-example-tutorial:
 
 Example problem description file
 --------------------------------
