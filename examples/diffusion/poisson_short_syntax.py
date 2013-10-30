@@ -1,7 +1,7 @@
 r"""
-Laplace equation.
+Laplace equation using the short syntax of keywords.
 
-The same example as poisson.py, but using the short syntax of keywords.
+See :ref:`diffusion-poisson` for the long syntax version.
 
 Find :math:`t` such that:
 
