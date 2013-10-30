@@ -1,5 +1,6 @@
 r"""
-Stationary Laplace equation.
+Laplace equation with a field-dependent material parameter.
+
 Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 
 .. math::
