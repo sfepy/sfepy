@@ -276,13 +276,13 @@ class SurfaceTerm(VolumeTerm):
 
 class VolumeSurfaceTerm(Term):
     r"""
-    Volume of a domain, using a surface integral. Uses approximation of the
-    parameter variable.
+    Volume of a :math:`D`-dimensional domain, using a surface integral. Uses
+    approximation of the parameter variable.
 
     :Definition:
 
     .. math::
-        \int_\Gamma \ul{x} \cdot \ul{n}
+        1 / D \int_\Gamma \ul{x} \cdot \ul{n}
 
     :Arguments:
         - parameter : any variable
