@@ -117,28 +117,21 @@ class ProblemDefinition(Struct):
             if equations is None:
                 raise ValueError('missing equations in auto_conf mode!')
 
-            self.equations = equations
-
             if fields is None:
-                variables = self.equations.variables
+                variables = equations.variables
                 fields = {}
                 for field in [var.get_field() for var in variables]:
                     fields[field.name] = field
 
-            self.fields = fields
-
             if domain is None:
-                domain = self.fields.values()[0].domain
-
-            self.domain = domain
+                domain = fields.values()[0].domain
 
             if conf is None:
                 self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
 
-        else:
-            self.domain = domain
-            self.fields = fields
-            self.equations = equations
+        self.equations = equations
+        self.fields = fields
+        self.domain = domain
 
         if auto_solvers:
             if ls is None:
