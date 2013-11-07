@@ -111,20 +111,11 @@ class TLMembraneTerm(Term):
                       fmode):
         crt = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, fmode)
 
-        n_ep = bfg.shape[3]
-
         if fmode == 0:
             bts = dot_sequences(mtx_b, crt, 'ATB')
 
             status = geo.integrate(out, bts * h0)
-
-            # Transform to global coordinate system, one node at
-            # a time.
-            for iep in range(n_ep):
-                ir = slice(iep, None, n_ep)
-                fn = out[:, 0, ir, 0]
-                fn[:] = dot_sequences(mtx_t, fn, 'AB')
-
+            membranes.transform_asm_vectors(out, mtx_t)
 
         else:
             btd = dot_sequences(mtx_b, crt, 'ATB')
@@ -137,16 +128,7 @@ class TLMembraneTerm(Term):
             mtx_k = kts + btdb
 
             status = geo.integrate(out, mtx_k * h0)
-
-            # Transform to global coordinate system, one node at
-            # a time.
-            dot = dot_sequences
-            for iepr in range(n_ep):
-                ir = slice(iepr, None, n_ep)
-                for iepc in range(n_ep):
-                    ic = slice(iepc, None, n_ep)
-                    fn = out[:, 0, ir, ic]
-                    fn[:] = dot(dot(mtx_t, fn, 'AB'), mtx_t, 'ABT')
+            membranes.transform_asm_matrices(out, mtx_t)
 
         return status
 

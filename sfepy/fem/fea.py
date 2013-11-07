@@ -215,21 +215,24 @@ class Approximation( Struct ):
         ----------
         region : Region instance
             The region, used to index surface and volume connectivities.
-        integration : one of ('volume', 'surface', 'surface_extra')
+        integration : one of ('volume', 'plate', 'surface', 'surface_extra')
             The term integration type.
         """
         if integration == 'surface':
             sd = self.surface_data[region.name]
             conn = sd.get_connectivity(self.is_surface, is_trace=is_trace)
 
-        elif integration in ('volume', 'surface_extra'):
+        elif integration in ('volume', 'plate', 'surface_extra'):
             if region.name == self.region.name:
                 conn = self.econn
 
             else:
-                aux = integration == 'volume'
+                aux = integration in ('volume', 'plate')
                 cells = region.get_cells(self.ig, true_cells_only=aux)
                 conn = nm.take(self.econn, cells.astype(nm.int32), axis=0)
+
+        else:
+            raise ValueError('unsupported term integration! (%s)' % integration)
 
         return conn
 
@@ -348,6 +351,32 @@ class Approximation( Struct ):
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
                                      ori=self.ori)
 
+            out = vg
+
+        elif gtype == 'plate':
+            import sfepy.mechanics.membranes as mm
+            from sfepy.linalg import dot_sequences
+
+            qp = self.get_qp('v', integral)
+            iels = region.get_cells(self.ig)
+
+            ps = self.interp.poly_spaces['v']
+            bf = self.get_base('v', 0, integral, iels=iels)
+
+            conn = nm.take(group.conn, nm.int32(iels), axis=0)
+            ccoors = coors[conn]
+
+            # Coordinate transformation matrix (transposed!).
+            mtx_t = mm.create_transformation_matrix(ccoors)
+
+            # Transform coordinates to the local coordinate system.
+            coors_loc = dot_sequences((ccoors - ccoors[:, 0:1, :]), mtx_t)
+
+            # Mapping from transformed elements to reference elements.
+            mapping = mm.create_mapping(coors_loc, field.gel, 1)
+            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                     ori=self.ori)
+            vg.mtx_t = mtx_t
             out = vg
 
         elif (gtype == 'surface') or (gtype == 'surface_extra'):

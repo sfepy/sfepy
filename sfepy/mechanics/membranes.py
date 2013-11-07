@@ -48,6 +48,46 @@ def create_transformation_matrix(coors):
 
     return mtx_t
 
+def transform_asm_vectors(out, mtx_t):
+    """
+    Transform vector assembling contributions to global coordinate system, one
+    node at a time.
+
+    Parameters
+    ----------
+    out : array
+        The array of vectors, transformed in-place.
+    mtx_t : array
+        The transposed transformation matrix :math:`T`, see
+        :func:`create_transformation_matrix`.
+    """
+    n_ep = out.shape[-1] / mtx_t.shape[-1]
+    for iep in range(n_ep):
+        ir = slice(iep, None, n_ep)
+        fn = out[:, 0, ir, 0]
+        fn[:] = dot_sequences(mtx_t, fn, 'AB')
+
+def transform_asm_matrices(out, mtx_t):
+    """
+    Transform matrix assembling contributions to global coordinate system, one
+    node at a time.
+
+    Parameters
+    ----------
+    out : array
+        The array of matrices, transformed in-place.
+    mtx_t : array
+        The transposed transformation matrix :math:`T`, see
+        :func:`create_transformation_matrix`.
+    """
+    n_ep = out.shape[-1] / mtx_t.shape[-1]
+    for iepr in range(n_ep):
+        ir = slice(iepr, None, n_ep)
+        for iepc in range(n_ep):
+            ic = slice(iepc, None, n_ep)
+            fn = out[:, 0, ir, ic]
+            fn[:] = dot_sequences(dot_sequences(mtx_t, fn, 'AB'), mtx_t, 'ABT')
+
 def create_mapping(coors, gel, order):
     """
     Create mapping from transformed (in `x-y` plane) element faces to

@@ -66,7 +66,7 @@ def get_shape_kind(integration):
     if integration == 'surface':
         shape_kind = 'surface'
 
-    elif integration in ('volume', 'surface_extra'):
+    elif integration in ('volume', 'plate', 'surface_extra'):
         shape_kind = 'volume'
 
     elif integration == 'point':
@@ -988,7 +988,8 @@ class Term(Struct):
             if self.integration == 'volume':
                 kind = 'v'
 
-            elif 'surface' in self.integration:
+            elif (('surface' in self.integration)
+                  or (self.integration == 'plate')):
                 kind = 's'
 
             elif self.integration == 'point':
@@ -1081,7 +1082,7 @@ class Term(Struct):
             igs = self.igs()
 
         for ig in igs:
-            if self.integration == 'volume':
+            if self.integration in ('volume', 'plate'):
                 if not len(self.region.get_cells(ig)): continue
             self.set_current_group(ig)
             yield ig
@@ -1181,6 +1182,10 @@ class Term(Struct):
 
         if self.integration == 'point':
             phys_qps = PhysicalQPs(self.region.igs)
+
+        elif self.integration == 'plate':
+            phys_qps = get_physical_qps(self.region, self.integral,
+                                        map_kind='v')
 
         else:
             phys_qps = get_physical_qps(self.region, self.integral)

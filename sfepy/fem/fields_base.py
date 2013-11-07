@@ -1150,7 +1150,7 @@ class VolumeField(Field):
         elif dct == 'point':
             self._setup_point_data(self, info.region)
 
-        elif dct not in ('volume', 'scalar'):
+        elif dct not in ('volume', 'scalar', 'plate'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def _setup_surface_data(self, region, is_trace=False):
@@ -1194,7 +1194,7 @@ class VolumeField(Field):
                     can_point = False
                 continue
 
-            if dct == 'volume':
+            if dct in ('volume', 'plate'):
                 dc = create_dof_conn(ap.econn, dpn)
                 self.dof_conns[key] = dc
 
