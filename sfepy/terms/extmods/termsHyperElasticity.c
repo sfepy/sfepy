@@ -66,7 +66,9 @@ int32 form_tlcc_strainGreen_VS( FMField *strain, FMField *mtxF )
     }
     for (ik = 0; ik < dim; ik++) {
       pstrain[ik] -= 1.0;
-      pstrain[ik] *= 0.5;
+    }
+    for (ii = 0; ii < sym; ii++) {
+      pstrain[ii] *= 0.5;
     }
   }
 
