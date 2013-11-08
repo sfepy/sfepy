@@ -1723,14 +1723,10 @@ class FieldVariable(Variable):
             assert_(field.region.contains(region))
 
         if integral is None:
-            if integration in ('plate', 'surface', 'surface_extra'):
-                msg = 'integral must be given for surface integration!'
-                raise ValueError(msg)
-
-            integral = Integral('aux_1', 'v', 1)
+            integral = Integral('aux_1', 1)
 
         if integration is None:
-            integration = {'v' : 'volume', 's' : 'surface'}[integral.kind]
+            integration = 'volume' if region.can_cells else 'surface'
 
         geo, _, key = field.get_mapping(ig, region, integral, integration,
                                         return_key=True)

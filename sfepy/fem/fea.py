@@ -336,7 +336,7 @@ class Approximation( Struct ):
         if gtype == 'volume':
             if integral is None:
                 from sfepy.fem import Integral
-                integral = Integral('i_tmp', 'v', 1)
+                integral = Integral('i_tmp', 1)
 
             qp = self.get_qp('v', integral)
 

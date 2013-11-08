@@ -57,7 +57,8 @@ def get_physical_qps(region, integral, map_kind=None):
     """
     phys_qps = PhysicalQPs(region.igs)
 
-    map_kind = get_default(map_kind, integral.kind[0])
+    if map_kind is None:
+        map_kind = 'v' if region.can_cells else 's'
 
     ii = 0
     for ig in region.igs:

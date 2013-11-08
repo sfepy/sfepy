@@ -61,7 +61,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     # Unit normals -> weights = ones.
     qp_weights = nm.ones(qp_coors.shape[0], dtype=nm.float64)
 
-    integral = Integral('aux', kind='s', coors=qp_coors, weights=qp_weights)
+    integral = Integral('aux', coors=qp_coors, weights=qp_weights)
 
     normals = nm.zeros((nodes.shape[0], dim), dtype=nm.float64)
     mask = nm.zeros((nodes.max() + 1,), dtype=nm.int32)

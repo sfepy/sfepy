@@ -1020,7 +1020,7 @@ class Field(Struct):
         else:
             region_name = region.name
 
-        key = (integral.get_key(), region_name, ig, integration)
+        key = (integral.name, region_name, ig, integration)
 
         # out is (geo, mapping) tuple.
         if get_saved:
