@@ -420,7 +420,7 @@ class Term(Struct):
             integrals = Integrals()
 
         obj = constructor(desc.name, desc.args, None, region)
-        obj.set_integral(integrals.get(desc.integral, obj.get_integral_info()))
+        obj.set_integral(integrals.get(desc.integral))
         obj.sign = desc.sign
 
         return obj
@@ -483,12 +483,6 @@ class Term(Struct):
         self.integral = integral
         if self.integral is not None:
             self.integral_name = self.integral.name
-
-            kind = self.get_integral_info()
-            if kind != integral.kind:
-                msg = "integral kind for term %s must be '%s'! (is '%s')" \
-                      % (self.name, kind, integral.kind)
-                raise ValueError(msg)
 
     def setup(self):
         self.char_fun = CharacteristicFunction(self.region)
@@ -974,35 +968,6 @@ class Term(Struct):
             name = join.join(name)
 
         return name
-
-    def get_integral_info(self):
-        """
-        Get information on the term integral.
-
-        Returns
-        -------
-        kind : 'v' or 's'
-            The integral kind.
-        """
-        if self.integration:
-            if self.integration == 'volume':
-                kind = 'v'
-
-            elif (('surface' in self.integration)
-                  or (self.integration == 'plate')):
-                kind = 's'
-
-            elif self.integration == 'point':
-                kind = None
-
-            else:
-                raise ValueError('unsupported term integration! (%s)'
-                                 % self.integration)
-
-        else:
-            kind = None
-
-        return kind
 
     def setup_integration(self):
         self.has_geometry = True

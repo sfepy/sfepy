@@ -3,23 +3,7 @@ import numpy as nm
 from sfepy.base.base import assert_
 from sfepy.terms.terms import Term
 
-class PointTermBase(Term):
-    """
-    Common methods of point terms.
-    """
-
-    def get_integral_info(self):
-        """
-        Get information on the term integral.
-
-        Returns
-        -------
-        kind : 'v' or 's'
-            The integral kind.
-        """
-        return 'v'
-
-class LinearPointSpringTerm(PointTermBase):
+class LinearPointSpringTerm(Term):
     r"""
     Linear springs constraining movement of FE nodes in a region; to use as a
     relaxed Dirichlet boundary conditions.
@@ -60,7 +44,7 @@ class LinearPointSpringTerm(PointTermBase):
 
         return stiffness, vec, diff_var
 
-class ConcentratedPointLoadTerm(PointTermBase):
+class ConcentratedPointLoadTerm(Term):
     r"""
     Concentrated point load term.
 
