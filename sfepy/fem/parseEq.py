@@ -59,8 +59,8 @@ def create_bnf(term_descs):
         
     ident = Word( alphas, alphanums + "_")
 
-    integral = Combine((Literal('i') + Word(alphanums)) | Literal('a')
-                       | Word(nums))("integral")
+    integral = Combine((Literal('i') + Word(alphanums)) | Literal('i')
+                       | Literal('a') | Word(nums))("integral")
 
     history = Optional('[' + inumber + ']', default='')("history")
 
