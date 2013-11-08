@@ -15,13 +15,11 @@ class Integrals(Container):
         for desc in conf.itervalues():
             if hasattr(desc, 'vals'):
                 aux = Integral(desc.name,
-                               kind=desc.kind,
                                coors=desc.vals,
                                weights=desc.weights)
 
             else:
                 aux = Integral(desc.name,
-                               kind=desc.kind,
                                order=desc.order)
 
             objs.append(aux)
@@ -29,7 +27,7 @@ class Integrals(Container):
         obj = Integrals(objs)
         return obj
 
-    def get(self, name, kind='v'):
+    def get(self, name):
         """
         Return existing or new integral.
 
@@ -58,13 +56,13 @@ class Integrals(Container):
             except:
                 raise ValueError('unsupported integral reference! (%s)' % name)
 
-            name = '__%s_o%d' % (kind, order)
+            name = '__o%d' % order
             if self.has_key(name):
                 obj = self[name]
 
             else:
                 # Create new integral, and add it to self.
-                obj = Integral(name, kind, order=order)
+                obj = Integral(name, order=order)
 
                 self.append(obj)
 
@@ -76,9 +74,8 @@ class Integral(Struct):
     Wrapper class around quadratures.
     """
 
-    def __init__(self, name, kind='v', order=1, coors=None, weights=None):
+    def __init__(self, name, order=1, coors=None, weights=None):
         self.name = name
-        self.kind = kind
         self.qps = {}
 
         if coors is None:
@@ -96,14 +93,6 @@ class Integral(Struct):
 
         else:
             self.order = int(order)
-
-    def get_key(self):
-        """
-        Get the key string corresponding to the integral kind and order,
-        that can be used to distinguish various cached data evaluated
-        using the integral.
-        """
-        return '__%s_o%d' % (self.kind, self.order)
 
     def get_qp(self, geometry):
         """
