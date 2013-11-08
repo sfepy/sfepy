@@ -660,14 +660,12 @@ integration orders can be specified directly in equations, see below.
 
         integral_<number> = {
             'name' : <name>,
-            'kind' : <kind>,
             'order' : <order>,
         }
 
   where
 
     * <name> - the integral name - it has to begin with 'i'!
-    * <kind> - volume 'v' or surface 's' integral
     * <order> - the order of polynomials to integrate, or 'custom' for
       integrals with explicitly given values and weights
 
@@ -675,7 +673,6 @@ integration orders can be specified directly in equations, see below.
 
         integral_1 = {
             'name' : 'i1',
-            'kind' : 'v',
             'order' : 2,
         }
 
@@ -683,7 +680,6 @@ integration orders can be specified directly in equations, see below.
         N = 2
         integral_2 = {
             'name' : 'i2',
-            'kind' : 'v',
             'order' : 'custom',
             'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
                             nm.linspace( 1e-10, 0.5, N )),
@@ -693,7 +689,7 @@ integration orders can be specified directly in equations, see below.
 * Short syntax::
 
         integrals = {
-            <name> : (<kind>, <order>)
+            <name> : <order>
         }
 
   * Example, short syntax::
@@ -701,9 +697,9 @@ integration orders can be specified directly in equations, see below.
         import numpy as nm
         N = 2
         integrals = {
-            'i1' : ('v', 2),
-            'i2' : ('v', 'custom', zip(nm.linspace( 1e-10, 0.5, N ),
-                                       nm.linspace( 1e-10, 0.5, N )),
+            'i1' : 2,
+            'i2' : ('custom', zip(nm.linspace( 1e-10, 0.5, N ),
+                                  nm.linspace( 1e-10, 0.5, N )),
                     [1./N] * N),
         }
 
@@ -853,7 +849,7 @@ Examples
 * Laplace equation, named integral::
 
     equations = {
-        'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+        'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
     }
 
 * Laplace equation, simplified integral given by order::
@@ -1181,7 +1177,7 @@ The weak formulation of :eq:`eq_laplace` is: Find :math:`T \in V`, such that
 where we assume no fluxes over :math:`\partial \Omega \setminus \Gamma`. In the
 syntax used in *SfePy* input files, this can be written as::
 
-    dw_volume_dot.i1.Omega( s, dT/dt ) + dw_laplace.i1.Omega( coef, s, T) = 0
+    dw_volume_dot.i.Omega( s, dT/dt ) + dw_laplace.i.Omega( coef, s, T) = 0
 
 which directly corresponds to the discrete version of :eq:`eq_wlaplace`: Find
 :math:`\bm{T} \in V_h`, such that
@@ -1195,7 +1191,7 @@ which directly corresponds to the discrete version of :eq:`eq_wlaplace`: Find
 where :math:`u \approx \bm{\phi} \bm{u}`, :math:`\nabla u \approx \bm{G}
 \bm{u}` for :math:`u \in \{s, T\}`. The integrals over the discrete domain
 :math:`\Omega_h` are approximated by a numerical quadrature, that is named
-:math:`\verb|i1|` in our case.
+:math:`\verb|i|` in our case.
 
 Syntax of Terms in Equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1312,13 +1308,13 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
         from sfepy.base.base import Struct
 
         # Cauchy strain averaged in elements.
-        strain = problem.evaluate('ev_cauchy_strain.i1.Omega(u)',
+        strain = problem.evaluate('ev_cauchy_strain.i.Omega(u)',
                                   mode='el_avg')
         out['cauchy_strain'] = Struct(name='output_data',
                                       mode='cell', data=strain,
                                       dofs=None)
         # Cauchy stress averaged in elements.
-        stress = problem.evaluate('ev_cauchy_stress.i1.Omega(solid.D, u)',
+        stress = problem.evaluate('ev_cauchy_stress.i.Omega(solid.D, u)',
                                   mode='el_avg')
         out['cauchy_stress'] = Struct(name='output_data',
                                       mode='cell', data=stress,
@@ -1333,7 +1329,7 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
     def post_process(out, pb, state, extend=False):
         from sfepy.base.base import Struct
 
-        dvel = pb.evaluate('ev_diffusion_velocity.i1.Omega(m.K, p)',
+        dvel = pb.evaluate('ev_diffusion_velocity.i.Omega(m.K, p)',
                            mode='el_avg')
         out['dvel'] = Struct(name='output_data',
                              mode='cell', data=dvel, dofs=None)

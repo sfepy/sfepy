@@ -519,8 +519,7 @@ to the right surface.
 ::
 
     integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
+        'name' : 'i',
         'order' : 2,
     }
 
@@ -530,7 +529,7 @@ quadrature over a 3 dimensional space.
 ::
 
     equations = {
-        'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+        'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
     }
 
 The equation above directly corresponds to the discrete version of
@@ -545,7 +544,7 @@ where :math:`\nabla u \approx \bm{G} \bm{u}`.
 The equations block is the heart of the *SfePy* problem definition file. Here,
 we are specifying that the Laplacian of the temperature (in the weak
 formulation) is 0, where ``coef.val`` is a material constant. We are using the
-``i1`` integral defined previously, over the domain specified by the region
+``i`` integral defined previously, over the domain specified by the region
 Omega.
 
 The above syntax is useful for defining *custom integrals* with
