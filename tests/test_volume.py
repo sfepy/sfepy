@@ -9,8 +9,7 @@ fields = {
 }
 
 integrals = {
-    'i1' : ('v', 2),
-    'i2' : ('s', 2),
+    'i' : 2,
 }
 
 regions = {
@@ -19,10 +18,10 @@ regions = {
 }
 
 expressions = {
-    'volume_p' : 'd_volume.i1.Omega( p )',
-    'volume_u' : 'd_volume.i1.Omega( u )',
-    'surface_p' : 'd_volume_surface.i2.Gamma( p )',
-    'surface_u' : 'd_volume_surface.i2.Gamma( u )',
+    'volume_p' : 'd_volume.i.Omega( p )',
+    'volume_u' : 'd_volume.i.Omega( u )',
+    'surface_p' : 'd_volume_surface.i.Gamma( p )',
+    'surface_u' : 'd_volume_surface.i.Gamma( u )',
 }
 
 import numpy as nm

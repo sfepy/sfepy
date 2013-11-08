@@ -146,10 +146,9 @@ class Test(TestCommon):
 
             domains.append(domain)
 
-        integrals = {'Omega' : Integral('iv', kind='v', order=3),
-                     'Gamma' : Integral('is', kind='s', order=3)}
+        integral = Integral('i', order=3)
 
-        test = Test(domains=domains, integrals=integrals,
+        test = Test(domains=domains, integral=integral,
                     conf=conf, options=options)
         return test
 
@@ -227,7 +226,7 @@ class Test(TestCommon):
                 self.report('args:', str_args)
 
                 name = term_call % (', '.join(str_args))
-                term = Term.new(name, self.integrals[rname],
+                term = Term.new(name, self.integral,
                                 domain.regions[rname], **args)
                 term.setup()
 

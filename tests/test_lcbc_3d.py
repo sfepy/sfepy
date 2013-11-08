@@ -83,13 +83,12 @@ lcbc_1 = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
 equations = {
-    'balance' : """dw_lin_elastic_iso.i1.Y( solid.lam, solid.mu, v, u ) = 0""",
+    'balance' : """dw_lin_elastic_iso.i.Y( solid.lam, solid.mu, v, u ) = 0""",
 }
 
 solver_0 = {

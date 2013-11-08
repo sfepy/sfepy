@@ -31,8 +31,7 @@ ebcs = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
@@ -51,17 +50,17 @@ material_2 = {
 
 equations = {
     'Laplace' :
-    """2 * dw_laplace.i1.Omega( coef.val, s, t )
+    """2 * dw_laplace.i.Omega( coef.val, s, t )
     """,
     'Diffusion' :
-    """3 * dw_diffusion.i1.Omega( coef.K, s, t )
+    """3 * dw_diffusion.i.Omega( coef.K, s, t )
     """,
 }
 equations_rhs = {
     'Laplace' :
-    """= - dw_volume_lvf.i1.Omega( rhs.val, s )""",
+    """= - dw_volume_lvf.i.Omega( rhs.val, s )""",
     'Diffusion' :
-    """= - dw_volume_lvf.i1.Omega( rhs.val, s )""",
+    """= - dw_volume_lvf.i.Omega( rhs.val, s )""",
 }
 
 solutions = {

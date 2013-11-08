@@ -66,19 +66,12 @@ ebc_2 = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
-integral_2 = {
-    'name' : 'i2',
-    'kind' : 's',
-    'order' : 1,
-}
-
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
 }
 
 solution = {

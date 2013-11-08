@@ -83,20 +83,19 @@ ebc_1 = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
 equations_iso = {
     'balance_of_forces' :
-    """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u )
-     = dw_point_lspring.i1.Bottom( spring.pars, v, u )""",
+    """dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu, v, u )
+     = dw_point_lspring.i.Bottom( spring.pars, v, u )""",
 }
 equations_general = {
     'balance_of_forces' :
-    """dw_lin_elastic.i1.Omega( solid.Dijkl, v, u )
-     = dw_point_lspring.i1.Bottom( spring.pars, v, u )""",
+    """dw_lin_elastic.i.Omega( solid.Dijkl, v, u )
+     = dw_point_lspring.i.Bottom( spring.pars, v, u )""",
 }
 
 solver_0 = {

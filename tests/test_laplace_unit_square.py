@@ -72,19 +72,12 @@ ebc_2 = {
 #    'Left' : ('T3', (30,), 'linear_y'),
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
-integral_2 = {
-    'name' : 'i2',
-    'kind' : 's',
-    'order' : 1,
-}
-
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
 }
 
 solution = {
@@ -219,7 +212,7 @@ class Test( TestCommon ):
                                    update_fields=True)
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
-                flux_term = 'd_surface_flux.i2.%s( m.K, t )' % region_name
+                flux_term = 'd_surface_flux.i.%s( m.K, t )' % region_name
                 val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
                 rvec = get_state( aux, 't', True )

@@ -26,8 +26,7 @@ regions = {
 }
 
 integrals = {
-    'i1' : ('v', 2),
-    'isurf' : ('s', 1),
+    'i' : 2,
 }
 
 materials = {
@@ -36,7 +35,7 @@ materials = {
 }
 
 equations = {
-    'eq' : """dw_diffusion.i1.Omega( m2.K, ts, us ) = 0"""
+    'eq' : """dw_diffusion.i.Omega( m2.K, ts, us ) = 0"""
 }
 
 def get_pars(ts, coor, mode=None, term=None, **kwargs):
@@ -65,13 +64,13 @@ functions = {
 # 'dw' variables (test must be paired with unknown, which should be at
 # index 2!), mat mode)
 test_terms = [
-    ('%s_biot.i1.Omega( m.val, %s, %s )',
+    ('%s_biot.i.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv', 'tv'))),
-    ('%s_biot.i1.Omega( m.val, %s, %s )',
+    ('%s_biot.i.Omega( m.val, %s, %s )',
      ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'))),
-    ('%s_diffusion.i1.Omega( m.val, %s, %s )',
+    ('%s_diffusion.i.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
-    ('%s_volume_dot.i1.Omega( m.val, %s, %s )',
+    ('%s_volume_dot.i.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
 ]
 
@@ -79,10 +78,10 @@ import numpy as nm
 from sfepy.base.testing import TestCommon
 
 def _integrate(var, val_qp):
-    from sfepy.fem import Integrals
+    from sfepy.fem import Integral
     from sfepy.fem.mappings import get_jacobian
 
-    integral = Integrals().get(2, 'v')
+    integral = Integral('i', 2)
     det = get_jacobian(var.field, integral)
     val = (val_qp * det).sum(axis=1) / det.sum(axis=1)
 
@@ -157,10 +156,10 @@ class Test(TestCommon):
 
         var.set_data(vec)
 
-        val1 = problem.evaluate('dw_diffusion.i1.Omega( m2.K, us, us )',
+        val1 = problem.evaluate('dw_diffusion.i.Omega( m2.K, us, us )',
                                 mode='eval', us=var)
 
-        mtx = problem.evaluate('dw_diffusion.i1.Omega( m2.K, ts, us )',
+        mtx = problem.evaluate('dw_diffusion.i.Omega( m2.K, ts, us )',
                                mode='weak', dw_mode='matrix')
 
         val2 = nm.dot(vec, mtx * vec)
@@ -180,12 +179,12 @@ class Test(TestCommon):
         state = problem.create_state()
         state.apply_ebc()
 
-        aux1 = problem.evaluate("dw_diffusion.i1.Omega( m2.K, ts, us )",
+        aux1 = problem.evaluate("dw_diffusion.i.Omega( m2.K, ts, us )",
                                 mode='weak', dw_mode='vector')
 
         problem.time_update(ebcs={}, epbcs={})
 
-        mtx = problem.evaluate("dw_diffusion.i1.Omega( m2.K, ts, us )",
+        mtx = problem.evaluate("dw_diffusion.i.Omega( m2.K, ts, us )",
                                mode='weak', dw_mode='matrix')
         aux2g = mtx * state()
         problem.time_update(ebcs=self.conf.ebcs,
@@ -209,7 +208,7 @@ class Test(TestCommon):
         vec[:] = 1.0
         us.set_data(vec)
 
-        expr = 'ev_surface_integrate.isurf.Left( us )'
+        expr = 'ev_surface_integrate.i.Left( us )'
         val = problem.evaluate(expr, us=us)
         ok1 = nm.abs(val - 1.0) < 1e-15
         self.report('with unknown: %s, value: %s, ok: %s'
@@ -219,7 +218,7 @@ class Test(TestCommon):
                             primary_var_name='(set-to-None)')
         ps1.set_data(vec)
 
-        expr = 'ev_surface_integrate.isurf.Left( ps1 )'
+        expr = 'ev_surface_integrate.i.Left( ps1 )'
         val = problem.evaluate(expr, ps1=ps1)
         ok2 = nm.abs(val - 1.0) < 1e-15
         self.report('with parameter: %s, value: %s, ok: %s'
@@ -235,10 +234,10 @@ class Test(TestCommon):
         val = nm.arange(var.n_dof, dtype=var.dtype)
         var.set_data(val)
 
-        val1 = problem.evaluate('ev_grad.i1.Omega( us )', us=var, mode='el_avg')
+        val1 = problem.evaluate('ev_grad.i.Omega( us )', us=var, mode='el_avg')
         self.report('ev_grad(el_avg): min, max:', val1.min(), val1.max())
 
-        aux = problem.evaluate('ev_grad.i1.Omega( us )', us=var, mode='qp')
+        aux = problem.evaluate('ev_grad.i.Omega( us )', us=var, mode='qp')
         val2 = _integrate(var, aux)
         val2.shape = val1.shape
         self.report('ev_grad(qp): min, max:', val2.min(), val2.max())
@@ -258,10 +257,10 @@ class Test(TestCommon):
         val = nm.arange(var.n_dof, dtype=var.dtype)
         var.set_data(val)
 
-        val1 = problem.evaluate('ev_div.i1.Omega( uv )', uv=var, mode='el_avg')
+        val1 = problem.evaluate('ev_div.i.Omega( uv )', uv=var, mode='el_avg')
         self.report('ev_div(el_avg): min, max:', val1.min(), val1.max())
 
-        aux = problem.evaluate('ev_div.i1.Omega( uv )', uv=var, mode='qp')
+        aux = problem.evaluate('ev_div.i.Omega( uv )', uv=var, mode='qp')
         val2 = _integrate(var, aux)
         val2.shape = val1.shape
         self.report('ev_div(qp): min, max:', val2.min(), val2.max())

@@ -31,8 +31,7 @@ ebcs = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
@@ -44,8 +43,8 @@ materials = {
 
 equations = {
     'Temperature' :
-    """dw_laplace.i1.Omega( coef.val, s, t )
-       = - dw_volume_lvf.i1.Omega( rhs.val, s )""",
+    """dw_laplace.i.Omega( coef.val, s, t )
+       = - dw_volume_lvf.i.Omega( rhs.val, s )""",
 }
 
 solutions = {
