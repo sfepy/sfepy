@@ -133,15 +133,24 @@ def transform_regions(adict):
 def transform_integrals(adict):
     d2 = {}
     for ii, (key, conf) in enumerate(adict.iteritems()):
-        if isinstance(conf, tuple):
-            c2 = tuple_to_conf(key, conf, ['kind', 'order'])
-            if (c2.order == 'custom') and (len(conf) == 4):
-                c2.vals = conf[2]
-                c2.weights = conf[3]
+        if isinstance(conf, int):
+            c2 = Struct(name=key, order=conf)
             d2['integral_%s__%d' % (c2.name, ii)] = c2
+
+        elif isinstance(conf, tuple):
+            if len(conf) == 2: # Old tuple version with now-ignored 'kind'.
+                conf = conf[1]
+                c2 = Struct(name=key, order=conf)
+
+            elif len(conf) == 3:
+                c2 = tuple_to_conf(key, conf, ['order', 'vals', 'weights'])
+
+            d2['integral_%s__%d' % (c2.name, ii)] = c2
+
         else:
             c2 = transform_to_struct_1(conf)
             d2['integral_'+c2.name] = c2
+
     return d2
 
 def transform_fields(adict):
