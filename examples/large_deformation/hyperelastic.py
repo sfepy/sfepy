@@ -115,22 +115,22 @@ def stress_strain( out, problem, state, extend = False ):
     from sfepy.base.base import Struct, debug
 
     ev = problem.evaluate
-    strain = ev('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+    strain = ev('dw_tl_he_neohook.i.Omega( solid.mu, v, u )',
                 mode='el_avg', term_mode='strain')
     out['green_strain'] = Struct(name='output_data',
                                  mode='cell', data=strain, dofs=None)
 
-    stress = ev('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+    stress = ev('dw_tl_he_neohook.i.Omega( solid.mu, v, u )',
                 mode='el_avg', term_mode='stress')
     out['neohook_stress'] = Struct(name='output_data',
                                    mode='cell', data=stress, dofs=None)
 
-    stress = ev('dw_tl_he_mooney_rivlin.i1.Omega( solid.kappa, v, u )',
+    stress = ev('dw_tl_he_mooney_rivlin.i.Omega( solid.kappa, v, u )',
                 mode='el_avg', term_mode='stress')
     out['mooney_rivlin_stress'] = Struct(name='output_data',
                                          mode='cell', data=stress, dofs=None)
 
-    stress = ev('dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )',
+    stress = ev('dw_tl_bulk_penalty.i.Omega( solid.K, v, u )',
                 mode='el_avg', term_mode= 'stress')
     out['bulk_stress'] = Struct(name='output_data',
                                 mode='cell', data=stress, dofs=None)
@@ -140,14 +140,13 @@ def stress_strain( out, problem, state, extend = False ):
 ##
 # Balance of forces.
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 1,
 }
 equations = {
-    'balance' : """dw_tl_he_neohook.i1.Omega( solid.mu, v, u )
-                 + dw_tl_he_mooney_rivlin.i1.Omega( solid.kappa, v, u )
-                 + dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )
+    'balance' : """dw_tl_he_neohook.i.Omega( solid.mu, v, u )
+                 + dw_tl_he_mooney_rivlin.i.Omega( solid.kappa, v, u )
+                 + dw_tl_bulk_penalty.i.Omega( solid.K, v, u )
                  = 0""",
 }
 

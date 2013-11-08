@@ -75,24 +75,22 @@ def define():
     ##
     # Balance of forces.
     integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
+        'name' : 'i',
         'order' : 1,
     }
     integral_3 = {
         'name' : 'isurf',
-        'kind' : 's',
         'order' : 2,
     }
     equations = {
-        'linear' : """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu_le, v, u )
+        'linear' : """dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu_le, v, u )
                       = dw_surface_ltr.isurf.Top( load.val, v )""",
-        'neoHookean' : """dw_tl_he_neohook.i1.Omega( solid.mu_nh, v, u )
-                        + dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )
+        'neoHookean' : """dw_tl_he_neohook.i.Omega( solid.mu_nh, v, u )
+                        + dw_tl_bulk_penalty.i.Omega( solid.K, v, u )
                         = dw_surface_ltr.isurf.Top( load.val, v )""",
-        'Mooney-Rivlin' : """dw_tl_he_neohook.i1.Omega( solid.mu_mr, v, u )
-                           + dw_tl_he_mooney_rivlin.i1.Omega( solid.kappa, v, u )
-                           + dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )
+        'Mooney-Rivlin' : """dw_tl_he_neohook.i.Omega( solid.mu_mr, v, u )
+                           + dw_tl_he_mooney_rivlin.i.Omega( solid.kappa, v, u )
+                           + dw_tl_bulk_penalty.i.Omega( solid.K, v, u )
                            = dw_surface_ltr.isurf.Top( load.val, v )""",
     }
 

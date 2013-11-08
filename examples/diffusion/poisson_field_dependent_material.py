@@ -26,9 +26,9 @@ def get_conductivity(ts, coors, problem, equations=None, mode=None, **kwargs):
     This relation results in larger T gradients where T is small.
     """
     if mode == 'qp':
-        # T-field values in quadrature points coordinates given by integral i1
+        # T-field values in quadrature points coordinates given by integral i
         # - they are the same as in `coors` argument.
-        T_values = problem.evaluate('ev_volume_integrate.i1.Omega(T)',
+        T_values = problem.evaluate('ev_volume_integrate.i.Omega(T)',
                                     mode='qp', verbose=False)
         val = 2 + 10 * (T_values + 2)
 
@@ -70,11 +70,11 @@ ics = {
 }
 
 integrals = {
-    'i1' : ('v', 1),
+    'i' : 1,
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, T ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega( coef.val, s, T ) = 0"""
 }
 
 solvers = {

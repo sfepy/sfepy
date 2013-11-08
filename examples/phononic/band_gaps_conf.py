@@ -198,7 +198,7 @@ class BandGapsConf(Struct):
 
     def define_integrals(self):
         integrals = {
-            'i1' : ('v', 2),
+            'i' : 2,
         }
 
         return integrals
@@ -207,18 +207,18 @@ class BandGapsConf(Struct):
         equations = {}
         equations['corrs_rs'] = {
             'balance_of_forces' :
-            """dw_lin_elastic.i1.Y_m( m.D_m, v_m, u_m )
-             = - dw_lin_elastic.i1.Y_m( m.D_m, v_m, Pi )""",
+            """dw_lin_elastic.i.Y_m( m.D_m, v_m, u_m )
+             = - dw_lin_elastic.i.Y_m( m.D_m, v_m, Pi )""",
         }
         equations['evp'] = {
-            'lhs' : """dw_lin_elastic.i1.Y_c( m.D_c, v_c, u_c )""",
-            'rhs' : """dw_volume_dot.i1.Y_c( m.density_c, v_c, u_c )""",
+            'lhs' : """dw_lin_elastic.i.Y_c( m.D_c, v_c, u_c )""",
+            'rhs' : """dw_volume_dot.i.Y_c( m.density_c, v_c, u_c )""",
         }
 
         expr_coefs = {
-            'D' : """dw_lin_elastic.i1.Y_m( m.D_m, u1_m, u2_m )""",
-            'VF' : """d_volume.i1.%s(aux)""",
-            'ema' : """ev_volume_integrate.i1.Y_c( m.density_c, u_c )""",
+            'D' : """dw_lin_elastic.i.Y_m( m.D_m, u1_m, u2_m )""",
+            'VF' : """d_volume.i.%s(aux)""",
+            'ema' : """ev_volume_integrate.i.Y_c( m.density_c, u_c )""",
         }
 
         return equations, expr_coefs
@@ -393,18 +393,18 @@ class BandGapsRigidConf(BandGapsConf):
     def define_equations(self):
         equations = {}
 
-        # dw_lin_elastic.i1.Y_r( m.D_r, v, u ) should have no effect!
+        # dw_lin_elastic.i.Y_r( m.D_r, v, u ) should have no effect!
         equations['evp'] = {
-            'lhs' : """dw_lin_elastic.i1.Y_c( m.D_c, v, u )
-                     + dw_lin_elastic.i1.Y_r( m.D_r, v, u )""",
-            'rhs' : """dw_volume_dot.i1.Y_c( m.density_c, v, u )
-                     + dw_volume_dot.i1.Y_r( m.density_r, v, u )""",
+            'lhs' : """dw_lin_elastic.i.Y_c( m.D_c, v, u )
+                     + dw_lin_elastic.i.Y_r( m.D_r, v, u )""",
+            'rhs' : """dw_volume_dot.i.Y_c( m.density_c, v, u )
+                     + dw_volume_dot.i.Y_r( m.density_r, v, u )""",
         }
 
         expr_coefs = {
-            'VF' : """d_volume.i1.%s(aux)""",
-            'ema' : """ev_volume_integrate.i1.Y_c( m.density_c, u )
-                     + ev_volume_integrate.i1.Y_r( m.density_r, u )""",
+            'VF' : """d_volume.i.%s(aux)""",
+            'ema' : """ev_volume_integrate.i.Y_c( m.density_c, u )
+                     + ev_volume_integrate.i.Y_r( m.density_r, u )""",
         }
 
         return equations, expr_coefs

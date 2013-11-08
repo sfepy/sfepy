@@ -102,14 +102,13 @@ material_2 = {
 
 # Numerical quadrature and the equation.
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
 equations = {
-    'Poisson' : """dw_laplace.i1.Omega( coef.val, s, t )
-                 = dw_volume_lvf.i1.Omega_1( source.val, s )"""
+    'Poisson' : """dw_laplace.i.Omega( coef.val, s, t )
+                 = dw_volume_lvf.i.Omega_1( source.val, s )"""
 }
 
 # Solvers.

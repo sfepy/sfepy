@@ -47,8 +47,8 @@ def ebc_sin(ts, coors, **kwargs):
 
 equations = {
     'balance_of_forces in time' :
-    """dw_volume_dot.i1.Omega( solid.c, v, du/dt )
-     + dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u ) = 0""",
+    """dw_volume_dot.i.Omega( solid.c, v, du/dt )
+     + dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu, v, u ) = 0""",
 }
 
 solvers.update({

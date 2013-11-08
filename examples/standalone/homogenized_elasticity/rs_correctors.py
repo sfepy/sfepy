@@ -154,7 +154,6 @@ material_1 = {
 # Numerical quadratures for volume (i3 - order 3) integral terms.
 integral_1 = {
     'name' : 'i3',
-    'kind' : 'v',
     'order' : 3,
 }
 

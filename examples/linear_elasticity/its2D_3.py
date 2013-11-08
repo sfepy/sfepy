@@ -63,5 +63,5 @@ asphalt.update({'D' : stiffness_from_youngpoisson(2, young, poisson)})
 options.update({'post_process_hook' : 'nodal_stress',})
 
 integrals = {
-    'ivn' : ('v', 'custom', gdata.coors, [gdata.volume / nc] * nc),
+    'ivn' : ('custom', gdata.coors, [gdata.volume / nc] * nc),
 }

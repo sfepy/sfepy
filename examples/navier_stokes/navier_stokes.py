@@ -126,12 +126,10 @@ variable_5 = {
 
 integral_1 = {
     'name' : 'i1',
-    'kind' : 'v',
     'order' : 2,
 }
 integral_2 = {
     'name' : 'i2',
-    'kind' : 'v',
     'order' : 3,
 }
 

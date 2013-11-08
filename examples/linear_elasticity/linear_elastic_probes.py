@@ -95,13 +95,13 @@ def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct
 
     # Cauchy strain averaged in elements.
-    strain = problem.evaluate('ev_cauchy_strain.i1.Omega( u )',
+    strain = problem.evaluate('ev_cauchy_strain.i.Omega( u )',
                               mode='el_avg')
     out['cauchy_strain'] = Struct(name='output_data',
                                   mode='cell', data=strain,
                                   dofs=None)
     # Cauchy stress averaged in elements.
-    stress = problem.evaluate('ev_cauchy_stress.i1.Omega( solid.D, u )',
+    stress = problem.evaluate('ev_cauchy_stress.i.Omega( solid.D, u )',
                               mode='el_avg')
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress,

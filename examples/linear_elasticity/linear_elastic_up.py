@@ -63,7 +63,7 @@ fields = {
 #! ---------
 #! Define the integral type Volume/Surface and quadrature rule.
 integrals = {
-    'i1' : ('v', order),
+    'i' : order,
 }
 #! Variables
 #! ---------
@@ -88,12 +88,12 @@ ebcs = {
 #! The weak formulation of the linear elastic problem.
 equations = {
     'balance_of_forces' :
-    """  dw_lin_elastic.i1.Omega( solid.D, v, u )
-       - dw_stokes.i1.Omega( v, p )
+    """  dw_lin_elastic.i.Omega( solid.D, v, u )
+       - dw_stokes.i.Omega( v, p )
        = 0 """,
     'pressure constraint' :
-    """- dw_stokes.i1.Omega( u, q )
-       - dw_volume_dot.i1.Omega( solid.gamma, q, p )
+    """- dw_stokes.i.Omega( u, q )
+       - dw_volume_dot.i.Omega( solid.gamma, q, p )
        = 0""",
 }
 #! Solvers

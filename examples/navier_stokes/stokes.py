@@ -131,17 +131,16 @@ variable_4 = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
 equations = {
     'balance' :
-    """dw_div_grad.i1.Y1Y2( fluid.viscosity, v, u )
-     - dw_stokes.i1.Y1Y2( v, p ) = 0""",
+    """dw_div_grad.i.Y1Y2( fluid.viscosity, v, u )
+     - dw_stokes.i.Y1Y2( v, p ) = 0""",
     'incompressibility' :
-    """dw_stokes.i1.Y1Y2( u, q ) = 0""",
+    """dw_stokes.i.Y1Y2( u, q ) = 0""",
 }
 
 material_1 = {

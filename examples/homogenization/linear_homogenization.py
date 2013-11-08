@@ -25,8 +25,8 @@ def recovery_le( pb, corrs, macro ):
                            mode = 'vertex', data = mic_u,
                            var_name = 'u', dofs = None )
 
-    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i1', 'Y', 'mat.D', 'u', mic_u )
-    stress_Y += compute_mac_stress_part( pb, 'i1', 'Y', 'mat.D', 'u', macro['strain'] )
+    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i', 'Y', 'mat.D', 'u', mic_u )
+    stress_Y += compute_mac_stress_part( pb, 'i', 'Y', 'mat.D', 'u', macro['strain'] )
 
     strain = macro['strain'] + strain_Y
 
@@ -104,8 +104,7 @@ all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 #! ---------
 #! Define the integral type Volume/Surface and quadrature rule.
 integrals = {
-    'i1' : ('v', 2),
-    'i2' : ('s', 2),
+    'i' : 2,
 }
 #! Options
 #! -------
@@ -115,7 +114,7 @@ options = {
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
     'volume' : { 'variables' : ['u'],
-                 'expression' : 'd_volume.i1.Y( u )' },
+                 'expression' : 'd_volume.i.Y( u )' },
     'output_dir' : 'output',
     'coefs_filename' : 'coefs_le',
     'recovery_hook' : 'recovery_le',
@@ -125,11 +124,11 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """dw_lin_elastic.i1.Y(mat.D, v, u ) =
-     - dw_lin_elastic.i1.Y(mat.D, v, Pi )"""
+    """dw_lin_elastic.i.Y(mat.D, v, u ) =
+     - dw_lin_elastic.i.Y(mat.D, v, Pi )"""
 }
 #! Expressions for homogenized linear elastic coefficients.
-expr_coefs = """dw_lin_elastic.i1.Y(mat.D, Pi1, Pi2 )"""
+expr_coefs = """dw_lin_elastic.i.Y(mat.D, Pi1, Pi2 )"""
 #! Coefficients
 #! ------------
 #! Definition of homogenized acoustic coefficients.

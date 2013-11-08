@@ -78,13 +78,11 @@ material_1 = {
 
 integral_1 = {
     'name' : 'i1',
-    'kind' : 'v',
     'order' : 1,
 }
 
 integral_2 = {
     'name' : 'i2',
-    'kind' : 'v',
     'order' : 2,
 }
 

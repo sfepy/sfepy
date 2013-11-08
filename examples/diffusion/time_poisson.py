@@ -74,15 +74,14 @@ ics = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 1,
 }
 
 equations = {
     'Temperature' :
-    """dw_volume_dot.i1.Omega( s, dT/dt )
-     + dw_laplace.i1.Omega( coef.val, s, T ) = 0"""
+    """dw_volume_dot.i.Omega( s, dT/dt )
+     + dw_laplace.i.Omega( coef.val, s, T ) = 0"""
 }
 
 solver_0 = {

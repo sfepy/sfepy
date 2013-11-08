@@ -33,9 +33,9 @@ def recovery_le( pb, corrs, macro ):
                                                        :,nm.newaxis],
                            var_name = 'p', dofs = None )
 
-    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i1', 'Y', 'mat.D', 'u', mic_u )
-    stress_Y += compute_mac_stress_part( pb, 'i1', 'Y', 'mat.D', 'u', macro['strain'] )
-    add_stress_p( stress_Y, pb, 'i1', 'Y', 'p', mic_p )
+    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i', 'Y', 'mat.D', 'u', mic_u )
+    stress_Y += compute_mac_stress_part( pb, 'i', 'Y', 'mat.D', 'u', macro['strain'] )
+    add_stress_p( stress_Y, pb, 'i', 'Y', 'p', mic_p )
 
     strain = macro['strain'] + strain_Y
 
@@ -120,8 +120,7 @@ all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 #! ---------
 #! Define the integral type Volume/Surface and quadrature rule.
 integrals = {
-    'i1' : ('v', 2),
-    'i2' : ('s', 2),
+    'i' : 2,
 }
 #! Options
 #! -------
@@ -131,7 +130,7 @@ options = {
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
     'volume' : { #'variables' : ['u'],
-                 #'expression' : 'd_volume.i1.Y( u )',
+                 #'expression' : 'd_volume.i.Y( u )',
                  'value' : get_box_volume( dim, region_lbn, region_rtf ),
                  },
     'output_dir' : 'output',
@@ -143,18 +142,18 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """  dw_lin_elastic.i1.Y( mat.D, v, u )
-       - dw_stokes.i1.Y( v, p ) =
-       - dw_lin_elastic.i1.Y( mat.D, v, Pi )""",
+    """  dw_lin_elastic.i.Y( mat.D, v, u )
+       - dw_stokes.i.Y( v, p ) =
+       - dw_lin_elastic.i.Y( mat.D, v, Pi )""",
     'pressure constraint' :
-    """- dw_stokes.i1.Y( u, q )
-       - dw_volume_dot.i1.Y( mat.gamma, q, p ) =
-       + dw_stokes.i1.Y( Pi, q )""",
+    """- dw_stokes.i.Y( u, q )
+       - dw_volume_dot.i.Y( mat.gamma, q, p ) =
+       + dw_stokes.i.Y( Pi, q )""",
 }
 #! Expressions for homogenized linear elastic coefficients.
 expr_coefs = {
-    'Q1' : """dw_lin_elastic.i1.Y( mat.D, Pi1u, Pi2u )""",
-    'Q2' : """dw_volume_dot.i1.Y( mat.gamma, Pi1p, Pi2p )""",
+    'Q1' : """dw_lin_elastic.i.Y( mat.D, Pi1u, Pi2u )""",
+    'Q2' : """dw_volume_dot.i.Y( mat.gamma, Pi1p, Pi2p )""",
 }
 #! Coefficients
 #! ------------

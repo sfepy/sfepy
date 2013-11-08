@@ -36,8 +36,7 @@ if filename_mesh.find('cube_medium_hexa.mesh') >= 0:
         'select' : 'cells of group 0',
     }
     integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
+        'name' : 'i',
         'order' : 1,
     }
     solver_0 = {
@@ -51,8 +50,7 @@ elif filename_mesh.find('cube_big_tetra.mesh') >= 0:
         'select' : 'cells of group 6',
     }
     integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
+        'name' : 'i',
         'quadrature' : 'custom',
         'vals'    : [[1./3., 1./3., 1./3.]],
         'weights' : [0.5]
@@ -123,7 +121,7 @@ ebc_2 = {
 }
 
 equations = {
-    'nice_equation' : """dw_laplace.i1.Omega( coef.val, s, T ) = 0""",
+    'nice_equation' : """dw_laplace.i.Omega( coef.val, s, T ) = 0""",
 }
 
 solver_1 = {

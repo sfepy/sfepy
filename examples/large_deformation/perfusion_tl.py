@@ -120,8 +120,8 @@ ebcs = {
 ##
 # Balance of forces.
 integrals = {
-    'i1' : ('v', 1),
-    'i2' : ('s', 2),
+    'i1' : 1,
+    'i2' : 2,
 }
 
 equations = {

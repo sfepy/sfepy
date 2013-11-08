@@ -47,8 +47,7 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
     }
 
     integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
+        'name' : 'i',
         'order' : 2,
     }
 
@@ -78,9 +77,9 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
     }
 
     equations = {
-        'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
-                   + dw_volume_dot.i1.Omega( mat_v.V, v, Psi )""",
-        'rhs' : """dw_volume_dot.i1.Omega( v, Psi )""",
+        'lhs' : """  dw_laplace.i.Omega( m.val, v, Psi )
+                   + dw_volume_dot.i.Omega( mat_v.V, v, Psi )""",
+        'rhs' : """dw_volume_dot.i.Omega( v, Psi )""",
     }
 
     solver_2 = {

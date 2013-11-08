@@ -51,11 +51,11 @@ functions = {
 }
 
 integrals = {
-    'i1' : ('v', 1),
+    'i' : 1,
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, T ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega( coef.val, s, T ) = 0"""
 }
 
 solvers = {
@@ -65,7 +65,7 @@ solvers = {
         't1' : 1.0,
         'dt' : 0.00002,
         'n_step' : None,
-        'mass' : 'dw_volume_dot.i1.Omega( s, T )',
+        'mass' : 'dw_volume_dot.i.Omega( s, T )',
         'lumped' : False, # If True, lump mass matrix so that it is diagonal.
     }),
 }

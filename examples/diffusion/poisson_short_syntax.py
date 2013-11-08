@@ -39,11 +39,11 @@ ebcs = {
 }
 
 integrals = {
-    'i1' : ('v', 2),
+    'i' : 2,
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i.Omega( coef.val, s, t ) = 0"""
 }
 
 solvers = {

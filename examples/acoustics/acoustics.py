@@ -50,16 +50,15 @@ ebcs = {
 }
 
 integrals = {
-    'ivol' : ('v', 2),
-    'isurf' : ('s', 2),
+    'i' : 2,
 }
 
 equations = {
     'Acoustic pressure' :
-    """%s * dw_laplace.ivol.Omega( one.one, q, p )
-    - %s * dw_volume_dot.ivol.Omega( q, p )
-    - %s * dw_surface_dot.isurf.Gamma_out( q, p )
-    = %s * dw_surface_integrate.isurf.Gamma_in( q )"""
+    """%s * dw_laplace.i.Omega( one.one, q, p )
+    - %s * dw_volume_dot.i.Omega( q, p )
+    - %s * dw_surface_dot.i.Gamma_out( q, p )
+    = %s * dw_surface_integrate.i.Gamma_in( q )"""
     % (c*c, w*w, 1j*w*c, 1j*w*c*c*rho*v_n)
 }
 

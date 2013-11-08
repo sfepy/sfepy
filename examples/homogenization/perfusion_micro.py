@@ -157,8 +157,8 @@ param_h = pb_def['param_h']
 
 # integrals
 integrals = {
-    'iV' : ('v', 2),
-    'iS' : ('s', 2),
+    'iV' : 2,
+    'iS' : 2,
 }
 
 functions = {

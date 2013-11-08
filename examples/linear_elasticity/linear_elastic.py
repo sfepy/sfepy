@@ -69,7 +69,7 @@ fields = {
 #! Define the integral type Volume/Surface and quadrature rule
 #! (here: dim=3, order=1).
 integrals = {
-    'i1' : ('v', 1),
+    'i' : ('v', 1),
 }
 #! Variables
 #! ---------
@@ -94,7 +94,7 @@ ebcs = {
 #! The weak formulation of the linear elastic problem.
 equations = {
     'balance_of_forces' :
-    """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u ) = 0""",
+    """dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu, v, u ) = 0""",
 }
 #! Solvers
 #! -------

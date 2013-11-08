@@ -122,18 +122,17 @@ ebcs = {
 }
 
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 2,
 }
 
 equations = {
-    '1' : """- %f * dw_volume_dot.i1.Y( inclusion.density, v, u )
-             + dw_lin_elastic_iso.i1.Y( inclusion.lam, inclusion.mu, v, u )
-             - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
+    '1' : """- %f * dw_volume_dot.i.Y( inclusion.density, v, u )
+             + dw_lin_elastic_iso.i.Y( inclusion.lam, inclusion.mu, v, u )
+             - dw_piezo_coupling.i.Y2( inclusion.coupling, v, phi )
            = 0""" % omega_squared,
-    '2' : """dw_diffusion.i1.Y( inclusion.dielectric, psi, phi )
-           + dw_piezo_coupling.i1.Y2( inclusion.coupling, u, psi )
+    '2' : """dw_diffusion.i.Y( inclusion.dielectric, psi, phi )
+           + dw_piezo_coupling.i.Y2( inclusion.coupling, u, psi )
            = 0""",
 }
 

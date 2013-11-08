@@ -111,16 +111,16 @@ ics = {
 }
 
 integrals = {
-    'i1' : ('v', 1),
+    'i' : 1,
 }
 
 equations = {
     'Temperature' :
-    """dw_volume_dot.i1.cylinder( cylinder.capacity, ds/dt, dT/dt )
-        dw_volume_dot.i1.fill( fill.capacity, ds/dt, dT/dt )
-        dw_laplace.i1.cylinder( cylinder.conductivity, s, T )
-        dw_laplace.i1.fill( fill.conductivity, s, T )
-        = dw_volume_integrate.i1.cylinder( cylinder.power, s )"""
+    """dw_volume_dot.i.cylinder( cylinder.capacity, ds/dt, dT/dt )
+        dw_volume_dot.i.fill( fill.capacity, ds/dt, dT/dt )
+        dw_laplace.i.cylinder( cylinder.conductivity, s, T )
+        dw_laplace.i.fill( fill.conductivity, s, T )
+        = dw_volume_integrate.i.cylinder( cylinder.power, s )"""
 }
 
 solvers = {

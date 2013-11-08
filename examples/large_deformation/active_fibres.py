@@ -164,18 +164,17 @@ ebcs = {
 ##
 # Balance of forces.
 integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
+    'name' : 'i',
     'order' : 1,
 }
 equations = {
     'balance'
-        : """dw_tl_he_neohook.i1.Omega( solid.mu, v, u )
-           + dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )
-           + dw_tl_fib_a.i1.Omega( f1.fmax, f1.eps_opt, f1.s, f1.fdir, f1.act,
-                                   v, u )
-           + dw_tl_fib_a.i1.Omega( f2.fmax, f2.eps_opt, f2.s, f2.fdir, f2.act,
-                                   v, u )
+        : """dw_tl_he_neohook.i.Omega( solid.mu, v, u )
+           + dw_tl_bulk_penalty.i.Omega( solid.K, v, u )
+           + dw_tl_fib_a.i.Omega( f1.fmax, f1.eps_opt, f1.s, f1.fdir, f1.act,
+                                  v, u )
+           + dw_tl_fib_a.i.Omega( f2.fmax, f2.eps_opt, f2.s, f2.fdir, f2.act,
+                                  v, u )
            = 0""",
 }
 
@@ -183,17 +182,17 @@ def stress_strain(out, problem, state, extend=False):
     from sfepy.base.base import Struct, debug
 
     ev = problem.evaluate
-    strain = ev('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+    strain = ev('dw_tl_he_neohook.i.Omega( solid.mu, v, u )',
                 mode='el_avg', term_mode='strain')
     out['green_strain'] = Struct(name='output_data',
                                  mode='cell', data=strain, dofs=None)
 
-    stress = ev('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+    stress = ev('dw_tl_he_neohook.i.Omega( solid.mu, v, u )',
                 mode='el_avg', term_mode='stress')
     out['neohook_stress'] = Struct(name='output_data',
                                    mode='cell', data=stress, dofs=None )
 
-    stress = ev('dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )',
+    stress = ev('dw_tl_bulk_penalty.i.Omega( solid.K, v, u )',
                 mode='el_avg', term_mode= 'stress')
     out['bulk_stress'] = Struct(name='output_data',
                                 mode='cell', data=stress, dofs=None)

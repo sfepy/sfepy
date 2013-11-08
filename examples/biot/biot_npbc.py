@@ -95,19 +95,19 @@ def get_pars(ts, coor, mode, output_dir='.', **kwargs):
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    dvel = pb.evaluate('ev_diffusion_velocity.i1.Omega( m.K, p )',
+    dvel = pb.evaluate('ev_diffusion_velocity.i.Omega( m.K, p )',
                        mode='el_avg')
     out['dvel'] = Struct(name='output_data',
                          mode='cell', data=dvel, dofs=None)
 
-    stress = pb.evaluate('ev_cauchy_stress.i1.Omega( m.D, u )',
+    stress = pb.evaluate('ev_cauchy_stress.i.Omega( m.D, u )',
                          mode='el_avg')
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress, dofs=None)
     return out
 
 def define_input(filename, output_dir):
-    
+
     filename_mesh = filename
     options = {
         'output_dir' : output_dir,
@@ -169,19 +169,18 @@ def define_input(filename, output_dir):
     }
 
     integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
+        'name' : 'i',
         'order' : 2,
     }
 
     equations = {
-        'eq_1' : 
-        """dw_lin_elastic.i1.Omega( m.D, v, u )
-         - dw_biot.i1.Omega( m.alpha, v, p ) 
+        'eq_1' :
+        """dw_lin_elastic.i.Omega( m.D, v, u )
+         - dw_biot.i.Omega( m.alpha, v, p )
          = 0""",
         'eq_2' :
-        """dw_biot.i1.Omega( m.alpha, u, q )
-         + dw_diffusion.i1.Omega( m.K, q, p )
+        """dw_biot.i.Omega( m.alpha, u, q )
+         + dw_diffusion.i.Omega( m.K, q, p )
          = 0""",
     }
 

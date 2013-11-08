@@ -77,20 +77,19 @@ ebcs = {
 }
 
 integrals = {
-    'ivol' : ('v', 2),
-    'isurf' : ('s', 2),
+    'i' : 2,
 }
 
 equations = {
     'Acoustic pressure' :
-    """%s * dw_volume_dot.ivol.Omega_1(q_1, p_1)
-     + %s * dw_volume_dot.ivol.Omega_2(q_2, p_2)
-     - dw_laplace.ivol.Omega_1(q_1, p_1)
-     - dw_laplace.ivol.Omega_2(q_2, p_2)
-     - %s * dw_surface_dot.isurf.Gamma_out(q_1, p_1)
-     + %s * dw_jump.isurf.Gamma_12_1(q_1, p_1, tr(p_2))
-     + %s * dw_jump.isurf.Gamma_12_2(q_2, p_2, tr(p_1))
-     = %s * dw_surface_integrate.isurf.Gamma_in(q_1)"""
+    """%s * dw_volume_dot.i.Omega_1(q_1, p_1)
+     + %s * dw_volume_dot.i.Omega_2(q_2, p_2)
+     - dw_laplace.i.Omega_1(q_1, p_1)
+     - dw_laplace.i.Omega_2(q_2, p_2)
+     - %s * dw_surface_dot.i.Gamma_out(q_1, p_1)
+     + %s * dw_jump.i.Gamma_12_1(q_1, p_1, tr(p_2))
+     + %s * dw_jump.i.Gamma_12_2(q_2, p_2, tr(p_1))
+     = %s * dw_surface_integrate.i.Gamma_in(q_1)"""
      % (k1*k1, k2*k2,
        1j*k1,
        1j*k1*rhoc1 / Z, 1j*k2*rhoc2 / Z,

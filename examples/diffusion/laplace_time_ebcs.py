@@ -63,11 +63,6 @@ functions = {
     'is_ebc' : (is_ebc,),
 }
 
-integrals = {
-    'ivol' : ('v', 2),
-    'isurf' : ('s', 2),
-}
-
 equations = {
     'eq' : """dw_laplace.2.Omega( one.val, s, t ) = 0""",
 }
