@@ -1,3 +1,7 @@
+"""
+Classes for accessing quadrature points and weights for various reference
+element geometries.
+"""
 import numpy as nm
 
 from sfepy.base.base import OneTypeList, Container, Struct, basestr
@@ -7,7 +11,7 @@ class Integrals(Container):
     """
     Container for instances of :class:`Integral`.
     """
-    
+
     @staticmethod
     def from_conf(conf):
         objs = OneTypeList(Integral)
@@ -67,7 +71,6 @@ class Integrals(Container):
                 self.append(obj)
 
         return obj
-    
 
 class Integral(Struct):
     """
