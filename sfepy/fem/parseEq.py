@@ -34,7 +34,7 @@ def rhs( lc ):
 #            print toks
             lc[0] = '-'
     return aux
-        
+
 def create_bnf(term_descs):
     """term_descs .. list of TermParse objects
     (sign, term_name, term_arg_names), where sign can be real or complex
@@ -56,7 +56,7 @@ def create_bnf(term_descs):
     number_expr << ZeroOrMore('(') + number \
                 + ZeroOrMore(add_op + number_expr) \
                 + ZeroOrMore(')')
-        
+
     ident = Word( alphas, alphanums + "_")
 
     integral = Combine((Literal('i') + Word(alphanums)) | Literal('i')
@@ -70,7 +70,7 @@ def create_bnf(term_descs):
                          + Literal('/') + Literal('dt'))
 
     trace = Combine(Literal('tr') + '(' + variable + ')')
-    
+
     generalized_var = derivative | trace | variable
     args = Group(delimitedList(generalized_var))
 
@@ -96,15 +96,15 @@ def create_bnf(term_descs):
     ## term.setDebug()
 
     return equation
-    
-    
+
+
 if __name__ == "__main__":
 
     test_str = """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + 5.0 * d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p[-1], Nu, dcf, mode )
                  = - dw_rhs.a.Y3( u, q, Nu, dcf, mode )"""
-    
+
     term_descs = []
     bnf = create_bnf(term_descs)
     out = bnf.parseString( test_str )
