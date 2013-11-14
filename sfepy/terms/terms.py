@@ -491,14 +491,7 @@ class Term(Struct):
         self.step = 0
         self.dt = 1.0
         self.is_quasistatic = False
-        self.has_integral = True
         self.has_region = True
-
-        self.itype = itype = None
-        aux = re.compile('([a-z]+)_.*').match(self.name)
-        if aux:
-            itype = aux.group(1)
-        self.raw_itype = itype
 
         self.setup_formal_args()
 
@@ -686,11 +679,6 @@ class Term(Struct):
         self.set_arg_types()
 
         self.setup_integration()
-
-        if (self.raw_itype == 'dw') and (self.mode == 'eval'):
-            self.itype = 'd'
-        else:
-            self.itype = self.raw_itype
 
     def _check_variables(self, arg_kinds):
         for ii, arg_kind in enumerate(arg_kinds):
