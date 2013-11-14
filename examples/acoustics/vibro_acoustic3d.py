@@ -74,8 +74,8 @@ regions = {
 fields = {
     'pressure1': ('complex', 'scalar', 'Omega1', 1),
     'pressure2': ('complex', 'scalar', 'Omega2', 1),
-    'tvelocity': ('complex', 'scalar', ('Gamma0_1', 'surface'), 1),
-    'deflection': ('complex', 'scalar', ('Gamma0_1', 'surface'), 1),
+    'tvelocity': ('complex', 'scalar', 'Gamma0_1', 1),
+    'deflection': ('complex', 'scalar', 'Gamma0_1', 1),
     }
 
 variables = {

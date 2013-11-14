@@ -86,7 +86,7 @@ def define_input(filename, output_dir):
     fields = {
         'displacement': ('real', 'vector', 'Omega', 1),
         'pressure': ('real', 'scalar', 'Omega', 1),
-        'multiplier': ('real', 'scalar', ('Walls', 'surface'), 1),
+        'multiplier': ('real', 'scalar', 'Walls', 1),
     }
 
     variables = {
