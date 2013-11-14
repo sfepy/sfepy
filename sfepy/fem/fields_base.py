@@ -325,17 +325,8 @@ class Field(Struct):
         approx_order = parse_approx_order(conf.approx_order)
         ao, force_bubble, discontinuous = approx_order
 
-        if isinstance(conf.region, tuple):
-            # Surface fields.
-            region_name, kind = conf.region
-            region = regions[region_name]
-
-            cls = table[kind + '_' + key]
-            obj = cls(conf.name, conf.dtype, conf.shape, region,
-                      approx_order=approx_order[:2])
-
-
-        else:
+        region = regions[conf.region]
+        if region.kind == 'cell':
             # Volume fields.
             kind = 'volume'
 
@@ -345,7 +336,15 @@ class Field(Struct):
             else:
                 cls = table[kind + '_' + key]
 
-            obj = cls(conf.name, conf.dtype, conf.shape, regions[conf.region],
+            obj = cls(conf.name, conf.dtype, conf.shape, region,
+                      approx_order=approx_order[:2])
+
+        else:
+            # Surface fields.
+            kind = 'surface'
+
+            cls = table[kind + '_' + key]
+            obj = cls(conf.name, conf.dtype, conf.shape, region,
                       approx_order=approx_order[:2])
 
         return obj
