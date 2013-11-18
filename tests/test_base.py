@@ -86,3 +86,28 @@ class Test( TestCommon ):
         ok = _ok1 and _ok2
 
         return ok
+
+    def test_resolve_deps(self):
+        from sfepy.base.resolve_deps import resolve
+
+        deps = {
+            'a' : ['a', 'b'],
+            'b' : ['a', 'b'],
+            'c' : ['b', 'c', 'd', 'e'],
+            'd' : ['c', 'e'],
+            'e' : ['d', 'e'],
+            'f' : ['e', 'f', 'g'],
+            'g' : ['g'],
+        }
+        order = resolve(deps)
+        ok1 = order == [['g'], ['a', 'b'], ['c', 'd', 'e'], ['f']]
+
+        deps = {
+            'a' : ['b'],
+            'b' : ['c'],
+            'c' : ['a'],
+        }
+        order = resolve(deps)
+        ok2 = order == [['a', 'b', 'c']]
+
+        return ok1 and ok2
