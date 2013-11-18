@@ -128,6 +128,21 @@ class Variables(Container):
             except IndexError:
                 pass
 
+    def get_dual_names(self):
+        """
+        Get names of pairs of dual variables.
+
+        Returns
+        -------
+        duals : dict
+           The dual names as virtual name : state name pairs.
+        """
+        duals = {}
+        for name in self.virtual:
+            duals[name] = self[name].primary_var_name
+
+        return duals
+
     def setup_ordering(self):
         """
         Setup ordering of variables.
