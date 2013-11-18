@@ -1,3 +1,6 @@
+"""
+Classes of variables for equations/terms.
+"""
 import time
 from collections import deque
 
@@ -7,9 +10,9 @@ from sfepy.base.base import (real_types, complex_types, assert_, get_default,
                              output, OneTypeList, Container, Struct, basestr)
 import sfepy.linalg as la
 from sfepy.fem.integrals import Integral
-from sfepy.fem.dof_info \
-     import DofInfo, EquationMap, LCBCOperators, \
-            expand_nodes_to_equations, make_global_lcbc_operator, is_active_bc
+from sfepy.fem.dof_info import (DofInfo, EquationMap, LCBCOperators,
+                                expand_nodes_to_equations,
+                                make_global_lcbc_operator, is_active_bc)
 from sfepy.fem.mappings import get_physical_qps
 from sfepy.fem.evaluate_variable import eval_real, eval_complex
 
@@ -19,15 +22,15 @@ is_parameter = 2
 is_field = 10
 
 def create_adof_conn(eq, dc, indx):
-    """Given a dof connectivity and equation mapping, create the active dof
-    connectivity."""
+    """
+    Given a dof connectivity and equation mapping, create the active dof
+    connectivity.
+    """
     aux = nm.take(eq, dc)
     adc = aux + nm.asarray(indx.start * (aux >= 0), dtype=nm.int32)
     return adc
 
-##
-# 14.07.2006, c
-class Variables( Container ):
+class Variables(Container):
     """
     Container holding instances of Variable.
     """
@@ -52,14 +55,14 @@ class Variables( Container ):
 
     def __init__(self, variables=None):
         Container.__init__(self, OneTypeList(Variable),
-                           state = set(),
-                           virtual = set(),
-                           parameter = set(),
-                           has_virtual_dcs = False,
-                           has_lcbc = False,
-                           has_eq_map = False,
-                           ordered_state = [],
-                           ordered_virtual = [])
+                           state=set(),
+                           virtual=set(),
+                           parameter=set(),
+                           has_virtual_dcs=False,
+                           has_lcbc=False,
+                           has_eq_map=False,
+                           ordered_state=[],
+                           ordered_virtual=[])
 
         if variables is not None:
             for var in variables:
@@ -86,15 +89,17 @@ class Variables( Container ):
         self.setup_ordering()
         self.setup_dof_info()
 
-    def setup_dtype( self ):
-        """Setup data types of state variables - all have to be of the same
-        data type, one of nm.float64 or nm.complex128."""
+    def setup_dtype(self):
+        """
+        Setup data types of state variables - all have to be of the same
+        data type, one of nm.float64 or nm.complex128.
+        """
         dtypes = {nm.complex128 : 0, nm.float64 : 0}
         for var in self.iter_state(ordered=False):
             dtypes[var.dtype] += 1
 
         if dtypes[nm.float64] and dtypes[nm.complex128]:
-            raise ValueError( "All variables must have the same dtype!" )
+            raise ValueError("All variables must have the same dtype!")
 
         elif dtypes[nm.float64]:
             self.dtype = nm.float64
@@ -159,7 +164,7 @@ class Variables( Container ):
         self.di = DofInfo('state_dof_info')
         for var_name in self.ordered_state:
             self.di.append_variable(self[var_name])
-        
+
         if make_virtual:
             self.vdi = DofInfo('virtual_dof_info')
             for var_name in self.ordered_virtual:
@@ -196,13 +201,11 @@ class Variables( Container ):
 
         self.has_lcbc = self.op_lcbc is not None
 
-    ##
-    # 04.10.2007, c
-    def get_lcbc_operator( self ):
+    def get_lcbc_operator(self):
         if self.has_lcbc:
             return self.op_lcbc
         else:
-            raise ValueError( 'no LCBC defined!' )
+            raise ValueError('no LCBC defined!')
 
     def equation_mapping(self, ebcs, epbcs, ts, functions, problem=None):
         """
@@ -247,9 +250,6 @@ class Variables( Container ):
                                                problem=problem)
                 active_bcs.update(active)
 
-            ## print var.eq_map
-            ## pause()
-
         self.adi = DofInfo('active_state_dof_info')
         for var_name in self.ordered_state:
             self.adi.append_variable(self[var_name], active=True)
@@ -284,19 +284,22 @@ class Variables( Container ):
 
             var.setup_initial_conditions(ics, self.di, functions)
 
-    def setup_adof_conns( self ):
-        """Translate dofs to active dofs.
-        Active dof connectivity key = (variable.name, region.name, type, ig)"""
+    def setup_adof_conns(self):
+        """
+        Translate dofs to active dofs.
+
+        Active dof connectivity key = (variable.name, region.name, type, ig).
+        """
         self.adof_conns = {}
         for var in self:
             var.setup_adof_conns(self.adof_conns, self.adi)
 
-    def create_state_vector( self ):
-        vec = nm.zeros( (self.di.ptr[-1],), dtype = self.dtype )
+    def create_state_vector(self):
+        vec = nm.zeros((self.di.ptr[-1],), dtype=self.dtype)
         return vec
 
-    def create_stripped_state_vector( self ):
-        vec = nm.zeros( (self.adi.ptr[-1],), dtype = self.dtype )
+    def create_stripped_state_vector(self):
+        vec = nm.zeros((self.adi.ptr[-1],), dtype=self.dtype)
         return vec
 
     def apply_ebc(self, vec, force_values=None):
@@ -353,31 +356,27 @@ class Variables( Container ):
 
         return vec
 
-    ##
-    # 14.03.2007, c
-    def has_ebc( self, vec, force_values = None ):
+    def has_ebc(self, vec, force_values=None):
         for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eq_ebc
             if force_values is None:
-                if not nm.allclose( vec[ii], eq_map.val_ebc ):
+                if not nm.allclose(vec[ii], eq_map.val_ebc):
                     return False
             else:
-                if isinstance( force_values, dict ):
-                    if not nm.allclose( vec[ii], force_values[var_name] ):
+                if isinstance(force_values, dict):
+                    if not nm.allclose(vec[ii], force_values[var_name]):
                         return False
                 else:
-                    if not nm.allclose( vec[ii], force_values ):
+                    if not nm.allclose(vec[ii], force_values):
                         return False
             # EPBC.
-            if not nm.allclose( vec[i0+eq_map.master], vec[i0+eq_map.slave] ):
+            if not nm.allclose(vec[i0+eq_map.master], vec[i0+eq_map.slave]):
                 return False
         return True
 
-    ##
-    # 26.07.2007, c
-    def get_indx( self, var_name, stripped = False, allow_dual = False ):
+    def get_indx(self, var_name, stripped=False, allow_dual=False):
         var = self[var_name]
 
         if not var.is_state():
@@ -385,8 +384,8 @@ class Variables( Container ):
                 var_name = var.primary_var_name
             else:
                 msg = '%s is not a state part' % var_name
-                raise IndexError( msg )
-        
+                raise IndexError(msg)
+
         if stripped:
             return self.adi.indx[var_name]
         else:
@@ -429,11 +428,11 @@ class Variables( Container ):
 
     def get_state_part_view(self, state, var_name, stripped=False):
         self.check_vector_size(state, stripped=stripped)
-        return state[self.get_indx( var_name, stripped )]
+        return state[self.get_indx(var_name, stripped)]
 
     def set_state_part(self, state, part, var_name, stripped=False):
         self.check_vector_size(state, stripped=stripped)
-        state[self.get_indx( var_name, stripped )] = part
+        state[self.get_indx(var_name, stripped)] = part
 
     def get_state_parts(self, vec=None):
         """
@@ -533,8 +532,10 @@ class Variables( Container ):
 
     def state_to_output(self, vec, fill_value=None, var_info=None,
                         extend=True, linearization=None):
-        """Convert a state vector to a dictionary of output data usable by
-        Mesh.write()."""
+        """
+        Convert a state vector to a dictionary of output data usable by
+        Mesh.write().
+        """
         di = self.di
 
         if var_info is None:
@@ -563,9 +564,7 @@ class Variables( Container ):
 
         return out
 
-    ##
-    # c: 27.11.2006, r: 22.05.2008
-    def iter_state( self, ordered = True ):
+    def iter_state(self, ordered=True):
 
         if ordered:
             for ii in self.ordered_state:
@@ -589,14 +588,11 @@ class Variables( Container ):
         if verbose:
             output('...done')
 
-    def advance( self, ts ):
+    def advance(self, ts):
         for var in self.iter_state():
-            var.advance( ts )
+            var.advance(ts)
 
-
-##
-# 11.07.2006, c
-class Variable( Struct ):
+class Variable(Struct):
     _count = 0
     _orders = []
     _all_var_names = set()
@@ -607,6 +603,7 @@ class Variable( Struct ):
         Variable._orders = []
         Variable._all_var_names = set()
 
+    @staticmethod
     def from_conf(key, conf, fields):
         aux = conf.kind.split()
         if len(aux) == 2:
@@ -649,12 +646,12 @@ class Variable( Struct ):
                 fld = fields[conf.field]
             except IndexError:
                 msg = 'field "%s" does not exist!' % conf.field
-                raise KeyError( msg )
+                raise KeyError(msg)
 
             if n_components is None:
                 # Workaround until new syntax for Variable is introduced.
                 n_components = fld.shape[0]
-                
+
             obj = FieldVariable(conf.name, kind, fld, n_components,
                                 order, primary_var_name,
                                 special=special, key=key, history=history)
@@ -663,7 +660,6 @@ class Variable( Struct ):
             raise ValueError('unknown variable family! (%s)' % family)
 
         return obj
-    from_conf = staticmethod( from_conf )
 
     def __init__(self, name, kind, n_components, order=None,
                  primary_var_name=None, special=None, flags=None, **kwargs):
@@ -720,7 +716,7 @@ class Variable( Struct ):
             self.dof_name = self.primary_var_name
 
         elif kind == 'parameter':
-            self.flags.add( is_parameter )
+            self.flags.add(is_parameter)
             msg = 'parameter variable %s: related unknown missing' % self.name
             self.primary_var_name = get_default(primary_var_name, None, msg)
             if self.primary_var_name == '(set-to-None)':
@@ -793,33 +789,25 @@ class Variable( Struct ):
 
         return var
 
-    ##
-    # 11.07.2006, c
-    def is_state( self ):
+    def is_state(self):
         return is_state in self.flags
 
-    ##
-    # 11.07.2006, c
-    def is_virtual( self ):
+    def is_virtual(self):
         return is_virtual in self.flags
 
-    ##
-    # 26.07.2007, c
-    def is_parameter( self ):
+    def is_parameter(self):
         return is_parameter in self.flags
 
-    def is_state_or_parameter( self ):
+    def is_state_or_parameter(self):
         return (is_state in self.flags) or (is_parameter in self.flags)
 
-    ##
-    # 26.07.2007, c
-    def is_kind( self, kind ):
-        return eval( 'self.is_%s()' % kind )
+    def is_kind(self, kind):
+        return eval('self.is_%s()' % kind)
 
-    def is_real( self ):
+    def is_real(self):
         return self.dtype in real_types
 
-    def is_complex( self ):
+    def is_complex(self):
         return self.dtype in complex_types
 
     def is_finite(self, step=0, derivative=None, dt=None):
@@ -971,13 +959,13 @@ class Variable( Struct ):
 
             return (self(step=step) - self(step=step-1)) / dt
 
-    def get_initial_condition( self ):
+    def get_initial_condition(self):
         if self.initial_condition is None:
             return 0.0
         else:
             return self.initial_condition
 
-    def get_full_state( self, step = 0 ):
+    def get_full_state(self, step=0):
         return self.data[step]
 
 class CloseNodesIterator(Struct):
@@ -1013,15 +1001,12 @@ class CloseNodesIterator(Struct):
         n_nod = self.coors.shape[0]
         dtype = nm.int32
 
-        ## tt = time.clock()
-
         if strategy is None:
             perm = nm.arange(n_nod, dtype=dtype)
 
         elif strategy == 'rcm':
             from sfepy.linalg import rcm
             perm = rcm(graph)
-            ## print 'rcm', time.clock() - tt
 
         elif 'greedy' in strategy:
             ipop, iin = {'00' : (0, 0),
@@ -1044,7 +1029,7 @@ class CloseNodesIterator(Struct):
             while ii < n_nod:
                 ir = active.pop(ipop)
                 row = graph.indices[graph.indptr[ir]:graph.indptr[ir+1]]
-##                 print ir, row
+
                 ips = []
                 for ip in row:
                     if perm_i[ip] < 0:
@@ -1059,8 +1044,6 @@ class CloseNodesIterator(Struct):
             perm = nm.empty_like(perm_i)
             perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
 
-        ## print time.clock() - tt
-             
         return perm
 
     def test_permutations(self, strategy='rcm'):
@@ -1128,15 +1111,10 @@ class CloseNodesIterator(Struct):
 
         return ii, val
 
-## ##
-## # 11.07.2006, c
-## class FEVariable( Variable ):
-##     """Finite element Variable
-## field .. field description of variable (borrowed)
-## """
 class FieldVariable(Variable):
-    """A finite element field variable.
-    
+    """
+    A finite element field variable.
+
     field .. field description of variable (borrowed)
     """
 
@@ -1229,7 +1207,7 @@ class FieldVariable(Variable):
 
     def get_dof_conn(self, dc_type, ig, active=False, is_trace=False):
         """Get active dof connectivity of a variable.
-        
+
         Note that primary and dual variables must have same Region!"""
         if not active:
             dc = self.field.get_dof_conn(dc_type, ig)
@@ -1259,15 +1237,15 @@ class FieldVariable(Variable):
         return dc
 
     def get_dof_info(self, active=False):
-        details = Struct(name = 'field_var_dof_details',
-                         n_nod = self.n_nod,
-                         dpn = self.n_components)
+        details = Struct(name='field_var_dof_details',
+                         n_nod=self.n_nod,
+                         dpn=self.n_components)
         if active:
             n_dof = self.n_adof
 
         else:
             n_dof = self.n_dof
-            
+
         return n_dof, details
 
     def time_update(self, ts, functions):
@@ -1350,7 +1328,9 @@ class FieldVariable(Variable):
         return active_bcs
 
     def setup_initial_conditions(self, ics, di, functions, warn=False):
-        """Setup of initial conditions."""
+        """
+        Setup of initial conditions.
+        """
         ics.canonize_dof_names(self.dofs)
         ics.sort()
 
@@ -1366,23 +1346,23 @@ class FieldVariable(Variable):
 
             nod_list = self.field.get_dofs_in_region(region, clean=True,
                                                      warn=clean_msg)
-            if len( nod_list ) == 0:
+            if len(nod_list) == 0:
                 continue
 
-            vv = nm.empty( (0,), dtype = self.dtype )
-            nods = nm.unique( nm.hstack( nod_list ) )
-            coor = self.field.get_coor( nods )
-            if type( val ) == str:
+            vv = nm.empty((0,), dtype=self.dtype)
+            nods = nm.unique(nm.hstack(nod_list))
+            coor = self.field.get_coor(nods)
+            if type(val) == str:
                 fun = functions[val]
                 vv = fun(coor, ic=ic)
             else:
-                vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
+                vv = nm.repeat([val], nods.shape[0] * len(dofs))
 
             eq = expand_nodes_to_equations(nods, dofs, self.dofs)
 
-            ic_vec = nm.zeros( (di.n_dof[self.name],), dtype = self.dtype )
+            ic_vec = nm.zeros((di.n_dof[self.name],), dtype=self.dtype)
             ic_vec[eq] = vv
-            
+
             self.initial_condition = ic_vec
 
     def get_approximation(self, ig):
@@ -1752,19 +1732,18 @@ class FieldVariable(Variable):
 
         return out
 
-    def get_state_in_region( self, region, igs = None, reshape = True,
-                             step = 0 ):
+    def get_state_in_region(self, region, igs=None, reshape=True,
+                             step=0):
         nods = self.field.get_dofs_in_region(region, merge=True, igs=igs)
-##         print nods, len( nods )
-##         pause()
-        eq = nm.empty( (len( nods ) * self.n_components,), dtype = nm.int32 )
-        for idof in range( self.n_components ):
+
+        eq = nm.empty((len(nods) * self.n_components,), dtype=nm.int32)
+        for idof in range(self.n_components):
             eq[idof::self.n_components] = self.n_components * nods \
                                           + idof + self.indx.start
 
         out = self.data[step][eq]
         if reshape:
-            out.shape = (len( nods ), self.n_components)
+            out.shape = (len(nods), self.n_components)
 
         return out
 
@@ -1781,7 +1760,7 @@ class FieldVariable(Variable):
             vec[ii] = eq_map.val_ebc
 
         else:
-            if isinstance(force_values, dict ):
+            if isinstance(force_values, dict):
                 vec[ii] = force_values[self.name]
 
             else:
@@ -1939,24 +1918,23 @@ class FieldVariable(Variable):
 
         out = {}
         if self.field.approx_order != 0:
-            out[self.name] = Struct(name = 'output_data',
-                                    mode = 'vertex', data = ext,
-                                    var_name = self.name, dofs = self.dofs)
+            out[self.name] = Struct(name='output_data',
+                                    mode='vertex', data=ext,
+                                    var_name=self.name, dofs=self.dofs)
         else:
             ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
-            out[self.name] = Struct(name = 'output_data',
-                                    mode = 'cell', data = ext,
-                                    var_name = self.name, dofs = self.dofs)
+            out[self.name] = Struct(name='output_data',
+                                    mode='cell', data=ext,
+                                    var_name=self.name, dofs=self.dofs)
 
         mesh.write(filename, io='auto', out=out)
 
     def set_from_mesh_vertices(self, data):
-        """Set the variable using values at the mesh vertices."""
+        """
+        Set the variable using values at the mesh vertices.
+        """
         ndata = self.field.interp_v_vals_to_n_vals(data)
         self.set_data(ndata)
-
-##         print data.shape
-##         print ndata.shape
 
     def has_same_mesh(self, other):
         """
@@ -2036,12 +2014,12 @@ class FieldVariable(Variable):
         strategy : 'projection' or 'interpolation'
             The strategy to set the values: the L^2 orthogonal projection, or
             a direct interpolation to the nodes (nodal elements only!)
-        
+
         Notes
         -----
         If the other variable uses the same field mesh, the coefficients are
         set directly.
-        
+
         If the other variable uses the same field mesh, only deformed slightly,
         it is advisable to provide directly the node ids as a hint where to
         start searching for a containing element; the order of nodes does not
@@ -2080,7 +2058,7 @@ class FieldVariable(Variable):
             tt = time.clock()
             iter_nodes = CloseNodesIterator(self.field, create_graph=False)
             output('iterator: %f s' % (time.clock()-tt))
-            
+
         elif search_strategy == 'crawl':
             tt = time.clock()
             iter_nodes = CloseNodesIterator(self.field, strategy='rcm')
