@@ -1,3 +1,6 @@
+"""
+Classes of equations composed of terms.
+"""
 import time
 from copy import copy
 
@@ -9,13 +12,6 @@ from sfepy.base.base import debug, OneTypeList, Container, Struct
 from sfepy.fem import Materials, Variables, setup_dof_conns
 from extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
-
-"""
-Note:
-- create found materials, variables from configuration/input file data
-  ... no - user should be able to create objects even if they are not
-  used in equations
-"""
 
 def parse_definition(equation_def):
     """
@@ -49,9 +45,7 @@ def get_expression_arg_names(expression, strip_dots=True):
 
     return set(args)
 
-##
-# 21.07.2006, c
-class Equations( Container ):
+class Equations(Container):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
@@ -156,18 +150,17 @@ class Equations( Container ):
         for eq in self:
             eq.collect_conn_info(self.conn_info)
 
-        ## print_structs(self.conn_info)
-        ## pause()
-
         return self.conn_info
 
-    def get_variable_names( self ):
-        """Return the list of names of all variables used in equations."""
+    def get_variable_names(self):
+        """
+        Return the list of names of all variables used in equations.
+        """
         vns = set()
         for eq in self:
             for term in eq.terms:
-                vns.update( term.get_variable_names() )
-        return list( vns )
+                vns.update(term.get_variable_names())
+        return list(vns)
 
     def invalidate_term_caches(self):
         """
@@ -321,7 +314,6 @@ class Equations( Container ):
                 ckey = (cvar.name, creg_name, dct, cig, info.is_trace)
 
                 dc_key = (rkey, ckey)
-                ## print dc_key
 
                 if not dc_key in shared:
                     try:
@@ -366,9 +358,9 @@ class Equations( Container ):
 
         shape = get_default(shape, self.variables.get_matrix_shape())
 
-        output( 'matrix shape:', shape )
-        if nm.prod( shape ) == 0:
-            output( 'no matrix (zero size)!' )
+        output('matrix shape:', shape)
+        if nm.prod(shape) == 0:
+            output('no matrix (zero size)!')
             return None
 
         rdcs, cdcs = self.get_graph_conns(any_dof_conn=any_dof_conn,
@@ -378,32 +370,25 @@ class Equations( Container ):
             output('no matrix (empty dof connectivities)!')
             return None
 
-        output( 'assembling matrix graph...' )
+        output('assembling matrix graph...')
         tt = time.clock()
 
         nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
                                             len(rdcs), rdcs, cdcs)
 
-        output( '...done in %.2f s' % (time.clock() - tt) )
-        output( 'matrix structural nonzeros: %d (%.2e%% fill)' \
-                % (nnz, float( nnz ) / nm.prod( shape ) ) )
-        ## print ret, prow, icol, nnz
+        output('...done in %.2f s' % (time.clock() - tt))
+        output('matrix structural nonzeros: %d (%.2e%% fill)' \
+               % (nnz, float(nnz) / nm.prod(shape)))
 
-        data = nm.zeros( (nnz,), dtype = self.variables.dtype )
-        matrix = sp.csr_matrix( (data, icol, prow), shape )
-        ## matrix.save( 'matrix', format = '%d %d %e\n' )
-        ## pause()
+        data = nm.zeros((nnz,), dtype=self.variables.dtype)
+        matrix = sp.csr_matrix((data, icol, prow), shape)
 
         return matrix
 
-    ##
-    # c: 02.04.2008, r: 02.04.2008
-    def init_time( self, ts ):
+    def init_time(self, ts):
         pass
 
-    ##
-    # 08.06.2007, c
-    def advance( self, ts ):
+    def advance(self, ts):
         for eq in self:
             for term in eq.terms:
                 term.advance(ts)
@@ -643,9 +628,7 @@ class Equations( Container ):
 
         return out
 
-##
-# 21.07.2006, c
-class Equation( Struct ):
+class Equation(Struct):
 
     @staticmethod
     def from_desc(name, desc, variables, regions, materials, integrals,
@@ -661,9 +644,9 @@ class Equation( Struct ):
         return obj
 
     def __init__(self, name, terms):
-        Struct.__init__(self, name = name)
+        Struct.__init__(self, name=name)
 
-        if isinstance(terms, Term): # single Term
+        if isinstance(terms, Term): # A single term.
             terms = Terms([terms])
 
         self.terms = terms
