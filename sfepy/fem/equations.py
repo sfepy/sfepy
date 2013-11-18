@@ -162,6 +162,29 @@ class Equations(Container):
                 vns.update(term.get_variable_names())
         return list(vns)
 
+    def get_variable_dependencies(self):
+        """
+        For each virtual variable get names of state/parameter variables that
+        are present in terms with that virtual variable.
+
+        The virtual variables define the actual equations and their
+        dependencies define the variables needed to evaluate the equations.
+
+        Returns
+        -------
+        deps : dict
+            The dependencies as a dictionary with virtual variable names as
+            keys and sets of state/parameter variables as values.
+        """
+        deps = {}
+        for eq in self:
+            for term in eq.terms:
+                dep_list = deps.setdefault(term.get_virtual_name(), set())
+                dep_list.update(term.get_state_names()
+                                + term.get_parameter_names())
+
+        return deps
+
     def invalidate_term_caches(self):
         """
         Invalidate evaluate caches of variables present in equations.
