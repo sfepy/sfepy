@@ -180,8 +180,7 @@ class Equations(Container):
         for eq in self:
             for term in eq.terms:
                 dep_list = deps.setdefault(term.get_virtual_name(), set())
-                dep_list.update(term.get_state_names()
-                                + term.get_parameter_names())
+                dep_list.update(term.get_state_names())
 
         return deps
 
