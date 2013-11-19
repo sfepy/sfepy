@@ -38,6 +38,75 @@ class StationarySolver(TimeSteppingSolver):
 
         return state
 
+def replace_virtuals(deps, pairs):
+    out = {}
+    for key, val in deps.iteritems():
+        out[pairs[key]] = val
+
+    return out
+
+class EquationSequenceSolver(TimeSteppingSolver):
+    """
+    Solver for stationary problems with an equation sequence.
+    """
+    name = 'ts.equation_sequence'
+
+    def __init__(self, conf, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, ts=None, **kwargs)
+
+    def __call__(self, state0=None, save_results=True, step_hook=None,
+                 post_process_hook=None, nls_status=None):
+        from sfepy.base.base import invert_dict, get_subdict
+        from sfepy.base.resolve_deps import resolve
+
+        problem = self.problem
+
+        if state0 is None:
+            state0 = problem.create_state()
+
+        variables = problem.get_variables()
+        vtos = variables.get_dual_names()
+        vdeps = problem.equations.get_variable_dependencies()
+        sdeps = replace_virtuals(vdeps, vtos)
+
+        sorder = resolve(sdeps)
+
+        stov = invert_dict(vtos)
+        vorder = [[stov[ii] for ii in block] for block in sorder]
+
+        parts0 = state0.get_parts()
+        state = state0.copy()
+        solved = []
+        for ib, block in enumerate(vorder):
+            output('solving for %s...' % sorder[ib])
+
+            subpb = problem.create_subproblem(block, solved)
+
+            subpb.equations.print_terms()
+
+            subpb.time_update()
+            substate0 = subpb.create_state()
+
+            vals = get_subdict(parts0, block)
+            substate0.set_parts(vals)
+
+            substate = subpb.solve(state0=substate0, nls_status=nls_status)
+
+            state.set_parts(substate.get_parts())
+
+            solved.extend(sorder[ib])
+            output('...done')
+
+        if step_hook is not None:
+            step_hook(problem, None, state)
+
+        if save_results:
+            problem.save_state(problem.get_output_name(), state,
+                               post_process_hook=post_process_hook,
+                               file_per_var=None)
+
+        return state
+
 def get_initial_state(problem):
     """
     Create a zero state vector and apply initial conditions.
