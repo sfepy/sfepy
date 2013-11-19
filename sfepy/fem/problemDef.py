@@ -218,6 +218,36 @@ class ProblemDefinition(Struct):
 
         return obj
 
+    def create_subproblem(self, var_names, known_var_names):
+        """
+        Create a sub-problem with equations containing only terms with the
+        given virtual variables.
+
+        Parameters
+        ----------
+        var_names : list
+            The list of names of virtual variables.
+        known_var_names : list
+            The list of  names of (already) known state variables.
+
+        Returns
+        -------
+        subpb : ProblemDefinition instance
+            The sub-problem.
+        """
+        subpb = ProblemDefinition(self.name + '_' + '_'.join(var_names),
+                                  conf=self.conf,
+                                  functions=self.functions,
+                                  domain=self.domain, fields=self.fields,
+                                  auto_conf=False, auto_solvers=False)
+        subpb.set_solvers(self.conf.solvers, self.conf.options)
+
+        subeqs = self.equations.create_subequations(var_names,
+                                                    known_var_names)
+        subpb.set_equations_instance(subeqs, keep_solvers=True)
+
+        return subpb
+
     def setup_default_output(self, conf=None, options=None):
         """
         Provide default values to `ProblemDefinition.setup_output()`
@@ -919,7 +949,6 @@ class ProblemDefinition(Struct):
         vec0 = state0.get_reduced()
 
         vec = solvers.nls(vec0)
-
         state = state0.copy(preserve_caches=True)
         state.set_reduced(vec, preserve_caches=True)
 
