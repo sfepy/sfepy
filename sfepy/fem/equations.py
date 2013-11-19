@@ -85,6 +85,54 @@ class Equations(Container):
         if setup:
             self.setup(make_virtual=make_virtual, verbose=verbose)
 
+    def create_subequations(self, var_names, known_var_names=None):
+        """
+        Create sub-equations containing only terms with the given virtual
+        variables.
+
+        Parameters
+        ----------
+        var_names : list
+            The list of names of virtual variables.
+        known_var_names : list
+            The list of  names of (already) known state variables.
+
+        Returns
+        -------
+        subequations : Equations instance
+            The sub-equations.
+        """
+        from sfepy.fem import FieldVariable
+
+        known_var_names = get_default(known_var_names, [])
+
+        objs = []
+        for iv, var_name in enumerate(var_names):
+            terms = [term.copy(name=term.name)
+                     for eq in self for term in eq.terms
+                     if term.get_virtual_name() == var_name]
+
+            # Make parameter variables from known state variables in terms
+            # arguments.
+            for known_name in known_var_names:
+                for term in terms:
+                    if known_name in term.arg_names:
+                        ii = term.arg_names.index(known_name)
+                        state = self.variables[known_name]
+                        par = FieldVariable(known_name, 'parameter',
+                                            state.field, state.n_components,
+                                            primary_var_name='(set-to-None)')
+                        term.args[ii] = par
+                        term._kwargs[known_name] = par
+                        par.set_data(state())
+
+            new_terms = Terms(terms)
+            objs.append(Equation('eq_%d' % iv, new_terms))
+
+        subequations = Equations(objs)
+
+        return subequations
+
     def get_domain(self):
         domain = None
 
