@@ -127,6 +127,21 @@ custom = {
             'rel_scaling' : 0.1,
         },
     },
+    'thermo_elasticity/thermo_elasticity_ess.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'only_names' : ['u'],
+            'domain_specific' : {
+                'u' : DomainSpecificPlot('plot_displacements',
+                                         ['rel_scaling=1000',
+                                          'color_kind="scalars"',
+                                          'color_name="T"']),
+            },
+            'view' : (-51, 71, 15, [1.16, 0.43, -1.56]),
+            'roll' : -65,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    }
 }
 
 def _omit(filename):
