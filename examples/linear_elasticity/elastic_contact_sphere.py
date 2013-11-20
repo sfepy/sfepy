@@ -5,7 +5,7 @@ Find :math:`\ul{u}` such that:
 
 .. math::
     \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
-    + \int_{\Gammai} \ul{v} \cdot f(d(\ul{u})) \ul{n}(\ul{u})
+    + \int_{\Gamma} \ul{v} \cdot f(d(\ul{u})) \ul{n}(\ul{u})
     = 0 \;,
 
 where
