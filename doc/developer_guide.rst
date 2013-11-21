@@ -813,8 +813,10 @@ Utility scripts
    src/script/gen_term_table
    src/script/plot_condition_numbers
    src/script/plot_mesh
+   src/script/plot_quadratures
    src/script/save_basis
    src/script/show_authors
+   src/script/show_terms_use
    src/script/sync_module_docs
 
 sfepy package
@@ -851,6 +853,7 @@ sfepy.base package
    src/sfepy/base/plotutils
    src/sfepy/base/progressbar
    src/sfepy/base/reader
+   src/sfepy/base/resolve_deps
    src/sfepy/base/testing
 
 sfepy.fem package
@@ -938,6 +941,7 @@ sfepy.linalg package
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/linalg/check_derivatives
    src/sfepy/linalg/eigen
    src/sfepy/linalg/geometry
    src/sfepy/linalg/sparse
@@ -950,7 +954,7 @@ sfepy.mechanics package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/mechanics/contact_planes
+   src/sfepy/mechanics/contact_bodies
    src/sfepy/mechanics/elastic_constants
    src/sfepy/mechanics/friction
    src/sfepy/mechanics/matcoefs
@@ -1002,6 +1006,7 @@ sfepy.postprocess package
    src/sfepy/postprocess/plot_cmesh
    src/sfepy/postprocess/plot_dofs
    src/sfepy/postprocess/plot_facets
+   src/sfepy/postprocess/plot_quadrature
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
