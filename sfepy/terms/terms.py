@@ -673,7 +673,7 @@ class Term(Struct):
 
         self.n_virtual = len(self.names.virtual)
         if self.n_virtual > 1:
-            raise ValueError('at most one virtial variable is allowed! (%d)'
+            raise ValueError('at most one virtual variable is allowed! (%d)'
                              % self.n_virtual)
 
         self.set_arg_types()
