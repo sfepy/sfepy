@@ -1,17 +1,14 @@
 Downloads
 =========
 
-Installation instructions:
---------------------------
+See :ref:`introduction_installation` for additional information.
 
-   http://sfepy.org/doc/installation.html
+Sources:
+--------
 
-Latest released sources:
-------------------------
+latest release: http://sfepy.org/downloads/sfepy-2013.3.tar.gz
 
-   http://sfepy.org/downloads/sfepy-2013.3.tar.gz
-
-   http://sfepy.org/downloads/sfepy-2013.2.tar.gz
+previous release: http://sfepy.org/downloads/sfepy-2013.2.tar.gz
 
 Git repository:
 ---------------
@@ -24,20 +21,10 @@ download the repository (read-write, permission needed)::
 
     git clone git@github.com:sfepy/sfepy.git
 
-web access:
+web access (fork the repository there if you wish to help):
 
    http://github.com/sfepy/sfepy
 
 latest snapshot:
 
    http://github.com/sfepy/sfepy/archives/master
-
-Git playground:
----------------
-
-some experimental branches http://github.com/rc/sfepy/tree/master
-
-clone the repository::
-
-   git clone git://github.com/rc/sfepy.git
-
