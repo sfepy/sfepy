@@ -1,5 +1,149 @@
 # created: 20.07.2007 (-1)
 
+.. _2013.3-2013.4:
+
+from 2013.3 to 2013.4
+=====================
+
+- fix nodal polynomial spaces for orders >= 3:
+
+  - merge branch 'fix_nodal_basis' - closes #205
+  - fix get_facet_dof_permutations(), H1NodalMixin._setup_facet_orientations()
+
+    - permutations should come from facet nodes in reference order
+
+  - increase approximation orders of 3_4, 3_8 in tests/test_poly_spaces.py
+  - prevent building ori_map for higher order elements in FESurface.__init__()
+
+- fields:
+
+  - reimplement get_facet_dof_permutations() using simple iterators
+  - update Field.from_conf() to set field kind from region kind
+
+    - update surface field syntax in examples
+
+- simplify integrals - remove integral kind:
+
+  - update transform_integrals() - remove/ignore integral kind
+  - clean up sfepy/fem/integrals.py, add module docstring
+  - remove kind attribute of Integral
+  - remove Integral.get_key()
+  - update Term for no integral kind, remove .get_integral_info()
+
+    - remove PointTermBase
+
+  - update sfepy.fem modules for no integral kind
+  - allow 'i' as integral name in equations
+  - update examples for no integral kind
+  - update tests for no integral kind
+  - docs: update users guide and tutorial for no integral kind
+
+- mesh, domain, regions:
+
+  - add tdim argument to mesh_set_coors()
+  - update CMesh to use max. topological dimension - new tdim attribute
+  - update Region to use max. topological dimension - new tdim attribute
+  - add tdim attribute to Domain.shape
+  - update fields for max. topological dimension
+
+- start support of 'plate' integration/connectivity type
+
+  - merge branch 'plate_mapping'
+  - update CMapping - new mtx_t attribute
+  - update Approximation.describe_geometry() for plate integration
+  - update get_physical_qps() - new map_kind argument
+  - update Term.get_physical_qps() for plate integration
+  - update get_shape_kind(), Term.iter_groups() for plate integration
+  - update FieldVariable.get_data_shape(), .evaluate() for plate integration
+  - update Approximation.get_connectivity() for plate integration
+  - new transform_asm_vectors(), transform_asm_matrices()
+  - update TLMembraneTerm.weak_function() - use transform functions
+
+- equation sequence solver:
+
+  - new Variables.get_dual_names()
+  - clean up sfepy/fem/equations.py, add module docstring
+  - new Equations.get_variable_dependencies()
+  - new sfepy/base/resolve_deps.py - functions for resolving dependencies
+
+    - new get_nums(), solvable(), remove_known(), try_block(), resolve()
+
+  - update tests/test_base.py: new test_resolve_deps()
+  - new Equations.create_subequations()
+  - new ProblemDefinition.create_subproblem()
+  - new EquationSequenceSolver for stationary problems with an equation sequence
+  - new examples/thermo_elasticity/thermo_elasticity_ess.py + test
+
+- scripts:
+
+  - script/save_basis.py: fix mesh mode, make permutations directly from mesh
+  - script/plot_mesh.py: fix help message
+  - simple.py: --list option can list solvers, new print_solvers()
+  - new script/plot_quadratures.py - closes #178
+
+    - update QuadraturePoints.from_table() to store true order
+    - new sfepy/postprocess/plot_quadrature.py
+
+  - new script/show_terms_use.py
+  - clean up script/eval_tl_forms.py, update for current sympy
+  - clean up script/evalForms.py, update for current sympy
+
+- terms:
+
+  - new ContactSphereTerm (dw_contact_sphere)
+
+    - rename sfepy/mechanics/contact_planes.py
+      -> sfepy/mechanics/contact_bodies.py
+    - new ContactSphere - elastic contact sphere
+
+  - new ContactPlaneTerm._get_force_pars(), update .get_fargs()
+  - fix empty array condition in ContactPlaneTerm.smooth_f()
+  - fix docstring of VolumeSurfaceTerm
+  - remove Term.has_integral, .itype, .raw_itype attributes (unused)
+  - fix form_tlcc_strainGreen_VS() - Green strain computation for
+    post-processing - out-of diagonal entries are no more doubled
+
+- homogenization:
+
+  - update AcousticMassTensor, AppliedLoadTensor zero division check, fix eye
+    call
+  - update MiniAppBase.init_solvers(): allow to use different solvers for the
+    correctors
+
+- miscellaneous updates:
+
+  - new sfepy/linalg/check_derivatives.py - check_fx(), check_vfvx()
+  - update HypermeshAsciiMeshIO reader: support for quad4 and tri3 cells
+  - update mesh reading/writing: print infromation about supported cell types
+  - generalize dict_to_array() for nD arrays
+  - fix type errors under Windows: in nm.take() cells
+  - fix dict_to_array() for non-array sequences
+  - update QuadraturePoints.from_table() to store true order
+  - simplify ProblemDefinition.__init__() - re-implements #212
+  - clean up sfepy/fem/parseEq.py
+  - clean up sfepy/fem/variables.py, add module docstring
+
+- examples and tests:
+
+  - new examples/linear_elasticity/elastic_contact_sphere.py + test
+  - update docstrings of poisson.py, poisson_short_syntax.py examples
+
+    - add mutual references, tutorial reference
+    - remove comments in examples/diffusion/poisson.py as their text is in the
+      tutorial
+
+  - update docstring of poisson_periodic_boundary_condition.py example
+  - update docstring of poisson_field_dependent_material.py example
+  - new examples/diffusion/poisson_neumann.py + test - closes #195
+
+- docs:
+
+  - fix issue, closes #236: move downloads from http://code.google.com/p/sfepy/
+    to sfepy.org/downloads
+  - fix duplicated module index in html
+  - remove link to GoogleWiki
+  - add labels to tutorial
+
 .. _2013.2-2013.3:
 
 from 2013.2 to 2013.3
