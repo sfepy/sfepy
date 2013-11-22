@@ -161,7 +161,7 @@ def create_arg_parser():
     from pyparsing import Literal, Word, delimitedList, Group, \
          StringStart, StringEnd, Optional, nums, alphas, alphanums
 
-    inumber = Word("+-"+nums, nums)
+    inumber = Word("+-" + nums, nums)
 
     history = Optional(Literal('[').suppress() + inumber
                        + Literal(']').suppress(), default=0)("history")
@@ -673,7 +673,7 @@ class Term(Struct):
 
         self.n_virtual = len(self.names.virtual)
         if self.n_virtual > 1:
-            raise ValueError('at most one virtial variable is allowed! (%d)'
+            raise ValueError('at most one virtual variable is allowed! (%d)'
                              % self.n_virtual)
 
         self.set_arg_types()
@@ -1385,12 +1385,12 @@ class Term(Struct):
                 shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
                 if dtype == nm.float64:
-                    val, stat = self.eval_real(shape, fargs, mode, term_mode,
-                                               **kwargs)
+                    val, stat = self.eval_real(shape, fargs, mode,
+                                               term_mode, **kwargs)
 
                 elif dtype == nm.complex128:
-                    val, stat = self.eval_complex(shape, fargs, mode, term_mode,
-                                                  **kwargs)
+                    val, stat = self.eval_complex(shape, fargs, mode,
+                                                  term_mode, **kwargs)
 
                 if vals is None:
                     vals = val
@@ -1399,8 +1399,8 @@ class Term(Struct):
                     vals = nm.r_[vals, val]
 
                 _iels = self.get_assembling_cells(val.shape)
-                aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
-                            _iels[:,None]]
+                aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:, None],
+                            _iels[:, None]]
                 iels = nm.r_[iels, aux]
                 status += stat
 
