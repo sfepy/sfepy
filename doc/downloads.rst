@@ -6,9 +6,9 @@ See :ref:`introduction_installation` for additional information.
 Sources:
 --------
 
-latest release: http://sfepy.org/downloads/sfepy-2013.3.tar.gz
+latest release: http://sfepy.org/downloads/sfepy-2013.4.tar.gz
 
-previous release: http://sfepy.org/downloads/sfepy-2013.2.tar.gz
+previous release: http://sfepy.org/downloads/sfepy-2013.3.tar.gz
 
 Git repository:
 ---------------
