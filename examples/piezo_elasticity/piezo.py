@@ -11,8 +11,8 @@ Find :math:`\ul{u}`, :math:`\phi` such that:
     = 0
     \;, \quad \forall \ul{v} \;,
 
-    \int_{Y} K_{ij} \nabla_i \psi \nabla_j \phi
     \int_{Y_2} g_{kij}\ e_{ij}(\ul{u}) \nabla_k \psi
+    + \int_{Y} K_{ij} \nabla_i \psi \nabla_j \phi
     = 0
     \;, \quad \forall \psi \;,
 
@@ -131,8 +131,8 @@ equations = {
              + dw_lin_elastic_iso.i.Y( inclusion.lam, inclusion.mu, v, u )
              - dw_piezo_coupling.i.Y2( inclusion.coupling, v, phi )
            = 0""" % omega_squared,
-    '2' : """dw_diffusion.i.Y( inclusion.dielectric, psi, phi )
-           + dw_piezo_coupling.i.Y2( inclusion.coupling, u, psi )
+    '2' : """dw_piezo_coupling.i.Y2( inclusion.coupling, u, psi )
+           + dw_diffusion.i.Y( inclusion.dielectric, psi, phi )
            = 0""",
 }
 
