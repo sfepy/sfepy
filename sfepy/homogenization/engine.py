@@ -4,11 +4,10 @@ from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
 from coefs_base import MiniAppBase
 
-def insert_sub_reqs( reqs, levels, req_info ):
+def insert_sub_reqs(reqs, levels, req_info):
     """Recursively build all requirements in correct order."""
     all_reqs = []
-##     print '>', levels, reqs
-    for ii, req in enumerate( reqs ):
+    for _, req in enumerate(reqs):
         # Coefficients are referenced as 'c.<name>'...
         areq = req
         if req.startswith('c.'):
@@ -19,24 +18,21 @@ def insert_sub_reqs( reqs, levels, req_info ):
         except KeyError:
             raise ValueError('requirement "%s" is not defined!' % req)
 
-        sub_reqs = rargs.get( 'requires', [] )
-##         print '*', ii, req, sub_reqs
+        sub_reqs = rargs.get('requires', [])
 
         if req in levels:
             raise ValueError('circular requirement "%s"!' % (req))
 
         if sub_reqs:
-            levels.append( req )
-            all_reqs.extend( insert_sub_reqs( sub_reqs, levels, req_info ) )
+            levels.append(req)
+            all_reqs.extend(insert_sub_reqs(sub_reqs, levels, req_info))
             levels.pop()
-            
+
         if req in all_reqs:
             raise ValueError('circular requirement "%s"!' % (req))
         else:
-            all_reqs.append( req )
+            all_reqs.append(req)
 
-##     print all_reqs
-##     pause()
     return all_reqs
 
 class HomogenizationEngine(PDESolverApp):
@@ -57,11 +53,11 @@ class HomogenizationEngine(PDESolverApp):
     def __init__(self, problem, options, app_options=None,
                  volume=None, output_prefix='he:', **kwargs):
         """Bypasses PDESolverApp.__init__()!"""
-        Application.__init__( self, problem.conf, options, output_prefix,
-                              **kwargs )
+        Application.__init__(self, problem.conf, options, output_prefix,
+                             **kwargs)
         self.problem = problem
         self.setup_options(app_options=app_options)
-        self.setup_output_info( self.problem, self.options )
+        self.setup_output_info(self.problem, self.options)
 
         if volume is None:
             self.volume = self.problem.evaluate(self.app_options.total_volume)
@@ -76,28 +72,28 @@ class HomogenizationEngine(PDESolverApp):
         po = HomogenizationEngine.process_options
         self.app_options += po(app_options)
 
-    def compute_requirements( self, requirements, dependencies, store ):
+    def compute_requirements(self, requirements, dependencies, store):
         problem = self.problem
 
         opts = self.app_options
-        req_info = getattr( self.conf, opts.requirements )
+        req_info = getattr(self.conf, opts.requirements)
 
-        requires = insert_sub_reqs( copy( requirements ), [], req_info )
-        
+        requires = insert_sub_reqs(copy(requirements), [], req_info)
+
         for req in requires:
             if req in dependencies and (dependencies[req] is not None):
                 continue
 
-            output( 'computing dependency %s...' % req )
+            output('computing dependency %s...' % req)
 
             rargs = req_info[req]
 
-            mini_app = MiniAppBase.any_from_conf( req, problem, rargs )
-            mini_app.setup_output( save_format = opts.save_format,
-                                   dump_format = opts.dump_format,
-                                   post_process_hook = self.post_process_hook,
-                                   file_per_var = opts.file_per_var )
-            store( mini_app )
+            mini_app = MiniAppBase.any_from_conf(req, problem, rargs)
+            mini_app.setup_output(save_format=opts.save_format,
+                                  dump_format=opts.dump_format,
+                                  post_process_hook=self.post_process_hook,
+                                  file_per_var=opts.file_per_var)
+            store(mini_app)
 
             problem.clear_equations()
 
@@ -110,15 +106,15 @@ class HomogenizationEngine(PDESolverApp):
             dep = mini_app(data=data)
 
             dependencies[req] = dep
-            output( '...done' )
+            output('...done')
 
         return dependencies
-        
-    def call( self, ret_all = False ):
+
+    def call(self, ret_all=False):
         problem = self.problem
 
         opts = self.app_options
-        coef_info = getattr( self.conf, opts.coefs )
+        coef_info = getattr(self.conf, opts.coefs)
 
         compute_names = set(get_default(opts.compute_only, coef_info.keys()))
         compute_names = ['c.' + key for key in compute_names]
@@ -132,7 +128,8 @@ class HomogenizationEngine(PDESolverApp):
         dependencies = {}
         save_names = {}
         dump_names = {}
-        def store_filenames( app ):
+
+        def store_filenames(app):
             if not '(not_set)' in app.get_save_name_base():
                 save_names[app.name] = app.get_save_name_base()
             if not '(not_set)' in app.get_dump_name_base():
@@ -174,7 +171,7 @@ class HomogenizationEngine(PDESolverApp):
                 if name.startswith('c.'):
                     dependencies[name] = getattr(coefs, name[2:])
 
-            mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
+            mini_app = MiniAppBase.any_from_conf(coef_name, problem, cargs)
 
             problem.clear_equations()
 
@@ -185,7 +182,7 @@ class HomogenizationEngine(PDESolverApp):
 
             val = mini_app(self.volume, data=data)
             setattr(coefs, coef_name, val)
-            output( '...done' )
+            output('...done')
 
         # remove "auxiliary" coefs
         for coef_name in sorted_coef_names:
