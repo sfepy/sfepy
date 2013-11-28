@@ -44,7 +44,7 @@ class Test(TestCommon):
         _ok = nm.allclose(tr, _tr, rtol=0.0, atol=1e-14)
         self.report('trace full: %s' % _ok)
         ok = ok and _ok
-        
+
         tr = tn.get_trace(a_sym, sym_storage=True)
         ok = ok and nm.allclose(tr, _tr, rtol=0.0, atol=1e-14)
         self.report('trace sym: %s' % _ok)
@@ -54,12 +54,12 @@ class Test(TestCommon):
         _ok = nm.allclose(vt, _vt_full, rtol=0.0, atol=1e-14)
         self.report('volumetric tensor full: %s' % _ok)
         ok = ok and _ok
-        
+
         vt = tn.get_volumetric_tensor(a_sym, sym_storage=True)
         _ok = nm.allclose(vt, _vt_sym, rtol=0.0, atol=1e-14)
         self.report('volumetric tensor sym: %s' % _ok)
         ok = ok and _ok
-        
+
         dev = tn.get_deviator(a_full, sym_storage=False)
         _ok = nm.allclose(dev, _dev_full, rtol=0.0, atol=1e-14)
         self.report('deviator full: %s' % _ok)
@@ -67,12 +67,12 @@ class Test(TestCommon):
 
         aux = (dev * nm.transpose(dev, (0, 2, 1))).sum(axis=1).sum(axis=1)
         vms2 = nm.sqrt((3.0/2.0) * aux)[:,None]
-        
+
         dev = tn.get_deviator(a_sym, sym_storage=True)
         _ok = nm.allclose(dev, _dev_sym, rtol=0.0, atol=1e-14)
         self.report('deviator sym: %s' % _ok)
         ok = ok and _ok
-        
+
         vms = tn.get_von_mises_stress(a_full, sym_storage=False)
         _ok = nm.allclose(vms, _vms, rtol=0.0, atol=1e-14)
         self.report('von Mises stress full: %s' % _ok)
