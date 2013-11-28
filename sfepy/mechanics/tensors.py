@@ -74,7 +74,7 @@ def get_volumetric_tensor(tensor, sym_storage=True):
     dim = tensor.shape[1]
     if sym_storage:
         dim = sym2dim(dim)
-    
+
     trace = get_trace(tensor, sym_storage=sym_storage)
     val = trace / float(dim)
 
@@ -148,6 +148,30 @@ def get_von_mises_stress(stress, sym_storage=True):
                              + 6.0 * (s12**2 + s13**2 + s23**2)))[:,None]
 
     return vms
+
+def get_t4_from_t2s(t2s):
+    """
+    Get the full 4D tensor with major/minor symmetries from its 2D matrix
+    representation.
+
+    Parameters
+    ----------
+    t2s : array
+        The symmetrically-stored tensor of shape (S, S), where S it the
+        symmetric storage size.
+
+    Returns
+    -------
+    t4 : array
+        The full 4D tensor of shape (D, D, D, D), where D is the space
+        dimension.
+    """
+    dim = sym2dim(t2s.shape[0])
+    iif = get_full_indices(dim)
+
+    t4 = t2s[:, iif][iif, ...]
+
+    return t4
 
 def prepare_cylindrical_transform(coors, origin, mode='axes'):
     """
