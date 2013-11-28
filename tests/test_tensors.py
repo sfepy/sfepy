@@ -87,6 +87,17 @@ class Test(TestCommon):
         self.report('von Mises stress via deviator: %s' % _ok)
         ok = ok and _ok
 
+        t2s = nm.arange(9).reshape(3, 3)
+        t2s = (t2s + t2s.T) / 2
+        t4 = tn.get_t4_from_t2s(t2s)
+        expected = nm.array([[[[0, 4], [4, 2]],
+                              [[4, 8], [8, 6]]],
+                             [[[4, 8], [8, 6]],
+                              [[2, 6],  [6, 4]]]])
+        _ok = nm.allclose(t4, expected, rtol=0.0, atol=1e-14)
+        self.report('full 4D tensor from 2D matrix, 2D space: %s' % _ok)
+        ok = ok and _ok
+
         return ok
 
     def test_transform_data(self):
