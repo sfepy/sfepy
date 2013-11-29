@@ -26,6 +26,8 @@
         <div class="section" id="sfepy-simple-finite-elements-in-python">
           <h1>SfePy: Downloads</h1>
 
+          It is recommended to download the latest release of SfePy.<br><br>
+
 <?php
 $download_dir = '../../sfepy_downloads/';
 
