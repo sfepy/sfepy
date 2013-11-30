@@ -61,7 +61,7 @@ def transform_asm_vectors(out, mtx_t):
         The transposed transformation matrix :math:`T`, see
         :func:`create_transformation_matrix`.
     """
-    n_ep = out.shape[-1] / mtx_t.shape[-1]
+    n_ep = out.shape[2] / mtx_t.shape[2]
     for iep in range(n_ep):
         ir = slice(iep, None, n_ep)
         fn = out[:, 0, ir, 0]
