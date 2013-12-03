@@ -177,7 +177,7 @@ class Region(Struct):
         obj : Region instance
             The new region.
         """
-        obj = Region(name, 'given faces', domain, '')
+        obj = Region(name, 'given faces', domain, '', kind=kind)
         obj.facets = facets
 
         return obj
