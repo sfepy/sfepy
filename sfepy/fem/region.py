@@ -198,10 +198,11 @@ class Region(Struct):
             The domain of the region.
         parse_def : str
             The parsed definition of the region.
-
-        Notes
-        -----
-        conns, vertex_groups are links to domain data.
+        kind : str
+            The region kind - one of 'cell', 'facet', 'face', 'edge', 'vertex',
+            'cell_only', ..., 'vertex_only'.
+        parent : str, optional
+            The name of the parent region.
         """
         tdim = domain.shape.tdim
         Struct.__init__(self,
