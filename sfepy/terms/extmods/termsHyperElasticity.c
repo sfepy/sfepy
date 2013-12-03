@@ -336,6 +336,8 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
     ERR_CheckGo( ret );
   }
  end_label:
+  errclear(); // Prevent false memory errors in mem_free_mem().
+
   fmf_freeDestroy( &st ); 
   fmf_freeDestroy( &mtx1 ); 
   fmf_freeDestroy( &mtx2 ); 
