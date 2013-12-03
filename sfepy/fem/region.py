@@ -157,7 +157,7 @@ class Region(Struct):
         return obj
 
     @staticmethod
-    def from_facets(facets, domain, name='region', kind='facet'):
+    def from_facets(facets, domain, name='region', kind='facet', parent=None):
         """
         Create a new region containing given facets.
 
@@ -171,13 +171,15 @@ class Region(Struct):
             The name of the region.
         kind : str, optional
             The kind of the region.
+        parent : str, optional
+            The name of the parent region.
 
         Returns
         -------
         obj : Region instance
             The new region.
         """
-        obj = Region(name, 'given faces', domain, '', kind=kind)
+        obj = Region(name, 'given faces', domain, '', kind=kind, parent=parent)
         obj.facets = facets
 
         return obj
