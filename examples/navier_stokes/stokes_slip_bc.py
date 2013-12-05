@@ -17,7 +17,7 @@ Find :math:`\ul{u}`, :math:`p` such that:
     \;, \quad \forall \ul{v} \;,
 
     \int_{\Omega} \mu \nabla q \cdot \nabla p
-    \int_{\Omega} q\ \nabla \cdot \ul{u}
+    + \int_{\Omega} q\ \nabla \cdot \ul{u}
     = 0
     \;, \quad \forall q \;,
 
