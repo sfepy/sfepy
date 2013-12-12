@@ -366,6 +366,10 @@ class Region(Struct):
                 if self.entities[idim].shape[0] > 0:
                     break
 
+        else:
+            msg = 'region "%s" has no entities!'
+            raise ValueError(msg % self.name)
+
         if idim <= dim:
             msg = 'setup_from_highest() can be used only with dim < %d'
             raise ValueError(msg % idim)
