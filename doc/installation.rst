@@ -59,7 +59,7 @@ See the `download`_ page for additional download options.
 In-place compilation of C extension modules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. Look at site_cfg_template.py and follow the instructions
+1. Look at ``site_cfg_template.py`` and follow the instructions
    therein. Usually no changes are necessary.
 
 2. Run::
@@ -96,6 +96,17 @@ If a particular test fails, please run it in debug mode::
     ./runTests.py --debug tests/failing_test_name.py
 
 and report the output to the sfepy-devel mailing list.
+
+Debugging
+---------
+
+If something goes wrong, set ``debug_flags = '-DDEBUG_FMF'`` in ``site_cfg.py``
+to turn on bound checks in the low level C functions, and recompile the code::
+
+    rm -rf build/ # remove completely build/ directory
+    python setup.py build_ext --inplace
+
+Then re-run your code and report the output.
 
 Platform-specific notes
 -----------------------
