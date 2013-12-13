@@ -106,5 +106,4 @@ class Config(object):
         if has_attr(site_cfg, 'tetgen_path'):
             return site_cfg.tetgen_path
         else:
-            return '/usr/bin'
-
+            return '/usr/bin/tetgen'
