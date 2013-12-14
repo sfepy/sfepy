@@ -690,18 +690,16 @@ class IntegralMeanValueOperator(LCBCOperator):
     def __init__(self, name, nodes, region, field, dof_names, filename=None):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
-        dim = field.shape[0]
-        assert_(len(dof_names) == dim)
-
+        dpn = len(dof_names)
         n_nod = nodes.shape[0]
 
-        data = nm.ones((n_nod * dim,))
+        data = nm.ones((n_nod * dpn,))
         rows = nm.arange(data.shape[0])
         cols = nm.zeros((data.shape[0],))
 
-        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, dim))
+        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, dpn))
 
-        self.n_dof = dim
+        self.n_dof = dpn
         self.mtx = mtx.tocsr()
 
 class LCBCOperators(Container):
