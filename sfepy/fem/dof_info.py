@@ -576,7 +576,7 @@ class NoPenetrationOperator(LCBCOperator):
     def __init__(self, name, nodes, region, field, dof_names, filename=None):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
-        dim = field.shape[0]
+        dim = region.dim
         assert_(len(dof_names) == dim)
 
         normals = compute_nodal_normals(nodes, region, field)
@@ -638,7 +638,7 @@ class NormalDirectionOperator(LCBCOperator):
     def __init__(self, name, nodes, region, field, dof_names, filename=None):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
-        dim = field.shape[0]
+        dim = region.dim
         assert_(len(dof_names) == dim)
 
         vectors = self.get_vectors(nodes, region, field, filename=filename)

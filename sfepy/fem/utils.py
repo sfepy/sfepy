@@ -49,7 +49,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in.
     """
-    dim = field.shape[0]
+    dim = region.dim
 
     field.domain.create_surface_group(region)
     field._setup_surface_data(region)
