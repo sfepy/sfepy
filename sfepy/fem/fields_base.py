@@ -264,6 +264,13 @@ class Field(Struct):
     - no two interps can be in a same group -> no two aps (with
       different regions) can be in a same group -> aps can be uniquely
       indexed with ig
+
+    Field shape information:
+
+    - ``shape`` - the shape of the base functions in a point
+    - ``n_components`` - the number of DOFs per FE node
+    - ``val_shape`` - the shape of field value (the product of DOFs and
+      base functions) in a point
     """
     _all = None
 
@@ -400,6 +407,7 @@ class Field(Struct):
         self._set_approx_order(approx_order)
         self._setup_geometry()
         self._setup_kind()
+        self._setup_shape()
 
         self._create_interpolant()
         self._setup_approximations()
@@ -1457,3 +1465,15 @@ class SurfaceField(Field):
         data_vertex /= nod_vol[:,nm.newaxis]
 
         return data_vertex
+
+class H1Mixin(Struct):
+    """
+    Methods of fields specific to H1 space.
+    """
+
+    def _setup_shape(self):
+        """
+        Setup the field's shape-related attributes, see :class:`Field`.
+        """
+        self.n_components = nm.prod(self.shape)
+        self.val_shape = self.shape
