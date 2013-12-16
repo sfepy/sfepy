@@ -82,8 +82,8 @@ def main():
         qp, _ = integral.get_qp(options.geometry)
         output('number of quadrature points:', qp.shape[0])
 
-        u = FieldVariable('u', 'unknown', field, n_c)
-        v = FieldVariable('v', 'test', field, n_c, primary_var_name='u')
+        u = FieldVariable('u', 'unknown', field)
+        v = FieldVariable('v', 'test', field, primary_var_name='u')
 
         m = Material('m', lam=1.0, mu=1.0)
 

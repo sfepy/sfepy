@@ -214,7 +214,7 @@ class Test(TestCommon):
         self.report('with unknown: %s, value: %s, ok: %s'
                     % (expr, val, ok1))
 
-        ps1 = FieldVariable('ps1', 'parameter', us.get_field(), 1,
+        ps1 = FieldVariable('ps1', 'parameter', us.get_field(),
                             primary_var_name='(set-to-None)')
         ps1.set_data(vec)
 

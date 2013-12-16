@@ -38,7 +38,7 @@ class Test(TestCommon):
     def test_projection_tri_quad(self):
         from sfepy.fem.projections import make_l2_projection
 
-        source = FieldVariable('us', 'unknown', self.field, 1)
+        source = FieldVariable('us', 'unknown', self.field)
 
         coors = self.field.get_coor()
         vals = nm.sin(2.0 * nm.pi * coors[:,0] * coors[:,1])
@@ -58,7 +58,7 @@ class Test(TestCommon):
         field = H1NodalVolumeField('bilinear', nm.float64, 'scalar', omega,
                                    approx_order=1)
 
-        target = FieldVariable('ut', 'unknown', field, 1)
+        target = FieldVariable('ut', 'unknown', field)
 
         make_l2_projection(target, source)
 

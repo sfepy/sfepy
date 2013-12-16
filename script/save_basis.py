@@ -71,7 +71,7 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
     field = Field.from_args('f', nm.float64, shape=1, region=omega,
                             approx_order=options.max_order,
                             poly_space_base=options.basis)
-    var = FieldVariable('u', 'unknown', field, 1)
+    var = FieldVariable('u', 'unknown', field)
 
     if options.plot_dofs:
         import sfepy.postprocess.plot_dofs as pd

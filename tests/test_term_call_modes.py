@@ -72,19 +72,19 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
                     # Only virtual variable in arguments.
                     istate = -1
                     # -> Make fake variable.
-                    var = FieldVariable('u-1', 'unknown', field, shape)
+                    var = FieldVariable('u-1', 'unknown', field)
                     var.set_constant(0.0)
                     variables.append(var)
 
-                var = FieldVariable('v', 'test', field, shape,
+                var = FieldVariable('v', 'test', field,
                                     primary_var_name='u%d' % istate)
 
             elif arg_kind == 'state_variable':
-                var = FieldVariable('u%d' % ii, 'unknown', field, shape)
+                var = FieldVariable('u%d' % ii, 'unknown', field)
                 var.set_constant(0.0)
 
             elif arg_kind == 'parameter_variable':
-                var = FieldVariable('p%d' % ii, 'parameter', field, shape,
+                var = FieldVariable('p%d' % ii, 'parameter', field,
                                     primary_var_name='(set-to-None)')
                 var.set_constant(0.0)
 

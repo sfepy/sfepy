@@ -52,8 +52,8 @@ def main():
 
     field = Field.from_args('fu', nm.float64, 'vector', omega, approx_order=2)
 
-    u = FieldVariable('u', 'unknown', field, mesh.dim)
-    v = FieldVariable('v', 'test', field, mesh.dim, primary_var_name='u')
+    u = FieldVariable('u', 'unknown', field)
+    v = FieldVariable('v', 'test', field, primary_var_name='u')
 
     m = Material('m', lam=1.0, mu=1.0)
     f = Material('f', val=[[0.02], [0.01]])

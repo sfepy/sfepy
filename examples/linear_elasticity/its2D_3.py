@@ -41,7 +41,7 @@ def nodal_stress(out, pb, state, extend=False):
     stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp')
     sfield = H1NodalVolumeField('stress', nm.float64, (3,),
                                 pb.domain.regions['Omega'])
-    svar = FieldVariable('sigma', 'parameter', sfield, 3,
+    svar = FieldVariable('sigma', 'parameter', sfield,
                          primary_var_name='(set-to-None)')
     svar.set_data_from_qp(stress, pb.integrals['ivn'])
 

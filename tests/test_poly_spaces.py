@@ -88,7 +88,7 @@ def _gen_common_data(orders, gels, report):
                 field = Field.from_args('f', nm.float64, shape=1,
                                         region=omega, approx_order=order,
                                         poly_space_base=poly_space_base)
-                var = FieldVariable('u', 'unknown', field, 1)
+                var = FieldVariable('u', 'unknown', field)
                 report('# dofs: %d' % var.n_dof)
 
                 vec = nm.empty(var.n_dof, dtype=var.dtype)

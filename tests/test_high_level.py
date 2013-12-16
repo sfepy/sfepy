@@ -43,7 +43,7 @@ class Test(TestCommon):
 
         integral = Integral('i', order=3)
 
-        u = FieldVariable('u', 'parameter', self.field, self.dim,
+        u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
 
         term = Term.new('d_volume(u)', integral, self.omega, u=u)
@@ -70,7 +70,7 @@ class Test(TestCommon):
 
         integral = Integral('i', order=3)
 
-        u = FieldVariable('u', 'parameter', self.field, self.dim,
+        u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
 
         t1 = Term.new('d_volume(u)', integral, self.omega, u=u)
@@ -97,7 +97,7 @@ class Test(TestCommon):
     def test_variables(self):
         from sfepy.fem import FieldVariable
 
-        u = FieldVariable('u', 'parameter', self.field, self.dim,
+        u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
 
         u.set_constant(1.0)
@@ -123,9 +123,8 @@ class Test(TestCommon):
         from sfepy.solvers.ls import ScipyDirect
         from sfepy.solvers.nls import Newton
 
-        u = FieldVariable('u', 'unknown', self.field, self.dim)
-        v = FieldVariable('v', 'test', self.field, self.dim,
-                          primary_var_name='u')
+        u = FieldVariable('u', 'unknown', self.field)
+        v = FieldVariable('v', 'test', self.field, primary_var_name='u')
 
         m = Material('m', lam=1.0, mu=1.0)
         f = Material('f', val=[[0.02], [0.01]])

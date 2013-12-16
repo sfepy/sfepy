@@ -54,7 +54,7 @@ class Test( TestCommon ):
         for key, term in expressions.items():
             var_name = key[-1]
             field = self.problem.fields[field_map[var_name]]
-            var = FieldVariable(var_name, 'parameter', field, 1,
+            var = FieldVariable(var_name, 'parameter', field,
                                 primary_var_name='(set-to-None)')
 
             val = self.problem.evaluate(term, **{var_name : var})

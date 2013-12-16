@@ -1,7 +1,7 @@
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
-
+#filename_mesh = data_dir + '/sd.mesh'
 material_2 = {
     'name' : 'coef',
     'values' : {'val' : 1.0},
