@@ -120,7 +120,7 @@ class Equations(Container):
                         ii = term.arg_names.index(known_name)
                         state = self.variables[known_name]
                         par = FieldVariable(known_name, 'parameter',
-                                            state.field, state.n_components,
+                                            state.field,
                                             primary_var_name='(set-to-None)')
                         term.args[ii] = par
                         term._kwargs[known_name] = par

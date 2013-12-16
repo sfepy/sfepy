@@ -17,8 +17,8 @@ def create_mass_matrix(field):
     mtx : csr_matrix
         The mass matrix in CSR format.
     """
-    u = FieldVariable('u', 'unknown', field, 1)
-    v = FieldVariable('v', 'test', field, 1, primary_var_name='u')
+    u = FieldVariable('u', 'unknown', field)
+    v = FieldVariable('v', 'test', field, primary_var_name='u')
 
     integral = Integral('i', order=field.approx_order * 2)
     term = Term.new('dw_volume_dot(v, u)', integral, field.region, v=v, u=u)
@@ -54,7 +54,7 @@ def make_l2_projection_data(target, eval_data):
     integral = Integral('i', order=order)
 
     un = target.name
-    v = FieldVariable('v', 'test', target.field, 1, primary_var_name=un)
+    v = FieldVariable('v', 'test', target.field, primary_var_name=un)
     lhs = Term.new('dw_volume_dot(v, %s)' % un, integral,
                    target.field.region, v=v, **{un : target})
 
@@ -94,7 +94,7 @@ def make_h1_projection_data(target, eval_data):
     integral = Integral('i', order=order)
 
     un = target.name
-    v = FieldVariable('v', 'test', target.field, 1, primary_var_name=un)
+    v = FieldVariable('v', 'test', target.field, primary_var_name=un)
     lhs1 = Term.new('dw_volume_dot(v, %s)' % un, integral,
                     target.field.region, v=v, **{un : target})
     lhs2 = Term.new('dw_laplace(v, %s)' % un, integral,
