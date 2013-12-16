@@ -280,10 +280,11 @@ class Field(Struct):
         dtype : numpy.dtype
             The field data type: float64 or complex128.
         shape : int/tuple/str
-            The field shape: 1 or (1,) or 'scalar', space dimension (2, or
-            (2,) or 3 or (3,)) or 'vector'. The field shape determines
-            the shape of the FE base functions and can be different from
-            a FieldVariable instance shape. (TODO)
+            The field shape: 1 or (1,) or 'scalar', space dimension (2, or (2,)
+            or 3 or (3,)) or 'vector', or a tuple. The field shape determines
+            the shape of the FE base functions and is related to the number of
+            components of variables and to the DOF per node count, depending
+            on the field kind.
         region : Region
             The region where the field is defined.
         approx_order : int/str
@@ -358,10 +359,11 @@ class Field(Struct):
         dtype : numpy.dtype
             The field data type: float64 or complex128.
         shape : int/tuple/str
-            The field shape: 1 or (1,) or 'scalar', space dimension (2, or
-            (2,) or 3 or (3,)) or 'vector'. The field shape determines
-            the shape of the FE base functions and can be different from
-            a FieldVariable instance shape. (TODO)
+            The field shape: 1 or (1,) or 'scalar', space dimension (2, or (2,)
+            or 3 or (3,)) or 'vector', or a tuple. The field shape determines
+            the shape of the FE base functions and is related to the number of
+            components of variables and to the DOF per node count, depending
+            on the field kind.
         region : Region
             The region where the field is defined.
         approx_order : int/str
