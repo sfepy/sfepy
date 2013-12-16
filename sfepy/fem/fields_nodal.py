@@ -15,16 +15,15 @@ import time
 import numpy as nm
 
 from sfepy.base.base import output, assert_
-from sfepy.base.base import Struct
 import fea
 from sfepy.fem.utils import prepare_remap
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.global_interp import get_ref_coors
 from sfepy.fem.facets import get_facet_dof_permutations
-from sfepy.fem.fields_base import Field, VolumeField, SurfaceField
+from sfepy.fem.fields_base import Field, VolumeField, SurfaceField, H1Mixin
 from sfepy.fem.extmods.bases import evaluate_in_rc
 
-class H1NodalMixin(Struct):
+class H1NodalMixin(H1Mixin):
 
     def _setup_facet_orientations(self):
         order = self.approx_order
@@ -157,7 +156,7 @@ class H1NodalMixin(Struct):
             region = self.region
 
         if dpn is None:
-            dpn = self.shape[0]
+            dpn = self.n_components
 
         aux = self.get_dofs_in_region(region, clean=True, warn=warn)
         nods = nm.unique(nm.hstack(aux))
