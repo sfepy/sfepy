@@ -640,8 +640,6 @@ class Variable(Struct):
                 raise ValueError('history must be integer >= 0! (got "%s")'
                                  % history)
 
-        n_components = conf.get('n_components', None)
-
         order = conf.get('order', None)
         if order is not None:
             order = int(order)
@@ -663,12 +661,7 @@ class Variable(Struct):
                 msg = 'field "%s" does not exist!' % conf.field
                 raise KeyError(msg)
 
-            if n_components is None:
-                # Workaround until new syntax for Variable is introduced.
-                n_components = fld.shape[0]
-
-            obj = FieldVariable(conf.name, kind, fld, n_components,
-                                order, primary_var_name,
+            obj = FieldVariable(conf.name, kind, fld, order, primary_var_name,
                                 special=special, key=key, history=history)
 
         else:
@@ -676,10 +669,9 @@ class Variable(Struct):
 
         return obj
 
-    def __init__(self, name, kind, n_components, order=None,
-                 primary_var_name=None, special=None, flags=None, **kwargs):
-        Struct.__init__(self, name=name, n_components=n_components,
-                        **kwargs)
+    def __init__(self, name, kind, order=None, primary_var_name=None,
+                 special=None, flags=None, **kwargs):
+        Struct.__init__(self, name=name, **kwargs)
 
         self.flags = set()
         if flags is not None:
@@ -746,11 +738,13 @@ class Variable(Struct):
 
         self.kind = kind
 
-    def _setup_dofs(self, n_nod):
+    def _setup_dofs(self, n_nod, n_components, val_shape):
         """
         Setup number of DOFs and  DOF names.
         """
         self.n_nod = n_nod
+        self.n_components = n_components
+        self.val_shape = val_shape
 
         self.n_dof = self.n_nod * self.n_components
 
@@ -1133,10 +1127,10 @@ class FieldVariable(Variable):
     field .. field description of variable (borrowed)
     """
 
-    def __init__(self, name, kind, field, n_components, order=None,
-                 primary_var_name=None, special=None, flags=None, **kwargs):
-        Variable.__init__(self, name, kind, n_components, order,
-                          primary_var_name, special, flags, **kwargs)
+    def __init__(self, name, kind, field, order=None, primary_var_name=None,
+                 special=None, flags=None, **kwargs):
+        Variable.__init__(self, name, kind, order, primary_var_name,
+                          special, flags, **kwargs)
 
         self._set_field(field)
 
@@ -1165,7 +1159,7 @@ class FieldVariable(Variable):
             self.is_surface = False
 
         self.field = field
-        self._setup_dofs(field.n_nod)
+        self._setup_dofs(field.n_nod, field.n_components, field.val_shape)
 
         self.flags.add(is_field)
         self.dtype = field.dtype
