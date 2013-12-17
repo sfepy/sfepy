@@ -292,8 +292,10 @@ class Equations(Container):
         graph_changed = active_bcs != self.active_bcs
         self.active_bcs = active_bcs
 
+        if graph_changed or not self.variables.adof_conns:
+            self.variables.setup_adof_conns()
+
         self.variables.setup_lcbc_operators(lcbcs, ts, functions)
-        self.variables.setup_adof_conns()
 
         for eq in self:
             for term in eq.terms:

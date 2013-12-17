@@ -72,6 +72,8 @@ class Variables(Container):
 
         self.setup_dtype()
 
+        self.adof_conns = {}
+
     def __setitem__(self, ii, var):
         Container.__setitem__(self, ii, var)
 
