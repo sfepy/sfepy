@@ -833,64 +833,6 @@ class Field(Struct):
     def clear_dof_conns(self):
         self.dof_conns = {}
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
-        """Setup dof connectivities of various kinds as needed by terms."""
-        if isinstance(dc_type, Struct):
-            dct = dc_type.type
-
-        else:
-            dct = dc_type
-
-        ##
-        # Expand nodes into dofs.
-        can_point = True
-        for ig, ap in self.aps.iteritems():
-            if ig not in region.igs: continue
-
-            region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig, is_trace)
-            if key in dof_conns:
-                self.dof_conns[key] = dof_conns[key]
-
-                if dct == 'point':
-                    can_point = False
-                continue
-
-            if dct == 'volume':
-                dc = create_dof_conn(ap.econn, dpn)
-                self.dof_conns[key] = dc
-
-            elif dct == 'surface':
-                sd = ap.surface_data[region_name]
-                conn = sd.get_connectivity(is_trace=is_trace)
-                dc = create_dof_conn(conn, dpn)
-                self.dof_conns[key] = dc
-                if is_trace:
-                    trkey = key[:-1] + (False,)
-                    if trkey in dof_conns:
-                        self.dof_conns[trkey] = dof_conns[trkey]
-                        continue
-                    conn = sd.get_connectivity(is_trace=False)
-                    dc = create_dof_conn(conn, dpn)
-                    self.dof_conns[trkey] = dc
-
-            elif dct == 'edge':
-                raise NotImplementedError('dof connectivity type %s' % dct)
-
-            elif dct == 'point':
-                if can_point:
-                    # Point data only in the first group to avoid multiple
-                    # assembling of nodes on group boundaries.
-                    conn = ap.point_data[region_name]
-                    dc = create_dof_conn(conn, dpn)
-                    self.dof_conns[key] = dc
-                    can_point = False
-
-            else:
-                raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
-        dof_conns.update(self.dof_conns)
-
     def create_mesh(self, extra_nodes=True):
         """
         Create a mesh from the field region, optionally including the field
