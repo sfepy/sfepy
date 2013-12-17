@@ -739,9 +739,8 @@ the test variable :math:`\vb`.
 
 .. sourcecode:: ipython
 
-    In [9]: u = FieldVariable('u', 'unknown', field, mesh.dim)
-    In [10]: v = FieldVariable('v', 'test', field, mesh.dim,
-       ....:                   primary_var_name='u')
+    In [9]: u = FieldVariable('u', 'unknown', field)
+    In [10]: v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 Before we can define the terms to build the equation of linear
 elasticity, we have to create also the materials, i.e. define the

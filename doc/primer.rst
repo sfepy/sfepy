@@ -556,7 +556,7 @@ The above computation could also be done in *isfepy*::
     In [28]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
        ....:                      mode='qp', integrals=Integrals([ivn]))
     In [29]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
-    In [30]: svar = FieldVariable('sigma', 'parameter', sfield, 3,
+    In [30]: svar = FieldVariable('sigma', 'parameter', sfield,
        ....:                      primary_var_name='(set-to-None)')
     In [31]: svar.set_data_from_qp(stress, ivn)
 
