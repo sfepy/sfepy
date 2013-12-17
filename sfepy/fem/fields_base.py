@@ -107,8 +107,7 @@ def setup_dof_conns(conn_info, dof_conns=None,
             var = info.primary
             field = var.get_field()
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
-            field.setup_dof_conns(dof_conns, var.n_components,
-                                  info.dc_type, info.get_region(),
+            field.setup_dof_conns(dof_conns, info.dc_type, info.get_region(),
                                   info.is_trace)
 
         if info.has_virtual and not info.is_trace:
@@ -116,8 +115,7 @@ def setup_dof_conns(conn_info, dof_conns=None,
             var = info.virtual
             field = var.get_field()
             field.setup_extra_data(info.v_tg, info, False)
-            field.setup_dof_conns(dof_conns, var.n_components,
-                                  info.dc_type,
+            field.setup_dof_conns(dof_conns, info.dc_type,
                                   info.get_region(can_trace=False))
 
     if verbose:
@@ -1122,7 +1120,7 @@ class VolumeField(Field):
         if region.name not in ap.point_data:
             ap.setup_point_data(field, region)
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
+    def setup_dof_conns(self, dof_conns, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
         if isinstance(dc_type, Struct):
             dct = dc_type.type
@@ -1137,7 +1135,7 @@ class VolumeField(Field):
             if ig not in region.igs: continue
 
             region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig, is_trace)
+            key = (self.name, self.n_components, region_name, dct, ig, is_trace)
             if key in dof_conns:
                 self.dof_conns[key] = dof_conns[key]
 
@@ -1146,13 +1144,13 @@ class VolumeField(Field):
                 continue
 
             if dct in ('volume', 'plate'):
-                dc = create_dof_conn(ap.econn, dpn)
+                dc = create_dof_conn(ap.econn, self.n_components)
                 self.dof_conns[key] = dc
 
             elif dct == 'surface':
                 sd = ap.surface_data[region_name]
                 conn = sd.get_connectivity(is_trace=is_trace)
-                dc = create_dof_conn(conn, dpn)
+                dc = create_dof_conn(conn, self.n_components)
                 self.dof_conns[key] = dc
                 if is_trace:
                     trkey = key[:-1] + (False,)
@@ -1160,7 +1158,7 @@ class VolumeField(Field):
                         self.dof_conns[trkey] = dof_conns[trkey]
                         continue
                     conn = sd.get_connectivity(is_trace=False)
-                    dc = create_dof_conn(conn, dpn)
+                    dc = create_dof_conn(conn, self.n_components)
                     self.dof_conns[trkey] = dc
 
             elif dct == 'edge':
@@ -1171,7 +1169,7 @@ class VolumeField(Field):
                     # Point data only in the first group to avoid multiple
                     # assembling of nodes on group boundaries.
                     conn = ap.point_data[region_name]
-                    dc = create_dof_conn(conn, dpn)
+                    dc = create_dof_conn(conn, self.n_components)
                     self.dof_conns[key] = dc
                     can_point = False
 
@@ -1334,7 +1332,7 @@ class SurfaceField(Field):
         """
         return 0, None, None
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
+    def setup_dof_conns(self, dof_conns, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
         dct = dc_type.type
 
@@ -1348,14 +1346,14 @@ class SurfaceField(Field):
             if ig not in region.igs: continue
 
             region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig, is_trace)
+            key = (self.name, self.n_components, region_name, dct, ig, is_trace)
             if key in dof_conns:
                 self.dof_conns[key] = dof_conns[key]
                 continue
 
             sd = ap.surface_data[region_name]
             conn = sd.get_connectivity(local=True, is_trace=is_trace)
-            dc = create_dof_conn(conn, dpn)
+            dc = create_dof_conn(conn, self.n_components)
             self.dof_conns[key] = dc
 
         dof_conns.update(self.dof_conns)
