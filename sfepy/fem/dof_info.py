@@ -687,7 +687,7 @@ class IntegralMeanValueOperator(LCBCOperator):
     Transformation matrix operator for integral mean value LCBCs.
     All node DOFs are sumed to the new one.
     """
-    def __init__(self, name, nodes, region, field, dof_names, filename=None):
+    def __init__(self, name, nodes, region, field, dof_names):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
         dpn = len(dof_names)
@@ -765,10 +765,8 @@ class LCBCOperators(Container):
                                        filename=filename)
 
         elif kind == 'integral_mean_value':
-            filename = bc.get('filename', None)
             op = IntegralMeanValueOperator('%d_integral_mean_value' % len(self),
-                                           nmaster, region, field, dofs,
-                                           filename=filename)
+                                           nmaster, region, field, dofs)
 
         self.append(op)
 
