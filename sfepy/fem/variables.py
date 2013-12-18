@@ -1307,6 +1307,14 @@ class FieldVariable(Variable):
 
             output('lcbc:', self.name, bc.name)
 
+            if ts is not None and ts.step > 0:
+                # Save LCBC data only in the initial time step of the LCBC
+                # application.
+                import os
+                if os.path.exists(get_default(bc.filename, '')):
+                    bc = bc.copy()
+                    bc.filename = None
+
             ops.add_from_bc(bc, self.field)
 
         ops.finalize()
