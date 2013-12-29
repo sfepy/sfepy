@@ -1216,21 +1216,19 @@ class FieldVariable(Variable):
 
         adof_conns.update(self.adof_conns)
 
-    def get_dof_conn(self, dc_type, ig, active=False, is_trace=False):
-        """Get active dof connectivity of a variable.
+    def get_dof_conn(self, dc_type, ig, is_trace=False):
+        """
+        Get active dof connectivity of a variable.
 
-        Note that primary and dual variables must have same Region!"""
-        if not active:
-            dc = self.field.get_dof_conn(dc_type, ig)
+        Notes
+        -----
+        The primary and dual variables must have the same Region.
+        """
+        if self.is_virtual():
+            var_name = self.get_primary().name
 
         else:
-            var = self.get_primary()
-
-            if self.is_virtual():
-                var_name = var.name
-
-            else:
-                var_name = self.name
+            var_name = self.name
 
         if not is_trace:
             region_name = dc_type.region_name

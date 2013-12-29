@@ -1490,7 +1490,7 @@ class Term(Struct):
 
             for ii, (ig, _iels) in enumerate(iels):
                 vec_in_els = val[ii]
-                dc = vvar.get_dof_conn(dc_type, ig, active=True)
+                dc = vvar.get_dof_conn(dc_type, ig)
                 assert_(vec_in_els.shape[2] == dc.shape[1])
 
                 assemble(asm_obj, vec_in_els, _iels, 1.0, dc)
@@ -1511,11 +1511,10 @@ class Term(Struct):
                     and (mtx_in_els.dtype == nm.float64)):
                     mtx_in_els = mtx_in_els.astype(nm.complex128)
 
-                rdc = vvar.get_dof_conn(dc_type, ig, active=True)
+                rdc = vvar.get_dof_conn(dc_type, ig)
 
                 is_trace = self.arg_traces[svar.name]
-                cdc = svar.get_dof_conn(dc_type, ig, active=True,
-                                        is_trace=is_trace)
+                cdc = svar.get_dof_conn(dc_type, ig, is_trace=is_trace)
                 assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 
                 sign = 1.0
