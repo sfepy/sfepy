@@ -1228,11 +1228,13 @@ class Term(Struct):
         pass
 
     def standalone_setup(self):
-        from sfepy.fem import setup_dof_conns
+        from sfepy.fem import create_adof_conns, Variables
 
         conn_info = {'aux' : self.get_conn_info()}
+        adcs = create_adof_conns(conn_info, None)
 
-        setup_dof_conns(conn_info)
+        variables = Variables(self.get_variables())
+        variables.set_adof_conns(adcs)
 
         materials = self.get_materials(join=True)
 
