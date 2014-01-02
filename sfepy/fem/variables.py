@@ -771,7 +771,8 @@ class Variable(Struct):
             var = self
 
         elif self.primary_var_name is not None:
-            if self._variables is not None:
+            if ((self._variables is not None)
+                and (self.primary_var_name in self._variables.names)):
                 var = self._variables[self.primary_var_name]
 
             else:
@@ -793,10 +794,20 @@ class Variable(Struct):
             variable for state variables.
         """
         if self.is_state():
-            var = self._variables[self.dual_var_name]
+            if ((self._variables is not None)
+                and (self.dual_var_name in self._variables.names)):
+                var = self._variables[self.dual_var_name]
+
+            else:
+                var = None
 
         else:
-            var = self._variables[self.primary_var_name]
+            if ((self._variables is not None)
+                and (self.primary_var_name in self._variables.names)):
+                var = self._variables[self.primary_var_name]
+
+            else:
+                var = None
 
         return var
 
