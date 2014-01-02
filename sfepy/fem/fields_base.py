@@ -56,22 +56,6 @@ def parse_approx_order(approx_order):
 
     return ao, force_bubble, discontinuous
 
-def create_dof_conn(conn, dpn):
-    """Given element a node connectivity, create the dof connectivity."""
-    if dpn == 1:
-        dc = conn.copy()
-    else:
-        n_el, n_ep = conn.shape
-        n_ed = n_ep * dpn
-        dc = nm.empty( (n_el, n_ed), dtype = conn.dtype )
-        for ic in range( n_ed ):
-            inod = ic / dpn
-            idof = ic % dpn
-            iloc = n_ep * idof + inod # Hack: For DBD order.
-            dc[:,iloc] = dpn * conn[:,inod] + idof
-
-    return dc
-
 def fields_from_conf(conf, regions):
     fields = {}
     for key, val in conf.iteritems():
@@ -88,40 +72,6 @@ def setup_extra_data(conn_info):
         for var in info.all_vars:
             field = var.get_field()
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
-
-def setup_dof_conns(conn_info, dof_conns=None,
-                    make_virtual=False, verbose=True):
-    """
-    Dof connectivity key:
-        (field.name, var.n_components, region.name, type, ig)
-    """
-    if verbose:
-        output('setting up dof connectivities...')
-        tt = time.clock()
-
-    dof_conns = get_default(dof_conns, {})
-
-    for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
-
-        if info.primary is not None:
-            var = info.primary
-            field = var.get_field()
-            field.setup_extra_data(info.ps_tg, info, info.is_trace)
-            field.setup_dof_conns(dof_conns, info.dc_type, info.get_region(),
-                                  info.is_trace)
-
-        if info.has_virtual and not info.is_trace:
-            # This is needed regardless make_virtual.
-            var = info.virtual
-            field = var.get_field()
-            field.setup_extra_data(info.v_tg, info, False)
-            field.setup_dof_conns(dof_conns, info.dc_type,
-                                  info.get_region(can_trace=False))
-
-    if verbose:
-        output('...done in %.2f s' % (time.clock() - tt))
-
-    return dof_conns
 
 def get_eval_expression(expression, ig,
                         fields, materials, variables,
@@ -399,8 +349,6 @@ class Field(Struct):
                         region=region)
         self.domain = self.region.domain
         self.igs = self.region.igs
-
-        self.clear_dof_conns()
 
         self._set_approx_order(approx_order)
         self._setup_geometry()
@@ -828,9 +776,6 @@ class Field(Struct):
 
         return out
 
-    def clear_dof_conns(self):
-        self.dof_conns = {}
-
     def create_mesh(self, extra_nodes=True):
         """
         Create a mesh from the field region, optionally including the field
@@ -1120,63 +1065,37 @@ class VolumeField(Field):
         if region.name not in ap.point_data:
             ap.setup_point_data(field, region)
 
-    def setup_dof_conns(self, dof_conns, dc_type, region, is_trace=False):
-        """Setup dof connectivities of various kinds as needed by terms."""
-        if isinstance(dc_type, Struct):
-            dct = dc_type.type
+    def get_econn(self, conn_type, region, ig, is_trace=False):
+        """
+        Get extended connectivity of the given type in the given region.
+        """
+        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+
+        if ((ig not in self.igs) or (ig not in region.igs)
+            or (ct == 'point' and (ig > self.igs[0]))):
+            # Point data only in the first group to avoid multiple
+            # assembling of nodes on group boundaries.
+            return None
+
+        ap = self.aps[ig]
+
+        if ct in ('volume', 'plate'):
+            conn = ap.econn
+
+        elif ct == 'surface':
+            sd = ap.surface_data[region.name]
+            conn = sd.get_connectivity(is_trace=is_trace)
+
+        elif ct == 'edge':
+            raise NotImplementedError('connectivity type %s' % ct)
+
+        elif ct == 'point':
+            conn = ap.point_data[region.name]
 
         else:
-            dct = dc_type
+            raise ValueError('unknown connectivity type! (%s)' % ct)
 
-        ##
-        # Expand nodes into dofs.
-        can_point = True
-        for ig, ap in self.aps.iteritems():
-            if ig not in region.igs: continue
-
-            region_name = region.name # True region name.
-            key = (self.name, self.n_components, region_name, dct, ig, is_trace)
-            if key in dof_conns:
-                self.dof_conns[key] = dof_conns[key]
-
-                if dct == 'point':
-                    can_point = False
-                continue
-
-            if dct in ('volume', 'plate'):
-                dc = create_dof_conn(ap.econn, self.n_components)
-                self.dof_conns[key] = dc
-
-            elif dct == 'surface':
-                sd = ap.surface_data[region_name]
-                conn = sd.get_connectivity(is_trace=is_trace)
-                dc = create_dof_conn(conn, self.n_components)
-                self.dof_conns[key] = dc
-                if is_trace:
-                    trkey = key[:-1] + (False,)
-                    if trkey in dof_conns:
-                        self.dof_conns[trkey] = dof_conns[trkey]
-                        continue
-                    conn = sd.get_connectivity(is_trace=False)
-                    dc = create_dof_conn(conn, self.n_components)
-                    self.dof_conns[trkey] = dc
-
-            elif dct == 'edge':
-                raise NotImplementedError('dof connectivity type %s' % dct)
-
-            elif dct == 'point':
-                if can_point:
-                    # Point data only in the first group to avoid multiple
-                    # assembling of nodes on group boundaries.
-                    conn = ap.point_data[region_name]
-                    dc = create_dof_conn(conn, self.n_components)
-                    self.dof_conns[key] = dc
-                    can_point = False
-
-            else:
-                raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
-        dof_conns.update(self.dof_conns)
+        return conn
 
     def average_qp_to_vertices(self, data_qp, integral):
         """
@@ -1332,31 +1251,22 @@ class SurfaceField(Field):
         """
         return 0, None, None
 
-    def setup_dof_conns(self, dof_conns, dc_type, region, is_trace=False):
-        """Setup dof connectivities of various kinds as needed by terms."""
-        dct = dc_type.type
+    def get_econn(self, conn_type, region, ig, is_trace=False):
+        """
+        Get extended connectivity of the given type in the given region.
+        """
+        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
 
-        if dct != 'surface':
-            msg = "dof connectivity type must be 'surface'! (%s)" % dct
+        if ct != 'surface':
+            msg = 'connectivity type must be "surface"! (%s)' % ct
             raise ValueError(msg)
 
-        ##
-        # Expand nodes into dofs.
-        for ig, ap in self.aps.iteritems():
-            if ig not in region.igs: continue
+        ap = self.aps[ig]
 
-            region_name = region.name # True region name.
-            key = (self.name, self.n_components, region_name, dct, ig, is_trace)
-            if key in dof_conns:
-                self.dof_conns[key] = dof_conns[key]
-                continue
+        sd = ap.surface_data[region.name]
+        conn = sd.get_connectivity(local=True, is_trace=is_trace)
 
-            sd = ap.surface_data[region_name]
-            conn = sd.get_connectivity(local=True, is_trace=is_trace)
-            dc = create_dof_conn(conn, self.n_components)
-            self.dof_conns[key] = dc
-
-        dof_conns.update(self.dof_conns)
+        return conn
 
     def average_qp_to_vertices(self, data_qp, integral):
         """

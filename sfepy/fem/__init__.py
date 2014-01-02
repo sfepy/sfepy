@@ -10,10 +10,10 @@ from mesh import Mesh
 from conditions import Conditions
 from domain import Domain
 from region import Region
-from fields_base import Field, setup_dof_conns
+from fields_base import Field
 from fields_nodal import (H1NodalVolumeField, H1DiscontinuousField,
                           H1NodalSurfaceField)
-from variables import Variables, Variable, FieldVariable
+from variables import Variables, Variable, FieldVariable, create_adof_conns
 from materials import Materials, Material
 from equations import Equations, Equation
 from integrals import Integrals, Integral

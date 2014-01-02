@@ -7,7 +7,8 @@ from collections import deque
 import numpy as nm
 
 from sfepy.base.base import (real_types, complex_types, assert_, get_default,
-                             output, OneTypeList, Container, Struct, basestr)
+                             output, OneTypeList, Container, Struct, basestr,
+                             iter_dict_of_lists)
 import sfepy.linalg as la
 from sfepy.fem.integrals import Integral
 from sfepy.fem.dof_info import (DofInfo, EquationMap, LCBCOperators,
@@ -21,13 +22,105 @@ is_virtual = 1
 is_parameter = 2
 is_field = 10
 
-def create_adof_conn(eq, dc, indx):
+def create_adof_conns(conn_info, var_indx=None, verbose=True):
     """
-    Given a dof connectivity and equation mapping, create the active dof
-    connectivity.
+    Create active DOF connectivities for all variables referenced in
+    `conn_info`.
+
+    If a variable has not the equation mapping, a trivial mapping is assumed
+    and connectivity with all DOFs active is created.
+
+    DOF connectivity key is a tuple ``(primary variable name, region name,
+    type, ig, is_trace flag)``.
     """
-    aux = nm.take(eq, dc)
-    adc = aux + nm.asarray(indx.start * (aux >= 0), dtype=nm.int32)
+    var_indx = get_default(var_indx, {})
+
+    def _create(var, econn):
+        if var.eq_map is None:
+            eq = nm.arange(var.n_dof, dtype=nm.int32)
+
+        else:
+            eq = var.eq_map.eq
+
+        offset = var_indx.get(var.name, slice(0, 0)).start
+        adc = create_adof_conn(eq, econn, var.n_components, offset)
+
+        return adc
+
+    def _iter_igs(adof_conns, info, region, var, field, is_trace):
+        for ig in region.igs:
+            key = (var.name, region.name, info.dc_type.type, ig, is_trace)
+            if not key in adof_conns:
+                econn = field.get_econn(info.dc_type, region,
+                                        ig, is_trace=is_trace)
+                if econn is None: continue
+
+                adof_conns[key] = _create(var, econn)
+
+            if info.is_trace:
+                key = (var.name, region.name, info.dc_type.type, ig, False)
+                if not key in adof_conns:
+                    econn = field.get_econn(info.dc_type, region,
+                                            ig, is_trace=False)
+
+                adof_conns[key] = _create(var, econn)
+
+    if verbose:
+        output('setting up dof connectivities...')
+        tt = time.clock()
+
+    adof_conns = {}
+
+    for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
+        if info.primary is not None:
+            var = info.primary
+            field = var.get_field()
+            field.setup_extra_data(info.ps_tg, info, info.is_trace)
+
+            region = info.get_region()
+            _iter_igs(adof_conns, info, region, var, field, info.is_trace)
+
+        if info.has_virtual and not info.is_trace:
+            var = info.virtual
+            field = var.get_field()
+            field.setup_extra_data(info.v_tg, info, False)
+
+            aux = var.get_primary()
+            var = aux if aux is not None else var
+
+            region = info.get_region(can_trace=False)
+            _iter_igs(adof_conns, info, region, var, field, False)
+
+    if verbose:
+        output('...done in %.2f s' % (time.clock() - tt))
+
+    return adof_conns
+
+def create_adof_conn(eq, conn, dpn, offset):
+    """
+    Given a node connectivity, number of DOFs per node and equation mapping,
+    create the active dof connectivity.
+
+    Locally (in a connectivity row), the DOFs are stored DOF-by-DOF (u_0 in all
+    local nodes, u_1 in all local nodes, ...).
+
+    Globally (in a state vector), the DOFs are stored node-by-node (u_0, u_1,
+    ..., u_X in node 0, u_0, u_1, ..., u_X in node 1, ...).
+    """
+    if dpn == 1:
+        aux = nm.take(eq, conn)
+        adc = aux + nm.asarray(offset * (aux >= 0), dtype=nm.int32)
+
+    else:
+        n_el, n_ep = conn.shape
+        adc = nm.empty((n_el, n_ep * dpn), dtype=conn.dtype)
+        ii = 0
+        for idof in xrange(dpn):
+            aux = nm.take(eq, dpn * conn + idof)
+            adc[:, ii : ii + n_ep] = aux + nm.asarray(offset * (aux >= 0),
+                                                      dtype=nm.int32)
+            ii += n_ep
+
     return adc
 
 class Variables(Container):
@@ -301,15 +394,24 @@ class Variables(Container):
 
             var.setup_initial_conditions(ics, self.di, functions)
 
-    def setup_adof_conns(self):
+    def set_adof_conns(self, adof_conns):
         """
-        Translate dofs to active dofs.
+        Set all active DOF connectivities to `self` as well as relevant
+        sub-dicts to the individual variables.
+        """
+        self.adof_conns = adof_conns
 
-        Active dof connectivity key = (variable.name, region.name, type, ig).
-        """
-        self.adof_conns = {}
         for var in self:
-            var.setup_adof_conns(self.adof_conns, self.adi)
+            var.adof_conns = {}
+
+        for key, val in adof_conns.iteritems():
+            if key[0] in self.names:
+                var = self[key[0]]
+                var.adof_conns[key] = val
+
+                var = var.get_dual()
+                if var is not None:
+                    var.adof_conns[key] = val
 
     def create_state_vector(self):
         vec = nm.zeros((self.di.ptr[-1],), dtype=self.dtype)
@@ -686,6 +788,7 @@ class Variable(Struct):
         self.dt = 1.0
         self.initial_condition = None
         self.dual_var_name = None
+        self.eq_map = None
 
         if self.is_virtual():
             self.data = None
@@ -1198,34 +1301,6 @@ class FieldVariable(Variable):
                                      get_saved=get_saved,
                                      return_key=return_key)
         return out
-
-    def setup_adof_conns(self, adof_conns, adi):
-        """
-        Translate dof connectivity of the variable to active dofs.
-
-        Active dof connectivity key:
-            (variable.name, region.name, type, ig)
-        """
-        self.adof_conns = {}
-
-        for key, dc in self.field.dof_conns.iteritems():
-            var = self.get_primary()
-            akey = (var.name,) + key[2:]
-            if akey in adof_conns:
-                self.adof_conns[akey] = adof_conns[akey]
-
-            else:
-                if var.name in adi.indx:
-                    indx = adi.indx[var.name]
-                    eq = var.eq_map.eq
-
-                else: # Special or pure parameter variables.
-                    indx = slice(0, var.n_dof)
-                    eq = nm.arange(var.n_dof, dtype=nm.int32)
-
-                self.adof_conns[akey] = create_adof_conn(eq, dc, indx)
-
-        adof_conns.update(self.adof_conns)
 
     def get_dof_conn(self, dc_type, ig, is_trace=False):
         """
