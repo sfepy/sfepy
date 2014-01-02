@@ -4,7 +4,7 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default, OneTypeList, Struct, basestr
 from sfepy.fem import Equations, Variables, Region, Integral, Integrals
-from sfepy.fem.fields_base import setup_dof_conns, setup_extra_data
+from sfepy.fem.fields_base import setup_extra_data
 
 ##
 # 02.10.2007, c
@@ -203,8 +203,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, regions, materials, integrals,
-                                    setup=False, user=extra_args,
-                                    verbose=verbose)
+                                    user=extra_args, verbose=verbose)
     equations.collect_conn_info()
 
     # The true variables used in the expression.
@@ -214,7 +213,6 @@ def create_evaluable(expression, fields, materials, variables, integrals,
             var.init_data(step=0)
 
     if mode == 'weak':
-        setup_dof_conns(equations.conn_info, verbose=verbose)
         equations.time_update(ts, ebcs, epbcs, lcbcs, functions,
                               verbose=verbose)
 

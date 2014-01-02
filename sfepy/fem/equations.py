@@ -9,7 +9,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import debug, OneTypeList, Container, Struct
-from sfepy.fem import Materials, Variables, setup_dof_conns
+from sfepy.fem import Materials, Variables, create_adof_conns
 from extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 
@@ -49,8 +49,7 @@ class Equations(Container):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  setup=True, user=None,
-                  make_virtual=False, verbose=True):
+                  user=None, verbose=True):
 
         objs = OneTypeList(Equation)
 
@@ -66,13 +65,11 @@ class Equations(Container):
             objs.append(eq)
             ii += 1
 
-        obj = Equations(objs, setup=setup,
-                        make_virtual=make_virtual, verbose=verbose)
+        obj = Equations(objs)
 
         return obj
 
-    def __init__(self, equations, setup=True,
-                 make_virtual=False, verbose=True):
+    def __init__(self, equations):
         Container.__init__(self, equations)
 
         self.variables = Variables(self.collect_variables())
@@ -82,8 +79,7 @@ class Equations(Container):
 
         self.active_bcs = set()
 
-        if setup:
-            self.setup(make_virtual=make_virtual, verbose=verbose)
+        self.collect_conn_info()
 
     def create_subequations(self, var_names, known_var_names=None):
         """
@@ -142,14 +138,6 @@ class Equations(Container):
                     domain = term.region.domain
 
         return domain
-
-    def setup(self, make_virtual=False, verbose=True):
-        self.collect_conn_info()
-
-        # This uses the conn_info created above.
-        self.dof_conns = {}
-        setup_dof_conns(self.conn_info, dof_conns=self.dof_conns,
-                        make_virtual=make_virtual, verbose=verbose)
 
     def collect_materials(self):
         """
@@ -293,7 +281,8 @@ class Equations(Container):
         self.active_bcs = active_bcs
 
         if graph_changed or not self.variables.adof_conns:
-            self.variables.setup_adof_conns()
+            adcs = create_adof_conns(self.conn_info, self.variables.adi.indx)
+            self.variables.set_adof_conns(adcs)
 
         self.variables.setup_lcbc_operators(lcbcs, ts, functions)
 

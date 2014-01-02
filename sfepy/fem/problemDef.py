@@ -390,8 +390,7 @@ class ProblemDefinition(Struct):
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         materials, self.integrals,
-                                        user=user,
-                                        make_virtual=make_virtual)
+                                        user=user)
 
         self.equations = equations
 
