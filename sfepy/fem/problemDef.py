@@ -1200,6 +1200,46 @@ class ProblemDefinition(Struct):
 
         return out
 
+    def eval_equations(self, names=None, preserve_caches=False,
+                   mode='eval', dw_mode='vector', term_mode=None,
+                   verbose=True):
+        """
+        Evaluate (some of) the problem's equations, convenience wrapper of
+        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations>`.
+
+        Parameters
+        ----------
+        names : str or sequence of str, optional
+            Evaluate only equations of the given name(s).
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
+        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+            The evaluation mode - 'weak' means the finite element
+            assembling, 'qp' requests the values in quadrature points,
+            'el_avg' element averages and 'eval' means integration over
+            each term region.
+        dw_mode : 'vector' or 'matrix'
+            The assembling mode for 'weak' evaluation mode.
+        term_mode : str
+            The term call mode - some terms support different call modes
+            and depending on the call mode different values are
+            returned.
+        verbose : bool
+            If False, reduce verbosity.
+
+        Returns
+        -------
+        out : dict or result
+            The evaluation result. In 'weak' mode it is the vector or sparse
+            matrix, depending on `dw_mode`. Otherwise, it is a dict of results
+            with equation names as keys or a single result for a single
+            equation.
+        """
+        return eval_equations(self.equations, self.equations.variables,
+                              names=names, preserve_caches=preserve_caches,
+                              mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                              verbose=verbose)
+
     def get_time_solver(self, ts_conf=None, **kwargs):
         """
         Create and return a TimeSteppingSolver instance.

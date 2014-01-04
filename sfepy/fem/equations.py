@@ -555,23 +555,41 @@ class Equations(Container):
     def get_lcbc_operator(self):
         return self.variables.get_lcbc_operator()
 
-    def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
-                 asm_obj=None):
+    def evaluate(self, names=None, mode='eval', dw_mode='vector',
+                 term_mode=None, asm_obj=None):
         """
         Parameters
         ----------
         mode : one of 'eval', 'el_avg', 'qp', 'weak'
             The evaluation mode.
+        names : eval only equations of given names.
+            Returns single result if names given by str Dictionary
+            otherwise. None means all equations names can be string (eval one
+            equation), list of strings (eval eqns with given names) or None
+            (eval all equations)
         """
+
+        if names is None:
+            single = False
+            eqs = self
+        else:
+            single = isinstance(names, str)
+            if single:
+                names = [ names ]
+            eqs = [ self[eq] for eq in names ]
+
         if mode == 'weak':
             out = asm_obj
-
+            single = False
         else:
             out = {}
 
-        for eq in self:
+        for eq in eqs:
             eout = eq.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
                                asm_obj=asm_obj)
+            if single:
+                return eout
+
             if mode != 'weak':
                 out[eq.name] = eout
 

@@ -222,7 +222,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     return equations, variables
 
 
-def eval_equations(equations, variables, preserve_caches=False,
+def eval_equations(equations, variables, names=None, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None,
                    verbose=True):
     """
@@ -234,6 +234,8 @@ def eval_equations(equations, variables, preserve_caches=False,
         The equations returned by :func:`create_evaluable()`.
     variables : Variables instance
         The variables returned by :func:`create_evaluable()`.
+    names : str or sequence of str, optional
+        Evaluate only equations of the given name(s).
     preserve_caches : bool
         If True, do not invalidate evaluate caches of variables.
     mode : one of 'eval', 'el_avg', 'qp', 'weak'
@@ -252,8 +254,10 @@ def eval_equations(equations, variables, preserve_caches=False,
 
     Returns
     -------
-    out : array
-        The result of the evaluation.
+    out : dict or result
+        The evaluation result. In 'weak' mode it is the vector or sparse
+        matrix, depending on `dw_mode`. Otherwise, it is a dict of results with
+        equation names as keys or a single result for a single equation.
     """
     asm_obj = None
 
@@ -267,8 +271,8 @@ def eval_equations(equations, variables, preserve_caches=False,
     if not preserve_caches:
         equations.invalidate_term_caches()
 
-    out = equations.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                             asm_obj=asm_obj)
+    out = equations.evaluate(names=names, mode=mode, dw_mode=dw_mode,
+                             term_mode=term_mode, asm_obj=asm_obj)
 
     if variables.has_lcbc and mode == 'weak':
         op_lcbc = variables.op_lcbc
