@@ -779,7 +779,7 @@ class ProblemDefinition(Struct):
             output('cannot make equation mapping!')
             raise
 
-        state = self.create_state()
+        state = State(variables)
         state.fill(default)
 
         if force:
