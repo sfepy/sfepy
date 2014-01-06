@@ -6,7 +6,7 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import dict_from_keys_init, select_by_names
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import output, get_default, Struct, IndexedStruct
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
@@ -144,7 +144,7 @@ class ProblemDefinition(Struct):
             nls.fun = ev.eval_residual
             nls.fun_grad = ev.eval_tangent_matrix
 
-            self.solvers = Struct(name='solvers', ls=ls, nls=nls)
+            self.set_solvers_instances(ls=ls, nls=nls)
 
         self.setup_output()
 
@@ -459,6 +459,8 @@ class ProblemDefinition(Struct):
                 raise ValueError('linear solver not used in nonlinear!')
 
         self.solvers = Struct(name='solvers', ls=ls, nls=nls)
+        if nls is not None:
+            self.nls_status = get_default(nls.status, IndexedStruct())
 
     def get_solver_conf(self, name):
         return self.solver_confs[name]
@@ -895,7 +897,7 @@ class ProblemDefinition(Struct):
                                    lin_solver=ls, iter_hook=self.nls_iter_hook,
                                    status=nls_status, **extra_args)
 
-        self.solvers = Struct(name='solvers', ls=ls, nls=nls)
+        self.set_solvers_instances(ls=ls, nls=nls)
 
     def get_solvers(self):
         return getattr(self, 'solvers', None)
@@ -947,7 +949,9 @@ class ProblemDefinition(Struct):
 
         vec0 = state0.get_reduced()
 
-        vec = solvers.nls(vec0)
+        self.nls_status = get_default(nls_status, self.nls_status)
+        vec = solvers.nls(vec0, status=self.nls_status)
+
         state = state0.copy(preserve_caches=True)
         state.set_reduced(vec, preserve_caches=True)
 
