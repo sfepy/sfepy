@@ -540,3 +540,32 @@ class ProblemConf(Struct):
 
     def edit(self, key, newval):
         self.__dict__[key] = transforms[key](newval)
+
+    def add_conf(self, conf):
+        """
+            Override configuration by values in given problem conf.
+               conf : another ProblemConf instance
+        """
+        for x in conf.__dict__:
+            his = conf.__dict__[x]
+            my = getattr(self, x, None)
+            if isinstance(my, dict) and isinstance(his, dict):
+               my.update(his)
+            else:
+               setattr(self, x, his)
+
+    def add_missing(self, conf):
+        """
+            Add missing values from given problem conf
+               conf : another ProblemConf instance
+        """
+        for x in conf.__dict__:
+            his = conf.__dict__[x]
+            my = getattr(self, x, None)
+            if isinstance(my, dict) and isinstance(his, dict):
+               for key in his:
+                  if not my.has_key(key):
+                     my[key]=his[key]
+            elif my is None:
+               setattr(self, x, his)
+
