@@ -222,8 +222,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     return equations, variables
 
 
-def eval_equations(equations, variables, preserve_caches=False,
-                   mode='eval', dw_mode='vector', term_mode=None):
+def eval_equations(equations, variables, names=None, preserve_caches=False,
+                   mode='eval', dw_mode='vector', term_mode=None,
+                   verbose=True):
     """
     Evaluate the equations.
 
@@ -233,6 +234,10 @@ def eval_equations(equations, variables, preserve_caches=False,
         The equations returned by :func:`create_evaluable()`.
     variables : Variables instance
         The variables returned by :func:`create_evaluable()`.
+    names:  can be
+           - None: evaluate all equations
+           - str: evaluate equation with given name
+           - list or set: evaluate equations with given names
     preserve_caches : bool
         If True, do not invalidate evaluate caches of variables.
     mode : one of 'eval', 'el_avg', 'qp', 'weak'
@@ -249,8 +254,12 @@ def eval_equations(equations, variables, preserve_caches=False,
 
     Returns
     -------
-    out : array
-        The result of the evaluation.
+    out : The result of the evaluation.
+          Returns
+            weak mode: array (1d or 2d depending to dw_mode)
+            names is string or there is one equation: X
+            otherwise: dict { eq_name : X }
+          Where X is result of given equation, scalar or array depending on mode
     """
     asm_obj = None
 
@@ -259,12 +268,12 @@ def eval_equations(equations, variables, preserve_caches=False,
             asm_obj = equations.create_stripped_state_vector()
 
         else:
-            asm_obj = equations.create_matrix_graph()
+            asm_obj = equations.create_matrix_graph(verbose=verbose)
 
     if not preserve_caches:
         equations.invalidate_term_caches()
 
-    out = equations.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+    out = equations.evaluate(names=names, mode=mode, dw_mode=dw_mode, term_mode=term_mode,
                              asm_obj=asm_obj)
 
     if variables.has_lcbc and mode == 'weak':

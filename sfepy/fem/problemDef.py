@@ -503,14 +503,14 @@ class ProblemDefinition(Struct):
         if ts is not None:
             self.ts = ts
 
-    def update_materials(self, ts=None, mode='normal'):
+    def update_materials(self, ts=None, mode='normal', verbose=True):
         """
         Update materials used in equations.
         """
         if self.equations is not None:
             self.update_time_stepper(ts)
             self.equations.time_update_materials(self.ts, mode=mode,
-                                                 problem=self)
+                                                 problem=self, verbose=verbose)
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
@@ -1190,6 +1190,48 @@ class ProblemDefinition(Struct):
             out = (out, variables)
 
         return out
+
+    def eval_equations(self, names=None, preserve_caches=False,
+                   mode='eval', dw_mode='vector', term_mode=None,
+                   verbose=True):
+        """
+        Evaluate the equations.
+
+        Parameters
+        ----------
+        names : string, iterable or None
+            Name of equation or list/set of equation names. If it's
+              - None: eval all equations
+              - str: eval given equation
+              - iterable (e.g. list): (of strings) eval equations with given names
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
+        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+            The evaluation mode - 'weak' means the finite element
+            assembling, 'qp' requests the values in quadrature points,
+            'el_avg' element averages and 'eval' means integration over
+            each term region.
+        dw_mode : 'vector' or 'matrix'
+            The assembling mode for 'weak' evaluation mode.
+        term_mode : str
+            The term call mode - some terms support different call modes
+            and depending on the call mode different values are
+            returned.
+
+        Returns
+        -------
+        out : array or dictionary
+              The result of the evaluation. If it's weak mode and there are lbcb conditions,\
+              or names parameter is string (so only one equation is choosed to evaluate),
+              one array is returned, the dictionary { equation_name: equation_result }
+              is returned otherwise
+        """
+        return eval_equations(self.equations, self.equations.variables, names=names,
+                   preserve_caches=preserve_caches,
+                   mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                   verbose=verbose)
+
+
 
     def get_time_solver(self, ts_conf=None, **kwargs):
         """
