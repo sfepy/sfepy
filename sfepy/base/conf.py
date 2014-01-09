@@ -540,3 +540,43 @@ class ProblemConf(Struct):
 
     def edit(self, key, newval):
         self.__dict__[key] = transforms[key](newval)
+
+    def update_conf(self, conf):
+        """
+        Update configuration by values in another problem configuration.
+
+        Values that are dictionaries are updated in-place by ``dict.update()``.
+
+        Parameters
+        ----------
+        conf : ProblemConf instance
+            The other configuration.
+        """
+        for x in conf.__dict__:
+            his = conf.__dict__[x]
+            my = getattr(self, x, None)
+            if isinstance(my, dict) and isinstance(his, dict):
+                my.update(his)
+            else:
+                setattr(self, x, his)
+
+    def add_missing(self, conf):
+        """
+        Add missing values from another problem configuration.
+
+        Missing keys/values are added also to values that are dictionaries.
+
+        Parameters
+        ----------
+        conf : ProblemConf instance
+            The other configuration.
+        """
+        for x in conf.__dict__:
+            his = conf.__dict__[x]
+            my = getattr(self, x, None)
+            if isinstance(my, dict) and isinstance(his, dict):
+                for key in his:
+                    if not my.has_key(key):
+                        my[key]=his[key]
+            elif my is None:
+                setattr(self, x, his)
