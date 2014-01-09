@@ -387,7 +387,7 @@ class Equations(Container):
         return rdcs, cdcs
 
     def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,
-                            shape=None):
+                            shape=None, verbose=True):
         """
         Create tangent matrix graph, i.e. preallocate and initialize the
         sparse storage needed for the tangent matrix. Order of DOF
@@ -419,7 +419,7 @@ class Equations(Container):
 
         shape = get_default(shape, self.variables.get_matrix_shape())
 
-        output('matrix shape:', shape)
+        output('matrix shape:', shape, verbose=verbose)
         if nm.prod(shape) == 0:
             output('no matrix (zero size)!')
             return None
@@ -431,15 +431,15 @@ class Equations(Container):
             output('no matrix (empty dof connectivities)!')
             return None
 
-        output('assembling matrix graph...')
+        output('assembling matrix graph...', verbose=verbose)
         tt = time.clock()
 
         nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
                                             len(rdcs), rdcs, cdcs)
 
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
         output('matrix structural nonzeros: %d (%.2e%% fill)' \
-               % (nnz, float(nnz) / nm.prod(shape)))
+               % (nnz, float(nnz) / nm.prod(shape)), verbose=verbose)
 
         data = nm.zeros((nnz,), dtype=self.variables.dtype)
         matrix = sp.csr_matrix((data, icol, prow), shape)

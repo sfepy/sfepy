@@ -503,14 +503,14 @@ class ProblemDefinition(Struct):
         if ts is not None:
             self.ts = ts
 
-    def update_materials(self, ts=None, mode='normal'):
+    def update_materials(self, ts=None, mode='normal', verbose=True):
         """
         Update materials used in equations.
         """
         if self.equations is not None:
             self.update_time_stepper(ts)
             self.equations.time_update_materials(self.ts, mode=mode,
-                                                 problem=self)
+                                                 problem=self, verbose=verbose)
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
