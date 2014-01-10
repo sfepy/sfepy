@@ -6,7 +6,7 @@ from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        delimitedList, nums, alphas, alphas8bit, alphanums,
                        Keyword)
 
-word_free = Word(alphas8bit + '_-/.+**' + alphanums)
+word_free = Word(alphas8bit + '][@_-/.+**' + alphanums)
 word_strict = Word(alphas8bit + alphas, alphas8bit + alphanums + '_' )
 
 (lparen, rparen, lbrack, rbrack,
