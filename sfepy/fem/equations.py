@@ -558,43 +558,49 @@ class Equations(Container):
     def evaluate(self, names=None, mode='eval', dw_mode='vector',
                  term_mode=None, asm_obj=None):
         """
+        Evaluate the equations.
+
         Parameters
         ----------
         mode : one of 'eval', 'el_avg', 'qp', 'weak'
             The evaluation mode.
-        names : eval only equations of given names.
-            Returns single result if names given by str Dictionary
-            otherwise. None means all equations names can be string (eval one
-            equation), list of strings (eval eqns with given names) or None
-            (eval all equations)
-        """
+        names : str or sequence of str, optional
+            Evaluate only equations of the given name(s).
 
+        Returns
+        -------
+        out : dict or result
+            The evaluation result. In 'weak' mode it is the
+            `asm_obj`. Otherwise, it is a dict of results with equation names
+            as keys or a single result for a single equation.
+        """
         if names is None:
-            single = False
             eqs = self
+            single = (len(eqs) == 1)
+
         else:
             single = isinstance(names, str)
             if single:
-                names = [ names ]
-            eqs = [ self[eq] for eq in names ]
+                names = [names]
+
+            eqs = [self[eq] for eq in names]
 
         if mode == 'weak':
+            for eq in eqs:
+                eq.evaluate(mode=mode, dw_mode=dw_mode,
+                            term_mode=term_mode, asm_obj=asm_obj)
+
             out = asm_obj
-            single = False
+
         else:
             out = {}
-
-        for eq in eqs:
-            eout = eq.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                               asm_obj=asm_obj)
-            if single:
-                return eout
-
-            if mode != 'weak':
+            for eq in eqs:
+                eout = eq.evaluate(mode=mode, dw_mode=dw_mode,
+                                   term_mode=term_mode)
                 out[eq.name] = eout
 
-        if (len(self) == 1) and (mode != 'weak'):
-            out = out.popitem()[1]
+            if single:
+                out = out.popitem()[1]
 
         return out
 
