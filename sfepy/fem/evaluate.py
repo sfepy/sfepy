@@ -247,6 +247,8 @@ def eval_equations(equations, variables, preserve_caches=False,
         The term call mode - some terms support different call modes
         and depending on the call mode different values are
         returned.
+    verbose : bool
+        If False, reduce verbosity.
 
     Returns
     -------

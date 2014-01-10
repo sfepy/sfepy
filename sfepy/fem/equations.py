@@ -406,6 +406,8 @@ class Equations(Container):
             The required shape, if it is different from the shape
             determined by the equations variables. This may be needed if
             additional row and column DOF connectivities are passed in.
+        verbose : bool
+            If False, reduce verbosity.
 
         Returns
         -------

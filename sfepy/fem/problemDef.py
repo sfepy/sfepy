@@ -506,6 +506,15 @@ class ProblemDefinition(Struct):
     def update_materials(self, ts=None, mode='normal', verbose=True):
         """
         Update materials used in equations.
+
+        Parameters
+        ----------
+        ts : TimeStepper instance
+            The time stepper.
+        mode : 'normal', 'update' or 'force'
+            The update mode, see :func:`Material.time_update()`.
+        verbose : bool
+            If False, reduce verbosity.
         """
         if self.equations is not None:
             self.update_time_stepper(ts)
