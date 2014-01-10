@@ -8,7 +8,7 @@ from sfepy.base.base import output, get_default_attr
 from sfepy.fem.mesh import make_inverse_connectivity
 from sfepy.fem.extmods.bases import find_ref_coors
 
-def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None):
+def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None, verbose=True):
     """
     Get reference element coordinates and elements corresponding to given
     physical coordinates.
@@ -51,7 +51,7 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None):
             mesh = field.create_mesh(extra_nodes=False)
 
         scoors = mesh.coors
-        output('reference field: %d vertices' % scoors.shape[0])
+        output('reference field: %d vertices' % scoors.shape[0], verbose=verbose)
 
         iconn = get_default_attr(cache, 'iconn', None)
         if iconn is None:
@@ -74,11 +74,11 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None):
 
                 tt = time.clock()
                 kdtree = KDTree(scoors)
-                output('kdtree: %f s' % (time.clock()-tt))
+                output('kdtree: %f s' % (time.clock()-tt),verbose=verbose)
 
             tt = time.clock()
             ics = kdtree.query(coors)[1]
-            output('kdtree query: %f s' % (time.clock()-tt))
+            output('kdtree query: %f s' % (time.clock()-tt),verbose=verbose)
 
             tt = time.clock()
             ics = nm.asarray(ics, dtype=nm.int32)
@@ -105,7 +105,7 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None):
                         scoors, conns,
                         vertex_coorss, nodess, mtx_is,
                         1, close_limit, 1e-15, 100, 1e-8)
-            output('ref. coordinates: %f s' % (time.clock()-tt))
+            output('ref. coordinates: %f s' % (time.clock()-tt),verbose=verbose)
 
         elif strategy == 'crawl':
             raise NotImplementedError
