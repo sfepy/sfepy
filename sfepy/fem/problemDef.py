@@ -512,7 +512,8 @@ class ProblemDefinition(Struct):
         ts : TimeStepper instance
             The time stepper.
         mode : 'normal', 'update' or 'force'
-            The update mode, see :func:`Material.time_update()`.
+            The update mode, see :func:`Material.time_update()
+            <sfepy.fem.materials.Material.time_update()>`.
         verbose : bool
             If False, reduce verbosity.
         """
