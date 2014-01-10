@@ -178,7 +178,7 @@ class H1NodalMixin(H1Mixin):
 
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
-                    ret_status=False, ret_ref_coors=False):
+                    ret_status=False, ret_ref_coors=False, verbose=True):
         """
         Evaluate source DOF values corresponding to the field in the given
         coordinates using the field interpolation.
@@ -222,12 +222,13 @@ class H1NodalMixin(H1Mixin):
         status : array
             The status, if `ret_status` is True.
         """
-        output('evaluating in %d points...' % coors.shape[0])
+        output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
 
         ref_coors, cells, status = get_ref_coors(self, coors,
                                                  strategy=strategy,
                                                  close_limit=close_limit,
-                                                 cache=cache)
+                                                 cache=cache,
+                                                 verbose=verbose)
 
         tt = time.clock()
         vertex_coorss, nodess, orders, mtx_is = [], [], [], []
@@ -251,9 +252,9 @@ class H1NodalMixin(H1Mixin):
         evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
                        conns, vertex_coorss, nodess, orders, mtx_is,
                        1e-15)
-        output('interpolation: %f s' % (time.clock()-tt))
+        output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
-        output('...done')
+        output('...done',verbose=verbose)
 
         if ret_ref_coors:
             return vals, ref_coors, cells, status
