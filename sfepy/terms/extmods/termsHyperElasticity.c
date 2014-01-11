@@ -416,6 +416,8 @@ int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
     ERR_CheckGo( ret );
   }
  end_label:
+  errclear(); // Prevent false memory errors in mem_free_mem().
+
   fmf_freeDestroy( &st );
 
   return( ret );
