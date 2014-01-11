@@ -585,6 +585,9 @@ def dq_finite_strain_tl(np.ndarray mtx_f not None,
     ret = _dq_finite_strain_tl(_mtx_f, _det_f, _vec_cs, _tr_c, _in_2c,
                                _vec_inv_cs, _vec_es, _state, 0, cmap.geo,
                                _conn, n_el, n_ep)
+    if ret:
+        raise ValueError('ccore error (see above)')
+
     return ret
 
 def dq_finite_strain_ul(np.ndarray mtx_f not None,
@@ -613,6 +616,9 @@ def dq_finite_strain_ul(np.ndarray mtx_f not None,
     ret = _dq_finite_strain_ul(_mtx_f, _det_f, _vec_bs, _tr_b, _in_2b,
                                _vec_es, _state, 0, cmap.geo,
                                _conn, n_el, n_ep)
+    if ret:
+        raise ValueError('ccore error (see above)')
+
     return ret
 
 def dq_tl_finite_strain_surface(np.ndarray mtx_f not None,
@@ -636,6 +642,9 @@ def dq_tl_finite_strain_surface(np.ndarray mtx_f not None,
     ret = _dq_tl_finite_strain_surface(_mtx_f, _det_f, _mtx_fi, _state, 0,
                                        cmap.geo,
                                        _fis, n_fa, n_fp, _conn, n_el, n_ep)
+    if ret:
+        raise ValueError('ccore error (see above)')
+
     return ret
 
 def dq_tl_he_stress_bulk(np.ndarray out not None,
