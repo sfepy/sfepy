@@ -305,7 +305,7 @@ def adapt_time_step(ts, status, adt, problem=None):
             is_break = True
 
         else:
-            ts.set_time_step(adt.dt0 * adt.red)
+            ts.set_time_step(adt.dt0 * adt.red, update_time=True)
             output('----- new time step: %e -----' % ts.dt)
             adt.wait = 0
 

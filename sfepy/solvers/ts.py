@@ -149,8 +149,13 @@ class VariableTimeStepper(TimeStepper):
     def get_default_time_step(self):
         return self.dt0
 
-    def set_time_step(self, dt):
+    def set_time_step(self, dt, update_time=False):
         self.dt = dt
+
+        if update_time:
+            self.time = self.times[self.step - 1] + self.dt
+            self.times[self.step] = self.time
+            self.normalize_time()
 
     def __iter__(self):
         """
