@@ -34,6 +34,8 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
         element coordinates as `cache.ref_coors`, `cache.cells` and
         `cache.status`, if the evaluation occurs in the same coordinates
         repeatedly. In that case the KDTree related data are ignored.
+    verbose : bool
+        If False, reduce verbosity.
 
     Returns
     -------

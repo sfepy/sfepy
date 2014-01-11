@@ -212,6 +212,8 @@ class H1NodalMixin(H1Mixin):
             extrapolation outside `close_limit`, 3 is failure.
         ret_ref_coors : bool, optional
             If True, return also the found reference element coordinates.
+        verbose : bool
+            If False, reduce verbosity.
 
         Returns
         -------
