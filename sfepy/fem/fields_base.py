@@ -321,8 +321,9 @@ class Field(Struct):
             on the field kind.
         region : Region
             The region where the field is defined.
-        approx_order : int/str
-            The FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
+        approx_order : int or tuple
+            The FE approximation order. The tuple form is (order, has_bubble),
+            e.g. (1, True) means order 1 with a bubble function.
 
         Notes
         -----
