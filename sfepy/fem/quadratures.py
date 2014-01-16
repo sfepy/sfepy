@@ -126,7 +126,8 @@ class QuadraturePoints(Struct):
     def from_table(geometry, order):
         """
         Create a new :class:`QuadraturePoints` instance, given reference
-        element geometry name and polynomial order.
+        element geometry name and polynomial order. For tensor product
+        geometries, the polynomial order is the 1D (line) order.
         """
         table = quadrature_tables[geometry]
 
