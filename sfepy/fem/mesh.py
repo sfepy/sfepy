@@ -451,7 +451,7 @@ class Mesh(Struct):
                 for ig in region.igs:
                     mesh.descs.append(mesh_in.descs[ig])
                     els = region.get_cells(ig)
-                    mesh.mat_ids.append(mesh_in.mat_ids[ig][els,:].copy())
+                    mesh.mat_ids.append(mesh_in.mat_ids[ig][els].copy())
                     mesh.conns.append(mesh_in.conns[ig][els,:].copy())
 
             if save_edges:
