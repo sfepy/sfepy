@@ -814,6 +814,7 @@ Utility scripts
    src/script/plot_condition_numbers
    src/script/plot_mesh
    src/script/plot_quadratures
+   src/script/plot_times
    src/script/save_basis
    src/script/show_authors
    src/script/show_terms_use
@@ -849,6 +850,7 @@ sfepy.base package
    src/sfepy/base/ioutils
    src/sfepy/base/log
    src/sfepy/base/log_plotter
+   src/sfepy/base/mem_usage
    src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
    src/sfepy/base/progressbar
@@ -992,7 +994,6 @@ sfepy.physics package
 
    src/sfepy/physics/energy
    src/sfepy/physics/potentials
-   src/sfepy/physics/radial_mesh
    src/sfepy/physics/schroedinger_app
 
 sfepy.postprocess package
