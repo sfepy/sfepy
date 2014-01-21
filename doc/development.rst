@@ -18,3 +18,8 @@ contribute, not just code:
 - ...
 
 Additional ideas can be found at `our wiki`_.
+
+To get acquainted with SfePy, you can start by reading the :ref:`sec-tutorial`
+and :ref:`sec-primer` sections of the documentation and trying out the examples
+that come with the sources. Your first contribution could be pinpointing
+anything that is not clear in the docs.
