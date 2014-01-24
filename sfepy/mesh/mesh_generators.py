@@ -7,7 +7,62 @@ from sfepy.linalg import cycle
 from sfepy.fem.mesh import Mesh
 from sfepy.mesh.mesh_tools import elems_q2t
 
-def gen_block_mesh(dims, shape, centre, mat_id=0, name='block', verbose=True):
+def get_tensor_product_conn(shape):
+    """
+    Generate vertex connectivity for cells of a tensor-product mesh of the
+    given shape.
+
+    Parameters
+    ----------
+    shape : array of 2 or 3 ints
+        Shape (counts of nodes in x, y, z) of the mesh.
+
+    Returns
+    -------
+    conn : array
+        The vertex connectivity array.
+    desc : str
+        The cell kind.
+    """
+    dim = len(shape)
+    assert_(1 <= dim <= 3)
+
+    n_nod = nm.prod(shape)
+    n_el = nm.prod(shape - 1)
+
+    grid = nm.arange(n_nod, dtype=nm.int32)
+    grid.shape = shape
+
+    if dim == 1:
+        conn = nm.zeros((n_el, 2), dtype=nm.int32)
+        conn[:, 0] = grid[:-1]
+        conn[:, 1] = grid[1:]
+        desc = '1_2'
+
+    elif dim == 2:
+        conn = nm.zeros((n_el, 4), dtype=nm.int32)
+        conn[:, 0] = grid[:-1, :-1].flat
+        conn[:, 1] = grid[1:, :-1].flat
+        conn[:, 2] = grid[1:, 1:].flat
+        conn[:, 3] = grid[:-1, 1:].flat
+        desc = '2_4'
+
+    else:
+        conn = nm.zeros((n_el, 8), dtype=nm.int32)
+        conn[:, 0] = grid[:-1, :-1, :-1].flat
+        conn[:, 1] = grid[1:, :-1, :-1].flat
+        conn[:, 2] = grid[1:, 1:, :-1].flat
+        conn[:, 3] = grid[:-1, 1:, :-1].flat
+        conn[:, 4] = grid[:-1, :-1, 1:].flat
+        conn[:, 5] = grid[1:, :-1, 1:].flat
+        conn[:, 6] = grid[1:, 1:, 1:].flat
+        conn[:, 7] = grid[:-1, 1:, 1:].flat
+        desc = '3_8'
+
+    return conn, desc
+
+def gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
+                   coors=None, verbose=True):
     """
     Generate a 2D or 3D block mesh. The dimension is determined by the
     lenght of the shape argument.
@@ -40,51 +95,26 @@ def gen_block_mesh(dims, shape, centre, mat_id=0, name='block', verbose=True):
     centre = centre[:dim]
     dims = dims[:dim]
 
+    n_nod = nm.prod(shape)
+    output('generating %d vertices...' % n_nod, verbose=verbose)
+
     x0 = centre - 0.5 * dims
     dd = dims / (shape - 1)
 
-    grid = nm.zeros(shape, dtype = nm.int32)
-    n_nod = nm.prod(shape)
-    coors = nm.zeros((n_nod, dim), dtype = nm.float64)
+    ngrid = nm.mgrid[[slice(ii) for ii in shape]]
+    ngrid.shape = (dim, n_nod)
 
-    bar = MyBar("       nodes:", verbose=verbose)
-    bar.init(n_nod)
-    for ii, ic in enumerate(cycle(shape)):
-        grid[tuple(ic)] = ii
-        coors[ii] = x0 + ic * dd
-        if not (ii % 100):
-            bar.update(ii)
-    bar.update(ii + 1)
+    coors = x0 + ngrid.T * dd
+    output('...done', verbose=verbose)
 
     n_el = nm.prod(shape - 1)
-    mat_ids = nm.empty((n_el,), dtype = nm.int32)
+    output('generating %d cells...' % n_el, verbose=verbose)
+
+    mat_ids = nm.empty((n_el,), dtype=nm.int32)
     mat_ids.fill(mat_id)
 
-    if (dim == 2):
-        conn = nm.zeros((n_el, 4), dtype = nm.int32)
-        bar = MyBar("       elements:", verbose=verbose)
-        bar.init(n_el)
-        for ii, (ix, iy) in enumerate(cycle(shape - 1)):
-            conn[ii,:] = [grid[ix  ,iy], grid[ix+1,iy  ],
-                          grid[ix+1,iy+1], grid[ix  ,iy+1]]
-            if not (ii % 100):
-                bar.update(ii)
-        bar.update(ii + 1)
-        desc = '2_4'
-
-    else:
-        conn = nm.zeros((n_el, 8), dtype = nm.int32)
-        bar = MyBar("       elements:", verbose=verbose)
-        bar.init(n_el)
-        for ii, (ix, iy, iz) in enumerate(cycle(shape - 1)):
-            conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
-                          grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
-                          grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
-                          grid[ix+1,iy+1,iz+1], grid[ix  ,iy+1,iz+1]]
-            if not (ii % 100):
-                bar.update(ii)
-        bar.update(ii + 1)
-        desc = '3_8'
+    conn, desc = get_tensor_product_conn(shape)
+    output('...done', verbose=verbose)
 
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_ids], [desc])
     return mesh
