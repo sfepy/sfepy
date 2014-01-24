@@ -86,9 +86,18 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    src = ['_geommech.pyx']
+    config.add_extension('_geommech',
+                         sources=src,
+                         libraries=['sfepy_common'],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
     # Include *.pxd files in distribution tarball and install them along
     # with the extension modules.
-    pxd_files = ['mappings.pxd', 'types.pxd', '_fmfield.pxd']
+    pxd_files = ['mappings.pxd', 'types.pxd', '_fmfield.pxd', '_geommech.pxd']
     config.add_data_files(('', pxd_files))
 
     return config

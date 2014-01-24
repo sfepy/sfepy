@@ -4,12 +4,13 @@ from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
+from sfepy.fem.extmods._geommech import geme_mulAVSB3py
 
 ##
 # 22.08.2006, c
-class LinearTractionTerm( Term ):
+class LinearTractionTerm(Term):
     r"""
-    Linear traction forces (weak form), where, depending on dimension of
+    Linear traction forces, where, depending on dimension of
     'material' argument, :math:`\ull{\sigma} \cdot \ul{n}` is
     :math:`\bar{p} \ull{I} \cdot \ul{n}` for a given scalar pressure,
     :math:`\ul{f}` for a traction vector, and itself for a stress tensor.
@@ -25,13 +26,36 @@ class LinearTractionTerm( Term ):
         - virtual  : :math:`\ul{v}`
     """
     name = 'dw_surface_ltr'
-    arg_types = ('opt_material', 'virtual')
-    arg_shapes = [{'opt_material' : 'S, 1', 'virtual' : ('D', None)},
+    arg_types = (('opt_material', 'virtual'),
+                 ('opt_material', 'parameter'))
+    arg_shapes = [{'opt_material' : 'S, 1', 'virtual' : ('D', None),
+                   'parameter' : 'D'},
                   {'opt_material' : 'D, 1'}, {'opt_material' : '1, 1'},
                   {'opt_material' : None}]
+    modes = ('weak', 'eval')
     integration = 'surface'
 
-    function = staticmethod(terms.dw_surface_ltr)
+    @staticmethod
+    def d_fun(out, traction, val, sg):
+        tdim = traction.shape[2]
+        dim = val.shape[2]
+        sym = (dim + 1) * dim / 2
+
+        if tdim == 0:
+            aux = dot_sequences(val, sg.normal, 'ATB')
+
+        elif tdim == 1: # Pressure
+            aux = dot_sequences(val, traction * sg.normal, 'ATB')
+
+        elif tdim == dim: # Traction vector
+            aux = dot_sequences(val, traction, 'ATB')
+
+        elif tdim == sym: # Traction tensor
+            trn, ret = geme_mulAVSB3py(traction, sg.normal)
+            aux = dot_sequences(val, trn, 'ATB')
+
+        status = sg.integrate(out, aux)
+        return status
 
     def get_fargs(self, traction, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -40,7 +64,29 @@ class LinearTractionTerm( Term ):
         if traction is None:
             traction = nm.zeros((0,0,0,0), dtype=nm.float64)
 
-        return traction, sg
+        if mode == 'weak':
+            return traction, sg
+
+        elif mode == 'eval':
+            val = self.get(virtual, 'val')
+            return traction, val, sg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, traction, virtual,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+
+        return (n_el, 1, 1, 1), virtual.dtype
+
+    def set_arg_types( self ):
+        if self.mode == 'weak':
+            self.function = terms.dw_surface_ltr
+
+        else:
+            self.function = self.d_fun
 
 class ContactPlaneTerm(Term):
     r"""
