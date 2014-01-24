@@ -2,6 +2,8 @@
 Functions to visualize the mesh connectivity with global and local DOF
 numberings.
 """
+import numpy as nm
+
 import matplotlib.pyplot as plt
 
 def _get_axes(ax, dim):
@@ -18,6 +20,12 @@ def _get_axes(ax, dim):
 
     return ax
 
+def _to2d(coors):
+    if coors.shape[1] == 1:
+        coors = nm.c_[coors, nm.zeros_like(coors)]
+
+    return coors
+
 def plot_points(ax, coors, vals=None, point_size=20,
                 show_colorbar=False, show=False):
     """
@@ -33,6 +41,7 @@ def plot_points(ax, coors, vals=None, point_size=20,
                         s=point_size, c=colors, alpha=1)
 
     else:
+        coors = _to2d(coors)
         sc = ax.scatter(coors[:, 0], coors[:, 1], s=point_size, c=colors)
 
     if show_colorbar and (vals is not None):
@@ -49,6 +58,7 @@ def plot_mesh(ax, coors, conn, edges, show=False):
     """
     dim = coors.shape[1]
     ax = _get_axes(ax, dim)
+    coors = _to2d(coors)
 
     for el in conn:
         eds = el[edges]
@@ -77,6 +87,7 @@ def plot_global_dofs(ax, coors, econn, show=False):
     """
     dim = coors.shape[1]
     ax = _get_axes(ax, dim)
+    coors = _to2d(coors)
 
     for el in econn:
         for gdof in el:
@@ -101,6 +112,7 @@ def plot_local_dofs(ax, coors, econn, show=False):
     """
     dim = coors.shape[1]
     ax = _get_axes(ax, dim)
+    coors = _to2d(coors)
 
     eps = 0.1
     oeps = 1.0 - eps
@@ -132,10 +144,9 @@ def plot_nodes(ax, coors, econn, ref_nodes, dofs, show=False):
     Plot Lagrange reference element nodes corresponding to global DOF numbers
     given in an extended connectivity.
     """
-    import numpy as nm
-
     dim = coors.shape[1]
     ax = _get_axes(ax, dim)
+    coors = _to2d(coors)
 
     eps = 0.2
     oeps = 1.0 - eps
