@@ -80,3 +80,49 @@ def compute_bezier_extraction_1d(knots, degree):
             b = b + 1
 
     return cs
+
+def eval_bernstein_basis(x, degree):
+    """
+    Evaluate the Bernstein polynomial basis of the given `degree`, and its
+    derivatives, in a point `x` in [0, 1].
+
+    Parameters
+    ----------
+    x : float
+        The point in [0, 1].
+    degree : int
+        The basis degree.
+
+    Returns
+    -------
+    funs : array
+        The `degree + 1` values of the Bernstein polynomial basis.
+    ders : array
+        The `degree + 1` values of the Bernstein polynomial basis derivatives.
+    """
+    n_fun = degree + 1
+
+    funs = nm.zeros(n_fun, dtype=nm.float64)
+    ders = nm.zeros(n_fun, dtype=nm.float64)
+
+    funs[0] = 1.0
+
+    if degree == 0: return funs, ders
+
+    for ip in xrange(1, n_fun - 1):
+        prev = 0.0
+        for ifun in xrange(ip + 1):
+            tmp = x * funs[ifun]
+            funs[ifun] = (1.0 - x) * funs[ifun] + prev
+            prev = tmp
+
+    for ifun in xrange(n_fun):
+        ders[ifun] = degree * (funs[ifun - 1] - funs[ifun])
+
+    prev = 0.0
+    for ifun in xrange(n_fun):
+        tmp = x * funs[ifun]
+        funs[ifun] = (1.0 - x) * funs[ifun] + prev
+        prev = tmp
+
+    return funs, ders
