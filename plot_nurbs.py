@@ -6,14 +6,7 @@ from sfepy.mesh.mesh_generators import get_tensor_product_conn
 import sfepy.postprocess.plot_dofs as pd
 from sfepy.postprocess.plot_dofs import _get_axes
 
-def _get_knots_tuple(knots):
-    if isinstance(knots, nm.ndarray) and (knots.ndim == 1):
-        knots = (knots,)
-
-    elif not isinstance(knots, tuple):
-        raise ValueError('knots must be 1D array or a tuple of 1D arrays!')
-
-    return knots
+from igalib import _get_knots_tuple
 
 def plot_parametric_mesh(ax, knots, show=False):
     """

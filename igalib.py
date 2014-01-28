@@ -13,6 +13,15 @@ described in [1].
 """
 import numpy as nm
 
+def _get_knots_tuple(knots):
+    if isinstance(knots, nm.ndarray) and (knots.ndim == 1):
+        knots = (knots,)
+
+    elif not isinstance(knots, tuple):
+        raise ValueError('knots must be 1D array or a tuple of 1D arrays!')
+
+    return knots
+
 def compute_bezier_extraction_1d(knots, degree):
     """
     Compute local (element) Bezier extraction operators for a 1D B-spline
