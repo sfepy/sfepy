@@ -13,6 +13,8 @@ described in [1].
 """
 import numpy as nm
 
+from sfepy.base.base import assert_
+
 def _get_knots_tuple(knots):
     if isinstance(knots, nm.ndarray) and (knots.ndim == 1):
         knots = (knots,)
@@ -87,6 +89,36 @@ def compute_bezier_extraction_1d(knots, degree):
             # The next knot vector interval.
             a = b
             b = b + 1
+
+    return cs
+
+def compute_bezier_extraction(knots, degrees):
+    """
+    Compute local (element) Bezier extraction operators for a nD B-spline
+    parametric domain.
+
+    Parameters
+    ----------
+    knots : sequence of array or array
+        The knot vectors.
+    degrees : tuple of ints or int
+        Polynomial degrees in each parametric dimension.
+
+    Returns
+    -------
+    cs : list of lists of 2D arrays
+        The element extraction operators in each parametric dimension.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+
+    knots = _get_knots_tuple(knots)
+    dim = len(knots)
+    assert_(dim == len(degrees))
+
+    cs = []
+    for ii, knots1d in enumerate(knots):
+        cs1d = compute_bezier_extraction_1d(knots1d, degrees[ii])
+        cs.append(cs1d)
 
     return cs
 
