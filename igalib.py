@@ -24,6 +24,13 @@ def _get_knots_tuple(knots):
 
     return knots
 
+def get_raveled_index(indices, shape):
+    """
+    Get a global raveled index corresponding to nD indices into an array of the
+    given shape.
+    """
+    return nm.ravel_multi_index(indices, shape)
+
 def compute_bezier_extraction_1d(knots, degree):
     """
     Compute local (element) Bezier extraction operators for a 1D B-spline
