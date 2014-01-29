@@ -149,6 +149,52 @@ def compute_bezier_extraction(knots, degrees):
 
     return cs
 
+def combine_bezier_extraction(cs):
+    """
+    For a nD B-spline parametric domain, combine the 1D element extraction
+    operators in each parametric dimension into a single operator for each nD
+    element.
+
+    Parameters
+    ----------
+    cs : list of lists of 2D arrays
+        The element extraction operators in each parametric dimension.
+
+    Returns
+    -------
+    ccs : list of 2D arrays
+        The combined element extraction operators.
+    """
+    dim = len(cs)
+
+    if dim == 3:
+        c0, c1, c2 = cs[0], cs[1], cs[2]
+
+        ncc = (len(c0), len(c1), len(c2))
+        ccs = [None] * nm.prod(ncc)
+        for i0 in xrange(len(c0)):
+            for i1 in xrange(len(c1)):
+                for i2 in xrange(len(c2)):
+                    cc = tensor_product(c0[i0], tensor_product(c1[i1], c2[i2]))
+                    ii = get_raveled_index([i0, i1, i2], ncc)
+                    ccs[ii] = cc
+
+    elif dim == 2:
+        c0, c1 = cs[0], cs[1]
+
+        ncc = (len(c0), len(c1))
+        ccs = [None] * nm.prod(ncc)
+        for i0 in xrange(len(c0)):
+            for i1 in xrange(len(c1)):
+                cc = tensor_product(c0[i0], c1[i1])
+                ii = get_raveled_index([i0, i1], ncc)
+                ccs[ii] = cc
+
+    else:
+        ccs = cs[0]
+
+    return ccs
+
 def eval_bernstein_basis(x, degree):
     """
     Evaluate the Bernstein polynomial basis of the given `degree`, and its
