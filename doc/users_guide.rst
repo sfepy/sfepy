@@ -807,23 +807,25 @@ elements, etc.
 
     material_3 = {
       'name' : 'm2',
-      'function' : 'some_function',
+      'function' : 'get_pars',
     }
 
-    def some_function(ts, coor, region, ig, mode=None):
+    def get_pars(ts, coors, mode=None, **kwargs):
         out = {}
         if mode == 'qp':
-            # <array of shape (coor.shape[0], n_row, n_col)>
-            out['val'] = nm.ones((coor.shape[0], 1, 1), dtype=nm.float64)
+            # <array of shape (coors.shape[0], n_row, n_col)>
+            out['val'] = nm.ones((coors.shape[0], 1, 1), dtype=nm.float64)
         else: # special mode
             out['val0'] = True
+
+        return out
 
 * Example, short syntax::
 
     material = {
         'm' : ({'val' : [0.0, -1.0, 0.0]},),
-        'm2' : 'some_function',
-        'm3' : (None, 'some_function'), # Same as the above line.
+        'm2' : 'get_pars',
+        'm3' : (None, 'get_pars'), # Same as the above line.
     }
 
 * Example, short syntax, different material parameters in regions 'Yc', 'Ym'::
@@ -1018,7 +1020,7 @@ description file demonstrating how to use different kinds of functions.
 
 - function for defining usual material parameters::
 
-    def get_pars(ts, coors, mode=None, region=None, ig=None):
+    def get_pars(ts, coors, mode=None, **kwargs):
         if mode == 'qp':
             val = coors[:,0]
             val.shape = (coors.shape[0], 1, 1)
@@ -1029,10 +1031,18 @@ description file demonstrating how to use different kinds of functions.
         'get_pars' : (get_pars,),
     }
 
+  The keyword arguments contain both additional use-specified arguments, if
+  any, and the following: ``equations, term, problem``, for cases when the
+  function needs access to the equations, problem, or term instances that
+  requested the parameters that are being evaluated. The full signature of the
+  function is::
+
+    def get_pars(ts, coors, mode=None,
+                 equations=None, term=None, problem=None, **kwargs)
+
 - function for defining special material parameters, with an extra argument::
 
-    def get_pars_special(ts, coors, mode=None, region=None, ig=None,
-                         extra_arg=None):
+    def get_pars_special(ts, coors, mode=None, extra_arg=None):
         if mode == 'special':
             if extra_arg == 'hello!':
                 ic = 0
@@ -1041,21 +1051,21 @@ description file demonstrating how to use different kinds of functions.
             return {('x_%s' % ic) : coors[:,ic]}
 
     functions = {
-        'get_pars1' : (lambda ts, coors, mode=None, region=None, ig=None:
-                       get_pars_special(ts, coors, mode, region, ig,
+        'get_pars1' : (lambda ts, coors, mode=None, **kwargs:
+                       get_pars_special(ts, coors, mode,
                                         extra_arg='hello!'),),
     }
 
     # Just another way of adding a function, besides 'functions' keyword.
     function_1 = {
         'name' : 'get_pars2',
-        'function' : lambda ts, coors,mode=None,  region=None, ig=None:
-            get_pars_special(ts, coors, mode, region, ig, extra_arg='hi!'),
+        'function' : lambda ts, coors, mode=None, **kwargs:
+            get_pars_special(ts, coors, mode, extra_arg='hi!'),
     }
 
 - function combining both kinds of material parameters::
 
-    def get_pars_both(ts, coors, mode=None, region=None, ig=None):
+    def get_pars_both(ts, coors, mode=None, **kwargs):
         out = {}
 
         if mode == 'special':
