@@ -195,6 +195,104 @@ def combine_bezier_extraction(cs):
 
     return ccs
 
+def create_connectivity_1d(n_el, degree):
+    """
+    Create a 1D Bezier element connectivity.
+
+    Parameters
+    ----------
+    n_el : int
+        The number of elements.
+    degree : int
+        The basis degree.
+
+    Returns
+    -------
+    conn : array
+        The connectivity array.
+    """
+    conn = nm.arange(degree + 1)[None, :] + nm.arange(n_el)[:, None]
+    return conn
+
+def create_connectivity(n_els, degrees):
+    """
+    Create a nD Bezier element connectivity.
+
+    Parameters
+    ----------
+    n_els : sequence of ints
+        The number of elements in each parametric dimension.
+    degrees : int
+        The basis degrees in each parametric dimension.
+
+    Returns
+    -------
+    conn : array
+        The connectivity array.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+    degrees = nm.asarray(degrees)
+
+    dim = len(n_els)
+    assert_(dim == len(degrees))
+
+    conns = []
+    n_gfuns = []
+    for ii, n_el in enumerate(n_els):
+        conn1d = create_connectivity_1d(n_el, degrees[ii])
+        conns.append(conn1d)
+
+        n_gfuns.append(conn1d.max() + 1)
+
+    n_el = nm.prod(n_els)
+    n_efuns = degrees + 1
+    n_efun = nm.prod(n_efuns)
+
+    if dim == 3:
+        conn = nm.empty((n_el, n_efun), dtype=nm.int32)
+        for ie0 in xrange(n_els[0]):
+            c0 = conns[0][ie0]
+            for ie1 in xrange(n_els[1]):
+                c1 = conns[1][ie1]
+                for ie2 in xrange(n_els[2]):
+                    c2 = conns[2][ie2]
+                    ie = get_raveled_index([ie0, ie1, ie2], n_els)
+
+                    for il0 in xrange(n_efuns[0]):
+                        cl0 = c0[il0]
+                        for il1 in xrange(n_efuns[1]):
+                            cl1 = c1[il1]
+                            for il2 in xrange(n_efuns[2]):
+                                cl2 = c2[il2]
+
+                                iloc = get_raveled_index([il0, il1, il2],
+                                                         n_efuns)
+                                ig = get_raveled_index([cl0, cl1, cl2],
+                                                       n_gfuns)
+                                conn[ie, iloc] = ig
+
+    elif dim == 2:
+        conn = nm.empty((n_el, n_efun), dtype=nm.int32)
+        for ie0 in xrange(n_els[0]):
+            c0 = conns[0][ie0]
+            for ie1 in xrange(n_els[1]):
+                c1 = conns[1][ie1]
+                ie = get_raveled_index([ie0, ie1], n_els)
+
+                for il0 in xrange(n_efuns[0]):
+                    cl0 = c0[il0]
+                    for il1 in xrange(n_efuns[1]):
+                        cl1 = c1[il1]
+
+                        iloc = get_raveled_index([il0, il1], n_efuns)
+                        ig = get_raveled_index([cl0, cl1], n_gfuns)
+                        conn[ie, iloc] = ig
+
+    else:
+        conn = conns[0]
+
+    return conn
+
 def eval_bernstein_basis(x, degree):
     """
     Evaluate the Bernstein polynomial basis of the given `degree`, and its
