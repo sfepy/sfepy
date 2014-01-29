@@ -27,12 +27,12 @@ def _get_knots_tuple(knots):
 def compute_bezier_extraction_1d(knots, degree):
     """
     Compute local (element) Bezier extraction operators for a 1D B-spline
-    parameteric domain.
+    parametric domain.
 
     Parameters
     ----------
     knots : array
-        The knot vector
+        The knot vector.
     degree : int
         The curve degree.
 
