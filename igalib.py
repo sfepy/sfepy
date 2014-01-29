@@ -31,6 +31,26 @@ def get_raveled_index(indices, shape):
     """
     return nm.ravel_multi_index(indices, shape)
 
+def tensor_product(a, b):
+    """
+    Compute tensor product of two 2D arrays with possibly different shapes. The
+    result has the form
+    ``c = [[a00 b, a01 b, ..., ],
+           [a10 b, a11 b, ..., ]
+           ...``.
+    """
+    c = nm.empty((a.shape[0] * b.shape[0],
+                  a.shape[1] * b.shape[1]), dtype=b.dtype)
+
+    n0 = b.shape[0]
+    n1 = b.shape[1]
+    for ir in xrange(a.shape[0]):
+        for ic in xrange(a.shape[1]):
+            c[n1 * ir : n1 * (ir + 1),
+              n0 * ic : n0 * (ic + 1)] = a[ir, ic] * b
+
+    return c
+
 def compute_bezier_extraction_1d(knots, degree):
     """
     Compute local (element) Bezier extraction operators for a 1D B-spline
