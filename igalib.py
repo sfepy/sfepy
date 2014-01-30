@@ -338,6 +338,51 @@ def create_connectivity(n_els, knots, degrees):
 
     return conn, bconn
 
+def compute_bezier_control(control_points, weights, ccs, conn, bconn):
+    """
+    Compute the control points and weights of the Bezier mesh.
+
+    Parameters
+    ----------
+    control_points : array
+        The NURBS control points.
+    weights : array
+        The NURBS weights.
+    ccs : list of 2D arrays
+        The combined element extraction operators.
+    conn : array
+        The connectivity of the global NURBS basis.
+    bconn : array
+        The connectivity of the Bezier basis.
+
+    Returns
+    -------
+    bezier_control_points : array
+        The control points of the Bezier mesh.
+    bezier_weights : array
+        The weights of the Bezier mesh.
+    """
+    n_bpoints = bconn.max() + 1
+    dim = control_points.shape[1]
+
+    bezier_control_points = nm.zeros((n_bpoints, dim), dtype=nm.float64)
+    bezier_weights = nm.zeros(n_bpoints, dtype=nm.float64)
+
+    for ie, ec in enumerate(conn):
+        cc = ccs[ie]
+        bec = bconn[ie]
+
+        ew = weights[ec]
+        ecp = control_points[ec]
+
+        bew = nm.dot(cc.T, ew)
+
+        becp = (1.0 / bew[:, None]) * nm.dot(cc.T, ew[:, None] * ecp)
+        bezier_control_points[bec] = becp
+        bezier_weights[bec] = bew
+
+    return bezier_control_points, bezier_weights
+
 def eval_bernstein_basis(x, degree):
     """
     Evaluate the Bernstein polynomial basis of the given `degree`, and its
