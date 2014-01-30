@@ -195,24 +195,47 @@ def combine_bezier_extraction(cs):
 
     return ccs
 
-def create_connectivity_1d(n_el, degree):
+def create_connectivity_1d(n_el, knots, degree):
     """
-    Create a 1D Bezier element connectivity.
+    Create connectivity arrays of 1D Bezier elements.
 
     Parameters
     ----------
     n_el : int
         The number of elements.
+    knots : array
+        The knot vector.
     degree : int
         The basis degree.
 
     Returns
     -------
     conn : array
-        The connectivity array.
+        The connectivity of the global NURBS basis.
+    bconn : array
+        The connectivity of the Bezier basis.
     """
-    conn = nm.arange(degree + 1)[None, :] + nm.arange(n_el)[:, None]
-    return conn
+    # Get multiplicities of NURBS knots.
+    n_knots = len(knots)
+    mul = [0]
+    ii = degree + 1
+    while ii < (n_knots - degree - 1):
+        i0 = ii
+        while (ii < (n_knots - degree - 2)) and (knots[ii] == knots[ii + 1]):
+            ii += 1
+        mul.append(ii - i0 + 1)
+        ii += 1
+
+    mul = nm.array(mul)[:, None]
+
+    aux1 = nm.arange(degree + 1)[None, :]
+    conn = aux1 + nm.cumsum(mul, 0)
+
+    # Bezier basis knots have multiplicity equal to degree.
+    aux2 = nm.arange(n_el)[:, None]
+    bconn = aux1 + degree * aux2
+
+    return conn, bconn
 
 def create_connectivity(n_els, degrees):
     """
