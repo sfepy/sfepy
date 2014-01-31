@@ -3,8 +3,8 @@ Isogeometric analysis utilities.
 
 Notes
 -----
-The function :func:`compute_bezier_extraction_1d()` implements the algorithm
-described in [1].
+The functions :func:`compute_bezier_extraction_1d()` and
+:func:`eval_nurbs_basis_tp()` implement the algorithms described in [1].
 
 [1] Michael J. Borden, Michael A. Scott, John A. Evans, Thomas J. R. Hughes:
     Isogeometric finite element data structures based on Bezier extraction of
@@ -435,3 +435,139 @@ def eval_bernstein_basis(x, degree):
         prev = tmp
 
     return funs, ders
+
+def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
+    """
+    Evaluate the tensor-product NURBS shape functions in a quadrature point for
+    a given Bezier element.
+
+    Parameters
+    ----------
+    qp : array
+        The quadrature point coordinates with components in [0, 1] reference
+        element domain.
+    ie : int
+        The Bezier element index.
+    control_points : array
+        The NURBS control points.
+    weights : array
+        The NURBS weights.
+    degrees : sequence of ints or int
+        The basis degrees in each parametric dimension.
+    cs : list of lists of 2D arrays
+        The element extraction operators in each parametric dimension.
+    conn : array
+        The connectivity of the global NURBS basis.
+
+    Returns
+    -------
+    R : array
+        The NURBS shape functions.
+    dR_dx : array
+        The NURBS shape functions derivatives w.r.t. the physical coordinates.
+    det : array
+        The Jacobian of the mapping to the unit reference element.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+    degrees = nm.asarray(degrees)
+
+    dim = len(degrees)
+    assert_(dim == len(qp) == len(cs))
+
+    n_efuns = degrees + 1
+    n_efun = nm.prod(n_efuns)
+    n_efuns_max = n_efuns.max()
+
+    assert_(n_efun == conn.shape[1])
+
+    # Element connectivity.
+    ec = conn[ie]
+
+    # Element control points and weights.
+    W = weights[ec]
+    P = control_points[ec]
+
+    # 1D Bernstein basis B, dB/dxi.
+    B = nm.empty((dim, n_efuns_max), dtype=nm.float64)
+    dB_dxi = nm.empty((dim, n_efuns_max), dtype=nm.float64)
+    for ii in xrange(dim):
+        (B[ii, :n_efuns[ii]],
+         dB_dxi[ii, :n_efuns[ii]]) = eval_bernstein_basis(qp[ii], degrees[ii])
+
+    # 1D B-spline basis N = CB, dN/dxi = C dB/dxi.
+    N = nm.empty((dim, n_efuns_max), dtype=nm.float64)
+    dN_dxi = nm.empty((dim, n_efuns_max), dtype=nm.float64)
+    n_els = [len(ii) for ii in cs]
+    ic = get_unraveled_indices(ie, n_els)
+    for ii in xrange(dim):
+        C = cs[ii][ic[ii]]
+
+        N[ii, :n_efuns[ii]] = nm.dot(C, B[ii, :n_efuns[ii]])
+        dN_dxi[ii, :n_efuns[ii]] = nm.dot(C, dB_dxi[ii, :n_efuns[ii]])
+
+    # Numerators and denominator for tensor-product NURBS basis R, dR/dxi.
+    R = nm.empty(n_efun, dtype=nm.float64)
+    dR_dxi = nm.empty((n_efun, dim), dtype=nm.float64)
+
+    w = 0 # w_b
+    dw_dxi = nm.zeros(dim, dtype=nm.float64) # dw_b/dxi
+    a = 0 # Basis function index.
+    if dim == 3:
+        for i0 in xrange(n_efuns[2]):
+            for i1 in xrange(n_efuns[1]):
+                for i2 in xrange(n_efuns[0]):
+                    R[a] = N[0, i2] * N[1, i1] * N[2, i0] * W[a]
+                    w += R[a]
+
+                    dR_dxi[a, 0] = dN_dxi[0, i2] * N[1, i1] * N[2, i0] * W[a]
+                    dw_dxi[0] += dR_dxi[a, 0]
+
+                    dR_dxi[a, 1] = N[0, i2] * dN_dxi[1, i1] * N[2, i0] * W[a]
+                    dw_dxi[1] += dR_dxi[a, 1]
+
+                    dR_dxi[a, 2] = N[0, i2] * N[1, i1] * dN_dxi[2, i0] * W[a]
+                    dw_dxi[2] += dR_dxi[a, 2]
+
+                    a += 1
+
+    elif dim == 2:
+        for i0 in xrange(n_efuns[1]):
+            for i1 in xrange(n_efuns[0]):
+                R[a] = N[0, i1] * N[1, i0] * W[a]
+                w += R[a]
+
+                dR_dxi[a, 0] = dN_dxi[0, i1] * N[1, i0] * W[a]
+                dw_dxi[0] += dR_dxi[a, 0]
+
+                dR_dxi[a, 1] = N[0, i1] * dN_dxi[1, i0] * W[a]
+                dw_dxi[1] += dR_dxi[a, 1]
+
+                a += 1
+
+    else:
+        for i0 in xrange(n_efuns[0]):
+            R[a] = N[0, i0] * W[a]
+            w += R[a]
+
+            dR_dxi[a, 0] = dN_dxi[0, i0] * W[a]
+            dw_dxi[0] += dR_dxi[a, 0]
+
+            a += 1
+
+    # Finish R <- R / w_b.
+    R /= w
+
+    # Finish dR/dxi. D == W C dB/dxi, dR/dxi = (D - R dw_b/dxi) / w_b.
+    dR_dxi = (dR_dxi - R[:, None] * dw_dxi) / w
+
+    # Mapping reference -> physical domain dxi/dx.
+    # x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
+    dx_dxi = nm.dot(P.T, dR_dxi)
+    det = nm.linalg.det(dx_dxi)
+
+    dxi_dx = nm.linalg.inv(dx_dxi)
+
+    # dR/dx.
+    dR_dx = nm.dot(dR_dxi, dxi_dx)
+
+    return R, dR_dx, det
