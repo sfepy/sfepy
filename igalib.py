@@ -128,7 +128,7 @@ def compute_bezier_extraction(knots, degrees):
     ----------
     knots : sequence of array or array
         The knot vectors.
-    degrees : tuple of ints or int
+    degrees : sequence of ints or int
         Polynomial degrees in each parametric dimension.
 
     Returns
@@ -247,7 +247,7 @@ def create_connectivity(n_els, knots, degrees):
         The number of elements in each parametric dimension.
     knots : sequence of array or array
         The knot vectors.
-    degrees : int
+    degrees : sequence of ints or int
         The basis degrees in each parametric dimension.
 
     Returns
