@@ -31,6 +31,13 @@ def get_raveled_index(indices, shape):
     """
     return nm.ravel_multi_index(indices, shape)
 
+def get_unraveled_indices(index, shape):
+    """
+    Get nD indices into an array of the given shape corresponding to a global
+    raveled index.
+    """
+    return nm.unravel_index(index, shape)
+
 def tensor_product(a, b):
     """
     Compute tensor product of two 2D arrays with possibly different shapes. The
