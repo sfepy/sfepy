@@ -114,3 +114,26 @@ def plot_iso_lines(ax, nurbs, color='b', n_points=100, show=False):
         plt.show()
 
     return ax
+
+def plot_nurbs_basis_1d(ax, nurbs, n_points=100, show=False):
+    """
+    Plot a 1D NURBS basis.
+    """
+    dim = nurbs.dim
+    ax = _get_axes(ax, dim)
+
+    ga = nurbs.greville()[0]
+
+    n_fun = nurbs.weights.shape[0]
+    line = nm.linspace(ga[0], ga[-1], n_points)
+    for ii in xrange(n_fun):
+        field = nm.zeros(n_fun)
+        field[ii] = 1.0
+
+        vals = nurbs.evaluate(fields=field, u=line)
+        plt.plot(line, vals)
+
+    if show:
+        plt.show()
+
+    return ax
