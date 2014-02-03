@@ -57,6 +57,62 @@ def plot_control_mesh(ax, control_points, show=False):
 
     return ax
 
+def _get_edges(n_ep, shape):
+    dim = len(shape)
+    aux = nm.arange(n_ep).reshape(shape)
+
+    edges = []
+    if dim == 3:
+        for ii in xrange(shape[2] - 1):
+            edges.append(aux[0, 0, ii:ii+2])
+            edges.append(aux[-1, 0, ii:ii+2])
+            edges.append(aux[0, -1, ii:ii+2])
+            edges.append(aux[-1, -1, ii:ii+2])
+
+        for ii in xrange(shape[1] - 1):
+            edges.append(aux[0, ii:ii+2, 0])
+            edges.append(aux[-1, ii:ii+2, 0])
+            edges.append(aux[0, ii:ii+2, -1])
+            edges.append(aux[-1, ii:ii+2, -1])
+
+        for ii in xrange(shape[0] - 1):
+            edges.append(aux[ii:ii+2, 0, 0])
+            edges.append(aux[ii:ii+2, -1, 0])
+            edges.append(aux[ii:ii+2, 0, -1])
+            edges.append(aux[ii:ii+2, -1, -1])
+
+    elif dim == 2:
+        for ii in xrange(shape[1] - 1):
+            edges.append(aux[0, ii:ii+2])
+            edges.append(aux[-1, ii:ii+2])
+
+        for ii in xrange(shape[0] - 1):
+            edges.append(aux[ii:ii+2, 0])
+            edges.append(aux[ii:ii+2, -1])
+
+    else:
+        for ii in xrange(shape[0] - 1):
+            edges.append(aux[ii:ii+2])
+
+    return nm.array(edges)
+
+def plot_bezier_mesh(ax, control_points, conn, degrees, show=False):
+    """
+    Plot the Bezier mesh of a NURBS given by its control points and
+    connectivity.
+    """
+    dim = control_points.shape[-1]
+    ax = _get_axes(ax, dim)
+
+    edges = _get_edges(conn.shape[1], nm.asarray(degrees) + 1)
+    ax = pd.plot_mesh(ax, control_points, conn, edges)
+    pd.plot_points(ax, control_points)
+
+    if show:
+        plt.show()
+
+    return ax
+
 def plot_iso_lines(ax, nurbs, color='b', n_points=100, show=False):
     """
     Plot the NURBS <object using iso-lines in Greville abscissae coordinates.
