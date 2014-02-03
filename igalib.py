@@ -93,31 +93,31 @@ def compute_bezier_extraction_1d(knots, degree):
             b += 1
         mult = b - b0 + 1
 
-        if mult >= degree:
-            continue
-
         # The next extraction operator.
-        cn = nm.eye(degree + 1, degree + 1, dtype=nm.float64)
-        cs.append(cn)
+        if (b + 1) < n_knots:
+            cn = nm.eye(degree + 1, degree + 1, dtype=nm.float64)
+            cs.append(cn)
 
-        alphas = nm.zeros(degree - mult, dtype=nm.float64)
-        numer = knots[b] - knots[a]
-        for ij in xrange(degree, mult, -1):
-            alphas[ij - mult - 1] = numer / (knots[a + ij] - knots[a])
+        if mult < degree:
+            alphas = nm.zeros(degree - mult, dtype=nm.float64)
+            numer = knots[b] - knots[a]
+            for ij in xrange(degree, mult, -1):
+                alphas[ij - mult - 1] = numer / (knots[a + ij] - knots[a])
 
-        r = degree - mult
-        for ij in xrange(0, r):
-            save = r - ij - 1
-            s = mult + ij
+            r = degree - mult
+            for ij in xrange(0, r):
+                save = r - ij - 1
+                s = mult + ij
 
-            for ik in xrange(degree, s, -1):
-                alpha = alphas[ik - s - 1]
-                cc[:, ik] = alpha * cc[:, ik] + (1.0 - alpha) * cc[:, ik - 1]
+                for ik in xrange(degree, s, -1):
+                    alpha = alphas[ik - s - 1]
+                    cc[:, ik] = (alpha * cc[:, ik]
+                                 + (1.0 - alpha) * cc[:, ik - 1])
 
-            if (b + 1) < n_knots:
-                # Update overlapping coefficients for the next operator.
-                cn[save : ij + save + 2,
-                   save] = cc[degree - ij - 1: degree + 1, degree]
+                if (b + 1) < n_knots:
+                    # Update overlapping coefficients for the next operator.
+                    cn[save : ij + save + 2,
+                       save] = cc[degree - ij - 1: degree + 1, degree]
 
         if (b + 1) < n_knots:
             # The next knot vector interval.
