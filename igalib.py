@@ -571,3 +571,75 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
     dR_dx = nm.dot(dR_dxi, dxi_dx)
 
     return R, dR_dx, det
+
+def eval_variable_in_qp(variable, qps,
+                        control_points, weights, degrees, cs, conn):
+    """
+    Evaluate a field variable in the given quadrature points. The quadrature
+    points are the same for all Bezier elements and should correspond to the
+    Bernstein basis degree. The field variable is defined by its DOFs - the
+    coefficients of the NURBS basis.
+
+    Parameters
+    ----------
+    variable : array
+        The DOF values of the variable with n_c components, shape (:, n_c).
+    qps : array
+        The quadrature points coordinates with components in [0, 1] reference
+        element domain.
+    control_points : array
+        The NURBS control points.
+    weights : array
+        The NURBS weights.
+    degrees : sequence of ints or int
+        The basis degrees in each parametric dimension.
+    cs : list of lists of 2D arrays
+        The element extraction operators in each parametric dimension.
+    conn : array
+        The connectivity of the global NURBS basis.
+
+    Returns
+    -------
+    coors : array
+        The physical coordinates of the quadrature points of all elements.
+    vals : array
+        The field variable values in the physical quadrature points.
+    dets : array
+        The Jacobians of the mapping to the unit reference element in the
+        physical quadrature points.
+    """
+    n_el = conn.shape[0]
+    n_qp = qps.shape[0]
+    dim = control_points.shape[1]
+    nc = variable.shape[1]
+
+    # Output values of the variable.
+    vals = nm.empty((n_el * n_qp, nc), dtype=nm.float64)
+
+    # Output physical coordinates of QPs.
+    coors = nm.empty((n_el * n_qp, dim), dtype=nm.float64)
+
+    # Output Jacobians.
+    dets = nm.empty((n_el * n_qp, 1), dtype=nm.float64)
+
+    # Loop over elements.
+    for ie in xrange(n_el):
+        ec = conn[ie]
+        vals_e = variable[ec]
+        cps_e = control_points[ec]
+
+        # Loop over quadrature points.
+        for iqp, qp in enumerate(qps):
+            ii = n_qp * ie + iqp
+            bf, bfg, det = eval_nurbs_basis_tp(qp, ie,
+                                               control_points, weights,
+                                               degrees, cs, conn)
+            vals_qp = nm.dot(bf, vals_e)
+            vals[ii, :] = vals_qp
+
+            coors_qp = nm.dot(bf, cps_e)
+            coors[ii, :] = coors_qp
+
+            dets[ii] = det
+
+    return coors, vals, dets
