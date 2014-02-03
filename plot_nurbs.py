@@ -193,3 +193,29 @@ def plot_nurbs_basis_1d(ax, nurbs, n_points=100, show=False):
         plt.show()
 
     return ax
+
+def plot_bezier_nurbs_basis_1d(ax, control_points, weights, degrees, cs, conn,
+                               n_points=20, show=False):
+    """
+    Plot a 1D NURBS basis using the Bezier extraction and local Bernstein
+    basis.
+    """
+    from igalib import eval_variable_in_qp
+    ax = _get_axes(ax, 2)
+
+    n_fun = weights.shape[0]
+    line = nm.linspace(0, 1, n_points)[:, None]
+    for ii in xrange(n_fun):
+        variable = nm.zeros((n_fun, 1))
+        variable[ii] = 1.0
+
+        coors, vals, dets = eval_variable_in_qp(variable, line,
+                                                control_points,
+                                                weights, degrees,
+                                                cs, conn)
+        plt.plot(coors[:, 0], vals)
+
+    if show:
+        plt.show()
+
+    return ax
