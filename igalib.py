@@ -513,33 +513,33 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
     dw_dxi = nm.zeros(dim, dtype=nm.float64) # dw_b/dxi
     a = 0 # Basis function index.
     if dim == 3:
-        for i0 in xrange(n_efuns[2]):
+        for i0 in xrange(n_efuns[0]):
             for i1 in xrange(n_efuns[1]):
-                for i2 in xrange(n_efuns[0]):
-                    R[a] = N[0, i2] * N[1, i1] * N[2, i0] * W[a]
+                for i2 in xrange(n_efuns[2]):
+                    R[a] = N[0, i0] * N[1, i1] * N[2, i2] * W[a]
                     w += R[a]
 
-                    dR_dxi[a, 0] = dN_dxi[0, i2] * N[1, i1] * N[2, i0] * W[a]
+                    dR_dxi[a, 0] = dN_dxi[0, i0] * N[1, i1] * N[2, i2] * W[a]
                     dw_dxi[0] += dR_dxi[a, 0]
 
-                    dR_dxi[a, 1] = N[0, i2] * dN_dxi[1, i1] * N[2, i0] * W[a]
+                    dR_dxi[a, 1] = N[0, i0] * dN_dxi[1, i1] * N[2, i2] * W[a]
                     dw_dxi[1] += dR_dxi[a, 1]
 
-                    dR_dxi[a, 2] = N[0, i2] * N[1, i1] * dN_dxi[2, i0] * W[a]
+                    dR_dxi[a, 2] = N[0, i0] * N[1, i1] * dN_dxi[2, i2] * W[a]
                     dw_dxi[2] += dR_dxi[a, 2]
 
                     a += 1
 
     elif dim == 2:
-        for i0 in xrange(n_efuns[1]):
-            for i1 in xrange(n_efuns[0]):
-                R[a] = N[0, i1] * N[1, i0] * W[a]
+        for i0 in xrange(n_efuns[0]):
+            for i1 in xrange(n_efuns[1]):
+                R[a] = N[0, i0] * N[1, i1] * W[a]
                 w += R[a]
 
-                dR_dxi[a, 0] = dN_dxi[0, i1] * N[1, i0] * W[a]
+                dR_dxi[a, 0] = dN_dxi[0, i0] * N[1, i1] * W[a]
                 dw_dxi[0] += dR_dxi[a, 0]
 
-                dR_dxi[a, 1] = N[0, i1] * dN_dxi[1, i0] * W[a]
+                dR_dxi[a, 1] = N[0, i0] * dN_dxi[1, i1] * W[a]
                 dw_dxi[1] += dR_dxi[a, 1]
 
                 a += 1
