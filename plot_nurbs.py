@@ -34,7 +34,7 @@ def plot_parametric_mesh(ax, knots, show=False):
 
     return ax
 
-def plot_control_mesh(ax, control_points, show=False):
+def plot_control_mesh(ax, control_points, label=False, show=False):
     """
     Plot the control mesh of a NURBS given by its control points.
     """
@@ -43,14 +43,25 @@ def plot_control_mesh(ax, control_points, show=False):
 
     shape = control_points.shape
 
-    coors = control_points.copy()
-    coors.shape = (nm.prod(shape[:-1]), shape[-1])
-
     conn, desc = get_tensor_product_conn(nm.array(shape[:-1]))
     gel = GeometryElement(desc)
 
+    coors = control_points.reshape((-1, dim))
+
     ax = pd.plot_mesh(ax, coors, conn, gel.edges)
     pd.plot_points(ax, coors)
+
+    if label:
+        for ii, cc in enumerate(coors):
+            if dim == 3:
+                cx, cy, cz = cc
+                ax.text(cx, cy, cz, '%d' % ii,
+                        color='g', fontsize=12, weight='bold')
+
+            else:
+                cx, cy = cc
+                ax.text(cx, cy, '%d' % ii,
+                        color='g', fontsize=12, weight='bold')
 
     if show:
         plt.show()
@@ -96,7 +107,8 @@ def _get_edges(n_ep, shape):
 
     return nm.array(edges)
 
-def plot_bezier_mesh(ax, control_points, conn, degrees, show=False):
+def plot_bezier_mesh(ax, control_points, conn, degrees, label=False,
+                     show=False):
     """
     Plot the Bezier mesh of a NURBS given by its control points and
     connectivity.
@@ -107,6 +119,9 @@ def plot_bezier_mesh(ax, control_points, conn, degrees, show=False):
     edges = _get_edges(conn.shape[1], nm.asarray(degrees) + 1)
     ax = pd.plot_mesh(ax, control_points, conn, edges)
     pd.plot_points(ax, control_points)
+
+    if label:
+        ax = pd.plot_global_dofs(ax, control_points, conn)
 
     if show:
         plt.show()
