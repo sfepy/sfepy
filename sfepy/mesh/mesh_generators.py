@@ -24,6 +24,7 @@ def get_tensor_product_conn(shape):
     desc : str
         The cell kind.
     """
+    shape = nm.asarray(shape)
     dim = len(shape)
     assert_(1 <= dim <= 3)
 
