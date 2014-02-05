@@ -130,7 +130,7 @@ def plot_bezier_mesh(ax, control_points, conn, degrees, label=False,
 
 def plot_iso_lines(ax, nurbs, color='b', n_points=100, show=False):
     """
-    Plot the NURBS <object using iso-lines in Greville abscissae coordinates.
+    Plot the NURBS object using iso-lines in Greville abscissae coordinates.
     """
     dim = nurbs.dim
     ax = _get_axes(ax, dim)
