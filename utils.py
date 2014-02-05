@@ -5,6 +5,8 @@ from itertools import product
 
 import numpy as nm
 
+from sfepy.base.base import Struct
+from sfepy.fem import Mesh
 from sfepy.mesh.mesh_generators import get_tensor_product_conn
 
 def create_linear_fe_mesh(nurbs, pars=None):
@@ -46,3 +48,43 @@ def create_linear_fe_mesh(nurbs, pars=None):
         coors = coors[:, :-1]
 
     return coors, conn, desc
+
+def create_mesh_and_output(nurbs, pars=None, **kwargs):
+    """
+    Create a nD-linear tensor product FE mesh using
+    :func:`create_linear_fe_mesh()`, evaluate field variables given as keyword
+    arguments in the mesh vertices and create a dictionary of output data
+    usable by Mesh.write().
+
+    Parameters
+    ----------
+    nurbs : igakit.nurbs.NURBS instance
+        The NURBS object.
+    pars : sequence of array, optional
+        The values of parameters in each parametric dimension. If not given,
+        the values are set so that the resulting mesh has the same number of
+        vertices as the number of control points/basis functions of the NURBS
+        object.
+    **kwargs : kwargs
+        The field variables as keyword arguments. Their names serve as keys in
+        the output dictionary.
+
+    Returns
+    -------
+    mesh : Mesh instance
+        The finite element mesh.
+    out : dict
+        The output dictionary.
+    """
+    coors, conn, desc = create_linear_fe_mesh(nurbs, pars)
+    mat_id = nm.zeros(conn.shape[0], dtype=nm.int32)
+    mesh = Mesh.from_data('nurbs', coors, None, [conn], [mat_id], [desc])
+
+    out = {}
+    for key, variable in kwargs.iteritems():
+        field = variable.reshape(nurbs.weights.shape)
+        vals = nurbs.evaluate(field, *pars).reshape((-1))
+        out[key] = Struct(name='output_data', mode='vertex',
+                          data=vals[:, None])
+
+    return mesh, out
