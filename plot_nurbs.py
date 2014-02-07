@@ -8,7 +8,7 @@ from sfepy.postprocess.plot_dofs import _get_axes
 
 from igalib import _get_knots_tuple
 
-def plot_parametric_mesh(ax, knots, show=False):
+def plot_parametric_mesh(ax, knots):
     """
     Plot the parametric mesh of a NURBS given by its knots.
     """
@@ -29,12 +29,9 @@ def plot_parametric_mesh(ax, knots, show=False):
     ax = pd.plot_mesh(ax, coors, conn, gel.edges)
     pd.plot_points(ax, coors)
 
-    if show:
-        plt.show()
-
     return ax
 
-def plot_control_mesh(ax, control_points, label=False, show=False):
+def plot_control_mesh(ax, control_points, label=False):
     """
     Plot the control mesh of a NURBS given by its control points.
     """
@@ -62,9 +59,6 @@ def plot_control_mesh(ax, control_points, label=False, show=False):
                 cx, cy = cc
                 ax.text(cx, cy, '%d' % ii,
                         color='g', fontsize=12, weight='bold')
-
-    if show:
-        plt.show()
 
     return ax
 
@@ -107,8 +101,7 @@ def _get_edges(n_ep, shape):
 
     return nm.array(edges)
 
-def plot_bezier_mesh(ax, control_points, conn, degrees, label=False,
-                     show=False):
+def plot_bezier_mesh(ax, control_points, conn, degrees, label=False):
     """
     Plot the Bezier mesh of a NURBS given by its control points and
     connectivity.
@@ -123,12 +116,9 @@ def plot_bezier_mesh(ax, control_points, conn, degrees, label=False,
     if label:
         ax = pd.plot_global_dofs(ax, control_points, conn)
 
-    if show:
-        plt.show()
-
     return ax
 
-def plot_iso_lines(ax, nurbs, color='b', n_points=100, show=False):
+def plot_iso_lines(ax, nurbs, color='b', n_points=100):
     """
     Plot the NURBS object using iso-lines in Greville abscissae coordinates.
     """
@@ -181,12 +171,9 @@ def plot_iso_lines(ax, nurbs, color='b', n_points=100, show=False):
                 vals = nurbs(x0, x1, x2)
                 ax.plot(vals[:, 0], vals[:, 1], vals[:, 2], color)
 
-    if show:
-        plt.show()
-
     return ax
 
-def plot_nurbs_basis_1d(ax, nurbs, n_points=100, show=False):
+def plot_nurbs_basis_1d(ax, nurbs, n_points=100):
     """
     Plot a 1D NURBS basis.
     """
@@ -204,13 +191,10 @@ def plot_nurbs_basis_1d(ax, nurbs, n_points=100, show=False):
         vals = nurbs.evaluate(fields=field, u=line)
         plt.plot(line, vals)
 
-    if show:
-        plt.show()
-
     return ax
 
 def plot_bezier_nurbs_basis_1d(ax, control_points, weights, degrees, cs, conn,
-                               n_points=20, show=False):
+                               n_points=20):
     """
     Plot a 1D NURBS basis using the Bezier extraction and local Bernstein
     basis.
@@ -229,8 +213,5 @@ def plot_bezier_nurbs_basis_1d(ax, control_points, weights, degrees, cs, conn,
                                                 weights, degrees,
                                                 cs, conn)
         plt.plot(coors[:, 0], vals)
-
-    if show:
-        plt.show()
 
     return ax
