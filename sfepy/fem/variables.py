@@ -1090,9 +1090,6 @@ class Variable(Struct):
         else:
             return self.initial_condition
 
-    def get_full_state(self, step=0):
-        return self.data[step]
-
 class CloseNodesIterator(Struct):
 
     def __init__(self, field, create_mesh=True, create_graph=True,
