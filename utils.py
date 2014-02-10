@@ -88,3 +88,32 @@ def create_mesh_and_output(nurbs, pars=None, **kwargs):
                           data=vals[:, None])
 
     return mesh, out
+
+def save_basis(nurbs, pars):
+    """
+    Save a NURBS object basis on a FE mesh corresponding to the given
+    parametrization in VTK files.
+
+    Parameters
+    ----------
+    nurbs : igakit.nurbs.NURBS instance
+        The NURBS object.
+    pars : sequence of array, optional
+        The values of parameters in each parametric dimension.
+    """
+    coors, conn, desc = create_linear_fe_mesh(nurbs, pars)
+    mat_id = nm.zeros(conn.shape[0], dtype=nm.int32)
+    mesh = Mesh.from_data('nurbs', coors, None, [conn], [mat_id], [desc])
+
+    n_dof = nurbs.weights.ravel().shape[0]
+    variable = nm.zeros(n_dof, dtype=nm.float64)
+    field = variable.reshape(nurbs.weights.shape)
+    for ic in xrange(n_dof):
+        variable[ic - 1] = 0.0
+        variable[ic] = 1.0
+
+        vals = nurbs.evaluate(field, *pars).reshape((-1))
+        out = {}
+        out['bf'] = Struct(name='output_data', mode='vertex',
+                           data=vals[:, None])
+        mesh.write('iga_basis_%03d.vtk' % ic, io='auto', out=out)
