@@ -390,6 +390,44 @@ def compute_bezier_control(control_points, weights, ccs, conn, bconn):
 
     return bezier_control_points, bezier_weights
 
+def get_bezier_topology(bconn, degrees):
+    """
+    Get a topology connectivity corresponding to the Bezier mesh connectivity.
+
+    In the referenced Bezier control points the Bezier mesh is interpolatory.
+
+    Parameters
+    ----------
+    bconn : array
+        The connectivity of the Bezier basis.
+    degrees : sequence of ints or int
+        The basis degrees in each parametric dimension.
+
+    Returns
+    -------
+    tconn : array
+        The topology connectivity (corner nodes, or vertices, of Bezier
+        elements) with vertex ordering suitable for a FE mesh.
+    """
+    shape = nm.asarray(degrees) + 1
+    dim = len(shape)
+
+    ii = nm.arange(bconn.shape[1]).reshape(shape)
+
+    if dim == 3:
+        corners = [ii[0, 0, 0], ii[-1, 0, 0], ii[-1, -1, 0], ii[0, -1, 0],
+                   ii[0, 0, -1], ii[-1, 0, -1], ii[-1, -1, -1], ii[0, -1, -1]]
+
+    elif dim == 2:
+        corners = [ii[0, 0], ii[-1, 0], ii[-1, -1], ii[0, -1]]
+
+    else:
+        corners = [ii[0], ii[-1]]
+
+    tconn = bconn[:, corners]
+
+    return tconn
+
 def eval_bernstein_basis(x, degree):
     """
     Evaluate the Bernstein polynomial basis of the given `degree`, and its
