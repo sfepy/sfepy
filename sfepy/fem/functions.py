@@ -109,15 +109,14 @@ class ConstantFunctionByRegion(Function):
                         region = problem.domain.regions[rkey]
                         rval = nm.array(rval, dtype=nm.float64, ndmin=3)
 
-                        offs = region.domain.mesh.el_offsets
-                        for kgrp, off in enumerate(offs[:-1]):
-                            elems = region.cells[off:offs[kgrp+1]] - off
-                            nqp = qps.shape[kgrp][1]
+                        for ig in region.igs:
+                            elems = region.get_cells(ig)
+                            nqp = qps.shape[ig][1]
                             nel = elems.shape[0]
                             vmap = nm.tile(elems.reshape((nel,1)) * nqp,
                                            (1, nqp)) + nm.arange(nqp)
                             matdata[vmap.reshape(nel * nqp)
-                                    + qps.rindx[kgrp].start] = rval
+                                    + qps.rindx[ig].start] = rval
 
                     out[key] = matdata
 
