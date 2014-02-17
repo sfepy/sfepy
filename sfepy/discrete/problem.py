@@ -513,7 +513,7 @@ class ProblemDefinition(Struct):
             The time stepper.
         mode : 'normal', 'update' or 'force'
             The update mode, see :func:`Material.time_update()
-            <sfepy.fem.materials.Material.time_update()>`.
+            <sfepy.discrete.materials.Material.time_update()>`.
         verbose : bool
             If False, reduce verbosity.
         """
@@ -828,7 +828,8 @@ class ProblemDefinition(Struct):
         element/node group numbers.
 
         See :func:`Domain.save_regions_as_groups()
-        <sfepy.fem.domain.Domain.save_regions_as_groups()>` for more details.
+        <sfepy.discrete.fem.domain.Domain.save_regions_as_groups()>` for more
+        details.
 
         Parameters
         ----------
@@ -978,11 +979,11 @@ class ProblemDefinition(Struct):
         Create evaluable object (equations and corresponding variables)
         from the `expression` string. Convenience function calling
         :func:`create_evaluable()
-        <sfepy.fem.evaluate.create_evaluable()>` with defaults provided
+        <sfepy.discrete.evaluate.create_evaluable()>` with defaults provided
         by the ProblemDefinition instance `self`.
 
         The evaluable can be repeatedly evaluated by calling
-        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations()>`,
+        :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations()>`,
         e.g. for different values of variables.
 
         Parameters
@@ -1044,7 +1045,7 @@ class ProblemDefinition(Struct):
             The equations that can be evaluated.
         variables : Variables instance
             The corresponding variables. Set their values and use
-            :func:`eval_equations() <sfepy.fem.evaluate.eval_equations()>`.
+            :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations()>`.
 
         Examples
         --------
@@ -1154,7 +1155,7 @@ class ProblemDefinition(Struct):
         """
         Evaluate an expression, convenience wrapper of
         :func:`ProblemDefinition.create_evaluable` and
-        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations>`.
+        :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations>`.
 
         Parameters
         ----------
@@ -1206,7 +1207,7 @@ class ProblemDefinition(Struct):
                    verbose=True):
         """
         Evaluate (some of) the problem's equations, convenience wrapper of
-        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations>`.
+        :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations>`.
 
         Parameters
         ----------

@@ -19,7 +19,7 @@ output directory and names)::
   $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' 2_4_2_refined_t.vtk --wireframe
   $ ./postproc.py -b 2_4_2_refined_grad.vtk
 
-The :class:`sfepy.fem.meshio.UserMeshIO` class is used to refine the original
+The :class:`sfepy.discrete.fem.meshio.UserMeshIO` class is used to refine the original
 two-element mesh before the actual solution.
 """
 import numpy as nm

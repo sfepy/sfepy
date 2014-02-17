@@ -1291,7 +1291,7 @@ class FieldVariable(Variable):
 
         See Also
         --------
-        sfepy.fem.fields.Field.get_mapping()
+        sfepy.discrete.fem.fields.Field.get_mapping()
         """
         if region is None:
             region = self.field.region
@@ -2093,8 +2093,8 @@ class FieldVariable(Variable):
         """
         Evaluate the variable in the given physical coordinates. Convenience
         wrapper around :func:`Field.evaluate_at()
-        <sfepy.fem.fields_nodal.H1NodalMixin.evaluate_at()>`, see its docstring
-        for more details.
+        <sfepy.discrete.fem.fields_nodal.H1NodalMixin.evaluate_at()>`, see its
+        docstring for more details.
         """
         source_vals = self().reshape((self.n_nod, self.n_components))
         out = self.field.evaluate_at(coors, source_vals, strategy=strategy,

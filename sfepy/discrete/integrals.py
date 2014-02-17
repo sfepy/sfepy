@@ -107,7 +107,7 @@ class Integral(Struct):
         ----------
         geometry : str
             The geometry key describing the integration domain,
-            see the keys of `sfepy.fem.quadratures.quadrature_tables`.
+            see the keys of `sfepy.discrete.quadratures.quadrature_tables`.
 
         Returns
         -------
@@ -146,7 +146,7 @@ class Integral(Struct):
         geometry : str
             The geometry key describing the integration domain. Default
             is `'1_2'`, i.e. a line integral in [0, 1]. For other values
-            see the keys of `sfepy.fem.quadratures.quadrature_tables`.
+            see the keys of `sfepy.discrete.quadratures.quadrature_tables`.
 
         Returns
         -------

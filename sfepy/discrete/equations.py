@@ -303,7 +303,7 @@ class Equations(Container):
             The time stepper.
         mode : 'normal', 'update' or 'force'
             The update mode, see
-            :func:`sfepy.fem.materials.Material.time_update()`.
+            :func:`sfepy.discrete.materials.Material.time_update()`.
         problem : ProblemDefinition instance, optional
             The problem that can be passed to user functions as a context.
         verbose : bool

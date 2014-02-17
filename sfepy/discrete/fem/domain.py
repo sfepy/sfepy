@@ -537,7 +537,7 @@ class Domain(Struct):
         Notes
         -----
         Surface groups define surface facet connectivity that is needed
-        for :class:`sfepy.fem.mappings.SurfaceMapping`.
+        for :class:`sfepy.discrete.fem.mappings.SurfaceMapping`.
         """
         for ig in region.igs:
             groups = self.surface_groups.setdefault(ig, {})
