@@ -254,7 +254,7 @@ Sneak peek: what is going on under the hood
    in an input file.
 
 #. Following the contents of the input file, a :class:`ProblemDefinition
-   <sfepy.fem.problemDef.ProblemDefinition>` instance is created - this
+   <sfepy.discrete.problem.ProblemDefinition>` instance is created - this
    is the input file coming to life. Let us call the instance
    ``problem``.
 
@@ -277,7 +277,7 @@ Sneak peek: what is going on under the hood
 The above last three steps are essentially repeated for each time
 step. So that is it - using the code a black-box PDE solver shields the
 user from having to create the :class:`ProblemDefinition
-<sfepy.fem.problemDef.ProblemDefinition>` instance by hand. But note
+<sfepy.discrete.problem.ProblemDefinition>` instance by hand. But note
 that this is possible, and often necessary when the flexibility of the
 default solvers is not enough. At the end of the tutorial an example
 demonstrating the interactive creation of the ``problem`` is shown, see
@@ -677,7 +677,7 @@ The output should look like this:
 
     These commands were executed:
     >>> from sfepy.base.base import *
-    >>> from sfepy.fem import *
+    >>> from sfepy.discrete import *
     >>> from sfepy.applications import solve_pde
     >>> from sfepy.postprocess import Viewer
 
@@ -779,7 +779,7 @@ the left edge :math:`\Gamma_1`, and shift the right edge
 
 .. sourcecode:: ipython
 
-   In [20]: from sfepy.fem.conditions import Conditions, EssentialBC
+   In [20]: from sfepy.discrete.conditions import Conditions, EssentialBC
    In [21]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
    In [22]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
       ....:     val = shift * coors[:,1]**2

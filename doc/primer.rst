@@ -544,7 +544,7 @@ file, namely lines 25, 26::
 
 The above computation could also be done in *isfepy*::
 
-    In [23]: from sfepy.fem.geometry_element import geometry_data
+    In [23]: from sfepy.discrete.fem.geometry_element import geometry_data
 
     In [24]: gdata = geometry_data['2_3']
     In [25]: nc = len(gdata.coors)
