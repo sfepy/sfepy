@@ -89,7 +89,7 @@ epbc_12 = {
     'match' : 'match_x_line',
 }
 
-from sfepy.fem.periodic import match_x_line, match_y_line
+from sfepy.discrete.fem.periodic import match_x_line, match_y_line
 
 functions = {
     'match_x_line' : (match_x_line,),
@@ -105,7 +105,7 @@ class Test( TestCommon ):
     ##
     # 01.06.2007, c
     def from_conf( conf, options ):
-        from sfepy.fem import ProblemDefinition
+        from sfepy.discrete import ProblemDefinition
         problem = ProblemDefinition.from_conf( conf, init_equations = False )
 
         test = Test( problem = problem,
@@ -116,7 +116,7 @@ class Test( TestCommon ):
     ##
     # c: 01.06.2007, r: 18.02.2008
     def test_pbc( self ):
-        from sfepy.fem import Variables, Conditions
+        from sfepy.discrete import Variables, Conditions
 
         problem  = self.problem
         conf = self.conf

@@ -12,7 +12,7 @@ class Test(TestCommon):
     @staticmethod
     def from_conf(conf, options):
         import sfepy
-        from sfepy.fem import Mesh, Domain, H1NodalVolumeField
+        from sfepy.discrete.fem import Mesh, Domain, Field
         mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh',
                               prefix_dir=sfepy.data_dir)
         domain = Domain('domain', mesh)
@@ -29,8 +29,8 @@ class Test(TestCommon):
                                       'vertices in x > %.10f' % (max_x - eps),
                                       'facet')
 
-        field = H1NodalVolumeField('fu', nm.float64, 'vector', omega,
-                                   approx_order=2)
+        field = Field.from_args('fu', nm.float64, 'vector', omega,
+                                approx_order=2)
 
         test = Test(conf=conf, options=options, dim=dim,
                     omega=omega, gamma1=gamma1, gamma2=gamma2,
@@ -38,7 +38,7 @@ class Test(TestCommon):
         return test
 
     def test_term_evaluation(self):
-        from sfepy.fem import Integral, FieldVariable
+        from sfepy.discrete import Integral, FieldVariable
         from sfepy.terms.terms import Term
 
         integral = Integral('i', order=3)
@@ -65,7 +65,7 @@ class Test(TestCommon):
         return ok
 
     def test_term_arithmetics(self):
-        from sfepy.fem import FieldVariable, Integral
+        from sfepy.discrete import FieldVariable, Integral
         from sfepy.terms.terms import Term
 
         integral = Integral('i', order=3)
@@ -95,7 +95,7 @@ class Test(TestCommon):
         return ok
 
     def test_variables(self):
-        from sfepy.fem import FieldVariable
+        from sfepy.discrete import FieldVariable
 
         u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
@@ -115,10 +115,10 @@ class Test(TestCommon):
 
     def test_solving(self):
         from sfepy.base.base import IndexedStruct
-        from sfepy.fem \
+        from sfepy.discrete \
              import FieldVariable, Material, ProblemDefinition, \
                     Function, Equation, Equations, Integral
-        from sfepy.fem.conditions import Conditions, EssentialBC
+        from sfepy.discrete.conditions import Conditions, EssentialBC
         from sfepy.terms import Term
         from sfepy.solvers.ls import ScipyDirect
         from sfepy.solvers.nls import Newton

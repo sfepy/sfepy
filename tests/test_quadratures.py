@@ -60,7 +60,7 @@ class Test(TestCommon):
         """
         Test if integral of 1 (= sum of weights) gives the domain volume.
         """
-        from sfepy.fem.quadratures import quadrature_tables
+        from sfepy.discrete.quadratures import quadrature_tables
 
         ok = True
         for geometry, qps in ordered_iteritems(quadrature_tables):
@@ -79,8 +79,8 @@ class Test(TestCommon):
         Test if the quadratures have orders they claim to have, using
         symbolic integration by sympy.
         """
-        from sfepy.fem.quadratures import quadrature_tables, tp_geometries
-        from sfepy.fem.integrals import Integral
+        from sfepy.discrete.quadratures import quadrature_tables, tp_geometries
+        from sfepy.discrete.integrals import Integral
 
         if sm is None:
             self.report('cannot import sympy, skipping')

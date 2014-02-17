@@ -11,7 +11,8 @@ filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
 
 def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
     from sfepy.base.base import basestr
-    from sfepy.fem import Field, FieldVariable, Material, Variables, Materials
+    from sfepy.discrete import FieldVariable, Material, Variables, Materials
+    from sfepy.discrete.fem import Field
     from sfepy.mechanics.tensors import dim2sym
 
     omega = domain.regions['Omega']
@@ -134,7 +135,8 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
-        from sfepy.fem import Mesh, Domain, Integral
+        from sfepy.discrete import Integral
+        from sfepy.discrete.fem import Mesh, Domain
 
         domains = []
         for filename in filename_meshes:

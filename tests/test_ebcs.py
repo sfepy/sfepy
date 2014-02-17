@@ -1,7 +1,7 @@
 import os.path as op
 
 from sfepy import data_dir
-from sfepy.fem.periodic import match_y_line
+from sfepy.discrete.fem.periodic import match_y_line
 
 filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 

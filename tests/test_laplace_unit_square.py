@@ -175,8 +175,8 @@ class Test( TestCommon ):
     def test_boundary_fluxes( self ):
         import os.path as op
         from sfepy.linalg import rotation_matrix2d
-        from sfepy.fem.evaluate import BasicEvaluator
-        from sfepy.fem import Material
+        from sfepy.discrete.evaluate import BasicEvaluator
+        from sfepy.discrete import Material
         problem = self.problem
 
         angles = [0, 30, 45]

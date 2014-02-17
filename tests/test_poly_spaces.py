@@ -40,8 +40,9 @@ def _gen_common_data(orders, gels, report):
     import sfepy
     from sfepy.base.base import Struct
     from sfepy.linalg import combine
-    from sfepy.fem import Mesh, Domain, Field, FieldVariable, Integral
-    from sfepy.fem.global_interp import get_ref_coors
+    from sfepy.discrete import FieldVariable, Integral
+    from sfepy.discrete.fem import Mesh, Domain, Field
+    from sfepy.discrete.fem.global_interp import get_ref_coors
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
                                     ['lagrange', 'lobatto']])]
@@ -114,7 +115,7 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
-        from sfepy.fem.geometry_element import GeometryElement
+        from sfepy.discrete.fem.geometry_element import GeometryElement
 
         gels = {}
         for key in ['2_3', '2_4', '3_4', '3_8']:
@@ -174,7 +175,7 @@ class Test(TestCommon):
         return ok
 
     def test_gradients(self):
-        from sfepy.fem.mappings import VolumeMapping
+        from sfepy.discrete.fem.mappings import VolumeMapping
 
         ok = True
         orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}

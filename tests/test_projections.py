@@ -2,7 +2,8 @@ import os.path as op
 import numpy as nm
 
 import sfepy
-from sfepy.fem import Mesh, Domain, H1NodalVolumeField, FieldVariable
+from sfepy.discrete import FieldVariable
+from sfepy.discrete.fem import Mesh, Domain, Field
 
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
@@ -17,14 +18,14 @@ class Test(TestCommon):
 
         omega = domain.create_region('Omega', 'all')
 
-        field = H1NodalVolumeField('linear', nm.float64, 'scalar', omega,
-                                   approx_order=1)
+        field = Field.from_args('linear', nm.float64, 'scalar', omega,
+                                approx_order=1)
 
         test = Test(conf=conf, options=options, omega=omega, field=field)
         return test
 
     def test_mass_matrix(self):
-        from sfepy.fem.projections import create_mass_matrix
+        from sfepy.discrete.projections import create_mass_matrix
 
         field = self.field
 
@@ -36,7 +37,7 @@ class Test(TestCommon):
         return True
 
     def test_projection_tri_quad(self):
-        from sfepy.fem.projections import make_l2_projection
+        from sfepy.discrete.projections import make_l2_projection
 
         source = FieldVariable('us', 'unknown', self.field)
 
@@ -55,8 +56,8 @@ class Test(TestCommon):
         omega = domain.create_region('Omega', 'all')
 
 
-        field = H1NodalVolumeField('bilinear', nm.float64, 'scalar', omega,
-                                   approx_order=1)
+        field = Field.from_args('bilinear', nm.float64, 'scalar', omega,
+                                approx_order=1)
 
         target = FieldVariable('ut', 'unknown', field)
 

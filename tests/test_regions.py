@@ -16,7 +16,8 @@ class Test(TestCommon):
     @staticmethod
     def from_conf( conf, options ):
         from sfepy import data_dir
-        from sfepy.fem import Mesh, Domain, Functions
+        from sfepy.discrete.fem import Mesh, Domain
+        from sfepy.discrete import Functions
 
         mesh = Mesh('test mesh',
                     data_dir + '/meshes/various_formats/abaqus_tet.inp')

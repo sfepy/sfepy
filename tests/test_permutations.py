@@ -12,7 +12,7 @@ class Test(TestCommon):
     def test_rcm(self):
         from sfepy import data_dir
         from sfepy.linalg import rcm, permute_in_place, save_sparse_txt
-        from sfepy.fem import Mesh
+        from sfepy.discrete.fem import Mesh
 
         filename = data_dir + '/meshes/2d/special/square_triquad.mesh'
 

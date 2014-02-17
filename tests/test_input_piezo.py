@@ -12,7 +12,7 @@ class Test( TestInput ):
 
     def test_ebc( self ):
         import numpy as nm
-        from sfepy.fem import ProblemDefinition
+        from sfepy.discrete import ProblemDefinition
 
         pb = ProblemDefinition.from_conf( self.test_conf )
         pb.time_update()
