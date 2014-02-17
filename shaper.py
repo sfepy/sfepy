@@ -8,10 +8,10 @@ import numpy as nm
 import sfepy
 from sfepy.base.base import output, remap_dict, Struct, IndexedStruct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.fem.evaluate import BasicEvaluator
+from sfepy.discrete.evaluate import BasicEvaluator
 import sfepy.base.ioutils as io
 import sfepy.optimize.shapeOptim as so
-from sfepy.fem.problemDef import ProblemDefinition
+from sfepy.discrete.problem import ProblemDefinition
 from sfepy.solvers import Solver
 
 def solve_stokes(dpb, equations_stokes, nls_conf):

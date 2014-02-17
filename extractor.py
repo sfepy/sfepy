@@ -17,7 +17,7 @@ from sfepy.base.ioutils import get_trunk
 import sfepy.postprocess.time_history as th
 
 def create_problem(filename):
-    from sfepy.fem import ProblemDefinition
+    from sfepy.discrete import ProblemDefinition
 
     problem = ProblemDefinition.from_conf_file(filename,
                                                init_equations=False,

@@ -7,7 +7,7 @@ Python shell for SfePy.
    for the user:
 
        >>> from sfepy.base.base import *
-       >>> from sfepy.fem import *
+       >>> from sfepy.discrete import *
        >>> from sfepy.applications import solve_pde
        >>> from sfepy.postprocess import Viewer
 

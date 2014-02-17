@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from sfepy.base.base import Output
-from sfepy.fem.mesh import Mesh
+from sfepy.discrete.fem.mesh import Mesh
 from sfepy.mesh.mesh_generators import gen_tiled_mesh
 from optparse import OptionParser
 
