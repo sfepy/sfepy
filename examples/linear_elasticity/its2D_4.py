@@ -38,7 +38,7 @@ def stress_strain(out, pb, state, extend=False):
     return out
 
 def gen_lines(problem):
-    from sfepy.fem.probes import LineProbe
+    from sfepy.discrete.fem.probes import LineProbe
     mesh = problem.domain.mesh
     ps0 = [[0.0,  0.0], [ 0.0,  0.0]]
     ps1 = [[75.0, 0.0], [ 0.0, 75.0]]

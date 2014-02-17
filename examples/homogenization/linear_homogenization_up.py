@@ -9,7 +9,7 @@
 #! Homogenization of heterogeneous linear elastic material - mixed formulation
 import numpy as nm
 
-import sfepy.fem.periodic as per
+import sfepy.discrete.fem.periodic as per
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson_mixed, bulk_from_youngpoisson
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_base as cb

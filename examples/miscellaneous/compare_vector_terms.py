@@ -21,7 +21,7 @@ The same values of :math:`\ul{u}`, :math:`\ul{r}` should be obtained.
 import os
 
 from sfepy import data_dir
-from sfepy.fem import MeshIO
+from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'

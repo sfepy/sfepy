@@ -179,7 +179,7 @@ helps = {
 
 def main():
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem import ProblemDefinition
+    from sfepy.discrete import ProblemDefinition
     from sfepy.base.plotutils import plt
 
     parser = OptionParser(usage=usage, version='%prog')

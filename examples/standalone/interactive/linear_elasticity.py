@@ -6,11 +6,11 @@ import sys
 sys.path.append('.')
 
 from sfepy.base.base import IndexedStruct
-from sfepy.fem import (Mesh, Domain, Field, FieldVariable,
-                       Material, Integral, Function, Equation, Equations,
-                       ProblemDefinition)
+from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+                            Equation, Equations, ProblemDefinition)
+from sfepy.discrete.fem import Mesh, Domain, Field
 from sfepy.terms import Term
-from sfepy.fem.conditions import Conditions, EssentialBC
+from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.postprocess import Viewer

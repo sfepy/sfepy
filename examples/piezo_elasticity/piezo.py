@@ -27,7 +27,7 @@ import os
 import numpy as nm
 
 from sfepy import data_dir
-from sfepy.fem import MeshIO
+from sfepy.discrete.fem import MeshIO
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 ## filename_mesh = data_dir + '/meshes/2d/special/circle_in_square_small.mesh'

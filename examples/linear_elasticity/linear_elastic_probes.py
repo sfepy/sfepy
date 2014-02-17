@@ -126,7 +126,7 @@ def gen_lines(problem):
     labels : list
         The list of probe labels.
     """
-    from sfepy.fem.probes import LineProbe
+    from sfepy.discrete.probes import LineProbe
 
     mesh = problem.domain.mesh
     bbox = mesh.get_bounding_box()
@@ -178,7 +178,7 @@ def probe_hook(data, probe, label, problem):
     """
     import matplotlib.pyplot as plt
     import matplotlib.font_manager as fm
-    from sfepy.fem import FieldVariable
+    from sfepy.discrete import FieldVariable
 
     def get_it(name, var_name):
         var = problem.create_variables([var_name])[var_name]

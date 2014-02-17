@@ -16,7 +16,7 @@ where
     \;.
 """
 from sfepy.mechanics.matcoefs import lame_from_youngpoisson
-from sfepy.fem.utils import refine_mesh
+from sfepy.discrete.fem.utils import refine_mesh
 from sfepy import data_dir
 
 # Fix the mesh file name if you run this file outside the SfePy directory.

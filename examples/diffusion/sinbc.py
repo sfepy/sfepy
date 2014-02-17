@@ -27,8 +27,8 @@ import numpy as nm
 from sfepy import data_dir
 
 from sfepy.base.base import output
-from sfepy.fem import Mesh, Domain
-from sfepy.fem.meshio import UserMeshIO, MeshIO
+from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem.meshio import UserMeshIO, MeshIO
 from sfepy.homogenization.utils import define_box_regions
 
 base_mesh = data_dir + '/meshes/elements/2_4_2.mesh'
@@ -57,7 +57,7 @@ def post_process(out, pb, state, extend=False):
     """
     Calculate gradient of the solution.
     """
-    from sfepy.fem.fields_base import create_expression_output
+    from sfepy.discrete.fem.fields_base import create_expression_output
 
     aux = create_expression_output('ev_grad.ie.Elements( t )',
                                    'grad', 'temperature',

@@ -5,7 +5,7 @@ sys.path.append( '.' )
 
 import numpy as nm
 
-import sfepy.fem.periodic as per
+import sfepy.discrete.fem.periodic as per
 from sfepy.homogenization.utils import define_box_regions
 
 # c: 05.05.2008, r: 05.05.2008
@@ -233,7 +233,7 @@ def main():
     import os
     from sfepy.base.base import spause, output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem import ProblemDefinition
+    from sfepy.discrete import ProblemDefinition
     import sfepy.homogenization.coefs_base as cb
 
     parser = OptionParser(usage=usage, version='%prog')
