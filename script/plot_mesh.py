@@ -5,7 +5,7 @@ Plot mesh connectivities, facet orientations, global and local DOF ids etc.
 from optparse import OptionParser
 
 from sfepy.base.base import output
-from sfepy.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, Domain
 import sfepy.postprocess.plot_cmesh as pc
 
 usage = '%prog [options] filename\n' + __doc__.rstrip()

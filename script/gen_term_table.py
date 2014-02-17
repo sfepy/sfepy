@@ -7,8 +7,8 @@ import pyparsing as pp
 import numpy as nm
 
 sys.path.append( '.' )
-import sfepy.fem # Hack: fix circular dependency, as terms.pyx imports
-                 # from sfepy.fem
+import sfepy.discrete.fem # Hack: fix circular dependency, as terms.pyx imports
+                          # from sfepy.discrete.fem
 from sfepy.terms import term_table
 
 def set_section(sec):

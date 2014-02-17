@@ -10,7 +10,7 @@ import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.mesh.mesh_generators import gen_block_mesh
-from sfepy.fem.meshio import MeshIO
+from sfepy.discrete.fem.meshio import MeshIO
 
 usage = '%prog [options]\n' + __doc__.rstrip()
 

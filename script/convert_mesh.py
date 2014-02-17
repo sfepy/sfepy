@@ -14,8 +14,8 @@ sys.path.append('.')
 
 from optparse import OptionParser
 from sfepy.base.base import nm, output
-from sfepy.fem import Mesh, Domain
-from sfepy.fem.meshio import (output_writable_meshes, MeshIO,
+from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem.meshio import (output_writable_meshes, MeshIO,
                               supported_cell_types)
 
 usage = '%prog [options] filename_in filename_out\n' + __doc__.rstrip()
