@@ -4,7 +4,7 @@ Linearization of higher order solutions for the purposes of visualization.
 import numpy as nm
 
 from sfepy.linalg import dot_sequences
-from sfepy.fem.refine import refine_reference
+from sfepy.discrete.fem.refine import refine_reference
 
 def get_eval_dofs(dofs, dof_conn, ps, ori=None):
     """

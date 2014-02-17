@@ -4,10 +4,10 @@ import numpy as nm
 
 from sfepy.base.base import get_default, Struct
 from sfepy.base.ioutils import get_print_info
-from sfepy.fem import extend_cell_data
+from sfepy.discrete.fem import extend_cell_data
 from sfepy.homogenization.utils import coor_to_sym
 from sfepy.base.conf import get_standard_keywords
-from sfepy.fem import ProblemDefinition
+from sfepy.discrete import ProblemDefinition
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file
 import os.path as op

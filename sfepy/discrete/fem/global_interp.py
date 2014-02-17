@@ -5,8 +5,8 @@ import time
 import numpy as nm
 
 from sfepy.base.base import output, get_default_attr
-from sfepy.fem.mesh import make_inverse_connectivity
-from sfepy.fem.extmods.bases import find_ref_coors
+from sfepy.discrete.fem.mesh import make_inverse_connectivity
+from sfepy.discrete.fem.extmods.bases import find_ref_coors
 
 def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
                   verbose=True):

@@ -8,9 +8,9 @@ import numpy as nm
 from sfepy.base.base import output, assert_, OneTypeList, Struct
 from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
-from sfepy.fem.parse_regions import create_bnf, visit_stack, ParseException
-from sfepy.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
-from sfepy.fem.fe_surface import FESurface
+from sfepy.discrete.parse_regions import create_bnf, visit_stack, ParseException
+from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
+from sfepy.discrete.fem.fe_surface import FESurface
 import fea
 
 def region_leaf(domain, regions, rdef, functions):
@@ -211,8 +211,8 @@ class Domain(Struct):
         self.reset_regions()
         self.clear_surface_groups()
 
-        from sfepy.fem.geometry_element import create_geometry_elements
-        from sfepy.fem.extmods.cmesh import CMesh
+        from sfepy.discrete.fem.geometry_element import create_geometry_elements
+        from sfepy.discrete.fem.extmods.cmesh import CMesh
         self.cmesh = CMesh.from_mesh(mesh)
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)

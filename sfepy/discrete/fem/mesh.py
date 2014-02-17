@@ -240,7 +240,7 @@ class Mesh(Struct):
 
     Example of creating and working with a mesh::
 
-        In [1]: from sfepy.fem import Mesh
+        In [1]: from sfepy.discrete.fem import Mesh
         In [2]: m = Mesh.from_file("meshes/3d/cylinder.vtk")
         sfepy: reading mesh (meshes/3d/cylinder.vtk)...
         sfepy: ...done in 0.04 s

@@ -4,10 +4,10 @@ Low level functions.
 """
 cimport cython
 
-cimport sfepy.fem.extmods._geommech as gmch
+cimport sfepy.discrete.fem.extmods._geommech as gmch
 from types cimport int32
 
-from sfepy.fem.extmods._fmfield cimport (FMField, array2fmfield4)
+from sfepy.discrete.fem.extmods._fmfield cimport (FMField, array2fmfield4)
 
 cimport numpy as np
 import numpy as np

@@ -4,7 +4,7 @@ from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
-from sfepy.fem.extmods._geommech import geme_mulAVSB3py
+from sfepy.discrete.fem.extmods._geommech import geme_mulAVSB3py
 
 ##
 # 22.08.2006, c

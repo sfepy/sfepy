@@ -3,8 +3,8 @@ import numpy as nm
 from sfepy.base.base import assert_
 from sfepy.linalg import norm_l2_along_axis as norm
 from sfepy.linalg import dot_sequences, insert_strided_axis
-from sfepy.fem.poly_spaces import PolySpace
-from sfepy.fem.mappings import VolumeMapping
+from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete.fem.mappings import VolumeMapping
 from sfepy.mechanics.tensors import dim2sym
 
 def create_transformation_matrix(coors):

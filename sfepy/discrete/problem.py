@@ -11,19 +11,19 @@ import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
-from mesh import Mesh
-from domain import Domain
-from fields_base import fields_from_conf
+from sfepy.discrete.fem.mesh import Mesh
+from sfepy.discrete.fem.domain import Domain
+from sfepy.discrete.fem.fields_base import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
 from equations import Equations
 from integrals import Integrals
-from sfepy.fem.state import State
-from sfepy.fem.conditions import Conditions
-from sfepy.fem.evaluate import create_evaluable, eval_equations
-import fea as fea
+from sfepy.discrete.state import State
+from sfepy.discrete.conditions import Conditions
+from sfepy.discrete.evaluate import create_evaluable, eval_equations
+from sfepy.discrete.fem import fea
 from sfepy.solvers.ts import TimeStepper
-from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator
+from sfepy.discrete.evaluate import BasicEvaluator, LCBCEvaluator
 from sfepy.solvers import Solver
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
@@ -1066,7 +1066,7 @@ class ProblemDefinition(Struct):
         >>> variables['u'].set_data(vec)
         >>> vec_qp = eval_equations(equations, variables, mode='qp')
         """
-        from sfepy.fem.equations import get_expression_arg_names
+        from sfepy.discrete.equations import get_expression_arg_names
 
         variables = get_default(var_dict, {})
         var_context = get_default(var_dict, {})

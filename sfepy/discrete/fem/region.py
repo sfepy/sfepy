@@ -649,8 +649,8 @@ class Region(Struct):
         mapping : VolumeMapping or SurfaceMapping instance
             The requested mapping.
         """
-        from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
-        from sfepy.fem.fe_surface import FESurface
+        from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
+        from sfepy.discrete.fem.fe_surface import FESurface
 
         coors = self.domain.get_mesh_coors()
         if kind == 's':

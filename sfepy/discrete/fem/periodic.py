@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.fem.mesh import find_map
+from sfepy.discrete.fem.mesh import find_map
 
 ##
 # c: 05.05.2008, r: 05.05.2008

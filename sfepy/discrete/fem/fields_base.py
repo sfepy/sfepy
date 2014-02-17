@@ -17,13 +17,14 @@ import numpy as nm
 from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
 from sfepy.base.base import Struct, basestr
 import fea
-from sfepy.fem.mesh import Mesh
-from sfepy.fem.meshio import convert_complex_output
-from sfepy.fem.utils import (extend_cell_data, prepare_remap, invert_remap,
-                             get_min_value)
-from sfepy.fem.fe_surface import FESurface
-from sfepy.fem.integrals import Integral
-from sfepy.fem.linearizer import get_eval_dofs, get_eval_coors, create_output
+from sfepy.discrete.fem.mesh import Mesh
+from sfepy.discrete.fem.meshio import convert_complex_output
+from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
+                                      invert_remap, get_min_value)
+from sfepy.discrete.fem.fe_surface import FESurface
+from sfepy.discrete.integrals import Integral
+from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
+                                           create_output)
 
 def parse_approx_order(approx_order):
     """
@@ -81,7 +82,7 @@ def get_eval_expression(expression, ig,
     Get the function for evaluating an expression given a list of elements,
     and reference element coordinates.
     """
-    from sfepy.fem.evaluate import eval_in_els_and_qp
+    from sfepy.discrete.evaluate import eval_in_els_and_qp
 
     def _eval(iels, coors):
         val = eval_in_els_and_qp(expression, ig, iels, coors,
@@ -267,7 +268,8 @@ class Field(Struct):
             import sfepy
             from sfepy.base.base import load_classes
 
-            field_files = [ii for ii in sfepy.get_paths('sfepy/fem/fields*.py')
+            field_files = [ii for ii
+                           in sfepy.get_paths('sfepy/discrete/fem/fields*.py')
                            if 'fields_base.py' not in ii]
             Field._all = load_classes(field_files, [Field], ignore_errors=True,
                                       name_attr='family_name')

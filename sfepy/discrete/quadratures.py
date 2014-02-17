@@ -53,7 +53,7 @@ Andreas Kloeckner.
 import numpy as nm
 
 from sfepy.base.base import output, assert_, Struct
-from sfepy.fem.simplex_cubature import get_simplex_cubature
+from sfepy.discrete.simplex_cubature import get_simplex_cubature
 
 simplex_geometries = ['1_2', '2_3', '3_4']
 tp_geometries = ['2_4', '3_8']

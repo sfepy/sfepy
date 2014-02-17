@@ -8,7 +8,7 @@ from sfepy.base.base import output, get_default, dict_to_struct, assert_, Struct
 from sfepy.solvers import eig, Solver
 from sfepy.base.progressbar import MyBar
 from sfepy.linalg import norm_l2_along_axis
-from sfepy.fem.evaluate import eval_equations
+from sfepy.discrete.evaluate import eval_equations
 from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
 

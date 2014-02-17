@@ -16,12 +16,13 @@ import numpy as nm
 
 from sfepy.base.base import output, assert_
 import fea
-from sfepy.fem.utils import prepare_remap
-from sfepy.fem.dof_info import expand_nodes_to_dofs
-from sfepy.fem.global_interp import get_ref_coors
-from sfepy.fem.facets import get_facet_dof_permutations
-from sfepy.fem.fields_base import Field, VolumeField, SurfaceField, H1Mixin
-from sfepy.fem.extmods.bases import evaluate_in_rc
+from sfepy.discrete.fem.utils import prepare_remap
+from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
+from sfepy.discrete.fem.global_interp import get_ref_coors
+from sfepy.discrete.fem.facets import get_facet_dof_permutations
+from sfepy.discrete.fem.fields_base import (Field, VolumeField, SurfaceField,
+                                            H1Mixin)
+from sfepy.discrete.fem.extmods.bases import evaluate_in_rc
 
 class H1NodalMixin(H1Mixin):
 

@@ -9,15 +9,15 @@ import scipy.sparse as sp
 
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import debug, OneTypeList, Container, Struct
-from sfepy.fem import Materials, Variables, create_adof_conns
-from extmods.cmesh import create_mesh_graph
+from sfepy.discrete import Materials, Variables, create_adof_conns
+from sfepy.discrete.fem.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 
 def parse_definition(equation_def):
     """
     Parse equation definition string to create term description list.
     """
-    from parseEq import create_bnf
+    from parse_equations import create_bnf
 
     term_descs = []
     bnf = create_bnf(term_descs)
@@ -98,7 +98,7 @@ class Equations(Container):
         subequations : Equations instance
             The sub-equations.
         """
-        from sfepy.fem import FieldVariable
+        from sfepy.discrete import FieldVariable
 
         known_var_names = get_default(known_var_names, [])
 

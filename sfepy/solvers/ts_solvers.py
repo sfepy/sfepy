@@ -5,7 +5,7 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct, IndexedStruct, basestr
 from sfepy.solvers.solvers import make_get_conf, TimeSteppingSolver
-from sfepy.fem.mass_operator import MassOperator
+from sfepy.discrete.mass_operator import MassOperator
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
 class StationarySolver(TimeSteppingSolver):

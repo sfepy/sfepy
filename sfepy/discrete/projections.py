@@ -2,8 +2,8 @@
 Construct projections between FE spaces.
 """
 from sfepy.base.base import output, IndexedStruct
-from sfepy.fem import FieldVariable, Integral, Equation, Equations, Material
-from sfepy.fem import ProblemDefinition
+from sfepy.discrete import FieldVariable, Integral, Equation, Equations, Material
+from sfepy.discrete import ProblemDefinition
 from sfepy.terms import Term
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton

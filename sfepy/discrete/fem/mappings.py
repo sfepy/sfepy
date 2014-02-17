@@ -4,8 +4,8 @@ Finite element reference mappings.
 import numpy as nm
 
 from sfepy.base.base import output, get_default, Struct
-from sfepy.fem.poly_spaces import PolySpace
-from sfepy.fem.extmods.mappings import CMapping
+from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete.fem.extmods.mappings import CMapping
 
 class PhysicalQPs(Struct):
     """

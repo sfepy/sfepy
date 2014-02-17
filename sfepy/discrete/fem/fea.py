@@ -1,7 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import Struct, assert_
-from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
+from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 
@@ -335,7 +335,7 @@ class Approximation( Struct ):
 
         if gtype == 'volume':
             if integral is None:
-                from sfepy.fem import Integral
+                from sfepy.discrete import Integral
                 integral = Integral('i_tmp', 1)
 
             qp = self.get_qp('v', integral)

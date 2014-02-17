@@ -16,8 +16,8 @@ from dataset_manager import DatasetManager
 
 from sfepy.base.base import Struct, basestr
 from sfepy.postprocess.utils import mlab
-from sfepy.fem import Mesh
-from sfepy.fem.meshio import MeshIO, vtk_cell_types, supported_formats
+from sfepy.discrete.fem import Mesh
+from sfepy.discrete.fem.meshio import MeshIO, vtk_cell_types, supported_formats
 
 def create_file_source(filename, watch=False, offscreen=True):
     """Factory function to create a file source corresponding to the

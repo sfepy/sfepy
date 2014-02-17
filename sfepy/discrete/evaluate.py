@@ -3,8 +3,8 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import output, get_default, OneTypeList, Struct, basestr
-from sfepy.fem import Equations, Variables, Region, Integral, Integrals
-from sfepy.fem.fields_base import setup_extra_data
+from sfepy.discrete import Equations, Variables, Region, Integral, Integrals
+from sfepy.discrete.fem.fields_base import setup_extra_data
 
 ##
 # 02.10.2007, c

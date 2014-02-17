@@ -5,7 +5,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
 import tables as pt
-from sfepy.fem.meshio import HDF5MeshIO
+from sfepy.discrete.fem.meshio import HDF5MeshIO
 import os.path as op
 
 def get_homog_coefs_linear(ts, coor, mode,

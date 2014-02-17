@@ -3,7 +3,7 @@ Basic uniform mesh refinement functions.
 """
 import numpy as nm
 
-from sfepy.fem import Mesh
+from sfepy.discrete.fem import Mesh
 
 def refine_2_3(mesh_in, cmesh):
     """
@@ -222,8 +222,8 @@ def refine_reference(geometry, level):
     The error edges must be generated in the order of the connectivity
     of the previous (lower) level.
     """
-    from sfepy.fem import Domain
-    from sfepy.fem.geometry_element import geometry_data
+    from sfepy.discrete.fem import Domain
+    from sfepy.discrete.fem.geometry_element import geometry_data
 
     gcoors, gconn = geometry.coors, geometry.conn
     if level == 0:

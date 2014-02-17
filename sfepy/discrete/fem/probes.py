@@ -10,7 +10,7 @@ except ImportError:
 
 from sfepy.base.base import output, get_default, basestr, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
-from sfepy.fem.mesh import make_inverse_connectivity
+from sfepy.discrete.fem.mesh import make_inverse_connectivity
 
 def write_results(filename, probe, results):
     """

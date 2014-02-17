@@ -2,7 +2,7 @@
 """
 Low level functions.
 """
-from sfepy.fem.extmods._fmfield cimport FMField
+from sfepy.discrete.fem.extmods._fmfield cimport FMField
 from types cimport int32
 
 cdef extern from 'geommech.h':

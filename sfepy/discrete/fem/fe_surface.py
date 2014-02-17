@@ -1,8 +1,8 @@
 import numpy as nm
 
 from sfepy.base.base import get_default, Struct
-from sfepy.fem.facets import build_orientation_map
-from sfepy.fem.utils import prepare_remap
+from sfepy.discrete.fem.facets import build_orientation_map
+from sfepy.discrete.fem.utils import prepare_remap
 
 class FESurface(Struct):
     """Description of a surface of a finite element domain."""

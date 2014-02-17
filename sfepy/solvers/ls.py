@@ -581,7 +581,7 @@ class SchurGeneralized(ScipyDirect):
                       needs_problem_instance=True) + common
 
     def __init__(self, conf, **kwargs):
-        from sfepy.fem.state import State
+        from sfepy.discrete.state import State
 
         ScipyDirect.__init__(self, conf, **kwargs)
 
@@ -760,8 +760,8 @@ class MultiProblem(ScipyDirect):
                       needs_problem_instance=True) + common
 
     def __init__(self, conf, problem, **kwargs):
-        from sfepy.fem.state import State
-        from sfepy.fem import ProblemDefinition
+        from sfepy.discrete.state import State
+        from sfepy.discrete import ProblemDefinition
         from sfepy.base.conf import ProblemConf, get_standard_keywords
         from scipy.spatial import cKDTree as KDTree
 

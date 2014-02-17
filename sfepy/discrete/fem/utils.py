@@ -1,7 +1,7 @@
 import numpy as nm
 
 import sfepy.linalg as la
-from sfepy.fem.integrals import Integral
+from sfepy.discrete.integrals import Integral
 
 def prepare_remap(indices, n_full):
     """
@@ -312,7 +312,7 @@ def refine_mesh(filename, level):
     """
     import os
     from sfepy.base.base import output
-    from sfepy.fem import Mesh, Domain
+    from sfepy.discrete.fem import Mesh, Domain
 
     if level > 0:
         mesh = Mesh.from_file(filename)

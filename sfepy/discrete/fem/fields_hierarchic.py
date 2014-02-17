@@ -1,9 +1,9 @@
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.fem.utils import prepare_remap, prepare_translate
-from sfepy.fem.dof_info import expand_nodes_to_dofs
-from sfepy.fem.fields_base import VolumeField, H1Mixin
+from sfepy.discrete.fem.utils import prepare_remap, prepare_translate
+from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
+from sfepy.discrete.fem.fields_base import VolumeField, H1Mixin
 
 class H1HierarchicVolumeField(H1Mixin, VolumeField):
     family_name = 'volume_H1_lobatto'

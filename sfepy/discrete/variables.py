@@ -10,12 +10,14 @@ from sfepy.base.base import (real_types, complex_types, assert_, get_default,
                              output, OneTypeList, Container, Struct, basestr,
                              iter_dict_of_lists)
 import sfepy.linalg as la
-from sfepy.fem.integrals import Integral
-from sfepy.fem.dof_info import (DofInfo, EquationMap, LCBCOperators,
-                                expand_nodes_to_equations,
-                                make_global_lcbc_operator, is_active_bc)
-from sfepy.fem.mappings import get_physical_qps
-from sfepy.fem.evaluate_variable import eval_real, eval_complex
+from sfepy.discrete.integrals import Integral
+from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
+                                            expand_nodes_to_equations,
+                                            is_active_bc)
+from sfepy.discrete.fem.lcbc_operators import (LCBCOperators,
+                                               make_global_lcbc_operator)
+from sfepy.discrete.fem.mappings import get_physical_qps
+from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 
 is_state = 0
 is_virtual = 1
@@ -1263,7 +1265,7 @@ class FieldVariable(Variable):
         Takes reference to a Field instance. Sets dtype according to
         field.dtype. Sets `dim` attribute to spatial dimension.
         """
-        from sfepy.fem.fields_base import SurfaceField
+        from sfepy.discrete import SurfaceField
 
         if isinstance(field, SurfaceField):
             self.is_surface = True

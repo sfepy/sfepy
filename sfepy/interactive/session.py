@@ -5,7 +5,8 @@ from sfepy.base.base import output, sfepy_config_dir
 
 preexec_source = """\
 from sfepy.base.base import *
-from sfepy.fem import *
+from sfepy.discrete import *
+from sfepy.discrete.fem import *
 from sfepy.applications import solve_pde
 try:
     import matplotlib as mpl

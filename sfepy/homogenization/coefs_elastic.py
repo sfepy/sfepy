@@ -5,7 +5,7 @@ from sfepy.homogenization.coefs_base import CoefOne, CorrDim, \
      TCorrectorsViaPressureEVP, \
      CoefFMSymSym, CoefFMSym, CoefFMOne, \
      CorrMiniApp, CorrSolution
-from sfepy.fem.meshio import HDF5MeshIO
+from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
 
 class CorrectorsPermeability( CorrDim ):
