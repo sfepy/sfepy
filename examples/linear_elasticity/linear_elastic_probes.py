@@ -4,20 +4,20 @@ This example shows how to use the post_process_hook and probe_hook options.
 Use it as follows (assumes running from the sfepy directory; on Windows, you
 may need to prefix all the commands with "python " and remove "./"):
 
-1. solve the problem:
+1. solve the problem::
 
    ./simple.py examples/linear_elasticity/linear_elastic_probes.py
 
-2. optionally, view the results:
+2. optionally, view the results::
 
    ./postproc.py cylinder.h5 -b
 
-3. optionally, convert results to VTK, and view again:
+3. optionally, convert results to VTK, and view again::
 
    ./extractor.py -d cylinder.h5
    ./postproc.py cylinder.vtk -b
 
-4. probe the data:
+4. probe the data::
 
    ./probe.py examples/linear_elasticity/linear_elastic_probes.py cylinder.h5
 
