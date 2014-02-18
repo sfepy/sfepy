@@ -636,41 +636,6 @@ class Region(Struct):
     def get_mirror_region(self):
         return self.mirror_region, self.ig_map, self.ig_map_i
 
-    def create_mapping(self, kind, ig):
-        """
-        Create mapping from reference elements to physical elements,
-        given the integration kind ('v' or 's').
-
-        This mapping can be used to compute the physical quadrature
-        points.
-
-        Returns
-        -------
-        mapping : VolumeMapping or SurfaceMapping instance
-            The requested mapping.
-        """
-        from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
-        from sfepy.discrete.fem.fe_surface import FESurface
-
-        coors = self.domain.get_mesh_coors()
-        if kind == 's':
-            coors = coors[self.vertices]
-
-        gel = self.domain.groups[ig].gel
-        conn = self.domain.groups[ig].conn
-
-        if kind == 'v':
-            cells = self.get_cells(ig)
-
-            mapping = VolumeMapping(coors, conn[cells], gel=gel)
-
-        elif kind == 's':
-            aux = FESurface('aux', self, gel.get_surface_entities(),
-                            conn , ig)
-            mapping = SurfaceMapping(coors, aux.leconn, gel=gel.surface_facet)
-
-        return mapping
-
     def get_n_cells(self, ig=None, is_surface=False):
         """
         Get number of region cells.

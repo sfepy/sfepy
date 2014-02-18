@@ -5,6 +5,7 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete.fem.fe_surface import FESurface
 from sfepy.discrete.fem.extmods.mappings import CMapping
 
 class PhysicalQPs(Struct):
@@ -50,6 +51,47 @@ class PhysicalQPs(Struct):
 
         return shape
 
+def create_mapping(region, kind, ig):
+    """
+    Create mapping from reference to physical entities in a given
+    region, given the integration kind ('v' or 's').
+
+    This mapping can be used to compute the physical quadrature
+    points.
+
+    Parameters
+    ----------
+    region : Region instance
+        The region defining the entities.
+    kind : 'v' or 's'
+        The kind of the entities: 'v' - cells, 's' - facets.
+    ig : int
+        The group index.
+
+    Returns
+    -------
+    mapping : VolumeMapping or SurfaceMapping instance
+        The requested mapping.
+    """
+    coors = region.domain.get_mesh_coors()
+    if kind == 's':
+        coors = coors[region.vertices]
+
+    gel = region.domain.groups[ig].gel
+    conn = region.domain.groups[ig].conn
+
+    if kind == 'v':
+        cells = region.get_cells(ig)
+
+        mapping = VolumeMapping(coors, conn[cells], gel=gel)
+
+    elif kind == 's':
+        aux = FESurface('aux', region, gel.get_surface_entities(),
+                        conn , ig)
+        mapping = SurfaceMapping(coors, aux.leconn, gel=gel.surface_facet)
+
+    return mapping
+
 def get_physical_qps(region, integral, map_kind=None):
     """
     Get physical quadrature points corresponding to the given region
@@ -62,7 +104,7 @@ def get_physical_qps(region, integral, map_kind=None):
 
     ii = 0
     for ig in region.igs:
-        gmap = region.create_mapping(map_kind, ig)
+        gmap = create_mapping(region, map_kind, ig)
 
         gel = gmap.get_geometry()
         qp_coors, _ = integral.get_qp(gel.name)
