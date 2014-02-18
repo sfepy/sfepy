@@ -7,7 +7,8 @@ import numpy as nm
 
 from sfepy.base.base import output, assert_, OneTypeList, Struct
 from geometry_element import GeometryElement
-from region import Region, get_dependency_graph, sort_by_dependency, get_parents
+from sfepy.discrete.common.region import (Region, get_dependency_graph,
+                                          sort_by_dependency, get_parents)
 from sfepy.discrete.parse_regions import create_bnf, visit_stack, ParseException
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.discrete.fem.fe_surface import FESurface

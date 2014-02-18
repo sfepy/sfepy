@@ -1,7 +1,7 @@
 # FEM stuff to move/split to common.
-from sfepy.discrete.fem.region import Region
 from sfepy.discrete.fem.fields_base import Field, VolumeField, SurfaceField
 
+from sfepy.discrete.common.region import Region
 from functions import Functions, Function
 from conditions import Conditions
 from variables import Variables, Variable, FieldVariable, create_adof_conns
