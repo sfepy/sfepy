@@ -189,8 +189,8 @@ def get_opacities(opacity):
     return opacities
 
 class Viewer(Struct):
-    """Class to automate visualization of various data using Mayavi. It can be
-    used via postproc.py or isfepy the most easily.
+    """
+    Class to automate visualization of various data using Mayavi.
 
     It can use any format that mlab.pipeline.open() handles, e.g. a VTK format.
     After opening a data file, all data (point, cell, scalars, vectors,
