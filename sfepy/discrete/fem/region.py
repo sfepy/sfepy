@@ -563,7 +563,7 @@ class Region(Struct):
             out = cmesh.get_from_cell_group(ig, self.tdim, self.cells)
 
         if offset:
-            out -= self.domain.mesh.el_offsets[ig]
+            out -= self.domain.cell_offsets[ig]
 
         return out
 
@@ -590,7 +590,7 @@ class Region(Struct):
             fis = fis[ic]
 
         if offset:
-            fis[:, 0] -= self.domain.mesh.el_offsets[ig]
+            fis[:, 0] -= self.domain.cell_offsets[ig]
 
         return fis
 

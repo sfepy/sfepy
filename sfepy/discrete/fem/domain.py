@@ -219,6 +219,7 @@ class Domain(Struct):
         self.cmesh.setup_entities()
 
         self.shape.tdim = self.cmesh.tdim
+        self.cell_offsets = self.mesh.el_offsets
 
     def setup_groups(self):
         n_nod, dim = self.mesh.coors.shape
@@ -260,11 +261,9 @@ class Domain(Struct):
 
     def get_cell_offsets(self):
         offs = {}
-        off = 0
-        for group in self.iter_groups():
-            ig = group.ig
-            offs[ig] = off
-            off += group.shape.n_el
+        for ig in range(self.shape.n_gr):
+            offs[ig] = self.cell_offsets[ig]
+
         return offs
 
     def get_mesh_coors(self, actual=False):
