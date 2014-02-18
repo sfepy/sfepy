@@ -1993,10 +1993,12 @@ class FieldVariable(Variable):
 
         diameters = nm.empty((cells.shape[0],), dtype=nm.float64)
 
+        integral = Integral('i_tmp', 1)
+
         igs = nm.unique(cells[:,0])
         for ig in igs:
             ap = field.aps[ig]
-            vg = ap.describe_geometry(field, 'volume', field.region)
+            vg = ap.describe_geometry(field, 'volume', field.region, integral)
 
             ii = nm.where(cells[:,0] == ig)[0]
             aux = domain.get_element_diameters(ig, cells[ii,1].copy(), vg,

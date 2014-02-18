@@ -314,7 +314,7 @@ class Approximation( Struct ):
         else:
             return self.bf[bf_key], qp.weights
 
-    def describe_geometry(self, field, gtype, region, integral=None,
+    def describe_geometry(self, field, gtype, region, integral,
                           return_mapping=False):
         """
         Compute jacobians, element volumes and base function derivatives
@@ -334,10 +334,6 @@ class Approximation( Struct ):
         coors = domain.get_mesh_coors(actual=True)
 
         if gtype == 'volume':
-            if integral is None:
-                from sfepy.discrete import Integral
-                integral = Integral('i_tmp', 1)
-
             qp = self.get_qp('v', integral)
 
             iels = region.get_cells(self.ig)
