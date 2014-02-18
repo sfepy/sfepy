@@ -671,11 +671,14 @@ class Region(Struct):
 
     def iter_cells(self):
         ii = 0
-        offs = self.domain.mesh.el_offsets
-        for ig, off in enumerate(offs[:-1]):
-            for iel in self.cells[off:offs[ig+1]]:
+        off = 0
+        for ig in self.igs:
+            n_cell = self.shape[ig].n_cell
+            for iel in self.cells[off : off + n_cell]:
                 yield ig, ii, iel - off
                 ii += 1
+
+            off += n_cell
 
     def has_cells(self):
         return self.cells.size > 0
