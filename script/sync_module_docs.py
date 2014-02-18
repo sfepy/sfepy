@@ -22,7 +22,6 @@ omits = [
     '__init__.py',
     '__config__.py',
     'debug.py',
-    'friction_slip.py',
     'gitwash_dumper.py',
     'setup.py',
     'site_cfg.py',

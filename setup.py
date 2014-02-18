@@ -150,7 +150,6 @@ def setup_package():
         'phonon.py',
         'extractor.py',
         'findSurf.py',
-        'friction_slip.py',
         'genPerMesh.py',
         'homogen.py',
         'isfepy',
