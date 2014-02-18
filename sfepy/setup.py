@@ -14,7 +14,6 @@ def configuration(parent_package='',top_path=None):
         'fem',
         'mesh',
         'homogenization',
-        'interactive',
         'linalg',
         'mechanics',
         'optimize',

@@ -101,11 +101,6 @@ package_check('scipy', INFO.SCIPY_MIN_VERSION)
 package_check('matplotlib', INFO.MATPLOTLIB_MIN_VERSION)
 package_check('pyparsing', INFO.PYPARSING_MIN_VERSION)
 package_check('tables', INFO.PYTABLES_MIN_VERSION)
-package_check('IPython', INFO.IPYTHON_MIN_VERSION, optional=True,
-              messages={'missing opt'
-                        : '%s was not found: '
-                        'isfepy will use regular Python shell',
-                        'opt suffix' : ''})
 package_check(('enthought.mayavi', 'mayavi'),
               INFO.MAYAVI_MIN_VERSION,
               optional=True,
@@ -152,7 +147,6 @@ def setup_package():
         'findSurf.py',
         'genPerMesh.py',
         'homogen.py',
-        'isfepy',
         'plotPerfusionCoefs.py',
         'postproc.py',
         'probe.py',
