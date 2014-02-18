@@ -147,7 +147,6 @@ def setup_package():
         'findSurf.py',
         'genPerMesh.py',
         'homogen.py',
-        'plotPerfusionCoefs.py',
         'postproc.py',
         'probe.py',
         'runTests.py',
