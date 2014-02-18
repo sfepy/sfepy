@@ -37,12 +37,6 @@ Basic Usage
 
   * See `Running Tests`_
 
-* ::
-
-    $ ./isfepy
-
-  * Follow the help information printed on startup
-
 Surface Extraction
 ^^^^^^^^^^^^^^^^^^
 

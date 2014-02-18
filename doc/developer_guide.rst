@@ -80,9 +80,6 @@ directory is `sfepy/`, which has the following contents:
      - the homogenization engine and supporting modules - highly
        specialized code, one of the reasons of *SfePy* existence
      - *
-   * - `interactive/`
-     - setup of IPython-based shell `isfepy`
-     -
    * - `linalg/`
      - linear algebra functions not covered by NumPy and SciPy
      -

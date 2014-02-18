@@ -12,9 +12,10 @@ Dependencies:
     - some tests and functions use sympy
     - schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
     - log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
-    - isfepy requires ipython, mayavi, matplotlib with WXAgg
     - postproc.py requires mayavi
     - to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX
+    - ipython is preferred over the regular Python shell for following some
+      parts of primer/tutorial
 
 SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
 
@@ -68,7 +69,6 @@ Basic usage:
 './postproc.py -b channels_symm944t.vtk' ... visualize the results
 
 './runTests.py' ... see Testing below
-'./isfepy' ... follow the help printed on its startup
 
 Surface extraction:
 './findSurf.py meshes/quantum/cube.node -' ... creates surf_cube.mesh

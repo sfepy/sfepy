@@ -313,12 +313,12 @@ Running SfePy in interactive mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In addition to solving problems using the simple.py script you can also run
-SfePy interactively. This requires that `IPython`_ be installed. To run
-*SfePy* interactively, use *isfepy*::
+SfePy interactively. We will use `IPython`_ with custom imports, as described
+in :ref:`using-ipython`. In the SfePy top-level directory::
 
-    $ ./isfepy
+    $ ipython --profile=sfepy
 
-Once isfepy loads up, issue the following command::
+Once the customized ipython shell loads up, issue the following command::
 
     In [1]: pb, state = solve_pde('its2D_2.py')
 
@@ -542,7 +542,7 @@ file, namely lines 25, 26::
     refinement_level = 0
     filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
-The above computation could also be done in *isfepy*::
+The above computation could also be done in the customized ipython shell::
 
     In [23]: from sfepy.fem.geometry_element import geometry_data
 

@@ -312,12 +312,13 @@ This section introduces the basics of running *SfePy* on the command line. The
   * Running the above command creates the output file ``cylinder.vtk`` in the
     *SfePy* top-level directory
 
-* *SfePy* can also be invoked interactively with the ``isfepy`` script::
+* *SfePy* can also be invoked interactively using `IPython`_ with custom
+  imports, as described in :ref:`using-ipython`. In the SfePy top-level
+  directory, run::
 
-    $ ./isfepy
+    $ ipython --profile=sfepy
 
-  * Follow the help information printed on startup to solve the
-    Poisson's equation example above
+  See :ref:`sec-interactive-example-linear-elasticity` for more information.
 
 .. _postprocessing:
 
@@ -623,11 +624,10 @@ see :download:`examples/diffusion/poisson_short_syntax.py
 Interactive Example: Linear Elasticity
 --------------------------------------
 
-This example shows how to use *SfePy* interactively, but also how to
-make a custom simulation script. We will use ``isfepy`` for the
-explanation, but regular Python shell, or IPython would do as well,
-provided the proper modules are imported (see the help information
-printed on startup of ``isfepy``).
+This example shows how to use *SfePy* interactively, but also how to make a
+custom simulation script. We will use `IPython`_ with custom imports, as
+described in :ref:`using-ipython`, for the explanation, but regular Python
+shell would do as well, provided the proper modules are imported.
 
 We wish to solve the following linear elasticity problem:
 
@@ -665,36 +665,9 @@ insight about the object internals.
 The whole example summarized in a script is below in
 :ref:`tutorial_interactive_source`.
 
-Run the ``isfepy`` script::
+In the SfePy top-level directory, run::
 
-    $ ./isfepy
-
-The output should look like this:
-
-.. sourcecode:: ipython
-
-    Python 2.6.5 console for SfePy 2010.2-git-11cfd34 (8c4664610ed4b85851966326aaa7ce36e560ce7a)
-
-    These commands were executed:
-    >>> from sfepy.base.base import *
-    >>> from sfepy.fem import *
-    >>> from sfepy.applications import solve_pde
-    >>> from sfepy.postprocess import Viewer
-
-    When in SfePy source directory, try:
-    >>> pb, vec, data = solve_pde('examples/diffusion/poisson.py')
-    >>> view = Viewer(pb.get_output_name())
-    >>> view()
-
-    When in another directory (and SfePy is installed), try:
-    >>> from sfepy import data_dir
-    >>> pb, vec, data = solve_pde(data_dir + '/examples/diffusion/poisson.py')
-    >>> view = Viewer(pb.get_output_name())
-    >>> view()
-
-    Documentation can be found at http://sfepy.org
-
-    In [1]:
+    $ ipython --profile=sfepy
 
 Read a finite element mesh, that defines the domain :math:`\Omega`.
 

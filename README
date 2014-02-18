@@ -34,9 +34,9 @@ contain a discretized solution domain (a FE mesh). The FE mesh must be provided
 in another file in one of the supported formats, notably the legacy VTK format
 [5]. SfePy does not provide meshing tools, but it can use a number of standard
 formats. The results are almost exclusively stored in legacy VTK files, or
-custom HDF5 files. Many standard open-source tools can be used to display the VTK
-files, namely paraview [6], or mayavi [7]. The latter is supported directly
-within SfePy, either via the postproc.py script or the isfepy shell.
+custom HDF5 files. Many standard open-source tools can be used to display the
+VTK files, namely paraview [6], or mayavi [7]. The latter is supported directly
+within SfePy, via the postproc.py script.
 
 Once an input file and a corresponding mesh file are prepared, the
 solution of the problem can be attempted by the 'simple.py' script, see

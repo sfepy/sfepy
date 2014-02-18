@@ -22,10 +22,12 @@ Dependencies:
 * some tests and functions use sympy
 * schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
 * log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
-* isfepy requires ipython, matplotlib with WXAgg
 * postproc.py requires mayavi2
 * to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX, see
   :ref:`how_to_regenerate_documentation`
+* ipython is preferred over the regular Python shell for following some parts
+  of primer/tutorial
+
 
 *SfePy* is known to work on various flavours of Linux, on Intel Macs and
 Windows.
@@ -107,6 +109,44 @@ to turn on bound checks in the low level C functions, and recompile the code::
     python setup.py build_ext --inplace
 
 Then re-run your code and report the output.
+
+.. _using-ipython:
+
+Using IPython
+-------------
+
+It is preferable to use (a customized) `IPython`_ over the regular Python shell
+when following :doc:`tutorial` or :doc:`primer`. Install `IPython`_ and then
+customize it as follows:
+
+1. Create a new profile::
+
+   $ ipython profile create sfepy
+
+2. Open the ``~/.ipython/profile_sfepy/ipython_config.py`` file in a text
+   editor and add/edit after the ``c = get_config()`` line the following:
+
+   .. sourcecode:: python
+
+      exec_lines = [
+          'from sfepy.base.base import *',
+          'from sfepy.fem import *',
+          'from sfepy.applications import solve_pde',
+          'import matplotlib as mpl',
+          'mpl.use("WXAgg")',
+          'from matplotlib.pyplot import *',
+          'from sfepy.postprocess import Viewer',
+      ]
+
+      c.InteractiveShellApp.exec_lines = exec_lines
+
+      c.TerminalIPythonApp.gui = 'wx'
+
+      c.TerminalInteractiveShell.colors = 'Linux' # NoColor, Linux, or LightBG
+
+3. Run the customized ipython shell::
+
+   $ ipython --profile=sfepy
 
 Platform-specific notes
 -----------------------
