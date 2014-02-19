@@ -93,6 +93,18 @@ def main():
 
     t0 = time.time()
 
+    out, err = check_output('python ./script/blockgen.py')
+    eok += report(out, '...', -2, 1, '...done')
+
+    out, err = check_output('python ./script/cylindergen.py')
+    eok += report(out, '...', -2, 1, '...done')
+
+    out, err = check_output('python ./script/convert_mesh.py meshes/3d/cylinder.vtk out.mesh')
+    eok += report(out, '...', -2, 1, '...done')
+
+    out, err = check_output('python ./genPerMesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
+    eok += report(out, '...', -2, 1, 'done.')
+
     out, err = check_output('python ./simple.py examples/diffusion/poisson.py')
     eok += report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
 
