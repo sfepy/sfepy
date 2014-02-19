@@ -12,6 +12,7 @@ from sfepy.discrete.common.region import (Region, get_dependency_graph,
 from sfepy.discrete.parse_regions import create_bnf, visit_stack, ParseException
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.discrete.fem.fe_surface import FESurface
+from sfepy.discrete.fem.mesh import make_inverse_connectivity
 import fea
 
 def region_leaf(domain, regions, rdef, functions):
@@ -522,6 +523,53 @@ class Domain(Struct):
             out = nm.sqrt(diameters.squeeze())
 
         return out
+
+    def get_evaluate_cache(self, cache=None, share_geometry=False):
+        """
+        Get the evaluate cache for :func:`Variable.evaluate_at()
+        <sfepy.discrete.variables.Variable.evaluate_at()>`.
+
+        Parameters
+        ----------
+        cache : Struct instance, optional
+            Optionally, use the provided instance to store the cache data.
+        share_geometry : bool
+            Set to True to indicate that all the probes will work on the same
+            domain. Certain data are then computed only for the first probe and
+            cached.
+
+        Returns
+        -------
+        cache : Struct instance
+            The evaluate cache.
+        """
+        try:
+            from scipy.spatial import cKDTree as KDTree
+        except ImportError:
+            from scipy.spatial import KDTree
+
+        if cache is None:
+            cache = Struct(name='evaluate_cache')
+
+        tt = time.clock()
+        if (cache.get('iconn', None) is None) or not share_geometry:
+            mesh = self.mesh
+            offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
+                                                       ret_offsets=True)
+            ii = nm.where(offsets[1:] == offsets[:-1])[0]
+            if len(ii):
+                raise ValueError('some vertices not in any element! (%s)' % ii)
+
+            cache.offsets = offsets
+            cache.iconn = iconn
+        output('iconn: %f s' % (time.clock()-tt))
+
+        tt = time.clock()
+        if (cache.get('kdtree', None) is None) or not share_geometry:
+            cache.kdtree = KDTree(mesh.coors)
+        output('kdtree: %f s' % (time.clock()-tt))
+
+        return cache
 
     def clear_surface_groups(self):
         """
