@@ -407,7 +407,7 @@ class PointsProbe(Probe):
         """No refinement for this probe."""
         refine_flag = nm.array([False])
         return refine_flag
-    
+
     def get_points(self, refine_flag=None):
         """
         Get the probe points.
@@ -475,7 +475,7 @@ class LineProbe(Probe):
 
         if refine_flag is None:
             pars = nm.linspace(0, self.length, self.n_point)
-            
+
         else:
             pars = Probe.refine_pars(self.pars, refine_flag)
 
@@ -539,7 +539,7 @@ class RayProbe(Probe):
         """No refinement for this probe."""
         refine_flag = nm.array([False])
         return refine_flag
-    
+
     def gen_points(self, sign):
         """Generate the probe points and their parametrization."""
         pars = self.p_fun(nm.arange(self.n_point_single, dtype=nm.float64))
@@ -655,13 +655,12 @@ class CircleProbe(Probe):
 
         else:
             points = nm.c_[x, y]
-    
+
         points += self.centre
 
         self.points = points
 
         return pars, points
-
 
 class IntegralProbe(Struct):
     """Evaluate integral expressions."""

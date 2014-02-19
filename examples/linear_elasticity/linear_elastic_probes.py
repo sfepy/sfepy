@@ -106,14 +106,14 @@ def post_process(out, problem, state, extend=False):
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress,
                                   dofs=None)
-    
+
     return out
 
 # This function will be called by probe.py.
 def gen_lines(problem):
     """
     Define three line probes in axial directions.
-    
+
     Parameters
     ----------
     problem : ProblemDefinition instance
@@ -141,7 +141,6 @@ def gen_lines(problem):
     ps1 = [[bbox[1,0], cy, cz],
            [cx, bbox[1,1], cz],
            [cx, cy, bbox[1,2]]]
-    
 
     # Use adaptive probe with 10 inital points.
     n_point = -10
