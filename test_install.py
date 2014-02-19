@@ -124,6 +124,12 @@ def main():
     out, err = check_output('python ./simple.py examples/linear_elasticity/linear_elastic_probes.py')
     eok += report(out, '...', -11, 5, '4.638192e-18', eps=1e-15)
 
+    out, err = check_output('python ./probe.py examples/linear_elasticity/linear_elastic_probes.py cylinder.h5')
+    eok += report(out, '...', -2, 3, 'cylinder_2.txt')
+
+    out, err = check_output('python ./extractor.py -d cylinder.h5')
+    eok += report(out, '...', -2, 1, '...done')
+
     out, err = check_output('python ./findSurf.py meshes/quantum/cube.node -')
     eok += report(out, '...', -2, 0, '64247')
 
