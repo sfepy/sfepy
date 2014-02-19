@@ -43,7 +43,7 @@ from sfepy.base.ioutils import edit_filename
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.discrete import ProblemDefinition
 from sfepy.discrete.fem import MeshIO
-from sfepy.discrete.fem.probes import write_results, read_results
+from sfepy.discrete.probes import write_results, read_results
 
 usage = """%prog [generation options] <input file> <results file>
 %prog [postprocessing options] <probe file> <figure file>

@@ -1372,7 +1372,7 @@ Probing
 Probing applies interpolation to output the solution along specified paths. As
 mentioned in :ref:`miscellaneous_options`, it relies on defining two additional
 functions, namely the `'gen_probes'` function, that should create the required
-probes (see :mod:`sfepy.discrete.fem.probes`), and the `'probe_hook'` function
+probes (see :mod:`sfepy.discrete.probes`), and the `'probe_hook'` function
 that performs the actual probing of the results for each of the probes. This
 function can return the probing results, as well as a handle to a corresponding
 matplotlib figure. See :doc:`primer` for additional explanation.
