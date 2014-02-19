@@ -149,7 +149,7 @@ def gen_lines(problem):
     probes = []
     for ip in xrange(len(ps0)):
         p0, p1 = ps0[ip], ps1[ip]
-        probes.append(LineProbe(p0, p1, n_point, mesh))
+        probes.append(LineProbe(p0, p1, n_point))
 
     return probes, labels
 
@@ -177,7 +177,6 @@ def probe_hook(data, probe, label, problem):
     """
     import matplotlib.pyplot as plt
     import matplotlib.font_manager as fm
-    from sfepy.discrete import FieldVariable
 
     def get_it(name, var_name):
         var = problem.create_variables([var_name])[var_name]
