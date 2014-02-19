@@ -51,7 +51,6 @@ def configuration(parent_package='',top_path=None):
     config.add_subpackage('sfepy')
     aux_scripts = [
         'blockgen.py',
-        'config.py',
         'convert_mesh.py',
         'cylindergen.py',
         'edit_identifiers.py',
