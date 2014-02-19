@@ -165,7 +165,7 @@ def main():
             else:
                 output("dimension: 3")
                 import sfepy.mesh as geom
-                from sfepy.fem.mesh import Mesh
+                from sfepy.discrete.fem.mesh import Mesh
                 try:
                     from site_cfg import tetgen_path
                 except ImportError:
@@ -195,7 +195,7 @@ def main():
                                              required, other)
 
     if options.mesh:
-        from sfepy.fem.mesh_generators import gen_mesh_from_string
+        from sfepy.discrete.fem.mesh_generators import gen_mesh_from_string
 
         conf.filename_mesh = gen_mesh_from_string(options.mesh,
                                                   options.mesh_dir)

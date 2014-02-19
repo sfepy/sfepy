@@ -125,8 +125,8 @@ class Test( TestCommon ):
     # 31.05.2007, c
     # 02.10.2007
     def test_boundary_fluxes( self ):
-        from sfepy.fem.evaluate import BasicEvaluator
-        from sfepy.fem import Material
+        from sfepy.discrete.evaluate import BasicEvaluator
+        from sfepy.discrete import Material
         problem = self.problem
 
         region_names = ['Gamma']

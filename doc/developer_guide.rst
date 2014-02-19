@@ -855,58 +855,58 @@ sfepy.base package
    src/sfepy/base/resolve_deps
    src/sfepy/base/testing
 
-sfepy.fem package
-^^^^^^^^^^^^^^^^^
-
-WARNING: The code in the fem package is undergoing rapid change. It is best to
-refer directly to the code base until the code stabilizes.
+sfepy.discrete package
+^^^^^^^^^^^^^^^^^^^^^^
 
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/fem/conditions
-   src/sfepy/fem/dof_info
-   src/sfepy/fem/domain
-   src/sfepy/fem/equations
-   src/sfepy/fem/evaluate
-   src/sfepy/fem/evaluate_variable
-   src/sfepy/fem/facets
-   src/sfepy/fem/fe_surface
-   src/sfepy/fem/fea
-   src/sfepy/fem/fields_base
-   src/sfepy/fem/fields_hierarchic
-   src/sfepy/fem/fields_nodal
-   src/sfepy/fem/functions
-   src/sfepy/fem/geometry_element
-   src/sfepy/fem/global_interp
-   src/sfepy/fem/history
-   src/sfepy/fem/linearizer
-   src/sfepy/fem/integrals
-   src/sfepy/fem/mappings
-   src/sfepy/fem/mass_operator
-   src/sfepy/fem/materials
-   src/sfepy/fem/mesh
-   src/sfepy/fem/meshio
-   src/sfepy/fem/parseEq
-   src/sfepy/fem/parse_regions
-   src/sfepy/fem/periodic
-   src/sfepy/fem/poly_spaces
-   src/sfepy/fem/probes
-   src/sfepy/fem/problemDef
-   src/sfepy/fem/projections
-   src/sfepy/fem/quadratures
-   src/sfepy/fem/refine
-   src/sfepy/fem/region
-   src/sfepy/fem/simplex_cubature
-   src/sfepy/fem/state
-   src/sfepy/fem/utils
-   src/sfepy/fem/variables
-   src/sfepy/fem/extmods/_fmfield
-   src/sfepy/fem/extmods/assemble
-   src/sfepy/fem/extmods/bases
-   src/sfepy/fem/extmods/cmesh
-   src/sfepy/fem/extmods/lobatto_bases
-   src/sfepy/fem/extmods/mappings
+   src/sfepy/discrete/conditions
+   src/sfepy/discrete/equations
+   src/sfepy/discrete/evaluate
+   src/sfepy/discrete/evaluate_variable
+   src/sfepy/discrete/functions
+   src/sfepy/discrete/integrals
+   src/sfepy/discrete/mass_operator
+   src/sfepy/discrete/materials
+   src/sfepy/discrete/parse_equations
+   src/sfepy/discrete/parse_regions
+   src/sfepy/discrete/problem
+   src/sfepy/discrete/projections
+   src/sfepy/discrete/quadratures
+   src/sfepy/discrete/simplex_cubature
+   src/sfepy/discrete/state
+   src/sfepy/discrete/variables
+   src/sfepy/discrete/common/dof_info
+   src/sfepy/discrete/fem/domain
+   src/sfepy/discrete/fem/extmods/_fmfield
+   src/sfepy/discrete/fem/extmods/_geommech
+   src/sfepy/discrete/fem/extmods/assemble
+   src/sfepy/discrete/fem/extmods/bases
+   src/sfepy/discrete/fem/extmods/cmesh
+   src/sfepy/discrete/fem/extmods/lobatto_bases
+   src/sfepy/discrete/fem/extmods/mappings
+   src/sfepy/discrete/fem/facets
+   src/sfepy/discrete/fem/fe_surface
+   src/sfepy/discrete/fem/fea
+   src/sfepy/discrete/fem/fields_base
+   src/sfepy/discrete/fem/fields_hierarchic
+   src/sfepy/discrete/fem/fields_nodal
+   src/sfepy/discrete/fem/geometry_element
+   src/sfepy/discrete/fem/global_interp
+   src/sfepy/discrete/fem/history
+   src/sfepy/discrete/fem/lcbc_operators
+   src/sfepy/discrete/fem/linearizer
+   src/sfepy/discrete/fem/mappings
+   src/sfepy/discrete/fem/mesh
+   src/sfepy/discrete/fem/meshio
+   src/sfepy/discrete/fem/periodic
+   src/sfepy/discrete/fem/poly_spaces
+   src/sfepy/discrete/fem/probes
+   src/sfepy/discrete/fem/refine
+   src/sfepy/discrete/fem/region
+   src/sfepy/discrete/fem/utils
+
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

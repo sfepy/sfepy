@@ -1,7 +1,7 @@
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.fem.mappings import get_physical_qps
+from sfepy.discrete.fem.mappings import get_physical_qps
 
 def eval_ion_ion_energy(centres, charges):
     """

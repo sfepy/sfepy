@@ -4,7 +4,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from sfepy.fem.extmods.types cimport int32
+from sfepy.discrete.fem.extmods.types cimport int32
 
 cdef extern from 'common.h':
     cdef void errclear()

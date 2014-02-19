@@ -19,7 +19,7 @@ output directory and names)::
   $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' 2_4_2_refined_t.vtk --wireframe
   $ ./postproc.py -b 2_4_2_refined_grad.vtk
 
-The :class:`sfepy.fem.meshio.UserMeshIO` class is used to refine the original
+The :class:`sfepy.discrete.fem.meshio.UserMeshIO` class is used to refine the original
 two-element mesh before the actual solution.
 """
 import numpy as nm
@@ -27,8 +27,8 @@ import numpy as nm
 from sfepy import data_dir
 
 from sfepy.base.base import output
-from sfepy.fem import Mesh, Domain
-from sfepy.fem.meshio import UserMeshIO, MeshIO
+from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem.meshio import UserMeshIO, MeshIO
 from sfepy.homogenization.utils import define_box_regions
 
 base_mesh = data_dir + '/meshes/elements/2_4_2.mesh'
@@ -57,7 +57,7 @@ def post_process(out, pb, state, extend=False):
     """
     Calculate gradient of the solution.
     """
-    from sfepy.fem.fields_base import create_expression_output
+    from sfepy.discrete.fem.fields_base import create_expression_output
 
     aux = create_expression_output('ev_grad.ie.Elements( t )',
                                    'grad', 'temperature',

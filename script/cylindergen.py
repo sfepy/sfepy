@@ -3,7 +3,7 @@ import sys
 sys.path.append( '.' )
 from optparse import OptionParser
 from sfepy.mesh.mesh_generators import gen_cylinder_mesh
-from sfepy.fem.meshio import MeshIO
+from sfepy.discrete.fem.meshio import MeshIO
 
 usage = """%prog [options]
 

@@ -92,7 +92,7 @@ def main():
     import numpy as nm
     import matplotlib.pyplot as plt
 
-    from sfepy.fem import MeshIO
+    from sfepy.discrete.fem import MeshIO
     import sfepy.linalg as la
     from sfepy.mechanics.contact_bodies import ContactSphere, plot_points
 

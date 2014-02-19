@@ -11,7 +11,7 @@ def configuration(parent_package='',top_path=None):
     subdirs = [
         'applications',
         'base',
-        'fem',
+        'discrete',
         'mesh',
         'homogenization',
         'linalg',

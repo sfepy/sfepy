@@ -19,8 +19,8 @@ import scipy.sparse as sp
 import sfepy
 from sfepy.base.base import output
 from sfepy.base.ioutils import edit_filename
-from sfepy.fem import Mesh, Domain
-from sfepy.fem.extmods.cmesh import create_mesh_graph, graph_components
+from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem.extmods.cmesh import create_mesh_graph, graph_components
 
 def _get_facets(vertices, offsets, ii, n_fp):
     facets = []

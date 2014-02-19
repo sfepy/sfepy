@@ -6,9 +6,9 @@ import numpy.linalg as nla
 import scipy as sc
 
 from sfepy.base.base import output, assert_, get_default, debug, Struct
-from sfepy.fem.evaluate import eval_equations
+from sfepy.discrete.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
-from sfepy.fem.meshio import HDF5MeshIO
+from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
 from utils import iter_sym, create_pis, create_scalar_pis
@@ -455,9 +455,9 @@ class CorrSetBCS(CorrMiniApp):
 
     def __call__(self, problem=None, data=None):
         from sfepy.base.base import select_by_names
-        from sfepy.fem.variables import Variables
-        from sfepy.fem.state import State
-        from sfepy.fem.conditions import Conditions
+        from sfepy.discrete.variables import Variables
+        from sfepy.discrete.state import State
+        from sfepy.discrete.conditions import Conditions
 
         problem = get_default(problem, self.problem)
 

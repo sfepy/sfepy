@@ -78,8 +78,8 @@ import numpy as nm
 from sfepy.base.testing import TestCommon
 
 def _integrate(var, val_qp):
-    from sfepy.fem import Integral
-    from sfepy.fem.mappings import get_jacobian
+    from sfepy.discrete import Integral
+    from sfepy.discrete.fem.mappings import get_jacobian
 
     integral = Integral('i', 2)
     det = get_jacobian(var.field, integral)
@@ -91,7 +91,7 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
-        from sfepy.fem import ProblemDefinition
+        from sfepy.discrete import ProblemDefinition
 
         problem = ProblemDefinition.from_conf(conf, init_equations=False)
         test = Test(problem=problem,
@@ -99,7 +99,7 @@ class Test(TestCommon):
         return test
 
     def test_consistency_d_dw(self):
-        from sfepy.fem import Variables
+        from sfepy.discrete import Variables
 
         ok = True
         pb = self.problem
@@ -200,7 +200,7 @@ class Test(TestCommon):
         return ret
 
     def test_surface_evaluate(self):
-        from sfepy.fem import FieldVariable
+        from sfepy.discrete import FieldVariable
         problem = self.problem
 
         us = problem.get_variables()['us']

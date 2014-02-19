@@ -34,7 +34,7 @@ class Test( TestCommon ):
     tests = ['test_volume']
 
     def from_conf( conf, options ):
-        from sfepy.fem import ProblemDefinition
+        from sfepy.discrete import ProblemDefinition
 
         problem = ProblemDefinition.from_conf(conf, init_equations=False)
         test = Test( problem = problem,
@@ -43,7 +43,7 @@ class Test( TestCommon ):
     from_conf = staticmethod( from_conf )
 
     def test_volume( self ):
-        from sfepy.fem import FieldVariable
+        from sfepy.discrete import FieldVariable
 
         ok = True
 

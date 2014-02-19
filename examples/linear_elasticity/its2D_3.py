@@ -19,8 +19,9 @@ where
 from its2D_1 import *
 
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
-from sfepy.fem.geometry_element import geometry_data
-from sfepy.fem import H1NodalVolumeField, FieldVariable
+from sfepy.discrete.fem.geometry_element import geometry_data
+from sfepy.discrete import FieldVariable
+from sfepy.discrete.fem import Field
 import numpy as nm
 
 gdata = geometry_data['2_3']
@@ -39,8 +40,8 @@ def nodal_stress(out, pb, state, extend=False):
     pb.time_update()
 
     stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp')
-    sfield = H1NodalVolumeField('stress', nm.float64, (3,),
-                                pb.domain.regions['Omega'])
+    sfield = Field.from_args('stress', nm.float64, (3,),
+                             pb.domain.regions['Omega'])
     svar = FieldVariable('sigma', 'parameter', sfield,
                          primary_var_name='(set-to-None)')
     svar.set_data_from_qp(stress, pb.integrals['ivn'])

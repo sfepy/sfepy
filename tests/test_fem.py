@@ -209,7 +209,7 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
-        from sfepy.fem.geometry_element import GeometryElement
+        from sfepy.discrete.fem.geometry_element import GeometryElement
 
         gels = {}
         for key in ['2_3', '2_4', '3_4', '3_8']:
@@ -224,7 +224,7 @@ class Test(TestCommon):
         data. Also test that sum of values over all element nodes gives one.
         """
         from sfepy.base.base import ordered_iteritems
-        from sfepy.fem.poly_spaces import PolySpace
+        from sfepy.discrete.fem.poly_spaces import PolySpace
 
         ok = True
 
@@ -262,7 +262,7 @@ class Test(TestCommon):
         reference element nodes.
         """
         from sfepy.base.base import ordered_iteritems
-        from sfepy.fem.poly_spaces import PolySpace
+        from sfepy.discrete.fem.poly_spaces import PolySpace
 
         ok = True
 

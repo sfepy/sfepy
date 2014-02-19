@@ -128,8 +128,8 @@ def setup_package():
     fd.close()
 
     # Create version.h file.
-    filename_in = 'sfepy/fem/extmods/version.h.in'
-    filename_out = 'sfepy/fem/extmods/version.h'
+    filename_in = 'sfepy/discrete/fem/extmods/version.h.in'
+    filename_out = 'sfepy/discrete/fem/extmods/version.h'
     fdi = open(filename_in, 'r')
     fdo = open(filename_out, 'w')
     for line in fdi:

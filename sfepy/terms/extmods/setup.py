@@ -19,8 +19,10 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
+    common_path = '../../discrete/fem/extmods'
+
     common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
-    common_src = [op.join('../../fem/extmods', ii) for ii in common_src]
+    common_src = [op.join(common_path, ii) for ii in common_src]
 
     csrc = [op.split(ii)[1] for ii in glob.glob('sfepy/terms/extmods/*.c')]
     try:
@@ -33,7 +35,7 @@ def configuration(parent_package='', top_path=None):
                        depends=common_src,
                        extra_compiler_args=site_config.compile_flags(),
                        extra_link_args=site_config.link_flags(),
-                       include_dirs=[auto_dir, '../../fem/extmods',
+                       include_dirs=[auto_dir, common_path,
                                      site_config.python_include()],
                        macros=defines)
 
@@ -44,7 +46,7 @@ def configuration(parent_package='', top_path=None):
                          depends=csrc + common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir, '../../fem/extmods'],
+                         include_dirs=[auto_dir, common_path],
                          define_macros=defines)
 
     return config

@@ -36,7 +36,7 @@ def mesh_hook(mesh, mode):
     elif mode == 'write':
         pass
 
-from sfepy.fem.meshio import UserMeshIO
+from sfepy.discrete.fem.meshio import UserMeshIO
 
 filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
 
@@ -63,7 +63,7 @@ class Test( TestCommon ):
     # c: 05.02.2008, r: 05.02.2008
     def test_read_meshes( self ):
         """Try to read all listed meshes."""
-        from sfepy.fem import Mesh
+        from sfepy.discrete.fem import Mesh
 
         conf_dir = op.dirname(__file__)
         meshes = {}
@@ -160,7 +160,7 @@ class Test( TestCommon ):
     ##
     # c: 03.07.2008, r: 03.07.2008
     def test_read_dimension( self ):
-        from sfepy.fem import MeshIO
+        from sfepy.discrete.fem import MeshIO
 
         meshes = {data_dir + '/meshes/various_formats/small2d.mesh' : 2,
                   data_dir + '/meshes/various_formats/small2d.vtk' : 2,
@@ -184,8 +184,9 @@ class Test( TestCommon ):
         """
         Try to write and then read all supported formats.
         """
-        from sfepy.fem import Mesh
-        from sfepy.fem.meshio import supported_formats, supported_capabilities
+        from sfepy.discrete.fem import Mesh
+        from sfepy.discrete.fem.meshio import (supported_formats,
+                                               supported_capabilities)
 
         conf_dir = op.dirname(__file__)
         mesh0 = Mesh.from_file(data_dir

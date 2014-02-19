@@ -105,7 +105,7 @@ epbc_13 = {
     'match' : 'match_y_plane',
 }
 
-from sfepy.fem.periodic import match_x_plane, match_y_plane, match_z_plane
+from sfepy.discrete.fem.periodic import match_x_plane, match_y_plane, match_z_plane
 
 functions = {
     'match_x_plane' : (match_x_plane,),

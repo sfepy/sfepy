@@ -414,7 +414,7 @@ class Term(Struct):
 
     @staticmethod
     def from_desc(constructor, desc, region, integrals=None):
-        from sfepy.fem import Integrals
+        from sfepy.discrete import Integrals
 
         if integrals is None:
             integrals = Integrals()
@@ -1131,7 +1131,7 @@ class Term(Struct):
         Get physical quadrature points corresponding to the term region
         and integral.
         """
-        from sfepy.fem.mappings import get_physical_qps, PhysicalQPs
+        from sfepy.discrete.fem.mappings import get_physical_qps, PhysicalQPs
 
         if self.integration == 'point':
             phys_qps = PhysicalQPs(self.region.igs)
@@ -1228,7 +1228,7 @@ class Term(Struct):
         pass
 
     def standalone_setup(self):
-        from sfepy.fem import create_adof_conns, Variables
+        from sfepy.discrete import create_adof_conns, Variables
 
         conn_info = {'aux' : self.get_conn_info()}
         adcs = create_adof_conns(conn_info, None)
@@ -1474,7 +1474,7 @@ class Term(Struct):
         return out
 
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
-        import sfepy.fem.extmods.assemble as asm
+        import sfepy.discrete.fem.extmods.assemble as asm
 
         vvar = self.get_virtual_variable()
         dc_type = self.get_dof_conn_type()

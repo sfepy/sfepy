@@ -25,7 +25,7 @@ Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 
 from sfepy import data_dir
 import numpy as nm
-import sfepy.fem.periodic as per
+import sfepy.discrete.fem.periodic as per
 
 filename_mesh = data_dir + '/meshes/3d/cylinder_in_box.mesh'
 

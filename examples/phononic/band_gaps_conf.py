@@ -6,8 +6,8 @@ import numpy as nm
 
 from sfepy.base.base import get_default, import_file, Struct
 from sfepy.base.conf import ProblemConf
-from sfepy.fem import MeshIO
-import sfepy.fem.periodic as per
+from sfepy.discrete.fem import MeshIO
+import sfepy.discrete.fem.periodic as per
 from sfepy.mechanics.matcoefs import stiffness_from_lame, TransformToPlane
 from sfepy.homogenization.utils import define_box_regions, get_lattice_volume
 import sfepy.homogenization.coefs_base as cb

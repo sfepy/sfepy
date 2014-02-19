@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 
 from sfepy import data_dir
 from sfepy.base.base import output, assert_
-from sfepy.fem import Mesh, Domain, Field, FieldVariable, Material, Integral
+from sfepy.discrete import FieldVariable, Material, Integral
+from sfepy.discrete.fem import Mesh, Domain, Field
 from sfepy.terms import Term
 from sfepy.solvers import eig
 

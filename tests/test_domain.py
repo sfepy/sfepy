@@ -4,7 +4,7 @@ import numpy as nm
 
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
-from sfepy.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, Domain
 
 def refine(domain, out_dir, level=3):
     for ii in range(level):

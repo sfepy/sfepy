@@ -18,15 +18,17 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
+    common_path = '../../discrete/fem/extmods'
+
     fem_src = ['common_python.c']
-    fem_src = [op.join('../../fem/extmods', ii) for ii in fem_src]
+    fem_src = [op.join(common_path, ii) for ii in fem_src]
 
     src = ['crcm.pyx', 'rcm.c']
     config.add_extension('crcm',
                          sources=src + fem_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir, '../../fem/extmods'],
+                         include_dirs=[auto_dir, common_path],
                          define_macros=defines)
 
     return config

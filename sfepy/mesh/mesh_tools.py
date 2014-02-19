@@ -1,4 +1,4 @@
-from sfepy.fem import Domain
+from sfepy.discrete.fem import Domain
 import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial

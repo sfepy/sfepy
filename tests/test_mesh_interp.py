@@ -34,7 +34,8 @@ def gen_datas(meshes):
 
 def do_interpolation(m2, m1, data, field_name, force=False):
     """Interpolate data from m1 to m2. """
-    from sfepy.fem import Domain, H1NodalVolumeField, Variables
+    from sfepy.discrete import Variables
+    from sfepy.discrete.fem import Domain, Field
 
     fields = {
         'scalar_si' : ((1,1), 'Omega', 2),
@@ -49,8 +50,8 @@ def do_interpolation(m2, m1, data, field_name, force=False):
 
     f = fields[field_name]
 
-    field1 = H1NodalVolumeField('f', nm.float64, f[0], d1.regions[f[1]],
-                                approx_order=f[2])
+    field1 = Field.from_args('f', nm.float64, f[0], d1.regions[f[1]],
+                             approx_order=f[2])
     ff = {field1.name : field1}
 
     vv = Variables.from_conf(transform_variables(variables), ff)
@@ -60,8 +61,8 @@ def do_interpolation(m2, m1, data, field_name, force=False):
     d2 = Domain('d2', m2)
     omega2 = d2.create_region('Omega', 'all')
 
-    field2 = H1NodalVolumeField('f', nm.float64, f[0], d2.regions[f[1]],
-                                approx_order=f[2])
+    field2 = Field.from_args('f', nm.float64, f[0], d2.regions[f[1]],
+                             approx_order=f[2])
     ff2 = {field2.name : field2}
 
     vv2 = Variables.from_conf(transform_variables(variables), ff2)
@@ -88,7 +89,7 @@ class Test(TestCommon):
 
     def test_interpolation(self):
         from sfepy import data_dir
-        from sfepy.fem import Mesh
+        from sfepy.discrete.fem import Mesh
         from sfepy.linalg import make_axis_rotation_matrix
 
         fname = in_dir(self.options.out_dir)
@@ -125,7 +126,8 @@ class Test(TestCommon):
 
     def test_interpolation_two_meshes(self):
         from sfepy import data_dir
-        from sfepy.fem import Mesh, Domain, H1NodalVolumeField, Variables
+        from sfepy.discrete import Variables
+        from sfepy.discrete.fem import Mesh, Domain, Field
 
         m1 = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
 
@@ -149,14 +151,14 @@ class Test(TestCommon):
 
         d1 = Domain('d1', m1)
         omega1 = d1.create_region('Omega', 'all')
-        field1 = H1NodalVolumeField('scalar_tp', nm.float64, (1,1), omega1,
-                                    approx_order=1)
+        field1 = Field.from_args('scalar_tp', nm.float64, (1,1), omega1,
+                                 approx_order=1)
         ff1 = {field1.name : field1}
 
         d2 = Domain('d2', m2)
         omega2 = d2.create_region('Omega', 'all')
-        field2 = H1NodalVolumeField('scalar_si', nm.float64, (1,1), omega2,
-                                    approx_order=0)
+        field2 = Field.from_args('scalar_si', nm.float64, (1,1), omega2,
+                                 approx_order=0)
         ff2 = {field2.name : field2}
 
         vv1 = Variables.from_conf(transform_variables(variables1), ff1)
@@ -178,7 +180,7 @@ class Test(TestCommon):
 
     def test_invariance(self):
         from sfepy import data_dir
-        from sfepy.fem import Mesh
+        from sfepy.discrete.fem import Mesh
 
         meshes = {
             'tp' : Mesh('original mesh', data_dir + '/meshes/3d/block.mesh'),
@@ -203,10 +205,10 @@ class Test(TestCommon):
 
     def test_invariance_qp(self):
         from sfepy import data_dir
-        from sfepy.fem import (Mesh, Domain, H1NodalVolumeField,
-                               Variables, Integral)
+        from sfepy.discrete import Variables, Integral
+        from sfepy.discrete.fem import Mesh, Domain, Field
         from sfepy.terms import Term
-        from sfepy.fem.mappings import get_physical_qps
+        from sfepy.discrete.fem.mappings import get_physical_qps
 
         mesh = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
 
@@ -222,8 +224,8 @@ class Test(TestCommon):
 
         domain = Domain('domain', mesh)
         omega = domain.create_region('Omega', 'all')
-        field = H1NodalVolumeField('scalar_tp', nm.float64, 1, omega,
-                                   approx_order=1)
+        field = Field.from_args('scalar_tp', nm.float64, 1, omega,
+                                approx_order=1)
         ff = {field.name : field}
 
         vv = Variables.from_conf(transform_variables(variables), ff)

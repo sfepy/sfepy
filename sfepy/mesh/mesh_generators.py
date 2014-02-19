@@ -4,7 +4,7 @@ from sfepy.base.base import output, assert_
 from sfepy.base.progressbar import MyBar
 from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import cycle
-from sfepy.fem.mesh import Mesh
+from sfepy.discrete.fem.mesh import Mesh
 from sfepy.mesh.mesh_tools import elems_q2t
 
 def get_tensor_product_conn(shape):
@@ -409,7 +409,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
 def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
                  eps=1e-6, mybar=None, ndmap=False):
-    from sfepy.fem.periodic import match_grid_plane
+    from sfepy.discrete.fem.periodic import match_grid_plane
 
     s1 = nm.nonzero(coors[:,idim] < (bb[0] + eps))[0]
     s2 = nm.nonzero(coors[:,idim] > (bb[1] - eps))[0]

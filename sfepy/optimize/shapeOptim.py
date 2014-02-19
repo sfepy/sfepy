@@ -4,8 +4,8 @@ import numpy as nm
 
 from sfepy.base.base import output, assert_, remap_dict, pause, Struct
 from sfepy.base.progressbar import MyBar
-from sfepy.fem.equations import get_expression_arg_names
-from sfepy.fem.evaluate import eval_equations
+from sfepy.discrete.equations import get_expression_arg_names
+from sfepy.discrete.evaluate import eval_equations
 import freeFormDef as ffd
 
 ##
@@ -169,7 +169,7 @@ class ShapeOptimFlowCase( Struct ):
         control_region = regions[opts.control_domain]
         design_region = regions[opts.design_domain]
 
-        from sfepy.fem.mesh import Mesh
+        from sfepy.discrete.fem.mesh import Mesh
         cmm = Mesh.from_region(control_region, dpb.domain.mesh)
         dmm = Mesh.from_region(design_region, dpb.domain.mesh)
         cmm.write( 'control.mesh', io = 'auto' )

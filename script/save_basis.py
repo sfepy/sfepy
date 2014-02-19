@@ -9,11 +9,12 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import get_print_info, ensure_path
-from sfepy.fem import Mesh, Domain, Field, FieldVariable, Variables
-from sfepy.fem.geometry_element import GeometryElement
-from sfepy.fem.poly_spaces import PolySpace
-from sfepy.fem.linearizer import create_output
-from sfepy.fem.fields_base import create_expression_output
+from sfepy.discrete import FieldVariable, Variables
+from sfepy.discrete.fem import Mesh, Domain, Field
+from sfepy.discrete.fem.geometry_element import GeometryElement
+from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete.fem.linearizer import create_output
+from sfepy.discrete.fem.fields_base import create_expression_output
 
 usage = '%prog [options] output_dir\n' + __doc__.rstrip()
 

@@ -26,7 +26,7 @@ class Test(TestCommon):
                     conf=conf, options=options)
 
     def test_assemble_vector(self):
-        from sfepy.fem.extmods.assemble import assemble_vector
+        from sfepy.discrete.fem.extmods.assemble import assemble_vector
 
         vec = nm.zeros(self.num, dtype=nm.float64)
 
@@ -42,7 +42,7 @@ class Test(TestCommon):
         return ok
 
     def test_assemble_vector_complex(self):
-        from sfepy.fem.extmods.assemble import assemble_vector_complex
+        from sfepy.discrete.fem.extmods.assemble import assemble_vector_complex
 
         vec = nm.zeros(self.num, dtype=nm.complex128)
         vec_in_els = self.vec_in_els.astype(nm.complex128) * (2 - 3j)
@@ -60,7 +60,7 @@ class Test(TestCommon):
         return ok
 
     def test_assemble_matrix(self):
-        from sfepy.fem.extmods.assemble import assemble_matrix
+        from sfepy.discrete.fem.extmods.assemble import assemble_matrix
 
         mtx = sps.csr_matrix(nm.ones((self.num, self.num),
                                      dtype=nm.float64))
@@ -83,7 +83,7 @@ class Test(TestCommon):
         return ok
 
     def test_assemble_matrix_complex(self):
-        from sfepy.fem.extmods.assemble import assemble_matrix_complex
+        from sfepy.discrete.fem.extmods.assemble import assemble_matrix_complex
 
         mtx = sps.csr_matrix(nm.ones((self.num, self.num),
                                      dtype=nm.complex128))

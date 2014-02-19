@@ -87,7 +87,7 @@ from sfepy.base.testing import TestCommon
 class Test( TestCommon ):
 
     def from_conf( conf, options ):
-        from sfepy.fem import ProblemDefinition
+        from sfepy.discrete import ProblemDefinition
 
         problem = ProblemDefinition.from_conf(conf)
         test = Test(problem = problem, conf = conf, options = options)
@@ -96,7 +96,7 @@ class Test( TestCommon ):
 
 
     def test_material_functions(self):
-        from sfepy.fem import Material
+        from sfepy.discrete import Material
 
         problem = self.problem
         conf = problem.conf

@@ -1221,7 +1221,7 @@ Terms can be evaluated in two ways:
 
 #. implicitly by using them in equations;
 #. explicitly using :func:`ProblemDefinition.evaluate()
-   <sfepy.fem.problemDef.ProblemDefinition.evaluate>`. This way is mostly used
+   <sfepy.discrete.problem.ProblemDefinition.evaluate>`. This way is mostly used
    in the postprocessing.
 
 Each term supports one or more *evaluation modes*:
@@ -1261,12 +1261,12 @@ individual terms. There are, however, certain naming conventions:
 
 Note that the naming prefixes are due to history when the `mode` argument to
 :func:`ProblemDefinition.evaluate()
-<sfepy.fem.problemDef.ProblemDefinition.evaluate>` and :func:`Term.evaluate()
+<sfepy.discrete.problem.ProblemDefinition.evaluate>` and :func:`Term.evaluate()
 <sfepy.terms.terms.Term.evaluate>` was not available. Now they are often
 redundant, but are kept around to indicate the evaluation purpose of each term.
 
 Several examples of using the :func:`ProblemDefinition.evaluate()
-<sfepy.fem.problemDef.ProblemDefinition.evaluate>` function are shown below.
+<sfepy.discrete.problem.ProblemDefinition.evaluate>` function are shown below.
 
 Solution Postprocessing
 -----------------------
@@ -1366,8 +1366,8 @@ Probing
 Probing applies interpolation to output the solution along specified paths. As
 mentioned in :ref:`miscellaneous_options`, it relies on defining two additional
 functions, namely the `'gen_probes'` function, that should create the required
-probes (see :mod:`sfepy.fem.probes`), and the `'probe_hook'` function that
-performs the actual probing of the results for each of the probes. This
+probes (see :mod:`sfepy.discrete.probes`), and the `'probe_hook'` function
+that performs the actual probing of the results for each of the probes. This
 function can return the probing results, as well as a handle to a corresponding
 matplotlib figure. See :doc:`primer` for additional explanation.
 

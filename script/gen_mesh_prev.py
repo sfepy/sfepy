@@ -13,7 +13,7 @@ import sys
 sys.path.append('.')
 import os
 import vtk
-from sfepy.fem import Mesh
+from sfepy.discrete.fem import Mesh
 
 def gen_shot(vtk_filename, png_filename):
     """

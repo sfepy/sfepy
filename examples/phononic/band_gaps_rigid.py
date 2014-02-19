@@ -11,7 +11,7 @@ import numpy as nm
 from sfepy import data_dir
 from sfepy.base.base import Struct
 from sfepy.base.ioutils import InDir
-from sfepy.fem import extend_cell_data
+from sfepy.discrete.fem import extend_cell_data
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.homogenization.coefficients import Coefficients
 

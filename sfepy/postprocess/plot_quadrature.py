@@ -9,8 +9,8 @@ from sfepy.postprocess.plot_dofs import _get_axes
 from sfepy.postprocess.plot_facets import plot_geometry
 
 def _get_qp(geometry, order):
-    from sfepy.fem import Integral
-    from sfepy.fem.geometry_element import GeometryElement
+    from sfepy.discrete import Integral
+    from sfepy.discrete.fem.geometry_element import GeometryElement
 
     aux = Integral('aux', order=order)
     coors, weights = aux.get_qp(geometry)

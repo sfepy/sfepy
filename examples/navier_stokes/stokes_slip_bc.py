@@ -39,7 +39,7 @@ solver - PETSc + petsc4py is needed in that case.
 """
 import numpy as nm
 
-from sfepy.fem.meshio import UserMeshIO
+from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.homogenization.utils import define_box_regions
 

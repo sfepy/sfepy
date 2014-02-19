@@ -256,7 +256,7 @@ def get_volume(problem, field_name, region_name, quad_order=1):
     field. Both the region and the field have to be defined in
     `problem`.
     """
-    from sfepy.fem import FieldVariable
+    from sfepy.discrete import FieldVariable
 
     field = problem.fields[field_name]
     var = FieldVariable('u', 'parameter', field, 1,

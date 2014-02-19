@@ -106,14 +106,14 @@ def post_process(out, problem, state, extend=False):
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress,
                                   dofs=None)
-    
+
     return out
 
 # This function will be called by probe.py.
 def gen_lines(problem):
     """
     Define three line probes in axial directions.
-    
+
     Parameters
     ----------
     problem : ProblemDefinition instance
@@ -126,7 +126,7 @@ def gen_lines(problem):
     labels : list
         The list of probe labels.
     """
-    from sfepy.fem.probes import LineProbe
+    from sfepy.discrete.probes import LineProbe
 
     mesh = problem.domain.mesh
     bbox = mesh.get_bounding_box()
@@ -141,7 +141,6 @@ def gen_lines(problem):
     ps1 = [[bbox[1,0], cy, cz],
            [cx, bbox[1,1], cz],
            [cx, cy, bbox[1,2]]]
-    
 
     # Use adaptive probe with 10 inital points.
     n_point = -10
@@ -150,7 +149,7 @@ def gen_lines(problem):
     probes = []
     for ip in xrange(len(ps0)):
         p0, p1 = ps0[ip], ps1[ip]
-        probes.append(LineProbe(p0, p1, n_point, mesh))
+        probes.append(LineProbe(p0, p1, n_point))
 
     return probes, labels
 
@@ -178,7 +177,6 @@ def probe_hook(data, probe, label, problem):
     """
     import matplotlib.pyplot as plt
     import matplotlib.font_manager as fm
-    from sfepy.fem import FieldVariable
 
     def get_it(name, var_name):
         var = problem.create_variables([var_name])[var_name]

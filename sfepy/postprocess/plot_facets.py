@@ -152,7 +152,7 @@ def draw_arrow(ax, coors, angle=20.0, length=0.3, **kwargs):
         ax.add_collection3d(arr)
 
 if __name__ == '__main__':
-    from sfepy.fem.geometry_element import GeometryElement, geometry_data
+    from sfepy.discrete.fem.geometry_element import GeometryElement, geometry_data
 
     for key, gd in geometry_data.iteritems():
         if key == '1_2' : continue

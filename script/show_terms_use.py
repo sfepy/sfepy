@@ -8,7 +8,7 @@ from optparse import OptionParser
 from sfepy.base.base import output, dict_from_keys_init, ordered_iteritems
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.ioutils import locate_files
-from sfepy.fem.equations import parse_definition
+from sfepy.discrete.equations import parse_definition
 from sfepy.terms import term_table
 
 usage = '%prog [options] <directory>\n' + __doc__.rstrip()

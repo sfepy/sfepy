@@ -17,7 +17,7 @@ Find :math:`\ul{u}`, :math:`p` such that:
     \;, \quad \forall q \;.
 """
 from sfepy import data_dir
-from sfepy.fem.periodic import match_y_line
+from sfepy.discrete.fem.periodic import match_y_line
 
 filename_mesh = data_dir + '/meshes/2d/special/channels_symm944t.mesh'
 

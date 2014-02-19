@@ -37,7 +37,7 @@ class Test(TestCommon):
 
     def test_mesh_smoothing(self):
         from sfepy.mesh.mesh_tools import smooth_mesh
-        from sfepy.fem.mesh import Mesh
+        from sfepy.discrete.fem.mesh import Mesh
         from sfepy import data_dir
 
         mesh = Mesh.from_file(data_dir + '/meshes/3d/cylinder.vtk')

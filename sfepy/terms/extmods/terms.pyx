@@ -7,13 +7,13 @@ cimport cython
 cimport numpy as np
 import numpy as np
 
-from sfepy.fem.extmods.mappings cimport (Mapping, CMapping)
-from sfepy.fem.extmods._fmfield cimport (FMField,
+from sfepy.discrete.fem.extmods.mappings cimport (Mapping, CMapping)
+from sfepy.discrete.fem.extmods._fmfield cimport (FMField,
                                          array2fmfield4, array2fmfield3,
                                          array2fmfield2, array2fmfield1,
                                          array2pint1, array2pint2)
 
-from sfepy.fem.extmods.types cimport int32, float64, complex128
+from sfepy.discrete.fem.extmods.types cimport int32, float64, complex128
 
 cdef extern from 'common.h':
     cdef void _errclear 'errclear'()

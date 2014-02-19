@@ -7,7 +7,7 @@ class Test(TestCommon):
     from_conf = staticmethod(from_conf)
 
     def test_parse_equations(self):
-        from sfepy.fem.parseEq import create_bnf
+        from sfepy.discrete.parse_equations import create_bnf
 
         test_strs = [
             """- d_volume.i1.Omega(uc)""",
@@ -51,7 +51,7 @@ class Test(TestCommon):
         return True
 
     def test_parse_regions(self):
-        from sfepy.fem.parse_regions import create_bnf
+        from sfepy.discrete.parse_regions import create_bnf
 
         test_strs = ['vertices of surface -v r.Omega',
                      'r.Y_2 +v copy r.Y_1',

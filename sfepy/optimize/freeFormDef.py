@@ -5,7 +5,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import assert_, OneTypeList, Struct
 from sfepy.linalg import cycle
-from sfepy.fem.mesh import Mesh
+from sfepy.discrete.fem.mesh import Mesh
 
 ##
 # 11.01.2006, c

@@ -110,7 +110,7 @@ solvers = {
 def main():
     from sfepy.base.base import output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem import ProblemDefinition
+    from sfepy.discrete import ProblemDefinition
 
     output.prefix = 'therel:'
 
