@@ -65,6 +65,7 @@ def configuration(parent_package='',top_path=None):
         'save_basis.py',
         'show_authors.py',
         'sync_module_docs.py',
+        'tile_periodic_mesh.py',
     ]
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
 
@@ -144,7 +145,6 @@ def setup_package():
         'phonon.py',
         'extractor.py',
         'findSurf.py',
-        'genPerMesh.py',
         'homogen.py',
         'postproc.py',
         'probe.py',

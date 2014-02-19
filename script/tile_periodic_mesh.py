@@ -45,7 +45,7 @@ def main():
         parser.print_help()
         return
 
-    output = Output('genPerMesh:')
+    output = Output('tpm:')
     output('scale:', options.scale)
     output('repeat:', options.repeat)
     output('eps:', options.eps)

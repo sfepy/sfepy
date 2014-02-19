@@ -102,7 +102,7 @@ def main():
     out, err = check_output('python ./script/convert_mesh.py meshes/3d/cylinder.vtk out.mesh')
     eok += report(out, '...', -2, 1, '...done')
 
-    out, err = check_output('python ./genPerMesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
+    out, err = check_output('python ./script/tile_periodic_mesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
     eok += report(out, '...', -2, 1, 'done.')
 
     out, err = check_output('python ./simple.py examples/diffusion/poisson.py')
