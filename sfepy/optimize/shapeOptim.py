@@ -3,7 +3,6 @@ import os.path as op
 import numpy as nm
 
 from sfepy.base.base import output, assert_, remap_dict, pause, Struct
-from sfepy.base.progressbar import MyBar
 from sfepy.discrete.equations import get_expression_arg_names
 from sfepy.discrete.evaluate import eval_equations
 import freeFormDef as ffd
@@ -274,12 +273,10 @@ class ShapeOptimFlowCase( Struct ):
 
         sa = []
 
-        pbar = MyBar('sensitivity:')
-        pbar.init(len(idsgs))
+        output('computing sensitivity of %d variables...' % idsgs)
 
         shape = (n_mesh_nod, dim)
         for ii, nu in enumerate(self.generate_mesh_velocity(shape, idsgs)):
-            pbar.update(ii)
             self.ofg_variables['Nu'].set_data(nu.ravel())
 
             ## from sfepy.base.ioutils import write_vtk
@@ -296,6 +293,7 @@ class ShapeOptimFlowCase( Struct ):
                                  term_mode=1, preserve_caches=True)
 
             sa.append( val )
+        output('...done')
 
         vec_sa = nm.array( sa, nm.float64 )
         return vec_sa

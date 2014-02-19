@@ -9,7 +9,6 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils \
      import skip_read_line, read_token, read_array, read_list, pt
-from sfepy.base.progressbar import MyBar
 import os.path as op
 
 supported_formats = {
@@ -964,9 +963,8 @@ class TetgenMeshIO(MeshIO):
     def read(self, mesh, **kwargs):
         import os
         fname = os.path.splitext(self.filename)[0]
-        nodes=self.getnodes(fname+".node", MyBar("       nodes:"))
-        etype, elements, regions = self.getele(fname+".ele",
-                                               MyBar("       elements:"))
+        nodes = self.getnodes(fname+".node")
+        etype, elements, regions = self.getele(fname+".ele")
         descs = []
         conns = []
         mat_ids = []
@@ -980,13 +978,13 @@ class TetgenMeshIO(MeshIO):
         return mesh
 
     @staticmethod
-    def getnodes(fnods, up, verbose=False):
+    def getnodes(fnods):
         """
         Reads t.1.nodes, returns a list of nodes.
 
         Example:
 
-        >>> self.getnodes("t.1.node", MyBar("nodes:"))
+        >>> self.getnodes("t.1.node")
         [(0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (0.0, 4.0, 0.0), (-4.0, 0.0, 0.0),
         (0.0, 0.0, 4.0), (0.0, -4.0, 0.0), (0.0, -0.0, -4.0), (-2.0, 0.0,
         -2.0), (-2.0, 2.0, 0.0), (0.0, 2.0, -2.0), (0.0, -2.0, -2.0), (2.0,
@@ -1000,7 +998,7 @@ class TetgenMeshIO(MeshIO):
             ndapp = [0.0]
         else:
             ndapp = []
-        if verbose: up.init(npoints)
+
         nodes = []
         for line in f:
             if line[0] == "#": continue
@@ -1009,18 +1007,17 @@ class TetgenMeshIO(MeshIO):
             assert_(int(l[0]) == len(nodes)+1)
             l = l[1:]
             nodes.append(tuple(l + ndapp))
-            if verbose: up.update(len(nodes))
         assert_(npoints == len(nodes))
         return nodes
 
     @staticmethod
-    def getele(fele, up, verbose=False):
+    def getele(fele):
         """
         Reads t.1.ele, returns a list of elements.
 
         Example:
 
-        >>> elements, regions = self.getele("t.1.ele", MyBar("elements:"))
+        >>> elements, regions = self.getele("t.1.ele")
         >>> elements
         [(20, 154, 122, 258), (86, 186, 134, 238), (15, 309, 170, 310), (146,
         229, 145, 285), (206, 207, 125, 211), (99, 193, 39, 194), (185, 197,
@@ -1048,7 +1045,6 @@ class TetgenMeshIO(MeshIO):
         if elem is None or not linear:
             raise ValueError("Only linear triangle and tetrahedra reader"
                              " is implemented")
-        if verbose: up.init(ntetra)
 
         els = []
         regions = {}
@@ -1076,7 +1072,7 @@ class TetgenMeshIO(MeshIO):
             else:
                 regions[regionnum]=[l[0]]
             assert_(l[0] == len(els))
-            if verbose: up.update(l[0])
+
         return elem, els, regions
 
     def write(self, filename, mesh, out=None, **kwargs):

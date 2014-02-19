@@ -6,14 +6,13 @@ import scipy as sc
 
 from sfepy.base.base import output, get_default, dict_to_struct, assert_, Struct
 from sfepy.solvers import eig, Solver
-from sfepy.base.progressbar import MyBar
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.discrete.evaluate import eval_equations
 from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
 
 def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
-                         transform=None, progress_bar=None):
+                         transform=None):
     """
     Compute the eigenmomenta corresponding to given eigenvectors.
     """
@@ -25,17 +24,7 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
     n_c = var.n_components
     eigenmomenta = nm.empty((n_eigs, n_c), dtype=nm.float64)
 
-    if progress_bar is not None:
-        progress_bar.init(n_eigs - 1)
-
     for ii in xrange(n_eigs):
-        if progress_bar is not None:
-            progress_bar.update(ii)
-
-        else:
-            if (ii % 100) == 0:
-                output('%d of %d (%f%%)' % (ii, n_eigs,
-                                            100. * ii / (n_eigs - 1)))
 
         if transform is None:
             vec_phi, is_zero = eig_vectors[:,ii], False
@@ -711,8 +700,6 @@ class Eigenmomenta(MiniAppBase):
     transform : callable, optional
         Optional function for transforming the eigenvectors before computing
         the eigenmomenta.
-    progress_bar : bool
-        If True, use a progress bar to show computation progress.
 
     Returns
     -------
@@ -729,8 +716,7 @@ class Eigenmomenta(MiniAppBase):
                                    'missing "var_name" in options!'),
                       threshold=get('threshold', 1e-4),
                       threshold_is_relative=get('threshold_is_relative', True),
-                      transform=get('transform', None),
-                      progress_bar=get('progress_bar', True))
+                      transform=get('transform', None))
 
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -739,11 +725,6 @@ class Eigenmomenta(MiniAppBase):
         evp, dv_info = [data[ii] for ii in self.requires]
 
         output('computing eigenmomenta...')
-        if opts.progress_bar:
-            progress_bar = MyBar('progress:')
-
-        else:
-            progress_bar = None
 
         if opts.transform is not None:
             fun = problem.conf.get_function(opts.transform[0])
@@ -756,7 +737,7 @@ class Eigenmomenta(MiniAppBase):
         tt = time.clock()
         eigenmomenta = compute_eigenmomenta(self.expression, opts.var_name,
                                             problem, evp.eig_vectors,
-                                            wrap_transform, progress_bar)
+                                            wrap_transform)
         output('...done in %.2f s' % (time.clock() - tt))
 
         n_eigs = evp.eigs.shape[0]

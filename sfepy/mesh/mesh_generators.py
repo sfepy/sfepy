@@ -1,7 +1,6 @@
 import numpy as nm
 
 from sfepy.base.base import output, assert_
-from sfepy.base.progressbar import MyBar
 from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import cycle
 from sfepy.discrete.fem.mesh import Mesh
@@ -200,8 +199,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         rbs = nm.linspace(b1, b2, nr)
 
     # This is 3D only...
-    bar = MyBar("       nodes:", verbose=verbose)
-    bar.init(n_nod)
+    output('generating %d vertices...' % n_nod, verbose=verbose)
     ii = 0
     for ix in range(nr):
         a, b = ras[ix], rbs[ix]
@@ -209,8 +207,6 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
             for iz, x in enumerate(xs):
                 grid[ix,iy,iz] = ii
                 coors[ii] = origin + [x, a * nm.cos(fi), b * nm.sin(fi)]
-                if not (ii % 100):
-                    bar.update(ii)
                 ii += 1
 
                 if not is_hollow and (ix == 0):
@@ -218,12 +214,12 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                         grid[ix,iy,iz] = grid[ix,0,iz]
                         ii -= 1
     assert_(ii == n_nod)
+    output('...done', verbose=verbose)
 
     n_el = (nr - 1) * nnfi * (nl - 1)
     conn = nm.zeros((n_el, 8), dtype=nm.int32)
 
-    bar = MyBar("       elements:", verbose=verbose)
-    bar.init(n_el)
+    output('generating %d cells...' % n_el, verbose=verbose)
     ii = 0
     for (ix, iy, iz) in cycle([nr-1, nnfi, nl-1]):
         if iy < (nnfi - 1):
@@ -239,13 +235,11 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                           grid[ix+1,0,iz+1], grid[ix  ,0,iz+1]]
             ii += 1
 
-        if not (ii % 100):
-            bar.update(ii)
-
     mat_id = nm.zeros((n_el,), dtype = nm.int32)
     desc = '3_8'
 
     assert_(n_nod == (conn.max() + 1))
+    output('...done', verbose=verbose)
 
     if axis == 'z':
         coors = coors[:,[1,2,0]]
@@ -407,8 +401,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     return mesh
 
-def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
-                 eps=1e-6, mybar=None, ndmap=False):
+def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
     from sfepy.discrete.fem.periodic import match_grid_plane
 
     s1 = nm.nonzero(coors[:,idim] < (bb[0] + eps))[0]
@@ -474,10 +467,6 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
 
         el_off += nel0
 
-
-        if mybar is not None:
-            mybar[0].update(mybar[1])
-
     if ret_ndmap:
         if ndmap is not None:
             max_nd_ref = nm.max(ndmap)
@@ -532,25 +521,23 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     nrep = nm.prod(grid)
     ndmap = None
 
-    bar = MyBar("       repeating:")
-    bar.init(nrep)
+    output('repeating %s ...' % grid)
     nblk = 1
     for ii, gr in enumerate(grid):
         if ret_ndmap:
             (conns, coors,
              ngrps, ndmap0) = tiled_mesh1d(conns, coors, ngrps,
                                            ii, gr, bbox.transpose()[ii],
-                                           eps=eps, mybar=(bar, nblk),
-                                           ndmap=ndmap)
+                                           eps=eps, ndmap=ndmap)
             ndmap = ndmap0
 
         else:
             conns, coors, ngrps = tiled_mesh1d(conns, coors, ngrps,
                                                ii, gr, bbox.transpose()[ii],
-                                               eps=eps, mybar=(bar, nblk))
+                                               eps=eps)
         nblk *= gr
 
-    bar.update(nblk)
+    output('...done')
 
     mat_ids = nm.tile(mat_ids, (nrep,))
     mesh_out = Mesh.from_data('tiled mesh', coors * scale, ngrps,

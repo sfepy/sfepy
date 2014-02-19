@@ -19,8 +19,7 @@ def eval_ion_ion_energy(centres, charges):
     return val
 
 def eval_non_local_interaction(problem, region_name, var_name,
-                               integral_name, f1, f2, kernel_function,
-                               pbar=None):
+                               integral_name, f1, f2, kernel_function):
     """
     Single element group only!
     """
@@ -53,10 +52,6 @@ def eval_non_local_interaction(problem, region_name, var_name,
 
     coef = nm.zeros(shape, dtype=val1.dtype)
 
-    if pbar is not None:
-        pbar.init(qp.shape[0])
-        pbar.update(0)
-
     for ii, coor in enumerate(qp):
         ## tt = time.clock()
         kernel = kernel_function(coor, qp)
@@ -67,12 +62,6 @@ def eval_non_local_interaction(problem, region_name, var_name,
         coef[ii] = (kernel * val2).sum()
         ## print 'bb', time.clock() - tt
 
-        if pbar is not None:
-            pbar.update(ii)
-
     val = (val1 * coef).sum()
-
-    if pbar is not None:
-        print
 
     return val
