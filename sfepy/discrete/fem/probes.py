@@ -1,16 +1,9 @@
 """Classes for probing values of Variables, for example, along a line."""
-import time
-
 import numpy as nm
 import numpy.linalg as nla
-try:
-    from scipy.spatial import cKDTree as KDTree
-except ImportError:
-    from scipy.spatial import KDTree
 
-from sfepy.base.base import output, get_default, basestr, Struct
+from sfepy.base.base import get_default, basestr, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
-from sfepy.discrete.fem.mesh import make_inverse_connectivity
 
 def write_results(filename, probe, results):
     """
@@ -135,21 +128,18 @@ class Probe(Struct):
     """
     Base class for all point probes. Enforces two points minimum.
     """
-    cache = Struct(name='probe_shared_cache',
-                   offsets=None, iconn=None, kdtree=None)
+    cache = Struct(name='probe_shared_evaluate_cache')
     is_cyclic = False
 
-    def __init__(self, name, mesh, share_mesh=True, n_point=None, **kwargs):
+    def __init__(self, name, share_geometry=True, n_point=None, **kwargs):
         """
         Parameters
         ----------
         name : str
             The probe name, set automatically by the subclasses.
-        mesh : Mesh instance
-            The FE mesh where the variables to be probed are defined.
-        share_mesh : bool
+        share_geometry : bool
             Set to True to indicate that all the probes will work on the same
-            mesh. Certain data are then computed only for the first probe and
+            domain. Certain data are then computed only for the first probe and
             cached.
         n_point : int
            The (fixed) number of probe points, when positive. When non-positive,
@@ -159,55 +149,16 @@ class Probe(Struct):
 
         For additional parameters see the __init__() docstrings of the
         subclasses.
-
-        Notes
-        -----
-        If the mesh contains vertices that are not contained in any element, we
-        shift coordinates of such vertices so that they never match in the
-        nearest node search.
         """
-        Struct.__init__(self, name=name, mesh=mesh, **kwargs)
+        Struct.__init__(self, name=name, share_geometry=share_geometry,
+                        **kwargs)
 
         self.set_n_point(n_point)
 
         self.options = Struct(close_limit=0.1, size_hint=None)
+        self.cache = Struct(name='probe_local_evaluate_cache')
 
         self.is_refined = False
-
-        tt = time.clock()
-        if share_mesh:
-            if Probe.cache.iconn is None:
-                offsets, iconn = make_inverse_connectivity(mesh.conns,
-                                                           mesh.n_nod,
-                                                           ret_offsets=True)
-                Probe.cache.iconn = iconn
-                Probe.cache.offsets = offsets
-            self.cache = Probe.cache
-
-        else:
-            offsets, iconn = make_inverse_connectivity(mesh.conns,
-                                                       mesh.n_nod,
-                                                       ret_offsets=True)
-            self.cache = Struct(name='probe_cache',
-                                offsets=offsets, iconn=iconn, kdtree=None)
-        output('iconn: %f s' % (time.clock()-tt))
-
-        i_bad = nm.where(nm.diff(self.cache.offsets) == 0)[0]
-        if len(i_bad):
-            bbox = mesh.get_bounding_box()
-            mesh.coors[i_bad] = bbox[1] + bbox[1] - bbox[0]
-            output('warning: some vertices are not in any element!')
-            output('warning: vertex-based results will be wrong!')
-
-        tt = time.clock()
-        if share_mesh:
-            if Probe.cache.kdtree is None:
-                self.cache.kdtree = KDTree(mesh.coors)
-
-        else:
-            self.cache.kdtree = KDTree(mesh.coors)
-
-        output('kdtree: %f s' % (time.clock()-tt))
 
     def set_n_point(self, n_point):
         """
@@ -286,7 +237,17 @@ class Probe(Struct):
             The variable to be sampled along the probe.
         """
         refine_flag = None
+
         ev = variable.evaluate_at
+        domain = variable.field.domain
+
+        if self.share_geometry:
+            cache = domain.get_evaluate_cache(cache=Probe.cache,
+                                              share_geometry=True)
+
+        else:
+            cache = domain.get_evaluate_cache(cache=self.cache,
+                                              share_geometry=False)
 
         self.reset_refinement()
 
@@ -297,7 +258,7 @@ class Probe(Struct):
 
             vals, cells, status = ev(points, strategy='kdtree',
                                      close_limit=self.options.close_limit,
-                                     cache=self.cache, ret_status=True)
+                                     cache=cache, ret_status=True)
             ii = nm.where(status > 1)[0]
             vals[ii] = nm.nan
 
@@ -376,8 +337,8 @@ class PointsProbe(Probe):
     """
     Probe variables in given points.
     """
-    
-    def __init__(self, points, mesh, share_mesh=True):
+
+    def __init__(self, points, share_geometry=True):
         """
         Parameters
         ----------
@@ -390,8 +351,7 @@ class PointsProbe(Probe):
         n_point = points.shape[0]
         name = 'points %d' % n_point
 
-        Probe.__init__(self, name=name, mesh=mesh,
-                       points=points, n_point=n_point)
+        Probe.__init__(self, name=name, points=points, n_point=n_point)
 
         self.n_point_single = n_point
 
@@ -432,7 +392,7 @@ class LineProbe(Probe):
     automatically. If it is negative, -n_point is used as an initial guess.
     """
 
-    def __init__(self, p0, p1, n_point, mesh, share_mesh=True):
+    def __init__(self, p0, p1, n_point, share_geometry=True):
         """
         Parameters
         ----------
@@ -445,8 +405,8 @@ class LineProbe(Probe):
         p1 = nm.array(p1, dtype=nm.float64)
         name = 'line [%s, %s]' % (p0, p1)
 
-        Probe.__init__(self, name=name, mesh=mesh, p0=p0, p1=p1, n_point=n_point)
-            
+        Probe.__init__(self, name=name, p0=p0, p1=p1, n_point=n_point)
+
         dirvec = self.p1 - self.p0
         self.length = nm.linalg.norm(dirvec)
         self.dirvec = dirvec / self.length
@@ -492,9 +452,9 @@ class RayProbe(Probe):
     Probe variables along a ray. The points are parametrized by a function of
     radial coordinates from a given point in a given direction.
     """
-    
-    def __init__(self, p0, dirvec, p_fun, n_point, both_dirs, mesh,
-                 share_mesh=True):
+
+    def __init__(self, p0, dirvec, p_fun, n_point, both_dirs,
+                 share_geometry=True):
         """
         Parameters
         ----------
@@ -519,9 +479,8 @@ class RayProbe(Probe):
         else:
             n_point_true = n_point
 
-        Probe.__init__(self, name=name, mesh=mesh,
-                       p0=p0, dirvec=dirvec, p_fun=p_fun, n_point=n_point_true,
-                       both_dirs=both_dirs)
+        Probe.__init__(self, name=name, p0=p0, dirvec=dirvec, p_fun=p_fun,
+                       n_point=n_point_true, both_dirs=both_dirs)
 
         self.n_point_single = n_point
 
@@ -575,8 +534,7 @@ class CircleProbe(Probe):
     """
     is_cyclic = True
 
-    def __init__(self, centre, normal, radius, n_point,
-                 mesh, share_mesh=True):
+    def __init__(self, centre, normal, radius, n_point, share_geometry=True):
         """
         Parameters
         ----------
@@ -593,9 +551,8 @@ class CircleProbe(Probe):
 
         name = 'circle [%s, %s, %s]' % (centre, normal, radius)
 
-        Probe.__init__(self, name=name, mesh=mesh,
-                       centre=centre, normal=normal, radius=radius,
-                       n_point=n_point)
+        Probe.__init__(self, name=name, centre=centre, normal=normal,
+                       radius=radius, n_point=n_point)
 
     def report(self):
         """Report the probe parameters."""
@@ -636,7 +593,7 @@ class CircleProbe(Probe):
         x = self.radius * nm.cos(pars[:,None])
         y = self.radius * nm.sin(pars[:,None])
 
-        if self.mesh.dim == 3:
+        if len(self.centre) == 3:
             z = nm.zeros((self.n_point, 1), dtype=nm.float64)
             points = nm.c_[x, y, z]
 
