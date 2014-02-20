@@ -22,7 +22,7 @@ BEGIN_C_DECLS
 #include "terms_navier_stokes.h"
 #include "terms_piezo.h"
 #include "terms_surface.h"
-#include "termsVolume.h"
+#include "terms_volume.h"
 #include "terms_dot.h"
 #include "terms_op.h"
 
