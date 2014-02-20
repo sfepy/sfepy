@@ -1,4 +1,4 @@
-#include "termsNavierStokes.h"
+#include "terms_navier_stokes.h"
 #include "terms_adj_navier_stokes.h"
 #include "terms.h"
 #include "geommech.h"

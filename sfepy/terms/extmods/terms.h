@@ -19,7 +19,7 @@ BEGIN_C_DECLS
 #include "termsHyperElasticity.h"
 #include "terms_diffusion.h"
 #include "terms_elastic.h"
-#include "termsNavierStokes.h"
+#include "terms_navier_stokes.h"
 #include "termsPiezo.h"
 #include "termsSurface.h"
 #include "termsVolume.h"
