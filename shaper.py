@@ -10,7 +10,7 @@ from sfepy.base.base import output, remap_dict, Struct, IndexedStruct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.discrete.evaluate import BasicEvaluator
 import sfepy.base.ioutils as io
-import sfepy.optimize.shapeOptim as so
+import sfepy.optimize.shape_optim as so
 from sfepy.discrete.problem import Problem
 from sfepy.solvers import Solver
 
