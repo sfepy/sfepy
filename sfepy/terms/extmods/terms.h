@@ -15,7 +15,7 @@ BEGIN_C_DECLS
 #include "terms_adj_navier_stokes.h"
 #include "terms_basic.h"
 #include "terms_biot.h"
-#include "termsElectric.h"
+#include "terms_electric.h"
 #include "termsHyperElasticity.h"
 #include "termsLaplace.h"
 #include "termsLinElasticity.h"

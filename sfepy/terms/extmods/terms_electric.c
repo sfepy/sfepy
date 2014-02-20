@@ -1,4 +1,4 @@
-#include "termsElectric.h"
+#include "terms_electric.h"
 #include "terms.h"
 #include "geommech.h"
 
