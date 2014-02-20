@@ -56,6 +56,7 @@ def configuration(parent_package='',top_path=None):
         'edit_identifiers.py',
         'evalForms.py',
         'eval_tl_forms.py',
+        'extract_surface.py',
         'gen_gallery.py',
         'gen_lobatto1d_c.py',
         'gen_mesh_prev.py',
@@ -144,7 +145,6 @@ def setup_package():
     main_scripts = [
         'phonon.py',
         'extractor.py',
-        'findSurf.py',
         'homogen.py',
         'postproc.py',
         'probe.py',

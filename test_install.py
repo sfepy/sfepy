@@ -105,6 +105,9 @@ def main():
     out, err = check_output('python ./script/tile_periodic_mesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
     eok += report(out, '...', -2, 1, 'done.')
 
+    out, err = check_output('python ./script/extract_surface.py meshes/quantum/cube.node -')
+    eok += report(out, '...', -2, 0, '64247')
+
     out, err = check_output('python ./simple.py examples/diffusion/poisson.py')
     eok += report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
 
@@ -129,9 +132,6 @@ def main():
 
     out, err = check_output('python ./extractor.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
-
-    out, err = check_output('python ./findSurf.py meshes/quantum/cube.node -')
-    eok += report(out, '...', -2, 0, '64247')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
     eok += report(out, '...', -6, 2, '208.54511594')
