@@ -20,7 +20,7 @@ BEGIN_C_DECLS
 #include "terms_diffusion.h"
 #include "terms_elastic.h"
 #include "terms_navier_stokes.h"
-#include "termsPiezo.h"
+#include "terms_piezo.h"
 #include "termsSurface.h"
 #include "termsVolume.h"
 #include "terms_dot.h"
