@@ -1,6 +1,6 @@
 #include "terms_biot.h"
 #include "terms.h"
-#include "formSDCC.h"
+#include "form_sdcc.h"
 
 #undef __FUNC__
 #define __FUNC__ "dw_biot_grad"

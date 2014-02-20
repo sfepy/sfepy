@@ -1,6 +1,6 @@
 #include "terms_hyperelastic.h"
 #include "terms.h"
-#include "formSDCC.h"
+#include "form_sdcc.h"
 
 /*
   notes: disG -> mtxF => removed '1.0 +' in form_tlcc_buildOpB_VS3()
