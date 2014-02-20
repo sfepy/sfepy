@@ -780,7 +780,7 @@ Main scripts
    src/phonon
    src/postproc
    src/probe
-   src/runTests
+   src/run_tests
    src/schroedinger
    src/shaper
    src/simple
@@ -792,18 +792,15 @@ Utility scripts
    :maxdepth: 2
 
    src/build_helpers
-   src/findSurf
-   src/genPerMesh
-   src/plotPerfusionCoefs
    src/test_install
 
    src/script/blockgen
-   src/script/config
    src/script/convert_mesh
    src/script/cylindergen
    src/script/edit_identifiers
-   src/script/evalForms
+   src/script/eval_ns_forms
    src/script/eval_tl_forms
+   src/script/extract_surface
    src/script/gen_gallery
    src/script/gen_lobatto1d_c
    src/script/gen_mesh_prev
@@ -816,6 +813,7 @@ Utility scripts
    src/script/show_authors
    src/script/show_terms_use
    src/script/sync_module_docs
+   src/script/tile_periodic_mesh
 
 sfepy package
 ^^^^^^^^^^^^^
@@ -850,7 +848,6 @@ sfepy.base package
    src/sfepy/base/mem_usage
    src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
-   src/sfepy/base/progressbar
    src/sfepy/base/reader
    src/sfepy/base/resolve_deps
    src/sfepy/base/testing
@@ -871,6 +868,7 @@ sfepy.discrete package
    src/sfepy/discrete/materials
    src/sfepy/discrete/parse_equations
    src/sfepy/discrete/parse_regions
+   src/sfepy/discrete/probes
    src/sfepy/discrete/problem
    src/sfepy/discrete/projections
    src/sfepy/discrete/quadratures
@@ -878,6 +876,7 @@ sfepy.discrete package
    src/sfepy/discrete/state
    src/sfepy/discrete/variables
    src/sfepy/discrete/common/dof_info
+   src/sfepy/discrete/common/region
    src/sfepy/discrete/fem/domain
    src/sfepy/discrete/fem/extmods/_fmfield
    src/sfepy/discrete/fem/extmods/_geommech
@@ -902,9 +901,7 @@ sfepy.discrete package
    src/sfepy/discrete/fem/meshio
    src/sfepy/discrete/fem/periodic
    src/sfepy/discrete/fem/poly_spaces
-   src/sfepy/discrete/fem/probes
    src/sfepy/discrete/fem/refine
-   src/sfepy/discrete/fem/region
    src/sfepy/discrete/fem/utils
 
 
@@ -927,14 +924,6 @@ sfepy.homogenization package
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
 
-sfepy.interactive package
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   src/sfepy/interactive/session
-
 sfepy.linalg package
 ^^^^^^^^^^^^^^^^^^^^
 .. toctree::
@@ -955,7 +944,6 @@ sfepy.mechanics package
 
    src/sfepy/mechanics/contact_bodies
    src/sfepy/mechanics/elastic_constants
-   src/sfepy/mechanics/friction
    src/sfepy/mechanics/matcoefs
    src/sfepy/mechanics/membranes
    src/sfepy/mechanics/tensors
@@ -967,11 +955,9 @@ sfepy.mesh package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/mesh/femlab
    src/sfepy/mesh/geom_tools
    src/sfepy/mesh/mesh_generators
    src/sfepy/mesh/mesh_tools
-   src/sfepy/mesh/meshutils
    src/sfepy/mesh/splinebox
 
 sfepy.optimize package
@@ -980,8 +966,8 @@ sfepy.optimize package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/optimize/freeFormDef
-   src/sfepy/optimize/shapeOptim
+   src/sfepy/optimize/free_form_def
+   src/sfepy/optimize/shape_optim
 
 sfepy.physics package
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1035,27 +1021,27 @@ sfepy.terms package
 
    terms_overview
    src/sfepy/terms/terms
-   src/sfepy/terms/termsAcoustic
-   src/sfepy/terms/termsAdjointNavierStokes
-   src/sfepy/terms/termsBasic
-   src/sfepy/terms/termsBiot
-   src/sfepy/terms/termsElectric
-   src/sfepy/terms/termsLaplace
-   src/sfepy/terms/termsLinElasticity
-   src/sfepy/terms/termsNavierStokes
-   src/sfepy/terms/termsPiezo
-   src/sfepy/terms/termsPoint
-   src/sfepy/terms/termsSurface
-   src/sfepy/terms/termsVolume
+   src/sfepy/terms/terms_acoustic
+   src/sfepy/terms/terms_adj_navier_stokes
+   src/sfepy/terms/terms_basic
+   src/sfepy/terms/terms_biot
    src/sfepy/terms/terms_constraints
+   src/sfepy/terms/terms_diffusion
    src/sfepy/terms/terms_dot
+   src/sfepy/terms/terms_elastic
+   src/sfepy/terms/terms_electric
    src/sfepy/terms/terms_fibres
    src/sfepy/terms/terms_hyperelastic_base
    src/sfepy/terms/terms_hyperelastic_tl
    src/sfepy/terms/terms_hyperelastic_ul
    src/sfepy/terms/terms_membrane
+   src/sfepy/terms/terms_navier_stokes
    src/sfepy/terms/terms_new
+   src/sfepy/terms/terms_piezo
+   src/sfepy/terms/terms_point
+   src/sfepy/terms/terms_surface
    src/sfepy/terms/terms_th
+   src/sfepy/terms/terms_volume
    src/sfepy/terms/utils
 
    src/sfepy/terms/extmods/terms
