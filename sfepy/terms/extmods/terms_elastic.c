@@ -1,5 +1,5 @@
 #include "formSDCC.h"
-#include "termsLinElasticity.h"
+#include "terms_elastic.h"
 #include "terms.h"
 
 #undef __FUNC__

@@ -18,7 +18,7 @@ BEGIN_C_DECLS
 #include "terms_electric.h"
 #include "termsHyperElasticity.h"
 #include "terms_diffusion.h"
-#include "termsLinElasticity.h"
+#include "terms_elastic.h"
 #include "termsNavierStokes.h"
 #include "termsPiezo.h"
 #include "termsSurface.h"

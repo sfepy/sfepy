@@ -3,7 +3,7 @@ import numpy as nm
 from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
-from sfepy.terms.termsLinElasticity import CauchyStressTerm
+from sfepy.terms.terms_elastic import CauchyStressTerm
 
 class BiotTerm(Term):
     r"""
