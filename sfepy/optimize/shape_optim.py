@@ -5,7 +5,7 @@ import numpy as nm
 from sfepy.base.base import output, assert_, remap_dict, pause, Struct
 from sfepy.discrete.equations import get_expression_arg_names
 from sfepy.discrete.evaluate import eval_equations
-import freeFormDef as ffd
+import free_form_def as ffd
 
 ##
 # c: 15.10.2007, r: 15.04.2008
