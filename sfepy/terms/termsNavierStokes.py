@@ -460,7 +460,7 @@ class GradDivStabilizationTerm(Term):
 
         return div, gamma, vg, fmode
 
-from sfepy.terms.termsLaplace import LaplaceTerm
+from sfepy.terms.terms_diffusion import LaplaceTerm
 class PSPGPStabilizationTerm(LaplaceTerm):
     r"""
     PSPG stabilization term, pressure part ( :math:`\tau` is a local

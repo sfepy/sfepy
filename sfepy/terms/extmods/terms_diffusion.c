@@ -1,4 +1,4 @@
-#include "termsLaplace.h"
+#include "terms_diffusion.h"
 #include "terms.h"
 
 #undef __FUNC__

@@ -17,7 +17,7 @@ BEGIN_C_DECLS
 #include "terms_biot.h"
 #include "terms_electric.h"
 #include "termsHyperElasticity.h"
-#include "termsLaplace.h"
+#include "terms_diffusion.h"
 #include "termsLinElasticity.h"
 #include "termsNavierStokes.h"
 #include "termsPiezo.h"
