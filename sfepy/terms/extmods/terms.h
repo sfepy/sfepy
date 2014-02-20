@@ -13,7 +13,7 @@ BEGIN_C_DECLS
 
 #include "terms_acoustic.h"
 #include "terms_adj_navier_stokes.h"
-#include "termsBasic.h"
+#include "terms_basic.h"
 #include "termsBiot.h"
 #include "termsElectric.h"
 #include "termsHyperElasticity.h"
