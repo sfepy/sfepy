@@ -1,4 +1,4 @@
-#include "termsBiot.h"
+#include "terms_biot.h"
 #include "terms.h"
 #include "formSDCC.h"
 
