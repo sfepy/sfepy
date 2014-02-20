@@ -37,15 +37,6 @@ Basic Usage
 
   * See `Running Tests`_
 
-Surface Extraction
-^^^^^^^^^^^^^^^^^^
-
-* ::
-
-    $ ./findSurf.py meshes/quantum/cube.node -
-
-  * Creates ``surf_cube.mesh``
-
 Applications
 ^^^^^^^^^^^^
 

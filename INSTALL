@@ -70,9 +70,6 @@ Basic usage:
 
 './runTests.py' ... see Testing below
 
-Surface extraction:
-'./findSurf.py meshes/quantum/cube.node -' ... creates surf_cube.mesh
-
 Applications (look at the Dependencies!):
 - phononic materials:
   './phonon.py -p examples/phononic/band_gaps.py'
