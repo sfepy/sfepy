@@ -16,7 +16,7 @@ BEGIN_C_DECLS
 #include "terms_basic.h"
 #include "terms_biot.h"
 #include "terms_electric.h"
-#include "termsHyperElasticity.h"
+#include "terms_hyperelastic.h"
 #include "terms_diffusion.h"
 #include "terms_elastic.h"
 #include "terms_navier_stokes.h"

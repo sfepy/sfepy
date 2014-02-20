@@ -1,4 +1,4 @@
-#include "termsHyperElasticity.h"
+#include "terms_hyperelastic.h"
 #include "terms.h"
 #include "formSDCC.h"
 
