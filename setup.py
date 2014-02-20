@@ -148,7 +148,7 @@ def setup_package():
         'homogen.py',
         'postproc.py',
         'probe.py',
-        'runTests.py',
+        'run_tests.py',
         'schroedinger.py',
         'shaper.py',
         'simple.py',

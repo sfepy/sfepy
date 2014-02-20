@@ -33,7 +33,7 @@ Basic Usage
 
 * ::
 
-    $ ./runTests.py
+    $ ./run_tests.py
 
   * See `Running Tests`_
 
@@ -82,10 +82,10 @@ Stand-Alone Examples
 Running Tests
 ^^^^^^^^^^^^^
 
-The tests are run by the ``runTests.py`` script::
+The tests are run by the ``run_tests.py`` script::
 
-    $ ./runTests.py -h
-    Usage: runTests.py [options] [test_filename[ test_filename ...]]
+    $ ./run_tests.py -h
+    Usage: run_tests.py [options] [test_filename[ test_filename ...]]
 
     Options:
       --version             show program's version number and exit
@@ -109,17 +109,18 @@ Common Tasks
 * Run all tests, filter output; result files related to the tests can be found
   in output-tests directory::
 
-    ./runTests.py
-    ./runTests.py --filter-more
-    ./runTests.py --filter-less
+    ./run_tests.py
+    ./run_tests.py --filter-more
+    ./run_tests.py --filter-less
 
 * Run a particular test file, filter output::
 
-    ./runTests.py tests/test_input_le.py # Test if linear elasticity input file works.
+    # Test if linear elasticity input file works.
+    ./run_tests.py tests/test_input_le.py
 
 * Debug a failing test::
 
-    ./runTests.py tests/test_input_le.py --debug
+    ./run_tests.py tests/test_input_le.py --debug
 
 Computations and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -195,7 +196,7 @@ system. Running ``postproc.py`` without arguments produces::
 
     Examples
     --------
-      The examples assume that runTests.py has been run successfully and the
+      The examples assume that run_tests.py has been run successfully and the
       resulting data files are present.
 
       - view data in output-tests/test_navier_stokes.vtk

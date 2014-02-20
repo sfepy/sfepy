@@ -46,7 +46,7 @@ directory.
    * - `sfepy/`
      - the source code
    * - `tests/`
-     - the tests run by `runTests.py`
+     - the tests run by `run_tests.py`
    * - `tmp/`
      - directory for temporary files (generated)
 

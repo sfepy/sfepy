@@ -5,7 +5,7 @@ computations results.
 
 Examples
 --------
-  The examples assume that runTests.py has been run successfully and the
+  The examples assume that run_tests.py has been run successfully and the
   resulting data files are present.
 
   - view data in output-tests/test_navier_stokes.vtk

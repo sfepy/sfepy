@@ -171,7 +171,7 @@ def main():
 
     t1 = time.time()
 
-    out, err = check_output('python ./runTests.py')
+    out, err = check_output('python ./run_tests.py')
     tok, failed = report(out, 'tests', -2, 7, '0', return_item=True)
     tok = {True : 'ok', False : 'fail'}[tok]
 

@@ -49,7 +49,7 @@ Things to check before a release
 
      $ python setup.py install --root=<some path>
      $ cd
-     $ runTests.py
+     $ run_tests.py
      $ rm -r output/
 
    then remove the installed files so that they do not interfere with

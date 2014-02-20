@@ -91,11 +91,11 @@ Checking the SfePy installation
 After installing *SfePy* you can check if all the functionalities are
 working by running the automated tests. From the source directory type::
 
-    ./runTests.py
+    ./run_tests.py
 
 If a particular test fails, please run it in debug mode::
 
-    ./runTests.py --debug tests/failing_test_name.py
+    ./run_tests.py --debug tests/failing_test_name.py
 
 and report the output to the sfepy-devel mailing list.
 
@@ -241,7 +241,7 @@ after a few minutes the compilation finishes.
 
 Finally you can test *SfePy* with::
 
-    ./runTests.py
+    ./run_tests.py
 
 If some test fails see `Checking the SfePy installation`_ section for further
 details.
@@ -356,10 +356,10 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
 
 #. You should now have a working copy of SfePy on Windows, Please help
    aid SfePy development by running the built-in tests. Run the
-   *runTests.py* in python IDLE or Write the following code in the
+   *run_tests.py* in python IDLE or Write the following code in the
    shell::
 
-       ./runTests.py --filter-less
+       ./run_tests.py --filter-less
 
    * Report any failures to the sfepy-devel mailing list
    * See `Checking the SfePy installation`_ for further details.

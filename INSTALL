@@ -68,7 +68,7 @@ Basic usage:
 './simple.py examples/navier_stokes/stokes.py' ... creates channels_symm944t.vtk
 './postproc.py -b channels_symm944t.vtk' ... visualize the results
 
-'./runTests.py' ... see Testing below
+'./run_tests.py' ... see Testing below
 
 Applications (look at the Dependencies!):
 - phononic materials:
@@ -92,7 +92,7 @@ Stand-alone examples:
 Testing:
 --------
 
-Run './runTests.py' or './runTests.py --filter-less' in TOPDIR.
+Run './run_tests.py' or './run_tests.py --filter-less' in TOPDIR.
 
 Tests that save results save them into TOPDIR/output-tests directory. View the
 results (*.vtk) with a VTK-capable viewer (e.g. ParaView, Mayavi).
@@ -104,8 +104,8 @@ installed. Also be sure to have a recent version of Numpy and SciPy installed
 (latest releases or SVN versions are the best bet). Verify also your pytables
 (hdf5) installation (possible test_io.py failures).
 
-To debug a failure, run './runTests.py --debug'.
-See also './runTests.py --help' for further options.
+To debug a failure, run './run_tests.py --debug'.
+See also './run_tests.py --help' for further options.
 
 Documentation:
 --------------
