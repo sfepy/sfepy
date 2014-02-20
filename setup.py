@@ -54,7 +54,7 @@ def configuration(parent_package='',top_path=None):
         'convert_mesh.py',
         'cylindergen.py',
         'edit_identifiers.py',
-        'evalForms.py',
+        'eval_ns_forms.py',
         'eval_tl_forms.py',
         'extract_surface.py',
         'gen_gallery.py',
