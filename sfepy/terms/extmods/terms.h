@@ -21,7 +21,7 @@ BEGIN_C_DECLS
 #include "terms_elastic.h"
 #include "terms_navier_stokes.h"
 #include "terms_piezo.h"
-#include "termsSurface.h"
+#include "terms_surface.h"
 #include "termsVolume.h"
 #include "terms_dot.h"
 #include "terms_op.h"

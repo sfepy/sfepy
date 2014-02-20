@@ -1,4 +1,4 @@
-#include "termsSurface.h"
+#include "terms_surface.h"
 #include "terms.h"
 #include "geommech.h"
 
