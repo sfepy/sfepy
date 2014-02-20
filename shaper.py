@@ -11,7 +11,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.discrete.evaluate import BasicEvaluator
 import sfepy.base.ioutils as io
 import sfepy.optimize.shapeOptim as so
-from sfepy.discrete.problem import ProblemDefinition
+from sfepy.discrete.problem import Problem
 from sfepy.solvers import Solver
 
 def solve_stokes(dpb, equations_stokes, nls_conf):
@@ -27,7 +27,7 @@ def solve_stokes(dpb, equations_stokes, nls_conf):
 def solve_navier_stokes(conf, options):
     opts = conf.options
 
-    dpb = ProblemDefinition.from_conf(conf, init_equations=False)
+    dpb = Problem.from_conf(conf, init_equations=False)
     equations = getattr(conf, '_'.join(('equations_direct', opts.problem)))
     dpb.set_equations(equations)
 
@@ -109,7 +109,7 @@ def solve_navier_stokes(conf, options):
 def solve_generic_direct(conf, options):
     opts = conf.options
 
-    dpb = ProblemDefinition.from_conf(conf, init_equations=False)
+    dpb = Problem.from_conf(conf, init_equations=False)
     equations = getattr(conf, '_'.join(('equations_direct', opts.problem)))
     dpb.set_equations(equations)
 
@@ -174,7 +174,7 @@ def solve_adjoint(conf, options, dpb, state_dp, data):
         apb = dpb.copy('adjoint')
 
     else:
-        apb = ProblemDefinition.from_conf(conf, init_equations=False)
+        apb = Problem.from_conf(conf, init_equations=False)
 
     equations = getattr(conf, '_'.join(('equations_adjoint',
                                         opts.problem,
@@ -221,7 +221,7 @@ def solve_optimize( conf, options ):
     trunk = io.get_trunk( conf.filename_mesh )
     data = {}
 
-    dpb = ProblemDefinition.from_conf( conf, init_equations = False )
+    dpb = Problem.from_conf(conf, init_equations=False)
     equations = getattr( conf, '_'.join( ('equations_direct', opts.problem) ) )
 
     dpb.set_equations( equations )

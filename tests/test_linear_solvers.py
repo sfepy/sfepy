@@ -114,9 +114,9 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 02.05.2008
     def from_conf( conf, options ):
-        from sfepy.discrete import ProblemDefinition
+        from sfepy.discrete import Problem
 
-        problem = ProblemDefinition.from_conf( conf )
+        problem = Problem.from_conf(conf)
         problem.time_update()
 
         test = Test( problem = problem, 

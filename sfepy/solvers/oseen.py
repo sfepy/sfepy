@@ -230,8 +230,9 @@ class Oseen( NonlinearSolver ):
 
     def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
                   lin_solver = None, status = None, problem = None ):
-        """Oseen solver is problem-specific - it requires a ProblemDefinition
-        instance."""
+        """
+        Oseen solver is problem-specific - it requires a Problem instance.
+        """
         import sfepy.base.plotutils as plu
 
         conf = get_default( conf, self.conf )

@@ -17,11 +17,10 @@ from sfepy.base.ioutils import get_trunk
 import sfepy.postprocess.time_history as th
 
 def create_problem(filename):
-    from sfepy.discrete import ProblemDefinition
+    from sfepy.discrete import Problem
 
-    problem = ProblemDefinition.from_conf_file(filename,
-                                               init_equations=False,
-                                               init_solvers=False)
+    problem = Problem.from_conf_file(filename,
+                                     init_equations=False, init_solvers=False)
     return problem
 
 def parse_linearization(linearization):

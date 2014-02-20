@@ -58,7 +58,7 @@ class Materials( Container ):
             The equations using the materials.
         mode : 'normal', 'update' or 'force'
             The update mode, see :func:`Material.time_update()`.
-        problem : ProblemDefinition instance, optional
+        problem : Problem instance, optional
             The problem that can be passed to user functions as a context.
         verbose : bool
             If False, reduce verbosity.
@@ -238,7 +238,7 @@ class Material( Struct ):
             The equations for which the update occurs.
         term : Term
             The term for which the update occurs.
-        problem : ProblemDefinition, optional
+        problem : Problem, optional
             The problem definition for which the update occurs.
         """
         self.datas.setdefault(key, {})
@@ -267,7 +267,7 @@ class Material( Struct ):
             The time stepper.
         equations : Equations
             The equations for which the update occurs.
-        problem : ProblemDefinition, optional
+        problem : Problem, optional
             The problem definition for which the update occurs.
         """
         if 'special' in self.datas: return
@@ -294,7 +294,7 @@ class Material( Struct ):
         ----------
         equations : Equations
             The equations for which the update occurs.
-        problem : ProblemDefinition, optional
+        problem : Problem, optional
             The problem definition for which the update occurs.
         """
         if 'special_constant' in self.datas: return
@@ -327,7 +327,7 @@ class Material( Struct ):
             constant, i.e., are given by a user function, 'normal' mode behaves
             like 'force' mode. For constant materials it behaves like 'update'
             mode - existing data are reused.
-        problem : ProblemDefinition instance, optional
+        problem : Problem instance, optional
             The problem that can be passed to user functions as a context.
         """
         if mode == 'force':

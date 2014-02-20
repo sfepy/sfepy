@@ -289,8 +289,8 @@ class ProblemConf(Struct):
     that have to/can appear in the input. Default keyword lists can be obtained
     by sfepy.base.conf.get_standard_keywords().
 
-    ProblemConf instance is used to construct a ProblemDefinition instance via
-    ProblemDefinition.from_conf(conf).
+    ProblemConf instance is used to construct a Problem instance via
+    Problem.from_conf(conf).
     """
 
     @staticmethod

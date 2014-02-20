@@ -3,7 +3,7 @@ Construct projections between FE spaces.
 """
 from sfepy.base.base import output, IndexedStruct
 from sfepy.discrete import FieldVariable, Integral, Equation, Equations, Material
-from sfepy.discrete import ProblemDefinition
+from sfepy.discrete import Problem
 from sfepy.terms import Term
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
@@ -75,7 +75,7 @@ def make_l2_projection_data(target, eval_data):
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = ProblemDefinition('aux', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('aux', equations=eqs, nls=nls, ls=ls)
 
     pb.time_update()
 
@@ -120,7 +120,7 @@ def make_h1_projection_data(target, eval_data):
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = ProblemDefinition('aux', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('aux', equations=eqs, nls=nls, ls=ls)
 
     pb.time_update()
 

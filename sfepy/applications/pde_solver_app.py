@@ -3,7 +3,7 @@ import os
 from sfepy.base.base import output, dict_to_struct, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 import sfepy.base.ioutils as io
-from sfepy.discrete import ProblemDefinition
+from sfepy.discrete import Problem
 from sfepy.discrete.fem.meshio import MeshIO
 from application import Application
 
@@ -58,7 +58,7 @@ def save_only(conf, save_names, problem=None):
     solving them.
     """
     if problem is None:
-        problem = ProblemDefinition.from_conf(conf, init_equations=False)
+        problem = Problem.from_conf(conf, init_equations=False)
 
     if save_names.regions is not None:
         problem.save_regions(save_names.regions)
@@ -122,7 +122,7 @@ class PDESolverApp(Application):
 
     def __init__(self, conf, options, output_prefix,
                  init_equations=True, **kwargs):
-        """`kwargs` are passed to  ProblemDefinition.from_conf()
+        """`kwargs` are passed to  Problem.from_conf()
 
         Command-line options have precedence over conf.options."""
         Application.__init__( self, conf, options, output_prefix )
@@ -131,9 +131,7 @@ class PDESolverApp(Application):
         is_eqs = init_equations
         if hasattr(options, 'solve_not') and options.solve_not:
             is_eqs = False
-        self.problem = ProblemDefinition.from_conf(conf,
-                                                   init_equations=is_eqs,
-                                                   **kwargs)
+        self.problem = Problem.from_conf(conf, init_equations=is_eqs, **kwargs)
 
         self.setup_output_info( self.problem, self.options )
 

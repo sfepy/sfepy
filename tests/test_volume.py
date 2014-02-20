@@ -34,9 +34,9 @@ class Test( TestCommon ):
     tests = ['test_volume']
 
     def from_conf( conf, options ):
-        from sfepy.discrete import ProblemDefinition
+        from sfepy.discrete import Problem
 
-        problem = ProblemDefinition.from_conf(conf, init_equations=False)
+        problem = Problem.from_conf(conf, init_equations=False)
         test = Test( problem = problem,
                      conf = conf, options = options )
         return test

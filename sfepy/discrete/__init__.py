@@ -9,5 +9,5 @@ from materials import Materials, Material
 from equations import Equations, Equation
 from integrals import Integrals, Integral
 from state import State
-from problem import ProblemDefinition
+from problem import Problem
 from evaluate import assemble_by_blocks

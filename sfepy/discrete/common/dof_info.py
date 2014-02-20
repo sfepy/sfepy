@@ -292,7 +292,7 @@ class EquationMap(Struct):
             The time stepper.
         functions : Functions instance
             The registered functions.
-        problem : ProblemDefinition instance, optional
+        problem : Problem instance, optional
             The problem that can be passed to user functions as a context.
         warn : bool, optional
             If True, warn about BC on non-existent nodes.

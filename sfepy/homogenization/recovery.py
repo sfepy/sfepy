@@ -7,7 +7,7 @@ from sfepy.base.ioutils import get_print_info
 from sfepy.discrete.fem import extend_cell_data
 from sfepy.homogenization.utils import coor_to_sym
 from sfepy.base.conf import get_standard_keywords
-from sfepy.discrete import ProblemDefinition
+from sfepy.discrete import Problem
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file
 import os.path as op
@@ -489,11 +489,8 @@ def recover_micro_hook( micro_filename, region, macro,
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove( 'equations' )
-    pb = ProblemDefinition.from_conf_file(micro_filename,
-                                          required=required,
-                                          other=other,
-                                          init_equations=False,
-                                          init_solvers=False)
+    pb = Problem.from_conf_file(micro_filename, required=required, other=other,
+                                init_equations=False, init_solvers=False)
 
     coefs_filename = pb.conf.options.get('coefs_filename', 'coefs')
     output_dir = pb.conf.options.get('output_dir', '.')

@@ -77,8 +77,8 @@ def post_process(out, problem, state, extend=False):
     ----------
     out : dict
         The output dictionary, where this function will store additional data.
-    problem : ProblemDefinition instance
-        The current ProblemDefinition instance.
+    problem : Problem instance
+        The current Problem instance.
     state : State instance
         The computed state, containing FE coefficients of all the unknown
         variables.
@@ -116,8 +116,8 @@ def gen_lines(problem):
 
     Parameters
     ----------
-    problem : ProblemDefinition instance
-        The current ProblemDefinition instance.
+    problem : Problem instance
+        The current Problem instance.
 
     Returns
     -------
@@ -164,8 +164,8 @@ def probe_hook(data, probe, label, problem):
         The probe to be used on data.
     label : str
         The label describing the probe.
-    problem : ProblemDefinition instance
-        The current ProblemDefinition instance.
+    problem : Problem instance
+        The current Problem instance.
 
     Returns
     -------

@@ -761,7 +761,7 @@ class MultiProblem(ScipyDirect):
 
     def __init__(self, conf, problem, **kwargs):
         from sfepy.discrete.state import State
-        from sfepy.discrete import ProblemDefinition
+        from sfepy.discrete import Problem
         from sfepy.base.conf import ProblemConf, get_standard_keywords
         from scipy.spatial import cKDTree as KDTree
 
@@ -796,7 +796,7 @@ class MultiProblem(ScipyDirect):
             output.set_output_prefix(sub_prefix)
             confi = ProblemConf.from_file(ifname, required, other,
                                           define_args=kwargs)
-            pbi = ProblemDefinition.from_conf(confi, init_equations=True)
+            pbi = Problem.from_conf(confi, init_equations=True)
             sti = State(pbi.equations.variables)
             pbi.equations.set_data(None, ignore_unknown=True)
             pbi.time_update()

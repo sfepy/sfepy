@@ -179,7 +179,7 @@ helps = {
 
 def main():
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.discrete import ProblemDefinition
+    from sfepy.discrete import Problem
     from sfepy.base.plotutils import plt
 
     parser = OptionParser(usage=usage, version='%prog')
@@ -193,8 +193,7 @@ def main():
     conf = ProblemConf.from_file( __file__, required, other )
 
     # Create problem instance, but do not set equations.
-    problem = ProblemDefinition.from_conf( conf,
-                                           init_equations = False )
+    problem = Problem.from_conf(conf, init_equations=False)
 
     # Solve the problem. Output is ignored, results stored by using the
     # step_hook.

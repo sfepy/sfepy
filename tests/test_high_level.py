@@ -115,9 +115,8 @@ class Test(TestCommon):
 
     def test_solving(self):
         from sfepy.base.base import IndexedStruct
-        from sfepy.discrete \
-             import FieldVariable, Material, ProblemDefinition, \
-                    Function, Equation, Equations, Integral
+        from sfepy.discrete import (FieldVariable, Material, Problem, Function,
+                                    Equation, Equations, Integral)
         from sfepy.discrete.conditions import Conditions, EssentialBC
         from sfepy.terms import Term
         from sfepy.solvers.ls import ScipyDirect
@@ -150,7 +149,7 @@ class Test(TestCommon):
         nls_status = IndexedStruct()
         nls = Newton({}, lin_solver=ls, status=nls_status)
 
-        pb = ProblemDefinition('elasticity', equations=eqs, nls=nls, ls=ls)
+        pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
         ## pb.save_regions_as_groups('regions')
 
         pb.time_update(ebcs=Conditions([fix_u, shift_u]))

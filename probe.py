@@ -41,7 +41,7 @@ import sfepy
 from sfepy.base.base import output, assert_
 from sfepy.base.ioutils import edit_filename
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.discrete import ProblemDefinition
+from sfepy.discrete import Problem
 from sfepy.discrete.fem import MeshIO
 from sfepy.discrete.probes import write_results, read_results
 
@@ -106,9 +106,8 @@ def generate_probes(filename_input, filename_results, options,
                 data[key] = val
 
     if problem is None:
-        problem = ProblemDefinition.from_conf(conf,
-                                              init_equations=False,
-                                              init_solvers=False)
+        problem = Problem.from_conf(conf,
+                                    init_equations=False, init_solvers=False)
 
     if probes is None:
         gen_probes = conf.get_function(conf.options.gen_probes)

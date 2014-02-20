@@ -105,8 +105,8 @@ class Test( TestCommon ):
     ##
     # 01.06.2007, c
     def from_conf( conf, options ):
-        from sfepy.discrete import ProblemDefinition
-        problem = ProblemDefinition.from_conf( conf, init_equations = False )
+        from sfepy.discrete import Problem
+        problem = Problem.from_conf(conf, init_equations=False)
 
         test = Test( problem = problem,
                      conf = conf, options = options )

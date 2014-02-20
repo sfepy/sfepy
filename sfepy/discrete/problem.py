@@ -30,14 +30,14 @@ from sfepy.solvers.nls import Newton
 
 ##
 # 29.01.2006, c
-class ProblemDefinition(Struct):
+class Problem(Struct):
     """
     Problem definition, the top-level class holding all data necessary to solve
     a problem.
 
     It can be constructed from a :class:`ProblemConf` instance using
-    `ProblemDefinition.from_conf()` or directly from a problem
-    description file using `ProblemDefinition.from_conf_file()`
+    `Problem.from_conf()` or directly from a problem description file using
+    `Problem.from_conf_file()`
 
     For interactive use, the constructor requires only the `equations`,
     `nls` and `ls` keyword arguments.
@@ -56,10 +56,9 @@ class ProblemDefinition(Struct):
 
         conf = ProblemConf.from_file(conf_filename, required, other)
 
-        obj = ProblemDefinition.from_conf(conf,
-                                          init_fields=init_fields,
-                                          init_equations=init_equations,
-                                          init_solvers=init_solvers)
+        obj = Problem.from_conf(conf, init_fields=init_fields,
+                                init_equations=init_equations,
+                                init_solvers=init_solvers)
         return obj
 
     @staticmethod
@@ -83,9 +82,8 @@ class ProblemDefinition(Struct):
         if conf.options.get('ulf', False):
             domain.mesh.coors_act = domain.mesh.coors.copy()
 
-        obj = ProblemDefinition('problem_from_conf', conf=conf,
-                                functions=functions, domain=domain,
-                                auto_conf=False, auto_solvers=False)
+        obj = Problem('problem_from_conf', conf=conf, functions=functions,
+                      domain=domain, auto_conf=False, auto_solvers=False)
 
         obj.set_regions(conf.regions, obj.functions)
 
@@ -174,7 +172,7 @@ class ProblemDefinition(Struct):
 
             - called prior to every iteration of nonlinear solver, if the
               solver supports that
-            - takes the ProblemDefinition instance (`self`) as the first
+            - takes the Problem instance (`self`) as the first
               argument
         """
         hook_names = ['nls_iter_hook', 'matrix_hook']
@@ -194,15 +192,14 @@ class ProblemDefinition(Struct):
 
     def copy(self, name=None):
         """
-        Make a copy of ProblemDefinition.
+        Make a copy of Problem.
         """
         if name is None:
             name = self.name + '_copy'
-        obj = ProblemDefinition(name, conf=self.conf,
-                                functions=self.functions,
-                                domain=self.domain, fields=self.fields,
-                                equations=self.equations,
-                                auto_conf=False, auto_solvers=False)
+        obj = Problem(name, conf=self.conf, functions=self.functions,
+                      domain=self.domain, fields=self.fields,
+                      equations=self.equations, auto_conf=False,
+                      auto_solvers=False)
 
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
@@ -232,14 +229,13 @@ class ProblemDefinition(Struct):
 
         Returns
         -------
-        subpb : ProblemDefinition instance
+        subpb : Problem instance
             The sub-problem.
         """
-        subpb = ProblemDefinition(self.name + '_' + '_'.join(var_names),
-                                  conf=self.conf,
-                                  functions=self.functions,
-                                  domain=self.domain, fields=self.fields,
-                                  auto_conf=False, auto_solvers=False)
+        subpb = Problem(self.name + '_' + '_'.join(var_names), conf=self.conf,
+                        functions=self.functions, domain=self.domain,
+                        fields=self.fields, auto_conf=False,
+                        auto_solvers=False)
         subpb.set_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
@@ -250,7 +246,7 @@ class ProblemDefinition(Struct):
 
     def setup_default_output(self, conf=None, options=None):
         """
-        Provide default values to `ProblemDefinition.setup_output()`
+        Provide default values to `Problem.setup_output()`
         from `conf.options` and `options`.
         """
         conf = get_default(conf, self.conf)
@@ -452,7 +448,7 @@ class ProblemDefinition(Struct):
     def set_solvers_instances(self, ls=None, nls=None):
         """
         Set the instances of linear and nonlinear solvers that will be
-        used in `ProblemDefinition.solve()` call.
+        used in `Problem.solve()` call.
         """
         if (ls is not None) and (nls is not None):
             if not (nls.lin_solver is ls):
@@ -660,7 +656,7 @@ class ProblemDefinition(Struct):
         Notes
         -----
         This operation resets almost everything (fields, equations, ...)
-        - it is roughly equivalent to creating a new ProblemDefinition
+        - it is roughly equivalent to creating a new Problem
         instance with the refined mesh.
         """
         if level == 0: return
@@ -854,14 +850,14 @@ class ProblemDefinition(Struct):
         """
         Either create a new Evaluator instance (reuse == False),
         or return an existing instance, created in a preceding call to
-        ProblemDefinition.init_solvers().
+        Problem.init_solvers().
         """
         if reuse:
             try:
                 ev = self.evaluator
             except AttributeError:
-                raise AttributeError('call ProblemDefinition.init_solvers() or'\
-                      ' set reuse to False!')
+                raise AttributeError('call Problem.init_solvers() or'\
+                                     ' set reuse to False!')
         else:
             if self.equations.variables.has_lcbc:
                 ev = LCBCEvaluator(self, matrix_hook=self.matrix_hook)
@@ -980,7 +976,7 @@ class ProblemDefinition(Struct):
         from the `expression` string. Convenience function calling
         :func:`create_evaluable()
         <sfepy.discrete.evaluate.create_evaluable()>` with defaults provided
-        by the ProblemDefinition instance `self`.
+        by the Problem instance `self`.
 
         The evaluable can be repeatedly evaluated by calling
         :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations()>`,
@@ -1049,7 +1045,7 @@ class ProblemDefinition(Struct):
 
         Examples
         --------
-        `problem` is ProblemDefinition instance.
+        `problem` is Problem instance.
 
         >>> out = problem.create_evaluable('dq_state_in_volume_qp.i1.Omega(u)')
         >>> equations, variables = out
@@ -1154,7 +1150,7 @@ class ProblemDefinition(Struct):
                  verbose=True, extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
-        :func:`ProblemDefinition.create_evaluable` and
+        :func:`Problem.create_evaluable` and
         :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations>`.
 
         Parameters
@@ -1169,7 +1165,7 @@ class ProblemDefinition(Struct):
             If True, return the variables that were created to evaluate
             the expression.
         other : arguments
-            See docstrings of :func:`ProblemDefinition.create_evaluable`.
+            See docstrings of :func:`Problem.create_evaluable()`.
 
         Returns
         -------

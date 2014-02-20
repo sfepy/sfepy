@@ -233,7 +233,7 @@ def main():
     import os
     from sfepy.base.base import spause, output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.discrete import ProblemDefinition
+    from sfepy.discrete import Problem
     import sfepy.homogenization.coefs_base as cb
 
     parser = OptionParser(usage=usage, version='%prog')
@@ -262,9 +262,9 @@ Press 'q' to quit the example, press any other key to continue...""" )
 ['q'/other key to quit/continue...]""" )
 
     spause( r""">>>
-Now the input will be used to create a ProblemDefinition instance.
+Now the input will be used to create a Problem instance.
 ['q'/other key to quit/continue...]""" )
-    problem = ProblemDefinition.from_conf(conf, init_equations=False)
+    problem = Problem.from_conf(conf, init_equations=False)
     # The homogenization mini-apps need the output_dir.
     output_dir = os.path.join(os.path.split(__file__)[0], 'output')
     if not os.path.exists(output_dir):
@@ -272,7 +272,7 @@ Now the input will be used to create a ProblemDefinition instance.
     problem.output_dir = output_dir
     print problem
     spause( r""">>>
-...the ProblemDefinition instance.
+...the Problem instance.
 ['q'/other key to quit/continue...]""" )
 
 

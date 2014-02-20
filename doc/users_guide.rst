@@ -1220,8 +1220,8 @@ Term Evaluation
 Terms can be evaluated in two ways:
 
 #. implicitly by using them in equations;
-#. explicitly using :func:`ProblemDefinition.evaluate()
-   <sfepy.discrete.problem.ProblemDefinition.evaluate>`. This way is mostly used
+#. explicitly using :func:`Problem.evaluate()
+   <sfepy.discrete.problem.Problem.evaluate>`. This way is mostly used
    in the postprocessing.
 
 Each term supports one or more *evaluation modes*:
@@ -1260,13 +1260,13 @@ individual terms. There are, however, certain naming conventions:
 - `'ev_*'` terms support `'eval'`, `'el_avg'` and `'qp'` modes
 
 Note that the naming prefixes are due to history when the `mode` argument to
-:func:`ProblemDefinition.evaluate()
-<sfepy.discrete.problem.ProblemDefinition.evaluate>` and :func:`Term.evaluate()
+:func:`Problem.evaluate()
+<sfepy.discrete.problem.Problem.evaluate>` and :func:`Term.evaluate()
 <sfepy.terms.terms.Term.evaluate>` was not available. Now they are often
 redundant, but are kept around to indicate the evaluation purpose of each term.
 
-Several examples of using the :func:`ProblemDefinition.evaluate()
-<sfepy.discrete.problem.ProblemDefinition.evaluate>` function are shown below.
+Several examples of using the :func:`Problem.evaluate()
+<sfepy.discrete.problem.Problem.evaluate>` function are shown below.
 
 Solution Postprocessing
 -----------------------
@@ -1294,8 +1294,8 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
         out : dict
             The output dictionary, where this function will store additional
             data.
-        problem : ProblemDefinition instance
-            The current ProblemDefinition instance.
+        problem : Problem instance
+            The current Problem instance.
         state : State instance
             The computed state, containing FE coefficients of all the unknown
             variables.

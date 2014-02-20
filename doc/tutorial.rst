@@ -253,8 +253,8 @@ Sneak peek: what is going on under the hood
 #. A top-level script (usually ``simple.py``, as in this tutorial) reads
    in an input file.
 
-#. Following the contents of the input file, a :class:`ProblemDefinition
-   <sfepy.discrete.problem.ProblemDefinition>` instance is created - this
+#. Following the contents of the input file, a :class:`Problem
+   <sfepy.discrete.problem.Problem>` instance is created - this
    is the input file coming to life. Let us call the instance
    ``problem``.
 
@@ -276,8 +276,8 @@ Sneak peek: what is going on under the hood
 
 The above last three steps are essentially repeated for each time
 step. So that is it - using the code a black-box PDE solver shields the
-user from having to create the :class:`ProblemDefinition
-<sfepy.discrete.problem.ProblemDefinition>` instance by hand. But note
+user from having to create the :class:`Problem
+<sfepy.discrete.problem.Problem>` instance by hand. But note
 that this is possible, and often necessary when the flexibility of the
 default solvers is not enough. At the end of the tutorial an example
 demonstrating the interactive creation of the ``problem`` is shown, see
@@ -775,15 +775,15 @@ it should converge in one iteration.
     In [28]: nls_status = IndexedStruct()
     In [29]: nls = Newton({}, lin_solver=ls, status=nls_status)
 
-Now we are ready to create a :class:`ProblemDefinition` instance. Note
+Now we are ready to create a :class:`Problem` instance. Note
 that the step above is not really necessary - the above solvers are
 constructed by default. We did them to get the `nls_status`.
 
 .. sourcecode:: ipython
 
-    In [30]: pb = ProblemDefinition('elasticity', equations=eqs, nls=nls, ls=ls)
+    In [30]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
 
-The :class:`ProblemDefinition` has several handy methods for
+The :class:`Problem` has several handy methods for
 debugging. Let us try saving the regions into a VTK file.
 
 .. sourcecode:: ipython

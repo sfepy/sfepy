@@ -158,7 +158,7 @@ def vary_omega1_size( problem ):
     """Vary size of \Omega1. Saves also the regions into options['output_dir'].
 
     Input:
-      problem: ProblemDefinition instance
+      problem: Problem instance
     Return:
       a generator object:
       1. creates new (modified) problem
@@ -166,7 +166,7 @@ def vary_omega1_size( problem ):
       3. use the output container for some logging
       4. yields None (to signal next iteration to Application)
     """
-    from sfepy.discrete import ProblemDefinition
+    from sfepy.discrete import Problem
     from sfepy.solvers.ts import get_print_info
     
     output.prefix = 'vary_omega1_size:'
@@ -185,7 +185,7 @@ def vary_omega1_size( problem ):
         cf['select_circ'] = (lambda coors, domain=None: 
                              select_circ(coors[:,0], coors[:,1], 0, diameter),)
         conf.edit('functions', cf)
-        problem = ProblemDefinition.from_conf( conf )
+        problem = Problem.from_conf(conf)
 
         problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ),
                               ['Omega_1'] )

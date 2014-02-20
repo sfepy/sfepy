@@ -87,9 +87,9 @@ from sfepy.base.testing import TestCommon
 class Test( TestCommon ):
 
     def from_conf( conf, options ):
-        from sfepy.discrete import ProblemDefinition
+        from sfepy.discrete import Problem
 
-        problem = ProblemDefinition.from_conf(conf)
+        problem = Problem.from_conf(conf)
         test = Test(problem = problem, conf = conf, options = options)
         return test
     from_conf = staticmethod( from_conf )

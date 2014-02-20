@@ -261,7 +261,7 @@ class Equations(Container):
             The linear combination boundary conditions.
         functions : Functions instance, optional
             The user functions for boundary conditions, materials, etc.
-        problem : ProblemDefinition instance, optional
+        problem : Problem instance, optional
             The problem that can be passed to user functions as a context.
         verbose : bool
             If False, reduce verbosity.
@@ -304,7 +304,7 @@ class Equations(Container):
         mode : 'normal', 'update' or 'force'
             The update mode, see
             :func:`sfepy.discrete.materials.Material.time_update()`.
-        problem : ProblemDefinition instance, optional
+        problem : Problem instance, optional
             The problem that can be passed to user functions as a context.
         verbose : bool
             If False, reduce verbosity.

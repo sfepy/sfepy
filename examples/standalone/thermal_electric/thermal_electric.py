@@ -110,14 +110,14 @@ solvers = {
 def main():
     from sfepy.base.base import output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.discrete import ProblemDefinition
+    from sfepy.discrete import Problem
 
     output.prefix = 'therel:'
 
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file(__file__, required, other)
 
-    problem = ProblemDefinition.from_conf(conf, init_equations=False)
+    problem = Problem.from_conf(conf, init_equations=False)
 
     # Setup output directory according to options above.
     problem.setup_default_output()

@@ -273,7 +273,7 @@ def adapt_time_step(ts, status, adt, problem=None):
         The nonlinear solver exit status.
     adt : Struct instance
         The adaptivity parameters of the time solver:
-    problem : ProblemDefinition instance, optional
+    problem : Problem instance, optional
         This canbe used in user-defined adaptivity functions. Not used here.
 
     Returns

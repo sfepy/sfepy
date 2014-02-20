@@ -7,7 +7,7 @@ sys.path.append('.')
 
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
-                            Equation, Equations, ProblemDefinition)
+                            Equation, Equations, Problem)
 from sfepy.discrete.fem import Mesh, Domain, Field
 from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
@@ -76,7 +76,7 @@ def main():
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = ProblemDefinition('elasticity', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
     pb.save_regions_as_groups('regions')
 
     pb.time_update(ebcs=Conditions([fix_u, shift_u]))
