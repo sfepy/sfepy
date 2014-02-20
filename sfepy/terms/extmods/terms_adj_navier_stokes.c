@@ -1,5 +1,5 @@
 #include "termsNavierStokes.h"
-#include "termsAdjointNavierStokes.h"
+#include "terms_adj_navier_stokes.h"
 #include "terms.h"
 #include "geommech.h"
 

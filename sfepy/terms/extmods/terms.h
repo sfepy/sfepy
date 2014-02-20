@@ -12,7 +12,7 @@ BEGIN_C_DECLS
 #include "geommech.h"
 
 #include "terms_acoustic.h"
-#include "termsAdjointNavierStokes.h"
+#include "terms_adj_navier_stokes.h"
 #include "termsBasic.h"
 #include "termsBiot.h"
 #include "termsElectric.h"
