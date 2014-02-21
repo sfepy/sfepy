@@ -6,7 +6,7 @@ from itertools import product
 import numpy as nm
 
 from sfepy.base.base import Struct
-from sfepy.fem import Mesh
+from sfepy.discrete.fem import Mesh
 from sfepy.mesh.mesh_generators import get_tensor_product_conn
 
 def create_linear_fe_mesh(nurbs, pars=None):

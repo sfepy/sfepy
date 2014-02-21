@@ -1,7 +1,7 @@
 import numpy as nm
 import matplotlib.pyplot as plt
 
-from sfepy.fem.geometry_element import GeometryElement
+from sfepy.discrete.fem.geometry_element import GeometryElement
 from sfepy.mesh.mesh_generators import get_tensor_product_conn
 import sfepy.postprocess.plot_dofs as pd
 from sfepy.postprocess.plot_dofs import _get_axes
