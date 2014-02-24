@@ -6,7 +6,7 @@ def configuration(parent_package='',top_path=None):
     import os.path as op
 
     auto_name = op.split(op.dirname(__file__))[-1]
-    config = Configuration('sfepy', parent_package, top_path)
+    config = Configuration(auto_name, parent_package, top_path)
 
     subdirs = [
         'common',
