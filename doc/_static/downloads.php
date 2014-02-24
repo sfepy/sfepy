@@ -45,7 +45,8 @@ function init(){
   echo '<tr><td><i>Filename</i></td><td><i>UploadDate</i></td><td><i>Size</i></td><td><i>DownloadCount</i></td><td></td></tr>';
 
   $tgz_files = glob($GLOBALS['download_dir'].'/*.{tar.gz}', GLOB_BRACE);
-  foreach($tgz_files as $file_) {
+  $itgz_files = array_reverse($tgz_files, true);
+  foreach($itgz_files as $file_) {
     $file = basename($file_);
     $sql = 'SELECT verze,stazeno FROM sfepy_downloads WHERE verze="'.$file.'"';
     $data = mysql_query($sql, $relace);
