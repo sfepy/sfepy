@@ -63,8 +63,11 @@ def configuration(parent_package='',top_path=None):
         'gen_term_table.py',
         'plot_condition_numbers.py',
         'plot_mesh.py',
+        'plot_quadratures.py',
+        'plot_times.py',
         'save_basis.py',
         'show_authors.py',
+        'show_terms_use.py',
         'sync_module_docs.py',
         'tile_periodic_mesh.py',
     ]
