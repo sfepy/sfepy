@@ -163,9 +163,9 @@ class SplineBox(Struct):
         Struct.__init__(self, name=name, **kwargs)
 
         self.axes, self.control_points, self.control_points_idx\
-                       = self.create_spb(bbox, coors)
+            = self.create_spb(bbox, coors)
         self.dim = self.control_points.shape[1]
-
+        self.coors_shape = (self.axes[0]['bsc'].shape[0], self.dim)
         self.control_points0 = self.control_points.copy()
 
     def get_control_points(self, init=False):
