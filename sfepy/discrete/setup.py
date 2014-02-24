@@ -9,6 +9,7 @@ def configuration(parent_package='',top_path=None):
     config = Configuration('sfepy', parent_package, top_path)
 
     subdirs = [
+        'common',
         'fem',
     ]
     for subdir in subdirs:
