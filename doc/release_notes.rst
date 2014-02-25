@@ -1,5 +1,218 @@
 # created: 20.07.2007 (-1)
 
+.. _2013.4-2014.1:
+
+from 2013.4 to 2014.1
+=====================
+
+- new handling of field and variable shapes:
+
+  - use region space dimension instead of field shape in vector LCBC operators
+  - use DOF per node count instead of field shape in IntegralMeanValueOperator
+  - update Field.from_args(), __init__() docstrings (shape parameter)
+  - update Field: new n_components, val_shape attributes, new H1Mixin
+  - inherit H1NodalMixin from H1Mixin, update .set_dofs()
+  - inherit H1HierarchicVolumeField from H1Mixin, update .set_dofs()
+  - remove n_components argument in Variable, FieldVariable constructors
+
+    - update Variable.__init__(), FieldVariable.__init__()
+    - update Variable._setup_dofs() - new n_components, val_shape arguments
+    - update FieldVariable._set_field() - set n_components, val_shape from field
+
+  - update sfepy.fem modules for no n_components argument
+  - update scripts, examples and tests for no n_components argument
+  - update docs for no n_components argument
+  - remove Field.setup_dof_conns() (duplicated in VolumeField.setup_dof_conns())
+  - remove dpn argument of {VolumeField, SurfaceField}.setup_dof_conns()
+
+- create active DOF connectivities directly from field connectivities:
+
+  - fields have no dof_conns dict
+  - remove create_dof_conn(), setup_dof_conns(), Field.clear_dof_conns()
+    VolumeField.setup_dof_conns(), SurfaceField.setup_dof_conns()
+  - new VolumeField.get_econn(), SurfaceField.get_econn()
+  - update Field.__init__()
+  - remove Variables.setup_adof_conns(), FieldVariable.setup_adof_conns()
+  - new create_adof_conns(), Variables.set_adof_conns()
+  - update create_adof_conn(), Variable.__init__()
+  - update sfepy.fem for create_adof_conns()
+
+    - remove Equations.setup()
+    - remove setup, make_virtual, verbose arguments of Equations.__init__()
+    - remove setup, make_virtual arguments of Equations.from_conf()
+    - update Equations.time_update(), create_evaluable(),
+      ProblemDefinition.set_equations()
+
+  - update Term.standalone_setup() for create_adof_conns()
+
+- variables, equations:
+
+  - update active DOF connectivities only when needed in Equations.time_update()
+
+    - initialize adof_conns in Variables.__init__()
+
+  - remove active argument of FieldVariable.get_dof_conn()
+  - update Variable.get_primary(), .get_dual() for incomplete variables
+  - selective equations evaluation - new ProblemDefinition.eval_equations()
+  - update Equations.evaluate() - split weak branch, fix/update docstring
+  - add verbosity argument to FieldVariable.evaluate_at()
+
+- terms:
+
+  - update LinearTractionTerm: new eval mode
+
+- regions:
+
+  - fix passing region kind argument in Region.from_facets()
+  - add parent argument to Region.from_facets()
+  - report no entities error in Region.setup_from_highest()
+
+- solvers:
+
+  - update ProblemDefinition to provide and store default nls_status
+
+    - update .__init__(), .init_solvers() to use .set_solvers_instances()
+    - update .set_solvers_instances() to set .nls_status
+    - update .solve() to use nls_status and set .nls_status
+
+  - fix make_implicit_step() to use nls_status argument in all time steps
+  - fix time step decrease in adapt_time_step() - update current time
+  - update VariableTimeStepper.set_time_step() - new update_time argument
+
+- mechanics:
+
+  - new get_t4_from_t2s() helper function
+  - clean up, update tests/test_tensors.py
+
+- homogenization:
+
+  - clean up sfepy/homogenization/engine.py
+  - clean up homogen.py
+
+- large deformation:
+
+  - prevent false memory errors after warp violation in dq_finite_strain()
+  - fix false memory errors after warp violation in
+    dq_tl_finite_strain_surface()
+  - fix error reporting of finite strain family functions
+
+- mesh generation:
+
+  - vectorize gen_block_mesh(), new get_tensor_product_cells()
+
+- scripts:
+
+  - new script/plot_times.py - taken from plant cell mechanics project
+
+- miscellaneous updates:
+
+  - fix transform_asm_vectors()
+  - re-add '2_2', '3_2' to vtk_cell_types
+  - remove unused filename argument of IntegralMeanValueOperator.__init__()
+  - save LCBC data only in the initial time step of LCBC application
+  - fix ProblemDefinition.save_ebc() for no equations (--solve-not option)
+  - move sfepy/physics/radial_mesh.py into specialized repository
+  - new sfepy/base/mem_usage.py - get_mem_usage(), print_mem_usage()
+  - new ProblemConf.update_conf(), .add_missing()
+  - fix link in docstring of ProblemDefinition.update_materials()
+  - update parsing lexical elements of problem configuration - new list_dict()
+  - fix approx_order description in Field.__init__() docstring
+  - update QuadraturePoints.from_table() docstring
+  - fix IndexError in Mesh.from_region() / detected on Win8
+  - update plot_dofs.py for 1D
+  - update ConstantFunctionByRegion.get_constants() to use Region.get_cells()
+  - update SplineBox.__init__(), new coors_shape attribute
+
+- tests and examples:
+
+  - fix typo in examples/piezo_elasticity/piezo.py
+  - fix docstring of examples/navier_stokes/stokes_slip_bc.py
+  - update test_install.py to test mesh generation/conversion scripts
+  - update test_install.py to test probe.py, extractor.py
+
+- general clean up:
+
+  - remove kill_* shell scripts
+  - remove unused Variable.get_full_state()
+  - remove .hgignore
+  - remove sfepy/mesh/femlab.py, sfepy/mesh/meshutils.py
+  - remove friction_slip.py, sfepy/mechanics/friction.py
+  - remove isfepy, sfepy/interactive/ - update Viewer docstring, docs
+  - remove plotPerfusionCoefs.py
+  - remove script/config.py
+  - remove sfepy/base/progressbar.py - update sfepy/ for no progress bar
+
+- split sfepy.fem - separate FEM-specific and general modules:
+
+  - merge branch 'split_fem'
+  - rename sfepy/fem/ -> sfepy/discrete/fem/
+  - move general files from sfepy/discrete/fem/ to sfepy/discrete/
+  - update setup.py files for new paths
+  - split fem/dof_info.py -> common/dof_info.py, fem/lcbc_operators.py
+  - update sfepy/discrete/__init__.py, sfepy/discrete/fem/__init__.py
+  - update sfepy/ for new paths
+  - update top level scripts for new paths
+  - update examples for new paths
+  - update tests for new paths
+  - update scripts for new paths
+  - update docs for new paths
+  - update docstrings for new paths
+  - update MANIFEST.in for new paths
+  - require integral argument in Approximation.describe_geometry()
+  - make Region.create_mapping() a standalone function create_mapping()
+
+    - update get_physical_qps()
+
+  - fix Region.iter_cells() for subdomains
+  - add cell_offsets attribute to Domain, use it in Region
+
+    - simplify Domain.get_cell_offsets()
+
+  - move fem/region.py -> common/region.py
+  - new Domain.get_evaluate_cache()
+  - remove mesh argument from probe constructors, remove all mesh references
+
+    - update Probe.probe() to use Domain.get_evaluate_cache()
+    - simplify Probe.__init__()
+
+  - move discrete/fem/probes.py -> discrete/probes.py
+  - update examples for moved and updated probes
+
+- rename ProblemDefinition -> Problem
+- rename many modules (fix according to naming conventions):
+
+  - genPerMesh.py -> script/tile_periodic_mesh.py
+  - findSurf.py -> script/extract_surface.py
+  - script/evalForms.py -> script/eval_ns_forms.py
+  - runTests.py -> run_tests.py
+  - sfepy/optimize/shapeOptim.py -> sfepy/optimize/shape_optim.py
+  - sfepy/optimize/freeFormDef.py -> sfepy/optimize/free_form_def.py
+  - termsAcoustic.{py, c, h} -> terms_acoustic.{py, c, h}
+  - termsAdjointNavierStokes.{py, c, h} -> terms_adj_navier_stokes.{py, c, h}
+  - termsBasic.{py, c, h} -> terms_basic.{py, c, h}
+  - termsBiot.{py, c, h} -> terms_biot.{py, c, h}
+  - termsElectric.{py, c, h} -> terms_electric.{py, c, h}
+  - termsLaplace.{py, c, h} -> terms_diffusion.{py, c, h}
+  - termsLinElasticity.{py, c, h} -> terms_elastic.{py, c, h}
+  - termsNavierStokes.{py, c, h} -> terms_navier_stokes.{py, c, h}
+  - termsPiezo.{py, c, h} -> terms_piezo.{py, c, h}
+  - termsPoint.py -> terms_point.py
+  - termsSurface.{py, c, h} -> terms_surface.{py, c, h}
+  - termsVolume.{py, c, h} -> terms_volume.{py, c, h}
+  - termsHyperElasticity.{c, h} -> terms_hyperelastic.{c, h}
+  - formSDCC.{c, h} -> form_sdcc.{c, h}
+  - tests/testsBasic.py -> tests/tests_basic.py
+
+- docs:
+
+  - fix gallery page title
+  - new download page with the downloads counter
+  - add debugging section to installation.rst
+  - update development tab
+  - fix and update description of defining material parameters by functions
+  - delete findSurf.py related text
+  - sync module index of developer guide with current sources
+
 .. _2013.3-2013.4:
 
 from 2013.3 to 2013.4
@@ -952,7 +1165,7 @@ from 2012.3 to 2012.4
   - new --save-ebc-nodes option, change meaning of --save-ebc
 
     - update solve_pde(), save_only(), PDESolverApp.call()
-    - update generate_images(), test_hyperelastic_tlul.py, testsBasic.py
+    - update generate_images(), test_hyperelastic_tlul.py, tests_basic.py
 
 - postproc.py:
 
