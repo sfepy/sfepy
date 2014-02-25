@@ -1,6 +1,13 @@
 News
 ====
 
+* **25.02.2014** Version 2014.1 released (sfepy.fem was split to separate
+  FEM-specific and general modules, lower memory usage by creating active DOF
+  connectivities directly from field connectivities, new handling of field and
+  variable shapes, clean up: many obsolete modules were removed, all module
+  names follow naming conventions , etc.), see :ref:`release notes
+  <2013.4-2014.1>`.
+
 * **22.11.2013** Version 2013.4 released (simplified quadrature definition,
   equation sequence solver, initial support for 'plate'
   integration/connectivity type, script for visualization of quadrature points
@@ -22,11 +29,5 @@ News
   evolutionary solvers, new implicit adaptive time stepping solver, elements of
   set and nodes of set region selectors, simplified setting of variables data,
   etc.), see :ref:`release notes <2012.4-2013.1>`.
-
-* **21.11.2012** Version 2012.4 released (initial support for hierarchical
-  basis on quadrilateral and brick elements, unified C/Cython structures for
-  reference mappings, new linear combination boundary condition: edge
-  direction, new examples showing some advanced features, etc.), see
-  :ref:`release notes <2012.3-2012.4>`.
 
 For historians: see :ref:`archived_news`.

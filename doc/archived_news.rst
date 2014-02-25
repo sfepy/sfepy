@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **21.11.2012** Version 2012.4 released (initial support for hierarchical
+  basis on quadrilateral and brick elements, unified C/Cython structures for
+  reference mappings, new linear combination boundary condition: edge
+  direction, new examples showing some advanced features, etc.), see
+  :ref:`release notes <2012.3-2012.4>`.
+
 * **12.09.2012** Version 2012.3 released (several new terms, material
   parameters can be defined per region using region names, base function values
   can be defined per element, support for global options, etc.), see
