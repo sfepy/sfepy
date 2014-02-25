@@ -1,6 +1,6 @@
 input_name = '../examples/thermo_elasticity/thermo_elasticity.py'
 output_name = 'test_thermo_elasticity.vtk'
 
-from testsBasic import TestInput
+from tests_basic import TestInput
 class Test(TestInput):
     pass

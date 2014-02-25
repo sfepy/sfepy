@@ -4,6 +4,6 @@
 input_name = '../examples/navier_stokes/stokes.py'
 output_name = 'test_stokes.vtk'
 
-from testsBasic import TestInput
+from tests_basic import TestInput
 class Test( TestInput ):
     pass

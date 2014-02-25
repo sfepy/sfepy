@@ -4,7 +4,7 @@ input_names = {'TL': '../examples/large_deformation/hyperelastic.py',
 output_name_trunk = 'test_hyperelastic_'
 
 from sfepy.base.testing import TestCommon
-from testsBasic import NLSStatus
+from tests_basic import NLSStatus
 
 class Test(TestCommon):
 

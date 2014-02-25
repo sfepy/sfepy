@@ -2,7 +2,7 @@ input_name = '../examples/piezo_elasticity/piezo.py'
 output_name = 'test_piezo.vtk'
 
 
-from testsBasic import TestInput
+from tests_basic import TestInput
 
 class Test( TestInput ):
 

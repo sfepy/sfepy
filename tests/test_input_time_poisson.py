@@ -2,7 +2,7 @@
 input_name = '../examples/diffusion/time_poisson.py'
 output_name_trunk = 'test_time_poisson'
 
-from testsBasic import TestInputEvolutionary
+from tests_basic import TestInputEvolutionary
 
 class Test( TestInputEvolutionary ):
     pass

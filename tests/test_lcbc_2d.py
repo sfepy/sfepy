@@ -127,7 +127,7 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-from testsBasic import TestLCBC
+from tests_basic import TestLCBC
 output_name = 'test_lcbc_2d.vtk'
 
 ##

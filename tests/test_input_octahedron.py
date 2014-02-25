@@ -2,6 +2,6 @@
 input_name = '../examples/diffusion/octahedron.py'
 output_name = 'test_octahedron.vtk'
 
-from testsBasic import TestInput
+from tests_basic import TestInput
 class Test( TestInput ):
     pass
