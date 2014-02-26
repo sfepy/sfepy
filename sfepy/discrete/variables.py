@@ -65,7 +65,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
                     econn = field.get_econn(info.dc_type, region,
                                             ig, is_trace=False)
 
-                adof_conns[key] = _create(var, econn)
+                    adof_conns[key] = _create(var, econn)
 
     if verbose:
         output('setting up dof connectivities...')
