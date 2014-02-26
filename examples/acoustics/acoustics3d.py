@@ -105,7 +105,7 @@ options = {
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton', {'i_max'      : 1,
-                               'eps_a'      : 1e-1,
+                               'eps_a'      : 1e-10,
                                'eps_r'      : 1.0,
                                'macheps'   : 1e-16,
                                'lin_red'    : 1e-1,
