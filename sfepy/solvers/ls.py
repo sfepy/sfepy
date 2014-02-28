@@ -794,6 +794,7 @@ class MultiProblem(ScipyDirect):
         for ii, ifname in enumerate(conf.others):
             sub_prefix = master_prefix[:-1] + '-sub%d:' % (ii + 1)
             output.set_output_prefix(sub_prefix)
+            kwargs['master_problem'] = problem
             confi = ProblemConf.from_file(ifname, required, other,
                                           define_args=kwargs)
             pbi = Problem.from_conf(confi, init_equations=True)
