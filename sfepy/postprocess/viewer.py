@@ -153,8 +153,15 @@ def get_position_counts(n_data, layout):
         n_row, n_col = 1, n_data
     elif layout == 'col':
         n_row, n_col = n_data, 1
-    else: # layout == 'rowcol':
+    elif layout == 'colrow':
         pass
+    else:
+        num = int(layout[3:])
+        n_col = num
+        n_row = int(nm.ceil(n_data / float(n_col)))
+        if layout[:3] == 'col':
+            n_row, n_col = n_col, n_row
+
     return n_row, n_col
 
 def get_opacities(opacity):
@@ -335,8 +342,11 @@ class Viewer(Struct):
             size = (1000, 600)
         elif layout == 'col':
             size = (600, 1000)
-        else:
+        elif layout == 'colrow':
             size = (600, 800)
+        else:
+            size = (800, 800)
+
         return size
 
     def build_mlab_pipeline(self, file_source=None, is_3d=False,

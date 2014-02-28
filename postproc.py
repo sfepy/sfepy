@@ -80,8 +80,8 @@ help = {
     'image resolution in NxN format [default: shorter axis: 600;'\
     ' depends on layout: for rowcol it is 800x600]',
     'layout' :
-    'layout for multi-field plots, one of: rowcol, colrow, row, col' \
-    ' [default: %default]',
+    'layout for multi-field plots, one of: rowcol, colrow, row, col, row#n, col#n,' \
+    ' where #n is the number of plots in the specified direction [default: %default]',
     'is_3d' :
     '3d plot mode',
     'view' :
