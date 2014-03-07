@@ -1441,9 +1441,12 @@ class HDF5MeshIO(MeshIO):
 
             name_dict = {}
             for key, val in out.iteritems():
-                dofs = get_default(val.dofs, (-1,))
                 shape = val.get('shape', val.data.shape)
-                var_name = val.get('var_name', 'None')
+                dofs = val.get('dofs', None)
+                if dofs is None:
+                    dofs = [''] * nm.squeeze(shape)[-1]
+                var_name = val.get('var_name', '')
+                name = val.get('name', 'output_data')
 
                 group_name = '__' + key.translate(self._tr)
                 data_group = fd.createGroup(step_group, group_name,
@@ -1452,7 +1455,7 @@ class HDF5MeshIO(MeshIO):
                 fd.createArray(data_group, 'mode', val.mode, 'mode')
                 fd.createArray(data_group, 'dofs', dofs, 'dofs')
                 fd.createArray(data_group, 'shape', shape, 'shape')
-                fd.createArray(data_group, 'name', val.name, 'object name')
+                fd.createArray(data_group, 'name', name, 'object name')
                 fd.createArray(data_group, 'var_name',
                                var_name, 'object parent name')
                 fd.createArray(data_group, 'dname', key, 'data name')
