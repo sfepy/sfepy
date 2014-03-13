@@ -477,6 +477,9 @@ class Viewer(Struct):
             output('range: %.2e %.2e l2 norm range: %.2e %.2e' % data_range[3:])
 
             if name in domain_specific:
+                if ctp is None:
+                    ctp = mlab.pipeline.cell_to_point_data(source)
+
                 ds = domain_specific[name]
                 out = ds(source, ctp, bbox, position, family, kind, name)
                 if len(out) == 4:
