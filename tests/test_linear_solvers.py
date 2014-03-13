@@ -1,7 +1,12 @@
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
-#filename_mesh = data_dir + '/sd.mesh'
+
+if 0:
+    from sfepy.discrete.fem.utils import refine_mesh
+    refinement_level = 1
+    filename_mesh = refine_mesh(filename_mesh, refinement_level)
+
 material_2 = {
     'name' : 'coef',
     'values' : {'val' : 1.0},
