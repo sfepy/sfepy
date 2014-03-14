@@ -570,7 +570,7 @@ class Region(Struct):
     def get_facet_indices(self, ig, offset=True, force_ig=True):
         """
         Return an array (per group) of (iel, ifa) for each facet. A facet can
-        be in several 1 (surface) or 2 (inner) cells.
+        be in 1 (surface) or 2 (inner) cells.
 
         If `offset` is True, the cell group offset is subtracted from the cell
         ids.
