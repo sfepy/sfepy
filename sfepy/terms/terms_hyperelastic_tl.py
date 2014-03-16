@@ -457,3 +457,55 @@ class SurfaceTractionTLTerm(HyperElasticBase):
             fmode = 1
 
         return mat, fd.det_f, fd.inv_f, bf, sg, sd.fis, fmode
+
+class VolumeSurfaceTLTerm(SurfaceTractionTLTerm):
+    r"""
+    Volume of a :math:`D`-dimensional domain, using a surface integral in the
+    total Lagrangian formulation, expressed using :math:`\ul{\nu}`, the outward
+    unit normal vector w.r.t. the undeformed surface, :math:`\ull{F}(\ul{u})`,
+    the deformation gradient, and :math:`J = \det(\ull{F})`. Uses the
+    approximation of :math:`\ul{u}` for the deformed surface coordinates
+    :math:`\ul{x}`.
+
+    :Definition:
+
+    .. math::
+        1 / D \int_{\Gamma} \ul{\nu} \cdot \ull{F}^{-1} \cdot \ul{x} J
+
+    :Arguments:
+        - parameter : :math:`\ul{u}`
+    """
+    name = 'd_tl_volume_surface'
+    arg_types = ('parameter',)
+    arg_shapes = {'parameter' : 'D'}
+    family_data_names = ['det_f', 'inv_f']
+    integration = 'surface_extra'
+
+    function = staticmethod(terms.d_tl_volume_surface)
+
+    def check_shapes(self, parameter):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        assert_(dim == n_c)
+
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, sg = self.get_approximation(parameter)
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base(sd.bkey, 0, self.integral)
+
+        fd = self.get_family_data(parameter, 'tl_surface_common',
+                                  self.family_data_names)
+
+        asc = nm.ascontiguousarray
+
+        coors0 = parameter.field.get_coor()
+        coors = asc(coors0 + parameter().reshape(coors0.shape))
+
+        return coors, fd.det_f, fd.inv_f, bf, sg, asc(sd.econn)
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, 1, 1), parameter.dtype

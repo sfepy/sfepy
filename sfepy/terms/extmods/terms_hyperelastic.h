@@ -111,6 +111,11 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      int32 *fis, int32 nFa, int32 nFP,
 			      int32 mode );
 
+int32 d_tl_volume_surface( FMField *out, FMField *coors,
+                           FMField *detF, FMField *mtxFI,
+                           FMField *bf, Mapping *sg,
+                           int32 *conn, int32 nFa, int32 nFP );
+
 int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
 		   int32 *conn, int32 nEl, int32 nEP, int32 mode );
 

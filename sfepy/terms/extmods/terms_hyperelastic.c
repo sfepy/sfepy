@@ -1871,6 +1871,56 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 }
 
 #undef __FUNC__
+#define __FUNC__ "d_tl_volume_surface"
+int32 d_tl_volume_surface( FMField *out, FMField *coors,
+                           FMField *detF, FMField *mtxFI,
+                           FMField *bf, Mapping *sg,
+                           int32 *conn, int32 nFa, int32 nFP )
+{
+  int32 ii, nQP, dim, ret = RET_OK;
+  float64 val;
+  FMField *aux = 0, *coors_qp = 0, *n2 = 0, *aux2 = 0;
+
+  dim = mtxFI->nRow;
+  nQP = mtxFI->nLev;
+
+  val = 1.0 / dim;
+
+  fmf_createAlloc( &aux, 1, 1, nFP, dim );
+  fmf_createAlloc( &coors_qp, 1, nQP, 1, dim );
+  fmf_createAlloc( &n2, 1, nQP, dim, 1 );
+  fmf_createAlloc( &aux2, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( out, ii );
+    FMF_SetCell( detF, ii );
+    FMF_SetCell( mtxFI, ii );
+    FMF_SetCell( sg->normal, ii );
+    FMF_SetCell( sg->det, ii );
+    FMF_SetCellX1( sg->bf, ii );
+
+    ele_extractNodalValuesNBN( aux, coors, conn + nFP * ii );
+    fmf_mulAB_n1( coors_qp, sg->bf, aux );
+
+    fmf_mulATB_nn( n2, mtxFI, sg->normal );
+    fmf_mulAB_nn( aux2, coors_qp, n2 );
+    fmf_mul( aux2, detF->val );
+    fmf_sumLevelsMulF( out, aux2, sg->det->val );
+    fmf_mulC( out, val );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &aux );
+  fmf_freeDestroy( &coors_qp );
+  fmf_freeDestroy( &n2 );
+  fmf_freeDestroy( &aux2 );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dq_def_grad"
 int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
                    int32 *conn, int32 nEl, int32 nEP, int32 mode )

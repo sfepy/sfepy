@@ -180,6 +180,12 @@ cdef extern from 'terms.h':
                                   int32 *fis, int32 nFa, int32 nFP,
                                   int32 mode)
 
+    cdef int32 _d_tl_volume_surface \
+         'd_tl_volume_surface'(FMField *out, FMField *coors,
+                               FMField *detF, FMField *mtxFI,
+                               FMField *bf, Mapping *sg,
+                               int32 *conn, int32 nFa, int32 nFP)
+
     cdef int32 _dq_def_grad \
          'dq_def_grad'(FMField *out, FMField *state, Mapping *vg,
                        int32 *conn, int32 nEl, int32 nEP, int32 mode)
@@ -1060,6 +1066,28 @@ def dw_tl_surface_traction(np.ndarray out not None,
 
     ret = _dw_tl_surface_traction(_out, _traction, _det_f, _mtx_fi, _bf,
                                        cmap.geo, _fis, n_fa, n_fp, mode)
+    return ret
+
+def d_tl_volume_surface(np.ndarray out not None,
+                        np.ndarray coors not None,
+                        np.ndarray det_f not None,
+                        np.ndarray mtx_fi not None,
+                        np.ndarray bf not None,
+                        CMapping cmap not None,
+                        np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _coors[1], _det_f[1], _mtx_fi[1], _bf[1]
+    cdef int32 *_conn, n_fa, n_fp
+
+    array2fmfield4(_out, out)
+    array2fmfield2(_coors, coors)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_mtx_fi, mtx_fi)
+    array2fmfield4(_bf, bf)
+    array2pint2(&_conn, &n_fa, &n_fp, conn)
+
+    ret = _d_tl_volume_surface(_out, _coors, _det_f, _mtx_fi, _bf,
+                               cmap.geo, _conn, n_fa, n_fp)
     return ret
 
 def dq_def_grad(np.ndarray out not None,
