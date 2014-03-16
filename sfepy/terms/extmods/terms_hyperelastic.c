@@ -1811,7 +1811,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
     ifa = fis[ii*nFP+1];
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( traction, ii );
+    FMF_SetCellX1( traction, ii );
     FMF_SetCell( detF, ii );
     FMF_SetCell( mtxFI, ii );
     FMF_SetCell( sg->normal, ii );
@@ -1867,7 +1867,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
     fmf_freeDestroy( &trdq );
   }
 
-  return( RET_OK );
+  return( ret );
 }
 
 #undef __FUNC__

@@ -397,9 +397,10 @@ class SurfaceTractionTLTerm(HyperElasticBase):
         - state    : :math:`\ul{u}`
     """
     name = 'dw_tl_surface_traction'
-    arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material' : 'D, D', 'virtual' : ('D', 'state'),
-                  'state' : 'D'}
+    arg_types = ('opt_material', 'virtual', 'state')
+    arg_shapes = [{'opt_material' : 'D, D', 'virtual' : ('D', 'state'),
+                   'state' : 'D'},
+                  {'opt_material' : None}]
     family_data_names = ['det_f', 'inv_f']
     integration = 'surface_extra'
 
@@ -433,7 +434,8 @@ class SurfaceTractionTLTerm(HyperElasticBase):
     def check_shapes(self, mat, virtual, state):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        assert_(mat.shape == (n_el, n_qp, dim, dim))
+        if mat is not None:
+            assert_(mat.shape == (n_el, n_qp, dim, dim))
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -443,6 +445,11 @@ class SurfaceTractionTLTerm(HyperElasticBase):
 
         fd = self.get_family_data(state, 'tl_surface_common',
                                   self.family_data_names)
+
+        if mat is None:
+            eye = nm.eye(sg.dim, dtype=nm.float64)
+            mat = nm.tile(eye, ((1, sg.n_qp, 1, 1)))
+
         if diff_var is None:
             fmode = 0
 
