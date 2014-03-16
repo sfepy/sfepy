@@ -70,3 +70,29 @@ class Test(TestCommon):
             ok = ok and _ok
 
         return ok
+
+    def test_volume_tl(self):
+        from sfepy.discrete import FieldVariable
+
+        fu = self.problem.fields['vector']
+        fq = self.problem.fields['scalar']
+
+        var_u = FieldVariable('u', 'parameter', fu,
+                              primary_var_name='(set-to-None)')
+        var_q = FieldVariable('q', 'test', fq,
+                              primary_var_name='(set-to-None)')
+
+        var_u.set_data(nm.linspace(0, 0.004, var_u.n_dof))
+
+        vval = self.problem.evaluate('dw_tl_volume.i.Omega( q, u )',
+                                     term_mode='volume', q=var_q, u=var_u)
+
+        sval = self.problem.evaluate('d_tl_volume_surface.i.Gamma( u )',
+                                     u=var_u)
+
+        ok = abs(vval - sval) < 1e-14
+
+        self.report('TL: by volume: %e == by surface: %e -> %s' %
+                    (vval, sval, ok))
+
+        return ok
