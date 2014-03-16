@@ -1,9 +1,11 @@
 import numpy as nm
 import numpy.linalg as nla
 
+from scipy.misc import factorial
+
 from sfepy.base.base import assert_, output
 from sfepy.linalg.utils import norm_l2_along_axis as norm
-from sfepy.linalg.utils import mini_newton
+from sfepy.linalg.utils import mini_newton, dets_fast
 
 def transform_bar_to_space_coors(bar_coors, coors):
     """
@@ -110,6 +112,29 @@ def get_simplex_circumcentres(coors, force_inside_eps=None):
         centres = transform_bar_to_space_coors(bar_coors, coors)
 
     return centres
+
+def get_simplex_volumes(cells, coors):
+    """
+    Get volumes of simplices in nD.
+
+    Parameters
+    ----------
+    cells : array, shape (n, d)
+        The indices of `n` simplices with `d` vertices into `coors`.
+    coors : array
+        The coordinates of simplex vertices.
+
+    Returns
+    -------
+    volumes : array
+        The volumes of the simplices.
+    """
+    scoors = coors[cells]
+    deltas = scoors[:, 1:] - scoors[:, :1]
+    dim = coors.shape[1]
+    volumes = dets_fast(deltas) / factorial(dim)
+
+    return volumes
 
 def barycentric_coors(coors, s_coors):
     """
