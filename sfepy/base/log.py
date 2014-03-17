@@ -71,7 +71,7 @@ def read_log(filename):
 
     fd = open(filename, 'r')
 
-    last_it = 0
+    last_xval = None
     for line in fd:
         if line[0] == '#':
             ls = line.split(':')
@@ -98,15 +98,15 @@ def read_log(filename):
         key = ls[0]
         xs, ys, vlines = log.setdefault(key, ([], [], []))
 
-        if len(ls) == 2:
-            vlines.append(last_it)
+        if (len(ls) == 2) and (last_xval is not None):
+            vlines.append(last_xval)
 
         else:
-            iteration, val = int(ls[1]), float(ls[2])
-            xs.append(iteration)
-            ys.append(val)
+            xval, yval = float(ls[1]), float(ls[2])
+            xs.append(xval)
+            ys.append(yval)
 
-            last_it = iteration
+            last_xval = xval
 
     fd.close()
 
