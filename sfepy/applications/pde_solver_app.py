@@ -30,7 +30,9 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
         required, other = get_standard_keywords()
         conf = ProblemConf.from_file(conf, required, other)
 
-    opts = conf.options = dict_to_struct(app_options, flag=(1,)) + conf.options
+    opts = conf.options = (dict_to_struct(app_options, flag=(1,),
+                                          constructor=type(conf.options))
+                           + conf.options)
 
     output_prefix = opts.get('output_prefix', None)
     if output_prefix is None:
