@@ -5,7 +5,7 @@ import numpy as nm
 
 try:
     from enthought.traits.api \
-         import HasTraits, Instance, Button, Int, Bool, on_trait_change
+         import HasTraits, Instance, Button, Int, Float, Bool, on_trait_change
     from enthought.traits.ui.api \
          import View, Item, Group, HGroup, spring
     from  enthought.traits.ui.editors.range_editor import RangeEditor
@@ -15,7 +15,7 @@ try:
 
 except ImportError:
     from traits.api \
-         import HasTraits, Instance, Button, Int, Bool, on_trait_change
+         import HasTraits, Instance, Button, Int, Float, Bool, on_trait_change
     from traitsui.api \
          import View, Item, Group, HGroup, spring
     from traitsui.editors.range_editor import RangeEditor
@@ -864,8 +864,9 @@ class Viewer(Struct):
 
         self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
-        step_range = self.file_source.get_step_range()
-        has_several_steps = (nm.diff(step_range) > 0)[0]
+        steps, times = self.file_source.get_ts_info()
+        has_several_times = len(times) > 0
+        has_several_steps = has_several_times or (len(steps) > 0)
 
         if gui is not None:
             gui.has_several_steps = has_several_steps
@@ -878,10 +879,10 @@ class Viewer(Struct):
             self.set_step = set_step = SetStep()
             set_step._viewer = self
             set_step._source = self.file_source
-            step = step if step >= 0 else step_range[1] + step + 1
-            assert_(step_range[0] <= step <= step_range[1],
+            step = step if step >= 0 else steps[-1] + step + 1
+            assert_(steps[0] <= step <= steps[-1],
                     msg='invalid time step! (%d <= %d <= %d)'
-                    % (step_range[0], step, step_range[1]))
+                    % (steps[0], step, steps[-1]))
             set_step.step = step
 
             if self.watch:
@@ -946,6 +947,7 @@ class SetStep(HasTraits):
 
     _viewer = Instance(Viewer)
     _source = Instance(FileSource)
+
     _step_editor = RangeEditor(low_name='step_low',
                                high_name='step_high',
                                label_width=28,
@@ -954,26 +956,69 @@ class SetStep(HasTraits):
     step = None
     step_low = Int
     step_high = Int
+
+    _time_editor = RangeEditor(low_name='time_low',
+                               high_name='time_high',
+                               label_width=28,
+                               auto_set=True,
+                               mode='slider')
+    time = None
+    time_low = Float
+    time_high = Float
+
     file_changed = Bool(False)
+
+    is_adjust = False
 
     traits_view = View(
         Item('step', defined_when='step is not None',
              editor=_step_editor),
+        Item('time', defined_when='time is not None',
+             editor=_time_editor),
     )
 
     def __source_changed(self, old, new):
-        rng = self._source.get_step_range()
-        self.add_trait('step', Int(0))
-        self.step_low, self.step_high = [int(ii) for ii in rng]
+        steps = self._source.steps
+        if len(steps):
+            self.add_trait('step', Int(0))
+            self.step_low, self.step_high = steps[0], steps[-1]
+
+        times = self._source.times
+        if len(times):
+            self.add_trait('time', Float(0.0))
+            self.time_low, self.time_high = times[0], times[-1]
 
     def _step_changed(self, old, new):
-        self._source.set_step(self.step)
-        self._viewer.set_source_filename(self._source.filename)
+        if new == old: return
+        if not self.is_adjust:
+            step, time = self._source.get_step_time(step=new)
+            self.is_adjust = True
+            self.step = step
+            self.time = time
+            self.is_adjust = False
+
+            self._viewer.set_source_filename(self._source.filename)
+
+    def _time_changed(self, old, new):
+        if new == old: return
+        if not self.is_adjust:
+            step, time = self._source.get_step_time(time=new)
+            self.is_adjust = True
+            self.step = step
+            self.time = time
+            self.is_adjust = False
+
+            self._viewer.set_source_filename(self._source.filename)
 
     def _file_changed_changed(self, old, new):
         if new == True:
-            rng = self._source.get_step_range()
-            self.step_low, self.step_high = [int(ii) for ii in rng]
+            steps = self._source.steps
+            if len(steps):
+                self.step_low, self.step_high = steps[0], steps[-1]
+
+            times = self._source.times
+            if len(times):
+                self.time_low, self.time_high = times[0], times[-1]
 
         self.file_changed = False
 

@@ -419,7 +419,7 @@ def main():
             output('%d: %s' % (ii, filename))
 
             file_source = create_file_source(filename)
-            file_source.set_step(options.step)
+            file_source.get_step_time(step=options.step)
             for key, val in get_data_ranges(file_source()).iteritems():
                 all_ranges.setdefault(key, []).append(val[3:])
 
