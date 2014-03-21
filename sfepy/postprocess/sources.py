@@ -76,22 +76,46 @@ class FileSource(Struct):
         """Reset."""
         self.mat_id_name = None
         self.source = None
-        self.step_range = None
         self.notify_obj = None
+        self.steps = []
+        self.times = []
+        self.step = 0
+        self.time = 0.0
         if self.watch:
             self.last_stat = os.stat(self.filename)
-        self.set_step()
 
     def setup_mat_id(self, mat_id_name='mat_id', single_color=False):
         self.mat_id_name = mat_id_name
         self.single_color = single_color
 
-    def set_step(self, step=0):
-        """Set step of a data sequence."""
-        self.step = step
+    def get_step_time(self, step=None, time=None):
+        """
+        Set current step and time to the values closest greater or equal to
+        either step or time. Return the found values.
+        """
+        if (step is not None) and len(self.steps):
+            step = step if step >= 0 else self.steps[-1] + step + 1
+            ii = nm.searchsorted(self.steps, step)
+            ii = nm.clip(ii, 0, len(self.steps) - 1)
+
+            self.step = self.steps[ii]
+            if len(self.times):
+                self.time = self.times[ii]
+
+        elif (time is not None) and len(self.times):
+            ii = nm.searchsorted(self.times, time)
+            ii = nm.clip(ii, 0, len(self.steps) - 1)
+
+            self.step = self.steps[ii]
+            self.time = self.times[ii]
+
+        return self.step, self.time
 
     def get_step_range(self):
-        return self.step_range
+        return self.steps[0], self.steps[-1]
+
+    def get_ts_info(self):
+        return self.steps, self.times
 
     def get_mat_id(self, mat_id_name='mat_id'):
         """
@@ -148,11 +172,13 @@ class VTKFileSource(FileSource):
         # Propagate changes in the pipeline.
         vis_source.data_changed = True
 
-    def get_step_range(self):
-        return (0, 0)
-
 class VTKSequenceFileSource(VTKFileSource):
     """A thin wrapper around mlab.pipeline.open() for VTK file sequences."""
+
+    def __init__(self, *args, **kwargs):
+        FileSource.__init__(self, *args, **kwargs)
+
+        self.steps = nm.arange(len(self.filename), dtype=nm.int32)
 
     def create_source(self):
         """Create a VTK file source """
@@ -162,23 +188,19 @@ class VTKSequenceFileSource(VTKFileSource):
         self.filename = filename
         vis_source.base_file_name = filename[self.step]
 
-    def get_step_range(self):
-        return (0, len(self.filename) - 1)
-
-
 class GenericFileSource(FileSource):
     """File source usable with any format supported by MeshIO classes."""
 
     def __init__(self, *args, **kwargs):
         FileSource.__init__(self, *args, **kwargs)
 
-        self.io = None
+        self.read_common(self.filename)
 
     def read_common(self, filename):
         self.io = MeshIO.any_from_filename(filename)
-        self.step_range = (0, self.io.read_last_step())
+        self.steps, self.times, _ = self.io.read_times()
 
-        self.mesh = mesh = Mesh.from_file(filename)
+        self.mesh = Mesh.from_file(filename)
         self.n_nod, self.dim = self.mesh.coors.shape
 
     def create_source(self):
@@ -228,13 +250,6 @@ class GenericFileSource(FileSource):
         self.filename = filename
         self.source = self.create_source()
         vis_source.data = self.source.data
-        
-    def get_step_range(self):
-        if self.step_range is None:
-            io = MeshIO.any_from_filename(self.filename)
-            self.step_range = (0, io.read_last_step())
-
-        return self.step_range
 
     def get_mat_id(self, mat_id_name='mat_id'):
         """
@@ -245,7 +260,7 @@ class GenericFileSource(FileSource):
             return mat_id
 
     def file_changed(self):
-        self.step_range = (0, self.io.read_last_step())
+        self.steps, self.times, _ = self.io.read_times()
 
     def create_dataset(self):
         """Create a tvtk.UnstructuredGrid dataset from the Mesh instance of the
@@ -352,6 +367,9 @@ class GenericSequenceFileSource(GenericFileSource):
     """File source usable with any format supported by MeshIO classes, with
     exception of HDF5 (.h5), for file sequences."""
 
+    def read_common(self, filename):
+        self.steps = nm.arange(len(self.filename), dtype=nm.int32)
+
     def create_source(self):
         """Create a VTK source from data in a SfePy-supported file."""
         if self.io is None:
@@ -367,6 +385,3 @@ class GenericSequenceFileSource(GenericFileSource):
         self.io = None
         self.source = self.create_source()
         vis_source.data = self.source.data
-        
-    def get_step_range(self):
-        return (0, len(self.filename) - 1)
