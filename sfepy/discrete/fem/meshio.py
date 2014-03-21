@@ -269,7 +269,7 @@ class MeshIO(Struct):
         -----
         The default implementation returns empty arrays.
         """
-        aux = nm.array([], dtype=nm.float64)
+        aux = nm.array([0.0], dtype=nm.float64)
         return aux.astype(nm.int32), aux, aux
 
     def read(self, mesh, omit_facets=False, **kwargs):
