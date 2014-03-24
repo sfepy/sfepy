@@ -7,7 +7,7 @@ try:
     from enthought.traits.api \
          import HasTraits, Instance, Button, Int, Float, Bool, on_trait_change
     from enthought.traits.ui.api \
-         import View, Item, Group, HGroup, spring
+         import View, Item, Heading, Group, HGroup, VGroup, Handler, spring
     from  enthought.traits.ui.editors.range_editor import RangeEditor
     from enthought.tvtk.pyface.scene_editor import SceneEditor
     from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
@@ -17,7 +17,7 @@ except ImportError:
     from traits.api \
          import HasTraits, Instance, Button, Int, Float, Bool, on_trait_change
     from traitsui.api \
-         import View, Item, Group, HGroup, spring
+         import View, Item, Heading, Group, HGroup, VGroup, Handler, spring
     from traitsui.editors.range_editor import RangeEditor
     from tvtk.pyface.scene_editor import SceneEditor
     from mayavi.tools.mlab_scene_model import MlabSceneModel
@@ -932,14 +932,23 @@ class Viewer(Struct):
                            show_label=False, style='custom'),
                 ),
                 HGroup(spring,
+                       Item('button_make_snapshots_steps', show_label=False,
+                            enabled_when='has_several_steps == True'),
+                       Item('button_make_animation_steps', show_label=False,
+                            enabled_when='has_several_steps == True'),
+                       spring,
+                       Item('button_make_snapshots_times', show_label=False,
+                            enabled_when='has_several_steps == True'),
+                       Item('button_make_animation_times', show_label=False,
+                            enabled_when='has_several_steps == True'),
+                       spring,),
+                HGroup(spring,
                        Item('button_reload', show_label=False),
                        Item('button_view', show_label=False),
-                       Item('button_make_snapshots', show_label=False,
-                            enabled_when='has_several_steps == True'),
-                       Item('button_make_animation', show_label=False,
-                            enabled_when='has_several_steps == True'),),
+                       Item('button_quit', show_label=False)),
                 resizable=True,
-                buttons=['OK'],
+                buttons=[],
+                handler=ClosingHandler(),
             )
 
             if is_new_scene:
@@ -958,6 +967,15 @@ class SetStep(HasTraits):
 
     _viewer = Instance(Viewer)
     _source = Instance(FileSource)
+
+    seq_start = Int(0)
+    seq_stop = Int(-1)
+    seq_step = Int(1)
+
+    seq_t0 = Float
+    seq_t1 = Float
+    seq_dt = Float
+    seq_n_step = Int
 
     _step_editor = RangeEditor(low_name='step_low',
                                high_name='step_high',
@@ -986,6 +1004,15 @@ class SetStep(HasTraits):
              editor=_step_editor),
         Item('time', defined_when='time is not None',
              editor=_time_editor),
+        HGroup(Heading('steps:'),
+               Item('seq_start', label='start'),
+               Item('seq_stop', label='stop'),
+               Item('seq_step', label='step'),
+               Heading('times:'),
+               Item('seq_t0', label='t0'),
+               Item('seq_t1', label='t1'),
+               Item('seq_dt', label='dt'),
+               Item('seq_n_step', label='n_step')),
     )
 
     def __source_changed(self, old, new):
@@ -1033,6 +1060,30 @@ class SetStep(HasTraits):
 
         self.file_changed = False
 
+    @on_trait_change('step_high, time_high')
+    def init_seq_selection(self, name, new):
+        self.seq_t0 = self.time_low
+        self.seq_t1 = self.time_high
+        self.seq_n_step = self.step_high - self.step_low + 1
+        self.seq_dt = (self.seq_t1 - self.seq_t0) / self.seq_n_step
+
+        self.seq_start = self.step_low
+        self.seq_stop = self.step_high + 1
+
+        if name == 'time_high':
+            self.on_trait_change(self.init_seq_selection, 'time_high',
+                                 remove=True)
+
+    def _seq_n_step_changed(self, old, new):
+        if new == old: return
+        self.seq_dt = (self.seq_t1 - self.seq_t0) / self.seq_n_step
+
+    def _seq_dt_changed(self, old, new):
+        if new == old: return
+        if self.seq_dt == 0.0: return
+        n_step = int(round((self.seq_t1 - self.seq_t0) / self.seq_dt))
+        self.seq_n_step = max(1, n_step)
+
 class ReloadSource(HasTraits):
 
     _viewer = Instance(Viewer)
@@ -1057,7 +1108,7 @@ class ReloadSource(HasTraits):
         self.reload_source = False
 
 def make_animation(filename, view, roll, anim_format, options,
-                   reuse_viewer=None):
+                   steps=None, times=None, reuse_viewer=None):
     output_dir = tempfile.mkdtemp()
 
     viewer = Viewer(filename, watch=options.watch,
@@ -1087,7 +1138,7 @@ def make_animation(filename, view, roll, anim_format, options,
         viewer.scene = reuse_viewer.scene
         viewer.set_step = reuse_viewer.set_step
 
-    viewer.save_animation(options.fig_filename)
+    viewer.save_animation(options.fig_filename, steps=steps, times=times)
 
     op = os.path
     if anim_format != 'png':
@@ -1104,6 +1155,10 @@ def make_animation(filename, view, roll, anim_format, options,
     if reuse_viewer is None:
         mlab.close(viewer.scene)
 
+class ClosingHandler(Handler):
+    def object_button_quit_changed(self, info):
+        info.ui.dispose()
+
 class ViewerGUI(HasTraits):
 
     scene = Instance(MlabSceneModel, ())
@@ -1113,8 +1168,11 @@ class ViewerGUI(HasTraits):
     set_step = Instance(SetStep)
     button_reload = Button('reload')
     button_view = Button('print view')
-    button_make_animation = Button('make animation')
-    button_make_snapshots = Button('make snapshots')
+    button_quit = Button('quit')
+    button_make_animation_steps = Button('make animation')
+    button_make_snapshots_steps = Button('make snapshots')
+    button_make_animation_times = Button('make animation')
+    button_make_snapshots_times = Button('make snapshots')
 
     @on_trait_change('scene.activated')
     def _post_init(self, name, old, new):
@@ -1143,25 +1201,50 @@ class ViewerGUI(HasTraits):
         print 'as args: --view=%.2e,%.2e,%.2e,%.2e,%.2e,%.2e --roll=%.2e' \
               % (view[:3] + tuple(view[3]) + (roll,))
 
-
-    def _button_make_animation_fired(self):
+    def _button_make_animation_steps_fired(self):
         view = mlab.view()
         roll = mlab.roll()
 
+        steps = nm.arange(self.set_step.seq_start,
+                          self.set_step.seq_stop,
+                          self.set_step.seq_step, dtype=nm.int32)
         make_animation(self.viewer.filename,
-                       view,
-                       roll,
-                       'avi',
-                       Struct(**self.viewer.options),
-                       self.viewer)
+                       view, roll, 'avi',
+                       Struct(**self.viewer.options), steps=steps,
+                       reuse_viewer=self.viewer)
 
-    def _button_make_snapshots_fired(self):
+    def _button_make_snapshots_steps_fired(self):
         view = mlab.view()
         roll = mlab.roll()
 
+        steps = nm.arange(self.set_step.seq_start,
+                          self.set_step.seq_stop,
+                          self.set_step.seq_step, dtype=nm.int32)
         make_animation(self.viewer.filename,
-                       view,
-                       roll,
-                       'png',
-                       Struct(**self.viewer.options),
-                       self.viewer)
+                       view, roll, 'png',
+                       Struct(**self.viewer.options), steps=steps,
+                       reuse_viewer=self.viewer)
+
+    def _button_make_animation_times_fired(self):
+        view = mlab.view()
+        roll = mlab.roll()
+
+        times = nm.arange(self.set_step.seq_t0,
+                          self.set_step.seq_t1 + 0.01 * self.set_step.seq_dt,
+                          self.set_step.seq_dt, dtype=nm.float64)
+        make_animation(self.viewer.filename,
+                       view, roll, 'avi',
+                       Struct(**self.viewer.options), times=times,
+                       reuse_viewer=self.viewer)
+
+    def _button_make_snapshots_times_fired(self):
+        view = mlab.view()
+        roll = mlab.roll()
+
+        times = nm.arange(self.set_step.seq_t0,
+                          self.set_step.seq_t1 + 0.01 * self.set_step.seq_dt,
+                          self.set_step.seq_dt, dtype=nm.float64)
+        make_animation(self.viewer.filename,
+                       view, roll, 'png',
+                       Struct(**self.viewer.options), times=times,
+                       reuse_viewer=self.viewer)
