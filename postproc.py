@@ -221,8 +221,6 @@ def view_file(filename, filter_names, options, view=None):
         else:
             offscreen = get_default(options.offscreen, True)
         view = Viewer(filename, watch=options.watch,
-                      animate=options.anim_format is not None,
-                      anim_format=options.anim_format,
                       ffmpeg_options=options.ffmpeg_options,
                       output_dir=options.output_dir,
                       offscreen=offscreen)
@@ -437,6 +435,7 @@ def main():
         view = view_file(filenames, filter_names, options)
 
     if options.anim_format is not None:
+        view.save_animation(options.filename)
         view.encode_animation(options.filename, options.anim_format,
                               options.ffmpeg_options)
 

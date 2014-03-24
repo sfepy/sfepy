@@ -208,12 +208,6 @@ class Viewer(Struct):
     watch : bool
         If True, watch the file for changes and update the mayavi
         pipeline automatically.
-    animate : bool
-        If True, save a view snaphost for each time step and exit.
-    anim_format : str
-        If set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is
-        installed and results of multiple time steps are given, an animation is
-        created in the same directory as the view images.
     ffmpeg_options : str
         The ffmpeg animation encoding options.
     output_dir : str
@@ -225,14 +219,11 @@ class Viewer(Struct):
     >>> view() # view with default parameters
     >>> view(layout='col') # use column layout
     """
-    def __init__(self, filename, watch=False,
-                 animate=False, anim_format=None, ffmpeg_options=None,
+    def __init__(self, filename, watch=False, ffmpeg_options=None,
                  output_dir='.', offscreen=False, auto_screenshot=True):
         Struct.__init__(self,
                         filename=filename,
                         watch=watch,
-                        animate=animate,
-                        anim_format=anim_format,
                         ffmpeg_options=ffmpeg_options,
                         output_dir=output_dir,
                         offscreen=offscreen,
@@ -930,12 +921,6 @@ class Viewer(Struct):
             if is_scalar_bar:
                 self.show_scalar_bars(self.scalar_bars)
 
-            if self.animate:
-                self.save_animation(fig_filename)
-
-            else:
-                self.save_image(fig_filename)
-
         else:
             traits_view = View(
                 Item('scene', editor=SceneEditor(scene_class=MayaviScene),
@@ -1076,7 +1061,6 @@ def make_animation(filename, view, roll, anim_format, options,
     output_dir = tempfile.mkdtemp()
 
     viewer = Viewer(filename, watch=options.watch,
-                    animate=True,
                     output_dir=output_dir,
                     offscreen=True)
 
@@ -1102,7 +1086,8 @@ def make_animation(filename, view, roll, anim_format, options,
         viewer.file_source = reuse_viewer.file_source
         viewer.scene = reuse_viewer.scene
         viewer.set_step = reuse_viewer.set_step
-        viewer.save_animation(options.fig_filename)
+
+    viewer.save_animation(options.fig_filename)
 
     op = os.path
     if anim_format != 'png':
