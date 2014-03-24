@@ -111,9 +111,6 @@ class FileSource(Struct):
 
         return self.step, self.time
 
-    def get_step_range(self):
-        return self.steps[0], self.steps[-1]
-
     def get_ts_info(self):
         return self.steps, self.times
 

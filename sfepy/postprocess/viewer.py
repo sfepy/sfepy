@@ -288,27 +288,52 @@ class Viewer(Struct):
         self.scene.scene.save(name)
         output('...done')
 
-    def get_animation_info(self, filename, add_output_dir=True, rng=None):
-        if rng is None:
-            rng = self.file_source.get_step_range()
+    def get_animation_info(self, filename, add_output_dir=True, last_step=None):
+        if last_step is None:
+            steps, _ = self.file_source.get_ts_info()
+            last_step = steps[-1]
 
         base, ext = os.path.splitext(filename)
         if add_output_dir:
             base = os.path.join(self.output_dir, base)
 
-        n_digit, fmt, suffix = get_print_info(rng[1] - rng[0] + 1)
-        return base, suffix, ext
+        _, _, suffix1 = get_print_info(last_step)
+        return base, suffix1 + '_%.5e', ext
 
-    def save_animation(self, filename):
-        """Animate the current scene view for all the time steps and save
-        a snapshot of each step view."""
-        rng = self.file_source.get_step_range()
+    def save_animation(self, filename, steps=None, times=None):
+        """
+        Animate the current scene view for the selected time steps or times and
+        save a snapshot of each view.
+        """
+        all_steps, all_times = self.file_source.get_ts_info()
+
+        if steps is None:
+            if times is None:
+                iis = nm.arange(len(all_steps), dtype=nm.int32)
+
+            else:
+                iis = nm.searchsorted(all_times, times)
+                iis = nm.clip(iis, 0, len(all_steps) - 1)
+                if not len(iis): iis = [0]
+
+        else:
+            iis = nm.searchsorted(all_steps, steps)
+            iis = nm.clip(iis, 0, len(all_steps) - 1)
+
+        last_step = all_steps[iis[-1]]
         base, suffix, ext = self.get_animation_info(filename,
                                                     add_output_dir=False,
-                                                    rng=rng)
+                                                    last_step=last_step)
+        for ii in iis:
+            step = all_steps[ii]
+            if len(all_times):
+                time = all_times[ii]
+                aux = (suffix % (step, time)).replace('.', '_')
 
-        for step in xrange(rng[0], rng[1]+1):
-            name = '.'.join((base, suffix % step, ext[1:]))
+            else:
+                aux = (suffix % (step, 0.0)).replace('.', '_')
+
+            name = '.'.join((base, aux, ext[1:]))
             output('%d: %s' % (step, name))
 
             self.set_step.step = step
@@ -318,12 +343,13 @@ class Viewer(Struct):
         if ffmpeg_options is None:
             ffmpeg_options = '-r 10 -sameq'
 
-        base, suffix, ext = self.get_animation_info(filename)
+        base, _, ext = self.get_animation_info(filename)
         anim_name = '.'.join((base, format))
-        cmd = 'ffmpeg %s -i %s %s' % (ffmpeg_options,
-                                      '.'.join((base, suffix, ext[1:])),
-                                      anim_name)
+        cmd = 'ffmpeg %s -i %s %s' \
+              % (ffmpeg_options, '.'.join((base, '%*', ext[1:])), anim_name)
         output('creating animation "%s"...' % anim_name)
+        output('using command:')
+        output(cmd)
         try:
             os.system(cmd)
         except:
