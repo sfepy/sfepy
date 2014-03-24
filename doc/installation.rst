@@ -130,7 +130,8 @@ customize it as follows:
 
       exec_lines = [
           'from sfepy.base.base import *',
-          'from sfepy.fem import *',
+          'from sfepy.discrete import *',
+          'from sfepy.discrete.fem import *',
           'from sfepy.applications import solve_pde',
           'import matplotlib as mpl',
           'mpl.use("WXAgg")',
