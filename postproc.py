@@ -63,8 +63,12 @@ help = {
     'ffmpeg animation encoding options (enclose in "") [default: "%default"]',
 
     'step' :
-    'set the time step, negative indices are allowed, -1 means the last step'
-    ' [default: %default]',
+    'set the time step. Negative indices are allowed, -1 means the last step.'
+    ' The closest higher step is used if the desired one is not available.'
+    ' Has precedence over --time. [default: the first step]',
+    'time' :
+    'set the time. The closest higher time is used if the desired one is not'
+    ' available. [default: None]',
     'watch' :
     'watch the results file for changes (single file mode only)',
     'all' :
@@ -244,7 +248,8 @@ def view_file(filename, filter_names, options, view=None):
              fig_filename=options.filename, resolution=options.resolution,
              filter_names=filter_names, only_names=options.only_names,
              group_names=options.group_names,
-             step=options.step, anti_aliasing=options.anti_aliasing,
+             step=options.step, time=options.time,
+             anti_aliasing=options.anti_aliasing,
              domain_specific=options.domain_specific)
 
     else:
@@ -281,7 +286,10 @@ def main():
     group = OptionGroup(parser, 'Data Options')
     group.add_option('--step', type='int', metavar='step',
                      action='store', dest='step',
-                     default=0, help=help['step'])
+                     default=None, help=help['step'])
+    group.add_option('--time', type='float', metavar='time',
+                     action='store', dest='time',
+                     default=None, help=help['time'])
     group.add_option('-w', '--watch',
                      action='store_true', dest='watch',
                      default=False, help=help['watch'])

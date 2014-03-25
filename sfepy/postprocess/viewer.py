@@ -721,7 +721,8 @@ class Viewer(Struct):
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
                   opacity=None, subdomains_args=None, rel_text_width=None,
                   fig_filename='view.png', resolution=None,
-                  filter_names=None, only_names=None, group_names=None, step=0,
+                  filter_names=None, only_names=None, group_names=None,
+                  step=None, time=None,
                   anti_aliasing=None, domain_specific=None):
         """
         By default, all data (point, cell, scalars, vectors, tensors)
@@ -788,8 +789,13 @@ class Viewer(Struct):
             List of data names in the form [(name1, ..., nameN), (...)]. Plots
             of data named in each group are superimposed. Repetitions of names
             are possible.
-        step : int
-            The time step to display.
+        step : int, optional
+            If not None, the time step to display. The closest higher step is
+            used if the desired one is not available. Has precedence over
+            `time`.
+        time : float, optional
+            If not None, the time of the time step to display. The closest
+            higher time is used if the desired one is not available.
         anti_aliasing : int
             Value of anti-aliasing.
         domain_specific : dict
@@ -896,11 +902,21 @@ class Viewer(Struct):
             self.set_step = set_step = SetStep()
             set_step._viewer = self
             set_step._source = self.file_source
-            step = step if step >= 0 else steps[-1] + step + 1
-            assert_(steps[0] <= step <= steps[-1],
-                    msg='invalid time step! (%d <= %d <= %d)'
-                    % (steps[0], step, steps[-1]))
-            set_step.step = step
+            if step is not None:
+                step = step if step >= 0 else steps[-1] + step + 1
+                assert_(steps[0] <= step <= steps[-1],
+                        msg='invalid time step! (%d <= %d <= %d)'
+                        % (steps[0], step, steps[-1]))
+                set_step.step = step
+
+            elif time is not None:
+                assert_(times[0] <= time <= times[-1],
+                        msg='invalid time! (%e <= %e <= %e)'
+                        % (times[0], time, times[-1]))
+                set_step.time = time
+
+            else:
+                set_step.step = steps[0]
 
             if self.watch:
                 self.file_source.setup_notification(set_step, 'file_changed')
