@@ -425,16 +425,41 @@ def main():
             output('%d: %s' % (ii, filename))
 
             file_source = create_file_source(filename)
-            file_source.get_step_time(step=options.step)
-            for key, val in get_data_ranges(file_source()).iteritems():
-                all_ranges.setdefault(key, []).append(val[3:])
+            if (options.step is None) and (options.time is None):
+                steps, _ = file_source.get_ts_info()
 
-        if len(filenames) > 1:
-            print 'summary of ranges:'
-            for key, ranges in all_ranges.iteritems():
-                aux = nm.array(ranges)
-                print '  "%s": min(min): %s max(max): %s' % \
-                      (key, aux[:,[0,2]].min(axis=0), aux[:,[1,3]].max(axis=0))
+            else:
+                if options.step is not None:
+                    step, _ = file_source.get_step_time(step=options.step)
+
+                else:
+                    step, _ = file_source.get_step_time(time=options.time)
+
+                steps = [step]
+
+            if not len(steps):
+                steps = [0]
+
+            for iis, step in enumerate(steps):
+                output('%d: step %d' %(iis, step))
+                file_source.get_step_time(step=step)
+                source = file_source.create_source()
+                ranges = get_data_ranges(source, return_only=True)
+                for key, val in ranges.iteritems():
+                    all_ranges.setdefault(key, []).append(val[3:])
+
+        if (len(filenames) > 1) or (len(steps) > 1):
+            output('union of ranges:')
+
+        else:
+            output('ranges:')
+
+        for key, ranges in all_ranges.iteritems():
+            aux = nm.array(ranges)
+            mins = aux[:, [0, 2]].min(axis=0)
+            maxs = aux[:, [1, 3]].max(axis=0)
+            output('  items: %s,%e,%e' % (key, mins[0], maxs[0]))
+            output('  norms: %s,%e,%e' % (key, mins[1], maxs[1]))
 
     else:
         if len(filenames) == 1:
