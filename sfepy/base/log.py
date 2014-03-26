@@ -102,7 +102,12 @@ def read_log(filename):
             vlines.append(last_xval)
 
         else:
-            xval, yval = float(ls[1]), float(ls[2])
+            try:
+                xval, yval = float(ls[1]), float(ls[2])
+
+            except ValueError:
+                continue
+
             xs.append(xval)
             ys.append(yval)
 
