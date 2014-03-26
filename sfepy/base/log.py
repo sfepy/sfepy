@@ -164,10 +164,10 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
 
         for name in names:
             xs, ys, vlines = log[name]
-            ax.plot(xs, ys)
+            ax.plot(xs, ys, label=name)
 
             for x in vlines:
-                ax.axvline(x, color='g')
+                ax.axvline(x, color='k', alpha=0.3)
 
         if xticks[ii] is not None:
             ax.set_xticks(xticks[ii])
@@ -178,7 +178,7 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
         if yticks[ii] is not None:
             ax.set_yticks(yticks[ii])
 
-        ax.legend(names, loc='best')
+        ax.legend(loc='best')
 
     plt.tight_layout(pad=0.5)
 
