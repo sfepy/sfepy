@@ -68,10 +68,15 @@ directory is `sfepy/`, which has the following contents:
    * - `base/`
      - common utilities and classes used by most of the other modules
      -
-   * - `fem/`
-     - the finite element core: modules taking care of boundary
-       conditions, degrees of freedom, approximations, variables,
-       equations, meshes, regions, quadratures, etc.
+   * - `discrete/`
+     - general classes and modules for describing a discrete problem, taking
+       care of boundary conditions, degrees of freedom, approximations,
+       variables, equations, meshes, regions, quadratures, etc.
+
+       Discretization-specific classes are in subdirectories:
+
+       - `common/` - common parent classes for discretization-specific classes
+       - `fem/` - finite element specific classes
      -
    * - `mesh/`
      - some utilities to interface with tetgen and triangle mesh generators
