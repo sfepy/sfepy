@@ -1,3 +1,6 @@
+"""
+Nonlinear solvers.
+"""
 import time
 
 import numpy as nm
@@ -7,65 +10,79 @@ from sfepy.base.base import output, get_default, pause, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 
-def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
-    """Verify the correctness of the tangent matrix as computed by fun_grad()
-    by comparing it with its finite difference approximation evaluated by
-    repeatedly calling fun() with vec_x items perturbed by a small delta."""
+def check_tangent_matrix(conf, vec_x0, fun, fun_grad):
+    """
+    Verify the correctness of the tangent matrix as computed by `fun_grad()` by
+    comparing it with its finite difference approximation evaluated by
+    repeatedly calling `fun()` with `vec_x0` items perturbed by a small delta.
+    """
     vec_x = vec_x0.copy()
     delta = conf.delta
 
-    vec_r = fun( vec_x ) # Update state.
-    mtx_a0 = fun_grad( vec_x )
+    vec_r = fun(vec_x) # Update state.
+    mtx_a0 = fun_grad(vec_x)
 
     mtx_a = mtx_a0.tocsc()
     mtx_d = mtx_a.copy()
     mtx_d.data[:] = 0.0
 
-    vec_dx = nm.zeros_like( vec_r )
+    vec_dx = nm.zeros_like(vec_r)
 
-    for ic in range( vec_dx.shape[0] ):
+    for ic in range(vec_dx.shape[0]):
         vec_dx[ic] = delta
         xx = vec_x.copy() - vec_dx
-        vec_r1 = fun( xx )
+        vec_r1 = fun(xx)
 
         vec_dx[ic] = -delta
         xx = vec_x.copy() - vec_dx
-        vec_r2 = fun( xx )
+        vec_r2 = fun(xx)
 
         vec_dx[ic] = 0.0;
 
         vec = 0.5 * (vec_r2 - vec_r1) / delta
 
-##         ir = mtx_a.indices[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]]
-##         for ii in ir:
-##             mtx_d[ii,ic] = vec[ii]
-
         ir = mtx_a.indices[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]]
         mtx_d.data[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]] = vec[ir]
 
-
-    vec_r = fun( vec_x ) # Restore.
+    vec_r = fun(vec_x) # Restore.
 
     tt = time.clock()
-    print mtx_a, '.. analytical'
-    print mtx_d, '.. difference'
+    output(mtx_a, '.. analytical')
+    output(mtx_d, '.. difference')
     import sfepy.base.plotutils as plu
-    plu.plot_matrix_diff( mtx_d, mtx_a, delta, ['difference', 'analytical'],
-                        conf.check )
+    plu.plot_matrix_diff(mtx_d, mtx_a, delta, ['difference', 'analytical'],
+                         conf.check)
 
     return time.clock() - tt
 
-##
-# c: 02.12.2005, r: 02.04.2008
-def conv_test( conf, it, err, err0 ):
+def conv_test(conf, it, err, err0):
+    """
+    Nonlinear solver convergence test.
 
+    Parameters
+    ----------
+    conf : Struct instance
+        The nonlinear solver configuration.
+    it : int
+        The current iteration.
+    err : float
+        The current iteration error.
+    err0 : float
+        The initial error.
+
+    Returns
+    -------
+    status : int
+        The convergence status: -1 = no convergence (yet), 0 = solver converged
+        - tolerances were met, 1 = max. number of iterations reached.
+    """
     status = -1
-    if (abs( err0 ) < conf.macheps):
+    if (abs(err0) < conf.macheps):
         err_r = 0.0
     else:
         err_r = err / err0
 
-    output( 'nls: iter: %d, residual: %e (rel: %e)' % (it, err, err_r) )
+    output('nls: iter: %d, residual: %e (rel: %e)' % (it, err, err_r))
 
     conv_a = err < conf.eps_a
     if it > 0:
@@ -205,7 +222,7 @@ class Newton(NonlinearSolver):
                       is_any_log=is_any_log) + common
 
     def __init__(self, conf, **kwargs):
-        NonlinearSolver.__init__( self, conf, **kwargs )
+        NonlinearSolver.__init__(self, conf, **kwargs)
 
         conf = self.conf
         if conf.is_any_log:
@@ -254,12 +271,12 @@ class Newton(NonlinearSolver):
           problems.
         """
         import sfepy.base.plotutils as plu
-        conf = get_default( conf, self.conf )
-        fun = get_default( fun, self.fun )
-        fun_grad = get_default( fun_grad, self.fun_grad )
-        lin_solver = get_default( lin_solver, self.lin_solver )
+        conf = get_default(conf, self.conf)
+        fun = get_default(fun, self.fun)
+        fun_grad = get_default(fun_grad, self.fun_grad)
+        lin_solver = get_default(lin_solver, self.lin_solver)
         iter_hook = get_default(iter_hook, self.iter_hook)
-        status = get_default( status, self.status )
+        status = get_default(status, self.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -288,7 +305,7 @@ class Newton(NonlinearSolver):
                 tt = time.clock()
 
                 try:
-                    vec_r = fun( vec_x )
+                    vec_r = fun(vec_x)
 
                 except ValueError:
                     if (it == 0) or (ls < conf.ls_min):
@@ -304,10 +321,10 @@ class Newton(NonlinearSolver):
                 time_stats['rezidual'] = time.clock() - tt
                 if ok:
                     try:
-                        err = nla.norm( vec_r )
+                        err = nla.norm(vec_r)
                     except:
-                        output( 'infs or nans in the residual:', vec_r )
-                        output( nm.isfinite( vec_r ).all() )
+                        output('infs or nans in the residual:', vec_r)
+                        output(nm.isfinite(vec_r).all())
                         debug()
 
                     if self.log is not None:
@@ -318,19 +335,19 @@ class Newton(NonlinearSolver):
                         break
                     if err < (err_last * conf.ls_on): break
                     red = conf.ls_red;
-                    output( 'linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'\
-                            % (it, err, err_last * conf.ls_on, red * ls) )
+                    output('linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'
+                           % (it, err, err_last * conf.ls_on, red * ls))
                 else: # Failure.
                     if conf.give_up_warp:
                         output('giving up!')
                         break
 
                     red = conf.ls_red_warp;
-                    output(  'rezidual computation failed for iter %d'
-                             ' (new ls: %e)!' % (it, red * ls) )
+                    output('rezidual computation failed for iter %d'
+                           ' (new ls: %e)!' % (it, red * ls))
 
                 if ls < conf.ls_min:
-                    output( 'linesearch failed, continuing anyway' )
+                    output('linesearch failed, continuing anyway')
                     break
 
                 ls *= red;
@@ -345,7 +362,7 @@ class Newton(NonlinearSolver):
             err_last = err;
             vec_x_last = vec_x.copy()
 
-            condition = conv_test( conf, it, err, err0 )
+            condition = conv_test(conf, it, err, err0)
             if condition >= 0:
                 break
 
@@ -358,13 +375,13 @@ class Newton(NonlinearSolver):
                 mtx_a = fun_grad(vec_x)
 
             else:
-                mtx_a = fun_grad( 'linear' )
+                mtx_a = fun_grad('linear')
 
             time_stats['matrix'] = time.clock() - tt
 
             if conf.check:
                 tt = time.clock()
-                wt = check_tangent_matrix( conf, vec_x, fun, fun_grad )
+                wt = check_tangent_matrix(conf, vec_x, fun, fun_grad)
                 time_stats['check'] = time.clock() - tt - wt
 
             if conf.lin_precision is not None:
@@ -388,10 +405,10 @@ class Newton(NonlinearSolver):
                 output('...done')
 
             for kv in time_stats.iteritems():
-                output( '%10s: %7.2f [s]' % kv )
+                output('%10s: %7.2f [s]' % kv)
 
             vec_e = mtx_a * vec_dx - vec_r
-            lerr = nla.norm( vec_e )
+            lerr = nla.norm(vec_e)
             if lerr > lin_red:
                 output('warning: linear system solution precision is lower')
                 output('then the value set in solver options! (err = %e < %e)'
@@ -402,18 +419,18 @@ class Newton(NonlinearSolver):
             if conf.is_plot:
                 plu.plt.ion()
                 plu.plt.gcf().clear()
-                plu.plt.subplot( 2, 2, 1 )
-                plu.plt.plot( vec_x_last )
-                plu.plt.ylabel( r'$x_{i-1}$' )
-                plu.plt.subplot( 2, 2, 2 )
-                plu.plt.plot( vec_r )
-                plu.plt.ylabel( r'$r$' )
-                plu.plt.subplot( 2, 2, 4 )
-                plu.plt.plot( vec_dx )
-                plu.plt.ylabel( r'$\_delta x$' )
-                plu.plt.subplot( 2, 2, 3 )
-                plu.plt.plot( vec_x )
-                plu.plt.ylabel( r'$x_i$' )
+                plu.plt.subplot(2, 2, 1)
+                plu.plt.plot(vec_x_last)
+                plu.plt.ylabel(r'$x_{i-1}$')
+                plu.plt.subplot(2, 2, 2)
+                plu.plt.plot(vec_r)
+                plu.plt.ylabel(r'$r$')
+                plu.plt.subplot(2, 2, 4)
+                plu.plt.plot(vec_dx)
+                plu.plt.ylabel(r'$\_delta x$')
+                plu.plt.subplot(2, 2, 3)
+                plu.plt.plot(vec_x)
+                plu.plt.ylabel(r'$x_i$')
                 plu.plt.draw()
                 plu.plt.ioff()
                 pause()
@@ -433,9 +450,10 @@ class Newton(NonlinearSolver):
 
         return vec_x
 
-class ScipyBroyden( NonlinearSolver ):
-    """Interface to Broyden and Anderson solvers from scipy.optimize."""
-
+class ScipyBroyden(NonlinearSolver):
+    """
+    Interface to Broyden and Anderson solvers from scipy.optimize.
+    """
     name = 'nls.scipy_broyden_like'
 
     @staticmethod
@@ -469,29 +487,29 @@ class ScipyBroyden( NonlinearSolver ):
                       w0=get('w0', 0.1),
                       verbose=get('verbose', False)) + common
 
-    def __init__( self, conf, **kwargs ):
-        NonlinearSolver.__init__( self, conf, **kwargs )
-        self.set_method( self.conf )
+    def __init__(self, conf, **kwargs):
+        NonlinearSolver.__init__(self, conf, **kwargs)
+        self.set_method(self.conf)
 
-    def set_method( self, conf ):
+    def set_method(self, conf):
         import scipy.optimize as so
 
         try:
-            solver = getattr( so, conf.method )
+            solver = getattr(so, conf.method)
         except AttributeError:
-            output( 'scipy solver %s does not exist!' % conf.method )
-            output( 'using broyden3 instead' )
+            output('scipy solver %s does not exist!' % conf.method)
+            output('using broyden3 instead')
             solver = so.broyden3
         self.solver = solver
 
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
         if conf is not None:
-            self.set_method( conf )
+            self.set_method(conf)
         else:
             conf = self.conf
-        fun = get_default( fun, self.fun )
-        status = get_default( status, self.status )
+        fun = get_default(fun, self.fun)
+        status = get_default(status, self.status)
 
         tt = time.clock()
 
@@ -500,16 +518,16 @@ class ScipyBroyden( NonlinearSolver ):
                   'verbose' : conf.verbose}
 
         if conf.method == 'broyden_generalized':
-            kwargs.update( {'M' : conf.M} )
+            kwargs.update({'M' : conf.M})
 
         elif conf.method in ['anderson', 'anderson2']:
-            kwargs.update( {'M' : conf.M, 'w0' : conf.w0} )
+            kwargs.update({'M' : conf.M, 'w0' : conf.w0})
 
         if conf.method in ['anderson', 'anderson2',
                            'broyden', 'broyden2' , 'newton_krylov']:
-            kwargs.update( {'f_tol' : conf.f_tol } )
+            kwargs.update({'f_tol' : conf.f_tol })
 
-        vec_x = self.solver( fun, vec_x0, **kwargs )
+        vec_x = self.solver(fun, vec_x0, **kwargs)
         vec_x = nm.asarray(vec_x)
 
         if status is not None:
