@@ -66,11 +66,19 @@ def conv_test( conf, it, err, err0 ):
         err_r = err / err0
 
     output( 'nls: iter: %d, residual: %e (rel: %e)' % (it, err, err_r) )
+
+    conv_a = err < conf.eps_a
     if it > 0:
-        if (err < conf.eps_a) and (err_r < conf.eps_r):
+        conv_r = err_r < conf.eps_r
+
+        if conv_a and conv_r:
             status = 0
+
+        elif (conf.get('eps_mode', '') == 'or') and (conv_a or conv_r):
+            status = 0
+
     else:
-        if err < conf.eps_a:
+        if conv_a:
             status = 0
 
     if (status == -1) and (it >= conf.i_max):
@@ -95,6 +103,9 @@ class Newton(NonlinearSolver):
     eps_r : float
         The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
         ||f(x^0)||`.
+    eps_mode : 'and' or 'or'
+        The logical operator to use for combining the absolute and relative
+        tolerances.
     macheps : float
         The float considered to be machine "zero".
     lin_red : float
@@ -151,6 +162,7 @@ class Newton(NonlinearSolver):
                 'i_max' : 2,
                 'eps_a' : 1e-8,
                 'eps_r' : 1e-2,
+                'eps_mode' : 'or',
                 'macheps' : 1e-16,
                 'lin_red' : 1e-2, # Linear system error < (eps_a * lin_red).
                 'lin_precision' : None,
@@ -176,6 +188,7 @@ class Newton(NonlinearSolver):
         return Struct(i_max=get('i_max', 1),
                       eps_a=get('eps_a', 1e-10),
                       eps_r=get('eps_r', 1.0),
+                      eps_mode=get('eps_mode', 'and'),
                       macheps=get('macheps', nm.finfo(nm.float64).eps),
                       lin_red=get('lin_red', 1.0),
                       lin_precision=get('lin_precision', None),
