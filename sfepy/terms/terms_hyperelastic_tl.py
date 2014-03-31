@@ -407,6 +407,48 @@ class HyperElasticSurfaceTLBase(HyperElasticBase):
                              vec, sg, sd.fis, ap.econn)
         return data
 
+class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
+    r"""
+    Surface flux term in the total Lagrangian formulation, consistent with
+    :class:`DiffusionTLTerm`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{\nu} \cdot \ull{K}(\ul{u}^{(n-1)}) \pdiff{p}{\ul{X}}
+
+    :Arguments:
+        - material_1 : :math:`\ull{k}`
+        - material_2 : :math:`N_f`
+        - parameter_1 : :math:`p`
+        - parameter_2 : :math:`\ul{u}^{(n-1)}`
+    """
+    name = 'd_tl_surface_flux'
+    arg_types = ('material_1', 'material_2', 'parameter_1', 'parameter_2')
+    arg_shapes = {'material_1' : 'D, D', 'material_2' : '1, 1',
+                  'parameter_1' : 1, 'parameter_2' : 'D'}
+    family_data_names = ['det_f', 'inv_f']
+    integration = 'surface_extra'
+
+    function = staticmethod(terms.d_tl_surface_flux)
+
+    def get_fargs(self, perm, ref_porosity, pressure, displacement,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, sg = self.get_approximation(displacement)
+        fd = self.get_family_data(displacement, 'tl_surface_common',
+                                  self.family_data_names)
+        grad = self.get(pressure, 'grad')
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'el' : 0}.get(mode, 0)
+
+        return grad, perm, ref_porosity, fd.inv_f, fd.det_f, sg, fmode
+
+    def get_eval_shape(self, perm, ref_porosity, pressure, displacement,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_fa, n_qp, dim, n_en, n_c = self.get_data_shape(displacement)
+
+        return (n_fa, 1, 1, 1), pressure.dtype
+
 class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
     r"""
     Surface traction term in the total Lagrangian formulation, expressed

@@ -1778,6 +1778,74 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 }
 
 #undef __FUNC__
+#define __FUNC__ "d_tl_surface_flux"
+int32 d_tl_surface_flux( FMField *out, FMField *pressure_grad,
+                         FMField *mtxD, FMField *ref_porosity,
+                         FMField *mtxFI, FMField *detF,
+                         Mapping *sg, int32 mode )
+{
+  int32 ii, iqp, dim, nQP, ret = RET_OK;
+  float64 val;
+  FMField *coef = 0, *perm = 0, *aux = 0, *mtxK = 0, *kgp = 0, *ntkgp = 0;
+
+  nQP = sg->normal->nLev;
+  dim = sg->normal->nRow;
+
+  fmf_createAlloc( &coef, 1, nQP, 1, 1 );
+  fmf_createAlloc( &perm, 1, nQP, dim, dim );
+  fmf_createAlloc( &aux, 1, nQP, dim, dim );
+  fmf_createAlloc( &mtxK, 1, nQP, dim, dim );
+  fmf_createAlloc( &kgp, 1, nQP, dim, 1 );
+  fmf_createAlloc( &ntkgp, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( out, ii );
+    FMF_SetCell( pressure_grad, ii );
+    FMF_SetCell( mtxD, ii );
+    FMF_SetCell( mtxFI, ii );
+    FMF_SetCell( detF, ii );
+    FMF_SetCell( ref_porosity, ii );
+    FMF_SetCell( sg->normal, ii );
+    FMF_SetCell( sg->det, ii );
+
+    // max(0, (1 + (J - 1) / N_f))^2
+    for (iqp = 0; iqp < nQP; iqp++) {
+      val = 1.0 + ((detF->val[iqp] - 1.0) / ref_porosity->val[iqp]);
+      if (val <= 0.0) val = 0.0;
+      coef->val[iqp] = val * val;
+    }
+    // Actual permeability.
+    fmf_mulAF( perm, mtxD, coef->val );
+
+    // Transformed permeability.
+    fmf_mulAB_nn( aux, mtxFI, perm );
+    fmf_mulABT_nn( mtxK, aux, mtxFI );
+    fmf_mul( mtxK, detF->val );
+
+    // Flux.
+    fmf_mulAB_nn( kgp, mtxK, pressure_grad );
+    fmf_mulATB_nn( ntkgp, sg->normal, kgp );
+
+    fmf_sumLevelsMulF( out, ntkgp, sg->det->val );
+    if (mode == 1) {
+      FMF_SetCell( sg->volume, ii );
+      fmf_mulC( out, 1.0 / sg->volume->val[0] );
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &coef );
+  fmf_freeDestroy( &perm );
+  fmf_freeDestroy( &aux );
+  fmf_freeDestroy( &mtxK );
+  fmf_freeDestroy( &kgp );
+  fmf_freeDestroy( &ntkgp );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_tl_surface_traction"
 int32 dw_tl_surface_traction( FMField *out, FMField *traction,
                               FMField *detF, FMField *mtxFI,

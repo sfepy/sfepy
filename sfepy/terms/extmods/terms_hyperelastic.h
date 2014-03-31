@@ -105,6 +105,11 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxF, FMField *detF,
 		       Mapping *vg, int32 mode );
 
+int32 d_tl_surface_flux( FMField *out, FMField *pressure_grad,
+                         FMField *mtxD, FMField *ref_porosity,
+                         FMField *mtxFI, FMField *detF,
+                         Mapping *sg, int32 mode );
+
 int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      FMField *detF, FMField *mtxFI,
 			      FMField *bf, Mapping *sg,

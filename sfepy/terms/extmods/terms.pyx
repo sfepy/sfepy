@@ -173,6 +173,12 @@ cdef extern from 'terms.h':
                            FMField *mtxF, FMField *detF,
                            Mapping *vg, int32 mode)
 
+    cdef int32 _d_tl_surface_flux \
+         "d_tl_surface_flux"( FMField *out, FMField *pressure_grad,
+                              FMField *mtxD, FMField *ref_porosity,
+                              FMField *mtxFI, FMField *detF,
+                              Mapping *sg, int32 mode )
+
     cdef int32 _dw_tl_surface_traction \
          'dw_tl_surface_traction'(FMField *out, FMField *traction,
                                   FMField *detF, FMField *mtxFI,
@@ -1043,6 +1049,29 @@ def dw_tl_diffusion(np.ndarray out not None,
 
     ret = _dw_tl_diffusion(_out, _pressure_grad, _mtx_d, _ref_porosity,
                            _mtx_f, _det_f, cmap.geo, mode)
+    return ret
+
+def d_tl_surface_flux(np.ndarray out not None,
+                      np.ndarray pressure_grad not None,
+                      np.ndarray mtx_d not None,
+                      np.ndarray ref_porosity not None,
+                      np.ndarray mtx_fi not None,
+                      np.ndarray det_f not None,
+                      CMapping cmap not None,
+                      int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_grad[1], _mtx_d[1], _ref_porosity[1]
+    cdef FMField _mtx_fi[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_grad, pressure_grad)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield4(_ref_porosity, ref_porosity)
+    array2fmfield4(_mtx_fi, mtx_fi)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _d_tl_surface_flux(_out, _pressure_grad, _mtx_d, _ref_porosity,
+                             _mtx_fi, _det_f, cmap.geo, mode)
     return ret
 
 def dw_tl_surface_traction(np.ndarray out not None,
