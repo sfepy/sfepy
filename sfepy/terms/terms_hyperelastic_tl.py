@@ -376,7 +376,37 @@ class DiffusionTLTerm(HyperElasticTLBase):
 
         return (n_el, 1, dim, 1), state.dtype
 
-class SurfaceTractionTLTerm(HyperElasticBase):
+class HyperElasticSurfaceTLBase(HyperElasticBase):
+    """
+    Base class for all hyperelastic surface terms in TL formulation family.
+    """
+    family_function = staticmethod(terms.dq_tl_finite_strain_surface)
+    fd_cache_name = 'tl_surface_common'
+
+    def compute_family_data(self, state):
+        ap, sg = self.get_approximation(state)
+        sd = ap.surface_data[self.region.name]
+
+        vec = self.get_vector(state)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        shapes = {
+            'mtx_f' : (n_el, n_qp, dim, dim),
+            'det_f' : (n_el, n_qp, 1, 1),
+            'inv_f' : (n_el, n_qp, dim, dim),
+        }
+        data = Struct(name='tl_surface_family_data')
+        for key, shape in shapes.iteritems():
+            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
+
+        self.family_function(data.mtx_f,
+                             data.det_f,
+                             data.inv_f,
+                             vec, sg, sd.fis, ap.econn)
+        return data
+
+class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
     r"""
     Surface traction term in the total Lagrangian formulation, expressed
     using :math:`\ul{\nu}`, the outward unit normal vector w.r.t. the
@@ -404,32 +434,7 @@ class SurfaceTractionTLTerm(HyperElasticBase):
     family_data_names = ['det_f', 'inv_f']
     integration = 'surface_extra'
 
-    family_function = staticmethod(terms.dq_tl_finite_strain_surface)
     function = staticmethod(terms.dw_tl_surface_traction)
-
-    def compute_family_data(self, state):
-        ap, sg = self.get_approximation(state)
-        sd = ap.surface_data[self.region.name]
-
-        vec = self.get_vector(state)
-
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        shapes = {
-            'mtx_f' : (n_el, n_qp, dim, dim),
-            'det_f' : (n_el, n_qp, 1, 1),
-            'inv_f' : (n_el, n_qp, dim, dim),
-        }
-        data = Struct(name='tl_surface_family_data')
-        for key, shape in shapes.iteritems():
-            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
-
-        self.family_function(data.mtx_f,
-                             data.det_f,
-                             data.inv_f,
-                             vec, sg, sd.fis, ap.econn)
-
-        return data
 
     def check_shapes(self, mat, virtual, state):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
@@ -458,7 +463,7 @@ class SurfaceTractionTLTerm(HyperElasticBase):
 
         return mat, fd.det_f, fd.inv_f, bf, sg, sd.fis, fmode
 
-class VolumeSurfaceTLTerm(SurfaceTractionTLTerm):
+class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
     r"""
     Volume of a :math:`D`-dimensional domain, using a surface integral in the
     total Lagrangian formulation, expressed using :math:`\ul{\nu}`, the outward
