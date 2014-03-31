@@ -324,7 +324,8 @@ class DiffusionTLTerm(HyperElasticTLBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{X} \pdiff{p}{X}
+        \int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{\ul{X}}
+        \pdiff{p}{\ul{X}}
 
     :Arguments:
         - material_1 : :math:`\ull{k}`
