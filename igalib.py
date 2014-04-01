@@ -428,6 +428,70 @@ def get_bezier_topology(bconn, degrees):
 
     return tconn
 
+def get_patch_box_regions(n_els, degrees):
+    """
+    Get box regions of Bezier topological mesh in terms of element corner
+    vertices of Bezier mesh.
+
+    Parameters
+    ----------
+    n_els : sequence of ints
+        The number of elements in each parametric dimension.
+    degrees : sequence of ints or int
+        Polynomial degrees in each parametric dimension.
+
+    Returns
+    -------
+    regions : dict
+        The Bezier mesh vertices of box regions.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+    degrees = nm.asarray(degrees)
+
+    n_els = nm.asarray(n_els)
+    dim = len(n_els)
+
+    shape = n_els * degrees + 1
+
+    regions = {}
+    if dim == 3:
+        aux0 = nm.arange(0, shape[2], dtype=nm.uint32)
+        aux1 = nm.arange(0, shape[2] * shape[1], shape[2], dtype=nm.uint32)
+        aux2 = nm.arange(0, shape[2] * shape[1] * shape[0],
+                         shape[2] * shape[1], dtype=nm.uint32)
+
+        aux01 = (aux0[None, :] + aux1[:, None]).ravel()
+        aux02 = (aux0[None, :] + aux2[:, None]).ravel()
+        aux12 = (aux1[None, :] + aux2[:, None]).ravel()
+
+        regions.update({
+            'xi00' : aux01,
+            'xi01' : aux01 + shape[2] * shape[1] * (shape[0] - 1),
+            'xi10' : aux02,
+            'xi11' : aux02 + shape[2] * (shape[1] - 1),
+            'xi20' : aux12,
+            'xi21' : aux12 + shape[2] - 1,
+        })
+
+    elif dim == 2:
+        aux0 = nm.arange(0, shape[1], dtype=nm.uint32)
+        aux1 = nm.arange(0, shape[1] * shape[0], shape[1], dtype=nm.uint32)
+
+        regions.update({
+            'xi00' : aux0,
+            'xi01' : aux0 + shape[1] * (shape[0] - 1),
+            'xi10' : aux1,
+            'xi11' : aux1 + shape[1] - 1,
+        })
+
+    else:
+        regions.update({
+            'xi00' : nm.array([0], dtype=nm.uint32),
+            'xi01' : nm.array([shape[0] - 1], dtype=nm.uint32),
+        })
+
+    return regions
+
 def eval_bernstein_basis(x, degree):
     """
     Evaluate the Bernstein polynomial basis of the given `degree`, and its
