@@ -72,12 +72,24 @@
 
    Work on SfePy is partially supported by the following projects:
 
-   - project GA108/11/0853 (Nanostructures with transition metals: Towards
-     ab-initio material design) of Czech Science Foundation,
+   - project GAP108/11/0853 (Nanostructures with transition metals: Towards
+     ab-initio material design) of Czech Science Foundation, since 2011;
+   - project NT13326 of Ministry of Health of the Czech Republic, since 2012;
+   - project GAP101/12/2315 (Modelling of acoustic wave propagation in strongly
+     heterogeneous media; multi-scale numerical and analytical approaches) of
+     Czech Science Foundation, since 2012.
+
+   In past, work on SfePy was partially supported by the following projects:
+
+   - project MSM4977751303 (Failure prediction of heterogeneous materials,
+     components of mechanical and biomechanical systems) of Ministry of
+     Education, Youth and Sports of the Czech Republic, in 2005-2011;
+   - project GA101/07/1471 (Finite element modelling of linear, non-linear and
+     multiscale effects in wave propagation in solids and heterogeneous media)
+     of Czech Science Foundation, in 2007-2011;
    - project GA106/09/0740 (Microstructure oriented hierarchical modeling of
      brain perfusion for CT based cerebral blood flow evaluation) of Czech
-     Science Foundation,
-   - project NT13326 of Ministry of Health of the Czech Republic.
+     Science Foundation, in 2009-2012.
 
 .. _documentation:
 
