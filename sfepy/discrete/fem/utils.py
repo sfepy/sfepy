@@ -284,7 +284,7 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False):
             ig = group.ig
             ii = eoffs[ig]
             if ig in region.igs:
-                cells = region.get_cells(ig)
+                cells = region.get_cells(ig, true_cells_only=False)
                 ucells = nm.unique(cells)
 
                 avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]
