@@ -5,7 +5,7 @@ import numpy as nm
 import tables as pt
 
 def write_iga_data(filename, knots, degrees, control_points, weights, cs, conn,
-                   bezier_control_points, bezier_weights, bezier_conn):
+                   bezier_control_points, bezier_weights, bezier_conn, regions):
     """
     Write IGA-related data into a HDF5 file using pytables.
     """
@@ -36,6 +36,10 @@ def write_iga_data(filename, knots, degrees, control_points, weights, cs, conn,
     fd.createArray(bezier, 'global_connectivity', conn, 'global_connectivity')
     fd.createArray(bezier, 'bezier_connectivity', bezier_conn,
                    'bezier_connectivity')
+
+    regs = fd.createGroup('/', 'regions', 'regions')
+    for key, val in regions.iteritems():
+        fd.createArray(regs, key, val, key)
 
     fd.close()
 
@@ -71,7 +75,11 @@ def read_iga_data(filename):
     bezier_weights = bezier.bezier_weights.read()
     bezier_conn = bezier.bezier_connectivity.read()
 
+    regions = {}
+    for region in fd.root.regions:
+        regions[region.name] = region.read()
+
     fd.close()
 
     return (knots, degrees, control_points, weights, cs, conn,
-            bezier_control_points, bezier_weights, bezier_conn)
+            bezier_control_points, bezier_weights, bezier_conn, regions)
