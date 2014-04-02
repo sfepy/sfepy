@@ -455,10 +455,11 @@ def get_patch_box_regions(n_els, degrees):
 
     regions = {}
     if dim == 3:
-        aux0 = nm.arange(0, shape[2], dtype=nm.uint32)
-        aux1 = nm.arange(0, shape[2] * shape[1], shape[2], dtype=nm.uint32)
+        aux0 = nm.arange(0, shape[2], degrees[2], dtype=nm.uint32)
+        aux1 = nm.arange(0, shape[2] * shape[1], shape[2] * degrees[1],
+                         dtype=nm.uint32)
         aux2 = nm.arange(0, shape[2] * shape[1] * shape[0],
-                         shape[2] * shape[1], dtype=nm.uint32)
+                         shape[2] * shape[1] * degrees[0], dtype=nm.uint32)
 
         aux01 = (aux0[None, :] + aux1[:, None]).ravel()
         aux02 = (aux0[None, :] + aux2[:, None]).ravel()
@@ -474,8 +475,9 @@ def get_patch_box_regions(n_els, degrees):
         })
 
     elif dim == 2:
-        aux0 = nm.arange(0, shape[1], dtype=nm.uint32)
-        aux1 = nm.arange(0, shape[1] * shape[0], shape[1], dtype=nm.uint32)
+        aux0 = nm.arange(0, shape[1], degrees[1], dtype=nm.uint32)
+        aux1 = nm.arange(0, shape[1] * shape[0], shape[1] * degrees[0],
+                         dtype=nm.uint32)
 
         regions.update({
             'xi00' : aux0,
