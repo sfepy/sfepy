@@ -6,7 +6,7 @@ from sfepy.mesh.mesh_generators import get_tensor_product_conn
 import sfepy.postprocess.plot_dofs as pd
 from sfepy.postprocess.plot_dofs import _get_axes
 
-from igalib import _get_knots_tuple
+from sfepy.discrete.iga.iga import _get_knots_tuple
 
 def plot_parametric_mesh(ax, knots):
     """
