@@ -494,6 +494,65 @@ def get_patch_box_regions(n_els, degrees):
 
     return regions
 
+def get_bezier_element_entities(degrees):
+    """
+    Get faces and edges of a Bezier mesh element in terms of indices into the
+    element's connectivity (reference Bezier element entities).
+
+    Parameters
+    ----------
+    degrees : sequence of ints or int
+        Polynomial degrees in each parametric dimension.
+
+    Returns
+    -------
+    faces : list of arrays
+        The indices for each face or None if not 3D.
+    edges : list of arrays
+        The indices for each edge or None if not at least 2D.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+    degrees = nm.asarray(degrees)
+
+    dim = len(degrees)
+    shape = degrees + 1
+
+    n_dof = nm.prod(shape)
+
+    aux = nm.arange(n_dof, dtype=nm.uint32).reshape(shape)
+    if dim == 3:
+        faces = [aux[0, :, :],
+                 aux[-1, :, :],
+                 aux[:, 0, :],
+                 aux[:, -1, :],
+                 aux[:, :, 0],
+                 aux[:, :, -1]]
+        faces = [ii.ravel() for ii in faces]
+        edges = [aux[0, 0, :],
+                 aux[0, -1, :],
+                 aux[-1, -1, :],
+                 aux[-1, 0, :],
+                 aux[0, :, 0],
+                 aux[0, :, -1],
+                 aux[-1, :, -1],
+                 aux[-1, :, 0],
+                 aux[:, 0, 0],
+                 aux[:, 0, -1],
+                 aux[:, -1, -1],
+                 aux[:, -1, 0]]
+
+    elif dim == 2:
+        faces = None
+        edges = [aux[0, :],
+                 aux[-1, :],
+                 aux[:, 0],
+                 aux[:, -1]]
+
+    else:
+        faces, edges = None, None
+
+    return faces, edges
+
 def eval_bernstein_basis(x, degree):
     """
     Evaluate the Bernstein polynomial basis of the given `degree`, and its
