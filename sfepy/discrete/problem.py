@@ -1101,7 +1101,7 @@ class Problem(Struct):
                     msg = 'inconsistent variable name! (%s == %s)' \
                           % (val.name, key)
                     raise ValueError(msg)
-                var_context[val.name] = variables[val.name] = val
+                var_context[key] = variables[key] = val.copy(name=key)
                 _kwargs.pop(key)
 
             elif isinstance(val, Material):
