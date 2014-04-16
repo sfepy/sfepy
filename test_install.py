@@ -105,8 +105,8 @@ def main():
     out, err = check_output('python ./script/tile_periodic_mesh.py -r 2,2 meshes/elements/2_4_2.mesh out-per.mesh')
     eok += report(out, '...', -2, 1, 'done.')
 
-    out, err = check_output('python ./script/extract_surface.py meshes/quantum/cube.node -')
-    eok += report(out, '...', -2, 0, '64247')
+    out, err = check_output('python ./script/extract_surface.py meshes/various_formats/octahedron.node -')
+    eok += report(out, '...', -2, 0, '1185')
 
     out, err = check_output('python ./simple.py examples/diffusion/poisson.py')
     eok += report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
@@ -148,11 +148,8 @@ def main():
     eok += report(out, '...', -6, 2, '4.58709531e+01')
     eok += report(out, '...', -5, 1, '1.13929200e+05]')
 
-    out, err = check_output('python ./schroedinger.py --2d --create-mesh')
-    eok += report(out, '...', -2, -1, 'tmp/mesh.vtk')
-
-    out, err = check_output('python ./schroedinger.py --2d --hydrogen')
-    eok += report(out, '...', -4, -2, '-0.01984415', eps=1e-4)
+    out, err = check_output('python ./schroedinger.py --hydrogen')
+    eok += report(out, '...', -4, -2, '-0.01913506', eps=1e-4)
 
     out, err = check_output('python ./homogen.py examples/homogenization/perfusion_micro.py')
     eok += report(out, '...', -7, -1, 'EpA...')
