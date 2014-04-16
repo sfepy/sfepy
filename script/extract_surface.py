@@ -86,8 +86,8 @@ def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
     parser.add_option("-m", "--mesh",
                       action="store_true", dest="save_mesh",
-                      default=True,
-                      help="save surface mesh [default: %default]")
+                      default=False,
+                      help="save surface mesh")
     parser.add_option("-n", "--no-surface",
                       action="store_true", dest="no_surface",
                       default=False,
