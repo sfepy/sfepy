@@ -13,6 +13,6 @@ def fun_v(ts, coor, mode=None, **kwargs):
     out['V'] = val
     return out
 
-def define():
-    l = common(fun_v, n_eigs=20, tau=0.0)
+def define(n_eigs=20, tau=0.0):
+    l = common(fun_v, n_eigs=n_eigs, tau=tau)
     return l

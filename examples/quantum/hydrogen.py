@@ -3,8 +3,6 @@ from sfepy.linalg import norm_l2_along_axis
 from quantum_common import common
 
 def fun_v(ts, coor, mode=None, **kwargs):
-    from numpy import sqrt
-
     if not mode == 'qp': return
 
     out = {}
@@ -17,6 +15,6 @@ def fun_v(ts, coor, mode=None, **kwargs):
     out['V'] = V
     return out
 
-def define():
-    l = common(fun_v, n_eigs=5, tau=-1.0)
+def define(n_eigs=5, tau=-1.0):
+    l = common(fun_v, n_eigs=n_eigs, tau=tau)
     return l

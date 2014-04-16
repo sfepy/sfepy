@@ -1,5 +1,30 @@
-def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
-    filename_mesh = mesh
+"""
+Common code for basic electronic structure examples.
+
+Notes
+-----
+
+The same code should work also with a 3D (box) mesh, but a very fine mesh would
+be required. Also in the 2D case, finer mesh and/or higher approximation order
+means higher accuracy.
+
+Try changing C, F and L parameters in square.geo and regenerate the mesh using
+gmsh::
+
+  $ gmsh -2 -format mesh meshes/quantum/square.geo -o meshes/quantum/square.mesh
+  $ ./script/convert_mesh.py meshes/quantum/square.mesh meshes/quantum/aux.vtk
+  $ ./script/convert_mesh.py meshes/quantum/aux.vtk meshes/quantum/square.mesh
+
+The ``script/convert_mesh.py`` calls make the mesh 2D, as gmsh does not save
+planar medit meshes.
+
+Also try changing approximation order ('approx_order') of the field below, as
+well as the integral order (should be two times the approximation order).
+"""
+from sfepy import data_dir
+
+def common(fun_v, n_eigs=5, tau=0.0):
+    filename_mesh = data_dir + '/meshes/quantum/square.mesh'
 
     options = {
         'save_eig_vectors' : None,
@@ -7,13 +32,11 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
         'eigen_solver' : 'eigen1',
     }
 
-    # Whole domain $Y$.
     region_1000 = {
         'name' : 'Omega',
         'select' : 'all',
     }
 
-    # Domain $Y_2$.
     region_2 = {
         'name' : 'Surface',
         'select' : 'vertices of surface',
@@ -23,7 +46,7 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
     functions = {
         'fun_v' : (fun_v,),
     }
-    
+
     material_1 = {
         'name' : 'm',
 
@@ -43,12 +66,12 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
         'dtype' : 'real',
         'shape' : 'scalar',
         'region' : 'Omega',
-        'approx_order' : 1,
+        'approx_order' : 2,
     }
 
     integral_1 = {
         'name' : 'i',
-        'order' : 2,
+        'order' : 4,
     }
 
     variable_1 = {
