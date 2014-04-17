@@ -429,6 +429,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
                 'name' : 'ls',
                 'kind' : 'ls.petsc_parallel',
 
+                'log_dir' : '.', # Store logs here.
                 'n_proc' : 5, # Number of processes to run.
 
                 'method' : 'cg', # ksp_type
@@ -443,14 +444,15 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         get = make_get_conf(conf, kwargs)
         common = PETScKrylovSolver.process_conf(conf, kwargs)
 
-        return Struct(n_proc=get('n_proc', 1),
+        return Struct(log_dir=get('log_dir', '.'),
+                      n_proc=get('n_proc', 1),
                       sub_precond=get('sub_precond', 'icc')) + common
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
         import os, sys, shutil, tempfile
-        from sfepy import base_dir, data_dir
+        from sfepy import base_dir
         from sfepy.base.ioutils import ensure_path
 
         eps_a = get_default(eps_a, self.conf.eps_a)
@@ -487,7 +489,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         sol_filename = os.path.join(output_dir, 'sol.dat')
         status_filename = os.path.join(output_dir, 'status.txt')
 
-        log_filename = os.path.join(data_dir, 'tmp/sol.log')
+        log_filename = os.path.join(self.conf.log_dir, 'sol.log')
         ensure_path(log_filename)
 
         output('storing system to %s...' % output_dir)
