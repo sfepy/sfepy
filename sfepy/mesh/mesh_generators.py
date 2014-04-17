@@ -603,7 +603,7 @@ def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
         output('...done')
 
     else:
-        import subprocess
+        import subprocess, shutil, tempfile
         filename = filename + '.mesh'
         ensure_path(filename)
 
@@ -612,7 +612,8 @@ def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
         output('to file %s...' % filename)
 
         f = open(os.path.join(defdir, 'quantum', 'sphere.geo'))
-        tmpfile = os.path.join(data_dir, 'tmp', 'sphere.geo.temp')
+        tmp_dir = tempfile.mkdtemp()
+        tmpfile = os.path.join(tmp_dir, 'sphere.geo.temp')
         ff = open(tmpfile, "w")
         ff.write("""
 R = %i.0;
@@ -624,7 +625,7 @@ dens = %f;
         ff.close()
         subprocess.call(['gmsh', '-3', tmpfile, '-format', 'mesh',
                          '-o', filename])
-
+        shutil.rmtree(tmp_dir)
         output('...done')
 
     return filename
