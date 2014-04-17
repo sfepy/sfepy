@@ -64,7 +64,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'SfePy'
-copyright = u'2010, Robert Cimrman and Contributors'
+copyright = u'2014, Robert Cimrman and Contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
