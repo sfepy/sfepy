@@ -20,7 +20,7 @@
    comes with a number of examples that can get you started, check
    :ref:`examples`. Some more advanced features are discussed in :doc:`primer`.
 
-   **License:** `BSD <http://www.opensource.org/licenses/bsd-license.php>`_
+   **License:** :doc:`BSD <license>`
 
    Links
    -----

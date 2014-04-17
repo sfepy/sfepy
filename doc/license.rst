@@ -1,0 +1,4 @@
+SfePy License
+=============
+
+.. include:: ../LICENSE
