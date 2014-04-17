@@ -73,11 +73,6 @@ class Problem(Struct):
 
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
-        trans_mtx = conf.options.get('mesh_coors_transform', None)
-
-        if trans_mtx is not None:
-            mesh.transform_coors(trans_mtx)
-
         domain = Domain(mesh.name, mesh)
         if conf.options.get('ulf', False):
             domain.mesh.coors_act = domain.mesh.coors.copy()
