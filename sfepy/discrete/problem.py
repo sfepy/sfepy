@@ -12,7 +12,6 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
-from sfepy.discrete.fem.domain import Domain
 from sfepy.discrete.fem.fields_base import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
@@ -71,11 +70,20 @@ class Problem(Struct):
 
         functions = Functions.from_conf(conf.functions)
 
-        mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
+        if conf.get('filename_mesh') is not None:
+            from sfepy.discrete.fem.domain import FEDomain
 
-        domain = Domain(mesh.name, mesh)
-        if conf.options.get('ulf', False):
-            domain.mesh.coors_act = domain.mesh.coors.copy()
+            mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
+            domain = FEDomain(mesh.name, mesh)
+            if conf.options.get('ulf', False):
+                domain.mesh.coors_act = domain.mesh.coors.copy()
+
+        elif conf.get('filename_domain') is not None:
+            from sfepy.discrete.iga.domain import IGDomain
+            domain = IGDomain.from_file(conf.filename_domain)
+
+        else:
+            raise ValueError('missing filename_mesh or filename_domain!')
 
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
                       domain=domain, auto_conf=False, auto_solvers=False)
