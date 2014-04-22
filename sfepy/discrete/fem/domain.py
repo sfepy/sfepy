@@ -307,12 +307,6 @@ class Domain(Struct):
         bbox = self.get_mesh_bounding_box()
         return (bbox[1,:] - bbox[0,:]).max()
 
-    def get_conns(self):
-        """
-        Return the element connectivity groups of the underlying mesh.
-        """
-        return self.mesh.conns
-
     def fix_element_orientation(self):
         """
         Ensure element nodes ordering giving positive element volume.
