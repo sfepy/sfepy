@@ -208,6 +208,11 @@ class Domain(Struct):
         for ig, mat_id in enumerate(mesh.mat_ids):
             self.mat_ids_to_i_gs[mat_id[0]] = ig
 
+        n_nod, dim = self.mesh.coors.shape
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0,
+                            n_el=0,
+                            n_gr=len(self.mesh.conns))
+
         self.setup_groups()
         self.fix_element_orientation()
         self.reset_regions()
@@ -224,9 +229,6 @@ class Domain(Struct):
         self.cell_offsets = self.mesh.el_offsets
 
     def setup_groups(self):
-        n_nod, dim = self.mesh.coors.shape
-        self.shape = Struct(n_gr=len(self.mesh.conns), n_el=0,
-                            n_nod=n_nod, dim=dim)
         self.groups = {}
         for ii in range(self.shape.n_gr):
             gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
