@@ -353,8 +353,7 @@ class Domain(Struct):
                 output('warning: element orienation not checked')
 
     def has_faces(self):
-        return sum([group.shape.n_face
-                    for group in self.iter_groups()]) > 0
+        return self.shape.tdim == 3
 
     def reset_regions(self):
         """
