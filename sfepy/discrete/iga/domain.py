@@ -1,0 +1,78 @@
+"""
+Computational domain for isogeometric analysis.
+"""
+import os.path as op
+
+import numpy as nm
+
+from sfepy.base.base import Struct
+from sfepy.discrete.common.domain import Domain
+import sfepy.discrete.iga as iga
+import sfepy.discrete.iga.io as io
+
+class IGDomain(Domain):
+    """
+    Bezier extraction based NURBS domain for isogeometric analysis.
+    """
+
+    @staticmethod
+    def from_file(filename):
+        """
+        filename : str
+            The name of the IGA domain file.
+        """
+        (knots, degrees, cps, weights, cs, conn,
+         bcps, bweights, bconn, regions) = io.read_iga_data(filename)
+
+        name = op.splitext(filename)[0]
+        domain = IGDomain(name, nurbs=(knots, degrees, cps, weights, cs, conn),
+                          bmesh=(bcps, bweights, bconn), regions=regions)
+        return domain
+
+    def __init__(self, name, nurbs, bmesh, regions=None, **kwargs):
+        """
+        Create an IGA domain.
+
+        Parameters
+        ----------
+        name : str
+            The domain name.
+        """
+        Domain.__init__(self, name, nurbs=nurbs, bmesh=bmesh, regions=regions,
+                        **kwargs)
+        from sfepy.discrete.fem.geometry_element import create_geometry_elements
+        from sfepy.discrete.fem import Mesh
+        from sfepy.discrete.fem.extmods.cmesh import CMesh
+        from sfepy.discrete.fem.utils import prepare_remap
+
+        bcps, bweights, bconn = bmesh
+        knots, degrees, cps, weights, cs, conn = nurbs
+
+        tconn = iga.get_bezier_topology(bconn, degrees)
+        itc = nm.unique(tconn)
+
+        remap = prepare_remap(itc, bconn.max() + 1)
+
+        ltcoors = bcps[itc]
+        ltconn = remap[tconn]
+
+        n_nod, dim = ltcoors.shape
+        n_el = ltconn.shape[0]
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0, n_el=n_el, n_gr=1)
+
+        desc = '2_4'
+        mat_id = nm.zeros(ltconn.shape[0], dtype=nm.int32)
+        self.mesh = Mesh.from_data(self.name + '_topo', ltcoors, None, [ltconn],
+                                   [mat_id], [desc])
+
+        self.cmesh = CMesh.from_mesh(self.mesh)
+        gels = create_geometry_elements()
+        self.cmesh.set_local_entities(gels)
+        self.cmesh.setup_entities()
+
+        self.shape.tdim = self.cmesh.tdim
+
+        if regions is not None:
+            self.vertex_set_bcs = {}
+            for key, val in self.regions.iteritems():
+                self.vertex_set_bcs[key] = remap[val]
