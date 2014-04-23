@@ -45,26 +45,47 @@ def make_l2_projection(target, source):
 
     make_l2_projection_data(target, eval_variable)
 
-def make_l2_projection_data(target, eval_data):
+def make_l2_projection_data(target, eval_data, order=None):
     """
-    Project scalar data given by a material-like `eval_data()` function to a
-    scalar `target` field variable using the :math:`L^2` dot product.
+    Project scalar data to a scalar `target` field variable using the
+    :math:`L^2` dot product.
+
+    Parameters
+    ----------
+    target : FieldVariable instance
+        The target variable.
+    eval_data : callable or array
+        Either a material-like function `eval_data()`, or an array of values in
+        quadrature points that has to be reshapable to the shape required by
+        `order`.
+    order : int, optional
+        The quadrature order. If not given, it is set to
+        `2 * target.field.approx_order`.
     """
-    order = target.field.approx_order * 2
+    if order is None:
+       order = 2 * target.field.approx_order
     integral = Integral('i', order=order)
 
-    un = target.name
-    v = FieldVariable('v', 'test', target.field, primary_var_name=un)
-    lhs = Term.new('dw_volume_dot(v, %s)' % un, integral,
-                   target.field.region, v=v, **{un : target})
+    # Use a copy of target for the projection to avoid overwriting
+    # target._variables.
+    un = target.copy(name=target.name)
+
+    v = FieldVariable('v', 'test', un.field, primary_var_name=un.name)
+    lhs = Term.new('dw_volume_dot(v, %s)' % un.name, integral,
+                   un.field.region, v=v, **{un.name : un})
 
     def _eval_data(ts, coors, mode, **kwargs):
         if mode == 'qp':
-            val = eval_data(ts, coors, mode, **kwargs)
+            if callable(eval_data):
+                val = eval_data(ts, coors, mode, **kwargs)
+
+            else:
+                val = eval_data.reshape((coors.shape[0], 1, 1))
+
             return {'val' : val}
 
     m = Material('m', function=_eval_data)
-    rhs = Term.new('dw_volume_lvf(m.val, v)', integral, target.field.region,
+    rhs = Term.new('dw_volume_lvf(m.val, v)', integral, un.field.region,
                    m=m, v=v)
 
     eq = Equation('projection', lhs - rhs)
@@ -79,8 +100,11 @@ def make_l2_projection_data(target, eval_data):
 
     pb.time_update()
 
-    # This sets the target variable with the projection solution.
+    # This sets the un variable with the projection solution.
     pb.solve()
+
+    # Copy the projection solution back to target.
+    target.set_data(un())
 
     if nls_status.condition != 0:
         output('L2 projection: solver did not converge!')
