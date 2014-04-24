@@ -8,6 +8,9 @@ def parse_approx_order(approx_order):
     force_bubble = False
     discontinuous = False
 
+    if approx_order is None:
+        return 'iga', force_bubble, discontinuous
+
     try:
         ao = int(approx_order)
     except ValueError:
@@ -115,7 +118,8 @@ class Field(Struct):
 
             field_files = [ii for ii
                            in sfepy.get_paths('sfepy/discrete/fem/fields*.py')
-                           if 'fields_base.py' not in ii]
+                           if 'fields_base.py' not in ii] \
+                           + sfepy.get_paths('sfepy/discrete/iga/fields*.py')
             Field._all = load_classes(field_files, [Field], ignore_errors=True,
                                       name_attr='family_name')
         table = Field._all
