@@ -32,6 +32,19 @@ def parse_approx_order(approx_order):
 
     return ao, force_bubble, discontinuous
 
+def parse_shape(shape, dim):
+    if isinstance(shape, basestr):
+        try:
+            shape = {'scalar' : (1,),
+                     'vector' : (dim,)}[shape]
+        except KeyError:
+            raise ValueError('unsupported field shape! (%s)', shape)
+
+    elif isinstance(shape, int):
+        shape = (shape,)
+
+    return shape
+
 def setup_extra_data(conn_info):
     """
     Setup extra data required for non-volume integration.

@@ -16,7 +16,7 @@ import numpy as nm
 from sfepy.base.base import output, get_default, assert_
 from sfepy.base.base import Struct
 import fea
-from sfepy.discrete.common.fields import Field
+from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
@@ -200,24 +200,12 @@ class FEField(Field):
         -----
         Assumes one cell type for the whole region!
         """
-        if isinstance(shape, basestr):
-            try:
-                shape = {'scalar' : (1,),
-                         'vector' : (region.domain.shape.dim,)}[shape]
-            except KeyError:
-                raise ValueError('unsupported field shape! (%s)', shape)
-
-        elif isinstance(shape, int):
-            shape = (shape,)
-
+        shape = parse_shape(shape, region.domain.shape.dim)
         if not self._check_region(region):
             raise ValueError('unsuitable region for field %s! (%s)' %
                              (name, region.name))
 
-        Struct.__init__(self,
-                        name=name,
-                        dtype=dtype,
-                        shape=shape,
+        Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
         self.domain = self.region.domain
         self.igs = self.region.igs
