@@ -12,7 +12,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
-from sfepy.discrete.fem.fields_base import fields_from_conf
+from sfepy.discrete.common.fields import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
 from equations import Equations

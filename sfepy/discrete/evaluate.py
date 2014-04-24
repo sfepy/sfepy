@@ -4,7 +4,7 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default, OneTypeList, Struct, basestr
 from sfepy.discrete import Equations, Variables, Region, Integral, Integrals
-from sfepy.discrete.fem.fields_base import setup_extra_data
+from sfepy.discrete.common.fields import setup_extra_data
 
 ##
 # 02.10.2007, c
