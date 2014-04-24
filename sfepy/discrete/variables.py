@@ -1279,7 +1279,7 @@ class FieldVariable(Variable):
         self.flags.add(is_field)
         self.dtype = field.dtype
 
-        self.dim = field.coors.shape[1]
+        self.dim = field.domain.shape.dim
 
     def get_field(self):
         return self.field
