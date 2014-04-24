@@ -24,9 +24,12 @@ class IGDomain(Domain):
         (knots, degrees, cps, weights, cs, conn,
          bcps, bweights, bconn, regions) = io.read_iga_data(filename)
 
+        nurbs = Struct(name='nurbs', knots=knots, degrees=degrees, cps=cps,
+                       weights=weights, cs=cs, conn=conn)
+        bmesh = Struct(name='bmesh', cps=bcps, weights=bweights, conn=bconn)
+
         name = op.splitext(filename)[0]
-        domain = IGDomain(name, nurbs=(knots, degrees, cps, weights, cs, conn),
-                          bmesh=(bcps, bweights, bconn), regions=regions)
+        domain = IGDomain(name, nurbs=nurbs, bmesh=bmesh, regions=regions)
         return domain
 
     def __init__(self, name, nurbs, bmesh, regions=None, **kwargs):
@@ -45,15 +48,12 @@ class IGDomain(Domain):
         from sfepy.discrete.fem.extmods.cmesh import CMesh
         from sfepy.discrete.fem.utils import prepare_remap
 
-        bcps, bweights, bconn = bmesh
-        knots, degrees, cps, weights, cs, conn = nurbs
-
-        tconn = iga.get_bezier_topology(bconn, degrees)
+        tconn = iga.get_bezier_topology(bmesh.conn, nurbs.degrees)
         itc = nm.unique(tconn)
 
-        remap = prepare_remap(itc, bconn.max() + 1)
+        remap = prepare_remap(itc, bmesh.conn.max() + 1)
 
-        ltcoors = bcps[itc]
+        ltcoors = bmesh.cps[itc]
         ltconn = remap[tconn]
 
         n_nod, dim = ltcoors.shape
