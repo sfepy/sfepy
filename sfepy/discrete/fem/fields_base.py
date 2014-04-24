@@ -11,12 +11,12 @@ Important attributes of continuous (order > 0) :class:`Field` and
 where `conn` is the mesh vertex connectivity, `econn` is the
 region-local field connectivity.
 """
-import time
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
-from sfepy.base.base import Struct, basestr
+from sfepy.base.base import output, get_default, assert_
+from sfepy.base.base import Struct
 import fea
+from sfepy.discrete.common.fields import Field
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
@@ -25,54 +25,6 @@ from sfepy.discrete.fem.fe_surface import FESurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
-
-def parse_approx_order(approx_order):
-    """
-    Parse the uniform approximation order value (str or int).
-    """
-    ao_msg = 'unsupported approximation order! (%s)'
-    force_bubble = False
-    discontinuous = False
-
-    try:
-        ao = int(approx_order)
-    except ValueError:
-        mode = approx_order[-1].lower()
-        if mode == 'b':
-            ao = int(approx_order[:-1])
-            force_bubble = True
-
-        elif mode == 'd':
-            ao = int(approx_order[:-1])
-            discontinuous = True
-
-        else:
-            raise ValueError(ao_msg % approx_order)
-
-    if ao < 0:
-        raise ValueError(ao_msg % approx_order)
-
-    elif ao == 0:
-        discontinuous = True
-
-    return ao, force_bubble, discontinuous
-
-def fields_from_conf(conf, regions):
-    fields = {}
-    for key, val in conf.iteritems():
-        field = Field.from_conf(val, regions)
-        fields[field.name] = field
-
-    return fields
-
-def setup_extra_data(conn_info):
-    """
-    Setup extra data required for non-volume integration.
-    """
-    for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
-        for var in info.all_vars:
-            field = var.get_field()
-            field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
 def get_eval_expression(expression, ig,
                         fields, materials, variables,
@@ -200,7 +152,7 @@ def create_expression_output(expression, name, primary_field_name,
 
     return out
 
-class Field(Struct):
+class FEField(Field):
     """
     Base class for finite element fields.
 
@@ -221,96 +173,13 @@ class Field(Struct):
     - ``val_shape`` - the shape of field value (the product of DOFs and
       base functions) in a point
     """
-    _all = None
-
-    @staticmethod
-    def from_args(name, dtype, shape, region, approx_order=1,
-                  space='H1', poly_space_base='lagrange'):
-        """
-        Create a Field subclass instance corresponding to a given space.
-
-        Parameters
-        ----------
-        name : str
-            The field name.
-        dtype : numpy.dtype
-            The field data type: float64 or complex128.
-        shape : int/tuple/str
-            The field shape: 1 or (1,) or 'scalar', space dimension (2, or (2,)
-            or 3 or (3,)) or 'vector', or a tuple. The field shape determines
-            the shape of the FE base functions and is related to the number of
-            components of variables and to the DOF per node count, depending
-            on the field kind.
-        region : Region
-            The region where the field is defined.
-        approx_order : int/str
-            The FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
-        space : str
-            The function space name.
-        poly_space_base : str
-            The name of polynomial space base.
-
-        Notes
-        -----
-        Assumes one cell type for the whole region!
-        """
-        conf = Struct(name=name, dtype=dtype, shape=shape, region=region.name,
-                      approx_order=approx_order, space=space,
-                      poly_space_base=poly_space_base)
-        return Field.from_conf(conf, {region.name : region})
-
-    @staticmethod
-    def from_conf(conf, regions):
-        """
-        Create a Field subclass instance based on the configuration.
-        """
-        if Field._all is None:
-            import sfepy
-            from sfepy.base.base import load_classes
-
-            field_files = [ii for ii
-                           in sfepy.get_paths('sfepy/discrete/fem/fields*.py')
-                           if 'fields_base.py' not in ii]
-            Field._all = load_classes(field_files, [Field], ignore_errors=True,
-                                      name_attr='family_name')
-        table = Field._all
-
-        space = conf.get('space', 'H1')
-        poly_space_base = conf.get('poly_space_base', 'lagrange')
-
-        key = space + '_' + poly_space_base
-
-        approx_order = parse_approx_order(conf.approx_order)
-        ao, force_bubble, discontinuous = approx_order
-
-        region = regions[conf.region]
-        if region.kind == 'cell':
-            # Volume fields.
-            kind = 'volume'
-
-            if discontinuous:
-                cls = table[kind + '_' + key + '_discontinuous']
-
-            else:
-                cls = table[kind + '_' + key]
-
-            obj = cls(conf.name, conf.dtype, conf.shape, region,
-                      approx_order=approx_order[:2])
-
-        else:
-            # Surface fields.
-            kind = 'surface'
-
-            cls = table[kind + '_' + key]
-            obj = cls(conf.name, conf.dtype, conf.shape, region,
-                      approx_order=approx_order[:2])
-
-        return obj
 
     def __init__(self, name, dtype, shape, region, approx_order=1):
         """
-        Create a Field.
+        Create a finite element field.
 
+        Parameters
+        ----------
         name : str
             The field name.
         dtype : numpy.dtype
@@ -375,13 +244,6 @@ class Field(Struct):
         else:
             self.approx_order = approx_order
             self.force_bubble = False
-
-    def _setup_kind(self):
-        name = self.get('family_name', None,
-                        'An abstract Field method called!')
-        aux = name.split('_')
-        self.space = aux[1]
-        self.poly_space_base = aux[2]
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -936,7 +798,7 @@ class Field(Struct):
 
         return out
 
-class VolumeField(Field):
+class VolumeField(FEField):
     """
     Finite element field base class over volume elements (element dimension
     equals space dimension).
@@ -1143,7 +1005,7 @@ class VolumeField(Field):
 
         return data_vertex
 
-class SurfaceField(Field):
+class SurfaceField(FEField):
     """
     Finite element field base class over surface (element dimension is one
     less than space dimension).
