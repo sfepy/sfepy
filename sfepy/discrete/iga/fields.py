@@ -58,3 +58,26 @@ class IGField(Field):
         Return True, if the field's approximation order is greater than one.
         """
         return (self.nurbs.degrees > 1).any()
+
+    def get_econn(self, conn_type, region, ig, is_trace=False):
+        """
+        Get DOF connectivity of the given type in the given region.
+        """
+        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+
+        if (ig not in self.igs) or (ig not in region.igs):
+            return None
+
+        if ct == 'volume':
+            conn = self.nurbs.conn
+
+        else:
+            raise ValueError('unsupported connectivity type! (%s)' % ct)
+
+        return conn
+
+    def setup_extra_data(self, geometry, info, is_trace):
+        dct = info.dc_type.type
+
+        if dct != 'volume':
+            raise ValueError('unknown dof connectivity type! (%s)' % dct)
