@@ -117,6 +117,39 @@ class IGField(Field):
 
         return dofs
 
+    def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+        """
+        Set the values of given DOFs using a function of space coordinates or
+        value `fun`.
+
+        Notes
+        -----
+        Works for a constant value over an entire patch side only.
+        """
+        if region is None:
+            region = self.region
+
+        if dpn is None:
+            dpn = self.n_components
+
+        nods = []
+        vals = []
+
+        aux = self.get_dofs_in_region(region, clean=True, warn=warn)
+        nods = nm.unique(nm.hstack(aux))
+
+        if nm.isscalar(fun):
+            vals = nm.repeat([fun], nods.shape[0] * dpn)
+
+        elif isinstance(fun, nm.ndarray):
+            assert_(len(fun) == dpn)
+            vals = nm.repeat(fun, nods.shape[0])
+
+        else:
+            raise ValueError('unknown function/value type! (%s)' % type(fun))
+
+        return nods, vals
+
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
 
