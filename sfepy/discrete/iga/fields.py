@@ -3,12 +3,16 @@ Fields for isogeometric analysis.
 """
 import numpy as nm
 
-from sfepy.base.base import Struct
+from sfepy.base.base import assert_, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 
 class IGField(Field):
     """
     Bezier extraction based NURBS field for isogeometric analysis.
+
+    Notes
+    -----
+    The field has to cover the whole IGA domain.
     """
     family_name = 'volume_H1_iga'
 
@@ -75,6 +79,43 @@ class IGField(Field):
             raise ValueError('unsupported connectivity type! (%s)' % ct)
 
         return conn
+
+    def get_dofs_in_region_group(self, region, ig, merge=True):
+        """
+        Return indices of DOFs that belong to the given region and group.
+        """
+        dofs = []
+
+        for idim in xrange(region.tdim, 0, -1):
+            if region.can[idim]:
+                break
+
+        else:
+            raise ValueError('region "%s" has no facets or cells!'
+                             % region.name)
+
+        conn = self.nurbs.conn
+
+        if idim == region.tdim: # Cells.
+            cells = region.entities[idim]
+            dofs.append(nm.unique(conn[cells]))
+
+        else: # Facets.
+            assert_(idim > 0)
+            fis = region.get_facet_indices(ig, offset=False, force_ig=False)
+
+            facets = self.domain.facets[2 - idim]
+
+            aux = []
+            for ii, fi in enumerate(fis):
+                aux.append(conn[fi[0], facets[fi[1]]])
+
+            dofs.append(nm.unique(nm.concatenate(aux)))
+
+        if merge:
+            dofs = nm.concatenate(dofs)
+
+        return dofs
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
