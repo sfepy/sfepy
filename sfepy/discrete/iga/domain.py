@@ -62,7 +62,7 @@ class IGDomain(Domain):
         n_el = ltconn.shape[0]
         self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0, n_el=n_el, n_gr=1)
 
-        desc = '2_4'
+        desc = '%d_%d' % (dim, 2**dim)
         mat_id = nm.zeros(ltconn.shape[0], dtype=nm.int32)
         self.mesh = Mesh.from_data(self.name + '_topo', ltcoors, None, [ltconn],
                                    [mat_id], [desc])
