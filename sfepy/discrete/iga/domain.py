@@ -48,6 +48,8 @@ class IGDomain(Domain):
         from sfepy.discrete.fem.extmods.cmesh import CMesh
         from sfepy.discrete.fem.utils import prepare_remap
 
+        self.facets = iga.get_bezier_element_entities(nurbs.degrees)
+
         tconn = iga.get_bezier_topology(bmesh.conn, nurbs.degrees)
         itc = nm.unique(tconn)
 
