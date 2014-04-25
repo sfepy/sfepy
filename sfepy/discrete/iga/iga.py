@@ -510,6 +510,11 @@ def get_bezier_element_entities(degrees):
         The indices for each face or None if not 3D.
     edges : list of arrays
         The indices for each edge or None if not at least 2D.
+
+    Notes
+    -----
+    The ordering of faces and edges has to be the same as in
+    :data:`sfepy.discrete.fem.geometry_element.geometry_data`.
     """
     if isinstance(degrees, int): degrees = [degrees]
     degrees = nm.asarray(degrees)
@@ -521,32 +526,32 @@ def get_bezier_element_entities(degrees):
 
     aux = nm.arange(n_dof, dtype=nm.uint32).reshape(shape)
     if dim == 3:
-        faces = [aux[0, :, :],
-                 aux[-1, :, :],
+        faces = [aux[:, :, 0],
+                 aux[0, :, :],
                  aux[:, 0, :],
-                 aux[:, -1, :],
-                 aux[:, :, 0],
-                 aux[:, :, -1]]
+                 aux[:, :, -1],
+                 aux[-1, :, :],
+                 aux[:, -1, :]]
         faces = [ii.ravel() for ii in faces]
-        edges = [aux[0, 0, :],
+        edges = [aux[:, 0, 0],
+                 aux[-1, :, 0],
+                 aux[:, -1, 0],
+                 aux[0, :, 0],
+                 aux[:, 0, -1],
+                 aux[-1, :, -1],
+                 aux[:, -1, -1],
+                 aux[0, :, -1],
+                 aux[0, 0, :],
                  aux[0, -1, :],
                  aux[-1, -1, :],
-                 aux[-1, 0, :],
-                 aux[0, :, 0],
-                 aux[0, :, -1],
-                 aux[-1, :, -1],
-                 aux[-1, :, 0],
-                 aux[:, 0, 0],
-                 aux[:, 0, -1],
-                 aux[:, -1, -1],
-                 aux[:, -1, 0]]
+                 aux[-1, 0, :]]
 
     elif dim == 2:
         faces = None
-        edges = [aux[0, :],
+        edges = [aux[:, 0],
                  aux[-1, :],
-                 aux[:, 0],
-                 aux[:, -1]]
+                 aux[:, -1],
+                 aux[0, :]]
 
     else:
         faces, edges = None, None
