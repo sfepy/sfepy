@@ -1131,7 +1131,7 @@ class Term(Struct):
         Get physical quadrature points corresponding to the term region
         and integral.
         """
-        from sfepy.discrete.fem.mappings import get_physical_qps, PhysicalQPs
+        from sfepy.discrete.common.mappings import get_physical_qps, PhysicalQPs
 
         if self.integration == 'point':
             phys_qps = PhysicalQPs(self.region.igs)

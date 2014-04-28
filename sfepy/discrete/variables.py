@@ -16,7 +16,7 @@ from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
                                             is_active_bc)
 from sfepy.discrete.fem.lcbc_operators import (LCBCOperators,
                                                make_global_lcbc_operator)
-from sfepy.discrete.fem.mappings import get_physical_qps
+from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 
 is_state = 0
