@@ -233,16 +233,7 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
-        # Share full group mappings.
-        shape = self.domain.groups[ig].shape
-        if ((region.shape[ig].n_vertex == shape.n_vertex)
-            and (region.shape[ig].n_cell == shape.n_el)):
-            region_name = ig
-
-        else:
-            region_name = region.name
-
-        key = (integral.name, region_name, ig, integration)
+        key = (integral.name, region.name, ig, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)
