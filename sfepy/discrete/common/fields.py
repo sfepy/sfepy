@@ -194,3 +194,67 @@ class Field(Struct):
                         output(warn + ('%s' % region.name))
 
         return nods
+
+    def clear_mappings(self, clear_all=False):
+        """
+        Clear current reference mappings.
+        """
+        self.mappings = {}
+        if clear_all:
+            self.mappings0 = {}
+
+    def save_mappings(self):
+        """
+        Save current reference mappings to `mappings0` attribute.
+        """
+        self.mappings0 = self.mappings.copy()
+
+    def get_mapping(self, ig, region, integral, integration,
+                    get_saved=False, return_key=False):
+        """
+        For given region, integral and integration type, get a reference
+        mapping, i.e. jacobians, element volumes and base function
+        derivatives for Volume-type geometries, and jacobians, normals
+        and base function derivatives for Surface-type geometries
+        corresponding to the field approximation.
+
+        The mappings are cached in the field instance in `mappings`
+        attribute. The mappings can be saved to `mappings0` using
+        `Field.save_mappings`. The saved mapping can be retrieved by
+        passing `get_saved=True`. If the required (saved) mapping
+        is not in cache, a new one is created.
+
+        Returns
+        -------
+        geo : CMapping instance
+            The reference mapping.
+        mapping : VolumeMapping or SurfaceMapping instance
+            The mapping.
+        key : tuple
+            The key of the mapping in `mappings` or `mappings0`.
+        """
+        # Share full group mappings.
+        shape = self.domain.groups[ig].shape
+        if ((region.shape[ig].n_vertex == shape.n_vertex)
+            and (region.shape[ig].n_cell == shape.n_el)):
+            region_name = ig
+
+        else:
+            region_name = region.name
+
+        key = (integral.name, region_name, ig, integration)
+
+        if get_saved:
+            out = self.mappings0.get(key, None)
+
+        else:
+            out = self.mappings.get(key, None)
+
+        if out is None:
+            out = self.create_mapping(ig, region, integral, integration)
+            self.mappings[key] = out
+
+        if return_key:
+            out = out + (key,)
+
+        return out
