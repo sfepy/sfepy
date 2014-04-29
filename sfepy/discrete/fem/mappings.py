@@ -50,6 +50,24 @@ class FEMapping(Mapping):
         bf = self.poly_space.eval_base(coors, diff=diff)
         return bf
 
+    def get_physical_qps(self, qp_coors):
+        """
+        Get physical quadrature points corresponding to given reference
+        element quadrature points.
+
+        Returns
+        -------
+        qps : array
+            The physical quadrature points ordered element by element,
+            i.e. with shape (n_el, n_qp, dim).
+        """
+        bf = self.get_base(qp_coors)
+        qps = nm.dot(nm.atleast_2d(bf.squeeze()), self.coors[self.conn])
+        # Reorder so that qps are really element by element.
+        qps = nm.ascontiguousarray(nm.swapaxes(qps, 0, 1))
+
+        return qps
+
 class VolumeMapping(FEMapping):
     """
     Mapping from reference domain to physical domain of the same space
