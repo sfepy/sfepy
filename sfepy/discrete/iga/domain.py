@@ -74,6 +74,8 @@ class IGDomain(Domain):
 
         self.shape.tdim = self.cmesh.tdim
 
+        self.gel = gels[desc]
+
         if regions is not None:
             self.vertex_set_bcs = {}
             for key, val in self.regions.iteritems():
