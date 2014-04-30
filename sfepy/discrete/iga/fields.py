@@ -50,6 +50,7 @@ class IGField(Field):
         self.n_components = nm.prod(self.shape)
         self.val_shape = self.shape
         self.n_nod = self.nurbs.weights.shape[0]
+        self.n_efun = nm.prod(self.nurbs.degrees + 1)
 
         self.mappings = {}
 
@@ -81,6 +82,46 @@ class IGField(Field):
             raise ValueError('unsupported connectivity type! (%s)' % ct)
 
         return conn
+
+    def get_data_shape(self, ig, integral,
+                       integration='volume', region_name=None):
+        """
+        Get element data dimensions.
+
+        Parameters
+        ----------
+        ig : int
+            The element group index.
+        integral : Integral instance
+            The integral describing used numerical quadrature.
+        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
+            The term integration type.
+        region_name : str
+            The name of surface region, required when `shape_kind` is
+            'surface'.
+
+        Returns
+        -------
+        data_shape : 4 ints
+            The `(n_el, n_qp, dim, n_en)` for volume shape kind.
+
+        Notes
+        -----
+        - `n_el` = number of elements
+        - `n_qp` = number of quadrature points per element/facet
+        - `dim` = spatial dimension
+        - `n_en` = number of element nodes
+        """
+        region = self.domain.regions[region_name]
+        shape = region.shape[ig]
+        dim = region.dim
+
+        _, weights = integral.get_qp(self.domain.gel.name)
+        n_qp = weights.shape[0]
+
+        data_shape = (shape.n_cell, n_qp, dim, self.n_efun)
+
+        return data_shape
 
     def get_dofs_in_region_group(self, region, ig, merge=True):
         """

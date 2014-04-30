@@ -365,6 +365,74 @@ class FEField(Field):
 
         return dofs[facets[facets >= 0]].ravel()
 
+    def get_data_shape(self, ig, integral,
+                       integration='volume', region_name=None):
+        """
+        Get element data dimensions.
+
+        Parameters
+        ----------
+        ig : int
+            The element group index.
+        integral : Integral instance
+            The integral describing used numerical quadrature.
+        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
+            The term integration type.
+        region_name : str
+            The name of surface region, required when `shape_kind` is
+            'surface'.
+
+        Returns
+        -------
+        data_shape : 4 ints
+            The `(n_el, n_qp, dim, n_en)` for volume shape kind,
+            `(n_fa, n_qp, dim, n_fn)` for surface shape kind and
+            `(n_nod, 0, 0, 1)` for point shape kind.
+
+        Notes
+        -----
+        - `n_el`, `n_fa` = number of elements/facets
+        - `n_qp` = number of quadrature points per element/facet
+        - `dim` = spatial dimension
+        - `n_en`, `n_fn` = number of element/facet nodes
+        - `n_nod` = number of element nodes
+        """
+        ap = self.aps[ig]
+
+        region = self.domain.regions[region_name]
+        shape = region.shape[ig]
+        dim = region.dim
+
+        if integration in ('surface', 'surface_extra'):
+            n_facet = shape.n_face if dim == 3 else shape.n_edge
+
+            # This works also for surface fields.
+            key = ap.surface_data[region_name].face_type
+            weights = ap.get_qp(key, integral).weights
+            n_qp = weights.shape[0]
+
+            if integration == 'surface':
+                data_shape = (n_facet, n_qp, dim, ap.n_ep[key])
+
+            else:
+                data_shape = (n_facet, n_qp, dim, ap.n_ep['v'])
+
+        elif integration in ('volume', 'plate'):
+            _, weights = integral.get_qp(self.gel.name)
+            n_qp = weights.shape[0]
+
+            data_shape = (shape.n_cell, n_qp, dim, ap.n_ep['v'])
+
+        elif integration == 'point':
+            dofs = self.field.get_dofs_in_region(region, merge=True)
+            data_shape = (dofs.shape[0], 0, 0, 1)
+
+        else:
+            raise NotImplementedError('unsupported integration! (%s)'
+                                      % integration)
+
+        return data_shape
+
     def get_dofs_in_region_group(self, region, ig, merge=True):
         """
         Return indices of DOFs that belong to the given region and group.

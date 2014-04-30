@@ -1503,31 +1503,9 @@ class FieldVariable(Variable):
         - `n_comp` = number of variable components in a point/node
         - `n_nod` = number of element nodes
         """
-        ap = self.field.aps[ig]
-        if integration in ('surface', 'surface_extra'):
-            data_shape = ap.get_s_data_shape(integral, region_name)
-
-            if integration == 'surface_extra':
-                n_en = ap.get_v_data_shape(integral)[-1]
-                data_shape = data_shape[:-1] + (n_en,)
-
-        elif integration in ('volume', 'plate'):
-            data_shape = ap.get_v_data_shape(integral)
-
-            # Override ap.region with the required region.
-            region = self.field.domain.regions[region_name]
-            data_shape = (region.get_n_cells(ig),) + data_shape[1:]
-
-        elif integration == 'point':
-            region = self.field.domain.regions[region_name]
-            dofs = self.field.get_dofs_in_region(region, merge=True)
-            data_shape = (dofs.shape[0], 0, 0, 1)
-
-        else:
-            raise NotImplementedError('unsupported integration! (%s)'
-                                      % integration)
-
-        data_shape += (self.n_components,)
+        aux = self.field.get_data_shape(ig, integral, integration=integration,
+                                        region_name=region_name)
+        data_shape = aux + (self.n_components,)
 
         return data_shape
 
