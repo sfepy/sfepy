@@ -78,6 +78,7 @@ class Mapping(Struct):
             The requested mapping.
         """
         from sfepy.discrete.fem.domain import FEDomain
+        from sfepy.discrete.iga.domain import IGDomain
 
         if isinstance(region.domain, FEDomain):
             import sfepy.discrete.fem.mappings as mm
@@ -100,6 +101,10 @@ class Mapping(Struct):
                                 conn , ig)
                 mapping = mm.SurfaceMapping(coors, aux.leconn,
                                             gel=gel.surface_facet)
+
+        elif isinstance(region.domain, IGDomain):
+            import sfepy.discrete.iga.mappings as mm
+            mapping = mm.IGMapping(region.domain, region.cells)
 
         else:
             raise ValueError('unknown domain class! (%s)' % type(region.domain))
