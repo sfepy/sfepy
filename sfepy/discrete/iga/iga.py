@@ -740,6 +740,68 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
 
     return R, dR_dx, det
 
+def eval_mapping_data_in_qp(qps, control_points, weights, degrees, cs, conn):
+    """
+    Evaluate data required for the isogeometric domain reference mapping in the
+    given quadrature points. The quadrature points are the same for all Bezier
+    elements and should correspond to the Bernstein basis degree.
+
+    Parameters
+    ----------
+    qps : array
+        The quadrature points coordinates with components in [0, 1] reference
+        element domain.
+    control_points : array
+        The NURBS control points.
+    weights : array
+        The NURBS weights.
+    degrees : sequence of ints or int
+        The basis degrees in each parametric dimension.
+    cs : list of lists of 2D arrays
+        The element extraction operators in each parametric dimension.
+    conn : array
+        The connectivity of the global NURBS basis.
+
+    Returns
+    -------
+    bfs : array
+        The NURBS shape functions in the physical quadrature points of all
+        elements.
+    bfgs : array
+        The NURBS shape functions derivatives w.r.t. the physical coordinates
+        in the physical quadrature points of all elements.
+    dets : array
+        The Jacobians of the mapping to the unit reference element in the
+        physical quadrature points of all elements.
+    """
+    n_el = conn.shape[0]
+    n_qp = qps.shape[0]
+    dim = control_points.shape[1]
+    n_efuns = degrees + 1
+    n_efun = nm.prod(n_efuns)
+
+    # Output Jacobians.
+    dets = nm.empty((n_el, n_qp, 1, 1), dtype=nm.float64)
+
+    # Output shape functions.
+    bfs = nm.empty((n_el, n_qp, 1, n_efun), dtype=nm.float64)
+
+    # Output gradients of shape functions.
+    bfgs = nm.empty((n_el, n_qp, dim, n_efun), dtype=nm.float64)
+
+    # Loop over elements.
+    for ie in xrange(n_el):
+        # Loop over quadrature points.
+        for iqp, qp in enumerate(qps):
+            bf, bfg, det = eval_nurbs_basis_tp(qp, ie,
+                                               control_points, weights,
+                                               degrees, cs, conn)
+            bfs[ie, iqp] = bf
+            bfgs[ie, iqp] = bfg.T
+            dets[ie, iqp] = det
+
+    return bfs, bfgs, dets
+
 def eval_variable_in_qp(variable, qps,
                         control_points, weights, degrees, cs, conn):
     """
