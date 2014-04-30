@@ -822,7 +822,8 @@ class VolumeField(FEField):
         if region.name not in ap.point_data:
             ap.setup_point_data(field, region)
 
-    def get_econn(self, conn_type, region, ig, is_trace=False):
+    def get_econn(self, conn_type, region, ig, is_trace=False,
+                  integration=None):
         """
         Get extended connectivity of the given type in the given region.
         """
@@ -837,7 +838,13 @@ class VolumeField(FEField):
         ap = self.aps[ig]
 
         if ct in ('volume', 'plate'):
-            conn = ap.econn
+            if region.name == self.region.name:
+                conn = ap.econn
+
+            else:
+                aux = integration in ('volume', 'plate')
+                cells = region.get_cells(ig, true_cells_only=aux)
+                conn = nm.take(ap.econn, cells.astype(nm.int32), axis=0)
 
         elif ct == 'surface':
             sd = ap.surface_data[region.name]
@@ -1008,7 +1015,8 @@ class SurfaceField(FEField):
         """
         return 0, None, None
 
-    def get_econn(self, conn_type, region, ig, is_trace=False):
+    def get_econn(self, conn_type, region, ig, is_trace=False,
+                  integration=None):
         """
         Get extended connectivity of the given type in the given region.
         """

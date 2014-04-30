@@ -1819,8 +1819,10 @@ class FieldVariable(Variable):
 
         else:
             vec = self(step=step, derivative=time_derivative, dt=dt)
-            ap = field.aps[ig]
-            conn = ap.get_connectivity(region, integration, is_trace)
+            ct = integration
+            if integration == 'surface_extra':
+                ct = 'volume'
+            conn = field.get_econn(ct, region, ig, is_trace, integration)
 
             shape = self.get_data_shape(ig, integral, integration, region.name)
 
