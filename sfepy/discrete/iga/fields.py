@@ -5,6 +5,7 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
+from sfepy.discrete.iga.mappings import IGMapping
 
 class IGField(Field):
     """
@@ -155,3 +156,14 @@ class IGField(Field):
 
         if dct != 'volume':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def create_mapping(self, ig, region, integral, integration):
+        """
+        Create a new reference mapping.
+        """
+        vals, weights = integral.get_qp(self.domain.gel.name)
+
+        mapping = IGMapping(self.domain, self.region.cells)
+        cmap = mapping.get_mapping(vals, weights)
+
+        return cmap, mapping
