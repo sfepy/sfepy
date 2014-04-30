@@ -1013,14 +1013,13 @@ class Term(Struct):
         According to the term integration type, return either the term
         region cell indices or local index sequence.
         """
-        shape_kind = get_shape_kind(self.integration)
         ig = self.char_fun.ig
 
         cells = self.region.get_cells(ig, true_cells_only=False)
-        if shape_kind == 'surface':
+        if self.integration in ('surface', 'surface_extra'):
             cells = nm.arange(cells.shape[0], dtype=nm.int32)
 
-        elif shape_kind == 'point':
+        elif self.integration == 'point':
             cells = nm.arange(shape[0], dtype=nm.int32)
 
         else:
