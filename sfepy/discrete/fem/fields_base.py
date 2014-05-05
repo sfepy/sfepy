@@ -424,7 +424,7 @@ class FEField(Field):
             data_shape = (shape.n_cell, n_qp, dim, ap.n_ep['v'])
 
         elif integration == 'point':
-            dofs = self.field.get_dofs_in_region(region, merge=True)
+            dofs = self.get_dofs_in_region(region, merge=True)
             data_shape = (dofs.shape[0], 0, 0, 1)
 
         else:
