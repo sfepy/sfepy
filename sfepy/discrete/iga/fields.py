@@ -55,6 +55,7 @@ class IGField(Field):
         self.mappings = {}
 
         self.igs = self.region.igs
+        self.is_surface = False
 
     def get_true_order(self):
         return nm.prod(self.nurbs.degrees)

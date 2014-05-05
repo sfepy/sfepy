@@ -798,6 +798,8 @@ class VolumeField(FEField):
         ig = self.region.domain.cmesh.cell_groups[self.region.cells[0]]
         self.gel = self.domain.groups[ig].gel
 
+        self.is_surface = False
+
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
                                   self.poly_space_base, self.approx_order,
@@ -1004,6 +1006,8 @@ class SurfaceField(FEField):
         self.gel = self.domain.groups[self.region.igs[0]].gel.surface_facet
         if self.gel is None:
             raise ValueError('element group has no surface!')
+
+        self.is_surface = True
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
