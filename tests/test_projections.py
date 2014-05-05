@@ -3,7 +3,7 @@ import numpy as nm
 
 import sfepy
 from sfepy.discrete import FieldVariable
-from sfepy.discrete.fem import Mesh, Domain, Field
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
@@ -14,7 +14,7 @@ class Test(TestCommon):
     def from_conf(conf, options):
         mesh = Mesh.from_file('meshes/2d/square_unit_tri.mesh',
                               prefix_dir=sfepy.data_dir)
-        domain = Domain('domain', mesh)
+        domain = FEDomain('domain', mesh)
 
         omega = domain.create_region('Omega', 'all')
 
@@ -51,7 +51,7 @@ class Test(TestCommon):
 
         mesh = Mesh.from_file('meshes/2d/square_quad.mesh',
                               prefix_dir=sfepy.data_dir)
-        domain = Domain('domain', mesh)
+        domain = FEDomain('domain', mesh)
 
         omega = domain.create_region('Omega', 'all')
 

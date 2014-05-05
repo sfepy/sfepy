@@ -4,7 +4,7 @@ import numpy as nm
 
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
-from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, FEDomain
 
 def refine(domain, out_dir, level=3):
     for ii in range(level):
@@ -114,7 +114,7 @@ class Test(TestCommon):
     def from_conf(conf, options):
         mesh = Mesh('mesh_tetra',
                     data_dir + '/meshes/various_formats/small3d.mesh')
-        domain = Domain('domain', mesh)
+        domain = FEDomain('domain', mesh)
 
         return Test(conf=conf, options=options, domain=domain)
 
@@ -140,7 +140,7 @@ class Test(TestCommon):
     def test_refine_hexa(self):
         mesh = Mesh('mesh_hexa',
                     data_dir + '/meshes/various_formats/abaqus_hex.inp')
-        domain = Domain('domain', mesh)
+        domain = FEDomain('domain', mesh)
 
         refine(domain, self.options.out_dir)
 
@@ -148,7 +148,7 @@ class Test(TestCommon):
 
     def test_refine_2_3(self):
         mesh = Mesh('2_3', data_dir + '/meshes/elements/2_3_1.mesh')
-        domain = refine(Domain('domain', mesh), self.options.out_dir, 1)
+        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
 
         ok = compare_mesh('2_3', domain.mesh.coors, domain.mesh.conns[0])
 
@@ -156,7 +156,7 @@ class Test(TestCommon):
 
     def test_refine_2_4(self):
         mesh = Mesh('2_4', data_dir + '/meshes/elements/2_4_1.mesh')
-        domain = refine(Domain('domain', mesh), self.options.out_dir, 1)
+        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
 
         ok = compare_mesh('2_4', domain.mesh.coors, domain.mesh.conns[0])
 
@@ -164,7 +164,7 @@ class Test(TestCommon):
 
     def test_refine_3_4(self):
         mesh = Mesh('3_4', data_dir + '/meshes/elements/3_4_1.mesh')
-        domain = refine(Domain('domain', mesh), self.options.out_dir, 1)
+        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
 
         ok = compare_mesh('3_4', domain.mesh.coors, domain.mesh.conns[0])
 
@@ -172,7 +172,7 @@ class Test(TestCommon):
 
     def test_refine_3_8(self):
         mesh = Mesh('3_8', data_dir + '/meshes/elements/3_8_1.mesh')
-        domain = refine(Domain('domain', mesh), self.options.out_dir, 1)
+        domain = refine(FEDomain('domain', mesh), self.options.out_dir, 1)
 
         ok = compare_mesh('3_8', domain.mesh.coors, domain.mesh.conns[0])
 

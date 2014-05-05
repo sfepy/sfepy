@@ -12,10 +12,10 @@ class Test(TestCommon):
     @staticmethod
     def from_conf(conf, options):
         import sfepy
-        from sfepy.discrete.fem import Mesh, Domain, Field
+        from sfepy.discrete.fem import Mesh, FEDomain, Field
         mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh',
                               prefix_dir=sfepy.data_dir)
-        domain = Domain('domain', mesh)
+        domain = FEDomain('domain', mesh)
         dim = domain.shape.dim
 
         min_x, max_x = domain.get_mesh_bounding_box()[:,0]

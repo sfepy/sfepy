@@ -285,7 +285,7 @@ class FEDomain(Domain):
 
         Returns
         -------
-        domain : Domain instance
+        domain : FEDomain instance
             The new domain with the refined mesh.
 
         Notes
@@ -319,6 +319,6 @@ class FEDomain(Domain):
             msg = 'unsupported element type! (%s)' % el_type
             raise NotImplementedError(msg)
 
-        domain = Domain(self.name + '_r', mesh)
+        domain = FEDomain(self.name + '_r', mesh)
 
         return domain

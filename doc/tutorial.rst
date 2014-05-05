@@ -679,7 +679,7 @@ Create a domain. The domain allows defining regions or subdomains.
 
 .. sourcecode:: ipython
 
-    In [2]: domain = Domain('domain', mesh)
+    In [2]: domain = FEDomain('domain', mesh)
 
 Define the regions - the whole domain :math:`\Omega`, where the solution
 is sought, and :math:`\Gamma_1`, :math:`\Gamma_2`, where the boundary

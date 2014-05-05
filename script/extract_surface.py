@@ -19,7 +19,7 @@ import scipy.sparse as sp
 import sfepy
 from sfepy.base.base import output
 from sfepy.base.ioutils import edit_filename
-from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.extmods.cmesh import create_mesh_graph, graph_components
 
 def _get_facets(vertices, offsets, ii, n_fp):
@@ -111,7 +111,7 @@ def main():
     if (filename_in != '-'):
         file_in.close()
 
-    domain = Domain('domain', mesh)
+    domain = FEDomain('domain', mesh)
     domain.setup_groups()
 
     if domain.has_faces():

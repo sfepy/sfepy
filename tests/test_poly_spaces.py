@@ -41,7 +41,7 @@ def _gen_common_data(orders, gels, report):
     from sfepy.base.base import Struct
     from sfepy.linalg import combine
     from sfepy.discrete import FieldVariable, Integral
-    from sfepy.discrete.fem import Mesh, Domain, Field
+    from sfepy.discrete.fem import Mesh, FEDomain, Field
     from sfepy.discrete.fem.global_interp import get_ref_coors
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
@@ -83,7 +83,7 @@ def _gen_common_data(orders, gels, report):
 
                 cache = Struct(mesh=mesh)
 
-                domain = Domain('domain', mesh)
+                domain = FEDomain('domain', mesh)
                 omega = domain.create_region('Omega', 'all')
                 region = domain.create_region('Facet', rsels[geom], 'facet')
                 field = Field.from_args('f', nm.float64, shape=1,

@@ -27,7 +27,7 @@ import numpy as nm
 from sfepy import data_dir
 
 from sfepy.base.base import output
-from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO, MeshIO
 from sfepy.homogenization.utils import define_box_regions
 
@@ -39,7 +39,7 @@ def mesh_hook(mesh, mode):
     """
     if mode == 'read':
         mesh = Mesh.from_file(base_mesh)
-        domain = Domain(mesh.name, mesh)
+        domain = FEDomain(mesh.name, mesh)
         for ii in range(3):
             output('refine %d...' % ii)
             domain = domain.refine()

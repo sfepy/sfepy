@@ -13,7 +13,7 @@ class Test(TestCommon):
 
     def test_linearization(self):
         from sfepy.base.base import Struct
-        from sfepy.discrete.fem import Mesh, Domain, Field
+        from sfepy.discrete.fem import Mesh, FEDomain, Field
         from sfepy import data_dir
 
         geometries = ['2_3', '2_4', '3_4', '3_8']
@@ -26,7 +26,7 @@ class Test(TestCommon):
                                 'meshes/elements/%s_1.mesh' % geometry)
             mesh = Mesh.from_file(name)
 
-            domain = Domain('', mesh)
+            domain = FEDomain('', mesh)
             domain = domain.refine()
 
             domain.mesh.write(self.join('linearizer-%s-0.mesh' % geometry))

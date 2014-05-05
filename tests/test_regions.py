@@ -16,13 +16,13 @@ class Test(TestCommon):
     @staticmethod
     def from_conf( conf, options ):
         from sfepy import data_dir
-        from sfepy.discrete.fem import Mesh, Domain
+        from sfepy.discrete.fem import Mesh, FEDomain
         from sfepy.discrete import Functions
 
         mesh = Mesh('test mesh',
                     data_dir + '/meshes/various_formats/abaqus_tet.inp')
         mesh.nodal_bcs['set0'] = [0, 7]
-        domain = Domain('test domain', mesh)
+        domain = FEDomain('test domain', mesh)
 
         conf_functions = {
             'get_vertices' : (get_vertices,),

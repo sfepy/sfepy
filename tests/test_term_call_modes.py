@@ -136,13 +136,13 @@ class Test(TestCommon):
     @staticmethod
     def from_conf(conf, options):
         from sfepy.discrete import Integral
-        from sfepy.discrete.fem import Mesh, Domain
+        from sfepy.discrete.fem import Mesh, FEDomain
 
         domains = []
         for filename in filename_meshes:
             mesh = Mesh.from_file(filename)
-            domain = Domain('domain_%s' % mesh.name.replace(data_dir, ''),
-                            mesh)
+            domain = FEDomain('domain_%s' % mesh.name.replace(data_dir, ''),
+                              mesh)
             domain.create_region('Omega', 'all')
             domain.create_region('Gamma', 'vertices of surface', 'facet')
 

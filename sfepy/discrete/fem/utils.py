@@ -238,7 +238,7 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False):
     ----------
     data : array
         The data defined in the region.
-    domain : Domain instance
+    domain : FEDomain instance
         The FE domain.
     rname : str
         The region name.
@@ -312,11 +312,11 @@ def refine_mesh(filename, level):
     """
     import os
     from sfepy.base.base import output
-    from sfepy.discrete.fem import Mesh, Domain
+    from sfepy.discrete.fem import Mesh, FEDomain
 
     if level > 0:
         mesh = Mesh.from_file(filename)
-        domain = Domain(mesh.name, mesh)
+        domain = FEDomain(mesh.name, mesh)
         for ii in range(level):
             output('refine %d...' % ii)
             domain = domain.refine()

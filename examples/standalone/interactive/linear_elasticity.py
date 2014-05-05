@@ -8,7 +8,7 @@ sys.path.append('.')
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.fem import Mesh, Domain, Field
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.solvers.ls import ScipyDirect
@@ -38,7 +38,7 @@ def main():
     options, args = parser.parse_args()
 
     mesh = Mesh.from_file(data_dir + '/meshes/2d/rectangle_tri.mesh')
-    domain = Domain('domain', mesh)
+    domain = FEDomain('domain', mesh)
 
     min_x, max_x = domain.get_mesh_bounding_box()[:,0]
     eps = 1e-8 * (max_x - min_x)
