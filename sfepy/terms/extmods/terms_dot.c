@@ -29,6 +29,7 @@ int32 dw_surface_v_dot_n_s(FMField *out,
     FMF_SetCellX1(coef, ii);
     FMF_SetCell(rsg->det, ii);
     FMF_SetCellX1(rsg->bf, ii);
+    FMF_SetCell(csg->normal, ii);
 
     if (isDiff) {
       FMF_SetCellX1(csg->bf, ii);
@@ -82,6 +83,7 @@ int32 dw_surface_s_v_dot_n(FMField *out,
     FMF_SetCellX1(coef, ii);
     FMF_SetCell(rsg->det, ii);
     FMF_SetCellX1(rsg->bf, ii);
+    FMF_SetCell(csg->normal, ii);
 
     if (isDiff) {
       FMF_SetCellX1(csg->bf, ii);
