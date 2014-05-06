@@ -101,7 +101,7 @@ class LaplaceTerm(DiffusionTerm):
     name = 'dw_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
-    arg_shapes = [{'opt_material' : 'D, D', 'virtual' : (1, 'state'),
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
                    'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
                   {'opt_material' : None}]
     modes = ('weak', 'eval')
