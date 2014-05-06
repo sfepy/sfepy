@@ -1010,20 +1010,9 @@ class Term(Struct):
 
     def get_assembling_cells(self, shape=None):
         """
-        According to the term integration type, return either the term
-        region cell indices or local index sequence.
+        Return the assembling cell indices into a DOF connectivity.
         """
-        ig = self.char_fun.ig
-
-        cells = self.region.get_cells(ig, true_cells_only=False)
-        if self.integration in ('surface', 'surface_extra'):
-            cells = nm.arange(cells.shape[0], dtype=nm.int32)
-
-        elif self.integration == 'point':
-            cells = nm.arange(shape[0], dtype=nm.int32)
-
-        else:
-            cells = cells.astype(nm.int32)
+        cells = nm.arange(shape[0], dtype=nm.int32)
 
         return cells
 
