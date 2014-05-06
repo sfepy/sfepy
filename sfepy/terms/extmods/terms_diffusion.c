@@ -466,6 +466,62 @@ int32 d_surface_flux( FMField *out, FMField *grad,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dw_surface_flux"
+int32 dw_surface_flux(FMField *out, FMField *grad,
+                      FMField *mat, FMField *bf, Mapping *sg,
+                      int32 *fis, int32 nFa, int32 nFP, int32 mode)
+{
+  int32 ii, ifa, dim, nQP, nEP, ret = RET_OK;
+  FMField *ntk = 0, *ntkg = 0, *out_qp = 0;
+
+  nQP = sg->normal->nLev;
+  dim = sg->normal->nRow;
+  nEP = sg->bfGM->nCol;
+
+  fmf_createAlloc(&ntk, 1, nQP, 1, dim);
+  if (mode) {
+    fmf_createAlloc(&ntkg, 1, nQP, 1, nEP);
+    fmf_createAlloc(&out_qp, 1, nQP, nEP, nEP);
+  } else {
+    fmf_createAlloc(&ntkg, 1, nQP, 1, 1);
+    fmf_createAlloc(&out_qp, 1, nQP, nEP, 1);
+  }
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    ifa = fis[ii*nFP+1];
+
+    FMF_SetCell(out, ii);
+    FMF_SetCellX1(mat, ii);
+    FMF_SetCell(sg->det, ii);
+    FMF_SetCell(sg->normal, ii);
+    FMF_SetCell(bf, ifa);
+
+    fmf_mulATB_nn(ntk, sg->normal, mat);
+
+    if (mode) {
+      FMF_SetCell(sg->bfGM, ii);
+
+      fmf_mulAB_nn(ntkg, ntk, sg->bfGM);
+    } else {
+      FMF_SetCell(grad, ii);
+
+      fmf_mulAB_nn(ntkg, ntk, grad);
+    }
+    fmf_mulATB_nn(out_qp, bf, ntkg);
+    fmf_sumLevelsMulF(out, out_qp, sg->det->val);
+
+    ERR_CheckGo(ret);
+  }
+
+ end_label:
+  fmf_freeDestroy(&ntk);
+  fmf_freeDestroy(&ntkg);
+  fmf_freeDestroy(&out_qp);
+
+  return(ret);
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_convect_v_grad_s"
 int32 dw_convect_v_grad_s( FMField *out, FMField *val_v, FMField *grad_s,
                            Mapping *vvg, Mapping *svg,

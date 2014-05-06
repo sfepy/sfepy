@@ -227,6 +227,10 @@ cdef extern from 'terms.h':
     cdef int32 _d_surface_flux \
          'd_surface_flux'(FMField *out, FMField *grad,
                           FMField *mtxD, Mapping *sg, int32 mode)
+    cdef int32 _dw_surface_flux \
+         'dw_surface_flux'(FMField *out, FMField *grad,
+                           FMField *mat, FMField *bf, Mapping *sg,
+                           int32 *fis, int32 nFa, int32 nFP, int32 mode)
     cdef int32 _dw_convect_v_grad_s \
          'dw_convect_v_grad_s'(FMField *out, FMField *val_v, FMField *grad_s,
                                Mapping *vvg, Mapping *svg,
@@ -1262,6 +1266,27 @@ def d_surface_flux(np.ndarray out not None,
     array2fmfield4(_mtx_d, mtx_d)
 
     ret = _d_surface_flux(_out, _grad, _mtx_d, cmap.geo, mode)
+    return ret
+
+def dw_surface_flux(np.ndarray out not None,
+                    np.ndarray grad not None,
+                    np.ndarray mat not None,
+                    np.ndarray bf not None,
+                    CMapping cmap not None,
+                    np.ndarray fis not None,
+                    int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _mat[1], _bf[1]
+    cdef int32 *_fis, n_fa, n_fp
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_bf, bf)
+    array2pint2(&_fis, &n_fa, &n_fp, fis)
+
+    ret = _dw_surface_flux(_out, _grad, _mat, _bf,
+                           cmap.geo, _fis, n_fa, n_fp, mode)
     return ret
 
 def dw_convect_v_grad_s(np.ndarray out not None,

@@ -343,6 +343,49 @@ class SurfaceFluxTerm(Term):
 
         return (n_fa, 1, 1, 1), parameter.dtype
 
+class SurfaceFluxOperatorTerm(Term):
+    r"""
+    Surface flux operator term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} q \ul{n} \cdot \ull{K} \cdot \nabla p
+
+    :Arguments:
+        - material : :math:`\ull{K}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+    """
+    name = 'dw_surface_flux'
+    arg_types = ('opt_material', 'virtual', 'state')
+    arg_shapes = [{'opt_material' : 'D, D', 'virtual' : (1, 'state'),
+                   'state' : 1},
+                  {'opt_material' : None}]
+    integration = 'surface_extra'
+    function = terms.dw_surface_flux
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, sg = self.get_approximation(state)
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base(sd.bkey, 0, self.integral)
+
+        if mat is None:
+            _, n_qp, dim, _, _ = self.get_data_shape(state)
+            mat = nm.empty((1, n_qp, dim, dim), dtype=nm.float64)
+            mat[..., :, :] = nm.eye(dim, dtype=nm.float64)
+
+        if diff_var is None:
+            grad = self.get(state, 'grad', integration='surface_extra')
+            fmode = 0
+
+        else:
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
+
+        return grad, mat,  bf, sg, sd.fis, fmode
+
 class ConvectVGradSTerm(Term):
     r"""
     Scalar gradient term with convective velocity.

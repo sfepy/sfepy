@@ -26,6 +26,9 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 int32 dw_diffusion_r( FMField *out, FMField *mtxD, Mapping *vg );
 int32 d_surface_flux( FMField *out, FMField *grad,
                       FMField *mtxD, Mapping *sg, int32 mode );
+int32 dw_surface_flux(FMField *out, FMField *grad,
+                      FMField *mat, FMField *bf, Mapping *sg,
+                      int32 *fis, int32 nFa, int32 nFP, int32 mode);
 
 int32 dw_convect_v_grad_s( FMField *out, FMField *val_v, FMField *grad_s,
                            Mapping *vvg, Mapping *svg,
