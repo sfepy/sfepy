@@ -404,18 +404,18 @@ class FEField(Field):
         dim = region.dim
 
         if integration in ('surface', 'surface_extra'):
-            n_facet = shape.n_face if dim == 3 else shape.n_edge
+            sd = ap.surface_data[region_name]
 
             # This works also for surface fields.
-            key = ap.surface_data[region_name].face_type
+            key = sd.face_type
             weights = ap.get_qp(key, integral).weights
             n_qp = weights.shape[0]
 
             if integration == 'surface':
-                data_shape = (n_facet, n_qp, dim, ap.n_ep[key])
+                data_shape = (sd.n_fa, n_qp, dim, ap.n_ep[key])
 
             else:
-                data_shape = (n_facet, n_qp, dim, ap.n_ep['v'])
+                data_shape = (sd.n_fa, n_qp, dim, ap.n_ep['v'])
 
         elif integration in ('volume', 'plate'):
             _, weights = integral.get_qp(self.gel.name)
