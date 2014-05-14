@@ -1,8 +1,6 @@
 """
 Utility functions based on igakit.
 """
-from itertools import product
-
 import numpy as nm
 
 from sfepy.base.base import Struct
@@ -41,7 +39,9 @@ def create_linear_fe_mesh(nurbs, pars=None):
             par = nm.linspace(kv[0], kv[-1], shape[ii])
             pars.append(par)
 
-    coors = nm.array([nurbs(*ii) for ii in product(*pars)])
+    coors = nurbs(*pars)
+    coors.shape = (-1, coors.shape[-1])
+
     conn, desc = get_tensor_product_conn([len(ii) for ii in pars])
 
     if (coors[:, -1] == 0.0).all():
