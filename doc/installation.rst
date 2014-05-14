@@ -262,17 +262,6 @@ Comment by david.huard, Mar 26, 2008::
 
   Of course, suitesparse and suitesparse-devel must be installed.
 
-Intel Mac
-^^^^^^^^^
-
-(thanks to Dominique Orban for his advice)
-
-To build *SfePy* on an Intel Mac the following options need to be set in
-site_cfg.py::
-
-    opt_flags = '-g -O2 -fPIC -DPIC -fno-strict-aliasing -fno-common -dynamic'
-    link_flags = '-dynamiclib -undefined dynamic_lookup -fPIC -DPIC'
-
 Windows using Python(x,y)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
