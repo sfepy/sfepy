@@ -152,6 +152,10 @@ customize it as follows:
 Platform-specific notes
 -----------------------
 
+The following information has been provided by users of the listed platforms
+and may become obsolete over time. The generic installation instructions above
+should work in any case, provided the required dependencies are installed.
+
 Gentoo
 ^^^^^^
 
