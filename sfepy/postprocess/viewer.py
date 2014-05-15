@@ -288,7 +288,7 @@ class Viewer(Struct):
         if add_output_dir:
             base = os.path.join(self.output_dir, base)
 
-        _, _, suffix1 = get_print_info(last_step)
+        _, _, suffix1 = get_print_info(last_step + 1)
         return base, suffix1 + '_%.5e', ext
 
     def save_animation(self, filename, steps=None, times=None):
