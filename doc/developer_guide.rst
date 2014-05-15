@@ -881,6 +881,9 @@ sfepy.discrete package
    src/sfepy/discrete/state
    src/sfepy/discrete/variables
    src/sfepy/discrete/common/dof_info
+   src/sfepy/discrete/common/domain
+   src/sfepy/discrete/common/fields
+   src/sfepy/discrete/common/mappings
    src/sfepy/discrete/common/region
    src/sfepy/discrete/fem/domain
    src/sfepy/discrete/fem/extmods/_fmfield
@@ -908,7 +911,13 @@ sfepy.discrete package
    src/sfepy/discrete/fem/poly_spaces
    src/sfepy/discrete/fem/refine
    src/sfepy/discrete/fem/utils
-
+   src/sfepy/discrete/iga/domain
+   src/sfepy/discrete/iga/fields
+   src/sfepy/discrete/iga/iga
+   src/sfepy/discrete/iga/io
+   src/sfepy/discrete/iga/mappings
+   src/sfepy/discrete/iga/plot_nurbs
+   src/sfepy/discrete/iga/utils
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
