@@ -13,6 +13,15 @@ Examples
     $ python postproc.py output-tests/test_navier_stokes.vtk
     $ python postproc.py output-tests/test_navier_stokes.vtk --3d
 
+  - save a snapshot image and exit
+
+    $ python postproc.py output-tests/test_poisson.vtk -o image.png -n
+
+  - save a snapshot image without off-screen rendering and exit
+
+    $ python postproc.py output-tests/test_poisson.vtk -o image.png \
+                         -n --no-offscreen
+
   - create animation (forces offscreen rendering) from
     output-tests/test_time_poisson.*.vtk
 
@@ -30,7 +39,7 @@ Examples
 
   - same as above, but slower frame rate
 
-    $ python postproc.py output-tests/test_hyperelastic.*.vtk \
+    $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk \
                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
 """
 from optparse import OptionParser, OptionGroup
@@ -400,8 +409,11 @@ def main():
                              options.bgcolor.split(',')])
     assert_(len(options.bgcolor) == 3)
 
+    can_save = not options.show
+
     # Output dir / file names.
     if options.filename is None:
+        can_save = False
         options.filename = 'view.png'
         if options.output_dir is None:
             options.output_dir = '.'
@@ -466,6 +478,8 @@ def main():
             filenames = filenames[0]
 
         view = view_file(filenames, filter_names, options)
+        if can_save:
+            view.save_image(options.filename)
 
     if options.anim_format is not None:
         view.save_animation(options.filename)
