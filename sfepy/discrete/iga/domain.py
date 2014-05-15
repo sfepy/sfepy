@@ -6,6 +6,7 @@ import os.path as op
 import numpy as nm
 
 from sfepy.base.base import Struct
+from sfepy.linalg import cycle
 from sfepy.discrete.common.domain import Domain
 import sfepy.discrete.iga as iga
 import sfepy.discrete.iga.io as io
@@ -21,6 +22,69 @@ class NurbsPatch(Struct):
                         cps=cps, weights=weights, cs=cs, conn=conn)
         self.n_els = [len(ii) for ii in cs]
         self.dim = len(self.n_els)
+
+    def _get_ref_coors_1d(self, pars, axis):
+        uk = nm.unique(self.knots[axis])
+        indices = nm.searchsorted(uk[1:], pars)
+        ref_coors = nm.empty_like(pars)
+        for ii in xrange(len(uk) - 1):
+            ispan = nm.where(indices == ii)[0]
+            pp = pars[ispan]
+            ref_coors[ispan] = (pp - uk[ii]) / (uk[ii+1] - uk[ii])
+
+        return uk, indices, ref_coors
+
+    def __call__(self, u=None, v=None, w=None, field=None):
+        """
+        Igakit-like interface for NURBS evaluation.
+        """
+        pars = [u]
+        if v is not None: pars += [v]
+        if w is not None: pars += [w]
+
+        indices = []
+        uks = []
+        rcs = []
+        for ia, par in enumerate(pars):
+            uk, indx, rc = self._get_ref_coors_1d(par, ia)
+            indices.append(indx)
+            uks.append(uk)
+            rcs.append(rc)
+
+        shape = [len(ii) for ii in pars]
+        n_vals = nm.prod(shape)
+
+        if field is None:
+            out = nm.zeros((n_vals, self.dim), dtype=nm.float64)
+
+        else:
+            out = nm.zeros((n_vals, field.shape[1]), dtype=nm.float64)
+
+        for ip, igrid in enumerate(cycle(shape)):
+            iis = [indices[ii][igrid[ii]] for ii in xrange(self.dim)]
+            ie = iga.get_raveled_index(iis, self.n_els)
+
+            rc = [rcs[ii][igrid[ii]] for ii in xrange(self.dim)]
+
+            bf, bfg, det = iga.eval_nurbs_basis_tp(rc, ie,
+                                                   self.cps, self.weights,
+                                                   self.degrees, self.cs,
+                                                   self.conn)
+            ec = self.conn[ie]
+
+            if field is None:
+                out[ip, :] = nm.dot(bf, self.cps[ec])
+
+            else:
+                out[ip, :] = nm.dot(bf, field[ec])
+
+        return out
+
+    def evaluate(self, field, u=None, v=None, w=None):
+        """
+        Igakit-like interface for NURBS evaluation.
+        """
+        return self(u, v, w, field)
 
 class IGDomain(Domain):
     """
