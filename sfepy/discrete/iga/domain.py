@@ -10,6 +10,18 @@ from sfepy.discrete.common.domain import Domain
 import sfepy.discrete.iga as iga
 import sfepy.discrete.iga.io as io
 
+class NurbsPatch(Struct):
+    """
+    Single NURBS patch data.
+    """
+
+    def __init__(self, knots, degrees, cps,
+                 weights, cs, conn):
+        Struct.__init__(self, name='nurbs', knots=knots, degrees=degrees,
+                        cps=cps, weights=weights, cs=cs, conn=conn)
+        self.n_els = [len(ii) for ii in cs]
+        self.dim = len(self.n_els)
+
 class IGDomain(Domain):
     """
     Bezier extraction based NURBS domain for isogeometric analysis.
@@ -24,8 +36,7 @@ class IGDomain(Domain):
         (knots, degrees, cps, weights, cs, conn,
          bcps, bweights, bconn, regions) = io.read_iga_data(filename)
 
-        nurbs = Struct(name='nurbs', knots=knots, degrees=degrees, cps=cps,
-                       weights=weights, cs=cs, conn=conn)
+        nurbs = NurbsPatch(knots, degrees, cps, weights, cs, conn)
         bmesh = Struct(name='bmesh', cps=bcps, weights=bweights, conn=bconn)
 
         name = op.splitext(filename)[0]
