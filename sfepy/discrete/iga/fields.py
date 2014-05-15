@@ -210,3 +210,39 @@ class IGField(Field):
         cmap = mapping.get_mapping(vals, weights)
 
         return cmap, mapping
+
+    def create_output(self, dofs, var_name, dof_names=None,
+                      key=None, **kwargs):
+        """
+        Convert the DOFs corresponding to the field to a dictionary of
+        output data usable by Mesh.write().
+
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        var_name : str
+            The variable name corresponding to `dofs`.
+        dof_names : tuple of str
+            The names of DOF components.
+        key : str, optional
+            The key to be used in the output dictionary instead of the
+            variable name.
+
+        Returns
+        -------
+        out : dict
+            The output dictionary.
+        """
+        from sfepy.discrete.iga.utils import create_mesh_and_output
+
+        num = 25 if self.region.dim == 3 else 101
+        pars = (nm.linspace(0, 1, num),) * self.region.dim
+        mesh, out = create_mesh_and_output(self.domain.nurbs, pars,
+                                           **{key : dofs})
+        out[key].var_name = var_name
+        out[key].dofs = dof_names
+        out['__mesh__'] = mesh
+
+        return out
