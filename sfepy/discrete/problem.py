@@ -770,8 +770,9 @@ class Problem(Struct):
                 mesh.write(aux, io='auto', out=vout,
                            float_format=self.float_format, **kwargs)
         else:
-            self.domain.mesh.write(filename, io='auto', out=out,
-                                   float_format=self.float_format, **kwargs)
+            mesh = out.pop('__mesh__', self.domain.mesh)
+            mesh.write(filename, io='auto', out=out,
+                       float_format=self.float_format, **kwargs)
 
     def save_ebc(self, filename, force=True, default=0.0):
         """
