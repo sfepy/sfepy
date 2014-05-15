@@ -275,8 +275,8 @@ def generate_images(images_dir, examples_dir):
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
                 view.filename = fname
-                view(scene=view.scene, show=False, is_scalar_bar=True,
-                     fig_filename=fig_filename, **kwargs)
+                view(scene=view.scene, show=False, is_scalar_bar=True, **kwargs)
+                view.save_image(fig_filename)
                 mlab.clf()
 
                 output('...done')
