@@ -82,7 +82,12 @@ def create_mesh_and_output(nurbs, pars=None, **kwargs):
 
     out = {}
     for key, variable in kwargs.iteritems():
-        field = variable.reshape(nurbs.weights.shape)
+        if variable.ndim == 2:
+            field = variable.reshape(nurbs.weights.shape + (variable.shape[1],))
+
+        else:
+            field = variable.reshape(nurbs.weights.shape)
+
         vals = nurbs.evaluate(field, *pars).reshape((-1))
         out[key] = Struct(name='output_data', mode='vertex',
                           data=vals[:, None])
