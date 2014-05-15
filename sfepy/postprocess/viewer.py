@@ -220,14 +220,13 @@ class Viewer(Struct):
     >>> view(layout='col') # use column layout
     """
     def __init__(self, filename, watch=False, ffmpeg_options=None,
-                 output_dir='.', offscreen=False, auto_screenshot=True):
+                 output_dir='.', offscreen=False):
         Struct.__init__(self,
                         filename=filename,
                         watch=watch,
                         ffmpeg_options=ffmpeg_options,
                         output_dir=output_dir,
                         offscreen=offscreen,
-                        auto_screenshot=auto_screenshot,
                         scene=None,
                         gui=None)
         self.options = get_arguments(omit=['self'])
@@ -774,8 +773,7 @@ class Viewer(Struct):
         rel_text_width : float
             Relative text width.
         fig_filename : str
-            File name for saving the resulting scene figure, if
-            self.auto_screenshot is True.
+            File name for saving the resulting scene figure.
         resolution : tuple
             Scene and figure resolution. If None, it is set
             automatically according to the layout.
@@ -973,9 +971,6 @@ class Viewer(Struct):
 
                 else:
                     gui.edit_traits(view=traits_view)
-
-                    if self.auto_screenshot:
-                        self.save_image(fig_filename)
 
         return gui
 
