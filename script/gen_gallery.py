@@ -61,23 +61,6 @@ omit_dirs = [
 ]
 
 custom = {
-    'diffusion/sinbc.py' : {
-        '_t' : {
-            'is_wireframe' : True,
-            'domain_specific' : {
-                't' : DomainSpecificPlot('plot_warp_scalar',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
-            'roll' : 68,
-            'opacity' : {'wireframe' : 0.3},
-        },
-        '_grad' : {
-            'opacity' : {'surface' : 0.3},
-            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
-            'roll' : 68,
-        },
-    },
     'acoustics/acoustics3d.py' : {
         '_p_1' : {
             'view' : (-53, 120, 0.225, [0.021, 0.018, 0.066]),
@@ -104,6 +87,35 @@ custom = {
         '_g0' : {
             'view' : (0.0, 0.0, 0.86, [0.315, 0.1, 0.1]),
             'roll' : 0,
+        },
+    },
+    'diffusion/poisson_iga.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                't' : DomainSpecificPlot('plot_warp_scalar',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (55, 39, 7, [0.57,  0.91, -0.09]),
+            'roll' : 15,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    },
+    'diffusion/sinbc.py' : {
+        '_t' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                't' : DomainSpecificPlot('plot_warp_scalar',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
+            'roll' : 68,
+            'opacity' : {'wireframe' : 0.3},
+        },
+        '_grad' : {
+            'opacity' : {'surface' : 0.3},
+            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
+            'roll' : 68,
         },
     },
     'linear_elasticity/elastic_contact_planes.py' : {
