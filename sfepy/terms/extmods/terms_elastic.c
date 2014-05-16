@@ -168,6 +168,8 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
     }
   } else if (sym == 3) {
     for (iell = 0; iell < stress->nCell; iell++) {
+      FMF_SetCell( lam, iell );
+      FMF_SetCell( mu, iell );
       pstress = FMF_PtrCell( stress, iell );
       pstrain = FMF_PtrCell( strain, iell );
       if (1) {
