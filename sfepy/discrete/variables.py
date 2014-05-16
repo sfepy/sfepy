@@ -10,6 +10,8 @@ from sfepy.base.base import (real_types, complex_types, assert_, get_default,
                              output, OneTypeList, Container, Struct, basestr,
                              iter_dict_of_lists)
 import sfepy.linalg as la
+from sfepy.discrete.functions import Function
+from sfepy.discrete.conditions import get_condition_value
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
                                             expand_nodes_to_equations,
@@ -1445,14 +1447,12 @@ class FieldVariable(Variable):
             if len(nod_list) == 0:
                 continue
 
-            vv = nm.empty((0,), dtype=self.dtype)
-            nods = nm.unique(nm.hstack(nod_list))
-            coor = self.field.get_coor(nods)
-            if type(val) == str:
-                fun = functions[val]
-                vv = fun(coor, ic=ic)
-            else:
-                vv = nm.repeat([val], nods.shape[0] * len(dofs))
+            fun = get_condition_value(val, functions, 'IC', ic.name)
+            if isinstance(fun, Function):
+                aux = fun
+                fun = lambda coors: aux(coors, ic=ic)
+
+            nods, vv = self.field.set_dofs(fun, region, len(dofs), clean_msg)
 
             eq = expand_nodes_to_equations(nods, dofs, self.dofs)
 
