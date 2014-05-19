@@ -173,7 +173,8 @@ def plot_iso_lines(ax, nurbs, color='b', n_points=100):
 
     return ax
 
-def plot_nurbs_basis_1d(ax, nurbs, n_points=100):
+def plot_nurbs_basis_1d(ax, nurbs, n_points=100, x_axis='parametric',
+                        legend=False):
     """
     Plot a 1D NURBS basis.
     """
@@ -189,7 +190,14 @@ def plot_nurbs_basis_1d(ax, nurbs, n_points=100):
         field[ii] = 1.0
 
         vals = nurbs.evaluate(fields=field, u=line)
-        plt.plot(line, vals)
+        if x_axis == 'parametric':
+            plt.plot(line, vals, label='%d' % ii)
+
+        else:
+            coors = nurbs(u=line)[:, x_axis]
+            plt.plot(coors, vals, label='%d' % ii)
+
+    if legend: plt.legend()
 
     return ax
 
