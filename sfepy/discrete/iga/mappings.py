@@ -63,7 +63,7 @@ class IGMapping(Mapping):
                                                       nurbs.degrees, nurbs.cs,
                                                       nurbs.conn)
         # Weight Jacobians by quadrature point weights.
-        dets = dets * weights[None, :, None, None]
+        dets = nm.abs(dets) * weights[None, :, None, None]
 
         # Cell volumes.
         volumes = dets.sum(axis=1)[..., None]
