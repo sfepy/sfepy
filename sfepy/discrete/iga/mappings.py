@@ -15,8 +15,8 @@ class IGMapping(Mapping):
     def __init__(self, domain, cells):
         self.domain = domain
         self.cells = cells
-        self.v_shape = (self.domain.shape.n_el, -1, self.domain.shape.dim)
-        self.s_shape = (self.domain.shape.n_el, -1, 1)
+        self.v_shape = (len(cells), -1, self.domain.shape.dim)
+        self.s_shape = (len(cells), -1, 1)
 
     def get_geometry(self):
         """
@@ -39,7 +39,7 @@ class IGMapping(Mapping):
         variable = nm.ones((nurbs.weights.shape[0], 1), dtype=nm.float64)
         qps, _, _ = iga.eval_variable_in_qp(variable, qp_coors, nurbs.cps,
                                             nurbs.weights, nurbs.degrees,
-                                            nurbs.cs, nurbs.conn)
+                                            nurbs.cs, nurbs.conn, self.cells)
         qps = qps.reshape(self.v_shape)
 
         return qps
@@ -61,7 +61,7 @@ class IGMapping(Mapping):
         bfs, bfgs, dets = iga.eval_mapping_data_in_qp(qp_coors, nurbs.cps,
                                                       nurbs.weights,
                                                       nurbs.degrees, nurbs.cs,
-                                                      nurbs.conn)
+                                                      nurbs.conn, self.cells)
         # Weight Jacobians by quadrature point weights.
         dets = nm.abs(dets) * weights[None, :, None, None]
 

@@ -77,7 +77,12 @@ class IGField(Field):
             return None
 
         if ct == 'volume':
-            conn = self.nurbs.conn
+            if region.name == self.region.name:
+                conn = self.nurbs.conn
+
+            else:
+                cells = region.get_cells(ig, true_cells_only=True)
+                conn = nm.take(self.nurbs.conn, cells.astype(nm.int32), axis=0)
 
         else:
             raise ValueError('unsupported connectivity type! (%s)' % ct)
@@ -205,8 +210,7 @@ class IGField(Field):
         Create a new reference mapping.
         """
         vals, weights = integral.get_qp(self.domain.gel.name)
-
-        mapping = IGMapping(self.domain, self.region.cells)
+        mapping = IGMapping(self.domain, region.cells)
         cmap = mapping.get_mapping(vals, weights)
 
         return cmap, mapping
