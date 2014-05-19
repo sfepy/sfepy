@@ -199,7 +199,7 @@ def plot_bezier_nurbs_basis_1d(ax, control_points, weights, degrees, cs, conn,
     Plot a 1D NURBS basis using the Bezier extraction and local Bernstein
     basis.
     """
-    from igalib import eval_variable_in_qp
+    from sfepy.discrete.iga.iga import eval_variable_in_qp
     ax = _get_axes(ax, 2)
 
     n_fun = weights.shape[0]
