@@ -740,7 +740,8 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
 
     return R, dR_dx, det
 
-def eval_mapping_data_in_qp(qps, control_points, weights, degrees, cs, conn):
+def eval_mapping_data_in_qp(qps, control_points, weights, degrees, cs, conn,
+                            cells=None):
     """
     Evaluate data required for the isogeometric domain reference mapping in the
     given quadrature points. The quadrature points are the same for all Bezier
@@ -761,6 +762,8 @@ def eval_mapping_data_in_qp(qps, control_points, weights, degrees, cs, conn):
         The element extraction operators in each parametric dimension.
     conn : array
         The connectivity of the global NURBS basis.
+    cells : array, optional
+        If given, use only the given Bezier elements.
 
     Returns
     -------
@@ -774,7 +777,10 @@ def eval_mapping_data_in_qp(qps, control_points, weights, degrees, cs, conn):
         The Jacobians of the mapping to the unit reference element in the
         physical quadrature points of all elements.
     """
-    n_el = conn.shape[0]
+    if cells is None:
+        cells = nm.arange(conn.shape[0])
+
+    n_el = len(cells)
     n_qp = qps.shape[0]
     dim = control_points.shape[1]
     n_efuns = degrees + 1
@@ -790,20 +796,21 @@ def eval_mapping_data_in_qp(qps, control_points, weights, degrees, cs, conn):
     bfgs = nm.empty((n_el, n_qp, dim, n_efun), dtype=nm.float64)
 
     # Loop over elements.
-    for ie in xrange(n_el):
+    for iseq, ie in enumerate(cells):
         # Loop over quadrature points.
         for iqp, qp in enumerate(qps):
             bf, bfg, det = eval_nurbs_basis_tp(qp, ie,
                                                control_points, weights,
                                                degrees, cs, conn)
-            bfs[ie, iqp] = bf
-            bfgs[ie, iqp] = bfg.T
-            dets[ie, iqp] = det
+            bfs[iseq, iqp] = bf
+            bfgs[iseq, iqp] = bfg.T
+            dets[iseq, iqp] = det
 
     return bfs, bfgs, dets
 
 def eval_variable_in_qp(variable, qps,
-                        control_points, weights, degrees, cs, conn):
+                        control_points, weights, degrees, cs, conn,
+                        cells=None):
     """
     Evaluate a field variable in the given quadrature points. The quadrature
     points are the same for all Bezier elements and should correspond to the
@@ -827,6 +834,8 @@ def eval_variable_in_qp(variable, qps,
         The element extraction operators in each parametric dimension.
     conn : array
         The connectivity of the global NURBS basis.
+    cells : array, optional
+        If given, use only the given Bezier elements.
 
     Returns
     -------
@@ -838,7 +847,10 @@ def eval_variable_in_qp(variable, qps,
         The Jacobians of the mapping to the unit reference element in the
         physical quadrature points.
     """
-    n_el = conn.shape[0]
+    if cells is None:
+        cells = nm.arange(conn.shape[0])
+
+    n_el = len(cells)
     n_qp = qps.shape[0]
     dim = control_points.shape[1]
     nc = variable.shape[1]
@@ -853,14 +865,14 @@ def eval_variable_in_qp(variable, qps,
     dets = nm.empty((n_el * n_qp, 1), dtype=nm.float64)
 
     # Loop over elements.
-    for ie in xrange(n_el):
+    for iseq, ie in enumerate(cells):
         ec = conn[ie]
         vals_e = variable[ec]
         cps_e = control_points[ec]
 
         # Loop over quadrature points.
         for iqp, qp in enumerate(qps):
-            ii = n_qp * ie + iqp
+            ii = n_qp * iseq + iqp
             bf, bfg, det = eval_nurbs_basis_tp(qp, ie,
                                                control_points, weights,
                                                degrees, cs, conn)
