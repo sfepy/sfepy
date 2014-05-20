@@ -9,6 +9,9 @@ Find :math:`t` such that:
     =  \int_{\Omega_0} f s
     \;, \quad \forall s \;.
 
+Try setting the Dirichlet boundary condition (ebcs) on various sides of the
+domain (``'Gamma1'``, ..., ``'Gamma4'``).
+
 View the results using::
 
   $ ./postproc.py patch2d.vtk --wireframe -b
@@ -46,7 +49,7 @@ ebcs = {
 }
 
 integrals = {
-    'i' : 10,
+    'i' : 3,
 }
 
 equations = {
