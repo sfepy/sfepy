@@ -142,6 +142,18 @@ custom = {
             'opacity' : {'wireframe' : 0.3},
         },
     },
+    'linear_elasticity/linear_elastic_iga.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                'u' : DomainSpecificPlot('plot_displacements',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (-113, 35, 1.7, [0.017, -0.05, -0.05]),
+            'roll' : 40,
+            'opacity' : {'wireframe' : 0.2},
+        },
+    },
     'navier_stokes/stokes_slip_bc.py' : {
         '' : {
             'view' : (-63, 52, 5.2, [-0.001,  0.52, -0.026]),
