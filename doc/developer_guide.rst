@@ -77,6 +77,7 @@ directory is `sfepy/`, which has the following contents:
 
        - `common/` - common parent classes for discretization-specific classes
        - `fem/` - finite element specific classes
+       - `iga/` - isogeometric analysis specific classes
      -
    * - `mesh/`
      - some utilities to interface with tetgen and triangle mesh generators
@@ -860,6 +861,8 @@ sfepy.base package
 sfepy.discrete package
 ^^^^^^^^^^^^^^^^^^^^^^
 
+This package implements various PDE discretization schemes (FEM or IGA).
+
 .. toctree::
    :maxdepth: 2
 
@@ -880,11 +883,27 @@ sfepy.discrete package
    src/sfepy/discrete/simplex_cubature
    src/sfepy/discrete/state
    src/sfepy/discrete/variables
+
+sfepy.discrete.common sub-package
+"""""""""""""""""""""""""""""""""
+
+Common lower-level code and parent classes for FEM and IGA.
+
+.. toctree::
+   :maxdepth: 2
+
    src/sfepy/discrete/common/dof_info
    src/sfepy/discrete/common/domain
    src/sfepy/discrete/common/fields
    src/sfepy/discrete/common/mappings
    src/sfepy/discrete/common/region
+
+sfepy.discrete.fem sub-package
+""""""""""""""""""""""""""""""
+
+.. toctree::
+   :maxdepth: 2
+
    src/sfepy/discrete/fem/domain
    src/sfepy/discrete/fem/extmods/_fmfield
    src/sfepy/discrete/fem/extmods/_geommech
@@ -911,6 +930,13 @@ sfepy.discrete package
    src/sfepy/discrete/fem/poly_spaces
    src/sfepy/discrete/fem/refine
    src/sfepy/discrete/fem/utils
+
+sfepy.discrete.iga sub-package
+""""""""""""""""""""""""""""""
+
+.. toctree::
+   :maxdepth: 2
+
    src/sfepy/discrete/iga/domain
    src/sfepy/discrete/iga/fields
    src/sfepy/discrete/iga/iga
