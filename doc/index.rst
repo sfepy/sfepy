@@ -70,6 +70,34 @@
    - Semi-automatic generation of finite element meshes from CT/MR scans stored
      in the DICOM file format: http://sfepy.org/dicom2fem
 
+   Citing
+   ------
+
+   If you would like to cite the SfePy package in a paper or presentation, the
+   following can be used:
+
+   - Author: Robert Cimrman
+   - Title: SfePy - Write Your Own FE Application
+   - Comment: Part of the Proceedings of the 6th European Conference on Python
+     in Science (EuroSciPy 2013)
+   - Year: 2014
+   - URL: http://arxiv.org/abs/1404.6391
+
+   Here’s an example of a BibTeX entry::
+
+     @InProceedings{,
+       author =       {Robert Cimrman},
+       title =        {{SfePy} - Write Your Own {FE} Application},
+       booktitle =    {ArXiv e-prints, Part of the Proceedings of the 6th
+                       European Conference on Python in Science
+                       (EuroSciPy 2013)},
+       pages =        {65--70},
+       year =         2014,
+       editor =       {Pierre de Buyl and Nelle Varoquaux},
+       volume =       {abs/1404.6391},
+       url =          {http://arxiv.org/abs/1404.6391},
+     }
+
    Support
    -------
 
