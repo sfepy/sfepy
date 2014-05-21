@@ -23,6 +23,7 @@ Dependencies:
 * schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
 * log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
 * postproc.py requires mayavi2
+* script/gen_iga_patch.py requires igakit
 * to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX, see
   :ref:`how_to_regenerate_documentation`
 * ipython is preferred over the regular Python shell for following some parts

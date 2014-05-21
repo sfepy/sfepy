@@ -9,7 +9,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import assert_, Struct, basestr
 from sfepy.discrete.functions import Function
-from sfepy.discrete.conditions import EssentialBC
+from sfepy.discrete.conditions import get_condition_value, EssentialBC
 
 def expand_nodes_to_dofs(nods, n_dof_per_node):
     """
@@ -349,17 +349,7 @@ class EquationMap(Struct):
                 dofs, val = bc.dofs
                 ##
                 # Evaluate EBC values.
-                if type(val) == str:
-                    fun = functions[val]
-
-                elif (isinstance(val, Function) or nm.isscalar(val)
-                      or isinstance(val, nm.ndarray)):
-                    fun = val
-
-                else:
-                    raise ValueError('unknown value type for EBC %s!'
-                                     % bc.name)
-
+                fun = get_condition_value(val, functions, 'EBC', bc.name)
                 if isinstance(fun, Function):
                     aux = fun
                     fun = lambda coors: aux(ts, coors,

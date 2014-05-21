@@ -10,7 +10,7 @@ import numpy as nm
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import get_print_info, ensure_path
 from sfepy.discrete import FieldVariable, Variables
-from sfepy.discrete.fem import Mesh, Domain, Field
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.fem.geometry_element import GeometryElement
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.linearizer import create_output
@@ -66,7 +66,7 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
 
             conn[:] = conn.take(perms + offsets[:, None])
 
-    domain = Domain('domain', mesh)
+    domain = FEDomain('domain', mesh)
 
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('f', nm.float64, shape=1, region=omega,

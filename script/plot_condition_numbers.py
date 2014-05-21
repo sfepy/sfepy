@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from sfepy import data_dir
 from sfepy.base.base import output, assert_
 from sfepy.discrete import FieldVariable, Material, Integral
-from sfepy.discrete.fem import Mesh, Domain, Field
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.solvers import eig
 
@@ -60,7 +60,7 @@ def main():
 
     mesh = Mesh.from_file(data_dir + '/meshes/elements/%s_1.mesh'
                           % options.geometry)
-    domain = Domain('domain', mesh)
+    domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
 
     orders = nm.arange(1, options.max_order + 1, dtype=nm.int)

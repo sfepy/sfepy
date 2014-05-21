@@ -5,7 +5,7 @@ Plot mesh connectivities, facet orientations, global and local DOF ids etc.
 from optparse import OptionParser
 
 from sfepy.base.base import output
-from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, FEDomain
 import sfepy.postprocess.plot_cmesh as pc
 
 usage = '%prog [options] filename\n' + __doc__.rstrip()
@@ -28,7 +28,7 @@ def main():
     output('  dimension: %d, vertices: %d, elements: %d'
            % (mesh.dim, mesh.n_nod, mesh.n_el))
 
-    domain = Domain('domain', mesh)
+    domain = FEDomain('domain', mesh)
     output(domain.cmesh)
     domain.cmesh.cprint(1)
     dim = domain.cmesh.dim

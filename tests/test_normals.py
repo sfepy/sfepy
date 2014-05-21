@@ -34,7 +34,7 @@ class Test(TestCommon):
         """
         import sfepy
         from sfepy.discrete import Integral
-        from sfepy.discrete.fem import Mesh, Domain
+        from sfepy.discrete.fem import Mesh, FEDomain
         from sfepy.discrete.fem.poly_spaces import PolySpace
         from sfepy.discrete.fem.mappings import SurfaceMapping
         from sfepy.linalg import normalize_vectors
@@ -44,7 +44,7 @@ class Test(TestCommon):
         for geom in ['2_3', '2_4', '3_4', '3_8']:
             mesh = Mesh.from_file('meshes/elements/%s_1.mesh' % geom,
                                   prefix_dir=sfepy.data_dir)
-            domain = Domain('domain', mesh)
+            domain = FEDomain('domain', mesh)
             surface = domain.create_region('Surface', 'vertices of surface',
                                            'facet')
             domain.create_surface_group(surface)

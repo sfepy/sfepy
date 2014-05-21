@@ -11,12 +11,12 @@ Important attributes of continuous (order > 0) :class:`Field` and
 where `conn` is the mesh vertex connectivity, `econn` is the
 region-local field connectivity.
 """
-import time
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
-from sfepy.base.base import Struct, basestr
+from sfepy.base.base import output, get_default, assert_
+from sfepy.base.base import Struct
 import fea
+from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
@@ -25,54 +25,6 @@ from sfepy.discrete.fem.fe_surface import FESurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
-
-def parse_approx_order(approx_order):
-    """
-    Parse the uniform approximation order value (str or int).
-    """
-    ao_msg = 'unsupported approximation order! (%s)'
-    force_bubble = False
-    discontinuous = False
-
-    try:
-        ao = int(approx_order)
-    except ValueError:
-        mode = approx_order[-1].lower()
-        if mode == 'b':
-            ao = int(approx_order[:-1])
-            force_bubble = True
-
-        elif mode == 'd':
-            ao = int(approx_order[:-1])
-            discontinuous = True
-
-        else:
-            raise ValueError(ao_msg % approx_order)
-
-    if ao < 0:
-        raise ValueError(ao_msg % approx_order)
-
-    elif ao == 0:
-        discontinuous = True
-
-    return ao, force_bubble, discontinuous
-
-def fields_from_conf(conf, regions):
-    fields = {}
-    for key, val in conf.iteritems():
-        field = Field.from_conf(val, regions)
-        fields[field.name] = field
-
-    return fields
-
-def setup_extra_data(conn_info):
-    """
-    Setup extra data required for non-volume integration.
-    """
-    for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
-        for var in info.all_vars:
-            field = var.get_field()
-            field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
 def get_eval_expression(expression, ig,
                         fields, materials, variables,
@@ -200,7 +152,7 @@ def create_expression_output(expression, name, primary_field_name,
 
     return out
 
-class Field(Struct):
+class FEField(Field):
     """
     Base class for finite element fields.
 
@@ -221,96 +173,13 @@ class Field(Struct):
     - ``val_shape`` - the shape of field value (the product of DOFs and
       base functions) in a point
     """
-    _all = None
-
-    @staticmethod
-    def from_args(name, dtype, shape, region, approx_order=1,
-                  space='H1', poly_space_base='lagrange'):
-        """
-        Create a Field subclass instance corresponding to a given space.
-
-        Parameters
-        ----------
-        name : str
-            The field name.
-        dtype : numpy.dtype
-            The field data type: float64 or complex128.
-        shape : int/tuple/str
-            The field shape: 1 or (1,) or 'scalar', space dimension (2, or (2,)
-            or 3 or (3,)) or 'vector', or a tuple. The field shape determines
-            the shape of the FE base functions and is related to the number of
-            components of variables and to the DOF per node count, depending
-            on the field kind.
-        region : Region
-            The region where the field is defined.
-        approx_order : int/str
-            The FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
-        space : str
-            The function space name.
-        poly_space_base : str
-            The name of polynomial space base.
-
-        Notes
-        -----
-        Assumes one cell type for the whole region!
-        """
-        conf = Struct(name=name, dtype=dtype, shape=shape, region=region.name,
-                      approx_order=approx_order, space=space,
-                      poly_space_base=poly_space_base)
-        return Field.from_conf(conf, {region.name : region})
-
-    @staticmethod
-    def from_conf(conf, regions):
-        """
-        Create a Field subclass instance based on the configuration.
-        """
-        if Field._all is None:
-            import sfepy
-            from sfepy.base.base import load_classes
-
-            field_files = [ii for ii
-                           in sfepy.get_paths('sfepy/discrete/fem/fields*.py')
-                           if 'fields_base.py' not in ii]
-            Field._all = load_classes(field_files, [Field], ignore_errors=True,
-                                      name_attr='family_name')
-        table = Field._all
-
-        space = conf.get('space', 'H1')
-        poly_space_base = conf.get('poly_space_base', 'lagrange')
-
-        key = space + '_' + poly_space_base
-
-        approx_order = parse_approx_order(conf.approx_order)
-        ao, force_bubble, discontinuous = approx_order
-
-        region = regions[conf.region]
-        if region.kind == 'cell':
-            # Volume fields.
-            kind = 'volume'
-
-            if discontinuous:
-                cls = table[kind + '_' + key + '_discontinuous']
-
-            else:
-                cls = table[kind + '_' + key]
-
-            obj = cls(conf.name, conf.dtype, conf.shape, region,
-                      approx_order=approx_order[:2])
-
-        else:
-            # Surface fields.
-            kind = 'surface'
-
-            cls = table[kind + '_' + key]
-            obj = cls(conf.name, conf.dtype, conf.shape, region,
-                      approx_order=approx_order[:2])
-
-        return obj
 
     def __init__(self, name, dtype, shape, region, approx_order=1):
         """
-        Create a Field.
+        Create a finite element field.
 
+        Parameters
+        ----------
         name : str
             The field name.
         dtype : numpy.dtype
@@ -331,24 +200,12 @@ class Field(Struct):
         -----
         Assumes one cell type for the whole region!
         """
-        if isinstance(shape, basestr):
-            try:
-                shape = {'scalar' : (1,),
-                         'vector' : (region.domain.shape.dim,)}[shape]
-            except KeyError:
-                raise ValueError('unsupported field shape! (%s)', shape)
-
-        elif isinstance(shape, int):
-            shape = (shape,)
-
+        shape = parse_shape(shape, region.domain.shape.dim)
         if not self._check_region(region):
             raise ValueError('unsuitable region for field %s! (%s)' %
                              (name, region.name))
 
-        Struct.__init__(self,
-                        name=name,
-                        dtype=dtype,
-                        shape=shape,
+        Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
         self.domain = self.region.domain
         self.igs = self.region.igs
@@ -375,13 +232,6 @@ class Field(Struct):
         else:
             self.approx_order = approx_order
             self.force_bubble = False
-
-    def _setup_kind(self):
-        name = self.get('family_name', None,
-                        'An abstract Field method called!')
-        aux = name.split('_')
-        self.space = aux[1]
-        self.poly_space_base = aux[2]
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -509,41 +359,79 @@ class Field(Struct):
         """
         return self.vertex_remap_i
 
-    def get_dofs_in_region(self, region, merge=False, clean=False,
-                           warn=False, igs=None):
-        """
-        Return indices of DOFs that belong to the given region.
-        """
-        if igs is None:
-            igs = region.igs
-
-        nods = []
-        for ig in self.igs:
-            if not ig in igs:
-                nods.append(None)
-                continue
-
-            nn = self.get_dofs_in_region_group(region, ig)
-            nods.append(nn)
-
-        if merge:
-            nods = [nn for nn in nods if nn is not None]
-            nods = nm.unique(nm.hstack(nods))
-
-        elif clean:
-            for nn in nods[:]:
-                if nn is None:
-                    nods.remove(nn)
-                    if warn is not None:
-                        output(warn + ('%s' % region.name))
-
-        return nods
-
     def _get_facet_dofs(self, get_facets, remap, dofs, ig):
         gfacets = get_facets(ig)
         facets = remap[gfacets]
 
         return dofs[facets[facets >= 0]].ravel()
+
+    def get_data_shape(self, ig, integral,
+                       integration='volume', region_name=None):
+        """
+        Get element data dimensions.
+
+        Parameters
+        ----------
+        ig : int
+            The element group index.
+        integral : Integral instance
+            The integral describing used numerical quadrature.
+        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
+            The term integration type.
+        region_name : str
+            The name of surface region, required when `shape_kind` is
+            'surface'.
+
+        Returns
+        -------
+        data_shape : 4 ints
+            The `(n_el, n_qp, dim, n_en)` for volume shape kind,
+            `(n_fa, n_qp, dim, n_fn)` for surface shape kind and
+            `(n_nod, 0, 0, 1)` for point shape kind.
+
+        Notes
+        -----
+        - `n_el`, `n_fa` = number of elements/facets
+        - `n_qp` = number of quadrature points per element/facet
+        - `dim` = spatial dimension
+        - `n_en`, `n_fn` = number of element/facet nodes
+        - `n_nod` = number of element nodes
+        """
+        ap = self.aps[ig]
+
+        region = self.domain.regions[region_name]
+        shape = region.shape[ig]
+        dim = region.dim
+
+        if integration in ('surface', 'surface_extra'):
+            sd = ap.surface_data[region_name]
+
+            # This works also for surface fields.
+            key = sd.face_type
+            weights = ap.get_qp(key, integral).weights
+            n_qp = weights.shape[0]
+
+            if integration == 'surface':
+                data_shape = (sd.n_fa, n_qp, dim, ap.n_ep[key])
+
+            else:
+                data_shape = (sd.n_fa, n_qp, dim, ap.n_ep['v'])
+
+        elif integration in ('volume', 'plate'):
+            _, weights = integral.get_qp(self.gel.name)
+            n_qp = weights.shape[0]
+
+            data_shape = (shape.n_cell, n_qp, dim, ap.n_ep['v'])
+
+        elif integration == 'point':
+            dofs = self.get_dofs_in_region(region, merge=True)
+            data_shape = (dofs.shape[0], 0, 0, 1)
+
+        else:
+            raise NotImplementedError('unsupported integration! (%s)'
+                                      % integration)
+
+        return data_shape
 
     def get_dofs_in_region_group(self, region, ig, merge=True):
         """
@@ -860,83 +748,17 @@ class Field(Struct):
         else:
             return self.coors[nods]
 
-    def clear_mappings(self, clear_all=False):
-        """
-        Clear current reference mappings.
-        """
-        self.mappings = {}
-        if clear_all:
-            self.mappings0 = {}
-
-    def save_mappings(self):
-        """
-        Save current reference mappings to `mappings0` attribute.
-        """
-        self.mappings0 = self.mappings.copy()
-
     def create_mapping(self, ig, region, integral, integration):
         """
         Create a new reference mapping.
         """
         ap = self.aps[ig]
 
-        out = ap.describe_geometry(self, integration, region, integral)
+        out = ap.describe_geometry(self, integration, region, integral,
+                                   return_mapping=True)
         return out
 
-    def get_mapping(self, ig, region, integral, integration,
-                    get_saved=False, return_key=False):
-        """
-        For given region, integral and integration type, get a reference
-        mapping, i.e. jacobians, element volumes and base function
-        derivatives for Volume-type geometries, and jacobians, normals
-        and base function derivatives for Surface-type geometries
-        corresponding to the field approximation.
-
-        The mappings are cached in the field instance in `mappings`
-        attribute. The mappings can be saved to `mappings0` using
-        `Field.save_mappings`. The saved mapping can be retrieved by
-        passing `get_saved=True`. If the required (saved) mapping
-        is not in cache, a new one is created.
-
-        Returns
-        -------
-        geo : VolumeGeometry or SurfaceGeometry instance
-            The geometry object that describes the mapping.
-        mapping : VolumeMapping or SurfaceMapping instance
-            The mapping.
-        key : tuple
-            The key of the mapping in `mappings` or `mappings0`.
-        """
-        ap = self.aps[ig]
-        # Share full group mappings.
-        shape = self.domain.groups[ig].shape
-        if ((region.shape[ig].n_vertex == shape.n_vertex)
-            and (region.shape[ig].n_cell == shape.n_el)):
-            region_name = ig
-
-        else:
-            region_name = region.name
-
-        key = (integral.name, region_name, ig, integration)
-
-        # out is (geo, mapping) tuple.
-        if get_saved:
-            out = self.mappings0.get(key, None)
-
-        else:
-            out = self.mappings.get(key, None)
-
-        if out is None:
-            out = ap.describe_geometry(self, integration, region, integral,
-                                       return_mapping=True)
-            self.mappings[key] = out
-
-        if return_key:
-            out = out + (key,)
-
-        return out
-
-class VolumeField(Field):
+class VolumeField(FEField):
     """
     Finite element field base class over volume elements (element dimension
     equals space dimension).
@@ -975,6 +797,8 @@ class VolumeField(Field):
         """
         ig = self.region.domain.cmesh.cell_groups[self.region.cells[0]]
         self.gel = self.domain.groups[ig].gel
+
+        self.is_surface = False
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -1068,7 +892,8 @@ class VolumeField(Field):
         if region.name not in ap.point_data:
             ap.setup_point_data(field, region)
 
-    def get_econn(self, conn_type, region, ig, is_trace=False):
+    def get_econn(self, conn_type, region, ig, is_trace=False,
+                  integration=None):
         """
         Get extended connectivity of the given type in the given region.
         """
@@ -1083,7 +908,13 @@ class VolumeField(Field):
         ap = self.aps[ig]
 
         if ct in ('volume', 'plate'):
-            conn = ap.econn
+            if region.name == self.region.name:
+                conn = ap.econn
+
+            else:
+                aux = integration in ('volume', 'plate')
+                cells = region.get_cells(ig, true_cells_only=aux)
+                conn = nm.take(ap.econn, cells.astype(nm.int32), axis=0)
 
         elif ct == 'surface':
             sd = ap.surface_data[region.name]
@@ -1143,7 +974,7 @@ class VolumeField(Field):
 
         return data_vertex
 
-class SurfaceField(Field):
+class SurfaceField(FEField):
     """
     Finite element field base class over surface (element dimension is one
     less than space dimension).
@@ -1175,6 +1006,8 @@ class SurfaceField(Field):
         self.gel = self.domain.groups[self.region.igs[0]].gel.surface_facet
         if self.gel is None:
             raise ValueError('element group has no surface!')
+
+        self.is_surface = True
 
     def _create_interpolant(self):
         name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
@@ -1254,7 +1087,8 @@ class SurfaceField(Field):
         """
         return 0, None, None
 
-    def get_econn(self, conn_type, region, ig, is_trace=False):
+    def get_econn(self, conn_type, region, ig, is_trace=False,
+                  integration=None):
         """
         Get extended connectivity of the given type in the given region.
         """

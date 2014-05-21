@@ -15,7 +15,7 @@ from sfepy.base.base import (Struct, IndexedStruct, dict_to_struct,
                              import_file, assert_, get_default, basestr)
 from sfepy.base.parse_conf import create_bnf
 
-_required = ['filename_mesh', 'field_[0-9]+|fields',
+_required = ['filename_mesh|filename_domain', 'field_[0-9]+|fields',
              'ebc_[0-9]+|ebcs', 'equations',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials',

@@ -5,7 +5,7 @@ except (ImportError, AttributeError):
     raise
 
 from mesh import Mesh
-from domain import Domain
+from domain import FEDomain
 from fields_base import Field
 from sfepy.discrete.fem.meshio import MeshIO
 from utils import extend_cell_data

@@ -79,7 +79,7 @@ from sfepy.base.testing import TestCommon
 
 def _integrate(var, val_qp):
     from sfepy.discrete import Integral
-    from sfepy.discrete.fem.mappings import get_jacobian
+    from sfepy.discrete.common.mappings import get_jacobian
 
     integral = Integral('i', 2)
     det = get_jacobian(var.field, integral)

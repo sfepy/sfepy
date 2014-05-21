@@ -10,13 +10,15 @@ from sfepy.base.base import (real_types, complex_types, assert_, get_default,
                              output, OneTypeList, Container, Struct, basestr,
                              iter_dict_of_lists)
 import sfepy.linalg as la
+from sfepy.discrete.functions import Function
+from sfepy.discrete.conditions import get_condition_value
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
                                             expand_nodes_to_equations,
                                             is_active_bc)
 from sfepy.discrete.fem.lcbc_operators import (LCBCOperators,
                                                make_global_lcbc_operator)
-from sfepy.discrete.fem.mappings import get_physical_qps
+from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 
 is_state = 0
@@ -1265,13 +1267,7 @@ class FieldVariable(Variable):
         Takes reference to a Field instance. Sets dtype according to
         field.dtype. Sets `dim` attribute to spatial dimension.
         """
-        from sfepy.discrete import SurfaceField
-
-        if isinstance(field, SurfaceField):
-            self.is_surface = True
-
-        else:
-            self.is_surface = False
+        self.is_surface = field.is_surface
 
         self.field = field
         self._setup_dofs(field.n_nod, field.n_components, field.val_shape)
@@ -1279,7 +1275,7 @@ class FieldVariable(Variable):
         self.flags.add(is_field)
         self.dtype = field.dtype
 
-        self.dim = field.coors.shape[1]
+        self.dim = field.domain.shape.dim
 
     def get_field(self):
         return self.field
@@ -1451,14 +1447,12 @@ class FieldVariable(Variable):
             if len(nod_list) == 0:
                 continue
 
-            vv = nm.empty((0,), dtype=self.dtype)
-            nods = nm.unique(nm.hstack(nod_list))
-            coor = self.field.get_coor(nods)
-            if type(val) == str:
-                fun = functions[val]
-                vv = fun(coor, ic=ic)
-            else:
-                vv = nm.repeat([val], nods.shape[0] * len(dofs))
+            fun = get_condition_value(val, functions, 'IC', ic.name)
+            if isinstance(fun, Function):
+                aux = fun
+                fun = lambda coors: aux(coors, ic=ic)
+
+            nods, vv = self.field.set_dofs(fun, region, len(dofs), clean_msg)
 
             eq = expand_nodes_to_equations(nods, dofs, self.dofs)
 
@@ -1503,31 +1497,9 @@ class FieldVariable(Variable):
         - `n_comp` = number of variable components in a point/node
         - `n_nod` = number of element nodes
         """
-        ap = self.field.aps[ig]
-        if integration in ('surface', 'surface_extra'):
-            data_shape = ap.get_s_data_shape(integral, region_name)
-
-            if integration == 'surface_extra':
-                n_en = ap.get_v_data_shape(integral)[-1]
-                data_shape = data_shape[:-1] + (n_en,)
-
-        elif integration in ('volume', 'plate'):
-            data_shape = ap.get_v_data_shape(integral)
-
-            # Override ap.region with the required region.
-            region = self.field.domain.regions[region_name]
-            data_shape = (region.get_n_cells(ig),) + data_shape[1:]
-
-        elif integration == 'point':
-            region = self.field.domain.regions[region_name]
-            dofs = self.field.get_dofs_in_region(region, merge=True)
-            data_shape = (dofs.shape[0], 0, 0, 1)
-
-        else:
-            raise NotImplementedError('unsupported integration! (%s)'
-                                      % integration)
-
-        data_shape += (self.n_components,)
+        aux = self.field.get_data_shape(ig, integral, integration=integration,
+                                        region_name=region_name)
+        data_shape = aux + (self.n_components,)
 
         return data_shape
 
@@ -1819,8 +1791,10 @@ class FieldVariable(Variable):
 
         else:
             vec = self(step=step, derivative=time_derivative, dt=dt)
-            ap = field.aps[ig]
-            conn = ap.get_connectivity(region, integration, is_trace)
+            ct = integration
+            if integration == 'surface_extra':
+                ct = 'volume'
+            conn = field.get_econn(ct, region, ig, is_trace, integration)
 
             shape = self.get_data_shape(ig, integral, integration, region.name)
 

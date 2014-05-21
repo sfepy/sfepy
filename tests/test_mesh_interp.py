@@ -35,7 +35,7 @@ def gen_datas(meshes):
 def do_interpolation(m2, m1, data, field_name, force=False):
     """Interpolate data from m1 to m2. """
     from sfepy.discrete import Variables
-    from sfepy.discrete.fem import Domain, Field
+    from sfepy.discrete.fem import FEDomain, Field
 
     fields = {
         'scalar_si' : ((1,1), 'Omega', 2),
@@ -44,7 +44,7 @@ def do_interpolation(m2, m1, data, field_name, force=False):
         'vector_tp' : ((3,1), 'Omega', 1),
     }
 
-    d1 = Domain('d1', m1)
+    d1 = FEDomain('d1', m1)
 
     omega1 = d1.create_region('Omega', 'all')
 
@@ -58,7 +58,7 @@ def do_interpolation(m2, m1, data, field_name, force=False):
     u1 = vv['u']
     u1.set_from_mesh_vertices(data)
 
-    d2 = Domain('d2', m2)
+    d2 = FEDomain('d2', m2)
     omega2 = d2.create_region('Omega', 'all')
 
     field2 = Field.from_args('f', nm.float64, f[0], d2.regions[f[1]],
@@ -127,7 +127,7 @@ class Test(TestCommon):
     def test_interpolation_two_meshes(self):
         from sfepy import data_dir
         from sfepy.discrete import Variables
-        from sfepy.discrete.fem import Mesh, Domain, Field
+        from sfepy.discrete.fem import Mesh, FEDomain, Field
 
         m1 = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
 
@@ -149,13 +149,13 @@ class Test(TestCommon):
             'v'       : ('test field',    'scalar_si', 'u'),
         }
 
-        d1 = Domain('d1', m1)
+        d1 = FEDomain('d1', m1)
         omega1 = d1.create_region('Omega', 'all')
         field1 = Field.from_args('scalar_tp', nm.float64, (1,1), omega1,
                                  approx_order=1)
         ff1 = {field1.name : field1}
 
-        d2 = Domain('d2', m2)
+        d2 = FEDomain('d2', m2)
         omega2 = d2.create_region('Omega', 'all')
         field2 = Field.from_args('scalar_si', nm.float64, (1,1), omega2,
                                  approx_order=0)
@@ -206,9 +206,9 @@ class Test(TestCommon):
     def test_invariance_qp(self):
         from sfepy import data_dir
         from sfepy.discrete import Variables, Integral
-        from sfepy.discrete.fem import Mesh, Domain, Field
+        from sfepy.discrete.fem import Mesh, FEDomain, Field
         from sfepy.terms import Term
-        from sfepy.discrete.fem.mappings import get_physical_qps
+        from sfepy.discrete.common.mappings import get_physical_qps
 
         mesh = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
 
@@ -222,7 +222,7 @@ class Test(TestCommon):
             'v'       : ('test field',    'scalar_tp', 'u'),
         }
 
-        domain = Domain('domain', mesh)
+        domain = FEDomain('domain', mesh)
         omega = domain.create_region('Omega', 'all')
         field = Field.from_args('scalar_tp', nm.float64, 1, omega,
                                 approx_order=1)

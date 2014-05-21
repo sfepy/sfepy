@@ -2,7 +2,28 @@
 The Dirichlet, periodic and linear combination boundary condition
 classes, as well as the initial condition class.
 """
+import numpy as nm
+
 from sfepy.base.base import Container, Struct
+from sfepy.discrete.functions import Function
+
+def get_condition_value(val, functions, kind, name):
+    """
+    Check a boundary/initial condition value type and return the value or
+    corresponding function.
+    """
+    if type(val) == str:
+        fun = functions[val]
+
+    elif (isinstance(val, Function) or nm.isscalar(val)
+          or isinstance(val, nm.ndarray)):
+        fun = val
+
+    else:
+        raise ValueError('unknown value type for %s %s!'
+                         % (kind, name))
+
+    return fun
 
 def _get_region(name, regions, bc_name):
     try:

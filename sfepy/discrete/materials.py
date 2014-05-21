@@ -273,13 +273,7 @@ class Material( Struct ):
         if 'special' in self.datas: return
 
         # Special function values (e.g. flags).
-        if problem is not None:
-            coors = problem.get_mesh_coors()
-
-        else:
-            coors = None
-
-        datas = self.function(ts, coors, mode='special',
+        datas = self.function(ts, None, mode='special',
                               problem=problem, equations=equations,
                               **self.extra_args)
         if datas is not None:

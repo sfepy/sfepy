@@ -20,7 +20,7 @@ from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
 from sfepy.discrete.fem.global_interp import get_ref_coors
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
-from sfepy.discrete.fem.fields_base import (Field, VolumeField, SurfaceField,
+from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
                                             H1Mixin)
 from sfepy.discrete.fem.extmods.bases import evaluate_in_rc
 
@@ -358,7 +358,7 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
         if self.approx_order != 0:
             dofs = self.average_to_vertices(dofs)
 
-        new_dofs = Field.extend_dofs(self, dofs)
+        new_dofs = FEField.extend_dofs(self, dofs)
 
         return new_dofs
 
@@ -369,7 +369,7 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
         if self.approx_order != 0:
             dofs = self.average_to_vertices(dofs)
 
-        new_dofs = Field.remove_extra_dofs(self, dofs)
+        new_dofs = FEField.remove_extra_dofs(self, dofs)
 
         return new_dofs
 

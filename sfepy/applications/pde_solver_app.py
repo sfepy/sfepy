@@ -150,12 +150,19 @@ class PDESolverApp(Application):
     def setup_output_info(self, problem, options):
         """Modifies both problem and options!"""
         if options.output_filename_trunk is None:
-            filename_mesh = self.conf.filename_mesh
-            if isinstance(filename_mesh, MeshIO):
-                ofn_trunk = filename_mesh.get_filename_trunk()
+            if self.conf.get('filename_mesh') is not None:
+                filename_mesh = self.conf.filename_mesh
+                if isinstance(filename_mesh, MeshIO):
+                    ofn_trunk = filename_mesh.get_filename_trunk()
+
+                else:
+                    ofn_trunk = io.get_trunk(filename_mesh)
+
+            elif self.conf.get('filename_domain') is not None:
+                ofn_trunk = io.get_trunk(self.conf.filename_domain)
 
             else:
-                ofn_trunk = io.get_trunk(filename_mesh)
+                raise ValueError('missing filename_mesh or filename_domain!')
 
             options.output_filename_trunk = ofn_trunk
 

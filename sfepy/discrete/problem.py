@@ -12,8 +12,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
-from sfepy.discrete.fem.domain import Domain
-from sfepy.discrete.fem.fields_base import fields_from_conf
+from sfepy.discrete.common.fields import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
 from equations import Equations
@@ -71,16 +70,20 @@ class Problem(Struct):
 
         functions = Functions.from_conf(conf.functions)
 
-        mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
+        if conf.get('filename_mesh') is not None:
+            from sfepy.discrete.fem.domain import FEDomain
 
-        trans_mtx = conf.options.get('mesh_coors_transform', None)
+            mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
+            domain = FEDomain(mesh.name, mesh)
+            if conf.options.get('ulf', False):
+                domain.mesh.coors_act = domain.mesh.coors.copy()
 
-        if trans_mtx is not None:
-            mesh.transform_coors(trans_mtx)
+        elif conf.get('filename_domain') is not None:
+            from sfepy.discrete.iga.domain import IGDomain
+            domain = IGDomain.from_file(conf.filename_domain)
 
-        domain = Domain(mesh.name, mesh)
-        if conf.options.get('ulf', False):
-            domain.mesh.coors_act = domain.mesh.coors.copy()
+        else:
+            raise ValueError('missing filename_mesh or filename_domain!')
 
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
                       domain=domain, auto_conf=False, auto_solvers=False)
@@ -767,8 +770,9 @@ class Problem(Struct):
                 mesh.write(aux, io='auto', out=vout,
                            float_format=self.float_format, **kwargs)
         else:
-            self.domain.mesh.write(filename, io='auto', out=out,
-                                   float_format=self.float_format, **kwargs)
+            mesh = out.pop('__mesh__', self.domain.mesh)
+            mesh.write(filename, io='auto', out=out,
+                       float_format=self.float_format, **kwargs)
 
     def save_ebc(self, filename, force=True, default=0.0):
         """

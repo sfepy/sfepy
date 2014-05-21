@@ -1,4 +1,4 @@
-from sfepy.discrete.fem import Domain
+from sfepy.discrete.fem import FEDomain
 import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial
@@ -124,7 +124,7 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
     if weights is None:
         n_nod = mesh.n_nod
-        domain = Domain('mesh', mesh)
+        domain = FEDomain('mesh', mesh)
         cmesh = domain.cmesh
 
         # initiate all vertices as inner - hierarchy = 2

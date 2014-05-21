@@ -222,7 +222,7 @@ def refine_reference(geometry, level):
     The error edges must be generated in the order of the connectivity
     of the previous (lower) level.
     """
-    from sfepy.discrete.fem import Domain
+    from sfepy.discrete.fem import FEDomain
     from sfepy.discrete.fem.geometry_element import geometry_data
 
     gcoors, gconn = geometry.coors, geometry.conn
@@ -236,7 +236,7 @@ def refine_reference(geometry, level):
 
     mesh = Mesh.from_data('aux', gd.coors, None, [conn],
                           [mat_id], [geometry.name])
-    domain = Domain('aux', mesh)
+    domain = FEDomain('aux', mesh)
 
     for ii in range(level):
         domain = domain.refine()

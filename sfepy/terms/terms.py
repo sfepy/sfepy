@@ -1010,21 +1010,9 @@ class Term(Struct):
 
     def get_assembling_cells(self, shape=None):
         """
-        According to the term integration type, return either the term
-        region cell indices or local index sequence.
+        Return the assembling cell indices into a DOF connectivity.
         """
-        shape_kind = get_shape_kind(self.integration)
-        ig = self.char_fun.ig
-
-        cells = self.region.get_cells(ig, true_cells_only=False)
-        if shape_kind == 'surface':
-            cells = nm.arange(cells.shape[0], dtype=nm.int32)
-
-        elif shape_kind == 'point':
-            cells = nm.arange(shape[0], dtype=nm.int32)
-
-        else:
-            cells = cells.astype(nm.int32)
+        cells = nm.arange(shape[0], dtype=nm.int32)
 
         return cells
 
@@ -1131,7 +1119,7 @@ class Term(Struct):
         Get physical quadrature points corresponding to the term region
         and integral.
         """
-        from sfepy.discrete.fem.mappings import get_physical_qps, PhysicalQPs
+        from sfepy.discrete.common.mappings import get_physical_qps, PhysicalQPs
 
         if self.integration == 'point':
             phys_qps = PhysicalQPs(self.region.igs)

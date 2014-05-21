@@ -679,7 +679,7 @@ Create a domain. The domain allows defining regions or subdomains.
 
 .. sourcecode:: ipython
 
-    In [2]: domain = Domain('domain', mesh)
+    In [2]: domain = FEDomain('domain', mesh)
 
 Define the regions - the whole domain :math:`\Omega`, where the solution
 is sought, and :math:`\Gamma_1`, :math:`\Gamma_2`, where the boundary
@@ -848,3 +848,100 @@ run from the *SfePy* source directory so that it finds the mesh file.
 
 .. literalinclude:: ../examples/standalone/interactive/linear_elasticity.py
    :linenos:
+
+.. _isogeometric_analysis:
+
+Isogeometric Analysis
+---------------------
+
+`Isogeometric analysis`_ (IGA) is a recently developed computational approach
+that allows using the NURBS-based domain description from CAD design tools also
+for approximation purposes similar to the finite element method.
+
+The implementation is SfePy is based on Bezier extraction of NURBS as developed
+in [1]_. This approach allows reusing the existing finite element assembling
+routines, as still the evaluation of weak forms occurs locally in "elements"
+and the local contributions are then assembled to the global system.
+
+Current Implementation
+^^^^^^^^^^^^^^^^^^^^^^
+
+The IGA code is still very preliminary and some crucial components are missing.
+The current implementation is also very slow, as it is in pure Python.
+
+The following already works:
+
+- single patch tensor product domain support in 2D and 3D
+- region selection based on topological Bezier mesh, see below
+- Dirichlet boundary conditions constant on entire sides of a patch
+- both scalar and vector volume terms work
+- term integration over the whole domain as well as a volume subdomain
+- simple linearization (output file generation) based on sampling the results
+  with uniform parametric vectors
+- basic domain generation with ``script/gen_iga_patch.py`` based on `igakit`_
+
+The following is not implemented yet:
+
+- tests
+- theoretical convergence rate verification
+- fast basis evaluation
+- surface terms
+- general Dirichlet boundary conditions (non-constant and/or on a subset of a
+  side)
+- other boundary conditions
+- evaluation in arbitrary point in the physical domain
+- proper (adaptive) linearization for post-processing
+- support for multiple NURBS patches
+
+Domain Description
+""""""""""""""""""
+
+The domain description is in custom HDF5-based files with ``.iga`` extension.
+Such a file contains:
+
+- NURBS patch data (knots, degrees, control points and weights). Those can
+  either be generated using ``igakit``, created manually or imported from other
+  tools.
+- Bezier extraction operators and corresponding DOF connectivity (computed by
+  SfePy).
+- Bezier mesh control points, weights and connectivity (computed by SfePy).
+
+The Bezier mesh is used to create a topological Bezier mesh - a subset of the
+Bezier mesh containing the Bezier element corner vertices only. Those vertices
+are interpolatory (are on the exact geometry) and so can be used for region
+selections.
+
+Region Selection
+""""""""""""""""
+
+The domain description files contain vertex sets for regions corresponding to
+the patch sides, named ``'xiIJ'``, where ``I`` is the parametric axis (0, 1,
+or 2) and ``J`` is 0 or 1 for the beginning and end of the axis knot span.
+Other regions can be defined in the usual way, using the topological Bezier
+mesh entities.
+
+Examples
+^^^^^^^^
+
+The examples demonstrating the use of IGA in SfePy are:
+
+- :ref:`diffusion-poisson_iga`
+- :ref:`linear_elasticity-linear_elastic_iga`
+
+Their problem description files are almost the same as their FEM equivalents,
+with the following differences:
+
+- There is ``filename_domain`` instead of ``filename_mesh``.
+- Fields are defined as follows::
+
+    fields = {
+        'temperature' : ('real', 1, 'Omega', None, 'H1', 'iga'),
+    }
+
+  The approximation order is ``None`` as it is given by the NURBS degrees in
+  the domain description.
+
+.. [1] Michael J. Borden, Michael A. Scott, John A. Evans, Thomas J. R. Hughes:
+       Isogeometric finite element data structures based on Bezier extraction
+       of NURBS, Institute for Computational Engineering and Sciences, The
+       University of Texas at Austin, Austin, Texas, March 2010.

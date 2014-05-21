@@ -14,7 +14,7 @@ sys.path.append('.')
 
 from optparse import OptionParser
 from sfepy.base.base import nm, output
-from sfepy.discrete.fem import Mesh, Domain
+from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import (output_writable_meshes, MeshIO,
                               supported_cell_types)
 
@@ -95,7 +95,7 @@ def main():
         mesh.transform_coors(tr)
 
     if options.refine > 0:
-        domain = Domain(mesh.name, mesh)
+        domain = FEDomain(mesh.name, mesh)
         output('initial mesh: %d nodes %d elements'
                % (domain.shape.n_nod, domain.shape.n_el))
 

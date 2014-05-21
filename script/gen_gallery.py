@@ -61,23 +61,6 @@ omit_dirs = [
 ]
 
 custom = {
-    'diffusion/sinbc.py' : {
-        '_t' : {
-            'is_wireframe' : True,
-            'domain_specific' : {
-                't' : DomainSpecificPlot('plot_warp_scalar',
-                                         ['rel_scaling=1']),
-            },
-            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
-            'roll' : 68,
-            'opacity' : {'wireframe' : 0.3},
-        },
-        '_grad' : {
-            'opacity' : {'surface' : 0.3},
-            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
-            'roll' : 68,
-        },
-    },
     'acoustics/acoustics3d.py' : {
         '_p_1' : {
             'view' : (-53, 120, 0.225, [0.021, 0.018, 0.066]),
@@ -106,6 +89,35 @@ custom = {
             'roll' : 0,
         },
     },
+    'diffusion/poisson_iga.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                't' : DomainSpecificPlot('plot_warp_scalar',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (55, 39, 7, [0.57,  0.91, -0.09]),
+            'roll' : 15,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    },
+    'diffusion/sinbc.py' : {
+        '_t' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                't' : DomainSpecificPlot('plot_warp_scalar',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
+            'roll' : 68,
+            'opacity' : {'wireframe' : 0.3},
+        },
+        '_grad' : {
+            'opacity' : {'surface' : 0.3},
+            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
+            'roll' : 68,
+        },
+    },
     'linear_elasticity/elastic_contact_planes.py' : {
         '' : {
             'is_wireframe' : True,
@@ -128,6 +140,18 @@ custom = {
             'view' : (-82, 47, 2.8, [-0.01, -0.02, -0.02]),
             'roll' : -8.4,
             'opacity' : {'wireframe' : 0.3},
+        },
+    },
+    'linear_elasticity/linear_elastic_iga.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                'u' : DomainSpecificPlot('plot_displacements',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (-113, 35, 1.7, [0.017, -0.05, -0.05]),
+            'roll' : 40,
+            'opacity' : {'wireframe' : 0.2},
         },
     },
     'navier_stokes/stokes_slip_bc.py' : {

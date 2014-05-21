@@ -164,28 +164,6 @@ class Approximation( Struct ):
 
         eval_nodal_coors(coors, mesh_coors, self.region, ps, gps, self.econn, self.ig)
 
-    def get_v_data_shape(self, integral=None):
-        """returns (n_el, n_qp, dim, n_ep)"""
-        if integral is not None:
-            bf_vg = self.get_base('v', 1, integral)
-            return (self.region.shape[self.ig].n_cell,) + bf_vg.shape[-3:]
-
-        else:
-            return (self.region.shape[self.ig].n_cell,
-                    self.interp.gel.dim, self.n_ep['v'])
-
-    def get_s_data_shape(self, integral, key):
-        """returns (n_fa, n_qp, dim, n_fp)"""
-        if not self.surface_data:
-            return 0, 0, 0, 0
-
-        sd = self.surface_data[key]
-        bf_sg = self.get_base(sd.face_type, 1, integral)
-        n_qp, dim, n_fp = bf_sg.shape
-        assert_(n_fp == sd.n_fp)
-
-        return sd.n_fa, n_qp, dim + 1, n_fp
-
     ##
     # c: 05.09.2006, r: 09.05.2008
     def setup_surface_data( self, region ):
@@ -398,7 +376,7 @@ class Approximation( Struct ):
             sg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
                                      mode=gtype)
             if gtype == 'surface_extra':
-                sg.alloc_extra_data(self.get_v_data_shape()[2])
+                sg.alloc_extra_data(self.n_ep['v'])
 
                 self.create_bqp(region.name, integral)
                 qp = self.qp_coors[(integral.name, esd.bkey)]
