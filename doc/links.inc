@@ -24,7 +24,8 @@
 .. _python: http://python.org
 .. _pep-0008: http://www.python.org/dev/peps/pep-0008
 
-.. _NumPy/SciPy: http://scipy.org
+.. _SciPy: http://www.scipy.org
+.. _NumPy: http://www.numpy.org
 .. _sparse matrix: http://docs.scipy.org/doc/scipy/reference/sparse.html
 .. _numpy documentation guide: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
@@ -35,6 +36,8 @@
 .. _python(x,y): http://code.google.com/p/pythonxy
 
 .. _cython: http://cython.org
+.. _pytables: http://www.pytables.org
+.. _sympy: http://sympy.org
 .. _ipython: http://ipython.org
 .. _pyparsing: http://sourceforge.net/projects/pyparsing
 .. _umfpackpy: http://code.google.com/p/umfpackpy
@@ -42,6 +45,7 @@
 .. _medit: http://www.ann.jussieu.fr/~frey/software.html
 .. _python mesh viewer: http://labs.freehackers.org/projects/pythonmeshviewer
 .. _mayavi: http://code.enthought.com/projects/mayavi
+.. _pysparse: http://pysparse.sourceforge.net
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _igakit: https://bitbucket.org/dalcinl/igakit
 

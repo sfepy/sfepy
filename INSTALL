@@ -1,93 +1,75 @@
-This is not for the faint of heart! But it gets better.
+This text contains short installation instructions for SfePy. The full
+instructions are given in doc/installation.rst, see also [1, 2].
 
-Installation prerequisites:
----------------------------
-    recent numpy, scipy (with umfpack wrapper, or umfpack scikit), cython
+[1] http://sfepy.org
+[2] http://sfepy.org/doc-devel/installation.html
 
-Dependencies:
--------------
-  - mandatory: matplotlib, pyparsing, pytables
-  - optional:
-    - umfpack + umfpack scikit (optional, but strongly recommended)
-    - some tests and functions use sympy
-    - schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
-    - log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
-    - postproc.py requires mayavi
-    - to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX
-    - ipython is preferred over the regular Python shell for following some
-      parts of primer/tutorial
-
-SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
-
-On Linux, consult the package manager of your favourite distribution.
-For example in Gentoo:
-  $ emerge -va pytables pyparsing numpy scipy matplotlib ipython
-in Debian:
-  $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
-
-On Windows, all the required packages are part of the Enthought Python
-Distribution (EPD) [1] which is free for academic purposes. A completely
-free Python(x,y) [2] can be used too, but pyparsing has to be installed
-manually, see [3] for step-by-step instructions.
-
-[1] http://www.enthought.com/products/epd.php
-[2] http://code.google.com/p/pythonxy
-[3] http://docs.sfepy.org/doc/introduction.html#running-on-windows-using-python-x-y
-
-SfePy can be used without any installation (see In-place compilation...) by
-running the scripts from the top-level directory of the distribution
-(TOPDIR) (see Examples), or can be installed locally or system-wide (see
-Installation).
-
-In-place compilation of C extension modules:
---------------------------------------------
-
-1. Look at site_cfg_template.py and follow the instructions
-   therein. Usually no changes are necessary.
-
-2. Run:
-   python setup.py build_ext --inplace
-
-Installation:
--------------
-
-system-wide: 'python setup.py install'
-local: 'python setup.py install --root=<installation prefix>'
-
-Examples:
+Platforms
 ---------
 
-Run the executable script 'simple.py' in the top-level directory of the
-distribution (TOPDIR). The unix-style calls are used below,
-on windows use 'python <script>' in place of './<script>'.
+*SfePy* is known to work on various flavours of Linux, on Intel Macs and
+Windows.
 
-Basic usage:
-'./simple.py examples/diffusion/poisson.py' ... creates cylinder.vtk
-'./postproc.py -b cylinder.vtk' ... visualize the results
+Requirements
+------------
 
-'./simple.py examples/navier_stokes/stokes.py' ... creates channels_symm944t.vtk
-'./postproc.py -b channels_symm944t.vtk' ... visualize the results
+Installation prerequisites, required to build SfePy:
 
-'./run_tests.py' ... see Testing below
+- a C compiler suite (for example gcc)
+- Python 2.6 or 2.7
+- NumPy
+- Cython
 
-Applications (look at the Dependencies!):
-- phononic materials:
-  './phonon.py -p examples/phononic/band_gaps.py'
-     ... see examples/phononic/output/
+Python packages required for using SfePy:
 
-- schroedinger.py (order is important below):
-  './schroedinger.py --2d --create-mesh'
-  './schroedinger.py --2d --hydrogen'
-  './postproc.py mesh.vtk'
+- Pyparsing
+- SciPy, preferably with umfpack wrapper, or umfpack scikit
+- Matplotlib, for various plots; GTKAgg for live plotting via log.py
+- PyTables, for storing results in HDF5 files
+- SymPy, for some tests and functions)
+- Mayavi, for postproc.py
+- Pysparse, for schroedinger.py
+- igakit, for script/gen_iga_patch.py - simple IGA domain generator
 
-Stand-alone examples:
+Other dependencies:
 
-'python examples/standalone/homogenized_elasticity/rs_correctors.py'
-'python examples/standalone/elastic_materials/compare_elastic_materials.py'
-'python examples/standalone/live_plot/live_plot.py' ... requires GTKAgg
- matplotlib backend!
-'python examples/standalone/interactive/linear_elasticity.py -s'
- ... '-s' option requires Mayavi
+- To be able to (re)generate the documentation: Sphinx, numpydoc, LaTeX.
+- Mesh generation tools use pexpect and gmsh or tetgen.
+- IPython is preferred over the regular Python shell for following some
+  parts of primer/tutorial.
+
+SfePy can be used in-place without any installation by running the scripts from
+the top-level directory of the distribution (TOPDIR), or can be installed
+locally or system-wide.
+
+Compilation of C Extension Modules
+----------------------------------
+
+1. Look at ``site_cfg_template.py`` and follow the instructions
+   therein. Usually no changes are necessary.
+
+2. Compile the extension modules
+
+   a) for in-place use:
+
+      python setup.py build_ext --inplace
+
+   b) for installation:
+
+      python setup.py build
+
+Installation
+------------
+
+(As mentioned above, this step is not required to use SfePy.)
+
+- System-wide (may require root privileges):
+
+    python setup.py install
+
+- Local (requires write access to ``<installation prefix>``):
+
+    python setup.py install --root=<installation prefix>
 
 Testing:
 --------
@@ -101,7 +83,7 @@ No failures should be reported.
 
 If you get some failures it probably means some optional packages are not
 installed. Also be sure to have a recent version of Numpy and SciPy installed
-(latest releases or SVN versions are the best bet). Verify also your pytables
+(latest releases or Git versions are the best bet). Verify also your pytables
 (hdf5) installation (possible test_io.py failures).
 
 To debug a failure, run './run_tests.py --debug'.
@@ -110,26 +92,5 @@ See also './run_tests.py --help' for further options.
 Documentation:
 --------------
 
-SfePy is documented using Sphinx [3]. The documentation sources are in
-the doc directory. Those sources can be used to generate the
-documentation in many formats supported by Sphinx, notably in html and
-pdf (using LaTeX). The pdf version is already contained in the release,
-see doc/sfepy_manual.pdf. The file can be (re)generated either by
-'python setup.py pdfdocs' in TOPDIR, or using the sphinx commands in the
-doc directory.
-
-For the html version of the sphinx documentation go to [4] (the latest
-release) or [5] (bleeding edge). Similarly to above, it can be
-(re)generated by 'python setup.py htmldocs' in TOPDIR.
-
-If doxygen is installed, the documentation of data structures and functions can
-be automatically generated by running 'python setup.py doxygendocs'. Then see
-'doc/html/index.html'.
-
-See also [1], [2].
-
-[1] http://sfepy.org
-[2] http://sfepy.kme.zcu.cz
-[3] http://sphinx.pocoo.org/
-[4] http://docs.sfepy.org/doc
-[5] http://docs.sfepy.org/doc-devel
+SfePy is documented using Sphinx, see [1] above. The documentation sources are
+in the doc directory.
