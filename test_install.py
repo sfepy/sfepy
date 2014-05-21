@@ -114,6 +114,9 @@ def main():
     out, err = check_output("""python ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" examples/diffusion/poisson.py""")
     eok += report(out, '...', -2, 5, '2.308051e-16', eps=1e-15)
 
+    out, err = check_output('python ./simple.py examples/diffusion/poisson_iga.py')
+    eok += report(out, '...', -2, 5, '3.373487e-15', eps=1e-14)
+
     out, err = check_output('python ./simple.py examples/navier_stokes/stokes.py')
     eok += report(out, '...', -2, 5, '1.210678e-13', eps=1e-11)
 
