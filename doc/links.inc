@@ -43,6 +43,7 @@
 .. _python mesh viewer: http://labs.freehackers.org/projects/pythonmeshviewer
 .. _mayavi: http://code.enthought.com/projects/mayavi
 .. _matplotlib: http://matplotlib.sourceforge.net
+.. _igakit: https://bitbucket.org/dalcinl/igakit
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
@@ -60,3 +61,4 @@
 .. _new bsd license: http://www.opensource.org/licenses/bsd-license.php
 
 .. _finite element method: http://en.wikipedia.org/wiki/Finite_element_method
+.. _isogeometric analysis: http://en.wikipedia.org/wiki/Isogeometric_analysis

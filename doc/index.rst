@@ -20,6 +20,9 @@
    comes with a number of examples that can get you started, check
    :ref:`examples`. Some more advanced features are discussed in :doc:`primer`.
 
+   There is also a preliminary support for the isogeometric analysis, see
+   the :ref:`isogeometric_analysis` section in the :doc:`tutorial`.
+
    **License:** `BSD <http://www.opensource.org/licenses/bsd-license.php>`_
 
    Links
