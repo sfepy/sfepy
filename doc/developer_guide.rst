@@ -808,6 +808,7 @@ Utility scripts
    src/script/eval_tl_forms
    src/script/extract_surface
    src/script/gen_gallery
+   src/script/gen_iga_patch
    src/script/gen_lobatto1d_c
    src/script/gen_mesh_prev
    src/script/gen_term_table
