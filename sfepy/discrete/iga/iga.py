@@ -41,10 +41,12 @@ def get_unraveled_indices(index, shape):
 def tensor_product(a, b):
     """
     Compute tensor product of two 2D arrays with possibly different shapes. The
-    result has the form
-    ``c = [[a00 b, a01 b, ..., ],
-           [a10 b, a11 b, ..., ]
-           ...``.
+    result has the form::
+
+       c = [[a00 b, a01 b, ...],
+            [a10 b, a11 b, ...],
+             ...
+             ...               ]
     """
     c = nm.empty((a.shape[0] * b.shape[0],
                   a.shape[1] * b.shape[1]), dtype=b.dtype)
