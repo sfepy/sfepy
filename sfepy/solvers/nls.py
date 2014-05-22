@@ -6,7 +6,7 @@ import time
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import output, get_default, pause, debug, Struct
+from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 
@@ -151,8 +151,6 @@ class Newton(NonlinearSolver):
     delta : float
         If `check >= 1`, the finite difference matrix is taken as :math:`A_{ij}
         = \frac{f_i(x_j + \delta) - f_i(x_j - \delta)}{2 \delta}`.
-    is_plot : False
-        If True, plot the solution and residual in each step.
     log : dict or None
         If not None, log the convergence according to the configuration in the
         following form::
@@ -190,7 +188,6 @@ class Newton(NonlinearSolver):
                 'give_up_warp' : False,
                 'check' : 0,
                 'delta' : 1e-6,
-                'is_plot' : False,
                 'log' : None, # 'nonlinear' or 'linear' (ignore i_max)
                 'problem' : 'nonlinear',
             }
@@ -216,7 +213,6 @@ class Newton(NonlinearSolver):
                       give_up_warp=get('give_up_warp', False),
                       check=get('check', 0),
                       delta=get('delta', 1e-6),
-                      is_plot=get('is_plot', False),
                       problem=get('problem', 'nonlinear'),
                       log=log,
                       is_any_log=is_any_log) + common
@@ -230,7 +226,6 @@ class Newton(NonlinearSolver):
                            xlabels=['', 'all iterations'],
                            ylabels=[r'$||r||$', 'iteration'],
                            yscales=['log', 'linear'],
-                           is_plot=conf.log.plot is not None,
                            log_filename=conf.log.text,
                            formats=[['%.8e'], ['%d']])
 
@@ -270,7 +265,6 @@ class Newton(NonlinearSolver):
           pre-solved matrix. This is mostly useful for linear time-dependent
           problems.
         """
-        import sfepy.base.plotutils as plu
         conf = get_default(conf, self.conf)
         fun = get_default(fun, self.fun)
         fun_grad = get_default(fun_grad, self.fun_grad)
@@ -415,26 +409,6 @@ class Newton(NonlinearSolver):
                        % (lerr, lin_red))
 
             vec_x -= vec_dx
-
-            if conf.is_plot:
-                plu.plt.ion()
-                plu.plt.gcf().clear()
-                plu.plt.subplot(2, 2, 1)
-                plu.plt.plot(vec_x_last)
-                plu.plt.ylabel(r'$x_{i-1}$')
-                plu.plt.subplot(2, 2, 2)
-                plu.plt.plot(vec_r)
-                plu.plt.ylabel(r'$r$')
-                plu.plt.subplot(2, 2, 4)
-                plu.plt.plot(vec_dx)
-                plu.plt.ylabel(r'$\_delta x$')
-                plu.plt.subplot(2, 2, 3)
-                plu.plt.plot(vec_x)
-                plu.plt.ylabel(r'$x_i$')
-                plu.plt.draw()
-                plu.plt.ioff()
-                pause()
-
             it += 1
 
         if status is not None:

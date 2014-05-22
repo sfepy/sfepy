@@ -3,7 +3,7 @@ import time
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import output, get_default, pause, Struct
+from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 from nls import conv_test
@@ -169,7 +169,6 @@ class Oseen( NonlinearSolver ):
                 'eps_r'      : 1.0,
                 'macheps'    : 1e-16,
                 'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-                'is_plot'    : False,
                 'log'        : {'text' : 'oseen_log.txt',
                                 'plot' : 'oseen_log.png'},
             }
@@ -206,7 +205,6 @@ class Oseen( NonlinearSolver ):
                       macheps=get('macheps', nm.finfo(nm.float64).eps),
                       lin_red=get('lin_red', 1.0),
                       lin_precision=get('lin_precision', None),
-                      is_plot=get('is_plot', False),
                       log=log,
                       is_any_log=is_any_log) + common
 
@@ -220,7 +218,6 @@ class Oseen( NonlinearSolver ):
                            xlabels=['', '', 'all iterations'],
                            ylabels=[r'$||r||$', 'iteration', 'stabilization'],
                            yscales=['log', 'linear', 'log'],
-                           is_plot=conf.log.plot is not None,
                            log_filename=conf.log.text,
                            formats=[['%.8e'], ['%d'],
                                     ['%.8e', '%.8e', '%.8e']])
@@ -233,8 +230,6 @@ class Oseen( NonlinearSolver ):
         """
         Oseen solver is problem-specific - it requires a Problem instance.
         """
-        import sfepy.base.plotutils as plu
-
         conf = get_default( conf, self.conf )
         fun = get_default( fun, self.fun )
         fun_grad = get_default( fun_grad, self.fun_grad )
@@ -359,26 +354,6 @@ class Oseen( NonlinearSolver ):
 
             vec_x_prev = vec_x.copy()
             vec_x -= vec_dx
-
-            if conf.is_plot:
-                plu.plt.ion()
-                plu.plt.gcf().clear()
-                plu.plt.subplot( 2, 2, 1 )
-                plu.plt.plot( vec_x_prev )
-                plu.plt.ylabel( r'$x_{i-1}$' )
-                plu.plt.subplot( 2, 2, 2 )
-                plu.plt.plot( vec_r )
-                plu.plt.ylabel( r'$r$' )
-                plu.plt.subplot( 2, 2, 4 )
-                plu.plt.plot( vec_dx )
-                plu.plt.ylabel( r'$\_delta x$' )
-                plu.plt.subplot( 2, 2, 3 )
-                plu.plt.plot( vec_x )
-                plu.plt.ylabel( r'$x_i$' )
-                plu.plt.draw()
-                plu.plt.ioff()
-                pause()
-
             it += 1
 
         if conf.check_navier_stokes_rezidual:
@@ -415,15 +390,7 @@ class Oseen( NonlinearSolver ):
             print 'Navier-Stokes rezidual : %.8e' % err_ns
             print 'b - u: %.8e' % nla.norm( vec_b - vec_u )
             print condition
-    ##         print vec_rns - vec_rns1
-            plu.plt.ion()
-            plu.plt.gcf().clear()
-            plu.plt.plot( vec_rns )
-    ##         plu.plt.gcf().clear()
-    ##         plu.plt.plot( vec_rns1 )
-            plu.plt.draw()
-            plu.plt.ioff()
-            pause()
+
         else:
             err_ns = None
 
