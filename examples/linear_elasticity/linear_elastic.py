@@ -116,7 +116,6 @@ solvers = {
                   'ls_min'     : 1e-5,
                   'check'     : 0,
                   'delta'     : 1e-6,
-                  'is_plot'    : False,
                   # 'nonlinear' or 'linear' (ignore i_max)
                   'problem'   : 'nonlinear'}),
 }

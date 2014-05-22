@@ -114,7 +114,6 @@ solver_1 = {
     'eps_r'      : 1.0,
     'macheps'    : 1e-16,
     'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'is_plot'    : False,
 
     # Uncomment the following to get a convergence log.
     ## 'log'        : {'text' : 'oseen_log.txt',

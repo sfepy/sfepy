@@ -114,17 +114,6 @@ solver_1 = {
 
     'i_max'      : 1,
     'eps_a'      : 1e-10,
-    'eps_r'      : 1.0,
-    'macheps'   : 1e-16,
-    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'ls_red'     : 0.1,
-    'ls_red_warp' : 0.001,
-    'ls_on'      : 1.1,
-    'ls_min'     : 1e-5,
-    'check'     : 0,
-    'delta'     : 1e-6,
-    'is_plot'    : False,
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 from tests_basic import TestLCBC
