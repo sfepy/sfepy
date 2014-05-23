@@ -13,7 +13,16 @@ def get_condition_value(val, functions, kind, name):
     corresponding function.
     """
     if type(val) == str:
-        fun = functions[val]
+        if functions is not None:
+            try:
+                fun = functions[val]
+
+            except IndexError:
+                raise ValueError('unknown function %s given for %s %s!'
+                                 % (val, kind, name))
+
+        else:
+            raise ValueError('no functions given for %s %s!' % (kind, name))
 
     elif (isinstance(val, Function) or nm.isscalar(val)
           or isinstance(val, nm.ndarray)):
