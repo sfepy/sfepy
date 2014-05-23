@@ -390,8 +390,13 @@ class EquationMap(Struct):
                 mcoor = field.get_coor(nmaster)
                 scoor = field.get_coor(nslave)
 
-                fun = functions[bc.match]
-                i1, i2 = fun(mcoor, scoor)
+                fun = get_condition_value(bc.match, functions, 'EPBC', bc.name)
+                if isinstance(fun, Function):
+                    i1, i2 = fun(mcoor, scoor)
+
+                else:
+                    i1, i2 = fun
+
                 ## print nm.c_[mcoor[i1], scoor[i2]]
                 ## print nm.c_[nmaster[i1], nslave[i2]] + 1
 
