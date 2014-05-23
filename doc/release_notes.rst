@@ -1,5 +1,312 @@
 # created: 20.07.2007 (-1)
 
+.. _2014.1-2014.2:
+
+from 2014.1 to 2014.2
+=====================
+
+- preliminary support for isogeometric analysis
+
+  - merge branch 'iga'
+  - new iga.py: compute_bezier_extraction_1d(), _get_knots_tuple(),
+    eval_bernstein_basis(), compute_bezier_extraction(), get_raveled_index(),
+    tensor_product(), combine_bezier_extraction(), create_connectivity_1d(),
+    create_connectivity(), compute_bezier_control(), get_unraveled_indices(),
+    eval_nurbs_basis_tp(), eval_variable_in_qp(), get_bezier_topology(),
+    get_patch_box_regions(), get_bezier_element_entities(),
+    eval_mapping_data_in_qp()
+  - new plot_nurbs.py: plot_parametric_mesh(), plot_control_mesh(),
+    plot_iso_lines(), plot_nurbs_basis_1d(), plot_bezier_mesh(), _get_edges(),
+    plot_bezier_nurbs_basis_1d()
+  - new utils.py: create_linear_fe_mesh(), create_mesh_and_output(),
+    save_basis()
+  - new io.py: write_iga_data(), read_iga_data()
+  - add filename_domain as alternative to required keywords
+  - update PDESolverApp.setup_output_info() for filename_domain keyword
+  - simplify Domain.has_faces()
+  - remove unused Domain.get_conns()
+  - initialize shape in Domain.__init__()
+  - move common Domain code into new sfepy/discrete/common/domain.py
+
+    - move & update region_leaf()
+    - move region_op(), Domain.get_centroids(), .has_faces(), .reset_regions(),
+      .create_region(), .create_regions(), .save_regions(),
+      .save_regions_as_groups()
+    - rename original Domain -> FEDomain, update FEDomain.__init__()
+    - new Domain.__init__()
+
+  - new sfepy/discrete/iga/domain.py - new IGDomain
+
+    - new .from_file(), .__init__()
+    - update Problem.from_conf() for FEDomain, IGDomain
+    - new NurbsPatch - ._get_ref_coors_1d(), .__call__(), .evaluate()
+
+  - move common Field code into new sfepy/discrete/common/fields.py
+
+    - move Field.from_args(), .from_conf(), ._setup_kind()
+    - move parse_approx_order(), setup_extra_data(), fields_from_conf()
+    - rename original Field -> FEField, update FEField.__init__()
+    - update VolumeField, SurfaceField parent class
+    - new parse_shape(), update FEField.__init__()
+
+  - new sfepy/discrete/iga/fields.py - new IGField
+
+    - new .__init__(), .get_true_order(), .is_higher_order()
+    - new .get_econn(), .setup_extra_data() - volume only
+    - new IGField.get_dofs_in_region_group()
+    - new IGField.set_dofs() - only for a constant value over an entire patch
+      side
+    - new IGField.create_mapping()
+    - new IGField.create_output() - initial version with hard-coded values
+
+      - output mesh corresponding to uniform parametric mesh is returned as
+        out['__mesh__']
+
+    - update Problem.save_state() for custom mesh in out['__mesh__']
+    - update parse_approx_order(), Field.from_conf() for IGField
+
+  - get dimension from domain in FieldVariable._set_field()
+  - move FEField.get_dofs_in_region() into Field
+  - move common Mappings code into new sfepy/discrete/common/mappings.py
+
+    - move PhysicalQPs, get_mapping_data(), get_jacobian(), get_normals()
+    - replace create_mapping() by new Mapping.from_args()
+    - rename original Mapping -> FEMapping - move .get_physical_qps()
+    - update VolumeMapping, SurfaceMapping parent class
+
+  - move mapping handling code from FEField to Field
+
+    - move .clear_mappings(), .save_mappings(), .get_mapping()
+    - update Field.get_mapping() to use .create_mapping(), fix docstring
+    - update FEField.create_mapping() to return both CMapping and Mapping
+
+  - do not use domain shape in Field.get_mapping() - remove sharing of full
+    group mappings
+  - do not use mesh coordinates in Material.update_special_data()
+  - new sfepy/discrete/iga/mappings.py - new IGMapping
+
+    - new .__init__(), .get_geometry(), .get_physical_qps(), .get_mapping()
+    - update Mapping.from_args() for IGMapping
+
+  - use Field.get_econn() in FieldVariable.evaluate()
+
+    - do not use Approximation.get_connectivity()
+    - update VolumeField.get_econn() - add integration argument
+    - update signature of SurfaceField.get_econn(), IGField.get_econn()
+
+  - move FieldVariable.get_data_shape() functionality to Field subclasses
+
+    - new FEField.get_data_shape(), IGField.get_data_shape()
+
+  - remove Approximation.get_v_data_shape(), .get_s_data_shape()
+  - update H1DiscontinuousField.extend_dofs(), .remove_extra_dofs() for FEField
+  - new is_surface attribute of fields
+
+    - update VolumeField._setup_geometry(), SurfaceField._setup_geometry()
+    - update FieldVariable._set_field() - does not import SurfaceField from
+      sfepy.discrete
+
+  - update sfepy/discrete/__init__.py for common Domain, Field
+  - update sfepy/discrete/fem/__init__.py for FEDomain
+  - update domain creating code for FEDomain
+  - update 'surface_extra' assembling cells in Term.get_assembling_cells()
+
+    - for Field.get_econn() in FieldVariable.evaluate() - surface regions have
+      no more a complete group DOF connectivity
+
+  - update 'volume' Term.get_assembling_cells() for subdomains
+
+    - for Field.get_econn() in FieldVariable.evaluate() - subdomain volume
+      regions have no more a complete group DOF connectivity
+    - trivial now, could be removed
+
+  - update FieldVariable.setup_initial_conditions() to use Field.set_dofs()
+
+  - tests and examples:
+
+    - fix get_pars() in tests/test_functions.py for None in coors argument
+    - update import in _integrate() in tests/test_term_consistency.py
+    - new meshes/iga/patch2d.iga
+    - new examples/diffusion/poisson_iga.py
+    - new meshes/iga/block3d.iga
+    - new examples/linear_elasticity/linear_elastic_iga.py
+    - update test_install.py to test poisson_iga.py example
+
+  - scripts:
+
+    - new script/gen_iga_patch.py
+    - add custom view for poisson_iga.py example to script/gen_gallery.py,
+      sort custom dict by keys
+    - add custom view for linear_elastic_iga.py example to script/gen_gallery.py
+
+  - docs:
+
+    - update developer guide for IGA, split sfepy.discrete contents list
+    - new IGA section in tutorial, update links and index
+    - update optional installation dependencies
+
+- postprocessing and visualization:
+
+  - postproc.py: update --layout option for row#n, col#n layouts - update
+    get_position_counts(), Viewer.get_size_hint()
+  - always use cell-to-point filter for domain-specific plots
+
+    - point scalars work as color_name
+    - update Viewer.build_mlab_pipeline()
+
+  - update file sources for providing both steps and times
+
+    - update FileSource.reset(), .get_step_range()
+    - remove FileSource.set_step(), VTKFileSource.get_step_range(),
+      VTKSequenceFileSource.get_step_range(),
+      GenericFileSource.get_step_range()
+      GenericSequenceFileSource.get_step_range()
+    - update GenericFileSource.__init__(), .read_common(), .file_changed()
+    - new FileSource.get_step_time(), .get_ts_info()
+    - new VTKSequenceFileSource.__init__()
+    - new GenericSequenceFileSource.read_common()
+
+  - update postproc.py, Viewer for updated file sources, add slider for times
+
+    - update Viewer.call_mlab()
+    - update SetStep - new ._time_editor, .time, .time_low, .time_high,
+      .is_adjust ._time_changed()
+    - update .__source_changed(), ._step_changed(), ._file_changed_changed()
+
+  - update Viewer.save_animation() for selected steps or times
+
+    - update Viewer.get_animation_info(), .encode_animation()
+    - remove FileSource.get_step_range()
+
+  - remove animate, anim_format arguments from Viewer.__init__()
+
+    - update view_file(), postproc.py
+    - update Viewer.call_mlab(), make_animation()
+
+  - update Viewer, ViewerGUI for saving snapshots in given ranges of steps/times
+
+    - update Viewer.call_mlab(), make_animation()
+    - update SetStep:
+
+      - new .seq_* traits
+      - new .init_seq_selection(), ._seq_n_step_changed(), ._seq_dt_changed()
+
+    - new ClosingHandler
+    - update ViewerGUI:
+
+      - custom quit button
+      - remove button_make_animation, button_make_snapshots buttons
+      - new button_make_animation_steps, button_make_snapshots_steps
+        button_make_animation_times, button_make_snapshots_times buttons + their
+        handlers
+
+  - postproc.py: new --time option
+
+    - change default of --step to None, --step has precedence over --time
+    - update view_file(), Viewer.call_mlab()
+
+  - postproc.py: improve --list-ranges
+
+    - for HDF5 result files, output union of ranges for all steps if --step or
+      --time are not given
+    - output in form suitable for --ranges
+
+  - fix suffix returned by Viewer.get_animation_info()
+  - remove auto_screenshot argument of Viewer.__init__() - update .call_mlab()
+  - postproc.py: update --output option behaviour, update docstring
+
+- input-output:
+
+  - update defaults for missing output data attributes in HDF5MeshIO.write() -
+    only mode and data are required
+  - provide better default values in MeshIO.read_times()
+
+- scripts:
+
+  - new script/plot_logs.py - plot text file logs of variables saved by Log
+  - update schroedinger.py: remove mesh generation options, simplify
+
+    - remove --create-mesh, --2d, --mesh, --mesh-dir options
+    - new --n-eigs, --tau options for updated examples/quantum/
+    - update docstring
+
+  - script/extract_surface.py: fix default value of --mesh option
+  - update script/gen_gallery.py for current Viewer - save image explicitly
+  - fix docstring formatting of script/convert_mesh.py
+
+- terms:
+
+  - make material argument of dw_tl_surface_traction optional - update
+    SurfaceTractionTLTerm, dw_tl_surface_traction()
+  - new VolumeSurfaceTLTerm (d_tl_volume_surface) - new d_tl_volume_surface()
+  - move SurfaceTractionTLTerm.compute_family_data() to new common class
+
+    - new HyperElasticSurfaceTLBase
+    - update SurfaceTractionTLTerm, VolumeSurfaceTLTerm
+
+  - new SurfaceFluxTLTerm (d_tl_surface_flux) - new d_tl_surface_flux()
+  - fix setting cells of normals in dw_surface_v_dot_n_s(),
+    dw_surface_s_v_dot_n()
+  - fix arg_shapes of LaplaceTerm
+  - new SurfaceFluxOperatorTerm (dw_surface_flux) - new dw_surface_flux()
+  - fix mat_le_stress() for heterogeneous parameters in 2D
+
+- solvers:
+
+  - update cm_pb solver: add "master problem" to kwargs
+  - improve linear solution precision warning message in Newton.__call__()
+  - new eps_mode parameter of Newton solver, update conv_test()
+  - clean up sfepy/solvers/nls.py, add module and conv_test() docstrings
+  - update PETScParallelKrylovSolver - new log_dir option - closes #250
+  - remove obsolete is_plot option from Newton and Oseen solvers
+
+- miscellaneous updates:
+
+  - fix create_adof_conns(): problem with trace
+  - fix docstring of Region.get_facet_indices()
+  - new get_simplex_volumes()
+  - update read_log() for general (float) x values
+  - fix read_log() for vlines before actual data
+  - fix solve_pde() to preserve conf.options class
+  - use tight layout in LogPlotter.process_command() after plotting labels
+  - fix surface mode in extend_cell_data()
+  - fix Problem.create_evaluable() to use copies of problem variables
+  - update test_install.py for meshes/quantum/ and schroedinger.py changes
+  - use tempfile in gen_misc_mesh()
+  - remove mesh coordinate transformation code in Problem.from_conf()
+  - remove tmp/.ignore
+  - update make_l2_projection_data() for array data, new order argument, fix
+    overwriting of target._variables
+  - new get_condition_value(), update EquationMap.map_equations()
+  - update EquationMap.map_equations() to use get_condition_value() for EPBCs
+
+- tests and examples:
+
+  - increase required precision in examples/acoustics/acoustics3d.py
+  - allow trying mesh refinement in tests/test_linear_solvers.py
+  - clean up tests/test_volume.py
+  - update tests/test_volume.py to test TL volume terms, new test_volume_tl()
+  - update examples/quantum/ - use meshes/quantum/square.mesh
+
+    - update quantum_common.py to use square.mesh, add docstring, increase
+      approximation order to 2, update common() arguments
+    - new arguments to define() in examples: n_eigs, tau
+    - remove unused meshes in meshes/quantum/
+    - update meshes/quantum/square.geo
+    - new meshes/quantum/square.mesh (corresponds to meshes/quantum/square.geo)
+
+- docs:
+
+  - update developer guide for sfepy/discrete/
+  - update support section
+  - update years in LICENSE
+  - replace link by contents of LICENSE, new doc/license.rst
+  - update year in doc/conf.py
+  - remove obsolete Intel Mac installation instructions
+  - update platform-specific notes
+  - simplify INSTALL, update installation and links
+  - new citing section in index
+
 .. _2013.4-2014.1:
 
 from 2013.4 to 2014.1
