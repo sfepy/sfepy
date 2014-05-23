@@ -11,6 +11,7 @@ def configuration(parent_package='',top_path=None):
     subdirs = [
         'common',
         'fem',
+        'iga',
     ]
     for subdir in subdirs:
         config.add_subpackage(subdir)

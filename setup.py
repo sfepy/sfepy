@@ -58,6 +58,7 @@ def configuration(parent_package='',top_path=None):
         'eval_tl_forms.py',
         'extract_surface.py',
         'gen_gallery.py',
+        'gen_iga_patch.py',
         'gen_lobatto1d_c.py',
         'gen_mesh_prev.py',
         'gen_term_table.py',
