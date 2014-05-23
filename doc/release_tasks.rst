@@ -59,7 +59,6 @@ Things to check before a release
 
    * update doc/release_notes.rst
    * update doc/news.rst, doc/archived_news.rst
-   * update doc/downloads.rst
    * change version number (sfepy/version.py) so that previous release
      tarball is not overwritten!
    * set ``is_release = True`` in site_cfg.py
