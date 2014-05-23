@@ -1,11 +1,16 @@
 News
 ====
 
+* **23.05.2014** Version 2014.2 released (preliminary support for isogeometric
+  analysis, improved postprocessing and visualization script for time-dependent
+  problems with adaptive time steps, three new terms, etc.), see :ref:`release
+  notes <2014.1-2014.2>`.
+
 * **25.02.2014** Version 2014.1 released (sfepy.fem was split to separate
   FEM-specific and general modules, lower memory usage by creating active DOF
   connectivities directly from field connectivities, new handling of field and
   variable shapes, clean up: many obsolete modules were removed, all module
-  names follow naming conventions , etc.), see :ref:`release notes
+  names follow naming conventions, etc.), see :ref:`release notes
   <2013.4-2014.1>`.
 
 * **22.11.2013** Version 2013.4 released (simplified quadrature definition,
@@ -24,10 +29,5 @@ News
   translated low level base functions from Cython to C for reusability,
   improved gallery http://docs.sfepy.org/gallery/gallery, etc.), see
   :ref:`release notes <2013.1-2013.2>`.
-
-* **27.02.2013** Version 2013.1 released (unified use of stationary and
-  evolutionary solvers, new implicit adaptive time stepping solver, elements of
-  set and nodes of set region selectors, simplified setting of variables data,
-  etc.), see :ref:`release notes <2012.4-2013.1>`.
 
 For historians: see :ref:`archived_news`.

@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **27.02.2013** Version 2013.1 released (unified use of stationary and
+  evolutionary solvers, new implicit adaptive time stepping solver, elements of
+  set and nodes of set region selectors, simplified setting of variables data,
+  etc.), see :ref:`release notes <2012.4-2013.1>`.
+
 * **21.11.2012** Version 2012.4 released (initial support for hierarchical
   basis on quadrilateral and brick elements, unified C/Cython structures for
   reference mappings, new linear combination boundary condition: edge
