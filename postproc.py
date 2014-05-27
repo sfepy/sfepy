@@ -48,7 +48,8 @@ import glob
 
 import sfepy
 from sfepy.base.base import assert_, get_default, output, nm
-from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
+from sfepy.postprocess.viewer import (Viewer, get_data_ranges,
+                                      create_file_source)
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
 usage = '%prog [options] filename\n' + __doc__.rstrip()

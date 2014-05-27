@@ -157,7 +157,7 @@ customize it as follows:
           'import matplotlib as mpl',
           'mpl.use("WXAgg")',
           'from matplotlib.pyplot import *',
-          'from sfepy.postprocess import Viewer',
+          'from sfepy.postprocess.viewer import Viewer',
       ]
 
       c.InteractiveShellApp.exec_lines = exec_lines

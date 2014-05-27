@@ -235,7 +235,7 @@ def generate_images(images_dir, examples_dir):
     The generated images are stored to `images_dir`,
     """
     from sfepy.applications import solve_pde
-    from sfepy.postprocess import Viewer
+    from sfepy.postprocess.viewer import Viewer
     from sfepy.postprocess.utils import mlab
 
     prefix = output.prefix

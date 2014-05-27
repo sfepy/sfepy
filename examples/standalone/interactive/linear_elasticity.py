@@ -13,7 +13,7 @@ from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
-from sfepy.postprocess import Viewer
+from sfepy.postprocess.viewer import Viewer
 
 def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
     """
