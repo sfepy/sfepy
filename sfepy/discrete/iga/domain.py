@@ -157,3 +157,5 @@ class IGDomain(Domain):
                 self.vertex_set_bcs[key] = remap[val]
 
         self.cell_offsets = {0 : 0}
+
+        self.reset_regions()
