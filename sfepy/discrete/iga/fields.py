@@ -241,6 +241,8 @@ class IGField(Field):
         """
         from sfepy.discrete.iga.utils import create_mesh_and_output
 
+        key = key if key is not None else var_name
+
         num = 25 if self.region.dim == 3 else 101
         pars = (nm.linspace(0, 1, num),) * self.region.dim
         mesh, out = create_mesh_and_output(self.domain.nurbs, pars,
