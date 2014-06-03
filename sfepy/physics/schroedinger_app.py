@@ -195,6 +195,7 @@ class SchroedingerApp(PDESolverApp):
         n_eigs = self.app_options.n_eigs
         out = get_default(out, {})
         state = pb.create_state()
+        aux = {}
         for ii in xrange(eigs.shape[0]):
             if save is not None:
                 if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
@@ -202,6 +203,9 @@ class SchroedingerApp(PDESolverApp):
             aux = state.create_output_dict()
             key = aux.keys()[0]
             out[key+'%03d' % ii] = aux[key]
+
+        if aux.get('__mesh__') is not None:
+            out['__mesh__'] = aux['__mesh__']
 
         pb.save_state(mesh_results_name, out=out)
 
