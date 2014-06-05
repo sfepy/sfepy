@@ -83,7 +83,6 @@ def configuration(parent_package='',top_path=None):
     config.add_data_dir(('sfepy/tests', 'tests'))
 
     config.get_version('sfepy/version.py') # sets config.version
-    ## print config
 
     return config
 

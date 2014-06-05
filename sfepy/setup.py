@@ -1,6 +1,3 @@
-import sys
-print sys.path
-
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
     import os.path as op
@@ -24,10 +21,7 @@ def configuration(parent_package='',top_path=None):
     ]
     for subdir in subdirs:
         config.add_subpackage(subdir)
-    import numpy.distutils.misc_util
-    print numpy.distutils.misc_util.__file__
-    config.make_config_py()
-    print config
+
     return config
 
 if __name__ == '__main__':
