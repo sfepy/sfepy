@@ -123,6 +123,10 @@ class IGDomain(Domain):
         from sfepy.discrete.fem.extmods.cmesh import CMesh
         from sfepy.discrete.fem.utils import prepare_remap
 
+        ac = nm.ascontiguousarray
+        self.nurbs.cs = [ac(nm.array(cc, dtype=nm.float64)[:, None, ...])
+                         for cc in self.nurbs.cs]
+
         self.facets = iga.get_bezier_element_entities(nurbs.degrees)
 
         tconn = iga.get_bezier_topology(bmesh.conn, nurbs.degrees)
