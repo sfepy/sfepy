@@ -20,7 +20,7 @@ def configuration(parent_package='', top_path=None):
 
     common_path = '../../fem/extmods'
 
-    fem_src = ['fmfield.c', 'common_python.c']
+    fem_src = ['fmfield.c', 'geommech.c', 'common_python.c']
     fem_src = [op.join(common_path, ii) for ii in fem_src]
 
     src = ['cnurbs.pyx', 'nurbs.c']

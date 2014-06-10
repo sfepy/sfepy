@@ -12,6 +12,16 @@ cdef extern from 'nurbs.h':
     cdef int32 _eval_bernstein_basis \
          'eval_bernstein_basis'(FMField *funs, FMField *ders,
                                 float64 x, uint32 degree)
+    cdef int32 _eval_nurbs_basis_tp \
+         'eval_nurbs_basis_tp'(FMField *R, FMField *dR_dx, FMField *det,
+                               FMField *dR_dxi,
+                               FMField *dx_dxi, FMField *dxi_dx,
+                               FMField *B, FMField *dB_dxi,
+                               FMField *N, FMField *dN_dxi,
+                               FMField *qp, uint32 ie, FMField *control_points,
+                               FMField *weights, int32 *degrees, int32 dim,
+                               FMField *cs,
+                               int32 *conn, int32 n_el, int32 n_ep)
 
 def eval_bernstein_basis(np.ndarray funs not None,
                          np.ndarray ders not None,
