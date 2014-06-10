@@ -1,5 +1,31 @@
 #include "nurbs.h"
 
+inline void ravel_multi_index(uint32 *index, uint32 *indices,
+                              uint32 *shape, uint32 num)
+{
+  uint32 ii, stride = 1;
+  uint32 raveled = 0;
+
+  for (ii = num - 1; ii >= 1; ii--) {
+    raveled += stride * indices[ii];
+    stride *= shape[ii - 1];
+  }
+  raveled += stride * indices[0];
+
+  *index = raveled;
+}
+
+inline void unravel_index(uint32 *indices, uint32 index,
+                          uint32 *shape, uint32 num)
+{
+  int32 ii; // To iterate to zero...
+
+  for (ii = num - 1; ii >= 0; ii--) {
+    indices[ii] = index % shape[ii];
+    index /= shape[ii];
+  }
+}
+
 int32 eval_bernstein_basis(FMField *funs, FMField *ders,
                            float64 x, uint32 degree)
 {
