@@ -15,6 +15,8 @@ def configuration(parent_package='', top_path=None):
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
+    if '-DDEBUG_FMF' in site_config.debug_flags():
+        defines.append(('DEBUG_FMF', None))
 
     common_path = '../../fem/extmods'
 
