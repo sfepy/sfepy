@@ -4,7 +4,7 @@ from libc.stdio cimport FILE, stdout
 cimport numpy as np
 import numpy as np
 
-from types cimport int32, float64
+from types cimport int32, uint32, float64
 
 cdef extern from "fmfield.h":
     ctypedef struct FMField:
@@ -151,3 +151,7 @@ cdef int array2pint2(int32 **out, int32 *n_row, int32 *n_col,
                      np.ndarray[int32, mode='c', ndim=2] arr) except -1
 cdef int array2pint1(int32 **out, int32 *n_row,
                      np.ndarray[int32, mode='c', ndim=1] arr) except -1
+cdef int array2puint2(uint32 **out, uint32 *n_row, uint32 *n_col,
+                      np.ndarray[uint32, mode='c', ndim=2] arr) except -1
+cdef int array2puint1(uint32 **out, uint32 *n_row,
+                      np.ndarray[uint32, mode='c', ndim=1] arr) except -1

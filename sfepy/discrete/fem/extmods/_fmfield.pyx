@@ -67,3 +67,18 @@ cdef inline int array2pint1(int32 **out, int32 *n_row,
                             except -1:
     out[0] = &arr[0]
     n_row[0] = arr.shape[0]
+
+@cython.boundscheck(False)
+cdef inline int array2puint2(uint32 **out, uint32 *n_row, uint32 *n_col,
+                             np.ndarray[uint32, mode='c', ndim=2] arr) \
+                             except -1:
+    out[0] = &arr[0, 0]
+    n_row[0] = arr.shape[0]
+    n_col[0] = arr.shape[1]
+
+@cython.boundscheck(False)
+cdef inline int array2puint1(uint32 **out, uint32 *n_row,
+                             np.ndarray[uint32, mode='c', ndim=1] arr) \
+                             except -1:
+    out[0] = &arr[0]
+    n_row[0] = arr.shape[0]
