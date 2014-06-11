@@ -8,7 +8,7 @@ inline void ravel_multi_index(uint32 *index, uint32 *indices,
 
   for (ii = num - 1; ii >= 1; ii--) {
     raveled += stride * indices[ii];
-    stride *= shape[ii - 1];
+    stride *= shape[ii];
   }
   raveled += stride * indices[0];
 
@@ -18,12 +18,13 @@ inline void ravel_multi_index(uint32 *index, uint32 *indices,
 inline void unravel_index(uint32 *indices, uint32 index,
                           uint32 *shape, uint32 num)
 {
-  int32 ii; // To iterate to zero...
+  uint32 ii;
 
-  for (ii = num - 1; ii >= 0; ii--) {
+  for (ii = num - 1; ii > 0; ii--) {
     indices[ii] = index % shape[ii];
     index /= shape[ii];
   }
+  indices[0] = index % shape[0];
 }
 
 int32 eval_bernstein_basis(FMField *funs, FMField *ders,

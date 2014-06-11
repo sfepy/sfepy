@@ -15,6 +15,11 @@
 #include "fmfield.h"
 #include "geommech.h"
 
+void ravel_multi_index(uint32 *index, uint32 *indices,
+                       uint32 *shape, uint32 num);
+void unravel_index(uint32 *indices, uint32 index,
+                   uint32 *shape, uint32 num);
+
 int32 eval_bernstein_basis(FMField *funs, FMField *ders,
                            float64 x, uint32 degree);
 int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
