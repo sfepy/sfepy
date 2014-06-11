@@ -939,6 +939,7 @@ sfepy.discrete.iga sub-package
    :maxdepth: 2
 
    src/sfepy/discrete/iga/domain
+   src/sfepy/discrete/iga/extmods/igac
    src/sfepy/discrete/iga/fields
    src/sfepy/discrete/iga/iga
    src/sfepy/discrete/iga/io
