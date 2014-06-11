@@ -12,10 +12,18 @@ from sfepy.discrete.fem.extmods._fmfield cimport (FMField,
                                                   array2fmfield1,
                                                   array2pint2,
                                                   array2pint1,
+                                                  array2puint1,
                                                   fmf_alloc,
                                                   fmf_free)
 
 cdef extern from 'nurbs.h':
+    cdef void _ravel_multi_index \
+         'ravel_multi_index'(uint32 *index, uint32 *indices,
+                             uint32 *shape, uint32 num)
+    cdef void _unravel_index \
+         'unravel_index'(uint32 *indices, uint32 index,
+                         uint32 *shape, uint32 num)
+
     cdef int32 _eval_bernstein_basis \
          'eval_bernstein_basis'(FMField *funs, FMField *ders,
                                 float64 x, uint32 degree)
@@ -305,3 +313,141 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                     _coors.val[ir] += _bf.val[ic] * control_points[ec[ic], ir]
 
     return coors, vals, dets
+
+def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
+                     indices not None,
+                     ref_coors not None,
+                     np.ndarray[float64, mode='c', ndim=2]
+                     control_points not None,
+                     np.ndarray[float64, mode='c', ndim=1] weights not None,
+                     np.ndarray[int32, mode='c', ndim=1] degrees not None,
+                     cs not None,
+                     np.ndarray[int32, mode='c', ndim=2] conn not None):
+    """
+    Evaluate a field variable (if given) or the NURBS geometry in the given
+    tensor-product reference coordinates. The field variable is defined by its
+    DOFs - the coefficients of the NURBS basis.
+
+    Parameters
+    ----------
+    variable : array
+        The DOF values of the variable with n_c components, shape (:, n_c).
+    indices : list of arrays
+        The indices of knot spans for each axis, defining the Bezier element
+        numbers.
+    ref_coors : list of arrays
+        The reference coordinates in [0, 1] for each knot span for each axis,
+        defining the reference coordinates in the Bezier elements given by
+        `indices`.
+    control_points : array
+        The NURBS control points.
+    weights : array
+        The NURBS weights.
+    degrees : sequence of ints or int
+        The basis degrees in each parametric dimension.
+    cs : list of lists of 2D arrays
+        The element extraction operators in each parametric dimension.
+    conn : array
+        The connectivity of the global NURBS basis.
+
+    Returns
+    -------
+    out : array
+        The field variable values or NURBS geometry coordinates for the given
+        reference coordinates.
+    """
+    cdef uint32 ii, ip, ie, n_efun, nc, ir, ic, n_vals, uaux
+    cdef int32 n_el, n_ep, dim, aux
+    cdef int32 *_degrees, *_conn, *ec
+    cdef uint32 igrid[3], shape[3], iis[3], n_els[3]
+    cdef uint32 *_indices[3], **puaux
+    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1]
+    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
+    cdef FMField _rc[1], _control_points[1], _weights[1]
+    cdef FMField _cs[3], _ref_coors[3]
+    cdef np.ndarray[float64, mode='c', ndim=2] _evals
+    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+
+    dim = control_points.shape[1]
+    n_efuns = degrees + 1
+    n_efun = np.prod(n_efuns)
+
+    n_vals = 1
+    for ii in range(0, dim):
+        shape[ii] = len(ref_coors[ii])
+        n_vals *= shape[ii]
+
+    # Output values.
+    if variable is None:
+        nc = dim
+        out = np.zeros((n_vals, dim), dtype=np.float64)
+        _evals = control_points
+
+    else:
+        nc = variable.shape[1]
+        out = np.zeros((n_vals, nc), dtype=np.float64)
+        _evals = variable
+
+    # Setup C termporary arrays.
+    rc = np.empty((dim,), dtype=np.float64)
+    det = np.empty((1,), dtype=np.float64)
+    bf = np.empty((n_efun,), dtype=np.float64)
+    bfg = np.empty((dim, n_efun), dtype=np.float64)
+    bfg_dxi = np.empty((1, 1, dim, n_efun), dtype=np.float64)
+    dx_dxi = np.empty((1, 1, dim, dim), dtype=np.float64)
+    dxi_dx = np.empty((1, 1, dim, dim), dtype=np.float64)
+
+    for ii in range(0, dim):
+        fmf_alloc(_B + ii, 1, 1, n_efuns[ii], 1)
+        fmf_alloc(_dB_dxi + ii, 1, 1, n_efuns[ii], 1)
+        fmf_alloc(_N + ii, 1, 1, n_efuns[ii], 1)
+        fmf_alloc(_dN_dxi + ii, 1, 1, n_efuns[ii], 1)
+
+    # Assign to C structures.
+    array2fmfield1(_rc, rc)
+    array2fmfield1(_det, det)
+    array2fmfield1(_bf, bf)
+    array2fmfield2(_bfg, bfg)
+    array2fmfield4(_bfg_dxi, bfg_dxi)
+    array2fmfield4(_dx_dxi, dx_dxi)
+    array2fmfield4(_dxi_dx, dxi_dx)
+    array2fmfield2(_control_points, control_points)
+    array2fmfield1(_weights, weights)
+    for ii in range(dim):
+        array2fmfield4(_cs + ii, cs[ii])
+        n_els[ii] = (_cs + ii).nCell;
+
+    array2pint1(&_degrees, &dim, degrees)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    for ii in range(0, dim):
+        puaux = _indices + ii
+        array2puint1(puaux, &uaux, indices[ii])
+        array2fmfield1(_ref_coors + ii, ref_coors[ii])
+
+    for ip in range(0, n_vals):
+        _unravel_index(igrid, ip, shape, dim)
+
+        for ii in range(0, dim):
+            iis[ii] = _indices[ii][igrid[ii]]
+            _rc.val[ii] = (_ref_coors + ii).val[igrid[ii]]
+        _ravel_multi_index(&ie, iis, n_els, dim)
+
+        _eval_nurbs_basis_tp(_bf, _bfg, _det,
+                             _bfg_dxi,
+                             _dx_dxi, _dxi_dx,
+                             _B, _dB_dxi, _N, _dN_dxi,
+                             _rc, ie,
+                             _control_points, _weights,
+                             _degrees, dim, _cs, _conn, n_el, n_ep)
+
+        # vals[ip, :] = np.dot(bf, variable[ec])
+        ec = _conn + n_ep * ie;
+        array2fmfield1(_vals, out[ip, :])
+        for ir in range(0, nc):
+            _vals.val[ir] = 0.0
+
+            for ic in range(0, n_efun):
+                _vals.val[ir] += _bf.val[ic] * _evals[ec[ic], ir]
+
+    return out
