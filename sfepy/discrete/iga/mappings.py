@@ -4,8 +4,8 @@ Reference mappings for isogeometric analysis.
 import numpy as nm
 
 from sfepy.discrete.common.mappings import Mapping
-import sfepy.discrete.iga.iga as iga
 from sfepy.discrete.fem.extmods.mappings import CMapping
+import sfepy.discrete.iga.extmods.igac as iga
 
 class IGMapping(Mapping):
     """

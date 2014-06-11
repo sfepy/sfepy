@@ -6,10 +6,10 @@ import os.path as op
 import numpy as nm
 
 from sfepy.base.base import Struct
-from sfepy.linalg import cycle
 from sfepy.discrete.common.domain import Domain
 import sfepy.discrete.iga as iga
 import sfepy.discrete.iga.io as io
+from sfepy.discrete.iga.extmods.igac import eval_in_tp_coors
 
 class NurbsPatch(Struct):
     """
@@ -43,40 +43,16 @@ class NurbsPatch(Struct):
         if w is not None: pars += [w]
 
         indices = []
-        uks = []
         rcs = []
         for ia, par in enumerate(pars):
             uk, indx, rc = self._get_ref_coors_1d(par, ia)
-            indices.append(indx)
-            uks.append(uk)
+            indices.append(indx.astype(nm.uint32))
             rcs.append(rc)
 
-        shape = [len(ii) for ii in pars]
-        n_vals = nm.prod(shape)
-
-        if field is None:
-            out = nm.zeros((n_vals, self.dim), dtype=nm.float64)
-
-        else:
-            out = nm.zeros((n_vals, field.shape[1]), dtype=nm.float64)
-
-        for ip, igrid in enumerate(cycle(shape)):
-            iis = [indices[ii][igrid[ii]] for ii in xrange(self.dim)]
-            ie = iga.get_raveled_index(iis, self.n_els)
-
-            rc = [rcs[ii][igrid[ii]] for ii in xrange(self.dim)]
-
-            bf, bfg, det = iga.eval_nurbs_basis_tp(rc, ie,
-                                                   self.cps, self.weights,
-                                                   self.degrees, self.cs,
-                                                   self.conn)
-            ec = self.conn[ie]
-
-            if field is None:
-                out[ip, :] = nm.dot(bf, self.cps[ec])
-
-            else:
-                out[ip, :] = nm.dot(bf, field[ec])
+        out = eval_in_tp_coors(field, indices,
+                               rcs, self.cps, self.weights,
+                               self.degrees,
+                               self.cs, self.conn)
 
         return out
 
@@ -122,6 +98,12 @@ class IGDomain(Domain):
         from sfepy.discrete.fem import Mesh
         from sfepy.discrete.fem.extmods.cmesh import CMesh
         from sfepy.discrete.fem.utils import prepare_remap
+
+        ac = nm.ascontiguousarray
+        self.nurbs.cs = [ac(nm.array(cc, dtype=nm.float64)[:, None, ...])
+                         for cc in self.nurbs.cs]
+
+        self.nurbs.degrees = self.nurbs.degrees.astype(nm.int32)
 
         self.facets = iga.get_bezier_element_entities(nurbs.degrees)
 
