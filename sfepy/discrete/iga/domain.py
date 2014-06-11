@@ -127,6 +127,8 @@ class IGDomain(Domain):
         self.nurbs.cs = [ac(nm.array(cc, dtype=nm.float64)[:, None, ...])
                          for cc in self.nurbs.cs]
 
+        self.nurbs.degrees = self.nurbs.degrees.astype(nm.int32)
+
         self.facets = iga.get_bezier_element_entities(nurbs.degrees)
 
         tconn = iga.get_bezier_topology(bmesh.conn, nurbs.degrees)
