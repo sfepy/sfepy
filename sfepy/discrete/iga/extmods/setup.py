@@ -23,8 +23,8 @@ def configuration(parent_package='', top_path=None):
     fem_src = ['fmfield.c', 'geommech.c', 'common_python.c']
     fem_src = [op.join(common_path, ii) for ii in fem_src]
 
-    src = ['cnurbs.pyx', 'nurbs.c']
-    config.add_extension('cnurbs',
+    src = ['igac.pyx', 'nurbs.c']
+    config.add_extension('igac',
                          sources=src + fem_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
