@@ -74,7 +74,7 @@ def compute_bezier_extraction_1d(knots, degree):
 
     Returns
     -------
-    cs : list of 2D arrays
+    cs : array of 2D arrays (3D array)
         The element extraction operators.
     """
     knots = nm.asarray(knots, dtype=nm.float64)
@@ -126,7 +126,7 @@ def compute_bezier_extraction_1d(knots, degree):
             a = b
             b = b + 1
 
-    return cs
+    return nm.asarray(cs, dtype=nm.float64)
 
 def compute_bezier_extraction(knots, degrees):
     """
