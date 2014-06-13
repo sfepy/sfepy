@@ -98,12 +98,14 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     """
     cdef uint32 ii, ie, n_qp, n_efun
     cdef int32 n_el, n_ep, dim, aux
+    cdef uint32 *_cells
     cdef int32 *_degrees, *_conn
     cdef FMField _bf[1], _bfg[1], _det[1]
     cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
     cdef FMField _qp[1], _control_points[1], _weights[1]
     cdef FMField _cs[3]
     cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef np.ndarray[float64, mode='c', ndim=4] bfs, bfgs, dets
 
     if cells is None:
         cells = np.arange(conn.shape[0], dtype=np.uint32)
@@ -148,17 +150,30 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     array2pint1(&_degrees, &dim, degrees)
     array2pint2(&_conn, &aux, &n_ep, conn)
 
+    _bf.offset = _bfg.offset = _det.offset = _qp.offset = -1
+    _bf.nAlloc = _bfg.nAlloc = _det.nAlloc = _qp.nAlloc = -1
+    _bf.nCell = _bfg.nCell = _det.nCell = _qp.nCell = 1
+    _bf.nLev = _bfg.nLev = _det.nLev = _qp.nLev = 1
+    _bf.nRow = _det.nRow = _qp.nRow = 1
+    _bfg.nRow = dim
+    _bf.nCol = _bfg.nCol = n_efun
+    _det.nCol = 1
+    _qp.nCol = dim
+
+    _bf.val = _bf.val0 = &bfs[0, 0, 0, 0]
+    _bfg.val = _bfg.val0 = &bfgs[0, 0, 0, 0]
+    _det.val = _det.val0 = &dets[0, 0, 0, 0]
+    _qp.val = _qp.val0 = &qps[0, 0]
+
     # Loop over elements.
+    _cells = &cells[0]
     for iseq in range(0, n_el):
-        ie = cells[iseq]
+        ie = _cells[iseq]
+
+        _qp.val = _qp.val0
 
         # Loop over quadrature points.
         for iqp in range(0, n_qp):
-            array2fmfield1(_bf, bfs[iseq, iqp, 0])
-            array2fmfield2(_bfg, bfgs[iseq, iqp])
-            array2fmfield1(_det, dets[iseq, iqp, 0])
-            array2fmfield1(_qp, qps[iqp])
-
             _eval_nurbs_basis_tp(_bf, _bfg, _det,
                                  _bfg_dxi,
                                  _dx_dxi, _dxi_dx,
@@ -166,6 +181,10 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                  _qp, ie,
                                  _control_points, _weights,
                                  _degrees, dim, _cs, _conn, n_el, n_ep)
+            _bf.val += n_efun
+            _bfg.val += dim * n_efun
+            _det.val += 1
+            _qp.val += dim
 
     for ii in range(0, dim):
         fmf_free(_B + ii)
