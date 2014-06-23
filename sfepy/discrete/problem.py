@@ -774,15 +774,35 @@ class Problem(Struct):
             mesh.write(filename, io='auto', out=out,
                        float_format=self.float_format, **kwargs)
 
-    def save_ebc(self, filename, force=True, default=0.0):
+    def save_ebc(self, filename, ebcs=None, epbcs=None,
+                 force=True, default=0.0):
         """
         Save essential boundary conditions as state variables.
+
+        Parameters
+        ----------
+        filename : str
+            The output file name.
+        ebcs : Conditions instance, optional
+            The essential (Dirichlet) boundary conditions. If not given,
+            `self.conf.ebcs` are used.
+        epbcs : Conditions instance, optional
+            The periodic boundary conditions. If not given, `self.conf.epbcs`
+            are used.
+        force : bool
+            If True, sequential nonzero values are forced to individual `ebcs`
+            so that the conditions are visible even when zero.
+        default : float
+            The default constant value of state vector.
         """
         output('saving ebc...')
         variables = self.get_variables(auto_create=True)
 
-        ebcs = Conditions.from_conf(self.conf.ebcs, self.domain.regions)
-        epbcs = Conditions.from_conf(self.conf.epbcs, self.domain.regions)
+        if ebcs is None:
+            ebcs = Conditions.from_conf(self.conf.ebcs, self.domain.regions)
+
+        if epbcs is None:
+            epbcs = Conditions.from_conf(self.conf.epbcs, self.domain.regions)
 
         try:
             variables.equation_mapping(ebcs, epbcs, self.ts, self.functions,
