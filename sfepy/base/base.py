@@ -121,7 +121,14 @@ def import_file(filename, package_name=None):
     Import a file as a module. The module is explicitly reloaded to
     prevent undesirable interactions.
     """
-    path = os.path.dirname(filename)
+    from sfepy import base_dir
+
+    top_dir = os.path.normpath(os.path.join(base_dir, '..'))
+    path = os.path.dirname(os.path.normpath(os.path.realpath(filename)))
+
+    if (package_name is None) and (top_dir == path[:len(top_dir)]):
+        package_name = path[len(top_dir) + 1:].replace('/', '.')
+        path = top_dir
 
     if not path in sys.path:
         sys.path.append(path)
