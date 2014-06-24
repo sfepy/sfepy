@@ -116,7 +116,7 @@ def mark_time(times, msg=None):
     if (msg is not None) and (len(times) > 1):
         print msg, times[-1] - times[-2]
 
-def import_file(filename, package_name=None):
+def import_file(filename, package_name=None, can_reload=True):
     """
     Import a file as a module. The module is explicitly reloaded to
     prevent undesirable interactions.
@@ -139,18 +139,13 @@ def import_file(filename, package_name=None):
 
     name = os.path.splitext(os.path.basename(filename))[0]
 
-    if name in sys.modules:
-        force_reload = True
-    else:
-        force_reload = False
-
     if package_name is not None:
         mod = __import__('.'.join((package_name, name)), fromlist=[name])
 
     else:
         mod = __import__(name)
 
-    if force_reload:
+    if (name in sys.modules) and can_reload:
         reload(mod)
 
     if remove_path:
