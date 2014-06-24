@@ -4,7 +4,7 @@ from config import Config
 from version import __version__, in_source_tree, top_dir
 
 data_dir = os.path.realpath(top_dir)
-base_dir = os.path.dirname(__file__)
+base_dir = os.path.dirname(os.path.normpath(os.path.realpath(__file__)))
 
 def get_paths(pattern):
     """

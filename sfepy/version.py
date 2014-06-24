@@ -22,7 +22,8 @@ def get_basic_info(version=__version__):
 
     # If installed, up_dir is '.', otherwise (in (git) source directory) '..'.
     for up_dir in ['..', '.']:
-        top_dir = op.normpath(op.join(op.dirname(__file__), up_dir))
+        top_dir = op.normpath(op.realpath(op.join(op.dirname(__file__),
+                                                  up_dir)))
         aux = op.join(top_dir, 'README')
         if op.isfile(aux):
             break
