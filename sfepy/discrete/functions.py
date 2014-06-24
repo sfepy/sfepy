@@ -110,13 +110,10 @@ class ConstantFunctionByRegion(Function):
                         rval = nm.array(rval, dtype=nm.float64, ndmin=3)
 
                         for ig in region.igs:
-                            elems = region.get_cells(ig)
-                            nqp = qps.shape[ig][1]
-                            nel = elems.shape[0]
-                            vmap = nm.tile(elems.reshape((nel,1)) * nqp,
-                                           (1, nqp)) + nm.arange(nqp)
-                            matdata[vmap.reshape(nel * nqp)
-                                    + qps.rindx[ig].start] = rval
+                            if not (ig in qps.igs):
+                                continue
+
+                            matdata[qps.rindx[ig]] = rval
 
                     out[key] = matdata
 
