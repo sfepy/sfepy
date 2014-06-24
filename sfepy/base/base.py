@@ -1051,11 +1051,13 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False,
     table = {}
     for filename in filenames:
         if not ignore_errors:
-            mod = import_file(filename, package_name=package_name)
+            mod = import_file(filename, package_name=package_name,
+                              can_reload=False)
 
         else:
             try:
-                mod = import_file(filename, package_name=package_name)
+                mod = import_file(filename, package_name=package_name,
+                                  can_reload=False)
 
             except:
                 output('WARNING: module %s cannot be imported!' % filename)
