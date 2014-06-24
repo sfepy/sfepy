@@ -226,6 +226,7 @@ class Newton(NonlinearSolver):
                            xlabels=['', 'all iterations'],
                            ylabels=[r'$||r||$', 'iteration'],
                            yscales=['log', 'linear'],
+                           is_plot=conf.log.plot is not None,
                            log_filename=conf.log.text,
                            formats=[['%.8e'], ['%d']])
 

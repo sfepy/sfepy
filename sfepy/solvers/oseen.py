@@ -218,6 +218,7 @@ class Oseen( NonlinearSolver ):
                            xlabels=['', '', 'all iterations'],
                            ylabels=[r'$||r||$', 'iteration', 'stabilization'],
                            yscales=['log', 'linear', 'log'],
+                           is_plot=conf.log.plot is not None,
                            log_filename=conf.log.text,
                            formats=[['%.8e'], ['%d'],
                                     ['%.8e', '%.8e', '%.8e']])
