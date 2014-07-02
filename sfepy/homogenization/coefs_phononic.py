@@ -657,7 +657,7 @@ class DensityVolumeInfo(MiniAppBase):
             total_volume += vol
 
         true_volume = self._get_volume(volume)
-        assert_(abs(total_volume - true_volume) / true_volume < 1e-14)
+        assert_(abs(total_volume - true_volume) / true_volume < 1e-12)
 
         output('total volume:', true_volume)
 
