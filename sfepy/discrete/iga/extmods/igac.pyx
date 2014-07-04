@@ -402,11 +402,11 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     cdef int32 *_degrees, *_conn, *ec
     cdef uint32 igrid[3], shape[3], iis[3], n_els[3]
     cdef uint32 *_indices[3], **puaux
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1]
+    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _out[1]
     cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
     cdef FMField _rc[1], _control_points[1], _weights[1]
     cdef FMField _cs[3], _ref_coors[3]
-    cdef np.ndarray[float64, mode='c', ndim=2] _evals
+    cdef np.ndarray[float64, mode='c', ndim=2] _evals, out
     cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
 
     dim = control_points.shape[1]
@@ -454,12 +454,19 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     array2fmfield4(_dxi_dx, dxi_dx)
     array2fmfield2(_control_points, control_points)
     array2fmfield1(_weights, weights)
+    array2fmfield2(_vals, _evals)
     for ii in range(dim):
         array2fmfield4(_cs + ii, cs[ii])
         n_els[ii] = (_cs + ii).nCell;
 
     array2pint1(&_degrees, &dim, degrees)
     array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    _out.offset = _out.nAlloc = -1
+    _out.nCell = _out.nLev = _out.nRow = 1
+    _out.nCol = nc
+
+    _out.val = _out.val0 = &out[0, 0]
 
     for ii in range(0, dim):
         puaux = _indices + ii
@@ -484,11 +491,12 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
 
         # vals[ip, :] = np.dot(bf, variable[ec])
         ec = _conn + n_ep * ie;
-        array2fmfield1(_vals, out[ip, :])
         for ir in range(0, nc):
-            _vals.val[ir] = 0.0
+            _out.val[ir] = 0.0
 
             for ic in range(0, n_efun):
-                _vals.val[ir] += _bf.val[ic] * _evals[ec[ic], ir]
+                _out.val[ir] += _bf.val[ic] * _vals.val[ec[ic] * nc + ir]
+
+        _out.val += nc
 
     return out
