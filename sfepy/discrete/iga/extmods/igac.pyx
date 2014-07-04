@@ -241,12 +241,15 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     """
     cdef uint32 ii, ie, n_qp, n_efun, nc, ir, ic
     cdef int32 n_el, n_ep, dim, aux
+    cdef uint32 *_cells
     cdef int32 *_degrees, *_conn, *ec
+    cdef float64 val
     cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _coors[1]
     cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _control_points[1], _weights[1]
+    cdef FMField _qp[1], _variable[1], _control_points[1], _weights[1]
     cdef FMField _cs[3]
     cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef np.ndarray[float64, mode='c', ndim=2] coors, vals, dets
 
     if cells is None:
         cells = np.arange(conn.shape[0], dtype=np.uint32)
@@ -286,6 +289,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     array2fmfield4(_bfg_dxi, bfg_dxi)
     array2fmfield4(_dx_dxi, dx_dxi)
     array2fmfield4(_dxi_dx, dxi_dx)
+    array2fmfield2(_variable, variable)
     array2fmfield2(_control_points, control_points)
     array2fmfield1(_weights, weights)
     for ii in range(dim):
@@ -294,21 +298,32 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     array2pint1(&_degrees, &dim, degrees)
     array2pint2(&_conn, &aux, &n_ep, conn)
 
-    # Loop over elements.
-    for iseq in range(0, n_el):
-        ie = cells[iseq]
+    _vals.offset = _coors.offset = _det.offset = _qp.offset = -1
+    _vals.nAlloc = _coors.nAlloc = _det.nAlloc = _qp.nAlloc = -1
+    _vals.nCell = _coors.nCell = _det.nCell = _qp.nCell = 1
+    _vals.nLev = _coors.nLev = _det.nLev = _qp.nLev = 1
+    _vals.nRow = _coors.nRow = _det.nRow = _qp.nRow = 1
+    _vals.nCol = nc
+    _coors.nCol = dim
+    _det.nCol = 1
+    _qp.nCol = dim
 
-        ec = _conn + n_ep * ie;
+    _vals.val = _vals.val0 = &vals[0, 0]
+    _coors.val = _coors.val0 = &coors[0, 0]
+    _det.val = _det.val0 = &dets[0, 0]
+    _qp.val = _qp.val0 = &qps[0, 0]
+
+    # Loop over elements.
+    _cells = &cells[0]
+    for iseq in range(0, n_el):
+        ie = _cells[iseq]
+
+        ec = _conn + n_ep * ie
+
+        _qp.val = _qp.val0
 
         # Loop over quadrature points.
         for iqp in range(0, n_qp):
-            ii = n_qp * iseq + iqp
-
-            array2fmfield1(_det, dets[ii])
-            array2fmfield1(_qp, qps[iqp])
-            array2fmfield1(_vals, vals[ii, :])
-            array2fmfield1(_coors, coors[ii, :])
-
             _eval_nurbs_basis_tp(_bf, _bfg, _det,
                                  _bfg_dxi,
                                  _dx_dxi, _dxi_dx,
@@ -322,14 +337,21 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                 _vals.val[ir] = 0.0
 
                 for ic in range(0, n_efun):
-                    _vals.val[ir] += _bf.val[ic] * variable[ec[ic], ir]
+                    val = _variable.val[ec[ic] * nc + ir]
+                    _vals.val[ir] += _bf.val[ic] * val
 
             # coors[ii, :] = np.dot(bf, control_points[ec])
             for ir in range(0, dim):
                 _coors.val[ir] = 0.0
 
                 for ic in range(0, n_efun):
-                    _coors.val[ir] += _bf.val[ic] * control_points[ec[ic], ir]
+                    val = _control_points.val[ec[ic] * dim + ir]
+                    _coors.val[ir] += _bf.val[ic] * val
+
+            _vals.val += nc
+            _coors.val += dim
+            _det.val += 1
+            _qp.val += dim
 
     return coors, vals, dets
 
