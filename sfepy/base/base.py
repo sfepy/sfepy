@@ -139,7 +139,7 @@ def import_file(filename, package_name=None, can_reload=True):
 
     name = os.path.splitext(os.path.basename(filename))[0]
 
-    if package_name is not None:
+    if package_name:
         mod = __import__('.'.join((package_name, name)), fromlist=[name])
 
     else:

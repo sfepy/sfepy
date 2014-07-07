@@ -322,7 +322,7 @@ class ProblemConf(Struct):
         Optionally, the define() function can accept additional arguments
         that should be defined using the `define_args` tuple or dictionary.
         """
-        funmod = import_file(filename)
+        funmod = import_file(filename, package_name=False)
 
         if "define" in funmod.__dict__:
             if define_args is None:
