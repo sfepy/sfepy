@@ -9,10 +9,8 @@ regular grid as well - this prevents coarser resolution inside the block.
 from optparse import OptionParser
 import numpy as nm
 
-import igakit.cad as cad
-
 from sfepy.base.base import output
-import sfepy.discrete.iga as iga
+from sfepy.discrete.iga.domain_generators import gen_patch_block_domain
 import sfepy.discrete.iga.plot_nurbs as pn
 import sfepy.discrete.iga.io as io
 
@@ -95,51 +93,20 @@ def main():
     output('continuity:', continuity)
     output('->        :', filename)
 
-    dd = centre - 0.5 * dims
-    block = cad.grid(shape - 1, degree=degrees, continuity=continuity)
+    nurbs, bmesh, regions = gen_patch_block_domain(dims, shape, centre,
+                                                   degrees,
+                                                   continuity=continuity,
+                                                   name='block', verbose=True)
 
-    for ia in xrange(dim):
-        block.scale(dims[ia], ia)
-
-    for ia in xrange(dim):
-        block.translate(dd[ia], ia)
-
-    # Force uniform control points. This prevents coarser resolution inside the
-    # block.
-    shape = nm.asarray(block.points.shape[:-1])
-    n_nod = nm.prod(shape)
-    x0 = centre - 0.5 * dims
-    dd = dims / (shape - 1)
-
-    ngrid = nm.mgrid[[slice(ii) for ii in shape]]
-    ngrid.shape = (dim, n_nod)
-
-    coors = x0 + ngrid.T * dd
-    coors.shape = shape.tolist() + [dim]
-
-    block.array[..., :dim] = coors
-
-    # Compute Bezier extraction data.
-    cs = iga.compute_bezier_extraction(block.knots, block.degree)
-    n_els = [len(ii) for ii in cs]
-    conn, bconn = iga.create_connectivity(n_els, block.knots, block.degree)
-
-    ccs = iga.combine_bezier_extraction(cs)
-
-    cps = block.points[..., :dim].copy()
-    cps = cps.reshape((-1, dim))
-    bcps, bweights = iga.compute_bezier_control(cps, block.weights.ravel(), ccs,
-                                                conn, bconn)
-
-    regions = iga.get_patch_box_regions(n_els, block.degree)
-
-    io.write_iga_data(filename, block.knots, block.degree, cps,
-                      block.weights.ravel(), cs, conn, bcps, bweights, bconn,
+    io.write_iga_data(filename, nurbs.knots, nurbs.degrees, nurbs.cps,
+                      nurbs.weights, nurbs.cs, nurbs.conn,
+                      bmesh.cps, bmesh.weights, bmesh.conn,
                       regions)
 
     if options.plot:
         pn.plt.rcParams['lines.linewidth'] = 2
 
+        block = nurbs.nurbs
         ax = pn.plot_parametric_mesh(None, block.knots)
         ax.set_title('parametric mesh')
         ax.axis('equal')
@@ -151,8 +118,8 @@ def main():
                      ' in Greville abscissae coordinates')
         ax.axis('equal')
 
-        points = bcps
-        ax = pn.plot_bezier_mesh(None, points, bconn, block.degree,
+        points = bmesh.cps
+        ax = pn.plot_bezier_mesh(None, points, bmesh.conn, block.degree,
                                  label=options.label)
         ax = pn.plot_iso_lines(ax, block)
         ax.set_title('Bezier mesh and iso lines (blue)'
