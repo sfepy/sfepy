@@ -7,6 +7,7 @@ import igakit.cad as cad
 
 from sfepy.base.base import output, Struct
 import sfepy.discrete.iga as iga
+from sfepy.discrete.iga.domain import NurbsPatch
 
 def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
                            name='block', verbose=True):
@@ -33,7 +34,7 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
 
     Returns
     -------
-    nurbs : Struct instance
+    nurbs : NurbsPatch instance
         The NURBS data. The igakit NURBS object is stored as `nurbs` attribute.
     bmesh : Struct instance
         The Bezier mesh data.
@@ -94,9 +95,9 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
     bcps, bweights = iga.compute_bezier_control(cps, block.weights.ravel(), ccs,
                                                 conn, bconn)
 
-    nurbs = Struct(name='nurbs', knots=block.knots, degrees=block.degree,
-                   cps=cps, weights=block.weights.ravel(), cs=cs, conn=conn,
-                   nurbs=block)
+    nurbs = NurbsPatch(block.knots, degrees, cps, block.weights.ravel(), cs,
+                       conn)
+    nurbs.nurbs = block
     bmesh = Struct(name='bmesh', cps=bcps, weights=bweights, conn=bconn)
     output('...done', verbose=verbose)
 
