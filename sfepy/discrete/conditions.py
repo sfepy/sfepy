@@ -39,7 +39,7 @@ def _get_region(name, regions, bc_name):
         region = regions[name]
     except IndexError:
         msg = "no region '%s' used in condition %s!" % (name, bc_name)
-        raise IndexError( msg )
+        raise IndexError(msg)
 
     return region
 
@@ -175,7 +175,7 @@ class Condition(Struct):
         """
         Canonize the DOF names using the full list of DOFs of a
         variable.
-        
+
         Assumes single condition instance.
         """
         self.dofs[0] = _canonize(self.dofs[0], dofs)
@@ -247,7 +247,7 @@ class PeriodicBC(Condition):
         """
         Canonize the DOF names using the full list of DOFs of a
         variable.
-        
+
         Assumes single condition instance.
         """
         self.dofs[0] = _canonize(self.dofs[0], dofs)
