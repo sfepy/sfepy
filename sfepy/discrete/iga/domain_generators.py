@@ -3,8 +3,6 @@ IGA domain generators.
 """
 import numpy as nm
 
-import igakit.cad as cad
-
 from sfepy.base.base import output, Struct
 import sfepy.discrete.iga as iga
 from sfepy.discrete.iga.domain import NurbsPatch
@@ -41,6 +39,8 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
     regions : dict
         The patch surface regions.
     """
+    import igakit.cad as cad
+
     dims = nm.asarray(dims, dtype=nm.float64)
     shape = nm.asarray(shape, dtype=nm.int32)
     centre = nm.asarray(centre, dtype=nm.float64)
