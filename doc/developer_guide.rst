@@ -813,6 +813,7 @@ Utility scripts
    src/script/gen_mesh_prev
    src/script/gen_term_table
    src/script/plot_condition_numbers
+   src/script/plot_logs
    src/script/plot_mesh
    src/script/plot_quadratures
    src/script/plot_times
@@ -939,6 +940,7 @@ sfepy.discrete.iga sub-package
    :maxdepth: 2
 
    src/sfepy/discrete/iga/domain
+   src/sfepy/discrete/iga/domain_generators
    src/sfepy/discrete/iga/extmods/igac
    src/sfepy/discrete/iga/fields
    src/sfepy/discrete/iga/iga
