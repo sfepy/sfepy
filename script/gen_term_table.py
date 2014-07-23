@@ -150,7 +150,7 @@ def typeset_term_table(fd, table):
             fd.write(table_row % (item_class.name,
                                   item_class.__name__,
                                   item_class.__module__,
-                                  'sfepy.terms.' + item_class.__module__,
+                                  item_class.__module__,
                                   typeset_term_syntax(item_class),
                                   definition))
 
