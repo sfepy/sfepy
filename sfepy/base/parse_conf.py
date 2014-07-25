@@ -3,11 +3,11 @@ Create pyparsing grammar for problem configuration and options.
 """
 from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        Forward, Empty, quotedString, oneOf, removeQuotes,
-                       delimitedList, nums, alphas, alphas8bit, alphanums,
+                       delimitedList, nums, alphas, alphanums,
                        Keyword)
 
-word_free = Word(alphas8bit + '][@_-/.+**' + alphanums)
-word_strict = Word(alphas8bit + alphas, alphas8bit + alphanums + '_' )
+word_free = Word(alphas + '][@_-/.+**' + alphanums)
+word_strict = Word(alphas, alphas + alphanums + '_' )
 
 (lparen, rparen, lbrack, rbrack,
  lbrace, rbrace, colon, equal_sign) = map(Suppress, '()[]{}:=')
