@@ -127,7 +127,7 @@ def import_file(filename, package_name=None, can_reload=True):
     path = os.path.dirname(os.path.normpath(os.path.realpath(filename)))
 
     if (package_name is None) and (top_dir == path[:len(top_dir)]):
-        package_name = path[len(top_dir) + 1:].replace('/', '.')
+        package_name = path[len(top_dir) + 1:].replace(os.sep, '.')
         path = top_dir
 
     if not path in sys.path:
