@@ -178,8 +178,7 @@ def plot_nurbs_basis_1d(ax, nurbs, n_points=100, x_axis='parametric',
     """
     Plot a 1D NURBS basis.
     """
-    dim = nurbs.dim
-    ax = _get_axes(ax, dim)
+    ax = _get_axes(ax, 2)
 
     ga = nurbs.greville()[0]
 
@@ -191,13 +190,13 @@ def plot_nurbs_basis_1d(ax, nurbs, n_points=100, x_axis='parametric',
 
         vals = nurbs.evaluate(fields=field, u=line)
         if x_axis == 'parametric':
-            plt.plot(line, vals, label='%d' % ii)
+            ax.plot(line, vals, label='%d' % ii)
 
         else:
             coors = nurbs(u=line)[:, x_axis]
-            plt.plot(coors, vals, label='%d' % ii)
+            ax.plot(coors, vals, label='%d' % ii)
 
-    if legend: plt.legend()
+    if legend: ax.legend()
 
     return ax
 
