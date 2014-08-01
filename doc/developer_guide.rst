@@ -118,6 +118,76 @@ The `fem/` is the heart of the code, while the `terms/` contains the
 particular integral forms usable to build equations - new term writers
 should look there.
 
+Exploring the Code
+------------------
+
+It is convenient to install IPython (see also :ref:`using-ipython`) to have the
+tab completion available. Moreover, all SfePy classes can be easily examined by
+printing them::
+
+    In [1]: from sfepy.discrete.fem import Mesh
+
+    In [2]: mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
+    sfepy: reading mesh [line2, tri3, quad4, tetra4, hexa8] (meshes/2d/rectangle_tri.mesh)...
+    sfepy: ...done in 0.00 s
+
+    In [3]: mesh
+    Out[3]: Mesh:meshes/2d/rectangle_tri
+
+    In [4]: print mesh
+    Mesh:meshes/2d/rectangle_tri
+      conns:
+        list: [array([[ 59,   0,  60],
+               [ 60,   0,   2],
+               [ 11,  32,  64],
+               ...,
+               [254, 250, 251],
+               [251, 256, 257],
+               [257, 254, 251]], dtype=int32)]
+      coors:
+        (258, 2) array of float64
+      descs:
+        list: ['2_3']
+      dim:
+        2
+      dims:
+        list: [2]
+      el_offsets:
+        (2,) array of int64
+      io:
+        None
+      mat_ids:
+        list: [array([3, 3, 3, ..., 3, 3, 3], dtype=int32)]
+      n_e_ps:
+        (1,) array of int64
+      n_el:
+        454
+      n_els:
+        (1,) array of int64
+      n_nod:
+        258
+      name:
+        meshes/2d/rectangle_tri
+      ngroups:
+        (258,) array of float64
+      nodal_bcs:
+        dict with keys: []
+      setup_done:
+        0
+
+We recommend going through the interactive example in the tutorial
+:ref:`sec-interactive-example-linear-elasticity` in this way, printing all the
+variables.
+
+Another useful tool is the :func:`debug() <sfepy.base.base.debug>` function,
+that can be used as follows::
+
+    from sfepy.base.base import debug; debug()
+
+Try to use it in the examples with user defined functions to explore their
+parameters etc. It works best with IPython installed, as then the tab
+completion is available also when debugging.
+
 .. _how_to_contribute:
 
 How to Contribute
