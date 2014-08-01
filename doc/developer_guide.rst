@@ -382,7 +382,7 @@ in `ipython`. The little tweak mentioned above is the starting newline::
 
     def function(arg1, arg2):
         """
-	This is a function.
+        This is a function.
 
         Parameters
         ----------
@@ -419,9 +419,9 @@ When using :math:`\mbox{\LaTeX}` in a docstring, use a raw string::
 
     def function():
         r"""
-	This is a function with :math:`\mbox{\LaTeX}` math:
+        This is a function with :math:`\mbox{\LaTeX}` math:
         :math:`\frac{1}{\pi}`.
-	"""
+        """
 
 to prevent Python from interpreting and consuming the backslashes in common
 escape sequences like '\\n', '\\f' etc.
