@@ -711,9 +711,17 @@ class Region(Struct):
 
     def contains(self, other):
         """
-        Tests only igs for now!!!
+        Return True in the region contains the `other` region.
+
+        The check is performed using entities corresponding to the other region
+        kind.
         """
-        return set(other.igs).issubset(set(self.igs))
+        tdim = other.kind_tdim
+
+        se = self.get_entities(tdim)
+        oe = other.entities[tdim]
+
+        return len(nm.intersect1d(se, oe))
 
     def get_cell_offsets(self):
         offs = {}
