@@ -519,6 +519,7 @@ class Region(Struct):
 
         else:
             if dim <= self.tdim:
+                self._access(dim)
                 out = self.entities[dim]
 
             else:
