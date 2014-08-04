@@ -369,7 +369,7 @@ class Region(Struct):
         else:
             self.cells
 
-    def setup_from_highest(self, dim):
+    def setup_from_highest(self, dim, allow_lower=True):
         """
         Setup entities of topological dimension `dim` using the available
         entities of the highest topological dimension.
@@ -385,15 +385,21 @@ class Region(Struct):
             msg = 'region "%s" has no entities!'
             raise ValueError(msg % self.name)
 
-        if idim <= dim:
-            msg = 'setup_from_highest() can be used only with dim < %d'
-            raise ValueError(msg % idim)
-
         cmesh = self.domain.cmesh
-        cmesh.setup_connectivity(idim, dim)
+        if idim <= dim:
+            if not allow_lower:
+                msg = 'setup_from_highest() can be used only with dim < %d'
+                raise ValueError(msg % idim)
 
-        incident = cmesh.get_incident(dim, self.entities[idim], idim)
-        self.entities[dim] = nm.unique(incident)
+            cmesh.setup_connectivity(dim, idim)
+            ents = self.get_entities(idim)
+            self.entities[dim] = cmesh.get_complete(dim, ents, idim)
+
+        else:
+            cmesh.setup_connectivity(idim, dim)
+
+            incident = cmesh.get_incident(dim, self.entities[idim], idim)
+            self.entities[dim] = nm.unique(incident)
 
     def setup_from_vertices(self, dim):
         """
