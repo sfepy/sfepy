@@ -508,11 +508,22 @@ class Region(Struct):
                                     n_face=n_face,
                                     n_cell=n_cell)
 
-    def get_entities(self, ig, dim):
+    def get_entities(self, dim, ig=None):
         """
-        Return mesh entities of dimension `dim` with cell group `ig`.
+        Return mesh entities of dimension `dim`, and optionally with the cell
+        group `ig`.
         """
-        out = self.domain.cmesh.get_from_cell_group(ig, dim, self.entities[dim])
+        if ig is not None:
+            out = self.domain.cmesh.get_from_cell_group(ig, dim,
+                                                        self.entities[dim])
+
+        else:
+            if dim <= self.tdim:
+                out = self.entities[dim]
+
+            else:
+                out = nm.empty(0, dtype=nm.uint32)
+
         return out
 
     def get_vertices_of_cells(self):
