@@ -211,7 +211,7 @@ class Region(Struct):
                         name=name, definition=definition,
                         domain=domain, parse_def=parse_def,
                         n_v_max=domain.shape.n_nod, dim=domain.shape.dim,
-                        tdim=tdim,
+                        tdim=tdim, kind_tdim=None,
                         entities=[None] * (tdim + 1),
                         kind=None, parent=parent, shape=None,
                         mirror_region=None, ig_map=None,
@@ -247,6 +247,21 @@ class Region(Struct):
                 self.entities[ii] = nm.empty(0, dtype=nm.uint32)
 
         self._igs = None
+
+        self.set_kind_tdim()
+
+    def set_kind_tdim(self):
+        if 'vertex' in self.true_kind:
+            self.kind_tdim = 0
+
+        elif 'edge' in self.true_kind:
+            self.kind_tdim = 1
+
+        elif 'face' in self.true_kind:
+            self.kind_tdim = 2
+
+        elif 'cell' in self.true_kind:
+            self.kind_tdim = self.tdim
 
     @property
     def vertices(self):
