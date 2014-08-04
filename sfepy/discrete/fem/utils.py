@@ -230,7 +230,8 @@ def get_min_value(dofs):
 
     return val
 
-def extend_cell_data(data, domain, rname, val=None, is_surface=False):
+def extend_cell_data(data, domain, rname, val=None, is_surface=False,
+                     average_surface=True):
     """
     Extend cell data defined in a region to the whole domain.
 
@@ -247,7 +248,12 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False):
         the smallest value in data is used.
     is_surface : bool
         If True, the data are defined on a surface region. In that case the
-        values are averaged into the cells containing the region surface faces.
+        values are averaged or summed into the cells containing the region
+        surface faces (a cell can have several faces of the surface), see
+        `average_surface`.
+    average_surface : bool
+        If True, the data defined on a surface region are averaged, otherwise
+        the data are summed.
 
     Returns
     -------
@@ -287,9 +293,22 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False):
                 cells = region.get_cells(ig, true_cells_only=False)
                 ucells = nm.unique(cells)
 
-                avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]
+                i1 = region.get_facets(ig)
+                i2 = region.facets
+                dii = nm.searchsorted(i2, i1)
+
+                if len(cells) != len(dii):
+                    raise ValueError('region %s has an inner face!'
+                                     % region.name)
+
+                if average_surface:
+                    avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]
+
+                else:
+                    avg = 1.0
+
                 for ic in xrange(data.shape[2]):
-                    evals = nm.bincount(cells, weights=data[:, 0, ic, 0],
+                    evals = nm.bincount(cells, weights=data[dii, 0, ic, 0],
                                         minlength=group.shape.n_el)[ucells]
 
                     edata[ii+ucells, 0, ic, 0] = evals / avg
