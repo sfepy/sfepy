@@ -20,14 +20,11 @@ variables = {
 
 regions = {
     'Omega' : 'all',
-    'Left' : ('vertices in (x < 0.001) & (y < 0.001)', 'facet'),
-    'Right' : ('vertices in (x > 0.999)', 'facet'),
     'Gamma' : ('vertices of surface', 'facet'),
 }
 
 ebcs = {
     't_left' : ('Gamma', {'t.0' : 'ebc'}),
-#    't_right' : ('Right', {'t.0' : 'ebc'}),
 }
 
 integral_1 = {

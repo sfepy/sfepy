@@ -39,21 +39,21 @@ class Test(TestCommon):
         Test basic region selectors.
         """
         selectors = [
-            'all',
-            'vertices of surface',
-            'vertices of group 0',
-            'vertices of set set0',
-            'vertices in (z < 0.1) & (x < 0.1)',
-            'vertices by get_vertices',
-            'vertex 0, 1, 2',
-            'vertex in r.r6',
-            'cells of group 0',
-            # 'cells of set 0', not implemented...
-            'cells by get_cells',
-            'cell 1, 4, 5',
-            'cell (0, 1), (0, 4), (0, 5)',
-            'copy r.r5',
-            'r.r5',
+            ['all', 'cell'],
+            ['vertices of surface', 'facet'],
+            ['vertices of group 0', 'facet'],
+            ['vertices of set set0', 'vertex'],
+            ['vertices in (z < 0.1) & (x < 0.1)', 'facet'],
+            ['vertices by get_vertices', 'cell'],
+            ['vertex 0, 1, 2', 'vertex'],
+            ['vertex in r.r6', 'vertex'],
+            ['cells of group 0', 'cell'],
+            # ['cells of set 0', 'cell'], not implemented...
+            ['cells by get_cells', 'cell'],
+            ['cell 1, 4, 5', 'cell'],
+            ['cell (0, 1), (0, 4), (0, 5)', 'cell'],
+            ['copy r.r5', 'cell'],
+            ['r.r5', 'cell'],
         ]
 
         vertices = [
@@ -76,7 +76,7 @@ class Test(TestCommon):
         ok = True
         for ii, sel in enumerate(selectors):
             self.report('select:', sel)
-            reg = self.domain.create_region('r%d' % ii, sel,
+            reg = self.domain.create_region('r%d' % ii, sel[0], kind=sel[1],
                                             functions=self.functions)
             _ok = ((len(reg.vertices) == len(vertices[ii]))
                    and (reg.vertices == vertices[ii]).all())
@@ -96,7 +96,7 @@ class Test(TestCommon):
 
         sel = 'r.r1 -v vertices of group 0'
         self.report('select:', sel)
-        reg = self.domain.create_region('reg', sel)
+        reg = self.domain.create_region('reg', sel, kind='vertex')
         av = [2,  4,  5,  6,  8,  9, 10, 11, 12]
         _ok = (reg.vertices == nm.array(av)).all()
         self.report('  vertices:', _ok)
@@ -104,7 +104,7 @@ class Test(TestCommon):
 
         sel = 'vertex 0, 1, 2 +v vertices of group 0'
         self.report('select:', sel)
-        reg = self.domain.create_region('reg', sel)
+        reg = self.domain.create_region('reg', sel, kind='vertex')
         av = [0,  1,  2,  3,  7]
         _ok = (reg.vertices == nm.array(av)).all()
         self.report('  vertices:', _ok)
@@ -112,7 +112,7 @@ class Test(TestCommon):
 
         sel = 'vertex 0, 1, 2 *v vertices of group 0'
         self.report('select:', sel)
-        reg = self.domain.create_region('reg', sel)
+        reg = self.domain.create_region('reg', sel, kind='vertex')
         av = [0,  1]
         _ok = (reg.vertices == nm.array(av)).all()
         self.report('  vertices:', _ok)

@@ -242,7 +242,8 @@ for ch, val in pb_def['channels'].iteritems():
 
     if 'fix_nd_grp' in val:
         regions.update({
-            'fixedY' + ch: 'vertices of group %d' % val['fix_nd_grp'][0],
+            'fixedY' + ch: ('vertices of group %d' % val['fix_nd_grp'][0],
+                            'vertex'),
             })
 
     ebcs_eta[ch] = []

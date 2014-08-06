@@ -46,6 +46,7 @@ region_1000 = {
 region_1 = {
     'name' : 'Centre',
     'select' : 'vertices in (x < 1e-8) & (x > -1e-8) & (y < 1e-8) & (y > -1e-8)',
+    'kind' : 'vertex'
 }
 
 region_2 = {
