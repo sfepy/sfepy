@@ -208,6 +208,7 @@ class Domain(Struct):
         region.name = name
         region.definition = select
         region.set_kind(kind)
+        region.finalize()
         region.parent = parent
         region.update_shape()
 

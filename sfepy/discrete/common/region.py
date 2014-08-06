@@ -413,6 +413,24 @@ class Region(Struct):
         vv = self.vertices
         self.entities[dim] = cmesh.get_complete(dim, vv, 0)
 
+    def finalize(self):
+        """
+        Initialize the entities corresponding to the region kind and regenerate
+        all already existing (accessed) entities of lower topological dimension
+        from the kind entities.
+        """
+        self._access(self.kind_tdim)
+        for idim in range(self.kind_tdim - 1, -1, -1):
+            if self.can[idim] and self.entities[idim] is not None:
+                try:
+                    self.setup_from_highest(idim, allow_lower=False)
+
+                except ValueError, exc:
+                    msg = '\n'.join((exc.message,
+                                     'fix region kind? (region: %s, kind: %s)'
+                                     % (self.name, self.kind)))
+                    raise ValueError(msg)
+
     def eval_op_vertices(self, other, op):
         parse_def = _join(self.parse_def, '%sv' % op, other.parse_def)
         tmp = self.light_copy('op', parse_def)
