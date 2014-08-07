@@ -288,6 +288,9 @@ class LCBCOperators(Container):
             op = IntegralMeanValueOperator('%d_integral_mean_value' % len(self),
                                            nmaster, region, field, dofs)
 
+        else:
+            raise ValueError('unknown LCBC kind! (%s)' % kind)
+
         self.append(op)
 
     def append(self, op):
