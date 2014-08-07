@@ -293,17 +293,17 @@ class LinearCombinationBC(Condition):
                            dof_map_fun=dof_map_fun, kind=kind,
                            key=key, times=times, arguments=arguments)
 
-    def canonize_dof_names(self, dofs):
+    def canonize_dof_names(self, dofs0, dofs1=None):
         """
         Canonize the DOF names using the full list of DOFs of a
         variable.
 
         Assumes single condition instance.
         """
-        self.dofs[0] = _canonize(self.dofs[0], dofs)
+        self.dofs[0] = _canonize(self.dofs[0], dofs0)
 
         if self.dofs[1] is not None:
-            self.dofs[1] = _canonize(self.dofs[1], dofs)
+            self.dofs[1] = _canonize(self.dofs[1], dofs1)
 
 class InitialCondition(Condition):
     """
