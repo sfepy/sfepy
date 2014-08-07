@@ -74,6 +74,15 @@ def sort_by_dependency(graph):
 
     return out
 
+def are_disjoint(r1, r2):
+    """
+    Check if the regions `r1` and `r2` are disjoint.
+
+    Uses vertices for the check - `*_only` regions not allowed.
+    """
+    return len(nm.intersect1d(r1.vertices, r2.vertices,
+                              assume_unique=True)) == 0
+
 def _join(def1, op, def2):
     return '(' + def1 + ' ' + op + ' ' + def2 + ')'
 
