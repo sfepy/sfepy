@@ -95,7 +95,32 @@ def transform_ics(adict):
     return transform_conditions(adict, 'ic')
 
 def transform_lcbcs(adict):
-    return transform_conditions(adict, 'lcbc')
+    d2 = {}
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
+            if len(conf) >= 4:
+                if isinstance(conf[1], dict):
+                    c2 = tuple_to_conf(key, conf, ['region', 'dofs',
+                                                   'dof_map_fun', 'kind'])
+                    c2.arguments = conf[4:]
+
+                else:
+                    c2 = tuple_to_conf(key, conf, ['region', 'times', 'dofs',
+                                                   'dof_map_fun', 'kind'])
+                    c2.arguments = conf[5:]
+
+            else:
+                msg = 'LCBC syntax has to be: region[, times], dofs,' \
+                      ' dof_map_fun, kind[, other arguments]'
+                raise SyntaxError(msg)
+
+            d2['lcbc_%s__%d' % (c2.name, ii)] = c2
+
+        else:
+            c2 = transform_to_struct_1(conf)
+            d2['lcbc_%s' % (c2.name)] = c2
+
+    return d2
 
 def transform_epbcs(adict):
     d2 = {}
