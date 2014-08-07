@@ -293,6 +293,16 @@ class LinearCombinationBC(Condition):
                            dof_map_fun=dof_map_fun, kind=kind,
                            key=key, times=times, arguments=arguments)
 
+    def get_var_names(self):
+        """
+        Get names of variables corresponding to the constrained and new DOFs.
+        """
+        names = [self.dofs[0].split('.')[0]]
+        if self.dofs[1] is not None:
+            names.append(self.dofs[1].split('.')[0])
+
+        return names
+
     def canonize_dof_names(self, dofs0, dofs1=None):
         """
         Canonize the DOF names using the full list of DOFs of a
