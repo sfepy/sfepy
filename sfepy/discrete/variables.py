@@ -291,6 +291,7 @@ class Variables(Container):
         """
         Prepare linear combination BC operator matrix.
         """
+        from sfepy.discrete.common.region import are_disjoint
         if lcbcs is None:
             self.lcdi = self.adi
             return
@@ -298,7 +299,26 @@ class Variables(Container):
         self.lcbcs = lcbcs
         lcbc_of_vars = self.lcbcs.group_by_variables()
 
-        # Assume disjoint regions.
+        if (ts is None) or ((ts is not None) and (ts.step == 0)):
+            regs = []
+            var_names = []
+            for bcs in self.lcbcs:
+                for bc in bcs.iter_single():
+                    vns = bc.get_var_names()
+
+                    regs.append(bc.regions[0])
+                    var_names.append(vns[0])
+                    if bc.regions[1] is not None:
+                        regs.append(bc.regions[1])
+                        var_names.append(vns[1])
+
+            for i0 in xrange(len(regs) - 1):
+                for i1 in xrange(i0 + 1, len(regs)):
+                    if ((var_names[i0] == var_names[i1])
+                        and not are_disjoint(regs[i0], regs[i1])):
+                        raise ValueError('regions %s and %s are not disjoint!'
+                                         % (regs[i0].name, regs[i1].name))
+
         lcbc_ops = {}
         offset = 0
         for var_name, bcs in lcbc_of_vars.iteritems():
