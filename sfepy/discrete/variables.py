@@ -297,7 +297,6 @@ class Variables(Container):
             return
 
         self.lcbcs = lcbcs
-        lcbc_of_vars = self.lcbcs.group_by_variables()
 
         if (ts is None) or ((ts is not None) and (ts.step == 0)):
             regs = []
@@ -319,19 +318,23 @@ class Variables(Container):
                         raise ValueError('regions %s and %s are not disjoint!'
                                          % (regs[i0].name, regs[i1].name))
 
-        lcbc_ops = {}
-        offset = 0
-        for var_name, bcs in lcbc_of_vars.iteritems():
-            var = self[var_name]
+        ops = LCBCOperators('lcbcs', self, functions=functions)
 
-            lcbc_op = var.create_lcbc_operators(bcs, offset,
-                                                ts=ts, functions=functions)
-            lcbc_ops[var_name] = lcbc_op
+        for bcs in self.lcbcs:
+            for bc in bcs.iter_single():
+                vns = bc.get_var_names()
+                dofs = [self[vn].dofs for vn in vns if vn is not None]
+                bc.canonize_dof_names(*dofs)
 
-            if lcbc_op is not None:
-                offset += lcbc_op.n_op
+                if not is_active_bc(bc, ts=ts, functions=functions):
+                    continue
 
-        self.op_lcbc, self.lcdi = make_global_lcbc_operator(lcbc_ops, self.adi)
+                output('lcbc:', bc.name)
+
+                ops.add_from_bc(bc, ts)
+
+        aux = ops.make_global_operator(self.adi)
+        self.op_lcbc, self.rhs_lcbc, self.lcdi = aux
 
         self.has_lcbc = self.op_lcbc is not None
 
