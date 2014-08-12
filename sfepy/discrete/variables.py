@@ -1395,36 +1395,6 @@ class FieldVariable(Variable):
 
         self.data[step] = data
 
-    def create_lcbc_operators(self, bcs, offset, ts=None, functions=None):
-        if len(bcs) == 0: return None
-
-        bcs.canonize_dof_names(self.dofs)
-        bcs.sort()
-
-        ops = LCBCOperators('lcbc:%s' % self.name, self.eq_map, offset)
-        for bc in bcs:
-            # Skip conditions that are not active in the current time.
-            if not is_active_bc(bc, ts=ts, functions=functions):
-                continue
-
-            output('lcbc:', self.name, bc.name)
-
-            if ts is not None and ts.step > 0:
-                # Save LCBC data only in the initial time step of the LCBC
-                # application.
-                import os
-                if os.path.exists(get_default(bc.filename, '')):
-                    bc = bc.copy()
-                    bc.filename = None
-
-            ops.add_from_bc(bc, self.field)
-
-        ops.finalize()
-
-        self.has_lcbc = True
-
-        return ops
-
     def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
                          warn=False):
         """
