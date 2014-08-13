@@ -39,6 +39,7 @@ class RigidOperator(LCBCOperator):
     """
     Transformation matrix operator for rigid LCBCs.
     """
+    kind = 'rigid'
 
     def __init__(self, name, nodes, field, dof_names, all_dof_names):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
@@ -93,6 +94,8 @@ class NoPenetrationOperator(LCBCOperator):
     """
     Transformation matrix operator for no-penetration LCBCs.
     """
+    kind = 'no_penetration'
+
     def __init__(self, name, nodes, region, field, dof_names, filename=None):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
@@ -155,6 +158,8 @@ class NormalDirectionOperator(LCBCOperator):
 
     The new DOF is :math:`w`.
     """
+    kind = 'normal_direction'
+
     def __init__(self, name, nodes, region, field, dof_names, filename=None):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
@@ -194,6 +199,8 @@ class EdgeDirectionOperator(NormalDirectionOperator):
     where :math:`\ul{d}` is an edge direction vector averaged into a node. The
     new DOF is :math:`w`.
     """
+    kind = 'edge_direction'
+
     def get_vectors(self, nodes, region, field, filename=None):
         edirs = compute_nodal_edge_dirs(nodes, region, field)
 
@@ -207,6 +214,8 @@ class IntegralMeanValueOperator(LCBCOperator):
     Transformation matrix operator for integral mean value LCBCs.
     All node DOFs are sumed to the new one.
     """
+    kind = 'integral_mean_value'
+
     def __init__(self, name, nodes, region, field, dof_names):
         Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
