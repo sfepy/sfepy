@@ -9,11 +9,63 @@ from sfepy.base.base import output, assert_, Container, Struct
 from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
+from sfepy.discrete.conditions import get_condition_value
 
 class LCBCOperator(Struct):
     """
     Base class for LCBC operators.
     """
+
+    def __init__(self, name, regions, dof_names, dof_map_fun, variables,
+                 functions=None):
+        Struct.__init__(self, name=name, regions=regions, dof_names=dof_names)
+
+        if dof_map_fun is not None:
+            self.dof_map_fun = get_condition_value(dof_map_fun, functions,
+                                                   'LCBC', 'dof_map_fun')
+        self._setup_dof_names(variables)
+
+    def _setup_dof_names(self, variables):
+        self.var_names = [dd[0].split('.')[0] for dd in self.dof_names]
+        self.all_dof_names = [variables[ii].dofs for ii in self.var_names]
+
+    def setup(self):
+        pass
+
+class MRLCBCOperator(LCBCOperator):
+    """
+    Base class for model-reduction type LCBC operators.
+    """
+
+    def __init__(self, name, regions, dof_names, dof_map_fun, variables,
+                 functions=None):
+        Struct.__init__(self, name=name, region=regions[0],
+                        dof_names=dof_names[0])
+
+        self._setup_dof_names(variables)
+
+        self.eq_map = variables[self.var_name].eq_map
+        field = variables[self.var_name].field
+        self.mdofs = field.get_dofs_in_region(self.region, merge=True)
+
+        self.n_sdof = 0
+
+    def _setup_dof_names(self, variables):
+        self.var_name = self.dof_names[0].split('.')[0]
+        self.var_names = [self.var_name, None]
+        self.all_dof_names = variables[self.var_name].dofs
+
+    def setup(self):
+        eq = self.eq_map.eq
+        meq = expand_nodes_to_equations(self.mdofs, self.dof_names,
+                                         self.all_dof_names)
+        ameq = eq[meq]
+        assert_(nm.all(ameq >= 0))
+
+        if self.eq_map.n_epbc:
+            self.treat_pbcs(meq, self.eq_map.master)
+
+        self.ameq = ameq
 
     def treat_pbcs(self, dofs, master):
         """
