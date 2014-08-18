@@ -87,16 +87,18 @@ class MRLCBCOperator(LCBCOperator):
                                  shape=(mtx.shape[0], indptr.shape[0] - 1))
         self.n_dof = self.mtx.shape[1]
 
-class RigidOperator(LCBCOperator):
+class RigidOperator(MRLCBCOperator):
     """
     Transformation matrix operator for rigid LCBCs.
     """
     kind = 'rigid'
 
-    def __init__(self, name, nodes, field, dof_names, all_dof_names):
-        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 variables, ts=None, functions=None):
+        MRLCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                                variables, functions=functions)
 
-        coors = field.get_coor(nodes)
+        coors = self.field.get_coor(self.mdofs)
         n_nod, dim = coors.shape
 
         mtx_e = nm.tile(nm.eye(dim, dtype=nm.float64), (n_nod, 1))
@@ -121,14 +123,15 @@ class RigidOperator(LCBCOperator):
             msg = 'dimension in [2, 3]: %d' % dim
             raise ValueError(msg)
 
-        self.n_dof = n_rigid_dof
         self.mtx = nm.hstack((mtx_r, mtx_e))
 
         # Strip unconstrained dofs.
         aux = dim * nm.arange(n_nod)
-        indx = [aux + all_dof_names.index(dof) for dof in dof_names]
+        indx = [aux + self.all_dof_names.index(dof) for dof in self.dof_names]
         indx = nm.array(indx).T.ravel()
 
+        self.n_mdof = n_nod * len(self.dof_names)
+        self.n_new_dof = n_rigid_dof
         self.mtx = self.mtx[indx]
 
 def _save_vectors(filename, vectors, region, mesh, data_name):
@@ -142,22 +145,27 @@ def _save_vectors(filename, vectors, region, mesh, data_name):
     out = {data_name : Struct(name='output_data', mode='vertex', data=nv)}
     mesh.write(filename, out=out, io='auto')
 
-class NoPenetrationOperator(LCBCOperator):
+class NoPenetrationOperator(MRLCBCOperator):
     """
     Transformation matrix operator for no-penetration LCBCs.
     """
     kind = 'no_penetration'
 
-    def __init__(self, name, nodes, region, field, dof_names, filename=None):
-        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 filename, variables, ts=None, functions=None):
+        MRLCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                                variables, functions=functions)
+        self.filename = filename
 
-        dim = region.dim
-        assert_(len(dof_names) == dim)
+        dim = self.region.dim
+        assert_(len(self.dof_names) == dim)
 
-        normals = compute_nodal_normals(nodes, region, field)
+        normals = compute_nodal_normals(self.mdofs, self.region, self.field)
 
-        if filename is not None:
-            _save_vectors(filename, normals, region, field.domain.mesh, 'n')
+        can_save = (ts is None) or ((ts is not None) and ts.step == 0)
+        if can_save and self.filename is not None:
+            _save_vectors(self.filename, normals, self.region,
+                          self.field.domain.mesh, 'n')
 
         ii = nm.abs(normals).argmax(1)
         n_nod, dim = normals.shape
@@ -196,10 +204,11 @@ class NoPenetrationOperator(LCBCOperator):
         n_np_dof = n_nod * (dim - 1)
         mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, n_np_dof))
 
-        self.n_dof = n_np_dof
+        self.n_mdof = n_nod * dim
+        self.n_new_dof = n_np_dof
         self.mtx = mtx.tocsr()
 
-class NormalDirectionOperator(LCBCOperator):
+class NormalDirectionOperator(MRLCBCOperator):
     """
     Transformation matrix operator for normal direction LCBCs.
 
@@ -212,14 +221,21 @@ class NormalDirectionOperator(LCBCOperator):
     """
     kind = 'normal_direction'
 
-    def __init__(self, name, nodes, region, field, dof_names, filename=None):
-        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 filename, variables, ts=None, functions=None):
+        MRLCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                                variables, functions=functions)
+        self.filename = filename
 
-        dim = region.dim
-        assert_(len(dof_names) == dim)
+        dim = self.region.dim
+        assert_(len(self.dof_names) == dim)
 
-        vectors = self.get_vectors(nodes, region, field, filename=filename)
+        can_save = ((self.filename is not None)
+                    and ((ts is None) or ((ts is not None) and ts.step == 0)))
+        filename = self.filename if can_save else None
 
+        vectors = self.get_vectors(self.mdofs, self.region, self.field,
+                                   filename=filename)
         n_nod, dim = vectors.shape
 
         data = vectors.ravel()
@@ -228,7 +244,8 @@ class NormalDirectionOperator(LCBCOperator):
 
         mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, n_nod))
 
-        self.n_dof = n_nod
+        self.n_mdof = n_nod * dim
+        self.n_new_dof = n_nod
         self.mtx = mtx.tocsr()
 
     def get_vectors(self, nodes, region, field, filename=None):
