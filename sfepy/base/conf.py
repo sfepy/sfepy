@@ -118,6 +118,8 @@ def transform_lcbcs(adict):
 
         else:
             c2 = transform_to_struct_1(conf)
+            c2.set_default('dof_map_fun', None)
+            c2.set_default('arguments', ())
             d2['lcbc_%s' % (c2.name)] = c2
 
     return d2
