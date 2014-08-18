@@ -45,8 +45,8 @@ class MRLCBCOperator(LCBCOperator):
         self._setup_dof_names(variables)
 
         self.eq_map = variables[self.var_name].eq_map
-        field = variables[self.var_name].field
-        self.mdofs = field.get_dofs_in_region(self.region, merge=True)
+        self.field = variables[self.var_name].field
+        self.mdofs = self.field.get_dofs_in_region(self.region, merge=True)
 
         self.n_sdof = 0
 
