@@ -283,6 +283,74 @@ class IntegralMeanValueOperator(LCBCOperator):
         self.n_dof = dpn
         self.mtx = mtx.tocsr()
 
+class ShiftedPeriodicOperator(LCBCOperator):
+    """
+    Transformation matrix operator shifted periodic boundary conditions.
+    """
+    kind = 'shifted_periodic'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun, shift_fun,
+                 variables, ts, functions):
+        LCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                              variables, functions=functions)
+
+        self.shift_fun = get_condition_value(shift_fun, functions,
+                                             'LCBC', 'shift')
+
+        mvar = variables[self.var_names[0]]
+        svar = variables[self.var_names[1]]
+
+        mfield = mvar.field
+        sfield = svar.field
+
+        nmaster = mfield.get_dofs_in_region(regions[0], merge=True)
+        nslave = sfield.get_dofs_in_region(regions[1], merge=True)
+
+        if nmaster.shape != nslave.shape:
+            msg = 'shifted EPBC node list lengths do not match!\n(%s,\n %s)' %\
+                  (nmaster, nslave)
+            raise ValueError(msg)
+
+        mcoor = mfield.get_coor(nmaster)
+        scoor = sfield.get_coor(nslave)
+
+        i1, i2 = self.dof_map_fun(mcoor, scoor)
+        self.mdofs = expand_nodes_to_equations(nmaster[i1], dof_names[0],
+                                               self.all_dof_names[0])
+        self.sdofs = expand_nodes_to_equations(nslave[i2], dof_names[1],
+                                               self.all_dof_names[1])
+
+        self.shift = self.shift_fun(ts, scoor[i2], regions[1])
+
+        meq = mvar.eq_map.eq[self.mdofs]
+        seq = svar.eq_map.eq[self.sdofs]
+
+        # Ignore DOFs with EBCs or EPBCs.
+        mia = nm.where(meq >= 0)[0]
+        sia = nm.where(seq >= 0)[0]
+
+        ia = nm.intersect1d(mia, sia)
+
+        meq = meq[ia]
+        seq = seq[ia]
+
+        num = len(ia)
+
+        ones = nm.ones(num, dtype=nm.float64)
+        n_dofs = [variables.adi.n_dof[name] for name in self.var_names]
+        mtx = sp.coo_matrix((ones, (meq, seq)), shape=n_dofs)
+
+        self.mtx = mtx.tocsr()
+
+        self.rhs = self.shift.ravel()[ia]
+
+        self.ameq = meq
+        self.aseq = seq
+
+        self.n_mdof = len(nm.unique(meq))
+        self.n_sdof = len(nm.unique(seq))
+        self.n_new_dof = 0
+
 class LCBCOperators(Container):
     """
     Container holding instances of LCBCOperator subclasses for a single
