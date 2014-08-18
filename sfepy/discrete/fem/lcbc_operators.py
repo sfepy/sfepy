@@ -261,18 +261,20 @@ class EdgeDirectionOperator(NormalDirectionOperator):
 
         return edirs
 
-class IntegralMeanValueOperator(LCBCOperator):
+class IntegralMeanValueOperator(MRLCBCOperator):
     """
     Transformation matrix operator for integral mean value LCBCs.
     All node DOFs are sumed to the new one.
     """
     kind = 'integral_mean_value'
 
-    def __init__(self, name, nodes, region, field, dof_names):
-        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 variables, ts=None, functions=None):
+        MRLCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                                variables, functions=functions)
 
-        dpn = len(dof_names)
-        n_nod = nodes.shape[0]
+        dpn = len(self.dof_names)
+        n_nod = self.mdofs.shape[0]
 
         data = nm.ones((n_nod * dpn,))
         rows = nm.arange(data.shape[0])
@@ -280,7 +282,8 @@ class IntegralMeanValueOperator(LCBCOperator):
 
         mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, dpn))
 
-        self.n_dof = dpn
+        self.n_mdof = n_nod * dpn
+        self.n_new_dof = dpn
         self.mtx = mtx.tocsr()
 
 class ShiftedPeriodicOperator(LCBCOperator):
