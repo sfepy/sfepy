@@ -86,7 +86,8 @@ class MRLCBCOperator(LCBCOperator):
         indptr = nm.unique(mtx.indptr)
         self.mtx = sp.csc_matrix((mtx.data, mtx.indices, indptr),
                                  shape=(mtx.shape[0], indptr.shape[0] - 1))
-        self.n_dof = self.mtx.shape[1]
+        self.n_mdof = self.mtx.shape[0]
+        self.n_dof_new = self.mtx.shape[1]
 
 class RigidOperator(MRLCBCOperator):
     """
