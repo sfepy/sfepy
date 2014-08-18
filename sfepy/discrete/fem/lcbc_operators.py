@@ -5,7 +5,7 @@ setting.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import output, assert_, Container, Struct
+from sfepy.base.base import output, assert_, find_subclasses, Container, Struct
 from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
@@ -287,26 +287,33 @@ class LCBCOperators(Container):
     """
     Container holding instances of LCBCOperator subclasses for a single
     variable.
-
-    Parameters
-    ----------
-    name : str
-        The object name.
-    eq_map : EquationMap instance
-        The equation mapping of the variable.
-    offset : int
-        The offset added to markers distinguishing the individual LCBCs.
     """
-    def __init__(self, name, eq_map, offset):
-        Container.__init__(self, name=name, eq_map=eq_map, offset=offset)
 
-        self.eq_lcbc = nm.zeros((self.eq_map.n_eq,), dtype=nm.int32)
+    def __init__(self, name, variables, functions=None):
+        """
+        Parameters
+        ----------
+        name : str
+            The object name.
+        variables : Variables instance
+            The variables to be constrained.
+        functions : Functions instance, optional
+            The user functions for DOF matching and other LCBC
+            subclass-specific tasks.
+        """
+        Container.__init__(self, name=name, variables=variables,
+                           functions=functions)
+
         self.markers = []
-        self.n_transformed_dof = []
+        self.n_new_dof = []
         self.n_op = 0
         self.ics = None
 
-    def add_from_bc(self, bc, field):
+        self.classes = find_subclasses(globals(), [LCBCOperator],
+                                       omit_unnamed=True,
+                                       name_attr='kind')
+
+    def add_from_bc(self, bc, ts):
         """
         Create a new LCBC operator described by `bc`, and add it to the
         container.
@@ -315,178 +322,191 @@ class LCBCOperators(Container):
         ----------
         bc : LinearCombinationBC instance
             The LCBC condition description.
-        field : Field instance
-            The field of the variable.
+        ts : TimeStepper instance
+            The time stepper.
         """
-        region = bc.region
-        dofs, kind = bc.dofs
+        try:
+            cls = self.classes[bc.kind]
 
-        nmaster = field.get_dofs_in_region(region, merge=True)
+        except KeyError:
+            raise ValueError('unknown LCBC kind! (%s)' % bc.kind)
 
-        if kind == 'rigid':
-            op = RigidOperator('%d_rigid' % len(self),
-                               nmaster, field, dofs, self.eq_map.dof_names)
+        args = bc.arguments + (self.variables, ts, self.functions)
 
-        elif kind == 'no_penetration':
-            filename = bc.get('filename', None)
-            op = NoPenetrationOperator('%d_no_penetration' % len(self),
-                                       nmaster, region, field, dofs,
-                                       filename=filename)
+        op = cls('%d_%s' % (len(self), bc.kind), bc.regions, bc.dofs,
+                 bc.dof_map_fun, *args)
 
-        elif kind == 'normal_direction':
-            filename = bc.get('filename', None)
-            op = NormalDirectionOperator('%d_normal_direction' % len(self),
-                                         nmaster, region, field, dofs,
-                                         filename=filename)
-
-        elif kind == 'edge_direction':
-            filename = bc.get('filename', None)
-            op = EdgeDirectionOperator('%d_edge_direction' % len(self),
-                                       nmaster, region, field, dofs,
-                                       filename=filename)
-
-        elif kind == 'integral_mean_value':
-            op = IntegralMeanValueOperator('%d_integral_mean_value' % len(self),
-                                           nmaster, region, field, dofs)
-
-        else:
-            raise ValueError('unknown LCBC kind! (%s)' % kind)
+        op.setup()
 
         self.append(op)
 
     def append(self, op):
         Container.append(self, op)
 
-        eq = self.eq_map.eq
-        dofs = expand_nodes_to_equations(op.nodes, op.dof_names,
-                                         self.eq_map.dof_names)
-        meq = eq[dofs]
-        assert_(nm.all(meq >= 0))
+        self.markers.append(self.n_op + 1)
+        self.n_new_dof.append(op.n_new_dof)
 
-        if self.eq_map.n_epbc:
-            op.treat_pbcs(dofs, self.eq_map.master)
-
-        self.markers.append(self.offset + self.n_op + 1)
-        self.eq_lcbc[meq] = self.markers[-1]
-
-        self.n_transformed_dof.append(op.n_dof)
         self.n_op = len(self)
 
     def finalize(self):
         """
         Call this after all LCBCs of the variable have been added.
 
-        Initializes the global column indices.
+        Initializes the global column indices and DOF counts.
         """
-        self.ics = nm.cumsum(nm.r_[0, self.n_transformed_dof])
+        keys = self.variables.adi.var_names
+        self.n_master = {}.fromkeys(keys, 0)
+        self.n_slave = {}.fromkeys(keys, 0)
+        self.n_new = {}.fromkeys(keys, 0)
+        ics = {}
+        for ii, op in enumerate(self):
+            self.n_master[op.var_names[0]] += op.n_mdof
 
-def make_global_lcbc_operator(lcbc_ops, adi, new_only=False):
-    """
-    Assemble all LCBC operators into a single matrix.
+            if op.var_names[1] is not None:
+                self.n_slave[op.var_names[1]] += op.n_sdof
 
-    Returns
-    -------
-    mtx_lc : csr_matrix
-        The global LCBC operator in the form of a CSR matrix.
-    lcdi : DofInfo
-        The global active LCBC-constrained DOF information.
-    new_only : bool
-        If True, the operator columns will contain only new DOFs.
-    """
-    n_dof = adi.ptr[-1]
-    eq_lcbc = nm.zeros((n_dof,), dtype=nm.int32)
+            self.n_new[op.var_names[0]] += op.n_new_dof
+            ics.setdefault(op.var_names[0], []).append((ii, op.n_new_dof))
 
-    n_dof_new = 0
-    n_free = {}
-    n_new = {}
-    for var_name, lcbc_op in lcbc_ops.iteritems():
-        if lcbc_op is None: continue
+        self.ics = {}
+        for key, val in ics.iteritems():
+            iis, ics = zip(*val)
+            self.ics[key] = (iis, nm.cumsum(nm.r_[0, ics]))
 
-        indx = adi.indx[var_name]
-        eq_lcbc[indx] = lcbc_op.eq_lcbc
+        self.n_free = {}
+        self.n_active = {}
+        n_dof = self.variables.adi.n_dof
+        for key in self.n_master.iterkeys():
+            self.n_free[key] = n_dof[key] - self.n_master[key]
+            self.n_active[key] = self.n_free[key] + self.n_new[key]
 
-        n_free[var_name] = len(nm.where(lcbc_op.eq_lcbc == 0)[0])
-        n_new[var_name] = nm.sum(lcbc_op.n_transformed_dof)
+        def _dict_to_di(name, dd):
+            di = DofInfo(name)
+            for key, val in dd.iteritems():
+                di.append_raw(key, val)
+            return di
 
-        n_dof_new += n_new[var_name]
+        self.lcdi = _dict_to_di('lcbc_active_state_dof_info', self.n_active)
+        self.fdi = _dict_to_di('free_dof_info', self.n_free)
+        self.ndi = _dict_to_di('new_dof_info', self.n_new)
 
-    if n_dof_new == 0:
-        return None, None
+    def make_global_operator(self, adi, new_only=False):
+        """
+        Assemble all LCBC operators into a single matrix.
 
-    ii = nm.nonzero(eq_lcbc)[0]
-    n_constrained = ii.shape[0]
-    n_dof_free = n_dof - n_constrained
-    n_dof_reduced = n_dof_free + n_dof_new
-    output('dofs: total %d, free %d, constrained %d, new %d'\
-            % (n_dof, n_dof_free, n_constrained, n_dof_new))
-    output(' -> reduced %d' % (n_dof_reduced))
+        Parameters
+        ----------
+        adi : DofInfo
+            The active DOF information.
+        new_only : bool
+            If True, the operator columns will contain only new DOFs.
 
-    lcdi = DofInfo('lcbc_active_state_dof_info')
-    fdi = DofInfo('free_dof_info')
-    ndi = DofInfo('new_dof_info')
-    for var_name in adi.var_names:
-        nf = n_free.get(var_name, adi.n_dof[var_name])
-        nn = n_new.get(var_name, 0)
-        fdi.append_raw(var_name, nf)
-        ndi.append_raw(var_name, nn)
-        lcdi.append_raw(var_name, nn + nf)
+        Returns
+        -------
+        mtx_lc : csr_matrix
+            The global LCBC operator in the form of a CSR matrix.
+        rhs_lc : array
+            The right-hand side for non-homogeneous LCBCs.
+        lcdi : DofInfo
+            The global active LCBC-constrained DOF information.
+        """
+        self.finalize()
 
-    assert_(lcdi.ptr[-1] == n_dof_reduced)
+        if len(self) == 0: return (None,) * 3
 
-    rows = []
-    cols = []
-    data = []
-    for var_name, lcbc_op in lcbc_ops.iteritems():
-        if lcbc_op is None: continue
+        n_dof = self.variables.adi.ptr[-1]
+        n_constrained = nm.sum([val for val in self.n_master.itervalues()])
+        n_dof_free = nm.sum([val for val in self.n_free.itervalues()])
+        n_dof_new = nm.sum([val for val in self.n_new.itervalues()])
+        n_dof_active = nm.sum([val for val in self.n_active.itervalues()])
 
-        if new_only:
-            offset = ndi.indx[var_name].start
+        output('dofs: total %d, free %d, constrained %d, new %d'\
+               % (n_dof, n_dof_free, n_constrained, n_dof_new))
+        output(' -> active %d' % (n_dof_active))
 
-        else:
-            offset = lcdi.indx[var_name].start + fdi.n_dof[var_name]
+        adi = self.variables.adi
+        lcdi, ndi, fdi = self.lcdi, self.ndi, self.fdi
 
-        for ii, op in enumerate(lcbc_op):
-            indx = nm.where(eq_lcbc == lcbc_op.markers[ii])[0]
-            icols = nm.arange(offset + lcbc_op.ics[ii],
-                              offset + lcbc_op.ics[ii+1])
+        rows = []
+        cols = []
+        data = []
 
-            if isinstance(op.mtx, sp.spmatrix):
-                lr, lc, lv = sp.find(op.mtx)
-                rows.append(indx[lr])
-                cols.append(icols[lc])
-                data.append(lv)
+        lcbc_mask = nm.ones(n_dof, dtype=nm.bool)
+        for ii, op in enumerate(self):
+            rvar_name = op.var_names[0]
+            roff = adi.indx[rvar_name].start
+
+            irs = roff + op.ameq
+            lcbc_mask[irs] = False
+
+        vec_lc = nm.zeros(n_dof, dtype=nm.float64)
+
+        for ii, op in enumerate(self):
+            rvar_name = op.var_names[0]
+            roff = adi.indx[rvar_name].start
+
+            irs = roff + op.ameq
+
+            cvar_name = op.var_names[1]
+            if cvar_name is None:
+                if new_only:
+                    coff = ndi.indx[rvar_name].start
+
+                else:
+                    coff = lcdi.indx[rvar_name].start + fdi.n_dof[rvar_name]
+
+                iis, icols = self.ics[rvar_name]
+                ici = nm.searchsorted(iis, ii)
+                ics = nm.arange(coff + icols[ici], coff + icols[ici+1])
+                if isinstance(op.mtx, sp.spmatrix):
+                    lr, lc, lv = sp.find(op.mtx)
+                    rows.append(irs[lr])
+                    cols.append(ics[lc])
+                    data.append(lv)
+
+                else:
+                    _irs, _ics = nm.meshgrid(irs, ics)
+                    rows.append(_irs.ravel())
+                    cols.append(_ics.ravel())
+                    data.append(op.mtx.T.ravel())
 
             else:
-                irs, ics = nm.meshgrid(indx, icols)
-                rows.append(irs.ravel())
-                cols.append(ics.ravel())
-                data.append(op.mtx.T.ravel())
+                coff = lcdi.indx[cvar_name].start
 
-    rows = nm.concatenate(rows)
-    cols = nm.concatenate(cols)
-    data = nm.concatenate(data)
+                lr, lc, lv = sp.find(op.mtx)
+                ii1 = nm.where(lcbc_mask[adi.indx[cvar_name]])[0]
+                ii2 = nm.searchsorted(ii1, lc)
 
-    if new_only:
-        mtx_lc = sp.coo_matrix((data, (rows, cols)),
-                               shape=(n_dof, n_dof_new))
+                rows.append(roff + lr)
+                cols.append(coff + ii2)
+                data.append(lv)
 
-    else:
-        mtx_lc = sp.coo_matrix((data, (rows, cols)),
-                               shape=(n_dof, n_dof_reduced))
+                vec_lc[irs] += op.rhs
 
-        ir = nm.where(eq_lcbc == 0)[0]
+        rows = nm.concatenate(rows)
+        cols = nm.concatenate(cols)
+        data = nm.concatenate(data)
 
-        ic = nm.empty((n_dof_free,), dtype=nm.int32)
-        for var_name in adi.var_names:
-            ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
-            ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
+        if new_only:
+            mtx_lc = sp.coo_matrix((data, (rows, cols)),
+                                   shape=(n_dof, n_dof_new))
 
-        mtx_lc2 = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
-                                shape=(n_dof, n_dof_reduced), dtype=nm.float64)
+        else:
+            mtx_lc = sp.coo_matrix((data, (rows, cols)),
+                                   shape=(n_dof, n_dof_active))
 
+            ir = nm.where(lcbc_mask)[0]
+            ic = nm.empty((n_dof_free,), dtype=nm.int32)
+            for var_name in adi.var_names:
+                ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
+                ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
 
-        mtx_lc = mtx_lc + mtx_lc2
+            mtx_lc2 = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
+                                    shape=(n_dof, n_dof_active),
+                                    dtype=nm.float64)
 
-    mtx_lc = mtx_lc.tocsr()
+            mtx_lc = mtx_lc + mtx_lc2
 
-    return mtx_lc, lcdi
+        mtx_lc = mtx_lc.tocsr()
+
+        return mtx_lc, vec_lc, lcdi
