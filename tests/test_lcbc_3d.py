@@ -79,7 +79,8 @@ ebc_2 = {
 lcbc_1 = {
     'name' : 'rigid1',
     'region' : 'Y2',
-    'dofs' : {'u.all' : 'rigid'},
+    'dofs' : {'u.all' : None},
+    'kind' : 'rigid',
 }
 
 integral_1 = {

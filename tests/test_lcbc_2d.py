@@ -86,12 +86,14 @@ ebc_2 = {
 lcbc_1 = {
     'name' : 'rigid1',
     'region' : 'Y2',
-    'dofs' : {'u.all' : 'rigid'},
+    'dofs' : {'u.all' : None},
+    'kind' : 'rigid',
 }
 lcbc_2 = {
     'name' : 'rigid2',
     'region' : 'Y3',
-    'dofs' : {'u.all' : 'rigid'},
+    'dofs' : {'u.all' : None},
+    'kind' : 'rigid',
 }
 
 integral_1 = {

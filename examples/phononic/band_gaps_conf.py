@@ -377,7 +377,7 @@ class BandGapsRigidConf(BandGapsConf):
             'fixed_gamma_mc' : ('Gamma_mc', {'u.all' : 0.0}),
         }
         lcbcs ={
-            'rigid' : ('Y_r',{'u.all' : 'rigid'}),
+            'rigid' : ('Y_r',{'u.all' : None}, None, 'rigid'),
         }
 
         return ebcs, {}, lcbcs, []
