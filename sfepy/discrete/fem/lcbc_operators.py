@@ -522,6 +522,7 @@ class LCBCOperators(Container):
         data = []
 
         lcbc_mask = nm.ones(n_dof, dtype=nm.bool)
+        is_homogeneous = True
         for ii, op in enumerate(self):
             rvar_name = op.var_names[0]
             roff = adi.indx[rvar_name].start
@@ -529,7 +530,14 @@ class LCBCOperators(Container):
             irs = roff + op.ameq
             lcbc_mask[irs] = False
 
-        vec_lc = nm.zeros(n_dof, dtype=nm.float64)
+            if op.get('rhs', None) is not None:
+                is_homogeneous = False
+
+        if not is_homogeneous:
+            vec_lc = nm.zeros(n_dof, dtype=nm.float64)
+
+        else:
+            vec_lc = None
 
         for ii, op in enumerate(self):
             rvar_name = op.var_names[0]
