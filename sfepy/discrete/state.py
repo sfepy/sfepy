@@ -131,7 +131,8 @@ class State(Struct):
         if self.variables.has_lcbc:
             if self.r_vec is None:
                 r_vec = strip(self.vec, follow_epbc=follow_epbc)
-                r_vec = self.variables.op_lcbc.T * r_vec
+                # This just sets the correct vector size (wrong values)!
+                r_vec = self.variables.mtx_lcbc.T * r_vec
 
             else:
                 r_vec = self.r_vec
