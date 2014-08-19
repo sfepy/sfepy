@@ -16,8 +16,7 @@ from sfepy.discrete.integrals import Integral
 from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
                                             expand_nodes_to_equations,
                                             is_active_bc)
-from sfepy.discrete.fem.lcbc_operators import (LCBCOperators,
-                                               make_global_lcbc_operator)
+from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 
@@ -157,6 +156,7 @@ class Variables(Container):
                            parameter=set(),
                            has_virtual_dcs=False,
                            has_lcbc=False,
+                           has_lcbc_rhs=False,
                            has_eq_map=False,
                            ordered_state=[],
                            ordered_virtual=[])
@@ -289,7 +289,8 @@ class Variables(Container):
 
     def setup_lcbc_operators(self, lcbcs, ts=None, functions=None):
         """
-        Prepare linear combination BC operator matrix.
+        Prepare linear combination BC operator matrix and right-hand side
+        vector.
         """
         from sfepy.discrete.common.region import are_disjoint
         if lcbcs is None:
@@ -334,13 +335,15 @@ class Variables(Container):
                 ops.add_from_bc(bc, ts)
 
         aux = ops.make_global_operator(self.adi)
-        self.op_lcbc, self.rhs_lcbc, self.lcdi = aux
+        self.mtx_lcbc, self.vec_lcbc, self.lcdi = aux
 
-        self.has_lcbc = self.op_lcbc is not None
+        self.has_lcbc = self.mtx_lcbc is not None
+        self.has_lcbc_rhs = self.vec_lcbc is not None
 
     def get_lcbc_operator(self):
         if self.has_lcbc:
-            return self.op_lcbc
+            return self.mtx_lcbc
+
         else:
             raise ValueError('no LCBC defined!')
 
@@ -487,12 +490,26 @@ class Variables(Container):
         Make a full DOF vector satisfying E(P)BCs from a reduced DOF
         vector.
 
-        Passing a `force_value` overrides the EBC values.
+        Parameters
+        ----------
+        svec : array
+            The reduced DOF vector.
+        force_value : float, optional
+            Passing a `force_value` overrides the EBC values.
+
+        Returns
+        -------
+        vec : array
+            The full DOF vector.
         """
         self.check_vector_size(svec, stripped=True)
 
         if self.has_lcbc:
-            svec = self.op_lcbc * svec
+            if self.has_lcbc_rhs:
+                svec = self.mtx_lcbc * svec + self.vec_lcbc
+
+            else:
+                svec = self.mtx_lcbc * svec
 
         vec = self.create_state_vector()
         for var in self.iter_state():
@@ -1276,7 +1293,6 @@ class FieldVariable(Variable):
 
         self.has_field = True
         self.has_bc = True
-        self.has_lcbc = False
         self._variables = None
 
         self.clear_bases()
