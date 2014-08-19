@@ -81,7 +81,7 @@ class LCBCEvaluator( BasicEvaluator ):
     # 04.10.2007, c
     def __init__(self, problem, matrix_hook=None):
         BasicEvaluator.__init__(self, problem, matrix_hook=matrix_hook)
-        self.op_lcbc = problem.equations.get_lcbc_operator()
+        self.mtx_lcbc = problem.equations.get_lcbc_operator()
 
     ##
     # 04.10.2007, c
@@ -89,7 +89,7 @@ class LCBCEvaluator( BasicEvaluator ):
         if not is_full:
             vec = self.make_full_vec( vec )
         vec_r = BasicEvaluator.eval_residual( self, vec, is_full = True )
-        vec_rr = self.op_lcbc.T * vec_r
+        vec_rr = self.mtx_lcbc.T * vec_r
         return vec_rr
 
     ##
@@ -102,7 +102,7 @@ class LCBCEvaluator( BasicEvaluator ):
             vec = self.make_full_vec( vec )
         mtx = BasicEvaluator.eval_tangent_matrix( self, vec, mtx = mtx,
                                                   is_full = True )
-        mtx_r = self.op_lcbc.T * mtx * self.op_lcbc
+        mtx_r = self.mtx_lcbc.T * mtx * self.mtx_lcbc
         mtx_r = mtx_r.tocsr()
         mtx_r.sort_indices()
 ##         import pylab
@@ -275,12 +275,12 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
                              term_mode=term_mode, asm_obj=asm_obj)
 
     if variables.has_lcbc and mode == 'weak':
-        op_lcbc = variables.op_lcbc
+        mtx_lcbc = variables.mtx_lcbc
         if dw_mode == 'vector':
-            out = op_lcbc.T * out
+            out = mtx_lcbc.T * out
 
         elif dw_mode == 'matrix':
-            out = op_lcbc.T * out * op_lcbc
+            out = mtx_lcbc.T * out * mtx_lcbc
             out = out.tocsr()
             out.sort_indices()
 
