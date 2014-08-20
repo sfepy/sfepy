@@ -419,7 +419,10 @@ class Term(Struct):
         if integrals is None:
             integrals = Integrals()
 
-        obj = constructor(desc.name, desc.args, None, region)
+        if desc.name == 'intFE':
+            obj = constructor(desc.name, desc.args, None, region, desc=desc)
+        else:
+            obj = constructor(desc.name, desc.args, None, region)
         obj.set_integral(integrals.get(desc.integral))
         obj.sign = desc.sign
 

@@ -931,6 +931,26 @@ class VolumeField(FEField):
 
         return conn
 
+    def get_full_econn(self, ig=None):
+        if ig not in self.igs:
+            msg = "The required index (%s) of element group is not available" \
+                % (str(ig),)
+            raise ValueError(msg)
+
+        econn = self.aps[ig].econn
+        n_econn = econn.shape[1]
+        if self.n_basis == n_econn:
+            full_econn = econn
+
+        elif self.n_basis==self.n_components*n_econn:
+            full_econn = nm.zeros([econn.shape[0], self.n_basis],
+                                  dtype=nm.int32)
+            for ii in nm.arange(self.n_components):
+                slc = slice(n_econn*ii, n_econn*(ii+1))
+                full_econn[:, slc] = econn*self.n_components + ii
+
+        return full_econn
+
     def average_qp_to_vertices(self, data_qp, integral):
         """
         Average data given in quadrature points in region elements into

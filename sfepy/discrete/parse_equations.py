@@ -1,6 +1,7 @@
-from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
-     ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
-     StringStart, StringEnd, CaselessLiteral, Forward, oneOf
+from pyparsing import (Combine, Literal, Word, Optional, ZeroOrMore, OneOrMore,
+                       nums, alphas, alphanums, StringStart, StringEnd,
+                       CaselessLiteral, Forward, oneOf, nestedExpr)
+from sfepy.base.base import basestr
 
 class TermParse(object):
     def __str__(self):
@@ -22,7 +23,25 @@ def collect_term(term_descs, lc):
         tp.flag = toks.term_desc.flag
         tp.sign = sign * eval(''.join(toks.mul))
         tp.name = toks.term_desc.name
-        tp.args = ', '.join(toks.args[0])
+        tp.fun_args = toks.fun_args
+        args = toks.args[0]
+        if tp.fun_args == 'einsum':
+            tp.fun_summation = args.pop(0)
+            args.pop(0)
+        args = args.asList()
+        while not 'arg_str' in locals():
+            try:
+                arg_str = ''.join(args)
+            except:
+                for ii, arg in enumerate(args):
+                    if isinstance(arg, basestr):
+                        continue
+                    args.pop(ii)
+                    arg.insert(0, '(')
+                    arg.append(')')
+                    args[ii:ii] = arg
+                    break
+        tp.args = arg_str
         term_descs.append(tp)
     return append
 
@@ -43,7 +62,7 @@ def create_bnf(term_descs):
 
     point = Literal(".")
     e = CaselessLiteral("E")
-    inumber = Word("+-" + nums, nums)
+
     fnumber = Combine(Word("+-" + nums, nums) +
                       Optional(point + Optional(Word(nums))) +
                       Optional(e + Word("+-" + nums, nums)))
@@ -59,18 +78,6 @@ def create_bnf(term_descs):
     integral = Combine((Literal('i') + Word(alphanums)) | Literal('i')
                        | Literal('a') | Word(nums))("integral")
 
-    history = Optional('[' + inumber + ']', default='')("history")
-
-    variable = Combine(Word(alphas, alphanums + '._') + history)
-
-    derivative = Combine(Literal('d') + variable \
-                         + Literal('/') + Literal('dt'))
-
-    trace = Combine(Literal('tr') + '(' + variable + ')')
-
-    generalized_var = derivative | trace | variable
-    args = Group(delimitedList(generalized_var))
-
     flag = Literal('a')
 
     term = Optional(Literal('+') | Literal('-'), default='+')("sign") \
@@ -81,15 +88,17 @@ def create_bnf(term_descs):
                               + ident("region") + "." + flag("flag") |
                               integral + "." + ident("region") |
                               ident("region")
-                              )))("term_desc") + "(" \
-                    + Optional(args, default=[''])("args") + ")"
+                              )))("term_desc") \
+                    + Optional("." + ident("fun_args")) \
+                    + Optional(nestedExpr(opener="(", closer=")")("args"))
+
     term.setParseAction(collect_term(term_descs, lc))
 
     rhs1 = equal + OneOrMore(term)
     rhs2 = equal + zero
     equation = StringStart() + OneOrMore(term) \
                + Optional(rhs1 | rhs2) + StringEnd()
-    ## term.setDebug()
+
     return equation
 
 if __name__ == "__main__":
@@ -97,6 +106,7 @@ if __name__ == "__main__":
     test_str = """d_term1.Y(fluid, u, w, Nu, dcf, mode)
                   + 5.0 * d_term2.Omega(u, w, Nu, dcf, mode)
                   - d_another_term.Elsewhere(w, p[-1], Nu, dcf, mode)
+                  + intFE.i.Y.einsum(',j,i', coef.val, u.grad, vg(a, b(c)))
                   = - dw_rhs.a.Y3(u, q, Nu, dcf, mode)"""
 
     term_descs = []

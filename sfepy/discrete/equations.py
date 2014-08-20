@@ -58,7 +58,7 @@ class Equations(Container):
         ii = 0
         for name, desc in conf.iteritems():
             if verbose:
-                output('equation "%s":' %  name)
+                output('equation "%s":' % name)
                 output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
                                     materials, integrals, user=user)
@@ -275,7 +275,8 @@ class Equations(Container):
         """
         self.variables.time_update(ts, functions, verbose=verbose)
 
-        active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions,
+        active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts,
+                                                     functions,
                                                      problem=problem)
         graph_changed = active_bcs != self.active_bcs
         self.active_bcs = active_bcs
@@ -364,7 +365,6 @@ class Equations(Container):
             if not (dct in ('volume', 'scalar', 'plate') or is_surface
                     or info.is_trace or any_dof_conn):
                 continue
-
 
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
@@ -587,8 +587,8 @@ class Equations(Container):
 
         if mode == 'weak':
             for eq in eqs:
-                eq.evaluate(mode=mode, dw_mode=dw_mode,
-                            term_mode=term_mode, asm_obj=asm_obj)
+                asm_obj = eq.evaluate(mode=mode, dw_mode=dw_mode,
+                                      term_mode=term_mode, asm_obj=asm_obj)
 
             out = asm_obj
 
@@ -709,9 +709,10 @@ class Equations(Container):
         else:
             tangent_matrix.data[:] = 0.0
 
-            self.evaluate(mode='weak', dw_mode='matrix', asm_obj=tangent_matrix)
+            asm_obj = self.evaluate(mode='weak', dw_mode='matrix',
+                                    asm_obj=tangent_matrix)
 
-            out = tangent_matrix
+            out = asm_obj
 
         return out
 
@@ -786,13 +787,22 @@ class Equation(Struct):
         mode : one of 'eval', 'el_avg', 'qp', 'weak'
             The evaluation mode.
         """
+
         if mode == 'eval':
             val = 0.0
             for term in self.terms:
-                aux, status = term.evaluate(mode=mode,
-                                            term_mode=term_mode,
-                                            standalone=False,
-                                            ret_status=True)
+                output("evaluate term '%s.%s.%s'" \
+                       % (term.name, term.integral.name, term.region.name))
+                tim = time.clock()
+                if term.name == 'intFE':
+                    aux = term.evaluate(mode=mode)
+                else:
+                    aux, status = term.evaluate(mode=mode,
+                                                term_mode=term_mode,
+                                                standalone=False,
+                                                ret_status=True)
+                tim = time.clock() - tim
+                output("...done in %0.2f" % (tim,))
                 val += aux
 
             out = val
@@ -815,27 +825,42 @@ class Equation(Struct):
         elif mode == 'weak':
 
             if dw_mode == 'vector':
-
                 for term in self.terms:
-                    val, iels, status = term.evaluate(mode=mode,
-                                                      term_mode=term_mode,
-                                                      standalone=False,
-                                                      ret_status=True)
-                    term.assemble_to(asm_obj, val, iels, mode=dw_mode)
-
-            elif dw_mode == 'matrix':
-
-                for term in self.terms:
-                    svars = term.get_state_variables(unknown_only=True)
-
-                    for svar in svars:
+                    output("evaluate term '%s.%s.%s'" \
+                           % (term.name, term.integral.name, term.region.name))
+                    tim = time.clock()
+                    if term.name == 'intFE':
+                        asm_obj = term.evaluate(asm_obj, mode=mode,
+                                                dw_mode=dw_mode)
+                    else:
                         val, iels, status = term.evaluate(mode=mode,
                                                           term_mode=term_mode,
-                                                          diff_var=svar.name,
                                                           standalone=False,
                                                           ret_status=True)
-                        term.assemble_to(asm_obj, val, iels,
-                                         mode=dw_mode, diff_var=svar)
+                        term.assemble_to(asm_obj, val, iels, mode=dw_mode)
+                    tim = time.clock() - tim
+                    output("...done in %.2f s" % (tim,))
+
+            elif dw_mode == 'matrix':
+                for term in self.terms:
+                    svars = term.get_state_variables(unknown_only=True)
+                    output("evaluate term '%s.%s.%s'" \
+                           % (term.name, term.integral.name, term.region.name))
+                    tim = time.clock()
+                    if term.name == 'intFE':
+                        asm_obj = term.evaluate(asm_obj, mode=mode,
+                                                dw_mode=dw_mode)
+                    else:
+                        for svar in svars:
+                            aux = term.evaluate(mode=mode, term_mode=term_mode,
+                                                diff_var=svar.name,
+                                                standalone=False,
+                                                ret_status=True)
+                            val, iels, status = aux
+                            term.assemble_to(asm_obj, val, iels,
+                                             mode=dw_mode, diff_var=svar)
+                    tim = time.clock() - tim
+                    output("...done in %.2f s" % (tim,))
 
             else:
                 raise ValueError('unknown assembling mode! (%s)' % dw_mode)

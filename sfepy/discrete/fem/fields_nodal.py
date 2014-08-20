@@ -301,6 +301,117 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
 
         return enod_vol_val
 
+    def set_basis(self, maps, methods):
+        """
+        This function along with eval_basis supports the general term IntFE.
+        It sets parameters and basis functions at reference element
+        according to its method (val, grad, div, etc).
+
+        Parameters
+        ----------
+        maps : class
+            It provides information about mapping between reference and real
+            element. Quadrature points stored in maps.qp_coor are used here.
+        method : list of string
+            It stores methods for variable evaluation. At first position, there
+            is one of val, grad, or div.
+        self.bfref : numpy.array of shape = (n_qp, n_basis) + basis_shape
+            An array that stores basis functions evaluated at quadrature
+            points. Here n_qp is number of quadrature points, n_basis is
+            number of basis functions, and basis_shape is a shape of basis
+            function, i.e. (1,) for scalar-valued, (dim,) for vector-valued,
+            (dim, dim) for matrix-valued, etc.
+
+        Returns
+        -------
+        self.bfref : numpy.array
+            It stores a basis functions at quadrature points of shape according
+            to proceeded methods.
+        self.n_basis : int
+            number of basis functions
+        """
+        self.eval_method = methods
+
+        def get_grad(maps, shape):
+            bfref0 = eval_base(maps.qp_coor, diff=True).swapaxes(1, 2)
+            if shape == (1,): # scalar variable
+                bfref = bfref0
+            elif len(shape) == 1: # vector variable
+                vec_shape = nm.array(bfref0.shape + shape)
+                vec_shape[1] *= shape[0]
+                bfref = nm.zeros(vec_shape)
+                for ii in nm.arange(shape[0]):
+                    slc = slice(ii*bfref0.shape[1], (ii+1)*bfref0.shape[1])
+                    bfref[:, slc, ii] = bfref0
+            else: # higher-order tensors variable
+                msg = "Evaluation of basis has not been implemented \
+                    for higher-order tensors yet."
+                raise NotImplementedError(msg)
+            return bfref
+
+        def get_val(maps, shape):
+            bfref0 = eval_base(maps.qp_coor, diff=False).swapaxes(1, 2)
+
+            if self.shape == (1,): # scalar variable
+                bfref = bfref0
+            elif len(shape) == 1:
+                vec_shape = nm.array(bfref0.shape)
+                vec_shape[1:3] *= shape[0]
+                bfref = nm.zeros(vec_shape)
+                for ii in nm.arange(shape[0]):
+                    slc = slice(ii*bfref0.shape[1], (ii+1)*bfref0.shape[1])
+                    bfref[:, slc] = bfref0
+            else: # higher-order tensors variable
+                msg = "Evaluation of basis has not been implemented \
+                    for higher-order tensors yet."
+                raise NotImplementedError(msg)
+            return bfref
+
+        eval_base = self.interp.poly_spaces['v'].eval_base
+        if self.eval_method[0] == 'val':
+            bfref = get_val(maps, self.shape)
+
+        elif self.eval_method[0] == 'grad':
+            bfref = get_grad(maps, self.shape)
+
+        elif self.eval_method[0] == 'div':
+            bfref = get_grad(maps, self.shape)
+
+        else:
+            raise NotImplementedError("The method '%s' is not implemented" \
+                                      % (self.eval_method))
+
+        self.bfref = bfref
+        self.n_basis = self.bfref.shape[1]
+
+    def eval_basis(self, maps):
+        """
+        It returns basis functions evaluated at quadrature points and mapped
+        at reference element according to real element.
+        """
+        if self.eval_method == ['grad']:
+            val = nm.tensordot(self.bfref, maps.inv_jac, axes=(-1, 0))
+            return val
+
+        elif self.eval_method == ['val']:
+            return self.bfref
+
+        elif self.eval_method == ['div']:
+            val = nm.tensordot(self.bfref, maps.inv_jac, axes=(-1, 0))
+            val = nm.atleast_3d(nm.einsum('ijkk', val))
+            return val
+
+        elif self.eval_method == ['grad', 'sym', 'Man']:
+            val = nm.tensordot(self.bfref, maps.inv_jac, axes=(-1, 0))
+            from sfepy.terms.terms_general import proceed_methods
+            val = proceed_methods(val, self.eval_method[1:])
+            return val
+
+        else:
+            msg = "Improper method '%s' for evaluation of basis functions" \
+                % (self.eval_method)
+            raise NotImplementedError(msg)
+
 class H1DiscontinuousField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
@@ -314,7 +425,7 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
             self.aps[ig] = ap
             self.aps_by_name[ap.name] = ap
 
-    def _setup_global_base( self ):
+    def _setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
         """

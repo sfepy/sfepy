@@ -28,6 +28,7 @@ class Test(TestCommon):
             """term_.a.a(u)""",
             """term.i1.Omega(v, du/dt) + term2.i2.Gamma(v, dphi/dt)""",
             """dw_jump.isurf.Gamma12_1(jump1.val, q1, p1, tr(p2))""",
+            """intFE.i.Y.einsum(',j,i', coef.val, u.grad, vg(a, b(c)))""",
         ]
 
         n_fail = 0
