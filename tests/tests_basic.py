@@ -37,7 +37,7 @@ class TestInput(TestCommon):
 
         name = test.get_output_name_trunk()
         test.solver_options = Struct(output_filename_trunk=name,
-                                     output_format ='vtk',
+                                     output_format='vtk',
                                      save_ebc=False, save_ebc_nodes=False,
                                      save_regions=False,
                                      save_regions_as_groups=False,
@@ -89,20 +89,14 @@ class TestInputEvolutionary(TestInput):
     def get_output_name_trunk(self):
         return self.conf.output_name_trunk
 
-##
-# 03.10.2007, c
-class TestLCBC( TestCommon ):
+class TestLCBC(TestCommon):
     """Test linear combination BC. See test_lcbc_*.py files."""
 
-    ##
-    # 03.10.2007, c
-    def from_conf( conf, options ):
-        return TestLCBC( conf = conf, options = options )
-    from_conf = staticmethod( from_conf )
+    @staticmethod
+    def from_conf(conf, options):
+        return TestLCBC(conf=conf, options=options)
 
-    ##
-    # c: 03.10.2007, r: 08.02.2008
-    def test_linear_rigid_body_bc( self ):
+    def test_linear_rigid_body_bc(self):
         import scipy
         if scipy.version.version == "0.6.0":
             # This test uses a functionality implemented in scipy svn, which is
@@ -116,16 +110,16 @@ class TestLCBC( TestCommon ):
         problem, state = solve_pde(self.conf, nls_status=status,
                                    save_results=False)
         ok = status.condition == 0
-        self.report( 'converged: %s' % ok )
+        self.report('converged: %s' % ok)
         out = state.create_output_dict()
 
         strain = problem.evaluate('ev_cauchy_strain.i.Y( u )', mode='el_avg')
         out['strain'] = Struct(name='output_data',
                                mode='cell', data=strain, dofs=None)
 
-        name = op.join( self.options.out_dir,
-                        op.split( self.conf.output_name )[1] )
-        problem.domain.mesh.write( name, io = 'auto', out = out )
+        name = op.join(self.options.out_dir,
+                       op.split(self.conf.output_name)[1])
+        problem.domain.mesh.write(name, io='auto', out=out)
 
         ##
         # Check if rigid body displacements are really rigid should go here.

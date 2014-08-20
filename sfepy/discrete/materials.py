@@ -6,9 +6,7 @@ from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
 from functions import ConstantFunction, ConstantFunctionByRegion
 
 
-##
-# 21.07.2006, c
-class Materials( Container ):
+class Materials(Container):
 
     @staticmethod
     def from_conf(conf, functions, wanted=None):
@@ -25,7 +23,7 @@ class Materials( Container ):
             mat = Material.from_conf(mc, functions)
             objs.append(mat)
 
-        obj = Materials( objs )
+        obj = Materials(objs)
         return obj
 
     def semideep_copy(self, reset=True):
@@ -70,9 +68,7 @@ class Materials( Container ):
             mat.time_update(ts, equations, mode=mode, problem=problem)
         if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
-##
-# 21.07.2006, c
-class Material( Struct ):
+class Material(Struct):
     """
     A class holding constitutive and other material parameters.
 
@@ -100,7 +96,7 @@ class Material( Struct ):
         if isinstance(function, basestr):
             function = functions[function]
 
-        obj =  Material(conf.name, kind, function, values, flags)
+        obj = Material(conf.name, kind, function, values, flags)
 
         return obj
 
@@ -362,7 +358,7 @@ class Material( Struct ):
 
         return keys
 
-    def set_all_data( self, datas ):
+    def set_all_data(self, datas):
         """
         Use the provided data, set mode to 'user'.
         """
@@ -375,8 +371,8 @@ class Material( Struct ):
 
     def reset(self):
         """
-        Clear all data created by a call to ``time_update()``, set ``self.mode``
-        to ``None``.
+        Clear all data created by a call to ``time_update()``, set
+        ``self.mode`` to ``None``.
         """
         self.mode = None
         self.datas = {}
@@ -384,33 +380,30 @@ class Material( Struct ):
         self.constant_names = set()
         self.extra_args = {}
 
-    ##
-    # 01.08.2007, c
     def set_extra_args(self, **extra_args):
         """Extra arguments passed tu the material function."""
         self.extra_args = extra_args
 
-    def get_data( self, key, ig, name ):
+    def get_data(self, key, ig, name):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
-##         print 'getting', self.name, name
 
         if isinstance(name, basestr):
-            return self._get_data( key, ig, name )
+            return self._get_data(key, ig, name)
         else:
             out = Struct()
             for key, item in name.iteritems():
-                setattr( out, key, self._get_data( key, ig, item ) )
+                setattr(out, key, self._get_data(key, ig, item))
             return out
 
-    def _get_data( self, key, ig, name ):
+    def _get_data(self, key, ig, name):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
                   '(material: %s, key: %s)' % (self.name, key)
-            raise ValueError( msg )
+            raise ValueError(msg)
 
         if not self.datas:
-            raise ValueError( 'material data not set! (call time_update())' )
+            raise ValueError('material data not set! (call time_update())')
 
         if name in self.special_names:
             # key, ig ignored.
@@ -419,8 +412,8 @@ class Material( Struct ):
         else:
             datas = self.datas[key]
 
-            if isinstance( datas[ig], Struct ):
-                return getattr( datas[ig], name )
+            if isinstance(datas[ig], Struct):
+                return getattr(datas[ig], name)
             elif datas[ig]:
                 return datas[ig][name]
 
@@ -433,9 +426,7 @@ class Material( Struct ):
             raise ValueError('material %s has no constant %s!'
                              % (self.name, name))
 
-    ##
-    # 01.08.2007, c
-    def reduce_on_datas( self, reduce_fun, init = 0.0 ):
+    def reduce_on_datas(self, reduce_fun, init=0.0):
         """For non-special values only!"""
         out = {}.fromkeys(self.datas[self.datas.keys()[0]][0].keys(), init)
         for datas in self.datas.itervalues():
