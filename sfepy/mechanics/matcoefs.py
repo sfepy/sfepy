@@ -209,7 +209,8 @@ class ElasticConstants(Struct):
                     print '!', skey
                 relations[skey] = val
 
-        bulk, lam, mu, young, poisson, p_wave = sm.symbols(self.names, real=True)
+        bulk, lam, mu, young, poisson, p_wave = sm.symbols(self.names,
+                                                           real=True)
 
         _expand_keys(sm.solve(bulk - (lam + 2 * mu / 3)))
         _expand_keys(sm.solve(young - (mu * (3 * lam + 2 * mu) / (lam + mu))))
@@ -341,52 +342,52 @@ class TransformToPlane(Struct):
                         i_m=i_m, i_s=i_s, i_ms=i_ms, i_ss=i_ss)
 
     def tensor_plane_stress(self, c3=None, d3=None, b3=None):
-       """
-       Transforms all coefficients of the piezoelectric constitutive law
-       from 3D to plane stress problem in 2D: strain/stress ordering: 11 22
-       33 12 13 23. If `d3` is None, uses only the stiffness tensor `c3`.
+        """
+        Transforms all coefficients of the piezoelectric constitutive law
+        from 3D to plane stress problem in 2D: strain/stress ordering: 11 22
+        33 12 13 23. If `d3` is None, uses only the stiffness tensor `c3`.
 
-       Parameters
-       ----------
-       c3 : array
-           The stiffness tensor.
-       d3 : array
-           The dielectric tensor.
-       b3 : array
-           The piezoelectric coupling tensor.
-       """
-       mg = nm.meshgrid
+        Parameters
+        ----------
+        c3 : array
+            The stiffness tensor.
+        d3 : array
+            The dielectric tensor.
+        b3 : array
+            The piezoelectric coupling tensor.
+        """
+        mg = nm.meshgrid
 
-       cs = c3[mg(self.i_ss,self.i_ss)]
-       cm = c3[mg(self.i_ss,self.i_ms)].T
-       if d3 is None: # elasticity only.
-           A = cs
-           Feps = cm
+        cs = c3[mg(self.i_ss, self.i_ss)]
+        cm = c3[mg(self.i_ss, self.i_ms)].T
+        if d3 is None: # elasticity only.
+            A = cs
+            Feps = cm
 
-           Ainv = nm.linalg.inv(A)
-           c2 = c3[mg(self.i_ms,self.i_ms)] \
-                - nm.dot(Feps.T, nm.dot(Ainv, Feps))
+            Ainv = nm.linalg.inv(A)
+            c2 = c3[mg(self.i_ms, self.i_ms)] \
+                 - nm.dot(Feps.T, nm.dot(Ainv, Feps))
 
-           return c2
+            return c2
 
-       else:
-           dm = d3[mg(self.i_s,self.i_m)].T
-           ds = d3[mg(self.i_s,self.i_s)]
+        else:
+            dm = d3[mg(self.i_s, self.i_m)].T
+            ds = d3[mg(self.i_s, self.i_s)]
 
-           ii = mg(self.i_s, self.i_ss)
-           A = nm.r_[nm.c_[cs, b3[ii]],
-                     nm.c_[b3[ii].T, -ds]] #=> sym !!!
-           F = nm.r_[nm.c_[cm, b3[mg(self.i_m,self.i_ss)]],
-                     nm.c_[b3[mg(self.i_s,self.i_ms)].T, -dm ]]
+            ii = mg(self.i_s, self.i_ss)
+            A = nm.r_[nm.c_[cs, b3[ii]],
+                      nm.c_[b3[ii].T, -ds]] #=> sym !!!
+            F = nm.r_[nm.c_[cm, b3[mg(self.i_m, self.i_ss)]],
+                      nm.c_[b3[mg(self.i_s, self.i_ms)].T, -dm]]
 
-           Feps = F[:,:3]
-           FE = F[:,3:]
-           Ainv = nm.linalg.inv(A)
-           c2 = c3[mg(self.i_ms,self.i_ms)] \
-                - nm.dot(Feps.T, nm.dot(Ainv, Feps))
-           d2 = d3[mg(self.i_m,self.i_m)] \
-                - nm.dot(FE.T, nm.dot(Ainv, FE))
-           b2 = b3[mg(self.i_m,self.i_ms)].T \
-                - nm.dot(FE.T, nm.dot(Ainv, Feps))
+            Feps = F[:, :3]
+            FE = F[:, 3:]
+            Ainv = nm.linalg.inv(A)
+            c2 = c3[mg(self.i_ms, self.i_ms)] \
+                 - nm.dot(Feps.T, nm.dot(Ainv, Feps))
+            d2 = d3[mg(self.i_m, self.i_m)] \
+                 - nm.dot(FE.T, nm.dot(Ainv, FE))
+            b2 = b3[mg(self.i_m, self.i_ms)].T \
+                 - nm.dot(FE.T, nm.dot(Ainv, Feps))
 
-           return c2, d2, b2
+            return c2, d2, b2
