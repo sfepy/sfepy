@@ -72,13 +72,7 @@ def transform_conditions(adict, prefix):
                 c2 = tuple_to_conf(key, conf, ['region', 'dofs'])
 
             else:
-                c2 = tuple_to_conf(key, conf, ['region'])
-
-                if isinstance(conf[1], dict):
-                    c2.dofs, c2.filename = conf[1:]
-
-                else:
-                    c2.times, c2.dofs = conf[1:]
+                c2 = tuple_to_conf(key, conf, ['region', 'times', 'dofs'])
 
             d2['%s_%s__%d' % (prefix, c2.name, ii)] = c2
 
