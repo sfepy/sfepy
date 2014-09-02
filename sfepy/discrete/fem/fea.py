@@ -11,6 +11,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
         domain.mesh.coors_act = coors.copy()
     else:
         domain.mesh.coors = coors.copy()
+        domain.cmesh.coors[:] = coors
 
     if update_fields:
         for field in fields.itervalues():
