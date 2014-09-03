@@ -91,7 +91,7 @@ helps = {
     'centre' :
     'centre of the block [default: %default]',
     'shape' :
-    'numbers of unique knot values along each axis [default: %default]',
+    'numbers of vertices along each axis [default: %default]',
     'show' : 'show the results figure',
 }
 
