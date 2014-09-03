@@ -38,7 +38,7 @@ def get_debug():
     else:
         old_excepthook = sys.excepthook
 
-        def debug(frame=None):
+        def debug(frame=None, frames_back=1):
             if IPython.__version__ >= '0.11':
                 from IPython.core.debugger import Pdb
 
@@ -67,13 +67,13 @@ def get_debug():
             sys.excepthook = old_excepthook
 
             if frame is None:
-                frame = sys._getframe().f_back
+                frame = sys._getframe(frames_back)
 
             Pdb(colors).set_trace(frame)
 
     if debug is None:
         import pdb
-        debug = pdb.set_trace
+        debug = lambda frame=None, frames_back=1: pdb.set_trace()
 
     debug.__doc__ = """
     Start debugger on line where it is called, roughly equivalent to::
@@ -84,6 +84,8 @@ def get_debug():
     debugger using the `IPython` API.
 
     When this fails, the plain old `pdb` is used instead.
+
+    With IPython, one can say in what frame the debugger can stop.
     """
 
     return debug
