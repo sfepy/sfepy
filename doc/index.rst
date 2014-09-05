@@ -136,8 +136,8 @@ Documentation
    primer
    users_guide
    examples
+   theory
    developer_guide
-   notes
 
 PDF version of the documentation: :download:`sfepy_manual.pdf`
 
