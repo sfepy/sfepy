@@ -518,12 +518,33 @@ def recover_micro_hook( micro_filename, region, macro,
 
             out = recovery_hook( pb, corrs, local_macro )
 
-            # save data
-            suffix = format % (ig, iel)
-            micro_name = pb.get_output_name(extra='recovered_'\
-                                            + recovery_file_tag + suffix)
-            filename = op.join(output_dir, op.basename(micro_name))
-            fpv = pb.conf.options.get('file_per_var', False)
-            pb.save_state(filename, out=out,
-                          file_per_var=fpv)
+            if ii == 0:
+                new_keys = []
+                new_data = {}
+                new_idxs = []
+                for k in local_macro.iterkeys():
+                    if k not in macro:
+                        new_keys.append(k)
+                        new_data[k] = []
 
+            new_idxs.append(ii)
+            for jj in new_keys:
+                new_data[jj].append(local_macro[jj])
+
+            # save data
+            if out is not None:
+                suffix = format % (ig, iel)
+                micro_name = pb.get_output_name(extra='recovered_'\
+                                                + recovery_file_tag + suffix)
+                filename = op.join(output_dir, op.basename(micro_name))
+                fpv = pb.conf.options.get('file_per_var', False)
+                pb.save_state(filename, out=out,
+                              file_per_var=fpv)
+
+        for jj in new_keys:
+            lout = new_data[jj]
+            macro[jj] = nm.zeros((nm.max(new_idxs) + 1,1) + lout[0].shape,
+                                 dtype=lout[0].dtype)
+            out = macro[jj]
+            for kk, ii in enumerate(new_idxs):
+                out[ii,0] = lout[kk]
