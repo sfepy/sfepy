@@ -689,15 +689,20 @@ integration orders can be specified directly in equations, see below.
                     [1./N] * N),
         }
 
-Boundary Conditions
-^^^^^^^^^^^^^^^^^^^
+Essential Boundary Conditions and Constraints
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The boundary conditions apply in a given region given by its name, and,
-optionally, in selected times. The times can be given either using a
-list of tuples `(t0, t1)` making the condition active for `t0 <= t <
-t1`, or by a name of a function taking the time argument and returning
-True or False depending on whether the condition is active at the given
-time or not.
+The essential boundary conditions set values of DOFs in some regions, while the
+constraints constrain or transform values of DOFs in some regions.
+
+Dirichlet Boundary Conditions
+"""""""""""""""""""""""""""""
+
+The Dirichlet, or essential, boundary conditions apply in a given region given
+by its name, and, optionally, in selected times. The times can be given either
+using a list of tuples `(t0, t1)` making the condition active for `t0 <= t <
+t1`, or by a name of a function taking the time argument and returning True or
+False depending on whether the condition is active at the given time or not.
 
 * Dirichlet (essential) boundary conditions, long syntax::
 
@@ -723,7 +728,7 @@ time or not.
     ebcs = {
         <name> : (<region_name>, [<times_specification>,]
                   {<dof_specification> : <value>[,
-                   <dof_specification> : <value>, ...]},...)
+                   <dof_specification> : <value>, ...]})
     }
 
   * Example::
@@ -732,6 +737,117 @@ time or not.
             'u1' : ('Left', {'u.all' : 0.0}),
             'u2' : ('Right', [(0.0, 1.0)], {'u.0' : 0.1}),
             'phi' : ('Surface', {'phi.all' : 0.0}),
+        }
+
+Periodic Boundary Conditions
+""""""""""""""""""""""""""""
+
+The periodic boundary conditions tie DOFs of a single variable in two regions
+that have matching nodes. Can be used with functions in
+:mod:`sfepy.discrete.fem.periodic`.
+
+* Periodic boundary conditions, long syntax::
+
+    epbc_<number> = {
+        'name' : <name>,
+        'region' : (<region1_name>, <region2_name>),
+        ['times' : <times_specification>,]
+        'dofs' : {<dof_specification> : <dof_specification>[,
+                  <dof_specification> : <dof_specification>, ...]},
+        'match' : <match_function_name>,
+    }
+
+  * Example::
+
+        epbc_1 = {
+            'name' : 'up1',
+            'region' : ('Left', 'Right'),
+            'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
+            'match' : 'match_y_line',
+        }
+
+
+* Periodic boundary conditions, short syntax::
+
+    epbcs = {
+        <name> : ((<region1_name>, <region2_name>), [<times_specification>,]
+                  {<dof_specification> : <dof_specification>[,
+                   <dof_specification> : <dof_specification>, ...]},
+                  <match_function_name>)
+    }
+
+  * Example::
+
+        epbcs = {
+            'up1' : (('Left', 'Right'), {'u.all' : 'u.all', 'p.0' : 'p.0'},
+                     'match_y_line'),
+        }
+
+Linear Combination Boundary Conditions
+""""""""""""""""""""""""""""""""""""""
+
+The linear combination boundary conditions (LCBCs) are more general than the
+Dirichlet BCs or periodic BCs. They can be used to substitute one set of DOFs
+in a region by another set of DOFs, possibly in another region and of another
+variable. The LCBCs can be used only in FEM with nodal (Lagrange) basis.
+
+Available LCBC kinds:
+
+- ``'rigid'`` - in linear elasticity problems, a region moves as a rigid body;
+- ``'no_penetration'`` - in flow problems, the velocity vector is constrained
+  to the plane tangent to the surface;
+- ``'normal_direction'`` - the velocity vector is constrained to the normal
+  direction;
+- ``'edge_direction'`` - the velocity vector is constrained to the mesh edge
+  direction;
+- ``'integral_mean_value'`` - all DOFs in a region are summed to a single new
+  DOF;
+- ``'shifted_periodic'`` - generalized periodic BCs that work with two
+  different variables and can have a non-zero mutual shift.
+
+Only the ``'shifted_periodic'`` LCBC needs the second region and the DOF
+mapping function, see below.
+
+* Linear combination boundary conditions, long syntax::
+
+    lcbc_<number> = {
+        'name' : <name>,
+        'region' : (<region1_name>, <region2_name>) | <region1_name>,
+        ['times' : <times_specification>,]
+        'dofs' : {<dof_specification> : <dof_specification> | None[, ...]},
+        ['dof_map_fun' : <dof_map_function_name> | None,]
+        'kind' : <lcbc_kind>,
+        [<kind_specific_options>]
+    }
+
+  * Example::
+
+        lcbc_1 = {
+            'name' : 'rigid',
+            'region' : 'Y2',
+            'dofs' : {'u.all' : None},
+            'kind' : 'rigid',
+        }
+
+* Linear combination boundary conditions, short syntax::
+
+    lcbcs = {
+        <name> : ((<region1_name>, <region2_name>) | <region1_name>,
+                  [<times_specification>,]
+                  {<dof_specification> : <dof_specification> | None, ...]},
+                  <dof_map_function_name> | None,
+                  <lcbc_kind>,
+                  [<kind_specific_options>])
+    }
+
+  * Example::
+
+        lcbcs = {
+            'shifted' : (('Left', 'Right'),
+                         {'u1.all' : 'u2.all'},
+                         'match_y_line', 'shifted_periodic',
+                         'get_shift'),
+            'mean' : ('Middle', {'u1.all' : None}, None, 'integral_mean_value'),
         }
 
 Initial Conditions

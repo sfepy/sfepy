@@ -4,7 +4,7 @@ classes, as well as the initial condition class.
 """
 import numpy as nm
 
-from sfepy.base.base import Container, Struct
+from sfepy.base.base import basestr, Container, Struct
 from sfepy.discrete.functions import Function
 
 def get_condition_value(val, functions, kind, name):
@@ -64,11 +64,18 @@ class Conditions(Container):
                                    times=times)
 
             elif 'lcbc' in key:
-                region = _get_region(cc.region, regions, cc.name)
-                filename = cc.get('filename', None)
-                cond = LinearCombinationBC(cc.name, region, cc.dofs, key=key,
-                                           filename=filename,
-                                           times=times)
+                if isinstance(cc.region, basestr):
+                    rs = [_get_region(cc.region, regions, cc.name), None]
+
+                else:
+                    rs = [_get_region(ii, regions, cc.name)
+                          for ii in cc.region]
+
+                cond = LinearCombinationBC(cc.name, rs, cc.dofs,
+                                           cc.dof_map_fun, cc.kind,
+                                           key=key,
+                                           times=times,
+                                           arguments=cc.get('arguments', None))
 
             elif 'ic' in key:
                 region = _get_region(cc.region, regions, cc.name)
@@ -261,22 +268,52 @@ class LinearCombinationBC(Condition):
     ----------
     name : str
         The boundary condition name.
-    region : Region instance
-        The region where the boundary condition is applied.
+    regions : list of two Region instances
+        The constrained (master) DOFs region and the new (slave) DOFs
+        region. The latter can be None if new DOFs are not field variable DOFs.
     dofs : dict
         The boundary condition specification defining the constrained
-        DOFs and the constraint type.
+        DOFs and the new DOFs (can be None).
+    dof_map_fun : str
+        The name of function for mapping the constrained DOFs to new DOFs (can
+        be None).
+    kind : str
+        The linear combination condition kind.
     key : str, optional
         The sorting key.
     times : list or str, optional
         The list of time intervals or a function returning True at time
         steps, when the condition applies.
-    filename : str, optional
-        Some conditions can store data (e.g. normal vectors) into a file.
+    arguments: tuple, optional
+        Additional arguments, depending on the condition kind.
     """
-    def __init__(self, name, region, dofs, key='', times=None, filename=None):
-        Condition.__init__(self, name=name, region=region, dofs=dofs,
-                           key=key, times=times, filename=filename)
+    def __init__(self, name, regions, dofs, dof_map_fun, kind, key='',
+                 times=None, arguments=None):
+        Condition.__init__(self, name=name, regions=regions, dofs=dofs,
+                           dof_map_fun=dof_map_fun, kind=kind,
+                           key=key, times=times, arguments=arguments)
+
+    def get_var_names(self):
+        """
+        Get names of variables corresponding to the constrained and new DOFs.
+        """
+        names = [self.dofs[0].split('.')[0]]
+        if self.dofs[1] is not None:
+            names.append(self.dofs[1].split('.')[0])
+
+        return names
+
+    def canonize_dof_names(self, dofs0, dofs1=None):
+        """
+        Canonize the DOF names using the full list of DOFs of a
+        variable.
+
+        Assumes single condition instance.
+        """
+        self.dofs[0] = _canonize(self.dofs[0], dofs0)
+
+        if self.dofs[1] is not None:
+            self.dofs[1] = _canonize(self.dofs[1], dofs1)
 
 class InitialCondition(Condition):
     """

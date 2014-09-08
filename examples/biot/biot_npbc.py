@@ -159,8 +159,9 @@ def define_input(filename, output_dir):
     }
 
     lcbcs = {
-        'rigid' : ('Outlet', {'u.all' : 'rigid'}),
-        'no_penetration' : ('Walls', {'u.all' : 'no_penetration'}),
+        'rigid' : ('Outlet', {'u.all' : None}, None, 'rigid'),
+        'no_penetration' : ('Walls', {'u.all' : None}, None,
+                            'no_penetration', None),
     }
 
     material_1 = {

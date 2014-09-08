@@ -317,7 +317,8 @@ for ch, val in pb_def['channels'].iteritems():
             })
 
     lcbcs.update({
-        'imv' + ch: ('Y' + ch, {'ls%s.all' % ch: 'integral_mean_value'})
+        'imv' + ch: ('Y' + ch, {'ls%s.all' % ch: None}, None,
+                     'integral_mean_value')
         })
 
 ###########################################################################

@@ -16,8 +16,7 @@ from sfepy.discrete.integrals import Integral
 from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
                                             expand_nodes_to_equations,
                                             is_active_bc)
-from sfepy.discrete.fem.lcbc_operators import (LCBCOperators,
-                                               make_global_lcbc_operator)
+from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 
@@ -157,6 +156,7 @@ class Variables(Container):
                            parameter=set(),
                            has_virtual_dcs=False,
                            has_lcbc=False,
+                           has_lcbc_rhs=False,
                            has_eq_map=False,
                            ordered_state=[],
                            ordered_virtual=[])
@@ -289,35 +289,61 @@ class Variables(Container):
 
     def setup_lcbc_operators(self, lcbcs, ts=None, functions=None):
         """
-        Prepare linear combination BC operator matrix.
+        Prepare linear combination BC operator matrix and right-hand side
+        vector.
         """
+        from sfepy.discrete.common.region import are_disjoint
         if lcbcs is None:
             self.lcdi = self.adi
             return
 
         self.lcbcs = lcbcs
-        lcbc_of_vars = self.lcbcs.group_by_variables()
 
-        # Assume disjoint regions.
-        lcbc_ops = {}
-        offset = 0
-        for var_name, bcs in lcbc_of_vars.iteritems():
-            var = self[var_name]
+        if (ts is None) or ((ts is not None) and (ts.step == 0)):
+            regs = []
+            var_names = []
+            for bcs in self.lcbcs:
+                for bc in bcs.iter_single():
+                    vns = bc.get_var_names()
 
-            lcbc_op = var.create_lcbc_operators(bcs, offset,
-                                                ts=ts, functions=functions)
-            lcbc_ops[var_name] = lcbc_op
+                    regs.append(bc.regions[0])
+                    var_names.append(vns[0])
+                    if bc.regions[1] is not None:
+                        regs.append(bc.regions[1])
+                        var_names.append(vns[1])
 
-            if lcbc_op is not None:
-                offset += lcbc_op.n_op
+            for i0 in xrange(len(regs) - 1):
+                for i1 in xrange(i0 + 1, len(regs)):
+                    if ((var_names[i0] == var_names[i1])
+                        and not are_disjoint(regs[i0], regs[i1])):
+                        raise ValueError('regions %s and %s are not disjoint!'
+                                         % (regs[i0].name, regs[i1].name))
 
-        self.op_lcbc, self.lcdi = make_global_lcbc_operator(lcbc_ops, self.adi)
+        ops = LCBCOperators('lcbcs', self, functions=functions)
 
-        self.has_lcbc = self.op_lcbc is not None
+        for bcs in self.lcbcs:
+            for bc in bcs.iter_single():
+                vns = bc.get_var_names()
+                dofs = [self[vn].dofs for vn in vns if vn is not None]
+                bc.canonize_dof_names(*dofs)
+
+                if not is_active_bc(bc, ts=ts, functions=functions):
+                    continue
+
+                output('lcbc:', bc.name)
+
+                ops.add_from_bc(bc, ts)
+
+        aux = ops.make_global_operator(self.adi)
+        self.mtx_lcbc, self.vec_lcbc, self.lcdi = aux
+
+        self.has_lcbc = self.mtx_lcbc is not None
+        self.has_lcbc_rhs = self.vec_lcbc is not None
 
     def get_lcbc_operator(self):
         if self.has_lcbc:
-            return self.op_lcbc
+            return self.mtx_lcbc
+
         else:
             raise ValueError('no LCBC defined!')
 
@@ -464,12 +490,26 @@ class Variables(Container):
         Make a full DOF vector satisfying E(P)BCs from a reduced DOF
         vector.
 
-        Passing a `force_value` overrides the EBC values.
+        Parameters
+        ----------
+        svec : array
+            The reduced DOF vector.
+        force_value : float, optional
+            Passing a `force_value` overrides the EBC values.
+
+        Returns
+        -------
+        vec : array
+            The full DOF vector.
         """
         self.check_vector_size(svec, stripped=True)
 
         if self.has_lcbc:
-            svec = self.op_lcbc * svec
+            if self.has_lcbc_rhs:
+                svec = self.mtx_lcbc * svec + self.vec_lcbc
+
+            else:
+                svec = self.mtx_lcbc * svec
 
         vec = self.create_state_vector()
         for var in self.iter_state():
@@ -1253,7 +1293,6 @@ class FieldVariable(Variable):
 
         self.has_field = True
         self.has_bc = True
-        self.has_lcbc = False
         self._variables = None
 
         self.clear_bases()
@@ -1371,36 +1410,6 @@ class FieldVariable(Variable):
         self.indx = slice(0, len(data))
 
         self.data[step] = data
-
-    def create_lcbc_operators(self, bcs, offset, ts=None, functions=None):
-        if len(bcs) == 0: return None
-
-        bcs.canonize_dof_names(self.dofs)
-        bcs.sort()
-
-        ops = LCBCOperators('lcbc:%s' % self.name, self.eq_map, offset)
-        for bc in bcs:
-            # Skip conditions that are not active in the current time.
-            if not is_active_bc(bc, ts=ts, functions=functions):
-                continue
-
-            output('lcbc:', self.name, bc.name)
-
-            if ts is not None and ts.step > 0:
-                # Save LCBC data only in the initial time step of the LCBC
-                # application.
-                import os
-                if os.path.exists(get_default(bc.filename, '')):
-                    bc = bc.copy()
-                    bc.filename = None
-
-            ops.add_from_bc(bc, self.field)
-
-        ops.finalize()
-
-        self.has_lcbc = True
-
-        return ops
 
     def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
                          warn=False):

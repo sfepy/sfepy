@@ -89,6 +89,20 @@ custom = {
             'roll' : 0,
         },
     },
+    'diffusion/laplace_coupling_lcbcs.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                'u1' : DomainSpecificPlot('plot_warp_scalar',
+                                          ['rel_scaling=1']),
+                'u2' : DomainSpecificPlot('plot_warp_scalar',
+                                          ['rel_scaling=1']),
+            },
+            'view' : (-55, 57, 3.4, [0.62,  0.12, 0.3]),
+            'roll' : -51,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    },
     'diffusion/poisson_iga.py' : {
         '' : {
             'is_wireframe' : True,
@@ -139,6 +153,21 @@ custom = {
             },
             'view' : (-82, 47, 2.8, [-0.01, -0.02, -0.02]),
             'roll' : -8.4,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    },
+    'linear_elasticity/elastic_shifted_periodic.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'only_names' : ['u'],
+            'domain_specific' : {
+                'u' : DomainSpecificPlot('plot_displacements',
+                                         ['rel_scaling=1',
+                                          'color_kind="scalars"',
+                                          'color_name="von_mises_stress"']),
+            },
+            'view' : (142, 39, 14, [-0.65, -0.37, -0.31]),
+            'roll' : 8.4,
             'opacity' : {'wireframe' : 0.3},
         },
     },

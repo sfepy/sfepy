@@ -110,10 +110,10 @@ ebcs = {
 }
 
 lcbcs = {
-    'walls' : ('Gamma_v', {'u.all' : 'no_penetration'},
+    'walls' : ('Gamma_v', {'u.all' : None}, None, 'no_penetration',
                'normals_Gamma.vtk'),
-    'edges' : ('Edges_v', {'u.all' : 'edge_direction'},
-               'edges_Edges.vtk'),
+    'edges' : ('Edges_v', [(-0.5, 1.5)], {'u.all' : None}, None,
+               'edge_direction', 'edges_Edges.vtk'),
 }
 
 materials = {
