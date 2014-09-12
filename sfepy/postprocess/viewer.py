@@ -860,7 +860,7 @@ class Viewer(Struct):
                 self.scene = None
 
             if self.scene is None:
-                if self.offscreen:
+                if self.offscreen or not show:
                     gui = None
                     scene = mlab.figure(fgcolor=fgcolor, bgcolor=bgcolor,
                                         size=self.size_hint)
