@@ -233,12 +233,7 @@ The syntax of the problem description file is very simple yet powerful,
 as the file itself is just a regular Python module that can be normally
 imported - no special parsing is necessary. The keywords mentioned above
 are regular Python variables (usually of the `dict` type) with special
-names. Historically, the keywords exist in two flavors:
-
-* **long syntax** is the original one - it is longer to type, but the
-  individual fields are named, so it might be easier/understand to read
-  for newcomers.
-* **short syntax** was added later to offer brevity for "expert" use.
+names.
 
 Below we show:
 
@@ -303,11 +298,11 @@ This section introduces the basics of running *SfePy* on the command line. The
 * The script ``simple.py`` is the most basic starting point in *SfePy*. It is
   invoked as follows::
 
-    $ ./simple.py examples/diffusion/poisson.py
+    $ ./simple.py examples/diffusion/poisson_short_syntax.py
 
-  * ``examples/diffusion/poisson.py`` is the *SfePy* *problem description*
-    file, which defines the problem to be solved in terms *SfePy* can
-    understand
+  * ``examples/diffusion/poisson_short_syntax.py`` is the *SfePy*
+    *problem description* file, which defines the problem to be solved
+    in terms *SfePy* can understand
 
   * Running the above command creates the output file ``cylinder.vtk`` in the
     *SfePy* top-level directory
@@ -352,10 +347,11 @@ Postprocessing the results
 Example problem description file
 --------------------------------
 
-Here we discuss the contents of the :download:`examples/diffusion/poisson.py
-<../examples/diffusion/poisson.py>` problem
-description file. For additional examples, see the problem description files in
-the ``examples/`` directory of *SfePy*.
+Here we discuss the contents of the
+:download:`examples/diffusion/poisson_short_syntax.py
+<../examples/diffusion/poisson_short_syntax.py>` problem description file. For
+additional examples, see the problem description files in the
+``examples/`` directory of *SfePy*.
 
 The problem at hand is the following:
 
@@ -389,14 +385,8 @@ long table in :ref:`term_overview`, we can see that *SfePy* contains
 this term under name `dw_laplace`. We are now ready to proceed to the
 actual problem definition.
 
-Long syntax of keywords
-^^^^^^^^^^^^^^^^^^^^^^^
-
-The example uses **long syntax** of the keywords. In next subsection, we
-show the same example written in **short syntax**.
-
-Open the :download:`examples/diffusion/poisson.py
-<../examples/diffusion/poisson.py>` file in your favorite text
+Open the :download:`examples/diffusion/poisson_short_syntax.py
+<../examples/diffusion/poisson_short_syntax.py>` file in your favorite text
 editor. Note that the file is a regular python source code.
 
 ::
@@ -410,9 +400,8 @@ particular problem. *SfePy* supports a variety of mesh formats.
 
 ::
 
-    material_2 = {
-        'name' : 'coef',
-        'values' : {'val' : 1.0},
+    materials = {
+        'coef': ({'val' : 1.0},),
     }
 
 Here we define just a constant coefficient :math:`c` of the Poisson
@@ -425,22 +414,11 @@ material parameters with the corresponding region of the mesh.
 
 ::
 
-    region_1000 = {
-        'name' : 'Omega',
-        'select' : 'cells of group 6',
-    }
-
-    region_03 = {
-        'name' : 'Gamma_Left',
-        'select' : 'vertices in (x < 0.00001)',
-        'kind' : 'facet',
-    }
-
-    region_4 = {
-        'name' : 'Gamma_Right',
-        'select' : 'vertices in (x > 0.099999)',
-        'kind' : 'facet',
-    }
+   regions = {
+       'Omega' : 'all', # or 'cells of group 6'
+       'Gamma_Left' : ('vertices in (x < 0.00001)', 'facet'),
+       'Gamma_Right' : ('vertices in (x > 0.099999)', 'facet'),
+   }
 
 Regions assign names to various parts of the finite element mesh. The region
 names can later be referred to, for example when specifying portions of the mesh
@@ -451,12 +429,8 @@ boundary conditions will be applied.
 
 ::
 
-    field_1 = {
-        'name' : 'temperature',
-        'dtype' : 'real',
-        'shape' : (1,),
-        'region' : 'Omega',
-        'approx_order' : 1,
+    fields = {
+        'temperature': ('real', 1, 'Omega', 1)
     }
 
 A field is used mainly to define the approximation on a (sub)domain, i.e. to
@@ -471,18 +445,9 @@ Several variables can use the same field, see below.
 
 ::
 
-    variable_1 = {
-        'name' : 't',
-        'kind' : 'unknown field',
-        'field' : 'temperature',
-        'order' : 0, # order in the global vector of unknowns
-    }
-
-    variable_2 = {
-        'name' : 's',
-        'kind' : 'test field',
-        'field' : 'temperature',
-        'dual' : 't',
+    variables = {
+        't': ('unknown field', 'temperature', 0),
+        's': ('test field', 'temperature', 't'),
     }
 
 One field can be used to generate discrete degrees of freedom (DOFs) of
@@ -498,16 +463,9 @@ variable defined, as usual in weak formulation of PDEs.
 
 ::
 
-    ebc_1 = {
-        'name' : 't1',
-        'region' : 'Gamma_Left',
-        'dofs' : {'t.0' : 2.0},
-    }
-
-    ebc_2 = {
-        'name' : 't2',
-        'region' : 'Gamma_Right',
-        'dofs' : {'t.0' : -2.0},
+    ebcs = {
+        't1': ('Gamma_Left', {'t.0' : 2.0}),
+        't2', ('Gamma_Right', {'t.0' : -2.0}),
     }
 
 Essential (Dirichlet) boundary conditions can be specified as above.
@@ -519,9 +477,8 @@ to the right surface.
 
 ::
 
-    integral_1 = {
-        'name' : 'i',
-        'order' : 2,
+    integrals = {
+        'i': 2,
     }
 
 Integrals specify which numerical scheme to use. Here we are using a 2nd order
@@ -561,35 +518,15 @@ name. The integral definition is superfluous in this case.
 
 ::
 
-    solver_0 = {
-        'name' : 'ls',
-        'kind' : 'ls.scipy_direct',
-        'method' : 'auto',
-    }
+   solvers = {
+       'ls' : ('ls.scipy_direct', {}),
+       'newton' : ('nls.newton',
+                   {'i_max'      : 1,
+                    'eps_a'      : 1e-10,
+       }),
+   }
 
-Here, we specify which kind of solver to use for linear equations.
-
-::
-
-    solver_1 = {
-        'name' : 'newton',
-        'kind' : 'nls.newton',
-
-        'i_max'      : 1,
-        'eps_a'      : 1e-10,
-        'eps_r'      : 1.0,
-        'macheps'   : 1e-16,
-        'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-        'ls_red'     : 0.1,
-        'ls_red_warp' : 0.001,
-        'ls_on'      : 1.1,
-        'ls_min'     : 1e-5,
-        'check'     : 0,
-        'delta'     : 1e-6,
-        'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
-    }
-
-Here, we specify the nonlinear solver kind and options. The convergence
+Here, we specify the linear and nonlinear solver kind and options. The convergence
 parameters can be adjusted if necessary, otherwise leave the default.
 
 Even linear problems are solved by a nonlinear solver (KISS rule) - only one
@@ -607,16 +544,6 @@ solvers with different convergence parameters if necessary.
 
 That's it! Now it is possible to proceed as described in
 :ref:`invoking_command_line`.
-
-Short syntax of keywords
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-The same diffusion equation example as above in **short syntax** reads,
-see :download:`examples/diffusion/poisson_short_syntax.py
-<../examples/diffusion/poisson_short_syntax.py>`, as follows:
-
-.. literalinclude:: ../examples/diffusion/poisson_short_syntax.py
-   :linenos:
 
 .. _sec-interactive-example-linear-elasticity:
 
