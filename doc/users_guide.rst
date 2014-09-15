@@ -322,6 +322,14 @@ files. For complete examples, see the problem description files in the
 ``examples/`` directory of SfePy.
 
 
+Long Syntax
+^^^^^^^^^^^
+
+Besides the *short syntax* described below there is (due to history)
+also a *long syntax* which is explained in
+:doc:`problem_desc_file_long`. The short and long syntax can be mixed
+together in one description file.
+
 FE Mesh
 ^^^^^^^
 
@@ -495,6 +503,8 @@ or::
                          +v r.Right""", 'facet', 'Omega'),
       }
 
+.. _User's Guide-Fields:
+
 Fields
 ^^^^^^
 
@@ -577,6 +587,8 @@ where
                                   nm.linspace( 1e-10, 0.5, N )),
                     [1./N] * N),
         }
+
+.. _User's Guide-EssentialBC:
 
 Essential Boundary Conditions and Constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1005,6 +1017,7 @@ Additional options (including solver selection)::
   modifying the problem description programmatically. See
   ``examples/diffusion/poisson_parametric_study.py`` for an example.
 * ``output_dir`` redirects output files to specified directory
+
 
 Building Equations in SfePy
 ---------------------------
