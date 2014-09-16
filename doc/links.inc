@@ -66,3 +66,6 @@
 
 .. _finite element method: http://en.wikipedia.org/wiki/Finite_element_method
 .. _isogeometric analysis: http://en.wikipedia.org/wiki/Isogeometric_analysis
+.. _salome download: http://www.salome-platform.org/downloads/current-version
+.. _salome web site: http://www.salome-platform.org
+.. _salome tutorial site: http://www.salome-platform.org/user-section/salome-tutorials

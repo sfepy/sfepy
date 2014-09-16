@@ -1658,14 +1658,19 @@ class MEDMeshIO(MeshIO):
         #TODO: Loop through multiple meshes?
         mesh_group = mesh_root._f_getChild(mesh_root._v_groups.keys()[0])
 
+        if not ('NOE' in mesh_group._v_groups.keys()):
+            mesh_group = mesh_group._f_getChild(mesh_group._v_groups.keys()[0])
+
         mesh.name = mesh_group._v_name
 
-        coors = mesh_group.NOE.COO.read()
+        aux_coors = mesh_group.NOE.COO.read()
         n_nodes = mesh_group.NOE.COO.getAttr('NBR')
 
         # Unflatten the node coordinate array
-        coors = coors.reshape(coors.shape[0]/n_nodes,n_nodes).transpose()
-        dim = coors.shape[1]
+        dim = aux_coors.shape[0] / n_nodes
+        coors = nm.zeros((n_nodes,dim), dtype=nm.float64)
+        for ii in range(dim):
+            coors[:,ii] = aux_coors[n_nodes*ii:n_nodes*(ii+1)]
 
         ngroups = mesh_group.NOE.FAM.read()
         assert_((ngroups >= 0).all())
@@ -1702,11 +1707,14 @@ class MEDMeshIO(MeshIO):
             try:
                 group = mesh_group.MAI._f_getChild(md)
 
-                conn = group.NOD.read()
+                aux_conn = group.NOD.read()
                 n_conns = group.NOD.getAttr('NBR')
 
                 # (0 based indexing in numpy vs. 1 based in MED)
-                conn = conn.reshape(conn.shape[0]/n_conns,n_conns).transpose()-1
+                nne = aux_conn.shape[0] / n_conns
+                conn = nm.zeros((n_conns,nne), dtype=nm.int32)
+                for ii in range(nne):
+                    conn[:,ii] = aux_conn[n_conns*ii:n_conns*(ii+1)] - 1
 
                 conns.append(conn)
 
