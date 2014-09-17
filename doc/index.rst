@@ -132,7 +132,6 @@ Documentation
    introduction
    installation
    tutorial
-   primer
    users_guide
    examples
    theory
