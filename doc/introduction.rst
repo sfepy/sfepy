@@ -7,44 +7,22 @@ Introduction
    :local:
    :backlinks: top
 
-*SfePy* is a finite element analysis software written almost entirely in
+*SfePy* (http://sfepy.org) is a software for solving systems of coupled partial
+differential equations (PDEs) by the finite element method in 2D and 3D. It can
+be viewed both as black-box PDE solver, and as a Python package which can be
+used for building custom applications. The word "simple" means that complex FEM
+problems can be coded very easily and rapidly. It is written almost entirely in
 `Python`_, with exception of the most time demanding routines - those are
 written in C and wrapped by `Cython`_ or written directly in Cython.
 
 *SfePy* is a free software released under the `New BSD License`_. It relies on
-`NumPy/SciPy`_ (an excellent collection of tools for scientific computations in
-Python).
+`NumPy`_ and `SciPy`_ (an excellent collection of tools for scientific
+computations in Python). It is a multi-platform software that should work on
+Linux, Mac OS X and Windows.
 
 *SfePy* was originally developed as a flexible framework to quickly implement
-and test the mathematical models developed during our various
-research projects. It has evolved, however, to a
-rather full-featured (yet small) finite element code with many weak forms
-to build equations so there is a chance it might serve you as well.
-
-New users should start by going through the :doc:`tutorial` and then the
-more focused :doc:`primer`.
-
-Features:
-
-* solution of linear, nonlinear problems
-* multi-platform (Linux, Mac OS X, Windows)
-* collection of modules (a library):
-    * FE engine, problem description facilities,
-      interfaces to various solvers, postprocessing utilities
-    * usable to build custom applications
-* "black box" PDE solver:
-    * no real programming involved
-    * just prepare a problem description file (in Python!) and solve it
-    * highly customizable behaviour (with a bit of coding)
-
-To find more information regarding the code itself, go to `SfePy web site`_
-where you can find:
-
-* releases
-* mailing lists
-* issue tracking
-* git repository (bleeding edge code)
-* further documentation, examples, and some of the research projects
-  the code has been developed for.
-
-To discuss in real time, join our IRC channel #sfepy at freenode.
+and test the mathematical models developed during our various research
+projects. It has evolved, however, to a rather full-featured (yet small) finite
+element code. Many terms have been implemented that can be used to build the
+PDEs, see :ref:`term_overview`. SfePy comes also with a number of examples that
+can get you started, check :ref:`examples`.
