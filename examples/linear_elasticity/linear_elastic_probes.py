@@ -1,25 +1,5 @@
 """
-This example shows how to use the post_process_hook and probe_hook options.
-
-Use it as follows (assumes running from the sfepy directory; on Windows, you
-may need to prefix all the commands with "python " and remove "./"):
-
-1. solve the problem::
-
-   ./simple.py examples/linear_elasticity/linear_elastic_probes.py
-
-2. optionally, view the results::
-
-   ./postproc.py cylinder.h5 -b
-
-3. optionally, convert results to VTK, and view again::
-
-   ./extractor.py -d cylinder.h5
-   ./postproc.py cylinder.vtk -b
-
-4. probe the data::
-
-   ./probe.py examples/linear_elasticity/linear_elastic_probes.py cylinder.h5
+This example shows how to use the post_process_hook to probe the output data.
 
 Find :math:`\ul{u}` such that:
 
@@ -37,35 +17,32 @@ where
 """
 # Just grab the problem definition of linear_elastic.py.
 from linear_elastic import *
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+import os
+import numpy as nm
+
+from sfepy.base.base import Struct
+from sfepy.postprocess.probes_vtk import Probe
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 # Define options.
 options = {
     'output_dir' : '.',
-    'output_format' : 'h5', # VTK reader cannot read cell data yet...
-
     'post_process_hook' : 'post_process',
-    'gen_probes' : 'gen_lines',
-    'probe_hook' : 'probe_hook',
 }
 
 # Update materials, as ev_cauchy_stress below needs the elastic constants in
 # the tensor form.
-from sfepy.mechanics.matcoefs import stiffness_from_lame
-
 solid = materials['solid'][0]
 lam, mu = solid['lam'], solid['mu']
 solid.update({
     'D' : stiffness_from_lame(3, lam=lam, mu=mu),
 })
 
-# Update fields and variables to be able to use probes for tensors.
-fields.update({
-    'sym_tensor': ('real', 6, 'Omega', 0),
-})
-
-variables.update({
-    's' : ('parameter field', 'sym_tensor', None),
-})
+# The function returning the probe parametrization.
+def par_fun(idx):
+    return nm.log(idx + 1) / nm.log(20) * 0.04
 
 # Define the function post_process, that will be called after the problem is
 # solved.
@@ -92,7 +69,6 @@ def post_process(out, problem, state, extend=False):
     out : dict
         The updated output dictionary.
     """
-    from sfepy.base.base import Struct
 
     # Cauchy strain averaged in elements.
     strain = problem.evaluate('ev_cauchy_strain.i.Omega( u )',
@@ -107,121 +83,84 @@ def post_process(out, problem, state, extend=False):
                                   mode='cell', data=stress,
                                   dofs=None)
 
-    return out
-
-# This function will be called by probe.py.
-def gen_lines(problem):
-    """
-    Define three line probes in axial directions.
-
-    Parameters
-    ----------
-    problem : Problem instance
-        The current Problem instance.
-
-    Returns
-    -------
-    probes : list
-        The list of the probes.
-    labels : list
-        The list of probe labels.
-    """
-    from sfepy.discrete.probes import LineProbe
+    # Define three line probes in axial directions.
 
     mesh = problem.domain.mesh
+
     bbox = mesh.get_bounding_box()
     cx, cy, cz = 0.5 * bbox.sum(axis=0)
-    print bbox
-    print cx, cy, cz
 
-    # Probe end points.
-    ps0 = [[bbox[0,0], cy, cz],
-           [cx, bbox[0,1], cz],
-           [cx, cy, bbox[0,2]]]
-    ps1 = [[bbox[1,0], cy, cz],
-           [cx, bbox[1,1], cz],
-           [cx, cy, bbox[1,2]]]
+    labels = []
+    probe_names = []
 
-    # Use adaptive probe with 10 inital points.
-    n_point = -10
+    probe = Probe(out, mesh)
 
-    labels = ['%s -> %s' % (p0, p1) for p0, p1 in zip(ps0, ps1)]
-    probes = []
-    for ip in xrange(len(ps0)):
-        p0, p1 = ps0[ip], ps1[ip]
-        probes.append(LineProbe(p0, p1, n_point))
+    # line probe
+    labels.append('line probe - x direction')
+    probe_names.append('line')
+    probe.add_line_probe('line',
+                         [bbox[0,0], cy, cz],
+                         [bbox[1,0], cy, cz],
+                         30)
 
-    return probes, labels
+    # circle probe
+    labels.append('circle probe')
+    probe_names.append('circle')
+    probe.add_circle_probe('circle',
+                           [cx, cy, cz],
+                           [0, 0, 1],
+                           0.015,
+                           30)
 
-# This function will be called by probe.py.
-def probe_hook(data, probe, label, problem):
-    """
-    Parameters
-    ----------
-    data : dict
-        The output data.
-    probe : Probe subclass instance
-        The probe to be used on data.
-    label : str
-        The label describing the probe.
-    problem : Problem instance
-        The current Problem instance.
+    # ray probe
+    labels.append('ray probe - y direction')
+    probe_names.append('ray')
+    probe.add_ray_probe('ray',
+                        [cx, bbox[0,1], cz],
+                        [0, 1, 0],
+                        par_fun, 20)
 
-    Returns
-    -------
-    fig : figure
-        The matplotlib figure with the probe plot.
-    results : dict
-        The dict of tuples (pars, vals) of the probe parametrization and the
-        corresponding probed data.
-    """
-    import matplotlib.pyplot as plt
-    import matplotlib.font_manager as fm
+    # Gnerate matplotlib figures with the probe plot.
+    for probe_name, label in zip(probe_names, labels):
 
-    def get_it(name, var_name):
-        var = problem.create_variables([var_name])[var_name]
-        var.set_data(data[name].data)
+        fig = plt.figure()
+        plt.clf()
+        fig.subplots_adjust(hspace=0.4)
 
-        pars, vals = probe(var)
-        vals = vals.squeeze()
-        return pars, vals
+        plt.subplot(311)
+        pars, vals = probe(probe_name, 'u')
+        for ic in range(vals.shape[1]):
+            plt.plot(pars, vals[:,ic], label=r'$u_{%d}$' % (ic + 1),
+                     lw=1, ls='-', marker='+', ms=3)
+        plt.ylabel('displacements')
+        plt.xlabel('probe %s' % label, fontsize=8)
+        plt.legend(loc='best', prop=fm.FontProperties(size=10))
 
-    results = {}
-    results['u'] = get_it('u', 'u')
-    results['cauchy_strain'] = get_it('cauchy_strain', 's')
-    results['cauchy_stress'] = get_it('cauchy_stress', 's')
+        sym_indices = [0, 4, 8, 1, 2, 5]
+        sym_labels = ['11', '22', '33', '12', '13', '23']
 
-    fig = plt.figure()
-    plt.clf()
-    fig.subplots_adjust(hspace=0.4)
+        plt.subplot(312)
+        pars, vals = probe(probe_name, 'cauchy_strain')
+        for ii, ic in enumerate(sym_indices):
+            plt.plot(pars, vals[:,ic], label=r'$e_{%s}$' % sym_labels[ii],
+                     lw=1, ls='-', marker='+', ms=3)
+        plt.ylabel('Cauchy strain')
+        plt.xlabel('probe %s' % label, fontsize=8)
+        plt.legend(loc='best', prop=fm.FontProperties(size=8))
 
-    plt.subplot(311)
-    pars, vals = results['u']
-    for ic in range(vals.shape[1]):
-        plt.plot(pars, vals[:,ic], label=r'$u_{%d}$' % (ic + 1),
-                 lw=1, ls='-', marker='+', ms=3)
-    plt.ylabel('displacements')
-    plt.xlabel('probe %s' % label, fontsize=8)
-    plt.legend(loc='best', prop=fm.FontProperties(size=10))
+        plt.subplot(313)
+        pars, vals = probe(probe_name, 'cauchy_stress')
+        for ii, ic in enumerate(sym_indices):
+            plt.plot(pars, vals[:,ic], label=r'$\tau_{%s}$' % sym_labels[ii],
+                     lw=1, ls='-', marker='+', ms=3)
+        plt.ylabel('Cauchy stress')
+        plt.xlabel('probe %s' % label, fontsize=8)
+        plt.legend(loc='best', prop=fm.FontProperties(size=8))
 
-    sym_indices = ['11', '22', '33', '12', '13', '23']
+        opts = problem.conf.options
+        filename_results = os.path.join(opts.get('output_dir'),
+                                        'cylinder_probe_%s.png' % probe_name)
 
-    plt.subplot(312)
-    pars, vals = results['cauchy_strain']
-    for ic in range(vals.shape[1]):
-        plt.plot(pars, vals[:,ic], label=r'$e_{%s}$' % sym_indices[ic],
-                 lw=1, ls='-', marker='+', ms=3)
-    plt.ylabel('Cauchy strain')
-    plt.xlabel('probe %s' % label, fontsize=8)
-    plt.legend(loc='best', prop=fm.FontProperties(size=8))
+        fig.savefig(filename_results)
 
-    plt.subplot(313)
-    pars, vals = results['cauchy_stress']
-    for ic in range(vals.shape[1]):
-        plt.plot(pars, vals[:,ic], label=r'$\tau_{%s}$' % sym_indices[ic],
-                 lw=1, ls='-', marker='+', ms=3)
-    plt.ylabel('Cauchy stress')
-    plt.xlabel('probe %s' % label, fontsize=8)
-    plt.legend(loc='best', prop=fm.FontProperties(size=8))
-
-    return plt.gcf(), results
+    return out

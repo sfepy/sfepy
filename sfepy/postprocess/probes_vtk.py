@@ -1,0 +1,312 @@
+"""Classes for probing values of Variables, for example, along a line,
+using PyVTK library"""
+
+import numpy as nm
+import vtk
+from vtk.util import numpy_support as vtknm
+import os.path as osp
+
+from sfepy.base.base import Struct, output
+from sfepy.linalg import make_axis_rotation_matrix
+
+class Probe(Struct):
+    """
+    Probe class.
+    """
+
+    def get_VTK_from_file(self, filename):
+        """
+        Read VTK file containing scalar or vector results.
+
+        Parameters
+        ----------
+        filename : str
+            Name of the VTK file.
+
+        Returns
+        -------
+        vtkdata : VTK object
+            Mesh, scalar, vector and tensor results.
+        """
+
+        reader = vtk.vtkUnstructuredGridReader()
+        reader.SetFileName(filename)
+        reader.ReadAllScalarsOn()
+        reader.ReadAllVectorsOn()
+        reader.ReadAllTensorsOn()
+        reader.Update()
+        vtkdata = reader.GetOutput()
+
+        return vtkdata
+
+    def __init__(self, data, mesh, **kwargs):
+        """
+        Parameters
+        ----------
+        data : dict
+            The output dictionary.
+        mesh : Mesh
+            The mesh.
+        """
+
+        Struct.__init__(self, name=mesh.name, **kwargs)
+
+        self.mesh_name = mesh.name[mesh.name.rfind(osp.sep) + 1:]
+        vtkname = 'probe_%s.vtk' % self.mesh_name
+        mesh.write(vtkname, io='auto', out=data)
+        self.vtkdata = self.get_VTK_from_file(vtkname)
+
+        self.vtkprobe = vtk.vtkProbeFilter()
+        self.vtkprobe.SetSource(self.vtkdata)
+
+        self.probes = {}
+        self.probes_png = {}
+
+    def new_vtk_polyline(self, points, closed=False):
+        """
+        Create the VTKPolyData object and store the line data.
+
+        Parameters
+        ----------
+        points : array
+            The line points.
+
+        Returns
+        -------
+        vtkpd : VTK object
+            VTKPolyData with the polyline.
+        """
+
+        npts = points.shape[0]
+        pts = vtk.vtkPoints()
+        pts.SetNumberOfPoints(npts)
+        for ii in range(npts):
+            pts.SetPoint(ii, points[ii,:])
+
+        nlns = npts
+        if closed:
+            nlns += 1
+        lns = vtk.vtkCellArray()
+        lns.InsertNextCell(nlns)
+        for ii in range(npts):
+            lns.InsertCellPoint(ii)
+
+        if closed:
+            lns.InsertCellPoint(0)
+
+        vtkpd = vtk.vtkPolyData()
+        vtkpd.SetPoints(pts)
+        vtkpd.SetLines(lns)
+        vtkpd.Update()
+
+        return vtkpd
+
+    def add_line_probe(self, name, p0, p1, n_point):
+        """
+        Create the line probe - VTK object.
+
+        Parameters
+        ----------
+        name : str
+            The probe name.
+        p0 : array_like
+            The coordinates of the start point.
+        p1 : array_like
+            The coordinates of the end point.
+        n_point : int
+           The number of probe points.
+        """
+
+        line = vtk.vtkLineSource()
+        line.SetPoint1(p0)
+        line.SetPoint2(p1)
+        line.SetResolution(n_point)
+        line.Update()
+
+        pars = nm.arange(n_point + 1) / nm.float(n_point)
+        self.probes[name] = (line, pars)
+        self.probes_png[name] = False
+
+    def add_ray_probe(self, name, p0, dirvec, p_fun, n_point):
+        """
+        Create the ray (line) probe - VTK object.
+
+        Parameters
+        ----------
+        name : str
+            The probe name.
+        p0 : array
+            The coordinates of the start point.
+        dirvec : array
+            The probe direction vector.
+        p_fun : function
+            The function returning the probe parametrization along the dirvec
+            direction.
+        n_point : int
+           The number of probe points.
+        """
+
+        p0 = nm.array(p0, dtype=nm.float64)
+        dirvec = nm.array(dirvec, dtype=nm.float64)
+        dirvec /= nm.linalg.norm(dirvec)
+
+        pars = p_fun(nm.arange(n_point, dtype=nm.float64))
+        points = p0 + dirvec * pars[:,None]
+
+        ray = self.new_vtk_polyline(points)
+        self.probes[name] = (ray, pars)
+        self.probes_png[name] = False
+
+    def add_circle_probe(self, name, centre, normal, radius, n_point):
+        """
+        Create the ray (line) probe - VTK object.
+
+        Parameters
+        ----------
+        name : str
+            The probe name.
+        centre : array
+            The coordinates of the circle center point.
+        normal : array
+             The normal vector perpendicular to the circle plane.
+        radius : float
+            The radius of the circle.
+        n_point : int
+           The number of probe points.
+        """
+
+        pars = nm.linspace(0.0, 2.0*nm.pi, n_point + 1)[:-1]
+
+        # Create the points in xy plane, centered at the origin.
+        x = radius * nm.cos(pars[:,None])
+        y = radius * nm.sin(pars[:,None])
+
+        if len(centre) == 3:
+            z = nm.zeros((n_point, 1), dtype=nm.float64)
+            points = nm.c_[x, y, z]
+
+            # Rotate to satisfy the normal, shift to the centre.
+            n1 = nm.array([0.0, 0.0, 1.0], dtype=nm.float64)
+            axis = nm.cross(n1, normal)
+            angle = nm.arccos(nm.dot(n1, normal))
+
+            if nm.linalg.norm(axis) < 0.1:
+                # n1 == self.normal
+                rot_mtx = nm.eye(3, dtype=nm.float64)
+            else:
+                rot_mtx = make_axis_rotation_matrix(axis, angle)
+
+            points = nm.dot(points, rot_mtx)
+
+        else:
+            points = nm.c_[x, y]
+
+        points += centre
+
+        circle = self.new_vtk_polyline(points, closed=True)
+        self.probes[name] = (circle, pars)
+        self.probes_png[name] = False
+
+    def gen_mesh_probe_png(self, probe, png_filename):
+        """
+        Generate PNG image of the FE mesh.
+
+        Parameters
+        ----------
+        probe : VTK objectstr
+            The probe, VTKPolyData or VTKSource.
+        png_filename : str
+            The name of the output PNG file.
+        """
+
+        surface = vtk.vtkDataSetSurfaceFilter()
+        surface.SetInput(self.vtkdata)
+        surface.Update()
+
+        gf = vtk.vtkGraphicsFactory()
+        gf.SetOffScreenOnlyMode(1)
+        gf.SetUseMesaClasses(1)
+
+        ifa = vtk.vtkImagingFactory()
+        ifa.SetUseMesaClasses(1)
+
+        mapper = vtk.vtkPolyDataMapper()
+        mapper.SetInput(surface.GetOutput())
+        mapper.SetScalarModeToUseCellData()
+
+        actor = vtk.vtkActor()
+        actor.SetMapper(mapper)
+        actor.GetProperty().SetOpacity(0.33)
+
+        mapper2 = vtk.vtkPolyDataMapper()
+        if hasattr(probe, 'GetOutput'):
+            mapper2.SetInput(probe.GetOutput())
+
+        else:
+            mapper2.SetInput(probe)
+
+        actor2 = vtk.vtkActor()
+        actor2.SetMapper(mapper2)
+        actor2.GetProperty().SetColor(0,0,0)
+        actor2.GetProperty().SetLineWidth(2)
+        ren = vtk.vtkRenderer()
+        renWin = vtk.vtkRenderWindow()
+        renWin.SetOffScreenRendering(1)
+        renWin.AddRenderer(ren)
+        ren.AddActor(actor)
+        ren.AddActor(actor2)
+        ren.SetBackground(1, 1, 1)
+        renWin.Render()
+
+        image = vtk.vtkWindowToImageFilter()
+        image.SetInput(renWin)
+        image.Update()
+
+        writer = vtk.vtkPNGWriter()
+        writer.SetFileName(png_filename)
+        writer.SetInput(image.GetOutput())
+        writer.Write()
+
+    def __call__(self, probe_name, variable, probe_view=False):
+        """
+        Do the probe for the given variable.
+
+        Parameters
+        ----------
+        probe_name : str
+            The name of previously defined probe.
+        variable : str
+            The variable to be probed.
+
+        Returns
+        -------
+        params : array
+            The parametrization of the probe points.
+        values : array
+            The probe values in the points.
+        """
+
+        inp = self.probes[probe_name][0]
+        params = self.probes[probe_name][1]
+
+        if hasattr(inp, 'GetOutputPort'):
+            self.vtkprobe.SetInputConnection(inp.GetOutputPort())
+
+        else:
+            self.vtkprobe.SetInput(inp)
+
+        self.vtkprobe.Update()
+        pdata = self.vtkprobe.GetOutput()
+        values = vtknm.vtk_to_numpy(pdata.GetPointData().GetArray(variable))
+
+        output('probing data')
+        output('  probe name: %s' % probe_name)
+        output('  variable: %s' % variable)
+        output('  points: %s' % params.shape[0])
+
+        if probe_view and not(self.probes_png[probe_name]):
+            pngname = 'probe_%s_%s.png' % (self.mesh_name, probe_name)
+            self.gen_mesh_probe_png(inp, pngname)
+            self.probes_png[probe_name] = True
+
+        return params, values
