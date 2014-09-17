@@ -14,11 +14,10 @@
    building custom applications. The word "simple" means that complex FEM
    problems can be coded very easily and rapidly.
 
-   SfePy can use many terms to build systems of partial differential
-   equations (PDEs) to be solved - follow this quick link to the table of
-   all available terms to see the full list: :ref:`term_overview`. SfePy
-   comes with a number of examples that can get you started, check
-   :ref:`examples`. Some more advanced features are discussed in :doc:`primer`.
+   SfePy can use many terms to build the PDEs to be solved, see
+   :ref:`term_overview`. SfePy comes also with a number of examples that can
+   get you started, check :ref:`examples`. Some more advanced features are
+   discussed in :doc:`primer`.
 
    There is also a preliminary support for the isogeometric analysis, see
    the :ref:`isogeometric_analysis` section in the :doc:`tutorial`.
