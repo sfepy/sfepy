@@ -76,13 +76,24 @@ class IGField(Field):
         if (ig not in self.igs) or (ig not in region.igs):
             return None
 
+        nconn = self.nurbs.conn
+
         if ct == 'volume':
             if region.name == self.region.name:
-                conn = self.nurbs.conn
+                conn = nconn
 
             else:
                 cells = region.get_cells(ig, true_cells_only=True)
-                conn = nm.take(self.nurbs.conn, cells.astype(nm.int32), axis=0)
+                conn = nm.take(nconn, cells.astype(nm.int32), axis=0)
+
+        elif ct == 'surface':
+            fis = region.get_facet_indices(ig, offset=False, force_ig=False)
+            tdim = region.kind_tdim
+            facets = self.domain.facets[2 - tdim]
+
+            conn = []
+            for ii, fi in enumerate(fis):
+                conn.append(nconn[fi[0], facets[fi[1]]])
 
         else:
             raise ValueError('unsupported connectivity type! (%s)' % ct)
