@@ -16,11 +16,11 @@
 
    SfePy can use many terms to build the PDEs to be solved, see
    :ref:`term_overview`. SfePy comes also with a number of examples that can
-   get you started, check :ref:`examples`. Some more advanced features are
-   discussed in :doc:`primer`.
+   get you started, check :ref:`examples` and :doc:`tutorial`. Some more
+   advanced features are discussed in :doc:`primer`.
 
-   There is also a preliminary support for the isogeometric analysis, see
-   the :ref:`isogeometric_analysis` section in the :doc:`tutorial`.
+   There is also a preliminary support for the isogeometric analysis,
+   outlined in :ref:`isogeometric_analysis`.
 
    **License:** :doc:`BSD <license>`
 
