@@ -6,5 +6,5 @@ Examples
 .. toctree::
    :maxdepth: 2
 
-   examples/using_salome
+   using_salome
    examples/index
