@@ -48,7 +48,7 @@ the result from there in the following.
 
 This is the mesh you should end up with:
 
-.. image:: ../images/using_salome/EDF1_screen10.png
+.. image:: images/using_salome/EDF1_screen10.png
    :width: 50%
 
 
