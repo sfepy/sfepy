@@ -21,7 +21,7 @@ Basic Usage
 
 * ::
 
-    $ ./simple.py examples/diffusion/poisson.py
+    $ ./simple.py examples/diffusion/poisson_short_syntax.py
 
   * Creates ``cylinder.vtk``
 
@@ -170,8 +170,8 @@ Common Tasks
 
 * Run a simulation::
 
-    ./simple.py examples/diffusion/poisson.py
-    ./simple.py examples/diffusion/poisson.py -o some_results # -> produces some_results.vtk
+    ./simple.py examples/diffusion/poisson_short_syntax.py
+    ./simple.py examples/diffusion/poisson_short_syntax.py -o some_results # -> produces some_results.vtk
 
 * Print available terms::
 
@@ -179,7 +179,7 @@ Common Tasks
 
 * Run a simulation and also save Dirichlet boundary conditions::
 
-    ./simple.py --save-ebc examples/diffusion/poisson.py # -> produces an additional .vtk file with BC visualization
+    ./simple.py --save-ebc examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
 
 Visualization of Results
 ------------------------
@@ -295,7 +295,7 @@ system. Running ``postproc.py`` without arguments produces::
 
 As a simple example, try::
 
-    $ ./simple.py examples/diffusion/poisson.py
+    $ ./simple.py examples/diffusion/poisson_short_syntax.py
     $ ./postproc.py cylinder.vtk
 
 The following window should display:
@@ -322,6 +322,14 @@ files. For complete examples, see the problem description files in the
 ``examples/`` directory of SfePy.
 
 
+Long Syntax
+^^^^^^^^^^^
+
+Besides the *short syntax* described below there is (due to history)
+also a *long syntax* which is explained in
+:doc:`problem_desc_file_long`. The short and long syntax can be mixed
+together in one description file.
+
 FE Mesh
 ^^^^^^^
 
@@ -340,7 +348,7 @@ A FE mesh defining a domain geometry can be stored in several formats:
 * gambit neutral text mesh file (``.neu``)
 * salome/pythonocc med binary mesh file (``.med``)
 
-Example::
+**Example**::
 
     filename_mesh = 'meshes/3d/cylinder.vtk'
 
@@ -474,48 +482,19 @@ vertices and cells - the other entities are computed as needed.
 Region Definition Syntax
 """"""""""""""""""""""""
 
-* Long syntax: a region is defined by the following Python dictionary
-  ([] denote optional keys/values)::
-
-      region_<number> = {
-          'name' : <name>,
-          'select' : <selection>,
-          ['kind'] : <region kind>,
-          ['parent'] : <parent region>,
-      }
-
-  * Example definitions::
-
-          region_0 = {
-              'name' : 'Omega',
-              'select' : 'all',
-          }
-          region_21 = {
-              'name' : 'Right',
-              'select' : 'vertices in (x > 0.99)',
-              'kind' : 'facet',
-          }
-          region_31 = {
-              'name' : 'Gamma1',
-              'select' : """(cells of group 1 *v cells of group 2)
-                            +v r.Right""",
-              'kind' : 'facet',
-              'parent' : 'Omega',
-          }
-
-* Short syntax::
+Regions are defined by the following Python dictionary::
 
         regions = {
             <name> : (<selection>, [<kind>], [<parent>]),
         }
 
-  or::
+or::
 
         regions = {
             <name> : <selection>,
         }
 
-  * Example definitions::
+**Example definitions**::
 
       regions = {
           'Omega' : 'all',
@@ -524,54 +503,34 @@ Region Definition Syntax
                          +v r.Right""", 'facet', 'Omega'),
       }
 
+.. _User's Guide-Fields:
+
 Fields
 ^^^^^^
 
-Fields correspond to FE spaces
-
-* Long syntax::
-
-        field_<number> = {
-            'name' : <name>,
-            'dtype' : <data_type>,
-            'shape' : <shape>,
-            'region' : <region_name>,
-            'approx_order' : <approx_order>
-        }
-
-  where
-    * <data_type> is a numpy type (float64 or complex128) or
-      'real' or 'complex'
-    * <shape> is the number of DOFs per node: 1 or (1,) or 'scalar', space
-      dimension (2, or (2,) or 3 or (3,)) or 'vector'; it can be other
-      positive integer than just 1, 2, or 3
-    * <region_name> is the name of region where the field is defined
-    * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
-      with bubble)
-
-  * Example: scalar P1 elements in 2D on a region Omega::
-
-        field_1 = {
-            'name' : 'temperature',
-            'dtype' : 'real',
-            'shape' : 'scalar',
-            'region' : 'Omega',
-            'approx_order' : 1
-        }
-
-* Short syntax::
+Fields correspond to FE spaces::
 
           fields = {
               <name> : (<data_type>, <shape>, <region_name>, <approx_order>)
           }
 
-  * Example: scalar P1 elements in 2D on a region Omega::
+where
+  * <data_type> is a numpy type (float64 or complex128) or
+    'real' or 'complex'
+  * <shape> is the number of DOFs per node: 1 or (1,) or 'scalar', space
+    dimension (2, or (2,) or 3 or (3,)) or 'vector'; it can be other
+      positive integer than just 1, 2, or 3
+  * <region_name> is the name of region where the field is defined
+  * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
+    with bubble)
+
+**Example**: scalar P1 elements in 2D on a region Omega::
 
         fields = {
             'temperature' : ('real', 1, 'Omega', 1),
         }
 
-* The following approximation orders can be used:
+The following approximation orders can be used:
 
   * simplex elements: 1, 2, '1B', '2B'
   * tensor product elements: 0, 1, '1B'
@@ -581,53 +540,19 @@ Fields correspond to FE spaces
 Variables
 ^^^^^^^^^
 
-Variables use the FE approximation given by the specified field:
-
-* Long syntax::
-
-        variables_<number> = {
-            'name' : <name>,
-            'kind' : <kind>,
-            'field' : <field_name>,
-            ['order' : <order>,]
-            ['dual' : <variable_name>,]
-            ['history' : <history_size>,]
-        }
-
-  where
-    * <kind> - 'unknown field', 'test field' or 'parameter field'
-    * <order> -  primary variable - order in the global vector of unknowns
-    * <history_size> - number of time steps to remember prior to current step
-
-  * Example, long syntax::
-
-        variable_1 = {
-            'name' : 't',
-            'kind' : 'unknown field',
-            'field' : 'temperature',
-            'order' : 0, # order in the global vector of unknowns
-            'history' : 1,
-        }
-
-        variable_2 = {
-            'name' : 's',
-            'kind' : 'test field',
-            'field' : 'temperature',
-            'dual' : 't',
-        }
-
-* Short syntax::
+Variables use the FE approximation given by the specified field::
 
         variables = {
-            <name> : (<kind>, <field_name>, <spec.>, [<history>])
+            <name> : (<kind>, <field_name>, <spec>, [<history>])
         }
 
-  where
+where
+  * <kind> - 'unknown field', 'test field' or 'parameter field'
+  * <spec> - in case of: primary variable - order in the global vector
+    of unknowns, dual variable - name of primary variable
+  * <history> - number of time steps to remember prior to current step
 
-  * <spec> - in case of: primary variable - order in the global vector of unknowns, dual variable - name of primary variable
-
-
-  * Example, short syntax::
+**Example**::
 
         variables = {
             't' : ('unknown field', 'temperature', 0, 1),
@@ -639,46 +564,20 @@ Variables use the FE approximation given by the specified field:
 Integrals
 ^^^^^^^^^
 
-Define the integral type and quadrature rule. This keyword is optional, as the
-integration orders can be specified directly in equations, see below.
-
-* Long syntax::
-
-        integral_<number> = {
-            'name' : <name>,
-            'order' : <order>,
-        }
-
-  where
-
-    * <name> - the integral name - it has to begin with 'i'!
-    * <order> - the order of polynomials to integrate, or 'custom' for
-      integrals with explicitly given values and weights
-
-  * Example, long syntax::
-
-        integral_1 = {
-            'name' : 'i1',
-            'order' : 2,
-        }
-
-        import numpy as nm
-        N = 2
-        integral_2 = {
-            'name' : 'i2',
-            'order' : 'custom',
-            'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
-                            nm.linspace( 1e-10, 0.5, N )),
-            'weights' : [1./N] * N,
-        }
-
-* Short syntax::
+Define the integral type and quadrature rule. This keyword is
+optional, as the integration orders can be specified directly in
+equations (see below)::
 
         integrals = {
             <name> : <order>
         }
 
-  * Example, short syntax::
+where
+  * <name> - the integral name - it has to begin with 'i'!
+  * <order> - the order of polynomials to integrate, or 'custom' for
+    integrals with explicitly given values and weights
+
+**Example**::
 
         import numpy as nm
         N = 2
@@ -688,6 +587,8 @@ integration orders can be specified directly in equations, see below.
                                   nm.linspace( 1e-10, 0.5, N )),
                     [1./N] * N),
         }
+
+.. _User's Guide-EssentialBC:
 
 Essential Boundary Conditions and Constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -704,26 +605,7 @@ using a list of tuples `(t0, t1)` making the condition active for `t0 <= t <
 t1`, or by a name of a function taking the time argument and returning True or
 False depending on whether the condition is active at the given time or not.
 
-* Dirichlet (essential) boundary conditions, long syntax::
-
-    ebc_<number> = {
-        'name' : <name>,
-        'region' : <region_name>,
-        ['times' : <times_specification>,]
-        'dofs' : {<dof_specification> : <value>[,
-                  <dof_specification> : <value>, ...]}
-    }
-
-  * Example::
-
-        ebc_1 = {
-            'name' : 'ZeroSurface',
-            'region' : 'Surface',
-            'times' : [(0.5, 1.0), (2.3, 5)],
-            'dofs' : {'u.all' : 0.0, 'phi.all' : 0.0},
-        }
-
-* Dirichlet (essential) boundary conditions, short syntax::
+Dirichlet (essential) boundary conditions::
 
     ebcs = {
         <name> : (<region_name>, [<times_specification>,]
@@ -731,7 +613,7 @@ False depending on whether the condition is active at the given time or not.
                    <dof_specification> : <value>, ...]})
     }
 
-  * Example::
+**Example**::
 
         ebcs = {
             'u1' : ('Left', {'u.all' : 0.0}),
@@ -746,28 +628,7 @@ The periodic boundary conditions tie DOFs of a single variable in two regions
 that have matching nodes. Can be used with functions in
 :mod:`sfepy.discrete.fem.periodic`.
 
-* Periodic boundary conditions, long syntax::
-
-    epbc_<number> = {
-        'name' : <name>,
-        'region' : (<region1_name>, <region2_name>),
-        ['times' : <times_specification>,]
-        'dofs' : {<dof_specification> : <dof_specification>[,
-                  <dof_specification> : <dof_specification>, ...]},
-        'match' : <match_function_name>,
-    }
-
-  * Example::
-
-        epbc_1 = {
-            'name' : 'up1',
-            'region' : ('Left', 'Right'),
-            'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
-            'match' : 'match_y_line',
-        }
-
-
-* Periodic boundary conditions, short syntax::
+Periodic boundary conditions::
 
     epbcs = {
         <name> : ((<region1_name>, <region2_name>), [<times_specification>,]
@@ -776,7 +637,7 @@ that have matching nodes. Can be used with functions in
                   <match_function_name>)
     }
 
-  * Example::
+**Example**::
 
         epbcs = {
             'up1' : (('Left', 'Right'), {'u.all' : 'u.all', 'p.0' : 'p.0'},
@@ -808,39 +669,7 @@ Available LCBC kinds:
 Only the ``'shifted_periodic'`` LCBC needs the second region and the DOF
 mapping function, see below.
 
-* Linear combination boundary conditions, long syntax::
-
-    lcbc_<number> = {
-        'name' : <name>,
-        'region' : (<region1_name>, <region2_name>) | <region1_name>,
-        ['times' : <times_specification>,]
-        'dofs' : {<dof_specification> : <dof_specification> | None[, ...]},
-        ['dof_map_fun' : <dof_map_function_name> | None,]
-        'kind' : <lcbc_kind>,
-        [<kind_specific_options>]
-    }
-
-  * Example::
-
-        lcbc_1 = {
-            'name' : 'rigid',
-            'region' : 'Y2',
-            'dofs' : {'u.all' : None},
-            'kind' : 'rigid',
-        }
-
-* Linear combination boundary conditions, short syntax::
-
-    lcbcs = {
-        <name> : ((<region1_name>, <region2_name>) | <region1_name>,
-                  [<times_specification>,]
-                  {<dof_specification> : <dof_specification> | None, ...]},
-                  <dof_map_function_name> | None,
-                  <lcbc_kind>,
-                  [<kind_specific_options>])
-    }
-
-  * Example::
+Linear combination boundary conditions::
 
         lcbcs = {
             'shifted' : (('Left', 'Right'),
@@ -854,33 +683,14 @@ Initial Conditions
 ^^^^^^^^^^^^^^^^^^
 
 Initial conditions are applied prior to the boundary conditions - no special
-care must be used for the boundary dofs.
-
-* Long syntax::
-
-    ic_<number> = {
-        'name' : <name>,
-        'region' : <region_name>,
-        'dofs' : {<dof_specification> : <value>[,
-                  <dof_specification> : <value>, ...]}
-    }
-
-  * Example::
-
-        ic_1 = {
-            'name' : 'ic',
-            'region' : 'Omega',
-            'dofs' : {'T.0' : 5.0},
-        }
-
-* Short syntax::
+care must be used for the boundary dofs::
 
     ics = {
         <name> : (<region_name>, {<dof_specification> : <value>[,
                                   <dof_specification> : <value>, ...]},...)
     }
 
-  * Example::
+**Example**::
 
         ics = {
             'ic' : ('Omega', {'T.0' : 5.0}),
@@ -895,34 +705,7 @@ traction or volume forces). Depending on a particular term, the parameters can
 be constants, functions defined over FE mesh nodes, functions defined in the
 elements, etc.
 
-* Example, long syntax::
-
-    material_10 = {
-        'name' : 'm',
-        'values' : {
-            # This gets tiled to all physical QPs (constant function)
-            'val' : [0.0, -1.0, 0.0],
-            # This does not - '.' denotes a special value, e.g. a flag.
-            '.val0' : [0.0, 0.1, 0.0],
-        },
-    }
-
-    material_3 = {
-      'name' : 'm2',
-      'function' : 'get_pars',
-    }
-
-    def get_pars(ts, coors, mode=None, **kwargs):
-        out = {}
-        if mode == 'qp':
-            # <array of shape (coors.shape[0], n_row, n_col)>
-            out['val'] = nm.ones((coors.shape[0], 1, 1), dtype=nm.float64)
-        else: # special mode
-            out['val0'] = True
-
-        return out
-
-* Example, short syntax::
+**Example**::
 
     material = {
         'm' : ({'val' : [0.0, -1.0, 0.0]},),
@@ -930,7 +713,7 @@ elements, etc.
         'm3' : (None, 'get_pars'), # Same as the above line.
     }
 
-* Example, short syntax, different material parameters in regions 'Yc', 'Ym'::
+**Example**: different material parameters in regions 'Yc', 'Ym'::
 
     from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
     dim = 3
@@ -986,35 +769,7 @@ In SfePy, a non-linear solver has to be specified even when solving a linear
 problem. The linear problem is/should be then solved in one iteration of the
 nonlinear solver.
 
-* Linear solver, long syntax::
-
-    solver_0 = {
-        'name' : 'ls',
-        'kind' : 'ls.umfpack',
-    }
-
-* Nonlinear solver, long syntax::
-
-    solver_1 = {
-        'name' : 'newton',
-        'kind' : 'nls.newton',
-
-        'i_max'      : 1,
-        'eps_a'      : 1e-10,
-        'eps_r'      : 1.0,
-        'macheps'   : 1e-16,
-        'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-        'ls_red'     : 0.1,
-        'ls_red_warp' : 0.001,
-        'ls_on'      : 1.1,
-        'ls_min'     : 1e-5,
-        'check'     : 0,
-        'delta'     : 1e-6,
-        'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
-    }
-
-
-* Solvers, short syntax::
+Linear and nonlinear solver::
 
     solvers = {
         'ls' : ('ls.scipy_direct', {}),
@@ -1023,7 +778,7 @@ nonlinear solver.
                      'problem' : 'nonlinear'}),
     }
 
-* Solver selection::
+Solver selection::
 
     options = {
         'nls' : 'newton',
@@ -1213,7 +968,7 @@ The options can be used to select solvers, output file format, output
 directory, to register functions to be called at various phases of the
 solution (the `hooks`), and for other settings.
 
-* Additional options (including solver selection)::
+Additional options (including solver selection)::
 
     options = {
         # string, output directory
@@ -1255,13 +1010,14 @@ solution (the `hooks`), and for other settings.
         'parametric_hook' : '<parametric_hook_function>',
     }
 
-  * ``post_process_hook`` enables computing derived quantities, like
-    stress or strain, from the primary unknown variables. See the
-    examples in ``examples/large_deformation/`` directory.
-  * ``parametric_hook`` makes it possible to run parametric studies by
-    modifying the problem description programmatically. See
-    ``examples/diffusion/poisson_parametric_study.py`` for an example.
-  * ``output_dir`` redirects output files to specified directory
+* ``post_process_hook`` enables computing derived quantities, like
+  stress or strain, from the primary unknown variables. See the
+  examples in ``examples/large_deformation/`` directory.
+* ``parametric_hook`` makes it possible to run parametric studies by
+  modifying the problem description programmatically. See
+  ``examples/diffusion/poisson_parametric_study.py`` for an example.
+* ``output_dir`` redirects output files to specified directory
+
 
 Building Equations in SfePy
 ---------------------------
