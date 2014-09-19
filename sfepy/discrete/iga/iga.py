@@ -496,6 +496,39 @@ def get_patch_box_regions(n_els, degrees):
 
     return regions
 
+def get_facet_axes(dim):
+    """
+    For each reference Bezier element facet return the facet axes followed by
+    the remaining (perpendicular) axis, as well as the remaining axis
+    coordinate of the facet.
+
+    Parameters
+    ----------
+    dim : int
+        The topological dimension.
+
+    Returns
+    -------
+    axes : array
+        The axes of the reference element facets.
+    coors : array
+        The remaining coordinate of the reference element facets.
+    """
+    if dim == 3:
+        axes = [[1, 0, 2], [2, 1, 0], [0, 2, 1],
+                [0, 1, 2], [1, 2, 0], [2, 0, 1]]
+        coors = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
+
+    elif dim == 2:
+        axes = [[0, 1], [1, 0], [1, 0], [0, 1]]
+        coors = [0.0, 1.0, 1.0, 0.0]
+
+    else:
+        axes = [[0]]
+        coors = None
+
+    return nm.array(axes, dtype=nm.uint32), nm.array(coors, dtype=nm.float64)
+
 def get_bezier_element_entities(degrees):
     """
     Get faces and edges of a Bezier mesh element in terms of indices into the
