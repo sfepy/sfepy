@@ -529,6 +529,38 @@ def get_facet_axes(dim):
 
     return nm.array(axes, dtype=nm.uint32), nm.array(coors, dtype=nm.float64)
 
+def create_boundary_qp(coors, dim):
+    """
+    Create boundary quadrature points from the surface quadrature points.
+
+    Uses the Bezier element tensor product structure.
+
+    Parameters
+    ----------
+    coors : array, shape (n_qp, d)
+        The coordinates of the surface quadrature points.
+    dim : int
+        The topological dimension.
+
+    Returns
+    -------
+    bcoors : array, shape (n_qp, d + 1)
+        The coordinates of the boundary quadrature points.
+    """
+    # Boundary QP - use tensor product structure.
+    axes, acoors = get_facet_axes(dim)
+    n_f = len(axes)
+
+    bcoors = nm.empty((n_f, coors.shape[0], coors.shape[1] + 1),
+                      dtype=nm.float64)
+    ii = nm.arange(bcoors.shape[1], dtype=nm.uint32)
+    for ik in xrange(n_f):
+        for ic in xrange(bcoors.shape[2] - 1):
+            bcoors[ik, :, axes[ik, ic]] = coors[:, ic]
+        bcoors[ik, ii, axes[ik, -1]] = acoors[ik]
+
+    return bcoors
+
 def get_bezier_element_entities(degrees):
     """
     Get faces and edges of a Bezier mesh element in terms of indices into the
