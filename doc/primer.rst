@@ -582,34 +582,36 @@ Probing
 
 As a bonus for sticking to the end of this tutorial see the following
 :download:`problem definition file
-</../examples/linear_elasticity/its2D_4.py>` that provides *SfePy*
+</../examples/linear_elasticity/its2D_5.py>` that provides *SfePy*
 functions to quickly and neatly probe the solution.
 
-.. literalinclude:: /../examples/linear_elasticity/its2D_4.py
+.. literalinclude:: /../examples/linear_elasticity/its2D_5.py
 
 Probing applies interpolation to output the solution along specified
 paths. For the tutorial, line probing is done along the x- and y-axes of
 the model.
 
-Notice that the output_format has been defined as h5. To apply probing
-first solve the problem as usual::
+Run SfePy to solve the problem and apply the probes::
 
-    $ ./simple.py its2D_4.py
+    $ ./simple.py its2D_5.py
 
-This will write the solution to the output directory indicated. Then run
-the *SfePy* probe.py script on the solution::
-
-    $ ./probe.py its2D_4.py <sfepy output path>/its2D.h5
-
-The results of the probing will be written to text files and the following
-figures will be generated. These figures show the displacements, normal
-stresses and strains as well as shear stresses and strains along the probe
-paths. Note that you need `matplotlib`_ installed to run this script.
+The probing function will generate the following figures that show the
+displacements, normal stresses and strains as well as shear stresses
+and strains along the probe paths. Note that you need `matplotlib`_
+installed to run this example.
 
 .. image:: images/primer/its2D_0.png
-   :width: 40 %
+   :width: 48 %
 
 .. image:: images/primer/its2D_01.png
-   :width: 40 %
+   :width: 48 %
+
+The probing function also generates previews of the mesh with the probe paths.
+
+.. image:: images/primer/probe_its2D_line0.png
+   :width: 30 %
+
+.. image:: images/primer/probe_its2D_line1.png
+   :width: 30 %
 
 The end.
