@@ -10,6 +10,21 @@ warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 from sfepy.base.base import output, get_default, assert_, try_imports, Struct
 from sfepy.solvers.solvers import make_get_conf, LinearSolver
 
+def solve(mtx, rhs, solver_class=None, solver_conf=None):
+    """
+    Solve the linear system with the matrix `mtx` and the right-hand side
+    `rhs`.
+
+    Convenience wrapper around the linear solver classes below.
+    """
+    solver_class = get_default(solver_class, ScipyDirect)
+    solver_conf = get_default(solver_conf, {})
+
+    solver = solver_class(solver_conf, mtx=mtx)
+    solution = solver(rhs)
+
+    return solution
+
 def standard_call(call):
     """
     Decorator handling argument preparation and timing for linear solvers.
