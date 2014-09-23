@@ -128,9 +128,9 @@ def main():
 
         pn.plt.rcParams['lines.linewidth'] = 3
 
-        line = block.extract(0, 0)
+        line = block.extract(0, 0.5)
         if dim == 3:
-            line = line.extract(0, 0)
+            line = line.extract(0, 0.5)
         ax = pn.plot_nurbs_basis_1d(None, line, n_points=1000,
                                     legend=options.label)
         ax.set_xlabel('last parametric coordinate')
