@@ -529,6 +529,43 @@ def get_facet_axes(dim):
 
     return nm.array(axes, dtype=nm.uint32), nm.array(coors, dtype=nm.float64)
 
+def get_surface_degrees(degrees):
+    """
+    Get degrees of the NURBS patch surfaces.
+
+    Parameters
+    ----------
+    degrees : sequence of ints or int
+        Polynomial degrees in each parametric dimension.
+
+    Returns
+    -------
+    sdegrees : list of arrays
+        The degrees of the patch surfaces, in the order of the reference Bezier
+        element facets.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+    degrees = nm.asarray(degrees)
+
+    dim = len(degrees)
+
+    if dim == 3:
+        sdegrees = [degrees[0] * degrees[1],
+                 degrees[1] * degrees[2],
+                 degrees[0] * degrees[2],
+                 degrees[0] * degrees[1],
+                 degrees[1] * degrees[2],
+                 degrees[0] * degrees[2]]
+        sdegrees = nm.array(sdegrees, dtype=nm.uint32)
+
+    elif dim == 2:
+        sdegrees = degrees[[0, 1, 0, 1]]
+
+    else:
+        sdegrees = None
+
+    return sdegrees
+
 def create_boundary_qp(coors, dim):
     """
     Create boundary quadrature points from the surface quadrature points.
