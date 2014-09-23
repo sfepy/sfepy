@@ -496,6 +496,108 @@ def get_patch_box_regions(n_els, degrees):
 
     return regions
 
+def get_facet_axes(dim):
+    """
+    For each reference Bezier element facet return the facet axes followed by
+    the remaining (perpendicular) axis, as well as the remaining axis
+    coordinate of the facet.
+
+    Parameters
+    ----------
+    dim : int
+        The topological dimension.
+
+    Returns
+    -------
+    axes : array
+        The axes of the reference element facets.
+    coors : array
+        The remaining coordinate of the reference element facets.
+    """
+    if dim == 3:
+        axes = [[1, 0, 2], [2, 1, 0], [0, 2, 1],
+                [0, 1, 2], [1, 2, 0], [2, 0, 1]]
+        coors = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
+
+    elif dim == 2:
+        axes = [[0, 1], [1, 0], [1, 0], [0, 1]]
+        coors = [0.0, 1.0, 1.0, 0.0]
+
+    else:
+        axes = [[0]]
+        coors = None
+
+    return nm.array(axes, dtype=nm.uint32), nm.array(coors, dtype=nm.float64)
+
+def get_surface_degrees(degrees):
+    """
+    Get degrees of the NURBS patch surfaces.
+
+    Parameters
+    ----------
+    degrees : sequence of ints or int
+        Polynomial degrees in each parametric dimension.
+
+    Returns
+    -------
+    sdegrees : list of arrays
+        The degrees of the patch surfaces, in the order of the reference Bezier
+        element facets.
+    """
+    if isinstance(degrees, int): degrees = [degrees]
+    degrees = nm.asarray(degrees)
+
+    dim = len(degrees)
+
+    if dim == 3:
+        sdegrees = [degrees[0] * degrees[1],
+                 degrees[1] * degrees[2],
+                 degrees[0] * degrees[2],
+                 degrees[0] * degrees[1],
+                 degrees[1] * degrees[2],
+                 degrees[0] * degrees[2]]
+        sdegrees = nm.array(sdegrees, dtype=nm.uint32)
+
+    elif dim == 2:
+        sdegrees = degrees[[0, 1, 0, 1]]
+
+    else:
+        sdegrees = None
+
+    return sdegrees
+
+def create_boundary_qp(coors, dim):
+    """
+    Create boundary quadrature points from the surface quadrature points.
+
+    Uses the Bezier element tensor product structure.
+
+    Parameters
+    ----------
+    coors : array, shape (n_qp, d)
+        The coordinates of the surface quadrature points.
+    dim : int
+        The topological dimension.
+
+    Returns
+    -------
+    bcoors : array, shape (n_qp, d + 1)
+        The coordinates of the boundary quadrature points.
+    """
+    # Boundary QP - use tensor product structure.
+    axes, acoors = get_facet_axes(dim)
+    n_f = len(axes)
+
+    bcoors = nm.empty((n_f, coors.shape[0], coors.shape[1] + 1),
+                      dtype=nm.float64)
+    ii = nm.arange(bcoors.shape[1], dtype=nm.uint32)
+    for ik in xrange(n_f):
+        for ic in xrange(bcoors.shape[2] - 1):
+            bcoors[ik, :, axes[ik, ic]] = coors[:, ic]
+        bcoors[ik, ii, axes[ik, -1]] = acoors[ik]
+
+    return bcoors
+
 def get_bezier_element_entities(degrees):
     """
     Get faces and edges of a Bezier mesh element in terms of indices into the
