@@ -57,7 +57,20 @@ variables = {
 
 ebcs = {
     'u1' : ('Gamma1', {'u.all' : 0.0}),
-    'u2' : ('Gamma2', {'u.0' : 0.1, 'u.[1,2]' : -0.05}),
+    'u2' : ('Gamma2', {'u.0' : 0.1, 'u.[1,2]' : 'get_ebcs'}),
+}
+
+def get_ebcs(ts, coors, **kwargs):
+    import numpy as nm
+
+    aux = nm.empty_like(coors[:, 1:])
+    aux[:, 0] = 0.1 * coors[:, 1]
+    aux[:, 1] = -0.05 + 0.03 * nm.sin(coors[:, 1] * 5 * nm.pi)
+
+    return aux.T.flat
+
+functions = {
+    'get_ebcs' : (get_ebcs,),
 }
 
 equations = {
