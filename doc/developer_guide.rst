@@ -1089,7 +1089,6 @@ sfepy.physics package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/physics/energy
    src/sfepy/physics/potentials
    src/sfepy/physics/schroedinger_app
 
