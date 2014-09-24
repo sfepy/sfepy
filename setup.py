@@ -63,6 +63,7 @@ def configuration(parent_package='',top_path=None):
         'gen_mesh_prev.py',
         'gen_term_table.py',
         'plot_condition_numbers.py',
+        'plot_logs.py',
         'plot_mesh.py',
         'plot_quadratures.py',
         'plot_times.py',
