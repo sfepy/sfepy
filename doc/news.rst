@@ -1,6 +1,13 @@
 News
 ====
 
+* **25.09.2014** Version 2014.3 released (isogeometric analysis (IGA) speed-up
+  by C implementation of NURBS basis evaluation, generalized linear combination
+  boundary conditions that work between different fields/variables and support
+  non-homogeneous periodic conditions, non-constant essential boundary
+  conditions given by a function in IGA, reorganized and improved
+  documentation, etc.), see :ref:`release notes <2014.2-2014.3>`.
+
 * **23.05.2014** Version 2014.2 released (preliminary support for isogeometric
   analysis, improved postprocessing and visualization script for time-dependent
   problems with adaptive time steps, three new terms, etc.), see :ref:`release
@@ -23,11 +30,5 @@ News
   solver for conjugate solution of subproblems, new advanced examples
   (vibro-acoustics, Stokes flow with slip conditions), etc.), see :ref:`release
   notes <2013.2-2013.3>`.
-
-* **22.05.2013** Version 2013.2 released (automatic testing of term calls (many
-  terms fixed w.r.t. corner cases), new elastic contact plane term + example,
-  translated low level base functions from Cython to C for reusability,
-  improved gallery http://docs.sfepy.org/gallery/gallery, etc.), see
-  :ref:`release notes <2013.1-2013.2>`.
 
 For historians: see :ref:`archived_news`.
