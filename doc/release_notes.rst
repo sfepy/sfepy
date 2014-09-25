@@ -1,5 +1,222 @@
 # created: 20.07.2007 (-1)
 
+.. _2014.2-2014.3:
+
+from 2014.2 to 2014.3
+=====================
+
+- speed-up IGA by C implementation of NURBS basis evaluation
+
+  - merge branches iga-c and iga-c-2
+  - new eval_bernstein_basis() in C in sfepy/discrete/iga/extmods/
+
+    - new sfepy/discrete/iga/extmods/nurbs.[ch]
+    - new sfepy/discrete/iga/extmods/igac.pyx
+    - new setup.py files
+
+  - support DEBUG_FMF define in sfepy/discrete/iga/extmods/setup.py
+  - update IGDomain.__init__() to have nurbs.cs in FMField compatible shape
+  - new ravel_multi_index(), unravel_index() in C
+  - new eval_nurbs_basis_tp() in C
+  - new array2puint2(), array2puint1() helper functions
+  - change return value of compute_bezier_extraction_1d() to 3D array
+  - change nurbs.degrees dtype to int32 in IGDomain.__init__()
+  - new eval_mapping_data_in_qp(), eval_variable_in_qp() in C - use in
+    sfepy/discrete/iga/mappings.py
+  - new eval_in_tp_coors() in C
+  - update NurbsPatch.__call__() to use eval_in_tp_coors()
+
+- generalize linear combination boundary conditions to work between different
+  fields/variables and to support non-homogeneous periodic conditions (non-zero
+  right-hand side or shift)
+
+  - merge branch 'lcbc' - closes #179, #267
+  - update transform_lcbcs() for new LCBC syntax
+
+    - the syntax: region[, times], dofs, dof_map_fun, kind[, other arguments]
+
+  - update Conditions.from_conf(), LinearCombinationBC.__init__() for new
+    syntax
+
+    - new LinearCombinationBC.canonize_dof_names()
+
+  - new are_disjoint()
+  - new LinearCombinationBC.get_var_names()
+  - check that regions are disjoint in Variables.setup_lcbc_operators()
+  - update Variables.setup_lcbc_operators() for new operators (to be done)
+  - remove FieldVariable.create_lcbc_operators()
+  - new kind attribute of LCBC operators
+  - update LCBCOperator for two variables in two regions
+
+    - rename & update LCBCOperator -> MRLCBCOperator (model reduction)
+    - new general LCBCOperator for tying two variables in two regions
+
+  - reimplement LCBCOperators, use common LCBCOperator constructor signature
+
+    - update .__init__(), .add_from_bc(), .append(), .finalize()
+    - move make_global_lcbc_operator() -> new
+      LCBCOperators.make_global_operator()
+
+  - new ShiftedPeriodicOperator
+  - provide some defaults for long syntax in transform_lcbcs()
+  - store field in MRLCBCOperator
+  - update LCBC operators new base classes - update IntegralMeanValueOperator,
+    RigidOperator, NoPenetrationOperator, NormalDirectionOperator
+  - fix MRLCBCOperator active equation map for non-scalar variables
+  - update MRLCBCOperator.treat_pbcs()
+  - update Variables.setup_lcbc_operators(), .__init__(),
+    FieldVariable.__init__()
+
+    - new Variables.has_lcbc_rhs
+    - rename Variables.op_lcbc, .rhs_lcbc -> .mtx_lcbc, .vec_lcbc
+    - remove FieldVariable.has_lcbc
+
+  - set vec_lc to None in LCBCOperators.make_global_operator() when no rhs
+  - update LCBCEvaluator, eval_equations() for renamed operators
+  - add comment to State.get_reduced()
+  - update meshes/2d/square_quad.mesh to have two cell groups
+  - simplify transform_conditions() - LCBCs treated in transform_lcbcs()
+  - docs: update essential boundary conditions description, add EPBCs, LCBCs
+  - tests and examples:
+
+    - update examples and tests for new LCBC syntax
+    - new examples/diffusion/laplace_coupling_lcbcs.py + test
+    - new examples/linear_elasticity/elastic_shifted_periodic.py + test
+    - new examples/standalone/interactive/laplace_shifted_periodic.py
+    - new tests/test_lcbcs.py, test_laplace_shifted_periodic()
+
+  - add custom views for laplace_coupling_lcbcs.py, elastic_shifted_periodic.py
+    to script/gen_gallery.py
+
+- support non-constant essential boundary conditions given by a function in IGA
+
+  - merge branch 'iga-ebc'
+  - update IGField.get_econn() for surface connectivities
+  - simplify IGField.get_dofs_in_region_group() by using .get_econn()
+  - new get_facet_axes()
+  - new solve() convenience wrapper
+  - new create_boundary_qp()
+  - new get_surface_degrees()
+  - update IGField.set_dofs() for DOFs given by function, update docstring -
+    initial implementation
+  - examples:
+
+    - update examples/linear_elasticity/linear_elastic_iga.py for EBCs by
+      function
+
+  - update custom view for linear_elastic_iga.py example in
+    script/gen_gallery.py
+
+- IGA:
+
+  - fix IGDomain.__init__() for standalone use - reset regions
+  - fix IGField.create_output() for no key argument
+  - new sfepy/discrete/iga/domain_generators.py - new gen_patch_block_domain()
+  - fix plot_nurbs_basis_1d to use ax argument
+
+- regions:
+
+  - new Region.kind_tdim attribute, new .set_kind_tdim(), update .set_kind()
+  - make ig argument optional in Region.get_entities(), signature change
+  - update Region.contains() to use other region kind entities
+  - make sure entities are initialized in Region.get_entities()
+  - update Region.setup_from_highest() - new allow_lower argument
+
+    - works also when the highest dimension of entities is lower than requested
+    - fixes selectors like 'vertices of surface *f vertices in (x < 0.0)'
+
+  - new Region.finalize(), update Domain.create_region()
+  - fix region definitions in tests and examples as reported by
+    Region.finalize()
+
+- postprocessing and visualization:
+
+  - remove import lines from sfepy/postprocess/__init__.py, update affected
+    imports
+  - update Viewer.call_mlab(): do not show GUI if show option is False
+
+- applications:
+
+  - update SchroedingerApp.save_results() for custom mesh in out['__mesh__']
+  - relax too strict assertion in DensityVolumeInfo.__call__()
+  - new: micro-recovery hook allows to return some values to the "master"
+    macro-problem
+
+- scripts:
+
+  - script/gen_iga_patch.py: use gen_patch_block_domain()
+  - script/gen_iga_patch.py: plot 1D basis along patch mid-line
+
+- miscellaneous updates:
+
+  - remove prints and config.py file generation from setup.py files
+  - support user-specified ebcs, epbcs in Problem.save_ebc(), update docstring
+  - fix Newton.__init__(), Oseen.__init__() to obey log plot option
+  - normalize paths in top_dir, data_dir and base_dir
+  - update import_file() to use full package paths for sfepy modules - prevents
+    name clashes for different fields.py files
+  - add can_reload argument to import_file()
+  - do not force module reload in load_classes()
+  - fix issue #263, ConstantFunctionByRegion
+  - clean up sfepy/discrete/conditions.py
+  - use os.sep instead of '/' for the pathname separator in import_file() - fix
+    portability issue
+  - fix extend_cell_data() for several groups, new average_surface argument
+  - change keys in transform_epbcs()
+  - report unknown LCBC kind in LCBCOperators.add_from_bc()
+  - clean up run_tests.py, sfepy/base/testing.py, sfepy/discrete/materials.py,
+    tests/tests_basic.py, sfepy/mechanics/matcoefs.py
+  - fix set_mesh_coors() - update also cmesh coordinates
+  - update get_debug() to allow frame specification in debug()
+  - update MED file support, fix this issue:
+    https://groups.google.com/forum/#!msg/sfepy-devel/z1e83Xgl1_U/884jDfKzKPsJ
+  - fix setup.py - add missing plot_logs.py script
+  - remove unused sfepy/physics/energy.py
+
+- examples:
+
+  - do not force examples to be in a package - update import_file(),
+    ProblemConf.from_file()
+  - remove examples/diffusion/octahedron.py + test - no added value
+    w.r.t. other diffusion examples
+  - update examples/linear_elasticity/linear_elastic.py: comments -> docstring
+
+- docs:
+
+  - module index of developer guide with current sources
+  - fix docs generation without igakit
+  - fix typeset_term_table() for import_file() using full package paths
+  - add missing figure
+  - replace alphas8bit with alphas - word_free with alphas8bit as default
+    argument value in get_standard_type_defs() and list_dict() breaks sphinx
+    docs generation on platforms with non utf-8 locale
+  - new section on exploring the code in developer guide
+  - fix download page
+  - migrate tutorial "Using Salome with SfePy" from google site, see #171
+  - merge branch 'theory-docs'
+
+    - new doc/ebcs_implementation.rst - explanation of EBCs implementation
+    - move IGA section from tutorial to user's guide
+    - new doc/theory.rst
+
+      - move notes on solving PDEs from doc/tutorial.rst to new
+        doc/solving_pdes_by_fem.rst
+      - add doc/ebcs_implementation.rst to doc/theory.rst
+      - update doc/index.rst
+
+    - remove doc/notes.rst
+
+  - simplify paragraph in doc/index.rst
+  - simplify doc/introduction.rst
+  - put Primer under Examples
+  - merge pull request #275 (short syntax)
+
+    - remove long syntax from the user's guide
+    - new doc page with long syntax
+    - tutorial with short syntax of keywords, closes #272
+
+  - add introductory paragraph to examples
+
 .. _2014.1-2014.2:
 
 from 2014.1 to 2014.2
