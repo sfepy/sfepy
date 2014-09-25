@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **22.05.2013** Version 2013.2 released (automatic testing of term calls (many
+  terms fixed w.r.t. corner cases), new elastic contact plane term + example,
+  translated low level base functions from Cython to C for reusability,
+  improved gallery http://docs.sfepy.org/gallery/gallery, etc.), see
+  :ref:`release notes <2013.1-2013.2>`.
+
 * **27.02.2013** Version 2013.1 released (unified use of stationary and
   evolutionary solvers, new implicit adaptive time stepping solver, elements of
   set and nodes of set region selectors, simplified setting of variables data,
