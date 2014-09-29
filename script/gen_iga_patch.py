@@ -86,12 +86,15 @@ def main():
     else:
         continuity = nm.array(eval(options.continuity), dtype=nm.int32)[:dim]
 
+    n_dofs = degrees + 1 + (shape - 2) * (degrees - continuity)
+
     output('dimensions:', dims)
     output('centre:    ', centre)
     output('shape:     ', shape)
     output('degrees:   ', degrees)
     output('continuity:', continuity)
     output('->        :', filename)
+    output('number of DOFs per axis:', n_dofs)
 
     nurbs, bmesh, regions = gen_patch_block_domain(dims, shape, centre,
                                                    degrees,
