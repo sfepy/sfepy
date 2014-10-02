@@ -129,10 +129,15 @@ def plot_iso_lines(ax, nurbs, color='b', n_points=100):
 
     if dim == 1:
         ga = gas[0]
-        line = nm.linspace(ga[0], ga[-1], n_points)
 
-        vals = nurbs(line)[:, 0]
-        ax.plot(line, vals, color)
+        x0 = nm.linspace(ga[0], ga[-1], n_points)
+        vals = nurbs(x0)
+
+        if vals.shape[1] == 1:
+            ax.plot(x0, vals[:, 0], color)
+
+        else: # Assume curve in 2D.
+            ax.plot(vals[:, 0], vals[:, 1], color)
 
     elif dim == 2:
         ga0 = gas[0]
