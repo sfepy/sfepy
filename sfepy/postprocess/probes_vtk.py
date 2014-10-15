@@ -8,36 +8,12 @@ import os.path as osp
 
 from sfepy.base.base import Struct, output
 from sfepy.linalg import make_axis_rotation_matrix
+from sfepy.postprocess.utils_vtk import get_vtk_from_mesh
 
 class Probe(Struct):
     """
     Probe class.
     """
-
-    def get_VTK_from_file(self, filename):
-        """
-        Read VTK file containing scalar or vector results.
-
-        Parameters
-        ----------
-        filename : str
-            Name of the VTK file.
-
-        Returns
-        -------
-        vtkdata : VTK object
-            Mesh, scalar, vector and tensor results.
-        """
-
-        reader = vtk.vtkUnstructuredGridReader()
-        reader.SetFileName(filename)
-        reader.ReadAllScalarsOn()
-        reader.ReadAllVectorsOn()
-        reader.ReadAllTensorsOn()
-        reader.Update()
-        vtkdata = reader.GetOutput()
-
-        return vtkdata
 
     def __init__(self, data, mesh, **kwargs):
         """
@@ -52,9 +28,7 @@ class Probe(Struct):
         Struct.__init__(self, name=mesh.name, **kwargs)
 
         self.mesh_name = mesh.name[mesh.name.rfind(osp.sep) + 1:]
-        vtkname = 'probe_%s.vtk' % self.mesh_name
-        mesh.write(vtkname, io='auto', out=data)
-        self.vtkdata = self.get_VTK_from_file(vtkname)
+        self.vtkdata = get_vtk_from_mesh(mesh, data, 'probe_')
 
         self.vtkprobe = vtk.vtkProbeFilter()
         self.vtkprobe.SetSource(self.vtkdata)
