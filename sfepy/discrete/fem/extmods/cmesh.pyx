@@ -177,8 +177,8 @@ cdef class CMesh:
 
         # Geometry coordinates.
         self.n_coor, self.dim = mesh.coors.shape
-        if (self.dim < 2) or (self.dim > 3):
-            raise ValueError('CMesh geometry dimension must be 2 or 3! (%d)'
+        if (self.dim < 1) or (self.dim > 3):
+            raise ValueError('CMesh geometry dimension must be 1, 2 or 3! (%d)'
                              % self.dim)
         _coors = self.coors = mesh.coors.copy()
         mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim, tdim)
@@ -289,8 +289,8 @@ cdef class CMesh:
 
     def setup_entities(self):
         """
-        Set up mesh edge and face connectivities (3D only) as well as their
-        orientations.
+        Set up mesh edge (2D and 3D) and face connectivities (3D only) as well
+        as their orientations.
         """
         cdef np.npy_intp shape[1]
 
@@ -299,29 +299,33 @@ cdef class CMesh:
                   ' CMesh.set_local_entities()!'
             raise ValueError(msg)
 
-        self.setup_connectivity(1, 0)
+        if self.tdim == 1:
+            pass
 
-        ii = self._get_conn_indx(self.mesh.topology.max_dim, 1)
-        shape[0] = <np.npy_intp> self.conns[ii].n_incident
-        ptr = self.mesh.topology.edge_oris
-        self.edge_oris = np.PyArray_SimpleNewFromData(1, shape,
-                                                      np.NPY_UINT32,
-                                                      <void *> ptr)
+        else:
+            self.setup_connectivity(1, 0)
 
-        if self.tdim == 3:
-            self.setup_connectivity(2, 0)
-
-            ii = self._get_conn_indx(self.mesh.topology.max_dim, 2)
+            ii = self._get_conn_indx(self.mesh.topology.max_dim, 1)
             shape[0] = <np.npy_intp> self.conns[ii].n_incident
-            ptr = self.mesh.topology.face_oris
-            self.face_oris = np.PyArray_SimpleNewFromData(1, shape,
+            ptr = self.mesh.topology.edge_oris
+            self.edge_oris = np.PyArray_SimpleNewFromData(1, shape,
                                                           np.NPY_UINT32,
                                                           <void *> ptr)
 
-            self.facet_oris = self.face_oris
+            if self.tdim == 3:
+                self.setup_connectivity(2, 0)
 
-        else:
-            self.facet_oris = self.edge_oris
+                ii = self._get_conn_indx(self.mesh.topology.max_dim, 2)
+                shape[0] = <np.npy_intp> self.conns[ii].n_incident
+                ptr = self.mesh.topology.face_oris
+                self.face_oris = np.PyArray_SimpleNewFromData(1, shape,
+                                                              np.NPY_UINT32,
+                                                              <void *> ptr)
+
+                self.facet_oris = self.face_oris
+
+            else:
+                self.facet_oris = self.edge_oris
 
     def setup_connectivity(self, d1, d2):
         cdef MeshConnectivity *pconn
