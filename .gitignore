@@ -19,6 +19,7 @@ issues/
 *.pdf
 *.png
 *.pyc
+*.pyd
 *.o
 *.so
 *_wrap.c
