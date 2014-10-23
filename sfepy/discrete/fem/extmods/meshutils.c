@@ -11,7 +11,7 @@ int32 n_c;
 
 
 /*!
-  For 3D and 2D.
+  For 3D, 2D and 1D.
 
   @par Revision history:
   - 08.06.2006, c
@@ -89,8 +89,25 @@ int32 orient_elements( int32 *flag, int32 flag_n_row,
 	}
       }
     }
+  } else if (nc == 1) { // 1D
+    for (iel = 0; iel < conn_n_row; iel++) {
+      flag[iel] = 0;
+
+      for (ir = 0; ir < v_roots_n_row; ir++) {
+        ip0 = IR(iel, ir);
+        ip1 = IV(iel, ir, 0);
+
+        v0[0] = coors[ip0];
+        v1[0] = coors[ip1] - v0[0];
+
+        if (v1[0] < CONST_MachEps){
+          flag[iel]++;
+          SwapValues(CONN(iel, SWF(ir, 0)), CONN(iel, SWT(ir, 0)), tmp);
+        }
+      }
+    }
   }
-  
+
   return( RET_OK );
 
 #undef IR

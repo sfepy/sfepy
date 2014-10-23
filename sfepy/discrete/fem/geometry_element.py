@@ -84,7 +84,7 @@ geometry_data = {
                    faces = None,
                    edges = None,
                    volume = 1.0,
-                   orientation = None,
+                   orientation = (0, (1,), 0, 1),
                    get_grid = _get_grid_1_2,
                    surface_facet_name = None),
 

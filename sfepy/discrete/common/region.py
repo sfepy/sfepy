@@ -129,8 +129,9 @@ class Region(Struct):
     }
 
     __facet_kinds = {
-        2 : {'facet' : 'edge', 'facet_only' : 'edge_only'},
-        3 : {'facet' : 'face', 'facet_only' : 'face_only'},
+        1 : {'facet' : 'vertex', 'facet_only' : 'vertex_only'},
+        2 : {'facet' : 'edge',   'facet_only' : 'edge_only'},
+        3 : {'facet' : 'face',   'facet_only' : 'face_only'},
     }
 
     __op_to_fun = {
@@ -240,14 +241,19 @@ class Region(Struct):
         can = [bool(ii) for ii in self.__can[self.true_kind]]
 
         self.can_vertices = can[0]
-        self.can_edges = can[1]
 
-        if self.tdim == 2:
+        if self.tdim == 1:
+            self.can = (can[0], can[3])
+            self.can_cells = can[1]
+
+        elif self.tdim == 2:
             self.can = (can[0], can[1], can[3])
+            self.can_edges = can[1]
             self.can_cells = can[2]
 
         else:
             self.can = can
+            self.can_edges = can[1]
             self.can_faces = can[2]
             self.can_cells = can[3]
 
@@ -310,8 +316,8 @@ class Region(Struct):
 
     @property
     def faces(self):
-        if self.tdim == 2:
-            raise AttributeError('2D region has no faces!')
+        if self.tdim <= 2:
+            raise AttributeError('1D or 2D region has no faces!')
 
         if self.entities[2] is None:
             if 'face' in self.true_kind:
@@ -336,16 +342,22 @@ class Region(Struct):
         if self.tdim == 3:
             return self.faces
 
-        else:
+        elif self.tdim == 2:
             return self.edges
+
+        else:
+            return self.vertices
 
     @facets.setter
     def facets(self, vals):
         if self.tdim == 3:
             self.faces = vals
 
-        else:
+        elif self.tdim == 2:
             self.edges = vals
+
+        else:
+            self.vertices = vals
 
     @property
     def cells(self):
@@ -582,9 +594,12 @@ class Region(Struct):
 
     def get_facets(self, ig):
         """
-        Return either region edges (in 2D) or faces (in 3D) .
+        Return either region vertices (in 1D), edges (in 2D) or faces (in 3D).
         """
-        if self.tdim == 2:
+        if self.tdim == 1:
+            return self.get_vertices(ig)
+
+        elif self.tdim == 2:
             return self.get_edges(ig)
 
         else:
