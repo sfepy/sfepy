@@ -91,6 +91,8 @@ In the *SfePy* top-level directory:
 
         python setup.py build
 
+We recommend starting with the in-place build.
+
 Installation
 ^^^^^^^^^^^^
 
@@ -104,21 +106,45 @@ Installation
 
     python setup.py install --root=<installation prefix>
 
-If all went well, proceed with `Checking the SfePy installation`_.
+If all went well, proceed with `Testing`_.
 
-Checking the SfePy installation
--------------------------------
+Testing
+-------
 
-After installing *SfePy* you can check if all the functionalities are
-working by running the automated tests. From the source directory type::
+After building in-place or installing *SfePy* you can check if all the
+functionalities are working by running the automated tests.
 
-    ./run_tests.py
+In-place Build
+^^^^^^^^^^^^^^
+
+In the source directory type::
+
+    python run_tests.py
 
 If a particular test fails, please run it in debug mode::
 
-    ./run_tests.py --debug tests/failing_test_name.py
+    python run_tests.py --debug tests/failing_test_name.py
 
 and report the output to the sfepy-devel mailing list.
+
+On a Linux-based system, the script can be executed directly by::
+
+    ./run_tests.py
+
+Installed Build
+^^^^^^^^^^^^^^^
+
+In a directory different from the source directory, run::
+
+    python run_tests.py
+
+or (on Linux)::
+
+    run_tests.py
+
+Note that this command creates a directory called ``'output'`` in the current
+directory as well as some other auxiliary files. Use the in-place build testing
+if you do not want to care about this.
 
 Debugging
 ---------
@@ -126,7 +152,7 @@ Debugging
 If something goes wrong, set ``debug_flags = '-DDEBUG_FMF'`` in ``site_cfg.py``
 to turn on bound checks in the low level C functions, and recompile the code::
 
-    rm -rf build/ # remove completely build/ directory
+    python setup.py clean
     python setup.py build_ext --inplace
 
 Then re-run your code and report the output.
@@ -269,7 +295,7 @@ Finally you can test *SfePy* with::
 
     ./run_tests.py
 
-If some test fails see `Checking the SfePy installation`_ section for further
+If some test fails see `Testing`_ section for further
 details.
 
 
@@ -377,4 +403,4 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
        ./run_tests.py --filter-less
 
    * Report any failures to the sfepy-devel mailing list
-   * See `Checking the SfePy installation`_ for further details.
+   * See `Testing`_ for further details.
