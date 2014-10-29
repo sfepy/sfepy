@@ -2,7 +2,8 @@
 Construct projections between FE spaces.
 """
 from sfepy.base.base import output, IndexedStruct
-from sfepy.discrete import FieldVariable, Integral, Equation, Equations, Material
+from sfepy.discrete import (FieldVariable, Integral,
+                            Equation, Equations, Material)
 from sfepy.discrete import Problem
 from sfepy.terms import Term
 from sfepy.solvers.ls import ScipyDirect
@@ -66,9 +67,7 @@ def make_l2_projection_data(target, eval_data, order=None):
        order = 2 * target.field.approx_order
     integral = Integral('i', order=order)
 
-    # Use a copy of target for the projection to avoid overwriting
-    # target._variables.
-    un = target.copy(name=target.name)
+    un = FieldVariable('u', 'unknown', target.field)
 
     v = FieldVariable('v', 'test', un.field, primary_var_name=un.name)
     lhs = Term.new('dw_volume_dot(v, %s)' % un.name, integral,
@@ -103,7 +102,7 @@ def make_l2_projection_data(target, eval_data, order=None):
     # This sets the un variable with the projection solution.
     pb.solve()
 
-    # Copy the projection solution back to target.
+    # Copy the projection solution to target.
     target.set_data(un())
 
     if nls_status.condition != 0:
