@@ -227,7 +227,7 @@ def refine_reference(geometry, level):
 
     gcoors, gconn = geometry.coors, geometry.conn
     if level == 0:
-        return gcoors, gconn
+        return gcoors, gconn, None
 
     gd = geometry_data[geometry.name]
     conn = nm.array([gd.conn], dtype=nm.int32)
