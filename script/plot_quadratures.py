@@ -2,6 +2,8 @@
 """
 Plot quadrature points for the given geometry and integration order.
 """
+import sys
+sys.path.append('.')
 from optparse import OptionParser
 
 import sfepy.postprocess.plot_quadrature as pq

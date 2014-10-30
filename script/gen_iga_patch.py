@@ -6,6 +6,8 @@ using igakit.
 The grid has equally-spaced knot vectors. The generated control points form a
 regular grid as well - this prevents coarser resolution inside the block.
 """
+import sys
+sys.path.append('.')
 from optparse import OptionParser
 import numpy as nm
 

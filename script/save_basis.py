@@ -3,6 +3,8 @@
 Save polynomial basis on reference elements or on a mesh for visualization into
 a given output directory.
 """
+import sys
+sys.path.append('.')
 import os
 from optparse import OptionParser
 import numpy as nm

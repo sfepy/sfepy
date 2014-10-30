@@ -3,6 +3,8 @@
 Plot conditions numbers w.r.t. polynomial approximation order of reference
 element matrices for various FE polynomial spaces (bases).
 """
+import sys
+sys.path.append('.')
 from optparse import OptionParser
 import time
 import numpy as nm

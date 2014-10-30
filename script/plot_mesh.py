@@ -2,6 +2,8 @@
 """
 Plot mesh connectivities, facet orientations, global and local DOF ids etc.
 """
+import sys
+sys.path.append('.')
 from optparse import OptionParser
 
 from sfepy.base.base import output

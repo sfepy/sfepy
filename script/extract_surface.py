@@ -11,6 +11,7 @@ With '-m' option, a mesh of the surface is created and saved in
 '<original path>/surf_<original mesh file name>.mesh'.
 """
 import sys
+sys.path.append('.')
 from optparse import OptionParser
 
 import numpy as nm

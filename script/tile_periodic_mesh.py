@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import sys
+sys.path.append('.')
 
 from sfepy.base.base import Output
 from sfepy.discrete.fem.mesh import Mesh

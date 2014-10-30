@@ -9,6 +9,8 @@ Notes
 -----
 The developer guide needs to be edited manually to reflect the changes.
 """
+import sys
+sys.path.append('.')
 import os
 import fnmatch
 from optparse import OptionParser

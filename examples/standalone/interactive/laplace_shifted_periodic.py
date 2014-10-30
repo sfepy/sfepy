@@ -8,6 +8,8 @@ Display using::
 
 or use the --show option.
 """
+import sys
+sys.path.append('.')
 from optparse import OptionParser
 import numpy as nm
 

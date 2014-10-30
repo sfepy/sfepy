@@ -2,6 +2,8 @@
 """
 Show terms use in problem description files in the given directory.
 """
+import sys
+sys.path.append('.')
 import os
 from optparse import OptionParser
 
