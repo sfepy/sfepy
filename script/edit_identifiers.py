@@ -23,65 +23,62 @@ def us2cw(x): # underscore to capwords notation
 
 misc = '[\'\"\[\]\(\)\{\}]'
 mixed = '^%s*(?=[^A-Z])[a-z]+' % misc
-match_candidate = re.compile( mixed ).match
+match_candidate = re.compile(mixed).match
 
-def split_on( token, chars ):
-    if len( chars ) == 1:
-        return token.split( chars[0] )
+def split_on(token, chars):
+    if len(chars) == 1:
+        return token.split(chars[0])
     else:
-        aux = token.split( chars[0] )
+        aux = token.split(chars[0])
         out = []
         for item in aux:
-            out.extend( split_on( item, chars[1:] ) )
+            out.extend(split_on(item, chars[1:]))
         return out
 
-def edit( line ):
+def edit(line):
     count = 0
     aux = line.split()
-    if len( aux ) > 2:
+    if len(aux) > 2:
         if aux[0] == 'from' and aux[2] == 'import':
             aux = aux[3:]
         elif aux[0] == 'import':
             aux = aux[3:]
-        
+
     for token in aux:
-        for item in split_on( token, '.,=*/+-_' ):
-            if match_candidate( item ):
-#                print item, cw2us( item )
-                line = line.replace( item, cw2us( item ), 1 )
+        for item in split_on(token, '.,=*/+-_'):
+            if match_candidate(item):
+                line = line.replace(item, cw2us(item), 1)
                 count += 1
     return line, count
 
 def main():
 
     write = True
-    
+
     for name in sys.argv[1:]:
         print name
-        
-        rfd = open( name, 'r' )
-        path = os.path.dirname( name )
-        base = os.path.basename( name )
-        new_name = os.path.join( path, 'new_' + base )
+
+        rfd = open(name, 'r')
+        path = os.path.dirname(name)
+        base = os.path.basename(name)
+        new_name = os.path.join(path, 'new_' + base)
         if write:
-            wfd = open( new_name, 'w' )
+            wfd = open(new_name, 'w')
 
         n_edit = 0
         for line in rfd:
-#            print line
-            eline, count = edit( line )
-#            print eline
+            eline, count = edit(line)
             if write:
-                wfd.write( eline )
+                wfd.write(eline)
             n_edit += count
-#        raw_input()
+
         rfd.close()
 
         print '%d edit candidates' % n_edit
 
         if write:
             wfd.close()
-            os.rename( new_name, name )
-        
+            os.rename(new_name, name)
+
 if __name__ == '__main__':
     main()
