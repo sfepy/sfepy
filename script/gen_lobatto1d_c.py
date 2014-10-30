@@ -203,7 +203,7 @@ def main():
 
         plt.show()
 
-    indir = InDir(os.path.join(top_dir, 'sfepy.discrete.fem.extmods/'))
+    indir = InDir(os.path.join(top_dir, 'sfepy/discrete/fem/extmods/'))
 
     fd = open(indir('lobatto1d_template.h'), 'r')
     template = fd.read()
