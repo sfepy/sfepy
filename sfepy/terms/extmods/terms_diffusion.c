@@ -52,6 +52,21 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
     }
     break;
     
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pg1 = FMF_PtrLevel(gc, iqp);
+
+      pout = FMF_PtrLevel(out, iqp);
+
+      for (ir = 0; ir < nEP; ir++) {
+        for (ic = 0; ic < nEP; ic++) {
+          pout[ic] = pg1[ir] * pg1[ic];
+        }
+        pout += nCol;
+      }
+    }
+    break;
+
   default:
     errput( ErrHead "ERR_Switch\n" );
     return( RET_Fail );
@@ -131,6 +146,26 @@ int32 laplace_act_g_m( FMField *out, FMField *gc, FMField *mtx )
     }
     break;
 
+  case 1:
+      for (iqp = 0; iqp < nQP; iqp++) {
+          pg1 = FMF_PtrLevel(gc, iqp);
+          pout = FMF_PtrLevel(out, iqp);
+
+          if (mtx->nLev == nQP)
+              pmtx = FMF_PtrLevel(mtx, iqp);
+          else
+              pmtx = FMF_PtrCurrent(mtx);
+
+          for (ic = 0; ic < nCol; ic++) {
+              val1 = 0.0;
+              for (ik = 0; ik < nEP; ik++) {
+                  val1 += pg1[ik] * pmtx[ic + nCol*ik];
+              }
+              pout[ic + 0] = val1;
+          }
+      }
+      break;
+
   default:
     errput( ErrHead "ERR_Switch\n" );
     return( RET_Fail );
@@ -191,6 +226,22 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
       }
     }
     break;
+
+  case 1:
+      for (iqp = 0; iqp < nQP; iqp++) {
+          pg1 = FMF_PtrLevel(gc, iqp);
+
+          pmtx = FMF_PtrLevel(mtx, iqp);
+
+          for (iep = 0; iep < nEP; iep++) {
+              pout = FMF_PtrLevel(out, iqp) + nCol * iep;
+
+              for (ii = 0; ii < nCol; ii++) {
+                  pout[ii] = pg1[iep] * pmtx[0 * nCol + ii];
+              }
+          }
+      }
+      break;
 
   default:
     errput( ErrHead "ERR_Switch\n" );

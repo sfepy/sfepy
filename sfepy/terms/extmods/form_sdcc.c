@@ -129,6 +129,17 @@ int32 form_sdcc_actOpGT_VS3( FMField *diff, FMField *gc, FMField *vec )
       }
     }
     break;
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++){
+      pdiff1 = FMF_PtrLevel(diff, iqp);
+      pvec = FMF_PtrLevel(vec, iqp);
+      pg1 = FMF_PtrLevel(gc, iqp);
+
+      for (iep = 0; iep < nEP; iep++){
+        pdiff1[iep] = pg1[iep] * pvec[0];
+      }
+    }
+    break;
   default:
     errput( ErrHead "ERR_Switch\n" );
   }
@@ -207,6 +218,19 @@ int32 form_sdcc_actOpGT_M3( FMField *diff, FMField *gc, FMField *mtx )
       }
     }
     break;
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++){
+      pg1 = FMF_PtrLevel(gc, iqp);
+      pvec = FMF_PtrLevel(mtx, iqp);
+
+      for (iep = 0; iep < nEP; iep++){
+        pdiff1 = FMF_PtrLevel(diff, iqp) + nCol * iep;
+        for (ii = 0; ii < nCol; ii++){
+          pdiff1[ii] = pg1[iep] * pvec[0 * nCol + ii];
+        }
+      }
+    }
+    break;
   default:
     errput( ErrHead "ERR_Switch\n" );
   }
@@ -282,6 +306,19 @@ int32 form_sdcc_actOpG_RM3( FMField *diff, FMField *mtx, FMField *gc )
 	    = pg1[iep] * pvec[2]
 	    + pg2[iep] * pvec[1];
 	}
+      }
+    }
+    break;
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++){
+      pg1 = FMF_PtrLevel(gc, iqp);
+
+      for (ii = 0; ii < nRow; ii++){
+        pvec = FMF_PtrLevel(mtx, iqp) + mtx->nCol * ii;
+        pdiff1 = FMF_PtrLevel(diff, iqp) + diff->nCol * ii;
+        for (iep = 0; iep < nEP; iep++){
+          pdiff1[iep] = pg1[iep] * pvec[0];
+        }
       }
     }
     break;
