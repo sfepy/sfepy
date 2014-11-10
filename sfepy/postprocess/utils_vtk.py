@@ -1,7 +1,8 @@
 """Postprocessing utils based on VTK library"""
 
 import vtk
-import os.path as osp
+import os
+import tempfile
 
 def get_vtk_from_file(filename):
     """
@@ -44,10 +45,12 @@ def write_vtk_to_file(filename, vtkdata):
     writer.Update()
 
 def get_vtk_from_mesh(mesh, data, prefix=''):
-    mesh_name = mesh.name[mesh.name.rfind(osp.sep) + 1:]
-    vtkname = '%s%s.vtk' % (prefix, mesh_name)
+    mesh_name = mesh.name[mesh.name.rfind(os.path.sep) + 1:]
+    tmpdir = tempfile.gettempdir()
+    vtkname = os.path.join(tmpdir, '%s%s.vtk' % (prefix, mesh_name))
     mesh.write(vtkname, io='auto', out=data)
     vtkdata = get_vtk_from_file(vtkname)
+    os.remove(vtkname)
 
     return vtkdata
 
