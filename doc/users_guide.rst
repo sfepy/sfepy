@@ -1226,13 +1226,47 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
 Probing
 -------
 
-Probing applies interpolation to output the solution along specified paths. As
-mentioned in :ref:`miscellaneous_options`, it relies on defining two additional
-functions, namely the `'gen_probes'` function, that should create the required
-probes (see :mod:`sfepy.discrete.probes`), and the `'probe_hook'` function
-that performs the actual probing of the results for each of the probes. This
-function can return the probing results, as well as a handle to a corresponding
-matplotlib figure. See :doc:`primer` for additional explanation.
+Probing applies interpolation to output the solution along specified
+paths. There are two ways of probing:
+
+- *VTK* probes: It is the simple way of probing using the
+  `'post_process_hook'`. It generates matplotlib figures with the
+  probing results and previews of the mesh with the probe paths.  See
+  :doc:`primer` or :ref:`linear_elasticity-its2D_5` example.
+
+- *SfePy* probes: As mentioned in :ref:`miscellaneous_options`, it
+  relies on defining two additional functions, namely the
+  `'gen_probes'` function, that should create the required probes (see
+  :mod:`sfepy.discrete.probes`), and the `'probe_hook'` function that
+  performs the actual probing of the results for each of the
+  probes. This function can return the probing results, as well as a
+  handle to a corresponding matplotlib figure. See
+  :ref:`linear_elasticity-its2D_4` for additional explanation.
+
+Postprocessing filters
+----------------------
+
+The following postprocessing functions based on the *VTK* filters are available:
+
+- 'get_vtk_surface': extract mesh surface
+- 'get_vtk_edges': extract mesh edges
+- 'get_vtk_by_group': extract domain by a material ID
+- 'tetrahedralize_vtk_mesh': 3D cells are converted to tetrahedral meshes, 2D cells to triangles
+
+The following code demonstrates the use of the postprocessing filters::
+
+    mesh = problem.domain.mesh
+    mesh_name = mesh.name[mesh.name.rfind(osp.sep) + 1:]
+
+    vtkdata = get_vtk_from_mesh(mesh, out, 'postproc_')
+    matrix = get_vtk_by_group(vtkdata, 1, 1)
+
+    matrix_surf = get_vtk_surface(matrix)
+    matrix_surf_tri = tetrahedralize_vtk_mesh(matrix_surf)
+    write_vtk_to_file('%s_mat1_surface.vtk' % mesh_name, matrix_surf_tri)
+
+    matrix_edges = get_vtk_edges(matrix)
+    write_vtk_to_file('%s_mat1_edges.vtk' % mesh_name, matrix_edges)
 
 Available Solvers
 -----------------
