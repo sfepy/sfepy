@@ -16,6 +16,8 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
+from copy import deepcopy
+
 import numpy as nm
 from linear_elastic import \
      filename_mesh, materials, regions, fields, ebcs, \
@@ -36,9 +38,11 @@ variables = {
 }
 
 # Put density to 'solid'.
+materials = deepcopy(materials)
 materials['solid'][0].update({'c' : 1000.0})
 
 # Moving the PerturbedSurface region.
+ebcs = deepcopy(ebcs)
 ebcs['PerturbedSurface'][1].update({'u.0' : 'ebc_sin'})
 
 def ebc_sin(ts, coors, **kwargs):
@@ -51,6 +55,7 @@ equations = {
      + dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu, v, u ) = 0""",
 }
 
+solvers = deepcopy(solvers) # Do not spoil linear_elastic.py namespace in tests.
 solvers.update({
     'ts' : ('ts.adaptive', {
         't0' : 0.0,

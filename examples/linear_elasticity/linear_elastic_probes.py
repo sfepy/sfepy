@@ -16,6 +16,8 @@ where
     \;.
 """
 # Just grab the problem definition of linear_elastic.py.
+from copy import deepcopy
+
 from linear_elastic import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -34,6 +36,7 @@ options = {
 
 # Update materials, as ev_cauchy_stress below needs the elastic constants in
 # the tensor form.
+materials = deepcopy(materials)
 solid = materials['solid'][0]
 lam, mu = solid['lam'], solid['mu']
 solid.update({
