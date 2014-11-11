@@ -27,7 +27,7 @@ import numpy as nm
 gdata = geometry_data['2_3']
 nc = len(gdata.coors)
 
-def nodal_stress(out, pb, state, extend=False):
+def nodal_stress(out, pb, state, extend=False, integrals=None):
     '''
     Calculate stresses at nodal points.
     '''
@@ -39,12 +39,15 @@ def nodal_stress(out, pb, state, extend=False):
     # Calculate nodal stress.
     pb.time_update()
 
-    stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp')
+    if integrals is None: integrals = pb.get_integrals()
+
+    stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp',
+                         integrals=integrals)
     sfield = Field.from_args('stress', nm.float64, (3,),
                              pb.domain.regions['Omega'])
     svar = FieldVariable('sigma', 'parameter', sfield,
                          primary_var_name='(set-to-None)')
-    svar.set_data_from_qp(stress, pb.integrals['ivn'])
+    svar.set_data_from_qp(stress, integrals['ivn'])
 
     print '\n=================================================================='
     print 'Given load = %.2f N' % -P

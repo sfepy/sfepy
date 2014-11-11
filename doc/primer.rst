@@ -614,4 +614,34 @@ The probing function also generates previews of the mesh with the probe paths.
 .. image:: images/primer/probe_its2D_line1.png
    :width: 30 %
 
+Interactive Example
+-------------------
+
+SfePy can be used also interactively by constructing directly the classes that
+corresponds to the keywords in the problem description files. The following
+listing shows a script with the same (and more) functionality as the above
+examples:
+
+.. literalinclude:: /../examples/linear_elasticity/its2D_interactive.py
+
+The script can be run from the SfePy top-level directory, assuming the in-place
+build, as follows::
+
+    python examples/linear_elasticity/its2D_interactive.py
+
+The script allows setting several parameters that influence the solution, see::
+
+    python examples/linear_elasticity/its2D_interactive.py -h
+
+for the complete list. Besides the material parameters, a uniform mesh
+refinement level and the displacement field approximation order can be
+specified. The script demonstrates how to
+
+- project a derived quantity, that is evaluated in quadrature points (e.g. a
+  strain or stress), into a field variable;
+- probe the solution defined in the field variables.
+
+Using :mod:`sfepy.discrete.probes` allows correct probing of fields with the
+approximation order greater than one.
+
 The end.
