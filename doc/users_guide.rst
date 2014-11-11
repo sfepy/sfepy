@@ -1243,6 +1243,11 @@ paths. There are two ways of probing:
   handle to a corresponding matplotlib figure. See
   :ref:`linear_elasticity-its2D_4` for additional explanation.
 
+  Using :mod:`sfepy.discrete.probes` allows correct probing of fields with the
+  approximation order greater than one, see :ref:`primer-interactive-example`
+  in Primer or :ref:`linear_elasticity-its2D_interactive` for an example of
+  interactive use.
+
 Postprocessing filters
 ----------------------
 

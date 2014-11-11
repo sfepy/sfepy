@@ -614,6 +614,8 @@ The probing function also generates previews of the mesh with the probe paths.
 .. image:: images/primer/probe_its2D_line1.png
    :width: 30 %
 
+.. _primer-interactive-example:
+
 Interactive Example
 -------------------
 
