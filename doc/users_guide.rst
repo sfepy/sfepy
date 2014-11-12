@@ -1344,7 +1344,7 @@ The following already works:
 
 - single patch tensor product domain support in 2D and 3D
 - region selection based on topological Bezier mesh, see below
-- Dirichlet boundary conditions constant on entire sides of a patch
+- Dirichlet boundary conditions using projections for non-constant values
 - both scalar and vector volume terms work
 - term integration over the whole domain as well as a volume subdomain
 - simple linearization (output file generation) based on sampling the results
@@ -1357,8 +1357,6 @@ The following is not implemented yet:
 - theoretical convergence rate verification
 - fast basis evaluation
 - surface terms
-- general Dirichlet boundary conditions (non-constant and/or on a subset of a
-  side)
 - other boundary conditions
 - evaluation in arbitrary point in the physical domain
 - proper (adaptive) linearization for post-processing
