@@ -10,6 +10,8 @@ from sfepy.base.base import Struct, output
 from sfepy.linalg import make_axis_rotation_matrix
 from sfepy.postprocess.utils_vtk import get_vtk_from_mesh
 
+vtk_version = vtk.vtkVersion().GetVTKMajorVersion()
+
 class Probe(Struct):
     """
     Probe class.
@@ -194,7 +196,12 @@ class Probe(Struct):
         """
 
         surface = vtk.vtkDataSetSurfaceFilter()
-        surface.SetInput(self.vtkdata)
+        if vtk_version < 6:
+            surface.SetInput(self.vtkdata)
+
+        else:
+            surface.SetInputData(self.vtkdata)
+
         surface.Update()
 
         gf = vtk.vtkGraphicsFactory()
@@ -205,7 +212,12 @@ class Probe(Struct):
         ifa.SetUseMesaClasses(1)
 
         mapper = vtk.vtkPolyDataMapper()
-        mapper.SetInput(surface.GetOutput())
+        if vtk_version < 6:
+            mapper.SetInput(surface.GetOutput())
+
+        else:
+            mapper.SetInputData(surface.GetOutput())
+
         mapper.SetScalarModeToUseCellData()
 
         actor = vtk.vtkActor()
@@ -214,10 +226,16 @@ class Probe(Struct):
 
         mapper2 = vtk.vtkPolyDataMapper()
         if hasattr(probe, 'GetOutput'):
-            mapper2.SetInput(probe.GetOutput())
+            probe0 = probe.GetOutput()
 
         else:
-            mapper2.SetInput(probe)
+            probe0 = probe
+
+        if vtk_version < 6:
+            mapper2.SetInput(probe0)
+
+        else:
+            mapper2.SetInputData(probe0)
 
         actor2 = vtk.vtkActor()
         actor2.SetMapper(mapper2)
@@ -238,7 +256,12 @@ class Probe(Struct):
 
         writer = vtk.vtkPNGWriter()
         writer.SetFileName(png_filename)
-        writer.SetInput(image.GetOutput())
+        if vtk_version < 6:
+            writer.SetInput(image.GetOutput())
+
+        else:
+            writer.SetInputData(image.GetOutput())
+
         writer.Write()
 
     def __call__(self, probe_name, variable, probe_view=False):
@@ -267,7 +290,11 @@ class Probe(Struct):
             self.vtkprobe.SetInputConnection(inp.GetOutputPort())
 
         else:
-            self.vtkprobe.SetInput(inp)
+            if vtk_version < 6:
+                self.vtkprobe.SetInput(inp)
+
+            else:
+                self.vtkprobe.SetInputData(inp)
 
         self.vtkprobe.Update()
         pdata = self.vtkprobe.GetOutput()

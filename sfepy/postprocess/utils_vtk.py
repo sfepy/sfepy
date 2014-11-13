@@ -4,6 +4,8 @@ import vtk
 import os
 import tempfile
 
+vtk_version = vtk.vtkVersion().GetVTKMajorVersion()
+
 def get_vtk_from_file(filename):
     """
     Read VTK file.
@@ -41,7 +43,12 @@ def write_vtk_to_file(filename, vtkdata):
     """
     writer = vtk.vtkGenericDataObjectWriter()
     writer.SetFileName(filename)
-    writer.SetInput(vtkdata)
+    if vtk_version < 6:
+        writer.SetInput(vtkdata)
+
+    else:
+        writer.SetInputData(vtkdata)
+
     writer.Update()
 
 def get_vtk_from_mesh(mesh, data, prefix=''):
@@ -69,7 +76,12 @@ def get_vtk_surface(vtkdata):
         Mesh, scalar, vector and tensor data.
     """
     surface = vtk.vtkDataSetSurfaceFilter()
-    surface.SetInput(vtkdata)
+    if vtk_version < 6:
+        surface.SetInput(vtkdata)
+
+    else:
+        surface.SetInputData(vtkdata)
+
     surface.Update()
 
     return surface.GetOutput()
@@ -89,7 +101,12 @@ def get_vtk_edges(vtkdata):
         Mesh, scalar, vector and tensor data.
     """
     edges = vtk.vtkExtractEdges()
-    edges.SetInput(vtkdata)
+    if vtk_version < 6:
+        edges.SetInput(vtkdata)
+
+    else:
+        edges.SetInputData(vtkdata)
+
     edges.Update()
 
     return edges.GetOutput()
@@ -115,7 +132,12 @@ def get_vtk_by_group(vtkdata, group_lower, group_upper=None):
         Mesh, scalar, vector and tensor data.
     """
     selection = vtk.vtkThreshold()
-    selection.SetInput(vtkdata)
+    if vtk_version < 6:
+        selection.SetInput(vtkdata)
+
+    else:
+        selection.SetInputData(vtkdata)
+
     selection.SetInputArrayToProcess(0, 0, 0,
                                      vtk.vtkDataObject.FIELD_ASSOCIATION_CELLS,
                                      "mat_id")
@@ -142,6 +164,12 @@ def tetrahedralize_vtk_mesh(vtkdata):
         Mesh, scalar, vector and tensor data.
     """
     tetra = vtk.vtkDataSetTriangleFilter()
+    if vtk_version < 6:
+        tetra.SetInput(vtkdata)
+
+    else:
+        tetra.SetInputData(vtkdata)
+
     tetra.SetInput(vtkdata)
     tetra.Update()
 
