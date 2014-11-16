@@ -8,11 +8,14 @@
 
 static float64 trace3d[6] = {1.0, 1.0, 1.0, 0.0, 0.0, 0.0};
 static float64 trace2d[3] = {1.0, 1.0, 0.0};
+static float64 trace1d[1] = {1.0};
 
 #undef __FUNC__
 #define __FUNC__ "get_trace"
 float64 *get_trace( int32 sym )
 {
+  if (sym == 1)
+    return( trace1d );
   if (sym == 3)
     return( trace2d );
   if (sym == 6)
@@ -41,6 +44,10 @@ int32 form_tlcc_strainGreen_VS( FMField *strain, FMField *mtxF )
   int32 *t2i = 0, *t2j = 0;
 
   switch (dim) {
+  case 1:
+    t2i = t2i1D;
+    t2j = t2j1D;
+    break;
   case 2:
     t2i = t2i2D;
     t2j = t2j2D;
@@ -188,6 +195,20 @@ int32 form_tlcc_buildOpB_VS3( FMField *out, FMField *mtxF, FMField *gc )
       }
     } /* for (iqp) */
     break;
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pgc = FMF_PtrLevel( gc, iqp );
+      pg[0] = pgc;
+
+      pd = FMF_PtrLevel( mtxF, iqp );
+
+      // Row 1.
+      pout = FMF_PtrLevel( out, iqp );
+      for (iep = 0; iep < nEP; iep++) {
+        pout[iep] = (pd[0]) * pg[0][iep];
+      }
+    } /* for (iqp) */
+    break;
   } /* switch */
 
   return( RET_OK );
@@ -254,6 +275,23 @@ int32 form_tlcc_buildOpKtsC_VS3( FMField *out, FMField *tau, FMField *gc )
             + ptau[2] * pg[1][ir] * pg[0][ic]
             + ptau[2] * pg[0][ir] * pg[1][ic]
             + ptau[1] * pg[1][ir] * pg[1][ic];
+        }
+        pout += nEP;
+      }
+    } /* for (iqp) */
+    break;
+  case 1:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pgc = FMF_PtrLevel( gc, iqp );
+      pg[0] = pgc;
+
+      ptau = FMF_PtrLevel( tau, iqp );
+
+      pout = FMF_PtrLevel( out, iqp );
+      for (ir = 0; ir < nEP; ir++) {
+        for (ic = 0; ic < nEP; ic++) {
+          pout[ic]
+            = ptau[0] * pg[0][ir] * pg[0][ic];
         }
         pout += nEP;
       }
@@ -491,8 +529,9 @@ int32 dw_he_rtm( FMField *out,
       }
 
       fmfr_addA_blockNC( out, iktsc, 0, 0 );
-      fmfr_addA_blockNC( out, iktsc, nEP, nEP );
-      if (dim == 3)
+      if (dim > 1)
+        fmfr_addA_blockNC( out, iktsc, nEP, nEP );
+      if (dim > 2)
         fmfr_addA_blockNC( out, iktsc, 2 * nEP, 2 * nEP );
 
       ERR_CheckGo( ret );

@@ -12,6 +12,9 @@ BEGIN_C_DECLS
 
 #define sym2dim( sym ) ((int32)(sym/3+1))
 
+extern int32 t2i1D[];
+extern int32 t2j1D[];
+extern int32 t4s1D[];
 extern int32 t2i2D[];
 extern int32 t2j2D[];
 extern int32 t4s2D[];
