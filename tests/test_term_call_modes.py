@@ -7,7 +7,7 @@ from sfepy.base.base import ordered_iteritems
 from sfepy import data_dir
 
 filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
-                   for geom in ['2_3', '2_4', '3_4', '3_8']]
+                   for geom in ['1_2', '2_3', '2_4', '3_4', '3_8']]
 
 def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
     from sfepy.base.base import basestr
@@ -172,7 +172,10 @@ class Test(TestCommon):
 
                 self.report('<-- %s ...' % term_cls.name)
 
-                if term_cls.arg_shapes:
+                if rname == 'Gamma' and domain.mesh.dim == 1:
+                    self.report('--> 1D Gamma region: not tested!')
+
+                elif term_cls.arg_shapes:
                     try:
                         _ok = self._test_single_term(term_cls, domain, rname)
 
