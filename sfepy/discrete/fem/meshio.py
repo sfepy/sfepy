@@ -777,8 +777,10 @@ class VTKMeshIO(MeshIO):
         fd.write('\nPOINTS %d float\n' % n_nod)
 
         aux = mesh.coors
-        if dim == 2:
-            aux = nm.hstack((aux, nm.zeros((aux.shape[0], 1), dtype=aux.dtype)))
+
+        if dim < 3:
+            aux = nm.hstack((aux, nm.zeros((aux.shape[0], 3 - dim),
+                                           dtype=aux.dtype)))
 
         format = self.get_vector_format(3) + '\n'
         for row in aux:
