@@ -296,6 +296,9 @@ class Region(Struct):
 
     @property
     def edges(self):
+        if self.tdim <= 1:
+            raise AttributeError('1D region has no edges!')
+
         if self.entities[1] is None:
             if 'edge' in self.true_kind:
                 self.setup_from_vertices(1)
@@ -377,8 +380,15 @@ class Region(Struct):
         """
         Helper to access region entities of dimension `dim`.
         """
-        if dim == 1:
-            self.edges
+        if dim == 0:
+            self.vertices
+
+        elif dim == 1:
+            if self.tdim == 1:
+                self.cells
+
+            else:
+                self.edges
 
         elif dim == 2:
             if self.tdim == 3:
@@ -540,8 +550,14 @@ class Region(Struct):
         self.shape = {}
         for ig in self.igs:
             n_vertex = get(ig, 0, self.vertices).shape[0]
-            n_edge = get(ig, 1, self.edges).shape[0]
             n_cell = get(ig, self.tdim, self.cells).shape[0]
+
+            if self.tdim > 1:
+                n_edge = get(ig, 1, self.edges).shape[0]
+
+            else:
+                n_edge = 0
+
             if self.tdim == 3:
                 n_face = get(ig, 2, self.faces).shape[0]
 
