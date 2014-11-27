@@ -49,23 +49,21 @@ def create_parser(slist, current_section):
     return doc
 
 header = """
-.. tabularcolumns:: |p{0.3\linewidth}|p{0.2\linewidth}|p{0.5\linewidth}|
+.. tabularcolumns:: |p{0.2\linewidth}|p{0.2\linewidth}|p{0.6\linewidth}|
 .. list-table:: Table of all terms.
-   :widths: 30 30 40
+   :widths: 20 20 60
    :header-rows: 1
 
-   * - name/class/link
+   * - name/class
      - arguments
      - definition
 """
 
 table_row = """   * - %s
 
-         :class:`%s`
-         :mod:`%s <%s>`
+       :class:`%s <%s.%s>`
      - %s
-     -
-%s
+     - %s
 """
 
 def format_next(text, new_text, pos, can_newline, width, ispaces):
@@ -146,14 +144,13 @@ def typeset_term_table(fd, table):
             else:
                 dd = ''
 
-            dds = dd.split('\n\n')
+            dds = dd.strip().split('\n\n')
             definition = '\n\n'.join(typeset_to_indent(dd, 7, 11, 65)
-                                     for dd in dds)
-
+                                     for dd in dds)[7:]
             fd.write(table_row % (item_class.name,
                                   item_class.__name__,
                                   item_class.__module__,
-                                  item_class.__module__,
+                                  item_class.__name__,
                                   typeset_term_syntax(item_class),
                                   definition))
 
