@@ -91,6 +91,18 @@ custom = {
             'roll' : 0,
         },
     },
+    'diffusion/laplace_1d.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                't' : DomainSpecificPlot('plot_warp_scalar',
+                                          ['rel_scaling=1']),
+            },
+            'view' : (-90, 90, 1.5, [0.5,  0, 0]),
+            'roll' : 0,
+            'opacity' : {'wireframe' : 0.3},
+        },
+    },
     'diffusion/laplace_coupling_lcbcs.py' : {
         '' : {
             'is_wireframe' : True,

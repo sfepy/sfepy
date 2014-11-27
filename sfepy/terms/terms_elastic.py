@@ -128,7 +128,10 @@ class SDLinearElasticTerm(Term):
         nel, nlev, dim, _ = vgrad.shape
         sd = nm.zeros((nel, nlev, dim**2, dim**2), dtype=vgrad.dtype)
 
-        if dim == 2:
+        if dim == 1:
+            sd[...] = vgrad[:,:]
+
+        elif dim == 2:
             sd[:,:,0:2,0:2] = vgrad[:,:]
             sd[:,:,2:4,2:4] = vgrad[:,:]
 
@@ -151,7 +154,8 @@ class SDLinearElasticTerm(Term):
         strain_w = grad_w.reshape((nel, nqp, nr * nc, 1))
         strain_u = grad_u.reshape((nel, nqp, nr * nc, 1))
 
-        mat_map = {3: nm.array([0, 2, 2, 1]),
+        mat_map = {1: nm.array([0]),
+                   3: nm.array([0, 2, 2, 1]),
                    6: nm.array([0, 3, 4, 3, 1, 5, 4, 5, 2])}
 
         mmap = mat_map[mat.shape[-1]]

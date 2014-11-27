@@ -239,8 +239,8 @@ class GenericFileSource(FileSource):
 
     def get_bounding_box(self):
         bbox = self.mesh.get_bounding_box()
-        if self.dim == 2:
-            bbox = nm.c_[bbox, [0.0, 0.0]]
+        if self.dim < 3:
+            bbox = nm.c_[bbox, nm.zeros((3 - self.dim, 2))]
         return bbox
 
     def set_filename(self, filename, vis_source):
@@ -266,8 +266,8 @@ class GenericFileSource(FileSource):
         n_nod, dim = self.n_nod, self.dim
         n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
 
-        if dim == 2:
-            nod_zz = nm.zeros((n_nod, 1), dtype=mesh.coors.dtype)
+        if dim < 3:
+            nod_zz = nm.zeros((n_nod, 3 - dim), dtype=mesh.coors.dtype)
             points = nm.c_[mesh.coors, nod_zz]
         else:
             points = mesh.coors

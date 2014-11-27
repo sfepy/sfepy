@@ -7,9 +7,10 @@ from sfepy.base.base import ordered_iteritems
 from sfepy import data_dir
 
 filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
-                   for geom in ['2_3', '2_4', '3_4', '3_8']]
+                   for geom in ['1_2', '2_3', '2_4', '3_4', '3_8']]
 
-def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
+def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
+                   material_value=None):
     from sfepy.base.base import basestr
     from sfepy.discrete import FieldVariable, Material, Variables, Materials
     from sfepy.discrete.fem import Field
@@ -103,15 +104,20 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain):
                 if len(aux) == 2:
                     prefix, sh = aux
 
+            if material_value is None:
+                material_value = 1.0
+
             shape = _parse_tuple_shape(sh)
             if (len(shape) > 1) or (shape[0] > 1):
                 # Array.
+                val = nm.empty(shape, dtype=nm.float64)
+                val.fill(material_value)
                 values = {'%sc%d' % (prefix, ii)
-                          : nm.ones(shape, dtype=nm.float64)}
+                          : val}
 
             elif (len(shape) == 1) and (shape[0] == 1):
                 # Single scalar as a special value.
-                values = {'.c%d' % ii : 1.0}
+                values = {'.c%d' % ii : material_value}
 
             else:
                 raise ValueError('wrong material shape! (%s)' % shape)
@@ -172,7 +178,10 @@ class Test(TestCommon):
 
                 self.report('<-- %s ...' % term_cls.name)
 
-                if term_cls.arg_shapes:
+                if rname == 'Gamma' and domain.mesh.dim == 1:
+                    self.report('--> 1D Gamma region: not tested!')
+
+                elif term_cls.arg_shapes:
                     try:
                         _ok = self._test_single_term(term_cls, domain, rname)
 
@@ -222,7 +231,14 @@ class Test(TestCommon):
                 arg_kinds = get_arg_kinds(ats)
                 modes = getattr(term_cls, 'modes', None)
                 mode = modes[iat] if modes is not None else None
-                aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain)
+
+                if 'dw_s_dot_grad_i_s' in term_cls.name:
+                    material_value = 0.0
+
+                else:
+                    material_value = 1.0
+                aux = make_term_args(arg_shapes, arg_kinds, ats, mode, domain,
+                                     material_value=material_value)
                 args, str_args, materials, variables = aux
 
                 self.report('args:', str_args)

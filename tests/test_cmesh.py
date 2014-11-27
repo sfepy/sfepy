@@ -5,9 +5,15 @@ import numpy as nm
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
 
-# n_cell, n_face, n_edge, n_vertex
+# n_vertex, n_edge, n_face, n_cell
 # d1 -> d2 : num, n_incident
 expected = {
+    '1_2_2.mesh' : ([3, 2, 0, 0], {
+        (0, 0) : (3, 4),
+        (0, 1) : (3, 4),
+        (1, 0) : (2, 4),
+        (1, 1) : (2, 2),
+        }),
     '2_3_2.mesh' : ([4, 5, 2, 0], {
         (0, 0) : (4, 10),
         (0, 1) : (4, 10),
@@ -84,7 +90,7 @@ class Test(TestCommon):
     @staticmethod
     def from_conf(conf, options):
         filename_meshes = [data_dir + '/meshes/elements/%s_2.mesh' % geom
-                           for geom in ['2_3', '2_4', '3_4', '3_8']]
+                           for geom in ['1_2', '2_3', '2_4', '3_4', '3_8']]
         filename_meshes.append(data_dir
                                + '/meshes/2d/special/square_triquad.mesh')
 
@@ -114,7 +120,7 @@ class Test(TestCommon):
             cmesh.setup_entities()
 
             self.report('dim:', cmesh.dim)
-            self.report('n_cell: %d, n_face: %d, n_edge: %d, n_vertex: %d' %
+            self.report('n_vertex: %d, n_edge: %d, n_face: %d, n_cell: %d' %
                         tuple(cmesh.num))
 
             _ok = (enum == cmesh.num).all()

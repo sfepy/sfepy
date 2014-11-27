@@ -44,12 +44,15 @@ def region_leaf(domain, regions, rdef, functions):
                 assert_(nm.amax(vertices) < n_coor)
             else:
                 coors = domain.cmesh.coors
+                y = z = None
                 x = coors[:,0]
-                y = coors[:,1]
-                if dim == 3:
+
+                if dim > 1:
+                    y = coors[:,1]
+
+                if dim > 2:
                     z = coors[:,2]
-                else:
-                    z = None
+
                 coor_dict = {'x' : x, 'y' : y, 'z': z}
 
                 vertices = nm.where(eval(where, {}, coor_dict))[0]

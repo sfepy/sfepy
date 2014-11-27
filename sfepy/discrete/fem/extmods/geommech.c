@@ -236,6 +236,9 @@ int32 geme_invar1( float64 *invar, FMField *mtx )
   for (il = 0; il < mtx->nLev; il++) {
     j = mtx->val + dim*dim*il;
     switch (dim) {
+    case 1:
+      invar[il] = j[0];
+      break;
     case 2: /* plain strain */
       invar[il] = 1.0 + j[0] + j[3];
       break;
@@ -260,6 +263,9 @@ int32 geme_invar2( float64 *invar, FMField *mtx )
   for (il = 0; il < mtx->nLev; il++) {
     j = mtx->val + dim*dim*il;
     switch (dim) {
+    case 1: /* no sense in 1D */
+      invar[il] = 0.0;
+      break;
     case 2: /* plain strain */
       invar[il] = j[0]*j[3] + j[0] + j[3] - j[1]*j[1];
       break;
@@ -291,7 +297,7 @@ int32 geme_norm3( float64 *out, FMField *mtx )
     j = mtx->val + dim*il;
     switch (dim) {
     case 1:
-      out[il] = j[0];
+      out[il] = abs(j[0]);
       break;
     case 2:
       out[il] = sqrt( j[0] * j[0] + j[1] * j[1] );
@@ -437,6 +443,10 @@ int32 t2j2D[] = {0, 1, 1};
 int32 t4s2D[] = {0, 2,
 		 2, 1};
 
+int32 t2i1D[] = {0};
+int32 t2j1D[] = {0};
+int32 t4s1D[] = {0};
+
 #undef __FUNC__
 #define __FUNC__ "geme_mulT2ST2S_T4S_ikjl"
 /*!
@@ -454,6 +464,11 @@ int32 geme_mulT2ST2S_T4S_ikjl( FMField *t4, FMField *t21, FMField *t22 )
   dim = sym2dim( sym );
 
   switch (dim) {
+  case 1:
+    t2i = t2i1D;
+    t2j = t2j1D;
+    t4s = t4s1D;
+    break;
   case 2:
     t2i = t2i2D;
     t2j = t2j2D;
@@ -505,6 +520,11 @@ int32 geme_mulT2ST2S_T4S_iljk( FMField *t4, FMField *t21, FMField *t22 )
   dim = sym2dim( sym );
 
   switch (dim) {
+  case 1:
+    t2i = t2i1D;
+    t2j = t2j1D;
+    t4s = t4s1D;
+    break;
   case 2:
     t2i = t2i2D;
     t2j = t2j2D;
@@ -554,6 +574,9 @@ int32 geme_mulT2S_AA( FMField *R, FMField *A )
 
   for ( il = 0; il < R->nLev; il++ ) {
     switch( sym ) {
+    case 1:
+      pr[0] = pa[0]*pa[0];
+      break;
     case 3:
       pr[0] = pa[0]*pa[0] + pa[2]*pa[2];
       pr[1] = pa[2]*pa[2] + pa[1]*pa[1];
