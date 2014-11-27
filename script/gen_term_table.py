@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Generate the table of all terms for the sphinx documentation.
+"""
 import os
 import sys
 from optparse import OptionParser
@@ -6,7 +9,7 @@ import pyparsing as pp
 
 import numpy as nm
 
-sys.path.append( '.' )
+sys.path.append('.')
 import sfepy.discrete.fem # Hack: fix circular dependency, as terms.pyx imports
                           # from sfepy.discrete.fem
 from sfepy.terms import term_table
@@ -24,9 +27,9 @@ def to_list(slist, sec):
             slist.append((sec[0], toks[0]))
         return toks
     return action
-    
+
 def create_parser(slist, current_section):
-    
+
     colon = pp.Literal(':')
 
     section = pp.Combine(colon
@@ -125,7 +128,7 @@ def typeset_term_table(fd, table):
     fd.write(header)
 
     keys = table.keys()
-    sort_keys = [key[key.find( '_' ):] for key in keys]
+    sort_keys = [key[key.find('_'):] for key in keys]
     iis = nm.argsort(sort_keys)
     for ii in iis:
         key = keys[ii]
@@ -135,7 +138,7 @@ def typeset_term_table(fd, table):
         if doc is not None:
             sec_list[:] = []
             current_section[0] = ''
-            out = parser.parseString(doc)
+            parser.parseString(doc)
 
             dd = [x[1] for x in sec_list if x[0].lower() == 'definition']
             if len(dd):
@@ -168,11 +171,9 @@ def gen_term_table(app):
 def setup(app):
     app.connect('builder-inited', gen_term_table)
 
-usage = """%prog [options]
+usage = '%prog [options]\n' + __doc__.rstrip()
 
-Generate the table of all terms for the sphinx documentation.
-"""
-help = {
+helps = {
     'output_filename' :
     'output file name',
 }
@@ -182,7 +183,7 @@ def main():
     parser = OptionParser(usage=usage, version="%prog")
     parser.add_option("-o", "--output", metavar='output_filename',
                       action="store", dest="output_filename",
-                      default="term_table.rst", help=help['output_filename'])
+                      default="term_table.rst", help=helps['output_filename'])
     (options, args) = parser.parse_args()
 
     typeset(options.output_filename)
