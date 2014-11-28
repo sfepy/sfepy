@@ -1,5 +1,84 @@
 # created: 20.07.2007 (-1)
 
+.. _2014.3-2014.4:
+
+from 2014.3 to 2014.4
+=====================
+
+- preliminary support for 1D problems
+
+  - merge branch 1d
+  - update CMesh for 1D (preliminary support)
+  - update Region, Domain and FEDomain for 1D, update orient_elements() -
+    update geometry_data
+  - update diffusion and Navier-Stokes terms for 1D
+  - update Term.geometries
+  - update tests/test_term_call_modes.py for 1D
+  - update C implementation of hyperelasticity for 1D
+  - update VTKMeshIO.write() for 1D
+  - add 1D reference elements meshes (1_2_1.mesh, 1_2_2.mesh)
+  - new examples/diffusion/laplace_1d.py + test
+  - update SDLinearElasticTerm for 1D
+  - support custom material parameter values in tests/test_term_call_modes.py
+
+    - update make_term_args()
+    - add custom value for 'dw_s_dot_grad_i_s' in Test._test_single_term()
+
+  - add custom view for laplace_1d.py example to script/gen_gallery.py
+  - update GenericFileSource.get_bounding_box(), .create_dataset() for 1D
+
+- merge pull request #276 (VTK probes)
+
+  - simplify probes, use pyVTK library
+  - Primer - use VTK probes
+  - new postrocessing function based on VTK, example
+  - update User's guide - postrocessing filters
+
+- interactive example for Primer
+
+  - merge branch its-interactive-example
+  - update nodal_stress() to accept user-provided integrals
+  - new examples/linear_elasticity/its2D_interactive.py
+  - docs: add interactive example section to primer
+
+- scripts:
+
+  - script/gen_iga_patch.py: report number of DOFs per axis
+  - fix path in script/gen_lobatto1d_c.py - bug introduced in
+    ec186b8c69b0719f483e11a864092a21a608a203
+  - clean up script/edit_identifiers.py
+  - fix sys.path in auxiliary scripts and standalone examples - for cases where
+    the current directory (i.e. top level sfepy directory) is not added
+    automatically
+  - script/gen_gallery.py:
+
+    - omit examples that use VTK probes - bad interaction, probably with
+      Mayavi, leads to segfault
+    - simplify section titles, generate better labels
+
+- miscellaneous updates:
+
+  - fix number of returned values for no refinement in refine_reference()
+  - fix make_l2_projection_data() for parameter variables
+  - IGA: update plot_iso_lines() for curves in 2D
+
+- tests and examples:
+
+  - update test_install.py for current linear_elastic_probes.py
+  - prevent modifying linear_elastic.py namespace in derived examples
+  - new tests/test_input_linear_elastic_probes.py
+
+- docs:
+
+  - fix testing instructions for installed build
+  - update user's guide for interactive probing example in primer
+  - fix IGA section for current sources
+  - clean up script/gen_term_table.py, use common help and docstring
+  - update script/gen_term_table.py: simpler table, correct links to term
+    classes
+  - update doc/index.rst for 1D and new gallery labels
+  - sync doc/introduction.rst with doc/index.rst
+
 .. _2014.2-2014.3:
 
 from 2014.2 to 2014.3
