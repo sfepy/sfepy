@@ -1,6 +1,10 @@
 News
 ====
 
+* **28.11.2014** Version 2014.4 released (preliminary support for 1D problems,
+  data probes using pyVTK library, etc.), see :ref:`release notes
+  <2014.3-2014.4>`.
+
 * **25.09.2014** Version 2014.3 released (isogeometric analysis (IGA) speed-up
   by C implementation of NURBS basis evaluation, generalized linear combination
   boundary conditions that work between different fields/variables and support
@@ -24,11 +28,5 @@ News
   equation sequence solver, initial support for 'plate'
   integration/connectivity type, script for visualization of quadrature points
   and weights, etc.), see :ref:`release notes <2013.3-2013.4>`.
-
-* **18.09.2013** Version 2013.3 released (implementation of Mesh topology data
-  structures in C, implementation of regions based on C Mesh, MultiProblem
-  solver for conjugate solution of subproblems, new advanced examples
-  (vibro-acoustics, Stokes flow with slip conditions), etc.), see :ref:`release
-  notes <2013.2-2013.3>`.
 
 For historians: see :ref:`archived_news`.

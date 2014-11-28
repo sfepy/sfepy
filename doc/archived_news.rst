@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **18.09.2013** Version 2013.3 released (implementation of Mesh topology data
+  structures in C, implementation of regions based on C Mesh, MultiProblem
+  solver for conjugate solution of subproblems, new advanced examples
+  (vibro-acoustics, Stokes flow with slip conditions), etc.), see :ref:`release
+  notes <2013.2-2013.3>`.
+
 * **22.05.2013** Version 2013.2 released (automatic testing of term calls (many
   terms fixed w.r.t. corner cases), new elastic contact plane term + example,
   translated low level base functions from Cython to C for reusability,
