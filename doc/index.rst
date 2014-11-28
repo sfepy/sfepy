@@ -9,15 +9,15 @@
    =======================================
 
    SfePy is a software for solving systems of coupled partial differential
-   equations (PDEs) by the finite element method in 2D and 3D. It can be viewed
-   both as black-box PDE solver, and as a Python package which can be used for
-   building custom applications. The word "simple" means that complex FEM
-   problems can be coded very easily and rapidly.
+   equations (PDEs) by the finite element method in 1D, 2D and 3D. It can be
+   viewed both as black-box PDE solver, and as a Python package which can be
+   used for building custom applications. The word "simple" means that complex
+   FEM problems can be coded very easily and rapidly.
 
    SfePy can use many terms to build the PDEs to be solved, see
    :ref:`term_overview`. SfePy comes also with a number of examples that can
-   get you started, check :ref:`examples` and :doc:`tutorial`. Some more
-   advanced features are discussed in :doc:`primer`.
+   get you started, check :ref:`sfepy-gallery-examples-index` and
+   :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
 
    There is also a preliminary support for the isogeometric analysis,
    outlined in :ref:`isogeometric_analysis`.
