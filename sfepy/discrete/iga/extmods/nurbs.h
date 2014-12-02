@@ -31,7 +31,8 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                             FMField *control_points,
                             int32 *degrees, int32 dim,
                             FMField *cs,
-                            int32 *conn, int32 n_el, int32 n_ep);
+                            int32 *conn, int32 n_el, int32 n_ep,
+                            int32 has_bernstein);
 int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                           FMField *dR_dxi,
                           FMField *dx_dxi, FMField *dxi_dx,
@@ -40,6 +41,7 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                           FMField *qp, uint32 ie, FMField *control_points,
                           FMField *weights, int32 *degrees, int32 dim,
                           FMField *cs,
-                          int32 *conn, int32 n_el, int32 n_ep);
+                          int32 *conn, int32 n_el, int32 n_ep,
+                          int32 has_bernstein);
 
 #endif /* !NURBS_H */

@@ -81,7 +81,8 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                             FMField *control_points,
                             int32 *degrees, int32 dim,
                             FMField *cs,
-                            int32 *conn, int32 n_el, int32 n_ep)
+                            int32 *conn, int32 n_el, int32 n_ep,
+                            int32 has_bernstein)
 {
   int32 ret = RET_OK;
   uint32 ii, jj, a, i0, i1, i2;
@@ -116,8 +117,10 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   ec = conn + n_ep * ie;
 
   // 1D Bernstein basis B, dB/dxi.
-  for (ii = 0; ii < dim; ii++) {
-    eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
+  if (!has_bernstein) {
+    for (ii = 0; ii < dim; ii++) {
+      eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
+    }
   }
 
   // 1D B-spline basis N = CB, dN/dxi = C dB/dxi.
@@ -226,7 +229,8 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                           FMField *qp, uint32 ie, FMField *control_points,
                           FMField *weights, int32 *degrees, int32 dim,
                           FMField *cs,
-                          int32 *conn, int32 n_el, int32 n_ep)
+                          int32 *conn, int32 n_el, int32 n_ep,
+                          int32 has_bernstein)
 {
   int32 ret = RET_OK;
   uint32 ii, jj, a, i0, i1, i2;
@@ -262,8 +266,10 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   ec = conn + n_ep * ie;
 
   // 1D Bernstein basis B, dB/dxi.
-  for (ii = 0; ii < dim; ii++) {
-    eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
+  if (!has_bernstein) {
+    for (ii = 0; ii < dim; ii++) {
+      eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
+    }
   }
 
   // 1D B-spline basis N = CB, dN/dxi = C dB/dxi.

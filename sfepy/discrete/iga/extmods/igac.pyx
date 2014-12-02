@@ -37,7 +37,8 @@ cdef extern from 'nurbs.h':
                                  FMField *control_points,
                                  int32 *degrees, int32 dim,
                                  FMField *cs,
-                                 int32 *conn, int32 n_el, int32 n_ep)
+                                 int32 *conn, int32 n_el, int32 n_ep,
+                                 int32 has_bernstein)
     cdef int32 _eval_nurbs_basis_tp \
          'eval_nurbs_basis_tp'(FMField *R, FMField *dR_dx, FMField *det,
                                FMField *dR_dxi,
@@ -47,7 +48,8 @@ cdef extern from 'nurbs.h':
                                FMField *qp, uint32 ie, FMField *control_points,
                                FMField *weights, int32 *degrees, int32 dim,
                                FMField *cs,
-                               int32 *conn, int32 n_el, int32 n_ep)
+                               int32 *conn, int32 n_el, int32 n_ep,
+                               int32 has_bernstein)
 
 def is_nurbs(np.ndarray[float64, mode='c', ndim=1] weights not None):
     """
@@ -113,7 +115,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
         The Jacobians of the mapping to the unit reference element in the
         physical quadrature points of all elements.
     """
-    cdef uint32 ii, ie, n_qp, n_efun
+    cdef uint32 ii, ie, n_qp, n_efun, nf
     cdef int32 n_el, n_ep, dim, aux
     cdef uint32 *_cells
     cdef int32 *_degrees, *_conn
@@ -150,8 +152,8 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     dxi_dx = np.empty((1, 1, dim, dim), dtype=np.float64)
 
     for ii in range(0, dim):
-        fmf_alloc(_B + ii, 1, 1, n_efuns[ii], 1)
-        fmf_alloc(_dB_dxi + ii, 1, 1, n_efuns[ii], 1)
+        fmf_alloc(_B + ii, n_qp, 1, n_efuns[ii], 1)
+        fmf_alloc(_dB_dxi + ii, n_qp, 1, n_efuns[ii], 1)
         fmf_alloc(_N + ii, 1, 1, n_efuns[ii], 1)
         fmf_alloc(_dN_dxi + ii, 1, 1, n_efuns[ii], 1)
 
@@ -182,6 +184,16 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     _det.val = _det.val0 = &dets[0, 0, 0, 0]
     _qp.val = _qp.val0 = &qps[0, 0]
 
+    # Pre-compute 1D Bernstein basis B, dB/dxi.
+    for iqp in range(0, n_qp):
+        for ii in range(0, dim):
+            nf = n_efuns[ii]
+            _eval_bernstein_basis(_B + ii, _dB_dxi + ii,
+                                  _qp.val[ii], _degrees[ii])
+            (_B + ii).val += nf
+            (_dB_dxi + ii).val += nf
+        _qp.val += dim
+
     if is_nurbs(weights):
         # Loop over elements.
         _cells = &cells[0]
@@ -189,6 +201,9 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
             ie = _cells[iseq]
 
             _qp.val = _qp.val0
+            for ii in range(0, dim):
+                (_B + ii).val = (_B + ii).val0
+                (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
             # Loop over quadrature points.
             for iqp in range(0, n_qp):
@@ -198,11 +213,16 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                      _B, _dB_dxi, _N, _dN_dxi,
                                      _qp, ie,
                                      _control_points, _weights,
-                                     _degrees, dim, _cs, _conn, n_el, n_ep)
+                                     _degrees, dim, _cs, _conn, n_el, n_ep,
+                                     1)
                 _bf.val += n_efun
                 _bfg.val += dim * n_efun
                 _det.val += 1
                 _qp.val += dim
+                for ii in range(0, dim):
+                    nf = n_efuns[ii]
+                    (_B + ii).val += nf
+                    (_dB_dxi + ii).val += nf
 
     else:
         # Loop over elements.
@@ -211,6 +231,9 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
             ie = _cells[iseq]
 
             _qp.val = _qp.val0
+            for ii in range(0, dim):
+                (_B + ii).val = (_B + ii).val0
+                (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
             # Loop over quadrature points.
             for iqp in range(0, n_qp):
@@ -220,11 +243,16 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                        _B, _dB_dxi, _N, _dN_dxi,
                                        _qp, ie,
                                        _control_points,
-                                       _degrees, dim, _cs, _conn, n_el, n_ep)
+                                       _degrees, dim, _cs, _conn, n_el, n_ep,
+                                       1)
                 _bf.val += n_efun
                 _bfg.val += dim * n_efun
                 _det.val += 1
                 _qp.val += dim
+                for ii in range(0, dim):
+                    nf = n_efuns[ii]
+                    (_B + ii).val += nf
+                    (_dB_dxi + ii).val += nf
 
     for ii in range(0, dim):
         fmf_free(_B + ii)
@@ -279,7 +307,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
         The Jacobians of the mapping to the unit reference element in the
         physical quadrature points.
     """
-    cdef uint32 ii, ie, n_qp, n_efun, nc, ir, ic
+    cdef uint32 ii, ie, n_qp, n_efun, nf, nc, ir, ic
     cdef int32 n_el, n_ep, dim, aux
     cdef uint32 *_cells
     cdef int32 *_degrees, *_conn, *ec
@@ -318,8 +346,8 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     dxi_dx = np.empty((1, 1, dim, dim), dtype=np.float64)
 
     for ii in range(0, dim):
-        fmf_alloc(_B + ii, 1, 1, n_efuns[ii], 1)
-        fmf_alloc(_dB_dxi + ii, 1, 1, n_efuns[ii], 1)
+        fmf_alloc(_B + ii, n_qp, 1, n_efuns[ii], 1)
+        fmf_alloc(_dB_dxi + ii, n_qp, 1, n_efuns[ii], 1)
         fmf_alloc(_N + ii, 1, 1, n_efuns[ii], 1)
         fmf_alloc(_dN_dxi + ii, 1, 1, n_efuns[ii], 1)
 
@@ -353,6 +381,16 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     _det.val = _det.val0 = &dets[0, 0]
     _qp.val = _qp.val0 = &qps[0, 0]
 
+    # Pre-compute 1D Bernstein basis B, dB/dxi.
+    for iqp in range(0, n_qp):
+        for ii in range(0, dim):
+            nf = n_efuns[ii]
+            _eval_bernstein_basis(_B + ii, _dB_dxi + ii,
+                                  _qp.val[ii], _degrees[ii])
+            (_B + ii).val += nf
+            (_dB_dxi + ii).val += nf
+        _qp.val += dim
+
     if is_nurbs(weights):
         # Loop over elements.
         _cells = &cells[0]
@@ -362,6 +400,9 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
             ec = _conn + n_ep * ie
 
             _qp.val = _qp.val0
+            for ii in range(0, dim):
+                (_B + ii).val = (_B + ii).val0
+                (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
             # Loop over quadrature points.
             for iqp in range(0, n_qp):
@@ -371,7 +412,8 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                                      _B, _dB_dxi, _N, _dN_dxi,
                                      _qp, ie,
                                      _control_points, _weights,
-                                     _degrees, dim, _cs, _conn, n_el, n_ep)
+                                     _degrees, dim, _cs, _conn, n_el, n_ep,
+                                     1)
 
                 # vals[ii, :] = np.dot(bf, variable[ec])
                 for ir in range(0, nc):
@@ -393,6 +435,10 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                 _coors.val += dim
                 _det.val += 1
                 _qp.val += dim
+                for ii in range(0, dim):
+                    nf = n_efuns[ii]
+                    (_B + ii).val += nf
+                    (_dB_dxi + ii).val += nf
 
     else:
         # Loop over elements.
@@ -403,6 +449,9 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
             ec = _conn + n_ep * ie
 
             _qp.val = _qp.val0
+            for ii in range(0, dim):
+                (_B + ii).val = (_B + ii).val0
+                (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
             # Loop over quadrature points.
             for iqp in range(0, n_qp):
@@ -412,7 +461,8 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                                        _B, _dB_dxi, _N, _dN_dxi,
                                        _qp, ie,
                                        _control_points,
-                                       _degrees, dim, _cs, _conn, n_el, n_ep)
+                                       _degrees, dim, _cs, _conn, n_el, n_ep,
+                                       1)
 
                 # vals[ii, :] = np.dot(bf, variable[ec])
                 for ir in range(0, nc):
@@ -434,6 +484,10 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                 _coors.val += dim
                 _det.val += 1
                 _qp.val += dim
+                for ii in range(0, dim):
+                    nf = n_efuns[ii]
+                    (_B + ii).val += nf
+                    (_dB_dxi + ii).val += nf
 
     return coors, vals, dets
 
@@ -570,7 +624,8 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
                                  _B, _dB_dxi, _N, _dN_dxi,
                                  _rc, ie,
                                  _control_points, _weights,
-                                 _degrees, dim, _cs, _conn, n_el, n_ep)
+                                 _degrees, dim, _cs, _conn, n_el, n_ep,
+                                 0)
 
             # vals[ip, :] = np.dot(bf, variable[ec])
             ec = _conn + n_ep * ie;
@@ -597,7 +652,8 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
                                    _B, _dB_dxi, _N, _dN_dxi,
                                    _rc, ie,
                                    _control_points,
-                                   _degrees, dim, _cs, _conn, n_el, n_ep)
+                                   _degrees, dim, _cs, _conn, n_el, n_ep,
+                                   0)
 
             # vals[ip, :] = np.dot(bf, variable[ec])
             ec = _conn + n_ep * ie;
