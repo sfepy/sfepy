@@ -68,6 +68,152 @@ int32 eval_bernstein_basis(FMField *funs, FMField *ders,
 }
 
 #undef __FUNC__
+#define __FUNC__ "eval_bspline_basis_tp"
+/*
+  dR_dx has shape (dim, n_efun), transposed w.r.t. the Python version!
+*/
+int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
+                            FMField *dR_dxi,
+                            FMField *dx_dxi, FMField *dxi_dx,
+                            FMField *B, FMField *dB_dxi,
+                            FMField *N, FMField *dN_dxi,
+                            FMField *qp, uint32 ie,
+                            FMField *control_points,
+                            int32 *degrees, int32 dim,
+                            FMField *cs,
+                            int32 *conn, int32 n_el, int32 n_ep)
+{
+  int32 ret = RET_OK;
+  uint32 ii, jj, a, i0, i1, i2;
+  uint32 n_efuns[3];
+  uint32 n_efun = 1;
+  uint32 n_els[3];
+  uint32 ic[3];
+  int32 *ec;
+  FMField *C, *N0, *N1, *N2, *dN0_dxi, *dN1_dxi, *dN2_dxi;
+  float64 P;
+
+#ifdef DEBUG_FMF
+  if (!((dim == qp->nCol) && (dim <= 3))) {
+    errput(ErrHead "inconsistent dimension! (%d == $d <= 3)", dim, qp->nCol);
+    ERR_CheckGo(ret);
+  }
+#endif
+
+  for (ii = 0; ii < dim; ii++) {
+    n_efuns[ii] = degrees[ii] + 1;
+    n_efun *= n_efuns[ii];
+  }
+
+#ifdef DEBUG_FMF
+  if (n_efun != n_ep) {
+    errput(ErrHead "inconsistent number of bases! (%d == $d)", n_efun, n_ep);
+    ERR_CheckGo(ret);
+  }
+#endif
+
+  // Element connectivity.
+  ec = conn + n_ep * ie;
+
+  // 1D Bernstein basis B, dB/dxi.
+  for (ii = 0; ii < dim; ii++) {
+    eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
+  }
+
+  // 1D B-spline basis N = CB, dN/dxi = C dB/dxi.
+  for (ii = 0; ii < dim; ii++) {
+    n_els[ii] = (cs + ii)->nCell;
+  }
+
+  unravel_index(ic, ie, n_els, dim);
+
+  for (ii = 0; ii < dim; ii++) {
+    C = cs + ii;
+    FMF_SetCell(C, ic[ii]);
+
+    fmf_mulAB_nn(N + ii, C, B + ii);
+    fmf_mulAB_nn(dN_dxi + ii, C, dB_dxi + ii);
+  }
+
+  ERR_CheckGo(ret);
+
+  // Tensor-product B-spline basis R, dR/dxi.
+  a = 0; // Basis function index.
+  if (dim == 3) {
+    N0 = N + 0;
+    N1 = N + 1;
+    N2 = N + 2;
+    dN0_dxi = dN_dxi + 0;
+    dN1_dxi = dN_dxi + 1;
+    dN2_dxi = dN_dxi + 2;
+    for (i0 = 0; i0 < n_efuns[0]; i0++) {
+      for (i1 = 0; i1 < n_efuns[1]; i1++) {
+        for (i2 = 0; i2 < n_efuns[2]; i2++) {
+          R->val[a] = N0->val[i0] * N1->val[i1] * N2->val[i2];
+
+          dR_dxi->val[a+n_ep*0] = dN0_dxi->val[i0] * N1->val[i1] * N2->val[i2];
+
+          dR_dxi->val[a+n_ep*1] = N0->val[i0] * dN1_dxi->val[i1] * N2->val[i2];
+
+          dR_dxi->val[a+n_ep*2] = N0->val[i0] * N1->val[i1] * dN2_dxi->val[i2];
+
+          a += 1;
+        }
+      }
+    }
+  } else if (dim == 2) {
+    N0 = N + 0;
+    N1 = N + 1;
+    dN0_dxi = dN_dxi + 0;
+    dN1_dxi = dN_dxi + 1;
+    for (i0 = 0; i0 < n_efuns[0]; i0++) {
+      for (i1 = 0; i1 < n_efuns[1]; i1++) {
+        R->val[a] = N0->val[i0] * N1->val[i1];
+
+        dR_dxi->val[a+n_ep*0] = dN0_dxi->val[i0] * N1->val[i1];
+
+        dR_dxi->val[a+n_ep*1] = N0->val[i0] * dN1_dxi->val[i1];
+
+        a += 1;
+      }
+    }
+  } else {
+    // Simple copy here.
+    N0 = N + 0;
+    dN0_dxi = dN_dxi + 0;
+    for (i0 = 0; i0 < n_efuns[0]; i0++) {
+        R->val[a] = N0->val[i0];
+
+        dR_dxi->val[a+n_ep*0] = dN0_dxi->val[i0];
+
+        a += 1;
+    }
+  }
+
+  // Mapping reference -> physical domain dxi/dx.
+  // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
+  for (ii = 0; ii < dim; ii++) {
+    for (jj = 0; jj < dim; jj++) {
+      dx_dxi->val[dim*ii+jj] = 0.0;
+      for (a = 0; a < dR_dxi->nCol; a++) {
+        P = control_points->val[dim*ec[a]+ii];
+
+        dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
+      }
+    }
+  }
+  geme_det3x3(det->val, dx_dxi);
+
+  geme_invert3x3(dxi_dx, dx_dxi);
+
+  // dR/dx.
+  fmf_mulATB_nn(dR_dx, dxi_dx, dR_dxi);
+
+ end_label:
+  return(ret);
+}
+
+#undef __FUNC__
 #define __FUNC__ "eval_nurbs_basis_tp"
 /*
   dR_dx has shape (dim, n_efun), transposed w.r.t. the Python version!

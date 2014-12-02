@@ -27,6 +27,17 @@ cdef extern from 'nurbs.h':
     cdef int32 _eval_bernstein_basis \
          'eval_bernstein_basis'(FMField *funs, FMField *ders,
                                 float64 x, uint32 degree)
+    cdef int32 _eval_bspline_basis_tp \
+         'eval_bspline_basis_tp'(FMField *R, FMField *dR_dx, FMField *det,
+                                 FMField *dR_dxi,
+                                 FMField *dx_dxi, FMField *dxi_dx,
+                                 FMField *B, FMField *dB_dxi,
+                                 FMField *N, FMField *dN_dxi,
+                                 FMField *qp, uint32 ie,
+                                 FMField *control_points,
+                                 int32 *degrees, int32 dim,
+                                 FMField *cs,
+                                 int32 *conn, int32 n_el, int32 n_ep)
     cdef int32 _eval_nurbs_basis_tp \
          'eval_nurbs_basis_tp'(FMField *R, FMField *dR_dx, FMField *det,
                                FMField *dR_dxi,
@@ -37,6 +48,12 @@ cdef extern from 'nurbs.h':
                                FMField *weights, int32 *degrees, int32 dim,
                                FMField *cs,
                                int32 *conn, int32 n_el, int32 n_ep)
+
+def is_nurbs(np.ndarray[float64, mode='c', ndim=1] weights not None):
+    """
+    Return True if some weights are not one.
+    """
+    return np.any(weights != 1.0)
 
 def eval_bernstein_basis(np.ndarray funs not None,
                          np.ndarray ders not None,
@@ -165,26 +182,49 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     _det.val = _det.val0 = &dets[0, 0, 0, 0]
     _qp.val = _qp.val0 = &qps[0, 0]
 
-    # Loop over elements.
-    _cells = &cells[0]
-    for iseq in range(0, n_el):
-        ie = _cells[iseq]
+    if is_nurbs(weights):
+        # Loop over elements.
+        _cells = &cells[0]
+        for iseq in range(0, n_el):
+            ie = _cells[iseq]
 
-        _qp.val = _qp.val0
+            _qp.val = _qp.val0
 
-        # Loop over quadrature points.
-        for iqp in range(0, n_qp):
-            _eval_nurbs_basis_tp(_bf, _bfg, _det,
-                                 _bfg_dxi,
-                                 _dx_dxi, _dxi_dx,
-                                 _B, _dB_dxi, _N, _dN_dxi,
-                                 _qp, ie,
-                                 _control_points, _weights,
-                                 _degrees, dim, _cs, _conn, n_el, n_ep)
-            _bf.val += n_efun
-            _bfg.val += dim * n_efun
-            _det.val += 1
-            _qp.val += dim
+            # Loop over quadrature points.
+            for iqp in range(0, n_qp):
+                _eval_nurbs_basis_tp(_bf, _bfg, _det,
+                                     _bfg_dxi,
+                                     _dx_dxi, _dxi_dx,
+                                     _B, _dB_dxi, _N, _dN_dxi,
+                                     _qp, ie,
+                                     _control_points, _weights,
+                                     _degrees, dim, _cs, _conn, n_el, n_ep)
+                _bf.val += n_efun
+                _bfg.val += dim * n_efun
+                _det.val += 1
+                _qp.val += dim
+
+    else:
+        # Loop over elements.
+        _cells = &cells[0]
+        for iseq in range(0, n_el):
+            ie = _cells[iseq]
+
+            _qp.val = _qp.val0
+
+            # Loop over quadrature points.
+            for iqp in range(0, n_qp):
+                _eval_bspline_basis_tp(_bf, _bfg, _det,
+                                       _bfg_dxi,
+                                       _dx_dxi, _dxi_dx,
+                                       _B, _dB_dxi, _N, _dN_dxi,
+                                       _qp, ie,
+                                       _control_points,
+                                       _degrees, dim, _cs, _conn, n_el, n_ep)
+                _bf.val += n_efun
+                _bfg.val += dim * n_efun
+                _det.val += 1
+                _qp.val += dim
 
     for ii in range(0, dim):
         fmf_free(_B + ii)
@@ -313,45 +353,87 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     _det.val = _det.val0 = &dets[0, 0]
     _qp.val = _qp.val0 = &qps[0, 0]
 
-    # Loop over elements.
-    _cells = &cells[0]
-    for iseq in range(0, n_el):
-        ie = _cells[iseq]
+    if is_nurbs(weights):
+        # Loop over elements.
+        _cells = &cells[0]
+        for iseq in range(0, n_el):
+            ie = _cells[iseq]
 
-        ec = _conn + n_ep * ie
+            ec = _conn + n_ep * ie
 
-        _qp.val = _qp.val0
+            _qp.val = _qp.val0
 
-        # Loop over quadrature points.
-        for iqp in range(0, n_qp):
-            _eval_nurbs_basis_tp(_bf, _bfg, _det,
-                                 _bfg_dxi,
-                                 _dx_dxi, _dxi_dx,
-                                 _B, _dB_dxi, _N, _dN_dxi,
-                                 _qp, ie,
-                                 _control_points, _weights,
-                                 _degrees, dim, _cs, _conn, n_el, n_ep)
+            # Loop over quadrature points.
+            for iqp in range(0, n_qp):
+                _eval_nurbs_basis_tp(_bf, _bfg, _det,
+                                     _bfg_dxi,
+                                     _dx_dxi, _dxi_dx,
+                                     _B, _dB_dxi, _N, _dN_dxi,
+                                     _qp, ie,
+                                     _control_points, _weights,
+                                     _degrees, dim, _cs, _conn, n_el, n_ep)
 
-            # vals[ii, :] = np.dot(bf, variable[ec])
-            for ir in range(0, nc):
-                _vals.val[ir] = 0.0
+                # vals[ii, :] = np.dot(bf, variable[ec])
+                for ir in range(0, nc):
+                    _vals.val[ir] = 0.0
 
-                for ic in range(0, n_efun):
-                    val = _variable.val[ec[ic] * nc + ir]
-                    _vals.val[ir] += _bf.val[ic] * val
+                    for ic in range(0, n_efun):
+                        val = _variable.val[ec[ic] * nc + ir]
+                        _vals.val[ir] += _bf.val[ic] * val
 
-            # coors[ii, :] = np.dot(bf, control_points[ec])
-            for ir in range(0, dim):
-                _coors.val[ir] = 0.0
+                # coors[ii, :] = np.dot(bf, control_points[ec])
+                for ir in range(0, dim):
+                    _coors.val[ir] = 0.0
 
-                for ic in range(0, n_efun):
-                    val = _control_points.val[ec[ic] * dim + ir]
-                    _coors.val[ir] += _bf.val[ic] * val
+                    for ic in range(0, n_efun):
+                        val = _control_points.val[ec[ic] * dim + ir]
+                        _coors.val[ir] += _bf.val[ic] * val
 
-            _vals.val += nc
-            _coors.val += dim
-            _det.val += 1
-            _qp.val += dim
+                _vals.val += nc
+                _coors.val += dim
+                _det.val += 1
+                _qp.val += dim
+
+    else:
+        # Loop over elements.
+        _cells = &cells[0]
+        for iseq in range(0, n_el):
+            ie = _cells[iseq]
+
+            ec = _conn + n_ep * ie
+
+            _qp.val = _qp.val0
+
+            # Loop over quadrature points.
+            for iqp in range(0, n_qp):
+                _eval_bspline_basis_tp(_bf, _bfg, _det,
+                                       _bfg_dxi,
+                                       _dx_dxi, _dxi_dx,
+                                       _B, _dB_dxi, _N, _dN_dxi,
+                                       _qp, ie,
+                                       _control_points,
+                                       _degrees, dim, _cs, _conn, n_el, n_ep)
+
+                # vals[ii, :] = np.dot(bf, variable[ec])
+                for ir in range(0, nc):
+                    _vals.val[ir] = 0.0
+
+                    for ic in range(0, n_efun):
+                        val = _variable.val[ec[ic] * nc + ir]
+                        _vals.val[ir] += _bf.val[ic] * val
+
+                # coors[ii, :] = np.dot(bf, control_points[ec])
+                for ir in range(0, dim):
+                    _coors.val[ir] = 0.0
+
+                    for ic in range(0, n_efun):
+                        val = _control_points.val[ec[ic] * dim + ir]
+                        _coors.val[ir] += _bf.val[ic] * val
+
+                _vals.val += nc
+                _coors.val += dim
+                _det.val += 1
+                _qp.val += dim
 
     return coors, vals, dets
 
@@ -473,30 +555,58 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
         array2puint1(puaux, &uaux, indices[ii])
         array2fmfield1(_ref_coors + ii, ref_coors[ii])
 
-    for ip in range(0, n_vals):
-        _unravel_index(igrid, ip, shape, dim)
+    if is_nurbs(weights):
+        for ip in range(0, n_vals):
+            _unravel_index(igrid, ip, shape, dim)
 
-        for ii in range(0, dim):
-            iis[ii] = _indices[ii][igrid[ii]]
-            _rc.val[ii] = (_ref_coors + ii).val[igrid[ii]]
-        _ravel_multi_index(&ie, iis, n_els, dim)
+            for ii in range(0, dim):
+                iis[ii] = _indices[ii][igrid[ii]]
+                _rc.val[ii] = (_ref_coors + ii).val[igrid[ii]]
+            _ravel_multi_index(&ie, iis, n_els, dim)
 
-        _eval_nurbs_basis_tp(_bf, _bfg, _det,
-                             _bfg_dxi,
-                             _dx_dxi, _dxi_dx,
-                             _B, _dB_dxi, _N, _dN_dxi,
-                             _rc, ie,
-                             _control_points, _weights,
-                             _degrees, dim, _cs, _conn, n_el, n_ep)
+            _eval_nurbs_basis_tp(_bf, _bfg, _det,
+                                 _bfg_dxi,
+                                 _dx_dxi, _dxi_dx,
+                                 _B, _dB_dxi, _N, _dN_dxi,
+                                 _rc, ie,
+                                 _control_points, _weights,
+                                 _degrees, dim, _cs, _conn, n_el, n_ep)
 
-        # vals[ip, :] = np.dot(bf, variable[ec])
-        ec = _conn + n_ep * ie;
-        for ir in range(0, nc):
-            _out.val[ir] = 0.0
+            # vals[ip, :] = np.dot(bf, variable[ec])
+            ec = _conn + n_ep * ie;
+            for ir in range(0, nc):
+                _out.val[ir] = 0.0
 
-            for ic in range(0, n_efun):
-                _out.val[ir] += _bf.val[ic] * _vals.val[ec[ic] * nc + ir]
+                for ic in range(0, n_efun):
+                    _out.val[ir] += _bf.val[ic] * _vals.val[ec[ic] * nc + ir]
 
-        _out.val += nc
+            _out.val += nc
+
+    else:
+        for ip in range(0, n_vals):
+            _unravel_index(igrid, ip, shape, dim)
+
+            for ii in range(0, dim):
+                iis[ii] = _indices[ii][igrid[ii]]
+                _rc.val[ii] = (_ref_coors + ii).val[igrid[ii]]
+            _ravel_multi_index(&ie, iis, n_els, dim)
+
+            _eval_bspline_basis_tp(_bf, _bfg, _det,
+                                   _bfg_dxi,
+                                   _dx_dxi, _dxi_dx,
+                                   _B, _dB_dxi, _N, _dN_dxi,
+                                   _rc, ie,
+                                   _control_points,
+                                   _degrees, dim, _cs, _conn, n_el, n_ep)
+
+            # vals[ip, :] = np.dot(bf, variable[ec])
+            ec = _conn + n_ep * ie;
+            for ir in range(0, nc):
+                _out.val[ir] = 0.0
+
+                for ic in range(0, n_efun):
+                    _out.val[ir] += _bf.val[ic] * _vals.val[ec[ic] * nc + ir]
+
+            _out.val += nc
 
     return out
