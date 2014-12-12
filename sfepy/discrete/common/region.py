@@ -194,6 +194,34 @@ class Region(Struct):
 
         return obj
 
+    @staticmethod
+    def from_cells(cells, domain, name='region', kind='cell', parent=None):
+        """
+        Create a new region containing given cells.
+
+        Parameters
+        ----------
+        cells : array
+            The array of cells.
+        domain : Domain instance
+            The domain containing the facets.
+        name : str, optional
+            The name of the region.
+        kind : str, optional
+            The kind of the region.
+        parent : str, optional
+            The name of the parent region.
+
+        Returns
+        -------
+        obj : Region instance
+            The new region.
+        """
+        obj = Region(name, 'given cells', domain, '', kind=kind, parent=parent)
+        obj.cells = cells
+
+        return obj
+
     def __init__(self, name, definition, domain, parse_def, kind='cell',
                  parent=None):
         """
