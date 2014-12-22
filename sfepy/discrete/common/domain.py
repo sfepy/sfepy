@@ -175,7 +175,8 @@ class Domain(Struct):
         self._bnf = create_bnf(self._region_stack)
 
     def create_region(self, name, select, kind='cell', parent=None,
-                      check_parents=True, functions=None, add_to_regions=True):
+                      check_parents=True, functions=None, add_to_regions=True,
+                      allow_empty=False):
         """
         Region factory constructor. Append the new region to
         self.regions list.
@@ -199,7 +200,7 @@ class Domain(Struct):
         region.name = name
         region.definition = select
         region.set_kind(kind)
-        region.finalize()
+        region.finalize(allow_empty=allow_empty)
         region.parent = parent
         region.update_shape()
 

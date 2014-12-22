@@ -414,7 +414,7 @@ class Region(Struct):
         else:
             self.cells
 
-    def setup_from_highest(self, dim, allow_lower=True):
+    def setup_from_highest(self, dim, allow_lower=True, allow_empty=False):
         """
         Setup entities of topological dimension `dim` using the available
         entities of the highest topological dimension.
@@ -427,8 +427,10 @@ class Region(Struct):
                     break
 
         else:
-            msg = 'region "%s" has no entities!'
-            raise ValueError(msg % self.name)
+            if not allow_empty:
+                msg = 'region "%s" has no entities!'
+                raise ValueError(msg % self.name)
+            return
 
         cmesh = self.domain.cmesh
         if idim <= dim:
@@ -458,7 +460,7 @@ class Region(Struct):
         vv = self.vertices
         self.entities[dim] = cmesh.get_complete(dim, vv, 0)
 
-    def finalize(self):
+    def finalize(self, allow_empty=False):
         """
         Initialize the entities corresponding to the region kind and regenerate
         all already existing (accessed) entities of lower topological dimension
@@ -468,7 +470,8 @@ class Region(Struct):
         for idim in range(self.kind_tdim - 1, -1, -1):
             if self.can[idim] and self.entities[idim] is not None:
                 try:
-                    self.setup_from_highest(idim, allow_lower=False)
+                    self.setup_from_highest(idim, allow_lower=False,
+                                            allow_empty=allow_empty)
 
                 except ValueError, exc:
                     msg = '\n'.join((exc.message,
