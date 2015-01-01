@@ -1104,9 +1104,11 @@ sfepy.postprocess package
    src/sfepy/postprocess/plot_dofs
    src/sfepy/postprocess/plot_facets
    src/sfepy/postprocess/plot_quadrature
+   src/sfepy/postprocess/probes_vtk
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
+   src/sfepy/postprocess/utils_vtk
    src/sfepy/postprocess/viewer
 
 sfepy.solvers package
