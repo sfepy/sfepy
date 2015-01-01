@@ -163,6 +163,9 @@ def main():
     out, err = check_output('python examples/standalone/interactive/linear_elasticity.py')
     eok += report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
 
+    out, err = check_output('python examples/standalone/interactive/modal_analysis.py')
+    eok += report(out, '...', -7, 3, '106.87158556', eps=1e-13)
+
     out, err = check_output('python examples/standalone/thermal_electric/thermal_electric.py')
     eok += report(out, '...', -3, 5, '2.612933e-14', eps=1e-13)
 
