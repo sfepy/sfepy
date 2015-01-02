@@ -18,6 +18,11 @@ class NurbsPatch(Struct):
 
     def __init__(self, knots, degrees, cps,
                  weights, cs, conn):
+        degrees = nm.asarray(degrees, dtype=nm.int32)
+        cs = [nm.asarray(cc, dtype=nm.float64) for cc in cs]
+        if cs[0].ndim == 3:
+            cs = [nm.ascontiguousarray(cc[:, None, ...]) for cc in cs]
+
         Struct.__init__(self, name='nurbs', knots=knots, degrees=degrees,
                         cps=cps, weights=weights, cs=cs, conn=conn)
         self.n_els = [len(ii) for ii in cs]
@@ -98,12 +103,6 @@ class IGDomain(Domain):
         from sfepy.discrete.fem import Mesh
         from sfepy.discrete.fem.extmods.cmesh import CMesh
         from sfepy.discrete.fem.utils import prepare_remap
-
-        ac = nm.ascontiguousarray
-        self.nurbs.cs = [ac(nm.array(cc, dtype=nm.float64)[:, None, ...])
-                         for cc in self.nurbs.cs]
-
-        self.nurbs.degrees = self.nurbs.degrees.astype(nm.int32)
 
         self.facets = iga.get_bezier_element_entities(nurbs.degrees)
 
