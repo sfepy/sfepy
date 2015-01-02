@@ -5,7 +5,7 @@ import os.path as op
 
 import numpy as nm
 
-from sfepy.base.base import Struct
+from sfepy.base.base import assert_, Struct
 from sfepy.discrete.common.domain import Domain
 import sfepy.discrete.iga as iga
 import sfepy.discrete.iga.io as io
@@ -66,6 +66,42 @@ class NurbsPatch(Struct):
         Igakit-like interface for NURBS evaluation.
         """
         return self(u, v, w, field)
+
+    def elevate(self, times=0):
+        """
+        Elevate the patch degrees several `times` by one.
+
+        Returns
+        -------
+        nurbs : NurbsPatch instance
+           Either `self` if `times` is zero, or a new instance.
+        """
+        if times is 0: return self
+
+        import igakit.cad as cad
+
+        n_efuns = self.degrees + 1
+        nks = nm.array([len(ii) for ii in self.knots])
+        shape = tuple(nks - n_efuns)
+
+        cps = self.cps.reshape(shape + (-1,))
+        weights = self.weights.reshape(shape)
+        aux = cad.NURBS(self.knots, cps, weights=weights)
+        for ia in range(self.dim):
+            aux.elevate(ia, times)
+            assert_(nm.isfinite(aux.points).all(),
+                    'igakit degree elevation failed for axis %d!' % ia)
+
+        cs = iga.compute_bezier_extraction(aux.knots, aux.degree)
+        n_els = [len(ii) for ii in cs]
+        conn, bconn = iga.create_connectivity(n_els, aux.knots, aux.degree)
+
+        cps = aux.points[..., :self.dim].copy()
+        cps = cps.reshape((-1, self.dim))
+
+        nurbs = NurbsPatch(aux.knots, aux.degree, cps, aux.weights.ravel(),
+                           cs, conn)
+        return nurbs
 
 class IGDomain(Domain):
     """
