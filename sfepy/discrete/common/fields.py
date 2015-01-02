@@ -13,6 +13,10 @@ def parse_approx_order(approx_order):
     if approx_order is None:
         return 'iga', force_bubble, discontinuous
 
+    elif isinstance(approx_order, basestr):
+        if approx_order.startswith('iga'):
+            return approx_order, force_bubble, discontinuous
+
     try:
         ao = int(approx_order)
     except ValueError:
