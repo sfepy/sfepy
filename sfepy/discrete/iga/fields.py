@@ -7,17 +7,29 @@ from sfepy.base.base import assert_, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.iga.mappings import IGMapping
 
+def parse_approx_order(approx_order):
+    if (approx_order is None): return 0
+
+    aux = approx_order.split('+')
+    if len(aux) == 2:
+        return int(aux[1])
+
+    else:
+        return 0
+
 class IGField(Field):
     """
     Bezier extraction based NURBS field for isogeometric analysis.
 
     Notes
     -----
-    The field has to cover the whole IGA domain.
+    The field has to cover the whole IGA domain. The field's NURBS basis can
+    have higher degree than the domain NURBS basis.
     """
     family_name = 'volume_H1_iga'
 
-    def __init__(self, name, dtype, shape, region, **kwargs):
+    def __init__(self, name, dtype, shape, region, approx_order=None,
+                 **kwargs):
         """
         Create a Bezier element isogeometric analysis field.
 
@@ -35,15 +47,21 @@ class IGField(Field):
             on the field kind.
         region : Region
             The region where the field is defined.
+        approx_order : tuple, optional
+            The field approximation order tuple with the first component in the
+            form 'iga+<nonnegative int>'. Other components are ignored. The
+            nonnegative int corresponds to the number of times the degree is
+            elevated by one w.r.t. the domain NURBS description.
         **kwargs : dict
             Additional keyword arguments.
         """
         shape = parse_shape(shape, region.domain.shape.dim)
+        elevate_times = parse_approx_order(approx_order[0])
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
-                        region=region)
+                        region=region, elevate_times=elevate_times)
 
         self.domain = self.region.domain
-        self.nurbs = self.domain.nurbs
+        self.nurbs = self.domain.nurbs.elevate(elevate_times)
 
         self._setup_kind()
 
