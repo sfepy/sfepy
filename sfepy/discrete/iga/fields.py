@@ -6,6 +6,7 @@ import numpy as nm
 from sfepy.base.base import assert_, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.iga.mappings import IGMapping
+from sfepy.discrete.iga.iga import get_bezier_element_entities
 
 def parse_approx_order(approx_order):
     if (approx_order is None): return 0
@@ -75,6 +76,10 @@ class IGField(Field):
         self.igs = self.region.igs
         self.is_surface = False
 
+    def _get_facets(self, tdim):
+        aux = get_bezier_element_entities(self.nurbs.degrees)
+        return aux[2 - tdim]
+
     def get_true_order(self):
         return nm.prod(self.nurbs.degrees)
 
@@ -107,7 +112,7 @@ class IGField(Field):
         elif ct == 'surface':
             fis = region.get_facet_indices(ig, offset=False, force_ig=False)
             tdim = region.kind_tdim
-            facets = self.domain.facets[2 - tdim]
+            facets = self._get_facets(tdim)
 
             conn = []
             for ii, fi in enumerate(fis):
@@ -244,8 +249,8 @@ class IGField(Field):
             import sfepy.discrete.iga as iga
             from sfepy.discrete.iga.extmods.igac import eval_mapping_data_in_qp
 
-            nurbs = self.domain.nurbs
-            facets = self.domain.facets[2 - region.kind_tdim]
+            nurbs = self.nurbs
+            facets = self._get_facets(region.kind_tdim)
 
             # Region facet connectivity.
             rconn = self.get_econn('surface', region, region.igs[0])
@@ -355,7 +360,7 @@ class IGField(Field):
         Create a new reference mapping.
         """
         vals, weights = integral.get_qp(self.domain.gel.name)
-        mapping = IGMapping(self.domain, region.cells)
+        mapping = IGMapping(self.domain, region.cells, nurbs=self.nurbs)
         cmap = mapping.get_mapping(vals, weights)
 
         return cmap, mapping
@@ -390,8 +395,7 @@ class IGField(Field):
 
         num = 25 if self.region.dim == 3 else 101
         pars = (nm.linspace(0, 1, num),) * self.region.dim
-        mesh, out = create_mesh_and_output(self.domain.nurbs, pars,
-                                           **{key : dofs})
+        mesh, out = create_mesh_and_output(self.nurbs, pars, **{key : dofs})
         out[key].var_name = var_name
         out[key].dofs = dof_names
         out['__mesh__'] = mesh
