@@ -10,11 +10,22 @@ import sfepy.discrete.iga.extmods.igac as iga
 class IGMapping(Mapping):
     """
     Reference mapping for isogeometric analysis based on Bezier extraction.
+
+    Parameters
+    ----------
+    domain : IGDomain instance
+        The mapping domain.
+    cells : array
+        The mapping region cells. (All domain cells required.)
+    nurbs : NurbsPatch instance, optional
+        If given, the `nurbs` is used instead of `domain.nurbs`. The `nurbs`
+        has to be obtained by degree elevation of `domain.nurbs`.
     """
 
-    def __init__(self, domain, cells):
+    def __init__(self, domain, cells, nurbs=None):
         self.domain = domain
         self.cells = cells
+        self.nurbs = domain.nurbs if nurbs is None else nurbs
         self.v_shape = (len(cells), -1, self.domain.shape.dim)
         self.s_shape = (len(cells), -1, 1)
 
@@ -35,7 +46,7 @@ class IGMapping(Mapping):
             The physical quadrature points ordered element by element,
             i.e. with shape (n_el, n_qp, dim).
         """
-        nurbs = self.domain.nurbs
+        nurbs = self.nurbs
         variable = nm.ones((nurbs.weights.shape[0], 1), dtype=nm.float64)
         qps, _, _ = iga.eval_variable_in_qp(variable, qp_coors, nurbs.cps,
                                             nurbs.weights, nurbs.degrees,
@@ -57,7 +68,7 @@ class IGMapping(Mapping):
         -----
         Does not set total volume of the C mapping structure!
         """
-        nurbs = self.domain.nurbs
+        nurbs = self.nurbs
         bfs, bfgs, dets = iga.eval_mapping_data_in_qp(qp_coors, nurbs.cps,
                                                       nurbs.weights,
                                                       nurbs.degrees, nurbs.cs,
