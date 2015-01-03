@@ -14,19 +14,43 @@ Find :math:`\ul{u}`, :math:`p` such that:
     \int_{\Omega} q\ \nabla \cdot \ul{u}
     = 0
     \;, \quad \forall q \;.
-"""
-from sfepy import data_dir
 
-filename_mesh = data_dir + '/meshes/2d/rectangle_fine_quad.mesh'
+The mesh is created by ``gen_block_mesh()`` function.
+
+View the results using::
+
+  $ ./postproc.py user_block.vtk -b
+"""
+from sfepy.discrete.fem.meshio import UserMeshIO
+from sfepy.mesh.mesh_generators import gen_block_mesh
+
+# Mesh dimensions.
+dims = [0.1, 0.1]
+
+# Mesh resolution: increase to improve accuracy.
+shape = [51, 51]
+
+def mesh_hook(mesh, mode):
+    """
+    Generate the block mesh.
+    """
+    if mode == 'read':
+        mesh = gen_block_mesh(dims, shape, [0, 0], name='user_block',
+                              verbose=False)
+        return mesh
+
+    elif mode == 'write':
+        pass
+
+filename_mesh = UserMeshIO(mesh_hook)
 
 regions = {
     'Omega' : 'all',
-    'Surface' : ('vertices of surface', 'facet'),
-    'Right' : ('vertices in (x > 4.999)', 'facet'),
-    'Bottom' : ('vertices in (y < -9.999)', 'facet'),
-    'Top' : ('vertices in (y > 9.999)', 'facet'),
-    'Walls' : ('r.Top +v r.Right +v r.Bottom', 'facet'),
-    'Driven' : ('r.Surface -v r.Walls', 'facet'),
+    'Left' : ('vertices in (x < -0.0499)', 'facet'),
+    'Right' : ('vertices in (x > 0.0499)', 'facet'),
+    'Bottom' : ('vertices in (y < -0.0499)', 'facet'),
+    'Top' : ('vertices in (y > 0.0499)', 'facet'),
+    'Walls' : ('r.Left +v r.Right +v r.Bottom', 'facet'),
 }
 
 materials = {
@@ -46,18 +70,23 @@ variables = {
 }
 
 ebcs = {
-    'Walls' : ('Walls', {'u.all' : 0.0}),
-    'Driven' : ('Driven', {'u.1' : 0.1, 'u.0' : 0.0}),
+    '1_Walls' : ('Walls', {'u.all' : 0.0}),
+    '0_Driven' : ('Top', {'u.0' : 1.0, 'u.1' : 0.0}),
+    'Pressure' : ('Bottom', {'p.0' : 0.0}),
+}
+
+integrals = {
+    'i' : 4,
 }
 
 equations = {
     'balance' :
-    """+ dw_div_grad.5.Omega(fluid.viscosity, v, u)
-       + dw_convect.5.Omega(v, u)
-       - dw_stokes.5.Omega(v, p) = 0""",
+    """+ dw_div_grad.i.Omega(fluid.viscosity, v, u)
+       + dw_convect.i.Omega(v, u)
+       - dw_stokes.i.Omega(v, p) = 0""",
 
     'incompressibility' :
-    """dw_stokes.5.Omega(u, q) = 0""",
+    """dw_stokes.i.Omega(u, q) = 0""",
 }
 
 solvers = {
