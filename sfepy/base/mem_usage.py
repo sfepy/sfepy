@@ -83,12 +83,15 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
                                           traversal_order=to, level=level)
 
     elif isinstance(obj, collections.Mapping):
-        for subname, sub in obj.iteritems():
-            to[0] += 1
-            record.usage += get_mem_usage(sub, usage,
-                                          name='item %s of %s'
-                                          % (subname, record.kind),
-                                          traversal_order=to, level=level)
+        try:
+            for subname, sub in obj.iteritems():
+                to[0] += 1
+                record.usage += get_mem_usage(sub, usage,
+                                              name='item %s of %s'
+                                              % (subname, record.kind),
+                                              traversal_order=to, level=level)
+        except:
+            pass
 
     elif isinstance(obj, collections.Sequence):
         for ii, sub in enumerate(obj):
