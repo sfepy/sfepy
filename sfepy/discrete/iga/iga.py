@@ -550,12 +550,12 @@ def get_surface_degrees(degrees):
     dim = len(degrees)
 
     if dim == 3:
-        sdegrees = [degrees[0] * degrees[1],
-                 degrees[1] * degrees[2],
-                 degrees[0] * degrees[2],
-                 degrees[0] * degrees[1],
-                 degrees[1] * degrees[2],
-                 degrees[0] * degrees[2]]
+        sdegrees = [(degrees[0], degrees[1]),
+                    (degrees[1], degrees[2]),
+                    (degrees[0], degrees[2]),
+                    (degrees[0], degrees[1]),
+                    (degrees[1], degrees[2]),
+                    (degrees[0], degrees[2])]
         sdegrees = nm.array(sdegrees, dtype=nm.uint32)
 
     elif dim == 2:
