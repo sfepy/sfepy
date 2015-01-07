@@ -3,12 +3,12 @@ IGA domain generators.
 """
 import numpy as nm
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import assert_, output, Struct
 import sfepy.discrete.iga as iga
 from sfepy.discrete.iga.domain import NurbsPatch
 
 def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
-                           name='block', verbose=True):
+                           cp_mode='greville', name='block', verbose=True):
     """
     Generate a single IGA patch block in 2D or 3D of given degrees and
     continuity using igakit.
@@ -25,6 +25,11 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
         NURBS degrees along each axis.
     continuity : array of D ints, optional
         NURBS continuity along each axis. If None, `degrees-1` is used.
+    cp_mode : 'greville' or 'uniform'
+        The control points mode. The default 'greville' results in a uniform
+        Bezier mesh, while the 'uniform' mode results in a uniform grid of
+        control points a finer Bezier mesh inside the block and a coarser
+        Bezier mesh near the block boundary.
     name : string
         Domain name.
     verbose : bool
@@ -46,6 +51,9 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
     centre = nm.asarray(centre, dtype=nm.float64)
     degrees = nm.asarray(degrees, dtype=nm.int32)
 
+    assert_(cp_mode in ['greville', 'uniform'],
+            "cp_mode has to be 'greville' or 'uniform'")
+
     if continuity is None:
         continuity = degrees - 1
 
@@ -65,20 +73,21 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
     for ia in xrange(dim):
         block.translate(dd[ia], ia)
 
-    # Force uniform control points. This prevents coarser resolution inside the
-    # block.
-    shape = nm.asarray(block.points.shape[:-1])
-    n_nod = nm.prod(shape)
-    x0 = centre - 0.5 * dims
-    dd = dims / (shape - 1)
+    if cp_mode == 'uniform':
+        # Force uniform control points. This prevents coarser resolution inside
+        # the block.
+        shape = nm.asarray(block.points.shape[:-1])
+        n_nod = nm.prod(shape)
+        x0 = centre - 0.5 * dims
+        dd = dims / (shape - 1)
 
-    ngrid = nm.mgrid[[slice(ii) for ii in shape]]
-    ngrid.shape = (dim, n_nod)
+        ngrid = nm.mgrid[[slice(ii) for ii in shape]]
+        ngrid.shape = (dim, n_nod)
 
-    coors = x0 + ngrid.T * dd
-    coors.shape = shape.tolist() + [dim]
+        coors = x0 + ngrid.T * dd
+        coors.shape = shape.tolist() + [dim]
 
-    block.array[..., :dim] = coors
+        block.array[..., :dim] = coors
 
     output('...done', verbose=verbose)
 

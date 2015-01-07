@@ -3,8 +3,7 @@
 Generate a single IGA patch block in 2D or 3D of given degrees and continuity
 using igakit.
 
-The grid has equally-spaced knot vectors. The generated control points form a
-regular grid as well - this prevents coarser resolution inside the block.
+The grid has equally-spaced knot vectors.
 """
 import sys
 sys.path.append('.')
@@ -31,6 +30,11 @@ helps = {
     'NURBS degrees along each axis [default: %default]',
     'continuity' :
     'NURBS continuity along each axis [default: degrees-1]',
+    'cp_mode' :
+    "The control points mode. The default 'greville' results in a uniform"
+    " Bezier mesh, while the 'uniform' mode results in a uniform grid of"
+    " control points a finer Bezier mesh inside the block and a coarser"
+    " Bezier mesh near the block boundary.",
     '2d' :
     'generate a 2D block, the third components of the above'
     ' options are ignored',
@@ -60,6 +64,10 @@ def main():
     parser.add_option('', '--continuity', metavar='continuity',
                       action='store', dest='continuity',
                       default=None, help=helps['continuity'])
+    parser.add_option('', '--cp-mode', metavar="'greville' or 'uniform'",
+                      action='store', dest='cp_mode',
+                      choices=['greville', 'uniform'],
+                      default='greville', help=helps['cp_mode'])
     parser.add_option('-2', '--2d',
                       action='store_true', dest='is_2d',
                       default=False, help=helps['2d'])
