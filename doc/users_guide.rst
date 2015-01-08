@@ -1396,6 +1396,7 @@ The examples demonstrating the use of IGA in SfePy are:
 
 - :ref:`diffusion-poisson_iga`
 - :ref:`linear_elasticity-linear_elastic_iga`
+- :ref:`navier_stokes-navier_stokes2d_iga`
 
 Their problem description files are almost the same as their FEM equivalents,
 with the following differences:
