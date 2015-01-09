@@ -5,6 +5,13 @@ Modal analysis of a linear elastic block in 2D or 3D.
 The dimension of the problem is determined by the length of the vector
 in ``--dims`` option.
 
+The default material properties correspond to aluminium in the following units:
+
+- length: m
+- mass: kg
+- stiffness / stress: Pa
+- density: kg / m^3
+
 Examples
 --------
 
@@ -54,6 +61,7 @@ helps = {
     ' free, clamped [default: %default]',
     'young' : "the Young's modulus [default: %default]",
     'poisson' : "the Poisson's ratio [default: %default]",
+    'density' : "the material density [default: %default]",
     'order' : 'displacement field approximation order [default: %default]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %default]',
     'show' : 'show the results figure',
@@ -76,10 +84,13 @@ def main():
                       default='free', help=helps['bc_kind'])
     parser.add_option('--young', metavar='float', type=float,
                       action='store', dest='young',
-                      default=2000.0, help=helps['young'])
+                      default=6.80e+10, help=helps['young'])
     parser.add_option('--poisson', metavar='float', type=float,
                       action='store', dest='poisson',
-                      default=0.4, help=helps['poisson'])
+                      default=0.36, help=helps['poisson'])
+    parser.add_option('--density', metavar='float', type=float,
+                      action='store', dest='density',
+                      default=2700.0, help=helps['density'])
     parser.add_option('--order', metavar='int', type=int,
                       action='store', dest='order',
                       default=1, help=helps['order'])
@@ -107,6 +118,7 @@ def main():
     output('using values:')
     output("  Young's modulus:", options.young)
     output("  Poisson's ratio:", options.poisson)
+    output('  density:', options.density)
 
     # Build the problem definition.
     mesh = gen_block_mesh(dims, shape, centre, name='mesh')
@@ -128,15 +140,13 @@ def main():
 
     mtx_d = stiffness_from_youngpoisson(dim, options.young, options.poisson)
 
-    m = Material('m', D=mtx_d)
+    m = Material('m', D=mtx_d, rho=options.density)
 
     integral = Integral('i', order=2*options.order)
 
-    t1 = Term.new('dw_lin_elastic(m.D, v, u)',
-                  integral, omega, m=m, v=v, u=u)
-    t2 = Term.new('dw_volume_dot(v, u)',
-                  integral, omega, v=v, u=u)
-    eq1 = Equation('balance', t1)
+    t1 = Term.new('dw_lin_elastic(m.D, v, u)', integral, omega, m=m, v=v, u=u)
+    t2 = Term.new('dw_volume_dot(m.rho, v, u)', integral, omega, m=m, v=v, u=u)
+    eq1 = Equation('stiffness', t1)
     eq2 = Equation('mass', t2)
     lhs_eqs = Equations([eq1, eq2])
 
@@ -161,8 +171,7 @@ def main():
 
     try:
         eigs, svecs = sla.eigsh(mtx_k, k=options.n_eigs + n_rbm, M=mtx_m,
-                                which='SM',
-                                maxiter=10000)
+                                which='SM', tol=1e-5, maxiter=10000)
     except sla.ArpackNoConvergence as ee:
         eigs = ee.eigenvalues
         svecs = ee.eigenvectors
