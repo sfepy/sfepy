@@ -25,6 +25,7 @@ derived_units = {
 }
 
 units_of_quantities = {
+    'density' : 'g / m**3',
     'force' : 'Newton',
     'stress' : 'Pa',
     'energy' : 'J',
@@ -32,6 +33,7 @@ units_of_quantities = {
 }
 
 prefixes = {
+    'p'  : 1e-12,
     'n'  : 1e-9,
     'mu' : 1e-6,
     'm'  : 1e-3,
@@ -41,6 +43,7 @@ prefixes = {
     'k'  : 1e3,
     'M'  : 1e6,
     'G'  : 1e9,
+    'T'  : 1e12,
 }
 
 inv_prefixes = invert_dict(prefixes)
