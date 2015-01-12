@@ -1405,11 +1405,18 @@ with the following differences:
 - Fields are defined as follows::
 
     fields = {
-        'temperature' : ('real', 1, 'Omega', None, 'H1', 'iga'),
+        't1' : ('real', 1, 'Omega', None, 'H1', 'iga'),
+        't2' : ('real', 1, 'Omega', 'iga', 'H1', 'iga'),
+        't3' : ('real', 1, 'Omega', 'iga+%d', 'H1', 'iga'),
     }
 
-  The approximation order is ``None`` as it is given by the NURBS degrees in
-  the domain description.
+  The approximation order in the first definition is ``None`` as it is given by
+  the NURBS degrees in the domain description. The second definition is
+  equivalent to the first one. The third definition, where ``%d`` should be a
+  non-negative integer, illustrates how to increase the field's NURBS degrees
+  (while keeping the continuity) w.r.t. the domain NURBS description. It is
+  applied in the :ref:`navier_stokes-navier_stokes2d_iga` example to the
+  velocity field.
 
 .. [1] Michael J. Borden, Michael A. Scott, John A. Evans, Thomas J. R. Hughes:
        Isogeometric finite element data structures based on Bezier extraction
