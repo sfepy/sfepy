@@ -240,7 +240,7 @@ class GenericFileSource(FileSource):
     def get_bounding_box(self):
         bbox = self.mesh.get_bounding_box()
         if self.dim < 3:
-            bbox = nm.c_[bbox, nm.zeros((3 - self.dim, 2))]
+            bbox = nm.c_[bbox, nm.zeros((2, 3 - self.dim))]
         return bbox
 
     def set_filename(self, filename, vis_source):
