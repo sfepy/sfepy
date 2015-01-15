@@ -1529,7 +1529,7 @@ class FieldVariable(Variable):
         if geo_key not in self.bfs:
             ap = self.field.aps[ig]
 
-            region_name = geo_key[1]
+            region_name = geo_key[0]
 
             self.data_shapes[geo_key] = self.get_data_shape(ig, integral,
                                                             shape_kind,

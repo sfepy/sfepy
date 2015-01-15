@@ -237,7 +237,7 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
-        key = (integral.name, region.name, ig, integration)
+        key = (region.name, integral.order, ig, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)

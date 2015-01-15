@@ -892,7 +892,7 @@ class Term(Struct):
             arg_types = ats
         args = []
 
-        iname, region_name, ig = self.get_current_group()
+        region_name, iorder, ig = self.get_current_group()
         for at in arg_types:
             ii = ats.index(at)
             arg_name = self.arg_names[ii]
@@ -906,7 +906,7 @@ class Term(Struct):
             else:
                 mat, par_name = self.args[ii]
                 if mat is not None:
-                    mat_data = mat.get_data((region_name, self.integral_name),
+                    mat_data = mat.get_data((region_name, iorder),
                                             ig, par_name)
                 else:
                     mat_data = None
@@ -995,7 +995,7 @@ class Term(Struct):
         return self.geometry_types
 
     def get_current_group(self):
-        return (self.integral_name, self.region.name, self.char_fun.ig)
+        return (self.region.name, self.integral.order, self.char_fun.ig)
 
 
     def get_dof_conn_type(self):
@@ -1112,7 +1112,7 @@ class Term(Struct):
         """
         Return a key identifying uniquely the term quadrature points.
         """
-        return (self.region.name, self.integral.name)
+        return (self.region.name, self.integral.order)
 
     def get_physical_qps(self):
         """

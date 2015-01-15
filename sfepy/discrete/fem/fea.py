@@ -253,7 +253,7 @@ class Approximation( Struct ):
         and integral. The key is 'v' or 's#', where # is the number of
         face vertices.
         """
-        qpkey = (integral.name, key)
+        qpkey = (integral.order, key)
 
         if not self.qp_coors.has_key(qpkey):
             interp = self.interp
@@ -277,7 +277,7 @@ class Approximation( Struct ):
         ps = self.get_poly_space(key, from_geometry=from_geometry)
 
         _key = key if not from_geometry else 'g' + key
-        bf_key = (integral.name, _key, derivative)
+        bf_key = (integral.order, _key, derivative)
 
         if not self.bf.has_key(bf_key):
             if (iels is not None) and (self.ori is not None):
@@ -380,7 +380,7 @@ class Approximation( Struct ):
                 sg.alloc_extra_data(self.n_ep['v'])
 
                 self.create_bqp(region.name, integral)
-                qp = self.qp_coors[(integral.name, esd.bkey)]
+                qp = self.qp_coors[(integral.order, esd.bkey)]
 
                 v_geo_ps = self.interp.get_geom_poly_space('v')
                 bf_bg = v_geo_ps.eval_base(qp.vals, diff=True)
@@ -409,11 +409,11 @@ class Approximation( Struct ):
 
         return out
 
-    def _create_bqp(self, skey, bf_s, weights, integral_name):
+    def _create_bqp(self, skey, bf_s, weights, integral):
         interp = self.interp
         gel = interp.gel
         bkey = 'b%s' % skey[1:]
-        bqpkey = (integral_name, bkey)
+        bqpkey = (integral.order, bkey)
         coors, faces = gel.coors, gel.get_surface_entities()
 
         vals = _interp_to_faces(coors, bf_s, faces)
@@ -424,14 +424,14 @@ class Approximation( Struct ):
 
     def create_bqp(self, region_name, integral):
         sd = self.surface_data[region_name]
-        bqpkey = (integral.name, sd.bkey)
+        bqpkey = (integral.order, sd.bkey)
         if not bqpkey in self.qp_coors:
             bf_s = self.get_base(sd.face_type, 0, integral,
                                  from_geometry=True)
             qp = self.get_qp(sd.face_type, integral)
 
             bkey = self._create_bqp(sd.face_type, bf_s, qp.weights,
-                                    integral.name)
+                                    integral)
             assert_(bkey == sd.bkey)
 
 class DiscontinuousApproximation(Approximation):
@@ -459,7 +459,7 @@ class SurfaceApproximation(Approximation):
         face vertices.
         """
         assert_(key[0] == 's')
-        qpkey = (integral.name, key)
+        qpkey = (integral.order, key)
 
         if not self.qp_coors.has_key(qpkey):
             interp = self.interp

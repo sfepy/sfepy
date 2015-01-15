@@ -32,7 +32,7 @@ class NewTerm(Term):
         is_trace = self.arg_traces[variable.name]
         geometry_type = self.geometry_types[variable.name]
 
-        iname, region_name, ig = self.get_current_group()
+        region_name, iorder, ig = self.get_current_group()
 
         if is_trace:
             region, ig_map, ig_map_i = self.region.get_mirror_region()
@@ -40,7 +40,7 @@ class NewTerm(Term):
             ig = ig_map_i[ig]
 
         ap = variable.get_approximation(ig)
-        key = (iname, region_name, geometry_type, ap.name)
+        key = (region_name, iorder, geometry_type, ap.name)
 
         return key, ig
 
