@@ -103,12 +103,14 @@ def main():
     output('shape:     ', shape)
     output('degrees:   ', degrees)
     output('continuity:', continuity)
+    output('cp_mode:   ', options.cp_mode)
     output('->        :', filename)
     output('number of DOFs per axis:', n_dofs)
 
     nurbs, bmesh, regions = gen_patch_block_domain(dims, shape, centre,
                                                    degrees,
                                                    continuity=continuity,
+                                                   cp_mode=options.cp_mode,
                                                    name='block', verbose=True)
 
     io.write_iga_data(filename, nurbs.knots, nurbs.degrees, nurbs.cps,
