@@ -116,6 +116,9 @@ class QuadraturePoints(Struct):
     tp_fix : float, optional
         The value that is used to multiply the tensor product element
         volume (= 1.0) to get the correct volume.
+    weight_fix : float, optional
+        The value that is used to multiply the weights to get the correct
+        values.
     symmetric : bool
         If True, the integral is 1D and the given coordinates and weights are
         symmetric w.r.t. the centre of bounds; only the non-negative
