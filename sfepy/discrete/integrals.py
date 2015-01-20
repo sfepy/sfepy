@@ -77,7 +77,8 @@ class Integral(Struct):
     Wrapper class around quadratures.
     """
 
-    def __init__(self, name, order=1, coors=None, weights=None):
+    def __init__(self, name, order=1, coors=None, weights=None,
+                 bounds=None, tp_fix=1.0, weight_fix=1.0, symmetric=False):
         self.name = name
         self.qps = {}
 
@@ -88,6 +89,10 @@ class Integral(Struct):
             self.mode = 'custom'
             self.coors = coors
             self.weights = weights
+            self.bounds = bounds
+            self.tp_fix = tp_fix
+            self.weight_fix = weight_fix
+            self.symmetric = symmetric
 
         self.order = 0
 
@@ -126,7 +131,10 @@ class Integral(Struct):
 
             else:
                 qp = QuadraturePoints(None,
-                                      coors=self.coors, weights=self.weights)
+                                      coors=self.coors, weights=self.weights,
+                                      bounds=self.bounds, tp_fix=self.tp_fix,
+                                      weight_fix=self.weight_fix,
+                                      symmetric=self.symmetric)
 
             self.qps[geometry] = qp
 
