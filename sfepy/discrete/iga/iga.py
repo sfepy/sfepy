@@ -614,6 +614,8 @@ def get_bezier_element_entities(degrees):
         The indices for each face or None if not 3D.
     edges : list of arrays
         The indices for each edge or None if not at least 2D.
+    vertices : list of arrays
+        The indices for each vertex.
 
     Notes
     -----
@@ -649,6 +651,15 @@ def get_bezier_element_entities(degrees):
                  aux[0, -1, :],
                  aux[-1, -1, :],
                  aux[-1, 0, :]]
+        vertices = [aux[0, 0, 0],
+                    aux[-1, 0, 0],
+                    aux[-1, -1, 0],
+                    aux[0, -1, 0],
+                    aux[0, 0, -1],
+                    aux[-1, 0, -1],
+                    aux[-1, -1, -1],
+                    aux[0, -1, -1]]
+        vertices = [ii[None] for ii in vertices]
 
     elif dim == 2:
         faces = None
@@ -656,11 +667,17 @@ def get_bezier_element_entities(degrees):
                  aux[-1, :],
                  aux[:, -1],
                  aux[0, :]]
+        vertices = [aux[0, 0],
+                    aux[-1, 0],
+                    aux[-1, -1],
+                    aux[0, -1]]
+        vertices = [ii[None] for ii in vertices]
 
     else:
         faces, edges = None, None
+        vertices = [aux[:1], aux[-1:]]
 
-    return faces, edges
+    return faces, edges, vertices
 
 def eval_bernstein_basis(x, degree):
     """
