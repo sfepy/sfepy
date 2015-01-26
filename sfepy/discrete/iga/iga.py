@@ -244,7 +244,7 @@ def create_connectivity_1d(n_el, knots, degree):
     aux2 = nm.arange(n_el)[:, None]
     bconn = aux1 + degree * aux2
 
-    return conn, bconn
+    return conn.astype(nm.int32), bconn.astype(nm.int32)
 
 def create_connectivity(n_els, knots, degrees):
     """
