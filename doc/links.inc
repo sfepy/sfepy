@@ -13,8 +13,8 @@
 .. _our mailing list: http://groups.google.com/group/sfepy-devel
 .. _sfepy issues: https://github.com/sfepy/sfepy/issues
 .. _issues: https://github.com/sfepy/sfepy/issues
-.. _sfepy download: http://code.google.com/p/sfepy/wiki/Downloads?tm=2
-.. _download: http://code.google.com/p/sfepy/wiki/Downloads?tm=2
+.. _sfepy download: http://sfepy.org/doc-devel/downloads.html
+.. _download: http://sfepy.org/doc-devel/downloads.html
 .. _sfepy git repository: https://github.com/sfepy/sfepy
 .. _sfepy tarball: http://github.com/sfepy/sfepy/tarball/master
 .. _our wiki: https://github.com/sfepy/sfepy/wiki
@@ -31,9 +31,12 @@
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
 .. _numpydoc: http://pypi.python.org/pypi/numpydoc
 
-.. _enthought python distribution: http://www.enthought.com/products/epd.php
+.. _anaconda: https://store.continuum.io/cshop/anaconda/
+.. _continuum analytics: http://www.continuum.io/
+.. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
 .. _python(x,y): http://code.google.com/p/pythonxy
+.. _WinPython: http://http://winpython.sourceforge.net/
 
 .. _cython: http://cython.org
 .. _pytables: http://www.pytables.org
