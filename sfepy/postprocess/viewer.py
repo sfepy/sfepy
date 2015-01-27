@@ -402,7 +402,8 @@ class Viewer(Struct):
             source.point_scalars_name = ''
 
         bbox = file_source.get_bounding_box()
-        dx = 1.1 * (bbox[1,:] - bbox[0,:])
+        bx = bbox[1,:] - bbox[0,:]
+        dx = 1.1 * bx
 
         float_eps = nm.finfo(nm.float64).eps
         self.is_3d_data = abs(dx[2]) > (10.0 * float_eps)
@@ -472,6 +473,9 @@ class Viewer(Struct):
 
         max_label_width = nm.max([len(ii[2]) for ii in names] + [5]) + 2
 
+        # Scene dimensions.
+        wx = dx * (nm.array([n_col, n_row, 0])) - 0.1 * bx
+
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
 
@@ -488,7 +492,8 @@ class Viewer(Struct):
             data_range = data_ranges[name]
 
             is_magnitude = False
-            position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
+            position = nm.array([dx[0] * ic - 0.5 * wx[0],
+                                 dx[1] * (n_row - ir - 1) - 0.5 * wx[1], 0])
             output(family, kind, name, 'at', position)
             output('range: %.2e %.2e l2 norm range: %.2e %.2e' % data_range[3:])
 
