@@ -67,6 +67,30 @@ class NurbsPatch(Struct):
         """
         return self(u, v, w, field)
 
+    def _to_igakit(self):
+        import igakit.cad as cad
+
+        n_efuns = self.degrees + 1
+        nks = nm.array([len(ii) for ii in self.knots])
+        shape = tuple(nks - n_efuns)
+
+        cps = self.cps.reshape(shape + (-1,))
+        weights = self.weights.reshape(shape)
+
+        return cad.NURBS(self.knots, cps, weights=weights)
+
+    def _from_igakit(self, inurbs):
+        cs = iga.compute_bezier_extraction(inurbs.knots, inurbs.degree)
+        n_els = [len(ii) for ii in cs]
+        conn, bconn = iga.create_connectivity(n_els, inurbs.knots,
+                                              inurbs.degree)
+
+        cps = inurbs.points[..., :self.dim].copy()
+        cps = cps.reshape((-1, self.dim))
+
+        return NurbsPatch(inurbs.knots, inurbs.degree, cps,
+                          inurbs.weights.ravel(), cs, conn)
+
     def elevate(self, times=0):
         """
         Elevate the patch degrees several `times` by one.
@@ -78,30 +102,13 @@ class NurbsPatch(Struct):
         """
         if times is 0: return self
 
-        import igakit.cad as cad
-
-        n_efuns = self.degrees + 1
-        nks = nm.array([len(ii) for ii in self.knots])
-        shape = tuple(nks - n_efuns)
-
-        cps = self.cps.reshape(shape + (-1,))
-        weights = self.weights.reshape(shape)
-        aux = cad.NURBS(self.knots, cps, weights=weights)
+        aux = self._to_igakit()
         for ia in range(self.dim):
             aux.elevate(ia, times)
             assert_(nm.isfinite(aux.points).all(),
                     'igakit degree elevation failed for axis %d!' % ia)
 
-        cs = iga.compute_bezier_extraction(aux.knots, aux.degree)
-        n_els = [len(ii) for ii in cs]
-        conn, bconn = iga.create_connectivity(n_els, aux.knots, aux.degree)
-
-        cps = aux.points[..., :self.dim].copy()
-        cps = cps.reshape((-1, self.dim))
-
-        nurbs = NurbsPatch(aux.knots, aux.degree, cps, aux.weights.ravel(),
-                           cs, conn)
-        return nurbs
+        return self._from_igakit(aux)
 
 class IGDomain(Domain):
     """
