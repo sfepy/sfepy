@@ -7,6 +7,51 @@ from sfepy.base.base import assert_, output, Struct
 import sfepy.discrete.iga as iga
 from sfepy.discrete.iga.domain import NurbsPatch
 
+def create_from_igakit(inurbs, verbose=False):
+    """
+    Create :class:`IGDomain <sfepy.discrete.iga.domain.IGDomain>` data from a
+    given igakit NURBS object.
+
+    Parameters
+    ----------
+    inurbs : igakit.nurbs.NURBS instance
+        The igakit NURBS object.
+
+    Returns
+    -------
+    nurbs : NurbsPatch instance
+        The NURBS data. The igakit NURBS object is stored as `nurbs` attribute.
+    bmesh : Struct instance
+        The Bezier mesh data.
+    regions : dict
+        The patch surface regions.
+    """
+    # Compute Bezier extraction data.
+    output('computing Bezier mesh...', verbose=verbose)
+    cs = iga.compute_bezier_extraction(inurbs.knots, inurbs.degree)
+    n_els = [len(ii) for ii in cs]
+    conn, bconn = iga.create_connectivity(n_els, inurbs.knots, inurbs.degree)
+
+    ccs = iga.combine_bezier_extraction(cs)
+
+    dim = len(inurbs.shape)
+    cps = inurbs.points[..., :dim].copy()
+    cps = cps.reshape((-1, dim))
+    bcps, bweights = iga.compute_bezier_control(cps, inurbs.weights.ravel(),
+                                                ccs, conn, bconn)
+
+    nurbs = NurbsPatch(inurbs.knots, inurbs.degree, cps,
+                       inurbs.weights.ravel(), cs, conn)
+    nurbs.nurbs = inurbs
+    bmesh = Struct(name='bmesh', cps=bcps, weights=bweights, conn=bconn)
+    output('...done', verbose=verbose)
+
+    output('defining regions...', verbose=verbose)
+    regions = iga.get_patch_box_regions(n_els, inurbs.degree)
+    output('...done', verbose=verbose)
+
+    return nurbs, bmesh, regions
+
 def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
                            cp_mode='greville', name='block', verbose=True):
     """
@@ -91,27 +136,6 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
 
     output('...done', verbose=verbose)
 
-    # Compute Bezier extraction data.
-    output('computing Bezier mesh...', verbose=verbose)
-    cs = iga.compute_bezier_extraction(block.knots, block.degree)
-    n_els = [len(ii) for ii in cs]
-    conn, bconn = iga.create_connectivity(n_els, block.knots, block.degree)
-
-    ccs = iga.combine_bezier_extraction(cs)
-
-    cps = block.points[..., :dim].copy()
-    cps = cps.reshape((-1, dim))
-    bcps, bweights = iga.compute_bezier_control(cps, block.weights.ravel(), ccs,
-                                                conn, bconn)
-
-    nurbs = NurbsPatch(block.knots, degrees, cps, block.weights.ravel(), cs,
-                       conn)
-    nurbs.nurbs = block
-    bmesh = Struct(name='bmesh', cps=bcps, weights=bweights, conn=bconn)
-    output('...done', verbose=verbose)
-
-    output('defining regions...', verbose=verbose)
-    regions = iga.get_patch_box_regions(n_els, block.degree)
-    output('...done', verbose=verbose)
+    nurbs, bmesh, regions = create_from_igakit(block, verbose=verbose)
 
     return nurbs, bmesh, regions
