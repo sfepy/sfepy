@@ -16,7 +16,7 @@ where the coefficient :math:`c(x) = 0.1 + \sin(2 \pi x)^2` is computed in
 
 View the results using::
 
-  $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' --wireframe --view=-90,90,1.5,0.5,0,0 --roll=0 laplace_1d.vtk
+  $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' --wireframe --view=-90,90,1.5,0,0,0 --roll=0 laplace_1d.vtk
 """
 import numpy as nm
 from sfepy.discrete.fem import Mesh
