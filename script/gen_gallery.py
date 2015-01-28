@@ -65,29 +65,29 @@ omit_dirs = [
 custom = {
     'acoustics/acoustics3d.py' : {
         '_p_1' : {
-            'view' : (-53, 120, 0.225, [0.021, 0.018, 0.066]),
-            'roll' : -177,
+            'view' : (44, 57, 0.24, [-0.004, -0.007, 0.09]),
+            'roll' : 0,
         },
         '_p_2' : {
-            'view' : (-112, 107, 0.32, [0.081, 0.042, 0.082]),
-            'roll' : 111,
+            'view' : (-99, 120, 0.4, [0.0, 0.0, 0.07]),
+            'roll' : 141,
         },
     },
     'acoustics/vibro_acoustic3d.py' : {
         '_p1' : {
-            'view' : (45.0, 54.7, 1.47, [0.325, 0.1, 0.05]),
+            'view' : (45.0, 54.7, 1.47, [0.0, 0.0, 0.05]),
             'roll' : -120,
         },
         '_p2' : {
-            'view' : (45.0, 54.7, 1.47, [0.525, 0.1, 0.15]),
+            'view' : (45.0, 54.7, 1.47, [0.0, 0.0, 0.15]),
             'roll' : -120,
         },
         '_w' : {
-            'view' : (0.0, 0.0, 0.86, [0.315, 0.1, 0.1]),
+            'view' : (0.0, 0.0, 0.86, [0.0, 0.0, 0.1]),
             'roll' : 0,
         },
         '_g0' : {
-            'view' : (0.0, 0.0, 0.86, [0.315, 0.1, 0.1]),
+            'view' : (0.0, 0.0, 0.86, [0.0, 0.0, 0.1]),
             'roll' : 0,
         },
     },
@@ -98,7 +98,7 @@ custom = {
                 't' : DomainSpecificPlot('plot_warp_scalar',
                                           ['rel_scaling=1']),
             },
-            'view' : (-90, 90, 1.5, [0.5,  0, 0]),
+            'view' : (-90, 90, 1.5, [0,  0, 0]),
             'roll' : 0,
             'opacity' : {'wireframe' : 0.3},
         },
@@ -112,8 +112,8 @@ custom = {
                 'u2' : DomainSpecificPlot('plot_warp_scalar',
                                           ['rel_scaling=1']),
             },
-            'view' : (-55, 57, 3.4, [0.62,  0.12, 0.3]),
-            'roll' : -51,
+            'view' : (-82, 50, 3.6, [-0.43, -0.55, 0.4]),
+            'roll' : -23,
             'opacity' : {'wireframe' : 0.3},
         },
     },
@@ -124,7 +124,7 @@ custom = {
                 't' : DomainSpecificPlot('plot_warp_scalar',
                                          ['rel_scaling=1']),
             },
-            'view' : (55, 39, 7, [0.57,  0.91, -0.09]),
+            'view' : (55, 39, 6.6, [-0.35, -0.29, 0.35]),
             'roll' : 15,
             'opacity' : {'wireframe' : 0.3},
         },
@@ -136,14 +136,14 @@ custom = {
                 't' : DomainSpecificPlot('plot_warp_scalar',
                                          ['rel_scaling=1']),
             },
-            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
-            'roll' : 68,
+            'view' : (-170, 30, 4.7, [0.34, 0.23, -0.26]),
+            'roll' : 71,
             'opacity' : {'wireframe' : 0.3},
         },
         '_grad' : {
             'opacity' : {'surface' : 0.3},
-            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
-            'roll' : 68,
+            'view' : (-170, 30, 4.7, [0.34, 0.23, -0.26]),
+            'roll' : 71,
         },
     },
     'linear_elasticity/elastic_contact_planes.py' : {
@@ -153,7 +153,7 @@ custom = {
                 'u' : DomainSpecificPlot('plot_displacements',
                                          ['rel_scaling=1']),
             },
-            'view' : (-82, 47, 2.8, [-0.01, -0.02, -0.02]),
+            'view' : (-82, 47, 3.4, [-0.5, -0.24, -0.2]),
             'roll' : -8.4,
             'opacity' : {'wireframe' : 0.3},
         },
@@ -165,7 +165,7 @@ custom = {
                 'u' : DomainSpecificPlot('plot_displacements',
                                          ['rel_scaling=1']),
             },
-            'view' : (-82, 47, 2.8, [-0.01, -0.02, -0.02]),
+            'view' : (-82, 47, 3.4, [-0.5, -0.24, -0.2]),
             'roll' : -8.4,
             'opacity' : {'wireframe' : 0.3},
         },
@@ -180,7 +180,7 @@ custom = {
                                           'color_kind="scalars"',
                                           'color_name="von_mises_stress"']),
             },
-            'view' : (142, 39, 14, [-0.65, -0.37, -0.31]),
+            'view' : (142, 39, 16, [-4.7, -2.1, -1.9]),
             'roll' : 8.4,
             'opacity' : {'wireframe' : 0.3},
         },
@@ -192,14 +192,14 @@ custom = {
                 'u' : DomainSpecificPlot('plot_displacements',
                                          ['rel_scaling=1']),
             },
-            'view' : (-37, 51, 1.66, [0.12, 0.016, -0.1]),
+            'view' : (-37, 51, 1.5, [-0.28, -0.29, 0.0]),
             'roll' : -51.5,
             'opacity' : {'wireframe' : 0.2},
         },
     },
     'navier_stokes/stokes_slip_bc.py' : {
         '' : {
-            'view' : (-63, 52, 5.2, [-0.001,  0.52, -0.026]),
+            'view' : (-63, 52, 5.2, [-1.5, -0.65, 0.12]),
             'roll' : -32,
             'resolution' : (800, 600),
             'layout' : 'col',
@@ -216,7 +216,7 @@ custom = {
                                           'color_kind="scalars"',
                                           'color_name="T"']),
             },
-            'view' : (-51, 71, 15, [1.16, 0.43, -1.56]),
+            'view' : (-51, 71, 12.9, [-2.3, -2.4, -0.2]),
             'roll' : -65,
             'opacity' : {'wireframe' : 0.3},
         },
@@ -299,7 +299,8 @@ def generate_images(images_dir, examples_dir):
 
     view = Viewer('', offscreen=False)
 
-    for ex_filename in locate_files('*.py', examples_dir):
+#    for ex_filename in locate_files('*.py', examples_dir):
+    for ex_filename in locate_files('elastic_contact_*.py', examples_dir):
         if _omit(ex_filename): continue
 
         output.level = 0
