@@ -62,7 +62,7 @@ def convert_to_csr(m_in):
     return m_out
 
 def define_matrices():
-    e = sm.zeros((7, 1))
+    e = sm.zeros(7, 1)
     e[0] = sm.sympify('u1')
     e[1] = sm.sympify('c * u3 + s * v3')
     e[2] = sm.sympify('u2 - u1')
@@ -79,17 +79,17 @@ def define_matrices():
     wbar = w[:2]
     g = ['g1', 'g2']
 
-    mtx_a = sm.zeros((6, 6))
+    mtx_a = sm.zeros(6, 6)
     for ir in range(mtx_a.shape[0]):
         for ic in range(mtx_a.shape[1]):
             mtx_a[ir,ic] = sm.diff(sm.diff(psi, w[ir]), w[ic])
 
-    mtx_b_bar = sm.zeros((2, 6))
+    mtx_b_bar = sm.zeros(2, 6)
     for ir in range(mtx_b_bar.shape[0]):
         for ic in range(mtx_b_bar.shape[1]):
             mtx_b_bar[ir,ic] = sm.diff(sm.diff(work, g[ir]), w[ic])
 
-    mtx_b = sm.zeros((2, 2))
+    mtx_b = sm.zeros(2, 2)
     for ir in range(mtx_b.shape[0]):
         for ic in range(mtx_b.shape[1]):
             mtx_b[ir,ic] = sm.diff(sm.diff(work, wbar[ir]), g[ic])
@@ -100,7 +100,7 @@ def define_matrices():
     sn2 = sm.diff(psi, 'u2n').subs('u2n', 0)
     sn = sm.Matrix([sn1, sn2])
 
-    mtx_d = sm.zeros((2, 6))
+    mtx_d = sm.zeros(2, 6)
     for ir in range(mtx_d.shape[0]):
         for ic in range(mtx_d.shape[1]):
             mtx_d[ir,ic] = sm.diff(sn[ir], w[ic])
