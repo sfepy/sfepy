@@ -1,7 +1,7 @@
 """
 Base (abstract) solver classes.
 """
-from sfepy.base.base import get_default, Struct
+from sfepy.base.base import Struct
 
 def make_get_conf(conf, kwargs):
     def _get_conf_item(name, default=None, msg_if_none=None):
@@ -181,7 +181,7 @@ class LinearSolver(Solver):
         settings. Either value can be `None`, meaning that the solver
         does not use that setting.
         """
-        return self.conf.eps_a, self.conf.eps_r
+        return self.conf.get('eps_a', None), self.conf.get('eps_r', None)
 
 class NonlinearSolver(Solver):
     """
