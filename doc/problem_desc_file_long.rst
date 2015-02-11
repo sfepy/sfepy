@@ -268,7 +268,7 @@ Linear solver::
 
     solver_0 = {
         'name' : 'ls',
-        'kind' : 'ls.umfpack',
+        'kind' : 'ls.scipy_direct',
     }
 
 Nonlinear solver::

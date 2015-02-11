@@ -134,15 +134,6 @@ class ScipyDirect(LinearSolver):
         else:
             return self.conf.presolve
 
-class Umfpack(ScipyDirect):
-    """This class stays for compatability with old input files. Use ScipyDirect
-    isntead."""
-    name = 'ls.umfpack'
-
-    def __init__(self, conf, **kwargs):
-        conf.method = 'umfpack'
-        ScipyDirect.__init__(self, conf, **kwargs)
-
 ##
 # c: 22.02.2008
 class ScipyIterative( LinearSolver ):

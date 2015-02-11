@@ -46,7 +46,7 @@ equations = {
 }
 
 solvers = {
-    'd00' : ('ls.umfpack',
+    'd00' : ('ls.scipy_direct',
              {'warn' : True,}
     ),
 ##     'd01' : ('ls.scipy_direct',

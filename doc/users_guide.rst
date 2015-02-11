@@ -1311,7 +1311,6 @@ available:
 - 'ls.scipy_direct': direct solver from SciPy - this is the default
   solver for all examples. It is strongly recommended to install umfpack
   and its SciPy wrappers to get good performance.
-- 'ls.umfpack': alias to 'ls.scipy_direct'.
 - 'ls.scipy_iterative': Interface to SciPy iterative solvers.
 - 'ls.pyamg': Interface to PyAMG solvers.
 - 'ls.petsc': Interface to Krylov subspace solvers of PETSc.

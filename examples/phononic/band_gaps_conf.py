@@ -102,7 +102,7 @@ class BandGapsConf(Struct):
 
     def define_solvers(self):
         solvers = {
-            'ls_d' : ('ls.umfpack', {}),
+            'ls_d' : ('ls.scipy_direct', {}),
             'ls_i' : ('ls.scipy_iterative', {
                 'method' : 'cg',
                 'i_max'      : 1000,
