@@ -134,9 +134,7 @@ class ScipyDirect(LinearSolver):
         else:
             return self.conf.presolve
 
-##
-# c: 22.02.2008
-class ScipyIterative( LinearSolver ):
+class ScipyIterative(LinearSolver):
     """
     Interface to SciPy iterative solvers.
 
@@ -184,10 +182,10 @@ class ScipyIterative( LinearSolver ):
         LinearSolver.__init__(self, conf, **kwargs)
 
         try:
-            solver = getattr( la, self.conf.method )
+            solver = getattr(la, self.conf.method)
         except AttributeError:
-            output( 'scipy solver %s does not exist!' % self.conf.method )
-            output( 'using cg instead' )
+            output('scipy solver %s does not exist!' % self.conf.method)
+            output('using cg instead')
             solver = la.cg
         self.solver = solver
         self.converged_reasons = {
@@ -220,9 +218,7 @@ class ScipyIterative( LinearSolver ):
 
         return sol
 
-##
-# c: 02.05.2008, r: 02.05.2008
-class PyAMGSolver( LinearSolver ):
+class PyAMGSolver(LinearSolver):
     """
     Interface to PyAMG solvers.
 
@@ -252,32 +248,30 @@ class PyAMGSolver( LinearSolver ):
         common = LinearSolver.process_conf(conf)
 
         return Struct(method=get('method', 'smoothed_aggregation_solver'),
-                      accel = get('accel', None),
+                      accel=get('accel', None),
                       i_max=None, eps_a=None,
                       eps_r=get('eps_r', 1e-8)) + common
 
-    ##
-    # c: 02.05.2008, r: 02.05.2008
-    def __init__( self, conf, **kwargs ):
+    def __init__(self, conf, **kwargs):
         try:
             import pyamg
         except ImportError:
             msg =  'cannot import pyamg!'
-            raise ImportError( msg )
+            raise ImportError(msg)
 
         LinearSolver.__init__(self, conf, mg=None, **kwargs)
 
         try:
-            solver = getattr( pyamg, self.conf.method )
+            solver = getattr(pyamg, self.conf.method)
         except AttributeError:
-            output( 'pyamg.%s does not exist!' % self.conf.method )
-            output( 'using pyamg.smoothed_aggregation_solver instead' )
+            output('pyamg.%s does not exist!' % self.conf.method)
+            output('using pyamg.smoothed_aggregation_solver instead')
             solver = pyamg.smoothed_aggregation_solver
         self.solver = solver
 
-        if hasattr( self, 'mtx' ):
+        if hasattr(self, 'mtx'):
             if self.mtx is not None:
-                self.mg = self.solver( self.mtx )
+                self.mg = self.solver(self.mtx)
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
@@ -293,7 +287,7 @@ class PyAMGSolver( LinearSolver ):
 
         return sol
 
-class PETScKrylovSolver( LinearSolver ):
+class PETScKrylovSolver(LinearSolver):
     """
     PETSc Krylov subspace solver.
 
@@ -342,21 +336,21 @@ class PETScKrylovSolver( LinearSolver ):
                       eps_r=get('eps_r', 1e-8),
                       eps_d=get('eps_d', 1e5)) + common
 
-    def __init__( self, conf, **kwargs ):
+    def __init__(self, conf, **kwargs):
         try:
             import petsc4py
             petsc4py.init([])
             from petsc4py import PETSc
         except ImportError:
             msg = 'cannot import petsc4py!'
-            raise ImportError( msg )
+            raise ImportError(msg)
 
         LinearSolver.__init__(self, conf, petsc=PETSc, pmtx=None, **kwargs)
 
         ksp = PETSc.KSP().create()
 
-        ksp.setType( self.conf.method )
-        ksp.getPC().setType( self.conf.precond )
+        ksp.setType(self.conf.method)
+        ksp.getPC().setType(self.conf.precond)
         side = self._precond_sides[self.conf.precond_side]
         if side is not None:
             ksp.setPCSide(side)
@@ -367,13 +361,13 @@ class PETScKrylovSolver( LinearSolver ):
             if isinstance(val, int):
                 self.converged_reasons[val] = key
 
-    def set_matrix( self, mtx ):
+    def set_matrix(self, mtx):
         mtx = sps.csr_matrix(mtx)
 
-        pmtx = self.petsc.Mat().createAIJ( mtx.shape,
-                                           csr = (mtx.indptr,
-                                                  mtx.indices,
-                                                  mtx.data) )
+        pmtx = self.petsc.Mat().createAIJ(mtx.shape,
+                                          csr=(mtx.indptr,
+                                               mtx.indices,
+                                               mtx.data))
         sol, rhs = pmtx.getVecs()
         return pmtx, sol, rhs
 
@@ -632,6 +626,7 @@ class SchurGeneralized(ScipyDirect):
         mtxs = {}
         rhss = {}
         ress = {}
+        get_sub = mtx._get_submatrix
         for ir in mtxi.iterkeys():
             rhss[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
             ress[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
@@ -645,7 +640,7 @@ class SchurGeneralized(ScipyDirect):
                     for jc, idxc in enumerate(mtxslc_f[ic]):
                         iir = mtxslc_s[ir][jr]
                         iic = mtxslc_s[ic][jc]
-                        mtxs[mtxid][iir, iic] = mtx._get_submatrix(idxr, idxc).todense()
+                        mtxs[mtxid][iir, iic] = get_sub(idxr, idxc).todense()
 
         self.orig_conf.function(ress, mtxs, rhss, nn)
 
@@ -895,7 +890,7 @@ class MultiProblem(ScipyDirect):
 
         for ii, lrow in enumerate(S):
             m = lrow.indices.shape[0]
-            idxrow = nm.ones((m, ), dtype=nm.int32) * gr[ii]
+            idxrow = nm.ones((m,), dtype=nm.int32) * gr[ii]
             Ar = nm.hstack([Ar, idxrow])
             Ac = nm.hstack([Ac, gc[lrow.indices]])
             Ad = nm.hstack([Ad, lrow.data])
