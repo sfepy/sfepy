@@ -10,6 +10,89 @@ def make_get_conf(conf, kwargs):
 
     return _get_conf_item
 
+def format_next(text, new_text, pos, can_newline, width, ispaces):
+    new_len = len(new_text)
+
+    if (pos + new_len > width) and can_newline:
+        text += '\n' + ispaces + new_text
+        pos = new_len
+        can_newline = False
+
+    else:
+        if pos > 0:
+            text += ' ' + new_text
+            pos += new_len + 1
+
+        else:
+            text += ispaces + new_text
+            pos += len(ispaces) + new_len
+
+        can_newline = True
+
+    return text, pos, can_newline
+
+def typeset_to_indent(txt, indent, width):
+    if not len(txt): return txt
+
+    txt_lines = txt.strip().split('\n')
+    ispaces = ' ' * indent
+
+    can_newline = False
+    pos = 0
+    text = ''
+    for line in txt_lines:
+        for word in line.split():
+            text, pos, can_newline = format_next(text, word, pos, can_newline,
+                                                 width, ispaces)
+
+    return text
+
+def make_option_docstring(name, kind, default, required, doc):
+    if default is None:
+        entry = '    %s : %s\n' % (name, kind)
+
+    else:
+        entry = '    %s : %s (default: %s)\n' % (name, kind, repr(default))
+
+    entry += typeset_to_indent(doc, 8, 75)
+
+    return entry
+
+par_template = \
+"""
+    For common configuration parameters, see :class:`Solver
+    <sfepy.solvers.solvers.Solver>`.
+
+    Specific configuration parameters:
+
+    Parameters
+    ----------
+"""
+
+class SolverMeta(type):
+    """
+    Metaclass for solver classes that automatically adds configuration
+    parameters to the solver class docstring from the ``_parameters`` class
+    attribute.
+    """
+
+    def __new__(cls, name, bases, ndict):
+        if '__doc__' in ndict:
+            ndict['__doc__'] = ndict['__doc__'].rstrip()
+
+            solver_kind = ndict.get('name')
+            if solver_kind is not None:
+                ndict['__doc__'] += '\n\n    Kind: %s\n' % repr(solver_kind)
+                ndict['__doc__'] += par_template
+
+            options = ndict.get('_parameters')
+            if options is not None:
+                docs = [make_option_docstring(*option) for option in options]
+                ndict['__doc__'] = (ndict['__doc__'].rstrip()
+                                    + '\n' + '\n'.join(docs))
+
+        return super(SolverMeta, cls).__new__(cls, name, bases, ndict)
+
 class Solver(Struct):
     """
     Base class for all solver kinds. Takes care of processing of common
