@@ -101,33 +101,45 @@ class Solver(Struct):
     The factory method any_from_conf() can be used to create an instance of any
     subclass.
 
-    The subclasses have to reimplement __init__() and __call__(). The
-    subclasses that implement process_conf() have to call Solver.process_conf().
+    The subclasses have to reimplement __init__() and __call__().
 
     All solvers use the following configuration parameters:
 
     Parameters
     ----------
-    name : str
-        The name referred to in problem description options.
-    kind : str
-        The solver kind, as given by the `name` class attribute of the Solver
-        subclasses.
-    verbose : bool
-        If True, the solver can print more information about the solution.
     """
+    __metaclass__ = SolverMeta
 
-    @staticmethod
-    def process_conf(conf, kwargs=None):
-        """
-        Ensures conf contains 'name' and 'kind'.
-        """
-        get = conf.get
-        name = get('name', None, 'missing "name" in options!')
-        kind = get('kind', None, 'missing "kind" in options!')
-        verbose = get('verbose', False)
+    _parameters = [
+        ('name', 'str', None, True,
+         'The name referred to in problem description options.'),
+        ('kind', 'str', None, True,
+         """The solver kind, as given by the `name` class attribute of the
+            Solver subclasses."""),
+        ('verbose', 'bool', False, False,
+         """If True, the solver can print more information about the
+            solution."""),
+    ]
 
-        return Struct(name=name, kind=kind, verbose=verbose)
+    @classmethod
+    def process_conf(cls, conf, kwargs):
+        """
+        Process configuration parameters.
+        """
+        get = make_get_conf(conf, kwargs)
+
+        if len(cls._parameters) and cls._parameters[0][0] != 'name':
+            options = Solver._parameters + cls._parameters
+
+        else:
+            options = cls._parameters
+
+        opts = Struct()
+        for name, _, default, required, _ in options:
+            msg = ('missing "%s" in options!' % name) if required else None
+            setattr(opts, name, get(name, default, msg))
+
+        return opts
 
     def __init__(self, conf=None, **kwargs):
         if conf is None:
