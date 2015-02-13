@@ -7,8 +7,8 @@ import scipy.sparse as sps
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
-from sfepy.base.base import output, get_default, assert_, try_imports, Struct
-from sfepy.solvers.solvers import make_get_conf, LinearSolver
+from sfepy.base.base import output, get_default, assert_, try_imports
+from sfepy.solvers.solvers import SolverMeta, LinearSolver
 
 def solve(mtx, rhs, solver_class=None, solver_conf=None):
     """
@@ -53,31 +53,21 @@ def standard_call(call):
     return _standard_call
 
 class ScipyDirect(LinearSolver):
+    """
+    Direct sparse solver from SciPy.
+    """
     name = 'ls.scipy_direct'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_1100 = {
-                'name' : 'dls1100',
-                'kind' : 'ls.scipy_direct',
-
-                'method' : 'superlu',
-                'presolve' : False,
-                'warn' : True,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = LinearSolver.process_conf(conf)
-
-        return Struct(method=get('method', 'auto'),
-                      presolve=get('presolve', False),
-                      warn=get('warn', True),
-                      i_max=None, eps_a=None, eps_r=None) + common
+    _parameters = [
+        ('method', "{'auto', 'umfpack', 'superlu'}", 'auto', False,
+         'The actual solver to use.'),
+        ('presolve', 'bool', False, False,
+         'If True, pre-factorize the matrix.'),
+        ('warn', 'bool', True, False,
+         'If True, allow warnings.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         LinearSolver.__init__(self, conf, **kwargs)
@@ -138,8 +128,6 @@ class ScipyIterative(LinearSolver):
     """
     Interface to SciPy iterative solvers.
 
-    Notes
-    -----
     The `eps_r` tolerance is both absolute and relative - the solvers
     stop when either the relative or the absolute residual is below it.
 
@@ -148,33 +136,22 @@ class ScipyIterative(LinearSolver):
     """
     name = 'ls.scipy_iterative'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_110 = {
-                'name' : 'ls110',
-                'kind' : 'ls.scipy_iterative',
-
-                'method' : 'cg',
-                'precond' : None,
-                'callback' : None,
-                'i_max' : 1000,
-                'eps_r' : 1e-12,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = LinearSolver.process_conf(conf)
-
-        return Struct(method=get('method', 'cg'),
-                      precond=get('precond', None),
-                      callback=get('callback', None),
-                      i_max=get('i_max', 100),
-                      eps_a=None,
-                      eps_r=get('eps_r', 1e-8)) + common
+    _parameters = [
+        ('method', 'str', 'cg', False,
+         'The actual solver to use.'),
+        ('precond', '{sparse matrix, dense matrix, LinearOperator}',
+         None, False,
+         'The preconditioner.'),
+        ('callback', 'function', None, False,
+         """User-supplied function to call after each iteration. It is called
+            as callback(xk), where xk is the current solution vector."""),
+        ('i_max', 'int', 100, False,
+         'The maximum number of iterations.'),
+        ('eps_r', 'float', 1e-8, False,
+         'The relative or absolute tolerance for the residual.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         import scipy.sparse.linalg.isolve as la
@@ -221,36 +198,21 @@ class ScipyIterative(LinearSolver):
 class PyAMGSolver(LinearSolver):
     """
     Interface to PyAMG solvers.
-
-    Notes
-    -----
-    Uses relative convergence tolerance, i.e. eps_r is scaled by `||b||`.
     """
     name = 'ls.pyamg'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_102 = {
-                'name' : 'ls102',
-                'kind' : 'ls.pyamg',
-
-                'method' : 'smoothed_aggregation_solver',
-                'accel' : 'cg'
-                'eps_r' : 1e-12,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = LinearSolver.process_conf(conf)
-
-        return Struct(method=get('method', 'smoothed_aggregation_solver'),
-                      accel=get('accel', None),
-                      i_max=None, eps_a=None,
-                      eps_r=get('eps_r', 1e-8)) + common
+    _parameters = [
+        ('method', 'str', 'smoothed_aggregation_solver', False,
+         'The actual solver to use.'),
+        ('accel', 'str', None, False,
+         'The accelerator.'),
+        ('i_max', 'int', 100, False,
+         'The maximum number of iterations.'),
+        ('eps_r', 'float', 1e-8, False,
+         'The relative tolerance for the residual.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         try:
@@ -278,12 +240,14 @@ class PyAMGSolver(LinearSolver):
                  i_max=None, mtx=None, status=None, **kwargs):
 
         eps_r = get_default(eps_r, self.conf.eps_r)
+        i_max = get_default(i_max, self.conf.i_max)
 
         if (self.mg is None) or (mtx is not self.mtx):
             self.mg = self.solver(mtx)
             self.mtx = mtx
 
-        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r)
+        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r,
+                            maxiter=i_max)
 
         return sol
 
@@ -295,46 +259,32 @@ class PETScKrylovSolver(LinearSolver):
     creation. Tolerances can be overriden when called by passing a `conf`
     object.
 
-    Notes
-    -----
     Convergence is reached when `rnorm < max(eps_r * rnorm_0, eps_a)`,
     where, in PETSc, `rnorm` is by default the norm of *preconditioned*
     residual.
     """
     name = 'ls.petsc'
 
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('method', 'str', 'cg', False,
+         'The actual solver to use.'),
+        ('precond', 'str', 'icc', False,
+         'The preconditioner.'),
+        ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
+         'The preconditioner side.'),
+        ('i_max', 'int', 100, False,
+         'The maximum number of iterations.'),
+        ('eps_a', 'float', 1e-8, False,
+         'The absolute tolerance for the residual.'),
+        ('eps_r', 'float', 1e-8, False,
+         'The relative tolerance for the residual.'),
+        ('eps_d', 'float', 1e5, False,
+         'The divergence tolerance for the residual.'),
+    ]
+
     _precond_sides = {None : None, 'left' : 0, 'right' : 1, 'symmetric' : 2}
-
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
-
-        Example configuration, all items::
-
-            solver_120 = {
-                'name' : 'ls120',
-                'kind' : 'ls.petsc',
-
-                'method' : 'cg', # ksp_type
-                'precond' : 'icc', # pc_type
-                'precond_side' : 'left', # ksp_pc_side
-                'eps_a' : 1e-12, # abstol
-                'eps_r' : 1e-12, # rtol
-                'eps_d' : 1e5, # divtol
-                'i_max' : 1000, # maxits
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = LinearSolver.process_conf(conf)
-
-        return Struct(method=get('method', 'cg'),
-                      precond=get('precond', 'icc'),
-                      precond_side=get('precond_side', None),
-                      i_max=get('i_max', 100),
-                      eps_a=get('eps_a', 1e-8),
-                      eps_r=get('eps_r', 1e-8),
-                      eps_d=get('eps_d', 1e5)) + common
 
     def __init__(self, conf, **kwargs):
         try:
@@ -410,43 +360,22 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
     creation. Tolerances can be overriden when called by passing a `conf`
     object.
 
-    Notes
-    -----
     Convergence is reached when `rnorm < max(eps_r * rnorm_0, eps_a)`,
     where, in PETSc, `rnorm` is by default the norm of *preconditioned*
     residual.
     """
     name = 'ls.petsc_parallel'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_1 = {
-                'name' : 'ls',
-                'kind' : 'ls.petsc_parallel',
-
-                'log_dir' : '.', # Store logs here.
-                'n_proc' : 5, # Number of processes to run.
-
-                'method' : 'cg', # ksp_type
-                'precond' : 'bjacobi', # pc_type
-                'sub_precond' : 'icc', # sub_pc_type
-                'eps_a' : 1e-12, # abstol
-                'eps_r' : 1e-12, # rtol
-                'eps_d' : 1e5, # divtol
-                'i_max' : 1000, # maxits
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = PETScKrylovSolver.process_conf(conf, kwargs)
-
-        return Struct(log_dir=get('log_dir', '.'),
-                      n_proc=get('n_proc', 1),
-                      sub_precond=get('sub_precond', 'icc')) + common
+    _parameters = PETScKrylovSolver._parameters + [
+        ('log_dir', 'str', '.', False,
+         'The directory for storing logs.'),
+        ('n_proc', 'int', 1, False,
+         'The number of processes.'),
+        ('sub_precond', 'str', 'icc', False,
+         'The preconditioner for matrix blocks.'),
+    ]
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
