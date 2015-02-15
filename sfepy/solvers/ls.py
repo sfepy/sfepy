@@ -483,38 +483,22 @@ class SchurGeneralized(ScipyDirect):
     """
     name = 'ls.schur_generalized'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Setup solver configuration options.
+    __metaclass__ = SolverMeta
 
-        Example configuration::
-
-            solvers = {
-                'ls': ('ls.schur_generalized',
-                       {'blocks':
-                        {'u': ['displacement1', 'displacement2'],
-                         'v': ['velocity1', 'velocity2'],
-                         'w': ['pressure1', 'pressure2'],
-                         },
-                        'function': my_schur,
-                        'needs_problem_instance': True,
-                        })
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = ScipyDirect.process_conf(conf, kwargs)
-
-        return Struct(blocks=get('blocks', None,
-                                 'missing "blocks" in options!'),
-                      function=get('function', None,
-                                   'missing "function" in options!'),
-                      needs_problem_instance=True) + common
+    _parameters = ScipyDirect._parameters + [
+        ('blocks', 'dict', None, True,
+         """The description of blocks: ``{block_name1 : [variable_name1, ...],
+            ...}``."""),
+        ('function', 'callable', None, True,
+         'The user defined function.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         from sfepy.discrete.state import State
 
         ScipyDirect.__init__(self, conf, **kwargs)
+
+        conf.needs_problem_instance = True
 
         equations = self.problem.equations
         aux_state = State(equations.variables)
@@ -617,30 +601,14 @@ class SchurComplement(SchurGeneralized):
     """
     name = 'ls.schur_complement'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Setup solver configuration options.
+    __metaclass__ = SolverMeta
 
-        Example configuration::
-
-            solvers = {
-                'ls': ('ls.schur_complement',
-                       {'eliminate': ['displacement'],
-                        'keep': ['pressure'],
-                        'needs_problem_instance': True,
-                        })
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        conf.blocks = {'1': get('eliminate', None,
-                                'missing "eliminate" in options!'),
-                       '2': get('keep', None,
-                                'missing "keep" in options!'),}
-        conf.function = SchurComplement.schur_fun
-        common = SchurGeneralized.process_conf(conf, kwargs)
-
-        return common
+    _parameters = ScipyDirect._parameters + [
+        ('eliminate', 'list', None, True,
+         'The list of variables to eliminate.'),
+        ('keep', 'list', None, True,
+         'The list of variables to keep.'),
+    ]
 
     @staticmethod
     def schur_fun(res, mtx, rhs, nn):
@@ -659,6 +627,16 @@ class SchurComplement(SchurGeneralized):
         res['2'] = sls.spsolve(scs.csc_matrix(mtx['22'] - spC * invAB), k_rhs)
         res['1'] = invAf - nm.dot(invAB, res['2'])
 
+    def __init__(self, conf, **kwargs):
+        get = self.conf.get
+        conf.blocks = {'1': get('eliminate', None,
+                                'missing "eliminate" in options!'),
+                       '2': get('keep', None,
+                                'missing "keep" in options!'),}
+        conf.function = SchurComplement.schur_fun
+
+        SchurGeneralized.__init__(self, conf, **kwargs)
+
 class MultiProblem(ScipyDirect):
     r"""
     Conjugate multiple problems.
@@ -667,29 +645,14 @@ class MultiProblem(ScipyDirect):
     """
     name = 'ls.cm_pb'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Setup solver configuration options.
+    __metaclass__ = SolverMeta
 
-        Example configuration::
-
-            solvers = {
-                'ls': ('ls.cm_pb',
-                       {'others': ['acoustic_subproblem.py'],
-                        'coupling_variables': ['g'],
-                        'needs_problem_instance': True,
-                        })
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = ScipyDirect.process_conf(conf, kwargs)
-
-        return Struct(others=get('others', None,
-                                 'missing "others" in options!'),
-                      coupling_variables=get('coupling_variables', None,
-                                             'missing "coupling_variables"!'),
-                      needs_problem_instance=True) + common
+    _parameters = ScipyDirect._parameters + [
+        ('others', 'list', None, True,
+         'The list of auxiliary problem definition files.'),
+        ('coupling_variables', 'list', None, True,
+         'The list of coupling variables.'),
+    ]
 
     def __init__(self, conf, problem, **kwargs):
         from sfepy.discrete.state import State
@@ -698,6 +661,8 @@ class MultiProblem(ScipyDirect):
         from scipy.spatial import cKDTree as KDTree
 
         ScipyDirect.__init__(self, conf, **kwargs)
+
+        conf.needs_problem_instance = True
 
         # init subproblems
         pb_vars = problem.get_variables()
