@@ -135,9 +135,20 @@ class Solver(Struct):
             options = cls._parameters
 
         opts = Struct()
+        allow_extra = False
         for name, _, default, required, _ in options:
+            if name == '*':
+                allow_extra = True
+                continue
+
             msg = ('missing "%s" in options!' % name) if required else None
             setattr(opts, name, get(name, default, msg))
+
+        if allow_extra:
+            all_keys = set(kwargs.keys() + conf.to_dict().keys())
+            other = all_keys.difference(opts.to_dict().keys())
+            for name in other:
+                setattr(opts, name, get(name, None, None))
 
         return opts
 
