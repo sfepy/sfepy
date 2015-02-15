@@ -5,7 +5,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, pause, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import make_get_conf, OptimizationSolver
+from sfepy.solvers.solvers import SolverMeta, OptimizationSolver
 
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
@@ -98,65 +98,58 @@ def check_gradient( xit, aofg, fn_of, delta, check ):
 ##
 # 17.10.2007, c
 class FMinSteepestDescent( OptimizationSolver ):
+    """
+    Steepest descent optimization solver.
+    """
     name = 'opt.fmin_sd'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_0 = {
-                'name'      : 'fmin_sd',
-                'kind'      : 'opt.fmin_sd',
-
-                'i_max'      : 10,
-                'eps_rd'     : 1e-5, # Relative delta of objective function
-                'eps_of'     : 1e-4,
-                'eps_ofg'    : 1e-8,
-                'norm'      : nm.Inf,
-                'ls'        : True, # Linesearch.
-                'ls_method'  : 'backtracking', # 'backtracking' or 'full'
-                'ls0'       : 0.25,
-                'ls_red'     : 0.5,
-                'ls_red_warp' : 0.1,
-                'ls_on'      : 0.99999,
-                'ls_min'     : 1e-5,
-                'check'     : 0,
-                'delta'     : 1e-6,
-                'output'    : None, # 'itc'
-                'log'       : {'text' : 'output/log.txt',
-                               'plot' : 'output/log.png'},
-                'yscales'   : ['linear', 'log', 'log', 'linear'],
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = OptimizationSolver.process_conf(conf)
-
-        log = get_logging_conf(conf)
-        log = Struct(name='log_conf', **log)
-        is_any_log = (log.text is not None) or (log.plot is not None)
-
-        return Struct(i_max=get('i_max', 10),
-                      eps_rd=get('eps_rd', 1e-5),
-                      eps_of=get('eps_of', 1e-4),
-                      eps_ofg=get('eps_ofg', 1e-8),
-                      norm=get('norm', nm.Inf),
-                      ls=get('ls', True),
-                      ls_method=get('ls_method', 'backtracking'),
-                      ls0=get('ls0', 0.25),
-                      ls_red=get('ls_red', 0.5),
-                      ls_red_warp=get('ls_red_warp', 0.1),
-                      ls_on=get('ls_on', 0.99999),
-                      ls_min=get('ls_min', 1e-5),
-                      check=get('check', 0),
-                      delta=get('delta', 1e-6),
-                      output=get('output', None),
-                      yscales=get('yscales',
-                                  ['linear', 'log', 'log', 'linear']),
-                      log=log,
-                      is_any_log=is_any_log) + common
+    _parameters = [
+        ('i_max', 'int', 10, False,
+         'The maximum number of iterations.'),
+        ('eps_rd', 'float', 1e-5, False,
+         'The relative delta of the objective function.'),
+        ('eps_of', 'float', 1e-4, False,
+         'The tolerance for the objective function.'),
+        ('eps_ofg', 'float', 1e-8, False,
+         'The tolerance for the objective function gradient.'),
+        ('norm', 'numpy norm', nm.Inf, False,
+         'The norm to be used.'),
+        ('ls', 'bool', True, False,
+         'If True, use a line-search.'),
+        ('ls_method', "{'backtracking', 'full'}", 'backtracking', False,
+         'The line-search method.'),
+        ('ls_on', 'float', 0.99999, False,
+         """Start the backtracking line-search by reducing the step, if
+            :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
+        ('ls0', '0.0 < float < 1.0', 1.0, False,
+         'The initial step.'),
+        ('ls_red', '0.0 < float < 1.0', 0.5, False,
+         'The step reduction factor in case of correct residual assembling.'),
+        ('ls_red_warp', '0.0 < float < 1.0', 0.1, False,
+         """The step reduction factor in case of failed residual assembling
+            (e.g. the "warp violation" error caused by a negative volume
+            element resulting from too large deformations)."""),
+        ('ls_min', '0.0 < float < 1.0', 1e-5, False,
+         'The minimum step reduction factor.'),
+        ('check', '0, 1 or 2', 0, False,
+         """If >= 1, check the tangent matrix using finite differences.  If 2,
+            plot the resulting sparsity patterns."""),
+        ('delta', 'float', 1e-6, False,
+         """If `check >= 1`, the finite difference matrix is taken as
+            :math:`A_{ij} = \frac{f_i(x_j + \delta) - f_i(x_j - \delta)}{2
+            \delta}`."""),
+        ('output', 'function', None, False,
+         """If given, use it instead of :func:`output()
+            <sfepy.base.base.output()>` function."""),
+        ('yscales', 'list of str', ['linear', 'log', 'log', 'linear'], False,
+         'The list of four convergence log subplot scales.'),
+        ('log', 'dict or None', None, False,
+         """If not None, log the convergence according to the configuration in
+            the following form: ``{'text' : 'log.txt', 'plot' : 'log.pdf'}``.
+            Each of the dict items can be None."""),
+    ]
 
     ##
     # 17.10.2007, c
@@ -164,6 +157,11 @@ class FMinSteepestDescent( OptimizationSolver ):
         OptimizationSolver.__init__( self, conf, **kwargs )
 
         conf = self.conf
+
+        log = get_logging_conf(conf)
+        conf.log = log = Struct(name='log_conf', **log)
+        conf.is_any_log = (log.text is not None) or (log.plot is not None)
+
         if conf.is_any_log:
             self.log = Log([[r'$||\Psi||$'], [r'$||\nabla \Psi||$'],
                             [r'$\alpha$'], ['iteration']],
@@ -339,6 +337,8 @@ class ScipyFMinSolver(OptimizationSolver):
     """
     name = 'nls.scipy_fmin_like'
 
+    __metaclass__ = SolverMeta
+
     _i_max_name  = {
         'fmin' : 'maxiter',
         'fmin_bfgs' : 'maxiter',
@@ -354,43 +354,16 @@ class ScipyFMinSolver(OptimizationSolver):
     _has_grad = ('fmin_bfgs', 'fmin_cg', 'fmin_l_bfgs_b', 'fmin_ncg',
                  'fmin_slsqp', 'fmin_tnc')
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are left to SciPy defaults. Unused options are ignored.
-
-        Besides 'i_max', use option names according to scipy.optimize
-        function arguments. The 'i_max' translates either to 'maxiter'
-        or 'maxfun' as available.
-
-        Example configuration::
-
-            solver_1 = {
-                'name' : 'fmin',
-                'kind' : 'nls.scipy_fmin_like',
-
-                'method'  : 'bfgs',
-                'i_max'   : 10,
-                'verbose' : True,
-
-                'gtol' : 1e-7
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = OptimizationSolver.process_conf(conf)
-
-        opts = Struct(method=get('method', 'fmin'),
-                      i_max=get('i_max', 10),
-                      verbose=get('verbose', False)) + common
-
-        other = {}
-        keys = opts.to_dict().keys()
-
-        for key, val in conf.to_dict().iteritems():
-            if key not in keys:
-                other[key] = val
-
-        return opts + Struct(**other)
+    _parameters = [
+        ('method',
+         '{%s}' % ', '.join(sorted(repr(ii) for ii in _i_max_name.keys())),
+         'fmin', False,
+         'The actual optimization method to use.'),
+        ('i_max', 'int', 10, False,
+         'The maximum number of iterations.'),
+        ('*', '*', None, False,
+         'Additional parameters supported by the method.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         OptimizationSolver.__init__(self, conf, **kwargs)
