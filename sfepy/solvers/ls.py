@@ -626,7 +626,7 @@ class SchurComplement(SchurGeneralized):
         res['1'] = invAf - nm.dot(invAB, res['2'])
 
     def __init__(self, conf, **kwargs):
-        get = self.conf.get
+        get = conf.get
         conf.blocks = {'1': get('eliminate', None,
                                 'missing "eliminate" in options!'),
                        '2': get('keep', None,
