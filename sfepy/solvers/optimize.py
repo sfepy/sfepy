@@ -137,7 +137,7 @@ class FMinSteepestDescent( OptimizationSolver ):
          """If >= 1, check the tangent matrix using finite differences.  If 2,
             plot the resulting sparsity patterns."""),
         ('delta', 'float', 1e-6, False,
-         """If `check >= 1`, the finite difference matrix is taken as
+         r"""If `check >= 1`, the finite difference matrix is taken as
             :math:`A_{ij} = \frac{f_i(x_j + \delta) - f_i(x_j - \delta)}{2
             \delta}`."""),
         ('output', 'function', None, False,
