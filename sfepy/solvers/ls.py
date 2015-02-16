@@ -493,14 +493,12 @@ class SchurGeneralized(ScipyDirect):
          'The user defined function.'),
     ]
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, problem, **kwargs):
         from sfepy.discrete.state import State
 
         ScipyDirect.__init__(self, conf, **kwargs)
 
-        conf.needs_problem_instance = True
-
-        equations = self.problem.equations
+        equations = problem.equations
         aux_state = State(equations.variables)
 
         conf.idxs = {}
@@ -661,8 +659,6 @@ class MultiProblem(ScipyDirect):
         from scipy.spatial import cKDTree as KDTree
 
         ScipyDirect.__init__(self, conf, **kwargs)
-
-        conf.needs_problem_instance = True
 
         # init subproblems
         pb_vars = problem.get_variables()

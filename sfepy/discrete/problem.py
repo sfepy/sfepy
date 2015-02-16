@@ -903,21 +903,13 @@ class Problem(Struct):
 
         if presolve:
             tt = time.clock()
-        if ls_conf.get('needs_problem_instance', False):
-            extra_args = {'problem' : self}
-        else:
-            extra_args = {}
 
         ls = Solver.any_from_conf(ls_conf, mtx=mtx, presolve=presolve,
-                                  **extra_args)
+                                  problem=self)
         if presolve:
             tt = time.clock() - tt
             output('presolve: %.2f [s]' % tt)
 
-        if nls_conf.get('needs_problem_instance', False):
-            extra_args = {'problem' : self}
-        else:
-            extra_args = {}
         ev = self.get_evaluator()
 
         if self.conf.options.get('ulf', False):
@@ -926,7 +918,7 @@ class Problem(Struct):
         nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
                                    fun_grad=ev.eval_tangent_matrix,
                                    lin_solver=ls, iter_hook=self.nls_iter_hook,
-                                   status=nls_status, **extra_args)
+                                   status=nls_status, problem=self)
 
         self.set_solvers_instances(ls=ls, nls=nls)
 

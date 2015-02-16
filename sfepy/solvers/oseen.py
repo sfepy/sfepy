@@ -177,7 +177,7 @@ class Oseen( NonlinearSolver ):
             `lin_precision` factor. Ignored for direct linear solvers."""),
     ]
 
-    def __init__( self, conf, **kwargs ):
+    def __init__( self, conf, problem, **kwargs ):
         NonlinearSolver.__init__( self, conf, **kwargs )
 
         conf = self.conf
@@ -186,7 +186,7 @@ class Oseen( NonlinearSolver ):
         conf.log = log = Struct(name='log_conf', **log)
         conf.is_any_log = (log.text is not None) or (log.plot is not None)
 
-        conf.needs_problem_instance = True
+        conf.problem = problem
 
         conf = self.conf
         if conf.is_any_log:
@@ -213,11 +213,8 @@ class Oseen( NonlinearSolver ):
         fun_grad = get_default( fun_grad, self.fun_grad )
         lin_solver = get_default( lin_solver, self.lin_solver )
         status = get_default( status, self.status )
-        problem = get_default( problem, self.problem )
-
-        if problem is None:
-            msg = 'set solver option "needs_problem_instance" to True!'
-            raise ValueError(msg)
+        problem = get_default(problem, conf.problem,
+                              '`problem` parameter needs to be set!')
 
         time_stats = {}
 
