@@ -106,7 +106,7 @@ solver_1 = {
     'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'problem'   : 'linear', # 'nonlinear' or 'linear' (ignore i_max)
+    'is_linear' : True,
 }
 
 solver_2 = {

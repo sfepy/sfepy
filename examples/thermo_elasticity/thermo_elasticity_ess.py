@@ -108,7 +108,6 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max'      : 1,
         'eps_a'      : 1e-10,
-        'problem'   : 'nonlinear',
     }),
     'ess' : ('ts.equation_sequence', {}),
 }

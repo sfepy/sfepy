@@ -102,12 +102,15 @@ equations = {
 #! Even linear problems are solved by a nonlinear solver - only one
 #! iteration is needed and the final rezidual is obtained for free.
 solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton',
-                { 'i_max'      : 1,
-                  'eps_a'      : 1e-2,
-                  'eps_r'      : 1e-10,
-                  'problem'   : 'nonlinear'}),
+    'ls' : ('ls.schur_complement', {
+        'keep': ['p'],
+        'eliminate': ['u'],
+    }),
+    'newton' : ('nls.newton', {
+        'i_max'      : 1,
+        'eps_a'      : 1e-2,
+        'eps_r'      : 1e-10,
+    }),
 }
 #! Options
 #! -------

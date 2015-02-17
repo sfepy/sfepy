@@ -4,9 +4,8 @@ import numpy as nm
 import numpy.linalg as nla
 import scipy.sparse as sp
 
-from sfepy.base.base import output, get_default, debug, Struct
-from sfepy.base.log import get_logging_conf
-from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
+from sfepy.base.base import output, get_default, debug
+from sfepy.solvers.solvers import SolverMeta
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse
 
@@ -27,61 +26,44 @@ class SemismoothNewton(Newton):
 
     Steepest descent step: :math:`y \leftarrow y - \beta J(y) \Phi(y)`
 
-    Notes
-    -----
-    Although fun_smooth_grad() computes the gradient of the smooth part only,
-    it should return the global matrix, where the non-smooth part is
+    Although ``fun_smooth_grad()`` computes the gradient of the smooth part
+    only, it should return the global matrix, where the non-smooth part is
     uninitialized, but pre-allocated.
     """
     name = 'nls.semismooth_newton'
 
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('semismooth', 'bool', True, False,
+         """If True, use the semi-smooth algorithm. Otherwise a non-smooth
+            equation is assumed (use a brute force)."""),
+        ('i_max', 'int', 1, False,
+         'The maximum number of iterations.'),
+        ('eps_a', 'float', 1e-10, False,
+         'The absolute tolerance for the residual, i.e. :math:`||f(x^i)||`.'),
+        ('eps_r', 'float', 1.0, False,
+         """The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
+            ||f(x^0)||`."""),
+        ('macheps', 'float', nm.finfo(nm.float64).eps, False,
+         'The float considered to be machine "zero".'),
+        ('lin_red', 'float', 1.0, False,
+         """The linear system solution error should be smaller than (`eps_a` *
+            `lin_red`), otherwise a warning is printed."""),
+        ('ls_on', 'float', 0.99999, False,
+         """Start the backtracking line-search by reducing the step, if
+            :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
+        ('ls_red', '0.0 < float < 1.0', 0.1, False,
+         'The step reduction factor in case of correct residual assembling.'),
+        ('ls_red_warp', '0.0 < float < 1.0', 0.001, False,
+         """The step reduction factor in case of failed residual assembling
+            (e.g. the "warp violation" error caused by a negative volume
+            element resulting from too large deformations)."""),
+        ('ls_min', '0.0 < float < 1.0', 1e-5, False,
+         'The minimum step reduction factor.'),
+    ]
+
     _colors = {'regular' : 'g', 'steepest_descent' : 'k'}
-
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
-
-        Example configuration, all items::
-
-            solver_1 = {
-                'name' : 'semismooth_newton',
-                'kind' : 'nls.semismooth_newton',
-
-                'semismooth' : True,
-
-                'i_max'      : 10,
-                'eps_a'      : 1e-8,
-                'eps_r'      : 1e-2,
-                'macheps'   : 1e-16,
-                'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-                'ls_red_reg' : 0.1,
-                'ls_red_alt' : 0.01,
-                'ls_red_warp' : 0.001,
-                'ls_on'      : 0.9,
-                'ls_min'     : 1e-10,
-                'log'        : {'plot' : 'convergence.png'},
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = NonlinearSolver.process_conf(conf)
-
-        log = get_logging_conf(conf)
-        log = Struct(name='log_conf', **log)
-        is_any_log = (log.text is not None) or (log.plot is not None)
-
-        return Struct(semismooth=get('semismooth', True),
-                      i_max=get('i_max', 1),
-                      eps_a=get('eps_a', 1e-10),
-                      eps_r=get('eps_r', 1.0),
-                      macheps=get('macheps', nm.finfo(nm.float64).eps),
-                      lin_red=get('lin_red', 1.0),
-                      ls_red=get('ls_red', 0.1),
-                      ls_red_warp=get('ls_red_warp', 0.001),
-                      ls_on=get('ls_on', 0.99999),
-                      ls_min=get('ls_min', 1e-5),
-                      log=log,
-                      is_any_log=is_any_log) + common
 
     def __call__(self, vec_x0, conf=None, fun_smooth=None, fun_smooth_grad=None,
                  fun_a=None, fun_a_grad=None, fun_b=None, fun_b_grad=None,

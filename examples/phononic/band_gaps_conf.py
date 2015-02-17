@@ -111,7 +111,6 @@ class BandGapsConf(Struct):
             'newton' : ('nls.newton', {
                 'i_max' : 1,
                 'eps_a' : 1e-4,
-                'problem' : 'nonlinear',
             }),
         }
 

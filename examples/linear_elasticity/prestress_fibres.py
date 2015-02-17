@@ -77,8 +77,8 @@ equations = {
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton',
-                { 'i_max' : 1,
-                  'eps_a' : 1e-10,
-                  'problem' : 'nonlinear'}),
+    'newton' : ('nls.newton', {
+        'i_max' : 1,
+        'eps_a' : 1e-10,
+    }),
 }

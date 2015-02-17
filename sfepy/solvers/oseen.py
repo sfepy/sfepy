@@ -5,7 +5,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
+from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
 from nls import conv_test
 
 class StabilizationFunction(Struct):
@@ -145,71 +145,48 @@ def scale_matrix( mtx, indx, factor ):
 ##
 # 11.10.2007, c
 class Oseen( NonlinearSolver ):
+    """
+    The Oseen solver for Navier-Stokes equations.
+    """
     name = 'nls.oseen'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
+    _parameters = [
+        ('stabil_mat', 'str', None, True,
+         'The name of stabilization material.'),
+        ('adimensionalize', 'bool', False, False,
+         'If True, adimensionalize the problem (not implemented!).'),
+        ('check_navier_stokes_rezidual', 'bool', False, False,
+         'If True, check the Navier-Stokes rezidual after the nonlinear loop.'),
+        ('i_max', 'int', 1, False,
+         'The maximum number of iterations.'),
+        ('eps_a', 'float', 1e-10, False,
+         'The absolute tolerance for the residual, i.e. :math:`||f(x^i)||`.'),
+        ('eps_r', 'float', 1.0, False,
+         """The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
+            ||f(x^0)||`."""),
+        ('macheps', 'float', nm.finfo(nm.float64).eps, False,
+         'The float considered to be machine "zero".'),
+        ('lin_red', 'float', 1.0, False,
+         """The linear system solution error should be smaller than (`eps_a` *
+            `lin_red`), otherwise a warning is printed."""),
+        ('lin_precision', 'float or None', None, False,
+         """If not None, the linear system solution tolerances are set in each
+            nonlinear iteration relative to the current residual norm by the
+            `lin_precision` factor. Ignored for direct linear solvers."""),
+    ]
 
-            solver_1 = {
-                'name' : 'oseen',
-                'kind' : 'nls.oseen',
+    def __init__( self, conf, problem, **kwargs ):
+        NonlinearSolver.__init__( self, conf, **kwargs )
 
-                'needs_problem_instance' : True,
-                'stabil_mat' : 'stabil',
-
-                'adimensionalize' : False,
-                'check_navier_stokes_rezidual' : False,
-
-                'i_max'      : 10,
-                'eps_a'      : 1e-8,
-                'eps_r'      : 1.0,
-                'macheps'    : 1e-16,
-                'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-                'log'        : {'text' : 'oseen_log.txt',
-                                'plot' : 'oseen_log.png'},
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = NonlinearSolver.process_conf(conf)
-
-        # Compulsory.
-        needs_problem_instance = get('needs_problem_instance', True)
-        if not needs_problem_instance:
-            msg = 'set solver option "needs_problem_instance" to True!'
-            raise ValueError(msg)
-
-        stabil_mat = get('stabil_mat', None, 'missing "stabil_mat" in options!')
-
-        # With defaults.
-        adimensionalize = get('adimensionalize', False)
-        if adimensionalize:
-            raise NotImplementedError
-
-        check = get('check_navier_stokes_rezidual', False)
+        conf = self.conf
 
         log = get_logging_conf(conf)
-        log = Struct(name='log_conf', **log)
-        is_any_log = (log.text is not None) or (log.plot is not None)
+        conf.log = log = Struct(name='log_conf', **log)
+        conf.is_any_log = (log.text is not None) or (log.plot is not None)
 
-        return Struct(needs_problem_instance=needs_problem_instance,
-                      stabil_mat=stabil_mat,
-                      adimensionalize=adimensionalize,
-                      check_navier_stokes_rezidual=check,
-                      i_max=get('i_max', 1),
-                      eps_a=get('eps_a', 1e-10),
-                      eps_r=get('eps_r', 1.0),
-                      macheps=get('macheps', nm.finfo(nm.float64).eps),
-                      lin_red=get('lin_red', 1.0),
-                      lin_precision=get('lin_precision', None),
-                      log=log,
-                      is_any_log=is_any_log) + common
-
-    def __init__( self, conf, **kwargs ):
-        NonlinearSolver.__init__( self, conf, **kwargs )
+        conf.problem = problem
 
         conf = self.conf
         if conf.is_any_log:
@@ -236,11 +213,8 @@ class Oseen( NonlinearSolver ):
         fun_grad = get_default( fun_grad, self.fun_grad )
         lin_solver = get_default( lin_solver, self.lin_solver )
         status = get_default( status, self.status )
-        problem = get_default( problem, self.problem )
-
-        if problem is None:
-            msg = 'set solver option "needs_problem_instance" to True!'
-            raise ValueError(msg)
+        problem = get_default(problem, conf.problem,
+                              '`problem` parameter needs to be set!')
 
         time_stats = {}
 

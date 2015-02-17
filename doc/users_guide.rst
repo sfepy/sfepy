@@ -774,8 +774,7 @@ Linear and nonlinear solver::
     solvers = {
         'ls' : ('ls.scipy_direct', {}),
         'newton' : ('nls.newton',
-                    {'i_max'   : 1,
-                     'problem' : 'nonlinear'}),
+                    {'i_max'   : 1}),
     }
 
 Solver selection::

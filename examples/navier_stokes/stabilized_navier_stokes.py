@@ -103,7 +103,6 @@ solver_1 = {
     'name' : 'oseen',
     'kind' : 'nls.oseen',
 
-    'needs_problem_instance' : True,
     'stabil_mat' : 'stabil',
 
     'adimensionalize' : False,

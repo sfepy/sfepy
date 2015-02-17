@@ -4,7 +4,7 @@ import numpy as nm
 import scipy.linalg as sla
 
 from sfepy.base.base import output, get_default, try_imports, Struct
-from sfepy.solvers.solvers import make_get_conf, Solver, EigenvalueSolver
+from sfepy.solvers.solvers import SolverMeta, Solver, EigenvalueSolver
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
         return_time=None, method='eig.scipy', **ckwargs):
@@ -57,6 +57,8 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
     """
     name = 'eig.scipy'
 
+    __metaclass__ = SolverMeta
+
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
 
@@ -101,24 +103,12 @@ class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
     """
     name = 'eig.sgscipy'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_20 = {
-                'name' : 'eigen2',
-                'kind' : 'eig.sgscipy',
-
-                'force_n_eigs' : True,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = EigenvalueSolver.process_conf(conf)
-
-        return Struct(force_n_eigs=get('force_n_eigs', False)) + common
+    _parameters = [
+        ('force_n_eigs', 'bool', False, False,
+         'If True, use the methods as if `n_eigs` was given.'),
+    ]
 
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
@@ -170,34 +160,19 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
     """
     name = 'eig.scipy_lobpcg'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_2 = {
-                'name' : 'lobpcg',
-                'kind' : 'eig.scipy_lobpcg',
-
-                'i_max' : 20,
-                'n_eigs' : 5,
-                'eps_a' : None,
-                'largest' : True,
-                'precond' : None,
-                'verbosity' : 0,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = EigenvalueSolver.process_conf(conf)
-
-        return Struct(i_max=get('i_max', 20),
-                      n_eigs=get('n_eigs', None),
-                      eps_a=get('eps_a', None),
-                      largest=get('largest', True),
-                      precond=get('precond', None),
-                      verbosity=get('verbosity', 0)) + common
+    _parameters = [
+        ('i_max', 'int', 1, False,
+         'The maximum number of iterations.'),
+        ('eps_a', 'float', None, False,
+         'The absolute tolerance for the convergence.'),
+        ('largest', 'bool', True, False,
+         'If True, solve for the largest eigenvalues, otherwise the smallest.'),
+        ('precond', '{dense matrix, sparse matrix, LinearOperator}',
+         None, False,
+         'The preconditioner.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
@@ -234,35 +209,24 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     """
     name = 'eig.pysparse'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_2 = {
-                'name' : 'eigen1',
-                'kind' : 'eig.pysparse',
-
-                'i_max' : 150,
-                'eps_a' : 1e-5,
-                'tau' : -10.0,
-                'method' : 'qmrs',
-                'verbosity' : 0,
-                'strategy' : 1,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = EigenvalueSolver.process_conf(conf)
-
-        return Struct(i_max=get('i_max', 100),
-                      n_eigs=get('n_eigs', 5),
-                      eps_a=get('eps_a', 1e-5),
-                      tau=get('tau', 0.0),
-                      method=get('method', 'qmrs'),
-                      verbosity=get('verbosity', 0),
-                      strategy=get('strategy', 1)) + common
+    _parameters = [
+        ('i_max', 'int', 1, False,
+         'The maximum number of iterations.'),
+        ('eps_a', 'float', None, False,
+         'The absolute tolerance for the convergence.'),
+        ('tau', 'float', 0.0, False,
+         'The target value.'),
+        ('method', "{'cgs', 'qmrs'}", 'qmrs', False,
+         'The linear iterative solver supported by ``pysparse``.'),
+        ('verbosity', 'int', 0, False,
+         'The ``pysparse`` verbosity level.'),
+        ('strategy', '{0, 1}', 1, False,
+         """The shifting and sorting strategy of JDSYM: strategy=0 enables the
+            default JDSYM algorithm, strategy=1 enables JDSYM to avoid
+            convergence to eigenvalues smaller than `tau`."""),
+    ]
 
     @staticmethod
     def _convert_mat(mtx):

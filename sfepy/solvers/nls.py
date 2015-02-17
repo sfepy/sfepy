@@ -8,7 +8,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
+from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
 
 def check_tangent_matrix(conf, vec_x0, fun, fun_grad):
     """
@@ -107,120 +107,68 @@ class Newton(NonlinearSolver):
     r"""
     Solves a nonlinear system :math:`f(x) = 0` using the Newton method with
     backtracking line-search, starting with an initial guess :math:`x^0`.
-
-    For common configuration parameters, see :class:`Solver
-    <sfepy.solvers.solvers.Solver>`.
-
-    Parameters
-    ----------
-    i_max : int
-        The maximum number of iterations.
-    eps_a : float
-        The absolute tolerance for the residual, i.e. :math:`||f(x^i)||`.
-    eps_r : float
-        The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
-        ||f(x^0)||`.
-    eps_mode : 'and' or 'or'
-        The logical operator to use for combining the absolute and relative
-        tolerances.
-    macheps : float
-        The float considered to be machine "zero".
-    lin_red : float
-        The linear system solution error should be smaller than (`eps_a` *
-        `lin_red`), otherwise a warning is printed.
-    lin_precision : float or None
-        If not None, the linear system solution tolerances are set in each
-        nonlinear iteration relative to the current residual norm by the
-        `lin_precision` factor. Ignored for direct linear solvers.
-    ls_on : float
-        Start the backtracking line-search by reducing the step, if
-        :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`.
-    ls_red : 0.0 < float < 1.0
-        The step reduction factor in case of correct residual assembling.
-    ls_red_warp : 0.0 < float < 1.0
-        The step reduction factor in case of failed residual assembling
-        (e.g. the "warp violation" error caused by a negative volume element
-        resulting from too large deformations).
-    ls_min : 0.0 < float < 1.0
-        The minimum step reduction factor.
-    give_up_warp : bool
-        If True, abort on the "warp violation" error.
-    check : 0, 1 or 2
-        If >= 1, check the tangent matrix using finite differences. If 2, plot
-        the resulting sparsity patterns.
-    delta : float
-        If `check >= 1`, the finite difference matrix is taken as :math:`A_{ij}
-        = \frac{f_i(x_j + \delta) - f_i(x_j - \delta)}{2 \delta}`.
-    log : dict or None
-        If not None, log the convergence according to the configuration in the
-        following form::
-
-            {'text' : 'log.txt', 'plot' : 'log.pdf'}
-
-        Each of the dict items can be None.
-    problem : 'nonlinear' or 'linear'
-        Specifies if the problem is linear or non-linear.
     """
     name = 'nls.newton'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are set to default values for a linear problem.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_1 = {
-                'name' : 'newton',
-                'kind' : 'nls.newton',
-
-                'i_max' : 2,
-                'eps_a' : 1e-8,
-                'eps_r' : 1e-2,
-                'eps_mode' : 'or',
-                'macheps' : 1e-16,
-                'lin_red' : 1e-2, # Linear system error < (eps_a * lin_red).
-                'lin_precision' : None,
-                'ls_on' : 0.99999,
-                'ls_red' : 0.1,
-                'ls_red_warp' : 0.001,
-                'ls_min' : 1e-5,
-                'give_up_warp' : False,
-                'check' : 0,
-                'delta' : 1e-6,
-                'log' : None, # 'nonlinear' or 'linear' (ignore i_max)
-                'problem' : 'nonlinear',
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = NonlinearSolver.process_conf(conf)
-
-        log = get_logging_conf(conf)
-        log = Struct(name='log_conf', **log)
-        is_any_log = (log.text is not None) or (log.plot is not None)
-
-        return Struct(i_max=get('i_max', 1),
-                      eps_a=get('eps_a', 1e-10),
-                      eps_r=get('eps_r', 1.0),
-                      eps_mode=get('eps_mode', 'and'),
-                      macheps=get('macheps', nm.finfo(nm.float64).eps),
-                      lin_red=get('lin_red', 1.0),
-                      lin_precision=get('lin_precision', None),
-                      ls_red=get('ls_red', 0.1),
-                      ls_red_warp=get('ls_red_warp', 0.001),
-                      ls_on=get('ls_on', 0.99999),
-                      ls_min=get('ls_min', 1e-5),
-                      give_up_warp=get('give_up_warp', False),
-                      check=get('check', 0),
-                      delta=get('delta', 1e-6),
-                      problem=get('problem', 'nonlinear'),
-                      log=log,
-                      is_any_log=is_any_log) + common
+    _parameters = [
+        ('i_max', 'int', 1, False,
+         'The maximum number of iterations.'),
+        ('eps_a', 'float', 1e-10, False,
+         'The absolute tolerance for the residual, i.e. :math:`||f(x^i)||`.'),
+        ('eps_r', 'float', 1.0, False,
+         """The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
+            ||f(x^0)||`."""),
+        ('eps_mode', "'and' or 'or'", 'and', False,
+         """The logical operator to use for combining the absolute and relative
+            tolerances."""),
+        ('macheps', 'float', nm.finfo(nm.float64).eps, False,
+         'The float considered to be machine "zero".'),
+        ('lin_red', 'float', 1.0, False,
+         """The linear system solution error should be smaller than (`eps_a` *
+            `lin_red`), otherwise a warning is printed."""),
+        ('lin_precision', 'float or None', None, False,
+         """If not None, the linear system solution tolerances are set in each
+            nonlinear iteration relative to the current residual norm by the
+            `lin_precision` factor. Ignored for direct linear solvers."""),
+        ('ls_on', 'float', 0.99999, False,
+         """Start the backtracking line-search by reducing the step, if
+            :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`."""),
+        ('ls_red', '0.0 < float < 1.0', 0.1, False,
+         'The step reduction factor in case of correct residual assembling.'),
+        ('ls_red_warp', '0.0 < float < 1.0', 0.001, False,
+         """The step reduction factor in case of failed residual assembling
+            (e.g. the "warp violation" error caused by a negative volume
+            element resulting from too large deformations)."""),
+        ('ls_min', '0.0 < float < 1.0', 1e-5, False,
+         'The minimum step reduction factor.'),
+        ('give_up_warp', 'bool', False, False,
+         'If True, abort on the "warp violation" error.'),
+        ('check', '0, 1 or 2', 0, False,
+         """If >= 1, check the tangent matrix using finite differences.  If 2,
+            plot the resulting sparsity patterns."""),
+        ('delta', 'float', 1e-6, False,
+         r"""If `check >= 1`, the finite difference matrix is taken as
+            :math:`A_{ij} = \frac{f_i(x_j + \delta) - f_i(x_j - \delta)}{2
+            \delta}`."""),
+        ('log', 'dict or None', None, False,
+         """If not None, log the convergence according to the configuration in
+            the following form: ``{'text' : 'log.txt', 'plot' : 'log.pdf'}``.
+            Each of the dict items can be None."""),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         NonlinearSolver.__init__(self, conf, **kwargs)
 
         conf = self.conf
+
+        log = get_logging_conf(conf)
+        conf.log = log = Struct(name='log_conf', **log)
+        conf.is_any_log = (log.text is not None) or (log.plot is not None)
+
         if conf.is_any_log:
             self.log = Log([[r'$||r||$'], ['iteration']],
                            xlabels=['', 'all iterations'],
@@ -262,7 +210,7 @@ class Newton(NonlinearSolver):
         -----
         * The optional parameters except `iter_hook` and `status` need
           to be given either here or upon `Newton` construction.
-        * Setting `conf.problem == 'linear'` means a pre-assembled and possibly
+        * Setting `conf.is_linear == True` means a pre-assembled and possibly
           pre-solved matrix. This is mostly useful for linear time-dependent
           problems.
         """
@@ -366,7 +314,7 @@ class Newton(NonlinearSolver):
                 break
 
             tt = time.clock()
-            if conf.problem == 'nonlinear':
+            if not conf.is_linear:
                 mtx_a = fun_grad(vec_x)
 
             else:
@@ -427,40 +375,26 @@ class Newton(NonlinearSolver):
 
 class ScipyBroyden(NonlinearSolver):
     """
-    Interface to Broyden and Anderson solvers from scipy.optimize.
+    Interface to Broyden and Anderson solvers from ``scipy.optimize``.
     """
     name = 'nls.scipy_broyden_like'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Missing items are left to scipy defaults. Unused options are ignored.
+    __metaclass__ = SolverMeta
 
-        Example configuration, all items::
-
-            solver_1 = {
-                'name' : 'broyden',
-                'kind' : 'nls.scipy_broyden_like',
-
-                'method'  : 'broyden3',
-                'i_max'   : 10,
-                'alpha'   : 0.9,
-                'M'       : 5,
-                'w0'      : 0.1,
-                'f_tol'   : 6e-6,
-                'verbose' : True,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = NonlinearSolver.process_conf(conf)
-
-        return Struct(method=get('method', 'broyden3'),
-                      i_max=get('i_max', 10),
-                      alpha=get('alpha', 0.9),
-                      M=get('M', 5),
-                      f_tol=get('f_tol', 6e-6),
-                      w0=get('w0', 0.1),
-                      verbose=get('verbose', False)) + common
+    _parameters = [
+        ('method', 'str', 'anderson', False,
+         'The name of the solver in ``scipy.optimize``.'),
+        ('i_max', 'int', 10, False,
+         'The maximum number of iterations.'),
+        ('alpha', 'float', 0.9, False,
+         'See ``scipy.optimize``.'),
+        ('M', 'float', 5, False,
+         'See ``scipy.optimize``.'),
+        ('f_tol', 'float', 1e-6, False,
+         'See ``scipy.optimize``.'),
+        ('w0', 'float', 0.1, False,
+         'See ``scipy.optimize``.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         NonlinearSolver.__init__(self, conf, **kwargs)

@@ -126,7 +126,6 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max' : 10,
         'eps_a' : 1e-10,
-        'problem' : 'nonlinear',
         'check' : 0,
         'delta' : 1e-6,
     }),

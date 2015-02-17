@@ -903,21 +903,13 @@ class Problem(Struct):
 
         if presolve:
             tt = time.clock()
-        if ls_conf.get('needs_problem_instance', False):
-            extra_args = {'problem' : self}
-        else:
-            extra_args = {}
 
         ls = Solver.any_from_conf(ls_conf, mtx=mtx, presolve=presolve,
-                                  **extra_args)
+                                  problem=self)
         if presolve:
             tt = time.clock() - tt
             output('presolve: %.2f [s]' % tt)
 
-        if nls_conf.get('needs_problem_instance', False):
-            extra_args = {'problem' : self}
-        else:
-            extra_args = {}
         ev = self.get_evaluator()
 
         if self.conf.options.get('ulf', False):
@@ -926,7 +918,7 @@ class Problem(Struct):
         nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
                                    fun_grad=ev.eval_tangent_matrix,
                                    lin_solver=ls, iter_hook=self.nls_iter_hook,
-                                   status=nls_status, **extra_args)
+                                   status=nls_status, problem=self)
 
         self.set_solvers_instances(ls=ls, nls=nls)
 
@@ -937,7 +929,7 @@ class Problem(Struct):
         nls_conf = get_default(None, self.nls_conf,
                                'you must set nonlinear solver!')
         aux = Solver.any_from_conf(nls_conf)
-        if aux.conf.problem == 'linear':
+        if aux.conf.get('is_linear', False):
             return True
         else:
             return False
@@ -945,10 +937,7 @@ class Problem(Struct):
     def set_linear(self, is_linear):
         nls_conf = get_default(None, self.nls_conf,
                                'you must set nonlinear solver!')
-        if is_linear:
-            nls_conf.problem = 'linear'
-        else:
-            nls_conf.problem = 'nonlinear'
+        nls_conf.is_linear = is_linear
 
     def solve(self, state0=None, nls_status=None,
               ls_conf=None, nls_conf=None, force_values=None,

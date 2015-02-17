@@ -134,10 +134,10 @@ solvers = {
            {'others': [data_dir
                        + '/examples/acoustics/vibro_acoustic3d_mid.py'],
             'coupling_variables': ['g0', 'w'],
-            'needs_problem_instance': True,
             }),
-    'nls': ('nls.newton', {'i_max'   : 1,
-                           'eps_a'   : 1e-6,
-                           'eps_r'   : 1e-6,
-                           'problem' : 'nonlinear', })
-    }
+    'nls': ('nls.newton', {
+        'i_max' : 1,
+        'eps_a' : 1e-6,
+        'eps_r' : 1e-6,
+    })
+}

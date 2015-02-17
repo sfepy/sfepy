@@ -234,10 +234,10 @@ else:
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton',
-                { 'i_max' : 1,
-                  'eps_a' : 1e-10,
-                  'problem' : 'nonlinear'}),
+    'newton' : ('nls.newton', {
+        'i_max' : 1,
+        'eps_a' : 1e-10,
+    }),
     'ts' : ('ts.simple', {
         't0' : t0,
         't1' : t1,

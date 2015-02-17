@@ -170,8 +170,8 @@ requirements = {
 #! Define linear and nonlinear solver.
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton', {'i_max' : 1,
-                               'eps_a' : 1e-4,
-                               'problem' : 'nonlinear',
-                               })
+    'newton' : ('nls.newton', {
+        'i_max' : 1,
+        'eps_a' : 1e-4,
+    })
 }
