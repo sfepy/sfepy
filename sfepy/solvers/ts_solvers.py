@@ -4,7 +4,7 @@ Time stepping solvers.
 import numpy as nm
 
 from sfepy.base.base import output, Struct, IndexedStruct, basestr
-from sfepy.solvers.solvers import make_get_conf, TimeSteppingSolver
+from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
 from sfepy.discrete.mass_operator import MassOperator
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
@@ -16,6 +16,8 @@ class StationarySolver(TimeSteppingSolver):
     solvers also for stationary problems.
     """
     name = 'ts.stationary'
+
+    __metaclass__ = SolverMeta
 
     def __init__(self, conf, **kwargs):
         TimeSteppingSolver.__init__(self, conf, ts=None, **kwargs)
@@ -50,6 +52,8 @@ class EquationSequenceSolver(TimeSteppingSolver):
     Solver for stationary problems with an equation sequence.
     """
     name = 'ts.equation_sequence'
+
+    __metaclass__ = SolverMeta
 
     def __init__(self, conf, **kwargs):
         TimeSteppingSolver.__init__(self, conf, ts=None, **kwargs)
@@ -317,19 +321,21 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
     """
     name = 'ts.simple'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Process configuration options.
-        """
-        get = make_get_conf(conf, kwargs)
-        common = TimeSteppingSolver.process_conf(conf)
+    __metaclass__ = SolverMeta
 
-        return Struct(t0=get('t0', 0.0),
-                      t1=get('t1', 1.0),
-                      dt=get('dt', None),
-                      n_step=get('n_step', 10),
-                      quasistatic=get('quasistatic', False)) + common
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('quasistatic', 'bool', False, False,
+         """If True, assume a quasistatic time-stepping. Then the non-linear
+            solver is invoked also for the initial time."""),
+    ]
 
     def __init__(self, conf, **kwargs):
         TimeSteppingSolver.__init__(self, conf, **kwargs)
@@ -391,17 +397,14 @@ class ExplicitTimeSteppingSolver(SimpleTimeSteppingSolver):
     """
     name = 'ts.explicit'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Process configuration options.
-        """
-        get = make_get_conf(conf, kwargs)
-        common = SimpleTimeSteppingSolver.process_conf(conf, kwargs)
+    __metaclass__ = SolverMeta
 
-        return Struct(mass=get('mass', None,
-                               'missing "mass" in options!'),
-                      lumped=get('lumped', False)) + common
+    _parameters = SimpleTimeSteppingSolver._parameters + [
+        ('mass', 'term', None, True,
+         'The term for assembling the mass matrix.'),
+        ('lump', 'bool', False, False,
+         'If True, use the lumped mass matrix.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         SimpleTimeSteppingSolver.__init__(self, conf, **kwargs)
@@ -426,30 +429,43 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
     """
     name = 'ts.adaptive'
 
-    @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Process configuration options.
-        """
-        get = make_get_conf(conf, kwargs)
-        common = SimpleTimeSteppingSolver.process_conf(conf, kwargs)
+    __metaclass__ = SolverMeta
 
-        adt = Struct(red_factor=get('dt_red_factor', 0.2),
-                     red_max=get('dt_red_max', 1e-3),
-                     inc_factor=get('dt_inc_factor', 1.25),
-                     inc_on_iter=get('dt_inc_on_iter', 4),
-                     inc_wait=get('dt_inc_wait', 5),
-                     red=1.0, wait=0, dt0=0.0)
-
-        return Struct(adapt_fun=get('adapt_fun', adapt_time_step),
-                      adt=adt) + common
+    _parameters = SimpleTimeSteppingSolver._parameters + [
+        ('adapt_fun', 'callable(ts, status, adt, problem)', None, False,
+         """If given, use this function to set the time step in `ts`. The
+            function return value is a bool - if True, the adaptivity loop
+            should stop. The other parameters below are collected in `adt`,
+            `status` is the nonlinear solver status and `problem` is the
+            :class:`Problem <sfepy.discrete.problem.Problem>` instance."""),
+        ('dt_red_factor', 'float', 0.2, False,
+         'The time step reduction factor.'),
+        ('dt_red_max', 'float', 1e-3, False,
+         'The maximum time step reduction factor.'),
+        ('dt_inc_factor', 'float', 1.25, False,
+         'The time step increase factor.'),
+        ('dt_inc_on_iter', 'int', 4, False,
+         """Increase the time step if the nonlinear solver converged in less
+            than this amount of iterations for `dt_inc_wait` consecutive time
+            steps."""),
+        ('dt_inc_wait', 'int', 5, False,
+         'The number of consecutive time steps, see `dt_inc_on_iter`.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         TimeSteppingSolver.__init__(self, conf, **kwargs)
 
         self.ts = VariableTimeStepper.from_conf(self.conf)
 
-        self.adt = adt = self.conf.adt
+        get = self.conf.get
+        adt = Struct(red_factor=get('dt_red_factor', 0.2),
+                     red_max=get('dt_red_max', 1e-3),
+                     inc_factor=get('dt_inc_factor', 1.25),
+                     inc_on_iter=get('dt_inc_on_iter', 4),
+                     inc_wait=get('dt_inc_wait', 5),
+                     red=1.0, wait=0, dt0=0.0)
+        self.adt = adt
+
         adt.dt0 = self.ts.get_default_time_step()
         self.ts.set_n_digit_from_min_dt(get_min_dt(adt))
 
