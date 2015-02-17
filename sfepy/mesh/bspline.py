@@ -139,7 +139,7 @@ class BSpline:
     @staticmethod
     def basis_function_dg(degree, t, knots, n):
         """
-        Basis function: degree >= 1
+        B-spline basis functions.
 
         Parameters
         ----------
@@ -157,26 +157,25 @@ class BSpline:
         bfun : array
            The spline basis function evaluated for given values.
         """
-        if degree > 1:
-            bfun_dgm1 = BSpline.basis_function_dg(degree - 1, t,
-                                                  knots, n + 1)
+        if degree >= 1:
+            bfun_dgm1 = BSpline.basis_function_dg(degree - 1, t, knots, n + 1)
+
+            nt = len(t)
+            bfun = nm.zeros((nt,n), dtype=nm.float64)
+            for ii in range(n):
+                c1 = t - knots[ii]
+                c2 = knots[ii + degree] - knots[ii]
+
+                if nm.abs(c2) > nm_f64_eps:
+                     bfun[:,ii] = c1 / c2 * bfun_dgm1[:,ii]
+
+                c1 = knots[ii + degree + 1] - t
+                c2 = knots[ii + degree + 1] - knots[ii + 1]
+                if nm.abs(c2) > nm_f64_eps:
+                    bfun[:,ii] += c1 / c2 * bfun_dgm1[:,ii + 1]
 
         else:
-            bfun_dgm1 = BSpline.basis_function_dg0(t, knots, n + 1)
-
-        nt = len(t)
-        bfun = nm.zeros((nt,n), dtype=nm.float64)
-        for ii in range(n):
-            c1 = t - knots[ii]
-            c2 = knots[ii + degree] - knots[ii]
-
-            if nm.abs(c2) > nm_f64_eps:
-                 bfun[:,ii] = c1 / c2 * bfun_dgm1[:,ii]
-
-            c1 = knots[ii + degree + 1] - t
-            c2 = knots[ii + degree + 1] - knots[ii + 1]
-            if nm.abs(c2) > nm_f64_eps:
-                bfun[:,ii] += c1 / c2 * bfun_dgm1[:,ii + 1]
+            bfun = BSpline.basis_function_dg0(t, knots, n)
 
         return bfun
 
