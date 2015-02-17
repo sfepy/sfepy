@@ -192,10 +192,6 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
             state = problem.solve(state0=state0, nls_status=nls_status)
 
     else:
-        if (ts.step == 1) and ts.is_quasistatic and problem.is_linear():
-            mtx = prepare_matrix(problem, state0)
-            problem.init_solvers(nls_status=nls_status, mtx=mtx)
-
         state = problem.solve(state0=state0, nls_status=nls_status)
 
     return state
