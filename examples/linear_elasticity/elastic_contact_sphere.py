@@ -80,7 +80,6 @@ solvers = {
         'i_max' : 20,
         'eps_a' : 1e-1,
         'ls_on' : 2.0,
-        'problem' : 'nonlinear',
         'check' : 0,
         'delta' : 1e-6,
     }),

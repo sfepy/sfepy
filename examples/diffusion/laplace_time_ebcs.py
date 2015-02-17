@@ -72,7 +72,6 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max'      : 1,
         'eps_a'      : 1e-10,
-        'problem'   : 'nonlinear',
     }),
     'ts' : ('ts.simple', {
         't0'     : 0.0,

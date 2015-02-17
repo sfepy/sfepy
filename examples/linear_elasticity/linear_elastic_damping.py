@@ -73,11 +73,6 @@ def adapt_time_step(ts, status, adt, problem):
 
     return True
 
-# Pre-assemble and factorize the matrix prior to time-stepping.
-newton = solvers['newton']
-newton[1].update({'problem' : 'nonlinear'}) # Change of time step changes
-                                            # matrix!
-
 ls = solvers['ls']
 ls[1].update({'presolve' : True})
 

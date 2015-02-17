@@ -198,7 +198,6 @@ solver_1 = {
     'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 save_format = 'hdf5' # 'hdf5' or 'vtk'

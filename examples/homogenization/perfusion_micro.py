@@ -666,8 +666,9 @@ for ch, val in pb_def['channels'].iteritems():
 
 solvers = {
     'ls': ('ls.scipy_direct', {}),
-    'newton': ('nls.newton', {'i_max': 1,
-                              'problem': 'nonlinear', })
+    'newton': ('nls.newton', {
+        'i_max': 1,
+    })
 }
 
 fe = {

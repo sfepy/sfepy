@@ -103,11 +103,11 @@ equations = {
 #! iteration is needed and the final rezidual is obtained for free.
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton',
-                { 'i_max'      : 1,
-                  'eps_a'      : 1e-2,
-                  'eps_r'      : 1e-10,
-                  'problem'   : 'nonlinear'}),
+    'newton' : ('nls.newton', {
+        'i_max'      : 1,
+        'eps_a'      : 1e-2,
+        'eps_r'      : 1e-10,
+    }),
 }
 #! Options
 #! -------
