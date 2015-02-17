@@ -929,7 +929,7 @@ class Problem(Struct):
         nls_conf = get_default(None, self.nls_conf,
                                'you must set nonlinear solver!')
         aux = Solver.any_from_conf(nls_conf)
-        if aux.conf.problem == 'linear':
+        if aux.conf.get('is_linear', False):
             return True
         else:
             return False
@@ -937,10 +937,7 @@ class Problem(Struct):
     def set_linear(self, is_linear):
         nls_conf = get_default(None, self.nls_conf,
                                'you must set nonlinear solver!')
-        if is_linear:
-            nls_conf.problem = 'linear'
-        else:
-            nls_conf.problem = 'nonlinear'
+        nls_conf.is_linear = is_linear
 
     def solve(self, state0=None, nls_status=None,
               ls_conf=None, nls_conf=None, force_values=None,

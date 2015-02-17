@@ -156,8 +156,8 @@ class Newton(NonlinearSolver):
          """If not None, log the convergence according to the configuration in
             the following form: ``{'text' : 'log.txt', 'plot' : 'log.pdf'}``.
             Each of the dict items can be None."""),
-        ('problem', "'nonlinear' or 'linear'", 'nonlinear', False,
-         'Specifies if the problem is linear or non-linear.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
     ]
 
     def __init__(self, conf, **kwargs):
@@ -210,7 +210,7 @@ class Newton(NonlinearSolver):
         -----
         * The optional parameters except `iter_hook` and `status` need
           to be given either here or upon `Newton` construction.
-        * Setting `conf.problem == 'linear'` means a pre-assembled and possibly
+        * Setting `conf.is_linear == True` means a pre-assembled and possibly
           pre-solved matrix. This is mostly useful for linear time-dependent
           problems.
         """
@@ -314,7 +314,7 @@ class Newton(NonlinearSolver):
                 break
 
             tt = time.clock()
-            if conf.problem == 'nonlinear':
+            if not conf.is_linear:
                 mtx_a = fun_grad(vec_x)
 
             else:
