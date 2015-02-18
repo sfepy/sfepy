@@ -34,7 +34,7 @@ def create_mass_matrix(field):
 
     return mtx
 
-def make_l2_projection(target, source):
+def make_l2_projection(target, source, ls=None):
     """
     Project a scalar `source` field variable to a scalar `target` field
     variable using the :math:`L^2` dot product.
@@ -44,9 +44,9 @@ def make_l2_projection(target, source):
         val.shape = val.shape + (1,)
         return val
 
-    make_l2_projection_data(target, eval_variable)
+    make_l2_projection_data(target, eval_variable, ls=ls)
 
-def make_l2_projection_data(target, eval_data, order=None):
+def make_l2_projection_data(target, eval_data, order=None, ls=None):
     """
     Project scalar data to a scalar `target` field variable using the
     :math:`L^2` dot product.
@@ -90,7 +90,8 @@ def make_l2_projection_data(target, eval_data, order=None):
     eq = Equation('projection', lhs - rhs)
     eqs = Equations([eq])
 
-    ls = ScipyDirect({})
+    if ls is None:
+        ls = ScipyDirect({})
 
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
