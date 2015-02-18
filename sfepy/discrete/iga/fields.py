@@ -3,7 +3,7 @@ Fields for isogeometric analysis.
 """
 import numpy as nm
 
-from sfepy.base.base import assert_, Struct
+from sfepy.base.base import assert_, basestr, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.iga.mappings import IGMapping
 from sfepy.discrete.iga.iga import get_bezier_element_entities
@@ -48,16 +48,23 @@ class IGField(Field):
             on the field kind.
         region : Region
             The region where the field is defined.
-        approx_order : tuple, optional
-            The field approximation order tuple with the first component in the
-            form 'iga+<nonnegative int>'. Other components are ignored. The
-            nonnegative int corresponds to the number of times the degree is
-            elevated by one w.r.t. the domain NURBS description.
+        approx_order : str or tuple, optional
+            The field approximation order string or tuple with the first
+            component in the form 'iga+<nonnegative int>'. Other components are
+            ignored. The nonnegative int corresponds to the number of times the
+            degree is elevated by one w.r.t. the domain NURBS description.
         **kwargs : dict
             Additional keyword arguments.
         """
         shape = parse_shape(shape, region.domain.shape.dim)
-        elevate_times = parse_approx_order(approx_order[0])
+
+        if approx_order is None:
+            elevate_times = 0
+
+        else:
+            if isinstance(approx_order, basestr): approx_order = (approx_order,)
+            elevate_times = parse_approx_order(approx_order[0])
+
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region, elevate_times=elevate_times)
 
