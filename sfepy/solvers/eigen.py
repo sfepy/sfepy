@@ -163,7 +163,7 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
     __metaclass__ = SolverMeta
 
     _parameters = [
-        ('i_max', 'int', 1, False,
+        ('i_max', 'int', 20, False,
          'The maximum number of iterations.'),
         ('eps_a', 'float', None, False,
          'The absolute tolerance for the convergence.'),
@@ -196,7 +196,7 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
                           M=conf.precond,
                           tol=conf.eps_a, maxiter=conf.i_max,
                           largest=conf.largest,
-                          verbosityLevel=conf.verbosity)
+                          verbosityLevel=conf.verbose)
 
         if not eigenvectors:
             out = out[0]
