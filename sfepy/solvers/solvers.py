@@ -172,6 +172,27 @@ class Solver(Struct):
         new_conf = self.process_conf(conf, kwargs)
         Struct.__init__(self, conf=new_conf, orig_conf=conf, **kwargs)
 
+    def build_solver_kwargs(self, conf):
+        """
+        Build the `kwargs` dict for the underlying solver function using the
+        extra options (marked by '*' in ``_parameters``) in `conf`. The
+        declared parameters are omitted.
+        """
+        if len(self._parameters) and self._parameters[0][0] != 'name':
+            options = Solver._parameters + self._parameters
+
+        else:
+            options = self._parameters
+
+        std = set([ii[0] for ii in options if ii[0] != '*'])
+
+        kwargs = {}
+        for key, val in conf.to_dict().iteritems():
+            if key not in std:
+                kwargs[key] = val
+
+        return kwargs
+
     def __call__(self, **kwargs):
         raise ValueError('called an abstract Solver instance!')
 
