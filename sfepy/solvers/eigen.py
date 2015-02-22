@@ -212,9 +212,9 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     __metaclass__ = SolverMeta
 
     _parameters = [
-        ('i_max', 'int', 1, False,
+        ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
-        ('eps_a', 'float', None, False,
+        ('eps_a', 'float', 1e-5, False,
          'The absolute tolerance for the convergence.'),
         ('tau', 'float', 0.0, False,
          'The target value.'),
@@ -241,19 +241,20 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
 
-    @standard_call
-    def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
-                 eigenvectors=None, status=None, conf=None):
         imp = try_imports(['from pysparse import jdsym, itsolvers, precon',
                            'from pysparse.eigen import jdsym;'
                            ' from pysparse import itsolvers, precon'],
                           'cannot import pysparse eigensolvers!')
+        self.imp = imp
 
-        jdsym = imp['jdsym']
-        itsolvers = imp['itsolvers']
-        precon = imp['precon']
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
+                 eigenvectors=None, status=None, conf=None):
+        jdsym = self.imp['jdsym']
+        itsolvers = self.imp['itsolvers']
+        precon = self.imp['precon']
 
-        output("solving...")
+        output('solving...', verbose=conf.verbose)
 
         A = self._convert_mat(mtx_a)
         Atau = A.copy()
@@ -278,13 +279,21 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
                                                 clvl=conf.verbosity,
                                                 strategy=conf.strategy)
 
-        output("number of converged eigenvalues:", kconv)
+        output('number of converged eigenvalues:', kconv, verbose=conf.verbose)
 
-        output("...done")
+        output('...done', verbose=conf.verbose)
 
         if status is not None:
             status['q'] = Q
             status['it'] = it
             status['it_in'] = it_in
 
-        return lmbd, Q
+        ii = nm.argsort(lmbd)
+
+        if eigenvectors:
+            out = (lmbd[ii], Q[:, ii])
+
+        else:
+            out = lmbd[ii]
+
+        return out
