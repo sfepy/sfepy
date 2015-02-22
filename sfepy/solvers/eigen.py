@@ -1,7 +1,6 @@
 import time
 
 import numpy as nm
-import scipy.linalg as sla
 
 from sfepy.base.base import output, get_default, try_imports, Struct
 from sfepy.solvers.solvers import SolverMeta, Solver, EigenvalueSolver
@@ -59,45 +58,59 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
 
     __metaclass__ = SolverMeta
 
+    _parameters = [
+        ('method', "{'eig', 'eigh'}", 'eig', False,
+         """The method for solving general or symmetric eigenvalue problems:
+            for dense problems :func:`eig()` or :func:`eigh()` are used, for
+            sparse problems (if `n_eigs` is given) :func:`eigs()` or
+            :func:`eigsh()` are used."""),
+        ('*', '*', None, False,
+         'Additional parameters supported by the method.'),
+    ]
+
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
+
+        import scipy.linalg as sla
+        self.sla = sla
+
+        aux = try_imports(['import scipy.sparse.linalg as ssla'],
+                          'cannot import scipy sparse eigenvalue solvers!')
+        self.ssla = aux['ssla']
 
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
                  status=None, conf=None):
+        kwargs = self.build_solver_kwargs(conf)
 
         if n_eigs is None:
             mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
-            out = sla.eig(mtx_a, mtx_b, right=eigenvectors)
-            if eigenvectors:
-                eigs = out[0]
-            else:
-                eigs = out
-            ii = nm.argsort(eigs)
-            if eigenvectors:
-                mtx_ev = out[1][:,ii]
-                out = (eigs[ii], mtx_ev)
-            else:
-                out = (eigs,)
+            eig = self.sla.eig if conf.method == 'eig' else self.sla.eigh
+            out = eig(mtx_a, mtx_b, right=eigenvectors, **kwargs)
+
         else:
-            try:
-                from scipy.splinalg import eigen_symmetric
-            except ImportError:
-                eigen_symmetric = None
+            eig = self.ssla.eigs if conf.method == 'eig' else self.ssla.eigsh
+            out = eig(mtx_a, M=mtx_b, k=n_eigs, which='SM',
+                      return_eigenvectors=eigenvectors, **kwargs)
 
-            try:
-                from scipy.sparse.linalg.eigen.arpack import eigen_symmetric
-            except ImportError:
-                eigen_symmetric = None
+        if eigenvectors:
+            eigs = out[0]
 
-            if eigen_symmetric is None:
-                raise ImportError('cannot import eigen_symmetric!')
+        else:
+            eigs = out
 
-            out = eigen_symmetric(mtx_a, k=n_eigs, M=mtx_b)
+        ii = nm.argsort(eigs)
+
+        if eigenvectors:
+            mtx_ev = out[1][:, ii]
+            out = (eigs[ii], mtx_ev)
+
+        else:
+            out = eigs[ii]
 
         return out
 
-class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
+class ScipySGEigenvalueSolver(EigenvalueSolver):
     """
     SciPy-based solver for dense symmetric problems.
     """
@@ -105,10 +118,11 @@ class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
 
     __metaclass__ = SolverMeta
 
-    _parameters = [
-        ('force_n_eigs', 'bool', False, False,
-         'If True, use the methods as if `n_eigs` was given.'),
-    ]
+    def __init__(self, conf, **kwargs):
+        EigenvalueSolver.__init__(self, conf, **kwargs)
+
+        import scipy.lib.lapack as llapack
+        self.llapack = llapack
 
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
@@ -118,40 +132,36 @@ class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
         -----
         Eigenvectors argument is ignored, as they are computed always.
         """
-        import scipy.lib.lapack as ll
+        ll = self.llapack
 
-        if (n_eigs is None) or (conf.force_n_eigs):
-            mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
-            if nm.iscomplexobj(mtx_a):
-                if mtx_b is None:
-                    fun = ll.get_lapack_funcs(['heev'], arrays=(mtx_a,))[0]
-                else:
-                    fun = ll.get_lapack_funcs(['hegv'], arrays=(mtx_a,))[0]
-            else:
-                if mtx_b is None:
-                    fun = ll.get_lapack_funcs(['syev'], arrays=(mtx_a,))[0]
-                else:
-                    fun = ll.get_lapack_funcs(['sygv'], arrays=(mtx_a,))[0]
-
+        mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
+        if nm.iscomplexobj(mtx_a):
             if mtx_b is None:
-                out = fun(mtx_a)
+                fun = ll.get_lapack_funcs(['heev'], arrays=(mtx_a,))[0]
             else:
-                out = fun(mtx_a, mtx_b)
-
-            if not eigenvectors:
-                if n_eigs is None:
-                    out = out[0]
-                else:
-                    out = out[0][:n_eigs]
-            else:
-                if n_eigs is None:
-                    out = out[:-1]
-                else:
-                    out = (out[0][:n_eigs], out[1][:, :n_eigs])
-
+                fun = ll.get_lapack_funcs(['hegv'], arrays=(mtx_a,))[0]
         else:
-            out = ScipyEigenvalueSolver.call(self, mtx_a, mtx_b, n_eigs,
-                                             eigenvectors, status=status)
+            if mtx_b is None:
+                fun = ll.get_lapack_funcs(['syev'], arrays=(mtx_a,))[0]
+            else:
+                fun = ll.get_lapack_funcs(['sygv'], arrays=(mtx_a,))[0]
+
+        if mtx_b is None:
+            out = fun(mtx_a)
+        else:
+            out = fun(mtx_a, mtx_b)
+
+        if not eigenvectors:
+            if n_eigs is None:
+                out = out[0]
+            else:
+                out = out[0][:n_eigs]
+        else:
+            if n_eigs is None:
+                out = out[:-1]
+            else:
+                out = (out[0][:n_eigs], out[1][:, :n_eigs])
+
         return out
 
 class LOBPCGEigenvalueSolver(EigenvalueSolver):
