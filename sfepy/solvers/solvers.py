@@ -145,7 +145,7 @@ class Solver(Struct):
             setattr(opts, name, get(name, default, msg))
 
         if allow_extra:
-            all_keys = set(kwargs.keys() + conf.to_dict().keys())
+            all_keys = set(conf.to_dict().keys())
             other = all_keys.difference(opts.to_dict().keys())
             for name in other:
                 setattr(opts, name, get(name, None, None))
