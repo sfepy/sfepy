@@ -350,7 +350,6 @@ class ScipyFMinSolver(OptimizationSolver):
         'fmin_slsqp' : 'iter',
         'fmin_tnc' : 'maxfun',
     }
-    _omit = ('name', 'kind', 'method', 'i_max', 'verbose')
     _has_grad = ('fmin_bfgs', 'fmin_cg', 'fmin_l_bfgs_b', 'fmin_ncg',
                  'fmin_slsqp', 'fmin_tnc')
 
@@ -405,9 +404,7 @@ class ScipyFMinSolver(OptimizationSolver):
         if 'disp' in inspect.getargspec(self.solver)[0]:
             kwargs['disp'] = conf.verbose
 
-        for key, val in conf.to_dict().iteritems():
-            if key not in self._omit:
-                kwargs[key] = val
+        kwargs.update(self.build_solver_kwargs(conf))
 
         out = self.solver(obj_fun, x0, **kwargs)
 
