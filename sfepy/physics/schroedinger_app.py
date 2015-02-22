@@ -119,7 +119,7 @@ class SchroedingerApp(PDESolverApp):
 
         output('computing resonance frequencies...')
         eig = Solver.any_from_conf(pb.get_solver_conf(opts.eigen_solver))
-        eigs, mtx_s_phi = eig(mtx_a, mtx_b, n_eigs)
+        eigs, mtx_s_phi = eig(mtx_a, mtx_b, n_eigs, eigenvectors=True)
         output('...done')
 
         bounding_box = pb.domain.mesh.get_bounding_box()
