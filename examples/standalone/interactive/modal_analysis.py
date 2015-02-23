@@ -30,6 +30,12 @@ Examples
 - Use 3D domain::
 
     python examples/standalone/interactive/modal_analysis.py -d 1,1,1 -c 0,0,0 -s 8,8,8 --show
+
+- Change the eigenvalue problem solver to LOBPCG::
+
+    python examples/standalone/interactive/modal_analysis.py --solver="eig.scipy_lobpcg,i_max:100,largest:False" --show
+
+  See :mod:`sfepy.solvers.eigen` for available solvers.
 """
 import sys
 sys.path.append('.')
@@ -46,6 +52,7 @@ from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.mesh.mesh_generators import gen_block_mesh
+from sfepy.solvers import Solver
 
 usage = '%prog [options]\n' + __doc__.rstrip()
 
@@ -64,6 +71,9 @@ helps = {
     'density' : "the material density [default: %default]",
     'order' : 'displacement field approximation order [default: %default]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %default]',
+    'solver' : 'the eigenvalue problem solver to use. It should be given'
+    ' as a comma-separated list: solver_kind,option0:value0,option1:value1,...'
+    ' [default: %default]',
     'show' : 'show the results figure',
 }
 
@@ -97,6 +107,10 @@ def main():
     parser.add_option('-n', '--n-eigs', metavar='int', type=int,
                       action='store', dest='n_eigs',
                       default=6, help=helps['order'])
+    parser.add_option('', '--solver', metavar='solver',
+                      action='store', dest='solver',
+                      default="eig.scipy,method:'eigh',tol:1e-5,maxiter:1000",
+                      help=helps['solver'])
     parser.add_option('', '--show',
                       action="store_true", dest='show',
                       default=False, help=helps['show'])
@@ -112,6 +126,13 @@ def main():
     centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
     shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
 
+    aux = options.solver.split(',')
+    kwargs = {}
+    for option in aux[1:]:
+        key, val = option.split(':')
+        kwargs[key.strip()] = eval(val)
+    eig_conf = Struct(name='evp', kind=aux[0], **kwargs)
+
     output('dimensions:', dims)
     output('centre:    ', centre)
     output('shape:     ', shape)
@@ -119,6 +140,14 @@ def main():
     output("  Young's modulus:", options.young)
     output("  Poisson's ratio:", options.poisson)
     output('  density:', options.density)
+    output('requested %d eigenvalues' % options.n_eigs)
+    output('using eigenvalue problem solver:', eig_conf.kind)
+    output.level += 1
+    for key, val in kwargs.iteritems():
+        output('%s: %r' % (key, val))
+    output.level -= 1
+
+    eig_solver = Solver.any_from_conf(eig_conf)
 
     # Build the problem definition.
     mesh = gen_block_mesh(dims, shape, centre, name='mesh')
@@ -170,12 +199,16 @@ def main():
     mtx_m = eq2.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
 
     try:
-        eigs, svecs = sla.eigsh(mtx_k, k=options.n_eigs + n_rbm, M=mtx_m,
-                                which='SM', tol=1e-5, maxiter=10000)
+        eigs, svecs = eig_solver(mtx_k, mtx_m, options.n_eigs + n_rbm,
+                                 eigenvectors=True)
+
     except sla.ArpackNoConvergence as ee:
         eigs = ee.eigenvalues
         svecs = ee.eigenvectors
         output('only %d eigenvalues converged!' % len(eigs))
+
+    output('%d eigenvalues converged (%d ignored as rigid body modes)' %
+           (len(eigs), n_rbm))
 
     eigs = eigs[n_rbm:]
     svecs = svecs[:, n_rbm:]
