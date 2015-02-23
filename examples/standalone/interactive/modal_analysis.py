@@ -206,7 +206,7 @@ def main():
     pb.save_state('eigenshapes.vtk', out=out)
     pb.save_regions_as_groups('regions')
 
-    if options.show:
+    if len(eigs) and options.show:
         # Show the solution. If the approximation order is greater than 1, the
         # extra DOFs are simply thrown away.
         from sfepy.postprocess.viewer import Viewer
