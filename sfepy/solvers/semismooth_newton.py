@@ -121,8 +121,8 @@ class SemismoothNewton(Newton):
                 else:
                     if conf.semismooth:
                         # Semi-smooth equation.
-                        vec_semismooth_r = nm.sqrt(vec_a_r**2.0 + vec_b_r**2.0) \
-                                           - (vec_a_r + vec_b_r)
+                        vec_semismooth_r = (nm.sqrt(vec_a_r**2.0 + vec_b_r**2.0)
+                                            - (vec_a_r + vec_b_r))
 
                     else:
                         # Non-smooth equation (brute force).
@@ -141,7 +141,8 @@ class SemismoothNewton(Newton):
                     try:
                         err = nla.norm(vec_r)
                     except:
-                        output('infs or nans in the residual:', vec_semismooth_r)
+                        output('infs or nans in the residual:',
+                               vec_semismooth_r)
                         output(nm.isfinite(vec_semismooth_r).all())
                         debug()
 
@@ -172,7 +173,8 @@ class SemismoothNewton(Newton):
                     if step_mode == 'regular':
                         output('restore previous state')
                         vec_x = vec_x_last.copy()
-                        vec_smooth_r, vec_a_r, vec_b_r, vec_semismooth_r = r_last
+                        (vec_smooth_r, vec_a_r, vec_b_r,
+                         vec_semismooth_r) = r_last
                         err = err_last
                         reuse_matrix = True
 
@@ -219,7 +221,7 @@ class SemismoothNewton(Newton):
 
             time_stats['matrix'] = time.clock() - tt
 
-            tt = time.clock() 
+            tt = time.clock()
 
             if step_mode == 'regular':
                 vec_dx = lin_solver(vec_r, mtx=mtx_jac)
