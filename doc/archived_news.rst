@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **22.11.2013** Version 2013.4 released (simplified quadrature definition,
+  equation sequence solver, initial support for 'plate'
+  integration/connectivity type, script for visualization of quadrature points
+  and weights, etc.), see :ref:`release notes <2013.3-2013.4>`.
+
 * **18.09.2013** Version 2013.3 released (implementation of Mesh topology data
   structures in C, implementation of regions based on C Mesh, MultiProblem
   solver for conjugate solution of subproblems, new advanced examples
