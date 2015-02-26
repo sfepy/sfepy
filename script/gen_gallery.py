@@ -299,8 +299,7 @@ def generate_images(images_dir, examples_dir):
 
     view = Viewer('', offscreen=False)
 
-#    for ex_filename in locate_files('*.py', examples_dir):
-    for ex_filename in locate_files('elastic_contact_*.py', examples_dir):
+    for ex_filename in locate_files('*.py', examples_dir):
         if _omit(ex_filename): continue
 
         output.level = 0
