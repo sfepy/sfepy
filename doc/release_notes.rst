@@ -1,5 +1,195 @@
 # created: 20.07.2007 (-1)
 
+.. _2014.4-2015.1:
+
+from 2014.4 to 2015.1
+=====================
+
+- support multiple fields in IGA
+
+  - merge branch iga-multifield
+  - move NurbsPatch-related code in IGDomain.__init__() to
+    NurbsPatch.__init__()
+  - update IGMapping for nurbs patch other than domain.nurbs
+
+    - update IGMapping.__init__() - new nurbs argument
+    - update docstring
+
+  - allow 'iga*' approximation order in parse_approx_order()
+  - new NurbsPatch.elevate()
+  - update IGField.__init__() for degree elevation of NURBS basis
+
+    - new approx_order argument in IGField.__init__()
+    - new parse_approx_order()
+
+  - use self.nurbs instead of self.domain.nurbs in IGField
+
+    - update .get_econn(), .set_dofs(), .create_mapping(), .create_output()
+    - new ._get_facets()
+    - remove IGDomain.facets
+
+  - new meshes/iga/block2d.iga
+  - new examples/navier_stokes/navier_stokes2d_iga.py + test
+
+- IGA:
+
+  - new eval_bspline_basis_tp() - use if all weights are one - new is_nurbs(),
+    update igac.pyx
+  - pre-compute Bernstein basis in eval_mapping_data_in_qp(),
+    eval_variable_in_qp() - update eval_bspline_basis_tp(),
+    eval_nurbs_basis_tp()
+  - fix get_facet_axes() in 2D
+  - fix get_surface_degrees()
+  - fix connectivity types in create_connectivity_1d()
+  - update get_bezier_element_entities() to return also vertices
+  - new create_from_igakit(), update gen_patch_block_domain()
+  - new NurbsPatch._to_igakit(), ._from_igakit(), update .elevate()
+  - update IGField.__init__() for str or None approx_order values
+
+- redesign handling of solver parameters
+
+  - merge branch solver-parameters
+  - new SolverMeta
+
+    - new format_next(), typeset_to_indent(), make_option_docstring()
+    - new par_template
+
+  - update Solver to use SolverMeta, new generic Solver.process_conf()
+  - update LinearSolver.get_tolerance() for no tolerances in conf, clean up
+  - update basic linear solvers for SolverMeta, new ._parameters class
+    attribute
+
+    - update ScipyDirect, ScipyIterative, PyAMGSolver, PETScKrylovSolver,
+      PETScParallelKrylovSolver - remove .process_conf()
+
+  - update nonlinear solvers for SolverMeta, new ._parameters class attribute
+
+    - update Newton, ScipyBroyden, Oseen - remove .process_conf()
+
+  - support extra parameters in Solver.process_conf() - marked by '*' name in
+    _parameters solver attribute
+
+  - update optimization solvers for SolverMeta, new ._parameters class
+    attribute
+
+    - update FMinSteepestDescent, ScipyFMinSolver - remove .process_conf()
+
+  - update remaining linear solvers for SolverMeta, new ._parameters class
+    attribute
+
+    - update SchurGeneralized, SchurComplement, MultiProblem - remove
+      .process_conf()
+
+  - remove 'needs_problem_instance' solver parameter
+  - remove 'needs_problem_instance' from examples
+  - rename Newton parameter 'problem' -> 'is_linear'
+
+    - update Newton.parameters, .__call__()
+    - update Problem.is_linear(), .set_linear()
+
+  - docs: update for 'is_linear'
+  - update examples for 'is_linear' (remove default setting, reformat if
+    needed)
+  - update SemismoothNewton for SolverMeta, new ._parameters class attribute -
+    remove .process_conf()
+  - update time-stepping solvers for SolverMeta, new ._parameters class
+    attribute
+
+    - update StationarySolver, EquationSequenceSolver,
+      SimpleTimeSteppingSolver, ExplicitTimeSteppingSolver,
+      AdaptiveTimeSteppingSolver - remove .process_conf()
+
+  - update eigenvalue solvers for SolverMeta, new ._parameters class attribute
+
+    - update ScipyEigenvalueSolver, ScipySGEigenvalueSolver,
+      LOBPCGEigenvalueSolver, PysparseEigenvalueSolver - remove .process_conf()
+
+  - use SchurComplement solver in linear_elastic_up.py example
+
+- solvers:
+
+  - remove ls.umfpack solver (class Umfpack), replace by ls.scipy_direct
+  - clean up sfepy/solvers/ls.py
+  - remove unneeded code in make_implicit_step()
+  - fix default i_max of LOBPCGEigenvalueSolver, use verbose option
+  - obey verbose option and eigenvectors argument in PysparseEigenvalueSolver
+
+    - fix default i_max, eps_a
+    - move imports to .__init__() for early failure
+
+  - new Solver.build_solver_kwargs()
+  - refactor ScipyEigenvalueSolver, ScipySGEigenvalueSolver
+
+    - ScipyEigenvalueSolver uses dense or sparse scipy linalg functions, new
+      method option, support extra options
+    - ScipySGEigenvalueSolver uses dense lapack functions, remove force_n_eigs
+      option
+    - imports moved to .__init__() for early failure
+
+  - use Solver.build_solver_kwargs() in ScipyFMinSolver
+  - clean up sfepy/solvers/optimize.py
+  - clean up sfepy/solvers/oseen.py
+  - clean up sfepy/solvers/semismooth_newton.py
+
+- scripts:
+
+  - script/gen_iga_patch.py: new --cp-mode option, update
+    gen_patch_block_domain()
+  - script/gen_gallery.py: update views for centered scene
+
+- miscellaneous updates:
+
+  - new Region.from_cells()
+  - clean up tests/sympy_operators.py
+  - fix get_mem_usage() (workaround of pyparsing object with iteritems of str
+    type)
+  - update units_of_quantities (add density), prefixes (add 'p', 'T')
+  - fix GenericFileSource.get_bounding_box()
+  - fix mappings, QP and base function key collisions
+
+    - use integral order instead of name in mapping keys, in QP and base
+      function keys
+    - make region name the first item in mapping keys
+    - update Approximation, SurfaceApproximation, Field, FieldVariable, Term,
+      NewTerm
+
+  - update QuadraturePoints docstring
+  - support all QuadraturePoints.__init__() arguments in Integral.__init__() -
+    update Integral.get_qp()
+  - update actor positions in Viewer.build_mlab_pipeline() to center scene
+  - fix sympy.zeros() calls for sympy 0.7.6
+  - new bspline functions (curve and surface)
+  - update SplineBox: use bspline.py functions, new test
+  - update BSpline.basis_function_dg() for degree 0
+  - add linear solver argument to make_l2_projection(),
+    make_l2_projection_data()
+  - fix SchroedingerApp.solve_eigen_problem() to request eigenvectors - fix for
+    updated PysparseEigenvalueSolver
+
+- tests and examples:
+
+  - new examples/standalone/interactive/modal_analysis.py
+  - update test_install.py to test modal_analysis.py example
+  - update examples/navier_stokes/navier_stokes2d.py - generated domain, new BC
+  - remove unused rectangle_fine_quad.mesh, rectangle_fine_tri.mesh
+  - regenerate IGA meshes with greville control points mode
+  - new tests/test_input_linear_elastic_iga.py, tests/test_input_poisson_iga.py
+  - new tests/test_eigenvalue_solvers.py
+
+- docs:
+
+  - sync module index of developer guide with current sources
+  - update citing section
+  - update list of applications
+  - update list of IGA examples
+  - update description of IGA field definition
+  - update installation notes:
+
+    - add Anaconda distribution info
+    - update tested versions
+    - bux-fixes
+    - minor reorganization and clean up
+
 .. _2014.3-2014.4:
 
 from 2014.3 to 2014.4
