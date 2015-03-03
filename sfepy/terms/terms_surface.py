@@ -15,6 +15,11 @@ class LinearTractionTerm(Term):
     :math:`\bar{p} \ull{I} \cdot \ul{n}` for a given scalar pressure,
     :math:`\ul{f}` for a traction vector, and itself for a stress tensor.
 
+    The material parameter can have one of the following shapes: 1 or (1, 1),
+    (D, 1), (S, 1). The symmetric tensor storage is used in the last case: in
+    3D S = 6 and the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D
+    S = 3 and the indices ordered as :math:`[11, 22, 12]`.
+
     :Definition:
 
     .. math::
