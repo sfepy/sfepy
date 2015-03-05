@@ -81,7 +81,7 @@ def gen_lines(problem):
 
     return probes, labels
 
-def probe_retults(u, strain, stress, probe, label):
+def probe_results(u, strain, stress, probe, label):
     """
     Probe the results using the given probe and plot the probed values.
     """
@@ -274,7 +274,7 @@ def main():
 
         all_results = []
         for ii, probe in enumerate(probes):
-            fig, results = probe_retults(u, strain, stress, probe, labels[ii])
+            fig, results = probe_results(u, strain, stress, probe, labels[ii])
 
             fig.savefig('its2D_interactive_probe_%d.png' % ii)
             all_results.append(results)
