@@ -1069,6 +1069,7 @@ sfepy.mesh package
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/mesh/bspline
    src/sfepy/mesh/geom_tools
    src/sfepy/mesh/mesh_generators
    src/sfepy/mesh/mesh_tools
