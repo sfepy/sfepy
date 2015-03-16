@@ -245,6 +245,9 @@ class TimeSteppingSolver(Solver):
                  post_process_hook=None, nls_status=None):
         raise ValueError('called an abstract TimeSteppingSolver instance!')
 
+    def init_time(self, nls_status=None):
+        pass
+
 class OptimizationSolver(Solver):
     """
     Abstract optimization solver class.

@@ -26,8 +26,6 @@ class StationarySolver(TimeSteppingSolver):
                  post_process_hook=None, nls_status=None):
         problem = self.problem
 
-        problem.time_update()
-
         state = problem.solve(state0=state0, nls_status=nls_status)
 
         if step_hook is not None:
@@ -39,6 +37,10 @@ class StationarySolver(TimeSteppingSolver):
                                file_per_var=None)
 
         yield 0, 0.0, state
+
+    def init_time(self, nls_status=None):
+        self.problem.time_update()
+        self.problem.init_solvers(nls_status=nls_status)
 
 def replace_virtuals(deps, pairs):
     out = {}
@@ -111,6 +113,9 @@ class EquationSequenceSolver(TimeSteppingSolver):
 
         yield 0, 0.0, state
 
+    def init_time(self, nls_status=None):
+        self.problem.init_solvers(nls_status=nls_status)
+
 def get_initial_state(problem):
     """
     Create a zero state vector and apply initial conditions.
@@ -160,15 +165,11 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
     """
     Make a step of an implicit time stepping solver.
     """
-    problem.time_update(ts)
-
     if ts.step == 0:
         state0.apply_ebc()
         state = state0.copy(deep=True)
 
         if not ts.is_quasistatic:
-            problem.init_time(ts)
-
             ev = problem.get_evaluator()
             try:
                 vec_r = ev.eval_residual(state(), is_full=True)
@@ -181,13 +182,7 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
 
         if problem.is_linear():
             mtx = prepare_matrix(problem, state)
-
-        else:
-            mtx = None
-
-        # Initialize solvers (and possibly presolve the matrix).
-        presolve = mtx is not None
-        problem.init_solvers(nls_status=nls_status, mtx=mtx, presolve=presolve)
+            problem.try_presolve(mtx)
 
         # Initialize variables with history.
         state0.init_history()
@@ -196,6 +191,7 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
             state = problem.solve(state0=state0, nls_status=nls_status)
 
     else:
+        problem.time_update(ts)
         state = problem.solve(state0=state0, nls_status=nls_status)
 
     return state
@@ -204,16 +200,15 @@ def make_explicit_step(ts, state0, problem, mass, nls_status=None):
     """
     Make a step of an explicit time stepping solver.
     """
-    problem.time_update(ts)
-
     if ts.step == 0:
         state0.apply_ebc()
         state = state0.copy(deep=True)
 
-        problem.init_time(ts)
-
         # Initialize variables with history.
         state0.init_history()
+
+    else:
+        problem.time_update(ts)
 
     ev = problem.get_evaluator()
     try:
@@ -378,6 +373,15 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
             problem.advance(ts)
 
+    def init_time(self, nls_status=None):
+        ts = self.ts
+        problem = self.problem
+
+        problem.time_update(ts)
+        problem.init_solvers(nls_status=nls_status)
+
+        if not ts.is_quasistatic:
+            problem.init_time(ts)
 
     def solve_step(self, ts, state0, nls_status=None):
         """
