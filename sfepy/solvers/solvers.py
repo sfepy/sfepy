@@ -215,6 +215,9 @@ class LinearSolver(Solver):
         """
         return self.conf.get('eps_a', None), self.conf.get('eps_r', None)
 
+    def presolve(self, mtx):
+        pass
+
 class NonlinearSolver(Solver):
     """
     Abstract nonlinear solver class.
