@@ -99,7 +99,7 @@ class Problem(Struct):
                 obj.set_equations(conf.equations, user={'ts' : obj.ts})
 
         if init_solvers:
-            obj.set_solvers(conf.solvers, conf.options)
+            obj.set_conf_solvers(conf.solvers, conf.options)
 
         return obj
 
@@ -208,7 +208,7 @@ class Problem(Struct):
         obj.epbcs = self.epbcs
         obj.lcbcs = self.lcbcs
 
-        obj.set_solvers(self.conf.solvers, self.conf.options)
+        obj.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         obj.setup_output(output_filename_trunk=self.ofn_trunk,
                          output_dir=self.output_dir,
@@ -239,7 +239,7 @@ class Problem(Struct):
                         functions=self.functions, domain=self.domain,
                         fields=self.fields, auto_conf=False,
                         auto_solvers=False)
-        subpb.set_solvers(self.conf.solvers, self.conf.options)
+        subpb.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
                                                     known_var_names)
@@ -407,7 +407,7 @@ class Problem(Struct):
         if not keep_solvers:
             self.solvers = None
 
-    def set_solvers(self, conf_solvers=None, options=None):
+    def set_conf_solvers(self, conf_solvers=None, options=None):
         """
         Choose which solvers should be used. If solvers are not set in
         `options`, use first suitable in `conf_solvers`.

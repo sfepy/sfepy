@@ -63,7 +63,7 @@ class MiniAppBase(Struct):
         else:
             opts = problem.conf.options
 
-        problem.set_solvers(problem.conf.solvers, opts)
+        problem.set_conf_solvers(problem.conf.solvers, opts)
 
         if self.is_linear:
             output('linear problem, trying to presolve...')
