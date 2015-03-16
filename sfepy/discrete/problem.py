@@ -888,34 +888,54 @@ class Problem(Struct):
         return ev
 
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
-                     mtx=None, presolve=False):
-        """Create and initialize solvers."""
-        ls_conf = get_default(ls_conf, self.ls_conf,
-                              'you must set linear solver!')
+                     force=False):
+        """
+        Create and initialize solver instances.
 
-        nls_conf = get_default(nls_conf, self.nls_conf,
-                               'you must set nonlinear solver!')
+        Parameters
+        ----------
+        nls_status : dict-like, IndexedStruct, optional
+            The user-supplied object to hold nonlinear solver convergence
+            statistics.
+        ls_conf : Struct, optional
+            The linear solver options.
+        nls_conf : Struct, optional
+            The nonlinear solver options.
+        force : bool
+            If True, re-create the solver instances even if they already exist
+            in `self.nls` attribute.
+        """
+        if (self.nls is None) or force:
+            ls_conf = get_default(ls_conf, self.ls_conf,
+                                  'you must set linear solver!')
 
-        if presolve:
-            tt = time.clock()
+            nls_conf = get_default(nls_conf, self.nls_conf,
+                                   'you must set nonlinear solver!')
 
-        ls = Solver.any_from_conf(ls_conf, mtx=mtx, presolve=presolve,
-                                  problem=self)
-        if presolve:
-            tt = time.clock() - tt
-            output('presolve: %.2f [s]' % tt)
+            ls = Solver.any_from_conf(ls_conf, problem=self)
 
-        ev = self.get_evaluator()
+            ev = self.get_evaluator()
 
-        if self.conf.options.get('ulf', False):
-            self.nls_iter_hook = ev.new_ulf_iteration
+            if self.conf.options.get('ulf', False):
+                self.nls_iter_hook = ev.new_ulf_iteration
 
-        nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
-                                   fun_grad=ev.eval_tangent_matrix,
-                                   lin_solver=ls, iter_hook=self.nls_iter_hook,
-                                   status=nls_status, problem=self)
+            nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
+                                       fun_grad=ev.eval_tangent_matrix,
+                                       lin_solver=ls,
+                                       iter_hook=self.nls_iter_hook,
+                                       status=nls_status, problem=self)
 
-        self.set_solvers_instances(ls=ls, nls=nls)
+            self.set_solver(nls)
+
+    def try_presolve(self, mtx):
+        nls = get_default(None, self.nls,
+                          'you must initialize solvers!')
+        ls = nls.lin_solver
+
+        tt = time.clock()
+        ls.presolve(mtx)
+        tt = time.clock() - tt
+        output('presolve: %.2f [s]' % tt)
 
     def get_solver(self):
         return getattr(self, 'nls', None)
