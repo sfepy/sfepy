@@ -38,7 +38,7 @@ class StationarySolver(TimeSteppingSolver):
                                post_process_hook=post_process_hook,
                                file_per_var=None)
 
-        return state
+        yield 0, 0.0, state
 
 def replace_virtuals(deps, pairs):
     out = {}
@@ -109,7 +109,7 @@ class EquationSequenceSolver(TimeSteppingSolver):
                                post_process_hook=post_process_hook,
                                file_per_var=None)
 
-        return state
+        yield 0, 0.0, state
 
 def get_initial_state(problem):
     """
@@ -374,9 +374,10 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
                                    ts=ts)
                 ii += 1
 
+            yield step, time, state
+
             problem.advance(ts)
 
-        return state
 
     def solve_step(self, ts, state0, nls_status=None):
         """
@@ -503,9 +504,9 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
                                    ts=ts)
                 ii += 1
 
-            problem.advance(ts)
+            yield step, time, state
 
-        return state
+            problem.advance(ts)
 
     def solve_step(self, ts, state0, nls_status=None):
         """
