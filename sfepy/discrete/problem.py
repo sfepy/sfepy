@@ -585,7 +585,9 @@ class Problem(Struct):
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, create_matrix=False):
-        self.set_bcs(ebcs, epbcs, lcbcs)
+        self.set_bcs(get_default(ebcs, self.ebcs),
+                     get_default(epbcs, self.epbcs),
+                     get_default(lcbcs, self.lcbcs))
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
