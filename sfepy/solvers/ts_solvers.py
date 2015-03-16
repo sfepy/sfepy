@@ -117,7 +117,7 @@ def get_initial_state(problem):
     """
     state = problem.create_state()
 
-    problem.setup_ic()
+    problem.setup_ics()
     state.apply_ic()
 
     return state

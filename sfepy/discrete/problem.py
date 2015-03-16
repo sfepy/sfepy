@@ -207,6 +207,7 @@ class Problem(Struct):
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
         obj.lcbcs = self.lcbcs
+        obj.ics = self.ics
 
         obj.set_conf_solvers(self.conf.solvers, self.conf.options)
 
@@ -367,6 +368,7 @@ class Problem(Struct):
         self.ebcs = None
         self.epbcs = None
         self.lcbcs = None
+        self.ics = None
 
     def set_equations(self, conf_equations=None, user=None,
                       keep_solvers=False, make_virtual=False):
@@ -591,13 +593,25 @@ class Problem(Struct):
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
-    def setup_ic(self, conf_ics=None, functions=None):
-        conf_ics = get_default(conf_ics, self.conf.ics)
-        ics = Conditions.from_conf(conf_ics, self.domain.regions)
+    def set_ics(self, ics=None):
+        """
+        Set the initial conditions to use.
+        """
+        if isinstance(ics, Conditions):
+            self.ics = ics
+
+        else:
+            conf_ics = get_default(ics, self.conf.ics)
+            self.ics = Conditions.from_conf(conf_ics, self.domain.regions)
+
+    def setup_ics(self, ics=None, functions=None):
+        """
+        Setup the initial conditions for use.
+        """
+        self.set_ics(get_default(ics, self.ics))
 
         functions = get_default(functions, self.functions)
-
-        self.equations.setup_initial_conditions(ics, functions)
+        self.equations.setup_initial_conditions(self.ics, functions)
 
     def select_bcs(self, ebc_names=None, epbc_names=None,
                    lcbc_names=None, create_matrix=False):
