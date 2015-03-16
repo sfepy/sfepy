@@ -164,9 +164,11 @@ def solve_branch(problem, branch_function):
         load.set_function(branch_function)
 
         time_solver = problem.get_time_solver()
+        time_solver.init_time()
 
         out = []
-        time_solver(save_results=False, step_hook=store_top_u(out))
+        for _ in time_solver(save_results=False, step_hook=store_top_u(out)):
+            pass
         displacements[key] = nm.array(out, dtype=nm.float64)
 
     return displacements
