@@ -921,18 +921,14 @@ class Problem(Struct):
         return getattr(self, 'nls', None)
 
     def is_linear(self):
-        nls_conf = get_default(None, self.nls_conf,
-                               'you must set nonlinear solver!')
-        aux = Solver.any_from_conf(nls_conf)
-        if aux.conf.get('is_linear', False):
-            return True
-        else:
-            return False
+        nls = get_default(None, self.nls,
+                          'you must initialize solvers!')
+        return nls.conf.get('is_linear', False)
 
     def set_linear(self, is_linear):
-        nls_conf = get_default(None, self.nls_conf,
-                               'you must set nonlinear solver!')
-        nls_conf.is_linear = is_linear
+        nls = get_default(None, self.nls,
+                          'you must initialize solvers!')
+        nls.conf.is_linear = is_linear
 
     def solve(self, state0=None, nls_status=None,
               ls_conf=None, nls_conf=None, force_values=None,
