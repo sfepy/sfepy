@@ -79,7 +79,7 @@ def run(domain, order):
     nls = Newton({}, lin_solver=ls,
                  fun=ev.eval_residual, fun_grad=ev.eval_tangent_matrix)
 
-    pb.set_solvers_instances(ls, nls)
+    pb.set_solver(nls)
 
     state = pb.solve()
 

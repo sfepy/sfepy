@@ -145,7 +145,7 @@ class Problem(Struct):
             nls.fun = ev.eval_residual
             nls.fun_grad = ev.eval_tangent_matrix
 
-            self.set_solvers_instances(ls=ls, nls=nls)
+            self.set_solver(nls)
 
         self.setup_output()
 
@@ -157,7 +157,7 @@ class Problem(Struct):
             self.setup_hooks()
 
         self.mtx_a = None
-        self.solvers = None
+        self.nls = None
         self.clear_equations()
 
     def setup_hooks(self, options=None):
@@ -394,7 +394,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.solvers = None
+            self.nls = None
 
     def set_equations_instance(self, equations, keep_solvers=False):
         """
@@ -405,7 +405,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.solvers = None
+            self.nls = None
 
     def set_conf_solvers(self, conf_solvers=None, options=None):
         """
@@ -448,18 +448,13 @@ class Problem(Struct):
         if info != 'using solvers:':
             output(info)
 
-    def set_solvers_instances(self, ls=None, nls=None):
+    def set_solver(self, nls):
         """
-        Set the instances of linear and nonlinear solvers that will be
-        used in `Problem.solve()` call.
+        Set the instance of nonlinear solver that will be used in
+        `Problem.solve()` call.
         """
-        if (ls is not None) and (nls is not None):
-            if not (nls.lin_solver is ls):
-                raise ValueError('linear solver not used in nonlinear!')
-
-        self.solvers = Struct(name='solvers', ls=ls, nls=nls)
-        if nls is not None:
-            self.nls_status = get_default(nls.status, IndexedStruct())
+        self.nls = nls
+        self.nls_status = get_default(nls.status, IndexedStruct())
 
     def get_solver_conf(self, name):
         return self.solver_confs[name]
@@ -922,8 +917,8 @@ class Problem(Struct):
 
         self.set_solvers_instances(ls=ls, nls=nls)
 
-    def get_solvers(self):
-        return getattr(self, 'solvers', None)
+    def get_solver(self):
+        return getattr(self, 'nls', None)
 
     def is_linear(self):
         nls_conf = get_default(None, self.nls_conf,
@@ -950,10 +945,10 @@ class Problem(Struct):
             A dictionary of {variable_name : data vector} used to initialize
             parameter variables.
         """
-        solvers = self.get_solvers()
-        if solvers is None:
+        nls = self.get_solver()
+        if nls is None:
             self.init_solvers(nls_status, ls_conf, nls_conf)
-            solvers = self.get_solvers()
+            nls = self.get_solver()
 
         if state0 is None:
             state0 = State(self.equations.variables)
@@ -970,7 +965,7 @@ class Problem(Struct):
         vec0 = state0.get_reduced()
 
         self.nls_status = get_default(nls_status, self.nls_status)
-        vec = solvers.nls(vec0, status=self.nls_status)
+        vec = nls(vec0, status=self.nls_status)
 
         state = state0.copy(preserve_caches=True)
         state.set_reduced(vec, preserve_caches=True)
