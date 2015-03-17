@@ -9,7 +9,7 @@ from sfepy.discrete.fem.mesh import make_inverse_connectivity
 from sfepy.discrete.fem.extmods.bases import find_ref_coors
 
 def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
-                  verbose=True):
+                  verbose=False):
     """
     Get reference element coordinates and elements corresponding to given
     physical coordinates.

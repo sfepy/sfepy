@@ -240,7 +240,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
-                    ret_status=False, ret_ref_coors=False, verbose=True):
+                    ret_status=False, ret_ref_coors=False, verbose=False):
         """
         Evaluate source DOF values corresponding to the field in the given
         coordinates using the field interpolation.
