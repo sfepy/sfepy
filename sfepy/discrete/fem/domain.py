@@ -206,7 +206,8 @@ class FEDomain(Domain):
 
         return out
 
-    def get_evaluate_cache(self, cache=None, share_geometry=False):
+    def get_evaluate_cache(self, cache=None, share_geometry=False,
+                           verbose=False):
         """
         Get the evaluate cache for :func:`Variable.evaluate_at()
         <sfepy.discrete.variables.Variable.evaluate_at()>`.
@@ -219,6 +220,8 @@ class FEDomain(Domain):
             Set to True to indicate that all the probes will work on the same
             domain. Certain data are then computed only for the first probe and
             cached.
+        verbose : bool
+            If False, reduce verbosity.
 
         Returns
         -------
@@ -244,12 +247,12 @@ class FEDomain(Domain):
 
             cache.offsets = offsets
             cache.iconn = iconn
-        output('iconn: %f s' % (time.clock()-tt))
+        output('iconn: %f s' % (time.clock()-tt), verbose=verbose)
 
         tt = time.clock()
         if (cache.get('kdtree', None) is None) or not share_geometry:
             cache.kdtree = KDTree(mesh.coors)
-        output('kdtree: %f s' % (time.clock()-tt))
+        output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
 
         return cache
 
