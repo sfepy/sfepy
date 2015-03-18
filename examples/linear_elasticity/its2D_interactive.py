@@ -44,21 +44,10 @@ from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.discrete.fem.geometry_element import geometry_data
 from sfepy.discrete.probes import LineProbe
-from sfepy.discrete.projections import make_l2_projection_data
+from sfepy.discrete.projections import project_by_component
 
 from its2D_2 import stress_strain
 from its2D_3 import nodal_stress
-
-def project_by_component(tensor, tensor_qp, component, order):
-    """
-    Wrapper around make_l2_projection_data() for non-scalar fields.
-    """
-    aux = []
-    for ic in range(3):
-        make_l2_projection_data(component, tensor_qp[..., ic, :].copy(),
-                                order=order)
-        aux.append(component())
-    tensor.set_data(nm.array(aux).T.ravel())
 
 def gen_lines(problem):
     """
