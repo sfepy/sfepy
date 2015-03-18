@@ -107,7 +107,8 @@ def make_l2_projection_data(target, eval_data, order=None, ls=None):
         ls = ScipyDirect({})
 
     nls_status = IndexedStruct()
-    nls = Newton({}, lin_solver=ls, status=nls_status)
+    nls = Newton({'eps_a' : 1e-16, 'i_max' : 1},
+                 lin_solver=ls, status=nls_status)
 
     pb = Problem('aux', equations=eqs, nls=nls, ls=ls)
 
