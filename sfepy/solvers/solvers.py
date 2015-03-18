@@ -215,6 +215,9 @@ class LinearSolver(Solver):
         """
         return self.conf.get('eps_a', None), self.conf.get('eps_r', None)
 
+    def presolve(self, mtx):
+        pass
+
 class NonlinearSolver(Solver):
     """
     Abstract nonlinear solver class.
@@ -241,6 +244,9 @@ class TimeSteppingSolver(Solver):
     def __call__(self, state0=None, save_results=True, step_hook=None,
                  post_process_hook=None, nls_status=None):
         raise ValueError('called an abstract TimeSteppingSolver instance!')
+
+    def init_time(self, nls_status=None):
+        pass
 
 class OptimizationSolver(Solver):
     """

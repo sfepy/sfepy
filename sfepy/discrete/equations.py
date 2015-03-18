@@ -312,7 +312,7 @@ class Equations(Container):
         self.materials.time_update(ts, self, mode=mode, problem=problem,
                                    verbose=verbose)
 
-    def setup_initial_conditions(self, ics, functions):
+    def setup_initial_conditions(self, ics, functions=None):
         self.variables.setup_initial_conditions(ics, functions)
 
     def get_graph_conns(self, any_dof_conn=False, rdcs=None, cdcs=None):

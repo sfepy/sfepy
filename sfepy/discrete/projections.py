@@ -1,6 +1,8 @@
 """
 Construct projections between FE spaces.
 """
+import numpy as nm
+
 from sfepy.base.base import output, IndexedStruct
 from sfepy.discrete import (FieldVariable, Integral,
                             Equation, Equations, Material)
@@ -33,6 +35,17 @@ def create_mass_matrix(field):
     mtx = eqs.eval_tangent_matrices(dummy, mtx)
 
     return mtx
+
+def project_by_component(tensor, tensor_qp, component, order):
+    """
+    Wrapper around make_l2_projection_data() for non-scalar fields.
+    """
+    aux = []
+    for ic in range(3):
+        make_l2_projection_data(component, tensor_qp[..., ic, :].copy(),
+                                order=order)
+        aux.append(component())
+    tensor.set_data(nm.array(aux).T.ravel())
 
 def make_l2_projection(target, source, ls=None):
     """

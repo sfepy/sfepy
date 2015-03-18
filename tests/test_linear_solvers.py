@@ -142,7 +142,8 @@ class Test(TestCommon):
             status = IndexedStruct()
             try:
                 self.problem.init_solvers(nls_status=status,
-                                          ls_conf=solver_conf)
+                                          ls_conf=solver_conf,
+                                          force=True)
                 state = self.problem.solve()
                 failed = status.condition != 0
             except Exception, exc:

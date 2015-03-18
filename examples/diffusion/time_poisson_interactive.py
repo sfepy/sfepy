@@ -1,0 +1,254 @@
+#!/usr/bin/env python
+"""
+Transient Laplace equation (heat equation) with non-constant initial conditions
+given by a function, using commands for interactive use.
+
+The script allows setting various simulation parameters, namely:
+
+- the diffusivity coefficient
+- the max. initial condition value
+- temperature field approximation order
+- uniform mesh refinement
+
+The example shows also how to probe the results.
+
+In the SfePy top-level directory the following command can be used to get usage
+information::
+
+  python examples/diffusion/time_poisson_interactive.py -h
+"""
+import sys
+sys.path.append('.')
+from optparse import OptionParser
+
+import numpy as nm
+import matplotlib.pyplot as plt
+
+from sfepy.base.base import assert_, output, ordered_iteritems, IndexedStruct
+from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+                            Equation, Equations, Problem)
+from sfepy.discrete.fem import Mesh, FEDomain, Field
+from sfepy.terms import Term
+from sfepy.discrete.conditions import Conditions, EssentialBC, InitialCondition
+from sfepy.solvers.ls import ScipyDirect
+from sfepy.solvers.nls import Newton
+from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
+from sfepy.discrete.probes import LineProbe, CircleProbe
+from sfepy.discrete.projections import project_by_component
+
+def gen_lines(problem):
+    """
+    Define a line probe and a circle probe.
+    """
+    # Use enough points for higher order approximations.
+    n_point = 1000
+
+    p0, p1 = nm.array([0.0, 0.0, 0.0]), nm.array([0.1, 0.0, 0.0])
+    line = LineProbe(p0, p1, n_point)
+    # Workaround current probe code shortcoming.
+    line.set_options(close_limit=0.5)
+
+    centre = 0.5 * (p0 + p1)
+    normal = [0.0, 1.0, 0.0]
+    r = 0.02
+    circle = CircleProbe(centre, normal, r, n_point)
+    # Workaround current probe code shortcoming.
+    circle.set_options(close_limit=0.5)
+
+    probes = [line, circle]
+    labels = ['%s -> %s' % (p0, p1),
+              'circle(%s, %s, %s' % (centre, normal, r)]
+
+    return probes, labels
+
+def probe_results(ax_num, T, dvel, probe, label):
+    """
+    Probe the results using the given probe and plot the probed values.
+    """
+    results = {}
+
+    pars, vals = probe(T)
+    results['T'] = (pars, vals)
+
+    pars, vals = probe(dvel)
+    results['dvel'] = (pars, vals)
+
+    fig = plt.figure(1)
+
+    ax = plt.subplot(2, 2, 2 * ax_num + 1)
+    ax.cla()
+    pars, vals = results['T']
+    ax.plot(pars, vals, label=r'$T$', lw=1, ls='-', marker='+', ms=3)
+    dx = 0.05 * (pars[-1] - pars[0])
+    ax.set_xlim(pars[0] - dx, pars[-1] + dx)
+    ax.set_ylabel('temperature')
+    ax.set_xlabel('probe %s' % label, fontsize=8)
+    ax.legend(loc='best', fontsize=10)
+
+    ax = plt.subplot(2, 2, 2 * ax_num + 2)
+    ax.cla()
+    pars, vals = results['dvel']
+    for ic in range(vals.shape[1]):
+        ax.plot(pars, vals[:, ic], label=r'$w_{%d}$' % (ic + 1),
+                lw=1, ls='-', marker='+', ms=3)
+    dx = 0.05 * (pars[-1] - pars[0])
+    ax.set_xlim(pars[0] - dx, pars[-1] + dx)
+    ax.set_ylabel('diffusion velocity')
+    ax.set_xlabel('probe %s' % label, fontsize=8)
+    ax.legend(loc='best', fontsize=10)
+
+    return fig, results
+
+usage = '%prog [options]\n' + __doc__.rstrip()
+
+helps = {
+    'diffusivity' : 'the diffusivity coefficient [default: %default]',
+    'ic_max' : 'the max. initial condition value [default: %default]',
+    'order' : 'temperature field approximation order [default: %default]',
+    'refine' : 'uniform mesh refinement level [default: %default]',
+    'probe' : 'probe the results',
+    'show' : 'show the probing results figure, if --probe is used',
+}
+
+def main():
+    from sfepy import data_dir
+
+    parser = OptionParser(usage=usage, version='%prog')
+    parser.add_option('--diffusivity', metavar='float', type=float,
+                      action='store', dest='diffusivity',
+                      default=1e-5, help=helps['diffusivity'])
+    parser.add_option('--ic-max', metavar='float', type=float,
+                      action='store', dest='ic_max',
+                      default=2.0, help=helps['ic_max'])
+    parser.add_option('--order', metavar='int', type=int,
+                      action='store', dest='order',
+                      default=2, help=helps['order'])
+    parser.add_option('-r', '--refine', metavar='int', type=int,
+                      action='store', dest='refine',
+                      default=0, help=helps['refine'])
+    parser.add_option('-p', '--probe',
+                      action="store_true", dest='probe',
+                      default=False, help=helps['probe'])
+    parser.add_option('-s', '--show',
+                      action="store_true", dest='show',
+                      default=False, help=helps['show'])
+    options, args = parser.parse_args()
+
+    assert_((0 < options.order),
+            'temperature approximation order must be at least 1!')
+
+    output('using values:')
+    output('  diffusivity:', options.diffusivity)
+    output('  max. IC value:', options.ic_max)
+    output('uniform mesh refinement level:', options.refine)
+
+    mesh = Mesh.from_file(data_dir + '/meshes/3d/cylinder.mesh')
+    domain = FEDomain('domain', mesh)
+
+    if options.refine > 0:
+        for ii in xrange(options.refine):
+            output('refine %d...' % ii)
+            domain = domain.refine()
+            output('... %d nodes %d elements'
+                   % (domain.shape.n_nod, domain.shape.n_el))
+
+    omega = domain.create_region('Omega', 'all')
+    left = domain.create_region('Left',
+                                'vertices in x < 0.00001', 'facet')
+    right = domain.create_region('Right',
+                                 'vertices in x > 0.099999', 'facet')
+
+    field = Field.from_args('fu', nm.float64, 'scalar', omega,
+                            approx_order=options.order)
+
+    T = FieldVariable('T', 'unknown', field, history=1)
+    s = FieldVariable('s', 'test', field, primary_var_name='T')
+
+    m = Material('m', diffusivity=options.diffusivity * nm.eye(3))
+
+    integral = Integral('i', order=2*options.order)
+
+    t1 = Term.new('dw_diffusion(m.diffusivity, s, T)',
+                  integral, omega, m=m, s=s, T=T)
+    t2 = Term.new('dw_volume_dot(s, dT/dt)',
+                  integral, omega, s=s, T=T)
+    eq = Equation('balance', t1 + t2)
+    eqs = Equations([eq])
+
+    # Boundary conditions.
+    ebc1 = EssentialBC('T1', left, {'T.0' : 2.0})
+    ebc2 = EssentialBC('T2', right, {'T.0' : -2.0})
+
+    # Initial conditions.
+    def get_ic(coors, ic):
+        x, y, z = coors.T
+        return 2 - 40.0 * x + options.ic_max * nm.sin(4 * nm.pi * x / 0.1)
+    ic_fun = Function('ic_fun', get_ic)
+    ic = InitialCondition('ic', omega, {'T.0' : ic_fun})
+
+    ls = ScipyDirect({})
+
+    nls_status = IndexedStruct()
+    nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
+
+    pb = Problem('heat', equations=eqs, nls=nls, ls=ls)
+    pb.set_bcs(ebcs=Conditions([ebc1, ebc2]))
+    pb.set_ics(Conditions([ic]))
+
+    tss = SimpleTimeSteppingSolver({'t0' : 0.0, 't1' : 100.0, 'n_step' : 11},
+                                   problem=pb)
+    tss.init_time()
+
+    if options.probe:
+        # Prepare probe data.
+        probes, labels = gen_lines(pb)
+
+        ev = pb.evaluate
+        order = 2 * (options.order - 1)
+
+        gfield = Field.from_args('gu', nm.float64, 'vector', omega,
+                                approx_order=options.order - 1)
+        dvel = FieldVariable('dvel', 'parameter', gfield,
+                             primary_var_name='(set-to-None)')
+        cfield = Field.from_args('gu', nm.float64, 'scalar', omega,
+                                approx_order=options.order - 1)
+        component = FieldVariable('component', 'parameter', cfield,
+                                  primary_var_name='(set-to-None)')
+
+        if options.show:
+            plt.ion()
+
+    # Solve the problem using the time stepping solver.
+    suffix = tss.ts.suffix
+    for step, time, state in tss():
+        if options.probe:
+            # Probe the solution.
+            dvel_qp = ev('ev_diffusion_velocity.%d.Omega(m.diffusivity, T)'
+                         % order, mode='qp')
+            project_by_component(dvel, dvel_qp, component, order)
+
+            all_results = []
+            for ii, probe in enumerate(probes):
+                fig, results = probe_results(ii, T, dvel, probe, labels[ii])
+
+                all_results.append(results)
+
+            plt.tight_layout()
+            fig.savefig('time_poisson_interactive_probe_%s.png'
+                        % (suffix % step), bbox_inches='tight')
+
+            if options.show:
+                plt.draw()
+
+            for ii, results in enumerate(all_results):
+                output('probe %d (%s):' % (ii, probes[ii].name))
+                output.level += 2
+                for key, res in ordered_iteritems(results):
+                    output(key + ':')
+                    val = res[1]
+                    output('  min: %+.2e, mean: %+.2e, max: %+.2e'
+                           % (val.min(), val.mean(), val.max()))
+                output.level -= 2
+
+if __name__ == '__main__':
+    main()

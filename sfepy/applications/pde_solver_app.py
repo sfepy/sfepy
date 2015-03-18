@@ -213,11 +213,11 @@ class PDESolverApp(Application):
             return None, None, None
 
         time_solver = problem.get_time_solver()
-
-        state = time_solver(save_results=opts.save_results,
-                            step_hook=self.step_hook,
-                            post_process_hook=self.post_process_hook,
-                            nls_status=nls_status)
+        time_solver.init_time(nls_status=nls_status)
+        for out in time_solver(save_results=opts.save_results,
+                               step_hook=self.step_hook,
+                               post_process_hook=self.post_process_hook):
+            step, time, state = out
 
         if self.post_process_hook_final is not None: # User postprocessing.
             self.post_process_hook_final(problem, state)

@@ -104,9 +104,6 @@ class ScipyDirect(LinearSolver):
                                 assumeSortedIndices=True)
 
         self.solve = None
-        if self._presolve() and hasattr(self, 'mtx'):
-            if self.mtx is not None:
-                self.solve = self.sls.factorized(self.mtx)
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
@@ -118,11 +115,10 @@ class ScipyDirect(LinearSolver):
         else:
             return self.sls.spsolve(mtx, rhs)
 
-    def _presolve(self):
-        if hasattr(self, 'presolve'):
-            return self.presolve
-        else:
-            return self.conf.presolve
+    def presolve(self, mtx):
+        self.mtx = mtx
+        if self.mtx is not None:
+            self.solve = self.sls.factorized(self.mtx)
 
 class ScipyIterative(LinearSolver):
     """
@@ -562,12 +558,6 @@ class SchurGeneralized(ScipyDirect):
 
         return res
 
-    def _presolve(self):
-        if hasattr(self, 'presolve'):
-            return self.presolve
-        else:
-            return self.conf.presolve
-
 class SchurComplement(SchurGeneralized):
     r"""
     Schur complement.
@@ -909,9 +899,3 @@ class MultiProblem(ScipyDirect):
             res.append(resi)
 
         return res[-1]
-
-    def _presolve(self):
-        if hasattr(self, 'presolve'):
-            return self.presolve
-        else:
-            return self.conf.presolve

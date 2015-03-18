@@ -99,7 +99,7 @@ class Problem(Struct):
                 obj.set_equations(conf.equations, user={'ts' : obj.ts})
 
         if init_solvers:
-            obj.set_solvers(conf.solvers, conf.options)
+            obj.set_conf_solvers(conf.solvers, conf.options)
 
         return obj
 
@@ -145,7 +145,7 @@ class Problem(Struct):
             nls.fun = ev.eval_residual
             nls.fun_grad = ev.eval_tangent_matrix
 
-            self.set_solvers_instances(ls=ls, nls=nls)
+            self.set_solver(nls)
 
         self.setup_output()
 
@@ -157,7 +157,7 @@ class Problem(Struct):
             self.setup_hooks()
 
         self.mtx_a = None
-        self.solvers = None
+        self.nls = None
         self.clear_equations()
 
     def setup_hooks(self, options=None):
@@ -207,8 +207,9 @@ class Problem(Struct):
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
         obj.lcbcs = self.lcbcs
+        obj.ics = self.ics
 
-        obj.set_solvers(self.conf.solvers, self.conf.options)
+        obj.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         obj.setup_output(output_filename_trunk=self.ofn_trunk,
                          output_dir=self.output_dir,
@@ -239,7 +240,7 @@ class Problem(Struct):
                         functions=self.functions, domain=self.domain,
                         fields=self.fields, auto_conf=False,
                         auto_solvers=False)
-        subpb.set_solvers(self.conf.solvers, self.conf.options)
+        subpb.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
                                                     known_var_names)
@@ -367,6 +368,7 @@ class Problem(Struct):
         self.ebcs = None
         self.epbcs = None
         self.lcbcs = None
+        self.ics = None
 
     def set_equations(self, conf_equations=None, user=None,
                       keep_solvers=False, make_virtual=False):
@@ -394,7 +396,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.solvers = None
+            self.nls = None
 
     def set_equations_instance(self, equations, keep_solvers=False):
         """
@@ -405,9 +407,9 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.solvers = None
+            self.nls = None
 
-    def set_solvers(self, conf_solvers=None, options=None):
+    def set_conf_solvers(self, conf_solvers=None, options=None):
         """
         Choose which solvers should be used. If solvers are not set in
         `options`, use first suitable in `conf_solvers`.
@@ -448,18 +450,13 @@ class Problem(Struct):
         if info != 'using solvers:':
             output(info)
 
-    def set_solvers_instances(self, ls=None, nls=None):
+    def set_solver(self, nls):
         """
-        Set the instances of linear and nonlinear solvers that will be
-        used in `Problem.solve()` call.
+        Set the instance of nonlinear solver that will be used in
+        `Problem.solve()` call.
         """
-        if (ls is not None) and (nls is not None):
-            if not (nls.lin_solver is ls):
-                raise ValueError('linear solver not used in nonlinear!')
-
-        self.solvers = Struct(name='solvers', ls=ls, nls=nls)
-        if nls is not None:
-            self.nls_status = get_default(nls.status, IndexedStruct())
+        self.nls = nls
+        self.nls_status = get_default(nls.status, IndexedStruct())
 
     def get_solver_conf(self, name):
         return self.solver_confs[name]
@@ -590,17 +587,31 @@ class Problem(Struct):
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, create_matrix=False):
-        self.set_bcs(ebcs, epbcs, lcbcs)
+        self.set_bcs(get_default(ebcs, self.ebcs),
+                     get_default(epbcs, self.epbcs),
+                     get_default(lcbcs, self.lcbcs))
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
-    def setup_ic(self, conf_ics=None, functions=None):
-        conf_ics = get_default(conf_ics, self.conf.ics)
-        ics = Conditions.from_conf(conf_ics, self.domain.regions)
+    def set_ics(self, ics=None):
+        """
+        Set the initial conditions to use.
+        """
+        if isinstance(ics, Conditions):
+            self.ics = ics
+
+        else:
+            conf_ics = get_default(ics, self.conf.ics)
+            self.ics = Conditions.from_conf(conf_ics, self.domain.regions)
+
+    def setup_ics(self, ics=None, functions=None):
+        """
+        Setup the initial conditions for use.
+        """
+        self.set_ics(get_default(ics, self.ics))
 
         functions = get_default(functions, self.functions)
-
-        self.equations.setup_initial_conditions(ics, functions)
+        self.equations.setup_initial_conditions(self.ics, functions)
 
     def select_bcs(self, ebc_names=None, epbc_names=None,
                    lcbc_names=None, create_matrix=False):
@@ -893,51 +904,67 @@ class Problem(Struct):
         return ev
 
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
-                     mtx=None, presolve=False):
-        """Create and initialize solvers."""
-        ls_conf = get_default(ls_conf, self.ls_conf,
-                              'you must set linear solver!')
+                     force=False):
+        """
+        Create and initialize solver instances.
 
-        nls_conf = get_default(nls_conf, self.nls_conf,
-                               'you must set nonlinear solver!')
+        Parameters
+        ----------
+        nls_status : dict-like, IndexedStruct, optional
+            The user-supplied object to hold nonlinear solver convergence
+            statistics.
+        ls_conf : Struct, optional
+            The linear solver options.
+        nls_conf : Struct, optional
+            The nonlinear solver options.
+        force : bool
+            If True, re-create the solver instances even if they already exist
+            in `self.nls` attribute.
+        """
+        if (self.nls is None) or force:
+            ls_conf = get_default(ls_conf, self.ls_conf,
+                                  'you must set linear solver!')
 
-        if presolve:
-            tt = time.clock()
+            nls_conf = get_default(nls_conf, self.nls_conf,
+                                   'you must set nonlinear solver!')
 
-        ls = Solver.any_from_conf(ls_conf, mtx=mtx, presolve=presolve,
-                                  problem=self)
-        if presolve:
-            tt = time.clock() - tt
-            output('presolve: %.2f [s]' % tt)
+            ls = Solver.any_from_conf(ls_conf, problem=self)
 
-        ev = self.get_evaluator()
+            ev = self.get_evaluator()
 
-        if self.conf.options.get('ulf', False):
-            self.nls_iter_hook = ev.new_ulf_iteration
+            if self.conf.options.get('ulf', False):
+                self.nls_iter_hook = ev.new_ulf_iteration
 
-        nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
-                                   fun_grad=ev.eval_tangent_matrix,
-                                   lin_solver=ls, iter_hook=self.nls_iter_hook,
-                                   status=nls_status, problem=self)
+            nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
+                                       fun_grad=ev.eval_tangent_matrix,
+                                       lin_solver=ls,
+                                       iter_hook=self.nls_iter_hook,
+                                       status=nls_status, problem=self)
 
-        self.set_solvers_instances(ls=ls, nls=nls)
+            self.set_solver(nls)
 
-    def get_solvers(self):
-        return getattr(self, 'solvers', None)
+    def try_presolve(self, mtx):
+        nls = get_default(None, self.nls,
+                          'you must initialize solvers!')
+        ls = nls.lin_solver
+
+        tt = time.clock()
+        ls.presolve(mtx)
+        tt = time.clock() - tt
+        output('presolve: %.2f [s]' % tt)
+
+    def get_solver(self):
+        return getattr(self, 'nls', None)
 
     def is_linear(self):
-        nls_conf = get_default(None, self.nls_conf,
-                               'you must set nonlinear solver!')
-        aux = Solver.any_from_conf(nls_conf)
-        if aux.conf.get('is_linear', False):
-            return True
-        else:
-            return False
+        nls = get_default(None, self.nls,
+                          'you must initialize solvers!')
+        return nls.conf.get('is_linear', False)
 
     def set_linear(self, is_linear):
-        nls_conf = get_default(None, self.nls_conf,
-                               'you must set nonlinear solver!')
-        nls_conf.is_linear = is_linear
+        nls = get_default(None, self.nls,
+                          'you must initialize solvers!')
+        nls.conf.is_linear = is_linear
 
     def solve(self, state0=None, nls_status=None,
               ls_conf=None, nls_conf=None, force_values=None,
@@ -950,10 +977,10 @@ class Problem(Struct):
             A dictionary of {variable_name : data vector} used to initialize
             parameter variables.
         """
-        solvers = self.get_solvers()
-        if solvers is None:
+        nls = self.get_solver()
+        if nls is None:
             self.init_solvers(nls_status, ls_conf, nls_conf)
-            solvers = self.get_solvers()
+            nls = self.get_solver()
 
         if state0 is None:
             state0 = State(self.equations.variables)
@@ -970,7 +997,7 @@ class Problem(Struct):
         vec0 = state0.get_reduced()
 
         self.nls_status = get_default(nls_status, self.nls_status)
-        vec = solvers.nls(vec0, status=self.nls_status)
+        vec = nls(vec0, status=self.nls_status)
 
         state = state0.copy(preserve_caches=True)
         state.set_reduced(vec, preserve_caches=True)

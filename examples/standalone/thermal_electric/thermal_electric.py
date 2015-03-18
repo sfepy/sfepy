@@ -133,7 +133,9 @@ def main():
     phi_var = problem.get_variables()['phi_known']
     phi_var.set_data(state_el())
     time_solver = problem.get_time_solver()
-    time_solver()
+    time_solver.init_time()
+    for _ in time_solver():
+        pass
 
     output('results saved in %s' % problem.get_output_name(suffix = '*'))
 

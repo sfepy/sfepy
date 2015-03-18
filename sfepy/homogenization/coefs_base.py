@@ -63,7 +63,8 @@ class MiniAppBase(Struct):
         else:
             opts = problem.conf.options
 
-        problem.set_solvers(problem.conf.solvers, opts)
+        problem.set_conf_solvers(problem.conf.solvers, opts)
+        problem.init_solvers()
 
         if self.is_linear:
             output('linear problem, trying to presolve...')
@@ -79,7 +80,7 @@ class MiniAppBase(Struct):
                 raise
 
             problem.set_linear(True)
-            problem.init_solvers(mtx=mtx_a, presolve=True)
+            problem.try_presolve(mtx_a)
 
             output('...done in %.2f s' % (time.clock() - tt))
 
