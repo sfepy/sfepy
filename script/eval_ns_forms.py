@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Operators present in the FE discretization of (adjoint) Navier-Stokes terms.
 """
