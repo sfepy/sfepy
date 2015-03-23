@@ -351,7 +351,8 @@ class PointsProbe(Probe):
         n_point = points.shape[0]
         name = 'points %d' % n_point
 
-        Probe.__init__(self, name=name, points=points, n_point=n_point)
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       points=points, n_point=n_point)
 
         self.n_point_single = n_point
 
@@ -405,7 +406,8 @@ class LineProbe(Probe):
         p1 = nm.array(p1, dtype=nm.float64)
         name = 'line [%s, %s]' % (p0, p1)
 
-        Probe.__init__(self, name=name, p0=p0, p1=p1, n_point=n_point)
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       p0=p0, p1=p1, n_point=n_point)
 
         dirvec = self.p1 - self.p0
         self.length = nm.linalg.norm(dirvec)
@@ -479,7 +481,8 @@ class RayProbe(Probe):
         else:
             n_point_true = n_point
 
-        Probe.__init__(self, name=name, p0=p0, dirvec=dirvec, p_fun=p_fun,
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       p0=p0, dirvec=dirvec, p_fun=p_fun,
                        n_point=n_point_true, both_dirs=both_dirs)
 
         self.n_point_single = n_point
@@ -551,7 +554,8 @@ class CircleProbe(Probe):
 
         name = 'circle [%s, %s, %s]' % (centre, normal, radius)
 
-        Probe.__init__(self, name=name, centre=centre, normal=normal,
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       centre=centre, normal=normal,
                        radius=radius, n_point=n_point)
 
     def report(self):
