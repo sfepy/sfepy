@@ -160,6 +160,13 @@ class Probe(Struct):
 
         self.is_refined = False
 
+    def get_evaluate_cache(self):
+        """
+        Return the evaluate cache for domain-related data given by
+        `self.share_geometry`.
+        """
+        return Probe.cache if self.share_geometry else self.cache
+
     def set_n_point(self, n_point):
         """
         Set the number of probe points.
@@ -241,14 +248,8 @@ class Probe(Struct):
         ev = variable.evaluate_at
         domain = variable.field.domain
 
-        if self.share_geometry:
-            cache = domain.get_evaluate_cache(cache=Probe.cache,
-                                              share_geometry=True)
-
-        else:
-            cache = domain.get_evaluate_cache(cache=self.cache,
-                                              share_geometry=False)
-
+        cache = domain.get_evaluate_cache(cache=self.get_evaluate_cache(),
+                                          share_geometry=self.share_geometry)
         self.reset_refinement()
 
         while True:
