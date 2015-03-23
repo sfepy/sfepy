@@ -215,6 +215,8 @@ def main():
         component = FieldVariable('component', 'parameter', cfield,
                                   primary_var_name='(set-to-None)')
 
+        nls_options = {'eps_a' : 1e-16, 'i_max' : 1}
+
         if options.show:
             plt.ion()
 
@@ -225,7 +227,8 @@ def main():
             # Probe the solution.
             dvel_qp = ev('ev_diffusion_velocity.%d.Omega(m.diffusivity, T)'
                          % order, mode='qp')
-            project_by_component(dvel, dvel_qp, component, order)
+            project_by_component(dvel, dvel_qp, component, order,
+                                 nls_options=nls_options)
 
             all_results = []
             for ii, probe in enumerate(probes):
