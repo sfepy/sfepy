@@ -364,14 +364,17 @@ int32 graph_components( int32 *p_n_comp,
   n_stop = n_nod;
   for (ir = 0; ir < n_nod; ir++) {
     flag[ir] = -1;
-    if ((row[ir+1] - row[ir]) == 0) n_stop--;
+    if ((row[ir+1] - row[ir]) == 0) {
+      n_stop--;
+      flag[ir] = -2;
+    }
   }
 
   n_tot = 0;
   for (icomp = 0; icomp < n_nod; icomp++) {
     // Find seed.
     ii = 0;
-    while (flag[ii] >= 0) {
+    while ((flag[ii] >= 0) || (flag[ii] == -2)) {
       ii++;
       if (ii >= n_nod) {
 	errput( "error in graph_components()!\n" );
