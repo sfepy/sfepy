@@ -57,6 +57,29 @@ int32 mesh_init(Mesh *mesh)
   return(RET_OK);
 }
 
+#undef __FUNC__
+#define __FUNC__ "mesh_free"
+int32 mesh_free(Mesh *mesh)
+{
+  int32 ii;
+  MeshTopology *topology = mesh->topology;
+  LocalEntities *entities = mesh->entities;
+
+  for (ii = 0; ii < 16; ii++) {
+    conn_free(topology->conn[ii]);
+  }
+
+  for (ii = 0; ii < MAX_EL_TYPES; ii++) {
+    conn_free(entities->edges[ii]);
+    conn_free(entities->faces[ii]);
+  }
+
+  free_mem(topology->edge_oris);
+  free_mem(topology->face_oris);
+
+  return(RET_OK);
+}
+
 int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 {
   int32 ii, id;

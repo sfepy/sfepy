@@ -66,6 +66,7 @@ cdef extern from 'mesh.h':
         LocalEntities entities[1]
 
     cdef int32 mesh_init(Mesh *mesh)
+    cdef int32 mesh_free(Mesh *mesh)
     cdef int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 
     cdef int32 conn_alloc(MeshConnectivity *conn,
@@ -241,6 +242,9 @@ cdef class CMesh:
             '3_4' : 3,
             '3_8' : 4,
         }
+
+    def __dealloc__(self):
+        mesh_free(self.mesh)
 
     def set_local_entities(self, gels):
         cdef MeshConnectivity *pedges, *pfaces

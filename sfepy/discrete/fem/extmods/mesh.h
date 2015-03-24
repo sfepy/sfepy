@@ -123,6 +123,7 @@ typedef struct Region {
 int32 mesh_create(Mesh **p_mesh);
 int32 mesh_destroy(Mesh **p_mesh);
 int32 mesh_init(Mesh *mesh);
+int32 mesh_free(Mesh *mesh);
 int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only);
 
 int32 mei_init(MeshEntityIterator *iter, Mesh *mesh, uint32 dim);
