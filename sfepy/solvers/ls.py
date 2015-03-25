@@ -291,21 +291,25 @@ class PETScKrylovSolver(LinearSolver):
             msg = 'cannot import petsc4py!'
             raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, petsc=PETSc, pmtx=None, **kwargs)
+        LinearSolver.__init__(self, conf, petsc=PETSc, pmtx=None,
+                              converged_reasons=None, **kwargs)
 
-        ksp = PETSc.KSP().create()
+    def create_ksp(self):
+        ksp = self.petsc.KSP().create()
 
         ksp.setType(self.conf.method)
         ksp.getPC().setType(self.conf.precond)
         side = self._precond_sides[self.conf.precond_side]
         if side is not None:
             ksp.setPCSide(side)
-        self.ksp = ksp
 
-        self.converged_reasons = {}
-        for key, val in ksp.ConvergedReason.__dict__.iteritems():
-            if isinstance(val, int):
-                self.converged_reasons[val] = key
+        if self.converged_reasons is None:
+            self.converged_reasons = {}
+            for key, val in ksp.ConvergedReason.__dict__.iteritems():
+                if isinstance(val, int):
+                    self.converged_reasons[val] = key
+
+        return ksp
 
     def set_matrix(self, mtx):
         mtx = sps.csr_matrix(mtx)
@@ -315,7 +319,12 @@ class PETScKrylovSolver(LinearSolver):
                                                mtx.indices,
                                                mtx.data))
         sol, rhs = pmtx.getVecs()
-        return pmtx, sol, rhs
+
+        # Create a new ksp to support the solver reuse for different matrices.
+        ksp = self.create_ksp()
+        ksp.setOperators(pmtx)
+
+        return ksp, pmtx, sol, rhs
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
@@ -326,11 +335,8 @@ class PETScKrylovSolver(LinearSolver):
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
-        # There is no use in caching matrix in the solver - always set as new.
-        pmtx, psol, prhs = self.set_matrix(mtx)
+        ksp, pmtx, psol, prhs = self.set_matrix(mtx)
 
-        ksp = self.ksp
-        ksp.setOperators(pmtx)
         ksp.setFromOptions() # PETSc.Options() not used yet...
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
 
@@ -387,11 +393,8 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
 
         petsc = self.petsc
 
-        # There is no use in caching matrix in the solver - always set as new.
-        pmtx, psol, prhs = self.set_matrix(mtx)
+        ksp, pmtx, psol, prhs = self.set_matrix(mtx)
 
-        ksp = self.ksp
-        ksp.setOperators(pmtx)
         ksp.setFromOptions() # PETSc.Options() not used yet...
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
 
