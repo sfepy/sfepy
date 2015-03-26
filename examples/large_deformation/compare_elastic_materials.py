@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Compare various elastic materials w.r.t. uniaxial tension/compression test.
 
@@ -5,14 +6,28 @@ Requires Matplotlib.
 """
 from optparse import OptionParser
 import sys
-sys.path.append( '.' )
+sys.path.append('.')
 
 import numpy as nm
 
 def define():
     """Define the problem to solve."""
+    from sfepy.discrete.fem.meshio import UserMeshIO
+    from sfepy.mesh.mesh_generators import gen_block_mesh
 
-    filename_mesh = 'el3.mesh'
+    def mesh_hook(mesh, mode):
+        """
+        Generate the block mesh.
+        """
+        if mode == 'read':
+            mesh = gen_block_mesh([2, 2, 3], [2, 2, 4], [0, 0, 1.5], name='el3',
+                                  verbose=False)
+            return mesh
+
+        elif mode == 'write':
+            pass
+
+    filename_mesh = UserMeshIO(mesh_hook)
 
     options = {
         'nls' : 'newton',
@@ -27,33 +42,23 @@ def define():
         'empty' : (lambda ts, coor, mode, region, ig: None,),
     }
 
-    field_1 = {
-        'name' : 'displacement',
-        'dtype' : nm.float64,
-        'shape' : (3,),
-        'region' : 'Omega',
-        'approx_order' : 1,
+    fields = {
+        'displacement' : ('real', 3, 'Omega', 1),
     }
 
     # Coefficients are chosen so that the tangent stiffness is the same for all
     # material for zero strains.
     # Young modulus = 10 kPa, Poisson's ratio = 0.3
-    material_1 = {
-        'name' : 'solid',
-
-        'values' : {
+    materials = {
+        'solid' : ({
             'K'  : 8.333, # bulk modulus
             'mu_nh' : 3.846, # shear modulus of neoHookean term
             'mu_mr' : 1.923, # shear modulus of Mooney-Rivlin term
             'kappa' : 1.923, # second modulus of Mooney-Rivlin term
             'lam' : 5.769, # Lame coefficients for LE term
             'mu_le' : 3.846,
-        }
-    }
-
-    material_2 = {
-        'name' : 'load',
-        'function' : 'empty'
+        },),
+        'load' : 'empty',
     }
 
     variables = {
@@ -72,61 +77,35 @@ def define():
         'fixt' : ('Top', {'u.[0,1]' : 0.0}),
     }
 
-    ##
-    # Balance of forces.
-    integral_1 = {
-        'name' : 'i',
-        'order' : 1,
-    }
-    integral_3 = {
-        'name' : 'isurf',
-        'order' : 2,
+    integrals = {
+        'i' : 1,
+        'isurf' : 2,
     }
     equations = {
-        'linear' : """dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu_le, v, u )
-                      = dw_surface_ltr.isurf.Top( load.val, v )""",
-        'neoHookean' : """dw_tl_he_neohook.i.Omega( solid.mu_nh, v, u )
-                        + dw_tl_bulk_penalty.i.Omega( solid.K, v, u )
-                        = dw_surface_ltr.isurf.Top( load.val, v )""",
-        'Mooney-Rivlin' : """dw_tl_he_neohook.i.Omega( solid.mu_mr, v, u )
-                           + dw_tl_he_mooney_rivlin.i.Omega( solid.kappa, v, u )
-                           + dw_tl_bulk_penalty.i.Omega( solid.K, v, u )
-                           = dw_surface_ltr.isurf.Top( load.val, v )""",
+        'linear' : """dw_lin_elastic_iso.i.Omega(solid.lam, solid.mu_le, v, u)
+                    = dw_surface_ltr.isurf.Top(load.val, v)""",
+        'neo-Hookean' : """dw_tl_he_neohook.i.Omega(solid.mu_nh, v, u)
+                         + dw_tl_bulk_penalty.i.Omega(solid.K, v, u)
+                         = dw_surface_ltr.isurf.Top(load.val, v)""",
+        'Mooney-Rivlin' : """dw_tl_he_neohook.i.Omega(solid.mu_mr, v, u)
+                           + dw_tl_he_mooney_rivlin.i.Omega(solid.kappa, v, u)
+                           + dw_tl_bulk_penalty.i.Omega(solid.K, v, u)
+                           = dw_surface_ltr.isurf.Top(load.val, v)""",
     }
 
-    ##
-    # Solvers etc.
-    solver_0 = {
-        'name' : 'ls',
-        'kind' : 'ls.scipy_direct',
-    }
-
-    solver_1 = {
-        'name' : 'newton',
-        'kind' : 'nls.newton',
-
-        'i_max'      : 5,
-        'eps_a'      : 1e-10,
-        'eps_r'      : 1.0,
-        'macheps'    : 1e-16,
-        'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-        'ls_red'     : 0.1,
-        'ls_red_warp': 0.001,
-        'ls_on'      : 1.1,
-        'ls_min'     : 1e-5,
-        'check'      : 0,
-        'delta'      : 1e-6,
-        'problem'    : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
-    }
-
-    solver_2 = {
-        'name' : 'ts',
-        'kind' : 'ts.simple',
-
-        't0'    : 0,
-        't1'    : 1,
-        'dt'    : None,
-        'n_step' : 101, # has precedence over dt!
+    solvers = {
+        'ls' : ('ls.scipy_direct', {}),
+        'newton' : ('nls.newton', {
+            'i_max'      : 5,
+            'eps_a'      : 1e-10,
+            'eps_r'      : 1.0,
+        }),
+        'ts' : ('ts.simple', {
+            't0'    : 0,
+            't1'    : 1,
+            'dt'    : None,
+            'n_step' : 101, # has precedence over dt!
+        }),
     }
 
     return locals()
@@ -144,21 +123,21 @@ def linear_compression(ts, coor, mode=None, **kwargs):
         return {'val' : val}
 
 
-def store_top_u( displacements ):
+def store_top_u(displacements):
     """Function _store() will be called at the end of each loading step. Top
     displacements will be stored into `displacements`."""
-    def _store( problem, ts, state ):
+    def _store(problem, ts, state):
 
         top = problem.domain.regions['Top']
-        top_u = problem.get_variables()['u'].get_state_in_region( top )
-        displacements.append( nm.mean( top_u[:,-1] ) )
+        top_u = problem.get_variables()['u'].get_state_in_region(top)
+        displacements.append(nm.mean(top_u[:,-1]))
 
     return _store
 
 def solve_branch(problem, branch_function):
     displacements = {}
     for key, eq in problem.conf.equations.iteritems():
-        problem.set_equations( {key : eq} )
+        problem.set_equations({key : eq})
 
         load = problem.get_materials()['load']
         load.set_function(branch_function)
@@ -173,12 +152,13 @@ def solve_branch(problem, branch_function):
 
     return displacements
 
-usage = """%prog [options]"""
+usage = '%prog [options]\n' + __doc__.rstrip()
 helps = {
     'no_plot' : 'do not show plot window',
 }
 
 def main():
+    from sfepy.base.base import output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.discrete import Problem
     from sfepy.base.plotutils import plt
@@ -191,7 +171,7 @@ def main():
 
     required, other = get_standard_keywords()
     # Use this file as the input file.
-    conf = ProblemConf.from_file( __file__, required, other )
+    conf = ProblemConf.from_file(__file__, required, other)
 
     # Create problem instance, but do not set equations.
     problem = Problem.from_conf(conf, init_equations=False)
@@ -204,10 +184,10 @@ def main():
     # Get pressure load by calling linear_*() for each time step.
     ts = problem.get_timestepper()
     load_t = nm.array([linear_tension(ts, nm.array([[0.0]]), 'qp')['val']
-                       for aux in ts.iter_from( 0 )],
+                       for aux in ts.iter_from(0)],
                       dtype=nm.float64).squeeze()
     load_c = nm.array([linear_compression(ts, nm.array([[0.0]]), 'qp')['val']
-                       for aux in ts.iter_from( 0 )],
+                       for aux in ts.iter_from(0)],
                       dtype=nm.float64).squeeze()
 
     # Join the branches.
@@ -218,21 +198,21 @@ def main():
 
 
     if plt is None:
-        print 'matplotlib cannot be imported, printing raw data!'
-        print displacements
-        print load
+        output('matplotlib cannot be imported, printing raw data!')
+        output(displacements)
+        output(load)
     else:
         legend = []
         for key, val in displacements.iteritems():
-            plt.plot( load, val )
-            legend.append( key )
+            plt.plot(load, val)
+            legend.append(key)
 
-        plt.legend( legend, loc = 2 )
-        plt.xlabel( 'tension [kPa]' )
-        plt.ylabel( 'displacement [mm]' )
-        plt.grid( True )
+        plt.legend(legend, loc = 2)
+        plt.xlabel('tension [kPa]')
+        plt.ylabel('displacement [mm]')
+        plt.grid(True)
 
-        plt.gcf().savefig( 'pressure_displacement.png' )
+        plt.gcf().savefig('pressure_displacement.png')
 
         if not options.no_plot:
             plt.show()
