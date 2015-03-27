@@ -571,8 +571,8 @@ Complete Example as a Script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The source code: :download:`linear_elasticity.py
-<../examples/standalone/interactive/linear_elasticity.py>`. It should be
+<../examples/linear_elasticity/linear_elastic_interactive.py>`. It should be
 run from the *SfePy* source directory so that it finds the mesh file.
 
-.. literalinclude:: ../examples/standalone/interactive/linear_elasticity.py
+.. literalinclude:: ../examples/linear_elasticity/linear_elastic_interactive.py
    :linenos:

@@ -206,7 +206,7 @@ custom = {
             'rel_scaling' : 0.1,
         },
     },
-    'thermo_elasticity/thermo_elasticity_ess.py' : {
+    'multi_physics/thermo_elasticity_ess.py' : {
         '' : {
             'is_wireframe' : True,
             'only_names' : ['u'],

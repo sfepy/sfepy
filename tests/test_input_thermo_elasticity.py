@@ -1,4 +1,4 @@
-input_name = '../examples/thermo_elasticity/thermo_elasticity.py'
+input_name = '../examples/multi_physics/thermo_elasticity.py'
 output_name = 'test_thermo_elasticity.vtk'
 
 from tests_basic import TestInput
