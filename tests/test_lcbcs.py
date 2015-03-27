@@ -11,7 +11,7 @@ class Test(TestCommon):
         import numpy as nm
         from sfepy.mesh.mesh_generators import gen_block_mesh
         from sfepy.discrete.fem import FEDomain
-        from examples.standalone.interactive.laplace_shifted_periodic import run
+        from examples.diffusion.laplace_shifted_periodic import run
 
         dims = [2.0, 1.0]
         shape = [21, 11]

@@ -1,5 +1,5 @@
-input_name = '../examples/piezo_elasticity/piezo.py'
-output_name = 'test_piezo.vtk'
+input_name = '../examples/multi_physics/piezo_elasticity.py'
+output_name = 'test_piezo_elasticity.vtk'
 
 
 from tests_basic import TestInput
