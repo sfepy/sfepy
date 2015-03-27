@@ -154,19 +154,19 @@ def main():
     out, err = check_output('python ./homogen.py examples/homogenization/perfusion_micro.py')
     eok += report(out, '...', -7, -1, 'EpA...')
 
-    out, err = check_output('python examples/standalone/homogenized_elasticity/rs_correctors.py -n')
+    out, err = check_output('python examples/homogenization/rs_correctors.py -n')
     eok += report(out, '...', -2, -1, '1.644e-01]]')
 
-    out, err = check_output('python examples/standalone/elastic_materials/compare_elastic_materials.py -n')
+    out, err = check_output('python examples/large_deformation/compare_elastic_materials.py -n')
     eok += report(out, '...', -2, 5, '1.068759e-14', eps=1e-13)
 
-    out, err = check_output('python examples/standalone/interactive/linear_elasticity.py')
+    out, err = check_output('python examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
 
-    out, err = check_output('python examples/standalone/interactive/modal_analysis.py')
+    out, err = check_output('python examples/linear_elasticity/modal_analysis.py')
     eok += report(out, '...', -7, 3, '12142.11470773', eps=1e-13)
 
-    out, err = check_output('python examples/standalone/thermal_electric/thermal_electric.py')
+    out, err = check_output('python examples/multi_physics/thermal_electric.py')
     eok += report(out, '...', -3, 5, '2.612933e-14', eps=1e-13)
 
     t1 = time.time()
