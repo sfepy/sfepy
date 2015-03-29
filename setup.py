@@ -100,6 +100,9 @@ def _cython_version(pkg_name):
     from Cython.Compiler.Version import version
     return version
 
+def _igakit_version(pkg_name):
+    return '0.1'
+
 # Hard and soft dependency checking
 package_check('numpy', INFO.NUMPY_MIN_VERSION)
 package_check('scipy', INFO.SCIPY_MIN_VERSION)
@@ -111,6 +114,10 @@ package_check(('enthought.mayavi', 'mayavi'),
               optional=True,
               version_getter=_mayavi_version)
 package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
+              messages={'missing opt'
+                        : '%s was not found: some tests are going to fail!'})
+package_check('igakit', INFO.IGAKIT_MIN_VERSION, optional=True,
+              version_getter=_igakit_version,
               messages={'missing opt'
                         : '%s was not found: some tests are going to fail!'})
 # Cython can be a build dependency
