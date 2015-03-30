@@ -523,7 +523,6 @@ class Mesh(Struct):
 
         if filename is None:
             self.io = None
-            self.setup_done = 0
 
         else:
             io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
