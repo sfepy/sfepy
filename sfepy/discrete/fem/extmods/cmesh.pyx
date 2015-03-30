@@ -147,6 +147,7 @@ cdef class CMesh:
     cdef Mesh mesh[1]
 
     cdef readonly np.ndarray coors
+    cdef readonly np.ndarray vertex_groups
     cdef readonly np.ndarray cell_types
     cdef readonly np.ndarray cell_groups # ig for each cell.
     cdef readonly list conns
@@ -158,6 +159,83 @@ cdef class CMesh:
     cdef readonly np.ndarray facet_oris # face_oris in 3D, edge_oris in 2D
 
     cdef readonly dict key_to_index
+
+    @classmethod
+    def from_data(cls, coors, vertex_groups, conns, mat_ids, descs):
+        """
+        Fill CMesh data using Python data.
+        """
+        cdef uint32 tdim
+        cdef np.ndarray[float64, mode='c', ndim=2] _coors
+        cdef np.ndarray[uint32, mode='c', ndim=1] _cell_types
+        cdef MeshConnectivity *pconn
+
+        self = CMesh()
+
+        n_e_ps = np.array([conn.shape[1] for conn in conns])
+        n_els = np.array([conn.shape[0] for conn in conns])
+        n_el = np.sum(n_els)
+
+        # Max. topological dimension of cells.
+        tdim = 0
+        for desc in descs:
+            tdim = max(tdim, int(desc[0]))
+
+        # Geometry coordinates.
+        self.n_coor, self.dim = coors.shape
+        if (self.dim < 1) or (self.dim > 3):
+            raise ValueError('CMesh geometry dimension must be 1, 2 or 3! (%d)'
+                             % self.dim)
+        _coors = self.coors = coors.copy()
+        mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim, tdim)
+
+        self.vertex_groups = vertex_groups
+
+        # Cell-vertex (D -> 0) connectivity.
+        self.n_el = n_el
+        self.tdim = tdim
+        self.mesh.topology.num[self.tdim] = self.n_el
+
+        _cell_types = self.cell_types = np.empty(self.n_el, dtype=np.uint32)
+        self.mesh.topology.cell_types = &_cell_types[0]
+
+        # Length of connectivity.
+        n_incident = (n_e_ps * n_els).sum()
+
+        ii = self._get_conn_indx(self.tdim, 0)
+        cconn = _create_cconn(self.mesh.topology.conn[ii],
+                              self.n_el, n_incident, 'D -> 0')
+
+        self.cell_groups = mat_ids
+
+        indices = []
+        offsets = []
+        ict = 0
+        for ig, conn in enumerate(conns):
+            n_el, n_ep = conn.shape
+
+            off = np.empty(n_el, dtype=np.uint32)
+            off.fill(n_ep)
+            offsets.append(off)
+            indices.append(conn.ravel())
+
+            self.cell_types[ict:ict+n_el] = self.key_to_index[descs[ig]]
+
+            ict += n_el
+
+        indices = np.concatenate(indices)
+        offsets = np.concatenate(offsets)
+
+        cconn.indices[:] = indices
+        cconn.offsets[0] = 0
+        cconn.offsets[1:] = np.cumsum(offsets)
+
+        self.conns = [None] * (self.mesh.topology.max_dim + 1)**2
+        self.conns[ii] = cconn
+
+        self._update_num()
+
+        return self
 
     @classmethod
     def from_mesh(cls, mesh):
