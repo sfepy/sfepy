@@ -53,71 +53,21 @@ class FEDomain(Domain):
 
         self.vertex_set_bcs = self.mesh.nodal_bcs
 
-        self.mat_ids_to_i_gs = {}
-        for ig, mat_id in enumerate(mesh.mat_ids):
-            self.mat_ids_to_i_gs[mat_id[0]] = ig
-
+        self.cmesh = self.mesh.cmesh
         n_nod, dim = self.mesh.coors.shape
-        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0,
-                            n_el=0,
-                            n_gr=len(self.mesh.conns))
-
-        self.setup_groups()
-        self.fix_element_orientation()
-        self.reset_regions()
-        self.clear_surface_groups()
 
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
-        from sfepy.discrete.fem.extmods.cmesh import CMesh
-        self.cmesh = CMesh.from_mesh(mesh)
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)
         self.cmesh.setup_entities()
 
-        self.shape.tdim = self.cmesh.tdim
-        self.cell_offsets = self.mesh.el_offsets
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh.tdim,
+                            n_el=0,
+                            n_gr=len(self.geom_els))
 
-    def setup_groups(self):
-        self.groups = {}
-        for ii in range(self.shape.n_gr):
-            gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
-            conn = self.mesh.conns[ii]
-            vertices = nm.unique(conn)
-
-            n_vertex = vertices.shape[0]
-            n_el, n_ep = conn.shape
-            n_edge = gel.n_edge
-            n_edge_total = n_edge * n_el
-
-            if gel.dim == 3:
-                n_face = gel.n_face
-                n_face_total = n_face * n_el
-            else:
-                n_face = n_face_total = 0
-
-            shape = Struct(n_vertex=n_vertex, n_el=n_el, n_ep=n_ep,
-                           n_edge=n_edge, n_edge_total=n_edge_total,
-                           n_face=n_face, n_face_total=n_face_total,
-                           dim=self.mesh.dims[ii])
-
-            self.groups[ii] = Struct(ig=ii, vertices=vertices, conn=conn,
-                                      gel=gel, shape=shape)
-            self.shape.n_el += n_el
-
-    def iter_groups(self, igs=None):
-        if igs is None:
-            for ig in xrange(self.shape.n_gr): # sorted by ig.
-                yield self.groups[ig]
-        else:
-            for ig in igs:
-                yield ig, self.groups[ig]
-
-    def get_cell_offsets(self):
-        offs = {}
-        for ig in range(self.shape.n_gr):
-            offs[ig] = self.cell_offsets[ig]
-
-        return offs
+        self.fix_element_orientation()
+        self.reset_regions()
+        self.clear_surface_groups()
 
     def get_mesh_coors(self, actual=False):
         """
