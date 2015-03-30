@@ -561,10 +561,7 @@ class Mesh(Struct):
 
     def _set_shape_info(self):
         self.n_nod, self.dim = self.coors.shape
-        self.n_els = nm.array([conn.shape[0] for conn in self.conns])
-        self.n_e_ps = nm.array([conn.shape[1] for conn in self.conns])
-        self.el_offsets = nm.cumsum(nm.r_[0, self.n_els])
-        self.n_el = nm.sum(self.n_els)
+        self.n_el = self.cmesh.n_el
         self.dims = [int(ii[0]) for ii in self.descs]
 
     def _set_data(self, coors, ngroups, conns, mat_ids, descs, nodal_bcs=None):
@@ -587,19 +584,23 @@ class Mesh(Struct):
             The nodes defining regions for boundary conditions referred
             to by the dict keys in problem description files.
         """
-        self.coors = nm.ascontiguousarray(coors)
+        ac = nm.ascontiguousarray
 
         if ngroups is None:
-            self.ngroups = nm.zeros((self.coors.shape[0],), dtype=nm.int32)
+            ngroups = nm.zeros((coors.shape[0],), dtype=nm.int32)
 
-        else:
-            self.ngroups = nm.ascontiguousarray(ngroups)
-
-        self.conns = [nm.asarray(conn, dtype=nm.int32) for conn in conns]
-        self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32)
-                        for mat_id in mat_ids]
         self.descs = descs
         self.nodal_bcs = get_default(nodal_bcs, {})
+
+        from sfepy.discrete.fem.extmods.cmesh import CMesh
+        self.cmesh = CMesh.from_data(ac(coors), ac(ngroups),
+                                     [ac(conn, dtype=nm.int32)
+                                      for conn in conns],
+                                     ac(nm.concatenate(mat_ids)), descs)
+        # Aliases.
+        self.coors = self.cmesh.coors
+        self.mat_ids = self.cmesh.cell_groups
+        self.ngroups = self.cmesh.vertex_groups
 
     def _append_region_faces(self, region, force_faces=False):
         dim = self.coors.shape[1]
