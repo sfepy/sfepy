@@ -421,14 +421,11 @@ class MeditMeshIO(MeshIO):
 
         fd.close()
 
-        conns_in, mat_ids = sort_by_mat_id(conns_in)
-
         # Detect wedges and pyramides -> separate groups.
         if ('3_8' in descs):
             ic = descs.index('3_8')
 
             conn_in = conns_in.pop(ic)
-            mat_id_in = mat_ids.pop(ic)
 
             flag = nm.zeros((conn_in.shape[0],), nm.int32)
             for ii, el in enumerate(conn_in):
@@ -440,34 +437,33 @@ class MeditMeshIO(MeshIO):
 
             conn = []
             desc = []
-            mat_id = []
 
             ib = nm.where(flag == 0)[0]
             if (len(ib) > 0):
                 conn.append(conn_in[ib])
-                mat_id.append(mat_id_in[ib])
                 desc.append('3_8')
 
             iw = nm.where(flag == 1)[0]
             if (len(iw) > 0):
                 ar = nm.array([0,1,2,3,4,6], nm.int32)
                 conn.append(conn_in[iw[:, None], ar])
-                mat_id.append(mat_id_in[iw])
                 desc.append('3_6')
 
             ip = nm.where(flag == 2)[0]
             if (len(ip) > 0):
                 ar = nm.array([0,1,2,3,4], nm.int32)
                 conn.append(conn_in[ip[:, None], ar])
-                mat_id.append(mat_id_in[ip])
                 desc.append('3_5')
 
             conns_in[ic:ic] = conn
-            mat_ids[ic:ic] = mat_id
             del(descs[ic])
             descs[ic:ic] = desc
 
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, descs)
+        conns, mat_ids = [], []
+        for conn in conns_in:
+            conns.append(conn[:, :-1])
+            mat_ids.append(conn[:, -1])
+
         mesh._set_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
 
         return mesh
