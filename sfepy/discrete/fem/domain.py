@@ -103,26 +103,24 @@ class FEDomain(Domain):
 
     def fix_element_orientation(self):
         """
-        Ensure element nodes ordering giving positive element volume.
-
-        The groups with elements of lower dimension than the space dimension
-        are skipped.
+        Ensure element vertices ordering giving positive cell volumes.
         """
         from extmods.cmesh import orient_elements
 
-        coors = self.mesh.coors
-        for ii, group in self.groups.iteritems():
-            if group.shape.dim < self.shape.dim: continue
+        cmesh = self.cmesh
+        for ii, gel in self.geom_els.iteritems():
+            ori = gel.orientation
 
-            ori, conn = group.gel.orientation, group.conn
+            cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
+            cells = cells[0].astype(nm.uint32)
 
             itry = 0
             while itry < 2:
-                flag = -nm.ones(conn.shape[0], dtype=nm.int32)
+                flag = -nm.ones(self.cmesh.n_el, dtype=nm.int32)
 
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
-                orient_elements(flag, conn, coors,
+                orient_elements(flag, self.cmesh, cells, gel.dim,
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
