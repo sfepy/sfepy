@@ -730,9 +730,7 @@ def get_cmem_usage():
 cdef extern from 'meshutils.h':
     int32 c_orient_elements \
           'orient_elements'(int32 *flag, int32 flag_n_row,
-                            int32 *conn, int32 conn_n_row, int32 conn_n_col,
-                            float64 *coors,
-                            int32 coors_n_row, int32 coors_n_col,
+                            Mesh *mesh, Indices *cells, int32 dcells,
                             int32 *v_roots, int32 v_roots_n_row,
                             int32 *v_vecs,
                             int32 v_vecs_n_row, int32 v_vecs_n_col,
@@ -755,8 +753,9 @@ cdef extern from 'meshutils.h':
 
 @cython.boundscheck(False)
 def orient_elements(np.ndarray[int32, mode='c', ndim=1] flag not None,
-                    np.ndarray[int32, mode='c', ndim=2] conn not None,
-                    np.ndarray[float64, mode='c', ndim=2] coors not None,
+                    CMesh cmesh not None,
+                    np.ndarray[uint32, mode='c', ndim=1] cells not None,
+                    int32 dcells,
                     np.ndarray[int32, mode='c', ndim=1] v_roots not None,
                     np.ndarray[int32, mode='c', ndim=2] v_vecs not None,
                     np.ndarray[int32, mode='c', ndim=2] swap_from not None,
@@ -764,9 +763,13 @@ def orient_elements(np.ndarray[int32, mode='c', ndim=1] flag not None,
     """
     Swap element nodes so that its volume is positive.
     """
+    cdef Indices _cells[1]
+
+    _cells.num = cells.shape[0]
+    _cells.indices = &cells[0]
+
     return c_orient_elements(&flag[0], flag.shape[0],
-                             &conn[0, 0], conn.shape[0], conn.shape[1],
-                             &coors[0, 0], coors.shape[0], coors.shape[1],
+                             cmesh.mesh, _cells, dcells,
                              &v_roots[0], v_roots.shape[0],
                              &v_vecs[0, 0], v_vecs.shape[0], v_vecs.shape[1],
                              &swap_from[0, 0],

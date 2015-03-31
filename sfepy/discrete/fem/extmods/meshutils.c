@@ -18,8 +18,7 @@ int32 n_c;
   - 02.08.2006
 */
 int32 orient_elements(int32 *flag, int32 flag_n_row,
-                      int32 *conn, int32 conn_n_row, int32 conn_n_col,
-                      float64 *coors, int32 coors_n_row, int32 coors_n_col,
+                      Mesh *mesh, Indices *cells, int32 dcells,
                       int32 *v_roots, int32 v_roots_n_row,
                       int32 *v_vecs, int32 v_vecs_n_row, int32 v_vecs_n_col,
                       int32 *swap_from,
@@ -27,25 +26,35 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
                       int32 *swap_to,
                       int32 swap_to_n_row, int32 swap_to_n_col)
 {
-#define IR(iel, ir) (conn[conn_n_col*(iel)+v_roots[ir]])
-#define IV(iel, ir, iv) (conn[conn_n_col*(iel)+v_vecs[v_vecs_n_col*ir+iv]])
-#define CONN(iel, ip) (conn[conn_n_col*(iel)+ip])
 #define SWF(ir, is) (swap_from[swap_from_n_col*ir+is])
 #define SWT(ir, is) (swap_to[swap_to_n_col*ir+is])
+#define IR(ir) (cell_vertices->indices[v_roots[ir]])
+#define IV(ir, iv) (cell_vertices->indices[v_vecs[v_vecs_n_col*ir+iv]])
+#define CONN(ip) (cell_vertices->indices[ip])
 
+  int32 D = mesh->topology->max_dim;
+  float64 *coors = mesh->geometry->coors;
+  Indices cell_vertices[1];
+  MeshEntityIterator it0[1];
+  MeshConnectivity *cD0 = 0; // D -> 0
   int32 ir, iel, ii, ip0, ip1, ip2, ip3, tmp, nc;
   float64 v0[3], v1[3], v2[3], v3[3], cross[3], dot[1];
 
-  nc = coors_n_col;
+  cD0 = mesh->topology->conn[IJ(D, D, 0)];
+
+  nc = mesh->geometry->dim;
   if (nc == 3) { // 3D.
-    for (iel = 0; iel < conn_n_row; iel++) {
+    for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
+      iel = it0->entity->ii;
       flag[iel] = 0;
 
+      me_get_incident2(it0->entity, cell_vertices, cD0);
+
       for (ir = 0; ir < v_roots_n_row; ir++) {
-        ip0 = IR(iel, ir);
-        ip1 = IV(iel, ir, 0);
-        ip2 = IV(iel, ir, 1);
-        ip3 = IV(iel, ir, 2);
+        ip0 = IR(ir);
+        ip1 = IV(ir, 0);
+        ip2 = IV(ir, 1);
+        ip3 = IV(ir, 2);
         for (ii = 0; ii < 3; ii++) {
           v0[ii] = coors[nc*ip0+ii];
           v1[ii] = coors[nc*ip1+ii] - v0[ii];
@@ -59,21 +68,23 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
         if (dot[0] < CONST_MachEps) {
           flag[iel]++;
           for (ii = 0; ii < swap_from_n_col; ii++) {
-            SwapValues(CONN(iel, SWF(ir, ii)),
-                        CONN(iel, SWT(ir, ii)), tmp);
+            SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
             /* output("%d %d\n", SWF(ir, ii), SWT(ir, ii)); */
           }
         }
       }
     }
   } else if (nc == 2) { // 2D.
-    for (iel = 0; iel < conn_n_row; iel++) {
+    for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
+      iel = it0->entity->ii;
       flag[iel] = 0;
 
+      me_get_incident2(it0->entity, cell_vertices, cD0);
+
       for (ir = 0; ir < v_roots_n_row; ir++) {
-        ip0 = IR(iel, ir);
-        ip1 = IV(iel, ir, 0);
-        ip2 = IV(iel, ir, 1);
+        ip0 = IR(ir);
+        ip1 = IV(ir, 0);
+        ip2 = IV(ir, 1);
         for (ii = 0; ii < 2; ii++) {
           v0[ii] = coors[nc*ip0+ii];
           v1[ii] = coors[nc*ip1+ii] - v0[ii];
@@ -84,26 +95,28 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
         if (cross[2] < CONST_MachEps) {
           flag[iel]++;
           for (ii = 0; ii < swap_from_n_col; ii++) {
-            SwapValues(CONN(iel, SWF(ir, ii)),
-                        CONN(iel, SWT(ir, ii)), tmp);
+            SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
           }
         }
       }
     }
   } else if (nc == 1) { // 1D
-    for (iel = 0; iel < conn_n_row; iel++) {
+    for (mei_init_sub(it0, mesh, cells, dcells); mei_go(it0); mei_next(it0)) {
+      iel = it0->entity->ii;
       flag[iel] = 0;
 
+      me_get_incident2(it0->entity, cell_vertices, cD0);
+
       for (ir = 0; ir < v_roots_n_row; ir++) {
-        ip0 = IR(iel, ir);
-        ip1 = IV(iel, ir, 0);
+        ip0 = IR(ir);
+        ip1 = IV(ir, 0);
 
         v0[0] = coors[ip0];
         v1[0] = coors[ip1] - v0[0];
 
         if (v1[0] < CONST_MachEps){
           flag[iel]++;
-          SwapValues(CONN(iel, SWF(ir, 0)), CONN(iel, SWT(ir, 0)), tmp);
+          SwapValues(CONN(SWF(ir, 0)), CONN(SWT(ir, 0)), tmp);
         }
       }
     }

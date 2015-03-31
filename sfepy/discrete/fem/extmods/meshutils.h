@@ -2,10 +2,10 @@
 #define _MESHUTILS_H_
 
 #include "common.h"
+#include "mesh.h"
 
 int32 orient_elements(int32 *flag, int32 flag_n_row,
-                      int32 *conn, int32 conn_n_row, int32 conn_n_col,
-                      float64 *coors, int32 coors_n_row, int32 coors_n_col,
+		      Mesh *mesh, Indices *cells, int32 dcells,
                       int32 *v_roots, int32 v_roots_n_row,
                       int32 *v_vecs, int32 v_vecs_n_row, int32 v_vecs_n_col,
                       int32 *swap_from,
