@@ -767,8 +767,7 @@ class VolumeField(FEField):
     def _check_region(self, region):
         """
         Check whether the `region` can be used for the
-        field. Non-surface fields require the region to span whole
-        element groups.
+        field.
 
         Returns
         -------
@@ -777,17 +776,15 @@ class VolumeField(FEField):
         """
         ok = True
         domain = region.domain
-        for ig in region.igs:
-            if domain.groups[ig].gel.dim != domain.shape.tdim:
-                output('cells with a bad topological dimension! (%d == %d)'
-                       % (domain.groups[ig].gel.dim, domain.shape.tdim))
-                ok = False
-                break
-            shape = domain.groups[ig].shape
-            if region.shape[ig].n_vertex < shape.n_vertex:
-                output('region does not span a whole element group!')
-                ok = False
-                break
+        if region.kind != 'cell':
+            output("bad region kind! (is: %r, should be: 'cell')"
+                   % region.kind)
+            ok = False
+
+        elif (region.kind_tdim != domain.shape.tdim):
+            output('cells with a bad topological dimension! (%d == %d)'
+                   % (region.kind_tdim, domain.shape.tdim))
+            ok = False
 
         return ok
 
@@ -795,8 +792,17 @@ class VolumeField(FEField):
         """
         Setup the field region geometry.
         """
-        ig = self.region.domain.cmesh.cell_groups[self.region.cells[0]]
-        self.gel = self.domain.groups[ig].gel
+        cmesh = self.domain.cmesh
+        for key, gel in self.domain.geom_els.iteritems():
+            ct = cmesh.cell_types
+            if (ct[self.region.cells] == cmesh.key_to_index[gel.name]).all():
+                self.gel = gel
+                break
+
+        else:
+            raise ValueError('region %s of field %s contains multiple'
+                             ' reference geometries!'
+                             % (self.region.name, self.name))
 
         self.is_surface = False
 
