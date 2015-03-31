@@ -54,15 +54,15 @@ class FEDomain(Domain):
         self.vertex_set_bcs = self.mesh.nodal_bcs
 
         self.cmesh = self.mesh.cmesh
-        n_nod, dim = self.mesh.coors.shape
 
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)
         self.cmesh.setup_entities()
 
+        n_nod, dim = self.mesh.coors.shape
         self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh.tdim,
-                            n_el=0,
+                            n_el=self.cmesh.n_el,
                             n_gr=len(self.geom_els))
 
         self.fix_element_orientation()
