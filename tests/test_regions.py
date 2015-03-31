@@ -51,7 +51,6 @@ class Test(TestCommon):
             # ['cells of set 0', 'cell'], not implemented...
             ['cells by get_cells', 'cell'],
             ['cell 1, 4, 5', 'cell'],
-            ['cell (0, 1), (0, 4), (0, 5)', 'cell'],
             ['copy r.r5', 'cell'],
             ['r.r5', 'cell'],
         ]
@@ -67,7 +66,6 @@ class Test(TestCommon):
             [0],
             [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12],
             [0,  1,  2,  3,  4,  5,  6,  9, 10, 11],
-            [0,  1,  2,  3,  4,  5,  6,  8],
             [0,  1,  2,  3,  4,  5,  6,  8],
             [1,  2,  3,  4,  5,  9, 11],
             [1,  2,  3,  4,  5,  9, 11],
