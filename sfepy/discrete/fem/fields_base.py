@@ -241,15 +241,6 @@ class FEField(Field):
                                       self.poly_space_base, self.approx_order,
                                       self.force_bubble)
 
-    def _setup_approximations(self):
-        self.aps = {}
-        self.aps_by_name = {}
-        for ig in self.igs:
-            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
-            ap = fea.Approximation(name, self.interp, self.region, ig)
-            self.aps[ig] = ap
-            self.aps_by_name[ap.name] = ap
-
     def get_true_order(self):
         """
         Get the true approximation order depending on the reference
