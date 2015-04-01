@@ -303,10 +303,6 @@ class Terms(Container):
             out.extend(term.get_user_names())
         return list(set(out))
 
-    def set_current_group(self, ig):
-        for term in self:
-            term.char_fun.set_current_group(ig)
-
 class Term(Struct):
     name = ''
     arg_types = ()
