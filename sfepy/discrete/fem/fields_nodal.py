@@ -33,14 +33,12 @@ class H1NodalMixin(H1Mixin):
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
             n_fp = self.gel.edges.shape[1]
-            self.edge_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             order)
+            self.edge_dof_perms = get_facet_dof_permutations(n_fp, order)
 
         face_nodes = self.node_desc.face_nodes
         if face_nodes is not None:
             n_fp = self.gel.faces.shape[1]
-            self.face_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             order)
+            self.face_dof_perms = get_facet_dof_permutations(n_fp, order)
 
     def _setup_edge_dofs(self):
         """
@@ -88,29 +86,29 @@ class H1NodalMixin(H1Mixin):
         n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
 
         oris = cmesh.get_orientations(dim)
-        for ig, ap in self.aps.iteritems():
-            gcells = self.region.get_cells(ig, offset=False)
-            n_el = gcells.shape[0]
 
-            indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
-            facets_of_cells = remap[indices]
+        gcells = self.region.get_cells()
+        n_el = gcells.shape[0]
 
-            ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
-            perms = facet_perms[ig][ori]
+        indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
+        facets_of_cells = remap[indices]
 
-            # Define global facet dof numbers.
-            gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
-                                                  n_dof_per_facet)
+        ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
+        perms = facet_perms[ori]
 
-            # Elements of facets.
-            iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
-            ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
+        # Define global facet dof numbers.
+        gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
+                                              n_dof_per_facet)
 
-            # DOF columns in econn for each facet.
-            iep = facet_desc[ies]
+        # Elements of facets.
+        iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+        ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
-            iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
-            ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
+        # DOF columns in econn for each facet.
+        iep = facet_desc[ies]
+
+        iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
+        self.ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
 
         n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
@@ -125,28 +123,19 @@ class H1NodalMixin(H1Mixin):
             return 0, None, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
-        n_dof = 0
         n_dof_per_cell = self.node_desc.bubble.shape[0]
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            n_cell = ii.shape[0]
-            nd = n_dof_per_cell * n_cell
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        ap = self.ap
+        ii = self.region.get_cells()
+        n_cell = ii.shape[0]
+        n_dof = n_dof_per_cell * n_cell
 
-            aux = nm.arange(offset + n_dof, offset + n_dof + nd,
-                            dtype=nm.int32)
-            aux.shape = (n_cell, n_dof_per_cell)
-            iep = self.node_desc.bubble[0]
-            ap.econn[:,iep:] = aux
-            all_dofs[ig] = aux
+        all_dofs = nm.arange(offset, offset + n_dof, dtype=nm.int32)
+        all_dofs.shape = (n_cell, n_dof_per_cell)
+        iep = self.node_desc.bubble[0]
+        ap.econn[:,iep:] = all_dofs
 
-            n_dof += nd
-
-        return n_dof, all_dofs, remaps
+        return n_dof, all_dofs
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """

@@ -208,7 +208,6 @@ class FEField(Field):
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
         self.domain = self.region.domain
-        self.igs = self.region.igs
 
         self._set_approx_order(approx_order)
         self._setup_geometry()
@@ -287,7 +286,7 @@ class FEField(Field):
         self.n_face_dof, self.face_dofs, self.face_remap = aux
 
         aux = self._setup_bubble_dofs()
-        self.n_bubble_dof, self.bubble_dofs, self.bubble_remaps = aux
+        self.n_bubble_dof, self.bubble_dofs = aux
 
         self.n_nod = self.n_vertex_dof + self.n_edge_dof \
                      + self.n_face_dof + self.n_bubble_dof
@@ -341,8 +340,7 @@ class FEField(Field):
                                                      indx.astype(nm.int32),
                                                      axis=0)
 
-        for ig, ap in self.aps.iteritems():
-            ap.eval_extra_coor(self.coors, coors)
+        self.ap.eval_extra_coor(self.coors, coors)
 
     def get_vertices(self):
         """
@@ -806,22 +804,17 @@ class VolumeField(FEField):
                                       self.force_bubble)
 
     def _setup_approximations(self):
-        self.aps = {}
-        self.aps_by_name = {}
-        for ig in self.igs:
-            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
-            ap = fea.Approximation(name, self.interp, self.region, ig)
-            self.aps[ig] = ap
-            self.aps_by_name[ap.name] = ap
+        name = self.interp.name + '_%s' % self.region.name
+        self.ap = fea.Approximation(name, self.interp, self.region)
 
     def _init_econn(self):
         """
         Initialize the extended DOF connectivity.
         """
-        for ig, ap in self.aps.iteritems():
-            n_ep = ap.n_ep['v']
-            n_cell = self.region.get_n_cells(ig)
-            ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
+        ap = self.ap
+        n_ep = ap.n_ep['v']
+        n_cell = self.region.get_n_cells()
+        ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
 
     def _setup_vertex_dofs(self):
         """
@@ -832,20 +825,20 @@ class VolumeField(FEField):
 
         region = self.region
 
-        vertices = region.get_vertices_of_cells()
+        cmesh = self.domain.cmesh
+        conn, offsets = cmesh.get_incident(0, region.cells, region.tdim,
+                                           ret_offsets=True)
+
+        vertices = nm.unique(conn)
         remap = prepare_remap(vertices, region.n_v_max)
         n_dof = vertices.shape[0]
 
-        ##
-        # Remap vertex node connectivity to field-local numbering.
-        for ig, ap in self.aps.iteritems():
-            group = self.domain.groups[ig]
-            offset = group.shape.n_ep
-            cells = region.get_cells(ig)
-            ap.econn[:,:offset] = nm.take(remap,
-                                          nm.take(group.conn,
-                                                  cells.astype(nm.int32),
-                                                  axis=0))
+        aux = nm.unique(nm.diff(offsets))
+        assert_(len(aux) == 1, 'region with multiple reference geometries!')
+        offset = aux[0]
+
+        ap = self.ap
+        ap.econn[:, :offset] = conn.reshape((-1, offset)).astype(nm.int32)
 
         return n_dof, remap
 
