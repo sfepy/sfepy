@@ -230,32 +230,6 @@ class ConnInfo(Struct):
         else:
             return None
 
-    def iter_igs(self):
-        if self.region is not None:
-            for ig in self.region.igs:
-                if self.virtual_igs is not None:
-                    ir = self.virtual_igs.tolist().index(ig)
-                    rig = self.virtual_igs[ir]
-                else:
-                    rig = None
-
-                if not self.is_trace:
-                    ii = ig
-                else:
-                    ig_map_i = self.region.get_mirror_region()[2]
-                    ii = ig_map_i[ig]
-
-                if self.state_igs is not None:
-                    ic = self.state_igs.tolist().index(ii)
-                    cig = self.state_igs[ic]
-                else:
-                    cig = None
-
-                yield rig, cig
-
-        else:
-            yield None, None
-
 class Terms(Container):
 
     @staticmethod
