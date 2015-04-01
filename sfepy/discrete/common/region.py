@@ -86,12 +86,6 @@ def are_disjoint(r1, r2):
 def _join(def1, op, def2):
     return '(' + def1 + ' ' + op + ' ' + def2 + ')'
 
-def _try_delete(obj, ig):
-    try:
-        del obj[ig]
-    except KeyError:
-        pass
-
 class Region(Struct):
     """
     Region defines a subset of a FE domain.
