@@ -471,17 +471,6 @@ class Term(Struct):
         self.classify_args()
         self.check_args()
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        """
-        Subclasses either implement __call__ or plug in a proper _call().
-        """
-        return self._call(diff_var, chunk_size, **kwargs)
-
-    def _call(self, diff_var=None, chunk_size=None, **kwargs):
-        msg = 'base class method "_call" called for %s' \
-              % self.__class__.__name__
-        raise RuntimeError(msg)
-
     def assign_args(self, variables, materials, user=None):
         """
         Check term argument existence in variables, materials, user data
