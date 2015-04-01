@@ -104,11 +104,6 @@ class Region(Struct):
     followed by one of ('v', 'e', 'f', 'c', and 's') for vertices, edges,
     faces, cells, and facets.
 
-    Notes
-    -----
-    Functions depending on `ig` are adapters for current code that should be
-    removed after new assembling is done.
-
     Created: 31.10.2005
     """
     __can = {
@@ -246,8 +241,7 @@ class Region(Struct):
                         tdim=tdim, kind_tdim=None,
                         entities=[None] * (tdim + 1),
                         kind=None, parent=parent, shape=None,
-                        mirror_region=None, ig_map=None,
-                        ig_map_i=None)
+                        mirror_region=None)
         self.set_kind(kind)
 
     def set_kind(self, kind):
@@ -282,8 +276,6 @@ class Region(Struct):
         for ii, ican in enumerate(self.can):
             if not ican:
                 self.entities[ii] = nm.empty(0, dtype=nm.uint32)
-
-        self._igs = None
 
         self.set_kind_tdim()
 
@@ -535,78 +527,33 @@ class Region(Struct):
     def delete_zero_faces(self, eps=1e-14):
         raise NotImplementedError
 
-    @property
-    def igs(self):
-        """
-        Cell group indices according to region kind.
-        """
-        if self.parent is not None:
-            self._igs = self.domain.regions[self.parent].igs
-
-        elif self._igs is None:
-            if 'vertex' in self.true_kind:
-                self._igs = self.domain.cmesh.get_igs(self.vertices, 0)
-
-            elif 'edge' in self.true_kind:
-                self._igs = self.domain.cmesh.get_igs(self.edges, 1)
-
-            elif 'face' in self.true_kind:
-                self._igs = self.domain.cmesh.get_igs(self.faces, 2)
-
-            elif 'cell' in self.true_kind:
-                self._igs = self.domain.cmesh.get_igs(self.cells, self.tdim)
-
-            if not len(self._igs):
-                output('warning: region %s of %s kind has empty group indices!'
-                       % (self.name, self.kind))
-
-        return self._igs
-
     def update_shape(self):
         """
         Update shape of each group according to region vertices, edges,
         faces and cells.
         """
-        get = self.domain.cmesh.get_from_cell_group
+        n_vertex = self.vertices.shape[0]
+        n_cell = self.cells.shape[0]
+        n_edge = self.edges.shape[0] if self.tdim > 1 else 0
+        n_face = self.faces.shape[0] if self.tdim == 3 else 0
+        n_facet = self.facets.shape[0] if self.tdim > 1 else 0
 
-        self.shape = {}
-        for ig in self.igs:
-            n_vertex = get(ig, 0, self.vertices).shape[0]
-            n_cell = get(ig, self.tdim, self.cells).shape[0]
+        self.shape = Struct(n_vertex=n_vertex,
+                            n_edge=n_edge,
+                            n_face=n_face,
+                            n_facet=n_facet,
+                            n_cell=n_cell)
 
-            if self.tdim > 1:
-                n_edge = get(ig, 1, self.edges).shape[0]
-
-            else:
-                n_edge = 0
-
-            if self.tdim == 3:
-                n_face = get(ig, 2, self.faces).shape[0]
-
-            else:
-                n_face = 0
-
-            self.shape[ig] = Struct(n_vertex=n_vertex,
-                                    n_edge=n_edge,
-                                    n_face=n_face,
-                                    n_cell=n_cell)
-
-    def get_entities(self, dim, ig=None):
+    def get_entities(self, dim):
         """
-        Return mesh entities of dimension `dim`, and optionally with the cell
-        group `ig`.
+        Return mesh entities of dimension `dim`.
         """
-        if ig is not None:
-            out = self.domain.cmesh.get_from_cell_group(ig, dim,
-                                                        self.entities[dim])
+        if dim <= self.tdim:
+            self._access(dim)
+            out = self.entities[dim]
 
         else:
-            if dim <= self.tdim:
-                self._access(dim)
-                out = self.entities[dim]
-
-            else:
-                out = nm.empty(0, dtype=nm.uint32)
+            out = nm.empty(0, dtype=nm.uint32)
 
         return out
 
@@ -618,32 +565,7 @@ class Region(Struct):
 
         return nm.unique(vertices)
 
-    def get_vertices(self, ig):
-        out = self.domain.cmesh.get_from_cell_group(ig, 0, self.vertices)
-        return out
-
-    def get_edges(self, ig):
-        out = self.domain.cmesh.get_from_cell_group(ig, 1, self.edges)
-        return out
-
-    def get_faces(self, ig):
-        out = self.domain.cmesh.get_from_cell_group(ig, 2, self.faces)
-        return out
-
-    def get_facets(self, ig):
-        """
-        Return either region vertices (in 1D), edges (in 2D) or faces (in 3D).
-        """
-        if self.tdim == 1:
-            return self.get_vertices(ig)
-
-        elif self.tdim == 2:
-            return self.get_edges(ig)
-
-        else:
-            return self.get_faces(ig)
-
-    def get_cells(self, ig, true_cells_only=True, offset=True):
+    def get_cells(self, true_cells_only=True):
         """
         Get cells of the region.
 
@@ -651,9 +573,6 @@ class Region(Struct):
         not allow cells (e.g. surface integration region). For
         `true_cells_only` equal to False, cells incident to facets are returned
         if the region itself contains no cells.
-
-        If `offset` is True, the cell group offset is subtracted from the cell
-        ids.
         """
         cmesh = self.domain.cmesh
 
@@ -668,42 +587,22 @@ class Region(Struct):
                 cmesh.setup_connectivity(self.tdim - 1, self.tdim)
                 out = cmesh.get_incident(self.tdim, self.facets, self.tdim - 1)
 
-                igs = cmesh.cell_groups[out]
-                ic = nm.where(igs == ig)
-                out = out[ic]
-
         else:
-            out = cmesh.get_from_cell_group(ig, self.tdim, self.cells)
-
-        if offset:
-            out -= self.domain.cell_offsets[ig]
+            out = self.cells
 
         return out
 
-    def get_facet_indices(self, ig, offset=True, force_ig=True):
+    def get_facet_indices(self):
         """
         Return an array (per group) of (iel, ifa) for each facet. A facet can
         be in 1 (surface) or 2 (inner) cells.
-
-        If `offset` is True, the cell group offset is subtracted from the cell
-        ids.
-
-        If `force_ig` is True, only the cells with the given `ig` are used.
         """
         cmesh = self.domain.cmesh
-        facets = self.get_facets(ig)
+        facets = self.facets
         cells, offs = cmesh.get_incident(self.tdim, facets, self.tdim - 1,
                                          ret_offsets=True)
         ii = cmesh.get_local_ids(facets, self.tdim - 1, cells, offs, self.tdim)
         fis = nm.c_[cells, ii]
-
-        if force_ig:
-            igs = cmesh.cell_groups[cells]
-            ic = nm.where(igs == ig)
-            fis = fis[ic]
-
-        if offset:
-            fis[:, 0] -= self.domain.cell_offsets[ig]
 
         return fis
 
@@ -713,51 +612,27 @@ class Region(Struct):
         """
         regions = self.domain.regions
 
-        parent = regions[self.parent]
         for reg in regions:
             mirror_parent = regions.find(reg.parent)
             if mirror_parent is None: continue
             if ((reg is not self)
-                and (len(reg.igs) == len(self.igs))
-                and (not len(nm.intersect1d(parent.igs, mirror_parent.igs)))
                 and nm.all(self.vertices == reg.vertices)):
                 mirror_region = reg
                 break
         else:
             raise ValueError('cannot find mirror region! (%s)' % self.name)
 
-        ig_map = {}
-        ig_map_i = {}
-        for igr in parent.igs:
-            v1 = self.get_vertices(igr)
-            for igc in mirror_parent.igs:
-                v2 = self.get_vertices(igc)
-                if nm.all(v1 == v2):
-                    ig_map[igc] = igr
-                    ig_map_i[igr] = igc
-                    break
-            else:
-                raise ValueError('cannot find mirror region group! (%d)' % igr)
-
-        self._igs = parent._igs
-        mirror_region._igs = mirror_parent._igs
-
         self.mirror_region = mirror_region
-        self.ig_map = ig_map
-        self.ig_map_i = ig_map_i
 
     def get_mirror_region(self):
-        return self.mirror_region, self.ig_map, self.ig_map_i
+        return self.mirror_region
 
-    def get_n_cells(self, ig=None, is_surface=False):
+    def get_n_cells(self, is_surface=False):
         """
         Get number of region cells.
 
         Parameters
         ----------
-        ig : int, optional
-            The group index. If None, counts from all groups are added
-            together.
         is_surface : bool
             If True, number of edges or faces according to domain
             dimension is returned instead.
@@ -767,31 +642,11 @@ class Region(Struct):
         n_cells : int
             The number of cells.
         """
-        if ig is not None:
-            if is_surface:
-                if self.domain.groups[ig].shape.dim == 2:
-                    return self.shape[ig].n_edge
-
-                else:
-                    return self.shape[ig].n_face
-
-            else:
-                return self.shape[ig].n_cell
+        if is_surface:
+            return self.shape.n_facet
 
         else:
-            return sum(self.get_n_cells(ig, is_surface=is_surface)
-                       for ig in self.igs)
-
-    def iter_cells(self):
-        ii = 0
-        off = 0
-        for ig in self.igs:
-            n_cell = self.shape[ig].n_cell
-            for iel in self.cells[off : off + n_cell]:
-                yield ig, ii, iel - off
-                ii += 1
-
-            off += n_cell
+            return self.shape.n_cell
 
     def has_cells(self):
         return self.cells.size > 0
@@ -809,14 +664,6 @@ class Region(Struct):
         oe = other.entities[tdim]
 
         return len(nm.intersect1d(se, oe))
-
-    def get_cell_offsets(self):
-        offs = {}
-        off = 0
-        for ig in self.igs:
-            offs[ig] = off
-            off += self.shape[ig].n_cell
-        return offs
 
     def get_charfun(self, by_cell=False, val_by_id=False):
         """
