@@ -10,8 +10,6 @@ from sfepy.base.compat import in1d
 # Used for imports in term files.
 from sfepy.terms.extmods import terms
 
-from sfepy.linalg import split_range
-
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
 _match_virtual = re.compile('^virtual$').match
 _match_state = re.compile('^state(_[_a-zA-Z0-9]+)?$').match
@@ -138,25 +136,6 @@ def split_complex_args(args):
 
     return newargs
 
-def vector_chunk_generator(total_size, chunk_size, shape_in,
-                           zero=False, set_shape=True, dtype=nm.float64):
-    if not chunk_size:
-        chunk_size = total_size
-    shape = list(shape_in)
-
-    sizes = split_range(total_size, chunk_size)
-    ii = nm.array(0, dtype=nm.int32)
-    for size in sizes:
-        chunk = nm.arange(size, dtype=nm.int32) + ii
-        if set_shape:
-            shape[0] = size
-        if zero:
-            out = nm.zeros(shape, dtype=dtype)
-        else:
-            out = nm.empty(shape, dtype=dtype)
-        yield out, chunk
-        ii += size
-
 def create_arg_parser():
     from pyparsing import Literal, Word, delimitedList, Group, \
          StringStart, StringEnd, Optional, nums, alphas, alphanums
@@ -180,36 +159,6 @@ def create_arg_parser():
     args = StringStart() + delimitedList(generalized_var) + StringEnd()
 
     return args
-
-# 22.01.2006, c
-class CharacteristicFunction(Struct):
-
-    def __init__(self, region):
-        self.igs = region.igs
-        self.region = region
-        self.local_chunk = None
-        self.ig = None
-
-    def __call__(self, chunk_size, shape_in, zero=False, set_shape=True,
-                 ret_local_chunk=False, dtype=nm.float64):
-        els = self.region.get_cells(self.ig)
-        for out, chunk in vector_chunk_generator(els.shape[0], chunk_size,
-                                                 shape_in, zero, set_shape,
-                                                 dtype):
-            self.local_chunk = chunk
-
-            if ret_local_chunk:
-                yield out, chunk
-            else:
-                yield out, els[chunk]
-
-        self.local_chunk = None
-
-    def set_current_group(self, ig):
-        self.ig = ig
-
-    def get_local_chunk(self):
-        return self.local_chunk
 
 class ConnInfo(Struct):
 

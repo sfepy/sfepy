@@ -1,7 +1,7 @@
 import sfepy
 import terms
 import extmods
-from terms import Terms, Term, CharacteristicFunction, vector_chunk_generator
+from terms import Terms, Term
 from terms_th import THTerm, ETHTerm
 from sfepy.base.base import load_classes
 
