@@ -55,6 +55,9 @@ class FEDomain(Domain):
 
         self.cmesh = self.mesh.cmesh
 
+        # Must be before creating derived connectivities.
+        self.fix_element_orientation()
+
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)
@@ -65,7 +68,6 @@ class FEDomain(Domain):
                             n_el=self.cmesh.n_el,
                             n_gr=len(self.geom_els))
 
-        self.fix_element_orientation()
         self.reset_regions()
         self.clear_surface_groups()
 
