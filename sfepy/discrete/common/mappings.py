@@ -10,36 +10,15 @@ class PhysicalQPs(Struct):
     Physical quadrature points in a region.
     """
 
-    def __init__(self, igs, n_total=0, is_uniform=True):
-        Struct.__init__(self, igs=igs, n_total=n_total, indx={}, rindx={},
-                        n_per_group={}, shape={}, values={},
-                        is_uniform=is_uniform)
-        for ig in self.igs:
-            self.indx[ig] = slice(None)
-            self.rindx[ig] = slice(None)
-            self.n_per_group[ig] = 0
-            self.shape[ig] = (0, 0, 0)
-            self.values[ig] = nm.empty(self.shape[ig], dtype=nm.float64)
+    def __init__(self, num=0):
+        Struct.__init__(self, num=num, shape=(0, 0, 0))
+        self.values = nm.empty(self.shape, dtype=nm.float64)
 
-    def get_merged_values(self):
-        qps = nm.concatenate([self.values[ig] for ig in self.igs], axis=0)
-
-        return qps
-
-    def get_shape(self, rshape, ig=None):
+    def get_shape(self, rshape):
         """
         Get shape from raveled shape.
         """
-        if ig is None:
-            if self.is_uniform:
-                n_qp = self.shape[self.igs[0]][1]
-
-            else:
-                msg = 'ig argument must be given for non-uniform QPs!'
-                raise ValueError(msg)
-
-        else:
-            n_qp = self.shape[ig][1]
+        n_qp = self.shape[1]
 
         if (rshape[0] / n_qp) * n_qp != rshape[0]:
             raise ValueError('incompatible shapes! (n_qp: %d, %s)'
