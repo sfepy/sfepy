@@ -47,22 +47,19 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
     ecoors = nm.dot(bf, mesh_coors[group.conn[cells]])
     coors[econn] = nm.swapaxes(ecoors, 0, 1)
 
-
-##
-# 04.08.2005, c
-def _interp_to_faces( vertex_vals, bfs, faces ):
+def _interp_to_faces(vertex_vals, bfs, faces):
     dim = vertex_vals.shape[1]
     n_face = faces.shape[0]
     n_qp = bfs.shape[0]
-    
-    faces_vals = nm.zeros( (n_face, n_qp, dim), nm.float64 )
-    for ii, face in enumerate( faces ):
+
+    faces_vals = nm.zeros((n_face, n_qp, dim), nm.float64)
+    for ii, face in enumerate(faces):
         vals = vertex_vals[face,:dim]
-        faces_vals[ii,:,:] = nm.dot( bfs[:,0,:], vals )
+        faces_vals[ii,:,:] = nm.dot(bfs[:,0,:], vals)
 
-    return( faces_vals )
+    return(faces_vals)
 
-class Interpolant( Struct ):
+class Interpolant(Struct):
     """A simple wrapper around PolySpace."""
 
     def __init__(self, name, gel, space='H1', base='lagrange',
@@ -82,15 +79,13 @@ class Interpolant( Struct ):
             skey = 's%d' % ps.n_nod
             poly_spaces[skey] = ps
 
-    def describe_nodes( self ):
+    def describe_nodes(self):
         ps = self.poly_spaces['v']
         node_desc = ps.describe_nodes()
 
         return node_desc
 
-    ##
-    # 16.11.2007, c
-    def get_n_nodes( self ):
+    def get_n_nodes(self):
         nn = {}
         for key, ps in self.poly_spaces.iteritems():
             nn[key] = ps.nodes.shape[0]
@@ -132,14 +127,8 @@ class SurfaceInterpolant(Interpolant):
 
         return ps
 
-##
-# 18.07.2006, c
-class Approximation( Struct ):
-    ##
-    # 18.07.2006, c
-    # 10.10.2006
-    # 11.07.2007
-    # 17.07.2007
+class Approximation(Struct):
+
     def __init__(self, name, interp, region, ig, is_surface=False):
         """interp, region are borrowed."""
 
@@ -165,9 +154,7 @@ class Approximation( Struct ):
 
         eval_nodal_coors(coors, mesh_coors, self.region, ps, gps, self.econn, self.ig)
 
-    ##
-    # c: 05.09.2006, r: 09.05.2008
-    def setup_surface_data( self, region ):
+    def setup_surface_data(self, region):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         sd = FESurface('surface_data_%s' % region.name, region,
@@ -175,14 +162,8 @@ class Approximation( Struct ):
         self.surface_data[region.name] = sd
         return sd
 
-    ##
-    # 11.07.2007, c
-    def setup_point_data( self, field, region ):
+    def setup_point_data(self, field, region):
         conn = field.get_dofs_in_region(region, merge=True, igs=region.igs)
-##         conn = [nods]\
-##                + [nm.empty( (0,), dtype = nm.int32 )]\
-##                * (len( region.igs ) - 1)
-
         conn.shape += (1,)
         self.point_data[region.name] = conn
 
@@ -417,8 +398,8 @@ class Approximation( Struct ):
         coors, faces = gel.coors, gel.get_surface_entities()
 
         vals = _interp_to_faces(coors, bf_s, faces)
-        self.qp_coors[bqpkey] = Struct(name = 'BQP_%s' % bkey,
-                                       vals = vals, weights = weights)
+        self.qp_coors[bqpkey] = Struct(name='BQP_%s' % bkey,
+                                       vals=vals, weights=weights)
         interp.poly_spaces[bkey] = interp.poly_spaces['v']
         return bkey
 
@@ -469,4 +450,3 @@ class SurfaceApproximation(Approximation):
             self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
 
         return self.qp_coors[qpkey]
-
