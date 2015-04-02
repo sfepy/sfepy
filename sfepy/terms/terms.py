@@ -1281,7 +1281,7 @@ class Term(Struct):
                                  % varr.dtype)
 
             vals *= self.sign
-            iels = self.get_assembling_cells(val.shape)
+            iels = self.get_assembling_cells(vals.shape)
 
         # Setup return value.
         if mode == 'eval':
