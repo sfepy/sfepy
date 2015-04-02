@@ -148,7 +148,7 @@ class H1NodalMixin(H1Mixin):
         if dpn is None:
             dpn = self.n_components
 
-        aux = self.get_dofs_in_region(region, clean=True, warn=warn)
+        aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
 
         if callable(fun):

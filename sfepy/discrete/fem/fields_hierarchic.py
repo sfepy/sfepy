@@ -14,8 +14,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         """
         VolumeField._init_econn(self)
 
-        for ig, ap in self.aps.iteritems():
-            ap.ori = nm.zeros_like(ap.econn)
+        self.ap.ori = nm.zeros_like(self.ap.econn)
 
     def _setup_facet_orientations(self):
         self.node_desc = self.interp.describe_nodes()
@@ -68,92 +67,93 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         n_fp = 2 if dim == 1 else self.gel.surface_facet.n_vertex
 
         oris = cmesh.get_orientations(dim)
-        for ig, ap in self.aps.iteritems():
-            gcells = self.region.get_cells(ig, offset=False)
-            n_el = gcells.shape[0]
+        ap = self.ap
 
-            indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
-            facets_of_cells = remap[indices]
+        gcells = self.region.get_cells(offset=False)
+        n_el = gcells.shape[0]
 
-            # Define global facet dof numbers.
-            gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
-                                                  n_dof_per_facet)
+        indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
+        facets_of_cells = remap[indices]
 
-            # Elements of facets.
-            iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
-            ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
+        # Define global facet dof numbers.
+        gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
+                                              n_dof_per_facet)
 
-            # DOF columns in econn for each facet (repeating same values for
-            # each element.
-            iep = facet_desc[ies]
+        # Elements of facets.
+        iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+        ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
-            ap.econn[iel[:, None], iep] = gdofs
+        # DOF columns in econn for each facet (repeating same values for
+        # each element.
+        iep = facet_desc[ies]
 
-            ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
+        ap.econn[iel[:, None], iep] = gdofs
 
-            if (n_fp == 2) and (ap.interp.gel.name in ['2_4', '3_8']):
-                tp_edges = ap.interp.gel.edges
-                ecs = ap.interp.gel.coors[tp_edges]
-                # True = positive, False = negative edge orientation w.r.t.
-                # reference tensor product axes.
-                tp_edge_ori = (nm.diff(ecs, axis=1).sum(axis=2) > 0).squeeze()
-                aux = nm.tile(tp_edge_ori, n_el)
-                ori = nm.where(aux, ori, 1 - ori)
+        ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
 
-            if n_fp == 2: # Edges.
-                # ori == 1 means the basis has to be multiplied by -1.
-                ps = ap.interp.poly_spaces['v']
-                orders = ps.node_orders
-                eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
-                eoo = orders[iep] % 2 # Odd orders.
-                ap.ori[iel[:, None], iep] = eori * eoo
+        if (n_fp == 2) and (ap.interp.gel.name in ['2_4', '3_8']):
+            tp_edges = ap.interp.gel.edges
+            ecs = ap.interp.gel.coors[tp_edges]
+            # True = positive, False = negative edge orientation w.r.t.
+            # reference tensor product axes.
+            tp_edge_ori = (nm.diff(ecs, axis=1).sum(axis=2) > 0).squeeze()
+            aux = nm.tile(tp_edge_ori, n_el)
+            ori = nm.where(aux, ori, 1 - ori)
 
-            elif n_fp == 3: # Triangular faces.
-                raise NotImplementedError
+        if n_fp == 2: # Edges.
+            # ori == 1 means the basis has to be multiplied by -1.
+            ps = ap.interp.poly_spaces['v']
+            orders = ps.node_orders
+            eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
+            eoo = orders[iep] % 2 # Odd orders.
+            ap.ori[iel[:, None], iep] = eori * eoo
 
-            else: # Quadrilateral faces.
-                # ori encoding in 3 bits:
-                # 0: axis swap, 1: axis 1 sign, 2: axis 2 sign
-                # 0 = + or False, 1 = - or True
-                # 63 -> 000 = 0
-                #  0 -> 001 = 1
-                # 30 -> 010 = 2
-                # 33 -> 011 = 3
-                # 11 -> 100 = 4
-                #  7 -> 101 = 5
-                # 52 -> 110 = 6
-                # 56 -> 111 = 7
-                # Special cases:
-                # Both orders same and even -> 000
-                # Both orders same and odd -> 0??
-                # Bits 1, 2 are multiplied by (swapped) axial order % 2.
-                new = nm.repeat(nm.arange(8, dtype=nm.int32), 3)
-                translate = prepare_translate([31, 59, 63,
-                                               0, 1, 4,
-                                               22, 30, 62,
-                                               32, 33, 41,
-                                               11, 15, 43,
-                                               3, 6, 7,
-                                               20, 52, 60,
-                                               48, 56, 57], new)
-                ori = translate[ori]
-                eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
+        elif n_fp == 3: # Triangular faces.
+            raise NotImplementedError
 
-                ps = ap.interp.poly_spaces['v']
-                orders = ps.face_axes_nodes[iep - ps.face_indx[0]]
-                eoo = orders % 2
-                eoo0, eoo1 = eoo[..., 0], eoo[..., 1]
+        else: # Quadrilateral faces.
+            # ori encoding in 3 bits:
+            # 0: axis swap, 1: axis 1 sign, 2: axis 2 sign
+            # 0 = + or False, 1 = - or True
+            # 63 -> 000 = 0
+            #  0 -> 001 = 1
+            # 30 -> 010 = 2
+            # 33 -> 011 = 3
+            # 11 -> 100 = 4
+            #  7 -> 101 = 5
+            # 52 -> 110 = 6
+            # 56 -> 111 = 7
+            # Special cases:
+            # Both orders same and even -> 000
+            # Both orders same and odd -> 0??
+            # Bits 1, 2 are multiplied by (swapped) axial order % 2.
+            new = nm.repeat(nm.arange(8, dtype=nm.int32), 3)
+            translate = prepare_translate([31, 59, 63,
+                                           0, 1, 4,
+                                           22, 30, 62,
+                                           32, 33, 41,
+                                           11, 15, 43,
+                                           3, 6, 7,
+                                           20, 52, 60,
+                                           48, 56, 57], new)
+            ori = translate[ori]
+            eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
 
-                i0 = nm.where(eori < 4)
-                i1 = nm.where(eori >= 4)
+            ps = ap.interp.poly_spaces['v']
+            orders = ps.face_axes_nodes[iep - ps.face_indx[0]]
+            eoo = orders % 2
+            eoo0, eoo1 = eoo[..., 0], eoo[..., 1]
 
-                eori[i0] = nm.bitwise_and(eori[i0], 2*eoo0[i0] + 5)
-                eori[i0] = nm.bitwise_and(eori[i0], eoo1[i0] + 6)
+            i0 = nm.where(eori < 4)
+            i1 = nm.where(eori >= 4)
 
-                eori[i1] = nm.bitwise_and(eori[i1], eoo0[i1] + 6)
-                eori[i1] = nm.bitwise_and(eori[i1], 2*eoo1[i1] + 5)
+            eori[i0] = nm.bitwise_and(eori[i0], 2*eoo0[i0] + 5)
+            eori[i0] = nm.bitwise_and(eori[i0], eoo1[i0] + 6)
 
-                ap.ori[iel[:, None], iep] = eori
+            eori[i1] = nm.bitwise_and(eori[i1], eoo0[i1] + 6)
+            eori[i1] = nm.bitwise_and(eori[i1], 2*eoo1[i1] + 5)
+
+            ap.ori[iel[:, None], iep] = eori
 
         n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
@@ -168,28 +168,19 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
             return 0, None, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
-        n_dof = 0
         n_dof_per_cell = self.node_desc.bubble.shape[0]
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            n_cell = ii.shape[0]
-            nd = n_dof_per_cell * n_cell
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        ap = self.ap
+        ii = self.region.get_cells()
+        n_cell = ii.shape[0]
+        n_dof = n_dof_per_cell * n_cell
 
-            aux = nm.arange(offset + n_dof, offset + n_dof + nd,
-                            dtype=nm.int32)
-            aux.shape = (n_cell, n_dof_per_cell)
-            iep = self.node_desc.bubble[0]
-            ap.econn[:,iep:] = aux
-            all_dofs[ig] = aux
+        all_dofs = nm.arange(offset + n_dof, offset + n_dof, dtype=nm.int32)
+        all_dofs.shape = (n_cell, n_dof_per_cell)
+        iep = self.node_desc.bubble[0]
+        ap.econn[:,iep:] = all_dofs
 
-            n_dof += nd
-
-        return n_dof, all_dofs, remaps
+        return n_dof, all_dofs
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
@@ -202,34 +193,24 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         if dpn is None:
             dpn = self.n_components
 
-        nods = []
-        vals = []
-        for ig in self.igs:
-            if nm.isscalar(fun):
-                # Hack - use only vertex DOFs.
-                gnods = self.get_dofs_in_region_group(region, ig, merge=False)
-                n_dof = dpn * sum([nn.shape[0] for nn in gnods])
-                gvals = nm.zeros(n_dof, dtype=nm.dtype(type(fun)))
-                gvals[:gnods[0].shape[0] * dpn] = fun
+        # Hack - use only vertex DOFs.
+        gnods = self.get_dofs_in_region(region, merge=False)
+        nods = nm.concatenate(gnods)
+        n_dof = dpn * nods.shape[0]
 
-                nods.append(nm.concatenate(gnods))
-                vals.append(gvals)
+        if nm.isscalar(fun):
+            vals = nm.zeros(n_dof, dtype=nm.dtype(type(fun)))
+            vals[:gnods[0].shape[0] * dpn] = fun
 
-            elif callable(fun):
-                # Hack - use only vertex DOFs.
-                gnods = self.get_dofs_in_region_group(region, ig, merge=False)
-                n_dof = dpn * sum([nn.shape[0] for nn in gnods])
 
-                vv = fun(self.get_coor(gnods[0]))
+        elif callable(fun):
+            vv = fun(self.get_coor(gnods[0]))
 
-                gvals = nm.zeros(n_dof, dtype=vv.dtype)
-                gvals[:gnods[0].shape[0] * dpn] = vv
+            vals = nm.zeros(n_dof, dtype=vv.dtype)
+            vals[:gnods[0].shape[0] * dpn] = vv
 
-                nods.append(nm.concatenate(gnods))
-                vals.append(gvals)
-
-            else:
-                raise NotImplementedError
+        else:
+            raise NotImplementedError
 
         nods, indx = nm.unique(nm.concatenate(nods), return_index=True)
         ii = (nm.tile(dpn * indx, dpn)

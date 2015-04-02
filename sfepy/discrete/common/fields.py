@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
+from sfepy.base.base import iter_dict_of_lists, Struct, basestr
 
 def parse_approx_order(approx_order):
     """
@@ -183,7 +183,7 @@ class Field(Struct):
         """
         self.mappings0 = self.mappings.copy()
 
-    def get_mapping(self, ig, region, integral, integration,
+    def get_mapping(self, region, integral, integration,
                     get_saved=False, return_key=False):
         """
         For given region, integral and integration type, get a reference
@@ -207,7 +207,7 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
-        key = (region.name, integral.order, ig, integration)
+        key = (region.name, integral.order, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)
@@ -216,7 +216,7 @@ class Field(Struct):
             out = self.mappings.get(key, None)
 
         if out is None:
-            out = self.create_mapping(ig, region, integral, integration)
+            out = self.create_mapping(region, integral, integration)
             self.mappings[key] = out
 
         if return_key:
