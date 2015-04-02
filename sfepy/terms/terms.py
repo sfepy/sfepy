@@ -404,7 +404,6 @@ class Term(Struct):
             self.integral_name = self.integral.name
 
     def setup(self):
-        self.char_fun = CharacteristicFunction(self.region)
         self.function = Struct.get(self, 'function', None)
 
         self.step = 0
@@ -471,7 +470,7 @@ class Term(Struct):
         """
         Check term argument existence in variables, materials, user data
         and assign the arguments to terms. Also check compatibility of
-        field and term subdomain lists (igs).
+        field and term regions.
         """
         if user is None:
             user = {}
@@ -608,7 +607,7 @@ class Term(Struct):
         """
         Common checking to all terms.
 
-        Check compatibility of field and term subdomain lists (igs).
+        Check compatibility of field and term regions.
         """
         vns = self.get_variable_names()
         for name in vns:
@@ -672,11 +671,10 @@ class Term(Struct):
         dc_type = self.get_dof_conn_type()
         tgs = self.get_geometry_types()
 
-        v_igs = v_tg = None
+        v_tg = None
         if vvar is not None:
             field = vvar.get_field()
             if field is not None:
-                v_igs = field.igs
                 if vvar.name in tgs:
                     v_tg = tgs[vvar.name]
 
@@ -694,7 +692,6 @@ class Term(Struct):
                                   self.arg_traces.values())
             if is_any_trace:
                 region.setup_mirror_region()
-                self.char_fun.igs = region.igs
 
         vals = []
         aux_pvars = []
@@ -705,10 +702,6 @@ class Term(Struct):
                 continue
 
             field = svar.get_field()
-            if field is not None:
-                s_igs = field.igs
-            else:
-                s_igs = None
             is_trace = self.arg_traces[svar.name]
 
             if svar.name in tgs:
@@ -716,9 +709,9 @@ class Term(Struct):
             else:
                 ps_tg = v_tg
 
-            val = ConnInfo(virtual=vvar, virtual_igs=v_igs,
-                           state=svar, state_igs=s_igs,
-                           primary=svar, primary_igs=s_igs,
+            val = ConnInfo(virtual=vvar,
+                           state=svar,
+                           primary=svar,
                            has_virtual=True,
                            has_state=True,
                            is_trace=is_trace,
@@ -732,10 +725,6 @@ class Term(Struct):
         pvars += aux_pvars
         for pvar in pvars:
             field = pvar.get_field()
-            if field is not None:
-                p_igs = field.igs
-            else:
-                p_igs = None
             is_trace = self.arg_traces[pvar.name]
 
             if pvar.name in tgs:
@@ -743,9 +732,9 @@ class Term(Struct):
             else:
                 ps_tg = v_tg
 
-            val = ConnInfo(virtual=vvar, virtual_igs=v_igs,
-                           state=None, state_igs=[],
-                           primary=pvar.get_primary(), primary_igs=p_igs,
+            val = ConnInfo(virtual=vvar,
+                           state=None,
+                           primary=pvar.get_primary(),
                            has_virtual=vvar is not None,
                            has_state=False,
                            is_trace=is_trace,
@@ -758,9 +747,9 @@ class Term(Struct):
 
         if vvar and (len(vals) == 0):
             # No state, parameter variables, just the virtual one.
-            val = ConnInfo(virtual=vvar, virtual_igs=v_igs,
-                           state=vvar.get_primary(), state_igs=v_igs,
-                           primary=vvar.get_primary(), primary_igs=v_igs,
+            val = ConnInfo(virtual=vvar,
+                           state=vvar.get_primary(),
+                           primary=vvar.get_primary(),
                            has_virtual=True,
                            has_state=False,
                            is_trace=False,
@@ -800,7 +789,7 @@ class Term(Struct):
             arg_types = ats
         args = []
 
-        region_name, iorder, ig = self.get_current_group()
+        region_name, iorder = self.region.name, self.integral.order
         for at in arg_types:
             ii = ats.index(at)
             arg_name = self.arg_names[ii]
@@ -814,8 +803,8 @@ class Term(Struct):
             else:
                 mat, par_name = self.args[ii]
                 if mat is not None:
-                    mat_data = mat.get_data((region_name, iorder),
-                                            ig, par_name)
+                    mat_data = mat.get_data((region_name, iorder), par_name)
+
                 else:
                     mat_data = None
 
@@ -902,19 +891,9 @@ class Term(Struct):
         """
         return self.geometry_types
 
-    def get_current_group(self):
-        return (self.region.name, self.integral.order, self.char_fun.ig)
-
-
     def get_dof_conn_type(self):
         return Struct(name='dof_conn_info', type=self.dof_conn_type,
                       region_name=self.region.name)
-
-    def set_current_group(self, ig):
-        self.char_fun.set_current_group(ig)
-
-    def igs(self):
-        return self.char_fun.igs
 
     def get_assembling_cells(self, shape=None):
         """
@@ -923,18 +902,6 @@ class Term(Struct):
         cells = nm.arange(shape[0], dtype=nm.int32)
 
         return cells
-
-    def iter_groups(self):
-        if self.dof_conn_type == 'point':
-            igs = self.igs()[0:1]
-        else:
-            igs = self.igs()
-
-        for ig in igs:
-            if self.integration in ('volume', 'plate'):
-                if not len(self.region.get_cells(ig)): continue
-            self.set_current_group(ig)
-            yield ig
 
     def time_update(self, ts):
         if ts is not None:
@@ -964,8 +931,7 @@ class Term(Struct):
         """
         geo, _, key = self.get_mapping(variable, get_saved=get_saved,
                                        return_key=True)
-        ig = key[2]
-        ap = variable.get_approximation(ig)
+        ap = variable.get_approximation()
 
         return ap, geo
 
@@ -1030,7 +996,7 @@ class Term(Struct):
         from sfepy.discrete.common.mappings import get_physical_qps, PhysicalQPs
 
         if self.integration == 'point':
-            phys_qps = PhysicalQPs(self.region.igs)
+            phys_qps = PhysicalQPs()
 
         elif self.integration == 'plate':
             phys_qps = get_physical_qps(self.region, self.integral,
@@ -1054,14 +1020,12 @@ class Term(Struct):
         is_trace = self.arg_traces[variable.name]
 
         if is_trace:
-            region, ig_map, ig_map_i = self.region.get_mirror_region()
-            ig = ig_map_i[self.char_fun.ig]
+            region = self.region.get_mirror_region()
 
         else:
             region = self.region
-            ig = self.char_fun.ig
 
-        out = variable.field.get_mapping(ig, region,
+        out = variable.field.get_mapping(region,
                                          self.integral, integration,
                                          get_saved=get_saved,
                                          return_key=return_key)
@@ -1081,15 +1045,12 @@ class Term(Struct):
         is_trace = self.arg_traces[variable.name]
 
         if is_trace:
-            region, ig_map, ig_map_i = self.region.get_mirror_region()
-            ig = ig_map_i[self.char_fun.ig]
+            region = self.region.get_mirror_region()
 
         else:
             region = self.region
-            ig = self.char_fun.ig
 
-        out = variable.get_data_shape(ig, self.integral,
-                                      integration, region.name)
+        out = variable.get_data_shape(self.integral, integration, region.name)
         return out
 
     def get(self, variable, quantity_name, bf=None, integration=None,
@@ -1109,7 +1070,7 @@ class Term(Struct):
                                       self.arg_derivatives[name])
         integration = get_default(integration, self.geometry_types[name])
 
-        data = variable.evaluate(self.char_fun.ig, mode=quantity_name,
+        data = variable.evaluate(mode=quantity_name,
                                  region=self.region, integral=self.integral,
                                  integration=integration,
                                  step=step, time_derivative=time_derivative,
@@ -1242,111 +1203,85 @@ class Term(Struct):
         term_mode = kwargs.pop('term_mode', None)
 
         if mode == 'eval':
-            val = 0.0
-            status = 0
-            for ig in self.iter_groups():
-                args = self.get_args(**kwargs)
-                self.check_shapes(*args)
+            args = self.get_args(**kwargs)
+            self.check_shapes(*args)
 
-                _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.call_get_fargs(_args, kwargs)
+            _args = tuple(args) + (mode, term_mode, diff_var)
+            fargs = self.call_get_fargs(_args, kwargs)
 
-                shape, dtype = self.get_eval_shape(*_args, **kwargs)
+            shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
-                if dtype == nm.float64:
-                    _v, stat = self.eval_real(shape, fargs, mode, term_mode,
-                                               **kwargs)
+            if dtype == nm.float64:
+                val, status = self.eval_real(shape, fargs, mode, term_mode,
+                                             **kwargs)
 
-                elif dtype == nm.complex128:
-                    _v, stat = self.eval_complex(shape, fargs, mode, term_mode,
-                                                 **kwargs)
+            elif dtype == nm.complex128:
+                val, status = self.eval_complex(shape, fargs, mode, term_mode,
+                                                **kwargs)
 
-                else:
-                    raise ValueError('unsupported term dtype! (%s)' % dtype)
-
-                val += _v
-                status += stat
+            else:
+                raise ValueError('unsupported term dtype! (%s)' % dtype)
 
             val *= self.sign
 
         elif mode in ('el_avg', 'el', 'qp'):
-            vals = None
-            iels = nm.empty((0, 2), dtype=nm.int32)
-            status = 0
-            for ig in self.iter_groups():
-                args = self.get_args(**kwargs)
-                self.check_shapes(*args)
+            args = self.get_args(**kwargs)
+            self.check_shapes(*args)
 
-                _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.call_get_fargs(_args, kwargs)
+            _args = tuple(args) + (mode, term_mode, diff_var)
+            fargs = self.call_get_fargs(_args, kwargs)
 
-                shape, dtype = self.get_eval_shape(*_args, **kwargs)
+            shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
-                if dtype == nm.float64:
-                    val, stat = self.eval_real(shape, fargs, mode,
-                                               term_mode, **kwargs)
+            if dtype == nm.float64:
+                vals, status = self.eval_real(shape, fargs, mode,
+                                              term_mode, **kwargs)
 
-                elif dtype == nm.complex128:
-                    val, stat = self.eval_complex(shape, fargs, mode,
-                                                  term_mode, **kwargs)
+            elif dtype == nm.complex128:
+                vals, status = self.eval_complex(shape, fargs, mode,
+                                                 term_mode, **kwargs)
 
-                if vals is None:
-                    vals = val
-
-                else:
-                    vals = nm.r_[vals, val]
-
-                _iels = self.get_assembling_cells(val.shape)
-                aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:, None],
-                            _iels[:, None]]
-                iels = nm.r_[iels, aux]
-                status += stat
+            iels = self.get_assembling_cells(vals.shape)
 
             vals *= self.sign
 
         elif mode == 'weak':
-            vals = []
-            iels = []
-            status = 0
-
             varr = self.get_virtual_variable()
             if diff_var is not None:
                 varc = self.get_variables(as_list=False)[diff_var]
 
-            for ig in self.iter_groups():
-                args = self.get_args(**kwargs)
-                self.check_shapes(*args)
+            args = self.get_args(**kwargs)
+            self.check_shapes(*args)
 
-                _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.call_get_fargs(_args, kwargs)
+            _args = tuple(args) + (mode, term_mode, diff_var)
+            fargs = self.call_get_fargs(_args, kwargs)
 
-                n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
-                n_row = n_cr * n_enr
+            n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
+            n_row = n_cr * n_enr
 
-                if diff_var is None:
-                    shape = (n_elr, 1, n_row, 1)
+            if diff_var is None:
+                shape = (n_elr, 1, n_row, 1)
 
-                else:
-                    n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
-                    n_col = n_cc * n_enc
+            else:
+                n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
+                n_col = n_cc * n_enc
 
-                    shape = (n_elr, 1, n_row, n_col)
+                shape = (n_elr, 1, n_row, n_col)
 
-                if varr.dtype == nm.float64:
-                    val, stat = self.eval_real(shape, fargs, mode, term_mode,
-                                               diff_var, **kwargs)
+            if varr.dtype == nm.float64:
+                vals, status = self.eval_real(shape, fargs, mode, term_mode,
+                                              diff_var, **kwargs)
 
-                elif varr.dtype == nm.complex128:
-                    val, stat = self.eval_complex(shape, fargs, mode, term_mode,
-                                                  diff_var, **kwargs)
+            elif varr.dtype == nm.complex128:
+                vals, status = self.eval_complex(shape, fargs, mode, term_mode,
+                                                 diff_var, **kwargs)
 
-                else:
-                    raise ValueError('unsupported term dtype! (%s)'
-                                     % varr.dtype)
+            else:
+                raise ValueError('unsupported term dtype! (%s)'
+                                 % varr.dtype)
 
-                vals.append(self.sign * val)
-                iels.append((ig, self.get_assembling_cells(val.shape)))
-                status += stat
+            vals *= self.sign
+            iels = self.get_assembling_cells(val.shape)
 
         # Setup return value.
         if mode == 'eval':
@@ -1386,12 +1321,10 @@ class Term(Struct):
                     if not(val[ii].dtype == nm.complex128):
                         val[ii] = nm.complex128(val[ii])
 
-            for ii, (ig, _iels) in enumerate(iels):
-                vec_in_els = val[ii]
-                dc = vvar.get_dof_conn(dc_type, ig)
-                assert_(vec_in_els.shape[2] == dc.shape[1])
+            dc = vvar.get_dof_conn(dc_type)
+            assert_(val.shape[2] == dc.shape[1])
 
-                assemble(asm_obj, vec_in_els, _iels, 1.0, dc)
+            assemble(asm_obj, val, iels, 1.0, dc)
 
         elif mode == 'matrix':
             if asm_obj.dtype == nm.float64:
@@ -1403,28 +1336,26 @@ class Term(Struct):
 
             svar = diff_var
             tmd = (asm_obj.data, asm_obj.indptr, asm_obj.indices)
-            for ii, (ig, _iels) in enumerate(iels):
-                mtx_in_els = val[ii]
-                if ((asm_obj.dtype == nm.complex128)
-                    and (mtx_in_els.dtype == nm.float64)):
-                    mtx_in_els = mtx_in_els.astype(nm.complex128)
 
-                rdc = vvar.get_dof_conn(dc_type, ig)
+            if ((asm_obj.dtype == nm.complex128)
+                and (val.dtype == nm.float64)):
+                val = val.astype(nm.complex128)
 
-                is_trace = self.arg_traces[svar.name]
-                cdc = svar.get_dof_conn(dc_type, ig, is_trace=is_trace)
-                assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
+            rdc = vvar.get_dof_conn(dc_type)
 
-                sign = 1.0
-                if self.arg_derivatives[svar.name]:
-                    if not self.is_quasistatic or (self.step > 0):
-                        sign *= 1.0 / self.dt
+            is_trace = self.arg_traces[svar.name]
+            cdc = svar.get_dof_conn(dc_type, is_trace=is_trace)
+            assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 
-                    else:
-                        sign = 0.0
+            sign = 1.0
+            if self.arg_derivatives[svar.name]:
+                if not self.is_quasistatic or (self.step > 0):
+                    sign *= 1.0 / self.dt
 
-                assemble(tmd[0], tmd[1], tmd[2], mtx_in_els,
-                         _iels, sign, rdc, cdc)
+                else:
+                    sign = 0.0
+
+            assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
