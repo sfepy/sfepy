@@ -130,13 +130,12 @@ class SurfaceInterpolant(Interpolant):
 
 class Approximation(Struct):
 
-    def __init__(self, name, interp, region, ig, is_surface=False):
+    def __init__(self, name, interp, region, is_surface=False):
         """interp, region are borrowed."""
 
         self.name = name
         self.interp = interp
         self.region = region
-        self.ig = ig
         self.is_surface = is_surface
         self.surface_data = {}
         self.edge_data = {}
@@ -153,18 +152,18 @@ class Approximation(Struct):
         gps = self.interp.gel.interp.poly_spaces['v']
         ps = self.interp.poly_spaces['v']
 
-        eval_nodal_coors(coors, mesh_coors, self.region, ps, gps, self.econn, self.ig)
+        eval_nodal_coors(coors, mesh_coors, self.region, ps, gps, self.econn)
 
     def setup_surface_data(self, region):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         sd = FESurface('surface_data_%s' % region.name, region,
-                       self.efaces, self.econn, self.ig)
+                       self.efaces, self.econn)
         self.surface_data[region.name] = sd
         return sd
 
     def setup_point_data(self, field, region):
-        conn = field.get_dofs_in_region(region, merge=True, igs=region.igs)
+        conn = field.get_dofs_in_region(region, merge=True)
         conn.shape += (1,)
         self.point_data[region.name] = conn
 
@@ -189,7 +188,7 @@ class Approximation(Struct):
 
             else:
                 aux = integration in ('volume', 'plate')
-                cells = region.get_cells(self.ig, true_cells_only=aux)
+                cells = region.get_cells(true_cells_only=aux)
                 conn = nm.take(self.econn, cells.astype(nm.int32), axis=0)
 
         else:
@@ -285,25 +284,23 @@ class Approximation(Struct):
 
         Notes
         -----
-        - volume mappings can be defined on a part of an element group,
-          although the field has to be defined always on the whole group.
         - surface mappings are defined on the surface region
         - surface mappings require field order to be > 0
         """
         domain = field.domain
-        group = domain.groups[self.ig]
         coors = domain.get_mesh_coors(actual=True)
+        dconn = domain.get_conn()
 
         if gtype == 'volume':
             qp = self.get_qp('v', integral)
 
-            iels = region.get_cells(self.ig)
+            iels = region.get_cells()
 
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
             bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(group.conn, iels.astype(nm.int32), axis=0)
+            conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
                                      ori=self.ori)
@@ -315,12 +312,12 @@ class Approximation(Struct):
             from sfepy.linalg import dot_sequences
 
             qp = self.get_qp('v', integral)
-            iels = region.get_cells(self.ig)
+            iels = region.get_cells()
 
             ps = self.interp.poly_spaces['v']
             bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(group.conn, nm.int32(iels), axis=0)
+            conn = nm.take(dconn, nm.int32(iels), axis=0)
             ccoors = coors[conn]
 
             # Coordinate transformation matrix (transposed!).
@@ -344,7 +341,7 @@ class Approximation(Struct):
                       ' hierarchical basis!'
                 raise ValueError(msg)
 
-            sd = domain.surface_groups[self.ig][region.name]
+            sd = domain.surface_groups[region.name]
             esd = self.surface_data[region.name]
 
             qp = self.get_qp(sd.face_type, integral)
@@ -368,7 +365,7 @@ class Approximation(Struct):
                 bf_bg = v_geo_ps.eval_base(qp.vals, diff=True)
                 ebf_bg = self.get_base(esd.bkey, 1, integral)
 
-                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, group.conn)
+                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, dconn)
 
             out =  sg
 
@@ -427,12 +424,12 @@ class DiscontinuousApproximation(Approximation):
         ps = self.interp.poly_spaces['v']
 
         eval_nodal_coors(coors, mesh_coors, self.region, ps, gps,
-                         self.econn, self.ig, only_extra=False)
+                         self.econn, only_extra=False)
 
 class SurfaceApproximation(Approximation):
 
-    def __init__(self, name, interp, region, ig):
-        Approximation.__init__(self, name, interp, region, ig, is_surface=True)
+    def __init__(self, name, interp, region):
+        Approximation.__init__(self, name, interp, region, is_surface=True)
 
     def get_qp(self, key, integral):
         """
