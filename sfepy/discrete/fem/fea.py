@@ -19,7 +19,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
             field.clear_mappings(clear_all=clear_all)
 
 def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
-                     econn, ig, only_extra=True):
+                     econn, only_extra=True):
     """
     Compute coordinates of nodes corresponding to `poly_space`, given
     mesh coordinates and `geom_poly_space`.
@@ -41,10 +41,11 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
 
     ##
     # Evaluate extra coordinates with 'bf'.
-    group = region.domain.groups[ig]
-    cells = region.get_cells(ig)
+    cmesh = region.domain.cmesh
+    conn = cmesh.get_incident(0, region.cells, region.tdim)
+    conn.shape = (econn.shape[0], -1)
 
-    ecoors = nm.dot(bf, mesh_coors[group.conn[cells]])
+    ecoors = nm.dot(bf, mesh_coors[conn[region.cells]])
     coors[econn] = nm.swapaxes(ecoors, 0, 1)
 
 def _interp_to_faces(vertex_vals, bfs, faces):
