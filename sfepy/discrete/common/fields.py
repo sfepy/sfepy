@@ -169,36 +169,6 @@ class Field(Struct):
         self.space = aux[1]
         self.poly_space_base = aux[2]
 
-    def get_dofs_in_region(self, region, merge=False, clean=False,
-                           warn=False, igs=None):
-        """
-        Return indices of DOFs that belong to the given region.
-        """
-        if igs is None:
-            igs = region.igs
-
-        nods = []
-        for ig in self.igs:
-            if not ig in igs:
-                nods.append(None)
-                continue
-
-            nn = self.get_dofs_in_region_group(region, ig)
-            nods.append(nn)
-
-        if merge:
-            nods = [nn for nn in nods if nn is not None]
-            nods = nm.unique(nm.hstack(nods))
-
-        elif clean:
-            for nn in nods[:]:
-                if nn is None:
-                    nods.remove(nn)
-                    if warn is not None:
-                        output(warn + ('%s' % region.name))
-
-        return nods
-
     def clear_mappings(self, clear_all=False):
         """
         Clear current reference mappings.
