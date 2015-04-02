@@ -177,7 +177,7 @@ class Material(Struct):
 
                 yield key, term
 
-    def set_data(self, key, ig, qps, data, indx):
+    def set_data(self, key, qps, data):
         """
         Set the material data in quadrature points.
 
@@ -185,40 +185,30 @@ class Material(Struct):
         ----------
         key : tuple
             The (region_name, integral_name) data key.
-        ig : int
-            The element group id.
         qps : Struct
             Information about the quadrature points.
         data : dict
             The material data. Changes the shape of data!
-        indx : array
-            The indices of quadrature points in the group `ig`.
         """
-        datas = self.datas[key]
-
         # Restore shape to (n_el, n_qp, ...) until the C
         # core is rewritten to work with a bunch of physical
         # point values only.
-        group_data = {}
-        if qps.is_uniform:
-            if data is not None:
-                for key, val in data.iteritems():
-                    aux = val[indx]
-                    aux.shape = qps.get_shape(aux.shape, ig)
-                    group_data[key] = aux
-        else:
-            raise NotImplementedError
+        new_data = {}
+        if data is not None:
+            for dkey, val in data.iteritems():
+                val.shape = qps.get_shape(val.shape)
+                new_data[dkey] = val
 
-        datas[ig] = group_data
+        self.datas[key] = new_data
 
     def set_data_from_variable(self, var, name, equations):
         for key, term in self.iter_terms(equations):
             qps = term.get_physical_qps()
-            for ig in term.igs():
-                data = var.evaluate_at(qps.values[ig])
-                data.shape = data.shape + (1,)
 
-                self.set_data(key, ig, qps, {name : data})
+            data = var.evaluate_at(qps.values)
+            data.shape = data.shape + (1,)
+
+            self.set_data(key, qps, {name : data})
 
     def update_data(self, key, ts, equations, term, problem=None):
         """
@@ -240,18 +230,12 @@ class Material(Struct):
         self.datas.setdefault(key, {})
 
         qps = term.get_physical_qps()
-        coors = qps.get_merged_values()
+        coors = qps.values
         data = self.function(ts, coors, mode='qp',
                              equations=equations, term=term, problem=problem,
-                             group_indx=qps.rindx,
                              **self.extra_args)
 
-        for ig, indx in qps.rindx.iteritems():
-            if (qps.n_per_group[ig] == 0):
-                self.set_data(key, ig, qps, None, None)
-
-            else:
-                self.set_data(key, ig, qps, data, indx)
+        self.set_data(key, qps, data)
 
     def update_special_data(self, ts, equations, problem=None):
         """
@@ -384,19 +368,19 @@ class Material(Struct):
         """Extra arguments passed tu the material function."""
         self.extra_args = extra_args
 
-    def get_data(self, key, ig, name):
+    def get_data(self, key, name):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
 
         if isinstance(name, basestr):
-            return self._get_data(key, ig, name)
+            return self._get_data(key, name)
         else:
             out = Struct()
             for key, item in name.iteritems():
-                setattr(out, key, self._get_data(key, ig, item))
+                setattr(out, key, self._get_data(key, item))
             return out
 
-    def _get_data(self, key, ig, name):
+    def _get_data(self, key, name):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
                   '(material: %s, key: %s)' % (self.name, key)
@@ -406,21 +390,22 @@ class Material(Struct):
             raise ValueError('material data not set! (call time_update())')
 
         if name in self.special_names:
-            # key, ig ignored.
+            # key ignored.
             return self.datas['special'][name]
 
         else:
             datas = self.datas[key]
 
-            if isinstance(datas[ig], Struct):
-                return getattr(datas[ig], name)
-            elif datas[ig]:
-                return datas[ig][name]
+            if isinstance(datas, Struct):
+                return getattr(datas, name)
+
+            elif datas:
+                return datas[name]
 
     def get_constant_data(self, name):
         """Get constant data by name."""
         if name in self.constant_names:
-            # no key, ig.
+            # no key.
             return self.datas['special_constant'][name]
         else:
             raise ValueError('material %s has no constant %s!'
