@@ -31,6 +31,10 @@ class FEDomain(Domain):
         """
         Domain.__init__(self, name, mesh=mesh, verbose=verbose, **kwargs)
 
+        if len(mesh.descs) > 1:
+            msg = 'meshes with several cell kinds are not supported!'
+            raise NotImplementedError(msg)
+
         self.geom_els = geom_els = {}
         for ig, desc in enumerate(mesh.descs):
             gel = GeometryElement(desc)
@@ -139,6 +143,22 @@ class FEDomain(Domain):
                                    % (ii, self.mesh.descs[ii]))
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
+
+    def get_conn(self, ret_gel=False):
+        """
+        Get the cell-vertex connectivity and, if `ret_gel` is True, also the
+        corresponding reference geometry element.
+        """
+        conn = self.cmesh.get_conn(self.cmesh.tdim, 0).indices
+        conn = conn.reshape((self.cmesh.n_el, -1)).astype(nm.int32)
+
+        if ret_gel:
+            gel = self.geom_els.values()[0]
+
+            return conn, gel
+
+        else:
+            return conn
 
     def get_element_diameters(self, ig, cells, vg, mode, square=True):
         group = self.groups[ig]
