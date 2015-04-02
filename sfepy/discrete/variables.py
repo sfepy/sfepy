@@ -34,7 +34,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
     and connectivity with all DOFs active is created.
 
     DOF connectivity key is a tuple ``(primary variable name, region name,
-    type, ig, is_trace flag)``.
+    type, is_trace flag)``.
     """
     var_indx = get_default(var_indx, {})
 
@@ -50,23 +50,20 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
 
         return adc
 
-    def _iter_igs(adof_conns, info, region, var, field, is_trace):
-        for ig in region.igs:
-            key = (var.name, region.name, info.dc_type.type, ig, is_trace)
+    def _assign(adof_conns, info, region, var, field, is_trace):
+        key = (var.name, region.name, info.dc_type.type, is_trace)
+        if not key in adof_conns:
+            econn = field.get_econn(info.dc_type, region, is_trace=is_trace)
+            if econn is None: return
+
+            adof_conns[key] = _create(var, econn)
+
+        if info.is_trace:
+            key = (var.name, region.name, info.dc_type.type, False)
             if not key in adof_conns:
-                econn = field.get_econn(info.dc_type, region,
-                                        ig, is_trace=is_trace)
-                if econn is None: continue
+                econn = field.get_econn(info.dc_type, region, is_trace=False)
 
                 adof_conns[key] = _create(var, econn)
-
-            if info.is_trace:
-                key = (var.name, region.name, info.dc_type.type, ig, False)
-                if not key in adof_conns:
-                    econn = field.get_econn(info.dc_type, region,
-                                            ig, is_trace=False)
-
-                    adof_conns[key] = _create(var, econn)
 
     if verbose:
         output('setting up dof connectivities...')
@@ -81,7 +78,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
             region = info.get_region()
-            _iter_igs(adof_conns, info, region, var, field, info.is_trace)
+            _assign(adof_conns, info, region, var, field, info.is_trace)
 
         if info.has_virtual and not info.is_trace:
             var = info.virtual
@@ -92,7 +89,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
             var = aux if aux is not None else var
 
             region = info.get_region(can_trace=False)
-            _iter_igs(adof_conns, info, region, var, field, False)
+            _assign(adof_conns, info, region, var, field, False)
 
     if verbose:
         output('...done in %.2f s' % (time.clock() - tt))
