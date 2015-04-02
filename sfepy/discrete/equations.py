@@ -365,24 +365,22 @@ class Equations(Container):
                     or info.is_trace or any_dof_conn):
                 continue
 
-
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
 
-            for rig, cig in info.iter_igs():
-                rname = rvar.get_primary_name()
-                rkey = (rname, rreg_name, dct, rig, False)
-                ckey = (cvar.name, creg_name, dct, cig, info.is_trace)
+            rname = rvar.get_primary_name()
+            rkey = (rname, rreg_name, dct, False)
+            ckey = (cvar.name, creg_name, dct, info.is_trace)
 
-                dc_key = (rkey, ckey)
+            dc_key = (rkey, ckey)
 
-                if not dc_key in shared:
-                    try:
-                        rdcs.append(adcs[rkey])
-                        cdcs.append(adcs[ckey])
-                    except:
-                        debug()
-                    shared.add(dc_key)
+            if not dc_key in shared:
+                try:
+                    rdcs.append(adcs[rkey])
+                    cdcs.append(adcs[ckey])
+                except:
+                    debug()
+                shared.add(dc_key)
 
         return rdcs, cdcs
 
