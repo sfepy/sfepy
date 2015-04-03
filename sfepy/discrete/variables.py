@@ -1314,7 +1314,7 @@ class FieldVariable(Variable):
     def get_field(self):
         return self.field
 
-    def get_mapping(self, ig, region, integral, integration,
+    def get_mapping(self, region, integral, integration,
                     get_saved=False, return_key=False):
         """
         Get the reference element mapping of the underlying field.
@@ -1326,12 +1326,12 @@ class FieldVariable(Variable):
         if region is None:
             region = self.field.region
 
-        out = self.field.get_mapping(ig, region, integral, integration,
+        out = self.field.get_mapping(region, integral, integration,
                                      get_saved=get_saved,
                                      return_key=return_key)
         return out
 
-    def get_dof_conn(self, dc_type, ig, is_trace=False):
+    def get_dof_conn(self, dc_type, is_trace=False):
         """
         Get active dof connectivity of a variable.
 
@@ -1347,15 +1347,13 @@ class FieldVariable(Variable):
 
         if not is_trace:
             region_name = dc_type.region_name
-            aig = ig
 
         else:
             aux = self.field.domain.regions[dc_type.region_name]
-            region, _, ig_map = aux.get_mirror_region()
+            region = aux.get_mirror_region()
             region_name = region.name
-            aig = ig_map[ig]
 
-        key = (var_name, region_name, dc_type.type, aig, is_trace)
+        key = (var_name, region_name, dc_type.type, is_trace)
         dc = self.adof_conns[key]
 
         return dc
@@ -1385,7 +1383,7 @@ class FieldVariable(Variable):
             setter = functions[setter_name]
 
             region = self.field.region
-            nod_list = self.field.get_dofs_in_region(region, clean=True)
+            nod_list = self.field.get_dofs_in_region(region)
             nods = nm.unique(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
@@ -1446,8 +1444,7 @@ class FieldVariable(Variable):
             else:
                 clean_msg = None
 
-            nod_list = self.field.get_dofs_in_region(region, clean=True,
-                                                     warn=clean_msg)
+            nod_list = self.field.get_dofs_in_region(region)
             if len(nod_list) == 0:
                 continue
 
@@ -1465,18 +1462,15 @@ class FieldVariable(Variable):
 
             self.initial_condition = ic_vec
 
-    def get_approximation(self, ig):
-        return self.field.aps[ig]
+    def get_approximation(self):
+        return self.field.ap
 
-    def get_data_shape(self, ig, integral,
-                       integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='volume', region_name=None):
         """
         Get element data dimensions for given approximation.
 
         Parameters
         ----------
-        ig : int
-            The element group index.
         integral : Integral instance
             The integral describing used numerical quadrature.
         integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
@@ -1501,7 +1495,7 @@ class FieldVariable(Variable):
         - `n_comp` = number of variable components in a point/node
         - `n_nod` = number of element nodes
         """
-        aux = self.field.get_data_shape(ig, integral, integration=integration,
+        aux = self.field.get_data_shape(integral, integration=integration,
                                         region_name=region_name)
         data_shape = aux + (self.n_components,)
 
@@ -1526,7 +1520,7 @@ class FieldVariable(Variable):
                 if key == step: # Given time step to clear.
                     step_cache.pop(key)
 
-    def evaluate(self, ig, mode='val',
+    def evaluate(self, mode='val',
                  region=None, integral=None, integration=None,
                  step=0, time_derivative=None, is_trace=False,
                  dt=None, bf=None):
@@ -1539,8 +1533,6 @@ class FieldVariable(Variable):
 
         Parameters
         ----------
-        ig : int
-            The element group index.
         mode : one of 'val', 'grad', 'div', 'cauchy_strain'
             The evaluation mode.
         region : Region instance, optional
@@ -1582,8 +1574,7 @@ class FieldVariable(Variable):
             region = field.region
 
         if is_trace:
-            region, ig_map, ig_map_i = region.get_mirror_region()
-            ig = ig_map_i[ig]
+            region = region.get_mirror_region()
 
         if region is not field.region:
             assert_(field.region.contains(region))
@@ -1594,7 +1585,7 @@ class FieldVariable(Variable):
         if integration is None:
             integration = 'volume' if region.can_cells else 'surface'
 
-        geo, _, key = field.get_mapping(ig, region, integral, integration,
+        geo, _, key = field.get_mapping(region, integral, integration,
                                         return_key=True)
         key += (time_derivative, is_trace)
 
@@ -1606,9 +1597,9 @@ class FieldVariable(Variable):
             ct = integration
             if integration == 'surface_extra':
                 ct = 'volume'
-            conn = field.get_econn(ct, region, ig, is_trace, integration)
+            conn = field.get_econn(ct, region, is_trace, integration)
 
-            shape = self.get_data_shape(ig, integral, integration, region.name)
+            shape = self.get_data_shape(integral, integration, region.name)
 
             if self.dtype == nm.float64:
                 out = eval_real(vec, conn, geo, mode, shape, bf)
@@ -1620,9 +1611,8 @@ class FieldVariable(Variable):
 
         return out
 
-    def get_state_in_region(self, region, igs=None, reshape=True,
-                             step=0):
-        nods = self.field.get_dofs_in_region(region, merge=True, igs=igs)
+    def get_state_in_region(self, region, reshape=True, step=0):
+        nods = self.field.get_dofs_in_region(region, merge=True)
 
         eq = nm.empty((len(nods) * self.n_components,), dtype=nm.int32)
         for idof in range(self.n_components):
@@ -1781,15 +1771,10 @@ class FieldVariable(Variable):
 
         integral = Integral('i_tmp', 1)
 
-        igs = nm.unique(cells[:,0])
-        for ig in igs:
-            ap = field.aps[ig]
-            vg = ap.describe_geometry(field, 'volume', field.region, integral)
+        ap = field.ap
+        vg = ap.describe_geometry(field, 'volume', field.region, integral)
 
-            ii = nm.where(cells[:,0] == ig)[0]
-            aux = domain.get_element_diameters(ig, cells[ii,1].copy(), vg,
-                                               mode, square=square)
-            diameters[ii] = aux
+        diameters = domain.get_element_diameters(cells, vg, mode, square=square)
 
         return diameters
 
