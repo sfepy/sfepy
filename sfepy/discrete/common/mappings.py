@@ -34,7 +34,7 @@ class Mapping(Struct):
     """
 
     @staticmethod
-    def from_args(region, kind='v', ig=None):
+    def from_args(region, kind='v'):
         """
         Create mapping from reference to physical entities in a given
         region, given the integration kind ('v' or 's').
@@ -48,8 +48,6 @@ class Mapping(Struct):
             The region defining the entities.
         kind : 'v' or 's'
             The kind of the entities: 'v' - cells, 's' - facets.
-        ig : int, optional
-            The group index.
 
         Returns
         -------
@@ -65,11 +63,10 @@ class Mapping(Struct):
             if kind == 's':
                 coors = coors[region.vertices]
 
-            gel = region.domain.groups[ig].gel
-            conn = region.domain.groups[ig].conn
+            conn, gel = region.domain.get_conn(ret_gel=True)
 
             if kind == 'v':
-                cells = region.get_cells(ig)
+                cells = region.get_cells()
 
                 mapping = mm.VolumeMapping(coors, conn[cells], gel=gel)
 
@@ -77,7 +74,7 @@ class Mapping(Struct):
                 from sfepy.discrete.fem.fe_surface import FESurface
 
                 aux = FESurface('aux', region, gel.get_surface_entities(),
-                                conn , ig)
+                                conn)
                 mapping = mm.SurfaceMapping(coors, aux.leconn,
                                             gel=gel.surface_facet)
 
@@ -95,32 +92,24 @@ def get_physical_qps(region, integral, map_kind=None):
     Get physical quadrature points corresponding to the given region
     and integral.
     """
-    phys_qps = PhysicalQPs(region.igs)
+    phys_qps = PhysicalQPs()
 
     if map_kind is None:
         map_kind = 'v' if region.can_cells else 's'
 
-    ii = 0
-    for ig in region.igs:
-        gmap = Mapping.from_args(region, map_kind, ig)
+    gmap = Mapping.from_args(region, map_kind)
 
-        gel = gmap.get_geometry()
-        qp_coors, _ = integral.get_qp(gel.name)
+    gel = gmap.get_geometry()
+    qp_coors, _ = integral.get_qp(gel.name)
 
-        qps = gmap.get_physical_qps(qp_coors)
-        n_el, n_qp = qps.shape[0], qps.shape[1]
+    qps = gmap.get_physical_qps(qp_coors)
+    n_el, n_qp = qps.shape[0], qps.shape[1]
 
-        phys_qps.n_per_group[ig] = n_per_group = n_el * n_qp
-        phys_qps.shape[ig] = qps.shape
+    phys_qps.num = n_el * n_qp
+    phys_qps.shape = qps.shape
 
-        phys_qps.indx[ig] = slice(ii, ii + n_el)
-        phys_qps.rindx[ig] = slice(ii * n_qp, (ii + n_el) * n_qp)
-
-        ii += qps.shape[0]
-
-        qps.shape = (n_per_group, qps.shape[2])
-        phys_qps.values[ig] = qps
-        phys_qps.n_total += n_el * n_qp
+    qps.shape = (phys_qps.num, qps.shape[2])
+    phys_qps.values = qps
 
     return phys_qps
 
@@ -157,14 +146,9 @@ def get_mapping_data(name, field, integral, region=None, integration='volume'):
     data = None
     if region is None:
         region = field.region
-    for ig in region.igs:
-        geo, _ = field.get_mapping(ig, region, integral, integration)
-        _data = getattr(geo, name)
-        if data is None:
-            data = _data
 
-        else:
-            data = nm.concatenate((data, _data), axis=0)
+    geo, _ = field.get_mapping(region, integral, integration)
+    data = getattr(geo, name)
 
     return data
 
