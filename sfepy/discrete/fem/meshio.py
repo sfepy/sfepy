@@ -132,15 +132,6 @@ def split_by_mat_id(conns_in, mat_ids_in, descs_in):
 
     return (conns, mat_ids, descs)
 
-
-def write_bb(fd, array, dtype):
-
-    fd.write('3 %d %d %d\n' % (array.shape[1], array.shape[0], dtype))
-    format = ' '.join(['%.5e'] * array.shape[1] + ['\n'])
-
-    for row in array:
-        fd.write(format % tuple(row))
-
 def join_conn_groups(conns, descs, mat_ids, concat=False):
     """Join groups of the same element type."""
 
