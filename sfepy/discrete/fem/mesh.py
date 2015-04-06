@@ -5,12 +5,6 @@ import scipy.sparse as sp
 from sfepy.base.base import Struct, get_default, output, assert_
 from meshio import MeshIO, supported_cell_types
 
-def make_point_cells(indx, dim):
-    conn = nm.zeros((indx.shape[0], dim + 1), dtype=nm.int32)
-    for ii in range(0, dim + 1):
-        conn[:,ii] = indx
-    return conn
-
 def find_map(x1, x2, eps=1e-8, allow_double=False, join=True):
     """
     Find a mapping between common coordinates in x1 and x2, such that
