@@ -120,7 +120,7 @@ class H1NodalMixin(H1Mixin):
         Setup bubble DOF connectivity.
         """
         if self.node_desc.bubble is None:
-            return 0, None, None
+            return 0, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof_per_cell = self.node_desc.bubble.shape[0]
