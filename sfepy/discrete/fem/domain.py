@@ -160,14 +160,14 @@ class FEDomain(Domain):
         else:
             return conn
 
-    def get_element_diameters(self, ig, cells, vg, mode, square=True):
-        group = self.groups[ig]
+    def get_element_diameters(self, cells, vg, mode, square=True):
         diameters = nm.empty((len(cells), 1, 1, 1), dtype=nm.float64)
         if vg is None:
             diameters.fill(1.0)
         else:
-            vg.get_element_diameters(diameters, group.gel.edges,
-                                     self.get_mesh_coors().copy(), group.conn,
+            conn, gel = self.get_conn(ret_gel=True)
+            vg.get_element_diameters(diameters, gel.edges,
+                                     self.get_mesh_coors().copy(), conn,
                                      cells.astype(nm.int32), mode)
         if square:
             out = diameters.squeeze()
@@ -242,17 +242,15 @@ class FEDomain(Domain):
         Surface groups define surface facet connectivity that is needed
         for :class:`sfepy.discrete.fem.mappings.SurfaceMapping`.
         """
-        for ig in region.igs:
-            groups = self.surface_groups.setdefault(ig, {})
-            if region.name not in groups:
-                group = self.groups[ig]
-                gel_faces = group.gel.get_surface_entities()
+        groups = self.surface_groups
+        if region.name not in groups:
+            conn, gel = self.get_conn(ret_gel=True)
+            gel_faces = gel.get_surface_entities()
 
-                name = 'surface_group_%s_%d' % (region.name, ig)
-                surface_group = FESurface(name, region, gel_faces,
-                                          group.conn, ig)
+            name = 'surface_group_%s' % (region.name)
+            surface_group = FESurface(name, region, gel_faces, conn)
 
-                groups[region.name] = surface_group
+            groups[region.name] = surface_group
 
     def refine(self):
         """
@@ -268,16 +266,11 @@ class FEDomain(Domain):
         Works only for meshes with single element type! Does not
         preserve node groups!
         """
-
-        names = set()
-        for group in self.groups.itervalues():
-            names.add(group.gel.name)
-
-        if len(names) != 1:
+        if len(self.geom_els) != 1:
             msg = 'refine() works only for meshes with single element type!'
             raise NotImplementedError(msg)
 
-        el_type = names.pop()
+        el_type = self.geom_els.values()[0].name
         if el_type == '2_3':
             mesh = refine_2_3(self.mesh, self.cmesh)
 
