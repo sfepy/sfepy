@@ -272,16 +272,16 @@ class FEDomain(Domain):
 
         el_type = self.geom_els.values()[0].name
         if el_type == '2_3':
-            mesh = refine_2_3(self.mesh, self.cmesh)
+            mesh = refine_2_3(self.mesh)
 
         elif el_type == '2_4':
-            mesh = refine_2_4(self.mesh, self.cmesh)
+            mesh = refine_2_4(self.mesh)
 
         elif el_type == '3_4':
-            mesh = refine_3_4(self.mesh, self.cmesh)
+            mesh = refine_3_4(self.mesh)
 
         elif el_type == '3_8':
-            mesh = refine_3_8(self.mesh, self.cmesh)
+            mesh = refine_3_8(self.mesh)
 
         else:
             msg = 'unsupported element type! (%s)' % el_type
