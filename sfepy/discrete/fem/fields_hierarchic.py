@@ -163,7 +163,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         Setup bubble DOF connectivity.
         """
         if self.node_desc.bubble is None:
-            return 0, None, None
+            return 0, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof_per_cell = self.node_desc.bubble.shape[0]
@@ -173,7 +173,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         n_cell = ii.shape[0]
         n_dof = n_dof_per_cell * n_cell
 
-        all_dofs = nm.arange(offset + n_dof, offset + n_dof, dtype=nm.int32)
+        all_dofs = nm.arange(offset, offset + n_dof, dtype=nm.int32)
         all_dofs.shape = (n_cell, n_dof_per_cell)
         iep = self.node_desc.bubble[0]
         ap.econn[:,iep:] = all_dofs
@@ -210,10 +210,10 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         else:
             raise NotImplementedError
 
-        nods, indx = nm.unique(nm.concatenate(nods), return_index=True)
+        nods, indx = nm.unique(nods, return_index=True)
         ii = (nm.tile(dpn * indx, dpn)
               + nm.tile(nm.arange(dpn, dtype=nm.int32), indx.shape[0]))
-        vals = nm.concatenate(vals)[ii]
+        vals = vals[ii]
 
         return nods, vals
 
