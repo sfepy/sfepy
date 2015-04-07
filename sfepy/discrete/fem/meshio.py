@@ -455,7 +455,7 @@ class MeditMeshIO(MeshIO):
             conns.append(conn[:, :-1])
             mat_ids.append(conn[:, -1])
 
-        mesh._set_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
+        mesh._set_io_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
 
         return mesh
 

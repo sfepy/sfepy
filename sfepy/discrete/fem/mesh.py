@@ -557,7 +557,8 @@ class Mesh(Struct):
         self.n_el = self.cmesh.n_el
         self.dims = [int(ii[0]) for ii in self.descs]
 
-    def _set_data(self, coors, ngroups, conns, mat_ids, descs, nodal_bcs=None):
+    def _set_io_data(self, coors, ngroups, conns, mat_ids, descs,
+                     nodal_bcs=None):
         """
         Set mesh data.
 
