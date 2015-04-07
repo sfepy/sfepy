@@ -591,10 +591,10 @@ class Mesh(Struct):
                                      [ac(conn, dtype=nm.int32)
                                       for conn in conns],
                                      ac(nm.concatenate(mat_ids)), descs)
-        # Aliases.
-        self.coors = self.cmesh.coors
-        self.mat_ids = self.cmesh.cell_groups
-        self.ngroups = self.cmesh.vertex_groups
+
+    @property
+    def coors(self):
+        return self.cmesh.coors
 
     def _append_region_faces(self, region, force_faces=False):
         dim = self.coors.shape[1]
