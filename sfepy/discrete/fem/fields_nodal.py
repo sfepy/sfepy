@@ -90,19 +90,21 @@ class H1NodalMixin(H1Mixin):
         gcells = self.region.get_cells()
         n_el = gcells.shape[0]
 
-        indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
-        facets_of_cells = remap[indices]
+        # Elements of facets.
+        iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+        ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
-        ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
+        aux = offs[gcells][:, None] + ies.reshape((n_el, n_f))
+
+        indices = cconn.indices[aux]
+        facets_of_cells = remap[indices].ravel()
+
+        ori = oris[aux].ravel()
         perms = facet_perms[ori]
 
         # Define global facet dof numbers.
         gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
                                               n_dof_per_facet)
-
-        # Elements of facets.
-        iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
-        ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
         # DOF columns in econn for each facet.
         iep = facet_desc[ies]

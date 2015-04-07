@@ -821,7 +821,10 @@ class VolumeField(FEField):
         offset = aux[0]
 
         ap = self.ap
-        ap.econn[:, :offset] = conn.reshape((-1, offset)).astype(nm.int32)
+
+        # Remap vertex node connectivity to field-local numbering.
+        aux = conn.reshape((-1, offset)).astype(nm.int32)
+        ap.econn[:, :offset] = nm.take(remap, aux)
 
         return n_dof, remap
 
