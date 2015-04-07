@@ -596,7 +596,7 @@ class VTKMeshIO(MeshIO):
         fd = open(self.filename, 'r')
         mode = 'header'
         mode_status = 0
-        coors = conns = desc = mat_id = node_grps = None
+        coors = conns = mat_id = node_grps = None
         finished = 0
         while 1:
             line = skip_read_line(fd)
@@ -698,23 +698,23 @@ class VTKMeshIO(MeshIO):
             ct = vtk_inverse_cell_types[key]
             dconns.setdefault(key, []).append(row[1:] + mat_id[iel])
 
-        desc = []
+        descs = []
         conns = []
+        mat_ids = []
         for key, conn in dconns.iteritems():
             ct = key[0]
             sct = vtk_inverse_cell_types[key]
-            desc.append(sct)
+            descs.append(sct)
 
-            aconn = nm.array(conn, dtype=nm.int32)
+            aux = nm.array(conn, dtype=nm.int32)
+            aconn = aux[:, :-1]
             if ct in vtk_remap_keys: # Remap pixels and voxels.
-                aconn[:, :-1] = aconn[:, vtk_remap[ct]]
+                aconn[:] = aconn[:, vtk_remap[ct]]
 
             conns.append(aconn)
+            mat_ids.append(aux[:, -1])
 
-        conns_in, mat_ids = sort_by_mat_id(conns)
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, desc)
-
-        mesh._set_data(coors, node_grps, conns, mat_ids, descs)
+        mesh._set_io_data(coors, node_grps, conns, mat_ids, descs)
 
         return mesh
 
