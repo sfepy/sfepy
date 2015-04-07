@@ -45,7 +45,7 @@ def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
     conn = cmesh.get_incident(0, region.cells, region.tdim)
     conn.shape = (econn.shape[0], -1)
 
-    ecoors = nm.dot(bf, mesh_coors[conn[region.cells]])
+    ecoors = nm.dot(bf, mesh_coors[conn])
     coors[econn] = nm.swapaxes(ecoors, 0, 1)
 
 def _interp_to_faces(vertex_vals, bfs, faces):
