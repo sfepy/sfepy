@@ -483,19 +483,17 @@ class Mesh(Struct):
 
     @staticmethod
     def from_data(name, coors, ngroups, conns, mat_ids, descs,
-                  igs=None, nodal_bcs=None):
+                  nodal_bcs=None):
         """
-        Create a mesh from mesh data.
+        Create a mesh from mesh IO data.
         """
-        if igs is None:
-            igs = range(len(conns))
         mesh = Mesh(name)
-        mesh._set_data(coors=coors,
-                       ngroups=ngroups,
-                       conns=[conns[ig] for ig in igs],
-                       mat_ids=[mat_ids[ig] for ig in igs],
-                       descs=[descs[ig] for ig in igs],
-                       nodal_bcs=nodal_bcs)
+        mesh._set_io_data(coors=coors,
+                          ngroups=ngroups,
+                          conns=conns,
+                          mat_ids=mat_ids,
+                          descs=descs,
+                          nodal_bcs=nodal_bcs)
         mesh._set_shape_info()
         return mesh
 
