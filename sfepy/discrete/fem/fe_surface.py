@@ -7,17 +7,16 @@ from sfepy.discrete.fem.utils import prepare_remap
 class FESurface(Struct):
     """Description of a surface of a finite element domain."""
 
-    def __init__(self, name, region, efaces, volume_econn, ig):
+    def __init__(self, name, region, efaces, volume_econn):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         self.name = get_default(name, 'surface_data_%s' % region.name)
 
-        face_indices = region.get_facet_indices(ig)
+        face_indices = region.get_facet_indices()
 
         faces = efaces[face_indices[:,1]]
         if faces.size == 0:
-            raise ValueError('region with group with no faces! (%s)'
-                             % region.name)
+            raise ValueError('region with no faces! (%s)' % region.name)
 
         try:
             ee = volume_econn[face_indices[:,0]]
@@ -41,7 +40,6 @@ class FESurface(Struct):
         # queried later.
         bkey = 'b%s' % face_type[1:]
 
-        self.ig = ig
         self.econn = econn
         self.fis = nm.ascontiguousarray(face_indices.astype(nm.int32))
         self.n_fa, self.n_fp = n_fa, n_fp
@@ -63,13 +61,12 @@ class FESurface(Struct):
         mirror region.
 
         1. Get orientation of the faces:
-           a) for elements in group ig -> ooris (own)
-           b) for elements in group mig -> moris (mirror)
+           a) for own elements -> ooris
+           b) for mirror elements -> moris
 
         2. orientation -> permutation.
         """
-        mregion, ig_map, ig_map_i = region.get_mirror_region()
-        mig = ig_map_i[self.ig]
+        mregion = region.get_mirror_region()
 
         oo = self.ori_map
         ori_map = nm.zeros((nm.max(oo.keys()) + 1, self.n_fp), dtype=nm.int32)
@@ -78,9 +75,9 @@ class FESurface(Struct):
         conn = region.domain.cmesh.get_conn_as_graph(region.dim, region.dim - 1)
         oris = region.domain.cmesh.facet_oris
 
-        ofis = region.get_facet_indices(self.ig, offset=False)
+        ofis = region.get_facet_indices()
         ooris = oris[conn.indptr[ofis[:, 0]] + ofis[:, 1]]
-        mfis = mregion.get_facet_indices(mig, offset=False)
+        mfis = mregion.get_facet_indices()
         moris = oris[conn.indptr[mfis[:, 0]] + mfis[:, 1]]
 
         omap = ori_map[ooris]
