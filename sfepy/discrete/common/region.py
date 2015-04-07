@@ -598,6 +598,8 @@ class Region(Struct):
         be in 1 (surface) or 2 (inner) cells.
         """
         cmesh = self.domain.cmesh
+        cmesh.setup_connectivity(self.tdim - 1, self.tdim)
+
         facets = self.facets
         cells, offs = cmesh.get_incident(self.tdim, facets, self.tdim - 1,
                                          ret_offsets=True)
