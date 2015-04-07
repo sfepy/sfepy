@@ -462,10 +462,7 @@ class MeditMeshIO(MeshIO):
     def write(self, filename, mesh, out=None, **kwargs):
         fd = open(filename, 'w')
 
-        coors = mesh.coors
-        conns, desc = join_conn_groups(mesh.conns, mesh.descs,
-                                       mesh.mat_ids, concat=True)
-
+        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
         n_nod, dim = coors.shape
 
         fd.write("MeshVersionFormatted 1\nDimension %d\n" % dim)
@@ -473,10 +470,11 @@ class MeditMeshIO(MeshIO):
         fd.write("Vertices\n%d\n" % n_nod)
         format = self.get_vector_format(dim) + ' %d\n'
         for ii in range(n_nod):
-            nn = tuple(coors[ii]) + (mesh.ngroups[ii],)
+            nn = tuple(coors[ii]) + (ngroups[ii],)
             fd.write(format % tuple(nn))
 
         for ig, conn in enumerate(conns):
+            ids = mat_ids[ig]
             if (desc[ig] == "1_1"):
                 fd.write("Corners\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
@@ -488,31 +486,31 @@ class MeditMeshIO(MeshIO):
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d\n"
-                             % (nn[0], nn[1], nn[2] - 1))
+                             % (nn[0], nn[1], ids[ii]))
             elif (desc[ig] == "2_4"):
                 fd.write("Quadrilaterals\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], nn[4] - 1))
+                             % (nn[0], nn[1], nn[2], nn[3], ids[ii]))
             elif (desc[ig] == "2_3"):
                 fd.write("Triangles\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
-                    fd.write("%d %d %d %d\n" % (nn[0], nn[1], nn[2], nn[3] - 1))
+                    fd.write("%d %d %d %d\n" % (nn[0], nn[1], nn[2], ids[ii]))
             elif (desc[ig] == "3_4"):
                 fd.write("Tetrahedra\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], nn[4] - 1))
+                             % (nn[0], nn[1], nn[2], nn[3], ids[ii]))
             elif (desc[ig] == "3_8"):
                 fd.write("Hexahedra\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d %d %d %d %d %d %d\n"
                              % (nn[0], nn[1], nn[2], nn[3], nn[4], nn[5],
-                                nn[6], nn[7], nn[8] - 1))
+                                nn[6], nn[7], ids[ii]))
             else:
                 raise ValueError('unknown element type! (%s)' % desc[ig])
 
@@ -755,15 +753,17 @@ class VTKMeshIO(MeshIO):
         else:
             step, time, nt = ts.step, ts.time, ts.nt
 
+        coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+
         fd = open(filename, 'w')
         fd.write(vtk_header % (step, time, nt, op.basename(sys.argv[0])))
 
-        n_nod, dim = mesh.coors.shape
+        n_nod, dim = coors.shape
         sym = dim * (dim + 1) / 2
 
         fd.write('\nPOINTS %d float\n' % n_nod)
 
-        aux = mesh.coors
+        aux = coors
 
         if dim < 3:
             aux = nm.hstack((aux, nm.zeros((aux.shape[0], 3 - dim),
@@ -773,14 +773,15 @@ class VTKMeshIO(MeshIO):
         for row in aux:
             fd.write(format % tuple(row))
 
-        n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
+        n_el = mesh.n_el
+        n_els, n_e_ps = nm.array([conn.shape for conn in conns]).T
         total_size = nm.dot(n_els, n_e_ps + 1)
         fd.write('\nCELLS %d %d\n' % (n_el, total_size))
 
         ct = []
-        for ig, conn in enumerate(mesh.conns):
+        for ig, conn in enumerate(conns):
             nn = n_e_ps[ig] + 1
-            ct += [vtk_cell_types[mesh.descs[ig]]] * n_els[ig]
+            ct += [vtk_cell_types[descs[ig]]] * n_els[ig]
             format = ' '.join(['%d'] * nn + ['\n'])
 
             for row in conn:
@@ -793,7 +794,7 @@ class VTKMeshIO(MeshIO):
 
         # node groups
         fd.write('\nSCALARS node_groups int 1\nLOOKUP_TABLE default\n')
-        fd.write(''.join(['%d\n' % ii for ii in mesh.ngroups]))
+        fd.write(''.join(['%d\n' % ii for ii in ngroups]))
 
         if out is not None:
             point_keys = [key for key, val in out.iteritems()
@@ -843,7 +844,7 @@ class VTKMeshIO(MeshIO):
 
         # cells - mat_id
         fd.write('SCALARS mat_id int 1\nLOOKUP_TABLE default\n')
-        aux = nm.hstack(mesh.mat_ids).tolist()
+        aux = nm.hstack(mat_ids).tolist()
         fd.write(''.join(['%d\n' % ii for ii in aux]))
 
         for key in cell_keys:
