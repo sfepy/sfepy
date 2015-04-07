@@ -72,6 +72,19 @@ def output_writable_meshes():
         if 'w' in val:
             output(key)
 
+def split_conns_mat_ids(conns_in):
+    """
+    Split connectivities (columns except the last ones in `conns_in`) from cell
+    groups (the last columns of `conns_in`).
+    """
+    conns, mat_ids = [], []
+    for conn in conns_in:
+        conn = nm.asarray(conn, dtype=nm.int32)
+        conns.append(conn[:, :-1])
+        mat_ids.append(conn[:, -1])
+
+    return conns, mat_ids
+
 def sort_by_mat_id(conns_in):
     """
     Sort by mat_id within a group, preserve order.
@@ -450,10 +463,7 @@ class MeditMeshIO(MeshIO):
             del(descs[ic])
             descs[ic:ic] = desc
 
-        conns, mat_ids = [], []
-        for conn in conns_in:
-            conns.append(conn[:, :-1])
-            mat_ids.append(conn[:, -1])
+        conns, mat_ids = split_conns_mat_ids(conns_in)
 
         mesh._set_io_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
 
