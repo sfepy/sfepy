@@ -31,8 +31,6 @@ def mesh_hook(mesh, mode):
 
         mesh._set_data(nodes, nod_ids, conns, mat_ids, descs)
 
-        ## mesh.write('aux.vtk', io='auto')
-
     elif mode == 'write':
         pass
 
@@ -46,41 +44,35 @@ import os.path as op
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
 
-##
-# c: 05.02.2008
-class Test( TestCommon ):
+class Test(TestCommon):
     """Write test names explicitely to impose a given order of evaluation."""
     tests = ['test_read_meshes', 'test_compare_same_meshes',
              'test_read_dimension', 'test_write_read_meshes']
 
-    ##
-    # c: 05.02.2008, r: 05.02.2008
-    def from_conf( conf, options ):
-        return Test( conf = conf, options = options )
-    from_conf = staticmethod( from_conf )
-    
-    ##
-    # c: 05.02.2008, r: 05.02.2008
-    def test_read_meshes( self ):
+    @staticmethod
+    def from_conf(conf, options):
+        return Test(conf=conf, options=options)
+
+    def test_read_meshes(self):
         """Try to read all listed meshes."""
         from sfepy.discrete.fem import Mesh
 
         conf_dir = op.dirname(__file__)
         meshes = {}
-        for ii, filename in enumerate( filename_meshes ):
-            self.report( '%d. mesh: %s' % (ii + 1, filename) )
+        for ii, filename in enumerate(filename_meshes):
+            self.report('%d. mesh: %s' % (ii + 1, filename))
             mesh = Mesh.from_file(filename, prefix_dir=conf_dir)
 
             assert_(mesh.dim == (mesh.coors.shape[1]))
             assert_(mesh.n_nod == (mesh.coors.shape[0]))
             assert_(mesh.n_nod == (mesh.ngroups.shape[0]))
             assert_(mesh.n_el == sum(mesh.n_els))
-            for ig, conn in enumerate( mesh.conns ):
+            for ig, conn in enumerate(mesh.conns):
                 assert_(conn.shape[0] == len(mesh.mat_ids[ig]))
                 assert_(conn.shape[0] == mesh.n_els[ig])
                 assert_(conn.shape[1] == mesh.n_e_ps[ig])
-                
-            self.report( 'read ok' )
+
+            self.report('read ok')
             meshes[filename] = mesh
 
         self.meshes = meshes
@@ -94,50 +86,50 @@ class Test( TestCommon ):
 
         ok0 = (mesh0.dim == mesh1.dim)
         if not ok0:
-            self.report( 'dimension failed!' )
-        oks.append( ok0 )
+            self.report('dimension failed!')
+        oks.append(ok0)
 
         ok0 = mesh0.n_nod == mesh1.n_nod
         if not ok0:
-            self.report( 'number of nodes failed!' )
-        oks.append( ok0 )
+            self.report('number of nodes failed!')
+        oks.append(ok0)
 
         ok0 = mesh0.n_el == mesh1.n_el
         if not ok0:
-            self.report( 'number of elements failed!' )
-        oks.append( ok0 )
+            self.report('number of elements failed!')
+        oks.append(ok0)
 
         ok0 = mesh0.n_e_ps == mesh1.n_e_ps
         if not ok0:
-            self.report( 'number of element points failed!' )
-        oks.append( ok0 )
+            self.report('number of element points failed!')
+        oks.append(ok0)
 
         ok0 = mesh0.descs == mesh1.descs
         if not ok0:
-            self.report( 'element types failed!' )
-        oks.append( ok0 )
+            self.report('element types failed!')
+        oks.append(ok0)
 
-        ok0 = nm.allclose( mesh0.coors, mesh1.coors )
+        ok0 = nm.allclose(mesh0.coors, mesh1.coors)
         if not ok0:
-            self.report( 'nodes failed!' )
-        oks.append( ok0 )
+            self.report('nodes failed!')
+        oks.append(ok0)
 
-        ok0 = nm.all( mesh0.ngroups == mesh1.ngroups )
+        ok0 = nm.all(mesh0.ngroups == mesh1.ngroups)
         if not ok0:
-            self.report( 'node groups failed!' )
-        oks.append( ok0 )
+            self.report('node groups failed!')
+        oks.append(ok0)
 
-        for ii in range( len( mesh0.mat_ids ) ):
-            ok0 = nm.all( mesh0.mat_ids[ii] == mesh1.mat_ids[ii] )
+        for ii in range(len(mesh0.mat_ids)):
+            ok0 = nm.all(mesh0.mat_ids[ii] == mesh1.mat_ids[ii])
             if not ok0:
-                self.report( 'material ids failed!' )
-            oks.append( ok0 )
+                self.report('material ids failed!')
+            oks.append(ok0)
 
-        for ii in range( len( mesh0.mat_ids ) ):
-            ok0 = nm.all( mesh0.conns[ii] == mesh1.conns[ii] )
+        for ii in range(len(mesh0.mat_ids)):
+            ok0 = nm.all(mesh0.conns[ii] == mesh1.conns[ii])
             if not ok0:
-                self.report( 'connectivities failed!' )
-            oks.append( ok0 )
+                self.report('connectivities failed!')
+            oks.append(ok0)
 
         return oks
 
@@ -157,9 +149,7 @@ class Test( TestCommon ):
 
         return sum(oks) == len(oks)
 
-    ##
-    # c: 03.07.2008, r: 03.07.2008
-    def test_read_dimension( self ):
+    def test_read_dimension(self):
         from sfepy.discrete.fem import MeshIO
 
         meshes = {data_dir + '/meshes/various_formats/small2d.mesh' : 2,
@@ -169,14 +159,14 @@ class Test( TestCommon ):
         ok = True
         conf_dir = op.dirname(__file__)
         for filename, adim in meshes.iteritems():
-            self.report( 'mesh: %s, dimension %d' % (filename, adim) )
+            self.report('mesh: %s, dimension %d' % (filename, adim))
             io = MeshIO.any_from_filename(filename, prefix_dir=conf_dir)
             dim = io.read_dimension()
             if dim != adim:
-                self.report( 'read dimension %d -> failed' % dim )
+                self.report('read dimension %d -> failed' % dim)
                 ok = False
             else:
-                self.report( 'read dimension %d -> ok' % dim )
+                self.report('read dimension %d -> ok' % dim)
 
         return ok
 
