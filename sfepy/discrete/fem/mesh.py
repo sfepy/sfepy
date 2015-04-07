@@ -579,6 +579,7 @@ class Mesh(Struct):
             to by the dict keys in problem description files.
         """
         ac = nm.ascontiguousarray
+        coors = ac(coors)
 
         if ngroups is None:
             ngroups = nm.zeros((coors.shape[0],), dtype=nm.int32)
@@ -587,7 +588,7 @@ class Mesh(Struct):
         self.nodal_bcs = get_default(nodal_bcs, {})
 
         from sfepy.discrete.fem.extmods.cmesh import CMesh
-        self.cmesh = CMesh.from_data(ac(coors), ac(ngroups),
+        self.cmesh = CMesh.from_data(coors, ac(ngroups),
                                      [ac(conn, dtype=nm.int32)
                                       for conn in conns],
                                      ac(nm.concatenate(mat_ids)), descs)
