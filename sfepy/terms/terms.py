@@ -1164,7 +1164,7 @@ class Term(Struct):
                 status = rstatus or istatus
 
         else:
-            out, status = rout, rstatus
+            out, status = rout + 0j, rstatus
 
         if mode == 'eval':
             out1 = nm.sum(out, 0).squeeze()
