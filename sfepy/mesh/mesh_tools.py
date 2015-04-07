@@ -1,10 +1,8 @@
-from sfepy.discrete.fem import FEDomain
+from sfepy.discrete.fem import Mesh, FEDomain
 import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial
 from sfepy.base.base import output
-from numpy.core import intc
-from numpy.linalg import lapack_lite
 
 def elems_q2t(el):
 
@@ -178,3 +176,84 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
         output('...done in %.2f s' % (time.clock() - tt))
 
     return coors
+
+def expand2d(mesh2d, dist, rep):
+    """
+    Expand 2D planar mesh into 3D volume,
+    convert triangular/quad mesh to tetrahedrons/hexahedrons.
+
+    Parameters
+    ----------
+    mesh2d : Mesh
+        The 2D mesh.
+    dist : float
+        The elements size in the 3rd direction.
+    rep : int
+        The number of elements in the 3rd direction.
+
+    Returns
+    -------
+    mesh3d : Mesh
+        The 3D mesh.
+    """
+    if len(mesh2d.descs) > 1:
+        raise ValueError('More than one cell type (%s). Not supported!'
+                         % ', '.join(mesh2d.descs))
+
+    nel = mesh2d.n_el
+    nnd = mesh2d.n_nod
+    et = mesh2d.descs[0]
+    coors = mesh2d.coors
+    conn = mesh2d.get_conn(et)
+
+    zcoor = nm.arange(rep + 1) * dist
+    coors3d = nm.hstack([nm.tile(coors, (rep + 1, 1)),
+                         nm.tile(zcoor, (nnd,1)).T.flatten()[:,nm.newaxis]])
+    ngroups = nm.tile(mesh2d.cmesh.vertex_groups, (rep + 1,1))
+
+    if et == '2_4':
+        descs3d = '3_8'
+        conn3d = nm.zeros((nel * rep, 8), dtype=nm.int32)
+        mats3d = nm.tile(mesh2d.cmesh.cell_groups, (1, rep)).squeeze()
+
+    elif et == '2_3':
+        descs3d = '3_4'
+        conn3d = nm.zeros((3 * nel * rep, 4), dtype=nm.int32)
+        mats3d = nm.tile(mesh2d.cmesh.cell_groups, (1, 3 * rep)).squeeze()
+
+    for ii in range(rep):
+        bgn0 = nnd * ii
+        bgn1 = bgn0 + nnd
+        if et == '2_4':
+            bge0 = nel * ii
+            bge1 = bge0 + nel
+            conn3d[bge0:bge1,:4] = conn + bgn0
+            conn3d[bge0:bge1,4:] = conn + bgn1
+
+        elif et == '2_3':
+            # 0 1 2 5
+            bge0 = 3 * nel * ii
+            bge1 = bge0 + nel
+            conn3d[bge0:bge1,:] = nm.array([conn[:,0] + bgn0,
+                                            conn[:,1] + bgn0,
+                                            conn[:,2] + bgn0,
+                                            conn[:,2] + bgn1]).T
+            # 0 1 5 4
+            bge0 += nel
+            bge1 += nel
+            conn3d[bge0:bge1,:] = nm.array([conn[:,0] + bgn0,
+                                            conn[:,1] + bgn0,
+                                            conn[:,2] + bgn1,
+                                            conn[:,1] + bgn1]).T
+            # 0 4 5 3
+            bge0 += nel
+            bge1 += nel
+            conn3d[bge0:bge1,:] = nm.array([conn[:,0] + bgn0,
+                                            conn[:,1] + bgn1,
+                                            conn[:,2] + bgn1,
+                                            conn[:,0] + bgn1]).T
+
+    mesh3d = Mesh.from_data('mesh', coors3d, [ngroups], [conn3d],
+                            [mats3d], [descs3d])
+
+    return mesh3d
