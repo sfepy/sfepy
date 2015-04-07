@@ -577,7 +577,7 @@ class Mesh(Struct):
             to by the dict keys in problem description files.
         """
         ac = nm.ascontiguousarray
-        coors = ac(coors)
+        coors = ac(coors, dtype=nm.float64)
 
         if ngroups is None:
             ngroups = nm.zeros((coors.shape[0],), dtype=nm.int32)
