@@ -665,6 +665,29 @@ class Mesh(Struct):
     def get_bounding_box(self):
         return nm.vstack((nm.amin(self.coors, 0), nm.amax(self.coors, 0)))
 
+    def get_conn(self, desc, ret_cells=False):
+        """
+        Get the rectangular cell-vertex connectivity corresponding to `desc`.
+        If `ret_cells` is True, the corresponding cells are returned as well.
+        """
+        if desc not in self.descs:
+            raise ValueError("'%s' not in %s!" % (desc, self.descs))
+
+        cmesh = self.cmesh
+
+        cells = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
+        cells = cells[0].astype(nm.uint32)
+
+        cdim = int(desc[0])
+        conn = cmesh.get_incident(0, cells, cdim)
+        conn = conn.reshape((cells.shape[0], -1)).astype(nm.int32)
+
+        if ret_cells:
+            return conn, cells
+
+        else:
+            return conn
+
     def get_element_coors(self, ig=None):
         """
         Get the coordinates of vertices elements in group `ig`.
