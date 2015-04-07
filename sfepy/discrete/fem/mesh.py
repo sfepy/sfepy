@@ -629,8 +629,8 @@ class Mesh(Struct):
             mat_ids = nm.repeat(ig, verts.shape[0])
             self.mat_ids.append(mat_ids)
 
-    def write(self, filename=None, io=None,
-              coors=None, igs=None, out=None, float_format=None, **kwargs):
+    def write(self, filename=None, io=None, out=None, float_format=None,
+              **kwargs):
         """
         Write mesh + optional results in `out` to a file.
 
@@ -640,10 +640,6 @@ class Mesh(Struct):
             The file name. If None, the mesh name is used instead.
         io : MeshIO instance or 'auto', optional
             Passing 'auto' respects the extension of `filename`.
-        coors : array, optional
-            The coordinates that can be used instead of the mesh coordinates.
-        igs : array_like, optional
-            Passing a list of group ids selects only those groups for writing.
         out : dict, optional
             The output data attached to the mesh vertices and/or cells.
         float_format : str, optional
@@ -663,17 +659,8 @@ class Mesh(Struct):
         if io == 'auto':
             io = MeshIO.any_from_filename(filename)
 
-        if coors is None:
-            coors = self.coors
-
-        if igs is None:
-            igs = range(len(self.conns))
-
-        aux_mesh = Mesh.from_data(self.name, coors, self.ngroups,
-                                  self.conns, self.mat_ids, self.descs,
-                                  igs=igs, nodal_bcs=self.nodal_bcs)
         io.set_float_format(float_format)
-        io.write(filename, aux_mesh, out, **kwargs)
+        io.write(filename, self, out, **kwargs)
 
     def get_bounding_box(self):
         return nm.vstack((nm.amin(self.coors, 0), nm.amax(self.coors, 0)))
