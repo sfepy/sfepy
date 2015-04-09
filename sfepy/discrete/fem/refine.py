@@ -223,7 +223,7 @@ def refine_reference(geometry, level):
         domain = domain.refine()
 
     coors = domain.mesh.coors
-    conn = domain.mesh.conns[0]
+    conn = domain.get_conn()
 
     n_el = conn.shape[0]
 
