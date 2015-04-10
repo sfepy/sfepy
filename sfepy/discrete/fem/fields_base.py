@@ -928,12 +928,8 @@ class SurfaceField(FEField):
         ok : bool
             True if the region is usable for the field.
         """
-        ok = True
-        for ig in region.igs:
-            n_cell = region.get_n_cells(ig, True)
-            if n_cell == 0:
-                ok = False
-                break
+        ok = ((region.kind_tdim == (region.tdim - 1))
+              and (region.get_n_cells(True) > 0))
 
         return ok
 
@@ -941,9 +937,12 @@ class SurfaceField(FEField):
         """
         Setup the field region geometry.
         """
-        self.gel = self.domain.groups[self.region.igs[0]].gel.surface_facet
+        for key, vgel in self.domain.geom_els.iteritems():
+            self.gel = vgel.surface_facet
+            break
+
         if self.gel is None:
-            raise ValueError('element group has no surface!')
+            raise ValueError('cells with no surface!')
 
         self.is_surface = True
 
@@ -957,13 +956,8 @@ class SurfaceField(FEField):
                                              self.force_bubble)
 
     def _setup_approximations(self):
-        self.aps = {}
-        self.aps_by_name = {}
-        for ig in self.igs:
-            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
-            ap = fea.SurfaceApproximation(name, self.interp, self.region, ig)
-            self.aps[ig] = ap
-            self.aps_by_name[ap.name] = ap
+        name = self.interp.name + '_%s' % self.region.name
+        self.ap = fea.SurfaceApproximation(name, self.interp, self.region)
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
@@ -974,27 +968,24 @@ class SurfaceField(FEField):
 
         reg = info.get_region()
 
-        for ig, ap in self.aps.iteritems():
-            if ig not in reg.igs: continue
+        ap = self.ap
+        if reg.name not in ap.surface_data:
+            # Defined in setup_vertex_dofs()
+            msg = 'no surface data of surface field! (%s)' % reg.name
+            raise ValueError(msg)
 
-            if reg.name not in ap.surface_data:
-                # Defined in setup_vertex_dofs()
-                msg = 'no surface data of surface field! (%s)' % reg.name
-                raise ValueError(msg)
-
-        for ig, ap in self.aps.iteritems():
-            if reg.name in ap.surface_data and is_trace:
-                sd = ap.surface_data[reg.name]
-                sd.setup_mirror_connectivity(reg)
+        if reg.name in ap.surface_data and is_trace:
+            sd = ap.surface_data[reg.name]
+            sd.setup_mirror_connectivity(reg)
 
     def _init_econn(self):
         """
         Initialize the extended DOF connectivity.
         """
-        for ig, ap in self.aps.iteritems():
-            n_ep = ap.n_ep['v']
-            n_cell = self.region.get_n_cells(ig, True)
-            ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
+        ap = self.ap
+        n_ep = ap.n_ep['v']
+        n_cell = self.region.get_n_cells(True)
+        ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
 
     def _setup_vertex_dofs(self):
         """
@@ -1008,14 +999,14 @@ class SurfaceField(FEField):
         remap = prepare_remap(region.vertices, region.n_v_max)
         n_dof = region.vertices.shape[0]
 
-        ##
+        ap = self.ap
+
         # Remap vertex node connectivity to field-local numbering.
-        for ig, ap in self.aps.iteritems():
-            group = self.domain.groups[ig]
-            faces = group.gel.get_surface_entities()
-            aux = FESurface('aux', region, faces, group.conn, ig)
-            ap.econn[:,:aux.n_fp] = aux.leconn
-            ap.surface_data[region.name] = aux
+        conn, gel = self.domain.get_conn(ret_gel=True)
+        faces = gel.get_surface_entities()
+        aux = FESurface('aux', region, faces, conn)
+        ap.econn[:, :aux.n_fp] = aux.leconn
+        ap.surface_data[region.name] = aux
 
         return n_dof, remap
 
@@ -1023,9 +1014,9 @@ class SurfaceField(FEField):
         """
         Setup bubble DOF connectivity.
         """
-        return 0, None, None
+        return 0, None
 
-    def get_econn(self, conn_type, region, ig, is_trace=False,
+    def get_econn(self, conn_type, region, is_trace=False,
                   integration=None):
         """
         Get extended connectivity of the given type in the given region.
@@ -1036,7 +1027,7 @@ class SurfaceField(FEField):
             msg = 'connectivity type must be "surface"! (%s)' % ct
             raise ValueError(msg)
 
-        ap = self.aps[ig]
+        ap = self.ap
 
         sd = ap.surface_data[region.name]
         conn = sd.get_connectivity(local=True, is_trace=is_trace)
@@ -1054,7 +1045,7 @@ class SurfaceField(FEField):
         """
         region = self.region
 
-        n_cells = region.get_n_cells(None, True)
+        n_cells = region.get_n_cells(True)
         if n_cells != data_qp.shape[0]:
             msg = 'incomatible shape! (%d == %d)' % (n_cells,
                                                      data_qp.shape[0])
@@ -1065,28 +1056,29 @@ class SurfaceField(FEField):
 
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
         data_vertex = nm.zeros((n_vertex, nc), dtype=nm.float64)
-        offset = 0
-        for ig, ap in self.aps.iteritems():
-            sg = ap.describe_geometry(self, 'surface', ap.region, integral)
 
-            area = nm.squeeze(sg.volume)
-            n_cells = region.get_n_cells(ig, True)
-            iels = offset + nm.arange(n_cells, dtype=nm.int32)
-            offset += n_cells
+        ap = self.ap
 
-            data_e = nm.zeros((area.shape[0], 1, nc, 1), dtype=nm.float64)
-            sg.integrate(data_e, data_qp[iels])
+        sg = ap.describe_geometry(self, 'surface', ap.region, integral)
 
-            ir = nm.arange(nc, dtype=nm.int32)
+        area = nm.squeeze(sg.volume)
+        n_cells = region.get_n_cells(True)
+        iels = nm.arange(n_cells, dtype=nm.int32)
 
-            sd = self.domain.surface_groups[ig][region.name]
-            # Should be vertex connectivity!
-            conn = sd.get_connectivity(local=True)
-            for ii, cc in enumerate(conn):
-                # Assumes unique nodes in cc!
-                ind2, ind1 = nm.meshgrid(ir, cc)
-                data_vertex[ind1,ind2] += data_e[iels[ii],0,:,0]
-                nod_vol[cc] += area[ii]
+        data_e = nm.zeros((area.shape[0], 1, nc, 1), dtype=nm.float64)
+        sg.integrate(data_e, data_qp[iels])
+
+        ir = nm.arange(nc, dtype=nm.int32)
+
+        sd = self.domain.surface_groups[region.name]
+        # Should be vertex connectivity!
+        conn = sd.get_connectivity(local=True)
+        for ii, cc in enumerate(conn):
+            # Assumes unique nodes in cc!
+            ind2, ind1 = nm.meshgrid(ir, cc)
+            data_vertex[ind1,ind2] += data_e[iels[ii],0,:,0]
+            nod_vol[cc] += area[ii]
+
         data_vertex /= nod_vol[:,nm.newaxis]
 
         return data_vertex
