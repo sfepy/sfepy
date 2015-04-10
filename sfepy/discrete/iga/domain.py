@@ -144,7 +144,6 @@ class IGDomain(Domain):
                         **kwargs)
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
         from sfepy.discrete.fem import Mesh
-        from sfepy.discrete.fem.extmods.cmesh import CMesh
         from sfepy.discrete.fem.utils import prepare_remap
 
         tconn = iga.get_bezier_topology(bmesh.conn, nurbs.degrees)
@@ -157,14 +156,14 @@ class IGDomain(Domain):
 
         n_nod, dim = ltcoors.shape
         n_el = ltconn.shape[0]
-        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0, n_el=n_el, n_gr=1)
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0, n_el=n_el)
 
         desc = '%d_%d' % (dim, 2**dim)
         mat_id = nm.zeros(ltconn.shape[0], dtype=nm.int32)
         self.mesh = Mesh.from_data(self.name + '_topo', ltcoors, None, [ltconn],
                                    [mat_id], [desc])
 
-        self.cmesh = CMesh.from_mesh(self.mesh)
+        self.cmesh = self.mesh.cmesh
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)
         self.cmesh.setup_entities()
@@ -177,7 +176,5 @@ class IGDomain(Domain):
             self.vertex_set_bcs = {}
             for key, val in self.regions.iteritems():
                 self.vertex_set_bcs[key] = remap[val]
-
-        self.cell_offsets = {0 : 0}
 
         self.reset_regions()
