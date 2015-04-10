@@ -26,7 +26,7 @@ from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
 
-def get_eval_expression(expression, ig,
+def get_eval_expression(expression,
                         fields, materials, variables,
                         functions=None, mode='eval', term_mode=None,
                         extra_args=None, verbose=True, kwargs=None):
@@ -37,7 +37,7 @@ def get_eval_expression(expression, ig,
     from sfepy.discrete.evaluate import eval_in_els_and_qp
 
     def _eval(iels, coors):
-        val = eval_in_els_and_qp(expression, ig, iels, coors,
+        val = eval_in_els_and_qp(expression, iels, coors,
                                  fields, materials, variables,
                                  functions=functions, mode=mode,
                                  term_mode=term_mode,
@@ -103,50 +103,32 @@ def create_expression_output(expression, name, primary_field_name,
     field = fields[primary_field_name]
     vertex_coors = field.coors[:field.n_vertex_dof, :]
 
-    coors = []
-    vdofs = []
-    conns = []
-    mat_ids = []
-    levels = []
-    offset = 0
-    for ig, ap in field.aps.iteritems():
-        ps = ap.interp.poly_spaces['v']
-        gps = ap.interp.gel.interp.poly_spaces['v']
-        group = field.domain.groups[ig]
-        vertex_conn = ap.econn[:, :group.shape.n_ep]
+    ap = field.ap
 
-        eval_dofs = get_eval_expression(expression, ig,
-                                        fields, materials, variables,
-                                        functions=functions,
-                                        mode=mode, extra_args=extra_args,
-                                        verbose=verbose, kwargs=kwargs)
-        eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
+    ps = ap.interp.poly_spaces['v']
+    gps = ap.interp.gel.interp.poly_spaces['v']
+    vertex_conn = ap.econn[:, :field.gel.n_vertex]
 
-        (level, _coors, conn,
-         _vdofs, _mat_ids) = create_output(eval_dofs, eval_coors,
-                                           group.shape.n_el, ps,
-                                           min_level=min_level,
-                                           max_level=max_level, eps=eps)
+    eval_dofs = get_eval_expression(expression,
+                                    fields, materials, variables,
+                                    functions=functions,
+                                    mode=mode, extra_args=extra_args,
+                                    verbose=verbose, kwargs=kwargs)
+    eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
 
-        _mat_ids[:] = field.domain.mesh.mat_ids[ig][0]
+    (level, coors, conn,
+     vdofs, mat_ids) = create_output(eval_dofs, eval_coors,
+                                     vertex_conn.shape[0], ps,
+                                     min_level=min_level,
+                                     max_level=max_level, eps=eps)
 
-        coors.append(_coors)
-        vdofs.append(_vdofs)
-        conns.append(conn + offset)
-        mat_ids.append(_mat_ids)
-        levels.append(level)
-
-        offset += _coors.shape[0]
-
-    coors = nm.concatenate(coors, axis=0)
-    vdofs = nm.concatenate(vdofs, axis=0)
-    mesh = Mesh.from_data('linearized_mesh', coors, None, conns, mat_ids,
+    mesh = Mesh.from_data('linearized_mesh', coors, None, [conn], [mat_ids],
                           field.domain.mesh.descs)
 
     out = {}
     out[name] = Struct(name='output_data', mode='vertex',
                        data=vdofs, var_name=name, dofs=None,
-                       mesh=mesh, levels=levels)
+                       mesh=mesh, level=level)
 
     out = convert_complex_output(out)
 
@@ -526,43 +508,26 @@ class FEField(Field):
 
         vertex_coors = self.coors[:self.n_vertex_dof, :]
 
-        coors = []
-        vdofs = []
-        conns = []
-        mat_ids = []
-        levels = []
-        offset = 0
-        for ig, ap in self.aps.iteritems():
-            ps = ap.interp.poly_spaces['v']
-            gps = ap.interp.gel.interp.poly_spaces['v']
-            group = self.domain.groups[ig]
-            vertex_conn = ap.econn[:, :group.shape.n_ep]
+        ap = self.ap
 
-            eval_dofs = get_eval_dofs(dofs, ap.econn, ps, ori=ap.ori)
-            eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
+        ps = ap.interp.poly_spaces['v']
+        gps = ap.interp.gel.interp.poly_spaces['v']
 
-            (level, _coors, conn,
-             _vdofs, _mat_ids) = create_output(eval_dofs, eval_coors,
-                                               group.shape.n_el, ps,
-                                               min_level=min_level,
-                                               max_level=max_level, eps=eps)
+        vertex_conn = ap.econn[:, :self.gel.n_vertex]
 
-            _mat_ids[:] = self.domain.mesh.mat_ids[ig][0]
+        eval_dofs = get_eval_dofs(dofs, ap.econn, ps, ori=ap.ori)
+        eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
 
-            coors.append(_coors)
-            vdofs.append(_vdofs)
-            conns.append(conn + offset)
-            mat_ids.append(_mat_ids)
-            levels.append(level)
+        (level, coors, conn,
+         vdofs, mat_ids) = create_output(eval_dofs, eval_coors,
+                                         vertex_conn.shape[0], ps,
+                                         min_level=min_level,
+                                         max_level=max_level, eps=eps)
 
-            offset += _coors.shape[0]
-
-        coors = nm.concatenate(coors, axis=0)
-        vdofs = nm.concatenate(vdofs, axis=0)
-        mesh = Mesh.from_data('linearized_mesh', coors, None, conns, mat_ids,
+        mesh = Mesh.from_data('linearized_mesh', coors, None, [conn], [mat_ids],
                               self.domain.mesh.descs)
 
-        return mesh, vdofs, levels
+        return mesh, vdofs, level
 
     def get_output_approx_order(self):
         """
