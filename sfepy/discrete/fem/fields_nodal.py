@@ -296,16 +296,11 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
     def _setup_approximations(self):
-        self.aps = {}
-        self.aps_by_name = {}
-        for ig in self.igs:
-            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
-            ap = fea.DiscontinuousApproximation(name, self.interp,
-                                                self.region, ig)
-            self.aps[ig] = ap
-            self.aps_by_name[ap.name] = ap
+        name = self.interp.name + '_%s' % self.region.name
+        self.ap = fea.DiscontinuousApproximation(name, self.interp,
+                                                 self.region)
 
-    def _setup_global_base( self ):
+    def _setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
         """
@@ -313,29 +308,18 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
 
         self._init_econn()
 
-        n_dof = 0
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            nd = nm.prod(ap.econn.shape)
+        ap = self.ap
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        n_dof = nm.prod(ap.econn.shape)
+        all_dofs = nm.arange(n_dof, dtype=nm.int32)
+        all_dofs.shape = ap.econn.shape
 
-            aux = nm.arange(n_dof, n_dof + nd, dtype=nm.int32)
-            aux.shape = ap.econn.shape
-
-            ap.econn[:] = aux
-            all_dofs[ig] = aux
-
-            n_dof += nd
+        ap.econn[:] = all_dofs
 
         self.n_nod = n_dof
 
         self.n_bubble_dof = n_dof
         self.bubble_dofs = all_dofs
-        self.bubble_remaps = remaps
 
         self.n_vertex_dof = self.n_edge_dof = self.n_face_dof = 0
 
