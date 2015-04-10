@@ -843,11 +843,7 @@ class VolumeField(FEField):
             else:
                 tco = integration in ('volume', 'plate')
                 cells = region.get_cells(true_cells_only=tco)
-                fcells = self.region.get_cells(true_cells_only=tco)
-
-                ii = nm.searchsorted(fcells, cells)
-                assert_((self.region.cells[ii] == region.cells).all())
-
+                ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(ap.econn, ii, axis=0)
 
         elif ct == 'surface':
