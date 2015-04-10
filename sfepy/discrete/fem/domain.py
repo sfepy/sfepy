@@ -10,7 +10,6 @@ from geometry_element import GeometryElement
 from sfepy.discrete.common.domain import Domain
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.discrete.fem.fe_surface import FESurface
-from sfepy.discrete.fem.mesh import make_inverse_connectivity
 import fea
 
 class FEDomain(Domain):
@@ -207,21 +206,8 @@ class FEDomain(Domain):
             cache = Struct(name='evaluate_cache')
 
         tt = time.clock()
-        if (cache.get('iconn', None) is None) or not share_geometry:
-            mesh = self.mesh
-            offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                                       ret_offsets=True)
-            ii = nm.where(offsets[1:] == offsets[:-1])[0]
-            if len(ii):
-                raise ValueError('some vertices not in any element! (%s)' % ii)
-
-            cache.offsets = offsets
-            cache.iconn = iconn
-        output('iconn: %f s' % (time.clock()-tt), verbose=verbose)
-
-        tt = time.clock()
         if (cache.get('kdtree', None) is None) or not share_geometry:
-            cache.kdtree = KDTree(mesh.coors)
+            cache.kdtree = KDTree(self.mesh.coors)
         output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
 
         return cache
