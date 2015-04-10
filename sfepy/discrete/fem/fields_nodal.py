@@ -225,26 +225,17 @@ class H1NodalMixin(H1Mixin):
                                                  verbose=verbose)
 
         tt = time.clock()
-        vertex_coorss, nodess, orders, mtx_is = [], [], [], []
-        conns = []
-        for ap in self.aps.itervalues():
-            ps = ap.interp.poly_spaces['v']
 
-            vertex_coorss.append(ps.geometry.coors)
-            nodess.append(ps.nodes)
-            mtx_is.append(ps.get_mtx_i())
-
-            orders.append(ps.order)
-            conns.append(ap.econn)
-
-        orders = nm.array(orders, dtype=nm.int32)
+        ap = self.ap
+        ps = ap.interp.poly_spaces['v']
+        mtx_i = ps.get_mtx_i()
 
         # Interpolate to the reference coordinates.
         vals = nm.empty((coors.shape[0], source_vals.shape[1]),
                         dtype=source_vals.dtype)
 
         evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       conns, vertex_coorss, nodess, orders, mtx_is,
+                       ap.econn, ps.geometry.coors, ps.nodes, ps.order, mtx_i,
                        1e-15)
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
