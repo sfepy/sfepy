@@ -92,13 +92,11 @@ class StabilizationFunction(Struct):
 
             field = problem.fields[ns['velocity']]
             region = term.region
-            diameters2 = []
-            for ig in term.iter_groups():
-                vg, _ = field.get_mapping(ig, region, term.integral, 'volume')
-                cells = region.get_cells(ig)
-                d2 = problem.domain.get_element_diameters(ig, cells, vg, dm)
-                diameters2.append(d2)
-            self.diameters2 = nm.concatenate(diameters2)
+            vg, _ = field.get_mapping(region, term.integral, 'volume')
+            cells = region.get_cells()
+            d2 = problem.domain.get_element_diameters(cells, vg, dm)
+
+            self.diameters2 = d2
 
             val1 = min(1.0, 1.0 / self.sigma)
             val2 = self.sigma * self.c_friedrichs**2
