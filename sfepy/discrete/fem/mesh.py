@@ -199,31 +199,6 @@ def make_mesh(coor, ngroups, conns, mesh_in):
                               mat_ids, mesh_in.descs)
     return mesh_out
 
-def make_inverse_connectivity(conns, n_nod, ret_offsets=True):
-    """
-    For each mesh node referenced in the connectivity conns, make a list of
-    elements it belongs to.
-    """
-    from itertools import chain
-
-    iconn = [[] for ii in xrange(n_nod)]
-    n_els = [0] * n_nod
-    for ig, conn in enumerate(conns):
-        for iel, row in enumerate(conn):
-            for node in row:
-                iconn[node].extend([ig, iel])
-                n_els[node] += 1
-
-    n_els = nm.array(n_els, dtype=nm.int32)
-    iconn = nm.fromiter(chain(*iconn), nm.int32)
-
-    if ret_offsets:
-        offsets = nm.cumsum(nm.r_[0, n_els], dtype=nm.int32)
-        return offsets, iconn
-
-    else:
-        return n_els, iconn
-
 class Mesh(Struct):
     """
     Contains the FEM mesh together with all utilities related to it.
