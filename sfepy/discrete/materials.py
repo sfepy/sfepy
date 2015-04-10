@@ -413,10 +413,9 @@ class Material(Struct):
 
     def reduce_on_datas(self, reduce_fun, init=0.0):
         """For non-special values only!"""
-        out = {}.fromkeys(self.datas[self.datas.keys()[0]][0].keys(), init)
-        for datas in self.datas.itervalues():
-            for data in datas.itervalues():
-                for key, val in data.iteritems():
-                    out[key] = reduce_fun(out[key], val)
+        out = {}.fromkeys(self.datas[self.datas.keys()[0]].keys(), init)
+        for data in self.datas.itervalues():
+            for key, val in data.iteritems():
+                out[key] = reduce_fun(out[key], val)
 
         return out
