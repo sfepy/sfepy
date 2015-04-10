@@ -592,6 +592,21 @@ class Region(Struct):
 
         return out
 
+    def get_cell_indices(self, cells, true_cells_only=True):
+        """
+        Return indices of `cells` in the region cells.
+
+        Raises ValueError if `true_cells_only` is True and the region kind does
+        not allow cells. For `true_cells_only` equal to False, cells incident
+        to facets are returned if the region itself contains no cells.
+        """
+        fcells = self.get_cells(true_cells_only=true_cells_only)
+
+        ii = nm.searchsorted(fcells, cells)
+        assert_((fcells[ii] == cells).all())
+
+        return ii
+
     def get_facet_indices(self):
         """
         Return an array (per group) of (iel, ifa) for each facet. A facet can
