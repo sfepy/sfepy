@@ -570,12 +570,9 @@ class Region(Struct):
         Get cells of the region.
 
         Raises ValueError if `true_cells_only` is True and the region kind does
-        not allow cells (e.g. surface integration region). For
-        `true_cells_only` equal to False, cells incident to facets are returned
-        if the region itself contains no cells.
+        not allow cells. For `true_cells_only` equal to False, cells incident
+        to facets are returned if the region itself contains no cells.
         """
-        cmesh = self.domain.cmesh
-
         if self.cells.shape[0] == 0:
             if true_cells_only:
                 msg = 'region %s has not true cells! (has kind: %s)' \
@@ -584,6 +581,7 @@ class Region(Struct):
 
             else:
                 # Has to be consistent with get_facet_indices()!
+                cmesh = self.domain.cmesh
                 cmesh.setup_connectivity(self.tdim - 1, self.tdim)
                 out = cmesh.get_incident(self.tdim, self.facets, self.tdim - 1)
 
