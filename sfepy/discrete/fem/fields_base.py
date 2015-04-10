@@ -618,17 +618,16 @@ class FEField(Field):
         mesh = self.domain.mesh
 
         if self.approx_order != 0:
-            conns, mat_ids, descs = [], [], []
-            for ig, ap in self.aps.iteritems():
-                group = self.domain.groups[ig]
-                if extra_nodes:
-                    conn = ap.econn
-                else:
-                    offset = group.shape.n_ep
-                    conn = ap.econn[:,:offset]
-                conns.append(conn)
-                mat_ids.append(mesh.mat_ids[ig])
-                descs.append(mesh.descs[ig])
+            ap = self.ap
+            if extra_nodes:
+                conn = ap.econn
+
+            else:
+                conn = ap.econn[:, :self.gel.n_vertex]
+
+            conns = [conn]
+            mat_ids = [mesh.cmesh.cell_groups]
+            descs = mesh.descs[:1]
 
             if extra_nodes:
                 coors = self.coors
