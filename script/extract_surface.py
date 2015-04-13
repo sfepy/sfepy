@@ -113,18 +113,18 @@ def main():
         file_in.close()
 
     domain = FEDomain('domain', mesh)
-    domain.setup_groups()
+
+    if options.save_mesh:
+        region = domain.create_region('surf', 'vertices of surface', 'facet')
+        surf_mesh = Mesh.from_region(region, mesh,
+                                     localize=True, is_surface=True)
+        aux = edit_filename(filename_in, prefix='surf_', new_ext='.mesh')
+        surf_mesh.write(aux, io='auto')
 
     if domain.has_faces():
         domain.fix_element_orientation()
 
         lst, surf_faces = get_surface_faces(domain)
-
-        surf_mesh = Mesh.from_surface(surf_faces, mesh)
-
-        if options.save_mesh:
-            aux = edit_filename(filename_in, prefix='surf_', new_ext='.mesh')
-            surf_mesh.write(aux, io='auto')
 
         if options.no_surface:
             return
