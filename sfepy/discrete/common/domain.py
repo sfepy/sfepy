@@ -302,7 +302,7 @@ class Domain(Struct):
             region = self.regions[name]
             output(region.name)
 
-            aux.ngroups[region.vertices] = n_ig
+            aux.cmesh.vertex_groups[region.vertices] = n_ig
             n_ig += 1
 
             mask = nm.zeros((n_nod, 1), dtype=nm.float64)
@@ -311,10 +311,9 @@ class Domain(Struct):
                                var_name=name, dofs=None)
 
             if region.has_cells():
-                for ig in region.igs:
-                    ii = region.get_cells(ig)
-                    aux.mat_ids[ig][ii] = c_ig
-                    c_ig += 1
+                ii = region.get_cells()
+                aux.cmesh.cell_groups[ii] = c_ig
+                c_ig += 1
 
         aux.write(filename, io='auto', out=out)
         output('...done')
