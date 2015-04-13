@@ -34,7 +34,7 @@ def nodal_stress(out, pb, state, extend=False, integrals=None):
 
     # Point load.
     mat = pb.get_materials()['Load']
-    P = 2.0 * mat.get_data('special', None, 'val')[1]
+    P = 2.0 * mat.get_data('special', 'val')[1]
 
     # Calculate nodal stress.
     pb.time_update()
