@@ -207,45 +207,6 @@ class Mesh(Struct):
     """
 
     @staticmethod
-    def from_surface(surf_faces, mesh_in):
-        """
-        Create a mesh given a set of surface faces and the original mesh.
-        """
-        aux = nm.concatenate([faces.ravel() for faces in surf_faces])
-        inod = nm.unique(aux)
-
-        n_nod = len(inod)
-        n_nod_m, dim = mesh_in.coors.shape
-
-        aux = nm.arange(n_nod, dtype=nm.int32)
-        remap = nm.zeros((n_nod_m,), nm.int32)
-        remap[inod] = aux
-
-        mesh = Mesh(mesh_in.name + "_surf")
-
-        mesh.coors = mesh_in.coors[inod]
-        mesh.ngroups = mesh_in.ngroups[inod]
-
-        sfm = {3 : "2_3", 4 : "2_4"}
-        mesh.conns = []
-        mesh.descs = []
-        mesh.mat_ids = []
-        for ii, sf in enumerate(surf_faces):
-            n_el, n_fp = sf.shape
-
-            conn = remap[sf]
-            mat_id = nm.empty((conn.shape[0],), dtype=nm.int32)
-            mat_id.fill(ii)
-
-            mesh.descs.append(sfm[n_fp])
-            mesh.conns.append(conn)
-            mesh.mat_ids.append(mat_id)
-
-        mesh._set_shape_info()
-
-        return mesh
-
-    @staticmethod
     def from_file(filename=None, io='auto', prefix_dir=None,
                   omit_facets=False):
         """
