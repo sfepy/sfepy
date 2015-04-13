@@ -443,26 +443,6 @@ class Mesh(Struct):
     def coors(self):
         return self.cmesh.coors
 
-    def _append_region_faces(self, region, force_faces=False):
-        dim = self.coors.shape[1]
-        if (not force_faces) and (dim == 2): return
-
-        cmesh = region.domain.cmesh
-        for ig in region.igs:
-            faces = region.get_facets(ig)
-            if not faces.size: continue
-
-            verts, offs = cmesh.get_incident(0, faces, cmesh.dim - 1,
-                                             ret_offsets=True)
-            n_fp = offs[1] - offs[0]
-            verts.shape = (verts.shape[0] / n_fp, n_fp)
-
-            self.descs.append('%d_%d' % (dim - 1, n_fp))
-            self.conns.append(verts)
-
-            mat_ids = nm.repeat(ig, verts.shape[0])
-            self.mat_ids.append(mat_ids)
-
     def write(self, filename=None, io=None, out=None, float_format=None,
               **kwargs):
         """
@@ -521,54 +501,6 @@ class Mesh(Struct):
 
         else:
             return conn
-
-    def localize(self, inod):
-        """
-        Strips nodes not in inod and remaps connectivities.
-        Omits elements where remap[conn] contains -1...
-        """
-        n_nod = inod.shape[0]
-
-        remap = nm.empty((self.n_nod,), dtype=nm.int32)
-        remap.fill(-1)
-        remap[inod] = nm.arange(n_nod, dtype=nm.int32)
-
-        self.coors = self.coors[inod]
-        self.ngroups = self.ngroups[inod]
-        conns = []
-        mat_ids = []
-        used_vertices = nm.zeros((0,), dtype=nm.int32)
-        for ig, conn in enumerate(self.conns):
-            if conn.shape[0] == 0:
-                continue
-
-            aux = remap[conn]
-            ii = nm.unique(nm.where(aux == -1)[0])
-            ii = nm.setdiff1d(nm.arange(conn.shape[0], dtype=nm.int32), ii)
-            cc = aux[ii]
-            conns.append(cc)
-            used_vertices = nm.r_[used_vertices, nm.unique(cc)]
-            mat_ids.append(self.mat_ids[ig][ii])
-
-        self.conns = conns
-        self.mat_ids = mat_ids
-
-        # Remove nodes not present in any cell.
-        used_vertices = nm.unique(used_vertices)
-        n_nod_new = used_vertices.shape[0]
-        if n_nod_new < n_nod:
-            remap = nm.empty((n_nod,), dtype=nm.int32)
-            remap.fill(-1)
-            remap[used_vertices] = nm.arange(n_nod_new, dtype=nm.int32)
-            self.coors = self.coors[used_vertices]
-            self.ngroups = self.ngroups[used_vertices]
-            # Only renumber cells, no cells should be removed.
-            for ig, conn in enumerate(self.conns):
-                if conn.shape[0] == 0:
-                    continue
-                conn[:] = remap[conn]
-
-        self._set_shape_info()
 
     def transform_coors(self, mtx_t, ref_coors=None):
         """
