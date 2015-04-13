@@ -157,7 +157,7 @@ class Approximation(Struct):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         sd = FESurface('surface_data_%s' % region.name, region,
-                       self.efaces, self.econn)
+                       self.efaces, self.econn, self.region)
         self.surface_data[region.name] = sd
         return sd
 

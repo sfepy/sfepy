@@ -7,7 +7,7 @@ from sfepy.discrete.fem.utils import prepare_remap
 class FESurface(Struct):
     """Description of a surface of a finite element domain."""
 
-    def __init__(self, name, region, efaces, volume_econn):
+    def __init__(self, name, region, efaces, volume_econn, volume_region=None):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         self.name = get_default(name, 'surface_data_%s' % region.name)
@@ -18,8 +18,14 @@ class FESurface(Struct):
         if faces.size == 0:
             raise ValueError('region with no faces! (%s)' % region.name)
 
+        if volume_region is None:
+            ii = face_indices[:, 0]
+
+        else:
+            ii = volume_region.get_cell_indices(face_indices[:, 0])
+
         try:
-            ee = volume_econn[face_indices[:,0]]
+            ee = volume_econn[ii]
 
         except:
             raise ValueError('missing region face indices! (%s)'
