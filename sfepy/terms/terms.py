@@ -164,13 +164,13 @@ class ConnInfo(Struct):
 
     def get_region(self, can_trace=True):
         if self.is_trace and can_trace:
-            return self.region.get_mirror_region()[0]
+            return self.region.get_mirror_region()
         else:
             return self.region
 
     def get_region_name(self, can_trace=True):
         if self.is_trace and can_trace:
-            reg = self.region.get_mirror_region()[0]
+            reg = self.region.get_mirror_region()
         else:
             reg = self.region
 
