@@ -252,6 +252,165 @@ cdef class CMesh:
     def __dealloc__(self):
         mesh_free(self.mesh)
 
+    def create_new(self,
+                   np.ndarray[uint32, mode='c', ndim=1] entities=None,
+                   int32 dent=0, localize=False):
+        """
+        Create a new CMesh instance, with cells corresponding to the given
+        `entities` of dimension `dent`.
+
+        Parameters
+        ----------
+        entities : array, optional
+            The selected topological entities of the mesh to be in the new
+            mesh. If not given, a copy of the mesh based on the cell-vertex
+            connectivity is returned.
+        dent : int, optional
+            The topological dimension of the entities.
+        localize : bool
+            If True, strip the vertices not used in the the resulting sub-mesh
+            cells and renumber the connectivity.
+
+        Returns
+        -------
+        cmesh : CMesh
+            The new mesh with the cell-vertex connectivity. Other
+            connectivities have to be created and local entities need to be set
+            manually.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=2] _coors
+        cdef np.ndarray[uint32, mode='c', ndim=1] _ct
+        cdef uint32 ii, tdim, n_v, num
+        cdef uint32 *pct, *poffsets
+        cdef np.ndarray[uint32, mode='c', ndim=1] indices
+        cdef np.ndarray[uint32, mode='c', ndim=1] offsets
+        cdef Indices _entities[1]
+        cdef MeshConnectivity _incident[1]
+        cdef CMesh cmesh
+
+        if entities is None: # Make a copy based cell-vertex connectivity.
+            cmesh = CMesh()
+
+            cmesh.n_coor = self.n_coor
+            cmesh.dim = self.dim
+            cmesh.n_el = self.n_el
+            cmesh.tdim = self.tdim
+
+            _coors = cmesh.coors = self.coors.copy()
+            mesh_set_coors(cmesh.mesh, &_coors[0, 0],
+                           cmesh.n_coor, cmesh.dim, cmesh.tdim)
+
+            cmesh.vertex_groups = self.vertex_groups.copy()
+            cmesh.cell_groups = self.cell_groups.copy()
+
+            cmesh.mesh.topology.num[cmesh.tdim] = cmesh.n_el
+
+            _ct = cmesh.cell_types = self.cell_types.copy()
+            cmesh.mesh.topology.cell_types = &_ct[0]
+
+            ii = cmesh._get_conn_indx(cmesh.tdim, 0)
+            scconn = self.conns[ii]
+            cconn = _create_cconn(cmesh.mesh.topology.conn[ii],
+                                  cmesh.n_el, scconn.n_incident, 'D -> 0')
+            cconn.indices[:] = scconn.indices
+            cconn.offsets[:] = scconn.offsets
+
+            cmesh.conns = [None] * (cmesh.mesh.topology.max_dim + 1)**2
+            cmesh.conns[ii] = cconn
+
+        else: # Create a submesh based on entities as cells.
+            if dent < 1:
+                raise ValueError('dimension of entities must be >= 1! (%d)'
+                                 % dent)
+
+            cmesh = CMesh()
+
+            cmesh.dim = self.dim
+            cmesh.n_el = entities.shape[0]
+            cmesh.tdim = dent
+
+            _entities.num = entities.shape[0]
+            _entities.indices = &entities[0]
+
+            cmesh.mesh.topology.num[cmesh.tdim] = cmesh.n_el
+
+            num = mesh_count_incident(self.mesh, 0, _entities, dent)
+
+            indices = np.empty(num, dtype=np.uint32)
+            offsets = np.empty(_entities.num + 1, dtype=np.uint32)
+            _incident.num = _entities.num
+            _incident.n_incident = num
+            _incident.indices = &indices[0]
+            _incident.offsets = &offsets[0]
+            mesh_get_incident(self.mesh, _incident, 0, _entities, dent)
+
+            ii0 = (cmesh.tdim + 1) * cmesh.tdim + 0
+            cconn = _create_cconn(cmesh.mesh.topology.conn[ii0],
+                                  cmesh.n_el, num,'%d -> 0' % dent)
+            cconn.offsets[:] = offsets
+
+            if cmesh.tdim == self.tdim: # Cell-based submesh.
+                cmesh.cell_groups = self.cell_groups[entities].copy()
+
+                _ct = cmesh.cell_types = self.cell_types[entities].copy()
+                cmesh.mesh.topology.cell_types = &_ct[0]
+
+            else: # Face- or edge- based submesh.
+                # Cell groups are not unique -> not preserved at all!
+                cmesh.cell_groups = np.zeros(cmesh.n_el, dtype=np.int32)
+
+                _ct = cmesh.cell_types = np.empty(cmesh.n_el, dtype=np.uint32)
+                pct = cmesh.mesh.topology.cell_types = &_ct[0]
+                poffsets = &_incident.offsets[0]
+                for ii in range(cmesh.n_el):
+                    n_v = poffsets[ii + 1] - poffsets[ii]
+                    if n_v == 2:
+                        pct[ii] = 0
+                    elif n_v == 3:
+                        pct[ii] = 1
+                    elif n_v == 4:
+                        pct[ii] = 2
+
+            if localize:
+                vertices = np.unique(indices)
+                n_new_vertex = vertices.shape[0]
+
+                cmesh.vertex_groups = self.vertex_groups[vertices].copy()
+
+                remap = np.empty(vertices[-1] + 1, dtype=np.uint32)
+                remap.fill(-1)
+                remap[vertices] = np.arange(n_new_vertex, dtype=np.uint32)
+
+                cconn.indices[:] = remap[indices]
+
+                cmesh.n_coor = n_new_vertex
+
+                _coors = cmesh.coors = self.coors[vertices].copy()
+                mesh_set_coors(cmesh.mesh, &_coors[0, 0],
+                               cmesh.n_coor, cmesh.dim, cmesh.tdim)
+
+            else:
+                cmesh.vertex_groups = self.vertex_groups.copy()
+
+                cconn.indices[:] = indices
+
+                cmesh.n_coor = self.n_coor
+
+                _coors = cmesh.coors = self.coors.copy()
+                mesh_set_coors(cmesh.mesh, &_coors[0, 0],
+                               cmesh.n_coor, cmesh.dim, cmesh.tdim)
+
+            ii = cmesh._get_conn_indx(cmesh.tdim, 0)
+            if ii != ii0:
+                raise AssertionError('wrong connectivity index!(%d == %d)'
+                                     % (ii, ii0))
+            cmesh.conns = [None] * (cmesh.mesh.topology.max_dim + 1)**2
+            cmesh.conns[ii] = cconn
+
+        cmesh._update_num()
+
+        return cmesh
+
     def set_local_entities(self, gels):
         cdef MeshConnectivity *pedges, *pfaces
 
