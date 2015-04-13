@@ -28,7 +28,8 @@ class Test(TestCommon):
         from sfepy.discrete.fem import Mesh
         from sfepy.mesh.splinebox import SplineBox
         mesh = Mesh.from_file(data_dir + '/meshes/3d/cylinder.vtk')
-        vol0 = tetravolume(mesh.conns[0], mesh.coors)
+        conn = mesh.get_conn('3_4')
+        vol0 = tetravolume(conn, mesh.coors)
 
         bbox = nm.array(mesh.get_bounding_box()).T
         spbox = SplineBox(bbox, mesh.coors)
@@ -38,12 +39,12 @@ class Test(TestCommon):
             for jj in range(4):
                 spbox.change_shape((0, ii, jj), [-0.02, 0, 0])
         coors = spbox.evaluate()
-        vol1 = tetravolume(mesh.conns[0], coors)
-        mesh.coors = coors
+        vol1 = tetravolume(conn, coors)
+        mesh.coors[:] = coors
 
         spbox.set_control_points(cpoints0)
         coors = spbox.evaluate()
-        vol2 = tetravolume(mesh.conns[0], coors)
+        vol2 = tetravolume(conn, coors)
 
         ok = True
         actual_volumes = (vol0, vol1, vol2)

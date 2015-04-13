@@ -47,11 +47,10 @@ class Test(TestCommon):
                     for ic in range(dpn):
                         dofs[:, ic] = funs[ic](3 * (cc[:, 0] * cc[:, 1]))
 
-                    vmesh, vdofs, levels = field.linearize(dofs,
-                                                           min_level=0,
-                                                           max_level=3,
-                                                           eps=1e-2)
-                    level = levels[0]
+                    vmesh, vdofs, level = field.linearize(dofs,
+                                                          min_level=0,
+                                                          max_level=3,
+                                                          eps=1e-2)
 
                     if approx_order == 1:
                         _ok = level == 0

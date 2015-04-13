@@ -41,9 +41,10 @@ class Test(TestCommon):
         from sfepy import data_dir
 
         mesh = Mesh.from_file(data_dir + '/meshes/3d/cylinder.vtk')
-        vol0 = get_volume(mesh.conns[0], mesh.coors)
-        mesh.coors = smooth_mesh(mesh, n_iter=10)
-        vol1 = get_volume(mesh.conns[0], mesh.coors)
+        conn = mesh.get_conn('3_4')
+        vol0 = get_volume(conn, mesh.coors)
+        mesh.coors[:] = smooth_mesh(mesh, n_iter=10)
+        vol1 = get_volume(conn, mesh.coors)
         filename = op.join(self.options.out_dir, 'smoothed_cylinder.vtk')
         mesh.write(filename)
         frac = vol1 / vol0

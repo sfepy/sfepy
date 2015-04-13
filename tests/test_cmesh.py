@@ -114,7 +114,7 @@ class Test(TestCommon):
             self.report('mesh: %s' % basename)
 
             mesh = Mesh.from_file(filename)
-            cmesh = CMesh.from_mesh(mesh)
+            cmesh = mesh.cmesh
             cmesh.set_local_entities(gels)
 
             cmesh.setup_entities()

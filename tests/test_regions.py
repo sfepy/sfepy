@@ -19,8 +19,8 @@ class Test(TestCommon):
         from sfepy.discrete.fem import Mesh, FEDomain
         from sfepy.discrete import Functions
 
-        mesh = Mesh('test mesh',
-                    data_dir + '/meshes/various_formats/abaqus_tet.inp')
+        mesh = Mesh.from_file(data_dir
+                              + '/meshes/various_formats/abaqus_tet.inp')
         mesh.nodal_bcs['set0'] = [0, 7]
         domain = FEDomain('test domain', mesh)
 

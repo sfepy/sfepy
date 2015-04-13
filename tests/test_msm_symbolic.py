@@ -171,7 +171,6 @@ class Test( TestCommon ):
             if val == 'state':
                 env[key] = sol
             else:
-                term.set_current_group(0)
                 env[key] = term.get_args( [val] )[0]
 
             if 'material' in val:

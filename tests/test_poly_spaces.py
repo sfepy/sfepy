@@ -77,7 +77,7 @@ def _gen_common_data(orders, gels, report):
                 report('pr: %s, pc: %s' % (pr, pc))
 
                 mesh = mesh0.copy()
-                conn = mesh.conns[0]
+                conn = mesh.get_conn(gel.name)
                 conn[0, :] = conn[0, pr]
                 conn[1, :] = conn[1, pc]
 
@@ -94,11 +94,10 @@ def _gen_common_data(orders, gels, report):
 
                 vec = nm.empty(var.n_dof, dtype=var.dtype)
 
-                ap = field.aps[0]
+                ap = field.ap
                 ps = ap.interp.poly_spaces['v']
 
-                dofs = field.get_dofs_in_region_group(region, 0,
-                                                      merge=False)
+                dofs = field.get_dofs_in_region(region, merge=False)
                 edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
 
                 rrc, rcells, rstatus = get_ref_coors(field, rcoors,
@@ -108,7 +107,7 @@ def _gen_common_data(orders, gels, report):
                 assert_((rstatus == 0).all() and (cstatus == 0).all())
 
                 yield (geom, poly_space_base, qp_weights, mesh, ir, ic,
-                       ap, ps, rrc, rcells[0, 1], crc, ccells[0, 1],
+                       ap, ps, rrc, rcells[0], crc, ccells[0],
                        vec, edofs, fdofs)
 
 class Test(TestCommon):
@@ -185,8 +184,8 @@ class Test(TestCommon):
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
              ap, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
-            conn = mesh.conns[0]
             gel = self.gels[geom]
+            conn = mesh.get_conn(gel.name)
 
             geo_ps = ap.interp.get_geom_poly_space('v')
             rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],

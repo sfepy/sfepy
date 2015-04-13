@@ -29,7 +29,7 @@ def mesh_hook(mesh, mode):
         mat_ids = [[0, 1]]
         descs = ['2_3']
 
-        mesh._set_data(nodes, nod_ids, conns, mat_ids, descs)
+        mesh._set_io_data(nodes, nod_ids, conns, mat_ids, descs)
 
     elif mode == 'write':
         pass
@@ -65,12 +65,8 @@ class Test(TestCommon):
 
             assert_(mesh.dim == (mesh.coors.shape[1]))
             assert_(mesh.n_nod == (mesh.coors.shape[0]))
-            assert_(mesh.n_nod == (mesh.ngroups.shape[0]))
-            assert_(mesh.n_el == sum(mesh.n_els))
-            for ig, conn in enumerate(mesh.conns):
-                assert_(conn.shape[0] == len(mesh.mat_ids[ig]))
-                assert_(conn.shape[0] == mesh.n_els[ig])
-                assert_(conn.shape[1] == mesh.n_e_ps[ig])
+            assert_(mesh.n_nod == (mesh.cmesh.vertex_groups.shape[0]))
+            assert_(mesh.n_el == mesh.cmesh.num[mesh.cmesh.tdim])
 
             self.report('read ok')
             meshes[filename] = mesh
@@ -99,11 +95,6 @@ class Test(TestCommon):
             self.report('number of elements failed!')
         oks.append(ok0)
 
-        ok0 = mesh0.n_e_ps == mesh1.n_e_ps
-        if not ok0:
-            self.report('number of element points failed!')
-        oks.append(ok0)
-
         ok0 = mesh0.descs == mesh1.descs
         if not ok0:
             self.report('element types failed!')
@@ -114,22 +105,23 @@ class Test(TestCommon):
             self.report('nodes failed!')
         oks.append(ok0)
 
-        ok0 = nm.all(mesh0.ngroups == mesh1.ngroups)
+        ok0 = nm.all(mesh0.cmesh.vertex_groups == mesh1.cmesh.vertex_groups)
         if not ok0:
             self.report('node groups failed!')
         oks.append(ok0)
 
-        for ii in range(len(mesh0.mat_ids)):
-            ok0 = nm.all(mesh0.mat_ids[ii] == mesh1.mat_ids[ii])
-            if not ok0:
-                self.report('material ids failed!')
-            oks.append(ok0)
+        ok0 = nm.all(mesh0.cmesh.cell_groups == mesh1.cmesh.cell_groups)
+        if not ok0:
+            self.report('material ids failed!')
+        oks.append(ok0)
 
-        for ii in range(len(mesh0.mat_ids)):
-            ok0 = nm.all(mesh0.conns[ii] == mesh1.conns[ii])
-            if not ok0:
-                self.report('connectivities failed!')
-            oks.append(ok0)
+        ok0 = (nm.all(mesh0.cmesh.get_cell_conn().indices
+                      == mesh1.cmesh.get_cell_conn().indices) and
+               nm.all(mesh0.cmesh.get_cell_conn().offsets
+                      == mesh1.cmesh.get_cell_conn().offsets))
+        if not ok0:
+            self.report('connectivities failed!')
+        oks.append(ok0)
 
         return oks
 
