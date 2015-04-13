@@ -44,8 +44,7 @@ class HyperElasticBase(Term):
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
 
-        igs = self.region.igs
-        self.stress_cache = {}.fromkeys(igs, None)
+        self.stress_cache = None
 
     def get_family_data(self, state, cache_name, data_names):
         """
@@ -103,17 +102,15 @@ class HyperElasticBase(Term):
                                   self.family_data_names)
 
         if mode == 'weak':
-            ig = self.char_fun.ig
-
             if diff_var is None:
                 stress = self.compute_stress(mat, fd, **kwargs)
-                self.stress_cache[ig] = stress
+                self.stress_cache = stress
                 tan_mod = nm.array([0], ndmin=4, dtype=nm.float64)
 
                 fmode = 0
 
             else:
-                stress = self.stress_cache[ig]
+                stress = self.stress_cache
                 if stress is None:
                     stress = self.compute_stress(mat, fd, **kwargs)
 

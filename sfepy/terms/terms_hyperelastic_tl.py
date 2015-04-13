@@ -195,18 +195,16 @@ class BulkPressureTLTerm(HyperElasticTLBase):
         fd.p_qp = self.get(state_p, 'val')
 
         if mode == 'weak':
-            ig = self.char_fun.ig
-
             if diff_var != state_p.name:
                 if diff_var is None:
                     stress = self.compute_data(fd, 0, **kwargs)
-                    self.stress_cache[ig] = stress
+                    self.stress_cache = stress
                     tan_mod = nm.array([0], ndmin=4, dtype=nm.float64)
 
                     fmode = 0
 
                 else:
-                    stress = self.stress_cache[ig]
+                    stress = self.stress_cache
                     if stress is None:
                         stress = self.compute_data(fd, 0, **kwargs)
 
