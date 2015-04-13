@@ -291,57 +291,28 @@ class Mesh(Struct):
         return mesh
 
     @staticmethod
-    def from_region(region, mesh_in, save_edges=False, save_faces=False,
-                    localize=False, is_surface=False):
+    def from_region(region, mesh_in, localize=False, is_surface=False):
         """
-        Create a mesh corresponding to a given region.
+        Create a mesh corresponding to cells, or, if `is_surface` is True, to
+        facets, of a given region.
         """
-        mesh = Mesh(mesh_in.name + "_reg")
-        mesh.coors = mesh_in.coors.copy()
-        mesh.ngroups = mesh_in.ngroups.copy()
-
-        mesh.conns = []
-        mesh.descs = []
-        mesh.mat_ids = []
+        cmesh_in = mesh_in.cmesh
 
         if not is_surface:
-            if region.has_cells():
-                for ig in region.igs:
-                    mesh.descs.append(mesh_in.descs[ig])
-                    els = region.get_cells(ig)
-                    mesh.mat_ids.append(mesh_in.mat_ids[ig][els].copy())
-                    mesh.conns.append(mesh_in.conns[ig][els,:].copy())
+            if not region.shape.n_cell:
+                raise ValueError('region %s has no cells!' % region.name)
 
-            if save_edges:
-                cmesh = region.domain.cmesh
-                for ig in region.igs:
-                    edges = region.get_edges(ig)
-                    if not edges.size: continue
-
-                    verts = cmesh.get_incident(0, edges, 1)
-                    verts.shape = (verts.shape[0] / 2, 2)
-
-                    mesh.descs.append('1_2')
-                    mesh.conns.append(verts)
-
-                    mat_ids = nm.repeat(ig, verts.shape[0])
-                    mesh.mat_ids.append(mat_ids)
-
-            if save_faces:
-                mesh._append_region_faces(region)
-
-            if save_edges or save_faces:
-                mesh.descs.append('1_1')
-                mesh.mat_ids.append(-nm.ones_like(region.vertices))
-                mesh.conns.append(region.vertices[:, None])
+            cmesh = cmesh_in.create_new(region.cells, region.tdim,
+                                        localize=localize)
 
         else:
-            mesh._append_region_faces(region, force_faces=True)
+            if not region.shape.n_facet:
+                raise ValueError('region %s has no facets!' % region.name)
 
-        mesh._set_shape_info()
+            cmesh = cmesh_in.create_new(region.facets, region.tdim - 1,
+                                        localize=localize)
 
-        if localize:
-            mesh.localize(region.vertices)
+        mesh = Mesh(mesh_in.name + "_reg", cmesh=cmesh)
 
         return mesh
 
@@ -381,14 +352,16 @@ class Mesh(Struct):
             self._set_shape_info()
 
     def copy(self, name=None):
-        """Make a deep copy of self.
+        """
+        Make a deep copy of the mesh.
 
         Parameters
         ----------
         name : str
             Name of the copied mesh.
         """
-        return Struct.copy(self, deep=True, name=name)
+        cmesh = self.cmesh.create_new()
+        return Mesh(name=name, cmesh=cmesh)
 
     def __add__(self, other):
         """
