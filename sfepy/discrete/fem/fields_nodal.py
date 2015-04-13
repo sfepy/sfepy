@@ -268,18 +268,19 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
         else:
             dim = vec.shape[1]
             enod_vol_val = nm.zeros((self.n_nod, dim), dtype=nm.float64)
-            for ig, ap in self.aps.iteritems():
-                group = self.domain.groups[ig]
-                econn = ap.econn
+            ap = self.ap
+            econn = ap.econn
 
-                coors = ap.interp.poly_spaces['v'].node_coors
+            coors = ap.interp.poly_spaces['v'].node_coors
 
-                ginterp = ap.interp.gel.interp
-                bf = ginterp.poly_spaces['v'].eval_base(coors)
-                bf = bf[:,0,:].copy()
+            ginterp = ap.interp.gel.interp
+            bf = ginterp.poly_spaces['v'].eval_base(coors)
+            bf = bf[:,0,:].copy()
 
-                evec = nm.dot(bf, vec[group.conn])
-                enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
+            conn = econn[:, :self.gel.n_vertex]
+
+            evec = nm.dot(bf, vec[conn])
+            enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
 
         return enod_vol_val
 
