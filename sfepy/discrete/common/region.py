@@ -616,6 +616,17 @@ class Region(Struct):
         facets = self.facets
         cells, offs = cmesh.get_incident(self.tdim, facets, self.tdim - 1,
                                          ret_offsets=True)
+
+        if self.parent is not None:
+            pcells = self.domain.regions[self.parent].cells
+            ip = nm.in1d(cells, pcells, assume_unique=True)
+            cells = cells[ip]
+
+            counts = nm.diff(offs)
+            pos = nm.repeat(nm.arange(facets.shape[0]), counts)
+            new_counts = nm.bincount(pos, weights=ip).astype(nm.uint32)
+            offs = nm.cumsum(nm.r_[0, new_counts], dtype=nm.uint32)
+
         ii = cmesh.get_local_ids(facets, self.tdim - 1, cells, offs, self.tdim)
         fis = nm.c_[cells, ii]
 
