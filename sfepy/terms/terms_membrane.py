@@ -157,10 +157,9 @@ class TLMembraneTerm(Term):
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
 
-        igs = self.region.igs
-        self.mtx_t = {}.fromkeys(igs, None)
-        self.membrane_geo = {}.fromkeys(igs, None)
-        self.bfg = {}.fromkeys(igs, None)
+        self.mtx_t = None
+        self.membrane_geo = None
+        self.bfg = None
 
     def get_fargs(self, a1, a2, h0, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -169,21 +168,20 @@ class TLMembraneTerm(Term):
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
-        ig = self.char_fun.ig
-        if self.mtx_t[ig] is None:
-            aux = membranes.describe_geometry(ig, vu.field,
+        if self.mtx_t is None:
+            aux = membranes.describe_geometry(vu.field,
                                               self.region, self.integral)
-            self.mtx_t[ig], self.membrane_geo[ig] = aux
+            self.mtx_t, self.membrane_geo = aux
             # Transformed base function gradient w.r.t. material coordinates
             # in quadrature points.
-            self.bfg[ig] = self.membrane_geo[ig].bfg
+            self.bfg = self.membrane_geo.bfg
 
-        mtx_t = self.mtx_t[ig]
-        bfg = self.bfg[ig]
-        geo = self.membrane_geo[ig]
+        mtx_t = self.mtx_t
+        bfg = self.bfg
+        geo = self.membrane_geo
 
         # Displacements of element nodes.
-        vec_u = vu.get_state_in_region(self.region, igs=[self.char_fun.ig])
+        vec_u = vu.get_state_in_region(self.region)
         el_u = vec_u[sd.leconn]
 
         # Transform displacements to the local coordinate system.
