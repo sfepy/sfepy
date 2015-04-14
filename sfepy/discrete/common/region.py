@@ -557,14 +557,6 @@ class Region(Struct):
 
         return out
 
-    def get_vertices_of_cells(self):
-        """
-        Return all vertices, that are in some cell of the region.
-        """
-        vertices = self.domain.cmesh.get_incident(0, self.cells, self.tdim)
-
-        return nm.unique(vertices)
-
     def get_cells(self, true_cells_only=True):
         """
         Get cells of the region.
