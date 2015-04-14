@@ -116,22 +116,6 @@ def fix_double_nodes(coor, ngroups, conns, eps):
         output('...done')
     return coor, ngroups, conns
 
-def get_min_edge_size(coor, conns):
-    """
-    Get the smallest edge length.
-    """
-    mes = 1e16
-    for conn in conns:
-        n_ep = conn.shape[1]
-        for ir in range(n_ep):
-            x1 = coor[conn[:,ir]]
-            for ic in range(ir + 1, n_ep):
-                x2 = coor[conn[:,ic]]
-                aux = nm.sqrt(nm.sum((x2 - x1)**2.0, axis=1).min())
-                mes = min(mes, aux)
-
-    return mes
-
 def get_min_vertex_distance(coor, guess):
     """Can miss the minimum, but is enough for our purposes."""
     # Sort by x.
