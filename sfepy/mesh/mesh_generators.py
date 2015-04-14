@@ -365,7 +365,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'x'.
     e_mesh.coors[:, 0] = (2 * centre[0]) - e_mesh.coors[:, 0]
-    e_mesh.mat_ids[0].fill(11)
+    e_mesh.cmesh.cell_groups.fill(11)
     mesh = mesh + e_mesh
 
     # 'y' extension.
@@ -375,7 +375,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'y'.
     e_mesh.coors[:, 1] = (2 * centre[1]) - e_mesh.coors[:, 1]
-    e_mesh.mat_ids[0].fill(21)
+    e_mesh.cmesh.cell_groups.fill(21)
     mesh = mesh + e_mesh
 
     # 'z' extension.
@@ -385,7 +385,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'z'.
     e_mesh.coors[:, 2] = (2 * centre[2]) - e_mesh.coors[:, 2]
-    e_mesh.mat_ids[0].fill(31)
+    e_mesh.cmesh.cell_groups.fill(31)
     mesh = mesh + e_mesh
 
     if name is not None:
