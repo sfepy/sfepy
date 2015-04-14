@@ -46,7 +46,7 @@ def find_map(x1, x2, eps=1e-8, allow_double=False, join=True):
     else:
         return i1, i2
 
-def merge_mesh(x1, ngroups1, conns1, mat_ids1, x2, ngroups2, conns2, mat_ids2,
+def merge_mesh(x1, ngroups1, conn1, mat_ids1, x2, ngroups2, conn2, mat_ids2,
                cmap, eps=1e-8):
     """
     Merge two meshes in common coordinates found in x1, x2.
@@ -71,20 +71,13 @@ def merge_mesh(x1, ngroups1, conns1, mat_ids1, x2, ngroups2, conns2, mat_ids2,
     xx = nm.r_[x1, x2[i2]]
     ngroups = nm.r_[ngroups1, ngroups2[i2]]
 
-    conns = []
-    for ii, conn1 in enumerate(conns1):
-        conn = nm.vstack((conn1, remap[conns2[ii]]))
-        conns.append(conn)
+    conn = nm.vstack((conn1, remap[conn2]))
 
     mat_ids = None
     if (mat_ids1 is not None) and (mat_ids2 is not None):
-        mat_ids = []
+        mat_ids = nm.concatenate((mat_ids1, mat_ids2))
 
-        for ii, mm1 in enumerate(mat_ids1):
-            mm = nm.concatenate((mm1, mat_ids2[ii]))
-            mat_ids.append(mm)
-
-    return xx, ngroups, conns, mat_ids
+    return xx, ngroups, conn, mat_ids
 
 def fix_double_nodes(coor, ngroups, conns, eps):
     """
@@ -326,17 +319,20 @@ class Mesh(Struct):
 
     def __add__(self, other):
         """
-        Merge the two meshes, assuming they have the same number and kind of
-        element groups.
+        Merge the two meshes, assuming they have the same kind of the single
+        element group.
         """
         cmap = find_map(self.coors, other.coors)
-        aux = merge_mesh(self.coors, self.ngroups, self.conns, self.mat_ids,
-                         other.coors, other.ngroups, other.conns, other.mat_ids,
+        desc = self.descs[0]
+        aux = merge_mesh(self.coors, self.cmesh.vertex_groups,
+                         self.get_conn(desc), self.cmesh.cell_groups,
+                         other.coors, other.cmesh.vertex_groups,
+                         other.get_conn(desc), other.cmesh.cell_groups,
                          cmap)
-        coors, ngroups, conns, mat_ids = aux
+        coors, ngroups, conn, mat_ids = aux
 
         mesh = Mesh.from_data(self.name + ' + ' + other.name,
-                              coors, ngroups, conns, mat_ids, self.descs)
+                              coors, ngroups, [conn], [mat_ids], [desc])
 
         return mesh
 
@@ -507,9 +503,9 @@ class Mesh(Struct):
         output('assembling mesh graph...', verbose=verbose)
         tt = time.clock()
 
+        conn = self.get_conn(self.descs[0])
         nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
-                                            len(self.conns),
-                                            self.conns, self.conns)
+                                            1, [conn], [conn])
         output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
         output('graph nonzeros: %d (%.2e%% fill)' \
                % (nnz, float(nnz) / nm.prod(shape)))
