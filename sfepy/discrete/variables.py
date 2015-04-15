@@ -1612,6 +1612,25 @@ class FieldVariable(Variable):
         return out
 
     def get_state_in_region(self, region, reshape=True, step=0):
+        """
+        Get DOFs of the variable in the given region.
+
+        Parameters
+        ----------
+        region : Region
+            The selected region.
+        reshape : bool
+            If True, reshape the DOF vector to a 2D array with the individual
+            components as columns. Otherwise a 1D DOF array of the form [all
+            DOFs in region node 0, all DOFs in region node 1, ...] is returned.
+        step : int, default 0
+            The time step (0 means current, -1 previous, ...).
+
+        Returns
+        -------
+        out : array
+            The selected DOFs.
+        """
         nods = self.field.get_dofs_in_region(region, merge=True)
 
         eq = nm.empty((len(nods) * self.n_components,), dtype=nm.int32)
