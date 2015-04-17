@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import OneTypeList, Container, Struct
+from sfepy.base.base import assert_, OneTypeList, Container, Struct
 
 class Functions(Container):
     """Container to hold all user-defined functions."""
@@ -97,25 +97,23 @@ class ConstantFunctionByRegion(Function):
             out = {}
             if mode == 'qp':
                 qps = term.get_physical_qps()
+                assert_(qps.num == coors.shape[0])
 
                 for key, val in values.iteritems():
                     if '.' in key: continue
                     rval = nm.array(val[val.keys()[0]], dtype=nm.float64,
                                     ndmin=3)
-                    matdata = nm.zeros((coors.shape[0], ) + rval.shape[1:],
-                                       dtype=nm.float64)
+                    s0 = rval.shape[1:]
+                    matdata = nm.zeros(qps.shape[:2] + s0, dtype=nm.float64)
 
                     for rkey, rval in val.iteritems():
                         region = problem.domain.regions[rkey]
                         rval = nm.array(rval, dtype=nm.float64, ndmin=3)
 
-                        for ig in region.igs:
-                            if not (ig in qps.igs):
-                                continue
+                        ii = term.region.get_cell_indices(region.cells)
+                        matdata[ii] = rval
 
-                            matdata[qps.rindx[ig]] = rval
-
-                    out[key] = matdata
+                    out[key] = matdata.reshape((-1,) + s0)
 
             return out
 

@@ -5,7 +5,6 @@ import time
 import numpy as nm
 
 from sfepy.base.base import output, get_default_attr
-from sfepy.discrete.fem.mesh import make_inverse_connectivity
 from sfepy.discrete.fem.extmods.bases import find_ref_coors
 
 def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
@@ -53,23 +52,18 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
         if mesh is None:
             mesh = field.create_mesh(extra_nodes=False)
 
+        cmesh = mesh.cmesh
+        cconn = cmesh.get_conn(cmesh.tdim, 0)
+        conn = cconn.indices.reshape((cmesh.n_el, -1)).astype(nm.int32)
+
+        cmesh.setup_connectivity(0, cmesh.tdim)
+        ciconn = cmesh.get_conn(0, cmesh.tdim)
+        iconn = ciconn.indices.astype(nm.int32)
+        offsets = ciconn.offsets.astype(nm.int32)
+
         scoors = mesh.coors
         output('reference field: %d vertices' % scoors.shape[0],
                verbose=verbose)
-
-        iconn = get_default_attr(cache, 'iconn', None)
-        if iconn is None:
-            offsets, iconn = make_inverse_connectivity(mesh.conns,
-                                                       mesh.n_nod,
-                                                       ret_offsets=True)
-
-            ii = nm.where(offsets[1:] == offsets[:-1])[0]
-            if len(ii):
-                raise ValueError('some vertices not in any element! (%s)'
-                                 % ii)
-
-        else:
-            offsets = cache.offsets
 
         if strategy == 'kdtree':
             kdtree = get_default_attr(cache, 'kdtree', None)
@@ -87,27 +81,19 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
             tt = time.clock()
             ics = nm.asarray(ics, dtype=nm.int32)
 
-            vertex_coorss, nodess, mtx_is = [], [], []
-            conns = []
-            for ig, ap in field.aps.iteritems():
-                ps = ap.interp.gel.interp.poly_spaces['v']
-
-                vertex_coorss.append(ps.geometry.coors)
-                nodess.append(ps.nodes)
-                mtx_is.append(ps.get_mtx_i())
-
-                conns.append(mesh.conns[ig].copy())
+            ap = field.ap
+            ps = ap.interp.gel.interp.poly_spaces['v']
+            mtx_i = ps.get_mtx_i()
 
             # Get reference element coordinates corresponding to
             # destination coordinates.
             ref_coors = nm.empty_like(coors)
-            cells = nm.empty((coors.shape[0], 2), dtype=nm.int32)
+            cells = nm.empty((coors.shape[0],), dtype=nm.int32)
             status = nm.empty((coors.shape[0],), dtype=nm.int32)
 
             find_ref_coors(ref_coors, cells, status, coors,
-                        ics, offsets, iconn,
-                        scoors, conns,
-                        vertex_coorss, nodess, mtx_is,
+                        ics, offsets, iconn, scoors, conn,
+                        ps.geometry.coors, ps.nodes, mtx_i,
                         1, close_limit, 1e-15, 100, 1e-8)
             output('ref. coordinates: %f s' % (time.clock()-tt),
                    verbose=verbose)

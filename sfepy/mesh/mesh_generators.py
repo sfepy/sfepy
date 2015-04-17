@@ -365,7 +365,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'x'.
     e_mesh.coors[:, 0] = (2 * centre[0]) - e_mesh.coors[:, 0]
-    e_mesh.mat_ids[0].fill(11)
+    e_mesh.cmesh.cell_groups.fill(11)
     mesh = mesh + e_mesh
 
     # 'y' extension.
@@ -375,7 +375,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'y'.
     e_mesh.coors[:, 1] = (2 * centre[1]) - e_mesh.coors[:, 1]
-    e_mesh.mat_ids[0].fill(21)
+    e_mesh.cmesh.cell_groups.fill(21)
     mesh = mesh + e_mesh
 
     # 'z' extension.
@@ -385,7 +385,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'z'.
     e_mesh.coors[:, 2] = (2 * centre[2]) - e_mesh.coors[:, 2]
-    e_mesh.mat_ids[0].fill(31)
+    e_mesh.cmesh.cell_groups.fill(31)
     mesh = mesh + e_mesh
 
     if name is not None:
@@ -401,7 +401,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     return mesh
 
-def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
+def tiled_mesh1d(conn, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
     from sfepy.discrete.fem.periodic import match_grid_plane
 
     s1 = nm.nonzero(coors[:,idim] < (bb[0] + eps))[0]
@@ -413,7 +413,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
 
     (nnod0, dim) = coors.shape
     nnod = nnod0 * n_rep - s1.shape[0] * (n_rep - 1)
-    (nel0, nnel) = conns.shape
+    (nel0, nnel) = conn.shape
     nel = nel0 * n_rep
 
     dd = nm.zeros((dim,), dtype=nm.float64)
@@ -421,7 +421,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
 
     m1, m2 = match_grid_plane(coors[s1], coors[s2], idim)
 
-    oconns = nm.zeros((nel, nnel), dtype=nm.int32)
+    oconn = nm.zeros((nel, nnel), dtype=nm.int32)
     ocoors = nm.zeros((nnod, dim), dtype=nm.float64)
     ongrps = nm.zeros((nnod,), dtype=nm.int32)
 
@@ -437,7 +437,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
 
     for ii in range(n_rep):
         if ii == 0:
-            oconns[0:nel0,:] = conns
+            oconn[0:nel0,:] = conn
             ocoors[0:nnod0,:] = coors
             ongrps[0:nnod0] = ngrps.squeeze()
             nd_off += nnod0
@@ -459,7 +459,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
             ocoors[nd_off:(nd_off + nnod0r),:] =\
               (coors[cidx,:] + ii * dd)
             ongrps[nd_off:(nd_off + nnod0r)] = ngrps[cidx].squeeze()
-            oconns[el_off:(el_off + nel0),:] = remap[conns]
+            oconn[el_off:(el_off + nel0),:] = remap[conn]
             if ret_ndmap:
                 ndmap_out[nd_off:(nd_off + nnod0r)] = cidx[0]
 
@@ -473,10 +473,10 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
             idxs = nm.where(ndmap_out > max_nd_ref)
             ndmap_out[idxs] = ndmap[ndmap_out[idxs]]
 
-        return oconns, ocoors, ongrps, ndmap_out
+        return oconn, ocoors, ongrps, ndmap_out
 
     else:
-        return oconns, ocoors, ongrps
+        return oconn, ocoors, ongrps
 
 def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     """
@@ -509,15 +509,11 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
         iscale = max(int(1.0 / scale), 1)
         grid = [iscale] * mesh.dim
 
-    conns = mesh.conns[0]
-    for ii in mesh.conns[1:]:
-        conns = nm.vstack((conns, ii))
-    mat_ids = mesh.mat_ids[0]
-    for ii in mesh.mat_ids[1:]:
-        mat_ids = nm.hstack((mat_ids, ii))
+    conn = mesh.get_conn(mesh.descs[0])
+    mat_ids = mesh.cmesh.cell_groups
 
     coors = mesh.coors
-    ngrps = mesh.ngroups
+    ngrps = mesh.cmesh.vertex_groups
     nrep = nm.prod(grid)
     ndmap = None
 
@@ -525,23 +521,23 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     nblk = 1
     for ii, gr in enumerate(grid):
         if ret_ndmap:
-            (conns, coors,
-             ngrps, ndmap0) = tiled_mesh1d(conns, coors, ngrps,
+            (conn, coors,
+             ngrps, ndmap0) = tiled_mesh1d(conn, coors, ngrps,
                                            ii, gr, bbox.transpose()[ii],
                                            eps=eps, ndmap=ndmap)
             ndmap = ndmap0
 
         else:
-            conns, coors, ngrps = tiled_mesh1d(conns, coors, ngrps,
-                                               ii, gr, bbox.transpose()[ii],
-                                               eps=eps)
+            conn, coors, ngrps = tiled_mesh1d(conn, coors, ngrps,
+                                              ii, gr, bbox.transpose()[ii],
+                                              eps=eps)
         nblk *= gr
 
     output('...done')
 
     mat_ids = nm.tile(mat_ids, (nrep,))
     mesh_out = Mesh.from_data('tiled mesh', coors * scale, ngrps,
-                              [conns], [mat_ids], [mesh.descs[0]])
+                              [conn], [mat_ids], [mesh.descs[0]])
 
     if ret_ndmap:
         return mesh_out, ndmap

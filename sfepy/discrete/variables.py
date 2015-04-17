@@ -34,7 +34,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
     and connectivity with all DOFs active is created.
 
     DOF connectivity key is a tuple ``(primary variable name, region name,
-    type, ig, is_trace flag)``.
+    type, is_trace flag)``.
     """
     var_indx = get_default(var_indx, {})
 
@@ -50,23 +50,20 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
 
         return adc
 
-    def _iter_igs(adof_conns, info, region, var, field, is_trace):
-        for ig in region.igs:
-            key = (var.name, region.name, info.dc_type.type, ig, is_trace)
+    def _assign(adof_conns, info, region, var, field, is_trace):
+        key = (var.name, region.name, info.dc_type.type, is_trace)
+        if not key in adof_conns:
+            econn = field.get_econn(info.dc_type, region, is_trace=is_trace)
+            if econn is None: return
+
+            adof_conns[key] = _create(var, econn)
+
+        if info.is_trace:
+            key = (var.name, region.name, info.dc_type.type, False)
             if not key in adof_conns:
-                econn = field.get_econn(info.dc_type, region,
-                                        ig, is_trace=is_trace)
-                if econn is None: continue
+                econn = field.get_econn(info.dc_type, region, is_trace=False)
 
                 adof_conns[key] = _create(var, econn)
-
-            if info.is_trace:
-                key = (var.name, region.name, info.dc_type.type, ig, False)
-                if not key in adof_conns:
-                    econn = field.get_econn(info.dc_type, region,
-                                            ig, is_trace=False)
-
-                    adof_conns[key] = _create(var, econn)
 
     if verbose:
         output('setting up dof connectivities...')
@@ -81,7 +78,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
             region = info.get_region()
-            _iter_igs(adof_conns, info, region, var, field, info.is_trace)
+            _assign(adof_conns, info, region, var, field, info.is_trace)
 
         if info.has_virtual and not info.is_trace:
             var = info.virtual
@@ -92,7 +89,7 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
             var = aux if aux is not None else var
 
             region = info.get_region(can_trace=False)
-            _iter_igs(adof_conns, info, region, var, field, False)
+            _assign(adof_conns, info, region, var, field, False)
 
     if verbose:
         output('...done in %.2f s' % (time.clock() - tt))
@@ -1295,8 +1292,6 @@ class FieldVariable(Variable):
         self.has_bc = True
         self._variables = None
 
-        self.clear_bases()
-        self.clear_current_group()
         self.clear_evaluate_cache()
 
     def _set_field(self, field):
@@ -1319,7 +1314,7 @@ class FieldVariable(Variable):
     def get_field(self):
         return self.field
 
-    def get_mapping(self, ig, region, integral, integration,
+    def get_mapping(self, region, integral, integration,
                     get_saved=False, return_key=False):
         """
         Get the reference element mapping of the underlying field.
@@ -1331,12 +1326,12 @@ class FieldVariable(Variable):
         if region is None:
             region = self.field.region
 
-        out = self.field.get_mapping(ig, region, integral, integration,
+        out = self.field.get_mapping(region, integral, integration,
                                      get_saved=get_saved,
                                      return_key=return_key)
         return out
 
-    def get_dof_conn(self, dc_type, ig, is_trace=False):
+    def get_dof_conn(self, dc_type, is_trace=False):
         """
         Get active dof connectivity of a variable.
 
@@ -1352,15 +1347,13 @@ class FieldVariable(Variable):
 
         if not is_trace:
             region_name = dc_type.region_name
-            aig = ig
 
         else:
             aux = self.field.domain.regions[dc_type.region_name]
-            region, _, ig_map = aux.get_mirror_region()
+            region = aux.get_mirror_region()
             region_name = region.name
-            aig = ig_map[ig]
 
-        key = (var_name, region_name, dc_type.type, aig, is_trace)
+        key = (var_name, region_name, dc_type.type, is_trace)
         dc = self.adof_conns[key]
 
         return dc
@@ -1390,7 +1383,7 @@ class FieldVariable(Variable):
             setter = functions[setter_name]
 
             region = self.field.region
-            nod_list = self.field.get_dofs_in_region(region, clean=True)
+            nod_list = self.field.get_dofs_in_region(region)
             nods = nm.unique(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
@@ -1451,8 +1444,7 @@ class FieldVariable(Variable):
             else:
                 clean_msg = None
 
-            nod_list = self.field.get_dofs_in_region(region, clean=True,
-                                                     warn=clean_msg)
+            nod_list = self.field.get_dofs_in_region(region)
             if len(nod_list) == 0:
                 continue
 
@@ -1470,18 +1462,15 @@ class FieldVariable(Variable):
 
             self.initial_condition = ic_vec
 
-    def get_approximation(self, ig):
-        return self.field.aps[ig]
+    def get_approximation(self):
+        return self.field.ap
 
-    def get_data_shape(self, ig, integral,
-                       integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='volume', region_name=None):
         """
         Get element data dimensions for given approximation.
 
         Parameters
         ----------
-        ig : int
-            The element group index.
         integral : Integral instance
             The integral describing used numerical quadrature.
         integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
@@ -1506,203 +1495,11 @@ class FieldVariable(Variable):
         - `n_comp` = number of variable components in a point/node
         - `n_nod` = number of element nodes
         """
-        aux = self.field.get_data_shape(ig, integral, integration=integration,
+        aux = self.field.get_data_shape(integral, integration=integration,
                                         region_name=region_name)
         data_shape = aux + (self.n_components,)
 
         return data_shape
-
-    def clear_bases(self):
-        """
-        Clear base functions, base function gradients and element data
-        dimensions.
-        """
-        self.bfs = {}
-        self.bfgs = {}
-        self.data_shapes = {}
-
-    def setup_bases(self, geo_key, ig, geo, integral, shape_kind='volume'):
-        """
-        Setup and cache base functions and base function gradients for
-        given geometry. Also cache element data dimensions.
-        """
-        if geo_key not in self.bfs:
-            ap = self.field.aps[ig]
-
-            region_name = geo_key[0]
-
-            self.data_shapes[geo_key] = self.get_data_shape(ig, integral,
-                                                            shape_kind,
-                                                            region_name)
-
-            if shape_kind == 'surface':
-                sd = ap.surface_data[region_name]
-                key = sd.face_type
-
-            elif shape_kind == 'volume':
-                key = 'v'
-
-            ebf = ap.get_base(key, 0, integral)
-            bf = la.insert_strided_axis(ebf, 0, ap.econn.shape[0])
-            self.bfs[geo_key] = bf
-
-            self.bfgs[geo_key] = geo.bfg
-
-    def clear_current_group(self):
-        """
-        Clear current group data.
-        """
-        self._ap = None
-        self._data_shape = None
-        self._bf = self._bfg = None
-
-    def set_current_group(self, geo_key, ig):
-        """
-        Set current group data, initialize current DOF counter to `None`.
-
-        The current group data are the approximation, element data
-        dimensions, base functions and base function gradients.
-        """
-        self._ap = self.field.aps[ig]
-        self._data_shape = self.data_shapes[geo_key]
-        self._bf = self.bfs[geo_key]
-        self._bfg = self.bfgs[geo_key]
-
-        self._idof = None
-        self._inod = None
-        self._ic = None
-
-    def val(self, ic=None):
-        """
-        Return base function values in quadrature points.
-
-        Parameters
-        ----------
-        ic : int, optional
-            The index of variable component.
-        """
-        if self._inod is None:
-            # Evaluation mode.
-            out = self.val_qp(ic=ic)
-
-        else:
-            out = self._bf[..., self._inod : self._inod + 1]
-
-        return out
-
-    def val_qp(self, ic=None):
-        """
-        Return variable evaluated in quadrature points.
-
-        Parameters
-        ----------
-        ic : int, optional
-            The index of variable component.
-        """
-        vec = self()[ic::self.n_components]
-        evec = vec[self._ap.econn]
-
-        aux = la.insert_strided_axis(evec, 1, self._bf.shape[1])[..., None]
-
-        out = la.dot_sequences(aux, self._bf, 'ATBT')
-
-        return out
-
-    def grad(self, ic=None, ider=None):
-        """
-        Return base function gradient (space elements) values in
-        quadrature points.
-
-        Parameters
-        ----------
-        ic : int, optional
-            The index of variable component.
-        ider : int, optional
-            The spatial derivative index. If not given, the whole
-            gradient is returned.
-        """
-        if ider is None:
-            iders = slice(None)
-
-        else:
-            iders = slice(ider, ider + 1)
-
-        if self._inod is None:
-            out = self.grad_qp(ic=ic, ider=ider)
-
-        else:
-            out = self._bfg[..., iders, self._inod : self._inod + 1]
-
-        return out
-
-    def grad_qp(self, ic=None, ider=None):
-        """
-        Return variable gradient evaluated in quadrature points.
-
-        Parameters
-        ----------
-        ic : int, optional
-            The index of variable component.
-        ider : int, optional
-            The spatial derivative index. If not given, the whole
-            gradient is returned.
-        """
-        if ider is None:
-            iders = slice(None)
-
-        else:
-            iders = slice(ider, ider + 1)
-
-        vec = self()[ic::self.n_components]
-        evec = vec[self._ap.econn]
-
-        aux = la.insert_strided_axis(evec, 1, self._bfg.shape[1])[..., None]
-        out = la.dot_sequences(self._bfg[:, :, iders, :], aux)
-
-        return out
-
-    def iter_dofs(self):
-        """
-        Iterate over element DOFs (DOF by DOF).
-        """
-        n_en, n_c = self._data_shape[3:]
-
-        for ii in xrange(n_en):
-            self._inod = ii
-            for ic in xrange(n_c):
-                self._ic = ic
-                self._idof = n_en * ic + ii
-                yield self._idof
-
-    def get_element_zeros(self):
-        """
-        Return array of zeros with correct shape and type for term
-        evaluation.
-        """
-        n_el, n_qp = self._data_shape[:2]
-
-        return nm.zeros((n_el, n_qp, 1,  1), dtype=self.dtype)
-
-    def get_component_indices(self):
-        """
-        Return indices of variable components according to current term
-        evaluation mode.
-
-        Returns
-        -------
-        indx : list of tuples
-            The list of `(ii, slice(ii, ii + 1))` of the variable
-            components. The first item is the index itself, the second
-            item is a convenience slice to index components of material
-            parameters.
-        """
-        if self._ic is None:
-            indx = [(ii, slice(ii, ii + 1)) for ii in range(self.n_components)]
-
-        else:
-            indx = [(ii, slice(ii, ii + 1)) for ii in [self._ic]]
-
-        return indx
 
     def clear_evaluate_cache(self):
         """
@@ -1723,7 +1520,7 @@ class FieldVariable(Variable):
                 if key == step: # Given time step to clear.
                     step_cache.pop(key)
 
-    def evaluate(self, ig, mode='val',
+    def evaluate(self, mode='val',
                  region=None, integral=None, integration=None,
                  step=0, time_derivative=None, is_trace=False,
                  dt=None, bf=None):
@@ -1736,8 +1533,6 @@ class FieldVariable(Variable):
 
         Parameters
         ----------
-        ig : int
-            The element group index.
         mode : one of 'val', 'grad', 'div', 'cauchy_strain'
             The evaluation mode.
         region : Region instance, optional
@@ -1779,8 +1574,7 @@ class FieldVariable(Variable):
             region = field.region
 
         if is_trace:
-            region, ig_map, ig_map_i = region.get_mirror_region()
-            ig = ig_map_i[ig]
+            region = region.get_mirror_region()
 
         if region is not field.region:
             assert_(field.region.contains(region))
@@ -1791,7 +1585,7 @@ class FieldVariable(Variable):
         if integration is None:
             integration = 'volume' if region.can_cells else 'surface'
 
-        geo, _, key = field.get_mapping(ig, region, integral, integration,
+        geo, _, key = field.get_mapping(region, integral, integration,
                                         return_key=True)
         key += (time_derivative, is_trace)
 
@@ -1803,9 +1597,9 @@ class FieldVariable(Variable):
             ct = integration
             if integration == 'surface_extra':
                 ct = 'volume'
-            conn = field.get_econn(ct, region, ig, is_trace, integration)
+            conn = field.get_econn(ct, region, is_trace, integration)
 
-            shape = self.get_data_shape(ig, integral, integration, region.name)
+            shape = self.get_data_shape(integral, integration, region.name)
 
             if self.dtype == nm.float64:
                 out = eval_real(vec, conn, geo, mode, shape, bf)
@@ -1817,9 +1611,27 @@ class FieldVariable(Variable):
 
         return out
 
-    def get_state_in_region(self, region, igs=None, reshape=True,
-                             step=0):
-        nods = self.field.get_dofs_in_region(region, merge=True, igs=igs)
+    def get_state_in_region(self, region, reshape=True, step=0):
+        """
+        Get DOFs of the variable in the given region.
+
+        Parameters
+        ----------
+        region : Region
+            The selected region.
+        reshape : bool
+            If True, reshape the DOF vector to a 2D array with the individual
+            components as columns. Otherwise a 1D DOF array of the form [all
+            DOFs in region node 0, all DOFs in region node 1, ...] is returned.
+        step : int, default 0
+            The time step (0 means current, -1 previous, ...).
+
+        Returns
+        -------
+        out : array
+            The selected DOFs.
+        """
+        nods = self.field.get_dofs_in_region(region, merge=True)
 
         eq = nm.empty((len(nods) * self.n_components,), dtype=nm.int32)
         for idof in range(self.n_components):
@@ -1978,15 +1790,10 @@ class FieldVariable(Variable):
 
         integral = Integral('i_tmp', 1)
 
-        igs = nm.unique(cells[:,0])
-        for ig in igs:
-            ap = field.aps[ig]
-            vg = ap.describe_geometry(field, 'volume', field.region, integral)
+        ap = field.ap
+        vg = ap.describe_geometry(field, 'volume', field.region, integral)
 
-            ii = nm.where(cells[:,0] == ig)[0]
-            aux = domain.get_element_diameters(ig, cells[ii,1].copy(), vg,
-                                               mode, square=square)
-            diameters[ii] = aux
+        diameters = domain.get_element_diameters(cells, vg, mode, square=square)
 
         return diameters
 

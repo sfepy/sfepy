@@ -60,13 +60,13 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
                        permutations=None, suffix=''):
     if permutations is not None:
         mesh = mesh.copy()
-        for ig, conn in enumerate(mesh.conns):
-            gel = GeometryElement(mesh.descs[ig])
-            perms = gel.get_conn_permutations()[permutations]
-            n_el, n_ep = conn.shape
-            offsets = nm.arange(n_el) * n_ep
+        gel = GeometryElement(mesh.descs[0])
+        perms = gel.get_conn_permutations()[permutations]
+        conn = mesh.cmesh.get_cell_conn()
+        n_el, n_ep = conn.num, gel.n_vertex
+        offsets = nm.arange(n_el) * n_ep
 
-            conn[:] = conn.take(perms + offsets[:, None])
+        conn.indices[:] = conn.indices.take((perms + offsets[:, None]).ravel())
 
     domain = FEDomain('domain', mesh)
 

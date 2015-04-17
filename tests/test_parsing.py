@@ -77,10 +77,9 @@ class Test(TestCommon):
                      'vertex 10, 20, 30',
                      'cell 10',
                      'cell 10, 20, 30',
-                     'cell (0, 10), (1, 20), (0, 30)',
                      'vertex 10, 20 +v cell 30, 40',
                      '(vertex 10, 20) +v (cell 30, 40)',
-                     'cell (0, 10), (1, 20), (0, 30) +v vertex 10',
+                     'cell 10, 20, 30 +v vertex 10',
                      'cells by afun']
 
         stack = []

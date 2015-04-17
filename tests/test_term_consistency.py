@@ -164,8 +164,7 @@ class Test(TestCommon):
 
         val2 = nm.dot(vec, mtx * vec)
 
-        ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-15
-
+        ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-14
         self.report('eval: %s, weak: %s, ok: %s' % (val1, val2, ok))
 
         return ok

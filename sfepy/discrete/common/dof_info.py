@@ -340,8 +340,7 @@ class EquationMap(Struct):
                 clean_msg = None
 
             # Get master region nodes.
-            master_nod_list = field.get_dofs_in_region(region, clean=True,
-                                                       warn=clean_msg)
+            master_nod_list = field.get_dofs_in_region(region)
             if len(master_nod_list) == 0:
                 continue
 
@@ -364,8 +363,7 @@ class EquationMap(Struct):
 
             else: # EPBC.
                 region = bc.regions[1]
-                slave_nod_list = field.get_dofs_in_region(region, clean=True,
-                                                          warn=clean_msg)
+                slave_nod_list = field.get_dofs_in_region(region)
 
                 nmaster = nm.unique(nm.hstack(master_nod_list))
                 # Treat fields not covering the whole domain.

@@ -210,9 +210,8 @@ class ContactPlaneTerm(Term):
         if self.cp is None:
             self.cp = ContactPlane(anchor, normal, bounds)
 
-        ig = self.char_fun.ig
         qps = self.get_physical_qps()
-        qp_coors = qps.values[ig]
+        qp_coors = qps.values
         u_qp = self.get(state, 'val').reshape(qp_coors.shape)
 
         # Deformed QP coordinates.
@@ -241,7 +240,7 @@ class ContactPlaneTerm(Term):
 
             fmode = 1
 
-        force.shape = qps.shape[ig][:2] + (1, 1)
+        force.shape = qps.shape[:2] + (1, 1)
 
         return force, self.cp.normal, sg, fmode
 
@@ -343,9 +342,8 @@ class ContactSphereTerm(ContactPlaneTerm):
         if self.cs is None:
             self.cs = ContactSphere(centre, radius)
 
-        ig = self.char_fun.ig
         qps = self.get_physical_qps()
-        qp_coors = qps.values[ig]
+        qp_coors = qps.values
         u_qp = self.get(state, 'val').reshape(qp_coors.shape)
 
         # Deformed QP coordinates.
@@ -377,12 +375,12 @@ class ContactSphereTerm(ContactPlaneTerm):
                 aux = self.smooth_f(d, k[ii], f0[ii], a[ii], eps[ii], 0)
                 fd = nm.zeros_like(force)
                 fd[ii] = aux / (self.cs.radius - d)
-                fd.shape = qps.shape[ig][:2] + (1, 1)
+                fd.shape = qps.shape[:2] + (1, 1)
 
             fmode = 1
 
-        force.shape = qps.shape[ig][:2] + (1, 1)
-        normals.shape = qps.shape[ig][:2] + (3, 1)
+        force.shape = qps.shape[:2] + (1, 1)
+        normals.shape = qps.shape[:2] + (3, 1)
 
         return force, normals, fd, sg, fmode
 

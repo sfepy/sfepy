@@ -20,7 +20,7 @@ def gen_datas(meshes):
         bbox = mesh.get_bounding_box()
         nx = bbox[1,0] - bbox[0,0]
         centre = 0.5 * bbox.sum(axis=0)
-        mesh.coors -= centre
+        mesh.coors[:] -= centre
 
         data = nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / nx)
         datas['scalar_' + key] = data
@@ -95,15 +95,14 @@ class Test(TestCommon):
         fname = in_dir(self.options.out_dir)
 
         meshes = {
-            'tp' : Mesh('original mesh', data_dir + '/meshes/3d/block.mesh'),
-            'si' : Mesh('original mesh', data_dir + '/meshes/3d/cylinder.mesh'),
+            'tp' : Mesh.from_file(data_dir + '/meshes/3d/block.mesh'),
+            'si' : Mesh.from_file(data_dir + '/meshes/3d/cylinder.mesh'),
         }
 
         datas = gen_datas(meshes)
 
         for field_name in ['scalar_si', 'vector_si', 'scalar_tp', 'vector_tp']:
             m1 = meshes[field_name[-2:]]
-
             for ia, angle in enumerate(nm.linspace(0.0, nm.pi, 11)):
                 self.report('%s: %d. angle: %f' % (field_name, ia, angle))
                 shift = [0.0, 0.0, 0.0]
@@ -129,10 +128,10 @@ class Test(TestCommon):
         from sfepy.discrete import Variables
         from sfepy.discrete.fem import Mesh, FEDomain, Field
 
-        m1 = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
+        m1 = Mesh.from_file(data_dir + '/meshes/3d/block.mesh')
 
-        m2 = Mesh('target mesh', data_dir + '/meshes/3d/cube_medium_tetra.mesh')
-        m2.coors *= 2.0
+        m2 = Mesh.from_file(data_dir + '/meshes/3d/cube_medium_tetra.mesh')
+        m2.coors[:] *= 2.0
 
         bbox = m1.get_bounding_box()
         dd = bbox[1,:] - bbox[0,:]
@@ -183,8 +182,8 @@ class Test(TestCommon):
         from sfepy.discrete.fem import Mesh
 
         meshes = {
-            'tp' : Mesh('original mesh', data_dir + '/meshes/3d/block.mesh'),
-            'si' : Mesh('original mesh', data_dir + '/meshes/3d/cylinder.mesh'),
+            'tp' : Mesh.from_file(data_dir + '/meshes/3d/block.mesh'),
+            'si' : Mesh.from_file(data_dir + '/meshes/3d/cylinder.mesh'),
         }
         datas = gen_datas(meshes)
 
@@ -210,7 +209,7 @@ class Test(TestCommon):
         from sfepy.terms import Term
         from sfepy.discrete.common.mappings import get_physical_qps
 
-        mesh = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
+        mesh = Mesh.from_file(data_dir + '/meshes/3d/block.mesh')
 
         bbox = mesh.get_bounding_box()
         dd = bbox[1,:] - bbox[0,:]
@@ -239,7 +238,7 @@ class Test(TestCommon):
         val1 = val1.ravel()
 
         qps = get_physical_qps(omega, integral)
-        coors = qps.get_merged_values()
+        coors = qps.values
 
         val2 = u.evaluate_at(coors).ravel()
 

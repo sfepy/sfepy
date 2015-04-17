@@ -72,104 +72,18 @@ def output_writable_meshes():
         if 'w' in val:
             output(key)
 
-def sort_by_mat_id(conns_in):
+def split_conns_mat_ids(conns_in):
     """
-    Sort by mat_id within a group, preserve order.
+    Split connectivities (columns except the last ones in `conns_in`) from cell
+    groups (the last columns of `conns_in`).
     """
-    conns = []
-    mat_ids = []
-    for ig, conn in enumerate(conns_in):
-        if conn.shape[0] > 0:
-            ii = nm.argsort(conn[:,-1], kind='mergesort')
-            conn = conn[ii]
-
-            conns.append(conn[:,:-1].copy())
-            mat_ids.append(conn[:,-1].copy())
-        else:
-            conns.append([])
-            mat_ids.append([])
+    conns, mat_ids = [], []
+    for conn in conns_in:
+        conn = nm.asarray(conn, dtype=nm.int32)
+        conns.append(conn[:, :-1])
+        mat_ids.append(conn[:, -1])
 
     return conns, mat_ids
-
-def sort_by_mat_id2(conns_in, mat_ids_in):
-    """
-    Sort by mat_id within a group, preserve order.
-    """
-    conns = []
-    mat_ids = []
-    for ig, conn in enumerate(conns_in):
-        if conn.shape[0] > 0:
-            mat_id = mat_ids_in[ig]
-            ii = nm.argsort(mat_id, kind='mergesort')
-            conns.append(conn[ii])
-            mat_ids.append(mat_id[ii])
-        else:
-            conns.append([])
-            mat_ids.append([])
-
-    return conns, mat_ids
-
-def split_by_mat_id(conns_in, mat_ids_in, descs_in):
-    """
-    Notes
-    -----
-    conns_in must be sorted by mat_id within a group!
-    """
-    conns = []
-    mat_ids = []
-    descs = []
-
-    for ig, conn in enumerate(conns_in):
-        one = nm.array([-1], nm.int32)
-        aux = nm.concatenate((one, mat_ids_in[ig], one))
-        ii = nm.where(aux[1:] != aux[:-1])[0]
-
-        n_gr = len(ii) - 1;
-        for igr in range(0, n_gr):
-            conns.append(conn[ii[igr]:ii[igr+1],:].copy())
-            mat_ids.append(mat_ids_in[ig][ii[igr]:ii[igr+1]])
-            descs.append(descs_in[ig])
-
-    return (conns, mat_ids, descs)
-
-
-def write_bb(fd, array, dtype):
-
-    fd.write('3 %d %d %d\n' % (array.shape[1], array.shape[0], dtype))
-    format = ' '.join(['%.5e'] * array.shape[1] + ['\n'])
-
-    for row in array:
-        fd.write(format % tuple(row))
-
-def join_conn_groups(conns, descs, mat_ids, concat=False):
-    """Join groups of the same element type."""
-
-    el = dict_from_keys_init(descs, list)
-    for ig, desc in enumerate(descs):
-        el[desc].append(ig)
-    groups = [ii for ii in el.values() if ii]
-
-    descs_out, conns_out, mat_ids_out = [], [], []
-    for group in groups:
-        n_ep = conns[group[0]].shape[1]
-
-        conn = nm.zeros((0, n_ep), nm.int32)
-        mat_id = nm.zeros((0,), nm.int32)
-        for ig in group:
-            conn = nm.concatenate((conn, conns[ig]))
-            mat_id = nm.concatenate((mat_id, mat_ids[ig]))
-
-        if concat:
-            conn = nm.concatenate((conn, mat_id[:,nm.newaxis]), 1)
-        else:
-            mat_ids_out.append(mat_id)
-        conns_out.append(conn)
-        descs_out.append(descs[group[0]])
-
-    if concat:
-        return conns_out, descs_out
-    else:
-        return conns_out, descs_out, mat_ids_out
 
 def convert_complex_output(out_in):
     """
@@ -202,15 +116,16 @@ class MeshIO(Struct):
 
         def read(self, mesh, **kwargs):
             nodes = ...
+            ngroups = ...
             conns = ...
             mat_ids = ...
             descs = ...
-            mesh._set_data(nodes, conns, mat_ids, descs)
+            mesh._set_io_data(nodes, ngroups, conns, mat_ids, descs)
             return mesh
 
-    See the Mesh class' docstring how the nodes, conns, mat_ids and descs
-    should look like. You just need to read them from your specific format from
-    disk.
+    See the Mesh class' docstring how the nodes, ngroups, conns, mat_ids and
+    descs should look like. You just need to read them from your specific
+    format from disk.
 
     To write a mesh to disk, just implement the write() method and use the
     information from the mesh instance (e.g. nodes, conns, mat_ids and descs)
@@ -421,14 +336,11 @@ class MeditMeshIO(MeshIO):
 
         fd.close()
 
-        conns_in, mat_ids = sort_by_mat_id(conns_in)
-
         # Detect wedges and pyramides -> separate groups.
         if ('3_8' in descs):
             ic = descs.index('3_8')
 
             conn_in = conns_in.pop(ic)
-            mat_id_in = mat_ids.pop(ic)
 
             flag = nm.zeros((conn_in.shape[0],), nm.int32)
             for ii, el in enumerate(conn_in):
@@ -440,45 +352,38 @@ class MeditMeshIO(MeshIO):
 
             conn = []
             desc = []
-            mat_id = []
 
             ib = nm.where(flag == 0)[0]
             if (len(ib) > 0):
                 conn.append(conn_in[ib])
-                mat_id.append(mat_id_in[ib])
                 desc.append('3_8')
 
             iw = nm.where(flag == 1)[0]
             if (len(iw) > 0):
                 ar = nm.array([0,1,2,3,4,6], nm.int32)
                 conn.append(conn_in[iw[:, None], ar])
-                mat_id.append(mat_id_in[iw])
                 desc.append('3_6')
 
             ip = nm.where(flag == 2)[0]
             if (len(ip) > 0):
                 ar = nm.array([0,1,2,3,4], nm.int32)
                 conn.append(conn_in[ip[:, None], ar])
-                mat_id.append(mat_id_in[ip])
                 desc.append('3_5')
 
             conns_in[ic:ic] = conn
-            mat_ids[ic:ic] = mat_id
             del(descs[ic])
             descs[ic:ic] = desc
 
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, descs)
-        mesh._set_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
+        conns, mat_ids = split_conns_mat_ids(conns_in)
+
+        mesh._set_io_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
 
         return mesh
 
     def write(self, filename, mesh, out=None, **kwargs):
         fd = open(filename, 'w')
 
-        coors = mesh.coors
-        conns, desc = join_conn_groups(mesh.conns, mesh.descs,
-                                       mesh.mat_ids, concat=True)
-
+        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
         n_nod, dim = coors.shape
 
         fd.write("MeshVersionFormatted 1\nDimension %d\n" % dim)
@@ -486,10 +391,11 @@ class MeditMeshIO(MeshIO):
         fd.write("Vertices\n%d\n" % n_nod)
         format = self.get_vector_format(dim) + ' %d\n'
         for ii in range(n_nod):
-            nn = tuple(coors[ii]) + (mesh.ngroups[ii],)
+            nn = tuple(coors[ii]) + (ngroups[ii],)
             fd.write(format % tuple(nn))
 
         for ig, conn in enumerate(conns):
+            ids = mat_ids[ig]
             if (desc[ig] == "1_1"):
                 fd.write("Corners\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
@@ -501,31 +407,31 @@ class MeditMeshIO(MeshIO):
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d\n"
-                             % (nn[0], nn[1], nn[2] - 1))
+                             % (nn[0], nn[1], ids[ii]))
             elif (desc[ig] == "2_4"):
                 fd.write("Quadrilaterals\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], nn[4] - 1))
+                             % (nn[0], nn[1], nn[2], nn[3], ids[ii]))
             elif (desc[ig] == "2_3"):
                 fd.write("Triangles\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
-                    fd.write("%d %d %d %d\n" % (nn[0], nn[1], nn[2], nn[3] - 1))
+                    fd.write("%d %d %d %d\n" % (nn[0], nn[1], nn[2], ids[ii]))
             elif (desc[ig] == "3_4"):
                 fd.write("Tetrahedra\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], nn[4] - 1))
+                             % (nn[0], nn[1], nn[2], nn[3], ids[ii]))
             elif (desc[ig] == "3_8"):
                 fd.write("Hexahedra\n%d\n" % conn.shape[0])
                 for ii in range(conn.shape[0]):
                     nn = conn[ii] + 1
                     fd.write("%d %d %d %d %d %d %d %d %d\n"
                              % (nn[0], nn[1], nn[2], nn[3], nn[4], nn[5],
-                                nn[6], nn[7], nn[8] - 1))
+                                nn[6], nn[7], ids[ii]))
             else:
                 raise ValueError('unknown element type! (%s)' % desc[ig])
 
@@ -611,7 +517,7 @@ class VTKMeshIO(MeshIO):
         fd = open(self.filename, 'r')
         mode = 'header'
         mode_status = 0
-        coors = conns = desc = mat_id = node_grps = None
+        coors = conns = mat_id = node_grps = None
         finished = 0
         while 1:
             line = skip_read_line(fd)
@@ -713,23 +619,23 @@ class VTKMeshIO(MeshIO):
             ct = vtk_inverse_cell_types[key]
             dconns.setdefault(key, []).append(row[1:] + mat_id[iel])
 
-        desc = []
+        descs = []
         conns = []
+        mat_ids = []
         for key, conn in dconns.iteritems():
             ct = key[0]
             sct = vtk_inverse_cell_types[key]
-            desc.append(sct)
+            descs.append(sct)
 
-            aconn = nm.array(conn, dtype=nm.int32)
+            aux = nm.array(conn, dtype=nm.int32)
+            aconn = aux[:, :-1]
             if ct in vtk_remap_keys: # Remap pixels and voxels.
-                aconn[:, :-1] = aconn[:, vtk_remap[ct]]
+                aconn[:] = aconn[:, vtk_remap[ct]]
 
             conns.append(aconn)
+            mat_ids.append(aux[:, -1])
 
-        conns_in, mat_ids = sort_by_mat_id(conns)
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, desc)
-
-        mesh._set_data(coors, node_grps, conns, mat_ids, descs)
+        mesh._set_io_data(coors, node_grps, conns, mat_ids, descs)
 
         return mesh
 
@@ -768,15 +674,17 @@ class VTKMeshIO(MeshIO):
         else:
             step, time, nt = ts.step, ts.time, ts.nt
 
+        coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+
         fd = open(filename, 'w')
         fd.write(vtk_header % (step, time, nt, op.basename(sys.argv[0])))
 
-        n_nod, dim = mesh.coors.shape
+        n_nod, dim = coors.shape
         sym = dim * (dim + 1) / 2
 
         fd.write('\nPOINTS %d float\n' % n_nod)
 
-        aux = mesh.coors
+        aux = coors
 
         if dim < 3:
             aux = nm.hstack((aux, nm.zeros((aux.shape[0], 3 - dim),
@@ -786,14 +694,15 @@ class VTKMeshIO(MeshIO):
         for row in aux:
             fd.write(format % tuple(row))
 
-        n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
+        n_el = mesh.n_el
+        n_els, n_e_ps = nm.array([conn.shape for conn in conns]).T
         total_size = nm.dot(n_els, n_e_ps + 1)
         fd.write('\nCELLS %d %d\n' % (n_el, total_size))
 
         ct = []
-        for ig, conn in enumerate(mesh.conns):
+        for ig, conn in enumerate(conns):
             nn = n_e_ps[ig] + 1
-            ct += [vtk_cell_types[mesh.descs[ig]]] * n_els[ig]
+            ct += [vtk_cell_types[descs[ig]]] * n_els[ig]
             format = ' '.join(['%d'] * nn + ['\n'])
 
             for row in conn:
@@ -806,7 +715,7 @@ class VTKMeshIO(MeshIO):
 
         # node groups
         fd.write('\nSCALARS node_groups int 1\nLOOKUP_TABLE default\n')
-        fd.write(''.join(['%d\n' % ii for ii in mesh.ngroups]))
+        fd.write(''.join(['%d\n' % ii for ii in ngroups]))
 
         if out is not None:
             point_keys = [key for key, val in out.iteritems()
@@ -856,7 +765,7 @@ class VTKMeshIO(MeshIO):
 
         # cells - mat_id
         fd.write('SCALARS mat_id int 1\nLOOKUP_TABLE default\n')
-        aux = nm.hstack(mesh.mat_ids).tolist()
+        aux = nm.hstack(mat_ids).tolist()
         fd.write(''.join(['%d\n' % ii for ii in aux]))
 
         for key in cell_keys:
@@ -976,7 +885,7 @@ class TetgenMeshIO(MeshIO):
             mat_ids.append(nm.ones_like(value) * key)
             conns.append(elements[nm.array(value)-1].copy())
 
-        mesh._set_data(nodes, None, conns, mat_ids, descs)
+        mesh._set_io_data(nodes, None, conns, mat_ids, descs)
         return mesh
 
     @staticmethod
@@ -1189,13 +1098,7 @@ class ComsolMeshIO(MeshIO):
         fd.close()
         self.fd = None
 
-        conns2 = []
-        for ii, conn in enumerate(conns):
-            conns2.append(nm.c_[conn, mat_ids[ii]])
-
-        conns_in, mat_ids = sort_by_mat_id(conns2)
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, descs)
-        mesh._set_data(coors, None, conns, mat_ids, descs)
+        mesh._set_io_data(coors, None, conns, mat_ids, descs)
 
         return mesh
 
@@ -1230,9 +1133,7 @@ class ComsolMeshIO(MeshIO):
 
         fd = open(filename, 'w')
 
-        coors = mesh.coors
-        conns, desc, mat_ids  = join_conn_groups(mesh.conns, mesh.descs,
-                                                 mesh.mat_ids)
+        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
 
         n_nod, dim = coors.shape
 
@@ -1365,8 +1266,8 @@ class HDF5MeshIO(MeshIO):
                 nodal_bcs[key] = nods
 
         fd.close()
-        mesh._set_data(coors, ngroups, conns, mat_ids, descs,
-                       nodal_bcs=nodal_bcs)
+        mesh._set_io_data(coors, ngroups, conns, mat_ids, descs,
+                          nodal_bcs=nodal_bcs)
 
         return mesh
 
@@ -1384,17 +1285,19 @@ class HDF5MeshIO(MeshIO):
 
             mesh_group = fd.createGroup('/', 'mesh', 'mesh')
 
+            coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+
             fd.createArray(mesh_group, 'name', mesh.name, 'name')
-            fd.createArray(mesh_group, 'coors', mesh.coors, 'coors')
-            fd.createArray(mesh_group, 'ngroups', mesh.ngroups, 'ngroups')
-            fd.createArray(mesh_group, 'n_gr', len(mesh.conns), 'n_gr')
-            for ig, conn in enumerate(mesh.conns):
+            fd.createArray(mesh_group, 'coors', coors, 'coors')
+            fd.createArray(mesh_group, 'ngroups', ngroups, 'ngroups')
+            fd.createArray(mesh_group, 'n_gr', len(conns), 'n_gr')
+            for ig, conn in enumerate(conns):
                 conn_group = fd.createGroup(mesh_group, 'group%d' % ig,
                                             'connectivity group')
                 fd.createArray(conn_group, 'conn', conn, 'connectivity')
-                fd.createArray(conn_group, 'mat_id', mesh.mat_ids[ig],
+                fd.createArray(conn_group, 'mat_id', mat_ids[ig],
                                'material id')
-                fd.createArray(conn_group, 'desc', mesh.descs[ig],
+                fd.createArray(conn_group, 'desc', descs[ig],
                                'element Type')
 
             node_sets_groups = fd.createGroup(mesh_group, 'node_sets',
@@ -1731,7 +1634,7 @@ class MEDMeshIO(MeshIO):
                 pass
 
         fd.close()
-        mesh._set_data(coors, ngroups, conns, mat_ids, descs)
+        mesh._set_io_data(coors, ngroups, conns, mat_ids, descs)
 
         return mesh
 
@@ -1760,7 +1663,7 @@ class Mesh3DMeshIO(MeshIO):
             conns.append(hexes - 1)
             mat_ids.append([0]*len(hexes))
             descs.append("3_8")
-        mesh._set_data(vertices, None, conns, mat_ids, descs)
+        mesh._set_io_data(vertices, None, conns, mat_ids, descs)
         return mesh
 
     def read_dimension(self):
@@ -1836,9 +1739,12 @@ def mesh_from_groups(mesh, ids, coors, ngroups,
                for ar in [mat_tris, mat_quads, mat_tetras, mat_hexas]]
     descs = ['2_3', '2_4', '3_4', '3_8']
 
-    conns, mat_ids = sort_by_mat_id2(conns, mat_ids)
-    conns, mat_ids, descs = split_by_mat_id(conns, mat_ids, descs)
-    mesh._set_data(coors, ngroups, conns, mat_ids, descs)
+    # Remove empty groups.
+    conns, mat_ids, descs = zip(*[(conns[ig], mat_ids[ig], descs[ig])
+                                  for ig in xrange(4)
+                                  if conns[ig].shape[0] > 0])
+
+    mesh._set_io_data(coors, ngroups, conns, mat_ids, descs)
     return mesh
 
 class AVSUCDMeshIO(MeshIO):
@@ -2213,11 +2119,9 @@ class BDFMeshIO(MeshIO):
         nod = nm.array(nod, nm.float64)
         if dim == 2:
             nod = nod[:,:2].copy()
-        conns_in = nm.array(conns_in, nm.int32)
 
-        conns_in, mat_ids = sort_by_mat_id(conns_in)
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, descs)
-        mesh._set_data(nod, node_grp, conns, mat_ids, descs)
+        conns, mat_ids = split_conns_mat_ids(conns_in)
+        mesh._set_io_data(nod, node_grp, conns, mat_ids, descs)
 
         return mesh
 
@@ -2235,9 +2139,7 @@ class BDFMeshIO(MeshIO):
     def write(self, filename, mesh, out=None, **kwargs):
         fd = open(filename, 'w')
 
-        coors = mesh.coors
-        conns, desc = join_conn_groups(mesh.conns, mesh.descs,
-                                       mesh.mat_ids, concat=True)
+        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
 
         n_nod, dim = coors.shape
 
@@ -2248,10 +2150,11 @@ class BDFMeshIO(MeshIO):
         iel = 0
         mats = {}
         for ig, conn in enumerate(conns):
+            ids = mat_ids[ig]
             for ii in range(conn.shape[0]):
                 iel += 1
-                nn = conn[ii][:-1] + 1
-                mat = conn[ii][-1]
+                nn = conn[ii] + 1
+                mat = ids[ii]
                 if mat in mats:
                     mats[mat] += 1
                 else:
@@ -2438,11 +2341,9 @@ class NEUMeshIO(MeshIO):
                 descs.append(elem)
 
         nod = nm.array(nod, nm.float64)
-        conns_in = nm.array(conns_in, nm.int32)
 
-        conns_in, mat_ids = sort_by_mat_id(conns_in)
-        conns, mat_ids, descs = split_by_mat_id(conns_in, mat_ids, descs)
-        mesh._set_data(nod, None, conns, mat_ids, descs, nodal_bcs=nodal_bcs)
+        conns, mat_ids = split_conns_mat_ids(conns_in)
+        mesh._set_io_data(nod, None, conns, mat_ids, descs, nodal_bcs=nodal_bcs)
 
         return mesh
 

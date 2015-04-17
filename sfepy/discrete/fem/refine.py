@@ -5,11 +5,13 @@ import numpy as nm
 
 from sfepy.discrete.fem import Mesh
 
-def refine_2_3(mesh_in, cmesh):
+def refine_2_3(mesh_in):
     """
     Refines mesh out of triangles by cutting cutting each edge in half
     and making 4 new finer triangles out of one coarser one.
     """
+    cmesh = mesh_in.cmesh
+
     # Unique edge centres.
     e_centres = cmesh.get_centroids(cmesh.dim - 1)
 
@@ -19,38 +21,34 @@ def refine_2_3(mesh_in, cmesh):
     o1 = mesh_in.n_nod
 
     cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
-    offs = cc.offsets
 
-    conns = []
-    mat_ids = []
-    for ig, conn in enumerate(mesh_in.conns):
-        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
-        n_el  = conn.shape[0]
+    conn = mesh_in.get_conn('2_3')
+    n_el = conn.shape[0]
 
-        e_nodes = cc.indices[offs[off0]:offs[off1]].reshape((n_el, 3)) + o1
+    e_nodes = cc.indices.reshape((n_el, 3)) + o1
 
-        c = nm.c_[conn, e_nodes].T
+    c = nm.c_[conn, e_nodes].T
 
-        new_conn = nm.vstack([c[0], c[3], c[5],
-                              c[3], c[4], c[5],
-                              c[1], c[4], c[3],
-                              c[2], c[5], c[4]]).T
-        new_conn = new_conn.reshape((4 * n_el, 3))
-        conns.append(new_conn)
+    new_conn = nm.vstack([c[0], c[3], c[5],
+                          c[3], c[4], c[5],
+                          c[1], c[4], c[3],
+                          c[2], c[5], c[4]]).T
+    new_conn = new_conn.reshape((4 * n_el, 3))
 
-        new_mat_id = mesh_in.mat_ids[ig].repeat(4)
-        mat_ids.append(new_mat_id)
+    new_mat_id = cmesh.cell_groups.repeat(4)
 
-    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, conns,
-                          mat_ids, mesh_in.descs )
+    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, [new_conn],
+                          [new_mat_id], mesh_in.descs )
 
     return mesh
 
-def refine_2_4(mesh_in, cmesh):
+def refine_2_4(mesh_in):
     """
     Refines mesh out of quadrilaterals by cutting cutting each edge in
     half and making 4 new finer quadrilaterals out of one coarser one.
     """
+    cmesh = mesh_in.cmesh
+
     # Unique edge centres.
     e_centres = cmesh.get_centroids(cmesh.dim - 1)
 
@@ -64,35 +62,29 @@ def refine_2_4(mesh_in, cmesh):
     o2 = o1 + e_centres.shape[0]
 
     cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
-    offs = cc.offsets
 
-    conns = []
-    mat_ids = []
-    for ig, conn in enumerate(mesh_in.conns):
-        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
-        n_el  = conn.shape[0]
+    conn = mesh_in.get_conn('2_4')
+    n_el = conn.shape[0]
 
-        e_nodes = cc.indices[offs[off0]:offs[off1]].reshape((n_el, 4)) + o1
-        nodes = nm.arange(n_el) + off0 + o2
+    e_nodes = cc.indices.reshape((n_el, 4)) + o1
+    nodes = nm.arange(n_el) + o2
 
-        c = nm.c_[conn, e_nodes, nodes].T
+    c = nm.c_[conn, e_nodes, nodes].T
 
-        new_conn = nm.vstack([c[0], c[4], c[8], c[7],
-                              c[1], c[5], c[8], c[4],
-                              c[2], c[6], c[8], c[5],
-                              c[3], c[7], c[8], c[6]]).T
-        new_conn = new_conn.reshape((4 * n_el, 4))
-        conns.append(new_conn)
+    new_conn = nm.vstack([c[0], c[4], c[8], c[7],
+                          c[1], c[5], c[8], c[4],
+                          c[2], c[6], c[8], c[5],
+                          c[3], c[7], c[8], c[6]]).T
+    new_conn = new_conn.reshape((4 * n_el, 4))
 
-        new_mat_id = mesh_in.mat_ids[ig].repeat(4)
-        mat_ids.append(new_mat_id)
+    new_mat_id = cmesh.cell_groups.repeat(4)
 
-    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, conns,
-                          mat_ids, mesh_in.descs )
+    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, [new_conn],
+                          [new_mat_id], mesh_in.descs )
 
     return mesh
 
-def refine_3_4(mesh_in, cmesh):
+def refine_3_4(mesh_in):
     """
     Refines tetrahedra by cutting each edge in half and making 8 new
     finer tetrahedra out of one coarser one. Old nodal coordinates come
@@ -112,6 +104,8 @@ def refine_3_4(mesh_in, cmesh):
       no. 4, 355--378, or
       http://citeseer.ist.psu.edu/bey95tetrahedral.html
     """
+    cmesh = mesh_in.cmesh
+
     # Unique edge centres.
     e_centres = cmesh.get_centroids(cmesh.dim - 2)
 
@@ -121,42 +115,38 @@ def refine_3_4(mesh_in, cmesh):
     o1 = mesh_in.n_nod
 
     cc = cmesh.get_conn(cmesh.dim, cmesh.dim - 2)
-    offs = cc.offsets
 
-    conns = []
-    mat_ids = []
-    for ig, conn in enumerate(mesh_in.conns):
-        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
-        n_el  = conn.shape[0]
+    conn = mesh_in.get_conn('3_4')
+    n_el = conn.shape[0]
 
-        e_nodes = cc.indices[offs[off0]:offs[off1]].reshape((n_el, 6)) + o1
+    e_nodes = cc.indices.reshape((n_el, 6)) + o1
 
-        c = nm.c_[conn, e_nodes].T
+    c = nm.c_[conn, e_nodes].T
 
-        new_conn = nm.vstack([c[0], c[4], c[6], c[7],
-                              c[4], c[1], c[5], c[8],
-                              c[6], c[5], c[2], c[9],
-                              c[7], c[8], c[9], c[3],
-                              c[4], c[6], c[7], c[8],
-                              c[4], c[6], c[8], c[5],
-                              c[6], c[7], c[8], c[9],
-                              c[6], c[5], c[9], c[8]]).T
-        new_conn = new_conn.reshape((8 * n_el, 4))
-        conns.append(new_conn)
+    new_conn = nm.vstack([c[0], c[4], c[6], c[7],
+                          c[4], c[1], c[5], c[8],
+                          c[6], c[5], c[2], c[9],
+                          c[7], c[8], c[9], c[3],
+                          c[4], c[6], c[7], c[8],
+                          c[4], c[6], c[8], c[5],
+                          c[6], c[7], c[8], c[9],
+                          c[6], c[5], c[9], c[8]]).T
+    new_conn = new_conn.reshape((8 * n_el, 4))
 
-        new_mat_id = mesh_in.mat_ids[ig].repeat(8)
-        mat_ids.append(new_mat_id)
+    new_mat_id = cmesh.cell_groups.repeat(8)
 
-    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, conns,
-                          mat_ids, mesh_in.descs )
+    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, [new_conn],
+                          [new_mat_id], mesh_in.descs )
 
     return mesh
 
-def refine_3_8(mesh_in, cmesh):
+def refine_3_8(mesh_in):
     """
     Refines hexahedral mesh by cutting cutting each edge in half and
     making 8 new finer hexahedrons out of one coarser one.
     """
+    cmesh = mesh_in.cmesh
+
     # Unique edge centres.
     e_centres = cmesh.get_centroids(cmesh.dim - 2)
 
@@ -164,8 +154,7 @@ def refine_3_8(mesh_in, cmesh):
     f_centres = cmesh.get_centroids(cmesh.dim - 1)
 
     # Unique element centres.
-    coors = mesh_in.get_element_coors()
-    centres = 0.125 * nm.sum(coors, axis=1)
+    centres = cmesh.get_centroids(cmesh.dim)
 
     # New coordinates after the original ones.
     coors = nm.r_[mesh_in.coors, e_centres, f_centres, centres]
@@ -175,41 +164,33 @@ def refine_3_8(mesh_in, cmesh):
     o3 = o2 + f_centres.shape[0]
 
     ecc = cmesh.get_conn(cmesh.dim, cmesh.dim - 2)
-    eoffs = ecc.offsets
-
     fcc = cmesh.get_conn(cmesh.dim, cmesh.dim - 1)
-    foffs = fcc.offsets
+
+    conn = mesh_in.get_conn('3_8')
+    n_el = conn.shape[0]
 
     st = nm.vstack
 
-    conns = []
-    mat_ids = []
-    for ig, conn in enumerate(mesh_in.conns):
-        off0, off1 = mesh_in.el_offsets[ig : ig + 2]
-        n_el  = conn.shape[0]
+    e_nodes = ecc.indices.reshape((n_el, 12)) + o1
+    f_nodes = fcc.indices.reshape((n_el, 6)) + o2
+    nodes = nm.arange(n_el) + o3
 
-        e_nodes = ecc.indices[eoffs[off0]:eoffs[off1]].reshape((n_el, 12)) + o1
-        f_nodes = fcc.indices[foffs[off0]:foffs[off1]].reshape((n_el, 6)) + o2
-        nodes = nm.arange(n_el) + off0 + o3
+    c = nm.c_[conn, e_nodes, f_nodes, nodes].T
 
-        c = nm.c_[conn, e_nodes, f_nodes, nodes].T
+    new_conn = st([c[0], c[8], c[20], c[11], c[16], c[22], c[26], c[21],
+                   c[1], c[9], c[20], c[8], c[17], c[24], c[26], c[22],
+                   c[2], c[10], c[20], c[9], c[18], c[25], c[26], c[24],
+                   c[3], c[11], c[20], c[10], c[19], c[21], c[26], c[25],
+                   c[4], c[15], c[23], c[12], c[16], c[21], c[26], c[22],
+                   c[5], c[12], c[23], c[13], c[17], c[22], c[26], c[24],
+                   c[6], c[13], c[23], c[14], c[18], c[24], c[26], c[25],
+                   c[7], c[14], c[23], c[15], c[19], c[25], c[26], c[21]]).T
+    new_conn = new_conn.reshape((8 * n_el, 8))
 
-        new_conn = st([c[0], c[8], c[20], c[11], c[16], c[22], c[26], c[21],
-                       c[1], c[9], c[20], c[8], c[17], c[24], c[26], c[22],
-                       c[2], c[10], c[20], c[9], c[18], c[25], c[26], c[24],
-                       c[3], c[11], c[20], c[10], c[19], c[21], c[26], c[25],
-                       c[4], c[15], c[23], c[12], c[16], c[21], c[26], c[22],
-                       c[5], c[12], c[23], c[13], c[17], c[22], c[26], c[24],
-                       c[6], c[13], c[23], c[14], c[18], c[24], c[26], c[25],
-                       c[7], c[14], c[23], c[15], c[19], c[25], c[26], c[21]]).T
-        new_conn = new_conn.reshape((8 * n_el, 8))
-        conns.append(new_conn)
+    new_mat_id = cmesh.cell_groups.repeat(8)
 
-        new_mat_id = mesh_in.mat_ids[ig].repeat(8)
-        mat_ids.append(new_mat_id)
-
-    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, conns,
-                          mat_ids, mesh_in.descs )
+    mesh = Mesh.from_data(mesh_in.name + '_r', coors, None, [new_conn],
+                          [new_mat_id], mesh_in.descs )
 
     return mesh
 
@@ -242,7 +223,7 @@ def refine_reference(geometry, level):
         domain = domain.refine()
 
     coors = domain.mesh.coors
-    conn = domain.mesh.conns[0]
+    conn = domain.get_conn()
 
     n_el = conn.shape[0]
 

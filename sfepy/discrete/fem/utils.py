@@ -69,18 +69,17 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     imap.fill(nodes.shape[0]) # out-of-range index for normals.
     imap[nodes] = nm.arange(nodes.shape[0], dtype=nm.int32)
 
-    for ig in region.igs:
-        cmap, _ = field.get_mapping(ig, region, integral, 'surface')
-        e_normals = cmap.normal[..., 0]
+    cmap, _ = field.get_mapping(region, integral, 'surface')
+    e_normals = cmap.normal[..., 0]
 
-        sd = field.domain.surface_groups[ig][region.name]
-        econn = sd.get_connectivity()
-        mask[econn] += 1
+    sd = field.domain.surface_groups[region.name]
+    econn = sd.get_connectivity()
+    mask[econn] += 1
 
-        # normals[imap[econn]] += e_normals
-        im = imap[econn]
-        for ii, en in enumerate(e_normals):
-            normals[im[ii]] += en
+    # normals[imap[econn]] += e_normals
+    im = imap[econn]
+    for ii, en in enumerate(e_normals):
+        normals[im[ii]] += en
 
     # All nodes must have a normal.
     if not nm.all(mask[nodes] > 0):
@@ -273,45 +272,31 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False,
     edata.fill(val)
 
     region = domain.regions[rname]
-    eoffs = domain.get_cell_offsets()
 
     if not is_surface:
-        offs = region.get_cell_offsets()
-        for group in domain.iter_groups():
-            ig = group.ig
-            ii = eoffs[ig]
-            if ig in region.igs:
-                n_cell = region.shape[ig].n_cell
-                ir = offs[ig]
-                edata[ii+region.get_cells(ig)] = data[ir:ir+n_cell]
+        edata[region.get_cells()] = data
 
     else:
-        for group in domain.iter_groups():
-            ig = group.ig
-            ii = eoffs[ig]
-            if ig in region.igs:
-                cells = region.get_cells(ig, true_cells_only=False)
-                ucells = nm.unique(cells)
+        cells = region.get_cells(true_cells_only=False)
+        ucells = nm.unique(cells)
 
-                i1 = region.get_facets(ig)
-                i2 = region.facets
-                dii = nm.searchsorted(i2, i1)
+        dii = region.facets
 
-                if len(cells) != len(dii):
-                    raise ValueError('region %s has an inner face!'
-                                     % region.name)
+        if len(cells) != len(dii):
+            raise ValueError('region %s has an inner face!'
+                             % region.name)
 
-                if average_surface:
-                    avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]
+        if average_surface:
+            avg = nm.bincount(cells, minlength=n_el)[ucells]
 
-                else:
-                    avg = 1.0
+        else:
+            avg = 1.0
 
-                for ic in xrange(data.shape[2]):
-                    evals = nm.bincount(cells, weights=data[dii, 0, ic, 0],
-                                        minlength=group.shape.n_el)[ucells]
+        for ic in xrange(data.shape[2]):
+            evals = nm.bincount(cells, weights=data[dii, 0, ic, 0],
+                                minlength=n_el)[ucells]
 
-                    edata[ii+ucells, 0, ic, 0] = evals / avg
+            edata[ucells, 0, ic, 0] = evals / avg
 
     return edata
 

@@ -169,7 +169,7 @@ class Test(TestCommon):
             self.report('domain: %s' % domain.name)
 
             for _, term_cls in ordered_iteritems(term_table):
-                if not domain.groups[0].gel.name in term_cls.geometries:
+                if not domain.geom_els.values()[0].name in term_cls.geometries:
                     continue
 
                 rname = 'Omega' \

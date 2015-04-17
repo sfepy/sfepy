@@ -286,7 +286,7 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
 
     return out
 
-def eval_in_els_and_qp(expression, ig, iels, coors,
+def eval_in_els_and_qp(expression, iels, coors,
                        fields, materials, variables,
                        functions=None, mode='eval', term_mode=None,
                        extra_args=None, verbose=True, kwargs=None):
@@ -332,14 +332,13 @@ def eval_in_els_and_qp(expression, ig, iels, coors,
     domain = fields.values()[0].domain
 
     region = Region('Elements', 'given elements', domain, '')
-    region.cells = iels + domain.mesh.el_offsets[ig]
+    region.cells = iels
     region.update_shape()
     domain.regions.append(region)
 
     for field in fields.itervalues():
         field.clear_mappings(clear_all=True)
-        for ap in field.aps.itervalues():
-            ap.clear_qp_base()
+        field.ap.clear_qp_base()
 
     aux = create_evaluable(expression, fields, materials,
                            variables.itervalues(), Integrals([integral]),

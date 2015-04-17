@@ -147,6 +147,7 @@ cdef class CMesh:
     cdef Mesh mesh[1]
 
     cdef readonly np.ndarray coors
+    cdef readonly np.ndarray vertex_groups
     cdef readonly np.ndarray cell_types
     cdef readonly np.ndarray cell_groups # ig for each cell.
     cdef readonly list conns
@@ -160,9 +161,9 @@ cdef class CMesh:
     cdef readonly dict key_to_index
 
     @classmethod
-    def from_mesh(cls, mesh):
+    def from_data(cls, coors, vertex_groups, conns, mat_ids, descs):
         """
-        Fill data from a Python mesh.
+        Fill CMesh data using Python data.
         """
         cdef uint32 tdim
         cdef np.ndarray[float64, mode='c', ndim=2] _coors
@@ -171,21 +172,27 @@ cdef class CMesh:
 
         self = CMesh()
 
+        n_e_ps = np.array([conn.shape[1] for conn in conns])
+        n_els = np.array([conn.shape[0] for conn in conns])
+        n_el = np.sum(n_els)
+
         # Max. topological dimension of cells.
         tdim = 0
-        for desc in mesh.descs:
+        for desc in descs:
             tdim = max(tdim, int(desc[0]))
 
         # Geometry coordinates.
-        self.n_coor, self.dim = mesh.coors.shape
+        self.n_coor, self.dim = coors.shape
         if (self.dim < 1) or (self.dim > 3):
             raise ValueError('CMesh geometry dimension must be 1, 2 or 3! (%d)'
                              % self.dim)
-        _coors = self.coors = mesh.coors.copy()
+        _coors = self.coors = coors.copy()
         mesh_set_coors(self.mesh, &_coors[0, 0], self.n_coor, self.dim, tdim)
 
+        self.vertex_groups = vertex_groups
+
         # Cell-vertex (D -> 0) connectivity.
-        self.n_el = mesh.n_el
+        self.n_el = n_el
         self.tdim = tdim
         self.mesh.topology.num[self.tdim] = self.n_el
 
@@ -193,18 +200,18 @@ cdef class CMesh:
         self.mesh.topology.cell_types = &_cell_types[0]
 
         # Length of connectivity.
-        n_incident = (mesh.n_e_ps * mesh.n_els).sum()
+        n_incident = (n_e_ps * n_els).sum()
 
         ii = self._get_conn_indx(self.tdim, 0)
         cconn = _create_cconn(self.mesh.topology.conn[ii],
                               self.n_el, n_incident, 'D -> 0')
 
-        self.cell_groups = np.empty(self.n_el, dtype=np.uint32)
+        self.cell_groups = mat_ids
 
         indices = []
         offsets = []
         ict = 0
-        for ig, conn in enumerate(mesh.conns):
+        for ig, conn in enumerate(conns):
             n_el, n_ep = conn.shape
 
             off = np.empty(n_el, dtype=np.uint32)
@@ -212,8 +219,7 @@ cdef class CMesh:
             offsets.append(off)
             indices.append(conn.ravel())
 
-            self.cell_types[ict:ict+n_el] = self.key_to_index[mesh.descs[ig]]
-            self.cell_groups[ict:ict+n_el] = ig
+            self.cell_types[ict:ict+n_el] = self.key_to_index[descs[ig]]
 
             ict += n_el
 
@@ -245,6 +251,165 @@ cdef class CMesh:
 
     def __dealloc__(self):
         mesh_free(self.mesh)
+
+    def create_new(self,
+                   np.ndarray[uint32, mode='c', ndim=1] entities=None,
+                   int32 dent=0, localize=False):
+        """
+        Create a new CMesh instance, with cells corresponding to the given
+        `entities` of dimension `dent`.
+
+        Parameters
+        ----------
+        entities : array, optional
+            The selected topological entities of the mesh to be in the new
+            mesh. If not given, a copy of the mesh based on the cell-vertex
+            connectivity is returned.
+        dent : int, optional
+            The topological dimension of the entities.
+        localize : bool
+            If True, strip the vertices not used in the the resulting sub-mesh
+            cells and renumber the connectivity.
+
+        Returns
+        -------
+        cmesh : CMesh
+            The new mesh with the cell-vertex connectivity. Other
+            connectivities have to be created and local entities need to be set
+            manually.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=2] _coors
+        cdef np.ndarray[uint32, mode='c', ndim=1] _ct
+        cdef uint32 ii, tdim, n_v, num
+        cdef uint32 *pct, *poffsets
+        cdef np.ndarray[uint32, mode='c', ndim=1] indices
+        cdef np.ndarray[uint32, mode='c', ndim=1] offsets
+        cdef Indices _entities[1]
+        cdef MeshConnectivity _incident[1]
+        cdef CMesh cmesh
+
+        if entities is None: # Make a copy based cell-vertex connectivity.
+            cmesh = CMesh()
+
+            cmesh.n_coor = self.n_coor
+            cmesh.dim = self.dim
+            cmesh.n_el = self.n_el
+            cmesh.tdim = self.tdim
+
+            _coors = cmesh.coors = self.coors.copy()
+            mesh_set_coors(cmesh.mesh, &_coors[0, 0],
+                           cmesh.n_coor, cmesh.dim, cmesh.tdim)
+
+            cmesh.vertex_groups = self.vertex_groups.copy()
+            cmesh.cell_groups = self.cell_groups.copy()
+
+            cmesh.mesh.topology.num[cmesh.tdim] = cmesh.n_el
+
+            _ct = cmesh.cell_types = self.cell_types.copy()
+            cmesh.mesh.topology.cell_types = &_ct[0]
+
+            ii = cmesh._get_conn_indx(cmesh.tdim, 0)
+            scconn = self.conns[ii]
+            cconn = _create_cconn(cmesh.mesh.topology.conn[ii],
+                                  cmesh.n_el, scconn.n_incident, 'D -> 0')
+            cconn.indices[:] = scconn.indices
+            cconn.offsets[:] = scconn.offsets
+
+            cmesh.conns = [None] * (cmesh.mesh.topology.max_dim + 1)**2
+            cmesh.conns[ii] = cconn
+
+        else: # Create a submesh based on entities as cells.
+            if dent < 1:
+                raise ValueError('dimension of entities must be >= 1! (%d)'
+                                 % dent)
+
+            cmesh = CMesh()
+
+            cmesh.dim = self.dim
+            cmesh.n_el = entities.shape[0]
+            cmesh.tdim = dent
+
+            _entities.num = entities.shape[0]
+            _entities.indices = &entities[0]
+
+            cmesh.mesh.topology.num[cmesh.tdim] = cmesh.n_el
+
+            num = mesh_count_incident(self.mesh, 0, _entities, dent)
+
+            indices = np.empty(num, dtype=np.uint32)
+            offsets = np.empty(_entities.num + 1, dtype=np.uint32)
+            _incident.num = _entities.num
+            _incident.n_incident = num
+            _incident.indices = &indices[0]
+            _incident.offsets = &offsets[0]
+            mesh_get_incident(self.mesh, _incident, 0, _entities, dent)
+
+            ii0 = (cmesh.tdim + 1) * cmesh.tdim + 0
+            cconn = _create_cconn(cmesh.mesh.topology.conn[ii0],
+                                  cmesh.n_el, num,'%d -> 0' % dent)
+            cconn.offsets[:] = offsets
+
+            if cmesh.tdim == self.tdim: # Cell-based submesh.
+                cmesh.cell_groups = self.cell_groups[entities].copy()
+
+                _ct = cmesh.cell_types = self.cell_types[entities].copy()
+                cmesh.mesh.topology.cell_types = &_ct[0]
+
+            else: # Face- or edge- based submesh.
+                # Cell groups are not unique -> not preserved at all!
+                cmesh.cell_groups = np.zeros(cmesh.n_el, dtype=np.int32)
+
+                _ct = cmesh.cell_types = np.empty(cmesh.n_el, dtype=np.uint32)
+                pct = cmesh.mesh.topology.cell_types = &_ct[0]
+                poffsets = &_incident.offsets[0]
+                for ii in range(cmesh.n_el):
+                    n_v = poffsets[ii + 1] - poffsets[ii]
+                    if n_v == 2:
+                        pct[ii] = 0
+                    elif n_v == 3:
+                        pct[ii] = 1
+                    elif n_v == 4:
+                        pct[ii] = 2
+
+            if localize:
+                vertices = np.unique(indices)
+                n_new_vertex = vertices.shape[0]
+
+                cmesh.vertex_groups = self.vertex_groups[vertices].copy()
+
+                remap = np.empty(vertices[-1] + 1, dtype=np.uint32)
+                remap.fill(-1)
+                remap[vertices] = np.arange(n_new_vertex, dtype=np.uint32)
+
+                cconn.indices[:] = remap[indices]
+
+                cmesh.n_coor = n_new_vertex
+
+                _coors = cmesh.coors = self.coors[vertices].copy()
+                mesh_set_coors(cmesh.mesh, &_coors[0, 0],
+                               cmesh.n_coor, cmesh.dim, cmesh.tdim)
+
+            else:
+                cmesh.vertex_groups = self.vertex_groups.copy()
+
+                cconn.indices[:] = indices
+
+                cmesh.n_coor = self.n_coor
+
+                _coors = cmesh.coors = self.coors.copy()
+                mesh_set_coors(cmesh.mesh, &_coors[0, 0],
+                               cmesh.n_coor, cmesh.dim, cmesh.tdim)
+
+            ii = cmesh._get_conn_indx(cmesh.tdim, 0)
+            if ii != ii0:
+                raise AssertionError('wrong connectivity index!(%d == %d)'
+                                     % (ii, ii0))
+            cmesh.conns = [None] * (cmesh.mesh.topology.max_dim + 1)**2
+            cmesh.conns[ii] = cconn
+
+        cmesh._update_num()
+
+        return cmesh
 
     def set_local_entities(self, gels):
         cdef MeshConnectivity *pedges, *pfaces
@@ -565,62 +730,6 @@ cdef class CMesh:
             raise ValueError('only edges or faces have orientations! (%d)'
                              % dim)
 
-    def get_from_cell_group(self, int32 ig, int32 dim,
-                            np.ndarray[uint32, mode='c', ndim=1] entities=None):
-        """
-        Get entities of dimension `dim` that are contained in cells of group
-        `ig` and are listed in `entities`. If `entities` is None, all entities
-        are used.
-
-        Adapter function to be removed after new assembling is done.
-        """
-        cdef np.ndarray[uint32, mode='c', ndim=1] cells
-        cdef np.ndarray[uint32, mode='c', ndim=1] candidates
-        cdef np.ndarray[uint32, mode='c', ndim=1] out
-
-        cells = np.where(self.cell_groups == ig)[0].astype(np.uint32)
-        if cells.shape[0] == 0:
-            raise ValueError('group %d does not exist!' % ig)
-
-        if dim == self.tdim:
-            candidates = cells
-
-        else:
-            self.setup_connectivity(self.tdim, dim)
-            candidates = self.get_incident(dim, cells, self.tdim)
-
-        if entities is not None:
-            out = np.intersect1d(candidates, entities)
-
-        else:
-            out = candidates
-
-        return out
-
-    def get_igs(self,
-                np.ndarray[uint32, mode='c', ndim=1] entities not None,
-                int32 dim):
-        """
-        Get cell groups of incident to entities of dimension `dim`.
-
-        Adapter function to be removed after new assembling is done.
-        """
-        cdef np.ndarray[uint32, mode='c', ndim=1] cells
-
-        if not entities.shape[0] > 0:
-            return np.empty(0, dtype=np.uint32)
-
-        if dim == self.tdim:
-            cells = entities
-
-        else:
-            self.setup_connectivity(dim, self.tdim)
-            cells = self.get_incident(self.tdim, entities, dim)
-
-        igs = np.unique(self.cell_groups[cells])
-
-        return igs
-
     def get_centroids(self, dim):
         """
         Return the coordinates of centroids of mesh entities with dimension
@@ -652,9 +761,7 @@ def get_cmem_usage():
 cdef extern from 'meshutils.h':
     int32 c_orient_elements \
           'orient_elements'(int32 *flag, int32 flag_n_row,
-                            int32 *conn, int32 conn_n_row, int32 conn_n_col,
-                            float64 *coors,
-                            int32 coors_n_row, int32 coors_n_col,
+                            Mesh *mesh, Indices *cells, int32 dcells,
                             int32 *v_roots, int32 v_roots_n_row,
                             int32 *v_vecs,
                             int32 v_vecs_n_row, int32 v_vecs_n_col,
@@ -677,8 +784,9 @@ cdef extern from 'meshutils.h':
 
 @cython.boundscheck(False)
 def orient_elements(np.ndarray[int32, mode='c', ndim=1] flag not None,
-                    np.ndarray[int32, mode='c', ndim=2] conn not None,
-                    np.ndarray[float64, mode='c', ndim=2] coors not None,
+                    CMesh cmesh not None,
+                    np.ndarray[uint32, mode='c', ndim=1] cells not None,
+                    int32 dcells,
                     np.ndarray[int32, mode='c', ndim=1] v_roots not None,
                     np.ndarray[int32, mode='c', ndim=2] v_vecs not None,
                     np.ndarray[int32, mode='c', ndim=2] swap_from not None,
@@ -686,9 +794,13 @@ def orient_elements(np.ndarray[int32, mode='c', ndim=1] flag not None,
     """
     Swap element nodes so that its volume is positive.
     """
+    cdef Indices _cells[1]
+
+    _cells.num = cells.shape[0]
+    _cells.indices = &cells[0]
+
     return c_orient_elements(&flag[0], flag.shape[0],
-                             &conn[0, 0], conn.shape[0], conn.shape[1],
-                             &coors[0, 0], coors.shape[0], coors.shape[1],
+                             cmesh.mesh, _cells, dcells,
                              &v_roots[0], v_roots.shape[0],
                              &v_vecs[0, 0], v_vecs.shape[0], v_vecs.shape[1],
                              &swap_from[0, 0],

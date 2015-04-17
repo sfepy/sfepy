@@ -33,19 +33,15 @@ def define_regions(filename):
     # Sides and corners.
     regions.update(define_box_regions(2, (wx, wy)))
 
-    return dim, regions, mat_ids
+    return dim, regions
 
-def get_pars(ts, coor, mode=None, term=None, group_indx=None,
-             mat_ids = [], **kwargs):
+def get_pars(ts, coor, mode=None, term=None, **kwargs):
     """
     Define material parameters: :math:`D_ijkl` (elasticity), in a given region.
     """
     if mode == 'qp':
         dim = coor.shape[1]
         sym = (dim + 1) * dim / 2
-
-        m2i = term.region.domain.mat_ids_to_i_gs
-        matrix_igs = [m2i[im] for im in mat_ids]
 
         out = {}
 
@@ -59,9 +55,10 @@ def get_pars(ts, coor, mode=None, term=None, group_indx=None,
         for key, val in out.iteritems():
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
 
-        for ig, indx in group_indx.iteritems():
-            if ig not in matrix_igs: # channels
-                out['D'][indx] *= 1e-1
+        channels_cells = term.region.domain.regions['Yc'].cells
+        n_cell = term.region.get_n_cells()
+        val = out['D'].reshape((n_cell, -1, 3, 3))
+        val[channels_cells] *= 1e-1
 
         return out
 
@@ -72,11 +69,11 @@ filename_mesh = data_dir + '/meshes/2d/special/osteonT1_11.mesh'
 ##
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...
 # depending on a mesh used.
-dim, regions, mat_ids = define_regions(filename_mesh)
+dim, regions = define_regions(filename_mesh)
 
 functions = {
     'get_pars' : (lambda ts, coors, **kwargs:
-                  get_pars(ts, coors, mat_ids=mat_ids, **kwargs),),
+                  get_pars(ts, coors, **kwargs),),
     'match_x_plane' : (per.match_x_plane,),
     'match_y_plane' : (per.match_y_plane,),
     'match_z_plane' : (per.match_z_plane,),

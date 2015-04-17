@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
+from sfepy.base.base import iter_dict_of_lists, Struct, basestr
 
 def parse_approx_order(approx_order):
     """
@@ -169,36 +169,6 @@ class Field(Struct):
         self.space = aux[1]
         self.poly_space_base = aux[2]
 
-    def get_dofs_in_region(self, region, merge=False, clean=False,
-                           warn=False, igs=None):
-        """
-        Return indices of DOFs that belong to the given region.
-        """
-        if igs is None:
-            igs = region.igs
-
-        nods = []
-        for ig in self.igs:
-            if not ig in igs:
-                nods.append(None)
-                continue
-
-            nn = self.get_dofs_in_region_group(region, ig)
-            nods.append(nn)
-
-        if merge:
-            nods = [nn for nn in nods if nn is not None]
-            nods = nm.unique(nm.hstack(nods))
-
-        elif clean:
-            for nn in nods[:]:
-                if nn is None:
-                    nods.remove(nn)
-                    if warn is not None:
-                        output(warn + ('%s' % region.name))
-
-        return nods
-
     def clear_mappings(self, clear_all=False):
         """
         Clear current reference mappings.
@@ -213,7 +183,7 @@ class Field(Struct):
         """
         self.mappings0 = self.mappings.copy()
 
-    def get_mapping(self, ig, region, integral, integration,
+    def get_mapping(self, region, integral, integration,
                     get_saved=False, return_key=False):
         """
         For given region, integral and integration type, get a reference
@@ -237,7 +207,7 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
-        key = (region.name, integral.order, ig, integration)
+        key = (region.name, integral.order, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)
@@ -246,7 +216,7 @@ class Field(Struct):
             out = self.mappings.get(key, None)
 
         if out is None:
-            out = self.create_mapping(ig, region, integral, integration)
+            out = self.create_mapping(region, integral, integration)
             self.mappings[key] = out
 
         if return_key:

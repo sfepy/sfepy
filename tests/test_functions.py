@@ -109,13 +109,13 @@ class Test( TestCommon ):
         mat1.time_update(ts, None, mode='normal', problem=problem)
 
         coors = problem.domain.get_mesh_coors()
-        assert_(nm.all(coors[:,0] == mat1.get_data(None, None, 'x_0')))
+        assert_(nm.all(coors[:,0] == mat1.get_data(None, 'x_0')))
 
         conf_mat2 = conf.get_item_by_name('materials', 'mf2')
         mat2 = Material.from_conf(conf_mat2, problem.functions)
         mat2.time_update(ts, None, mode='normal', problem=problem)
 
-        assert_(nm.all(coors[:,1] == mat2.get_data(None, None, 'x_1')))
+        assert_(nm.all(coors[:,1] == mat2.get_data(None, 'x_1')))
 
         materials = problem.get_materials()
         materials.time_update(ts, problem.equations, mode='normal',
@@ -123,9 +123,9 @@ class Test( TestCommon ):
         mat3 = materials['mf3']
         key = mat3.get_keys(region_name='Omega')[0]
 
-        assert_(nm.all(mat3.get_data(key, 0, 'a') == 10.0))
-        assert_(nm.all(mat3.get_data(key, 0, 'b') == 2.0))
-        assert_(mat3.get_data(None, None, 'c') == 'ahoj')
+        assert_(nm.all(mat3.get_data(key, 'a') == 10.0))
+        assert_(nm.all(mat3.get_data(key, 'b') == 2.0))
+        assert_(mat3.get_data(None, 'c') == 'ahoj')
 
         return True
 
@@ -146,12 +146,12 @@ class Test( TestCommon ):
 
         vec = state()
 
-        iv = domain.regions['Left'].get_vertices(0)
+        iv = domain.regions['Left'].vertices
         coors = domain.get_mesh_coors()[iv]
         ok = ok and self.compare_vectors(vec[iv], nm.sin(nm.pi * coors[:,1]),
                                          label1='state_left', label2='bc_left')
 
-        iv = domain.regions['Right'].get_vertices(0)
+        iv = domain.regions['Right'].vertices
         coors = domain.get_mesh_coors()[iv]
         ok = ok and self.compare_vectors(vec[iv], nm.cos(nm.pi * coors[:,1]),
                                          label1='state_right', label2='bc_right')

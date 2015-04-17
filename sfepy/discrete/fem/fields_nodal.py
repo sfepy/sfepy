@@ -33,14 +33,12 @@ class H1NodalMixin(H1Mixin):
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
             n_fp = self.gel.edges.shape[1]
-            self.edge_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             order)
+            self.edge_dof_perms = get_facet_dof_permutations(n_fp, order)
 
         face_nodes = self.node_desc.face_nodes
         if face_nodes is not None:
             n_fp = self.gel.faces.shape[1]
-            self.face_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             order)
+            self.face_dof_perms = get_facet_dof_permutations(n_fp, order)
 
     def _setup_edge_dofs(self):
         """
@@ -88,29 +86,31 @@ class H1NodalMixin(H1Mixin):
         n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
 
         oris = cmesh.get_orientations(dim)
-        for ig, ap in self.aps.iteritems():
-            gcells = self.region.get_cells(ig, offset=False)
-            n_el = gcells.shape[0]
 
-            indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
-            facets_of_cells = remap[indices]
+        gcells = self.region.get_cells()
+        n_el = gcells.shape[0]
 
-            ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
-            perms = facet_perms[ig][ori]
+        # Elements of facets.
+        iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+        ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
-            # Define global facet dof numbers.
-            gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
-                                                  n_dof_per_facet)
+        aux = offs[gcells][:, None] + ies.reshape((n_el, n_f))
 
-            # Elements of facets.
-            iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
-            ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
+        indices = cconn.indices[aux]
+        facets_of_cells = remap[indices].ravel()
 
-            # DOF columns in econn for each facet.
-            iep = facet_desc[ies]
+        ori = oris[aux].ravel()
+        perms = facet_perms[ori]
 
-            iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
-            ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
+        # Define global facet dof numbers.
+        gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
+                                              n_dof_per_facet)
+
+        # DOF columns in econn for each facet.
+        iep = facet_desc[ies]
+
+        iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
+        self.ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
 
         n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
@@ -122,31 +122,22 @@ class H1NodalMixin(H1Mixin):
         Setup bubble DOF connectivity.
         """
         if self.node_desc.bubble is None:
-            return 0, None, None
+            return 0, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
-        n_dof = 0
         n_dof_per_cell = self.node_desc.bubble.shape[0]
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            n_cell = ii.shape[0]
-            nd = n_dof_per_cell * n_cell
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        ap = self.ap
+        ii = self.region.get_cells()
+        n_cell = ii.shape[0]
+        n_dof = n_dof_per_cell * n_cell
 
-            aux = nm.arange(offset + n_dof, offset + n_dof + nd,
-                            dtype=nm.int32)
-            aux.shape = (n_cell, n_dof_per_cell)
-            iep = self.node_desc.bubble[0]
-            ap.econn[:,iep:] = aux
-            all_dofs[ig] = aux
+        all_dofs = nm.arange(offset, offset + n_dof, dtype=nm.int32)
+        all_dofs.shape = (n_cell, n_dof_per_cell)
+        iep = self.node_desc.bubble[0]
+        ap.econn[:,iep:] = all_dofs
 
-            n_dof += nd
-
-        return n_dof, all_dofs, remaps
+        return n_dof, all_dofs
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
@@ -159,7 +150,7 @@ class H1NodalMixin(H1Mixin):
         if dpn is None:
             dpn = self.n_components
 
-        aux = self.get_dofs_in_region(region, clean=True, warn=warn)
+        aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
 
         if callable(fun):
@@ -234,26 +225,17 @@ class H1NodalMixin(H1Mixin):
                                                  verbose=verbose)
 
         tt = time.clock()
-        vertex_coorss, nodess, orders, mtx_is = [], [], [], []
-        conns = []
-        for ap in self.aps.itervalues():
-            ps = ap.interp.poly_spaces['v']
 
-            vertex_coorss.append(ps.geometry.coors)
-            nodess.append(ps.nodes)
-            mtx_is.append(ps.get_mtx_i())
-
-            orders.append(ps.order)
-            conns.append(ap.econn)
-
-        orders = nm.array(orders, dtype=nm.int32)
+        ap = self.ap
+        ps = ap.interp.poly_spaces['v']
+        mtx_i = ps.get_mtx_i()
 
         # Interpolate to the reference coordinates.
         vals = nm.empty((coors.shape[0], source_vals.shape[1]),
                         dtype=source_vals.dtype)
 
         evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       conns, vertex_coorss, nodess, orders, mtx_is,
+                       ap.econn, ps.geometry.coors, ps.nodes, ps.order, mtx_i,
                        1e-15)
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
@@ -286,18 +268,19 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
         else:
             dim = vec.shape[1]
             enod_vol_val = nm.zeros((self.n_nod, dim), dtype=nm.float64)
-            for ig, ap in self.aps.iteritems():
-                group = self.domain.groups[ig]
-                econn = ap.econn
+            ap = self.ap
+            econn = ap.econn
 
-                coors = ap.interp.poly_spaces['v'].node_coors
+            coors = ap.interp.poly_spaces['v'].node_coors
 
-                ginterp = ap.interp.gel.interp
-                bf = ginterp.poly_spaces['v'].eval_base(coors)
-                bf = bf[:,0,:].copy()
+            ginterp = ap.interp.gel.interp
+            bf = ginterp.poly_spaces['v'].eval_base(coors)
+            bf = bf[:,0,:].copy()
 
-                evec = nm.dot(bf, vec[group.conn])
-                enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
+            conn = econn[:, :self.gel.n_vertex]
+
+            evec = nm.dot(bf, vec[conn])
+            enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
 
         return enod_vol_val
 
@@ -305,16 +288,11 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
     def _setup_approximations(self):
-        self.aps = {}
-        self.aps_by_name = {}
-        for ig in self.igs:
-            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
-            ap = fea.DiscontinuousApproximation(name, self.interp,
-                                                self.region, ig)
-            self.aps[ig] = ap
-            self.aps_by_name[ap.name] = ap
+        name = self.interp.name + '_%s' % self.region.name
+        self.ap = fea.DiscontinuousApproximation(name, self.interp,
+                                                 self.region)
 
-    def _setup_global_base( self ):
+    def _setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
         """
@@ -322,29 +300,18 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
 
         self._init_econn()
 
-        n_dof = 0
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            nd = nm.prod(ap.econn.shape)
+        ap = self.ap
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        n_dof = nm.prod(ap.econn.shape)
+        all_dofs = nm.arange(n_dof, dtype=nm.int32)
+        all_dofs.shape = ap.econn.shape
 
-            aux = nm.arange(n_dof, n_dof + nd, dtype=nm.int32)
-            aux.shape = ap.econn.shape
-
-            ap.econn[:] = aux
-            all_dofs[ig] = aux
-
-            n_dof += nd
+        ap.econn[:] = all_dofs
 
         self.n_nod = n_dof
 
         self.n_bubble_dof = n_dof
         self.bubble_dofs = all_dofs
-        self.bubble_remaps = remaps
 
         self.n_vertex_dof = self.n_edge_dof = self.n_face_dof = 0
 

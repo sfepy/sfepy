@@ -10,7 +10,6 @@ from geometry_element import GeometryElement
 from sfepy.discrete.common.domain import Domain
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.discrete.fem.fe_surface import FESurface
-from sfepy.discrete.fem.mesh import make_inverse_connectivity
 import fea
 
 class FEDomain(Domain):
@@ -30,6 +29,10 @@ class FEDomain(Domain):
             A mesh defining the domain.
         """
         Domain.__init__(self, name, mesh=mesh, verbose=verbose, **kwargs)
+
+        if len(mesh.descs) > 1:
+            msg = 'meshes with several cell kinds are not supported!'
+            raise NotImplementedError(msg)
 
         self.geom_els = geom_els = {}
         for ig, desc in enumerate(mesh.descs):
@@ -53,71 +56,23 @@ class FEDomain(Domain):
 
         self.vertex_set_bcs = self.mesh.nodal_bcs
 
-        self.mat_ids_to_i_gs = {}
-        for ig, mat_id in enumerate(mesh.mat_ids):
-            self.mat_ids_to_i_gs[mat_id[0]] = ig
+        self.cmesh = self.mesh.cmesh
 
-        n_nod, dim = self.mesh.coors.shape
-        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=0,
-                            n_el=0,
-                            n_gr=len(self.mesh.conns))
-
-        self.setup_groups()
+        # Must be before creating derived connectivities.
         self.fix_element_orientation()
-        self.reset_regions()
-        self.clear_surface_groups()
 
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
-        from sfepy.discrete.fem.extmods.cmesh import CMesh
-        self.cmesh = CMesh.from_mesh(mesh)
         gels = create_geometry_elements()
         self.cmesh.set_local_entities(gels)
         self.cmesh.setup_entities()
 
-        self.shape.tdim = self.cmesh.tdim
-        self.cell_offsets = self.mesh.el_offsets
+        n_nod, dim = self.mesh.coors.shape
+        self.shape = Struct(n_nod=n_nod, dim=dim, tdim=self.cmesh.tdim,
+                            n_el=self.cmesh.n_el,
+                            n_gr=len(self.geom_els))
 
-    def setup_groups(self):
-        self.groups = {}
-        for ii in range(self.shape.n_gr):
-            gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
-            conn = self.mesh.conns[ii]
-            vertices = nm.unique(conn)
-
-            n_vertex = vertices.shape[0]
-            n_el, n_ep = conn.shape
-            n_edge = gel.n_edge
-            n_edge_total = n_edge * n_el
-
-            if gel.dim == 3:
-                n_face = gel.n_face
-                n_face_total = n_face * n_el
-            else:
-                n_face = n_face_total = 0
-
-            shape = Struct(n_vertex=n_vertex, n_el=n_el, n_ep=n_ep,
-                           n_edge=n_edge, n_edge_total=n_edge_total,
-                           n_face=n_face, n_face_total=n_face_total,
-                           dim=self.mesh.dims[ii])
-
-            self.groups[ii] = Struct(ig=ii, vertices=vertices, conn=conn,
-                                      gel=gel, shape=shape)
-            self.shape.n_el += n_el
-
-    def iter_groups(self, igs=None):
-        if igs is None:
-            for ig in xrange(self.shape.n_gr): # sorted by ig.
-                yield self.groups[ig]
-        else:
-            for ig in igs:
-                yield ig, self.groups[ig]
-
-    def get_cell_offsets(self):
-        offs = {}
-        for ig in range(self.shape.n_gr):
-            offs[ig] = self.cell_offsets[ig]
-
-        return offs
+        self.reset_regions()
+        self.clear_surface_groups()
 
     def get_mesh_coors(self, actual=False):
         """
@@ -153,26 +108,24 @@ class FEDomain(Domain):
 
     def fix_element_orientation(self):
         """
-        Ensure element nodes ordering giving positive element volume.
-
-        The groups with elements of lower dimension than the space dimension
-        are skipped.
+        Ensure element vertices ordering giving positive cell volumes.
         """
         from extmods.cmesh import orient_elements
 
-        coors = self.mesh.coors
-        for ii, group in self.groups.iteritems():
-            if group.shape.dim < self.shape.dim: continue
+        cmesh = self.cmesh
+        for ii, gel in self.geom_els.iteritems():
+            ori = gel.orientation
 
-            ori, conn = group.gel.orientation, group.conn
+            cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
+            cells = cells[0].astype(nm.uint32)
 
             itry = 0
             while itry < 2:
-                flag = -nm.ones(conn.shape[0], dtype=nm.int32)
+                flag = -nm.ones(self.cmesh.n_el, dtype=nm.int32)
 
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
-                orient_elements(flag, conn, coors,
+                orient_elements(flag, self.cmesh, cells, gel.dim,
                                 ori.roots, ori.vecs,
                                 ori.swap_from, ori.swap_to)
 
@@ -190,14 +143,30 @@ class FEDomain(Domain):
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
 
-    def get_element_diameters(self, ig, cells, vg, mode, square=True):
-        group = self.groups[ig]
+    def get_conn(self, ret_gel=False):
+        """
+        Get the cell-vertex connectivity and, if `ret_gel` is True, also the
+        corresponding reference geometry element.
+        """
+        conn = self.cmesh.get_conn(self.cmesh.tdim, 0).indices
+        conn = conn.reshape((self.cmesh.n_el, -1)).astype(nm.int32)
+
+        if ret_gel:
+            gel = self.geom_els.values()[0]
+
+            return conn, gel
+
+        else:
+            return conn
+
+    def get_element_diameters(self, cells, vg, mode, square=True):
         diameters = nm.empty((len(cells), 1, 1, 1), dtype=nm.float64)
         if vg is None:
             diameters.fill(1.0)
         else:
-            vg.get_element_diameters(diameters, group.gel.edges,
-                                     self.get_mesh_coors().copy(), group.conn,
+            conn, gel = self.get_conn(ret_gel=True)
+            vg.get_element_diameters(diameters, gel.edges,
+                                     self.get_mesh_coors().copy(), conn,
                                      cells.astype(nm.int32), mode)
         if square:
             out = diameters.squeeze()
@@ -237,21 +206,8 @@ class FEDomain(Domain):
             cache = Struct(name='evaluate_cache')
 
         tt = time.clock()
-        if (cache.get('iconn', None) is None) or not share_geometry:
-            mesh = self.mesh
-            offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                                       ret_offsets=True)
-            ii = nm.where(offsets[1:] == offsets[:-1])[0]
-            if len(ii):
-                raise ValueError('some vertices not in any element! (%s)' % ii)
-
-            cache.offsets = offsets
-            cache.iconn = iconn
-        output('iconn: %f s' % (time.clock()-tt), verbose=verbose)
-
-        tt = time.clock()
         if (cache.get('kdtree', None) is None) or not share_geometry:
-            cache.kdtree = KDTree(mesh.coors)
+            cache.kdtree = KDTree(self.mesh.coors)
         output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
 
         return cache
@@ -272,17 +228,15 @@ class FEDomain(Domain):
         Surface groups define surface facet connectivity that is needed
         for :class:`sfepy.discrete.fem.mappings.SurfaceMapping`.
         """
-        for ig in region.igs:
-            groups = self.surface_groups.setdefault(ig, {})
-            if region.name not in groups:
-                group = self.groups[ig]
-                gel_faces = group.gel.get_surface_entities()
+        groups = self.surface_groups
+        if region.name not in groups:
+            conn, gel = self.get_conn(ret_gel=True)
+            gel_faces = gel.get_surface_entities()
 
-                name = 'surface_group_%s_%d' % (region.name, ig)
-                surface_group = FESurface(name, region, gel_faces,
-                                          group.conn, ig)
+            name = 'surface_group_%s' % (region.name)
+            surface_group = FESurface(name, region, gel_faces, conn)
 
-                groups[region.name] = surface_group
+            groups[region.name] = surface_group
 
     def refine(self):
         """
@@ -298,27 +252,22 @@ class FEDomain(Domain):
         Works only for meshes with single element type! Does not
         preserve node groups!
         """
-
-        names = set()
-        for group in self.groups.itervalues():
-            names.add(group.gel.name)
-
-        if len(names) != 1:
+        if len(self.geom_els) != 1:
             msg = 'refine() works only for meshes with single element type!'
             raise NotImplementedError(msg)
 
-        el_type = names.pop()
+        el_type = self.geom_els.values()[0].name
         if el_type == '2_3':
-            mesh = refine_2_3(self.mesh, self.cmesh)
+            mesh = refine_2_3(self.mesh)
 
         elif el_type == '2_4':
-            mesh = refine_2_4(self.mesh, self.cmesh)
+            mesh = refine_2_4(self.mesh)
 
         elif el_type == '3_4':
-            mesh = refine_3_4(self.mesh, self.cmesh)
+            mesh = refine_3_4(self.mesh)
 
         elif el_type == '3_8':
-            mesh = refine_3_8(self.mesh, self.cmesh)
+            mesh = refine_3_8(self.mesh)
 
         else:
             msg = 'unsupported element type! (%s)' % el_type
