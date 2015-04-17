@@ -131,49 +131,26 @@ printing them::
     sfepy: reading mesh [line2, tri3, quad4, tetra4, hexa8] (meshes/2d/rectangle_tri.mesh)...
     sfepy: ...done in 0.00 s
 
-    In [3]: mesh
-    Out[3]: Mesh:meshes/2d/rectangle_tri
-
-    In [4]: print mesh
+    In [3]: print mesh
     Mesh:meshes/2d/rectangle_tri
-      conns:
-        list: [array([[ 59,   0,  60],
-               [ 60,   0,   2],
-               [ 11,  32,  64],
-               ...,
-               [254, 250, 251],
-               [251, 256, 257],
-               [257, 254, 251]], dtype=int32)]
-      coors:
-        (258, 2) array of float64
+      cmesh:
+        CMesh: n_coor: 258, dim 2, tdim: 2, n_el 454
       descs:
         list: ['2_3']
       dim:
         2
       dims:
         list: [2]
-      el_offsets:
-        (2,) array of int64
       io:
         None
-      mat_ids:
-        list: [array([3, 3, 3, ..., 3, 3, 3], dtype=int32)]
-      n_e_ps:
-        (1,) array of int64
       n_el:
         454
-      n_els:
-        (1,) array of int64
       n_nod:
         258
       name:
         meshes/2d/rectangle_tri
-      ngroups:
-        (258,) array of float64
       nodal_bcs:
         dict with keys: []
-      setup_done:
-        0
 
 We recommend going through the interactive example in the tutorial
 :ref:`sec-interactive-example-linear-elasticity` in this way, printing all the
@@ -569,7 +546,7 @@ concept, we will focus on the standard terms here.
 
 The purpose of a standard term class is to implement a (vectorized)
 function that assembles the term contribution to residual/matrix and/or
-evaluates the term integral in a group of elements simultaneously. Most
+evaluates the term integral in elements of the term region simultaneously. Most
 such functions are currently implemented in C, but some terms are pure
 Python, vectorized using NumPy. A term with a C function needs to be
 able to extract the real data from its arguments and then pass those
@@ -642,7 +619,7 @@ function arguments have to be provided by the `get_fargs()` method. The
 function returns zero `status` on success, nonzero on failure.
 
 The `out` array has shape `(n_el, 1, n_row, n_col)`, where `n_el` is the
-number of elements in a group and `n_row`, `n_col` are matrix dimensions
+number of elements and `n_row`, `n_col` are matrix dimensions
 of the value on a single element.
 
 `get_fargs()`
@@ -786,7 +763,7 @@ implemented as follows::
 
     - the output array `out`, already having the required shape,
     - the material coefficient (array) `mat` evaluated in physical
-      quadrature points of all elements of an element group,
+      quadrature points of elements of the term region,
     - a base function (array) `bf` evaluated in the quadrature points of
       a reference element and
     - a reference element (geometry) mapping `geo`.
@@ -1152,7 +1129,6 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_ul
    src/sfepy/terms/terms_membrane
    src/sfepy/terms/terms_navier_stokes
-   src/sfepy/terms/terms_new
    src/sfepy/terms/terms_piezo
    src/sfepy/terms/terms_point
    src/sfepy/terms/terms_surface

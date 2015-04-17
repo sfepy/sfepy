@@ -438,9 +438,7 @@ vertices and cells - the other entities are computed as needed.
    * - ``cells by <efunction>``
      - cells given by a function of coordinates [#f4]_
    * - ``cell <id>[, <id>, ...]``,
-     - cells given by their ids (assumes cell group 0)
-   * - ``cell (<ig>, <id>)[, (<ig>, <id>), ...]``
-     - cells given by their (group, id) pairs
+     - cells given by their ids
    * - ``copy r.<name of another region>``
      - a copy of the given region
    * - ``r.<name of another region>``
