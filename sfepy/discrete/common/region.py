@@ -241,7 +241,7 @@ class Region(Struct):
                         tdim=tdim, kind_tdim=None,
                         entities=[None] * (tdim + 1),
                         kind=None, parent=parent, shape=None,
-                        mirror_region=None)
+                        mirror_region=None, is_empty=False)
         self.set_kind(kind)
 
     def set_kind(self, kind):
@@ -427,9 +427,15 @@ class Region(Struct):
                     break
 
         else:
-            if not allow_empty:
+            if not (allow_empty or self.is_empty):
                 msg = 'region "%s" has no entities!'
                 raise ValueError(msg % self.name)
+
+            if self.entities[dim] is None:
+                self.entities[dim] = nm.empty(0, dtype=nm.uint32)
+
+            self.is_empty = True
+
             return
 
         cmesh = self.domain.cmesh
