@@ -91,6 +91,7 @@ cdef extern from 'mesh.h':
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
     cdef int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
+    cdef int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals)
 
 cdef class CConnectivity:
     """
@@ -744,6 +745,22 @@ cdef class CMesh:
             out = np.empty((self.mesh.topology.num[dim], self.dim),
                            dtype=np.float64)
             mesh_get_centroids(self.mesh, &out[0, 0], dim)
+
+        return out
+
+    def get_facet_normals(self):
+        """
+        Return the normals of facets for each mesh cell. The normals can be
+        accessed using the cell-facet connectivity.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=2] out
+
+        td = self.tdim
+        self.setup_connectivity(td, td - 1)
+        ccf = self.get_conn(td, td - 1)
+
+        out = np.empty((ccf.n_incident, self.dim), dtype=np.float64)
+        mesh_get_facet_normals(self.mesh, &out[0, 0])
 
         return out
 
