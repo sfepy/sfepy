@@ -21,18 +21,30 @@ int32 gtr_cross_product( float64 obj[3], float64 obj1[3], float64 obj2[3] )
   @par Revision history:
   - 22.03.2002, c
 */
-int32 gtr_normalize_v3( float64 obj[3], float64 obj1[3] )
+int32 gtr_normalize_v3( float64 obj[3], float64 obj1[3], int32 dim )
 {
   float64 norm;
 
-  norm = sqrt( obj1[0] * obj1[0] + obj1[1] * obj1[1] + obj1[2] * obj1[2] );
-  if (norm > CONST_MachEps) {
-    obj[0] = obj1[0] / norm;
-    obj[1] = obj1[1] / norm;
-    obj[2] = obj1[2] / norm;
-  } else {
-    errput( "zero norm!\n" );
-    obj[0] = obj[1] = obj[2] = 0.0;
+  if (dim == 3) {
+    norm = sqrt( obj1[0] * obj1[0] + obj1[1] * obj1[1] + obj1[2] * obj1[2] );
+    if (norm > CONST_MachEps) {
+      obj[0] = obj1[0] / norm;
+      obj[1] = obj1[1] / norm;
+      obj[2] = obj1[2] / norm;
+    } else {
+      errput( "zero norm!\n" );
+      obj[0] = obj[1] = obj[2] = 0.0;
+    }
+
+  } else { // dim == 2
+    norm = sqrt( obj1[0] * obj1[0] + obj1[1] * obj1[1] );
+    if (norm > CONST_MachEps) {
+      obj[0] = obj1[0] / norm;
+      obj[1] = obj1[1] / norm;
+    } else {
+      errput( "zero norm!\n" );
+      obj[0] = obj[1] = 0.0;
+    }
   }
 
   return( RET_OK );
