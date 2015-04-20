@@ -1,4 +1,5 @@
 #include "common.h"
+#include "geomtrans.h"
 #include "mesh.h"
 
 static void debprintf(const char *what, ...)
@@ -903,6 +904,84 @@ int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
   }
 
   return(RET_OK);
+}
+
+// `normals` must be preallocated.
+int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals)
+{
+#define VS(ic, id) (coors[nc*cell_vertices->indices[ik[ic]] + id])
+
+  int32 D = mesh->topology->max_dim;
+  int32 nc = mesh->geometry->dim;
+  int32 dim = D - 1;
+  uint32 ii, id, n_loc;
+  uint32 *ik;
+  uint32 *cell_types = mesh->topology->cell_types;
+  float64 *coors = mesh->geometry->coors;
+  float64 vv0, vv2, v0[3], v1[3], v2[3], v3[3], ndir[3], ndir1[3];
+  Indices cell_vertices[1];
+  MeshEntityIterator it0[1];
+  MeshConnectivity *cD0 = 0; // D -> 0
+  MeshConnectivity *cDd = 0; // D -> d
+  MeshConnectivity *loc = 0;
+  MeshConnectivity **locs = 0;
+
+  cD0 = mesh->topology->conn[IJ(D, D, 0)];
+  cDd = mesh->topology->conn[IJ(D, D, dim)];
+
+  // Local entities - reference cell edges or faces.
+  locs = (dim == 1) ? mesh->entities->edges : mesh->entities->faces;
+
+  for (mei_init(it0, mesh, D); mei_go(it0); mei_next(it0)) {
+    me_get_incident2(it0->entity, cell_vertices, cD0);
+    loc = locs[cell_types[it0->it]];
+
+    for (ii = 0; ii < loc->num; ii++) {
+      ik = loc->indices + loc->offsets[ii]; // Points to local facet vertices.
+
+      n_loc = loc->offsets[ii+1] - loc->offsets[ii];
+      if (n_loc == 2) { // Edge normals.
+        for (id = 0; id < nc; id++) {
+          v0[id] = VS(1, id) - VS(0, id);
+        }
+        ndir[0] = v0[1];
+        ndir[1] = -v0[0];
+
+      } else if (n_loc == 3) { // Triangular face normals.
+        for (id = 0; id < nc; id++) {
+          vv0 = VS(0, id);
+          v0[id] = VS(1, id) - vv0;
+          v1[id] = VS(2, id) - vv0;
+        }
+        gtr_cross_product(ndir, v0, v1);
+
+      } else if (n_loc == 4) { // Quadrilateral face normals.
+        for (id = 0; id < nc; id++) {
+          vv0 = VS(0, id);
+          vv2 = VS(2, id);
+
+          v0[id] = VS(1, id) - vv0;
+          v1[id] = vv2 - vv0;
+          v2[id] = VS(3, id) - vv2;
+          v3[id] = VS(1, id) - vv2;
+        }
+        gtr_cross_product(ndir, v0, v1);
+        gtr_cross_product(ndir1, v2, v3);
+        for (id = 0; id < nc; id++) {
+          ndir[id] += ndir1[id];
+        }
+      }
+
+      gtr_normalize_v3(ndir, ndir, nc);
+      for (id = 0; id < nc; id++) {
+        normals[nc * (cDd->offsets[it0->it] + ii) + id] = ndir[id];
+      }
+    }
+  }
+
+  return(RET_OK);
+
+#undef VS
 }
 
 inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)
