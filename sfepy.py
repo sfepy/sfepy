@@ -24,7 +24,6 @@ def get_commands():
         - user defined directory (not implemented)
 
     TBD:
-        - Currently only list of 'bin_dir' scripts is implemented.
         - Windows UNC-paths may be not working correctly (according os.path doc)
         - Check for mandatory/default scripts existence?
 
@@ -32,6 +31,8 @@ def get_commands():
     """
 
     bin_dir = 'scripts-common'  # TBD: Get actual values from SfePy
+    if not sfepy.in_source_tree:
+        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
 
     scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
     cmd = [op.splitext(op.basename(i))[0] for i in scripts]
