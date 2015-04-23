@@ -56,9 +56,15 @@ int32 gtr_normalize_v3( float64 obj[3], float64 obj1[3], int32 dim )
   @par Revision history:
   - 08.06.2006, c
 */
-int32 gtr_dot_v3( float64 *p_val, float64 obj1[3], float64 obj2[3] )
+int32 gtr_dot_v3( float64 *p_val, float64 obj1[3], float64 obj2[3], int32 dim )
 {
-  *p_val = obj1[0] * obj2[0] + obj1[1] * obj2[1] + obj1[2] * obj2[2];
+  if (dim == 3) {
+    *p_val = obj1[0] * obj2[0] + obj1[1] * obj2[1] + obj1[2] * obj2[2];
+
+  } else { // dim == 2
+    *p_val = obj1[0] * obj2[0] + obj1[1] * obj2[1];
+
+  }
 
   return( RET_OK );
 }
