@@ -907,7 +907,7 @@ int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
 }
 
 // `normals` must be preallocated.
-int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals)
+int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
 {
 #define VS(ic, id) (coors[nc*cell_vertices->indices[ik[ic]] + id])
 
@@ -918,7 +918,7 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals)
   uint32 *ik;
   uint32 *cell_types = mesh->topology->cell_types;
   float64 *coors = mesh->geometry->coors;
-  float64 vv0, vv2, v0[3], v1[3], v2[3], v3[3], ndir[3], ndir1[3];
+  float64 vv0, vv1, vv2, vv3, v0[3], v1[3], v2[3], v3[3], ndir[3], ndir1[3];
   Indices cell_vertices[1];
   MeshEntityIterator it0[1];
   MeshConnectivity *cD0 = 0; // D -> 0
@@ -958,17 +958,28 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals)
       } else if (n_loc == 4) { // Quadrilateral face normals.
         for (id = 0; id < nc; id++) {
           vv0 = VS(0, id);
+          vv1 = VS(1, id);
           vv2 = VS(2, id);
+          vv3 = VS(3, id);
 
-          v0[id] = VS(1, id) - vv0;
-          v1[id] = vv2 - vv0;
-          v2[id] = VS(3, id) - vv2;
-          v3[id] = VS(1, id) - vv2;
+          v0[id] = vv1 - vv0;
+          v1[id] = vv3 - vv0;
+          v2[id] = vv3 - vv2;
+          v3[id] = vv1 - vv2;
         }
-        gtr_cross_product(ndir, v0, v1);
-        gtr_cross_product(ndir1, v2, v3);
-        for (id = 0; id < nc; id++) {
-          ndir[id] += ndir1[id];
+
+        if (which == 0) {
+          gtr_cross_product(ndir, v0, v1);
+
+        } else if (which == 1) {
+          gtr_cross_product(ndir, v2, v3);
+
+        } else {
+          gtr_cross_product(ndir, v0, v1);
+          gtr_cross_product(ndir1, v2, v3);
+          for (id = 0; id < nc; id++) {
+            ndir[id] += ndir1[id];
+          }
         }
       }
 
