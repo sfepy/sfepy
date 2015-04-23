@@ -21,6 +21,7 @@ if "%1" == "help" (
 	echo.  htmlhelp  to make HTML files and a HTML help project
 	echo.  qthelp    to make HTML files and a qthelp project
 	echo.  latex     to make LaTeX files, you can set PAPER=a4 or PAPER=letter
+	echo.  man       to make Unix style manual pages
 	echo.  changes   to make an overview over all changed/added/deprecated items
 	echo.  linkcheck to check all external links for integrity
 	echo.  doctest   to run all doctests embedded in the documentation if enabled
@@ -84,6 +85,13 @@ if "%1" == "latex" (
 	%SPHINXBUILD% -b latex %ALLSPHINXOPTS% %BUILDDIR%/latex
 	echo.
 	echo.Build finished; the LaTeX files are in %BUILDDIR%/latex.
+	goto end
+)
+
+if "%1" == "man" (
+	%SPHINXBUILD% -b man %ALLSPHINXOPTS% %BUILDDIR%/man
+	echo.
+	echo.Build finished. The MANUAL pages are in %BUILDDIR%/man.
 	goto end
 )
 

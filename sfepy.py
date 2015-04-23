@@ -66,7 +66,7 @@ def main():
         '--window',
         '-w',
         help='Use alternative pythonw interpreter.',
-        action='store_false',
+        action='store_true',
         dest='py_cmd'
     )
 
@@ -80,7 +80,7 @@ def main():
         nargs=argparse.REMAINDER,
         help='Additional options passed directly to selected [command].')
 
-    py_cmd = 'python' if parser.parse_args().py_cmd else 'pythonw'
+    py_cmd = 'python' if not parser.parse_args().py_cmd else 'pythonw'
     command = parser.parse_args().command
     options = ', '.join(parser.parse_args().options)
 

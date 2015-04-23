@@ -308,3 +308,11 @@ def process_terms(app, what_, name, obj, options, lines):
 
 def setup(app):
     app.connect('autodoc-process-docstring', process_terms)
+
+#    
+# -- Options for manual pages output ---------------------------------------------------
+#
+man_pages = [
+    ('manpages', 'sfepy', 'Main SfePy wrapper', 'Robert Cimrman and Contributors', 1)
+]
+#
