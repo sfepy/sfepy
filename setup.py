@@ -34,7 +34,7 @@ Operating System :: MacOS :: MacOS X
 Operating System :: Microsoft :: Windows
 """
 
-DOWNLOAD_URL = "http://code.google.com/p/sfepy/wiki/Downloads?tm=2"
+DOWNLOAD_URL = "http://sfepy.org/doc-devel/downloads.html"
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
