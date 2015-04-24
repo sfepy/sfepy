@@ -50,6 +50,8 @@ class BasicEvaluator( Evaluator ):
             vec = self.make_full_vec( vec )
 
         vec_r = self.problem.equations.eval_residuals(vec)
+        if self.matrix_hook is not None:
+            vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
 
         return vec_r
 
@@ -90,6 +92,9 @@ class LCBCEvaluator( BasicEvaluator ):
             vec = self.make_full_vec( vec )
         vec_r = BasicEvaluator.eval_residual( self, vec, is_full = True )
         vec_rr = self.mtx_lcbc.T * vec_r
+        if self.matrix_hook is not None:
+            vec_rr = self.matrix_hook(vec_rr, self.problem,
+                                      call_mode='lcbc_residual')
         return vec_rr
 
     ##
