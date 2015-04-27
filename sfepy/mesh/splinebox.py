@@ -60,7 +60,7 @@ class SplineBox:
         return spbox, cpoints
 
     def __init__(self, bbox, coors,
-                 name='spbox', **kwargs):
+                 nsg=None, name='spbox', **kwargs):
         """
         Create a SplineBox.
 
@@ -72,8 +72,10 @@ class SplineBox:
             Coordinates of mesh nodes.
         name : str
             Object name.
+        nsg : array
+            Number of segments.
         """
-        self.spbox, self.control_points = self.create_spb(bbox, coors)
+        self.spbox, self.control_points = self.create_spb(bbox, coors, nsg=nsg)
         self.ncoors, self.dim = coors.shape
         self.control_points0 = self.control_points.copy()
 
