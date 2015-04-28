@@ -983,7 +983,7 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
         }
       }
 
-      gtr_normalize_v3(ndir, ndir, nc);
+      gtr_normalize_v3(ndir, ndir, nc, 0);
       for (id = 0; id < nc; id++) {
         normals[nc * (cDd->offsets[it0->it] + ii) + id] = ndir[id];
       }
