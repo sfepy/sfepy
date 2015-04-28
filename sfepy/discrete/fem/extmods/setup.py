@@ -76,6 +76,16 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    src = ['crefcoors.pyx', 'refcoors.c', 'geomtrans.c', 'lagrange.c', 'mesh.c']
+    config.add_extension('crefcoors',
+                         sources=src,
+                         libraries=['sfepy_common'],
+                         depends=common_src,
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
     src = ['lobatto_bases.pyx', 'lobatto.c', 'lobatto1d.c']
     config.add_extension('lobatto_bases',
                          sources=src,
