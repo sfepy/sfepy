@@ -489,10 +489,14 @@ cdef extern from 'terms.h':
                           FMField *divMV, FMField *gradMV, FMField *coef,
                           Mapping *vg_p, int32 mode)
 
-    cdef int32 _mulATB_integrate \
-         'mulATB_integrate'(FMField *out,
-                            FMField *A, FMField *B,
-                            Mapping *vg)
+    cdef int32 _mulAB_integrate \
+         'mulAB_integrate'(FMField *out,
+                           FMField *A, FMField *B,
+                           Mapping *vg, int32 mode)
+
+    cdef int32 _actBfT \
+         'actBfT'(FMField *out,
+                  FMField *bf, FMField *A)
 
 def errclear():
     _errclear()
@@ -1897,18 +1901,50 @@ def d_surf_lcouple(np.ndarray out not None,
     ret = _d_surf_lcouple(_out, _state_p, _grad_q, _coef, cmap.geo)
     return ret
 
-def mulATB_integrate(np.ndarray out not None,
-                     np.ndarray A not None,
-                     np.ndarray B not None,
-                     CMapping cmap not None):
+def mulAB_integrate(np.ndarray out not None,
+                    np.ndarray A not None,
+                    np.ndarray B not None,
+                    CMapping cmap not None,
+                    mode):
     cdef int32 ret
     cdef FMField _out[1], _A[1], _B[1]
 
     array2fmfield4(_out, out)
-    array2fmfield4(_A, A)
-    array2fmfield4(_B, B)
+    if A.ndim == 4:
+        array2fmfield4(_A, A)
+    else:
+        array2fmfield3(_A, A)
 
-    ret = _mulATB_integrate(_out, _A, _B, cmap.geo)
+    if B.ndim == 4:
+        array2fmfield4(_B, B)
+    else:
+        array2fmfield3(_B, B)
+
+    if mode == 'ATB':
+        imode = 0
+    elif mode == 'AB':
+        imode = 1
+    elif mode == 'ABT':
+        imode = 2
+    elif mode == 'ATBT':
+        imode = 3
+    else:
+        imode = -1
+
+    ret = _mulAB_integrate(_out, _A, _B, cmap.geo, imode)
+    return ret
+
+def actBfT(np.ndarray out not None,
+           np.ndarray bf not None,
+           np.ndarray A not None):
+    cdef int32 ret
+    cdef FMField _out[1], _bf[1], _A[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_A, A)
+
+    ret = _actBfT(_out, _bf, _A)
     return ret
 
 def dw_adj_convect1(np.ndarray out not None,

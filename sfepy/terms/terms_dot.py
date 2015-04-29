@@ -438,12 +438,14 @@ class ScalarDotGradIScalarTerm(Term):
         bft = cc(nm.tile(bf, (out.shape[0], 1, 1, 1)))
 
         if fmode == 0:
-            status = terms.mulATB_integrate(out, bft,
-                                            cc(grad[..., idx:idx+1, :]), vg)
+            status = terms.mulAB_integrate(out, bft,
+                                           cc(grad[..., idx:idx+1, :]), vg,
+                                           mode='ATB')
 
         else:
-            status = terms.mulATB_integrate(out, bft,
-                                            cc(vg.bfg[:,:,idx:(idx + 1),:]), vg)
+            status = terms.mulAB_integrate(out, bft,
+                                           cc(vg.bfg[:,:,idx:(idx + 1),:]), vg,
+                                           mode='ATB')
 
         return status
 

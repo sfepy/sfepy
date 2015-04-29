@@ -174,16 +174,19 @@ class DiffusionCoupling(Term):
     def dw_fun(out, val, mat, bf, vg, fmode):
 
         if fmode == 0:
-            status = terms.mulATB_integrate(out, vg.bfg, mat * val, vg)
+            status = terms.mulAB_integrate(out, vg.bfg, mat * val, vg,
+                                           mode='ATB')
 
         elif fmode == 1:
-            status = terms.mulATB_integrate(out, bf * mat, val, vg)
+            status = terms.mulAB_integrate(out, bf * mat, val, vg, mode='ATB')
 
         elif fmode == 2:
-            status = terms.mulATB_integrate(out, vg.bfg, mat * bf, vg)
+            status = terms.mulAB_integrate(out, vg.bfg, mat * bf, vg,
+                                           mode='ATB')
 
         elif fmode == 3:
-            status = terms.mulATB_integrate(out, mat * bf, vg.bfg, vg)
+            status = terms.mulAB_integrate(out, mat * bf, vg.bfg, vg,
+                                           mode='ATB')
 
         return status
 
