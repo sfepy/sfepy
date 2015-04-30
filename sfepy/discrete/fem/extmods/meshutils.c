@@ -62,7 +62,7 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
           v3[ii] = coors[nc*ip3+ii] - v0[ii];
         }
         gtr_cross_product(cross, v1, v2);
-        gtr_dot_v3(dot, v3, cross);
+        gtr_dot_v3(dot, v3, cross, 3);
         /* output("%d %d -> %d %d %d %d %e\n", iel, ir, ip0, ip1, ip2, ip3, */
         /*        dot[0]); */
         if (dot[0] < CONST_MachEps) {

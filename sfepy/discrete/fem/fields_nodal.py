@@ -188,33 +188,38 @@ class H1NodalMixin(H1Mixin):
             The maximum limit distance of a point from the closest
             element allowed for extrapolation.
         cache : Struct, optional
-            To speed up a sequence of evaluations, the field mesh, the inverse
-            connectivity of the field mesh and the KDTree instance can
-            be cached as `cache.mesh`, `cache.offsets`, `cache.iconn` and
-            `cache.kdtree`. Optionally, the cache can also contain the
-            reference element coordinates as `cache.ref_coors`,
-            `cache.cells` and `cache.status`, if the evaluation occurs
-            in the same coordinates repeatedly. In that case the KDTree
-            related data are ignored.
-        ret_cells : bool, optional
-            If True, return also the cell indices the coordinates are in.
-        ret_status : bool, optional
-            If True, return also the status for each point: 0 is
-            success, 1 is extrapolation within `close_limit`, 2 is
-            extrapolation outside `close_limit`, 3 is failure.
+            To speed up a sequence of evaluations, the field mesh and other
+            data can be cached. Optionally, the cache can also contain the
+            reference element coordinates as `cache.ref_coors`, `cache.cells`
+            and `cache.status`, if the evaluation occurs in the same
+            coordinates repeatedly. In that case the mesh related data are
+            ignored. See :func:`Field.get_evaluate_cache()
+            <sfepy.discrete.fem.fields_base.FEField.get_evaluate_cache()>`.
         ret_ref_coors : bool, optional
             If True, return also the found reference element coordinates.
+        ret_status : bool, optional
+            If True, return also the enclosing cell status for each point.
+        ret_cells : bool, optional
+            If True, return also the cell indices the coordinates are in.
         verbose : bool
             If False, reduce verbosity.
 
         Returns
         -------
         vals : array
-            The interpolated values.
+            The interpolated values. If `ret_status` is False, the values where
+            the status is greater than one are set to ``numpy.nan``.
+        ref_coors : array
+            The found reference element coordinates, if `ret_ref_coors` is True.
         cells : array
-            The cell indices, if `ret_cells` or `ret_status` are True.
+            The cell indices, if `ret_ref_coors` or `ret_cells` or `ret_status`
+            are True.
         status : array
-            The status, if `ret_status` is True.
+            The status, if `ret_ref_coors` or `ret_status` are True, with the
+            following meaning: 0 is success, 1 is extrapolation within
+            `close_limit`, 2 is extrapolation outside `close_limit`, 3 is
+            failure, 4 is failure due to non-convergence of the Newton
+            iteration in tensor product cells.
         """
         output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
 
@@ -240,6 +245,10 @@ class H1NodalMixin(H1Mixin):
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
         output('...done',verbose=verbose)
+
+        if not ret_status:
+            ii = nm.where(status > 1)[0]
+            vals[ii] = nm.nan
 
         if ret_ref_coors:
             return vals, ref_coors, cells, status

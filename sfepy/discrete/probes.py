@@ -246,10 +246,10 @@ class Probe(Struct):
         refine_flag = None
 
         ev = variable.evaluate_at
-        domain = variable.field.domain
+        field = variable.field
 
-        cache = domain.get_evaluate_cache(cache=self.get_evaluate_cache(),
-                                          share_geometry=self.share_geometry)
+        cache = field.get_evaluate_cache(cache=self.get_evaluate_cache(),
+                                         share_geometry=self.share_geometry)
         self.reset_refinement()
 
         while True:
@@ -257,11 +257,9 @@ class Probe(Struct):
             if not nm.isfinite(points).all():
                 raise ValueError('Inf/nan in probe points!')
 
-            vals, cells, status = ev(points, strategy='kdtree',
-                                     close_limit=self.options.close_limit,
-                                     cache=cache, ret_status=True)
-            ii = nm.where(status > 1)[0]
-            vals[ii] = nm.nan
+            vals, cells = ev(points, strategy='kdtree',
+                             close_limit=self.options.close_limit,
+                             cache=cache, ret_cells=True)
 
             if self.is_refined:
                 break

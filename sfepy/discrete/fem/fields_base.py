@@ -640,6 +640,70 @@ class FEField(Field):
 
         return mesh
 
+    def get_evaluate_cache(self, cache=None, share_geometry=False,
+                           verbose=False):
+        """
+        Get the evaluate cache for :func:`Variable.evaluate_at()
+        <sfepy.discrete.variables.Variable.evaluate_at()>`.
+
+        Parameters
+        ----------
+        cache : Struct instance, optional
+            Optionally, use the provided instance to store the cache data.
+        share_geometry : bool
+            Set to True to indicate that all the evaluations will work on the
+            same region. Certain data are then computed only for the first
+            probe and cached.
+        verbose : bool
+            If False, reduce verbosity.
+
+        Returns
+        -------
+        cache : Struct instance
+            The evaluate cache.
+        """
+        import time
+
+        try:
+            from scipy.spatial import cKDTree as KDTree
+        except ImportError:
+            from scipy.spatial import KDTree
+
+        from sfepy.discrete.fem.geometry_element import create_geometry_elements
+
+        if cache is None:
+            cache = Struct(name='evaluate_cache')
+
+        tt = time.clock()
+        if (cache.get('cmesh', None) is None) or not share_geometry:
+            mesh = self.create_mesh(extra_nodes=False)
+            cache.cmesh = cmesh = mesh.cmesh
+
+            gels = create_geometry_elements()
+
+            cmesh.set_local_entities(gels)
+            cmesh.setup_entities()
+
+            cache.centroids = cmesh.get_centroids(cmesh.tdim)
+
+            if self.gel.name != '3_8':
+                cache.normals0 = cmesh.get_facet_normals()
+                cache.normals1 = None
+
+            else:
+                cache.normals0 = cmesh.get_facet_normals(0)
+                cache.normals1 = cmesh.get_facet_normals(1)
+
+        output('cmesh setup: %f s' % (time.clock()-tt), verbose=verbose)
+
+        tt = time.clock()
+        if (cache.get('kdtree', None) is None) or not share_geometry:
+            cache.kdtree = KDTree(cmesh.coors)
+
+        output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
+
+        return cache
+
     def interp_to_qp(self, dofs):
         """
         Interpolate DOFs into quadrature points.

@@ -1,8 +1,6 @@
 """
 Computational domain, consisting of the mesh and regions.
 """
-import time
-
 import numpy as nm
 
 from sfepy.base.base import output, Struct
@@ -174,43 +172,6 @@ class FEDomain(Domain):
             out = nm.sqrt(diameters.squeeze())
 
         return out
-
-    def get_evaluate_cache(self, cache=None, share_geometry=False,
-                           verbose=False):
-        """
-        Get the evaluate cache for :func:`Variable.evaluate_at()
-        <sfepy.discrete.variables.Variable.evaluate_at()>`.
-
-        Parameters
-        ----------
-        cache : Struct instance, optional
-            Optionally, use the provided instance to store the cache data.
-        share_geometry : bool
-            Set to True to indicate that all the probes will work on the same
-            domain. Certain data are then computed only for the first probe and
-            cached.
-        verbose : bool
-            If False, reduce verbosity.
-
-        Returns
-        -------
-        cache : Struct instance
-            The evaluate cache.
-        """
-        try:
-            from scipy.spatial import cKDTree as KDTree
-        except ImportError:
-            from scipy.spatial import KDTree
-
-        if cache is None:
-            cache = Struct(name='evaluate_cache')
-
-        tt = time.clock()
-        if (cache.get('kdtree', None) is None) or not share_geometry:
-            cache.kdtree = KDTree(self.mesh.coors)
-        output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
-
-        return cache
 
     def clear_surface_groups(self):
         """
