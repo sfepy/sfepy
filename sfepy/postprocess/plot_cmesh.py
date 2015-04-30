@@ -19,10 +19,10 @@ def plot_wireframe(ax, cmesh, color='k', show=False):
     for edge_vertices in edges.indices.reshape((edges.num, 2)):
         cc = coors[edge_vertices]
         if dim == 3:
-            ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], color)
+            ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], color=color)
 
         else:
-            ax.plot(cc[:, 0], cc[:, 1], color)
+            ax.plot(cc[:, 0], cc[:, 1], color=color)
 
     if show:
         plt.show()
