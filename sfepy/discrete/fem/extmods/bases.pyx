@@ -247,7 +247,7 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
 
     Interpolation uses field approximation connectivity.
     """
-    cdef int32 ip, ic, ig, iel, n_v, n_ep
+    cdef int32 ip, ic, iel, n_v, n_ep
     cdef int32 n_col, ii, ik
     cdef int32 n_point = ref_coors.shape[0]
     cdef int32 dim = ref_coors.shape[1]
