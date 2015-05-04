@@ -9,7 +9,7 @@ sfepy.py [-w] [command] [options]
 positional arguments
 -----------------
 
-| command    available SfePy command(s)
+| command    available SfePy command(s) (see sfepy.py --help for further info)
 | options    additional options passed directly to selected command
 
 optional arguments
