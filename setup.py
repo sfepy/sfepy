@@ -11,6 +11,7 @@ DOCLINES = __doc__.split("\n")
 
 import os
 import sys
+import glob
 
 from build_helpers import (generate_a_pyrex_source, package_check,
                            cmdclass, INFO)
@@ -49,6 +50,20 @@ def configuration(parent_package='',top_path=None):
                        quiet=True)
 
     config.add_subpackage('sfepy')
+
+    main_scripts = [
+        'phonon.py',
+        'extractor.py',
+        'homogen.py',
+        'postproc.py',
+        'probe.py',
+        'run_tests.py',
+        'schroedinger.py',
+        'shaper.py',
+        'simple.py',
+        'test_install.py',
+    ]
+
     aux_scripts = [
         'blockgen.py',
         'convert_mesh.py',
@@ -73,12 +88,16 @@ def configuration(parent_package='',top_path=None):
         'sync_module_docs.py',
         'tile_periodic_mesh.py',
     ]
+        
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
+    common_scripts = [glob.glob(os.path.normpath(os.path.join('scripts-common',
+                                                              '*.py')))]
 
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
                                      'AUTHORS', 'build_helpers.py',
                                      'site_cfg_template.py', 'Makefile')))
     config.add_data_files(('sfepy/script', aux_scripts))
+    config.add_data_files(('sfepy/scripts-common', common_scripts))
     config.add_data_dir(('sfepy/meshes', 'meshes'))
     config.add_data_dir(('sfepy/examples', 'examples'))
     config.add_data_dir(('sfepy/tests', 'tests'))
@@ -153,19 +172,6 @@ def setup_package():
     fdi.close()
     fdo.close()
 
-    main_scripts = [
-        'phonon.py',
-        'extractor.py',
-        'homogen.py',
-        'postproc.py',
-        'probe.py',
-        'run_tests.py',
-        'schroedinger.py',
-        'shaper.py',
-        'simple.py',
-        'test_install.py',
-    ]
-
     try:
         setup(name = 'sfepy',
               maintainer = "Robert Cimrman",
@@ -177,7 +183,7 @@ def setup_package():
               license = 'BSD',
               classifiers = filter(None, CLASSIFIERS.split('\n')),
               platforms = ["Linux", "Mac OS-X", 'Windows'],
-              scripts = main_scripts,
+              scripts = ['sfepy.py'],
               cmdclass = cmdclass,
               configuration = configuration)
     finally:
