@@ -313,6 +313,10 @@ def setup(app):
 # -- Options for manual pages output ---------------------------------------------------
 #
 man_pages = [
-    ('manpages', 'sfepy', 'Main SfePy wrapper', 'Robert Cimrman and Contributors', 1)
+    ('manpages',
+    'sfepy',
+    'Simple wrapper for main SfePy commands (scripts)',
+    'Robert Cimrman and Contributors',
+    1)
 ]
 #

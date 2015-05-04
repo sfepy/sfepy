@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
 Simple wrapper for main SfePy commands (scripts).
+
+Available [commands] are dynamically defined by presence *.py scripts
+in pre-defined directory ``scripts-common``.
 """
 
 import os.path as op
@@ -16,15 +19,15 @@ def main():
     cmd_list = get_commands()
 
     parser = argparse.ArgumentParser(
-        description=__doc__,
+        description='Simple wrapper for main SfePy commands.',
         version='%(prog)s' + sfepy.__version__,
         usage='%(prog)s [command] [options]'
     )
 
     parser.add_argument(
-        '--window',
         '-w',
-        help='Use alternative (pythonw) interpreter.',
+        '--window',
+        help='use alternative (pythonw) interpreter',
         action='store_true',
         dest='py_cmd'
     )
@@ -37,7 +40,7 @@ def main():
     parser.add_argument(
         'options',
         nargs=argparse.REMAINDER,
-        help='Additional options are passed directly to selected [command].')
+        help='Additional options passed directly to selected [command].')
 
     py_cmd = 'python' if not parser.parse_args().py_cmd else 'pythonw'
     command = parser.parse_args().command
