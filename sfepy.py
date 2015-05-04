@@ -1,71 +1,30 @@
 #!/usr/bin/env python
 """
-Simple main SfePy scripts wrapper.
+Simple wrapper for main SfePy commands (scripts).
 """
 
-from __future__ import print_function
-
 import os.path as op
-
 import glob
-
 import argparse
 import subprocess
 
 import sfepy
 
 
-def get_commands():
-    """
-    Get available commands (AKA scripts) to run via main SfePy wrapper.
-
-    Commands are dynamically defined by presence in pre-defined directories:
-        - <sfeppy.data_dir>/scripts-common
-        - user defined directory (not implemented)
-
-    TBD:
-        - Windows UNC-paths may be not working correctly (according os.path doc)
-        - Check for mandatory/default scripts existence?
-
-    :rtype : dict { command: path_to_script }
-    """
-
-    bin_dir = 'scripts-common'  # TBD: Get actual values from SfePy
-    if not sfepy.in_source_tree:
-        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
-
-    scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
-    cmd = [op.splitext(op.basename(i))[0] for i in scripts]
-
-    commands = dict(zip(cmd, scripts))
-
-    return commands
-
-
 def main():
-    """
-    TBD
-    :rtype : object
-    """
 
     cmd_list = get_commands()
 
     parser = argparse.ArgumentParser(
-        description='Main Sfepy commands wrapper.',
+        description=__doc__,
         version='%(prog)s' + sfepy.__version__,
         usage='%(prog)s [command] [options]'
     )
 
     parser.add_argument(
-        '--dir',
-        '-d',
-        help='Optional scripts directory (not implemented yet).'
-    )
-
-    parser.add_argument(
         '--window',
         '-w',
-        help='Use alternative pythonw interpreter.',
+        help='Use alternative (pythonw) interpreter.',
         action='store_true',
         dest='py_cmd'
     )
@@ -78,7 +37,7 @@ def main():
     parser.add_argument(
         'options',
         nargs=argparse.REMAINDER,
-        help='Additional options passed directly to selected [command].')
+        help='Additional options are passed directly to selected [command].')
 
     py_cmd = 'python' if not parser.parse_args().py_cmd else 'pythonw'
     command = parser.parse_args().command
@@ -86,11 +45,30 @@ def main():
 
     args = [py_cmd, cmd_list[command], options]
 
-    print(options)
-    print(py_cmd + cmd_list[command], options)
-    print(args)
-
     subprocess.call(args)
+
+
+def get_commands():
+    """
+    Get available commands (and corresponding scripts) for SfePy wrapper.
+
+    Commands are dynamically defined by presence *.py scripts in pre-defined
+    directory ``scripts-common``.
+
+    :rtype : dict { command: path_to_script }
+    """
+
+    bin_dir = 'scripts-common'
+    if not sfepy.in_source_tree:
+        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
+
+    scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
+    cmd = [op.splitext(op.basename(i))[0] for i in scripts]
+
+    commands = dict(zip(cmd, scripts))
+
+    return commands
+
 
 if __name__ == '__main__':
     main()
