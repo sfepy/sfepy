@@ -122,13 +122,16 @@ class H1NodalMixin(H1Mixin):
         Setup bubble DOF connectivity.
         """
         if self.node_desc.bubble is None:
-            return 0, None
+            return 0, None, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof_per_cell = self.node_desc.bubble.shape[0]
 
         ap = self.ap
+
         ii = self.region.get_cells()
+        remap = prepare_remap(ii, self.domain.cmesh.n_el)
+
         n_cell = ii.shape[0]
         n_dof = n_dof_per_cell * n_cell
 
@@ -137,7 +140,7 @@ class H1NodalMixin(H1Mixin):
         iep = self.node_desc.bubble[0]
         ap.econn[:,iep:] = all_dofs
 
-        return n_dof, all_dofs
+        return n_dof, all_dofs, remap
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """

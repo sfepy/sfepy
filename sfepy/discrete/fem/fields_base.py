@@ -263,7 +263,7 @@ class FEField(Field):
         self.n_face_dof, self.face_dofs, self.face_remap = aux
 
         aux = self._setup_bubble_dofs()
-        self.n_bubble_dof, self.bubble_dofs = aux
+        self.n_bubble_dof, self.bubble_dofs, self.bubble_remap = aux
 
         self.n_nod = self.n_vertex_dof + self.n_edge_dof \
                      + self.n_face_dof + self.n_bubble_dof
@@ -1073,7 +1073,7 @@ class SurfaceField(FEField):
         """
         Setup bubble DOF connectivity.
         """
-        return 0, None
+        return 0, None, None
 
     def get_econn(self, conn_type, region, is_trace=False,
                   integration=None):
