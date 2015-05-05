@@ -2,11 +2,12 @@
 """
 Simple wrapper for main SfePy commands (scripts).
 
-Available [commands] are dynamically defined by presence *.py scripts
-in pre-defined directory ``scripts-common``.
+Available commands are dynamically defined by presence of *.py scripts
+in default directory (scripts-common).
 """
 
 import os.path as op
+import sys
 import glob
 import argparse
 import subprocess
@@ -14,8 +15,29 @@ import subprocess
 import sfepy
 
 
-def main():
+def get_commands():
+    """
+    Get available commands (and corresponding scripts) for SfePy wrapper.
 
+    Commands are dynamically defined by presence *.py scripts in pre-defined
+    directory ``scripts-common``.
+
+    :rtype : dict { command: path_to_script }
+    """
+
+    bin_dir = 'scripts-common'
+    if not sfepy.in_source_tree:
+        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
+
+    scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
+    cmd = [op.splitext(op.basename(i))[0] for i in scripts]
+
+    commands = dict(zip(cmd, scripts))
+
+    return commands
+
+
+def main():
     cmd_list = get_commands()
 
     parser = argparse.ArgumentParser(
@@ -42,35 +64,21 @@ def main():
         nargs=argparse.REMAINDER,
         help='Additional options passed directly to selected [command].')
 
+    if not len(sys.argv) > 1:
+        parser.print_help()
+        return
+
     py_cmd = 'python' if not parser.parse_args().py_cmd else 'pythonw'
     command = parser.parse_args().command
-    options = ', '.join(parser.parse_args().options)
+    options = parser.parse_args().options
 
-    args = [py_cmd, cmd_list[command], options]
+    args = [py_cmd, cmd_list[command]]
+
+    if options:
+        options = ', '.join(parser.parse_args().options)
+        args += [options]
 
     subprocess.call(args)
-
-
-def get_commands():
-    """
-    Get available commands (and corresponding scripts) for SfePy wrapper.
-
-    Commands are dynamically defined by presence *.py scripts in pre-defined
-    directory ``scripts-common``.
-
-    :rtype : dict { command: path_to_script }
-    """
-
-    bin_dir = 'scripts-common'
-    if not sfepy.in_source_tree:
-        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
-
-    scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
-    cmd = [op.splitext(op.basename(i))[0] for i in scripts]
-
-    commands = dict(zip(cmd, scripts))
-
-    return commands
 
 
 if __name__ == '__main__':

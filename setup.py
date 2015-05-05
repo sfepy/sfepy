@@ -183,7 +183,7 @@ def setup_package():
               license = 'BSD',
               classifiers = filter(None, CLASSIFIERS.split('\n')),
               platforms = ["Linux", "Mac OS-X", 'Windows'],
-              scripts = ['sfepy.py'],
+              scripts = ['sfepy-run'],
               cmdclass = cmdclass,
               configuration = configuration)
     finally:

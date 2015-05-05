@@ -314,7 +314,7 @@ def setup(app):
 #
 man_pages = [
     ('manpages',
-    'sfepy',
+    'sfepy-run',
     'Simple wrapper for main SfePy commands (scripts)',
     'Robert Cimrman and Contributors',
     1)
