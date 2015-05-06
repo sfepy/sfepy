@@ -891,8 +891,8 @@ class Viewer(Struct):
         self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
         steps, times = self.file_source.get_ts_info()
-        has_several_times = len(times) > 0
-        has_several_steps = has_several_times or (len(steps) > 0)
+        has_several_times = len(times) > 1
+        has_several_steps = has_several_times or (len(steps) > 1)
 
         if gui is not None:
             gui.has_several_steps = has_several_steps
