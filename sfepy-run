@@ -5,7 +5,6 @@ Simple wrapper for main SfePy commands (scripts).
 Available commands are dynamically defined by presence of *.py scripts
 in default directory (scripts-common).
 """
-
 import os.path as op
 import sys
 import glob
@@ -14,7 +13,6 @@ import subprocess
 
 import sfepy
 
-
 def get_commands():
     """
     Get available commands (and corresponding scripts) for SfePy wrapper.
@@ -22,10 +20,15 @@ def get_commands():
     Commands are dynamically defined by presence *.py scripts in pre-defined
     directory ``scripts-common``.
 
-    :rtype : dict { command: path_to_script }
+    Returns
+    -------
+    commands : dict
+        The command : path_to_script dictionary.
     """
 
     bin_dir = 'scripts-common'
+    hidden_cmd = 'test_install'
+
     if not sfepy.in_source_tree:
         bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
 
@@ -34,8 +37,10 @@ def get_commands():
 
     commands = dict(zip(cmd, scripts))
 
-    return commands
+    if hidden_cmd in commands:
+        del commands[hidden_cmd]
 
+    return commands
 
 def main():
     cmd_list = get_commands()
@@ -56,7 +61,7 @@ def main():
 
     parser.add_argument(
         'command',
-        choices=cmd_list.keys(),
+        choices=sorted(cmd_list.keys()),
         help='Available SfePy command(s).')
 
     parser.add_argument(
@@ -79,7 +84,6 @@ def main():
         args += [options]
 
     subprocess.call(args)
-
 
 if __name__ == '__main__':
     main()

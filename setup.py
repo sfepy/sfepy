@@ -12,11 +12,13 @@ DOCLINES = __doc__.split("\n")
 import os
 import sys
 import glob
+import shutil
 
 from build_helpers import (generate_a_pyrex_source, package_check,
                            cmdclass, INFO)
 # monkey-patch numpy distutils to use Cython instead of Pyrex
 from numpy.distutils.command.build_src import build_src
+
 build_src.generate_a_pyrex_source = generate_a_pyrex_source
 
 VERSION = INFO.__version__
@@ -41,8 +43,9 @@ DOWNLOAD_URL = "http://code.google.com/p/sfepy/wiki/Downloads?tm=2"
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-def configuration(parent_package='',top_path=None):
+def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
+
     config = Configuration(None, parent_package, top_path)
     config.set_options(ignore_setup_xxx_py=True,
                        assume_default_configuration=True,
@@ -50,19 +53,6 @@ def configuration(parent_package='',top_path=None):
                        quiet=True)
 
     config.add_subpackage('sfepy')
-
-    main_scripts = [
-        'phonon.py',
-        'extractor.py',
-        'homogen.py',
-        'postproc.py',
-        'probe.py',
-        'run_tests.py',
-        'schroedinger.py',
-        'shaper.py',
-        'simple.py',
-        'test_install.py',
-    ]
 
     aux_scripts = [
         'blockgen.py',
@@ -88,21 +78,23 @@ def configuration(parent_package='',top_path=None):
         'sync_module_docs.py',
         'tile_periodic_mesh.py',
     ]
-        
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
-    common_scripts = [glob.glob(os.path.normpath(os.path.join('scripts-common',
-                                                              '*.py')))]
 
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
                                      'AUTHORS', 'build_helpers.py',
                                      'site_cfg_template.py', 'Makefile')))
     config.add_data_files(('sfepy/script', aux_scripts))
-    config.add_data_files(('sfepy/scripts-common', common_scripts))
+
+    if os.name == 'posix':
+        common_scripts = [
+            glob.glob(os.path.normpath(os.path.join('scripts-common', '*.py')))]
+        config.add_data_files(('sfepy/scripts-common', common_scripts))
+
     config.add_data_dir(('sfepy/meshes', 'meshes'))
     config.add_data_dir(('sfepy/examples', 'examples'))
     config.add_data_dir(('sfepy/tests', 'tests'))
 
-    config.get_version('sfepy/version.py') # sets config.version
+    config.get_version('sfepy/version.py')  # sets config.version
 
     return config
 
@@ -117,6 +109,7 @@ def _mayavi_version(pkg_name):
 
 def _cython_version(pkg_name):
     from Cython.Compiler.Version import version
+
     return version
 
 def _igakit_version(pkg_name):
@@ -151,7 +144,7 @@ def setup_package():
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     os.chdir(local_path)
     sys.path.insert(0, local_path)
-    sys.path.insert(0, os.path.join(local_path, 'sfepy')) # to retrive version
+    sys.path.insert(0, os.path.join(local_path, 'sfepy'))  # to retrive version
 
     # Write the version file.
     fd = open('VERSION', 'w')
@@ -172,20 +165,37 @@ def setup_package():
     fdi.close()
     fdo.close()
 
+    main_scripts = [
+        'phonon.py',
+        'extractor.py',
+        'homogen.py',
+        'postproc.py',
+        'probe.py',
+        'run_tests.py',
+        'schroedinger.py',
+        'shaper.py',
+        'simple.py',
+        'test_install.py',
+    ]
+
+    if os.name == 'posix':
+        main_scripts = ['sfepy-run']
+
     try:
-        setup(name = 'sfepy',
-              maintainer = "Robert Cimrman",
-              maintainer_email = "cimrman3@ntc.zcu.cz",
-              description = DOCLINES[0],
-              long_description = "\n".join(DOCLINES[2:]),
-              url = "http://sfepy.org",
-              download_url = DOWNLOAD_URL,
-              license = 'BSD',
-              classifiers = filter(None, CLASSIFIERS.split('\n')),
-              platforms = ["Linux", "Mac OS-X", 'Windows'],
-              scripts = ['sfepy-run'],
-              cmdclass = cmdclass,
-              configuration = configuration)
+        setup(name='sfepy',
+              maintainer="Robert Cimrman",
+              maintainer_email="cimrman3@ntc.zcu.cz",
+              description=DOCLINES[0],
+              long_description="\n".join(DOCLINES[2:]),
+              url="http://sfepy.org",
+              download_url=DOWNLOAD_URL,
+              license='BSD',
+              classifiers=filter(None, CLASSIFIERS.split('\n')),
+              platforms=["Linux", "Mac OS-X", 'Windows'],
+              scripts=main_scripts,
+              cmdclass=cmdclass,
+              configuration=configuration)
+
     finally:
         del sys.path[0]
         os.chdir(old_path)
