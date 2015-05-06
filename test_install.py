@@ -133,6 +133,9 @@ def main():
     out, err = check_output('python ./extractor.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
 
+    out, err = check_output('python ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5')
+    eok += report(out, '...', -3, 2, 'cylinder.png...')
+
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
     eok += report(out, '...', -6, 2, '208.54511594')
     eok += report(out, '...', -5, 1, '116309.22337295]')
