@@ -276,9 +276,10 @@ class GenericFileSource(FileSource):
         cell_types = []
         cells = []
         offset = [0]
-        for ig, conn in enumerate(mesh.conns):
+        for ig, desc in enumerate(mesh.descs):
+            conn = mesh.get_conn(desc)
             num = conn.shape[0]
-            cell_types += [vtk_cell_types[mesh.descs[ig]]] * num
+            cell_types += [vtk_cell_types[desc]] * num
 
             nn = nm.array([conn.shape[1]] * num)
             aux = nm.c_[nn[:,None], conn]
@@ -291,7 +292,7 @@ class GenericFileSource(FileSource):
         offset = nm.cumsum(offset)[:-1]
 
         cell_array = tvtk.CellArray()
-        cell_array.set_cells(cells.shape[0], cells)
+        cell_array.set_cells(mesh.n_el, cells)
 
         dataset.set_cells(cell_types, offset, cell_array)
 
