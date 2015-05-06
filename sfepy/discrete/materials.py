@@ -196,6 +196,10 @@ class Material(Struct):
         new_data = {}
         if data is not None:
             for dkey, val in data.iteritems():
+                if val.ndim != 3:
+                    raise ValueError('material parameter array must have'
+                                     " three dimensions! ('%s' has %d)"
+                                     % (dkey, val.ndim))
                 val.shape = qps.get_shape(val.shape)
                 new_data[dkey] = val
 
