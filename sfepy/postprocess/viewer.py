@@ -673,6 +673,7 @@ class Viewer(Struct):
         self.build_mlab_pipeline(**options)
         self.source.update() # Force source update to see e.g. streamlines.
         scene.scene.reset_zoom()
+        scene.scene.camera.parallel_projection = options['parallel_projection']
 
         view = options['view']
         if view is None:
@@ -718,7 +719,7 @@ class Viewer(Struct):
         pass
 
     def call_mlab(self, scene=None, show=True, is_3d=False,
-                  view=None, roll=None,
+                  view=None, roll=None, parallel_projection=False,
                   fgcolor=(0.0, 0.0, 0.0), bgcolor=(1.0, 1.0, 1.0),
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
@@ -745,6 +746,8 @@ class Viewer(Struct):
             `mlab.view()`.
         roll : float
             Roll angle tuple as in mlab.roll().
+        parallel_projection: bool
+            If True, use parallel projection.
         fgcolor : tuple of floats (R, G, B)
             The foreground color, that is the color of all text
             annotation labels (axes, orientation axes, scalar bar

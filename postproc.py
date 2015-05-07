@@ -104,6 +104,8 @@ help = {
     '[default: if --3d is True: "45,45", else: "0,0"]',
     'roll' :
     'camera roll angle [default: %default]',
+    'parallel_projection' :
+    'use parallel projection',
     'fgcolor' :
     'foreground color, that is the color of all text annotation labels'
     ' (axes, orientation axes, scalar bar labels) [default: %default]',
@@ -244,6 +246,7 @@ def view_file(filename, filter_names, options, view=None):
 
         view(show=options.show, is_3d=options.is_3d, view=options.view,
              roll=options.roll,
+             parallel_projection=options.parallel_projection,
              fgcolor=options.fgcolor, bgcolor=options.bgcolor,
              layout=options.layout,
              scalar_mode=options.scalar_mode,
@@ -335,6 +338,9 @@ def main():
     group.add_option('--roll', type='float', metavar='angle',
                      action='store', dest='roll',
                      default=0.0, help=help['roll'])
+    group.add_option('--parallel-projection', metavar='parallel_projection',
+                     action='store_true', dest='parallel_projection',
+                     default=False, help=help['parallel_projection'])
     group.add_option('--fgcolor', metavar='R,G,B',
                      action='store', dest='fgcolor',
                      default='0.0,0.0,0.0', help=help['fgcolor'])
