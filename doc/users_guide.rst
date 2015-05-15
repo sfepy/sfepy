@@ -64,6 +64,38 @@ Applications
 
         $ ./postproc.py mesh.vtk
 
+Using Command Wrapper
+^^^^^^^^^^^^^^^^^^^^^
+
+All top-level *SfePy* scripts (applications) can be run via single
+``sfepy-run`` wrapper::
+
+  $ ./sfepy-run
+  usage: sfepy-run [command] [options]
+
+  Simple wrapper for main SfePy commands.
+
+  positional arguments:
+  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,shaper,simple}
+                        Available SfePy command(s).
+  options               Additional options passed directly to selected
+                        [command].
+
+  optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  -w, --window          use alternative (pythonw) interpreter
+
+Notes
+"""""
+
+* This is a "new" supported method. Any *SfePy* script can be still
+  run as stand-alone (as mentioned above).
+* Only Posix-based systems (Linux, Mac OS) are currently supported.
+* Both "--inplace" and "system-wide" installations are supported.
+* Available commands can be customized by add/delete scripts to
+  ``scripts-common`` directory.
+
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^
 
