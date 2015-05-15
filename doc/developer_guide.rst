@@ -959,6 +959,7 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/extmods/assemble
    src/sfepy/discrete/fem/extmods/bases
    src/sfepy/discrete/fem/extmods/cmesh
+   src/sfepy/discrete/fem/extmods/crefcoors
    src/sfepy/discrete/fem/extmods/lobatto_bases
    src/sfepy/discrete/fem/extmods/mappings
    src/sfepy/discrete/fem/facets
