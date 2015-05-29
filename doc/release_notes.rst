@@ -1,5 +1,465 @@
 # created: 20.07.2007 (-1)
 
+.. _2015.1-2015.2:
+
+from 2015.1 to 2015.2
+=====================
+
+- update time stepping solvers for interactive use
+
+  - merge branch ts-interactive
+  - rename Problem.set_solvers() -> .set_conf_solvers()
+  - rename Problem.set_solvers_instances() -> .set_solver()
+
+    - work only with nonlinear solver
+    - remove .solvers, new .nls (the nonlinear solver instance)
+    - rename .get_solvers() -> .get_solver()
+
+  - update Problem.is_linear(), .set_linear() to use nonlinear solver instance
+  - update ScipyDirect to presolve in new .presolve()
+
+    - new LinearSolver.presolve()
+    - remove {ScipyDirect, SchurGeneralized, MultiProblem}._presolve()
+
+  - update Problem.init_solvers() to only create instances, new .try_presolve()
+  - update Problem.time_update() to reuse existing conditions by default
+  - make functions argument optional in Equations.setup_initial_conditions()
+  - remove Problem.setup_ic(), new .set_ics(), .setup_ics()
+
+    - new Problem.ics attribute - update .copy(), .clear_equations()
+    - update get_initial_state()
+
+  - make generator from .__call__() of time stepping solvers - yield step,
+    time, state
+  - move initial step initialization of time stepping solvers to new
+    .init_time()
+
+    - update StationarySolver, EquationSequenceSolver, SimpleTimeSteppingSolver,
+      new .init_time() - call Problem.init_solvers() there
+    - update make_implicit_step() - use Problem.try_presolve()
+    - update make_explicit_step()
+    - new TimeSteppingSolver.init_time()
+
+  - updates for time stepping solvers as generators and .init_time()
+  - move project_by_component() from example into sfepy code
+  - new examples/diffusion/time_poisson_interactive.py
+
+- solvers:
+
+  - fix PETSc Krylov solvers for reusing with different matrices
+
+    - new PETScKrylovSolver.create_ksp(), update .set_matrix(), .__call__()
+    - update PETScParallelKrylovSolver.__call__()
+
+- reorganize examples:
+
+  - merge branch reorganize-examples
+  - move Biot, piezo-, thermo-elasticity examples into examples/multi_physics/
+  - move compare_elastic_materials.py into examples/large_deformation/, remove
+    el3.mesh
+  - clean up compare_elastic_materials.py, generate mesh, use short syntax,
+    make it an executable script
+  - move rs_correctors.py into examples/homogenization/, move osteonT1_11.mesh
+    into meshes/2d/special/
+  - clean up rs_correctors.py, use short syntax, add docstring, make it an
+    executable script, change output to current directory
+  - move laplace_shifted_periodic.py into examples/diffusion/
+  - move linear_elasticity.py into examples/linear_elasticity/ - rename to
+    linear_elastic_interactive.py
+  - move modal_analysis.py into examples/linear_elasticity/
+  - remove examples/standalone/interactive/__init__.py
+  - move live_plot.py into examples/miscellaneous/
+  - move thermal_electric.py into examples/multi_physics/
+  - remove examples/standalone/__init__.py
+  - update tests for moved examples
+  - update test_install.py for moved examples
+  - script/gen_gallery.py: update for moved examples
+  - docs: update tutorial for moved examples
+
+- remove element groups - major code simplification
+
+  - merge branch no-ig
+  - update CMesh and Mesh:
+
+    - new CMesh.from_data(), new .vertex_groups attribute
+    - start using CMesh internally in Mesh to store mesh data, no element
+      groups - update Mesh._set_data(), ._set_shape_info()
+    - remove CMesh.from_mesh(), .get_from_cell_group(), .get_igs()
+    - new CMesh.create_new()
+    - remove unused Mesh.setup_done attribute
+    - remove unused make_point_cells()
+    - remove unused write_bb()
+    - rename Mesh._set_data() -> ._set_io_data(), update MeditMeshIO.read()
+    - remove Mesh.mat_ids, .ngroups, make .coors @property alias to .cmesh.coors
+
+      - update ._set_io_data()
+      - new .coors() property
+
+    - new Mesh.get_conn()
+    - new Mesh._get_io_data()
+    - update Mesh.write() - remove coors, igs arguments
+    - update Mesh.from_data() for no element groups
+    - remove unused Mesh.get_element_coors()
+    - update Mesh.__init__() for CMesh
+
+      - new cmesh argument, remove filename, prefix_dir, kwargs arguments
+      - new Mesh._collect_descs()
+      - update Mesh docstring
+
+    - update Mesh.from_region(), .copy() for CMesh.create_new()
+
+      - do not add facet entities in Mesh.from_region()
+
+    - remove unused Mesh._append_region_faces(), .localize()
+    - remove unused Mesh.from_surface()
+    - update merge_mesh(), Mesh.__add__(), .create_conn_graph() for no element
+      groups
+    - remove unused get_min_edge_size()
+    - remove unused Mesh.explode_groups()
+    - remove unused make_inverse_connectivity()
+
+  - mesh generators:
+
+    - update tiled_mesh1d(), gen_tiled_mesh() for no element groups
+    - update gen_extended_block_mesh() for no element groups
+
+  - update MeshIO and subclasses:
+
+    - do not split connectivities by mat_id in MeditMeshIO.read()
+    - update MeditMeshIO.write(), VTKMeshIO.write() for Mesh._get_io_data()
+    - do not split connectivities by mat_id in VTKMeshIO.read()
+    - clean up tests/test_meshio.py
+    - new split_conns_mat_ids(), update MeditMeshIO.read()
+    - update MeshIO and remaining subclasses for current Mesh
+
+      - do not split connectivities by mat_id in *.read()
+      - use Mesh._get_io_data() in *.write()
+      - update MeshIO docstring
+      - update TetgenMeshIO.read()
+      - update ComsolMeshIO.read(), .write()
+      - update HDF5MeshIO.read(), .write()
+      - update MEDMeshIO.read()
+      - update Mesh3DMeshIO.read()
+      - update mesh_from_groups()
+      - update BDFMeshIO.read(), .write()
+      - update NEUMeshIO.read()
+
+  - remove unused meshio functions related to element groups
+
+    - remove sort_by_mat_id(), sort_by_mat_id2(), split_by_mat_id(),
+      join_conn_groups()
+
+  - update Domain, FEDomain:
+
+    - update FEDomain__init__() for CMesh in Mesh and no element groups
+
+      - remove .setup_groups(), .iter_groups(), .get_cell_offsets()
+      - remove .groups, .mat_ids_to_i_gs, .cell_offsets attributes
+
+    - update orient_elements() C function for C Mesh, update cmesh.pyx
+    - update FEDomain.fix_element_orientation() for CMesh
+    - update FEDomain__init__() - set self.shape.n_el
+    - update region_leaf() for no element groups, use CMesh
+
+      - update create_bnf(): remove E_CI2, rename E_CI1 -> E_CI
+      - update tests/test_regions.py
+
+    - fix element orientation in FEDomain.__init__() before setting local
+      entities
+    - new FEDomain.get_conn(), update .__init__() to disallow multiple cell
+      kinds
+    - update remaining FEDomain methods for no element groups - update
+      .get_element_diameters(), .create_surface_group(), .refine()
+    - update refine_*() for no element groups
+
+      - update refine_2_3(), refine_2_4(), refine_3_4(), refine_3_8()
+      - update FEDomain.refine() for current refine_*()
+
+    - update Domain.save_regions_as_groups() for no element groups
+    - update FEDomain.get_evaluate_cache() for CMesh
+
+  - update Region:
+
+    - update Region for no element groups
+
+      - update .__init__(), .set_kind(), .update_shape(), .get_entities(),
+        .get_cells(), .get_facet_indices(), .setup_mirror_region(),
+        .get_mirror_region(), .get_n_cells()
+      - remove .igs property, ._igs, .ig_map, .ig_map_i attributes
+      - remove .get_vertices(), .get_edges(), .get_faces(), .get_facets(),
+        .iter_cells(), .get_cell_offsets()
+
+    - remove unused _try_delete()
+    - fix Region.get_facet_indices() to setup required connectivity
+    - new Region.get_cell_indices()
+    - remove unused Region.get_vertices_of_cells()
+
+  - fields:
+
+    - update VolumeField._check_region(), ._setup_geometry() for no element
+      groups
+    - remove unused FEField._setup_approximations() (re-implemented in
+      subclasses)
+    - update FEField and subclasses for no element groups
+
+      - setup of global basis of volume nodal fields works
+      - remove FEField.igs, .aps attributes
+      - new FEField.ap attribute
+      - update FEField._setup_global_base(), .setup_coors()
+      - update VolumeField._setup_approximations(), ._init_econn(),
+        ._setup_vertex_dofs()
+      - update H1NodalMixin._setup_facet_orientations(), ._setup_facet_dofs(),
+        ._setup_bubble_dofs()
+      - update Field.get_mapping()
+      - update FEField._setup_esurface(), ._get_facet_dofs(), .get_data_shape(),
+        .interp_to_qp(), .create_mapping()
+      - rename & update FEField.get_dofs_in_region_group() ->
+        .get_dofs_in_region()
+      - update VolumeField._setup_surface_data(), ._setup_point_data(),
+        .get_econn(), .average_qp_to_vertices()
+      - update H1HierarchicVolumeField._init_econn(), ._setup_facet_dofs(),
+        ._setup_bubble_dofs(), .set_dofs()
+      - update H1NodalMixin.set_dofs()
+
+    - remove Field.get_dofs_in_region()
+    - remove facet_desc argument of H1HierarchicVolumeField._setup_facet_dofs()
+    - update FEField linearization functions for no element groups
+
+      - update eval_in_els_and_qp()
+      - update get_eval_expression(), create_expression_output()
+      - update FEField.linearize()
+
+    - update SurfaceField for no element groups
+
+      - update ._check_region(), ._setup_geometry(), ._setup_approximations(),
+        .setup_extra_data(), ._init_econn(), ._setup_vertex_dofs(),
+        ._setup_bubble_dofs(), .get_econn(), .average_qp_to_vertices()
+
+    - update H1DiscontinuousField for no element groups - update
+      ._setup_approximations(), ._setup_global_base()
+    - update FEField.create_mesh() for no element groups
+    - update H1NodalVolumeField.interp_v_vals_to_n_vals() for no element groups
+    - update get_facet_dof_permutations() for no element groups
+    - update find_ref_coors(), evaluate_in_rc() for no element groups
+    - update H1NodalMixin.evaluate_at() for no element groups - update
+      get_ref_coors()
+
+  - IGA:
+
+    - update IGDomain.__init__() for no element groups
+    - update IGField for no element groups
+
+      - update .__init__(), .get_econn(), .get_data_shape(), .set_dofs(),
+        .create_mapping()
+      - rename and update .get_dofs_in_region_group() -> .get_dofs_in_region()
+
+  - Term, Terms:
+
+    - update ConnInfo for no element groups - remove ConnInfo.iter_igs()
+    - remove vector_chunk_generator(), CharacteristicFunction()
+    - remove unused Term.__call__(), ._call()
+    - remove Terms.set_current_group()
+    - update Term for no element groups
+
+      - remove .char_fun attribute
+      - remove .get_current_group(), .set_current_group(), .igs(),
+        .iter_groups()
+      - update .setup(), .get_conn_info(), .get_args(), .get_approximation(),
+        .get_physical_qps(), .get_mapping(), .get_data_shape(), .get(),
+        .evaluate(), .assemble_to()
+      - update docstring of .assign_args(), .check_args()
+
+    - fix Term.eval_complex() - force complex output also for real arguments
+
+  - remove sfepy/terms/terms_new.py - NewTerm and subclasses
+
+    - update FieldVariable for no NewTerm
+
+      - remove .clear_bases(), .setup_bases(), .clear_current_group(),
+        .set_current_group(), .val(), .val_qp(), .grad(), .grad_qp(),
+        .iter_dofs(), .get_element_zeros(), .get_component_indices()
+      - update .__init__()
+
+    - remove compare_scalar_terms.py, compare_vector_terms.py examples
+
+  - update PhysicalQPs for no element groups
+
+    - update .__init__(), .get_shape()
+    - remove .get_merged_values()
+
+  - update Material for no element groups
+
+    - update .set_data(), .set_data_from_variable(), .update_data(),
+      .get_data(), ._get_data(), .get_constant_data(), .reduce_on_datas()
+
+  - update eval_nodal_coors() for no element groups
+  - update Approximation and subclasses for no element groups
+
+    - update Approximation.__init__(), .eval_extra_coor(),
+      .setup_surface_data(), .setup_point_data(), .get_connectivity(),
+      .describe_geometry()
+    - remove Approximation.ig attribute
+    - update DiscontinuousApproximation.eval_extra_coor()
+    - update SurfaceApproximation.__init__()
+    - update FESurface for no element groups - update .__init__(),
+      .setup_mirror_connectivity()
+
+  - update Equations.get_graph_conns() for no element groups
+  - update EquationMap.map_equations() for no element groups
+  - update create_adof_conns() for no element groups
+  - update Mapping.from_args() for no element groups - update
+    get_physical_qps(), get_mapping_data()
+
+  - update FieldVariable for no element groups
+
+    - update .get_mapping(), .get_dof_conn(), .time_update(),
+      .setup_initial_conditions(), .get_approximation(), .get_data_shape(),
+      .evaluate(), .get_state_in_region(), .get_element_diameters()
+
+  - miscellaneous updates:
+
+    - clean up meshutils.[ch]
+    - clean up sfepy/discrete/fem/fea.py
+    - update set_mesh_coors() for current Mesh
+    - update refine_reference() for no element groups
+    - update compute_nodal_normals(), extend_cell_data() for no element groups
+    - update StabilizationFunction.__call__() for no element groups
+    - update ConstantFunctionByRegion.__init__() for no element groups
+
+  - scripts:
+
+    - script/extract_surface.py: update for no element groups
+
+      - use Mesh.from_region()
+      - allow surface mesh saving also for 2D meshes
+
+    - script/save_basis.py: update save_basis_on_mesh() for no element groups
+
+  - update homogenization recovery functions for no element groups
+
+    - update get_output_suffix(), .recover_bones(), .recover_paraflow(),
+      .recover_micro_hook()
+
+  - terms:
+
+    - update membrane describe_geometry() for no element groups
+    - update TLMembraneTerm for no element groups - update .__init__(),
+      .get_fargs()
+    - update hyperelastic terms for no element groups
+
+      - update HyperElasticBase.__init__(), .get_fargs()
+      - update BulkPressureTLTerm.get_fargs()
+      - update BulkPressureULTerm.get_fargs()
+
+    - update contact surface terms for no element groups
+
+      - update ContactPlaneTerm.get_fargs()
+      - update ContactSphereTerm.get_fargs()
+
+    - remove commented-out code in hyperelastic terms
+
+  - examples and tests:
+
+    - fix mesh_hook() in examples/diffusion/laplace_1d.py
+    - update examples/linear_elasticity/its2D_3.py for no element groups
+    - update examples/homogenization/rs_correctors.py for no element groups, use
+      cells of channels regions directly
+    - update tests for no element groups and current Mesh
+
+  - add docstring to FieldVariable.get_state_in_region()
+  - docs: update for current sources
+
+- improve finding reference element coordinates of physical points
+
+  - merge branch improve-find-ref-coors - partially fixes #285
+  - update gtr_normalize_v3() for 2D - add dim argument
+  - new mesh_get_facet_normals() C function
+  - new CMesh.get_facet_normals()
+  - update gtr_dot_v3() for 2D - add dim argument
+  - update orient_elements() for current gtr_dot_v3()
+  - fix tensor-product mode in inverse_element_mapping()
+  - split cmesh.pyx -> cmesh.pyx + cmesh.pxd
+  - add verbose argument to gtr_normalize_v3()
+  - new refc_find_ref_coors() C function in new refcoors.c
+
+    - new sfepy/discrete/fem/extmods/refcoors.[ch]
+    - new _mul_c_add_v3(), _intersect_line_plane(), _intersect_line_triangle(),
+      _get_cell_coors(), _get_tri_coors(), _get_xi_dist()
+
+  - new find_ref_coors() in new crefcoors.pyx extension module
+
+    - new sfepy/discrete/fem/extmods/crefcoors.pyx
+    - update sfepy/discrete/fem/extmods/setup.py
+
+  - update get_ref_coors() for new find_ref_coors() C function
+  - remove old find_ref_coors() Cython function
+  - move FEDomain.get_evaluate_cache() -> FEField.get_evaluate_cache() - update
+    for new find_ref_coors()
+  - set failed values to nan in H1NodalMixin.evaluate_at() if not returning
+    status, fix and update docstring
+  - update Probe.probe() for current code
+
+- reorganize main scripts
+
+  - merge branch reorganize-scripts
+  - add main sfepy-run wrapper and scripts-common dir
+  - add sfepy.in_source_tree dependency
+  - update doc build scripts for man builder, add sfepy manpage
+  - add scripts-common links and modify setup call parameters
+  - update user's guide for sfepy-run command
+
+- scripts:
+
+  - postproc.py: new --parallel-projection option - update Viewer.call_mlab(),
+    .render_scene()
+
+- miscellaneous updates:
+
+  - change default verbose value to False in FieldVariable.evaluate_at() +
+    related
+  - update FEDomain.get_evaluate_cache() for new verbose argument
+  - force solution in make_l2_projection_data() by decreasing absolute
+    tolerance
+  - add boilerplate in eval_ns_forms.py
+  - fix probe constructors to obey share_geometry - fix PointsProbe, LineProbe,
+    RayProbe, CircleProbe
+  - new Probe.get_evaluate_cache(), update .probe()
+  - add nonlinear solver options argument to projection functions -
+    project_by_component(), update make_l2_projection(),
+    make_l2_projection_data()
+  - fix memory leak - new CMesh.__dealloc__(), new mesh_free() C function
+  - fix graph_components() (according to cs_graph_components() in scipy.sparse)
+  - add igakit as optional dependency in setup.py, update sfepy/version.py
+  - new mesh function: expand2d - converts tri/quad mesh to tetra/hexa
+  - allow matrix_hook to handle residual vector
+  - update splinebox.py: number of segments as an input argument to __init__()
+  - remove unused variable in evaluate_in_rc()
+  - update plot_wireframe() for non-string color specifications
+  - fix DOWNLOAD_URL
+  - fix has_several_times, has_several_steps in Viewer.call_mlab()
+  - speed up GenericFileSource.create_dataset()
+  - check number of dimensions of material array in Material.set_data()
+
+- examples and tests:
+
+  - clean up tests/test_linear_solvers.py
+  - new example: Darcy flow in multiple compartments
+  - new tests/test_input_darcy_flow_multicomp.py
+  - update test_install.py to test postproc.py with HDF5 output files
+
+- terms:
+
+  - update LinearTractionTerm docstring - explain load shapes
+  - new term: dw_vm_dot_s
+
+    - replace mulATB_integrate() by mulAB_integrate() with multiple modes; new:
+      actBfT()
+
+- docs:
+
+  - sync module index of developer guide with current sources
+  - update release tasks for sfepy-run
+
 .. _2014.4-2015.1:
 
 from 2014.4 to 2015.1
