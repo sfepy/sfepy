@@ -165,7 +165,7 @@ def setup_package():
     fdi.close()
     fdo.close()
 
-    main_scripts = [
+    data_files = main_scripts = [
         'phonon.py',
         'extractor.py',
         'homogen.py',
@@ -193,6 +193,7 @@ def setup_package():
               classifiers=filter(None, CLASSIFIERS.split('\n')),
               platforms=["Linux", "Mac OS-X", 'Windows'],
               scripts=main_scripts,
+              data_files=data_files,
               cmdclass=cmdclass,
               configuration=configuration)
 
