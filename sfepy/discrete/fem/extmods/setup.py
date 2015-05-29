@@ -107,7 +107,8 @@ def configuration(parent_package='', top_path=None):
 
     # Include *.pxd files in distribution tarball and install them along
     # with the extension modules.
-    pxd_files = ['mappings.pxd', 'types.pxd', '_fmfield.pxd', '_geommech.pxd']
+    pxd_files = ['cmesh.pxd', 'mappings.pxd', 'types.pxd',
+                 '_fmfield.pxd', '_geommech.pxd']
     config.add_data_files(('', pxd_files))
 
     return config
