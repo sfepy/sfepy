@@ -1,6 +1,12 @@
 News
 ====
 
+* **29.05.2015** Version 2015.2 released (major code simplification (removed
+  element groups), time stepping solvers updated for interactive use, improved
+  finding of reference element coordinates of physical points, reorganized
+  examples, reorganized installation on POSIX systems (sfepy-run script),
+  etc.), see :ref:`release notes <2015.1-2015.2>`.
+
 * **26.02.2015** Version 2015.1 released (support for multiple fields in
   isogeometric analysis, redesigned handling of solver parameters, new modal
   analysis example, etc.), see :ref:`release notes <2014.4-2015.1>`.
@@ -20,12 +26,5 @@ News
   analysis, improved postprocessing and visualization script for time-dependent
   problems with adaptive time steps, three new terms, etc.), see :ref:`release
   notes <2014.1-2014.2>`.
-
-* **25.02.2014** Version 2014.1 released (sfepy.fem was split to separate
-  FEM-specific and general modules, lower memory usage by creating active DOF
-  connectivities directly from field connectivities, new handling of field and
-  variable shapes, clean up: many obsolete modules were removed, all module
-  names follow naming conventions, etc.), see :ref:`release notes
-  <2013.4-2014.1>`.
 
 For historians: see :ref:`archived_news`.
