@@ -73,9 +73,10 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
     count = 0
     inter_count = 0
     for ir, ntasks in ordered_iteritems(inter_facets):
-        region = Region.from_cells(cell_parts[ir], domain)
-        dofs = field.get_dofs_in_region(region)
 
+        cregion = Region.from_cells(cell_parts[ir], domain, name='task_%d' % ir)
+        domain.regions.append(cregion)
+        dofs = field.get_dofs_in_region(cregion)
         rdof_map = dof_maps.setdefault(ir, [None, [], 0, 0])
 
         inter_dofs = []
@@ -85,7 +86,8 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
             name = 'inter_%d_%d' % (ir, ic)
             ii = ir
 
-            region = Region.from_facets(facets, domain, name)
+            region = Region.from_facets(facets, domain, name,
+                                        parent=cregion.name)
             region.update_shape()
 
             inter_dofs.append(field.get_dofs_in_region(region))
@@ -96,7 +98,7 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
             econn = sd.get_connectivity()
             n_facet = econn.shape[0]
 
-            ii2 = int(n_facet / 2)
+            ii2 = max(int(n_facet / 2), 1)
 
             dr = nm.unique(econn[:ii2])
             ii = nm.where((id_map[dr] == 0))[0]
@@ -117,6 +119,8 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
                 id_map[dc[ii]] = 1
                 inter_count += n_new
                 count += n_new
+
+        domain.regions.pop() # Remove the cell region.
 
         inner_dofs = nm.setdiff1d(dofs, nm.concatenate(inter_dofs))
         n_inner = len(inner_dofs)
