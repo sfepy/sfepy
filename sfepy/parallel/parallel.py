@@ -21,8 +21,8 @@ def get_inter_facets(domain, cell_tasks):
     cmesh = domain.cmesh
 
     # Facet-to-cell connectivity.
-    cmesh.setup_connectivity(cmesh.dim - 1, cmesh.dim)
-    cfc = cmesh.get_conn(cmesh.dim - 1, cmesh.dim)
+    cmesh.setup_connectivity(cmesh.tdim - 1, cmesh.tdim)
+    cfc = cmesh.get_conn(cmesh.tdim - 1, cmesh.tdim)
 
     # Facet tasks by cells in cfc.
     ftasks = cell_tasks[cfc.indices]
