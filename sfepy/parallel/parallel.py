@@ -58,7 +58,7 @@ def get_inter_facets(domain, cell_tasks):
 
     return inter_facets
 
-def create_task_dof_maps(field, cell_parts, inter_facets, is_overlap=True):
+def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
     """
     For each task list its inner and interface DOFs of the given field and
     create PETSc numbering that is consecutive in each subdomain.
@@ -88,8 +88,12 @@ def create_task_dof_maps(field, cell_parts, inter_facets, is_overlap=True):
     count = 0
     inter_count = 0
     ocs = nm.zeros(0, dtype=nm.int32)
+    cell_parts = []
     for ir, ntasks in ordered_iteritems(inter_facets):
-        cregion = Region.from_cells(cell_parts[ir], domain, name='task_%d' % ir)
+        cells = nm.where(cell_tasks == ir)[0].astype(nm.int32)
+        cell_parts.append(cells)
+
+        cregion = Region.from_cells(cells, domain, name='task_%d' % ir)
         domain.regions.append(cregion)
         dofs = field.get_dofs_in_region(cregion)
 
@@ -188,9 +192,9 @@ def create_task_dof_maps(field, cell_parts, inter_facets, is_overlap=True):
     if not len(overlap_cells):
         overlap_cells.append( nm.zeros(0, dtype=nm.int32))
 
-    return dof_maps, id_map, overlap_cells
+    return dof_maps, id_map, cell_parts, overlap_cells
 
-def distribute_field_dofs(field, cell_parts, cell_tasks, is_overlap=True,
+def distribute_field_dofs(field, cell_tasks, is_overlap=True,
                           comm=None, verbose=False):
     """
     Distribute the owned cells and DOFs of the given field to all tasks.
@@ -208,9 +212,9 @@ def distribute_field_dofs(field, cell_parts, cell_tasks, is_overlap=True,
     if comm.rank == 0:
         inter_facets = get_inter_facets(field.domain, cell_tasks)
 
-        aux = create_task_dof_maps(field, cell_parts, inter_facets,
+        aux = create_task_dof_maps(field, cell_tasks, inter_facets,
                                    is_overlap=is_overlap)
-        dof_maps, id_map, overlap_cells = aux
+        dof_maps, id_map, cell_parts, overlap_cells = aux
 
         n_cell_parts = [len(ii) for ii in cell_parts]
         output('numbers of cells in tasks (without overlaps):',
