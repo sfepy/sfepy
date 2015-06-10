@@ -611,7 +611,7 @@ class Region(Struct):
 
         if self.parent is not None:
             pcells = self.domain.regions[self.parent].cells
-            ip = nm.in1d(cells, pcells, assume_unique=True)
+            ip = nm.in1d(cells, pcells, assume_unique=False)
             cells = cells[ip]
 
             counts = nm.diff(offs)
