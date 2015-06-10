@@ -1,6 +1,8 @@
 """
 Functions for a high-level PETSc-based parallelization.
 """
+import time
+
 import numpy as nm
 
 import sys, petsc4py
@@ -370,8 +372,6 @@ def assemble_to_petsc(pmtx, prhs, mtx, rhs, pdofs, drange, is_overlap=True,
     ---
     Try Mat.setValuesCSR() - no lgmap - filtering vectorized?
     """
-    import time
-
     if comm is None:
         comm = PETSc.COMM_WORLD
 
