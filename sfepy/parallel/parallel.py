@@ -326,7 +326,7 @@ def create_prealloc_data(mtx, pdofs, drange, verbose=False):
 
     return mtx_prealloc
 
-def create_petsc_matrix(sizes, mtx=None, comm=None):
+def create_petsc_matrix(sizes, mtx_prealloc=None, comm=None):
     """
     Create and allocate a PETSc matrix.
     """
@@ -339,8 +339,8 @@ def create_petsc_matrix(sizes, mtx=None, comm=None):
 
     pmtx.setSizes((sizes, sizes))
 
-    if mtx is not None:
-        pmtx.setPreallocationCSR((mtx.indptr, mtx.indices))
+    if mtx_prealloc is not None:
+        pmtx.setPreallocationCSR((mtx_prealloc.indptr, mtx_prealloc.indices))
 
     pmtx.setUp()
 
