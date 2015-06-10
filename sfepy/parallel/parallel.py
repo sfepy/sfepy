@@ -15,6 +15,45 @@ from sfepy.base.base import assert_, output, ordered_iteritems, Struct
 from sfepy.discrete.common.region import Region
 from sfepy.discrete.fem.fe_surface import FESurface
 
+def partition_mesh(mesh, n_parts, use_metis=True, verbose=False):
+    """
+    Partition the mesh cells into `n_parts` subdomains, using metis, if
+    available.
+    """
+    output('partitioning mesh into %d subdomains...' % n_parts, verbose=verbose)
+    tt = time.clock()
+
+    if use_metis:
+        try:
+            from pymetis import part_graph
+
+        except ImportError:
+            output('pymetis is not available, using naive partitioning!')
+            part_graph = None
+
+    if use_metis and (part_graph is not None):
+        cmesh = mesh.cmesh
+        cmesh.setup_connectivity(cmesh.dim, cmesh.dim)
+        graph = cmesh.get_conn(cmesh.dim, cmesh.dim)
+
+        cuts, cell_tasks = part_graph(n_parts, xadj=graph.offsets.astype(int),
+                                      adjncy=graph.indices.astype(int))
+        cell_tasks = nm.array(cell_tasks, dtype=nm.int32)
+
+    else:
+        ii = nm.arange(n_parts)
+        n_cell_parts = mesh.n_el / n_parts + ((mesh.n_el % n_parts) > ii)
+        output(n_cell_parts)
+        assert_(sum(n_cell_parts) == mesh.n_el)
+        assert_(nm.all(n_cell_parts > 0))
+
+        offs = nm.cumsum(nm.r_[0, n_cell_parts])
+        cell_tasks = nm.digitize(nm.arange(offs[-1]), offs) - 1
+
+    output('...done in', time.clock() - tt, verbose=verbose)
+
+    return cell_tasks
+
 def get_inter_facets(domain, cell_tasks):
     """
     For each couple of neighboring task subdomains get the common boundary
