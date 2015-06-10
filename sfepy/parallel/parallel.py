@@ -9,7 +9,7 @@ petsc4py.init(sys.argv)
 from petsc4py import PETSc
 from mpi4py import MPI
 
-from sfepy.base.base import assert_, output, ordered_iteritems
+from sfepy.base.base import assert_, output, ordered_iteritems, Struct
 from sfepy.discrete.common.region import Region
 from sfepy.discrete.fem.fe_surface import FESurface
 
@@ -310,6 +310,21 @@ def expand_dofs(dofs, n_components):
         edofs[idof::n_components] = aux
 
     return edofs
+
+def create_prealloc_data(mtx, pdofs, drange, verbose=False):
+    """
+    Create CSR preallocation data for a PETSc matrix based on the owned PETSc
+    DOFs and a local matrix with EBCs not applied.
+    """
+    owned_dofs = nm.where((pdofs >= drange[0]) & (pdofs < drange[1]))[0]
+    owned_dofs = owned_dofs.astype(nm.int32)
+    output('owned local DOFs:', owned_dofs, verbose=verbose)
+
+    ii = nm.argsort(pdofs[owned_dofs])
+    aux = mtx[owned_dofs[ii]]
+    mtx_prealloc = Struct(indptr=aux.indptr, indices=pdofs[aux.indices])
+
+    return mtx_prealloc
 
 def create_petsc_matrix(sizes, mtx=None, comm=None):
     """
