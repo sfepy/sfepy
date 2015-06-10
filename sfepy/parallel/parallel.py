@@ -56,32 +56,45 @@ def get_inter_facets(domain, cell_tasks):
 
     return inter_facets
 
-def create_task_dof_maps(field, cell_parts, inter_facets):
+def create_task_dof_maps(field, cell_parts, inter_facets, is_overlap=True):
     """
     For each task list its inner and interface DOFs of the given field and
     create PETSc numbering that is consecutive in each subdomain.
 
     For each task, the DOF map has the following structure::
 
-      [inner, [own_inter1, own_inter2, ...], [], n_task_total, task_offset]
+      [inner,
+       [own_inter1, own_inter2, ...],
+       [overlap_cells1, overlap_cells2, ...],
+       n_task_total, task_offset]
+
+    The overlapping cells are defined so that the system matrix corresponding
+    to each task can be assembled independently, see [1]. TODO: Some "corner"
+    cells may be added even if not needed - filter them out by using the PETSc
+    DOFs range.
+
+    [1] J. Sistek and F. Cirak. Parallel iterative solution of the
+    incompressible Navier-Stokes equations with application to rotating
+    wings. Submitted for publication, 2015
     """
     domain = field.domain
+    cmesh = domain.cmesh
 
     id_map = nm.zeros(field.n_nod, dtype=nm.uint32)
 
     dof_maps = {}
     count = 0
     inter_count = 0
+    ocs = nm.zeros(0, dtype=nm.int32)
     for ir, ntasks in ordered_iteritems(inter_facets):
-
         cregion = Region.from_cells(cell_parts[ir], domain, name='task_%d' % ir)
         domain.regions.append(cregion)
         dofs = field.get_dofs_in_region(cregion)
-        rdof_map = dof_maps.setdefault(ir, [None, [], 0, 0])
 
+        rdof_map = dof_maps.setdefault(ir, [None, [], [], 0, 0])
         inter_dofs = []
         for ic, facets in ordered_iteritems(ntasks):
-            cdof_map = dof_maps.setdefault(ic, [None, [], 0, 0])
+            cdof_map = dof_maps.setdefault(ic, [None, [], [], 0, 0])
 
             name = 'inter_%d_%d' % (ir, ic)
             ii = ir
@@ -105,26 +118,38 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
             n_new = len(ii)
             if n_new:
                 rdof_map[1].append(dr[ii])
-                rdof_map[2] += n_new
+                rdof_map[3] += n_new
                 id_map[dr[ii]] = 1
                 inter_count += n_new
                 count += n_new
+
+                if is_overlap:
+                    ovs = cmesh.get_incident(0, region.facets[:ii2],
+                                             cmesh.tdim - 1)
+                    ocs = cmesh.get_incident(cmesh.tdim, ovs, 0)
+                    rdof_map[2].append(ocs.astype(nm.int32))
 
             dc = nm.unique(econn[ii2:])
             ii = nm.where((id_map[dc] == 0))[0]
             n_new = len(ii)
             if n_new:
                 cdof_map[1].append(dc[ii])
-                cdof_map[2] += n_new
+                cdof_map[3] += n_new
                 id_map[dc[ii]] = 1
                 inter_count += n_new
                 count += n_new
+
+                if is_overlap:
+                    ovs = cmesh.get_incident(0, region.facets[ii2:],
+                                             cmesh.tdim - 1)
+                    ocs = cmesh.get_incident(cmesh.tdim, ovs, 0)
+                    cdof_map[2].append(ocs.astype(nm.int32))
 
         domain.regions.pop() # Remove the cell region.
 
         inner_dofs = nm.setdiff1d(dofs, nm.concatenate(inter_dofs))
         n_inner = len(inner_dofs)
-        rdof_map[2] += n_inner
+        rdof_map[3] += n_inner
         assert_(nm.all(id_map[inner_dofs] == 0))
         id_map[inner_dofs] = 1
         count += n_inner
@@ -132,8 +157,9 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
         rdof_map[0] = inner_dofs
 
     offset = 0
+    overlap_cells = []
     for ir, dof_map in ordered_iteritems(dof_maps):
-        n_owned = dof_map[2]
+        n_owned = dof_map[3]
         output(n_owned, offset)
 
         i0 = len(dof_map[0])
@@ -144,15 +170,26 @@ def create_task_dof_maps(field, cell_parts, inter_facets):
                                     dtype=nm.uint32)
             i0 += i1
 
+        if len(dof_map[2]):
+            ocs = nm.unique(nm.concatenate(dof_map[2]))
+
+        else:
+            ocs = nm.zeros(0, dtype=nm.int32)
+
+        overlap_cells.append(ocs)
+
         assert_(i0 == n_owned)
 
-        dof_map[3] = offset
+        dof_map[4] = offset
         offset += n_owned
 
-    return dof_maps, id_map
+    if not len(overlap_cells):
+        overlap_cells.append( nm.zeros(0, dtype=nm.int32))
 
-def distribute_field_dofs(field, cell_parts, cell_tasks, comm=None,
-                          verbose=False):
+    return dof_maps, id_map, overlap_cells
+
+def distribute_field_dofs(field, cell_parts, cell_tasks, is_overlap=True,
+                          comm=None, verbose=False):
     """
     Distribute the owned cells and DOFs of the given field to all tasks.
 
@@ -169,40 +206,44 @@ def distribute_field_dofs(field, cell_parts, cell_tasks, comm=None,
     if comm.rank == 0:
         inter_facets = get_inter_facets(field.domain, cell_tasks)
 
-        dof_maps, id_map = create_task_dof_maps(field, cell_parts, inter_facets)
+        aux = create_task_dof_maps(field, cell_parts, inter_facets,
+                                   is_overlap=is_overlap)
+        dof_maps, id_map, overlap_cells = aux
 
         n_cell_parts = [len(ii) for ii in cell_parts]
-        output('numbers of cells in tasks:', n_cell_parts, verbose=verbose)
+        output('numbers of cells in tasks (without overlaps):',
+               n_cell_parts, verbose=verbose)
         assert_(sum(n_cell_parts) == field.domain.mesh.n_el)
         assert_(nm.all(n_cell_parts > 0))
 
         # Send subdomain data to other tasks.
         for it in xrange(1, size):
-            # Send owned cells.
-            mpi.send(n_cell_parts[it], it)
-            mpi.Send([cell_parts[it], MPI.INTEGER4], it)
+            # Send owned and overlap cells.
+            cells = nm.union1d(cell_parts[it], overlap_cells[it])
+            mpi.send(len(cells), it)
+            mpi.Send([cells, MPI.INTEGER4], it)
 
             dof_map = dof_maps[it]
 
             # Send owned petsc_dofs range.
-            mpi.send(dof_map[3], it)
-            mpi.send(dof_map[3] + dof_map[2], it)
+            mpi.send(dof_map[4], it)
+            mpi.send(dof_map[4] + dof_map[3], it)
 
             # Send petsc_dofs of global_dofs.
-            global_dofs = field.ap.econn[cell_parts[it]]
+            global_dofs = field.ap.econn[cells]
             petsc_dofs_conn = id_map[global_dofs]
             mpi.send(petsc_dofs_conn.shape[0], it)
             mpi.send(petsc_dofs_conn.shape[1], it)
             mpi.Send([petsc_dofs_conn, MPI.INTEGER4], it)
 
-        cells = cell_parts[0]
+        cells = nm.union1d(cell_parts[0], overlap_cells[0])
         n_cell = len(cells)
 
         global_dofs = field.ap.econn[cells]
 
         if 0 in dof_maps:
             dof_map = dof_maps[0]
-            petsc_dofs_range = (dof_map[3], dof_map[3] + dof_map[2])
+            petsc_dofs_range = (dof_map[4], dof_map[4] + dof_map[3])
             petsc_dofs_conn = id_map[global_dofs]
 
         else:
