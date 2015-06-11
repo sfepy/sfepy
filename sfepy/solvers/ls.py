@@ -52,6 +52,39 @@ def standard_call(call):
 
     return _standard_call
 
+def petsc_call(call):
+    """
+    Decorator handling argument preparation and timing for PETSc-based linear
+    solvers.
+    """
+    def _petsc_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                    i_max=None, mtx=None, status=None, comm=None, **kwargs):
+        tt = time.clock()
+
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
+        comm = get_default(comm, self.comm)
+
+        mshape = mtx.size if isinstance(mtx, self.petsc.Mat) else mtx.shape
+        rshape = [rhs.size] if isinstance(rhs, self.petsc.Vec) else rhs.shape
+
+        assert_(mshape[0] == mshape[1] == rshape[0])
+        if x0 is not None:
+            xshape = [x0.size] if isinstance(x0, self.petsc.Vec) else x0.shape
+            assert_(xshape[0] == rshape[0])
+
+        result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
+                      comm, **kwargs)
+
+        ttt = time.clock() - tt
+        if status is not None:
+            status['time'] = ttt
+
+        return result
+
+    return _petsc_call
+
 class ScipyDirect(LinearSolver):
     """
     Direct sparse solver from SciPy.
