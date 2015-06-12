@@ -227,8 +227,11 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
         dof_map[4] = offset
         offset += n_owned
 
+    if not len(cell_parts):
+        cell_parts.append(nm.arange(len(cell_tasks), dtype=nm.int32))
+
     if not len(overlap_cells):
-        overlap_cells.append( nm.zeros(0, dtype=nm.int32))
+        overlap_cells.append(nm.zeros(0, dtype=nm.int32))
 
     return dof_maps, id_map, cell_parts, overlap_cells
 
