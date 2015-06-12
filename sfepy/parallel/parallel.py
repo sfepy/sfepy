@@ -356,6 +356,20 @@ def expand_dofs(dofs, n_components):
 
     return edofs
 
+def view_petsc_local(data, name='data', viewer=None, comm=None):
+    """
+    View local PETSc `data` called `name`. The data object has to have
+    `.view()` method.
+    """
+    if comm is None:
+        comm = PETSc.COMM_WORLD
+
+    for rank in xrange(comm.size):
+        if rank == comm.rank:
+            output('contents of local %s on rank %d:' % (name, rank))
+            data.view(viewer=viewer)
+        comm.barrier()
+
 def create_prealloc_data(mtx, pdofs, drange, verbose=False):
     """
     Create CSR preallocation data for a PETSc matrix based on the owned PETSc
