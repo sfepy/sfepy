@@ -43,7 +43,7 @@ def partition_mesh(mesh, n_parts, use_metis=True, verbose=False):
     else:
         ii = nm.arange(n_parts)
         n_cell_parts = mesh.n_el / n_parts + ((mesh.n_el % n_parts) > ii)
-        output(n_cell_parts)
+        output('cell counts:', n_cell_parts, verbose=verbose)
         assert_(sum(n_cell_parts) == mesh.n_el)
         assert_(nm.all(n_cell_parts > 0))
 
