@@ -520,7 +520,8 @@ class Problem(Struct):
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
-                         lcbcs=None, functions=None, create_matrix=False):
+                         lcbcs=None, functions=None, create_matrix=False,
+                         is_matrix=True):
         """
         Update equations for current time step.
 
@@ -544,6 +545,11 @@ class Problem(Struct):
         functions : Functions instance, optional
             The user functions for boundary conditions, materials,
             etc. If not given, `self.functions` are used.
+        create_matrix : bool
+            If True, force the matrix graph computation.
+        is_matrix : bool
+            If False, the matrix is not created. Has precedence over
+            `create_matrix`.
         """
         self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
@@ -553,7 +559,8 @@ class Problem(Struct):
                                                    functions, self)
         self.graph_changed = graph_changed
 
-        if graph_changed or (self.mtx_a is None) or create_matrix:
+        if (is_matrix
+            and (graph_changed or (self.mtx_a is None) or create_matrix)):
             self.mtx_a = self.equations.create_matrix_graph()
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
@@ -586,12 +593,12 @@ class Problem(Struct):
 
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
-                    functions=None, create_matrix=False):
+                    functions=None, create_matrix=False, is_matrix=True):
         self.set_bcs(get_default(ebcs, self.ebcs),
                      get_default(epbcs, self.epbcs),
                      get_default(lcbcs, self.lcbcs))
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
-                              functions, create_matrix)
+                              functions, create_matrix, is_matrix)
 
     def set_ics(self, ics=None):
         """
