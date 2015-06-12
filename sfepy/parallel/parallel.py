@@ -380,6 +380,52 @@ def create_local_petsc_vector(pdofs):
 
     return pvec_i
 
+def create_gather_scatter(pdofs, pvec_i, pvec, comm=None):
+    """
+    Create the ``gather()`` function for updating a global PETSc vector from
+    local ones and the ``scatter()`` function for updating local PETSc vectors
+    from the global one.
+    """
+    if comm is None:
+        comm = PETSc.COMM_WORLD
+
+    isg = PETSc.IS().createGeneral(pdofs, comm=comm)
+    g2l = PETSc.Scatter().create(pvec, isg, pvec_i, None)
+
+    def scatter(pvec_i, pvec):
+        """
+        Scatter `pvec` to `pvec_i`.
+        """
+        g2l.scatter(pvec, pvec_i, PETSc.InsertMode.INSERT)
+
+    def gather(pvec, pvec_i):
+        """
+        Gather `pvec_i` to `pvec`.
+        """
+        g2l.scatter(pvec_i, pvec, PETSc.InsertMode.INSERT,
+                    PETSc.ScatterMode.REVERSE)
+
+    return gather, scatter
+
+def create_gather_to_zero(pvec):
+    """
+    Create the ``gather_to_zero()`` function for collecting the global PETSc
+    vector on the task of rank zero.
+    """
+    g20, pvec_full =  PETSc.Scatter().toZero(pvec)
+
+    def gather_to_zero(pvec):
+        """
+        Return the global PETSc vector, corresponding to `pvec`, on the task of
+        rank zero. The vector is reused between calls!
+        """
+        g20.scatter(pvec, pvec_full, PETSc.InsertMode.INSERT,
+                    PETSc.ScatterMode.FORWARD)
+
+        return pvec_full
+
+    return gather_to_zero
+
 def create_prealloc_data(mtx, pdofs, drange, verbose=False):
     """
     Create CSR preallocation data for a PETSc matrix based on the owned PETSc
