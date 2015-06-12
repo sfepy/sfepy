@@ -205,7 +205,6 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
     overlap_cells = []
     for ir, dof_map in ordered_iteritems(dof_maps):
         n_owned = dof_map[3]
-        output(n_owned, offset)
 
         i0 = len(dof_map[0])
         id_map[dof_map[0]] = nm.arange(offset, offset + i0, dtype=nm.uint32)
