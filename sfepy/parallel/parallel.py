@@ -370,6 +370,16 @@ def view_petsc_local(data, name='data', viewer=None, comm=None):
             data.view(viewer=viewer)
         comm.barrier()
 
+def create_local_petsc_vector(pdofs):
+    """
+    Create a local PETSc vector with the size corresponding to `pdofs`.
+    """
+    pvec_i = PETSc.Vec().create(comm=PETSc.COMM_SELF)
+    pvec_i.setSizes(len(pdofs))
+    pvec_i.setUp()
+
+    return pvec_i
+
 def create_prealloc_data(mtx, pdofs, drange, verbose=False):
     """
     Create CSR preallocation data for a PETSc matrix based on the owned PETSc
