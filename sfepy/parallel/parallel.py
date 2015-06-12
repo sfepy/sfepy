@@ -232,6 +232,63 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
 
     return dof_maps, id_map, cell_parts, overlap_cells
 
+def verify_task_dof_maps(dof_maps, id_map, field, verbose=False):
+    """
+    Verify the counts and values of DOFs in `dof_maps` and `id_map`
+    corresponding to `field`.
+
+    Returns the vector with a task number for each DOF.
+    """
+    tt = time.clock()
+    if verbose:
+        output('verifying...')
+        output('total number of DOFs:', field.n_nod)
+        output('number of tasks:', len(dof_maps))
+
+    count = count2 = 0
+    dofs = []
+    vec = nm.empty(field.n_nod, dtype=nm.float64)
+    for ir, dof_map in ordered_iteritems(dof_maps):
+        n_owned = dof_map[3]
+        offset = dof_map[4]
+        o2 = offset + n_owned
+
+        if verbose:
+            output('task %d: %d owned on offset %d' % (ir, n_owned, offset))
+
+        aux = dof_map[0]
+        assert_(nm.all((id_map[aux] >= offset) & (id_map[aux] < o2)))
+
+        count2 += dof_map[3]
+
+        count += len(dof_map[0])
+
+        dofs.append(dof_map[0])
+        vec[dof_map[0]] = ir
+        for aux in dof_map[1]:
+            assert_(nm.all((id_map[aux] >= offset) & (id_map[aux] < o2)))
+
+            count += len(aux)
+            dofs.append(aux)
+            vec[aux] = ir
+
+    dofs = nm.concatenate(dofs)
+    assert_(field.n_nod == len(dofs))
+    assert_(nm.all(nm.sort(dofs) == nm.sort(id_map)))
+
+    dofs = nm.unique(dofs)
+    assert_(field.n_nod == len(dofs))
+
+    assert_(field.n_nod == dofs[-1] + 1)
+    assert_(field.n_nod == count)
+    assert_(field.n_nod == count2)
+    assert_(field.n_nod == len(id_map))
+    assert_(field.n_nod == len(nm.unique(id_map)))
+
+    output('...done in', time.clock() - tt, verbose=verbose)
+
+    return vec
+
 def distribute_field_dofs(field, cell_tasks, is_overlap=True,
                           comm=None, verbose=False):
     """
