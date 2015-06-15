@@ -405,7 +405,7 @@ class PETScKrylovSolver(LinearSolver):
 
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s)'
-               % (self.conf.method, self.conf.precond, self.conf.sub_precond,
+               % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
                   ksp.reason, self.converged_reasons[ksp.reason]),
                verbose=conf.verbose)
 
