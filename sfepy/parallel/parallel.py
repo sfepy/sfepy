@@ -520,12 +520,10 @@ def create_petsc_matrix(sizes, mtx_prealloc=None, comm=None):
 
     return pmtx
 
-def apply_ebc_to_matrix(mtx, eq_map):
+def apply_ebc_to_matrix(mtx, ebc_rows):
     """
     Apply to matrix rows: zeros to non-diagonal entries, one to the diagonal.
     """
-    ebc_rows = eq_map.eq_ebc
-
     data, prows, cols = mtx.data, mtx.indptr, mtx.indices
     for ir in ebc_rows:
         for ic in xrange(prows[ir], prows[ir + 1]):
