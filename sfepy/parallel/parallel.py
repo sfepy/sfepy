@@ -408,10 +408,20 @@ def expand_dofs(dofs, n_components):
     """
     Expand DOFs to equation numbers.
     """
+    if dofs.ndim > 1:
+        sh = dofs.shape
+        dofs = dofs.ravel()
+
+    else:
+        sh = None
+
     edofs = nm.empty(n_components * dofs.shape[0], nm.int32)
     for idof in xrange(n_components):
         aux = n_components * dofs + idof
         edofs[idof::n_components] = aux
+
+    if sh is not None:
+        edofs.shape = sh[:-1] + (-1,)
 
     return edofs
 
