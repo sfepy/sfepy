@@ -252,7 +252,8 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
 
     return dof_maps, id_map, cell_parts, overlap_cells
 
-def verify_task_dof_maps(dof_maps, id_map, field, verbose=False):
+def verify_task_dof_maps(dof_maps, id_map, field, use_expand_dofs=False,
+                         verbose=False):
     """
     Verify the counts and values of DOFs in `dof_maps` and `id_map`
     corresponding to `field`.
@@ -267,7 +268,11 @@ def verify_task_dof_maps(dof_maps, id_map, field, verbose=False):
 
     count = count2 = 0
     dofs = []
-    vec = nm.empty(field.n_nod, dtype=nm.float64)
+    if use_expand_dofs:
+        vec = nm.empty(field.n_nod * field.n_components, dtype=nm.float64)
+
+    else:
+        vec = nm.empty(field.n_nod, dtype=nm.float64)
     for ir, dof_map in ordered_iteritems(dof_maps):
         n_owned = dof_map[3]
         offset = dof_map[4]
@@ -276,8 +281,9 @@ def verify_task_dof_maps(dof_maps, id_map, field, verbose=False):
         if verbose:
             output('task %d: %d owned on offset %d' % (ir, n_owned, offset))
 
-        aux = dof_map[0]
-        assert_(nm.all((id_map[aux] >= offset) & (id_map[aux] < o2)))
+        if not use_expand_dofs:
+            aux = dof_map[0]
+            assert_(nm.all((id_map[aux] >= offset) & (id_map[aux] < o2)))
 
         count2 += dof_map[3]
 
@@ -286,24 +292,29 @@ def verify_task_dof_maps(dof_maps, id_map, field, verbose=False):
         dofs.append(dof_map[0])
         vec[dof_map[0]] = ir
         for aux in dof_map[1]:
-            assert_(nm.all((id_map[aux] >= offset) & (id_map[aux] < o2)))
+            if not use_expand_dofs:
+                assert_(nm.all((id_map[aux] >= offset) & (id_map[aux] < o2)))
 
             count += len(aux)
             dofs.append(aux)
             vec[aux] = ir
 
     dofs = nm.concatenate(dofs)
-    assert_(field.n_nod == len(dofs))
-    assert_(nm.all(nm.sort(dofs) == nm.sort(id_map)))
+
+    n_dof = vec.shape[0]
+
+    assert_(n_dof == len(dofs))
+    if not expand_dofs:
+        assert_(nm.all(nm.sort(dofs) == nm.sort(id_map)))
 
     dofs = nm.unique(dofs)
-    assert_(field.n_nod == len(dofs))
+    assert_(n_dof == len(dofs))
 
-    assert_(field.n_nod == dofs[-1] + 1)
-    assert_(field.n_nod == count)
-    assert_(field.n_nod == count2)
-    assert_(field.n_nod == len(id_map))
-    assert_(field.n_nod == len(nm.unique(id_map)))
+    assert_(n_dof == dofs[-1] + 1)
+    assert_(n_dof == count)
+    assert_(n_dof == count2)
+    assert_(n_dof == len(id_map))
+    assert_(n_dof == len(nm.unique(id_map)))
 
     output('...done in', time.clock() - tt, verbose=verbose)
 
