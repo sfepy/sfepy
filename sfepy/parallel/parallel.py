@@ -97,7 +97,8 @@ def get_inter_facets(domain, cell_tasks):
 
     return inter_facets
 
-def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
+def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
+                         use_expand_dofs=False):
     """
     For each task list its inner and interface DOFs of the given field and
     create PETSc numbering that is consecutive in each subdomain.
@@ -121,7 +122,23 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
     domain = field.domain
     cmesh = domain.cmesh
 
-    id_map = nm.zeros(field.n_nod, dtype=nm.uint32)
+    if use_expand_dofs:
+        id_map = nm.zeros(field.n_nod * field.n_components, dtype=nm.uint32)
+
+    else:
+        id_map = nm.zeros(field.n_nod, dtype=nm.uint32)
+
+    def _get_dofs_region(field, region):
+        dofs = field.get_dofs_in_region(region)
+        if use_expand_dofs:
+            dofs = expand_dofs(dofs, field.n_components)
+        return dofs
+
+    def _get_dofs_conn(field, conn):
+        dofs = nm.unique(conn)
+        if use_expand_dofs:
+            dofs = expand_dofs(dofs, field.n_components)
+        return dofs
 
     dof_maps = {}
     count = 0
@@ -134,7 +151,7 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
 
         cregion = Region.from_cells(cells, domain, name='task_%d' % ir)
         domain.regions.append(cregion)
-        dofs = field.get_dofs_in_region(cregion)
+        dofs = _get_dofs_region(field, cregion)
 
         rdof_map = dof_maps.setdefault(ir, [None, [], [], 0, 0])
         inter_dofs = []
@@ -148,7 +165,7 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
                                         parent=cregion.name)
             region.update_shape()
 
-            inter_dofs.append(field.get_dofs_in_region(region))
+            inter_dofs.append(_get_dofs_region(field, region))
 
             ap = field.ap
             sd = FESurface('surface_data_%s' % region.name, region,
@@ -158,7 +175,7 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
 
             ii2 = max(int(n_facet / 2), 1)
 
-            dr = nm.unique(econn[:ii2])
+            dr = _get_dofs_conn(field, econn[:ii2])
             ii = nm.where((id_map[dr] == 0))[0]
             n_new = len(ii)
             if n_new:
@@ -174,7 +191,7 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True):
                     ocs = cmesh.get_incident(cmesh.tdim, ovs, 0)
                     rdof_map[2].append(ocs.astype(nm.int32))
 
-            dc = nm.unique(econn[ii2:])
+            dc = _get_dofs_conn(field, econn[ii2:])
             ii = nm.where((id_map[dc] == 0))[0]
             n_new = len(ii)
             if n_new:
@@ -292,7 +309,7 @@ def verify_task_dof_maps(dof_maps, id_map, field, verbose=False):
 
     return vec
 
-def distribute_field_dofs(field, cell_tasks, is_overlap=True,
+def distribute_field_dofs(field, gfd, use_expand_dofs=False,
                           comm=None, verbose=False):
     """
     Distribute the owned cells and DOFs of the given field to all tasks.
@@ -308,46 +325,41 @@ def distribute_field_dofs(field, cell_tasks, is_overlap=True,
     mpi = comm.tompi4py()
 
     if comm.rank == 0:
-        inter_facets = get_inter_facets(field.domain, cell_tasks)
-
-        aux = create_task_dof_maps(field, cell_tasks, inter_facets,
-                                   is_overlap=is_overlap)
-        dof_maps, id_map, cell_parts, overlap_cells = aux
-
-        n_cell_parts = [len(ii) for ii in cell_parts]
-        output('numbers of cells in tasks (without overlaps):',
-               n_cell_parts, verbose=verbose)
-        assert_(sum(n_cell_parts) == field.domain.mesh.n_el)
-        assert_(nm.all(n_cell_parts > 0))
+        dof_maps = gfd.dof_maps
+        id_map = gfd.id_map
 
         # Send subdomain data to other tasks.
         for it in xrange(1, size):
             # Send owned and overlap cells.
-            cells = nm.union1d(cell_parts[it], overlap_cells[it])
+            cells = nm.union1d(gfd.cell_parts[it], gfd.overlap_cells[it])
             mpi.send(len(cells), it)
             mpi.Send([cells, MPI.INTEGER4], it)
 
             dof_map = dof_maps[it]
 
             # Send owned petsc_dofs range.
-            mpi.send(dof_map[4], it)
-            mpi.send(dof_map[4] + dof_map[3], it)
+            mpi.send(gfd.coffsets[it], it)
+            mpi.send(gfd.coffsets[it] + dof_map[3], it)
 
             # Send petsc_dofs of global_dofs.
             global_dofs = field.ap.econn[cells]
+            if use_expand_dofs:
+                global_dofs = expand_dofs(global_dofs, field.n_components)
             petsc_dofs_conn = id_map[global_dofs]
             mpi.send(petsc_dofs_conn.shape[0], it)
             mpi.send(petsc_dofs_conn.shape[1], it)
             mpi.Send([petsc_dofs_conn, MPI.INTEGER4], it)
 
-        cells = nm.union1d(cell_parts[0], overlap_cells[0])
+        cells = nm.union1d(gfd.cell_parts[0], gfd.overlap_cells[0])
         n_cell = len(cells)
 
         global_dofs = field.ap.econn[cells]
+        if use_expand_dofs:
+            global_dofs = expand_dofs(global_dofs, field.n_components)
 
         if 0 in dof_maps:
             dof_map = dof_maps[0]
-            petsc_dofs_range = (dof_map[4], dof_map[4] + dof_map[3])
+            petsc_dofs_range = (gfd.coffsets[0], gfd.coffsets[0] + dof_map[3])
             petsc_dofs_conn = id_map[global_dofs]
 
         else:
@@ -382,6 +394,77 @@ def distribute_field_dofs(field, cell_tasks, is_overlap=True,
         output('local petsc DOFs (owned + shared):', aux, len(aux))
 
     return cells, petsc_dofs_range, petsc_dofs_conn, dof_maps, id_map
+
+def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
+                           use_expand_dofs=False, comm=None, verbose=False):
+    """
+    Distribute the owned cells and DOFs of the given field to all tasks.
+
+    Uses interleaved PETSc numbering in each task, i.e., the PETSc DOFs of each
+    tasks are consecutive and correspond to the first field DOFs block followed
+    by the second etc.
+
+    Expand DOFs to equations if `use_expand_dofs` is True.
+    """
+    if comm is None:
+        comm = PETSc.COMM_WORLD
+
+    size = comm.size
+
+    if comm.rank == 0:
+        gfds = []
+        inter_facets = get_inter_facets(fields[0].domain, cell_tasks)
+        for field in fields:
+            aux = create_task_dof_maps(field, cell_tasks, inter_facets,
+                                       is_overlap=is_overlap,
+                                       use_expand_dofs=use_expand_dofs)
+            cell_parts = aux[2]
+            n_cell_parts = [len(ii) for ii in cell_parts]
+            output('numbers of cells in tasks (without overlaps):',
+                   n_cell_parts, verbose=verbose)
+            assert_(sum(n_cell_parts) == field.domain.mesh.n_el)
+            assert_(nm.all(n_cell_parts > 0))
+
+            gfd = Struct(name='global field %s distribution' % field.name,
+                         dof_maps=aux[0], id_map=aux[1],
+                         cell_parts=aux[2], overlap_cells=aux[3],
+                         coffsets=nm.empty(size, dtype=nm.int32))
+            gfds.append(gfd)
+
+        # Initialize composite offsets of DOFs.
+        if len(fields) > 1:
+            # Renumber id_maps for field inter-leaving.
+            offset = 0
+            for ir in xrange(size):
+                for ii, gfd in enumerate(gfds):
+                    dof_map = gfd.dof_maps[ir]
+                    n_owned = dof_map[3]
+                    off = dof_map[4]
+
+                    iown = nm.concatenate([dof_map[0]] + dof_map[1])
+                    gfd.id_map[iown] += offset - off
+                    gfd.coffsets[ir] = offset
+
+                    offset += n_owned
+
+        else:
+            gfd = gfds[0]
+            gfd.coffsets[:] = [gfd.dof_maps[ir][4] for ir in xrange(size)]
+
+    else:
+        gfds = [None] * len(fields)
+
+    lfds = []
+    for ii, field in enumerate(fields):
+        aux = distribute_field_dofs(field, gfds[ii],
+                                    use_expand_dofs=use_expand_dofs,
+                                    comm=comm, verbose=verbose)
+        lfd = Struct(name='local field %s distribution' % field.name,
+                      cells=aux[0], petsc_dofs_range=aux[1],
+                      petsc_dofs_conn=aux[2])
+        lfds.append(lfd)
+
+    return lfds, gfds
 
 def get_local_ordering(field_i, petsc_dofs_conn):
     """
