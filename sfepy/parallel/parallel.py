@@ -496,6 +496,17 @@ def get_sizes(petsc_dofs_range, n_dof, n_components):
 
     return sizes, drange
 
+def get_composite_sizes(lfds):
+    """
+    Get (local, total) sizes of a vector and local equation range for a
+    composite matrix built from field blocks described by `lfds` local field
+    distributions information.
+    """
+    sizes = tuple(sum(ii) for ii in zip(*[ii.sizes for ii in lfds]))
+    drange = (lfds[0].drange[0], lfds[-1].drange[1])
+
+    return sizes, drange
+
 def expand_dofs(dofs, n_components):
     """
     Expand DOFs to equation numbers.
