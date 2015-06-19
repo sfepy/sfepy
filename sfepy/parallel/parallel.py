@@ -466,12 +466,21 @@ def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
 
     return lfds, gfds
 
-def get_local_ordering(field_i, petsc_dofs_conn):
+def get_local_ordering(field_i, petsc_dofs_conn, use_expand_dofs=False):
     """
     Get PETSc DOFs in the order of local DOFs of the localized field `field_i`.
+
+    Expand DOFs to equations if `use_expand_dofs` is True.
     """
-    petsc_dofs = nm.empty(field_i.n_nod, dtype=nm.int32)
+    if use_expand_dofs:
+        petsc_dofs = nm.empty(field_i.n_nod * field_i.n_components,
+                              dtype=nm.int32)
+
+    else:
+        petsc_dofs = nm.empty(field_i.n_nod, dtype=nm.int32)
     econn = field_i.ap.econn
+    if use_expand_dofs:
+        econn = expand_dofs(econn, field_i.n_components)
     petsc_dofs[econn] = petsc_dofs_conn
 
     return petsc_dofs
