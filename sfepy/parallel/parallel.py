@@ -657,10 +657,48 @@ def apply_ebc_to_matrix(mtx, ebc_rows):
             else:
                 data[ic] = 0.0
 
-def assemble_to_petsc(pmtx, prhs, mtx, rhs, pdofs, drange, is_overlap=True,
-                      comm=None, verbose=False):
+def assemble_rhs_to_petsc(prhs, rhs, pdofs, drange, is_overlap=True,
+                          comm=None, verbose=False):
     """
-    Assemble local CSR matrix and right-hand side vector to PETSc counterparts.
+    Assemble a local right-hand side vector to a global PETSc vector.
+    """
+    if comm is None:
+        comm = PETSc.COMM_WORLD
+
+    lgmap = PETSc.LGMap().create(pdofs, comm=comm)
+
+    if is_overlap:
+        prhs.setLGMap(lgmap)
+        output('setting rhs values...', verbose=verbose)
+        tt = time.clock()
+        for ir, rdof in enumerate(pdofs):
+            if (rdof < drange[0]) or (rdof >= drange[1]): continue
+            prhs.setValueLocal(ir, rhs[ir],
+                               PETSc.InsertMode.INSERT_VALUES)
+        output('...done in', time.clock() - tt, verbose=verbose)
+
+        output('assembling rhs...', verbose=verbose)
+        tt = time.clock()
+        prhs.assemble()
+        output('...done in', time.clock() - tt, verbose=verbose)
+
+    else:
+        prhs.setLGMap(lgmap)
+        output('setting rhs values...', verbose=verbose)
+        tt = time.clock()
+        prhs.setValuesLocal(nm.arange(len(rhs), dtype=nm.int32), rhs,
+                            PETSc.InsertMode.ADD_VALUES)
+        output('...done in', time.clock() - tt, verbose=verbose)
+
+        output('assembling rhs...', verbose=verbose)
+        tt = time.clock()
+        prhs.assemble()
+        output('...done in', time.clock() - tt, verbose=verbose)
+
+def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
+                          comm=None, verbose=False):
+    """
+    Assemble a local CSR matrix to a global PETSc matrix.
 
     WIP
     ---
@@ -692,20 +730,6 @@ def assemble_to_petsc(pmtx, prhs, mtx, rhs, pdofs, drange, is_overlap=True,
         pmtx.assemble()
         output('...done in', time.clock() - tt, verbose=verbose)
 
-        prhs.setLGMap(lgmap)
-        output('setting rhs values...', verbose=verbose)
-        tt = time.clock()
-        for ir, rdof in enumerate(pdofs):
-            if (rdof < drange[0]) or (rdof >= drange[1]): continue
-            prhs.setValueLocal(ir, rhs[ir],
-                               PETSc.InsertMode.INSERT_VALUES)
-        output('...done in', time.clock() - tt, verbose=verbose)
-
-        output('assembling rhs...', verbose=verbose)
-        tt = time.clock()
-        prhs.assemble()
-        output('...done in', time.clock() - tt, verbose=verbose)
-
     else:
         pmtx.setLGMap(lgmap, lgmap)
         output('setting matrix values...', verbose=verbose)
@@ -717,16 +741,4 @@ def assemble_to_petsc(pmtx, prhs, mtx, rhs, pdofs, drange, is_overlap=True,
         output('assembling matrix...', verbose=verbose)
         tt = time.clock()
         pmtx.assemble()
-        output('...done in', time.clock() - tt, verbose=verbose)
-
-        prhs.setLGMap(lgmap)
-        output('setting rhs values...', verbose=verbose)
-        tt = time.clock()
-        prhs.setValuesLocal(nm.arange(len(rhs), dtype=nm.int32), rhs,
-                            PETSc.InsertMode.ADD_VALUES)
-        output('...done in', time.clock() - tt, verbose=verbose)
-
-        output('assembling rhs...', verbose=verbose)
-        tt = time.clock()
-        prhs.assemble()
         output('...done in', time.clock() - tt, verbose=verbose)
