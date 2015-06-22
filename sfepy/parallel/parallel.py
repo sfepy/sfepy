@@ -244,6 +244,11 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
         dof_map[4] = offset
         offset += n_owned
 
+    if not len(dof_maps):
+        dofs = _get_dofs_region(field, field.region)
+        dof_maps[0] = [dofs, [], [], len(dofs), 0]
+        id_map[:] = nm.arange(len(dofs), dtype=nm.uint32)
+
     if not len(cell_parts):
         cell_parts.append(nm.arange(len(cell_tasks), dtype=nm.int32))
 
@@ -368,14 +373,9 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
         if use_expand_dofs:
             global_dofs = expand_dofs(global_dofs, field.n_components)
 
-        if 0 in dof_maps:
-            dof_map = dof_maps[0]
-            petsc_dofs_range = (gfd.coffsets[0], gfd.coffsets[0] + dof_map[3])
-            petsc_dofs_conn = id_map[global_dofs]
-
-        else:
-            petsc_dofs_range = (0, global_dofs.max() + 1)
-            petsc_dofs_conn = global_dofs
+        dof_map = dof_maps[0]
+        petsc_dofs_range = (gfd.coffsets[0], gfd.coffsets[0] + dof_map[3])
+        petsc_dofs_conn = id_map[global_dofs]
 
     else:
         # Receive owned cells.
