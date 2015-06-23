@@ -33,7 +33,10 @@ class Probe(Struct):
         self.vtkdata = get_vtk_from_mesh(mesh, data, 'probe_')
 
         self.vtkprobe = vtk.vtkProbeFilter()
-        self.vtkprobe.SetSource(self.vtkdata)
+        if vtk_version < 6:
+            self.vtkprobe.SetSource(self.vtkdata)
+        else:
+            self.vtkprobe.SetSourceData(self.vtkdata)
 
         self.probes = {}
         self.probes_png = {}
