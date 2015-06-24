@@ -40,6 +40,15 @@ class Problem(Struct):
 
     For interactive use, the constructor requires only the `equations`,
     `nls` and `ls` keyword arguments.
+
+    Notes
+    -----
+    The Problem is by default created with `active_only` set to True. Then the
+    (tangent) matrices and residual vectors (right-hand sides) have reduced
+    sizes and contain only the active DOFs, i.e., DOFs not constrained by EBCs
+    or EPBCs. Setting `active_only` to False results in full-size vectors and
+    matrices. Then the matrix size non-zeros structure does not depend on the
+    actual E(P)BCs applied. It must be False when using parallel PETSc solvers.
     """
 
     @staticmethod
@@ -105,7 +114,9 @@ class Problem(Struct):
 
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
-                 nls=None, ls=None, ts=None, auto_solvers=True):
+                 nls=None, ls=None, ts=None, auto_solvers=True,
+                 active_only=True):
+        self.active_only = active_only
         self.name = name
         self.conf = conf
         self.functions = functions
@@ -554,14 +565,16 @@ class Problem(Struct):
         self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
 
+        ac = self.active_only
         graph_changed = self.equations.time_update(self.ts,
                                                    ebcs, epbcs, lcbcs,
-                                                   functions, self)
+                                                   functions, self,
+                                                   active_only=ac)
         self.graph_changed = graph_changed
 
         if (is_matrix
             and (graph_changed or (self.mtx_a is None) or create_matrix)):
-            self.mtx_a = self.equations.create_matrix_graph()
+            self.mtx_a = self.equations.create_matrix_graph(active_only=ac)
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
             ## plu.plt.show()
