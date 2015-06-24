@@ -240,7 +240,8 @@ class Equations(Container):
                           term.region.name, term.arg_str))
 
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
-                    functions=None, problem=None, verbose=True):
+                    functions=None, problem=None, active_only=True,
+                    verbose=True):
         """
         Update the equations for current time step.
 
@@ -263,6 +264,10 @@ class Equations(Container):
             The user functions for boundary conditions, materials, etc.
         problem : Problem instance, optional
             The problem that can be passed to user functions as a context.
+        active_only : bool
+            If True, the active DOF connectivities and matrix graph have
+            reduced size and are created with the reduced (active DOFs only)
+            numbering.
         verbose : bool
             If False, reduce verbosity.
 
@@ -276,12 +281,14 @@ class Equations(Container):
         self.variables.time_update(ts, functions, verbose=verbose)
 
         active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions,
-                                                     problem=problem)
-        graph_changed = active_bcs != self.active_bcs
+                                                     problem=problem,
+                                                     active_only=active_only)
+        graph_changed = active_only and (active_bcs != self.active_bcs)
         self.active_bcs = active_bcs
 
         if graph_changed or not self.variables.adof_conns:
-            adcs = create_adof_conns(self.conn_info, self.variables.adi.indx)
+            adcs = create_adof_conns(self.conn_info, self.variables.adi.indx,
+                                     active_only=active_only)
             self.variables.set_adof_conns(adcs)
 
         self.variables.setup_lcbc_operators(lcbcs, ts, functions)
@@ -315,7 +322,8 @@ class Equations(Container):
     def setup_initial_conditions(self, ics, functions=None):
         self.variables.setup_initial_conditions(ics, functions)
 
-    def get_graph_conns(self, any_dof_conn=False, rdcs=None, cdcs=None):
+    def get_graph_conns(self, any_dof_conn=False, rdcs=None, cdcs=None,
+                        active_only=True):
         """
         Get DOF connectivities needed for creating tangent matrix graph.
 
@@ -328,6 +336,9 @@ class Equations(Container):
         rdcs, cdcs : arrays, optional
             Additional row and column DOF connectivities, corresponding
             to the variables used in the equations.
+        active_only : bool
+            If True, the active DOF connectivities have reduced size and are
+            created with the reduced (active DOFs only) numbering.
 
         Returns
         -------
@@ -375,15 +386,26 @@ class Equations(Container):
             dc_key = (rkey, ckey)
 
             if not dc_key in shared:
-                rdcs.append(adcs[rkey])
-                cdcs.append(adcs[ckey])
+                rdc = adcs[rkey]
+                cdc = adcs[ckey]
+                if not active_only:
+                    ii = nm.where(rdc < 0)
+                    rdc = rdc.copy()
+                    rdc[ii] = -1 - rdc[ii]
+
+                    ii = nm.where(cdc < 0)
+                    cdc = cdc.copy()
+                    cdc[ii] = -1 - cdc[ii]
+
+                rdcs.append(rdc)
+                cdcs.append(cdc)
 
                 shared.add(dc_key)
 
         return rdcs, cdcs
 
     def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,
-                            shape=None, verbose=True):
+                            shape=None, active_only=True, verbose=True):
         """
         Create tangent matrix graph, i.e. preallocate and initialize the
         sparse storage needed for the tangent matrix. Order of DOF
@@ -402,6 +424,9 @@ class Equations(Container):
             The required shape, if it is different from the shape
             determined by the equations variables. This may be needed if
             additional row and column DOF connectivities are passed in.
+        active_only : bool
+            If True, the matrix graph has reduced size and is created with the
+            reduced (active DOFs only) numbering.
         verbose : bool
             If False, reduce verbosity.
 
@@ -423,7 +448,8 @@ class Equations(Container):
             return None
 
         rdcs, cdcs = self.get_graph_conns(any_dof_conn=any_dof_conn,
-                                          rdcs=rdcs, cdcs=cdcs)
+                                          rdcs=rdcs, cdcs=cdcs,
+                                          active_only=active_only)
 
         if not len(rdcs):
             output('no matrix (empty dof connectivities)!')

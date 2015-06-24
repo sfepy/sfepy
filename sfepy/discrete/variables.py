@@ -25,7 +25,7 @@ is_virtual = 1
 is_parameter = 2
 is_field = 10
 
-def create_adof_conns(conn_info, var_indx=None, verbose=True):
+def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
     """
     Create active DOF connectivities for all variables referenced in
     `conn_info`.
@@ -35,17 +35,29 @@ def create_adof_conns(conn_info, var_indx=None, verbose=True):
 
     DOF connectivity key is a tuple ``(primary variable name, region name,
     type, is_trace flag)``.
+
+    Notes
+    -----
+    If `active_only` is False, the DOF connectivities contain all DOFs, with
+    the E(P)BC-constrained ones stored as `-1 - <DOF number>`, so that the full
+    connectivities can be reconstructed for the matrix graph creation.
     """
     var_indx = get_default(var_indx, {})
 
     def _create(var, econn):
+        offset = var_indx.get(var.name, slice(0, 0)).start
         if var.eq_map is None:
             eq = nm.arange(var.n_dof, dtype=nm.int32)
 
         else:
-            eq = var.eq_map.eq
+            if active_only:
+                eq = var.eq_map.eq
 
-        offset = var_indx.get(var.name, slice(0, 0)).start
+            else:
+                eq = nm.arange(var.n_dof, dtype=nm.int32)
+                eq[var.eq_map.eq_ebc] = -1 - (var.eq_map.eq_ebc + offset)
+                eq[var.eq_map.master] = -1 - (var.eq_map.master + offset)
+
         adc = create_adof_conn(eq, econn, var.n_components, offset)
 
         return adc
@@ -344,10 +356,27 @@ class Variables(Container):
         else:
             raise ValueError('no LCBC defined!')
 
-    def equation_mapping(self, ebcs, epbcs, ts, functions, problem=None):
+    def equation_mapping(self, ebcs, epbcs, ts, functions, problem=None,
+                         active_only=True):
         """
         Create the mapping of active DOFs from/to all DOFs for all state
         variables.
+
+        Parameters
+        ----------
+        ebcs : Conditions instance
+            The essential (Dirichlet) boundary conditions.
+        epbcs : Conditions instance
+            The periodic boundary conditions.
+        ts : TimeStepper instance
+            The time stepper.
+        functions : Functions instance
+            The user functions for boundary conditions.
+        problem : Problem instance, optional
+            The problem that can be passed to user functions as a context.
+        active_only : bool
+            If True, the active DOF info ``self.adi`` uses the reduced (active
+            DOFs only) numbering. Otherwise it is the same as ``self.di``.
 
         Returns
         -------
@@ -389,12 +418,12 @@ class Variables(Container):
 
         self.adi = DofInfo('active_state_dof_info')
         for var_name in self.ordered_state:
-            self.adi.append_variable(self[var_name], active=True)
+            self.adi.append_variable(self[var_name], active=active_only)
 
         if self.has_virtual_dcs:
             self.avdi = DofInfo('active_virtual_dof_info')
             for var_name in self.ordered_virtual:
-                self.avdi.append_variable(self[var_name], active=True)
+                self.avdi.append_variable(self[var_name], active=active_only)
 
         else:
             self.avdi = self.adi
