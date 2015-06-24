@@ -76,7 +76,8 @@ class Probe(Struct):
         vtkpd = vtk.vtkPolyData()
         vtkpd.SetPoints(pts)
         vtkpd.SetLines(lns)
-        vtkpd.Update()
+        if vtk_version < 6:
+            vtkpd.Update()
 
         return vtkpd
 
