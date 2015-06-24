@@ -8,7 +8,7 @@ import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
-from sfepy.base.base import debug, OneTypeList, Container, Struct
+from sfepy.base.base import OneTypeList, Container, Struct
 from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.fem.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
@@ -375,11 +375,9 @@ class Equations(Container):
             dc_key = (rkey, ckey)
 
             if not dc_key in shared:
-                try:
-                    rdcs.append(adcs[rkey])
-                    cdcs.append(adcs[ckey])
-                except:
-                    debug()
+                rdcs.append(adcs[rkey])
+                cdcs.append(adcs[ckey])
+
                 shared.add(dc_key)
 
         return rdcs, cdcs
