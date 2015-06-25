@@ -283,7 +283,7 @@ def insert_strided_axis(ar, axis, length):
     axis : int
         The axis before which the new axis will be inserted.
     length : int
-        The length of the inserted axis. 
+        The length of the inserted axis.
 
     Returns
     -------
@@ -364,7 +364,7 @@ def dot_sequences(mtx, vec, mode='AB'):
 
     Notes
     -----
-    Uses `numpy.core.umath_tests.matrix_multiply()` if available, which is much 
+    Uses `numpy.core.umath_tests.matrix_multiply()` if available, which is much
     faster than the default implementation.
 
     The default implementation uses `numpy.sum()` and element-wise
@@ -514,7 +514,7 @@ class MatrixAction( Struct ):
         insert_method( obj, call )
         return obj
     from_array = staticmethod( from_array )
-    
+
     ##
     # 30.08.2007, c
     def __call__( self, vec ):
