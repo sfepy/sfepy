@@ -23,7 +23,7 @@ def get_volume(el, nd):
 
     mtx = nm.ones((nel, dim + 1, dim + 1), dtype=nm.double)
     mtx[:,:,:-1] = nd[el,:]
-    vols = mul * dets_fast(mtx.copy())
+    vols = mul * dets_fast(mtx)
     vol = vols.sum()
 
     return vol

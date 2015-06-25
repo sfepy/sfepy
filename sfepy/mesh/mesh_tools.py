@@ -107,7 +107,7 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
         mtx = nm.ones((nel, dim + 1, dim + 1), dtype=nm.double)
         mtx[:,:,:-1] = nd[el,:]
-        vols = mul * dets_fast(mtx.copy())
+        vols = mul * dets_fast(mtx)
         vol = vols.sum()
         bc = nm.dot(vols, mtx.sum(1)[:,:-1] / nnd)
 

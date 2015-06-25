@@ -70,26 +70,31 @@ def dets_fast(a):
     out : array
         The output array with shape (m,): out[i] = det(a[i, :, :]).
     """
-    from numpy.linalg import lapack_lite
-    from numpy.core import intc
+    if float('.'.join(nm.version.version.split('.')[:2])) >= 1.8:
+        return nm.linalg.det(a)
 
-    m = a.shape[0]
-    n = a.shape[1]
-    lapack_routine = lapack_lite.dgetrf
-    pivots = nm.zeros((m, n), intc)
-    flags = nm.arange(1, n + 1).reshape(1, -1)
-    for i in xrange(m):
-        tmp = a[i]
-        lapack_routine(n, n, tmp, n, pivots[i], 0)
-    sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
-    idx = nm.arange(n)
-    d = a[:, idx, idx]
-    absd = nm.absolute(d)
-    sign *= nm.multiply.reduce(d / absd, axis=1)
-    nm.log(absd, absd)
-    logdet = nm.add.reduce(absd, axis=-1)
+    else:
+        from numpy.linalg import lapack_lite
+        from numpy.core import intc
 
-    return sign * nm.exp(logdet)
+        a = a.copy()
+        m = a.shape[0]
+        n = a.shape[1]
+        lapack_routine = lapack_lite.dgetrf
+        pivots = nm.zeros((m, n), intc)
+        flags = nm.arange(1, n + 1).reshape(1, -1)
+        for i in xrange(m):
+            tmp = a[i]
+            lapack_routine(n, n, tmp, n, pivots[i], 0)
+        sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
+        idx = nm.arange(n)
+        d = a[:, idx, idx]
+        absd = nm.absolute(d)
+        sign *= nm.multiply.reduce(d / absd, axis=1)
+        nm.log(absd, absd)
+        logdet = nm.add.reduce(absd, axis=-1)
+
+        return sign * nm.exp(logdet)
 
 def print_array_info(ar):
     """
