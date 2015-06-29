@@ -26,17 +26,6 @@ class Materials(Container):
         obj = Materials(objs)
         return obj
 
-    def semideep_copy(self, reset=True):
-        """Copy materials, while external data (e.g. region) remain shared."""
-        others = copy(self)
-        others.update(OneTypeList(Material))
-        for mat in self:
-            other = mat.copy(name=mat.name)
-            if reset:
-                other.reset()
-            others.append(other)
-        return others
-
     def reset(self):
         """Clear material data so that next materials.time_update() is
         performed even for stationary materials."""
