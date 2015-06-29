@@ -13,16 +13,16 @@ from sfepy.linalg import (get_perpendiculars, normalize_vectors,
                           make_axis_rotation_matrix)
 from sfepy.postprocess.plot_dofs import _get_axes, plot_mesh, plot_global_dofs
 
-def plot_geometry(ax, gel, show=False):
+def plot_geometry(ax, gel):
     """
     Plot a geometry element as a wireframe.
     """
-    ax = plot_mesh(ax, gel.coors, [gel.conn], gel.edges, show=False)
-    ax = plot_global_dofs(ax, gel.coors, [gel.conn], show=show)
+    ax = plot_mesh(ax, gel.coors, [gel.conn], gel.edges)
+    ax = plot_global_dofs(ax, gel.coors, [gel.conn])
 
     return ax
 
-def plot_edges(ax, gel, length, show=False):
+def plot_edges(ax, gel, length):
     """
     Plot edges of a geometry element as numbered arrows.
     """
@@ -40,19 +40,12 @@ def plot_edges(ax, gel, length, show=False):
         cc = l2 * vdir + centre
         draw_arrow(ax, cc, length=0.3*length, linewidth=3, color='b')
 
-        if dim == 3:
-            cx, cy, cz = centre
-            ax.text(cx, cy, cz, ii,
-                    color='b', fontsize=10, weight='light')
-
-        else:
-            cx, cy = centre
-            ax.text(cx, cy, ii,
-                    color='b', fontsize=10, weight='light')
+        ax.text(*centre, s=ii,
+                color='b', fontsize=10, weight='light')
 
     return ax
 
-def plot_faces(ax, gel, radius, n_point, show=False):
+def plot_faces(ax, gel, radius, n_point):
     """
     Plot faces of a 3D geometry element as numbered oriented arcs. An arc
     centre corresponds to the first node of a face. It points from the first
@@ -89,15 +82,8 @@ def plot_faces(ax, gel, radius, n_point, show=False):
 
         draw_arrow(ax, coors, length=0.3*radius, linewidth=3, color='r')
 
-        if dim == 3:
-            cx, cy, cz = centre
-            ax.text(cx, cy, cz, ii,
-                    color='r', fontsize=10, weight='light')
-
-        else:
-            cx, cy = centre
-            ax.text(cx, cy, ii,
-                    color='r', fontsize=10, weight='light')
+        ax.text(*centre, s=ii,
+                color='r', fontsize=10, weight='light')
 
     return ax
 
@@ -152,7 +138,8 @@ def draw_arrow(ax, coors, angle=20.0, length=0.3, **kwargs):
         ax.add_collection3d(arr)
 
 if __name__ == '__main__':
-    from sfepy.discrete.fem.geometry_element import GeometryElement, geometry_data
+    from sfepy.discrete.fem.geometry_element import (GeometryElement,
+                                                     geometry_data)
 
     for key, gd in geometry_data.iteritems():
         if key == '1_2' : continue

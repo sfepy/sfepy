@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from sfepy.base.base import output
 
-from sfepy.postprocess.plot_dofs import _get_axes
+from sfepy.postprocess.plot_dofs import _get_axes, _to2d
 from sfepy.postprocess.plot_facets import plot_geometry
 
 def _get_qp(geometry, order):
@@ -24,7 +24,7 @@ def _get_qp(geometry, order):
     return GeometryElement(geometry), coors, weights
 
 def plot_weighted_points(ax, coors, weights, min_radius=10, max_radius=50,
-                         show_colorbar=False, show=False):
+                         show_colorbar=False):
     """
     Plot points with given coordinates as circles/spheres with radii given by
     weights.
@@ -40,24 +40,16 @@ def plot_weighted_points(ax, coors, weights, min_radius=10, max_radius=50,
         nweights = ((weights - wmin) * (max_radius - min_radius)
                     / (wmax - wmin) + min_radius)
 
-    if dim == 3:
-        sc = ax.scatter(coors[:, 0], coors[:, 1], coors[:, 2],
-                        s=nweights, c=weights, alpha=1)
-
-    else:
-        sc = ax.scatter(coors[:, 0], coors[:, 1],
-                        s=nweights, c=weights, alpha=1)
+    coors = _to2d(coors)
+    sc = ax.scatter(*coors.T, s=nweights, c=weights, alpha=1)
 
     if show_colorbar:
         plt.colorbar(sc)
 
-    if show:
-        plt.show()
-
     return ax
 
 def plot_quadrature(ax, geometry, order, min_radius=10, max_radius=50,
-                    show_colorbar=False, show=False):
+                    show_colorbar=False):
     """
     Plot quadrature points for the given geometry and integration order.
 
@@ -69,9 +61,9 @@ def plot_quadrature(ax, geometry, order, min_radius=10, max_radius=50,
 
     ax = _get_axes(ax, dim)
 
-    plot_geometry(ax, gel, show=False)
+    plot_geometry(ax, gel)
     plot_weighted_points(ax, coors, weights,
                          min_radius=min_radius, max_radius=max_radius,
-                         show_colorbar=show_colorbar, show=show)
+                         show_colorbar=show_colorbar)
 
     return ax

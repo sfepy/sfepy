@@ -27,7 +27,7 @@ def _to2d(coors):
     return coors
 
 def plot_points(ax, coors, vals=None, point_size=20,
-                show_colorbar=False, show=False):
+                show_colorbar=False):
     """
     Plot points with given coordinates, optionally colored using `vals` values.
     """
@@ -36,23 +36,15 @@ def plot_points(ax, coors, vals=None, point_size=20,
 
     colors = 'b' if vals is None else vals
 
-    if dim == 3:
-        sc = ax.scatter(coors[:, 0], coors[:, 1], coors[:, 2],
-                        s=point_size, c=colors, alpha=1)
-
-    else:
-        coors = _to2d(coors)
-        sc = ax.scatter(coors[:, 0], coors[:, 1], s=point_size, c=colors)
+    coors = _to2d(coors)
+    sc = ax.scatter(*coors.T, s=point_size, c=colors, alpha=1)
 
     if show_colorbar and (vals is not None):
         plt.colorbar(sc)
 
-    if show:
-        plt.show()
-
     return ax
 
-def plot_mesh(ax, coors, conn, edges, show=False):
+def plot_mesh(ax, coors, conn, edges):
     """
     Plot a finite element mesh as a wireframe.
     """
@@ -66,18 +58,11 @@ def plot_mesh(ax, coors, conn, edges, show=False):
         for ed in eds:
             cc = coors[ed]
 
-            if dim == 3:
-                ax.plot(cc[:, 0], cc[:, 1], cc[:, 2], 'k')
-
-            else:
-                ax.plot(cc[:, 0], cc[:, 1], 'k')
-
-    if show:
-        plt.show()
+            ax.plot(*cc.T, color='k')
 
     return ax
 
-def plot_global_dofs(ax, coors, econn, show=False):
+def plot_global_dofs(ax, coors, econn):
     """
     Plot global DOF numbers given in an extended connectivity.
 
@@ -91,22 +76,12 @@ def plot_global_dofs(ax, coors, econn, show=False):
 
     for el in econn:
         for gdof in el:
-            if dim == 3:
-                cx, cy, cz = coors[gdof]
-                ax.text(cx, cy, cz, '%d' % gdof,
-                        color='g', fontsize=12, weight='bold')
-
-            else:
-                cx, cy = coors[gdof]
-                ax.text(cx, cy, '%d' % gdof,
-                        color='g', fontsize=12, weight='bold')
-
-    if show:
-        plt.show()
+            ax.text(*coors[gdof], s='%d' % gdof,
+                    color='g', fontsize=12, weight='bold')
 
     return ax
 
-def plot_local_dofs(ax, coors, econn, show=False):
+def plot_local_dofs(ax, coors, econn):
     """
     Plot local DOF numbers corresponding to an extended connectivity.
     """
@@ -124,22 +99,12 @@ def plot_local_dofs(ax, coors, econn, show=False):
             # Shift labels towards the centre.
             cc = oeps * coors[gdof] + eps * centre
 
-            if dim == 3:
-                cx, cy, cz = cc
-                ax.text(cx, cy, cz, '%d' % ldof,
-                        color='b', fontsize=10, weight='light')
-
-            else:
-                cx, cy = cc
-                ax.text(cx, cy, '%d' % ldof,
-                        color='b', fontsize=10, weight='light')
-
-    if show:
-        plt.show()
+            ax.text(*cc, s='%d' % ldof,
+                    color='b', fontsize=10, weight='light')
 
     return ax
 
-def plot_nodes(ax, coors, econn, ref_nodes, dofs, show=False):
+def plot_nodes(ax, coors, econn, ref_nodes, dofs):
     """
     Plot Lagrange reference element nodes corresponding to global DOF numbers
     given in an extended connectivity.
@@ -163,17 +128,7 @@ def plot_nodes(ax, coors, econn, ref_nodes, dofs, show=False):
             # Shift labels towards the centre.
             cc = oeps * coors[gdof] + eps * centre
 
-            if dim == 3:
-                cx, cy, cz = cc
-                ax.text(cx, cy, cz, '%s' % node,
-                        color='r', fontsize=8, weight='light')
-
-            else:
-                cx, cy = cc
-                ax.text(cx, cy, '%d' % node,
-                        color='r', fontsize=8, weight='light')
-
-    if show:
-        plt.show()
+            ax.text(*cc, s='%s' % node,
+                    color='r', fontsize=8, weight='light')
 
     return ax
