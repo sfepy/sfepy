@@ -128,7 +128,7 @@ class Problem(Struct):
                 domain = fields.values()[0].domain
 
             if conf is None:
-                self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
+                self.conf = Struct(ebcs={}, epbcs={}, lcbcs={}, materials={})
 
         self.equations = equations
         self.fields = fields
@@ -1123,16 +1123,12 @@ class Problem(Struct):
             variables = self.create_variables(possible_var_names)
 
         materials = self.get_materials()
-        if materials is not None:
-            if copy_materials:
-                materials = materials.semideep_copy()
-
-            else:
-                materials = Materials(objs=materials._objs)
-
-        else:
+        if copy_materials or (materials is None):
             possible_mat_names = get_expression_arg_names(expression)
             materials = self.create_materials(possible_mat_names)
+
+        else:
+            materials = Materials(objs=materials._objs)
 
         _kwargs = copy(kwargs)
         for key, val in kwargs.iteritems():
