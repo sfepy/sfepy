@@ -676,6 +676,36 @@ def create_petsc_matrix(sizes, mtx_prealloc=None, comm=None):
 
     return pmtx
 
+def create_petsc_system(mtx, sizes, pdofs, drange, is_overlap=True,
+                        comm=None, verbose=False):
+    """
+    Create and pre-allocate (if `is_overlap` is True) a PETSc matrix and
+    related solution and right-hand side vectors.
+    """
+    if comm is None:
+        comm = PETSc.COMM_WORLD
+
+    if is_overlap:
+        mtx.data[:] = 1
+        mtx_prealloc = create_prealloc_data(mtx, pdofs, drange,
+                                            verbose=True)
+        pmtx = create_petsc_matrix(sizes, mtx_prealloc, comm=comm)
+
+    else:
+        pmtx = create_petsc_matrix(sizes, comm=comm)
+
+    own_range = pmtx.getOwnershipRange()
+    output('pmtx ownership:', own_range, verbose=verbose)
+    assert_(own_range == drange)
+
+    psol, prhs = pmtx.getVecs()
+
+    own_range = prhs.getOwnershipRange()
+    output('prhs ownership:', own_range, verbose=verbose)
+    assert_(own_range == drange)
+
+    return pmtx, psol, prhs
+
 def apply_ebc_to_matrix(mtx, ebc_rows):
     """
     Apply to matrix rows: zeros to non-diagonal entries, one to the diagonal.
