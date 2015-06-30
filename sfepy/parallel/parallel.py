@@ -518,6 +518,38 @@ def get_composite_sizes(lfds):
 
     return sizes, drange
 
+def setup_composite_dofs(lfds, fields, local_variables, verbose=False):
+    """
+    Setup composite DOFs built from field blocks described by `lfds` local
+    field distributions information.
+
+    Returns (local, total) sizes of a vector, local equation range for a
+    composite matrix, and the local ordering of composite PETSc DOFs,
+    corresponding to `local_variables` (must be in the order of `fields`!).
+    """
+    for ii, variable in enumerate(local_variables.iter_state(ordered=True)):
+        output('field %s:' % fields[ii].name, verbose=verbose)
+        lfd = lfds[ii]
+        output('PETSc DOFs range:', lfd.petsc_dofs_range, verbose=verbose)
+
+        n_cdof = fields[ii].n_nod * fields[ii].n_components
+        lfd.sizes, lfd.drange = get_sizes(lfd.petsc_dofs_range, n_cdof, 1)
+        output('sizes, drange:', lfd.sizes, lfd.drange, verbose=verbose)
+
+        lfd.petsc_dofs = get_local_ordering(variable.field,
+                                            lfd.petsc_dofs_conn,
+                                            use_expand_dofs=True)
+        output('petsc dofs:', lfd.petsc_dofs, verbose=verbose)
+
+    sizes, drange = get_composite_sizes(lfds)
+    output('composite sizes:', sizes, verbose=verbose)
+    output('composite drange:', drange, verbose=verbose)
+
+    pdofs = nm.concatenate([ii.petsc_dofs for ii in lfds])
+    output('composite pdofs:', pdofs, verbose=verbose)
+
+    return sizes, drange, pdofs
+
 def expand_dofs(dofs, n_components):
     """
     Expand DOFs to equation numbers.
