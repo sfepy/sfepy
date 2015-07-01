@@ -6,7 +6,8 @@ import time
 import numpy as nm
 
 import sys, petsc4py
-petsc4py.init(sys.argv)
+argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
+petsc4py.init(argv)
 
 from petsc4py import PETSc
 from mpi4py import MPI
