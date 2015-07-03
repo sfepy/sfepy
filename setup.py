@@ -138,6 +138,7 @@ package_check('igakit', INFO.IGAKIT_MIN_VERSION, optional=True,
               messages={'missing opt'
                         : '%s was not found: some tests are going to fail!'})
 package_check('petsc4py', INFO.PETSC4PY_MIN_VERSION, optional=True)
+package_check('mpi4py', INFO.MPI4PY_MIN_VERSION, optional=True)
 package_check('pymetis', INFO.PYMETIS_MIN_VERSION, optional=True,
               version_getter=_pymetis_version)
 
