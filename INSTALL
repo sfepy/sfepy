@@ -30,6 +30,9 @@ Python packages required for using SfePy:
 - Mayavi, for postproc.py
 - Pysparse, for schroedinger.py
 - igakit, for script/gen_iga_patch.py - simple IGA domain generator
+- petsc4py and mpi4py, for running parallel examples and using parallel
+  solvers from PETSc
+- pymetis, for mesh partitioning using Metis
 
 Other dependencies:
 
