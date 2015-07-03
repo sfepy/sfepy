@@ -1329,6 +1329,8 @@ The following solvers are available:
   from scipy.optimize.
 - 'nls.semismooth_newton': Semismooth Newton method for contact/friction
   problems.
+- 'nls.petsc': Interface to PETSc SNES (Scalable Nonlinear Equations Solvers)
+   supporting parallel use.
 
 Linear Solvers
 ^^^^^^^^^^^^^^
@@ -1342,11 +1344,50 @@ available:
   and its SciPy wrappers to get good performance.
 - 'ls.scipy_iterative': Interface to SciPy iterative solvers.
 - 'ls.pyamg': Interface to PyAMG solvers.
-- 'ls.petsc': Interface to Krylov subspace solvers of PETSc.
+- 'ls.petsc': Interface to Krylov subspace solvers of PETSc supporting parallel
+  use.
 - 'ls.petsc_parallel': Interface to Krylov subspace solvers of PETSc
   able to run in parallel by storing the system to disk and running a
   separate script via `mpiexec`.
 - 'ls.schur_complement': Schur complement problem solver.
+
+.. _solving_problems_in_parallel:
+
+Solving Problems in Parallel
+----------------------------
+
+The PETSc-based nonlinear equations solver 'nls.petsc' and linear system solver
+'ls.petsc' can be used for parallel computations, together with the modules in
+:ref:`sfepy_parallel_package`. This feature is **very preliminary**, and can be
+used only with the commands for interactive use - problem description files are
+not supported (yet). The key module is :mod:`sfepy.parallel.parallel` that
+takes care of the domain and field DOFs distribution among parallel tasks, as
+well as parallel assembling to PETSc vectors and matrices.
+
+Current Implementation Drawbacks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The partitioning of the domain and fields DOFs is not done in parallel and
+  all tasks need to load the whole mesh and define the global fields - those
+  must fit into memory available to each task.
+- While all KSP and SNES solver are supported, in principle, most of their
+  options have to be passed using the command-line parameters of PETSc - they
+  are not supported yet in the SfePy solver parameters.
+- There are no performance statistics yet. The code was tested on a single
+  multi-cpu machine only.
+- The global solution is gathered to task 0 and saved to disk serially.
+- The ``vertices of surface`` region selector does not work in parallel,
+  because the region definition is applied to a task-local domain.
+
+Examples
+^^^^^^^^
+
+The examples demonstrating the use parallel problem solving in SfePy are:
+
+- :ref:`diffusion-poisson_parallel_interactive`
+- :ref:`multi_physics-biot_parallel_interactive`
+
+See their help messages for further information.
 
 .. _isogeometric_analysis:
 

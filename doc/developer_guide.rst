@@ -96,6 +96,9 @@ directory is `sfepy/`, which has the following contents:
    * - `optimize/`
      - modules for shape optimization based on free-form deformation
      - *
+   * - `parallel/`
+     - modules supporting parallel assembling and solution of problems
+     -
    * - `physics/`
      - small utilities for quantum physics (`schroedinger.py`)
      - *
@@ -1061,6 +1064,8 @@ sfepy.optimize package
 
    src/sfepy/optimize/free_form_def
    src/sfepy/optimize/shape_optim
+
+.. _sfepy_parallel_package:
 
 sfepy.parallel package
 ^^^^^^^^^^^^^^^^^^^^^^
