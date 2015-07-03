@@ -52,6 +52,39 @@ def standard_call(call):
 
     return _standard_call
 
+def petsc_call(call):
+    """
+    Decorator handling argument preparation and timing for PETSc-based linear
+    solvers.
+    """
+    def _petsc_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                    i_max=None, mtx=None, status=None, comm=None, **kwargs):
+        tt = time.clock()
+
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
+        comm = get_default(comm, self.comm)
+
+        mshape = mtx.size if isinstance(mtx, self.petsc.Mat) else mtx.shape
+        rshape = [rhs.size] if isinstance(rhs, self.petsc.Vec) else rhs.shape
+
+        assert_(mshape[0] == mshape[1] == rshape[0])
+        if x0 is not None:
+            xshape = [x0.size] if isinstance(x0, self.petsc.Vec) else x0.shape
+            assert_(xshape[0] == rshape[0])
+
+        result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
+                      comm, **kwargs)
+
+        ttt = time.clock() - tt
+        if status is not None:
+            status['time'] = ttt
+
+        return result
+
+    return _petsc_call
+
 class ScipyDirect(LinearSolver):
     """
     Direct sparse solver from SciPy.
@@ -251,8 +284,14 @@ class PETScKrylovSolver(LinearSolver):
     """
     PETSc Krylov subspace solver.
 
+    The solver supports parallel use with a given MPI communicator (see `comm`
+    argument of :func:`PETScKrylovSolver.__init__()`) and allows passing in
+    PETSc matrices and vectors. Returns a (global) PETSc solution vector
+    instead of a (local) numpy array, when given a PETSc right-hand side
+    vector.
+
     The solver and preconditioner types are set upon the solver object
-    creation. Tolerances can be overriden when called by passing a `conf`
+    creation. Tolerances can be overridden when called by passing a `conf`
     object.
 
     Convergence is reached when `rnorm < max(eps_r * rnorm_0, eps_a)`,
@@ -268,6 +307,8 @@ class PETScKrylovSolver(LinearSolver):
          'The actual solver to use.'),
         ('precond', 'str', 'icc', False,
          'The preconditioner.'),
+        ('sub_precond', 'str', None, False,
+         'The preconditioner for matrix blocks (in parallel runs).'),
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
         ('i_max', 'int', 100, False,
@@ -282,20 +323,32 @@ class PETScKrylovSolver(LinearSolver):
 
     _precond_sides = {None : None, 'left' : 0, 'right' : 1, 'symmetric' : 2}
 
-    def __init__(self, conf, **kwargs):
-        try:
-            import petsc4py
-            petsc4py.init([])
-            from petsc4py import PETSc
-        except ImportError:
-            msg = 'cannot import petsc4py!'
-            raise ImportError(msg)
+    def __init__(self, conf, comm=None, **kwargs):
+        if comm is None:
+            try:
+                import petsc4py
+                petsc4py.init([])
+            except ImportError:
+                msg = 'cannot import petsc4py!'
+                raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, petsc=PETSc, pmtx=None,
-                              converged_reasons=None, **kwargs)
+        from petsc4py import PETSc as petsc
 
-    def create_ksp(self):
-        ksp = self.petsc.KSP().create()
+        converged_reasons = {}
+        for key, val in petsc.KSP.ConvergedReason.__dict__.iteritems():
+            if isinstance(val, int):
+                converged_reasons[val] = key
+
+        LinearSolver.__init__(self, conf, petsc=petsc, comm=comm,
+                              converged_reasons=converged_reasons, **kwargs)
+
+    def create_ksp(self, comm=None):
+        optDB = self.petsc.Options()
+
+        optDB['sub_pc_type'] = self.conf.sub_precond
+
+        ksp = self.petsc.KSP()
+        ksp.create(comm)
 
         ksp.setType(self.conf.method)
         ksp.getPC().setType(self.conf.precond)
@@ -303,53 +356,64 @@ class PETScKrylovSolver(LinearSolver):
         if side is not None:
             ksp.setPCSide(side)
 
-        if self.converged_reasons is None:
-            self.converged_reasons = {}
-            for key, val in ksp.ConvergedReason.__dict__.iteritems():
-                if isinstance(val, int):
-                    self.converged_reasons[val] = key
-
         return ksp
 
-    def set_matrix(self, mtx):
-        mtx = sps.csr_matrix(mtx)
+    def create_petsc_matrix(self, mtx, comm=None):
+        if isinstance(mtx, self.petsc.Mat):
+            pmtx = mtx
 
-        pmtx = self.petsc.Mat().createAIJ(mtx.shape,
-                                          csr=(mtx.indptr,
-                                               mtx.indices,
-                                               mtx.data))
-        sol, rhs = pmtx.getVecs()
+        else:
+            mtx = sps.csr_matrix(mtx)
 
-        # Create a new ksp to support the solver reuse for different matrices.
-        ksp = self.create_ksp()
-        ksp.setOperators(pmtx)
+            pmtx = self.petsc.Mat()
+            pmtx.createAIJ(mtx.shape, csr=(mtx.indptr, mtx.indices, mtx.data),
+                           comm=comm)
 
-        return ksp, pmtx, sol, rhs
+        return pmtx
 
-    @standard_call
+    @petsc_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
-
+                 i_max=None, mtx=None, status=None, comm=None, **kwargs):
         eps_a = get_default(eps_a, self.conf.eps_a)
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
-        ksp, pmtx, psol, prhs = self.set_matrix(mtx)
+        pmtx = self.create_petsc_matrix(mtx, comm=comm)
 
-        ksp.setFromOptions() # PETSc.Options() not used yet...
+        ksp = self.create_ksp(comm=comm)
+        ksp.setOperators(pmtx)
         ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
+        ksp.setFromOptions()
 
-        # Set PETSc rhs, solve, get solution from PETSc solution.
+        if isinstance(rhs, self.petsc.Vec):
+            prhs = rhs
+
+        else:
+            prhs = pmtx.getVecLeft()
+            prhs[...] = rhs
+
         if x0 is not None:
-            psol[...] = x0
+            if isinstance(x0, self.petsc.Vec):
+                psol = x0
+
+            else:
+                psol = pmtx.getVecRight()
+                psol[...] = x0
+
             ksp.setInitialGuessNonzero(True)
-        prhs[...] = rhs
+
         ksp.solve(prhs, psol)
-        sol = psol[...].copy()
-        output('%s(%s) convergence: %s (%s)'
-               % (self.conf.method, self.conf.precond,
-                  ksp.reason, self.converged_reasons[ksp.reason]))
+        output('%s(%s, %s/proc) convergence: %s (%s)'
+               % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
+                  ksp.reason, self.converged_reasons[ksp.reason]),
+               verbose=conf.verbose)
+
+        if isinstance(rhs, self.petsc.Vec):
+            sol = psol
+
+        else:
+            sol = psol[...].copy()
 
         return sol
 

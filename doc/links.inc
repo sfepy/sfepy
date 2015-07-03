@@ -51,6 +51,9 @@
 .. _pysparse: http://pysparse.sourceforge.net
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _igakit: https://bitbucket.org/dalcinl/igakit
+.. _petsc4py: https://bitbucket.org/petsc/petsc4py
+.. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
+.. _pymetis: http://mathema.tician.de/software/pymetis
 
 .. _git: http://git-scm.com
 .. _github: http://github.com

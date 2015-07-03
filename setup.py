@@ -115,6 +115,11 @@ def _cython_version(pkg_name):
 def _igakit_version(pkg_name):
     return '0.1'
 
+def _pymetis_version(pkg_name):
+    import pymetis
+
+    return pymetis.version
+
 # Hard and soft dependency checking
 package_check('numpy', INFO.NUMPY_MIN_VERSION)
 package_check('scipy', INFO.SCIPY_MIN_VERSION)
@@ -132,6 +137,11 @@ package_check('igakit', INFO.IGAKIT_MIN_VERSION, optional=True,
               version_getter=_igakit_version,
               messages={'missing opt'
                         : '%s was not found: some tests are going to fail!'})
+package_check('petsc4py', INFO.PETSC4PY_MIN_VERSION, optional=True)
+package_check('mpi4py', INFO.MPI4PY_MIN_VERSION, optional=True)
+package_check('pymetis', INFO.PYMETIS_MIN_VERSION, optional=True,
+              version_getter=_pymetis_version)
+
 # Cython can be a build dependency
 package_check('cython',
               INFO.CYTHON_MIN_VERSION,

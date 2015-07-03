@@ -19,6 +19,9 @@
    get you started, check :ref:`sfepy-gallery-examples-index` and
    :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
 
+   SfePy can be used in parallel (work in progress), see
+   :ref:`solving_problems_in_parallel`.
+
    There is also a preliminary support for the isogeometric analysis,
    outlined in :ref:`isogeometric_analysis`.
 

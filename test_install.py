@@ -172,6 +172,12 @@ def main():
     out, err = check_output('python examples/multi_physics/thermal_electric.py')
     eok += report(out, '...', -3, 5, '2.612933e-14', eps=1e-13)
 
+    out, err = check_output('mpiexec -n 2 python examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
+
+    out, err = check_output('mpiexec -n 2 python examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-8)
+
     t1 = time.time()
 
     out, err = check_output('python ./run_tests.py')
