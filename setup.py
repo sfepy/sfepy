@@ -14,7 +14,7 @@ import sys
 import glob
 import shutil
 
-from build_helpers import (generate_a_pyrex_source, package_check,
+from build_helpers import (generate_a_pyrex_source, package_check, log,
                            cmdclass, INFO)
 # monkey-patch numpy distutils to use Cython instead of Pyrex
 from numpy.distutils.command.build_src import build_src
@@ -120,32 +120,40 @@ def _pymetis_version(pkg_name):
 
     return pymetis.version
 
-# Hard and soft dependency checking
-package_check('numpy', INFO.NUMPY_MIN_VERSION)
-package_check('scipy', INFO.SCIPY_MIN_VERSION)
-package_check('matplotlib', INFO.MATPLOTLIB_MIN_VERSION)
-package_check('pyparsing', INFO.PYPARSING_MIN_VERSION)
-package_check('tables', INFO.PYTABLES_MIN_VERSION)
-package_check(('enthought.mayavi', 'mayavi'),
-              INFO.MAYAVI_MIN_VERSION,
-              optional=True,
-              version_getter=_mayavi_version)
-package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
-              messages={'missing opt'
-                        : '%s was not found: some tests are going to fail!'})
-package_check('igakit', INFO.IGAKIT_MIN_VERSION, optional=True,
-              version_getter=_igakit_version,
-              messages={'missing opt'
-                        : '%s was not found: some tests are going to fail!'})
-package_check('petsc4py', INFO.PETSC4PY_MIN_VERSION, optional=True)
-package_check('mpi4py', INFO.MPI4PY_MIN_VERSION, optional=True)
-package_check('pymetis', INFO.PYMETIS_MIN_VERSION, optional=True,
-              version_getter=_pymetis_version)
+def check_versions(show_only=False):
+    # Cython is a build dependency.
+    package_check('cython', INFO.CYTHON_MIN_VERSION,
+                  version_getter=_cython_version,
+                  show_only=show_only)
 
-# Cython can be a build dependency
-package_check('cython',
-              INFO.CYTHON_MIN_VERSION,
-              version_getter=_cython_version)
+    # Check hard and soft dependencies.
+    package_check('numpy', INFO.NUMPY_MIN_VERSION,
+                  show_only=show_only)
+    package_check('scipy', INFO.SCIPY_MIN_VERSION,
+                  show_only=show_only)
+    package_check('matplotlib', INFO.MATPLOTLIB_MIN_VERSION,
+                  show_only=show_only)
+    package_check('pyparsing', INFO.PYPARSING_MIN_VERSION,
+                  show_only=show_only)
+    package_check('tables', INFO.PYTABLES_MIN_VERSION,
+                  show_only=show_only)
+    package_check(('enthought.mayavi', 'mayavi'),
+                  INFO.MAYAVI_MIN_VERSION, optional=True,
+                  version_getter=_mayavi_version,
+                  show_only=show_only)
+    package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
+                  messages={'opt suffix' : '; some tests are going to fail!'},
+                  show_only=show_only)
+    package_check('igakit', INFO.IGAKIT_MIN_VERSION, optional=True,
+                  version_getter=_igakit_version,
+                  show_only=show_only)
+    package_check('petsc4py', INFO.PETSC4PY_MIN_VERSION, optional=True,
+                  show_only=show_only)
+    package_check('mpi4py', INFO.MPI4PY_MIN_VERSION, optional=True,
+                  show_only=show_only)
+    package_check('pymetis', INFO.PYMETIS_MIN_VERSION, optional=True,
+                  version_getter=_pymetis_version,
+                  show_only=show_only)
 
 def setup_package():
     from numpy.distutils.core import setup
@@ -214,4 +222,8 @@ def setup_package():
     return
 
 if __name__ == '__main__':
+    check_versions()
     setup_package()
+
+    log.info('\nRequired and optional packages found:\n')
+    check_versions(show_only=True)
