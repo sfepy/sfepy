@@ -240,40 +240,39 @@ def generate_a_pyrex_source(self, base, ext_name, source, extension):
                                  (CYTHON_MIN_VERSION, source))
     return target_file
 
-def package_check(pkg_name, version=None,
-                  optional=False,
-                  checker=LooseVersion,
-                  version_getter=None,
-                  messages=None
-                  ):
+def package_check(pkg_name, version=None, optional=False, checker=LooseVersion,
+                  version_getter=None, messages=None, show_only=False):
     """
-    Check if package `pkg_name` is present, and correct version
+    Check if package `pkg_name` is present, and in correct version.
 
     Parameters
     ----------
     pkg_name : str or sequence of str
-       name of package as imported into python. Alternative names
+       The name of the package as imported into python. Alternative names
        (e.g. for different versions) may be given in a list.
-    version : {None, str}, optional
-       minimum version of the package that we require. If None, we don't
-       check the version.  Default is None
-    optional : {False, True}, optional
+    version : str, optional
+       The minimum version of the package that is required. If not given, the
+       version is not checked.
+    optional : bool, optional
        If False, raise error for absent package or wrong version;
        otherwise warn
     checker : callable, optional
-       callable with which to return comparable thing from version
-       string.  Default is ``distutils.version.LooseVersion``
-    version_getter : {None, callable}:
-       Callable that takes `pkg_name` as argument, and returns the
-       package version string - as in::
+       If given, the callable with which to return a comparable thing from a
+       version string. The default is ``distutils.version.LooseVersion``.
+    version_getter : callable, optional:
+       If given, the callable that takes `pkg_name` as argument, and returns
+       the package version string - as in::
 
           ``version = version_getter(pkg_name)``
 
-       If None, equivalent to::
+       The default is equivalent to::
 
           mod = __import__(pkg_name); version = mod.__version__``
-    messages : None or dict, optional
-       dictionary giving output messages
+    messages : dict, optional
+       If given, the dictionary providing (some of) output messages.
+    show_only : bool
+       If True, do not raise exceptions, only show the package name and version
+       information.
     """
     if version_getter is None:
         def version_getter(pkg_name):
@@ -281,13 +280,14 @@ def package_check(pkg_name, version=None,
             return mod.__version__
     if messages is None:
         messages = {}
+
     msgs = {
-         'missing': 'Cannot import package "%s" - is it installed?',
-         'missing opt': 'Missing optional package "%s"',
+         'available' : '%s is available',
+         'missing' : '%s is missing',
          'opt suffix' : '; you may get run-time errors',
-         'version too old': 'You have version %s of package "%s"'
-                            ' but we need version >= %s',
-        'no version' : 'cannot determine version of %s!',
+         'version' : '%s is available in version %s',
+         'version old' : '%s is available in version %s, but >= %s is needed',
+         'no version' : '%s is available, cannot determine version',
     }
     msgs.update(messages)
 
@@ -306,34 +306,41 @@ def package_check(pkg_name, version=None,
         else:
             import_ok = True
 
+    pkg_info = pkg_name + (' (optional)' if optional else '')
+
     if not import_ok:
-        if not optional:
+        if not (optional or show_only):
             raise RuntimeError(msgs['missing'] % pkg_name)
-        log.warn(msgs['missing opt'] % pkg_name +
-                 msgs['opt suffix'])
+        log.warn(msgs['missing'] % pkg_info + msgs['opt suffix'])
         return
 
     if not version:
+        if show_only:
+            log.info(msgs['available'] % pkg_info)
+
         return
+
     try:
         have_version = version_getter(pkg_name)
+
     except AttributeError:
-        raise RuntimeError('Cannot find version for %s' % pkg_name)
+        raise RuntimeError(msgs['no version'] % pkg_info)
 
     if not have_version:
-        if optional:
-            log.warn(msgs['no version'] % pkg_name)
+        if optional or show_only:
+            log.warn(msgs['no version'] % pkg_info)
 
         else:
-            raise RuntimeError(msgs['no version'] % pkg_name)
+            raise RuntimeError(msgs['no version'] % pkg_info)
 
     elif checker(have_version) < checker(version):
-        if optional:
-            log.warn(msgs['version too old'] % (have_version,
-                                                pkg_name,
-                                                version)
+        if optional or show_only:
+            log.warn(msgs['version old'] % (pkg_info, have_version, version)
                      + msgs['opt suffix'])
+
         else:
-            raise RuntimeError(msgs['version too old'] % (have_version,
-                                                          pkg_name,
-                                                          version))
+            raise RuntimeError(msgs['version old'] % (pkg_info, have_version,
+                                                      version))
+
+    elif show_only:
+        log.info(msgs['version'] % (pkg_info, have_version))
