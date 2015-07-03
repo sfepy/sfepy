@@ -13,7 +13,7 @@ Find :math:`u` such that:
 Important Notes
 ---------------
 
-- This example requires petsc4py and (optionally) pymetis with their
+- This example requires petsc4py, mpi4py and (optionally) pymetis with their
   dependencies installed!
 - This example generates a number of files - do not use an existing non-empty
   directory for the ``output_dir`` argument.
