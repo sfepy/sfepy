@@ -1062,6 +1062,16 @@ sfepy.optimize package
    src/sfepy/optimize/free_form_def
    src/sfepy/optimize/shape_optim
 
+sfepy.parallel package
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/parallel/evaluate
+   src/sfepy/parallel/parallel
+   src/sfepy/parallel/plot_parallel_dofs
+
 sfepy.physics package
 ^^^^^^^^^^^^^^^^^^^^^
 
