@@ -143,7 +143,8 @@ class Clean(clean):
         clean.run(self)
 
         print 'extra clean:'
-        suffixes = ['*.pyc', '*.o', '*.so', '*_wrap.c', '*.bak', '*~', '*%']
+        suffixes = ['*.pyc', '*.o', '*.so', '*.pyd',
+                    '*_wrap.c', '*.bak', '*~', '*%']
         for filename in recursive_glob('sfepy', suffixes):
             print filename
             os.remove(filename)
