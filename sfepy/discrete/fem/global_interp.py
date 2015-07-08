@@ -265,3 +265,56 @@ def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
         status = cache.status
 
     return ref_coors, cells, status
+
+def get_ref_coors(field, coors, strategy='general', close_limit=0.1,
+                  cache=None, verbose=False):
+    """
+    Get reference element coordinates and elements corresponding to given
+    physical coordinates.
+
+    Parameters
+    ----------
+    field : Field instance
+        The field defining the approximation.
+    coors : array
+        The physical coordinates.
+    strategy : {'general', 'convex'}, optional
+        The strategy for finding the elements that contain the coordinates. For
+        convex meshes, the 'convex' strategy might be faster than the 'general'
+        one.
+    close_limit : float, optional
+        The maximum limit distance of a point from the closest
+        element allowed for extrapolation.
+    cache : Struct, optional
+        To speed up a sequence of evaluations, the field mesh and other data
+        can be cached. Optionally, the cache can also contain the reference
+        element coordinates as `cache.ref_coors`, `cache.cells` and
+        `cache.status`, if the evaluation occurs in the same coordinates
+        repeatedly. In that case the mesh related data are ignored.
+    verbose : bool
+        If False, reduce verbosity.
+
+    Returns
+    -------
+    ref_coors : array
+        The reference coordinates.
+    cells : array
+        The cell indices corresponding to the reference coordinates.
+    status : array
+        The status: 0 is success, 1 is extrapolation within `close_limit`, 2 is
+        extrapolation outside `close_limit`, 3 is failure, 4 is failure due to
+        non-convergence of the Newton iteration in tensor product cells. If
+        close_limit is 0, then for the 'general' strategy the status 5
+        indicates points outside of the field domain that had no potential
+        cells.
+    """
+    if strategy == 'general':
+        return get_ref_coors_general(field, coors, close_limit=close_limit,
+                                     cache=cache, verbose=verbose)
+
+    elif strategy == 'convex':
+        return get_ref_coors_convex(field, coors, close_limit=close_limit,
+                                    cache=cache, verbose=verbose)
+
+    else:
+        raise ValueError('unsupported strategy! (%s)' % strategy)
