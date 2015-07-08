@@ -176,22 +176,22 @@ int32 _get_xi_dist(float64 *pdist, FMField *xi,
 }
 
 #undef __FUNC__
-#define __FUNC__ "refc_find_ref_coors"
-int32 refc_find_ref_coors(FMField *ref_coors,
-                          int32 *cells, int32 n_cells,
-                          int32 *status, int32 n_status,
-                          FMField *coors,
-                          Mesh *mesh,
-                          FMField *centroids,
-                          FMField *normals0,
-                          FMField *normals1,
-                          int32 *ics, int32 n_ics,
-                          FMField *eref_coors,
-                          int32 *nodes, int32 n_nodes, int32 n_nodes_col,
-                          FMField *mtx_i,
-                          int32 allow_extrapolation,
-                          float64 close_limit, float64 qp_eps,
-                          int32 i_max, float64 newton_eps)
+#define __FUNC__ "refc_find_ref_coors_convex"
+int32 refc_find_ref_coors_convex(FMField *ref_coors,
+                                 int32 *cells, int32 n_cells,
+                                 int32 *status, int32 n_status,
+                                 FMField *coors,
+                                 Mesh *mesh,
+                                 FMField *centroids,
+                                 FMField *normals0,
+                                 FMField *normals1,
+                                 int32 *ics, int32 n_ics,
+                                 FMField *eref_coors,
+                                 int32 *nodes, int32 n_nodes, int32 n_nodes_col,
+                                 FMField *mtx_i,
+                                 int32 allow_extrapolation,
+                                 float64 close_limit, float64 qp_eps,
+                                 int32 i_max, float64 newton_eps)
 {
   int32 ip, ic, icell, icell_max = 0, ii, imin, ik, ok, ret = RET_OK;
   int32 xi_ok, hexa_reverse;

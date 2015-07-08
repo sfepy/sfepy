@@ -6,10 +6,10 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default_attr
 from sfepy.discrete.fem.geometry_element import create_geometry_elements
-from sfepy.discrete.fem.extmods.crefcoors import find_ref_coors
+import sfepy.discrete.fem.extmods.crefcoors as crc
 
-def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
-                  verbose=False):
+def get_ref_coors_convex(field, coors, strategy='kdtree', close_limit=0.1,
+                         cache=None, verbose=False):
     """
     Get reference element coordinates and elements corresponding to given
     physical coordinates.
@@ -111,10 +111,10 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
         ac = nm.ascontiguousarray
 
         tt = time.clock()
-        find_ref_coors(ref_coors, cells, status, ac(coors), cmesh, centroids,
-                       normals0, normals1, ics,
-                       ps.geometry.coors, ps.nodes, mtx_i,
-                       1, close_limit, 1e-15, 100, 1e-8)
+        crc.find_ref_coors_convex(ref_coors, cells, status, ac(coors), cmesh,
+                                  centroids, normals0, normals1, ics,
+                                  ps.geometry.coors, ps.nodes, mtx_i,
+                                  1, close_limit, 1e-15, 100, 1e-8)
         output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
 
     else:
