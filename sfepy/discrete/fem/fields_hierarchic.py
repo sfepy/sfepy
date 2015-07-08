@@ -222,7 +222,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
         return nods, vals
 
-    def evaluate_at(self, coors, source_vals, strategy='kdtree',
+    def evaluate_at(self, coors, source_vals, strategy='general',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False, ret_ref_coors=False, verbose=False):
         """
@@ -235,9 +235,10 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
             The coordinates the source values should be interpolated into.
         source_vals : array
             The source DOF values corresponding to the field.
-        strategy : str, optional
+        strategy : {'general', 'convex'}, optional
             The strategy for finding the elements that contain the
-            coordinates. Only 'kdtree' is supported for the moment.
+            coordinates. For convex meshes, the 'convex' strategy might be
+            faster than the 'general' one.
         close_limit : float, optional
             The maximum limit distance of a point from the closest
             element allowed for extrapolation.

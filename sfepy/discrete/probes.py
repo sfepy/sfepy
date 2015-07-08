@@ -257,7 +257,7 @@ class Probe(Struct):
             if not nm.isfinite(points).all():
                 raise ValueError('Inf/nan in probe points!')
 
-            vals, cells = ev(points, strategy='kdtree',
+            vals, cells = ev(points, strategy='general',
                              close_limit=self.options.close_limit,
                              cache=cache, ret_cells=True)
 

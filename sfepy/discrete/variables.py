@@ -1908,7 +1908,7 @@ class FieldVariable(Variable):
 
         return coors
 
-    def evaluate_at(self, coors, strategy='kdtree',
+    def evaluate_at(self, coors, strategy='general',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False, ret_ref_coors=False, verbose=False):
         """
@@ -1996,7 +1996,7 @@ class FieldVariable(Variable):
 
         perm = iter_nodes.get_permutation(iter_nodes.strategy)
 
-        vals = other.evaluate_at(coors[perm], strategy=search_strategy,
+        vals = other.evaluate_at(coors[perm], strategy='general',
                                  close_limit=close_limit)
 
         if strategy == 'interpolation':
