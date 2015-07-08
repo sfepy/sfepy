@@ -439,3 +439,111 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
  end_label:
   return(ret);
 }
+
+#undef __FUNC__
+#define __FUNC__ "refc_find_ref_coors"
+int32 refc_find_ref_coors(FMField *ref_coors,
+                          int32 *cells, int32 n_cells,
+                          int32 *status, int32 n_status,
+                          FMField *coors,
+                          Mesh *mesh,
+                          int32 *candidates, int32 n_candidates,
+                          int32 *offsets, int32 n_offsets,
+                          FMField *eref_coors,
+                          int32 *nodes, int32 n_nodes, int32 n_nodes_col,
+                          FMField *mtx_i,
+                          int32 allow_extrapolation,
+                          float64 close_limit, float64 qp_eps,
+                          int32 i_max, float64 newton_eps)
+{
+  int32 ip, ic, ii, imin, ok, xi_ok, ret = RET_OK;
+  int32 D = mesh->topology->max_dim;
+  int32 nc = mesh->geometry->dim;
+  float64 vmin, vmax, d_min, dist;
+  float64 *mesh_coors = mesh->geometry->coors;
+  float64 buf3[3];
+  float64 buf_ec_max[8 * 3]; // Max. n_ep * dim.
+  FMField point[1], e_coors[1], xi[1];
+  FMField bc[1];
+  Indices cell_vertices[1];
+  MeshEntity cell_ent[1];
+  MeshConnectivity *cD0 = 0; // D -> 0
+
+  mesh_setup_connectivity(mesh, D, 0);
+  cD0 = mesh->topology->conn[IJ(D, D, 0)];
+
+  fmf_pretend_nc(point, coors->nRow, 1, 1, nc, coors->val);
+
+  fmf_pretend_nc(xi, 1, 1, 1, nc, buf3);
+  fmf_fillC(xi, 0.0);
+
+  vmin = eref_coors->val[0];
+  vmax = eref_coors->val[nc];
+
+  for (ip = 0; ip < coors->nRow; ip++) {
+    FMF_SetCell(point, ip);
+
+    if (offsets[ip] == offsets[ip+1]) {
+      status[ip] = 5;
+      cells[ip] = 0;
+      for (ii = 0; ii < nc; ii++) {
+        ref_coors->val[nc*ip+ii] = 0.0;
+      }
+      continue;
+    }
+
+    ok = xi_ok = 0;
+    d_min = 1e10;
+    imin = 0;
+
+   for (ic = offsets[ip]; ic < offsets[ip+1]; ic++) {
+      /* output("***** %d %d %d\n", ip, ic, candidates[ic]); */
+
+      cell_ent->ii = candidates[ic];
+      me_get_incident2(cell_ent, cell_vertices, cD0);
+
+      _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
+                      buf_ec_max);
+      xi_ok = _get_xi_dist(&dist, xi, cell_vertices->num, nc, D,
+                           point, e_coors, eref_coors, bc,
+                           nodes, n_nodes_col, mtx_i, vmin, vmax,
+                           i_max, newton_eps);
+
+      if (dist < d_min) {
+        d_min = dist;
+        imin = cell_ent->ii;
+      }
+      if (xi_ok && (dist < qp_eps)) {
+        ok = 1;
+        break;
+      }
+    }
+    /* output("-> %d %d %d %.3e\n", imin, xi_ok, ok, d_min); */
+
+    cells[ip] = imin;
+
+    if (ok != 1) {
+      if (!xi_ok) {
+        status[ip] = 4;
+      } else if (allow_extrapolation) {
+        if (sqrt(d_min) < close_limit) {
+          status[ip] = 1;
+        } else {
+          status[ip] = 2;
+        }
+      } else {
+        status[ip] = 3;
+      }
+    } else {
+      status[ip] = 0;
+    }
+
+    for (ii = 0; ii < nc; ii++) {
+      ref_coors->val[nc*ip+ii] = xi->val[ii];
+    }
+    ERR_CheckGo(ret);
+  }
+
+ end_label:
+  return(ret);
+}
