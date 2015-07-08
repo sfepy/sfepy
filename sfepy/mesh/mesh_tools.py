@@ -209,7 +209,7 @@ def expand2d(mesh2d, dist, rep):
     zcoor = nm.arange(rep + 1) * dist
     coors3d = nm.hstack([nm.tile(coors, (rep + 1, 1)),
                          nm.tile(zcoor, (nnd,1)).T.flatten()[:,nm.newaxis]])
-    ngroups = nm.tile(mesh2d.cmesh.vertex_groups, (rep + 1,1))
+    ngroups = nm.tile(mesh2d.cmesh.vertex_groups, (rep + 1,))
 
     if et == '2_4':
         descs3d = '3_8'
@@ -253,7 +253,7 @@ def expand2d(mesh2d, dist, rep):
                                             conn[:,2] + bgn1,
                                             conn[:,0] + bgn1]).T
 
-    mesh3d = Mesh.from_data('mesh', coors3d, [ngroups], [conn3d],
+    mesh3d = Mesh.from_data('mesh', coors3d, ngroups, [conn3d],
                             [mats3d], [descs3d])
 
     return mesh3d
