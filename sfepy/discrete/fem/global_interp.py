@@ -4,7 +4,7 @@ Global interpolation functions.
 import time
 import numpy as nm
 
-from sfepy.base.base import output, get_default_attr
+from sfepy.base.base import assert_, output, get_default_attr
 from sfepy.discrete.fem.geometry_element import create_geometry_elements
 import sfepy.discrete.fem.extmods.crefcoors as crc
 
@@ -115,6 +115,150 @@ def get_ref_coors_convex(field, coors, strategy='kdtree', close_limit=0.1,
                                   centroids, normals0, normals1, ics,
                                   ps.geometry.coors, ps.nodes, mtx_i,
                                   1, close_limit, 1e-15, 100, 1e-8)
+        output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
+
+    else:
+        cells = cache.cells
+        status = cache.status
+
+    return ref_coors, cells, status
+
+def get_potential_cells(coors, cmesh, centroids=None, extrapolate=True):
+    """
+    Get cells that potentially contain the given coordinates,
+    """
+    from scipy.spatial import cKDTree as KDTree
+
+    if centroids is None:
+        centroids = cmesh.get_centroids(cmesh.tdim)
+
+    kdtree = KDTree(coors)
+
+    conn = cmesh.get_cell_conn()
+    cc = conn.indices.reshape(cmesh.n_el, -1)
+    cell_coors = cmesh.coors[cc]
+
+    rays = cell_coors - centroids[:, None]
+    radii = nm.linalg.norm(rays, ord=nm.inf, axis=2).max(axis=1)
+
+    potential_cells = [[]] * coors.shape[0]
+    for ic, centroid in enumerate(centroids):
+        ips = kdtree.query_ball_point(centroid, radii[ic], p=nm.inf)
+        if len(ips):
+            for ip in ips:
+                if not len(potential_cells[ip]):
+                    potential_cells[ip] = []
+
+                potential_cells[ip].append(ic)
+
+    lens = nm.array([0] + [len(ii) for ii in potential_cells], dtype=nm.int32)
+
+    if extrapolate:
+        # Deal with the points outside of the field domain - insert elements
+        # incident to the closest mesh vertex.
+        iin = nm.where(lens[1:] == 0)[0]
+        if len(iin):
+            kdtree = KDTree(cmesh.coors)
+            ics = kdtree.query(coors[iin])[1]
+            cmesh.setup_connectivity(0, cmesh.tdim)
+            conn = cmesh.get_conn(0, cmesh.tdim)
+
+            oo = conn.offsets
+            for ii, ip in enumerate(iin):
+                ik = ics[ii]
+                potential_cells[ip] = conn.indices[oo[ik]:oo[ik+1]]
+                lens[ip+1] = len(potential_cells[ip])
+
+    offsets = nm.cumsum(lens, dtype=nm.int32)
+    potential_cells = nm.concatenate(potential_cells).astype(nm.int32)
+
+    return potential_cells, offsets
+
+def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
+                          verbose=False):
+    """
+    Get reference element coordinates and elements corresponding to given
+    physical coordinates.
+
+    Parameters
+    ----------
+    field : Field instance
+        The field defining the approximation.
+    coors : array
+        The physical coordinates.
+    close_limit : float, optional
+        The maximum limit distance of a point from the closest
+        element allowed for extrapolation.
+    cache : Struct, optional
+        To speed up a sequence of evaluations, the field mesh and other data
+        can be cached. Optionally, the cache can also contain the reference
+        element coordinates as `cache.ref_coors`, `cache.cells` and
+        `cache.status`, if the evaluation occurs in the same coordinates
+        repeatedly. In that case the mesh related data are ignored.
+    verbose : bool
+        If False, reduce verbosity.
+
+    Returns
+    -------
+    ref_coors : array
+        The reference coordinates.
+    cells : array
+        The cell indices corresponding to the reference coordinates.
+    status : array
+        The status: 0 is success, 1 is extrapolation within `close_limit`, 2 is
+        extrapolation outside `close_limit`, 3 is failure, 4 is failure due to
+        non-convergence of the Newton iteration in tensor product cells. If
+        close_limit is 0, then status 5 indicates points outside of the field
+        domain that had no potential cells.
+    """
+    ref_coors = get_default_attr(cache, 'ref_coors', None)
+
+    if ref_coors is None:
+        extrapolate = close_limit > 0.0
+
+        ref_coors = nm.empty_like(coors)
+        cells = nm.empty((coors.shape[0],), dtype=nm.int32)
+        status = nm.empty((coors.shape[0],), dtype=nm.int32)
+
+        cmesh = get_default_attr(cache, 'cmesh', None)
+        if cmesh is None:
+            tt = time.clock()
+            mesh = field.create_mesh(extra_nodes=False)
+            cmesh = mesh.cmesh
+
+            gels = create_geometry_elements()
+
+            cmesh.set_local_entities(gels)
+            cmesh.setup_entities()
+
+            centroids = cmesh.get_centroids(cmesh.tdim)
+
+            output('cmesh setup: %f s' % (time.clock()-tt), verbose=verbose)
+
+        else:
+            centroids = cache.centroids
+
+        tt = time.clock()
+        potential_cells, offsets = get_potential_cells(coors, cmesh,
+                                                       centroids=centroids,
+                                                       extrapolate=extrapolate)
+        output('potential cells: %f s' % (time.clock()-tt), verbose=verbose)
+
+        ap = field.ap
+        ps = ap.interp.gel.interp.poly_spaces['v']
+        mtx_i = ps.get_mtx_i()
+
+        ac = nm.ascontiguousarray
+
+        tt = time.clock()
+
+        crc.find_ref_coors(ref_coors, cells, status, ac(coors), cmesh,
+                           potential_cells, offsets,
+                           ps.geometry.coors, ps.nodes, mtx_i,
+                           extrapolate, close_limit, 1e-15, 100, 1e-8)
+        if extrapolate:
+            assert_(nm.all(status < 5))
+
         output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
 
     else:
