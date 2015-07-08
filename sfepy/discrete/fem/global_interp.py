@@ -8,8 +8,8 @@ from sfepy.base.base import assert_, output, get_default_attr
 from sfepy.discrete.fem.geometry_element import create_geometry_elements
 import sfepy.discrete.fem.extmods.crefcoors as crc
 
-def get_ref_coors_convex(field, coors, strategy='kdtree', close_limit=0.1,
-                         cache=None, verbose=False):
+def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
+                         verbose=False):
     """
     Get reference element coordinates and elements corresponding to given
     physical coordinates.
@@ -20,9 +20,6 @@ def get_ref_coors_convex(field, coors, strategy='kdtree', close_limit=0.1,
         The field defining the approximation.
     coors : array
         The physical coordinates.
-    strategy : str, optional
-        The strategy for finding the elements that contain the
-        coordinates. Only 'kdtree' is supported for the moment.
     close_limit : float, optional
         The maximum limit distance of a point from the closest
         element allowed for extrapolation.
@@ -58,6 +55,8 @@ def get_ref_coors_convex(field, coors, strategy='kdtree', close_limit=0.1,
     ref_coors = get_default_attr(cache, 'ref_coors', None)
 
     if ref_coors is None:
+        extrapolate = close_limit > 0.0
+
         ref_coors = nm.empty_like(coors)
         cells = nm.empty((coors.shape[0],), dtype=nm.int32)
         status = nm.empty((coors.shape[0],), dtype=nm.int32)
@@ -114,7 +113,7 @@ def get_ref_coors_convex(field, coors, strategy='kdtree', close_limit=0.1,
         crc.find_ref_coors_convex(ref_coors, cells, status, ac(coors), cmesh,
                                   centroids, normals0, normals1, ics,
                                   ps.geometry.coors, ps.nodes, mtx_i,
-                                  1, close_limit, 1e-15, 100, 1e-8)
+                                  extrapolate, close_limit, 1e-15, 100, 1e-8)
         output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
 
     else:
