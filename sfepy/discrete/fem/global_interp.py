@@ -64,8 +64,6 @@ def get_ref_coors(field, coors, strategy='kdtree', close_limit=0.1, cache=None,
 
         cmesh = get_default_attr(cache, 'cmesh', None)
         if cmesh is None:
-            mesh = field.create_mesh(extra_nodes=False)
-
             tt = time.clock()
             mesh = field.create_mesh(extra_nodes=False)
             cmesh = mesh.cmesh
