@@ -223,7 +223,9 @@ class H1NodalMixin(H1Mixin):
             following meaning: 0 is success, 1 is extrapolation within
             `close_limit`, 2 is extrapolation outside `close_limit`, 3 is
             failure, 4 is failure due to non-convergence of the Newton
-            iteration in tensor product cells.
+            iteration in tensor product cells. If close_limit is 0, then for
+            the 'general' strategy the status 5 indicates points outside of the
+            field domain that had no potential cells.
         """
         output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
 
