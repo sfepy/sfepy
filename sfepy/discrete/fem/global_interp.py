@@ -194,8 +194,8 @@ def get_potential_cells(coors, cmesh, centroids=None, extrapolate=True):
 
     return potential_cells, offsets
 
-def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
-                          verbose=False):
+def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
+                          cache=None, verbose=False):
     """
     Get reference element coordinates and elements corresponding to given
     physical coordinates.
@@ -209,6 +209,11 @@ def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
     close_limit : float, optional
         The maximum limit distance of a point from the closest
         element allowed for extrapolation.
+    get_cells_fun : callable, optional
+        If given, a function with signature ``get_cells_fun(coors, cmesh,
+        **kwargs)`` returning cells and offsets that potentially contain points
+        with the coordinates `coors`. When not given,
+        :func:`get_potential_cells()` is used.
     cache : Struct, optional
         To speed up a sequence of evaluations, the field mesh and other data
         can be cached. Optionally, the cache can also contain the reference
@@ -236,6 +241,8 @@ def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
     if ref_coors is None:
         extrapolate = close_limit > 0.0
 
+        get = get_potential_cells if get_cells_fun is None else get_cells_fun
+
         ref_coors = nm.empty_like(coors)
         cells = nm.empty((coors.shape[0],), dtype=nm.int32)
         status = nm.empty((coors.shape[0],), dtype=nm.int32)
@@ -251,7 +258,11 @@ def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
             cmesh.set_local_entities(gels)
             cmesh.setup_entities()
 
-            centroids = cmesh.get_centroids(cmesh.tdim)
+            if get_cells_fun is None:
+                centroids = cmesh.get_centroids(cmesh.tdim)
+
+            else:
+                centroids = None
 
             output('cmesh setup: %f s' % (time.clock()-tt), verbose=verbose)
 
@@ -259,9 +270,8 @@ def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
             centroids = cache.centroids
 
         tt = time.clock()
-        potential_cells, offsets = get_potential_cells(coors, cmesh,
-                                                       centroids=centroids,
-                                                       extrapolate=extrapolate)
+        potential_cells, offsets = get(coors, cmesh, centroids=centroids,
+                                       extrapolate=extrapolate)
         output('potential cells: %f s' % (time.clock()-tt), verbose=verbose)
 
         ap = field.ap
@@ -288,7 +298,7 @@ def get_ref_coors_general(field, coors, close_limit=0.1, cache=None,
     return ref_coors, cells, status
 
 def get_ref_coors(field, coors, strategy='general', close_limit=0.1,
-                  cache=None, verbose=False):
+                  get_cells_fun=None, cache=None, verbose=False):
     """
     Get reference element coordinates and elements corresponding to given
     physical coordinates.
@@ -306,6 +316,11 @@ def get_ref_coors(field, coors, strategy='general', close_limit=0.1,
     close_limit : float, optional
         The maximum limit distance of a point from the closest
         element allowed for extrapolation.
+    get_cells_fun : callable, optional
+        If given, a function with signature ``get_cells_fun(coors, cmesh,
+        **kwargs)`` returning cells and offsets that potentially contain points
+        with the coordinates `coors`. Applicable only when `strategy` is
+        'general'. When not given, :func:`get_potential_cells()` is used.
     cache : Struct, optional
         To speed up a sequence of evaluations, the field mesh and other data
         can be cached. Optionally, the cache can also contain the reference
@@ -331,6 +346,7 @@ def get_ref_coors(field, coors, strategy='general', close_limit=0.1,
     """
     if strategy == 'general':
         return get_ref_coors_general(field, coors, close_limit=close_limit,
+                                     get_cells_fun=get_cells_fun,
                                      cache=cache, verbose=verbose)
 
     elif strategy == 'convex':
