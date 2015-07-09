@@ -124,7 +124,28 @@ def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
 
 def get_potential_cells(coors, cmesh, centroids=None, extrapolate=True):
     """
-    Get cells that potentially contain the given coordinates,
+    Get cells that potentially contain points with the given physical
+    coordinates.
+
+    Parameters
+    ----------
+    coors : array
+        The physical coordinates.
+    cmesh : CMesh instance
+        The cmesh defining the cells.
+    centroids : array, optional
+        The centroids of the cells.
+    extrapolate : bool
+        If True, even the points that are surely outside of the
+        cmesh are considered and assigned potential cells.
+
+    Returns
+    -------
+    potential_cells : array
+        The indices of the cells that potentially contain the points.
+    offsets : array
+        The offsets into `potential_cells` for each point: a point ``ip`` is
+        potentially in cells ``potential_cells[offsets[ip]:offsets[ip+1]]``.
     """
     from scipy.spatial import cKDTree as KDTree
 
