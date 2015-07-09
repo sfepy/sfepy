@@ -172,8 +172,9 @@ class H1NodalMixin(H1Mixin):
         return nods, vals
 
     def evaluate_at(self, coors, source_vals, strategy='general',
-                    close_limit=0.1, cache=None, ret_cells=False,
-                    ret_status=False, ret_ref_coors=False, verbose=False):
+                    close_limit=0.1, get_cells_fun=None, cache=None,
+                    ret_cells=False, ret_status=False, ret_ref_coors=False,
+                    verbose=False):
         """
         Evaluate source DOF values corresponding to the field in the given
         coordinates using the field interpolation.
@@ -191,6 +192,13 @@ class H1NodalMixin(H1Mixin):
         close_limit : float, optional
             The maximum limit distance of a point from the closest
             element allowed for extrapolation.
+        get_cells_fun : callable, optional
+            If given, a function with signature ``get_cells_fun(coors, cmesh,
+            **kwargs)`` returning cells and offsets that potentially contain
+            points with the coordinates `coors`. Applicable only when
+            `strategy` is 'general'. When not given,
+            :func:`get_potential_cells()
+            <sfepy.discrete.fem.global_interp.get_potential_cells>` is used.
         cache : Struct, optional
             To speed up a sequence of evaluations, the field mesh and other
             data can be cached. Optionally, the cache can also contain the
@@ -232,6 +240,7 @@ class H1NodalMixin(H1Mixin):
         ref_coors, cells, status = get_ref_coors(self, coors,
                                                  strategy=strategy,
                                                  close_limit=close_limit,
+                                                 get_cells_fun=get_cells_fun,
                                                  cache=cache,
                                                  verbose=verbose)
 

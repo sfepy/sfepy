@@ -1909,7 +1909,8 @@ class FieldVariable(Variable):
         return coors
 
     def evaluate_at(self, coors, strategy='general',
-                    close_limit=0.1, cache=None, ret_cells=False,
+                    close_limit=0.1, get_cells_fun=None,
+                    cache=None, ret_cells=False,
                     ret_status=False, ret_ref_coors=False, verbose=False):
         """
         Evaluate the variable in the given physical coordinates. Convenience
@@ -1919,7 +1920,9 @@ class FieldVariable(Variable):
         """
         source_vals = self().reshape((self.n_nod, self.n_components))
         out = self.field.evaluate_at(coors, source_vals, strategy=strategy,
-                                     close_limit=close_limit, cache=cache,
+                                     close_limit=close_limit,
+                                     get_cells_fun=get_cells_fun,
+                                     cache=cache,
                                      ret_cells=ret_cells,
                                      ret_status=ret_status,
                                      ret_ref_coors=ret_ref_coors,

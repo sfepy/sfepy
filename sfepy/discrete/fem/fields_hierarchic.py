@@ -223,8 +223,9 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         return nods, vals
 
     def evaluate_at(self, coors, source_vals, strategy='general',
-                    close_limit=0.1, cache=None, ret_cells=False,
-                    ret_status=False, ret_ref_coors=False, verbose=False):
+                    close_limit=0.1, get_cells_fun=None, cache=None,
+                    ret_cells=False, ret_status=False, ret_ref_coors=False,
+                    verbose=False):
         """
         Evaluate source DOF values corresponding to the field in the given
         coordinates using the field interpolation.
@@ -242,6 +243,13 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         close_limit : float, optional
             The maximum limit distance of a point from the closest
             element allowed for extrapolation.
+        get_cells_fun : callable, optional
+            If given, a function with signature ``get_cells_fun(coors, cmesh,
+            **kwargs)`` returning cells and offsets that potentially contain
+            points with the coordinates `coors`. Applicable only when
+            `strategy` is 'general'. When not given,
+            :func:`get_potential_cells()
+            <sfepy.discrete.fem.global_interp.get_potential_cells>` is used.
         cache : Struct, optional
             To speed up a sequence of evaluations, the field mesh, the inverse
             connectivity of the field mesh and the KDTree instance can
