@@ -50,10 +50,9 @@ def gen_lines(problem):
 
     centre = 0.5 * (p0 + p1)
     normal = [0.0, 1.0, 0.0]
-    r = 0.02
+    r = 0.019
     circle = CircleProbe(centre, normal, r, n_point)
-    # Workaround current probe code shortcoming.
-    circle.set_options(close_limit=0.5)
+    circle.set_options(close_limit=0.0)
 
     probes = [line, circle]
     labels = ['%s -> %s' % (p0, p1),
