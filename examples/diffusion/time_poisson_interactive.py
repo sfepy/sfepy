@@ -226,7 +226,7 @@ def main():
         if options.probe:
             # Probe the solution.
             dvel_qp = ev('ev_diffusion_velocity.%d.Omega(m.diffusivity, T)'
-                         % order, mode='qp')
+                         % order, copy_materials=False, mode='qp')
             project_by_component(dvel, dvel_qp, component, order,
                                  nls_options=nls_options)
 
