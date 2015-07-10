@@ -26,6 +26,7 @@
 
 .. _SciPy: http://www.scipy.org
 .. _NumPy: http://www.numpy.org
+.. _scikit-umfpack: http://rc.github.io/scikit-umfpack
 .. _sparse matrix: http://docs.scipy.org/doc/scipy/reference/sparse.html
 .. _numpy documentation guide: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py

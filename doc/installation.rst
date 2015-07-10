@@ -28,16 +28,21 @@ Installation prerequisites, required to build *SfePy*:
 Python packages required for using *SfePy*:
 
 - `Pyparsing`_
-- `SciPy`_, preferably with umfpack wrapper, or umfpack scikit
+- `SciPy`_
+- `scikit-umfpack`_, for enabling UMFPACK solver for SciPy >= 0.14.0
 - `Matplotlib`_, for various plots; GTKAgg for live plotting via log.py
 - `PyTables`_, for storing results in HDF5 files
-- `SymPy`_, for some tests and functions)
+- `SymPy`_, for some tests and functions
 - `Mayavi`_, for postproc.py
 - `Pysparse`_, for schroedinger.py
 - `igakit`_, for script/gen_iga_patch.py - simple IGA domain generator
 - `petsc4py`_ and `mpi4py`_, for running parallel examples and using parallel
   solvers from PETSc
 - `pymetis`_, for mesh partitioning using Metis
+
+Make sure the dependencies of those packages are also installed -
+`scikit-umfpack`_ does not work without UMFPACK, `petsc4py`_ without PETSc,
+etc.
 
 Other dependencies:
 
