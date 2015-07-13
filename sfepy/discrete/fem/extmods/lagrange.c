@@ -180,8 +180,7 @@ int32 get_xi_tensor(FMField *xi,
   if (ii == i_max) {
     ok = 2;
     // Newton did not converge.
-    // Use centre if nothing better is available, but do not spoil
-    // possible d_min (see below).
+    // Use centre if nothing better is available.
     fmf_fillC(xi, 0.5 * (vmin + vmax));
   }
 
