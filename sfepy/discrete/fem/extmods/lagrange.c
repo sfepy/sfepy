@@ -12,6 +12,13 @@
       reference element coordinates `xi = dot(bc, ref_coors)`.
   coors : FMField
       The coordinates of the points, shape `(n_coor, dim)`.
+  ctx : LagrangeContext
+      The context data.
+
+  Notes
+  -----
+  Uses the following items of LagrangeContext:
+
   mtx_i : FMField
       The inverse of simplex coordinates matrix, shape `(dim + 1, dim + 1)`.
   eps : float
@@ -20,9 +27,13 @@
       If True, raise ValueError if a barycentric coordinate is outside
       the snap interval `[-eps, 1 + eps]`.
 */
-int32 get_barycentric_coors(FMField *bc, FMField *coors, FMField *mtx_i,
-                            float64 eps, int32 check_errors)
+int32 get_barycentric_coors(FMField *bc, FMField *coors, void *_ctx)
 {
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  FMField *mtx_i = ctx->mtx_i;
+  float64 eps = ctx->eps;
+  int32 check_errors = ctx->check_errors;
+
   int32 ii, ir, ic, error, ret = RET_OK;
   int32 n_coor = coors->nRow;
   int32 nc = coors->nCol;
@@ -70,12 +81,14 @@ int32 get_barycentric_coors(FMField *bc, FMField *coors, FMField *mtx_i,
 /*
   Get reference simplex coordinates `xi` of `dest_point` given spatial
   element coordinates `e_coors` and coordinates of reference simplex
-  vertices `ref_coors`. Output also the corresponding barycentric
-  coordinates `bc`.
+  vertices `ref_coors` (in `ctx`). Output also the corresponding barycentric
+  coordinates `bc` (in `ctx`).
 */
-int32 get_xi_simplex(FMField *xi, FMField *bc, FMField *dest_point,
-                     FMField *ref_coors, FMField *e_coors)
+int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
+                     void *_ctx)
 {
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+
   int32 idim, ii;
   int32 n_v = e_coors->nRow;
   int32 dim = e_coors->nCol;
@@ -103,8 +116,8 @@ int32 get_xi_simplex(FMField *xi, FMField *bc, FMField *dest_point,
     geme_invert3x3(mtx_i, mtx);
   }
 
-  fmf_mulABT_nn(bc, rhs, mtx_i);
-  fmf_mulAB_nn(xi, bc, ref_coors);
+  fmf_mulABT_nn(ctx->bc, rhs, mtx_i);
+  fmf_mulAB_nn(xi, ctx->bc, ctx->ref_coors);
 
   return(RET_OK);
 }
@@ -114,17 +127,21 @@ int32 get_xi_simplex(FMField *xi, FMField *bc, FMField *dest_point,
 
   Uses linear 1D base functions.
 */
-int32 get_xi_tensor(FMField *xi,
-                    FMField *dest_point, FMField *e_coors,
-                    FMField *mtx_i,
-                    FMField *base1d, int32 *nodes, int32 n_col,
-                    float64 vmin, float64 vmax,
-                    int32 i_max, float64 newton_eps)
+int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
+                    void *_ctx)
 {
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  FMField *bc = ctx->bc;
+
+  float64 vmin = ctx->vmin;
+  float64 vmax = ctx->vmax;
+  int32 i_max = ctx->i_max;
+  float64 newton_eps = ctx->newton_eps;
+
   int32 idim, ii, ok = 0;
   int32 dim = e_coors->nCol;
   int32 powd = 1 << dim;
-  FMField bc[1], bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1];
+  FMField bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1];
   float64 err;
   float64 buf6[6], buf8[8], buf24[24];
   float64 buf3_1[3], buf3_2[3], buf9_1[9], buf9_2[9];
@@ -148,7 +165,7 @@ int32 get_xi_tensor(FMField *xi,
       bc->val[0] = 1.0 - bc->val[1];
     }
 
-    eval_lagrange_tensor_product(bf, bc, mtx_i, base1d, nodes, n_col, 1, 0);
+    eval_lagrange_tensor_product(bf, 1, 0, _ctx);
 
     // X(xi).
     fmf_mulAB_n1(xint, bf, e_coors);
@@ -166,7 +183,7 @@ int32 get_xi_tensor(FMField *xi,
     }
 
     // grad Base(xi).
-    eval_lagrange_tensor_product(bfg, bc, mtx_i, base1d, nodes, n_col, 1, 1);
+    eval_lagrange_tensor_product(bfg, 1, 1, _ctx);
     // - Matrix.
     fmf_mulAB_n1(mtx, bfg, e_coors);
 
@@ -190,10 +207,15 @@ int32 get_xi_tensor(FMField *xi,
 /*
   Evaluate Lagrange base polynomials in given points on simplex domain.
 */
-int32 eval_lagrange_simplex(FMField *out, FMField *bc, FMField *mtx_i,
-                            int32 *nodes, int32 n_col,
-                            int32 order, int32 diff)
+int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
+                            void *_ctx)
 {
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  FMField *bc = ctx->bc;
+  FMField *mtx_i = ctx->mtx_i;
+  int32 *nodes = ctx->nodes;
+  int32 n_col = ctx->n_col;
+
   int32 ret = RET_OK;
   int32 n_coor = bc->nRow;
   int32 n_v = bc->nCol;
@@ -276,30 +298,30 @@ int32 eval_lagrange_simplex(FMField *out, FMField *bc, FMField *mtx_i,
   Evaluate Lagrange base polynomials in given points on tensor product
   domain.
 */
-int32 eval_lagrange_tensor_product(FMField *out, FMField *bc,
-                                   FMField *mtx_i, FMField *base1d,
-                                   int32 *nodes, int32 n_col,
-                                   int32 order, int32 diff)
+int32 eval_lagrange_tensor_product(FMField *out, int32 order, int32 diff,
+                                   void *_ctx)
 {
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  FMField *bc = ctx->bc;
+  FMField *base1d = ctx->base1d;
+  int32 *nodes = ctx->nodes;
+
   int32 ret = RET_OK;
   int32 ii, idim, im, ic;
-  int32 n_coor = out->nLev;
   int32 nr = out->nRow;
   int32 n_nod = out->nCol;
   int32 dim = bc->nCell;
-  int32 out_size = n_coor * nr * n_nod;
-  int32 *pnodes;
 
   fmf_fillC(out, 1.0);
 
   if (!diff) {
     for (ii = 0; ii < dim; ii++) {
       // slice [:,2*ii:2*ii+2]
-      pnodes = nodes + 2 * ii;
+      ctx->nodes = nodes + 2 * ii;
       // slice [:,ii:ii+1]
       FMF_SetCell(bc, ii);
 
-      eval_lagrange_simplex(base1d, bc, mtx_i, pnodes, n_col, order, diff);
+      eval_lagrange_simplex(base1d, order, diff, _ctx);
 
       for (im = 0; im < out->cellSize; im++) {
         out->val[im] *= base1d->val[im];
@@ -311,15 +333,15 @@ int32 eval_lagrange_tensor_product(FMField *out, FMField *bc,
   } else {
     for (ii = 0; ii < dim; ii++) {
       // slice [:,2*ii:2*ii+2]
-      pnodes = nodes + 2 * ii;
+      ctx->nodes = nodes + 2 * ii;
       // slice [:,ii:ii+1]
       FMF_SetCell(bc, ii);
 
       for (idim = 0; idim < dim; idim++) {
         if (ii == idim) {
-          eval_lagrange_simplex(base1d, bc, mtx_i, pnodes, n_col, order, diff);
+          eval_lagrange_simplex(base1d, order, diff, _ctx);
         } else {
-          eval_lagrange_simplex(base1d, bc, mtx_i, pnodes, n_col, order, 0);
+          eval_lagrange_simplex(base1d, order, 0, _ctx);
         }
 
         // slice [:,idim:idim+1,:]
@@ -335,5 +357,8 @@ int32 eval_lagrange_tensor_product(FMField *out, FMField *bc,
   }
 
  end_label:
+  // Restore nodes.
+  ctx->nodes = nodes;
+
   return(ret);
 }
