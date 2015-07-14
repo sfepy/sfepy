@@ -1130,12 +1130,11 @@ Each term supports one or more *evaluation modes*:
   quantities during postprocessing such as fluxes or total values of extensive
   quantities (mass, volume, energy, ...).
 
+- `'el_eval'` : The element evaluation mode results in an array of a quantity
+  integrated over each element of a region.
+
 - `'el_avg'` : The element average mode results in an array of a quantity
   averaged in each element of a region. This is the mode for postprocessing.
-
-- `'el'` : The element integral value mode results in an array of a quantity
-  integrated over each element of a region. This mode is supported only by
-  some special terms.
 
 - `'qp'` : The quadrature points mode results in an array of a quantity
   interpolated into quadrature points of each element in a region. This mode is
@@ -1148,8 +1147,8 @@ individual terms. There are, however, certain naming conventions:
 
 - `'dw_*'` terms support `'weak'` mode
 - `'dq_*'` terms support `'qp'` mode
-- `'d_*'`, `'di_*'` terms support `'eval'` mode
-- `'ev_*'` terms support `'eval'`, `'el_avg'` and `'qp'` modes
+- `'d_*'`, `'di_*'` terms support `'eval'` and `'el_eval'` modes
+- `'ev_*'` terms support `'eval'`, `'el_eval'`, `'el_avg'` and `'qp'` modes
 
 Note that the naming prefixes are due to history when the `mode` argument to
 :func:`Problem.evaluate()

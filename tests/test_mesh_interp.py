@@ -234,7 +234,7 @@ class Test(TestCommon):
         integral = Integral('i', order=2)
         term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
         term.setup()
-        val1, _ = term.evaluate(mode='qp')
+        val1 = term.evaluate(mode='qp')
         val1 = val1.ravel()
 
         qps = get_physical_qps(omega, integral)

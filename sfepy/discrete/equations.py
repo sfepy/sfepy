@@ -805,10 +805,10 @@ class Equation(Struct):
         """
         Parameters
         ----------
-        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+        mode : one of 'eval', 'el_eval', 'el_avg', 'qp', 'weak'
             The evaluation mode.
         """
-        if mode == 'eval':
+        if mode in ('eval', 'el_eval'):
             val = 0.0
             for term in self.terms:
                 aux, status = term.evaluate(mode=mode,
@@ -819,14 +819,13 @@ class Equation(Struct):
 
             out = val
 
-        elif mode in ('el_avg', 'el', 'qp'):
-
+        elif mode in ('el_avg', 'qp'):
             vals = []
             for term in self.terms:
-                val, iels, status = term.evaluate(mode=mode,
-                                                  term_mode=term_mode,
-                                                  standalone=False,
-                                                  ret_status=True)
+                val, status = term.evaluate(mode=mode,
+                                            term_mode=term_mode,
+                                            standalone=False,
+                                            ret_status=True)
                 vals.append(val)
 
             if len(vals) == 1:
