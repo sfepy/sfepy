@@ -437,7 +437,7 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
                                   self.family_data_names)
         grad = self.get(pressure, 'grad')
 
-        fmode = {'eval' : 0, 'el_avg' : 1, 'el' : 0}.get(mode, 0)
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 0)
 
         return grad, perm, ref_porosity, fd.inv_f, fd.det_f, sg, fmode
 

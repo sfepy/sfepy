@@ -304,7 +304,7 @@ class SurfaceFluxTerm(Term):
     r"""
     Surface flux term.
 
-    Supports 'eval', 'el_avg' and 'el' evaluation modes.
+    Supports 'eval', 'el_eval' and 'el_avg' evaluation modes.
 
     :Definition:
 
@@ -336,7 +336,7 @@ class SurfaceFluxTerm(Term):
 
         grad = self.get(parameter, 'grad')
 
-        fmode = {'eval' : 0, 'el_avg' : 1, 'el' : 0}.get(mode, 0)
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 0)
 
         return grad, mat, sg, fmode
 

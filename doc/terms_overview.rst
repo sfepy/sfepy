@@ -50,7 +50,7 @@ The following notation is used:
      - vector parameter function
    * - :math:`\ull{e}(\ul{u})`
      - Cauchy strain tensor (:math:`\frac{1}{2}((\nabla u) + (\nabla u)^T)`)
-   * - :math:`\ull{F}`  
+   * - :math:`\ull{F}`
      - deformation gradient :math:`F_{ij} = \pdiff{x_i}{X_j}`
    * - :math:`J`
      - :math:`\det(F)`
@@ -104,12 +104,12 @@ Term names are (usually) prefixed according to the following conventions:
        arguments, used for FE assembling
    * - d
      - discrete
-     - `'eval'`
+     - `'eval'`, `'el_eval'`
      - terms having all arguments known, the result is the scalar value of
        the integral
    * - di
      - discrete integrated
-     - `'eval'`
+     - `'eval'`, `'el_eval'`
      - like 'd' but the result is not a scalar (e.g. a vector)
    * - dq
      - discrete quadrature
@@ -118,7 +118,7 @@ Term names are (usually) prefixed according to the following conventions:
        quadrature points of elements
    * - ev
      - evaluate
-     - `'eval'`, `'el_avg'`, `'qp'`
+     - `'eval'`, `'el_eval'`, `'el_avg'`, `'qp'`
      - terms having all arguments known and supporting all evaluation modes
        except `'weak'` (no virtual variables in arguments, no FE assembling)
 
