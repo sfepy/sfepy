@@ -147,7 +147,8 @@ class DiffusionCoupling(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega}  p K_{j} \nabla_j q
+        \int_{\Omega}  p K_{j} \nabla_j q \mbox{ , }
+        \int_{\Omega}  q K_{j} \nabla_j p
 
     :Arguments:
         - material : :math:`K_{j}`
