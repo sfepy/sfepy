@@ -181,9 +181,9 @@ class H1NodalMixin(H1Mixin):
 
         Parameters
         ----------
-        coors : array
+        coors : array, shape ``(n_coor, dim)``
             The coordinates the source values should be interpolated into.
-        source_vals : array
+        source_vals : array, shape ``(n_nod, n_components)``
             The source DOF values corresponding to the field.
         mode : {'val', 'grad'}, optional
             The evaluation mode: the field value (default) or the field value
@@ -222,8 +222,10 @@ class H1NodalMixin(H1Mixin):
         Returns
         -------
         vals : array
-            The interpolated values. If `ret_status` is False, the values where
-            the status is greater than one are set to ``numpy.nan``.
+            The interpolated values with shape ``(n_coor, n_components, 1)`` or
+            gradients with shape ``(n_coor, n_components, dim)`` according to
+            the `mode`. If `ret_status` is False, the values where the status
+            is greater than one are set to ``numpy.nan``.
         ref_coors : array
             The found reference element coordinates, if `ret_ref_coors` is True.
         cells : array
