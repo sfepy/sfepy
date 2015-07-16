@@ -224,26 +224,38 @@ class Test(TestCommon):
         domain = FEDomain('domain', mesh)
         omega = domain.create_region('Omega', 'all')
         field = Field.from_args('scalar_tp', nm.float64, 1, omega,
-                                approx_order=1)
+                                approx_order=2)
         ff = {field.name : field}
 
         vv = Variables.from_conf(transform_variables(variables), ff)
         u = vv['u']
         u.set_from_mesh_vertices(data)
 
-        integral = Integral('i', order=2)
+        integral = Integral('i', order=3)
+        qps = get_physical_qps(omega, integral)
+        coors = qps.values
+
         term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
         term.setup()
         val1 = term.evaluate(mode='qp')
         val1 = val1.ravel()
 
-        qps = get_physical_qps(omega, integral)
-        coors = qps.values
-
         val2 = u.evaluate_at(coors).ravel()
 
-        self.report('max. difference:', nm.abs(val1 - val2).max())
-        ok = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
+        self.report('value: max. difference:', nm.abs(val1 - val2).max())
+        ok1 = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
+
+        term = Term.new('ev_grad(u)', integral, omega, u=u)
+        term.setup()
+        val1 = term.evaluate(mode='qp')
+        val1 = val1.ravel()
+
+        val2 = u.evaluate_at(coors, mode='grad').ravel()
+
+        self.report('gradient: max. difference:', nm.abs(val1 - val2).max())
+        ok2 = nm.allclose(val1, val2, rtol=0.0, atol=1e-10)
+
+        ok = ok1 and ok2
         self.report('invariance in qp: %s' % ok)
 
         return ok
