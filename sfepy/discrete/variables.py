@@ -1908,7 +1908,7 @@ class FieldVariable(Variable):
 
         return coors
 
-    def evaluate_at(self, coors, strategy='general',
+    def evaluate_at(self, coors, mode='val', strategy='general',
                     close_limit=0.1, get_cells_fun=None,
                     cache=None, ret_cells=False,
                     ret_status=False, ret_ref_coors=False, verbose=False):
@@ -1919,7 +1919,9 @@ class FieldVariable(Variable):
         docstring for more details.
         """
         source_vals = self().reshape((self.n_nod, self.n_components))
-        out = self.field.evaluate_at(coors, source_vals, strategy=strategy,
+        out = self.field.evaluate_at(coors, source_vals,
+                                     mode=mode,
+                                     strategy=strategy,
                                      close_limit=close_limit,
                                      get_cells_fun=get_cells_fun,
                                      cache=cache,

@@ -171,7 +171,7 @@ class H1NodalMixin(H1Mixin):
 
         return nods, vals
 
-    def evaluate_at(self, coors, source_vals, strategy='general',
+    def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
                     close_limit=0.1, get_cells_fun=None, cache=None,
                     ret_cells=False, ret_status=False, ret_ref_coors=False,
                     verbose=False):
@@ -185,6 +185,9 @@ class H1NodalMixin(H1Mixin):
             The coordinates the source values should be interpolated into.
         source_vals : array
             The source DOF values corresponding to the field.
+        mode : {'val', 'grad'}, optional
+            The evaluation mode: the field value (default) or the field value
+            gradient.
         strategy : {'general', 'convex'}, optional
             The strategy for finding the elements that contain the
             coordinates. For convex meshes, the 'convex' strategy might be
@@ -251,12 +254,29 @@ class H1NodalMixin(H1Mixin):
         mtx_i = ps.get_mtx_i()
 
         # Interpolate to the reference coordinates.
-        vals = nm.empty((coors.shape[0], source_vals.shape[1]),
-                        dtype=source_vals.dtype)
+        if mode == 'val':
+            vals = nm.empty((coors.shape[0], source_vals.shape[1], 1),
+                            dtype=source_vals.dtype)
+            cmode = 0
+            mesh_coors = None
+            mesh_conn = None
+            geo_nodes = None
+
+        elif mode == 'grad':
+            vals = nm.empty((coors.shape[0], source_vals.shape[1],
+                             coors.shape[1]),
+                            dtype=source_vals.dtype)
+            cmode = 1
+            mesh_coors = self.domain.get_mesh_coors(actual=True)
+            dconn = self.domain.get_conn()
+            mesh_conn = nm.take(dconn, self.region.get_cells(), axis=0)
+
+            geo_ps = ap.interp.get_geom_poly_space('v')
+            geo_nodes = geo_ps.nodes
 
         evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       ap.econn, ps.geometry.coors, ps.nodes, ps.order, mtx_i,
-                       1e-15)
+                       ap.econn, ps.geometry.coors, ps.nodes, ps.order,
+                       mesh_coors, mesh_conn, geo_nodes, cmode, mtx_i, 1e-15)
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
         output('...done',verbose=verbose)
