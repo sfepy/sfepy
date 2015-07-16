@@ -254,7 +254,7 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
 
     Interpolation uses field approximation connectivity.
     """
-    cdef int32 ip, ic, iel, n_v, n_ep
+    cdef int32 ip, ib, ic, iel, n_v, n_ep
     cdef int32 n_cp = 0, n_gcol = 0
     cdef int32 n_col, ii, ik
     cdef int32 n_point = ref_coors.shape[0]
@@ -390,7 +390,7 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
                         for ik in range(0, n_ep):
                             aux += bfg.val[n_ep*ib+ik] * src.val[n_ep*ic+ik]
 
-                        _out.val[bdim*ic+ib] = aux
+                        _out.val[dpn*ib+ic] = aux
 
         else:
             _f.fmf_fillC(_out, 0.0)
