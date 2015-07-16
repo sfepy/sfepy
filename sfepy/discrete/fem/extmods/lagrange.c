@@ -226,12 +226,12 @@ int32 eval_lagrange_simplex(FMField *out, FMField *bc, FMField *mtx_i,
       }
     }
   } else {
+    fmf_fillC(out, 0.0);
+
     for (ic = 0; ic < n_coor; ic++) {
       pout = FMF_PtrLevel(out, ic);
 
       for (inod = 0; inod < n_nod; inod++) {
-        pout[inod] = 0.0;
-
         for (ii = 0; ii < n_v; ii++) {
           vv = 1.0;
           bcii = bc->val[n_v*ic+ii];
