@@ -267,5 +267,42 @@ class Test(TestCommon):
 
             ok = ok and ok1 and ok2
 
+        return ok
+
+    def test_field_gradient(self):
+        from sfepy import data_dir
+
+        ok = True
+        for name in ['meshes/3d/block.mesh', 'meshes/3d/cylinder.mesh',
+                     'meshes/2d/square_quad.mesh',
+                     'meshes/2d/square_unit_tri.mesh']:
+            self.report(name)
+
+            u = prepare_variable(op.join(data_dir, name), n_components=1)
+
+            bbox = u.field.domain.get_mesh_bounding_box()
+            coors = nm.c_[tuple([nm.linspace(ii[0] + 1e-3, ii[1] - 1e-3, 100)
+                                 for ii in bbox.T])]
+
+            grad, cells, status = u.evaluate_at(coors, mode='grad',
+                                                close_limit=0.0,
+                                                ret_status=True)
+
+            agrad = nm.dot(grad[:, 0, :], nm.ones((grad.shape[2], 1)))
+
+            eps = 1e-5
+            val0 = u.evaluate_at(coors - eps, close_limit=0.0)
+            val1 = u.evaluate_at(coors + eps, close_limit=0.0)
+
+            ngrad = 0.5 * (val1 - val0) / eps
+
+            ii = nm.where(status == 0)
+
+            self.report('max. difference:', nm.abs(agrad[ii] - ngrad[ii]).max())
+
+            _ok = nm.allclose(agrad[ii], ngrad[ii], rtol=0.0, atol=10 * eps)
+            self.report('->', _ok)
+
+            ok = ok and _ok
 
         return ok
