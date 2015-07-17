@@ -281,9 +281,9 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
     cdef int32 bdim = out.shape[2]
     cdef int32 *_cells = &cells[0]
     cdef int32 *_status = &status[0]
-    cdef int32 *_conn, *_mesh_conn, *_geo_nodes
-    cdef float64 aux
-    cdef LagrangeContext ctx[1]
+    cdef int32 *_conn, *_mesh_conn
+    cdef float64 vmin, vmax, aux
+    cdef LagrangeContext ctx[1], geo_ctx[1]
     cdef FMField _ref_coors[1], _out[1], bf[1], src[1], cell_coors[1]
     cdef FMField _source_vals[1], _mesh_coors[1]
     cdef FMField mtxMR[1], mtxMRI[1], bfg[1], gbfg[1], gbase1d[1]
@@ -330,8 +330,13 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
     _f.fmf_pretend_nc(bf, 1, 1, bdim, n_ep, buf_bf_max)
 
     if diff:
-        _geo_nodes = &geo_nodes[0, 0]
-        n_gcol = geo_nodes.shape[1]
+        geo_ctx.nodes = &geo_nodes[0, 0]
+        geo_ctx.n_col = geo_nodes.shape[1]
+        geo_ctx.eps = qp_eps
+        geo_ctx.check_errors = 0
+        _f.array2fmfield2(geo_ctx.mtx_i, mtx_i)
+        _f.array2fmfield2(geo_ctx.ref_coors, eref_coors)
+
         _mesh_conn = &mesh_conn[0, 0]
         n_cp = mesh_conn.shape[1]
 
@@ -342,12 +347,18 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
         _f.fmf_pretend_nc(gbfg, 1, 1, dim, n_cp, buf24_2)
         _f.fmf_pretend_nc(bfg, 1, 1, dim, n_ep, buf_bfg)
 
-        if n_v != (dim + 1):
-            # Shares buffer with base1d!
-            _f.fmf_pretend_nc(gbase1d, 1, 1, 1, n_cp, buf_b1d_max)
+        if n_v == (dim + 1):
+            # Shares buffer with ctx!
+            _f.fmf_pretend_nc(geo_ctx.bc, 1, 1, 1, dim + 1, buf6)
+
+        else:
+            # Shares buffer with ctx!
+            _f.fmf_pretend_nc(geo_ctx.bc, dim, 1, 1, 2, buf6)
+            # Shares buffer with ctx!
+            _f.fmf_pretend_nc(geo_ctx.base1d, 1, 1, 1, n_cp, buf_b1d_max)
 
     else:
-        _geo_nodes = _mesh_conn = NULL
+        _mesh_conn = NULL
 
     _f.fmf_pretend_nc(src, 1, 1, dpn, n_ep, buf_src_max)
 
@@ -384,12 +395,10 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
 
             else:
                 if n_v == (dim + 1):
-                    _eval_lagrange_simplex(gbfg, bc, _mtx_i,
-                                           _geo_nodes, n_gcol, 1, diff)
+                    _eval_lagrange_simplex(gbfg, 1, diff, geo_ctx)
 
                 else:
-                    _eval_lagrange_tensor_product(gbfg, bc, _mtx_i, gbase1d,
-                                                  _geo_nodes, n_gcol, 1, diff)
+                    _eval_lagrange_tensor_product(gbfg, 1, diff, geo_ctx)
 
                 _f.ele_extractNodalValuesNBN(cell_coors, _mesh_coors,
                                              _mesh_conn + n_cp * iel)
