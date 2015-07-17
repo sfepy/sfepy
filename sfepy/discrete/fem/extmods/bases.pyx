@@ -225,9 +225,10 @@ def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
 
     return out
 
+from libc.stdio cimport FILE, stdout
 @cython.boundscheck(False)
 @cython.cdivision(True)
-cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
+cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
                      np.ndarray[float64, mode='c', ndim=2] ref_coors,
                      np.ndarray[int32, mode='c', ndim=1] cells,
                      np.ndarray[int32, mode='c', ndim=1] status,
@@ -236,43 +237,56 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
                      np.ndarray[float64, mode='c', ndim=2] eref_coors,
                      np.ndarray[int32, mode='c', ndim=2] nodes,
                      int32 order,
+                     np.ndarray[float64, mode='c', ndim=2] mesh_coors,
+                     np.ndarray[int32, mode='c', ndim=2] mesh_conn,
+                     np.ndarray[int32, mode='c', ndim=2] geo_nodes,
+                     int32 diff,
                      np.ndarray[float64, mode='c', ndim=2] mtx_i,
                      float64 qp_eps):
     """
-    Evaluate source field DOF values in the given reference element
-    coordinates using the given interpolation.
+    Evaluate source field DOF values or gradients in the given reference
+    element coordinates using the given interpolation.
 
-    1. Evaluate base functions in the reference coordinates.
-    2. Interpolate source values using the base functions.
+    1. Evaluate basis functions or gradients of basis functions in the
+    reference coordinates. For gradients, tranform the values to the material
+    coordinates.
+    2. Interpolate source values using the basis functions/gradients.
 
     Interpolation uses field approximation connectivity.
     """
-    cdef int32 ip, ic, iel, n_v, n_ep
+    cdef int32 ip, ib, ic, iel, n_v, n_ep
+    cdef int32 n_cp = 0, n_gcol = 0
     cdef int32 n_col, ii, ik
     cdef int32 n_point = ref_coors.shape[0]
     cdef int32 dim = ref_coors.shape[1]
     cdef int32 dpn = out.shape[1]
+    cdef int32 bdim = out.shape[2]
     cdef int32 *_nodes, *_cells = &cells[0]
     cdef int32 *_status = &status[0]
-    cdef int32 *_conn
+    cdef int32 *_conn, *_mesh_conn, *_geo_nodes
     cdef float64 vmin, vmax, aux
-    cdef FMField _eref_coors[1], src[1]
+    cdef FMField _eref_coors[1], src[1], cell_coors[1]
     cdef FMField _ref_coors[1], _out[1], bc[1], base1d[1], _mtx_i[1], bf[1]
-    cdef FMField _source_vals[1]
-    cdef float64 *buf_ec_max, *buf_b1d_max, *buf_bf_max, *buf_src_max
+    cdef FMField _source_vals[1], _mesh_coors[1]
+    cdef FMField mtxMR[1], mtxMRI[1], bfg[1], gbfg[1], gbase1d[1]
+    cdef float64 *buf, *buf_b1d_max, *buf_bf_max, *buf_src_max, *buf_bfg
     cdef float64 buf6[6]
+    cdef float64 buf9_1[9]
+    cdef float64 buf9_2[9]
+    cdef float64 buf24_1[24]
+    cdef float64 buf24_2[24]
 
     # Prepare buffers.
     n_ep = conn.shape[1]
 
-    buf_ec_max = <float64 *> pyalloc(n_ep * (dim + 2 + dpn)
-                                     * sizeof(float64))
-    buf_b1d_max = buf_ec_max + n_ep * dim
+    buf = <float64 *> pyalloc(n_ep * (bdim + 1 + dpn + dim) * sizeof(float64))
+    buf_b1d_max = buf
     buf_bf_max = buf_b1d_max + n_ep
-    buf_src_max = buf_bf_max + n_ep
+    buf_src_max = buf_bf_max + n_ep * bdim
+    buf_bfg = buf_src_max + n_ep * dpn
 
     _f.array2fmfield2(_source_vals, source_vals)
-    _f.fmf_pretend_nc(_out, n_point, 1, 1, dpn, &out[0, 0])
+    _f.fmf_pretend_nc(_out, n_point, 1, dpn, bdim, &out[0, 0, 0])
     _f.fmf_pretend_nc(_ref_coors, n_point, 1, 1, dim, &ref_coors[0, 0])
 
     _nodes = &nodes[0, 0]
@@ -287,8 +301,6 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
 
     n_col = nodes.shape[1]
 
-    _f.fmf_pretend_nc(bf, 1, 1, 1, n_ep, buf_bf_max)
-
     if n_v == (dim + 1):
         _f.fmf_pretend_nc(bc, 1, 1, 1, dim + 1, buf6)
 
@@ -296,7 +308,28 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
         _f.fmf_pretend_nc(bc, dim, 1, 1, 2, buf6)
         _f.fmf_pretend_nc(base1d, 1, 1, 1, n_ep, buf_b1d_max)
 
-    # Interpolate source_vals using bf.
+    _f.fmf_pretend_nc(bf, 1, 1, bdim, n_ep, buf_bf_max)
+
+    if diff:
+        _geo_nodes = &geo_nodes[0, 0]
+        n_gcol = geo_nodes.shape[1]
+        _mesh_conn = &mesh_conn[0, 0]
+        n_cp = mesh_conn.shape[1]
+
+        _f.array2fmfield2(_mesh_coors, mesh_coors)
+        _f.fmf_pretend_nc(cell_coors, 1, 1, n_cp, dim, buf24_1)
+        _f.fmf_pretend_nc(mtxMR, 1, 1, dim, dim, buf9_1)
+        _f.fmf_pretend_nc(mtxMRI, 1, 1, dim, dim, buf9_2)
+        _f.fmf_pretend_nc(gbfg, 1, 1, dim, n_cp, buf24_2)
+        _f.fmf_pretend_nc(bfg, 1, 1, dim, n_ep, buf_bfg)
+
+        if n_v != (dim + 1):
+            # Shares buffer with base1d!
+            _f.fmf_pretend_nc(gbase1d, 1, 1, 1, n_cp, buf_b1d_max)
+
+    else:
+        _geo_nodes = _mesh_conn = NULL
+
     _f.fmf_pretend_nc(src, 1, 1, dpn, n_ep, buf_src_max)
 
     # Point (destination coordinate) loop.
@@ -310,7 +343,7 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
             if n_v == (dim + 1):
                 _get_barycentric_coors(bc, _ref_coors, _mtx_i, qp_eps, 0)
                 _eval_lagrange_simplex(bf, bc, _mtx_i,
-                                       _nodes, n_col, order, 0)
+                                       _nodes, n_col, order, diff)
 
             else:
                 for ii in range(0, dim):
@@ -319,20 +352,47 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=2] out,
                     bc.val[1] = (_ref_coors.val[ii] - vmin) / (vmax - vmin)
                     bc.val[0] = 1.0 - bc.val[1]
                 _eval_lagrange_tensor_product(bf, bc, _mtx_i, base1d,
-                                              _nodes, n_col, order, 0)
+                                              _nodes, n_col, order, diff)
 
-            # Interpolate source_vals using bf.
             _f.ele_extractNodalValuesDBD(src, _source_vals,
                                          _conn + n_ep * iel)
 
-            for ic in range(0, dpn):
-                aux = 0.0
-                for ik in range(0, n_ep):
-                    aux += bf.val[ik] * src.val[n_ep*ic+ik]
+            if diff == 0:
+                for ic in range(0, dpn):
+                    aux = 0.0
+                    for ik in range(0, n_ep):
+                        aux += bf.val[ik] * src.val[n_ep*ic+ik]
 
-                _out.val[ic] = aux
+                    _out.val[ic] = aux
+
+            else:
+                if n_v == (dim + 1):
+                    _eval_lagrange_simplex(gbfg, bc, _mtx_i,
+                                           _geo_nodes, n_gcol, 1, diff)
+
+                else:
+                    _eval_lagrange_tensor_product(gbfg, bc, _mtx_i, gbase1d,
+                                                  _geo_nodes, n_gcol, 1, diff)
+
+                _f.ele_extractNodalValuesNBN(cell_coors, _mesh_coors,
+                                             _mesh_conn + n_cp * iel)
+
+                # Jacobi matrix from reference to material system.
+                _f.fmf_mulATBT_1n(mtxMR, cell_coors, gbfg)
+                # Inverse of Jacobi matrix reference to material system.
+                _f.geme_invert3x3(mtxMRI, mtxMR)
+                # Base function gradient w.r.t. material system.
+                _f.fmf_mulATB_nn(bfg, mtxMRI, bf)
+
+                for ib in range(0, bdim):
+                    for ic in range(0, dpn):
+                        aux = 0.0
+                        for ik in range(0, n_ep):
+                            aux += bfg.val[n_ep*ib+ik] * src.val[n_ep*ic+ik]
+
+                        _out.val[dpn*ib+ic] = aux
 
         else:
             _f.fmf_fillC(_out, 0.0)
 
-    pyfree(buf_ec_max)
+    pyfree(buf)

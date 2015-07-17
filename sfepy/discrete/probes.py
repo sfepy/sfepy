@@ -234,7 +234,7 @@ class Probe(Struct):
         """
         return self.probe(variable)
 
-    def probe(self, variable):
+    def probe(self, variable, mode='val'):
         """
         Probe the given variable.
 
@@ -242,6 +242,9 @@ class Probe(Struct):
         ----------
         variable : Variable instance
             The variable to be sampled along the probe.
+        mode : {'val', 'grad'}, optional
+            The evaluation mode: the variable value (default) or the
+            variable value gradient.
         """
         refine_flag = None
 
@@ -257,7 +260,7 @@ class Probe(Struct):
             if not nm.isfinite(points).all():
                 raise ValueError('Inf/nan in probe points!')
 
-            vals, cells = ev(points, strategy='general',
+            vals, cells = ev(points, mode=mode, strategy='general',
                              close_limit=self.options.close_limit,
                              cache=cache, ret_cells=True)
 

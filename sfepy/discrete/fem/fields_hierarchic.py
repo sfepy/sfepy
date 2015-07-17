@@ -222,7 +222,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
         return nods, vals
 
-    def evaluate_at(self, coors, source_vals, strategy='general',
+    def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
                     close_limit=0.1, get_cells_fun=None, cache=None,
                     ret_cells=False, ret_status=False, ret_ref_coors=False,
                     verbose=False):
@@ -236,6 +236,9 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
             The coordinates the source values should be interpolated into.
         source_vals : array
             The source DOF values corresponding to the field.
+        mode : {'val', 'grad'}, optional
+            The evaluation mode: the field value (default) or the field value
+            gradient.
         strategy : {'general', 'convex'}, optional
             The strategy for finding the elements that contain the
             coordinates. For convex meshes, the 'convex' strategy might be
