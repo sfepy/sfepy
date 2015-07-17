@@ -80,6 +80,28 @@ def do_interpolation(m2, m1, data, field_name, force=False):
 
     return u1, u2
 
+def prepare_variable(filename, n_components):
+    from sfepy.discrete import FieldVariable
+    from sfepy.discrete.fem import Mesh, FEDomain, Field
+
+    mesh = Mesh.from_file(filename)
+
+    bbox = mesh.get_bounding_box()
+    dd = bbox[1,:] - bbox[0,:]
+    data = (nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / dd[0])
+            * nm.cos(4.0 * nm.pi * mesh.coors[:,1:2] / dd[1]))
+
+    domain = FEDomain('domain', mesh)
+    omega = domain.create_region('Omega', 'all')
+    field = Field.from_args('field', nm.float64, n_components, omega,
+                            approx_order=2)
+
+    u = FieldVariable('u', 'parameter', field,
+                      primary_var_name='(set-to-None)')
+    u.set_from_mesh_vertices(nm.c_[tuple([data] * n_components)])
+
+    return u
+
 class Test(TestCommon):
 
     @staticmethod
@@ -204,8 +226,7 @@ class Test(TestCommon):
 
     def test_invariance_qp(self):
         from sfepy import data_dir
-        from sfepy.discrete import Variables, Integral
-        from sfepy.discrete.fem import Mesh, FEDomain, Field
+        from sfepy.discrete import Integral
         from sfepy.terms import Term
         from sfepy.discrete.common.mappings import get_physical_qps
 
@@ -215,27 +236,8 @@ class Test(TestCommon):
                      'meshes/2d/square_unit_tri.mesh']:
             self.report(name)
 
-            mesh = Mesh.from_file(op.join(data_dir, name))
-
-            bbox = mesh.get_bounding_box()
-            dd = bbox[1,:] - bbox[0,:]
-            data = (nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / dd[0])
-                    * nm.cos(4.0 * nm.pi * mesh.coors[:,1:2] / dd[1]))
-
-            variables = {
-                'u'       : ('unknown field', 'field', 0),
-                'v'       : ('test field',    'field', 'u'),
-            }
-
-            domain = FEDomain('domain', mesh)
-            omega = domain.create_region('Omega', 'all')
-            field = Field.from_args('field', nm.float64, 3, omega,
-                                    approx_order=2)
-            ff = {field.name : field}
-
-            vv = Variables.from_conf(transform_variables(variables), ff)
-            u = vv['u']
-            u.set_from_mesh_vertices(nm.c_[data, data, data])
+            u = prepare_variable(op.join(data_dir, name), n_components=3)
+            omega = u.field.region
 
             integral = Integral('i', order=3)
             qps = get_physical_qps(omega, integral)
@@ -250,6 +252,7 @@ class Test(TestCommon):
 
             self.report('value: max. difference:', nm.abs(val1 - val2).max())
             ok1 = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
+            self.report('->', ok1)
 
             term = Term.new('ev_grad(u)', integral, omega, u=u)
             term.setup()
@@ -260,9 +263,9 @@ class Test(TestCommon):
 
             self.report('gradient: max. difference:', nm.abs(val1 - val2).max())
             ok2 = nm.allclose(val1, val2, rtol=0.0, atol=1e-10)
+            self.report('->', ok2)
 
             ok = ok and ok1 and ok2
 
-        self.report('invariance in qp: %s' % ok)
 
         return ok
