@@ -55,6 +55,7 @@ def make_l2_projection(target, source, ls=None, nls_options=None):
     """
     def eval_variable(ts, coors, mode, **kwargs):
         val = source.evaluate_at(coors)
+        val.shape = val.shape + (1,)
         return val
 
     make_l2_projection_data(target, eval_variable,

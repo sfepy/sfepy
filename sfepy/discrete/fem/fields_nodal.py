@@ -222,7 +222,7 @@ class H1NodalMixin(H1Mixin):
         Returns
         -------
         vals : array
-            The interpolated values with shape ``(n_coor, n_components, 1)`` or
+            The interpolated values with shape ``(n_coor, n_components)`` or
             gradients with shape ``(n_coor, n_components, dim)`` according to
             the `mode`. If `ret_status` is False, the values where the status
             is greater than one are set to ``numpy.nan``.
@@ -282,6 +282,9 @@ class H1NodalMixin(H1Mixin):
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
         output('...done',verbose=verbose)
+
+        if mode == 'val':
+            vals.shape = (coors.shape[0], source_vals.shape[1])
 
         if not ret_status:
             ii = nm.where(status > 1)[0]
