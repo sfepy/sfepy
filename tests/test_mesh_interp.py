@@ -209,53 +209,60 @@ class Test(TestCommon):
         from sfepy.terms import Term
         from sfepy.discrete.common.mappings import get_physical_qps
 
-        mesh = Mesh.from_file(data_dir + '/meshes/3d/block.mesh')
+        ok = True
+        for name in ['meshes/3d/block.mesh', 'meshes/3d/cylinder.mesh',
+                     'meshes/2d/square_quad.mesh',
+                     'meshes/2d/square_unit_tri.mesh']:
+            self.report(name)
 
-        bbox = mesh.get_bounding_box()
-        dd = bbox[1,:] - bbox[0,:]
-        data = nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / dd[0]) \
-               * nm.cos(4.0 * nm.pi * mesh.coors[:,1:2] / dd[1])
+            mesh = Mesh.from_file(op.join(data_dir, name))
 
-        variables = {
-            'u'       : ('unknown field', 'scalar_tp', 0),
-            'v'       : ('test field',    'scalar_tp', 'u'),
-        }
+            bbox = mesh.get_bounding_box()
+            dd = bbox[1,:] - bbox[0,:]
+            data = (nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / dd[0])
+                    * nm.cos(4.0 * nm.pi * mesh.coors[:,1:2] / dd[1]))
 
-        domain = FEDomain('domain', mesh)
-        omega = domain.create_region('Omega', 'all')
-        field = Field.from_args('scalar_tp', nm.float64, 1, omega,
-                                approx_order=2)
-        ff = {field.name : field}
+            variables = {
+                'u'       : ('unknown field', 'field', 0),
+                'v'       : ('test field',    'field', 'u'),
+            }
 
-        vv = Variables.from_conf(transform_variables(variables), ff)
-        u = vv['u']
-        u.set_from_mesh_vertices(data)
+            domain = FEDomain('domain', mesh)
+            omega = domain.create_region('Omega', 'all')
+            field = Field.from_args('field', nm.float64, 3, omega,
+                                    approx_order=2)
+            ff = {field.name : field}
 
-        integral = Integral('i', order=3)
-        qps = get_physical_qps(omega, integral)
-        coors = qps.values
+            vv = Variables.from_conf(transform_variables(variables), ff)
+            u = vv['u']
+            u.set_from_mesh_vertices(nm.c_[data, data, data])
 
-        term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
-        term.setup()
-        val1 = term.evaluate(mode='qp')
-        val1 = val1.ravel()
+            integral = Integral('i', order=3)
+            qps = get_physical_qps(omega, integral)
+            coors = qps.values
 
-        val2 = u.evaluate_at(coors).ravel()
+            term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
+            term.setup()
+            val1 = term.evaluate(mode='qp')
+            val1 = val1.ravel()
 
-        self.report('value: max. difference:', nm.abs(val1 - val2).max())
-        ok1 = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
+            val2 = u.evaluate_at(coors).ravel()
 
-        term = Term.new('ev_grad(u)', integral, omega, u=u)
-        term.setup()
-        val1 = term.evaluate(mode='qp')
-        val1 = val1.ravel()
+            self.report('value: max. difference:', nm.abs(val1 - val2).max())
+            ok1 = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
 
-        val2 = u.evaluate_at(coors, mode='grad').ravel()
+            term = Term.new('ev_grad(u)', integral, omega, u=u)
+            term.setup()
+            val1 = term.evaluate(mode='qp')
+            val1 = val1.ravel()
 
-        self.report('gradient: max. difference:', nm.abs(val1 - val2).max())
-        ok2 = nm.allclose(val1, val2, rtol=0.0, atol=1e-10)
+            val2 = u.evaluate_at(coors, mode='grad').ravel()
 
-        ok = ok1 and ok2
+            self.report('gradient: max. difference:', nm.abs(val1 - val2).max())
+            ok2 = nm.allclose(val1, val2, rtol=0.0, atol=1e-10)
+
+            ok = ok and ok1 and ok2
+
         self.report('invariance in qp: %s' % ok)
 
         return ok
