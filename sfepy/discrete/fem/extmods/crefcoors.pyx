@@ -57,6 +57,10 @@ cdef extern from 'refcoors.h':
 
 from libc.stdio cimport FILE, stdout
 
+cdef class CBasisContext:
+
+    cdef void *ctx
+
 @cython.boundscheck(False)
 def find_ref_coors_convex(
         np.ndarray[float64, mode='c', ndim=2] ref_coors not None,
