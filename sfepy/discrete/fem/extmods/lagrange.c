@@ -2,6 +2,28 @@
 
 #include "lagrange.h"
 
+void print_context_lagrange(void *_ctx)
+{
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+
+  output("bc:\n");
+  fmf_print(ctx->bc, stdout, 0);
+  output("mtx_i:\n");
+  fmf_print(ctx->mtx_i, stdout, 0);
+  output("base1d:\n");
+  fmf_print(ctx->base1d, stdout, 0);
+  output("ref_coors:\n");
+  fmf_print(ctx->ref_coors, stdout, 0);
+
+  output("n_col: %d\n", ctx->n_col);
+  output("eps: %.4e\n", ctx->eps);
+  output("check_errors: %d\n", ctx->check_errors);
+  output("i_max: %d\n", ctx->i_max);
+  output("newton_eps: %.4e\n", ctx->newton_eps);
+  output("vmin: %.4e\n", ctx->vmin);
+  output("vmax: %.4e\n", ctx->vmax);
+}
+
 /*
   Get barycentric (area in 2D, volume in 3D) coordinates of points.
 

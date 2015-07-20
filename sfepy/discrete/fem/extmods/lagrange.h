@@ -29,6 +29,8 @@ typedef struct LagrangeContext {
   float64 vmax;
 } LagrangeContext;
 
+void print_context_lagrange(void *_ctx);
+
 int32 get_barycentric_coors(FMField *bc, FMField *coors, void *_ctx);
 
 int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
