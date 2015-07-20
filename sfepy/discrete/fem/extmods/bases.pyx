@@ -33,6 +33,7 @@ cdef extern from 'lagrange.h':
         FMField base1d[1]
         FMField ref_coors[1]
         int32 *nodes
+        int32 n_nod
         int32 n_col
         int32 tdim
         float64 eps
@@ -110,6 +111,7 @@ cdef class CLagrangeContext:
 
         if nodes is not None:
             ctx.nodes = &nodes[0, 0]
+            ctx.n_nod = nodes.shape[0]
             ctx.n_col = nodes.shape[1]
 
         ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]

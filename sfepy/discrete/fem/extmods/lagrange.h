@@ -24,6 +24,7 @@ typedef struct LagrangeContext {
   FMField base1d[1];
   FMField ref_coors[1];
   int32 *nodes;
+  int32 n_nod;
   int32 n_col;
   int32 tdim;
   float64 eps;

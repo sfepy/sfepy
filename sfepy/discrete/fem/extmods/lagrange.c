@@ -6,6 +6,8 @@ void print_context_lagrange(void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
 
+  int32 ir, ic;
+
   output("bc:\n");
   fmf_print(ctx->bc, stdout, 0);
   output("mtx_i:\n");
@@ -15,7 +17,17 @@ void print_context_lagrange(void *_ctx)
   output("ref_coors:\n");
   fmf_print(ctx->ref_coors, stdout, 0);
 
+  output("n_nod: %d\n", ctx->n_nod);
   output("n_col: %d\n", ctx->n_col);
+  output("nodes:\n");
+  for (ir = 0; ir < ctx->n_nod; ir ++) {
+    for (ic = 0; ic < ctx->n_col; ic ++) {
+      output(" %d", ctx->nodes[ctx->n_col*ir+ic]);
+    }
+    output("\n");
+  }
+
+  output("tdim: %d\n", ctx->tdim);
   output("eps: %.4e\n", ctx->eps);
   output("check_errors: %d\n", ctx->check_errors);
   output("i_max: %d\n", ctx->i_max);
