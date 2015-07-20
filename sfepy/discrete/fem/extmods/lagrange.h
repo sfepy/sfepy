@@ -15,6 +15,10 @@
 #include "fmfield.h"
 
 typedef struct LagrangeContext {
+  int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
+                       FMField *point, FMField *e_coors,
+                       void *_ctx);
+
   FMField bc[1];
   FMField mtx_i[1];
   FMField base1d[1];
