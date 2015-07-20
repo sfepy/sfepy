@@ -100,6 +100,63 @@ int32 get_barycentric_coors(FMField *bc, FMField *coors, void *_ctx)
   return(ret);
 }
 
+#undef __FUNC__
+#define __FUNC__ "get_xi_dist"
+// Returns: ok = 1: success, ok = 0: failure (only for tensor product cells).
+int32 get_xi_dist(float64 *pdist, FMField *xi,
+                  FMField *point, FMField *e_coors,
+                  void *_ctx)
+{
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  FMField *bc = ctx->bc;
+  int32 n_v = e_coors->nRow;
+  int32 dim = e_coors->nCol;
+  int32 tdim = ctx->tdim;
+  float64 vmin = ctx->vmin;
+  float64 vmax = ctx->vmax;
+
+  int32 ii, ok;
+  float64 dist = 0.0, val;
+  float64 buf4[4];
+  float64 buf8[8];
+
+  if (n_v == (dim + 1)) {
+    fmf_pretend_nc(bc, 1, 1, 1, tdim + 1, buf4);
+    get_xi_simplex(xi, point, e_coors, _ctx);
+
+    // dist == 0 for 0 <= bc <= 1.
+    for (ii = 0; ii < n_v; ii++) {
+      val = Min(Max(bc->val[ii] - 1.0, 0.0), 100.0);
+      dist += val * val;
+      val = Min(Max(0.0 - bc->val[ii], 0.0), 100.0);
+      dist += val * val;
+    }
+    ok = 1;
+
+  } else {
+    fmf_pretend_nc(ctx->base1d, 1, 1, 1, n_v, buf8);
+
+    ok = get_xi_tensor(xi, point, e_coors, _ctx);
+
+    // dist == 0 for vmin <= xi <= vmax and ok == 0.
+    if (ok == 0) {
+      ok = 1;
+      for (ii = 0; ii < dim; ii++) {
+        val = Min(Max(xi->val[ii] - vmax, 0.0), 100.0);
+        dist += val * val;
+        val = Min(Max(vmin - xi->val[ii], 0.0), 100.0);
+        dist += val * val;
+      }
+    } else {
+      ok = 0;
+      dist = 1e10;
+    }
+  }
+  *pdist = dist;
+
+  return(ok);
+}
+
 /*
   Get reference simplex coordinates `xi` of `dest_point` given spatial
   element coordinates `e_coors` and coordinates of reference simplex
