@@ -1,5 +1,4 @@
 #include "geomtrans.h"
-#include "lagrange.h"
 #include "refcoors.h"
 
 #undef __FUNC__
@@ -122,61 +121,6 @@ void _get_tri_coors(float64 *buf9, uint32 *loc_indices, uint32 off,
 }
 
 #undef __FUNC__
-#define __FUNC__ "_get_xi_dist"
-// Returns: ok = 1: success, ok = 0: failure (only for tensor product cells).
-int32 _get_xi_dist(float64 *pdist, FMField *xi,
-                   int32 n_v, int32 dim, int32 tdim,
-                   FMField *point, FMField *e_coors,
-                   void *_ctx)
-{
-  LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
-  float64 vmin = ctx->vmin;
-  float64 vmax = ctx->vmax;
-
-  int32 ii, ok;
-  float64 dist = 0.0, val;
-  float64 buf4[4];
-  float64 buf8[8];
-
-  if (n_v == (dim + 1)) {
-    fmf_pretend_nc(bc, 1, 1, 1, tdim + 1, buf4);
-    get_xi_simplex(xi, point, e_coors, _ctx);
-
-    // dist == 0 for 0 <= bc <= 1.
-    for (ii = 0; ii < n_v; ii++) {
-      val = Min(Max(bc->val[ii] - 1.0, 0.0), 100.0);
-      dist += val * val;
-      val = Min(Max(0.0 - bc->val[ii], 0.0), 100.0);
-      dist += val * val;
-    }
-    ok = 1;
-
-  } else {
-    fmf_pretend_nc(ctx->base1d, 1, 1, 1, n_v, buf8);
-
-    ok = get_xi_tensor(xi, point, e_coors, _ctx);
-
-    // dist == 0 for vmin <= xi <= vmax and ok == 0.
-    if (ok == 0) {
-      ok = 1;
-      for (ii = 0; ii < dim; ii++) {
-        val = Min(Max(xi->val[ii] - vmax, 0.0), 100.0);
-        dist += val * val;
-        val = Min(Max(vmin - xi->val[ii], 0.0), 100.0);
-        dist += val * val;
-      }
-    } else {
-      ok = 0;
-      dist = 1e10;
-    }
-  }
-  *pdist = dist;
-
-  return(ok);
-}
-
-#undef __FUNC__
 #define __FUNC__ "refc_find_ref_coors_convex"
 int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  int32 *cells, int32 n_cells,
@@ -188,11 +132,11 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  FMField *normals1,
                                  int32 *ics, int32 n_ics,
                                  int32 allow_extrapolation,
-                                 float64 close_limit, void *_ctx)
+                                 float64 qp_eps,
+                                 float64 close_limit,
+                                 void *_ctx)
 {
-  LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  float64 qp_eps = ctx->eps;
-
+  BasisContext *ctx = (BasisContext *) _ctx;
   int32 ip, ic, icell, icell_max = 0, ii, imin, ik, ok, ret = RET_OK;
   int32 xi_ok, hexa_reverse;
   int32 D = mesh->topology->max_dim;
@@ -284,8 +228,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
           _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc, buf_ec_max);
           /* fmf_print(e_coors, stdout, 0); */
 
-          xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                               point, e_coors, _ctx);
+          xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
           d_min = Min(dist, d_min);
           if (xi_ok && (dist < qp_eps)) {
@@ -312,8 +255,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
               _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                               buf_ec_max);
 
-              xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                                   point, e_coors, _ctx);
+              xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
               d_min = Min(dist, d_min);
               if (xi_ok && (dist < qp_eps)) {
@@ -337,8 +279,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
               _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                               buf_ec_max);
 
-              xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                                   point, e_coors, _ctx);
+              xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
               d_min = Min(dist, d_min);
               if (xi_ok && (dist < qp_eps)) {
@@ -377,8 +318,8 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
 
         _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                         buf_ec_max);
-        xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                             point, e_coors, _ctx);
+        xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
+
         d_min = Min(dist, d_min);
         if (xi_ok && (dist < qp_eps)) {
           ok = 1;
@@ -438,10 +379,11 @@ int32 refc_find_ref_coors(FMField *ref_coors,
                           int32 *candidates, int32 n_candidates,
                           int32 *offsets, int32 n_offsets,
                           int32 allow_extrapolation,
-                          float64 close_limit, void *_ctx)
+                          float64 qp_eps,
+                          float64 close_limit,
+                          void *_ctx)
 {
-  LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  float64 qp_eps = ctx->eps;
+  BasisContext *ctx = (BasisContext *) _ctx;
 
   int32 ip, ic, ii, imin, ok, xi_ok, ret = RET_OK;
   int32 D = mesh->topology->max_dim;
@@ -487,8 +429,7 @@ int32 refc_find_ref_coors(FMField *ref_coors,
 
       _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                       buf_ec_max);
-      xi_ok = _get_xi_dist(&dist, xi, cell_vertices->num, nc, D,
-                           point, e_coors, _ctx);
+      xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
       if (dist < d_min) {
         d_min = dist;

@@ -7,6 +7,12 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "mesh.h"
 
+typedef struct BasisContext {
+  int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
+                       FMField *dest_point, FMField *e_coors,
+                       void *_ctx);
+} BasisContext;
+
 int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  int32 *cells, int32 n_cells,
                                  int32 *status, int32 n_status,
@@ -17,7 +23,9 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  FMField *normals1,
                                  int32 *ics, int32 n_ics,
                                  int32 allow_extrapolation,
-                                 float64 close_limit, void *_ctx);
+                                 float64 qp_eps,
+                                 float64 close_limit,
+                                 void *_ctx);
 
 int32 refc_find_ref_coors(FMField *ref_coors,
                           int32 *cells, int32 n_cells,
@@ -27,7 +35,9 @@ int32 refc_find_ref_coors(FMField *ref_coors,
                           int32 *candidates, int32 n_candidates,
                           int32 *offsets, int32 n_offsets,
                           int32 allow_extrapolation,
-                          float64 close_limit, void *_ctx);
+                          float64 qp_eps,
+                          float64 close_limit,
+                          void *_ctx);
 
 END_C_DECLS
 
