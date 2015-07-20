@@ -103,17 +103,13 @@ def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
 
         ics = nm.asarray(ics, dtype=nm.int32)
 
-        ap = field.ap
-        ps = ap.interp.gel.interp.poly_spaces['v']
-        mtx_i = ps.get_mtx_i()
-
-        ac = nm.ascontiguousarray
+        coors = nm.ascontiguousarray(coors)
+        ctx = field.create_basis_context()
 
         tt = time.clock()
-        crc.find_ref_coors_convex(ref_coors, cells, status, ac(coors), cmesh,
+        crc.find_ref_coors_convex(ref_coors, cells, status, coors, cmesh,
                                   centroids, normals0, normals1, ics,
-                                  ps.geometry.coors, ps.nodes, mtx_i,
-                                  extrapolate, close_limit, 1e-15, 100, 1e-8)
+                                  extrapolate, 1e-15, close_limit, ctx)
         output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
 
     else:
@@ -274,18 +270,14 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
                                        extrapolate=extrapolate)
         output('potential cells: %f s' % (time.clock()-tt), verbose=verbose)
 
-        ap = field.ap
-        ps = ap.interp.gel.interp.poly_spaces['v']
-        mtx_i = ps.get_mtx_i()
-
-        ac = nm.ascontiguousarray
+        coors = nm.ascontiguousarray(coors)
+        ctx = field.create_basis_context()
 
         tt = time.clock()
 
-        crc.find_ref_coors(ref_coors, cells, status, ac(coors), cmesh,
-                           potential_cells, offsets,
-                           ps.geometry.coors, ps.nodes, mtx_i,
-                           extrapolate, close_limit, 1e-15, 100, 1e-8)
+        crc.find_ref_coors(ref_coors, cells, status, coors, cmesh,
+                           potential_cells, offsets, extrapolate,
+                           1e-15, close_limit, ctx)
         if extrapolate:
             assert_(nm.all(status < 5))
 
