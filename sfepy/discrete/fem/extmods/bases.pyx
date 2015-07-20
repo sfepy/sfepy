@@ -24,12 +24,17 @@ cdef extern from 'common.h':
 
 cdef extern from 'lagrange.h':
     ctypedef struct LagrangeContext:
-        FMField *bc
-        FMField *mtx_i
-        FMField *base1d
-        FMField *ref_coors
+        int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
+                             FMField *point, FMField *e_coors,
+                             void *_ctx)
+
+        FMField bc[1]
+        FMField mtx_i[1]
+        FMField base1d[1]
+        FMField ref_coors[1]
         int32 *nodes
         int32 n_col
+        int32 tdim
         float64 eps
         int32 check_errors
         int32 i_max
@@ -37,9 +42,17 @@ cdef extern from 'lagrange.h':
         float64 vmin
         float64 vmax
 
+    void _print_context_lagrange \
+         'print_context_lagrange'(LagrangeContext *ctx)
+
     int32 _get_barycentric_coors \
           'get_barycentric_coors'(FMField *bc, FMField *coors,
                                   LagrangeContext *ctx)
+
+    int32 _get_xi_dist \
+          'get_xi_dist'(float64 *pdist, FMField *xi,
+                        FMField *point, FMField *e_coors,
+                        void *_ctx)
 
     int32 _get_xi_simplex \
           'get_xi_simplex'(FMField *xi, FMField *dest_point, FMField *e_coors,
@@ -56,6 +69,68 @@ cdef extern from 'lagrange.h':
     int32 _eval_lagrange_tensor_product \
           'eval_lagrange_tensor_product'(FMField *out, int32 order, int32 diff,
                                          LagrangeContext *ctx)
+
+cdef class CLagrangeContext:
+
+    cdef LagrangeContext *ctx
+
+    def __cinit__(self,
+                  np.ndarray[float64, mode='c', ndim=2] bc=None,
+                  np.ndarray[float64, mode='c', ndim=2] mtx_i=None,
+                  np.ndarray[float64, mode='c', ndim=1] base1d=None,
+                  np.ndarray[float64, mode='c', ndim=2] ref_coors=None,
+                  np.ndarray[int32, mode='c', ndim=2] nodes=None,
+                  int32 tdim=0,
+                  float64 eps=1e-15,
+                  int32 check_errors=0,
+                  int32 i_max=100,
+                  float64 newton_eps=1e-8,
+                  float64 vmin=0.0,
+                  float64 vmax=1.0):
+        cdef LagrangeContext *ctx
+
+        ctx = self.ctx = <LagrangeContext *> pyalloc(sizeof(LagrangeContext))
+
+        if ctx is NULL:
+            raise MemoryError()
+
+        ctx.get_xi_dist = &_get_xi_dist
+
+        if bc is not None:
+            _f.array2fmfield2(ctx.bc, bc)
+
+        if mtx_i is not None:
+            _f.array2fmfield2(ctx.mtx_i, mtx_i)
+
+        if base1d is not None:
+            _f.array2fmfield3(ctx.base1d, base1d)
+
+        if ref_coors is not None:
+            _f.array2fmfield2(ctx.ref_coors, ref_coors)
+
+        if nodes is not None:
+            ctx.nodes = &nodes[0, 0]
+            ctx.n_col = nodes.shape[1]
+
+        ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]
+
+        ctx.eps = eps
+        ctx.check_errors = check_errors
+
+        ctx.i_max = i_max
+        ctx.newton_eps = newton_eps
+
+        ctx.vmin = vmin
+        ctx.vmax = vmax
+
+    def __dealloc__(self):
+        pyfree(self.ctx)
+
+    def __str__(self):
+        return 'CLagrangeContext'
+
+    def cprint(self):
+        _print_context_lagrange(self.ctx)
 
 @cython.boundscheck(False)
 def get_barycentric_coors(np.ndarray[float64, mode='c', ndim=2] coors not None,
