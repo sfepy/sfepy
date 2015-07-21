@@ -21,7 +21,8 @@ import sfepy
 from sfepy.base.base import output
 from sfepy.base.ioutils import edit_filename
 from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.extmods.cmesh import create_mesh_graph, graph_components
+from sfepy.discrete.common.extmods.cmesh import (create_mesh_graph,
+                                                 graph_components)
 
 def _get_facets(vertices, offsets, ii, n_fp):
     facets = []

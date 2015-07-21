@@ -101,7 +101,7 @@ class Test(TestCommon):
     def test_cmesh_counts(self):
         from sfepy.discrete.fem import Mesh
         from sfepy.discrete.fem.geometry_element import create_geometry_elements
-        from sfepy.discrete.fem.extmods.cmesh import CMesh, get_cmem_usage
+        from sfepy.discrete.common.extmods.cmesh import CMesh, get_cmem_usage
 
         gels = create_geometry_elements()
 

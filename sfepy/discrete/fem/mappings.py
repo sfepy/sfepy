@@ -5,8 +5,8 @@ import numpy as nm
 
 from sfepy.base.base import get_default, output
 from sfepy.discrete.common.mappings import Mapping
+from sfepy.discrete.common.extmods.mappings import CMapping
 from sfepy.discrete.fem.poly_spaces import PolySpace
-from sfepy.discrete.fem.extmods.mappings import CMapping
 
 class FEMapping(Mapping):
     """

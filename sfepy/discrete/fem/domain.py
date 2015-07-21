@@ -108,7 +108,7 @@ class FEDomain(Domain):
         """
         Ensure element vertices ordering giving positive cell volumes.
         """
-        from extmods.cmesh import orient_elements
+        from sfepy.discrete.common.extmods.cmesh import orient_elements
 
         cmesh = self.cmesh
         for ii, gel in self.geom_els.iteritems():

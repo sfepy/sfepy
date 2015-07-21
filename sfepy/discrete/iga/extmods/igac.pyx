@@ -4,17 +4,17 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from sfepy.discrete.fem.extmods.types cimport int32, uint32, float64
+from sfepy.discrete.common.extmods.types cimport int32, uint32, float64
 
-from sfepy.discrete.fem.extmods._fmfield cimport (FMField,
-                                                  array2fmfield4,
-                                                  array2fmfield2,
-                                                  array2fmfield1,
-                                                  array2pint2,
-                                                  array2pint1,
-                                                  array2puint1,
-                                                  fmf_alloc,
-                                                  fmf_free)
+from sfepy.discrete.common.extmods._fmfield cimport (FMField,
+                                                     array2fmfield4,
+                                                     array2fmfield2,
+                                                     array2fmfield1,
+                                                     array2pint2,
+                                                     array2pint1,
+                                                     array2puint1,
+                                                     fmf_alloc,
+                                                     fmf_free)
 
 cdef extern from 'nurbs.h':
     cdef void _ravel_multi_index \
