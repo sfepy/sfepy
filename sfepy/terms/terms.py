@@ -1280,7 +1280,7 @@ class Term(Struct):
         return out
 
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
-        import sfepy.discrete.fem.extmods.assemble as asm
+        import sfepy.discrete.common.extmods.assemble as asm
 
         vvar = self.get_virtual_variable()
         dc_type = self.get_dof_conn_type()

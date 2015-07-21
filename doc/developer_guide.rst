@@ -946,6 +946,12 @@ Common lower-level code and parent classes for FEM and IGA.
 
    src/sfepy/discrete/common/dof_info
    src/sfepy/discrete/common/domain
+   src/sfepy/discrete/common/extmods/_fmfield
+   src/sfepy/discrete/common/extmods/_geommech
+   src/sfepy/discrete/common/extmods/assemble
+   src/sfepy/discrete/common/extmods/cmesh
+   src/sfepy/discrete/common/extmods/crefcoors
+   src/sfepy/discrete/common/extmods/mappings
    src/sfepy/discrete/common/fields
    src/sfepy/discrete/common/mappings
    src/sfepy/discrete/common/region
@@ -957,14 +963,8 @@ sfepy.discrete.fem sub-package
    :maxdepth: 2
 
    src/sfepy/discrete/fem/domain
-   src/sfepy/discrete/fem/extmods/_fmfield
-   src/sfepy/discrete/fem/extmods/_geommech
-   src/sfepy/discrete/fem/extmods/assemble
    src/sfepy/discrete/fem/extmods/bases
-   src/sfepy/discrete/fem/extmods/cmesh
-   src/sfepy/discrete/fem/extmods/crefcoors
    src/sfepy/discrete/fem/extmods/lobatto_bases
-   src/sfepy/discrete/fem/extmods/mappings
    src/sfepy/discrete/fem/facets
    src/sfepy/discrete/fem/fe_surface
    src/sfepy/discrete/fem/fea

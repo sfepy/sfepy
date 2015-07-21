@@ -6,7 +6,7 @@ import numpy as nm
 
 from sfepy.base.base import assert_, output, get_default_attr
 from sfepy.discrete.fem.geometry_element import create_geometry_elements
-import sfepy.discrete.fem.extmods.crefcoors as crc
+import sfepy.discrete.common.extmods.crefcoors as crc
 
 def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
                          verbose=False):

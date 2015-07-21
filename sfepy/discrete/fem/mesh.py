@@ -361,7 +361,7 @@ class Mesh(Struct):
         self.descs = descs
         self.nodal_bcs = get_default(nodal_bcs, {})
 
-        from sfepy.discrete.fem.extmods.cmesh import CMesh
+        from sfepy.discrete.common.extmods.cmesh import CMesh
         self.cmesh = CMesh.from_data(coors, ac(ngroups),
                                      [ac(conn, dtype=nm.int32)
                                       for conn in conns],
@@ -476,7 +476,7 @@ class Mesh(Struct):
         graph : csr_matrix
             The mesh connectivity graph as a SciPy CSR matrix.
         """
-        from extmods.cmesh import create_mesh_graph
+        from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 
         shape = (self.n_nod, self.n_nod)
         output('graph shape:', shape, verbose=verbose)
