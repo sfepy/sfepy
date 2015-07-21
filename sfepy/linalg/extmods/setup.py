@@ -18,7 +18,7 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    common_path = '../../discrete/fem/extmods'
+    common_path = '../../discrete/common/extmods'
 
     fem_src = ['common_python.c']
     fem_src = [op.join(common_path, ii) for ii in fem_src]

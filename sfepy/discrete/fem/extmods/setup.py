@@ -17,45 +17,11 @@ def configuration(parent_package='', top_path=None):
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
-    if '-DDEBUG_MESH' in site_config.debug_flags():
-        defines.append(('DEBUG_MESH', None))
+
+    common_path = '../../common/extmods'
 
     common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
-
-    config.add_library('sfepy_common',
-                       sources=common_src,
-                       extra_compiler_args=site_config.compile_flags(),
-                       extra_link_args=site_config.link_flags(),
-                       include_dirs=[auto_dir, site_config.python_include()],
-                       macros=defines)
-
-    src = ['_fmfield.pyx']
-    config.add_extension('_fmfield',
-                         sources=src,
-                         libraries=['sfepy_common'],
-                         depends=common_src,
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
-    src = ['mappings.pyx']
-    config.add_extension('mappings',
-                         sources=src,
-                         libraries=['sfepy_common'],
-                         depends=common_src,
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
-    src = ['assemble.pyx']
-    config.add_extension('assemble',
-                         sources=src,
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
+    common_src = [op.join(common_path, ii) for ii in common_src]
 
     src = ['bases.pyx', 'lagrange.c']
     config.add_extension('bases',
@@ -64,26 +30,7 @@ def configuration(parent_package='', top_path=None):
                          depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
-    src = ['cmesh.pyx', 'geomtrans.c', 'mesh.c', 'meshutils.c', 'sort.c',
-           'common_python.c']
-    config.add_extension('cmesh',
-                         sources=src,
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
-    src = ['crefcoors.pyx', 'refcoors.c', 'geomtrans.c', 'lagrange.c', 'mesh.c']
-    config.add_extension('crefcoors',
-                         sources=src,
-                         libraries=['sfepy_common'],
-                         depends=common_src,
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
+                         include_dirs=[auto_dir, common_path],
                          define_macros=defines)
 
     src = ['lobatto_bases.pyx', 'lobatto.c', 'lobatto1d.c']
@@ -93,23 +40,8 @@ def configuration(parent_package='', top_path=None):
                          depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
+                         include_dirs=[auto_dir, common_path],
                          define_macros=defines)
-
-    src = ['_geommech.pyx']
-    config.add_extension('_geommech',
-                         sources=src,
-                         libraries=['sfepy_common'],
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
-    # Include *.pxd files in distribution tarball and install them along
-    # with the extension modules.
-    pxd_files = ['cmesh.pxd', 'mappings.pxd', 'types.pxd',
-                 '_fmfield.pxd', '_geommech.pxd']
-    config.add_data_files(('', pxd_files))
 
     return config
 
