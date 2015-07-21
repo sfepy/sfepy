@@ -23,32 +23,116 @@ cdef extern from 'common.h':
     double Min_f 'Min'(double a, double b)
 
 cdef extern from 'lagrange.h':
+    ctypedef struct LagrangeContext:
+        int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
+                             FMField *point, FMField *e_coors,
+                             void *_ctx)
+
+        FMField bc[1]
+        FMField mtx_i[1]
+        FMField base1d[1]
+        FMField ref_coors[1]
+        int32 *nodes
+        int32 n_nod
+        int32 n_col
+        int32 tdim
+        float64 eps
+        int32 check_errors
+        int32 i_max
+        float64 newton_eps
+        float64 vmin
+        float64 vmax
+
+    void _print_context_lagrange \
+         'print_context_lagrange'(LagrangeContext *ctx)
+
     int32 _get_barycentric_coors \
-          'get_barycentric_coors'(FMField *bc, FMField *coors, FMField *mtx_i,
-                                  float64 eps, int32 check_errors)
+          'get_barycentric_coors'(FMField *bc, FMField *coors,
+                                  LagrangeContext *ctx)
+
+    int32 _get_xi_dist \
+          'get_xi_dist'(float64 *pdist, FMField *xi,
+                        FMField *point, FMField *e_coors,
+                        void *_ctx)
 
     int32 _get_xi_simplex \
-          'get_xi_simplex'(FMField *xi, FMField *bc, FMField *dest_point,
-                           FMField *ref_coors, FMField *e_coors)
+          'get_xi_simplex'(FMField *xi, FMField *dest_point, FMField *e_coors,
+                           LagrangeContext *ctx)
 
     int32 _get_xi_tensor \
-          'get_xi_tensor'(FMField *xi,
-                          FMField *dest_point, FMField *e_coors,
-                          FMField *mtx_i,
-                          FMField *base1d, int32 *nodes, int32 n_col,
-                          float64 vmin, float64 vmax,
-                          int32 i_max, float64 newton_eps)
+          'get_xi_tensor'(FMField *xi, FMField *dest_point, FMField *e_coors,
+                          LagrangeContext *ctx)
 
     int32 _eval_lagrange_simplex \
-          'eval_lagrange_simplex'(FMField *out, FMField *bc, FMField *mtx_i,
-                                  int32 *nodes, int32 n_col,
-                                  int32 order, int32 diff)
+          'eval_lagrange_simplex'(FMField *out, int32 order, int32 diff,
+                                  LagrangeContext *ctx)
 
     int32 _eval_lagrange_tensor_product \
-          'eval_lagrange_tensor_product'(FMField *out, FMField *bc,
-                                         FMField *mtx_i, FMField *base1d,
-                                         int32 *nodes, int32 n_col,
-                                         int32 order, int32 diff)
+          'eval_lagrange_tensor_product'(FMField *out, int32 order, int32 diff,
+                                         LagrangeContext *ctx)
+
+cdef class CLagrangeContext:
+
+    cdef LagrangeContext *ctx
+
+    def __cinit__(self,
+                  np.ndarray[float64, mode='c', ndim=2] bc=None,
+                  np.ndarray[float64, mode='c', ndim=2] mtx_i=None,
+                  np.ndarray[float64, mode='c', ndim=1] base1d=None,
+                  np.ndarray[float64, mode='c', ndim=2] ref_coors=None,
+                  np.ndarray[int32, mode='c', ndim=2] nodes=None,
+                  int32 tdim=0,
+                  float64 eps=1e-15,
+                  int32 check_errors=0,
+                  int32 i_max=100,
+                  float64 newton_eps=1e-8,
+                  float64 vmin=0.0,
+                  float64 vmax=1.0):
+        cdef LagrangeContext *ctx
+
+        ctx = self.ctx = <LagrangeContext *> pyalloc(sizeof(LagrangeContext))
+
+        if ctx is NULL:
+            raise MemoryError()
+
+        ctx.get_xi_dist = &_get_xi_dist
+
+        if bc is not None:
+            _f.array2fmfield2(ctx.bc, bc)
+
+        if mtx_i is not None:
+            _f.array2fmfield2(ctx.mtx_i, mtx_i)
+
+        if base1d is not None:
+            _f.array2fmfield3(ctx.base1d, base1d)
+
+        if ref_coors is not None:
+            _f.array2fmfield2(ctx.ref_coors, ref_coors)
+
+        if nodes is not None:
+            ctx.nodes = &nodes[0, 0]
+            ctx.n_nod = nodes.shape[0]
+            ctx.n_col = nodes.shape[1]
+
+        ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]
+
+        ctx.eps = eps
+        ctx.check_errors = check_errors
+
+        ctx.i_max = i_max
+        ctx.newton_eps = newton_eps
+
+        ctx.vmin = vmin
+        ctx.vmax = vmax
+
+    def __dealloc__(self):
+        pyfree(self.ctx)
+
+    def __str__(self):
+        return 'CLagrangeContext'
+
+    def cprint(self):
+        _print_context_lagrange(self.ctx)
 
 @cython.boundscheck(False)
 def get_barycentric_coors(np.ndarray[float64, mode='c', ndim=2] coors not None,
@@ -78,14 +162,18 @@ def get_barycentric_coors(np.ndarray[float64, mode='c', ndim=2] coors not None,
     """
     cdef int n_coor = coors.shape[0]
     cdef int n_v = mtx_i.shape[0]
-    cdef FMField _bc[1], _coors[1], _mtx_i[1]
+    cdef LagrangeContext ctx[1]
+    cdef FMField _coors[1]
     cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, n_v),
                                                    dtype=np.float64)
 
-    _f.array2fmfield2(_bc, bc)
+    ctx.eps = eps
+    ctx.check_errors = check_errors
+    _f.array2fmfield2(ctx.bc, bc)
+    _f.array2fmfield2(ctx.mtx_i, mtx_i)
     _f.array2fmfield2(_coors, coors)
-    _f.array2fmfield2(_mtx_i, mtx_i)
-    _get_barycentric_coors(_bc, _coors, _mtx_i, eps, check_errors)
+
+    _get_barycentric_coors(ctx.bc, _coors, ctx)
     return bc
 
 @cython.boundscheck(False)
@@ -125,8 +213,8 @@ def eval_lagrange_simplex(np.ndarray[float64, mode='c', ndim=2] coors not None,
     cdef int n_coor = coors.shape[0]
     cdef int dim = mtx_i.shape[0] - 1
     cdef int n_nod = nodes.shape[0]
-    cdef FMField _out[1], _bc[1], _coors[1], _mtx_i[1]
-    cdef int32 *_nodes = &nodes[0, 0]
+    cdef LagrangeContext ctx[1]
+    cdef FMField _out[1], _coors[1]
     cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, dim + 1),
                                                    dtype=np.float64)
 
@@ -141,14 +229,17 @@ def eval_lagrange_simplex(np.ndarray[float64, mode='c', ndim=2] coors not None,
     cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
                                                     dtype=np.float64)
 
+    ctx.eps = eps
+    ctx.check_errors = check_errors
+    ctx.nodes = &nodes[0, 0]
+    ctx.n_col = nodes.shape[1]
+    _f.array2fmfield2(ctx.bc, bc)
+    _f.array2fmfield2(ctx.mtx_i, mtx_i)
     _f.array2fmfield3(_out, out)
-    _f.array2fmfield2(_bc, bc)
     _f.array2fmfield2(_coors, coors)
-    _f.array2fmfield2(_mtx_i, mtx_i)
 
-    _get_barycentric_coors(_bc, _coors, _mtx_i, eps, check_errors)
-    _eval_lagrange_simplex(_out, _bc, _mtx_i, _nodes, nodes.shape[1],
-                           order, diff)
+    _get_barycentric_coors(ctx.bc, _coors, ctx)
+    _eval_lagrange_simplex(_out, order, diff, ctx)
 
     return out
 
@@ -193,7 +284,8 @@ def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
     cdef int n_coor = coors.shape[0]
     cdef int n_nod = nodes.shape[0]
     cdef int dim = coors.shape[1]
-    cdef FMField _out[1], _bc[1], _coors[1], _mtx_i[1], _base1d[1]
+    cdef LagrangeContext ctx[1]
+    cdef FMField _out[1], _coors[1]
     cdef int32 *_nodes = &nodes[0, 0]
     cdef np.ndarray[float64, ndim=3] bc = np.zeros((dim, n_coor, 2),
                                                    dtype=np.float64)
@@ -208,20 +300,23 @@ def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
     cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
                                                     dtype=np.float64)
 
+    ctx.eps = eps
+    ctx.check_errors = check_errors
+    ctx.nodes = &nodes[0, 0]
+    ctx.n_col = nodes.shape[1]
+    _f.array2fmfield2(ctx.mtx_i, mtx_i)
+    _f.array2fmfield3(ctx.base1d, base1d)
+    _f.fmf_pretend_nc(ctx.bc, dim, 1, n_coor, 2, &bc[0, 0, 0])
     _f.array2fmfield3(_out, out)
-    _f.fmf_pretend_nc(_bc, dim, 1, n_coor, 2, &bc[0, 0, 0])
-    _f.array2fmfield2(_mtx_i, mtx_i)
-    _f.array2fmfield3(_base1d, base1d)
 
     for ii in range(0, dim):
-        _f.FMF_SetCell(_bc, ii)
-        # slice [:,ii:ii+1]
+        _f.FMF_SetCell(ctx.bc, ii)
+         # slice [:,ii:ii+1]
         _f.fmf_pretend_nc(_coors, 1, 1, coors.shape[0], coors.shape[1],
                           &coors[0, ii])
-        _get_barycentric_coors(_bc, _coors, _mtx_i, eps, check_errors)
+        _get_barycentric_coors(ctx.bc, _coors, ctx)
 
-    _eval_lagrange_tensor_product(_out, _bc, _mtx_i, _base1d,
-                                  _nodes, nodes.shape[1], order, diff)
+    _eval_lagrange_tensor_product(_out, order, diff, ctx)
 
     return out
 
@@ -255,18 +350,18 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
     Interpolation uses field approximation connectivity.
     """
     cdef int32 ip, ib, ic, iel, n_v, n_ep
-    cdef int32 n_cp = 0, n_gcol = 0
-    cdef int32 n_col, ii, ik
+    cdef int32 n_cp = 0
+    cdef int32 ii, ik
     cdef int32 n_point = ref_coors.shape[0]
     cdef int32 dim = ref_coors.shape[1]
     cdef int32 dpn = out.shape[1]
     cdef int32 bdim = out.shape[2]
-    cdef int32 *_nodes, *_cells = &cells[0]
+    cdef int32 *_cells = &cells[0]
     cdef int32 *_status = &status[0]
-    cdef int32 *_conn, *_mesh_conn, *_geo_nodes
+    cdef int32 *_conn, *_mesh_conn
     cdef float64 vmin, vmax, aux
-    cdef FMField _eref_coors[1], src[1], cell_coors[1]
-    cdef FMField _ref_coors[1], _out[1], bc[1], base1d[1], _mtx_i[1], bf[1]
+    cdef LagrangeContext ctx[1], geo_ctx[1]
+    cdef FMField _ref_coors[1], _out[1], bf[1], src[1], cell_coors[1]
     cdef FMField _source_vals[1], _mesh_coors[1]
     cdef FMField mtxMR[1], mtxMRI[1], bfg[1], gbfg[1], gbase1d[1]
     cdef float64 *buf, *buf_b1d_max, *buf_bf_max, *buf_src_max, *buf_bfg
@@ -289,30 +384,36 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
     _f.fmf_pretend_nc(_out, n_point, 1, dpn, bdim, &out[0, 0, 0])
     _f.fmf_pretend_nc(_ref_coors, n_point, 1, 1, dim, &ref_coors[0, 0])
 
-    _nodes = &nodes[0, 0]
     _conn = &conn[0, 0]
 
-    _f.array2fmfield2(_mtx_i, mtx_i)
+    ctx.nodes = &nodes[0, 0]
+    ctx.n_col = nodes.shape[1]
+    ctx.eps = qp_eps
+    ctx.check_errors = 0
+    _f.array2fmfield2(ctx.mtx_i, mtx_i)
+    _f.array2fmfield2(ctx.ref_coors, eref_coors)
 
-    _f.array2fmfield2(_eref_coors, eref_coors)
-    n_v = _eref_coors.nRow
-    vmin = _eref_coors.val[0]
-    vmax = _eref_coors.val[dim]
-
-    n_col = nodes.shape[1]
+    n_v = ctx.ref_coors.nRow
+    vmin = ctx.ref_coors.val[0]
+    vmax = ctx.ref_coors.val[dim]
 
     if n_v == (dim + 1):
-        _f.fmf_pretend_nc(bc, 1, 1, 1, dim + 1, buf6)
+        _f.fmf_pretend_nc(ctx.bc, 1, 1, 1, dim + 1, buf6)
 
     else:
-        _f.fmf_pretend_nc(bc, dim, 1, 1, 2, buf6)
-        _f.fmf_pretend_nc(base1d, 1, 1, 1, n_ep, buf_b1d_max)
+        _f.fmf_pretend_nc(ctx.bc, dim, 1, 1, 2, buf6)
+        _f.fmf_pretend_nc(ctx.base1d, 1, 1, 1, n_ep, buf_b1d_max)
 
     _f.fmf_pretend_nc(bf, 1, 1, bdim, n_ep, buf_bf_max)
 
     if diff:
-        _geo_nodes = &geo_nodes[0, 0]
-        n_gcol = geo_nodes.shape[1]
+        geo_ctx.nodes = &geo_nodes[0, 0]
+        geo_ctx.n_col = geo_nodes.shape[1]
+        geo_ctx.eps = qp_eps
+        geo_ctx.check_errors = 0
+        _f.array2fmfield2(geo_ctx.mtx_i, mtx_i)
+        _f.array2fmfield2(geo_ctx.ref_coors, eref_coors)
+
         _mesh_conn = &mesh_conn[0, 0]
         n_cp = mesh_conn.shape[1]
 
@@ -323,12 +424,18 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
         _f.fmf_pretend_nc(gbfg, 1, 1, dim, n_cp, buf24_2)
         _f.fmf_pretend_nc(bfg, 1, 1, dim, n_ep, buf_bfg)
 
-        if n_v != (dim + 1):
-            # Shares buffer with base1d!
-            _f.fmf_pretend_nc(gbase1d, 1, 1, 1, n_cp, buf_b1d_max)
+        if n_v == (dim + 1):
+            # Shares buffer with ctx!
+            _f.fmf_pretend_nc(geo_ctx.bc, 1, 1, 1, dim + 1, buf6)
+
+        else:
+            # Shares buffer with ctx!
+            _f.fmf_pretend_nc(geo_ctx.bc, dim, 1, 1, 2, buf6)
+            # Shares buffer with ctx!
+            _f.fmf_pretend_nc(geo_ctx.base1d, 1, 1, 1, n_cp, buf_b1d_max)
 
     else:
-        _geo_nodes = _mesh_conn = NULL
+        _mesh_conn = NULL
 
     _f.fmf_pretend_nc(src, 1, 1, dpn, n_ep, buf_src_max)
 
@@ -341,18 +448,16 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
             iel = _cells[ip]
 
             if n_v == (dim + 1):
-                _get_barycentric_coors(bc, _ref_coors, _mtx_i, qp_eps, 0)
-                _eval_lagrange_simplex(bf, bc, _mtx_i,
-                                       _nodes, n_col, order, diff)
+                _get_barycentric_coors(ctx.bc, _ref_coors, ctx)
+                _eval_lagrange_simplex(bf, order, diff, ctx)
 
             else:
                 for ii in range(0, dim):
-                    _f.FMF_SetCell(bc, ii)
+                    _f.FMF_SetCell(ctx.bc, ii)
                     # slice [:,ii:ii+1]
-                    bc.val[1] = (_ref_coors.val[ii] - vmin) / (vmax - vmin)
-                    bc.val[0] = 1.0 - bc.val[1]
-                _eval_lagrange_tensor_product(bf, bc, _mtx_i, base1d,
-                                              _nodes, n_col, order, diff)
+                    ctx.bc.val[1] = (_ref_coors.val[ii] - vmin) / (vmax - vmin)
+                    ctx.bc.val[0] = 1.0 - ctx.bc.val[1]
+                _eval_lagrange_tensor_product(bf, order, diff, ctx)
 
             _f.ele_extractNodalValuesDBD(src, _source_vals,
                                          _conn + n_ep * iel)
@@ -367,12 +472,10 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
 
             else:
                 if n_v == (dim + 1):
-                    _eval_lagrange_simplex(gbfg, bc, _mtx_i,
-                                           _geo_nodes, n_gcol, 1, diff)
+                    _eval_lagrange_simplex(gbfg, 1, diff, geo_ctx)
 
                 else:
-                    _eval_lagrange_tensor_product(gbfg, bc, _mtx_i, gbase1d,
-                                                  _geo_nodes, n_gcol, 1, diff)
+                    _eval_lagrange_tensor_product(gbfg, 1, diff, geo_ctx)
 
                 _f.ele_extractNodalValuesNBN(cell_coors, _mesh_coors,
                                              _mesh_conn + n_cp * iel)

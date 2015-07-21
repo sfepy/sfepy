@@ -1,5 +1,4 @@
 #include "geomtrans.h"
-#include "lagrange.h"
 #include "refcoors.h"
 
 #undef __FUNC__
@@ -122,60 +121,6 @@ void _get_tri_coors(float64 *buf9, uint32 *loc_indices, uint32 off,
 }
 
 #undef __FUNC__
-#define __FUNC__ "_get_xi_dist"
-// Returns: ok = 1: success, ok = 0: failure (only for tensor product cells).
-int32 _get_xi_dist(float64 *pdist, FMField *xi,
-                   int32 n_v, int32 dim, int32 tdim,
-                   FMField *point, FMField *e_coors,
-                   FMField *eref_coors, FMField *bc,
-                   int32 *nodes, int32 n_nodes_col,
-                   FMField *mtx_i,
-                   float64 vmin, float64 vmax,
-                   int32 i_max, float64 newton_eps)
-{
-  int32 ii, ok;
-  float64 dist = 0.0, val;
-  float64 buf4[4];
-  float64 buf8[8];
-
-  if (n_v == (dim + 1)) {
-    fmf_pretend_nc(bc, 1, 1, 1, tdim + 1, buf4);
-    get_xi_simplex(xi, bc, point, eref_coors, e_coors);
-
-    // dist == 0 for 0 <= bc <= 1.
-    for (ii = 0; ii < n_v; ii++) {
-      val = Min(Max(bc->val[ii] - 1.0, 0.0), 100.0);
-      dist += val * val;
-      val = Min(Max(0.0 - bc->val[ii], 0.0), 100.0);
-      dist += val * val;
-    }
-    ok = 1;
-
-  } else {
-    fmf_pretend_nc(bc, 1, 1, 1, n_v, buf8);
-    ok = get_xi_tensor(xi, point, e_coors,
-                       mtx_i, bc, nodes, n_nodes_col,
-                       vmin, vmax, i_max, newton_eps);
-    // dist == 0 for vmin <= xi <= vmax and ok == 0.
-    if (ok == 0) {
-      ok = 1;
-      for (ii = 0; ii < dim; ii++) {
-        val = Min(Max(xi->val[ii] - vmax, 0.0), 100.0);
-        dist += val * val;
-        val = Min(Max(vmin - xi->val[ii], 0.0), 100.0);
-        dist += val * val;
-      }
-    } else {
-      ok = 0;
-      dist = 1e10;
-    }
-  }
-  *pdist = dist;
-
-  return(ok);
-}
-
-#undef __FUNC__
 #define __FUNC__ "refc_find_ref_coors_convex"
 int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  int32 *cells, int32 n_cells,
@@ -186,13 +131,12 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  FMField *normals0,
                                  FMField *normals1,
                                  int32 *ics, int32 n_ics,
-                                 FMField *eref_coors,
-                                 int32 *nodes, int32 n_nodes, int32 n_nodes_col,
-                                 FMField *mtx_i,
                                  int32 allow_extrapolation,
-                                 float64 close_limit, float64 qp_eps,
-                                 int32 i_max, float64 newton_eps)
+                                 float64 qp_eps,
+                                 float64 close_limit,
+                                 void *_ctx)
 {
+  BasisContext *ctx = (BasisContext *) _ctx;
   int32 ip, ic, icell, icell_max = 0, ii, imin, ik, ok, ret = RET_OK;
   int32 xi_ok, hexa_reverse;
   int32 D = mesh->topology->max_dim;
@@ -203,13 +147,12 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
   uint32 cell, cell0, cell00, facet;
   uint32 *noffs, *foffs, aux[2];
   uint32 *cell_types = mesh->topology->cell_types;
-  float64 vmin, vmax, d_min, tmin, tt, dist;
+  float64 d_min, tmin, tt, dist;
   float64 *mesh_coors = mesh->geometry->coors;
   float64 buf3[3];
   float64 buf9[9];
   float64 buf_ec_max[8 * 3]; // Max. n_ep * dim.
   FMField point[1], centroid[1], _normals0[1], _normals1[1], e_coors[1], xi[1];
-  FMField bc[1];
   Indices cell_vertices[1];
   MeshEntity cell_ent[1];
   MeshConnectivity *cD0 = 0; // D -> 0
@@ -240,9 +183,6 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
 
   fmf_pretend_nc(xi, 1, 1, 1, nc, buf3);
   fmf_fillC(xi, 0.0);
-
-  vmin = eref_coors->val[0];
-  vmax = eref_coors->val[nc];
 
   for (ip = 0; ip < coors->nRow; ip++) {
     ic = ics[ip];
@@ -288,10 +228,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
           _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc, buf_ec_max);
           /* fmf_print(e_coors, stdout, 0); */
 
-          xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                               point, e_coors, eref_coors, bc,
-                               nodes, n_nodes_col, mtx_i, vmin, vmax,
-                               i_max, newton_eps);
+          xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
           d_min = Min(dist, d_min);
           if (xi_ok && (dist < qp_eps)) {
@@ -318,10 +255,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
               _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                               buf_ec_max);
 
-              xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                                   point, e_coors, eref_coors, bc,
-                                   nodes, n_nodes_col, mtx_i, vmin, vmax,
-                                   i_max, newton_eps);
+              xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
               d_min = Min(dist, d_min);
               if (xi_ok && (dist < qp_eps)) {
@@ -345,10 +279,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
               _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                               buf_ec_max);
 
-              xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                                   point, e_coors, eref_coors, bc,
-                                   nodes, n_nodes_col, mtx_i, vmin, vmax,
-                                   i_max, newton_eps);
+              xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
               d_min = Min(dist, d_min);
               if (xi_ok && (dist < qp_eps)) {
@@ -387,10 +318,8 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
 
         _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                         buf_ec_max);
-        xi_ok = _get_xi_dist(&dist, xi,  cell_vertices->num, nc, D,
-                             point, e_coors, eref_coors, bc,
-                             nodes, n_nodes_col, mtx_i, vmin, vmax,
-                             i_max, newton_eps);
+        xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
+
         d_min = Min(dist, d_min);
         if (xi_ok && (dist < qp_eps)) {
           ok = 1;
@@ -449,22 +378,21 @@ int32 refc_find_ref_coors(FMField *ref_coors,
                           Mesh *mesh,
                           int32 *candidates, int32 n_candidates,
                           int32 *offsets, int32 n_offsets,
-                          FMField *eref_coors,
-                          int32 *nodes, int32 n_nodes, int32 n_nodes_col,
-                          FMField *mtx_i,
                           int32 allow_extrapolation,
-                          float64 close_limit, float64 qp_eps,
-                          int32 i_max, float64 newton_eps)
+                          float64 qp_eps,
+                          float64 close_limit,
+                          void *_ctx)
 {
+  BasisContext *ctx = (BasisContext *) _ctx;
+
   int32 ip, ic, ii, imin, ok, xi_ok, ret = RET_OK;
   int32 D = mesh->topology->max_dim;
   int32 nc = mesh->geometry->dim;
-  float64 vmin, vmax, d_min, dist;
+  float64 d_min, dist;
   float64 *mesh_coors = mesh->geometry->coors;
   float64 buf3[3];
   float64 buf_ec_max[8 * 3]; // Max. n_ep * dim.
   FMField point[1], e_coors[1], xi[1];
-  FMField bc[1];
   Indices cell_vertices[1];
   MeshEntity cell_ent[1];
   MeshConnectivity *cD0 = 0; // D -> 0
@@ -476,9 +404,6 @@ int32 refc_find_ref_coors(FMField *ref_coors,
 
   fmf_pretend_nc(xi, 1, 1, 1, nc, buf3);
   fmf_fillC(xi, 0.0);
-
-  vmin = eref_coors->val[0];
-  vmax = eref_coors->val[nc];
 
   for (ip = 0; ip < coors->nRow; ip++) {
     FMF_SetCell(point, ip);
@@ -496,7 +421,7 @@ int32 refc_find_ref_coors(FMField *ref_coors,
     d_min = 1e10;
     imin = 0;
 
-   for (ic = offsets[ip]; ic < offsets[ip+1]; ic++) {
+    for (ic = offsets[ip]; ic < offsets[ip+1]; ic++) {
       /* output("***** %d %d %d\n", ip, ic, candidates[ic]); */
 
       cell_ent->ii = candidates[ic];
@@ -504,10 +429,7 @@ int32 refc_find_ref_coors(FMField *ref_coors,
 
       _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
                       buf_ec_max);
-      xi_ok = _get_xi_dist(&dist, xi, cell_vertices->num, nc, D,
-                           point, e_coors, eref_coors, bc,
-                           nodes, n_nodes_col, mtx_i, vmin, vmax,
-                           i_max, newton_eps);
+      xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
       if (dist < d_min) {
         d_min = dist;
