@@ -351,6 +351,25 @@ class PolySpace(Struct):
     def describe_nodes(self):
         return NodeDescription(self.nts, self.nodes)
 
+class LagrangePolySpace(PolySpace):
+
+    def create_context(self, tdim, eps, check_errors, i_max, newton_eps):
+        from sfepy.discrete.fem.extmods.bases import CLagrangeContext
+
+        ref_coors = self.geometry.coors
+
+        ctx = CLagrangeContext(order=self.order,
+                               tdim=tdim,
+                               nodes=self.nodes,
+                               ref_coors=ref_coors,
+                               mtx_i=self.get_mtx_i(),
+                               eps=eps,
+                               check_errors=check_errors,
+                               i_max=i_max,
+                               newton_eps=newton_eps)
+
+        return ctx
+
 class LagrangeSimplexPolySpace(PolySpace):
     """Lagrange polynomial space on a simplex domain."""
     name = 'lagrange_simplex'
