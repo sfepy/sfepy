@@ -8,17 +8,9 @@ void print_context_lagrange(void *_ctx)
 
   int32 ir, ic;
 
-  output("bc:\n");
-  fmf_print(ctx->bc, stdout, 0);
-  output("mtx_i:\n");
-  fmf_print(ctx->mtx_i, stdout, 0);
-  output("base1d:\n");
-  fmf_print(ctx->base1d, stdout, 0);
-  output("ref_coors:\n");
-  fmf_print(ctx->ref_coors, stdout, 0);
-
-  output("n_nod: %d\n", ctx->n_nod);
-  output("n_col: %d\n", ctx->n_col);
+  output("order: %d\n", ctx->order);
+  output("is_bubble: %d\n", ctx->is_bubble);
+  output("tdim: %d\n", ctx->tdim);
   output("nodes:\n");
   for (ir = 0; ir < ctx->n_nod; ir ++) {
     for (ic = 0; ic < ctx->n_col; ic ++) {
@@ -26,14 +18,25 @@ void print_context_lagrange(void *_ctx)
     }
     output("\n");
   }
+  output("n_nod: %d\n", ctx->n_nod);
+  output("n_col: %d\n", ctx->n_col);
 
-  output("tdim: %d\n", ctx->tdim);
+  output("ref_coors:\n");
+  fmf_print(ctx->ref_coors, stdout, 0);
+  output("vmin: %.4e\n", ctx->vmin);
+  output("vmax: %.4e\n", ctx->vmax);
+
+  output("mtx_i:\n");
+  fmf_print(ctx->mtx_i, stdout, 0);
+  output("bc:\n");
+  fmf_print(ctx->bc, stdout, 0);
+  output("base1d:\n");
+  fmf_print(ctx->base1d, stdout, 0);
+
   output("eps: %.4e\n", ctx->eps);
   output("check_errors: %d\n", ctx->check_errors);
   output("i_max: %d\n", ctx->i_max);
   output("newton_eps: %.4e\n", ctx->newton_eps);
-  output("vmin: %.4e\n", ctx->vmin);
-  output("vmax: %.4e\n", ctx->vmax);
 }
 
 /*
