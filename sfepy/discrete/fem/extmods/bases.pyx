@@ -27,21 +27,28 @@ cdef extern from 'lagrange.h':
         int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
                              FMField *point, FMField *e_coors,
                              void *_ctx)
+        int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
+                            void *_ctx)
 
-        FMField bc[1]
-        FMField mtx_i[1]
-        FMField base1d[1]
-        FMField ref_coors[1]
+        int32 order
+        int32 is_bubble
+        int32 tdim
         int32 *nodes
         int32 n_nod
         int32 n_col
-        int32 tdim
+
+        FMField ref_coors[1]
+        float64 vmin
+        float64 vmax
+
+        FMField mtx_i[1]
+        FMField bc[1]
+        FMField base1d[1]
+
         float64 eps
         int32 check_errors
         int32 i_max
         float64 newton_eps
-        float64 vmin
-        float64 vmax
 
     void _print_context_lagrange \
          'print_context_lagrange'(LagrangeContext *ctx)
@@ -75,19 +82,25 @@ cdef class CLagrangeContext:
 
     cdef LagrangeContext *ctx
 
+    property is_bubble:
+
+        def __get__(self):
+            return self.ctx.is_bubble
+
+        def __set__(self, int32 is_bubble):
+            self.ctx.is_bubble = is_bubble
+
     def __cinit__(self,
-                  np.ndarray[float64, mode='c', ndim=2] bc=None,
-                  np.ndarray[float64, mode='c', ndim=2] mtx_i=None,
-                  np.ndarray[float64, mode='c', ndim=1] base1d=None,
-                  np.ndarray[float64, mode='c', ndim=2] ref_coors=None,
-                  np.ndarray[int32, mode='c', ndim=2] nodes=None,
+                  int32 order=1,
+                  int32 is_bubble=0,
                   int32 tdim=0,
+                  np.ndarray[int32, mode='c', ndim=2] nodes=None,
+                  np.ndarray[float64, mode='c', ndim=2] ref_coors=None,
+                  np.ndarray[float64, mode='c', ndim=2] mtx_i=None,
                   float64 eps=1e-15,
                   int32 check_errors=0,
                   int32 i_max=100,
-                  float64 newton_eps=1e-8,
-                  float64 vmin=0.0,
-                  float64 vmax=1.0):
+                  float64 newton_eps=1e-8):
         cdef LagrangeContext *ctx
 
         ctx = self.ctx = <LagrangeContext *> pyalloc(sizeof(LagrangeContext))
@@ -97,33 +110,30 @@ cdef class CLagrangeContext:
 
         ctx.get_xi_dist = &_get_xi_dist
 
-        if bc is not None:
-            _f.array2fmfield2(ctx.bc, bc)
+        ctx.order = order
+        ctx.is_bubble = is_bubble
 
-        if mtx_i is not None:
-            _f.array2fmfield2(ctx.mtx_i, mtx_i)
-
-        if base1d is not None:
-            _f.array2fmfield3(ctx.base1d, base1d)
-
-        if ref_coors is not None:
-            _f.array2fmfield2(ctx.ref_coors, ref_coors)
+        ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]
 
         if nodes is not None:
             ctx.nodes = &nodes[0, 0]
             ctx.n_nod = nodes.shape[0]
             ctx.n_col = nodes.shape[1]
 
-        ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]
+        if ref_coors is not None:
+            _f.array2fmfield2(ctx.ref_coors, ref_coors)
+
+            ctx.vmin = ref_coors[0, 0]
+            ctx.vmax = ref_coors[1, 0]
+
+        if mtx_i is not None:
+            _f.array2fmfield2(ctx.mtx_i, mtx_i)
 
         ctx.eps = eps
         ctx.check_errors = check_errors
 
         ctx.i_max = i_max
         ctx.newton_eps = newton_eps
-
-        ctx.vmin = vmin
-        ctx.vmax = vmax
 
     def __dealloc__(self):
         pyfree(self.ctx)
