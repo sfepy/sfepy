@@ -18,21 +18,28 @@ typedef struct LagrangeContext {
   int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
                        FMField *point, FMField *e_coors,
                        void *_ctx);
+  int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
+                      void *_ctx);
 
-  FMField bc[1];
-  FMField mtx_i[1];
-  FMField base1d[1];
-  FMField ref_coors[1];
+  int32 order;
+  int32 is_bubble;
+  int32 tdim;
   int32 *nodes;
   int32 n_nod;
   int32 n_col;
-  int32 tdim;
+
+  FMField ref_coors[1];
+  float64 vmin;
+  float64 vmax;
+
+  FMField mtx_i[1];
+  FMField bc[1];
+  FMField base1d[1];
+
   float64 eps;
   int32 check_errors;
   int32 i_max;
   float64 newton_eps;
-  float64 vmin;
-  float64 vmax;
 } LagrangeContext;
 
 void print_context_lagrange(void *_ctx);
