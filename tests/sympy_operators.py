@@ -19,7 +19,7 @@ def grad(f, variables=None):
     n_var = len(variables)
     f = sp.sympify(f)
 
-    out = sp.zeros((n_var, 1))
+    out = sp.zeros(n_var, 1)
     for iv, var in enumerate(variables):
        out[iv,0] = f.diff(var)
     return out
