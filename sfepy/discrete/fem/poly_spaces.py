@@ -370,7 +370,7 @@ class LagrangePolySpace(PolySpace):
 
         return ctx
 
-class LagrangeSimplexPolySpace(PolySpace):
+class LagrangeSimplexPolySpace(LagrangePolySpace):
     """Lagrange polynomial space on a simplex domain."""
     name = 'lagrange_simplex'
 
@@ -494,6 +494,12 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
 
         self.n_nod = self.nodes.shape[0]
 
+    def create_context(self, *args):
+        ctx = LagrangePolySpace.create_context(*args)
+        ctx.is_bubble = 1
+
+        return ctx
+
     def _eval_base(self, coors, diff=False, ori=None,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
@@ -511,7 +517,7 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
 
         return base
 
-class LagrangeTensorProductPolySpace(PolySpace):
+class LagrangeTensorProductPolySpace(LagrangePolySpace):
     """Lagrange polynomial space on a tensor product domain."""
     name = 'lagrange_tensor_product'
 
