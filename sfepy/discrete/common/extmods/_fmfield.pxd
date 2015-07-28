@@ -40,6 +40,8 @@ cdef extern from "fmfield.h":
     cdef int32 fmfr_pretend(FMField *obj,
                             int32 nLev, int32 nRow, int32 nCol,
                             float64 *data, int32 offset, int32 nColFull)
+    cdef int32 fmf_set_qp(FMField *qp_obj, int32 iqp, FMField *obj)
+
     cdef int32 fmf_print(FMField *obj, FILE *file, int32 mode)
 
     cdef int32 fmf_fillC(FMField *obj, float64 val)

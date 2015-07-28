@@ -183,6 +183,24 @@ int32 fmfr_pretend( FMField *obj,
 }
 
 #undef __FUNC__
+#define __FUNC__ "fmf_set_qp"
+int32 fmf_set_qp(FMField *qp_obj, int32 iqp, FMField *obj)
+{
+#ifdef DEBUG_FMF
+  if ((qp_obj->nRow != obj->nRow) || (qp_obj->nCol != obj->nCol)
+      || (qp_obj->nLev != 1)) {
+    errput(ErrHead "ERR_BadMatch: (1 %d %d) == (%d %d %d)|iqp\n",
+           qp_obj->nLev, qp_obj->nRow, qp_obj->nCol,
+           obj->nLev, obj->nRow, obj->nCol);
+  }
+#endif
+
+  qp_obj->val = obj->val + obj->nRow * obj->nCol * iqp;
+
+  return(RET_OK);
+}
+
+#undef __FUNC__
 #define __FUNC__ "fmf_getDim"
 /*!
   @par Revision history:
