@@ -136,34 +136,30 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
                   void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
   int32 n_v = e_coors->nRow;
   int32 dim = e_coors->nCol;
-  int32 tdim = ctx->tdim;
   float64 vmin = ctx->vmin;
   float64 vmax = ctx->vmax;
 
   int32 ii, ok;
-  float64 dist = 0.0, val;
-  float64 buf4[4];
-  float64 buf8[8];
+  float64 dist = 0.0, val, aux;
 
   if (n_v == (dim + 1)) {
-    fmf_pretend_nc(bc, 1, 1, 1, tdim + 1, buf4);
     get_xi_simplex(xi, point, e_coors, _ctx);
 
-    // dist == 0 for 0 <= bc <= 1.
-    for (ii = 0; ii < n_v; ii++) {
-      val = Min(Max(bc->val[ii] - 1.0, 0.0), 100.0);
-      dist += val * val;
-      val = Min(Max(0.0 - bc->val[ii], 0.0), 100.0);
+    // dist == 0 for vmin <= xi and sum(xi) <= vmax.
+    aux = 0.0;
+    for (ii = 0; ii < dim; ii++) {
+      aux += xi->val[ii];
+
+      val = Min(Max(vmin - xi->val[ii], 0.0), 100.0);
       dist += val * val;
     }
+    val = Min(Max(aux - vmax, 0.0), 100.0);
+    dist += val * val;
     ok = 1;
 
   } else {
-    fmf_pretend_nc(ctx->base1d, 1, 1, 1, n_v, buf8);
-
     ok = get_xi_tensor(xi, point, e_coors, _ctx);
 
     // dist == 0 for vmin <= xi <= vmax and ok == 0.
@@ -188,23 +184,23 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
 /*
   Get reference simplex coordinates `xi` of `dest_point` given spatial
   element coordinates `e_coors` and coordinates of reference simplex
-  vertices `ref_coors` (in `ctx`). Output also the corresponding barycentric
-  coordinates `bc` (in `ctx`).
+  vertices `ref_coors` (in `ctx`).
 */
 int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
                      void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-
   int32 idim, ii;
   int32 n_v = e_coors->nRow;
   int32 dim = e_coors->nCol;
-  FMField mtx[1], mtx_i[1], rhs[1];
-  float64 buf16[16], buf16_2[16], buf4[4];
+  FMField mtx[1], mtx_i[1], rhs[1], bc[1];
+  float64 buf16[16], buf16_2[16], buf4_1[4], buf4_2[4];
+
+  fmf_pretend_nc(bc, 1, 1, 1, ctx->tdim + 1, buf4_1);
 
   fmf_pretend_nc(mtx, 1, 1, n_v, n_v, buf16);
   fmf_pretend_nc(mtx_i, 1, 1, n_v, n_v, buf16_2);
-  fmf_pretend_nc(rhs, 1, 1, 1, n_v, buf4);
+  fmf_pretend_nc(rhs, 1, 1, 1, n_v, buf4_2);
 
   for (idim = 0; idim < dim; idim++) {
     for (ii = 0; ii < n_v; ii++) {
@@ -223,8 +219,8 @@ int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
     geme_invert3x3(mtx_i, mtx);
   }
 
-  fmf_mulABT_nn(ctx->bc, rhs, mtx_i);
-  fmf_mulAB_nn(xi, ctx->bc, ctx->ref_coors);
+  fmf_mulABT_nn(bc, rhs, mtx_i);
+  fmf_mulAB_nn(xi, bc, ctx->ref_coors);
 
   return(RET_OK);
 }
@@ -238,8 +234,6 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
                     void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
-
   float64 vmin = ctx->vmin;
   float64 vmax = ctx->vmax;
   int32 i_max = ctx->i_max;
@@ -248,10 +242,12 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
   int32 idim, ii, ok = 0;
   int32 dim = e_coors->nCol;
   int32 powd = 1 << dim;
-  FMField bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1];
+  FMField bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1], bc[1], base1d[1];
   float64 err;
-  float64 buf6[6], buf8[8], buf24[24];
+  float64 buf6[6], buf8[8], buf8_2[8], buf24[24];
   float64 buf3_1[3], buf3_2[3], buf9_1[9], buf9_2[9];
+
+  fmf_pretend_nc(base1d, 1, 1, 1, e_coors->nRow, buf8_2);
 
   fmf_pretend_nc(bc, dim, 1, 1, 2, buf6);
   fmf_pretend_nc(bf, 1, 1, 1, powd, buf8);
@@ -260,6 +256,8 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
   fmf_pretend_nc(xint, 1, 1, 1, dim, buf3_2);
   fmf_pretend_nc(mtx, 1, 1, dim, dim, buf9_1);
   fmf_pretend_nc(imtx, 1, 1, dim, dim, buf9_2);
+
+  ctx->bc = bc;
 
   ii = 0;
   fmf_fillC(xi, 0.5 * (vmin + vmax));
