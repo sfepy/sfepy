@@ -135,7 +135,7 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
                   FMField *point, FMField *e_coors,
                   void *_ctx)
 {
-  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  LagrangeContext *ctx = ((LagrangeContext *) _ctx)->geo_ctx;
   int32 n_v = e_coors->nRow;
   int32 dim = e_coors->nCol;
   float64 vmin = ctx->vmin;
@@ -145,7 +145,7 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
   float64 dist = 0.0, val, aux;
 
   if (n_v == (dim + 1)) {
-    get_xi_simplex(xi, point, e_coors, _ctx);
+    get_xi_simplex(xi, point, e_coors, ctx);
 
     // dist == 0 for vmin <= xi and sum(xi) <= vmax.
     aux = 0.0;
@@ -160,7 +160,7 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
     ok = 1;
 
   } else {
-    ok = get_xi_tensor(xi, point, e_coors, _ctx);
+    ok = get_xi_tensor(xi, point, e_coors, ctx);
 
     // dist == 0 for vmin <= xi <= vmax and ok == 0.
     if (ok == 0) {
