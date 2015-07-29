@@ -353,15 +353,20 @@ class PolySpace(Struct):
 
 class LagrangePolySpace(PolySpace):
 
-    def create_context(self, tdim, eps, check_errors, i_max, newton_eps):
+    def create_context(self, cmesh, eps, check_errors, i_max, newton_eps):
         from sfepy.discrete.fem.extmods.bases import CLagrangeContext
 
         ref_coors = self.geometry.coors
 
+        conn = cmesh.get_conn(cmesh.tdim, 0)
+        mesh_conn = conn.indices.reshape(cmesh.n_el, -1).astype(nm.int32)
+
         ctx = CLagrangeContext(order=self.order,
-                               tdim=tdim,
+                               tdim=cmesh.tdim,
                                nodes=self.nodes,
                                ref_coors=ref_coors,
+                               mesh_coors=cmesh.coors,
+                               mesh_conn=mesh_conn,
                                mtx_i=self.get_mtx_i(),
                                eps=eps,
                                check_errors=check_errors,
