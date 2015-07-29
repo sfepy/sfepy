@@ -312,20 +312,113 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
 }
 
 /*
+  Evaluate Lagrange base polynomials in given points.
+*/
+int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
+                          void *_ctx)
+{
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  LagrangeContext *geo_ctx = ctx->geo_ctx;
+
+  int32 ii, iqp, ret = RET_OK;
+  int32 n_v = ctx->ref_coors->nRow;
+  int32 dim = ctx->ref_coors->nCol;
+  int32 n_cp = ctx->n_cp;
+  int32 iel = ctx->iel;
+  float64 buf9_1[9], buf9_2[9], buf24_1[24], buf24_2[24], buf24_3[24], buf6[6];
+  FMField bc[1], _coors[1], _coor[1], coor[1];
+  FMField cell_coors[1], mtxMR[1], mtxMRI[1], _out[1];
+  FMField bf1[1], gbfg1[1], bfg1[1];
+
+  fmf_pretend_nc(_coors, 1, coors->nRow, 1, coors->nCol, coors->val);
+  fmf_pretend_nc(coor, 1, 1, 1, dim, 0);
+  fmf_pretend_nc(bf1, 1, 1, out->nRow, out->nCol, 0);
+
+  if (diff && (iel >= 0)) {
+    fmf_pretend_nc(cell_coors, 1, 1, n_cp, dim, buf24_1);
+    fmf_pretend_nc(mtxMR, 1, 1, dim, dim, buf9_1);
+    fmf_pretend_nc(mtxMRI, 1, 1, dim, dim, buf9_2);
+    fmf_pretend_nc(_out, 1, 1, dim, n_cp, buf24_2);
+    fmf_pretend_nc(gbfg1, 1, 1, dim, n_cp, buf24_3);
+    fmf_pretend_nc(bfg1, 1, 1, dim, out->nCol, 0);
+  }
+
+  ctx->bc = bc;
+
+  if (n_v == (dim + 1)) {
+    fmf_pretend_nc(bc, 1, 1, 1, dim + 1, buf6);
+
+    for (iqp = 0; iqp < out->nLev; iqp++) {
+      fmf_set_qp(coor, iqp, _coors);
+      fmf_set_qp(bf1, iqp, out);
+
+      get_barycentric_coors(bc, coor, _ctx);
+      eval_lagrange_simplex(bf1, ctx->order, diff, _ctx);
+    }
+
+  } else {
+    fmf_pretend_nc(bc, dim, 1, 1, 2, buf6);
+
+    for (iqp = 0; iqp < out->nLev; iqp++) {
+      fmf_set_qp(coor, iqp, _coors);
+
+      fmf_set_qp(bf1, iqp, out);
+
+      for (ii = 0; ii < dim; ii++) {
+        FMF_SetCell(bc, ii);
+        // slice [:,ii:ii+1].
+        fmf_pretend_nc(_coor, 1, 1, 1, coor->nCol, coor->val + ii);
+        get_barycentric_coors(bc, _coor, ctx);
+      }
+
+      eval_lagrange_tensor_product(bf1, ctx->order, diff, ctx);
+    }
+  }
+
+  if (diff && (iel >= 0)) {
+
+    ele_extractNodalValuesNBN(cell_coors, ctx->mesh_coors,
+                              ctx->mesh_conn + n_cp * iel);
+
+    for (iqp = 0; iqp < out->nLev; iqp++) {
+      fmf_set_qp(coor, iqp, _coors);
+
+      geo_ctx->eval_basis(gbfg1, coor, 1, geo_ctx);
+
+      fmf_set_qp(bfg1, iqp, out);
+
+      // Jacobi matrix from reference to material system.
+      fmf_mulATBT_1n(mtxMR, cell_coors, gbfg1);
+      // Inverse of Jacobi matrix reference to material system.
+      geme_invert3x3(mtxMRI, mtxMR);
+      // Base function gradient w.r.t. material system.
+      fmf_mulATB_nn(_out, mtxMRI, bfg1);
+
+      fmf_copy(bfg1, _out);
+    }
+  }
+
+  ERR_CheckGo(ret);
+
+ end_label:
+  return(ret);
+}
+
+/*
   Evaluate Lagrange base polynomials in given points on simplex domain.
 */
 int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
                             void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
   FMField *mtx_i = ctx->mtx_i;
+  FMField *bc = ctx->bc;
   int32 *nodes = ctx->nodes;
   int32 n_col = ctx->n_col;
+  int32 n_v = bc->nCol;
 
   int32 ret = RET_OK;
-  int32 n_coor = bc->nRow;
-  int32 n_v = bc->nCol;
+  int32 n_coor = 1;  // assume single qp!!!
   int32 dim = n_v - 1;
   int32 n_nod = out->nCol;
   int32 ii, ir, ic, i1, i2, inod, n_i1, n_ii;
@@ -333,7 +426,8 @@ int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
   float64 *pout;
 
   if (n_coor != out->nLev) {
-    errset("coordinates size mismatch!");
+    errput("%d == %d!\n", n_coor, out->nLev);
+    errset("only single point supported (see above)!");
     ERR_CheckGo(ret);
   }
 

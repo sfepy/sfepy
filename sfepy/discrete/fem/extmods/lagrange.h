@@ -65,6 +65,9 @@ int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
 int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
                     void *_ctx);
 
+int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
+                          void *_ctx);
+
 int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
                             void *_ctx);
 
