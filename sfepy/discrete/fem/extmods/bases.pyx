@@ -29,6 +29,9 @@ cdef extern from 'lagrange.h':
                              void *_ctx)
         int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
                             void *_ctx)
+        int32 iel # >= 0 => apply reference mapping to gradient.
+
+        LagrangeContext *geo_ctx
 
         int32 order
         int32 is_bubble
@@ -41,8 +44,14 @@ cdef extern from 'lagrange.h':
         float64 vmin
         float64 vmax
 
+        FMField mesh_coors[1]
+        int32 *mesh_conn
+        int32 n_cell
+        int32 n_cp
+
         FMField mtx_i[1]
-        FMField bc[1]
+
+        FMField *bc
         FMField base1d[1]
 
         float64 eps
@@ -70,6 +79,10 @@ cdef extern from 'lagrange.h':
           'get_xi_tensor'(FMField *xi, FMField *dest_point, FMField *e_coors,
                           LagrangeContext *ctx)
 
+    int32 _eval_basis_lagrange \
+          'eval_basis_lagrange'(FMField *out, FMField *coors, int32 diff,
+                                void *_ctx)
+
     int32 _eval_lagrange_simplex \
           'eval_lagrange_simplex'(FMField *out, int32 order, int32 diff,
                                   LagrangeContext *ctx)
@@ -82,6 +95,12 @@ cdef class CLagrangeContext:
 
     cdef LagrangeContext *ctx
 
+    # Store arrays to prevent their deallocation in Python.
+    cdef readonly CLagrangeContext _geo_ctx
+    cdef readonly np.ndarray mesh_coors
+    cdef readonly np.ndarray mesh_conn
+    cdef readonly np.ndarray base1d # Auxiliary buffer.
+
     property is_bubble:
 
         def __get__(self):
@@ -90,18 +109,41 @@ cdef class CLagrangeContext:
         def __set__(self, int32 is_bubble):
             self.ctx.is_bubble = is_bubble
 
+    property iel:
+
+        def __get__(self):
+            return self.ctx.iel
+
+        def __set__(self, int32 iel):
+            assert iel < self.ctx.n_cell
+            self.ctx.iel = iel
+
+    property geo_ctx:
+
+        def __set__(self, _ctx):
+            cdef CLagrangeContext __ctx = <CLagrangeContext> _ctx
+            cdef LagrangeContext *ctx = <LagrangeContext *> __ctx.ctx
+
+            self._geo_ctx = __ctx
+            self.ctx.geo_ctx = ctx
+
     def __cinit__(self,
                   int32 order=1,
                   int32 is_bubble=0,
                   int32 tdim=0,
                   np.ndarray[int32, mode='c', ndim=2] nodes=None,
                   np.ndarray[float64, mode='c', ndim=2] ref_coors=None,
+                  np.ndarray mesh_coors=None,
+                  np.ndarray mesh_conn=None,
                   np.ndarray[float64, mode='c', ndim=2] mtx_i=None,
                   float64 eps=1e-15,
                   int32 check_errors=0,
                   int32 i_max=100,
                   float64 newton_eps=1e-8):
         cdef LagrangeContext *ctx
+        cdef np.ndarray[float64, mode='c', ndim=2] _mesh_coors
+        cdef np.ndarray[int32, mode='c', ndim=2] _mesh_conn
+        cdef np.ndarray[float64, mode='c', ndim=1] _base1d
 
         ctx = self.ctx = <LagrangeContext *> pyalloc(sizeof(LagrangeContext))
 
@@ -109,6 +151,8 @@ cdef class CLagrangeContext:
             raise MemoryError()
 
         ctx.get_xi_dist = &_get_xi_dist
+        ctx.eval_basis = &_eval_basis_lagrange
+        ctx.iel = -1
 
         ctx.order = order
         ctx.is_bubble = is_bubble
@@ -120,11 +164,25 @@ cdef class CLagrangeContext:
             ctx.n_nod = nodes.shape[0]
             ctx.n_col = nodes.shape[1]
 
+            _base1d = self.base1d = np.zeros((ctx.n_nod,), dtype=np.float64)
+            _f.fmf_pretend_nc(ctx.base1d, 1, 1, 1, ctx.n_nod, &_base1d[0])
+
         if ref_coors is not None:
             _f.array2fmfield2(ctx.ref_coors, ref_coors)
 
             ctx.vmin = ref_coors[0, 0]
             ctx.vmax = ref_coors[1, 0]
+
+        if mesh_coors is not None:
+            _mesh_coors = self.mesh_coors = mesh_coors
+            _f.array2fmfield2(ctx.mesh_coors, _mesh_coors)
+
+        if mesh_conn is not None:
+            _mesh_conn = self.mesh_conn = mesh_conn
+
+            ctx.mesh_conn = &_mesh_conn[0, 0]
+            ctx.n_cell = mesh_conn.shape[0]
+            ctx.n_cp = mesh_conn.shape[1]
 
         if mtx_i is not None:
             _f.array2fmfield2(ctx.mtx_i, mtx_i)
@@ -143,6 +201,39 @@ cdef class CLagrangeContext:
 
     def cprint(self):
         _print_context_lagrange(self.ctx)
+
+    def evaluate(self, np.ndarray[float64, mode='c', ndim=2] coors not None,
+                 int32 diff=False,
+                 float64 eps=1e-15,
+                 int32 check_errors=True):
+        cdef int32 n_coor = coors.shape[0]
+        cdef int32 n_nod = self.ctx.n_nod
+        cdef int32 dim = coors.shape[1]
+        cdef int32 bdim, n_v
+        cdef FMField _out[1], _coors[1]
+
+        ctx = self.ctx
+
+        n_v = ctx.ref_coors.nRow
+
+        ctx.check_errors = check_errors
+        ctx.eps = eps
+
+        if diff:
+            bdim = dim
+
+        else:
+            bdim = 1
+
+        cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
+                                                        dtype=np.float64)
+
+        _f.array2fmfield3(_out, out)
+        _f.array2fmfield2(_coors, coors)
+
+        self.ctx.eval_basis(_out, _coors, diff, ctx)
+
+        return out
 
 @cython.boundscheck(False)
 def get_barycentric_coors(np.ndarray[float64, mode='c', ndim=2] coors not None,
