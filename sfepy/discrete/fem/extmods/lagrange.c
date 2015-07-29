@@ -8,6 +8,8 @@ void print_context_lagrange(void *_ctx)
 
   int32 ir, ic;
 
+  output("iel: %d\n", ctx->iel);
+
   output("order: %d\n", ctx->order);
   output("is_bubble: %d\n", ctx->is_bubble);
   output("tdim: %d\n", ctx->tdim);
@@ -26,12 +28,23 @@ void print_context_lagrange(void *_ctx)
   output("vmin: %.4e\n", ctx->vmin);
   output("vmax: %.4e\n", ctx->vmax);
 
+  output("mesh_coors:\n");
+  fmf_print(ctx->mesh_coors, stdout, 0);
+  output("mesh_conn:\n");
+  for (ir = 0; ir < ctx->n_cell; ir ++) {
+    for (ic = 0; ic < ctx->n_cp; ic ++) {
+      output(" %d", ctx->mesh_conn[ctx->n_cp*ir+ic]);
+    }
+    output("\n");
+  }
+  output("n_cell: %d\n", ctx->n_cell);
+  output("n_cp: %d\n", ctx->n_cp);
+
   output("mtx_i:\n");
   fmf_print(ctx->mtx_i, stdout, 0);
-  output("bc:\n");
-  fmf_print(ctx->bc, stdout, 0);
+
   output("base1d:\n");
-  fmf_print(ctx->base1d, stdout, 0);
+  fmf_print(ctx->base1d, stdout, 1);
 
   output("eps: %.4e\n", ctx->eps);
   output("check_errors: %d\n", ctx->check_errors);
