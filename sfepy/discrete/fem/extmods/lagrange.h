@@ -20,6 +20,9 @@ typedef struct LagrangeContext {
                        void *_ctx);
   int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
                       void *_ctx);
+  int32 iel; // >= 0 => apply reference mapping to gradient.
+
+  struct LagrangeContext *geo_ctx;
 
   int32 order;
   int32 is_bubble;
@@ -32,8 +35,14 @@ typedef struct LagrangeContext {
   float64 vmin;
   float64 vmax;
 
+  FMField mesh_coors[1];
+  int32 *mesh_conn;
+  int32 n_cell;
+  int32 n_cp;
+
   FMField mtx_i[1];
-  FMField bc[1];
+
+  FMField *bc;
   FMField base1d[1];
 
   float64 eps;
