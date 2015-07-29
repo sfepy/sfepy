@@ -22,7 +22,7 @@ from sfepy.discrete.fem.global_interp import get_ref_coors
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
 from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
                                             H1Mixin)
-from sfepy.discrete.fem.extmods.bases import evaluate_in_rc
+from sfepy.discrete.common.extmods.crefcoors import evaluate_in_rc
 
 class H1NodalMixin(H1Mixin):
 
