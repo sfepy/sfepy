@@ -175,22 +175,15 @@ class H1NodalMixin(H1Mixin):
         """
         Create the context required for evaluating the field basis.
         """
-        from sfepy.discrete.fem.extmods.bases import CLagrangeContext
+        ps = self.ap.get_poly_space('v', from_geometry=False)
+        gps = self.ap.get_poly_space('v', from_geometry=True)
 
-        ap = self.ap
-        ps = ap.interp.gel.interp.poly_spaces['v']
+        mesh = self.create_mesh(extra_nodes=False)
 
-        ref_coors = ps.geometry.coors
+        ctx = ps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
 
-        ctx = CLagrangeContext(mtx_i=ps.get_mtx_i(),
-                               ref_coors=ref_coors,
-                               vmin=ref_coors[0, 0],
-                               vmax=ref_coors[1, 0],
-                               nodes=ps.nodes,
-                               tdim=self.domain.shape.tdim,
-                               eps=1e-15,
-                               i_max=100,
-                               newton_eps=1e-8)
+        ctx.geo_ctx = geo_ctx
 
         return ctx
 
