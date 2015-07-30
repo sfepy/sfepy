@@ -12,15 +12,9 @@ from sfepy.discrete.common.extmods._fmfield cimport FMField
 
 from sfepy.discrete.common.extmods.types cimport int32, float64, complex128
 
-cdef extern from 'math.h':
-    cdef float64 sqrt(float x)
-
 cdef extern from 'common.h':
     void *pyalloc(size_t size)
     void pyfree(void *pp)
-    int Max_i 'Max'(int a, int b)
-    double Max_f 'Max'(double a, double b)
-    double Min_f 'Min'(double a, double b)
 
 cdef extern from 'lagrange.h':
     ctypedef struct LagrangeContext:
@@ -63,34 +57,14 @@ cdef extern from 'lagrange.h':
     void _print_context_lagrange \
          'print_context_lagrange'(LagrangeContext *ctx)
 
-    int32 _get_barycentric_coors \
-          'get_barycentric_coors'(FMField *bc, FMField *coors,
-                                  LagrangeContext *ctx)
-
     int32 _get_xi_dist \
           'get_xi_dist'(float64 *pdist, FMField *xi,
                         FMField *point, FMField *e_coors,
                         void *_ctx)
 
-    int32 _get_xi_simplex \
-          'get_xi_simplex'(FMField *xi, FMField *dest_point, FMField *e_coors,
-                           LagrangeContext *ctx)
-
-    int32 _get_xi_tensor \
-          'get_xi_tensor'(FMField *xi, FMField *dest_point, FMField *e_coors,
-                          LagrangeContext *ctx)
-
     int32 _eval_basis_lagrange \
           'eval_basis_lagrange'(FMField *out, FMField *coors, int32 diff,
                                 void *_ctx)
-
-    int32 _eval_lagrange_simplex \
-          'eval_lagrange_simplex'(FMField *out, int32 order, int32 diff,
-                                  LagrangeContext *ctx)
-
-    int32 _eval_lagrange_tensor_product \
-          'eval_lagrange_tensor_product'(FMField *out, int32 order, int32 diff,
-                                         LagrangeContext *ctx)
 
 cdef class CLagrangeContext:
 
