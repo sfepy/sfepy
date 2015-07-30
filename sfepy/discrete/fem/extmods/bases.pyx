@@ -173,15 +173,24 @@ cdef class CLagrangeContext:
                                          dtype=np.float64)
             _f.array2fmfield2(ctx.mbfg,_mbfg)
 
+        else:
+            raise ValueError('nodes argument is required!')
+
         if ref_coors is not None:
             _f.array2fmfield2(ctx.ref_coors, ref_coors)
 
             ctx.vmin = ref_coors[0, 0]
             ctx.vmax = ref_coors[1, 0]
 
+        else:
+            raise ValueError('ref_coors argument is required!')
+
         if mesh_coors is not None:
             _mesh_coors = self.mesh_coors = mesh_coors
             _f.array2fmfield2(ctx.mesh_coors, _mesh_coors)
+
+        else:
+            _f.fmf_pretend_nc(ctx.mesh_coors, 0, 0, 0, 0, NULL)
 
         if mesh_conn is not None:
             _mesh_conn = self.mesh_conn = mesh_conn
@@ -190,8 +199,15 @@ cdef class CLagrangeContext:
             ctx.n_cell = mesh_conn.shape[0]
             ctx.n_cp = mesh_conn.shape[1]
 
+        else:
+            ctx.mesh_conn = NULL
+            ctx.n_cell = ctx.n_cp = 0
+
         if mtx_i is not None:
             _f.array2fmfield2(ctx.mtx_i, mtx_i)
+
+        else:
+            raise ValueError('mtx_i argument is required!')
 
         ctx.eps = eps
         ctx.check_errors = check_errors
