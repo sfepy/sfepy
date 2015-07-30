@@ -44,6 +44,7 @@ typedef struct LagrangeContext {
 
   FMField *bc;
   FMField base1d[1];
+  FMField mbfg[1];
 
   float64 eps;
   int32 check_errors;
