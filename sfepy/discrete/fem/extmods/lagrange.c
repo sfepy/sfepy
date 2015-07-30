@@ -43,8 +43,11 @@ void print_context_lagrange(void *_ctx)
   output("mtx_i:\n");
   fmf_print(ctx->mtx_i, stdout, 0);
 
+  output("bc: %p\n", ctx->bc);
   output("base1d:\n");
   fmf_print(ctx->base1d, stdout, 1);
+  output("mbfg:\n");
+  fmf_print(ctx->mbfg, stdout, 1);
 
   output("eps: %.4e\n", ctx->eps);
   output("check_errors: %d\n", ctx->check_errors);
