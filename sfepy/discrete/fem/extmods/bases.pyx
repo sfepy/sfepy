@@ -53,6 +53,7 @@ cdef extern from 'lagrange.h':
 
         FMField *bc
         FMField base1d[1]
+        FMField mbfg[1]
 
         float64 eps
         int32 check_errors
@@ -100,6 +101,7 @@ cdef class CLagrangeContext:
     cdef readonly np.ndarray mesh_coors
     cdef readonly np.ndarray mesh_conn
     cdef readonly np.ndarray base1d # Auxiliary buffer.
+    cdef readonly np.ndarray mbfg # Auxiliary buffer.
 
     property is_bubble:
 
@@ -166,6 +168,10 @@ cdef class CLagrangeContext:
 
             _base1d = self.base1d = np.zeros((ctx.n_nod,), dtype=np.float64)
             _f.fmf_pretend_nc(ctx.base1d, 1, 1, 1, ctx.n_nod, &_base1d[0])
+
+            _mbfg = self.mbfg = np.zeros((ref_coors.shape[1], ctx.n_nod),
+                                         dtype=np.float64)
+            _f.array2fmfield2(ctx.mbfg,_mbfg)
 
         if ref_coors is not None:
             _f.array2fmfield2(ctx.ref_coors, ref_coors)
