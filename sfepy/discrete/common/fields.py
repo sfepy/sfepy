@@ -1,6 +1,8 @@
+import time
+
 import numpy as nm
 
-from sfepy.base.base import iter_dict_of_lists, Struct, basestr
+from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
 
 def parse_approx_order(approx_order):
     """
@@ -223,3 +225,125 @@ class Field(Struct):
             out = out + (key,)
 
         return out
+
+    def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
+                    close_limit=0.1, get_cells_fun=None, cache=None,
+                    ret_cells=False, ret_status=False, ret_ref_coors=False,
+                    verbose=False):
+        """
+        Evaluate source DOF values corresponding to the field in the given
+        coordinates using the field interpolation.
+
+        Parameters
+        ----------
+        coors : array, shape ``(n_coor, dim)``
+            The coordinates the source values should be interpolated into.
+        source_vals : array, shape ``(n_nod, n_components)``
+            The source DOF values corresponding to the field.
+        mode : {'val', 'grad'}, optional
+            The evaluation mode: the field value (default) or the field value
+            gradient.
+        strategy : {'general', 'convex'}, optional
+            The strategy for finding the elements that contain the
+            coordinates. For convex meshes, the 'convex' strategy might be
+            faster than the 'general' one.
+        close_limit : float, optional
+            The maximum limit distance of a point from the closest
+            element allowed for extrapolation.
+        get_cells_fun : callable, optional
+            If given, a function with signature ``get_cells_fun(coors, cmesh,
+            **kwargs)`` returning cells and offsets that potentially contain
+            points with the coordinates `coors`. Applicable only when
+            `strategy` is 'general'. When not given,
+            :func:`get_potential_cells()
+            <sfepy.discrete.common.global_interp.get_potential_cells>` is used.
+        cache : Struct, optional
+            To speed up a sequence of evaluations, the field mesh and other
+            data can be cached. Optionally, the cache can also contain the
+            reference element coordinates as `cache.ref_coors`, `cache.cells`
+            and `cache.status`, if the evaluation occurs in the same
+            coordinates repeatedly. In that case the mesh related data are
+            ignored. See :func:`Field.get_evaluate_cache()
+            <sfepy.discrete.fem.fields_base.FEField.get_evaluate_cache()>`.
+        ret_ref_coors : bool, optional
+            If True, return also the found reference element coordinates.
+        ret_status : bool, optional
+            If True, return also the enclosing cell status for each point.
+        ret_cells : bool, optional
+            If True, return also the cell indices the coordinates are in.
+        verbose : bool
+            If False, reduce verbosity.
+
+        Returns
+        -------
+        vals : array
+            The interpolated values with shape ``(n_coor, n_components)`` or
+            gradients with shape ``(n_coor, n_components, dim)`` according to
+            the `mode`. If `ret_status` is False, the values where the status
+            is greater than one are set to ``numpy.nan``.
+        ref_coors : array
+            The found reference element coordinates, if `ret_ref_coors` is True.
+        cells : array
+            The cell indices, if `ret_ref_coors` or `ret_cells` or `ret_status`
+            are True.
+        status : array
+            The status, if `ret_ref_coors` or `ret_status` are True, with the
+            following meaning: 0 is success, 1 is extrapolation within
+            `close_limit`, 2 is extrapolation outside `close_limit`, 3 is
+            failure, 4 is failure due to non-convergence of the Newton
+            iteration in tensor product cells. If close_limit is 0, then for
+            the 'general' strategy the status 5 indicates points outside of the
+            field domain that had no potential cells.
+        """
+        from sfepy.discrete.common.global_interp import get_ref_coors
+        from sfepy.discrete.common.extmods.crefcoors import evaluate_in_rc
+
+        output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
+
+        ref_coors, cells, status = get_ref_coors(self, coors,
+                                                 strategy=strategy,
+                                                 close_limit=close_limit,
+                                                 get_cells_fun=get_cells_fun,
+                                                 cache=cache,
+                                                 verbose=verbose)
+
+        tt = time.clock()
+
+        # Interpolate to the reference coordinates.
+        if mode == 'val':
+            vals = nm.empty((coors.shape[0], source_vals.shape[1], 1),
+                            dtype=source_vals.dtype)
+            cmode = 0
+
+        elif mode == 'grad':
+            vals = nm.empty((coors.shape[0], source_vals.shape[1],
+                             coors.shape[1]),
+                            dtype=source_vals.dtype)
+            cmode = 1
+
+        ctx = self.create_basis_context()
+
+        evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
+                       self.ap.econn, cmode, ctx)
+        output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
+
+        output('...done',verbose=verbose)
+
+        if mode == 'val':
+            vals.shape = (coors.shape[0], source_vals.shape[1])
+
+        if not ret_status:
+            ii = nm.where(status > 1)[0]
+            vals[ii] = nm.nan
+
+        if ret_ref_coors:
+            return vals, ref_coors, cells, status
+
+        elif ret_status:
+            return vals, cells, status
+
+        elif ret_cells:
+            return vals, cells
+
+        else:
+            return vals
