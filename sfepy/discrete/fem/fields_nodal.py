@@ -180,7 +180,8 @@ class H1NodalMixin(H1Mixin):
 
         mesh = self.create_mesh(extra_nodes=False)
 
-        ctx = ps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx = ps.create_context(None, 0, 1e-15, 100, 1e-8,
+                                tdim=mesh.cmesh.tdim)
         geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
 
         ctx.geo_ctx = geo_ctx
