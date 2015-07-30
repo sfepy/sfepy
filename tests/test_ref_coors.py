@@ -2,7 +2,7 @@ import numpy as nm
 
 import sfepy
 from sfepy.discrete.fem import Mesh, FEDomain, Field
-import sfepy.discrete.fem.global_interp as gi
+import sfepy.discrete.common.global_interp as gi
 
 from sfepy.base.testing import TestCommon
 

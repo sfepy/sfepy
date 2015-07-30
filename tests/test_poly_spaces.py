@@ -42,7 +42,7 @@ def _gen_common_data(orders, gels, report):
     from sfepy.linalg import combine
     from sfepy.discrete import FieldVariable, Integral
     from sfepy.discrete.fem import Mesh, FEDomain, Field
-    from sfepy.discrete.fem.global_interp import get_ref_coors
+    from sfepy.discrete.common.global_interp import get_ref_coors
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
                                     ['lagrange', 'lobatto']])]
