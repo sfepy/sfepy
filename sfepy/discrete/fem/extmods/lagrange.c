@@ -14,8 +14,8 @@ void print_context_lagrange(void *_ctx)
   output("is_bubble: %d\n", ctx->is_bubble);
   output("tdim: %d\n", ctx->tdim);
   output("nodes:\n");
-  for (ir = 0; ir < ctx->n_nod; ir ++) {
-    for (ic = 0; ic < ctx->n_col; ic ++) {
+  for (ir = 0; ir < ctx->n_nod; ir++) {
+    for (ic = 0; ic < ctx->n_col; ic++) {
       output(" %d", ctx->nodes[ctx->n_col*ir+ic]);
     }
     output("\n");
@@ -31,8 +31,8 @@ void print_context_lagrange(void *_ctx)
   output("mesh_coors:\n");
   fmf_print(ctx->mesh_coors, stdout, 0);
   output("mesh_conn:\n");
-  for (ir = 0; ir < ctx->n_cell; ir ++) {
-    for (ic = 0; ic < ctx->n_cp; ic ++) {
+  for (ir = 0; ir < ctx->n_cell; ir++) {
+    for (ic = 0; ic < ctx->n_cp; ic++) {
       output(" %d", ctx->mesh_conn[ctx->n_cp*ir+ic]);
     }
     output("\n");
