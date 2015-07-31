@@ -120,6 +120,7 @@ cdef class CLagrangeContext:
         cdef np.ndarray[float64, mode='c', ndim=2] _mesh_coors
         cdef np.ndarray[int32, mode='c', ndim=2] _mesh_conn
         cdef np.ndarray[float64, mode='c', ndim=1] _base1d
+        cdef np.ndarray[float64, mode='c', ndim=2] _mbfg
 
         ctx = self.ctx = <LagrangeContext *> pyalloc(sizeof(LagrangeContext))
 
@@ -141,11 +142,11 @@ cdef class CLagrangeContext:
             ctx.n_col = nodes.shape[1]
 
             _base1d = self.base1d = np.zeros((ctx.n_nod,), dtype=np.float64)
-            _f.fmf_pretend_nc(ctx.base1d, 1, 1, 1, ctx.n_nod, &_base1d[0])
+            _f.array2fmfield1(ctx.base1d, _base1d)
 
             _mbfg = self.mbfg = np.zeros((ref_coors.shape[1], ctx.n_nod),
                                          dtype=np.float64)
-            _f.array2fmfield2(ctx.mbfg,_mbfg)
+            _f.array2fmfield2(ctx.mbfg, _mbfg)
 
         else:
             raise ValueError('nodes argument is required!')
