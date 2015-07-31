@@ -205,12 +205,10 @@ cdef class CLagrangeContext:
         cdef int32 n_coor = coors.shape[0]
         cdef int32 n_nod = self.ctx.n_nod
         cdef int32 dim = coors.shape[1]
-        cdef int32 bdim, n_v
+        cdef int32 bdim
         cdef FMField _out[1], _coors[1]
 
         ctx = self.ctx
-
-        n_v = ctx.ref_coors.nRow
 
         ctx.check_errors = check_errors
         ctx.eps = eps
