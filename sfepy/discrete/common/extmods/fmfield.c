@@ -1435,7 +1435,9 @@ int32 fmfr_sumLevelsTMulF( FMField *objR, FMField *objA, float64 *val )
 int32 fmf_copy( FMField *objR, FMField *objA )
 {
   if (objR->cellSize != objA->cellSize) {
-    errput( ErrHead "ERR_BadMatch\n" );
+    errput(ErrHead "ERR_BadMatch: (%d %d %d) = (%d %d %d)\n",
+           objR->nLev, objR->nRow, objR->nCol,
+           objA->nLev, objA->nRow, objA->nCol);
   }
   memcpy( objR->val, objA->val, objA->cellSize * sizeof( float64 ) );
 
