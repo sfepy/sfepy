@@ -114,7 +114,11 @@ cdef class CMesh:
             offsets.append(off)
             indices.append(conn.ravel())
 
-            self.cell_types[ict:ict+n_el] = self.key_to_index[descs[ig]]
+            if descs[ig] in self.key_to_index:
+                self.cell_types[ict:ict+n_el] = self.key_to_index[descs[ig]]
+
+            else:
+                self.cell_types[ict:ict+n_el] = 5 # Higher order mesh.
 
             ict += n_el
 
