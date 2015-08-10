@@ -424,7 +424,7 @@ int32 refc_find_ref_coors(FMField *ref_coors,
 
     ok = xi_ok = 0;
     d_min = 1e10;
-    imin = 0;
+    imin = candidates[offsets[ip]];
 
     for (ic = offsets[ip]; ic < offsets[ip+1]; ic++) {
       /* output("***** %d %d %d\n", ip, ic, candidates[ic]); */
@@ -437,13 +437,18 @@ int32 refc_find_ref_coors(FMField *ref_coors,
                       ctx->e_coors_max->val);
       xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
-      if (dist < d_min) {
+      if (xi_ok) {
+        if (dist < qp_eps) {
+          imin = cell_ent->ii;
+          ok = 1;
+          break;
+        } else if (dist < d_min) {
+          d_min = dist;
+          imin = cell_ent->ii;
+        }
+      } else if (dist < d_min) {
         d_min = dist;
         imin = cell_ent->ii;
-      }
-      if (xi_ok && (dist < qp_eps)) {
-        ok = 1;
-        break;
       }
     }
     /* output("-> %d %d %d %.3e\n", imin, xi_ok, ok, d_min); */
