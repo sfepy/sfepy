@@ -9,6 +9,10 @@ void print_context_lagrange(void *_ctx)
   int32 ir, ic;
 
   output("iel: %d\n", ctx->iel);
+  output("is_dx: %d\n", ctx->is_dx);
+
+  output("e_coors_max:\n");
+  fmf_print(ctx->e_coors_max, stdout, 1);
 
   output("order: %d\n", ctx->order);
   output("is_bubble: %d\n", ctx->is_bubble);
