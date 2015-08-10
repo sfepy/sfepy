@@ -27,6 +27,248 @@ inline void unravel_index(uint32 *indices, uint32 index,
   indices[0] = index % shape[0];
 }
 
+void print_context_nurbs(void *_ctx)
+{
+  NURBSContext *ctx = (NURBSContext *) _ctx;
+
+  int32 ir, ic;
+
+  output("iel: %d\n", ctx->iel);
+  output("is_dx: %d\n", ctx->is_dx);
+
+  output("e_coors_max:\n");
+  fmf_print(ctx->e_coors_max, stdout, 1);
+
+  output("control_points:\n");
+  fmf_print(ctx->control_points, stdout, 0);
+  output("weights:\n");
+  fmf_print(ctx->weights, stdout, 0);
+
+  output("degrees:\n");
+  for (ir = 0; ir < ctx->dim; ir++) {
+    output(" %d", ctx->degrees[ir]);
+  }
+  output("\n");
+  output("dim: %d\n", ctx->dim);
+
+  output("cs:\n");
+  for (ir = 0; ir < ctx->dim; ir++) {
+    fmf_print(ctx->cs + ir, stdout, 0);
+  }
+
+  output("conn:\n");
+  for (ir = 0; ir < ctx->n_cell; ir++) {
+    for (ic = 0; ic < ctx->n_efun; ic++) {
+      output(" %d", ctx->conn[ctx->n_efun*ir+ic]);
+    }
+    output("\n");
+  }
+  output("n_cell: %d\n", ctx->n_cell);
+  output("n_efun: %d\n", ctx->n_efun);
+
+  output("bf:\n");
+  fmf_print(ctx->bf, stdout, 1);
+  output("bfg:\n");
+  fmf_print(ctx->bfg, stdout, 1);
+
+  output("R:\n");
+  fmf_print(ctx->R, stdout, 1);
+  output("dR_dxi:\n");
+  fmf_print(ctx->dR_dxi, stdout, 1);
+  output("dR_dx:\n");
+  fmf_print(ctx->dR_dx, stdout, 1);
+
+  output("B:\n");
+  for (ir = 0; ir < ctx->dim; ir++) {
+    fmf_print(ctx->B + ir, stdout, 1);
+  }
+  output("dB_dxi:\n");
+  for (ir = 0; ir < ctx->dim; ir++) {
+    fmf_print(ctx->dB_dxi + ir, stdout, 1);
+  }
+
+  output("N:\n");
+  for (ir = 0; ir < ctx->dim; ir++) {
+    fmf_print(ctx->N + ir, stdout, 1);
+  }
+  output("dN_dxi:\n");
+  for (ir = 0; ir < ctx->dim; ir++) {
+    fmf_print(ctx->dN_dxi + ir, stdout, 1);
+  }
+
+  output("reuse: %d\n", ctx->reuse);
+
+  output("has_bernstein: %d\n", ctx->has_bernstein);
+  output("is_nurbs: %d\n", ctx->is_nurbs);
+
+  output("i_max: %d\n", ctx->i_max);
+  output("newton_eps: %.4e\n", ctx->newton_eps);
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "get_xi_dist"
+// Returns: ok = 1: success, ok = 0: failure.
+int32 get_xi_dist(float64 *pdist, FMField *xi,
+                  FMField *point, FMField *e_coors,
+                  void *_ctx)
+{
+  NURBSContext *ctx = (NURBSContext *) _ctx;
+
+  int32 i_max = ctx->i_max;
+  float64 newton_eps = ctx->newton_eps;
+
+  int32 idim, ii, ok = 0;
+  int32 dim = e_coors->nCol;
+  FMField *bf = ctx->bf;
+  FMField *bfg = ctx->bfg;
+  FMField xint[1], res[1], mtx[1], imtx[1], bc[1], base1d[1];
+  float64 err, val, dist;
+  float64 buf6[6], buf8[8];
+  float64 buf3_1[3], buf3_2[3], buf9_1[9], buf9_2[9];
+
+  fmf_pretend_nc(base1d, 1, 1, 1, e_coors->nRow, buf8);
+
+  fmf_pretend_nc(bc, dim, 1, 1, 2, buf6);
+  fmf_pretend_nc(res, 1, 1, 1, dim, buf3_1);
+  fmf_pretend_nc(xint, 1, 1, 1, dim, buf3_2);
+  fmf_pretend_nc(mtx, 1, 1, dim, dim, buf9_1);
+  fmf_pretend_nc(imtx, 1, 1, dim, dim, buf9_2);
+
+  ii = 0;
+  fmf_fillC(xi, 0.5);
+  while (ii < i_max) {
+    // Base(xi).
+    ctx->reuse = 0;
+    ctx->eval_basis(bf, xi, 0, _ctx);
+
+    // X(xi).
+    fmf_mulAB_n1(xint, bf, e_coors);
+    // Rezidual.
+    fmf_subAB_nn(res, point, xint);
+
+    err = 0.0;
+    for (idim = 0; idim < dim; idim++) {
+      err += res->val[idim] * res->val[idim];
+    }
+    err = sqrt(err);
+
+    if (err < newton_eps) {
+      ok = 1;
+      break;
+    }
+
+    // grad Base(xi).
+    ctx->reuse = 1;
+    ctx->eval_basis(bfg, xi, 1, _ctx);
+
+    // - Matrix.
+    fmf_mulAB_n1(mtx, bfg, e_coors);
+
+    geme_invert3x3(imtx, mtx);
+
+    fmf_mulAB_nn(xint, res, imtx);
+    fmf_addAB_nn(xi, xi, xint);
+
+    ii += 1;
+  }
+  if (!ok) {
+    // Newton did not converge.
+    // Use centre if nothing better is available.
+    fmf_fillC(xi, 0.5);
+
+    *pdist = 1e10;
+
+  } else {
+    dist = 0.0;
+    for (ii = 0; ii < dim; ii++) {
+      val = Min(Max(xi->val[ii] - 1.0, 0.0), 100.0);
+      dist += val * val;
+      val = Min(Max(0.0 - xi->val[ii], 0.0), 100.0);
+      dist += val * val;
+    }
+    *pdist = dist;
+  }
+
+  return(ok);
+}
+
+/*
+  Evaluate NURBS basis polynomials in given points.
+*/
+int32 eval_basis_nurbs(FMField *out, FMField *coors, int32 diff,
+                       void *_ctx)
+{
+  NURBSContext *ctx = (NURBSContext *) _ctx;
+  int32 dim = ctx->dim;
+  int32 ii, iqp, ret = RET_OK;
+  FMField bf[1], _coors[1], qp[1], _det[1], _dx_dxi[1], _dxi_dx[1];
+  float64 buf1[1], buf9_1[9], buf9_2[9];
+
+  fmf_pretend_nc(_coors, 1, coors->nRow, 1, coors->nCol, coors->val);
+  fmf_pretend_nc(qp, 1, 1, 1, dim, 0);
+  fmf_pretend_nc(bf, 1, 1, out->nRow, out->nCol, 0);
+  fmf_pretend_nc(_det, 1, 1, 1, 1, buf1);
+  fmf_pretend_nc(_dx_dxi, 1, 1, dim, dim, buf9_1);
+  fmf_pretend_nc(_dxi_dx, 1, 1, dim, dim, buf9_2);
+
+  if ((ctx->reuse) && (out->nLev > 1)) {
+    errput("cannot reuse more than one point! (%d)\n", out->nLev);
+    ERR_CheckGo(ret);
+  }
+
+  for (iqp = 0; iqp < out->nLev; iqp++) {
+    fmf_set_qp(bf, iqp, out);
+
+    if (ctx->reuse) {
+      goto copy;
+    }
+
+    fmf_set_qp(qp, iqp, _coors);
+
+    for (ii = 0; ii < dim; ii++) {
+      eval_bernstein_basis(ctx->B + ii, ctx->dB_dxi + ii, qp->val[ii],
+                           ctx->degrees[ii]);
+    }
+
+    if (ctx->is_nurbs) {
+      eval_nurbs_basis_tp(ctx->R, ctx->dR_dx, _det,
+                          ctx->dR_dxi, _dx_dxi, _dxi_dx,
+                          ctx->B, ctx->dB_dxi, ctx->N, ctx->dN_dxi,
+                          qp, ctx->iel,
+                          ctx->control_points, ctx->weights,
+                          ctx->degrees, ctx->dim, ctx->cs,
+                          ctx->conn, ctx->n_cell, ctx->n_efun,
+                          1, ctx->is_dx);
+    } else {
+      eval_bspline_basis_tp(ctx->R, ctx->dR_dx, _det,
+                            ctx->dR_dxi, _dx_dxi, _dxi_dx,
+                            ctx->B, ctx->dB_dxi, ctx->N, ctx->dN_dxi,
+                            qp, ctx->iel,
+                            ctx->control_points,
+                            ctx->degrees, ctx->dim, ctx->cs,
+                            ctx->conn, ctx->n_cell, ctx->n_efun,
+                            1, ctx->is_dx);
+    }
+
+  copy:
+    if (!diff) {
+      fmf_copy(bf, ctx->R);
+
+    } else if (ctx->is_dx) {
+      fmf_copy(bf, ctx->dR_dx);
+
+    } else {
+      fmf_copy(bf, ctx->dR_dxi);
+    }
+
+    ERR_CheckGo(ret);
+  }
+
+ end_label:
+  return(ret);
+}
+
 int32 eval_bernstein_basis(FMField *funs, FMField *ders,
                            float64 x, uint32 degree)
 {
@@ -82,7 +324,7 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                             int32 *degrees, int32 dim,
                             FMField *cs,
                             int32 *conn, int32 n_el, int32 n_ep,
-                            int32 has_bernstein)
+                            int32 has_bernstein, int32 is_dx)
 {
   int32 ret = RET_OK;
   uint32 ii, jj, a, i0, i1, i2;
@@ -193,24 +435,26 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
     }
   }
 
-  // Mapping reference -> physical domain dxi/dx.
-  // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
-  for (ii = 0; ii < dim; ii++) {
-    for (jj = 0; jj < dim; jj++) {
-      dx_dxi->val[dim*ii+jj] = 0.0;
-      for (a = 0; a < dR_dxi->nCol; a++) {
-        P = control_points->val[dim*ec[a]+ii];
+  if (is_dx) {
+    // Mapping reference -> physical domain dxi/dx.
+    // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
+    for (ii = 0; ii < dim; ii++) {
+      for (jj = 0; jj < dim; jj++) {
+        dx_dxi->val[dim*ii+jj] = 0.0;
+        for (a = 0; a < dR_dxi->nCol; a++) {
+          P = control_points->val[dim*ec[a]+ii];
 
-        dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
+          dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
+        }
       }
     }
+    geme_det3x3(det->val, dx_dxi);
+
+    geme_invert3x3(dxi_dx, dx_dxi);
+
+    // dR/dx.
+    fmf_mulATB_nn(dR_dx, dxi_dx, dR_dxi);
   }
-  geme_det3x3(det->val, dx_dxi);
-
-  geme_invert3x3(dxi_dx, dx_dxi);
-
-  // dR/dx.
-  fmf_mulATB_nn(dR_dx, dxi_dx, dR_dxi);
 
  end_label:
   return(ret);
@@ -230,7 +474,7 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
                           FMField *weights, int32 *degrees, int32 dim,
                           FMField *cs,
                           int32 *conn, int32 n_el, int32 n_ep,
-                          int32 has_bernstein)
+                          int32 has_bernstein, int32 is_dx)
 {
   int32 ret = RET_OK;
   uint32 ii, jj, a, i0, i1, i2;
@@ -371,24 +615,26 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
     }
   }
 
-  // Mapping reference -> physical domain dxi/dx.
-  // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
-  for (ii = 0; ii < dim; ii++) {
-    for (jj = 0; jj < dim; jj++) {
-      dx_dxi->val[dim*ii+jj] = 0.0;
-      for (a = 0; a < dR_dxi->nCol; a++) {
-        P = control_points->val[dim*ec[a]+ii];
+  if (is_dx) {
+    // Mapping reference -> physical domain dxi/dx.
+    // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
+    for (ii = 0; ii < dim; ii++) {
+      for (jj = 0; jj < dim; jj++) {
+        dx_dxi->val[dim*ii+jj] = 0.0;
+        for (a = 0; a < dR_dxi->nCol; a++) {
+          P = control_points->val[dim*ec[a]+ii];
 
-        dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
+          dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
+        }
       }
     }
+    geme_det3x3(det->val, dx_dxi);
+
+    geme_invert3x3(dxi_dx, dx_dxi);
+
+    // dR/dx.
+    fmf_mulATB_nn(dR_dx, dxi_dx, dR_dxi);
   }
-  geme_det3x3(det->val, dx_dxi);
-
-  geme_invert3x3(dxi_dx, dx_dxi);
-
-  // dR/dx.
-  fmf_mulATB_nn(dR_dx, dxi_dx, dR_dxi);
 
  end_label:
   return(ret);
