@@ -249,11 +249,6 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
             mesh = field.create_mesh(extra_nodes=False)
             cmesh = mesh.cmesh
 
-            gels = create_geometry_elements()
-
-            cmesh.set_local_entities(gels)
-            cmesh.setup_entities()
-
             if get_cells_fun is None:
                 centroids = cmesh.get_centroids(cmesh.tdim)
 
@@ -273,9 +268,22 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
         coors = nm.ascontiguousarray(coors)
         ctx = field.create_basis_context()
 
+        eval_cmesh = get_default_attr(cache, 'eval_cmesh', None)
+        if eval_cmesh is None:
+            tt = time.clock()
+            mesh = field.create_eval_mesh()
+            if mesh is None:
+                eval_cmesh = cmesh
+
+            else:
+                eval_cmesh = mesh.cmesh
+
+            output('eval_cmesh setup: %f s'
+                   % (time.clock()-tt), verbose=verbose)
+
         tt = time.clock()
 
-        crc.find_ref_coors(ref_coors, cells, status, coors, cmesh,
+        crc.find_ref_coors(ref_coors, cells, status, coors, eval_cmesh,
                            potential_cells, offsets, extrapolate,
                            1e-15, close_limit, ctx)
         if extrapolate:
