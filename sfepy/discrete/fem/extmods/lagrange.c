@@ -330,6 +330,7 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
   int32 dim = ctx->ref_coors->nCol;
   int32 n_cp = 0;
   int32 is_dx = ctx->is_dx;
+  float64 coef = 1.0;
   float64 buf9_1[9], buf9_2[9], buf24_1[24], buf24_2[24], buf6[6];
   FMField *_out = ctx->mbfg;
   FMField bc[1], _coors[1], _coor[1], coor[1];
@@ -348,6 +349,9 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
     fmf_pretend_nc(gbfg1, 1, 1, dim, n_cp, buf24_2);
     fmf_pretend_nc(bfg1, 1, 1, dim, out->nCol, 0);
   }
+  if (ctx->is_bubble) {
+    coef = 1.0 / (ctx->n_nod - 1);
+  }
 
   ctx->bc = bc;
 
@@ -360,6 +364,35 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
 
       get_barycentric_coors(bc, coor, _ctx);
       eval_lagrange_simplex(bf1, ctx->order, diff, _ctx);
+
+      if (ctx->is_bubble) {
+        int32 ir;
+        int32 order = 0;
+        int32 *nodes = ctx->nodes;
+        FMField bubble[1];
+        float64 buf3[3];
+
+        // slice [:, -1:].
+        fmf_pretend_nc(bubble, 1, 1, bf1->nRow, 1, buf3);
+
+        ctx->nodes += (ctx->n_nod - 1) * ctx->n_col;
+        for (ii = 0; ii < ctx->n_col; ii++) {
+          order += ctx->nodes[ii];
+        }
+        ctx->is_bubble = 0;
+        eval_lagrange_simplex(bubble, order, diff, _ctx);
+        ctx->nodes = nodes;
+        ctx->is_bubble = 1;
+
+        for (ir = 0; ir < bf1->nRow; ir++) {
+          bf1->val[bf1->nCol * ir + bf1->nCol - 1] = bubble->val[ir];
+
+          // out[:, :-1] -= bubble / (n_nod - 1).
+          for (ii = 0; ii < (bf1->nCol - 1); ii++) {
+            bf1->val[bf1->nCol * ir + ii] -= coef * bubble->val[ir];
+          }
+        }
+      }
     }
 
   } else {
@@ -425,7 +458,8 @@ int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
   int32 ret = RET_OK;
   int32 n_coor = 1;  // assume single qp!!!
   int32 dim = n_v - 1;
-  int32 n_nod = out->nCol;
+  int32 n_ocol = out->nCol;
+  int32 n_nod = n_ocol - ctx->is_bubble;
   int32 ii, ir, ic, i1, i2, inod, n_i1, n_ii;
   float64 dval, dd, vv, bci1, bcii;
   float64 *pout;
@@ -489,7 +523,7 @@ int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
           }
 
           for (ir = 0; ir < dim; ir++) {
-            pout[n_nod*ir+inod] += vv * dval * mtx_i->val[n_v*ii+ir];
+            pout[n_ocol*ir+inod] += vv * dval * mtx_i->val[n_v*ii+ir];
           }
         }
       }
