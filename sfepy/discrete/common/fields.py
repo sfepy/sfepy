@@ -331,7 +331,7 @@ class Field(Struct):
         ctx = self.create_basis_context()
 
         evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       self.ap.econn, cmode, ctx)
+                       self.get_econn('volume', self.region), cmode, ctx)
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
         output('...done',verbose=verbose)
