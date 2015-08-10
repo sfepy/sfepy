@@ -184,6 +184,9 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
     # Prepare buffers.
     n_ep = conn.shape[1]
 
+    if diff:
+        assert bdim == dim
+
     buf = <float64 *> pyalloc(n_ep * (bdim + dpn) * sizeof(float64))
     buf_bf_max = buf
     buf_src_max = buf_bf_max + n_ep * bdim
