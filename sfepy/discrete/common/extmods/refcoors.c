@@ -151,7 +151,6 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
   float64 *mesh_coors = mesh->geometry->coors;
   float64 buf3[3];
   float64 buf9[9];
-  float64 buf_ec_max[8 * 3]; // Max. n_ep * dim.
   FMField point[1], centroid[1], _normals0[1], _normals1[1], e_coors[1], xi[1];
   Indices cell_vertices[1];
   MeshEntity cell_ent[1];
@@ -225,7 +224,8 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
         }
 
         if (tmin >= (1.0 - qp_eps)) {
-          _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc, buf_ec_max);
+          _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
+                          ctx->e_coors_max->val);
           /* fmf_print(e_coors, stdout, 0); */
 
           xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
@@ -253,7 +253,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
             imin = ii;
             if ((tt >= (1.0 - qp_eps)) || hexa_reverse) {
               _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
-                              buf_ec_max);
+                              ctx->e_coors_max->val);
 
               xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
@@ -277,7 +277,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
             imin = ii;
             if ((tt >= (1.0 - qp_eps)) || hexa_reverse) {
               _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
-                              buf_ec_max);
+                              ctx->e_coors_max->val);
 
               xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
@@ -317,7 +317,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
         me_get_incident2(cell_ent, cell_vertices, cD0);
 
         _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
-                        buf_ec_max);
+                        ctx->e_coors_max->val);
         xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
         d_min = Min(dist, d_min);
@@ -391,7 +391,6 @@ int32 refc_find_ref_coors(FMField *ref_coors,
   float64 d_min, dist;
   float64 *mesh_coors = mesh->geometry->coors;
   float64 buf3[3];
-  float64 buf_ec_max[8 * 3]; // Max. n_ep * dim.
   FMField point[1], e_coors[1], xi[1];
   Indices cell_vertices[1];
   MeshEntity cell_ent[1];
@@ -428,7 +427,7 @@ int32 refc_find_ref_coors(FMField *ref_coors,
       me_get_incident2(cell_ent, cell_vertices, cD0);
 
       _get_cell_coors(e_coors, cell_vertices, mesh_coors, nc,
-                      buf_ec_max);
+                      ctx->e_coors_max->val);
       xi_ok = ctx->get_xi_dist(&dist, xi, point, e_coors, ctx);
 
       if (dist < d_min) {

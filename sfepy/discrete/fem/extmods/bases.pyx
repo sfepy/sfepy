@@ -24,6 +24,7 @@ cdef extern from 'lagrange.h':
         int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
                             void *_ctx)
         int32 iel # >= 0 => apply reference mapping to gradient.
+        FMField e_coors_max[1] # Buffer for coordinates of element nodes.
 
         LagrangeContext *geo_ctx
 
@@ -74,6 +75,7 @@ cdef class CLagrangeContext:
     cdef readonly CLagrangeContext _geo_ctx
     cdef readonly np.ndarray mesh_coors
     cdef readonly np.ndarray mesh_conn
+    cdef readonly np.ndarray e_coors_max # Auxiliary buffer.
     cdef readonly np.ndarray base1d # Auxiliary buffer.
     cdef readonly np.ndarray mbfg # Auxiliary buffer.
 
@@ -119,6 +121,7 @@ cdef class CLagrangeContext:
         cdef LagrangeContext *ctx
         cdef np.ndarray[float64, mode='c', ndim=2] _mesh_coors
         cdef np.ndarray[int32, mode='c', ndim=2] _mesh_conn
+        cdef np.ndarray[float64, mode='c', ndim=2] _e_coors_max
         cdef np.ndarray[float64, mode='c', ndim=1] _base1d
         cdef np.ndarray[float64, mode='c', ndim=2] _mbfg
 
@@ -135,6 +138,9 @@ cdef class CLagrangeContext:
         ctx.is_bubble = is_bubble
 
         ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]
+
+        _e_coors_max = self.e_coors_max = np.zeros((8, 3), dtype=np.float64)
+        _f.array2fmfield2(ctx.e_coors_max, _e_coors_max)
 
         if nodes is not None:
             ctx.nodes = &nodes[0, 0]

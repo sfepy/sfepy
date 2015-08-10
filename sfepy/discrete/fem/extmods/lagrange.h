@@ -21,6 +21,7 @@ typedef struct LagrangeContext {
   int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
                       void *_ctx);
   int32 iel; // >= 0 => apply reference mapping to gradient.
+  FMField e_coors_max[1]; // Buffer for coordinates of element nodes.
 
   struct LagrangeContext *geo_ctx;
 
