@@ -120,6 +120,14 @@ def _pymetis_version(pkg_name):
 
     return pymetis.version
 
+def _scikit_umfpack_version(pkg_name):
+    try:
+        import scikits.umfpack; scikits.umfpack
+        return '0.1'
+
+    except:
+        return None
+
 def check_versions(show_only=False):
     # Cython is a build dependency.
     package_check('cython', INFO.CYTHON_MIN_VERSION,
@@ -153,6 +161,12 @@ def check_versions(show_only=False):
                   show_only=show_only)
     package_check('pymetis', INFO.PYMETIS_MIN_VERSION, optional=True,
                   version_getter=_pymetis_version,
+                  show_only=show_only)
+    package_check('scikits.umfpack', INFO.SCIKIT_UMFPACK_MIN_VERSION,
+                  optional=True,
+                  version_getter=_scikit_umfpack_version,
+                  show_only=show_only)
+    package_check('pysparse', INFO.PYSPARSE_MIN_VERSION, optional=True,
                   show_only=show_only)
 
 def setup_package():
