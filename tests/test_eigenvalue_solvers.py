@@ -112,7 +112,15 @@ class Test(TestCommon):
         for eig_conf in eig_confs:
             self.report(eig_conf.name)
 
-            eig_solver = Solver.any_from_conf(eig_conf)
+            try:
+                eig_solver = Solver.any_from_conf(eig_conf)
+
+            except (ValueError, ImportError):
+                if eig_conf.kind in self.can_fail:
+                    continue
+
+                else:
+                    raise
 
             t0 = time.clock()
             eigs, vecs = eig_solver(self.mtx, n_eigs=n_eigs, eigenvectors=True)
