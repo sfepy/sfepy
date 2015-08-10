@@ -1463,6 +1463,8 @@ class FieldVariable(Variable):
         ics.canonize_dof_names(self.dofs)
         ics.sort()
 
+        self.initial_condition = nm.zeros((di.n_dof[self.name],),
+                                          dtype=self.dtype)
         for ic in ics:
             region = ic.region
             dofs, val = ic.dofs
@@ -1483,13 +1485,9 @@ class FieldVariable(Variable):
                 fun = lambda coors: aux(coors, ic=ic)
 
             nods, vv = self.field.set_dofs(fun, region, len(dofs), clean_msg)
-
             eq = expand_nodes_to_equations(nods, dofs, self.dofs)
 
-            ic_vec = nm.zeros((di.n_dof[self.name],), dtype=self.dtype)
-            ic_vec[eq] = vv
-
-            self.initial_condition = ic_vec
+            self.initial_condition[eq] = vv
 
     def get_approximation(self):
         return self.field.ap
