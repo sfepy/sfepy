@@ -414,7 +414,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                      _qp, ie,
                                      _control_points, _weights,
                                      _degrees, dim, _cs, _conn, n_el, n_ep,
-                                     1)
+                                     1, 1)
                 _bf.val += n_efun
                 _bfg.val += dim * n_efun
                 _det.val += 1
@@ -444,7 +444,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                        _qp, ie,
                                        _control_points,
                                        _degrees, dim, _cs, _conn, n_el, n_ep,
-                                       1)
+                                       1, 1)
                 _bf.val += n_efun
                 _bfg.val += dim * n_efun
                 _det.val += 1
@@ -613,7 +613,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                                      _qp, ie,
                                      _control_points, _weights,
                                      _degrees, dim, _cs, _conn, n_el, n_ep,
-                                     1)
+                                     1, 1)
 
                 # vals[ii, :] = np.dot(bf, variable[ec])
                 for ir in range(0, nc):
@@ -662,7 +662,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                                        _qp, ie,
                                        _control_points,
                                        _degrees, dim, _cs, _conn, n_el, n_ep,
-                                       1)
+                                       1, 1)
 
                 # vals[ii, :] = np.dot(bf, variable[ec])
                 for ir in range(0, nc):
@@ -825,7 +825,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
                                  _rc, ie,
                                  _control_points, _weights,
                                  _degrees, dim, _cs, _conn, n_el, n_ep,
-                                 0)
+                                 0, 1)
 
             # vals[ip, :] = np.dot(bf, variable[ec])
             ec = _conn + n_ep * ie;
@@ -853,7 +853,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
                                    _rc, ie,
                                    _control_points,
                                    _degrees, dim, _cs, _conn, n_el, n_ep,
-                                   0)
+                                   0, 1)
 
             # vals[ip, :] = np.dot(bf, variable[ec])
             ec = _conn + n_ep * ie;
