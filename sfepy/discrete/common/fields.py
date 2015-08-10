@@ -226,6 +226,13 @@ class Field(Struct):
 
         return out
 
+    def create_eval_mesh(self):
+        """
+        Create a mesh for evaluating the field. The default implementation
+        returns None, because this mesh is for most fields the same as the one
+        created by `Field.create_mesh()`.
+        """
+
     def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
                     close_limit=0.1, get_cells_fun=None, cache=None,
                     ret_cells=False, ret_status=False, ret_ref_coors=False,
