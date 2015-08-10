@@ -54,7 +54,8 @@ cdef extern from 'refcoors.h':
                              void *_ctx)
         int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
                             void *_ctx)
-        int32 iel # >= 0 => apply reference mapping to gradient.
+        int32 iel # >= 0.
+        int32 is_dx # 1 => apply reference mapping to gradient.
 
 from libc.stdio cimport FILE, stdout
 
@@ -195,6 +196,8 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
 
     _f.fmf_pretend_nc(bf, 1, 1, bdim, n_ep, buf_bf_max)
     _f.fmf_pretend_nc(src, 1, 1, dpn, n_ep, buf_src_max)
+
+    ctx.is_dx = 1
 
     # Point (destination coordinate) loop.
     for ip in range(0, n_point):

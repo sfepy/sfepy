@@ -183,6 +183,8 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
   fmf_pretend_nc(xi, 1, 1, 1, nc, buf3);
   fmf_fillC(xi, 0.0);
 
+  ctx->is_dx = 0;
+
   for (ip = 0; ip < coors->nRow; ip++) {
     ic = ics[ip];
     /* output("***** %d %d\n", ip, ic); */
@@ -199,6 +201,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
       FMF_SetCell(centroid, cell);
       /* fmf_print(centroid, stdout, 0); */
 
+      ctx->iel = cell;
       cell_ent->ii = cell;
       me_get_incident2(cell_ent, cell_vertices, cD0);
 
@@ -313,6 +316,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
         }
 
       } else { // Boundary facet.
+        ctx->iel = cell;
         cell_ent->ii = cell;
         me_get_incident2(cell_ent, cell_vertices, cD0);
 
@@ -404,6 +408,8 @@ int32 refc_find_ref_coors(FMField *ref_coors,
   fmf_pretend_nc(xi, 1, 1, 1, nc, buf3);
   fmf_fillC(xi, 0.0);
 
+  ctx->is_dx = 0;
+
   for (ip = 0; ip < coors->nRow; ip++) {
     FMF_SetCell(point, ip);
 
@@ -423,6 +429,7 @@ int32 refc_find_ref_coors(FMField *ref_coors,
     for (ic = offsets[ip]; ic < offsets[ip+1]; ic++) {
       /* output("***** %d %d %d\n", ip, ic, candidates[ic]); */
 
+      ctx->iel = candidates[ic];
       cell_ent->ii = candidates[ic];
       me_get_incident2(cell_ent, cell_vertices, cD0);
 

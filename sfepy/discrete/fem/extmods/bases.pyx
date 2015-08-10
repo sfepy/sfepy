@@ -23,7 +23,8 @@ cdef extern from 'lagrange.h':
                              void *_ctx)
         int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
                             void *_ctx)
-        int32 iel # >= 0 => apply reference mapping to gradient.
+        int32 iel # >= 0.
+        int32 is_dx # 1 => apply reference mapping to gradient.
         FMField e_coors_max[1] # Buffer for coordinates of element nodes.
 
         LagrangeContext *geo_ctx
@@ -132,7 +133,8 @@ cdef class CLagrangeContext:
 
         ctx.get_xi_dist = &_get_xi_dist
         ctx.eval_basis = &_eval_basis_lagrange
-        ctx.iel = -1
+        ctx.iel = 0
+        ctx.is_dx = 0
 
         ctx.order = order
         ctx.is_bubble = is_bubble

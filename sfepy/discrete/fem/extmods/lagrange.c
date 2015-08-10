@@ -325,7 +325,7 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
   int32 n_v = ctx->ref_coors->nRow;
   int32 dim = ctx->ref_coors->nCol;
   int32 n_cp = 0;
-  int32 iel = ctx->iel;
+  int32 is_dx = ctx->is_dx;
   float64 buf9_1[9], buf9_2[9], buf24_1[24], buf24_2[24], buf6[6];
   FMField *_out = ctx->mbfg;
   FMField bc[1], _coors[1], _coor[1], coor[1];
@@ -336,7 +336,7 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
   fmf_pretend_nc(coor, 1, 1, 1, dim, 0);
   fmf_pretend_nc(bf1, 1, 1, out->nRow, out->nCol, 0);
 
-  if (diff && (iel >= 0)) {
+  if (diff && is_dx) {
     n_cp = geo_ctx->n_cp;
     fmf_pretend_nc(cell_coors, 1, 1, n_cp, dim, buf24_1);
     fmf_pretend_nc(mtxMR, 1, 1, dim, dim, buf9_1);
@@ -377,10 +377,9 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
     }
   }
 
-  if (diff && (iel >= 0)) {
-
+  if (diff && is_dx) {
     ele_extractNodalValuesNBN(cell_coors, geo_ctx->mesh_coors,
-                              geo_ctx->mesh_conn + n_cp * iel);
+                              geo_ctx->mesh_conn + n_cp * ctx->iel);
 
     for (iqp = 0; iqp < out->nLev; iqp++) {
       fmf_set_qp(coor, iqp, _coors);
