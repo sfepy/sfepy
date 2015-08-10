@@ -226,23 +226,13 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         """
         Create the context required for evaluating the field basis.
         """
-        from sfepy.discrete.fem.extmods.bases import CLagrangeContext
+        # Hack for tests to pass - the reference coordinates are determined
+        # from vertices only - we can use the Lagrange basis context for the
+        # moment. The true context for Field.evaluate_at() is not implemented.
+        gps = self.ap.get_poly_space('v', from_geometry=True)
+        mesh = self.create_mesh(extra_nodes=False)
 
-        # Hack - the reference coordinates are determined from vertices only -
-        # we can use the Lagrange basis for the moment.
-        ap = self.ap
-        ps = ap.interp.gel.interp.poly_spaces['v']
-
-        ref_coors = ps.geometry.coors
-
-        ctx = CLagrangeContext(mtx_i=ps.get_mtx_i(),
-                               ref_coors=ref_coors,
-                               vmin=ref_coors[0, 0],
-                               vmax=ref_coors[1, 0],
-                               nodes=ps.nodes,
-                               tdim=self.domain.shape.tdim,
-                               eps=1e-15,
-                               i_max=100,
-                               newton_eps=1e-8)
+        ctx = geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx.geo_ctx = geo_ctx
 
         return ctx
