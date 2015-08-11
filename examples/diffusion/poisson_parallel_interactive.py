@@ -66,6 +66,7 @@ import glob
 from itertools import chain
 
 import numpy as nm
+import matplotlib.pyplot as plt
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import ensure_path
@@ -343,7 +344,7 @@ def solve_problem(mesh_filename, options, comm):
     output('...done in', time.clock() - tt)
 
     if options.show:
-        ppd.pc.plt.show()
+        plt.show()
 
 helps = {
     'output_dir' :
