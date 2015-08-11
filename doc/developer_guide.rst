@@ -953,6 +953,7 @@ Common lower-level code and parent classes for FEM and IGA.
    src/sfepy/discrete/common/extmods/crefcoors
    src/sfepy/discrete/common/extmods/mappings
    src/sfepy/discrete/common/fields
+   src/sfepy/discrete/common/global_interp
    src/sfepy/discrete/common/mappings
    src/sfepy/discrete/common/region
 
@@ -972,7 +973,6 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/fields_hierarchic
    src/sfepy/discrete/fem/fields_nodal
    src/sfepy/discrete/fem/geometry_element
-   src/sfepy/discrete/fem/global_interp
    src/sfepy/discrete/fem/history
    src/sfepy/discrete/fem/lcbc_operators
    src/sfepy/discrete/fem/linearizer
