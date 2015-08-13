@@ -28,6 +28,33 @@ import numpy as nm
 
 from sfepy import data_dir
 from sfepy.discrete.fem import MeshIO
+from sfepy.mechanics.matcoefs import stiffness_from_lame
+
+def post_process(out, pb, state, extend=False):
+    """
+    Calculate and output the strain and stresses for the given state.
+    """
+    from sfepy.base.base import Struct
+    from sfepy.discrete.fem import extend_cell_data
+
+    ev = pb.evaluate
+    strain = ev('ev_cauchy_strain.i.Y(u)', mode='el_avg')
+    stress = ev('ev_cauchy_stress.i.Y(inclusion.D, u)', mode='el_avg')
+
+    piezo = -ev('ev_piezo_stress.i.Y2(inclusion.coupling, phi)',
+                mode='el_avg')
+    piezo = extend_cell_data(piezo, pb.domain, 'Y2', val=0.0)
+
+    out['cauchy_strain'] = Struct(name='output_data', mode='cell',
+                                  data=strain, dofs=None)
+    out['elastic_stress'] = Struct(name='output_data', mode='cell',
+                                   data=stress, dofs=None)
+    out['piezo_stress'] = Struct(name='output_data', mode='cell',
+                                 data=piezo, dofs=None)
+    out['total_stress'] = Struct(name='output_data', mode='cell',
+                                 data=stress + piezo, dofs=None)
+
+    return out
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 ## filename_mesh = data_dir + '/meshes/2d/special/circle_in_square_small.mesh'
@@ -44,6 +71,10 @@ bbox, dim = io.read_bounding_box(ret_dim=True)
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 x_left, x_right = bbox[:,0]
+
+options = {
+    'post_process_hook' : 'post_process',
+}
 
 regions = {
     'Y' : 'all',
@@ -94,6 +125,7 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
             'coupling' : coupling,
             'density' : 0.1142, # in 1e4 kg/m3
         }
+        out['D'] = stiffness_from_lame(2, out['lam'], out['mu']),
 
         for key, val in out.iteritems():
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
