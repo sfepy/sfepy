@@ -70,7 +70,8 @@ def plot_partitioning(axs, field, cell_tasks, gfd, output_dir, size):
     econn = field.ap.econn
     ax = pd.plot_global_dofs(ax, coors, econn)
     ax.set_title('global DOFs')
-    ax.figure.savefig(os.path.join(output_dir, 'global_dofs.png'))
+    ax.figure.savefig(os.path.join(output_dir, 'global_dofs.png'),
+                      bbox_inches='tight')
 
     ax = pc.plot_wireframe(axs[1], mesh.cmesh)
     fig = ax.figure
@@ -94,7 +95,8 @@ def plot_partitioning(axs, field, cell_tasks, gfd, output_dir, size):
 
     ax.set_title('subdomains of tasks and PETSc DOFs')
 
-    fig.savefig(os.path.join(output_dir, 'petsc_dofs.png'))
+    fig.savefig(os.path.join(output_dir, 'petsc_dofs.png'),
+                bbox_inches='tight')
 
     ax.set_title('')
 
@@ -109,7 +111,8 @@ def plot_partitioning(axs, field, cell_tasks, gfd, output_dir, size):
         ax.axis(axis)
         ax.set_title('overlap cells on task %d' % ir)
         fig.savefig(os.path.join(output_dir,
-                                 'petsc_overlaps_%02d.png' % ir))
+                                 'petsc_overlaps_%02d.png' % ir),
+                    bbox_inches='tight')
         fig.delaxes(ax)
 
 def plot_local_dofs(axs, field, field_i, omega_gi, output_dir, rank):
@@ -124,11 +127,13 @@ def plot_local_dofs(axs, field, field_i, omega_gi, output_dir, rank):
     econn = field_i.ap.econn
     ax = pd.plot_global_dofs(ax, coors, econn)
     ax.set_title('local DOFs on task %d' % rank)
-    ax.figure.savefig(os.path.join(output_dir, 'local_dofs_%02d.png' % rank))
+    ax.figure.savefig(os.path.join(output_dir, 'local_dofs_%02d.png' % rank),
+                      bbox_inches='tight')
 
     ax = pc.plot_wireframe(axs[1], mesh.cmesh)
     coors = field.get_coor()
     econn = field.get_econn('volume', omega_gi, 0)
     ax = pd.plot_global_dofs(ax, coors, econn)
     ax.set_title('global DOFs on task %d' % rank)
-    ax.figure.savefig(os.path.join(output_dir, 'local_global_%02d.png' % rank))
+    ax.figure.savefig(os.path.join(output_dir, 'local_global_%02d.png' % rank),
+                      bbox_inches='tight')
