@@ -39,7 +39,7 @@ omega_squared = omega**2
 
 conf_dir = os.path.dirname(__file__)
 io = MeshIO.any_from_filename(filename_mesh, prefix_dir=conf_dir)
-bbox, dim = io.read_bounding_box( ret_dim = True )
+bbox, dim = io.read_bounding_box(ret_dim=True)
 
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
@@ -54,11 +54,22 @@ regions = {
     'Right' : ('vertices in (x > %f)' % (x_right - 1e-3), 'facet'),
 }
 
-material_2 = {
-    'name' : 'inclusion',
+fields = {
+    'displacement' : ('real', dim, 'Y', 1),
+    'potential' : ('real', 1, 'Y', 1),
+}
 
-    # epoxy
-    'function' : 'get_inclusion_pars',
+variables = {
+    'u' : ('unknown field', 'displacement', 0),
+    'v' : ('test field', 'displacement', 'u'),
+    'phi' : ('unknown field', 'potential', 1),
+    'psi' : ('test field', 'potential', 'phi'),
+}
+
+ebcs = {
+    'u1' : ('Left', {'u.all' : 0.0}),
+    'u2' : ('Right', {'u.0' : 0.1}),
+    'phi' : ('Y2_Surface', {'phi.all' : 0.0}),
 }
 
 def get_inclusion_pars(ts, coor, mode=None, **kwargs):
@@ -68,9 +79,9 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
         n_nod, dim = coor.shape
         sym = (dim + 1) * dim / 2
 
-        dielectric = nm.eye( dim, dtype = nm.float64 )
+        dielectric = nm.eye(dim, dtype=nm.float64)
         # !!!
-        coupling = nm.ones( (dim, sym), dtype = nm.float64 )
+        coupling = nm.ones((dim, sym), dtype=nm.float64)
         #    coupling[0,1] = 0.2
 
         out = {
@@ -88,74 +99,32 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
         return out
 
+materials = {
+    'inclusion' : (None, 'get_inclusion_pars')
+}
+
 functions = {
     'get_inclusion_pars' : (get_inclusion_pars,),
 }
 
-field_0 = {
-    'name' : 'displacement',
-    'dtype' : nm.float64,
-    'shape' : dim,
-    'region' : 'Y',
-    'approx_order' : 1,
-}
-
-field_2 = {
-    'name' : 'potential',
-    'dtype' : nm.float64,
-    'shape' : (1,),
-    'region' : 'Y',
-    'approx_order' : 1,
-}
-
-variables = {
-    'u' : ('unknown field', 'displacement', 0),
-    'v' : ('test field', 'displacement', 'u'),
-    'phi' : ('unknown field', 'potential', 1),
-    'psi' : ('test field', 'potential', 'phi'),
-}
-
-ebcs = {
-    'u1' : ('Left', {'u.all' : 0.0}),
-    'u2' : ('Right', {'u.0' : 0.1}),
-    'phi' : ('Y2_Surface', {'phi.all' : 0.0}),
-}
-
-integral_1 = {
-    'name' : 'i',
-    'order' : 2,
+integrals = {
+    'i' : 2,
 }
 
 equations = {
-    '1' : """- %f * dw_volume_dot.i.Y( inclusion.density, v, u )
-             + dw_lin_elastic_iso.i.Y( inclusion.lam, inclusion.mu, v, u )
-             - dw_piezo_coupling.i.Y2( inclusion.coupling, v, phi )
+    '1' : """- %f * dw_volume_dot.i.Y(inclusion.density, v, u)
+             + dw_lin_elastic_iso.i.Y(inclusion.lam, inclusion.mu, v, u)
+             - dw_piezo_coupling.i.Y2(inclusion.coupling, v, phi)
            = 0""" % omega_squared,
-    '2' : """dw_piezo_coupling.i.Y2( inclusion.coupling, u, psi )
-           + dw_diffusion.i.Y( inclusion.dielectric, psi, phi )
+    '2' : """dw_piezo_coupling.i.Y2(inclusion.coupling, u, psi)
+           + dw_diffusion.i.Y(inclusion.dielectric, psi, phi)
            = 0""",
 }
 
-##
-# Solvers etc.
-solver_0 = {
-    'name' : 'ls',
-    'kind' : 'ls.scipy_direct',
-}
-
-solver_1 = {
-    'name' : 'newton',
-    'kind' : 'nls.newton',
-
-    'i_max'      : 1,
-    'eps_a'      : 1e-10,
-    'eps_r'      : 1.0,
-    'macheps'    : 1e-16,
-    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'ls_red'     : 0.1,
-    'ls_red_warp': 0.001,
-    'ls_on'      : 1.1,
-    'ls_min'     : 1e-5,
-    'check'      : 0,
-    'delta'      : 1e-6,
+solvers = {
+    'ls' : ('ls.scipy_direct', {}),
+    'newton' : ('nls.newton',
+                {'i_max'      : 1,
+                 'eps_a'      : 1e-10,
+    }),
 }
