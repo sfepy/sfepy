@@ -222,7 +222,7 @@ class Probe(Struct):
 
         return out
 
-    def __call__(self, variable):
+    def __call__(self, variable, **kwargs):
         """
         Probe the given variable. The actual implementation is in self.probe(),
         so that it can be overridden in subclasses.
@@ -231,8 +231,10 @@ class Probe(Struct):
         ----------
         variable : Variable instance
             The variable to be sampled along the probe.
+        **kwargs : additional arguments
+            See :func:`Probe.probe()`.
         """
-        return self.probe(variable)
+        return self.probe(variable, **kwargs)
 
     def probe(self, variable, mode='val'):
         """
