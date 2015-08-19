@@ -1,7 +1,7 @@
 import numpy as nm
 
 import sfepy
-from sfepy.discrete.fem import Mesh, FEDomain, Field
+from sfepy.discrete.common import Field
 import sfepy.discrete.common.global_interp as gi
 
 from sfepy.base.testing import TestCommon
@@ -10,6 +10,12 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
+        test = Test(conf=conf, options=options)
+        return test
+
+    def test_ref_coors_fem(self):
+        from sfepy.discrete.fem import Mesh, FEDomain
+
         mesh = Mesh.from_file('meshes/3d/special/cross3d.mesh',
                               prefix_dir=sfepy.data_dir)
         domain = FEDomain('domain', mesh)
@@ -19,11 +25,6 @@ class Test(TestCommon):
         field = Field.from_args('linear', nm.float64, 'scalar', omega,
                                 approx_order=1)
 
-        test = Test(conf=conf, options=options, omega=omega, field=field)
-        return test
-
-    def test_ref_coors(self):
-        field = self.field
 
         mcoors = field.domain.get_mesh_coors()
         conn = field.domain.get_conn()
@@ -46,6 +47,8 @@ class Test(TestCommon):
 
         ok = True
 
+        ctx = field.create_basis_context()._geo_ctx
+
         for ir, coors in enumerate(gen_rays()):
             self.report('ray %d' % ir)
             ref_coors, cells, status = gi.get_ref_coors(field, coors,
@@ -56,7 +59,7 @@ class Test(TestCommon):
             self.report(cells)
             self.report(status)
 
-            # In the distorted cell 2, the Newton method founds a solution
+            # In the distorted cell 2, the Newton method finds a solution
             # outside of the cell. This will be fixed when box constraints
             # are applied.
             _ok = nm.all((status == 0) | ((cells == 2) & (status == 3)))
@@ -66,8 +69,8 @@ class Test(TestCommon):
             ok = ok and _ok
 
             for ic, cell in enumerate(cells):
-                ps = field.ap.get_poly_space('v')
-                bf = ps.eval_base(ref_coors[ic:ic+1], suppress_errors=True)
+                ctx.iel = cell
+                bf = ctx.evaluate(ref_coors[ic:ic+1], check_errors=False)
 
                 cell_coors = mcoors[conn[cell]]
                 coor = nm.dot(bf, cell_coors).ravel()
