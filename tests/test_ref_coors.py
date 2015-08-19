@@ -85,3 +85,50 @@ class Test(TestCommon):
                 ok = ok and _ok
 
         return ok
+
+    def test_ref_coors_iga(self):
+        from sfepy.discrete.iga.domain import IGDomain
+
+        domain = IGDomain.from_file('meshes/iga/block2d.iga')
+
+        omega = domain.create_region('Omega', 'all')
+
+        field = Field.from_args('iga', nm.float64, 'scalar', omega,
+                                approx_order='iga', poly_space_base='iga')
+
+        mcoors = field.nurbs.cps
+        conn = field.get_econn('volume', field.region)
+
+        bbox = domain.eval_mesh.get_bounding_box()
+        ray = nm.linspace(bbox[0, 0], bbox[1, 0], 11)
+        coors = nm.c_[ray, ray]
+
+        ref_coors, cells, status = gi.get_ref_coors(field, coors,
+                                                    strategy='general',
+                                                    close_limit=0.0,
+                                                    verbose=False)
+        self.report(ref_coors)
+        self.report(cells)
+        self.report(status)
+
+        ok = nm.all(status == 0)
+
+        ctx = field.create_basis_context()
+
+        for ic, cell in enumerate(cells):
+            ctx.iel = cell
+            bf = ctx.evaluate(ref_coors[ic:ic+1])
+
+            cell_coors = mcoors[conn[cell]]
+            coor = nm.dot(bf, cell_coors).ravel()
+
+            _ok = nm.allclose(coor, coors[ic], atol=1e-14, rtol=0.0)
+            if not _ok:
+                self.report('point %d:' % ic)
+                self.report(' - wrong reference coordinates %s!'
+                            % ref_coors[ic])
+                self.report(' - given point: %s' % coors[ic])
+                self.report(' - found point: %s' % coor)
+            ok = ok and _ok
+
+        return ok
