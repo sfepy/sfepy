@@ -256,7 +256,7 @@ def main():
         order = 2 * (options.order - 1)
         strain_qp = ev('ev_cauchy_strain.%d.Omega(u)' % order, mode='qp')
         stress_qp = ev('ev_cauchy_stress.%d.Omega(Asphalt.D, u)' % order,
-                       mode='qp')
+                       mode='qp', copy_materials=False)
 
         project_by_component(strain, strain_qp, component, order)
         project_by_component(stress, stress_qp, component, order)
