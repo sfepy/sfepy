@@ -9,6 +9,34 @@ from sfepy.base.testing import TestCommon
 def init_vec(variables):
     return nm.random.rand(variables.di.ptr[-1])
 
+def check_vec(self, vec, ii, ok, conds, variables):
+    from sfepy.discrete.common.dof_info import expand_nodes_to_equations
+
+    for var_name, var_conds in conds.group_by_variables().iteritems():
+        var = variables[var_name]
+        for cond in var_conds:
+            cond.canonize_dof_names(var.dofs)
+            self.report('%d: %s %s: %s %s'
+                        % (ii, var.name,
+                           cond.name, cond.region.name, cond.dofs[0]))
+            nods = var.field.get_dofs_in_region(cond.region)
+            eq = expand_nodes_to_equations(nods, cond.dofs[0], var.dofs)
+
+            off = variables.di.indx[var_name].start
+            n_nod = len(nods)
+            for cdof, dof_name in enumerate(cond.dofs[0]):
+                idof = var.dofs.index(dof_name)
+                eqs = eq[n_nod * cdof : n_nod * (cdof + 1)]
+
+                _ok = nm.allclose(vec[off + eqs], idof,
+                                  atol=1e-14, rtol=0.0)
+                if not _ok:
+                    self.report(' %s: failed! (all of %s == %f)'
+                                % (dof_name, vec[off + eqs], idof))
+                ok = ok and _ok
+
+    return ok
+
 class Test(TestCommon):
 
     @staticmethod
@@ -56,7 +84,6 @@ class Test(TestCommon):
 
     def test_ebcs(self):
         from sfepy.discrete.conditions import Conditions, EssentialBC
-        from sfepy.discrete.common.dof_info import expand_nodes_to_equations
 
         variables = self.variables
         regions = self.problem.domain.regions
@@ -85,28 +112,7 @@ class Test(TestCommon):
             vec = init_vec(variables)
             variables.apply_ebc(vec)
 
-            for var_name, var_bcs in ebcs.group_by_variables().iteritems():
-                var = variables[var_name]
-                for bc in var_bcs:
-                    bc.canonize_dof_names(var.dofs)
-                    self.report('%d: %s %s: %s %s'
-                                % (ii, var.name,
-                                   bc.name, bc.region.name, bc.dofs[0]))
-                    nods = var.field.get_dofs_in_region(bc.region)
-                    eq = expand_nodes_to_equations(nods, bc.dofs[0], var.dofs)
-
-                    off = variables.di.indx[var_name].start
-                    n_nod = len(nods)
-                    for bdof, dof_name in enumerate(bc.dofs[0]):
-                        idof = var.dofs.index(dof_name)
-                        eqs = eq[n_nod * bdof : n_nod * (bdof + 1)]
-
-                        _ok = nm.allclose(vec[off + eqs], idof,
-                                          atol=1e-14, rtol=0.0)
-                        if not _ok:
-                            self.report(' %s: failed! (all of %s == %f)'
-                                        % (dof_name, vec[off + eqs], idof))
-                        ok = ok and _ok
+            ok = check_vec(self, vec, ii, ok, ebcs, variables)
 
         return ok
 
