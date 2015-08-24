@@ -171,9 +171,48 @@ class Test(TestCommon):
         return ok
 
     def test_save_ebc(self):
+        from sfepy.discrete import (FieldVariable, Integral,
+                                    Equation, Equations, Problem)
+        from sfepy.discrete.conditions import Conditions, EssentialBC
+        from sfepy.terms import Term
+
         name = op.join(self.options.out_dir,
                        op.splitext(op.basename(__file__))[0])
-        self.problem.save_ebc(name + '_ebcs_f.vtk', force=True)
-        self.problem.save_ebc(name + '_ebcs.vtk', default=-1, force=False)
+
+        integral = Integral('i', order=1)
+
+        u = self.variables['u']
+        v = FieldVariable('v', 'test', u.field, primary_var_name='u')
+
+        p = self.variables['p']
+        q = FieldVariable('q', 'test', p.field, primary_var_name='p')
+
+        regions = self.problem.domain.regions
+        omega = regions['Omega']
+
+        # Problem.save_ebc() requires to have equations defined.
+        t1 = Term.new('dw_lin_elastic(v, u)',
+                      integral, omega, v=v, u=u)
+        t2 = Term.new('dw_laplace(q, p)', integral, omega, q=q, p=p)
+        eq = Equation('aux', t1 + t2)
+        eqs = Equations([eq])
+
+        pb = Problem('test', equations=eqs, auto_solvers=False)
+
+        all_ebcs = []
+        all_ebcs.append(EssentialBC('fix_u1', regions['RightFix'],
+                                    {'u.all' : nm.array([0.0, 1.0])}))
+        all_ebcs.append(EssentialBC('fix_u2', regions['LeftStrip'],
+                                    {'u.0' : 0.0, 'u.1' : 1.0}))
+        all_ebcs.append(EssentialBC('fix_p1', regions['LeftFix'],
+                                    {'p.all' : 0.0}))
+        all_ebcs.append(EssentialBC('fix_p2', regions['RightStrip'],
+                                    {'p.0' : 0.0}))
+        ebcs = Conditions(all_ebcs)
+
+        pb.time_update(ebcs=ebcs)
+
+        pb.save_ebc(name + '_ebcs_f.vtk', ebcs=ebcs, force=True)
+        pb.save_ebc(name + '_ebcs.vtk', ebcs=ebcs, default=-1, force=False)
 
         return True
