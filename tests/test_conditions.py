@@ -1,61 +1,6 @@
 import os.path as op
 
 from sfepy import data_dir
-from sfepy.discrete.fem.periodic import match_y_line
-
-filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
-
-materials = {
-    'm' : ({'K' : [[3.0, 0.1], [0.3, 1.0]]},),
-}
-
-fields = {
-    'pressure' : ('real', 'scalar', 'Omega', 2),
-}
-
-variables = {
-    'p' : ('unknown field', 'pressure', 0),
-    'q' : ('test field', 'pressure', 'p'),
-    'r' : ('parameter field', 'pressure', 'p'),
-}
-
-regions = {
-    'Omega' : 'all',
-    'Left' : ('vertices in (x < -0.499)', 'facet'),
-    'LeftStrip' : ('vertices in (x < -0.499) & (y > -0.199) & (y < 0.199)',
-                   'facet'),
-    'LeftFix' : ('r.Left -v r.LeftStrip', 'facet'),
-    'Right' : ('vertices in (x > 0.499)', 'facet'),
-    'RightStrip' : ('vertices in (x > 0.499) & (y > -0.199) & (y < 0.199)',
-                    'facet'),
-    'RightFix' : ('r.Right -v r.RightStrip', 'facet'),
-}
-
-ebcs = {
-    't_left' : ('LeftFix', {'p.0' : 5.0}),
-    't_right' : ('RightFix', {'p.0' : 0.0}),
-}
-
-epbcs = {
-    'periodic_x' : (['LeftStrip', 'RightStrip'],
-                    {'p.0' : 'p.0'}, 'match_y_line'),
-}
-
-functions = {
-    'match_y_line' : (match_y_line,),
-}
-
-equations = {
-    'eq' : """dw_diffusion.2.Omega( m.K, q, p ) = 0"""
-}
-
-solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton',
-                {'i_max'      : 1,
-                 'eps_a'      : 1e-10,
-    }),
-}
 
 from sfepy.base.testing import TestCommon
 
