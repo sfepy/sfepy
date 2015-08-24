@@ -110,6 +110,66 @@ class Test(TestCommon):
 
         return ok
 
+    def test_epbcs(self):
+        from sfepy.discrete import Function, Functions
+        from sfepy.discrete.conditions import Conditions, PeriodicBC
+        from sfepy.discrete.common.dof_info import expand_nodes_to_equations
+        from sfepy.discrete.fem.periodic import match_y_line
+
+        variables = self.variables
+        regions = self.problem.domain.regions
+
+        match_y_line = Function('match_y_line', match_y_line)
+        pbc = PeriodicBC('pbc', [regions['LeftStrip'], regions['RightStrip']],
+                         {'u.[1,0]' : 'u.[0,1]'}, match='match_y_line')
+
+        functions = Functions([match_y_line])
+
+        epbcs = Conditions([pbc])
+        variables.equation_mapping(ebcs=None, epbcs=epbcs,
+                                   ts=None, functions=functions)
+
+        vec = init_vec(variables)
+        variables.apply_ebc(vec)
+
+        var = variables['u']
+        var_bcs = epbcs.group_by_variables()['u']
+        bc = var_bcs['pbc']
+        bc.canonize_dof_names(var.dofs)
+
+        nods0 = var.field.get_dofs_in_region(bc.regions[0])
+        nods1 = var.field.get_dofs_in_region(bc.regions[1])
+
+        coors0 = var.field.get_coor(nods0)
+        coors1 = var.field.get_coor(nods1)
+        i0, i1 = match_y_line(coors0, coors1)
+
+        eq0 = expand_nodes_to_equations(nods0[i0], bc.dofs[0], var.dofs)
+        eq1 = expand_nodes_to_equations(nods1[i1], bc.dofs[1], var.dofs)
+
+        ok = True
+
+        _ok = len(nm.setdiff1d(eq0, var.eq_map.master)) == 0
+        if not _ok:
+            self.report('master equations mismatch! (set(%s) == set(%s))'
+                        % (eq0, var.eq_map.master))
+        ok = ok and _ok
+
+        _ok = len(nm.setdiff1d(eq1, var.eq_map.slave)) == 0
+        if not _ok:
+            self.report('slave equations mismatch! (set(%s) == set(%s))'
+                        % (eq1, var.eq_map.slave))
+        ok = ok and _ok
+
+        off = variables.di.indx['u'].start
+        _ok = nm.allclose(vec[off + eq0], vec[off + eq1], atol=1e-14, rtol=0.0)
+        if not _ok:
+            self.report('periodicity test failed! (%s == %s)'
+                        % (vec[off + eq0], vec[off + eq0]))
+        ok = ok and _ok
+
+        return ok
+
     def test_save_ebc(self):
         name = op.join(self.options.out_dir,
                        op.splitext(op.basename(__file__))[0])
