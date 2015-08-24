@@ -82,6 +82,37 @@ class Test(TestCommon):
                     conf=conf, options=options)
         return test
 
+    def test_ics(self):
+        from sfepy.discrete.conditions import Conditions, InitialCondition
+
+        variables = self.variables
+        omega = self.problem.domain.regions['Omega']
+
+        all_ics = []
+        all_ics.append(InitialCondition('ic0', omega,
+                                        {'p.all' : 0.0}))
+        all_ics.append(InitialCondition('ic1', omega,
+                                        {'u.1' : 1.0}))
+        all_ics.append(InitialCondition('ic2', omega,
+                                        {'u.all' : nm.array([0.0, 1.0])}))
+        all_ics.append(InitialCondition('ic3', omega,
+                                        {'p.0' : 0.0,
+                                         'u.0' : 0.0, 'u.1' : 1.0}))
+
+        ok = True
+        for ii, ics in enumerate(all_ics):
+            if not isinstance(ics, list): ics = [ics]
+
+            ics = Conditions(ics)
+            variables.setup_initial_conditions(ics, functions=None)
+
+            vec = init_vec(variables)
+            variables.apply_ic(vec)
+
+            ok = check_vec(self, vec, ii, ok, ics, variables)
+
+        return ok
+
     def test_ebcs(self):
         from sfepy.discrete.conditions import Conditions, EssentialBC
 
