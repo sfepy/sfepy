@@ -80,7 +80,7 @@ solver_1 = {
 
 import numpy as nm
 try:
-    import sympy_operators as sops
+    import sfepy.linalg.sympy_operators as sops
 except ImportError, exc:
     sops = None
 
