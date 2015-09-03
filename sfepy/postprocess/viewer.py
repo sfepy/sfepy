@@ -195,6 +195,18 @@ def get_opacities(opacity):
 
     return opacities
 
+def set_colormap(source, colormap_name):
+    """
+    Set the given colormap to all look-up tables depending on the given source.
+    """
+    if hasattr(source, 'scalar_lut_manager'):
+        source.scalar_lut_manager.lut_mode = colormap_name
+        source.vector_lut_manager.lut_mode = colormap_name
+
+    elif hasattr(source, 'children'):
+        for child in source.children:
+            set_colormap(child, colormap_name)
+
 class Viewer(Struct):
     """
     Class to automate visualization of various data using Mayavi.
@@ -664,6 +676,8 @@ class Viewer(Struct):
                 surf.actor.property.representation = 'wireframe'
                 surf.actor.mapper.scalar_visibility = False
 
+        set_colormap(source, self.colormap)
+
     def render_scene(self, scene, options):
         """
         Render the scene, preferably after it has been activated.
@@ -721,6 +735,7 @@ class Viewer(Struct):
     def call_mlab(self, scene=None, show=True, is_3d=False,
                   view=None, roll=None, parallel_projection=False,
                   fgcolor=(0.0, 0.0, 0.0), bgcolor=(1.0, 1.0, 1.0),
+                  colormap='blue-red',
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
@@ -754,6 +769,8 @@ class Viewer(Struct):
             labels).
         bgcolor : tuple of floats (R, G, B)
             The background color.
+        colormap : str
+            The colormap name.
         layout : str
             Grid layout for placing the datasets. Possible values are:
             'row', 'col', 'rowcol', 'colrow'.
@@ -809,6 +826,7 @@ class Viewer(Struct):
         """
         self.fgcolor = fgcolor
         self.bgcolor = bgcolor
+        self.colormap = colormap
 
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
