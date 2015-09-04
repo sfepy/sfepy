@@ -22,6 +22,10 @@ from sfepy.discrete.fem.meshio import MeshIO, vtk_cell_types, supported_formats
 def create_file_source(filename, watch=False, offscreen=True):
     """Factory function to create a file source corresponding to the
     given file format."""
+
+    if isinstance(filename, FileSource):
+        return filename
+
     kwargs = {'watch' : watch, 'offscreen' : offscreen}
 
     if isinstance(filename, basestr):
