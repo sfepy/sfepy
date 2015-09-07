@@ -58,7 +58,9 @@
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
+.. _create a github account: https://github.com/signup/free
 .. _gitwash: http://github.com/matthew-brett/gitwash
+.. _numpy gitwash: http://docs.scipy.org/doc/numpy/dev/gitwash
 .. _tbaggery.com: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 .. _msysgit: http://code.google.com/p/msysgit
 
