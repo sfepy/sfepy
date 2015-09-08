@@ -1,3 +1,5 @@
+.. include:: links.inc
+
 User's Guide
 ============
 
@@ -549,7 +551,7 @@ where
     'real' or 'complex'
   * <shape> is the number of DOFs per node: 1 or (1,) or 'scalar', space
     dimension (2, or (2,) or 3 or (3,)) or 'vector'; it can be other
-      positive integer than just 1, 2, or 3
+    positive integer than just 1, 2, or 3
   * <region_name> is the name of region where the field is defined
   * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
     with bubble)
