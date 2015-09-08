@@ -16,6 +16,35 @@ This section purports to document the *SfePy* internals. It is mainly useful
 for those who wish to contribute to the development of  *SfePy* and understand
 the inner workings of the code.
 
+We use `git`_ to track source code, documentation, examples, and other files
+related to the project.
+
+It is not necessary to learn git in order to contribute to *SfePy* but we
+strongly suggest you do so as soon as possible - it is an extremely useful tool
+not just for writing code, but also for tracking revisions of articles,
+Ph.D. theses, books, ... it will also look well in your CV :-) It is also much
+easier for us to integrate changes that are in form of a github pull request
+than in another form.
+
+Retrieving the Latest Code
+--------------------------
+
+The first step is to obtain the latest development version of the code from the
+`SfePy git repository`_::
+
+  git clone git://github.com/sfepy/sfepy.git
+
+For development, it is preferable to build the extension modules in place (see
+:ref:`compilation`)::
+
+  python setup.py build_ext --inplace
+
+On Unix-like systems, you can simply type ``make`` in the top-level folder to
+build in-place.
+
+After the initial compilation, or after making changes, do not forget to run
+the tests, see :ref:`testing`.
+
 SfePy Directory Structure
 -------------------------
 
@@ -173,15 +202,15 @@ completion is available also when debugging.
 How to Contribute
 -----------------
 
-Read this section if you wish to contribute some work to the *SfePy* project.
-Contributions can be made in a variety of forms, not just code. Reporting bugs
-and contributing to the documentation, tutorials, and examples is in great
-need!
+Read this section if you wish to contribute some work to the *SfePy* project -
+everyone is welcome to contribute. Contributions can be made in a variety of
+forms, not just code. Reporting bugs and contributing to the documentation,
+tutorials, and examples is in great need!
 
 Below we describe
 
-#. where to report or find current problems, issues, and suggestions of
-   particular topics for additional development
+#. where to report problems or find existing issues and additional development
+   suggestions
 #. what to do to apply changes/fixes
 #. what to do after you made your changes/fixes
 
@@ -191,68 +220,192 @@ Reporting problems
 *Reporting a bug is the first way in which to contribute to an open source
 project*
 
-Short version: go to the main `SfePy`_ and follow the links given there.
+Short version: go to the main `SfePy`_ site and follow the links given there.
 
 When you encounter a problem, try searching that site first - an answer may
 already be posted in the `SfePy mailing list`_ (to which we suggest you
-subscribe...), or the problem might have been added to the `SfePy issues`_ web
-page. As is true in any open source project, doing your homework by searching
+subscribe...), or the problem might have been added to the `SfePy issues`_.
+As is true in any open source project, doing your homework by searching
 for existing known problems greatly reduces the burden on the developers by
 eliminating duplicate issues. If you find your problem already exists in the
 issue tracker, feel free to gather more information and append it to the
 issue. In case the problem is not there, create a new issue with proper labels
 for the issue type and priority, and/or ask us using the mailing list.
 
-**Note** A google account (e.g., gmail account) is needed to join the mailing
-list and post comments to issues. It is, however, not needed to create a new
-issue.
+**Note:** A google account (e.g., gmail account) is needed to join the mailing
+list. A github account is needed for working with the source code repository
+and issues.
 
-**Note** When reporting a problem, try to provide as much information as
+**Note:** When reporting a problem, try to provide as much information as
 possible concerning the version of *SfePy*, the OS / Linux distribution, and
-the versions of *Python*, *NumPy* and *SciPy*, and other prerequisites.
+the versions of *Python*, *NumPy* and *SciPy*, and other prerequisites. The
+versions found on your system can be printed by running::
 
-Our persisting all star top priority issues include:
+  python setup.py --help
 
-* missing docstrings in many functions/classes/modules
-* incomplete documentation
-* lowering the barrier for new users
+If you are a new user, please let us know what difficulties you have with this
+documentation. We greatly welcome a variety of contributions not limited to
+code only.
 
-  * e.g., through generation of additional tutorial material
+Contributing changes
+^^^^^^^^^^^^^^^^^^^^
 
-So if you are a new user, please let us know what difficulties you have with
-this documentation. We greatly welcome a variety of contributions not limited
-to code only.
+**Note:** To avoid duplicating work, it is highly advised that you contact the
+developers on the mailing list or create an enhancement issue before starting
+work on a non-trivial feature.
 
-Making changes
-^^^^^^^^^^^^^^
+Before making any changes, read the :ref:`notes_patches`.
 
-This step is simple, just keep in mind to use the latest development version of
-the code from the `SfePy git repository`_ page.
+Using git and github
+""""""""""""""""""""
 
-We use `git`_ to track source code, documentation, examples, and other files
-related to the project.
+The preferred way to contribute to *SfePy* is to fork the main repository on
+github, then submit a "pull request" (PR):
 
-It is not necessary to learn git in order to contribute to *SfePy* but we
-strongly suggest you do so as soon as possible - it is an extremely useful tool
-not just for writing code, but also for tracking revisions of articles,
-Ph.D. theses, books, ... it will also look well in your CV :-) It is also much
-easier for us to integrate changes that are in form of a nice git patch than in
-another form.
+#. `Create a github account`_ if you do not already have one.
 
-Having said that, to download the latest snapshot, do either (with git):
+#. Fork the project repository: click on the "Fork" button near the top of the
+   `sfepy git repository`_ page. This creates a copy of the repository under
+   your account on the github server.
 
-- git clone git://github.com/sfepy/sfepy.git
+#. Clone your fork to your computer::
 
-or (without git):
+     git clone git@github.com:YourLogin/sfepy.git
 
-- use the `SfePy tarball`_ link
+#. If you have never used git before, introduce yourself to git and make
+   (optionally) some handy aliases either in ``.gitconfig`` in your home
+   directory (global settings for all your git projects), or directly in
+   ``.git/config`` in the repository::
 
-Then make the changes as you wish, following our :ref:`coding_style`.
+     [user]
+         email = mail@mail.org
+         name = Name Surname
 
-**Note** Do not be afraid to experiment - git works with your *local* copy of
-the repository, so it is not possible to damage the master repository. It is
-always possible to re-clone a fresh copy, in case you do something that is
-really bad.
+     [color]
+         ui = auto
+         interactive = true
+
+     [alias]
+         ci = commit
+         di = diff --color-words
+         st = status
+         co = checkout
+
+#. Create a feature branch to hold your changes::
+
+     git checkout -b my-feature
+
+   Then you can start to make your changes. Do not work in the master branch!
+
+#. Modify some files and use git to track your local changes. The changed
+   added/modified files can be listed using::
+
+     git status
+
+   and the changes can be reviewed using::
+
+     git diff
+
+   A more convenient way of achieving the above is to run::
+
+     gitk --all
+
+   in order to visualize of project history (all branches). There are other
+   GUIs for this purpose, e.g. ``qgit``. You may need to install those tools,
+   as they usually are not installed with git by default. Record a set of
+   changes by::
+
+     # schedule some of the changed files for the next commit
+     git add file1 file2 ...
+     # an editor will pop up where you should describe the commit
+     git commit
+
+   We recommend ``git gui`` command in case you want to add and commit only
+   some changes in a modified file.
+
+   **Note:** Do not be afraid to experiment - git works with your *local* copy
+   of the repository, so it is not possible to damage the master repository. It
+   is always possible to re-clone a fresh copy, in case you do something that
+   is really bad.
+
+#. The commit(s) now reflect changes, but only in your *local* git
+   repository. To update your github repository with your new commit(s), run::
+
+     git push origin my-feature:my-feature
+
+#. Finally, when your feature is ready, and all tests pass, go to the github
+   page of your sfepy repository fork, and click "Pull request" to send your
+   changes to the maintainers for review. It is recommended to check that your
+   contribution complies with the :ref:`notes_patches`.
+
+In the above setup, your origin remote repository points to
+``YourLogin/sfepy.git``. If you wish to fetch/merge from the main repository
+instead of your forked one, you will need to add another remote to use instead
+of origin. The main repository is usually called "upstream". To add it, type::
+
+  git remote add upstream https://github.com/sfepy/sfepy.git
+
+To synchronize your repository with the upstream, proceed as follows:
+
+#. Fetch the upstream changes::
+
+     git fetch upstream
+
+   Never start with ``git pull upstream``!
+
+#. Check the changes of the upstream master branch. You can use ``gitk --all``
+   to visualize all your and remote branches. The upstream master is named
+   ``remotes/upstream/master``.
+
+#. Make sure all your local changes are either committed in a feature branch or
+   stashed (see ``git stash``). Then reset your master to the upstream master::
+
+     git checkout master
+     git reset --hard upstream/master
+
+   **Warning** The above will remove all your local commits in the master
+   branch that are not in ``upstream/master``, and also reset all the changes
+   in your non-committed modified files!
+
+   Optionally, the reset command can be run conveniently in ``gitk`` by
+   right-clicking on a commit you want to reset the current branch onto.
+
+#. Optionally, rebase your feature branch onto the upstream master::
+
+     git checkout my-feature
+     git rebase upstream/master
+
+   This is useful, for example, when the upstream master contains a change you
+   need in your feature branch.
+
+For additional information, see, for example, the `gitwash`_ git tutorial, or
+its incarnation `NumPy gitwash`_.
+
+.. _notes_patches:
+
+Notes on commits and patches
+""""""""""""""""""""""""""""
+- Follow our :ref:`coding_style`.
+- Do not use lines longer than 79 characters (exception: tables of
+  values, e.g., quadratures).
+- Write descriptive docstrings in correct style, see :ref:`docstrings`.
+- There should be one patch for one topic - do not mix unrelated things in one
+  patch. For example, when you add a new function, then notice a typo in
+  docstring in a nearby function and correct it, create two patches: one fixing
+  the docstring, the other adding the new function.
+- The commit message and description should clearly state what the patch
+  does. Try to follow the style of other commit messages. Some interesting
+  notes can be found at `tbaggery.com`_, namely that the commit message is
+  better to be written in the present tense: "fix bug" and not "fixed bug".
+
+
+Without using git
+"""""""""""""""""
+
+Without using git, send the modified files to the `SfePy mailing list`_ or
+attach them using `gist`_ to the corresponding issue at the `Issues`_ web
+page. Do not forget to describe the changes properly, and to follow the spirit
+of :ref:`notes_patches` and the :ref:`coding_style`.
 
 .. _coding_style:
 
@@ -291,124 +444,6 @@ it uses slightly different formatting, as long as it follows the PEP.
 
 Note: some old parts of the code might not follow the PEP, yet. We fix them
 progressively as we update the code.
-
-Contributing changes
-^^^^^^^^^^^^^^^^^^^^
-
-Even if you do not use git, try to follow the spirit of :ref:`notes_patches`
-
-Without git
-"""""""""""
-
-Without using git, send the modified files to the `SfePy mailing list`_ or
-attach them using gist to the corresponding issue at the `Issues`_ web page. Do
-not forget to describe the changes properly.
-
-With git
-""""""""
-
-.. toctree::
-   :hidden:
-
-   dev/gitwash/index
-
-**Note**: This section will get quickly get you started using git and github.
-For more in-depth reading about how these tools work with the *SfePy* source
-code and the general git development, read :ref:`using-git`, which was adapted
-from Matthew Brett's excellent `gitwash`_ git tutorial.
-
-With git there are some additional options for how to send changes to *SfePy*.
-Before listing them, let us describe a typical development session and the
-related git commands:
-
-#. Either clone a fresh copy by::
-
-     git clone git://github.com/sfepy/sfepy.git
-
-   or update your local repository::
-
-     # look for changes at origin
-     git fetch origin
-
-     # difference between local and origin master branch
-     git diff master origin/master
-
-     # apply the changes to local master branch
-     git pull origin master
-
-#. Introduce yourself to git and make (optionally) some handy aliases
-   either in ``.gitconfig`` in your home directory (global setting for
-   all your git projects), or directly in ``.git/config`` in the repository::
-
-     [user]
-         email = mail@mail.org
-         name = Name Surname
-
-     [color]
-         ui = auto
-         interactive = true
-
-     [alias]
-         ci = commit
-         di = diff --color-words
-         st = status
-         co = checkout
-
-#. Change some file(s), and review the changes::
-
-     # text diff
-     git diff
-
-     # use GUI to visualize of project history (all branches)
-     gitk --all
-
-#. Create one or more commits::
-
-    # schedule some of the changed files for the next commit
-    git add file1 file2 ...
-    # an editor will pop up where you should describe the commit
-    git commit
-
-#. The commit(s) now reflect changes, but only in your *local* git
-   repository. Then you must somehow allow others to see them. This can be done,
-   for example, by sending a patch (or through the other option below). So
-   create the patch(es)::
-
-    # create patches for, e.g., the last two commits
-    git format-patch HEAD~2
-
-#. Send the patch(es) to the `SfePy mailing list`_ or attach them
-   to the corresponding issue at the `Issues`_ web page.
-
-#. If the patches are fine, they will appear in the master
-   repository. Then synchronize your repository with the master:
-
-   - either clone a fresh copy
-   - or use the fetch, pull, merge or rebase commands. This may require
-     a deeper git-fu in case of conflicts. For beginners, it is
-     advisable to clone always a fresh copy if they see a conflict.
-
-There is another option than submitting patches, however, useful when you wish
-to get feedback on a larger set of changes. This option is to publish your
-repository using `Github`_ and let the other developers know about it - follow
-the instructions in :ref:`git-development` of :ref:`using-git`.
-
-.. _notes_patches:
-
-Notes on commits and patches
-""""""""""""""""""""""""""""
-- Follow our :ref:`coding_style`.
-- Do not use lines longer than 79 characters (exception: tables of
-  values, e.g., quadratures).
-- Write descriptive docstrings in correct style, see :ref:`docstrings`.
-- There should be one patch for one topic - do not mix unrelated things in one
-  patch. For example, when you add a new function, then notice a typo in
-  docstring in a nearby function and correct it, create two patches: one fixing
-  the docstring, the other adding the new function.
-- The commit message and description should clearly state what the patch
-  does. Try to follow the style of other commit messages. Some interesting
-  notes can be found at `tbaggery.com`_, namely that the commit message is
-  better to be written in the present tense: "fix bug" and not "fixed bug".
 
 .. _docstrings:
 
@@ -800,28 +835,6 @@ How To Make a Release
    :maxdepth: 2
 
    release_tasks
-
-.. _using-git:
-
-Working with *SfePy* source code
---------------------------------
-
-This section was adapted from Matthew Brett's excellent `gitwash`_ git
-tutorial. It complements the above sections and details several aspects of
-working with Git and Github.
-
-It can be updated by running::
-
-   $ curl -O https://raw.github.com/matthew-brett/gitwash/master/gitwash_dumper.py
-   $ python gitwash_dumper.py doc/dev SfePy --repo-name=sfepy --github-user=sfepy --project-url=http://sfepy.org --project-ml-url=http://groups.google.com/group/sfepy-devel
-
-in the SfePy source directory. Do not forget to delete the section title
-in `doc/dev/gitwash/index.rst`, as it is already here.
-
-.. toctree::
-   :maxdepth: 2
-
-   dev/gitwash/index
 
 Module Index
 ------------

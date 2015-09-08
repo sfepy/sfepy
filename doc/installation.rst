@@ -78,12 +78,22 @@ system-wide.
 Generic Installation Instructions
 ---------------------------------
 
-Download the latest source release or the development version from
+Download the latest development version of the code from
 `SfePy git repository`_::
 
     git clone git://github.com/sfepy/sfepy.git
 
+In case you wish to use a specific release instead of the latest master
+version, use::
+
+    git tag -l
+
+to see the available releases - the release tags have form
+``release_<year>.<int>``.
+
 See the `download`_ page for additional download options.
+
+.. _compilation:
 
 Compilation of C Extension Modules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -119,6 +129,8 @@ Installation
     python setup.py install --root=<installation prefix>
 
 If all went well, proceed with `Testing`_.
+
+.. _testing:
 
 Testing
 -------
