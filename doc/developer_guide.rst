@@ -209,8 +209,8 @@ tutorials, and examples is in great need!
 
 Below we describe
 
-#. where to report or find current problems, issues, and suggestions of
-   particular topics for additional development
+#. where to report problems or find existing issues and additional development
+   suggestions
 #. what to do to apply changes/fixes
 #. what to do after you made your changes/fixes
 
@@ -224,19 +224,19 @@ Short version: go to the main `SfePy`_ site and follow the links given there.
 
 When you encounter a problem, try searching that site first - an answer may
 already be posted in the `SfePy mailing list`_ (to which we suggest you
-subscribe...), or the problem might have been added to the `SfePy issues`_ web
-page. As is true in any open source project, doing your homework by searching
+subscribe...), or the problem might have been added to the `SfePy issues`_.
+As is true in any open source project, doing your homework by searching
 for existing known problems greatly reduces the burden on the developers by
 eliminating duplicate issues. If you find your problem already exists in the
 issue tracker, feel free to gather more information and append it to the
 issue. In case the problem is not there, create a new issue with proper labels
 for the issue type and priority, and/or ask us using the mailing list.
 
-**Note** A google account (e.g., gmail account) is needed to join the mailing
+**Note:** A google account (e.g., gmail account) is needed to join the mailing
 list. A github account is needed for working with the source code repository
 and issues.
 
-**Note** When reporting a problem, try to provide as much information as
+**Note:** When reporting a problem, try to provide as much information as
 possible concerning the version of *SfePy*, the OS / Linux distribution, and
 the versions of *Python*, *NumPy* and *SciPy*, and other prerequisites. The
 versions found on your system can be printed by running::
@@ -250,29 +250,29 @@ code only.
 Contributing changes
 ^^^^^^^^^^^^^^^^^^^^
 
-**Note** To avoid duplicating work, it is highly advised that you contact the
+**Note:** To avoid duplicating work, it is highly advised that you contact the
 developers on the mailing list or create an enhancement issue before starting
 work on a non-trivial feature.
 
 Before making any changes, read the :ref:`notes_patches`.
 
-With git and github
-"""""""""""""""""""
+Using git and github
+""""""""""""""""""""
 
-The preferred way to contribute to SfePy is to fork the main repository on
+The preferred way to contribute to *SfePy* is to fork the main repository on
 github, then submit a "pull request" (PR):
 
 #. `Create a github account`_ if you do not already have one.
 
 #. Fork the project repository: click on the "Fork" button near the top of the
-   `sfepy git repository`_ page. This creates a copy of the code under your
-   account on the github server.
+   `sfepy git repository`_ page. This creates a copy of the repository under
+   your account on the github server.
 
 #. Clone your fork to your computer::
 
      git clone git@github.com:YourLogin/sfepy.git
 
-#. If you never used git before, introduce yourself to git and make
+#. If you have never used git before, introduce yourself to git and make
    (optionally) some handy aliases either in ``.gitconfig`` in your home
    directory (global settings for all your git projects), or directly in
    ``.git/config`` in the repository::
@@ -310,7 +310,9 @@ github, then submit a "pull request" (PR):
 
      gitk --all
 
-   in order to visualize of project history (all branches). Record a set of
+   in order to visualize of project history (all branches). There are other
+   GUIs for this purpose, e.g. ``qgit``. You may need to install those tools,
+   as they usually are not installed with git by default. Record a set of
    changes by::
 
      # schedule some of the changed files for the next commit
@@ -321,7 +323,7 @@ github, then submit a "pull request" (PR):
    We recommend ``git gui`` command in case you want to add and commit only
    some changes in a modified file.
 
-   **Note** Do not be afraid to experiment - git works with your *local* copy
+   **Note:** Do not be afraid to experiment - git works with your *local* copy
    of the repository, so it is not possible to damage the master repository. It
    is always possible to re-clone a fresh copy, in case you do something that
    is really bad.
@@ -331,16 +333,15 @@ github, then submit a "pull request" (PR):
 
      git push origin my-feature:my-feature
 
-#. Finally, when your feature is ready, and all tests pass, go to the web page
-   of your fork of the sfepy repository, and click "Pull request" to send your
+#. Finally, when your feature is ready, and all tests pass, go to the github
+   page of your sfepy repository fork, and click "Pull request" to send your
    changes to the maintainers for review. It is recommended to check that your
    contribution complies with the :ref:`notes_patches`.
 
 In the above setup, your origin remote repository points to
 ``YourLogin/sfepy.git``. If you wish to fetch/merge from the main repository
 instead of your forked one, you will need to add another remote to use instead
-of origin. The main repository is usually called "upstream", so then the
-command will be::
+of origin. The main repository is usually called "upstream". To add it, type::
 
   git remote add upstream https://github.com/sfepy/sfepy.git
 
@@ -352,8 +353,8 @@ To synchronize your repository with the upstream, proceed as follows:
 
    Never start with ``git pull upstream``!
 
-#. Check the changes of the upstream master branch. Use ``gitk --all`` to
-   visualize all your and remote branches. The upstream master is named
+#. Check the changes of the upstream master branch. You can use ``gitk --all``
+   to visualize all your and remote branches. The upstream master is named
    ``remotes/upstream/master``.
 
 #. Make sure all your local changes are either committed in a feature branch or
@@ -366,8 +367,8 @@ To synchronize your repository with the upstream, proceed as follows:
    branch that are not in ``upstream/master``, and also reset all the changes
    in your non-committed modified files!
 
-   The reset command can be run conveniently in ``gitk`` by right-clicking on a
-   commit you want to reset the current branch onto.
+   Optionally, the reset command can be run conveniently in ``gitk`` by
+   right-clicking on a commit you want to reset the current branch onto.
 
 #. Optionally, rebase your feature branch onto the upstream master::
 
@@ -398,13 +399,13 @@ Notes on commits and patches
   better to be written in the present tense: "fix bug" and not "fixed bug".
 
 
-Without git
-"""""""""""
+Without using git
+"""""""""""""""""
 
 Without using git, send the modified files to the `SfePy mailing list`_ or
-attach them using gist to the corresponding issue at the `Issues`_ web page. Do
-not forget to describe the changes properly, and to follow the spirit of
-:ref:`notes_patches` and the :ref:`coding_style`.
+attach them using `gist`_ to the corresponding issue at the `Issues`_ web
+page. Do not forget to describe the changes properly, and to follow the spirit
+of :ref:`notes_patches` and the :ref:`coding_style`.
 
 .. _coding_style:
 
