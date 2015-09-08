@@ -1,4 +1,4 @@
-.. _sec-theoretical-background
+.. _sec-theoretical-background:
 
 Theoretical Background
 ======================
