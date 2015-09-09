@@ -111,7 +111,7 @@ class FEDomain(Domain):
         from sfepy.discrete.common.extmods.cmesh import orient_elements
 
         cmesh = self.cmesh
-        for ii, gel in self.geom_els.iteritems():
+        for key, gel in self.geom_els.iteritems():
             ori = gel.orientation
 
             cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
@@ -136,8 +136,8 @@ class FEDomain(Domain):
                 itry += 1
 
             if itry == 2 and flag[0] != -1:
-                raise RuntimeError('elements cannot be oriented! (%d, %s)'
-                                   % (ii, self.mesh.descs[ii]))
+                raise RuntimeError('elements cannot be oriented! (%s)' % key)
+
             elif flag[0] == -1:
                 output('warning: element orienation not checked')
 
