@@ -236,6 +236,8 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
          """The shifting and sorting strategy of JDSYM: strategy=0 enables the
             default JDSYM algorithm, strategy=1 enables JDSYM to avoid
             convergence to eigenvalues smaller than `tau`."""),
+        ('*', '*', None, False,
+         'Additional parameters supported by the solver.'),
     ]
 
     @staticmethod
@@ -260,6 +262,8 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
+        kwargs = self.build_solver_kwargs(conf)
+
         jdsym = self.imp['jdsym']
         itsolvers = self.imp['itsolvers']
         precon = self.imp['precon']
@@ -287,7 +291,8 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
                                                 conf.eps_a, conf.i_max,
                                                 method,
                                                 clvl=conf.verbosity,
-                                                strategy=conf.strategy)
+                                                strategy=conf.strategy,
+                                                **kwargs)
 
         output('number of converged eigenvalues:', kconv, verbose=conf.verbose)
 
