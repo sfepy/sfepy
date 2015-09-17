@@ -66,6 +66,9 @@ helps = {
     'bc_kind' :
     'kind of Dirichlet boundary conditions on the bottom surface, one of:'
     ' free, clamped [default: %default]',
+    'axis' :
+    'the axis index of the block that the bottom surface is related to'
+    ' [default: %default]',
     'young' : "the Young's modulus [default: %default]",
     'poisson' : "the Poisson's ratio [default: %default]",
     'density' : "the material density [default: %default]",
@@ -92,6 +95,9 @@ def main():
                       action='store', dest='bc_kind',
                       choices=['free', 'clamped'],
                       default='free', help=helps['bc_kind'])
+    parser.add_option('-a', '--axis', metavar='0, ..., dim, or -1', type=int,
+                      action='store', dest='axis',
+                      default=-1, help=helps['axis'])
     parser.add_option('--young', metavar='float', type=float,
                       action='store', dest='young',
                       default=6.80e+10, help=helps['young'])
@@ -147,6 +153,9 @@ def main():
         output('%s: %r' % (key, val))
     output.level -= 1
 
+    output('axis:      ', options.axis)
+    assert_((-dim <= options.axis < dim), 'invalid axis value!')
+
     eig_solver = Solver.any_from_conf(eig_conf)
 
     # Build the problem definition.
@@ -154,11 +163,13 @@ def main():
     domain = FEDomain('domain', mesh)
 
     bbox = domain.get_mesh_bounding_box()
-    min_y, max_y = bbox[:, 1]
-    eps = 1e-8 * (max_y - min_y)
+    min_coor, max_coor = bbox[:, options.axis]
+    eps = 1e-8 * (max_coor - min_coor)
+    ax = 'xyz'[:dim][options.axis]
+
     omega = domain.create_region('Omega', 'all')
     bottom = domain.create_region('Bottom',
-                                  'vertices in (y < %.10f)' % (min_y + eps),
+                                  'vertices in (%s < %.10f)' % (ax, min_coor + eps),
                                   'facet')
 
     field = Field.from_args('fu', nm.float64, 'vector', omega,
