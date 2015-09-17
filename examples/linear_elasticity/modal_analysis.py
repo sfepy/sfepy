@@ -115,7 +115,7 @@ def main():
                       default=1, help=helps['order'])
     parser.add_option('-n', '--n-eigs', metavar='int', type=int,
                       action='store', dest='n_eigs',
-                      default=6, help=helps['order'])
+                      default=6, help=helps['n_eigs'])
     parser.add_option('', '--solver', metavar='solver',
                       action='store', dest='solver',
                       default="eig.scipy,method:'eigh',tol:1e-5,maxiter:1000",
