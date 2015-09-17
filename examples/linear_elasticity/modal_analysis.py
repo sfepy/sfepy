@@ -22,9 +22,9 @@ Examples
 
     python examples/linear_elasticity/modal_analysis.py --show
 
-- Clamp bottom surface of the domain, show 9 eigen-shapes::
+- Fix bottom surface of the domain, show 9 eigen-shapes::
 
-    python examples/linear_elasticity/modal_analysis.py -b clamped -n 9 --show
+    python examples/linear_elasticity/modal_analysis.py -b cantilever -n 9 --show
 
 - Increase mesh resolution::
 
@@ -67,10 +67,10 @@ helps = {
     'shape' :
     'numbers of vertices along each axis [default: %default]',
     'bc_kind' :
-    'kind of Dirichlet boundary conditions on the bottom surface, one of:'
-    ' free, clamped [default: %default]',
+    'kind of Dirichlet boundary conditions on the bottom and top surfaces, one of:'
+    ' free, cantilever, fixed [default: %default]',
     'axis' :
-    'the axis index of the block that the bottom surface is related to'
+    'the axis index of the block that the bottom and top surfaces are related to'
     ' [default: %default]',
     'young' : "the Young's modulus [default: %default]",
     'poisson' : "the Poisson's ratio [default: %default]",
@@ -96,7 +96,7 @@ def main():
                       default='[11, 11]', help=helps['shape'])
     parser.add_option('-b', '--bc-kind', metavar='kind',
                       action='store', dest='bc_kind',
-                      choices=['free', 'clamped'],
+                      choices=['free', 'cantilever', 'fixed'],
                       default='free', help=helps['bc_kind'])
     parser.add_option('-a', '--axis', metavar='0, ..., dim, or -1', type=int,
                       action='store', dest='axis',
@@ -186,6 +186,10 @@ def main():
     bottom = domain.create_region('Bottom',
                                   'vertices in (%s < %.10f)' % (ax, min_coor + eps),
                                   'facet')
+    bottom_top = domain.create_region('BottomTop',
+                                      'r.Bottom +v vertices in (%s > %.10f)'
+                                      % (ax, max_coor - eps),
+                                      'facet')
 
     field = Field.from_args('fu', nm.float64, 'vector', omega,
                             approx_order=options.order)
@@ -211,10 +215,18 @@ def main():
         pb.time_update()
         n_rbm = dim * (dim + 1) / 2
 
-    else:
-        fixed_b = EssentialBC('FixedB', bottom, {'u.all' : 0.0})
-        pb.time_update(ebcs=Conditions([fixed_b]))
+    elif options.bc_kind == 'cantilever':
+        fixed = EssentialBC('Fixed', bottom, {'u.all' : 0.0})
+        pb.time_update(ebcs=Conditions([fixed]))
         n_rbm = 0
+
+    elif options.bc_kind == 'fixed':
+        fixed = EssentialBC('Fixed', bottom_top, {'u.all' : 0.0})
+        pb.time_update(ebcs=Conditions([fixed]))
+        n_rbm = 0
+
+    else:
+        raise ValueError('unsupported BC kind! (%s)' % options.bc_kind)
 
     pb.update_materials()
 
