@@ -5,6 +5,9 @@ Modal analysis of a linear elastic block in 2D or 3D.
 The dimension of the problem is determined by the length of the vector
 in ``--dims`` option.
 
+Optionally, a mesh file name can be given as a positional argument. In that
+case, the mesh generation options are ignored.
+
 The default material properties correspond to aluminium in the following units:
 
 - length: m
@@ -47,14 +50,14 @@ import scipy.sparse.linalg as sla
 from sfepy.base.base import assert_, output, Struct
 from sfepy.discrete import (FieldVariable, Material, Integral, Integrals,
                             Equation, Equations, Problem)
-from sfepy.discrete.fem import FEDomain, Field
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.solvers import Solver
 
-usage = '%prog [options]\n' + __doc__.rstrip()
+usage = '%prog [options] [filename]\n' + __doc__.rstrip()
 
 helps = {
     'dims' :
@@ -122,16 +125,6 @@ def main():
                       default=False, help=helps['show'])
     options, args = parser.parse_args()
 
-    assert_((0.0 < options.poisson < 0.5),
-            "Poisson's ratio must be in ]0, 0.5[!")
-    assert_((0 < options.order),
-            'displacement approximation order must be at least 1!')
-
-    dims = nm.array(eval(options.dims), dtype=nm.float64)
-    dim = len(dims)
-    centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
-    shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
-
     aux = options.solver.split(',')
     kwargs = {}
     for option in aux[1:]:
@@ -139,13 +132,11 @@ def main():
         kwargs[key.strip()] = eval(val)
     eig_conf = Struct(name='evp', kind=aux[0], **kwargs)
 
-    output('dimensions:', dims)
-    output('centre:    ', centre)
-    output('shape:     ', shape)
     output('using values:')
     output("  Young's modulus:", options.young)
     output("  Poisson's ratio:", options.poisson)
     output('  density:', options.density)
+    output('displacement field approximation order:', options.order)
     output('requested %d eigenvalues' % options.n_eigs)
     output('using eigenvalue problem solver:', eig_conf.kind)
     output.level += 1
@@ -153,13 +144,36 @@ def main():
         output('%s: %r' % (key, val))
     output.level -= 1
 
+    assert_((0.0 < options.poisson < 0.5),
+            "Poisson's ratio must be in ]0, 0.5[!")
+    assert_((0 < options.order),
+            'displacement approximation order must be at least 1!')
+
+    if len(args) == 1:
+        filename = args[0]
+
+        mesh = Mesh.from_file(filename)
+        dim = mesh.dim
+
+    else:
+        dims = nm.array(eval(options.dims), dtype=nm.float64)
+        dim = len(dims)
+
+        centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
+        shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
+
+        output('dimensions:', dims)
+        output('centre:    ', centre)
+        output('shape:     ', shape)
+
+        mesh = gen_block_mesh(dims, shape, centre, name='mesh')
+
     output('axis:      ', options.axis)
     assert_((-dim <= options.axis < dim), 'invalid axis value!')
 
     eig_solver = Solver.any_from_conf(eig_conf)
 
     # Build the problem definition.
-    mesh = gen_block_mesh(dims, shape, centre, name='mesh')
     domain = FEDomain('domain', mesh)
 
     bbox = domain.get_mesh_bounding_box()
