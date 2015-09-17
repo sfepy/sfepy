@@ -77,6 +77,9 @@ helps = {
     'density' : "the material density [default: %default]",
     'order' : 'displacement field approximation order [default: %default]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %default]',
+    'ignore' : 'if given, the number of eigenvalues to ignore (e.g. rigid body modes);'
+    ' has precedence over the default setting determined by --bc-kind'
+    ' [default: %default]',
     'solver' : 'the eigenvalue problem solver to use. It should be given'
     ' as a comma-separated list: solver_kind,option0:value0,option1:value1,...'
     ' [default: %default]',
@@ -116,6 +119,9 @@ def main():
     parser.add_option('-n', '--n-eigs', metavar='int', type=int,
                       action='store', dest='n_eigs',
                       default=6, help=helps['n_eigs'])
+    parser.add_option('-i', '--ignore', metavar='int', type=int,
+                      action='store', dest='ignore',
+                      default=None, help=helps['ignore'])
     parser.add_option('', '--solver', metavar='solver',
                       action='store', dest='solver',
                       default="eig.scipy,method:'eigh',tol:1e-5,maxiter:1000",
@@ -227,6 +233,9 @@ def main():
 
     else:
         raise ValueError('unsupported BC kind! (%s)' % options.bc_kind)
+
+    if options.ignore is not None:
+        n_rbm = options.ignore
 
     pb.update_materials()
 
