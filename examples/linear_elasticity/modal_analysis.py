@@ -260,8 +260,12 @@ def main():
     eigs = eigs[n_rbm:]
     svecs = svecs[:, n_rbm:]
 
-    output('eigenvalues:', eigs)
-    output('eigen-frequencies:', nm.sqrt(eigs))
+    omegas = nm.sqrt(eigs)
+    freqs = omegas / (2 * nm.pi)
+
+    output('number |         eigenvalue |  angular frequency |          frequency')
+    for ii, eig in enumerate(eigs):
+        output('%6d | %17.12e | %17.12e | %17.12e' % (ii + 1, eig, omegas[ii], freqs[ii]))
 
     # Make full eigenvectors (add DOFs fixed by boundary conditions).
     variables = pb.get_variables()
