@@ -154,6 +154,7 @@ def main():
 
         mesh = Mesh.from_file(filename)
         dim = mesh.dim
+        dims = nm.diff(mesh.get_bounding_box(), axis=0)
 
     else:
         dims = nm.array(eval(options.dims), dtype=nm.float64)
