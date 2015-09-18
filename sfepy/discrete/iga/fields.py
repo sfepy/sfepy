@@ -77,6 +77,7 @@ class IGField(Field):
         self.val_shape = self.shape
         self.n_nod = self.nurbs.weights.shape[0]
         self.n_efun = nm.prod(self.nurbs.degrees + 1)
+        self.approx_order = self.nurbs.degrees.max()
 
         self.mappings = {}
 
