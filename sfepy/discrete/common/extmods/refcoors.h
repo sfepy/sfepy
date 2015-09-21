@@ -11,6 +11,11 @@ typedef struct BasisContext {
   int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
                        FMField *dest_point, FMField *e_coors,
                        void *_ctx);
+  int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
+                      void *_ctx);
+  int32 iel; // >= 0.
+  int32 is_dx; // 1 => apply reference mapping to gradient.
+  FMField e_coors_max[1]; // Buffer for coordinates of element nodes.
 } BasisContext;
 
 int32 refc_find_ref_coors_convex(FMField *ref_coors,

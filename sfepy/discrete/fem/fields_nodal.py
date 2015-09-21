@@ -11,18 +11,15 @@ Important attributes of continuous (order > 0) :class:`Field` and
 where `conn` is the mesh vertex connectivity, `econn` is the
 region-local field connectivity.
 """
-import time
 import numpy as nm
 
-from sfepy.base.base import output, assert_
+from sfepy.base.base import assert_
 import fea
 from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
-from sfepy.discrete.fem.global_interp import get_ref_coors
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
 from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
                                             H1Mixin)
-from sfepy.discrete.fem.extmods.bases import evaluate_in_rc
 
 class H1NodalMixin(H1Mixin):
 
@@ -175,155 +172,18 @@ class H1NodalMixin(H1Mixin):
         """
         Create the context required for evaluating the field basis.
         """
-        from sfepy.discrete.fem.extmods.bases import CLagrangeContext
+        ps = self.ap.get_poly_space('v', from_geometry=False)
+        gps = self.ap.get_poly_space('v', from_geometry=True)
 
-        ap = self.ap
-        ps = ap.interp.gel.interp.poly_spaces['v']
+        mesh = self.create_mesh(extra_nodes=False)
 
-        ref_coors = ps.geometry.coors
+        ctx = ps.create_context(None, 0, 1e-15, 100, 1e-8,
+                                tdim=mesh.cmesh.tdim)
+        geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
 
-        ctx = CLagrangeContext(mtx_i=ps.get_mtx_i(),
-                               ref_coors=ref_coors,
-                               vmin=ref_coors[0, 0],
-                               vmax=ref_coors[1, 0],
-                               nodes=ps.nodes,
-                               tdim=self.domain.shape.tdim,
-                               eps=1e-15,
-                               i_max=100,
-                               newton_eps=1e-8)
+        ctx.geo_ctx = geo_ctx
 
         return ctx
-
-    def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
-                    close_limit=0.1, get_cells_fun=None, cache=None,
-                    ret_cells=False, ret_status=False, ret_ref_coors=False,
-                    verbose=False):
-        """
-        Evaluate source DOF values corresponding to the field in the given
-        coordinates using the field interpolation.
-
-        Parameters
-        ----------
-        coors : array, shape ``(n_coor, dim)``
-            The coordinates the source values should be interpolated into.
-        source_vals : array, shape ``(n_nod, n_components)``
-            The source DOF values corresponding to the field.
-        mode : {'val', 'grad'}, optional
-            The evaluation mode: the field value (default) or the field value
-            gradient.
-        strategy : {'general', 'convex'}, optional
-            The strategy for finding the elements that contain the
-            coordinates. For convex meshes, the 'convex' strategy might be
-            faster than the 'general' one.
-        close_limit : float, optional
-            The maximum limit distance of a point from the closest
-            element allowed for extrapolation.
-        get_cells_fun : callable, optional
-            If given, a function with signature ``get_cells_fun(coors, cmesh,
-            **kwargs)`` returning cells and offsets that potentially contain
-            points with the coordinates `coors`. Applicable only when
-            `strategy` is 'general'. When not given,
-            :func:`get_potential_cells()
-            <sfepy.discrete.fem.global_interp.get_potential_cells>` is used.
-        cache : Struct, optional
-            To speed up a sequence of evaluations, the field mesh and other
-            data can be cached. Optionally, the cache can also contain the
-            reference element coordinates as `cache.ref_coors`, `cache.cells`
-            and `cache.status`, if the evaluation occurs in the same
-            coordinates repeatedly. In that case the mesh related data are
-            ignored. See :func:`Field.get_evaluate_cache()
-            <sfepy.discrete.fem.fields_base.FEField.get_evaluate_cache()>`.
-        ret_ref_coors : bool, optional
-            If True, return also the found reference element coordinates.
-        ret_status : bool, optional
-            If True, return also the enclosing cell status for each point.
-        ret_cells : bool, optional
-            If True, return also the cell indices the coordinates are in.
-        verbose : bool
-            If False, reduce verbosity.
-
-        Returns
-        -------
-        vals : array
-            The interpolated values with shape ``(n_coor, n_components)`` or
-            gradients with shape ``(n_coor, n_components, dim)`` according to
-            the `mode`. If `ret_status` is False, the values where the status
-            is greater than one are set to ``numpy.nan``.
-        ref_coors : array
-            The found reference element coordinates, if `ret_ref_coors` is True.
-        cells : array
-            The cell indices, if `ret_ref_coors` or `ret_cells` or `ret_status`
-            are True.
-        status : array
-            The status, if `ret_ref_coors` or `ret_status` are True, with the
-            following meaning: 0 is success, 1 is extrapolation within
-            `close_limit`, 2 is extrapolation outside `close_limit`, 3 is
-            failure, 4 is failure due to non-convergence of the Newton
-            iteration in tensor product cells. If close_limit is 0, then for
-            the 'general' strategy the status 5 indicates points outside of the
-            field domain that had no potential cells.
-        """
-        output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
-
-        ref_coors, cells, status = get_ref_coors(self, coors,
-                                                 strategy=strategy,
-                                                 close_limit=close_limit,
-                                                 get_cells_fun=get_cells_fun,
-                                                 cache=cache,
-                                                 verbose=verbose)
-
-        tt = time.clock()
-
-        ap = self.ap
-        ps = ap.interp.poly_spaces['v']
-        mtx_i = ps.get_mtx_i()
-
-        # Interpolate to the reference coordinates.
-        if mode == 'val':
-            vals = nm.empty((coors.shape[0], source_vals.shape[1], 1),
-                            dtype=source_vals.dtype)
-            cmode = 0
-            mesh_coors = None
-            mesh_conn = None
-            geo_nodes = None
-
-        elif mode == 'grad':
-            vals = nm.empty((coors.shape[0], source_vals.shape[1],
-                             coors.shape[1]),
-                            dtype=source_vals.dtype)
-            cmode = 1
-            mesh_coors = self.domain.get_mesh_coors(actual=True)
-            dconn = self.domain.get_conn()
-            mesh_conn = nm.take(dconn, self.region.get_cells(), axis=0)
-
-            geo_ps = ap.interp.get_geom_poly_space('v')
-            geo_nodes = geo_ps.nodes
-
-        evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       ap.econn, ps.geometry.coors, ps.nodes, ps.order,
-                       mesh_coors, mesh_conn, geo_nodes, cmode, mtx_i, 1e-15)
-        output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
-
-        output('...done',verbose=verbose)
-
-        if mode == 'val':
-            vals.shape = (coors.shape[0], source_vals.shape[1])
-
-        if not ret_status:
-            ii = nm.where(status > 1)[0]
-            vals[ii] = nm.nan
-
-        if ret_ref_coors:
-            return vals, ref_coors, cells, status
-
-        elif ret_status:
-            return vals, cells, status
-
-        elif ret_cells:
-            return vals, cells
-
-        else:
-            return vals
 
 class H1NodalVolumeField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange'

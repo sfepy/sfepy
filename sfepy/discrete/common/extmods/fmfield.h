@@ -86,6 +86,7 @@ int32 fmf_pretend_nc( FMField *obj,
 int32 fmfr_pretend( FMField *obj,
 		    int32 nLev, int32 nRow, int32 nCol,
 		    float64 *data, int32 offset, int32 nColFull );
+int32 fmf_set_qp(FMField *qp_obj, int32 iqp, FMField *obj);
 int32 fmf_getDim( FMField *obj, int32 *p_nCell, int32 *p_nLev,
 		  int32 *p_nRow, int32 *p_nCol );
 

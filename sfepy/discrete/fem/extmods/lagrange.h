@@ -18,21 +18,40 @@ typedef struct LagrangeContext {
   int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
                        FMField *point, FMField *e_coors,
                        void *_ctx);
+  int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
+                      void *_ctx);
+  int32 iel; // >= 0.
+  int32 is_dx; // 1 => apply reference mapping to gradient.
+  FMField e_coors_max[1]; // Buffer for coordinates of element nodes.
 
-  FMField bc[1];
-  FMField mtx_i[1];
-  FMField base1d[1];
-  FMField ref_coors[1];
+  struct LagrangeContext *geo_ctx;
+
+  int32 order;
+  int32 is_bubble;
+  int32 tdim;
   int32 *nodes;
   int32 n_nod;
   int32 n_col;
-  int32 tdim;
+
+  FMField ref_coors[1];
+  float64 vmin;
+  float64 vmax;
+
+  FMField mesh_coors[1];
+  int32 *mesh_conn;
+  int32 n_cell;
+  int32 n_cp;
+
+  FMField mtx_i[1];
+
+  FMField *bc;
+  FMField base1d[1];
+  FMField mbfg[1];
+
   float64 eps;
   int32 check_errors;
   int32 i_max;
   float64 newton_eps;
-  float64 vmin;
-  float64 vmax;
 } LagrangeContext;
 
 void print_context_lagrange(void *_ctx);
@@ -48,6 +67,9 @@ int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
 
 int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
                     void *_ctx);
+
+int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
+                          void *_ctx);
 
 int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
                             void *_ctx);

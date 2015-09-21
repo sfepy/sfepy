@@ -8,32 +8,55 @@ void print_context_lagrange(void *_ctx)
 
   int32 ir, ic;
 
-  output("bc:\n");
-  fmf_print(ctx->bc, stdout, 0);
-  output("mtx_i:\n");
-  fmf_print(ctx->mtx_i, stdout, 0);
-  output("base1d:\n");
-  fmf_print(ctx->base1d, stdout, 0);
-  output("ref_coors:\n");
-  fmf_print(ctx->ref_coors, stdout, 0);
+  output("iel: %d\n", ctx->iel);
+  output("is_dx: %d\n", ctx->is_dx);
 
-  output("n_nod: %d\n", ctx->n_nod);
-  output("n_col: %d\n", ctx->n_col);
+  output("e_coors_max:\n");
+  fmf_print(ctx->e_coors_max, stdout, 1);
+
+  output("order: %d\n", ctx->order);
+  output("is_bubble: %d\n", ctx->is_bubble);
+  output("tdim: %d\n", ctx->tdim);
   output("nodes:\n");
-  for (ir = 0; ir < ctx->n_nod; ir ++) {
-    for (ic = 0; ic < ctx->n_col; ic ++) {
+  for (ir = 0; ir < ctx->n_nod; ir++) {
+    for (ic = 0; ic < ctx->n_col; ic++) {
       output(" %d", ctx->nodes[ctx->n_col*ir+ic]);
     }
     output("\n");
   }
+  output("n_nod: %d\n", ctx->n_nod);
+  output("n_col: %d\n", ctx->n_col);
 
-  output("tdim: %d\n", ctx->tdim);
+  output("ref_coors:\n");
+  fmf_print(ctx->ref_coors, stdout, 0);
+  output("vmin: %.4e\n", ctx->vmin);
+  output("vmax: %.4e\n", ctx->vmax);
+
+  output("mesh_coors:\n");
+  fmf_print(ctx->mesh_coors, stdout, 0);
+  output("mesh_conn:\n");
+  for (ir = 0; ir < ctx->n_cell; ir++) {
+    for (ic = 0; ic < ctx->n_cp; ic++) {
+      output(" %d", ctx->mesh_conn[ctx->n_cp*ir+ic]);
+    }
+    output("\n");
+  }
+  output("n_cell: %d\n", ctx->n_cell);
+  output("n_cp: %d\n", ctx->n_cp);
+
+  output("mtx_i:\n");
+  fmf_print(ctx->mtx_i, stdout, 0);
+
+  output("bc: %p\n", ctx->bc);
+  output("base1d:\n");
+  fmf_print(ctx->base1d, stdout, 1);
+  output("mbfg:\n");
+  fmf_print(ctx->mbfg, stdout, 1);
+
   output("eps: %.4e\n", ctx->eps);
   output("check_errors: %d\n", ctx->check_errors);
   output("i_max: %d\n", ctx->i_max);
   output("newton_eps: %.4e\n", ctx->newton_eps);
-  output("vmin: %.4e\n", ctx->vmin);
-  output("vmax: %.4e\n", ctx->vmax);
 }
 
 /*
@@ -119,36 +142,32 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
                   FMField *point, FMField *e_coors,
                   void *_ctx)
 {
-  LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
+  LagrangeContext *ctx = ((LagrangeContext *) _ctx)->geo_ctx;
   int32 n_v = e_coors->nRow;
   int32 dim = e_coors->nCol;
-  int32 tdim = ctx->tdim;
   float64 vmin = ctx->vmin;
   float64 vmax = ctx->vmax;
 
   int32 ii, ok;
-  float64 dist = 0.0, val;
-  float64 buf4[4];
-  float64 buf8[8];
+  float64 dist = 0.0, val, aux;
 
   if (n_v == (dim + 1)) {
-    fmf_pretend_nc(bc, 1, 1, 1, tdim + 1, buf4);
-    get_xi_simplex(xi, point, e_coors, _ctx);
+    get_xi_simplex(xi, point, e_coors, ctx);
 
-    // dist == 0 for 0 <= bc <= 1.
-    for (ii = 0; ii < n_v; ii++) {
-      val = Min(Max(bc->val[ii] - 1.0, 0.0), 100.0);
-      dist += val * val;
-      val = Min(Max(0.0 - bc->val[ii], 0.0), 100.0);
+    // dist == 0 for vmin <= xi and sum(xi) <= vmax.
+    aux = 0.0;
+    for (ii = 0; ii < dim; ii++) {
+      aux += xi->val[ii];
+
+      val = Min(Max(vmin - xi->val[ii], 0.0), 100.0);
       dist += val * val;
     }
+    val = Min(Max(aux - vmax, 0.0), 100.0);
+    dist += val * val;
     ok = 1;
 
   } else {
-    fmf_pretend_nc(ctx->base1d, 1, 1, 1, n_v, buf8);
-
-    ok = get_xi_tensor(xi, point, e_coors, _ctx);
+    ok = get_xi_tensor(xi, point, e_coors, ctx);
 
     // dist == 0 for vmin <= xi <= vmax and ok == 0.
     if (ok == 0) {
@@ -172,23 +191,23 @@ int32 get_xi_dist(float64 *pdist, FMField *xi,
 /*
   Get reference simplex coordinates `xi` of `dest_point` given spatial
   element coordinates `e_coors` and coordinates of reference simplex
-  vertices `ref_coors` (in `ctx`). Output also the corresponding barycentric
-  coordinates `bc` (in `ctx`).
+  vertices `ref_coors` (in `ctx`).
 */
 int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
                      void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-
   int32 idim, ii;
   int32 n_v = e_coors->nRow;
   int32 dim = e_coors->nCol;
-  FMField mtx[1], mtx_i[1], rhs[1];
-  float64 buf16[16], buf16_2[16], buf4[4];
+  FMField mtx[1], mtx_i[1], rhs[1], bc[1];
+  float64 buf16[16], buf16_2[16], buf4_1[4], buf4_2[4];
+
+  fmf_pretend_nc(bc, 1, 1, 1, ctx->tdim + 1, buf4_1);
 
   fmf_pretend_nc(mtx, 1, 1, n_v, n_v, buf16);
   fmf_pretend_nc(mtx_i, 1, 1, n_v, n_v, buf16_2);
-  fmf_pretend_nc(rhs, 1, 1, 1, n_v, buf4);
+  fmf_pretend_nc(rhs, 1, 1, 1, n_v, buf4_2);
 
   for (idim = 0; idim < dim; idim++) {
     for (ii = 0; ii < n_v; ii++) {
@@ -207,8 +226,8 @@ int32 get_xi_simplex(FMField *xi, FMField *dest_point, FMField *e_coors,
     geme_invert3x3(mtx_i, mtx);
   }
 
-  fmf_mulABT_nn(ctx->bc, rhs, mtx_i);
-  fmf_mulAB_nn(xi, ctx->bc, ctx->ref_coors);
+  fmf_mulABT_nn(bc, rhs, mtx_i);
+  fmf_mulAB_nn(xi, bc, ctx->ref_coors);
 
   return(RET_OK);
 }
@@ -222,8 +241,6 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
                     void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
-
   float64 vmin = ctx->vmin;
   float64 vmax = ctx->vmax;
   int32 i_max = ctx->i_max;
@@ -232,10 +249,12 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
   int32 idim, ii, ok = 0;
   int32 dim = e_coors->nCol;
   int32 powd = 1 << dim;
-  FMField bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1];
+  FMField bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1], bc[1], base1d[1];
   float64 err;
-  float64 buf6[6], buf8[8], buf24[24];
+  float64 buf6[6], buf8[8], buf8_2[8], buf24[24];
   float64 buf3_1[3], buf3_2[3], buf9_1[9], buf9_2[9];
+
+  fmf_pretend_nc(base1d, 1, 1, 1, e_coors->nRow, buf8_2);
 
   fmf_pretend_nc(bc, dim, 1, 1, 2, buf6);
   fmf_pretend_nc(bf, 1, 1, 1, powd, buf8);
@@ -244,6 +263,8 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
   fmf_pretend_nc(xint, 1, 1, 1, dim, buf3_2);
   fmf_pretend_nc(mtx, 1, 1, dim, dim, buf9_1);
   fmf_pretend_nc(imtx, 1, 1, dim, dim, buf9_2);
+
+  ctx->bc = bc;
 
   ii = 0;
   fmf_fillC(xi, 0.5 * (vmin + vmax));
@@ -296,28 +317,156 @@ int32 get_xi_tensor(FMField *xi, FMField *dest_point, FMField *e_coors,
 }
 
 /*
+  Evaluate Lagrange base polynomials in given points.
+*/
+int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
+                          void *_ctx)
+{
+  LagrangeContext *ctx = (LagrangeContext *) _ctx;
+  LagrangeContext *geo_ctx = ctx->geo_ctx;
+
+  int32 ii, iqp, ret = RET_OK;
+  int32 n_v = ctx->ref_coors->nRow;
+  int32 dim = ctx->ref_coors->nCol;
+  int32 n_cp = 0;
+  int32 is_dx = ctx->is_dx;
+  float64 coef = 1.0;
+  float64 buf9_1[9], buf9_2[9], buf24_1[24], buf24_2[24], buf6[6];
+  FMField *_out = ctx->mbfg;
+  FMField bc[1], _coors[1], _coor[1], coor[1];
+  FMField cell_coors[1], mtxMR[1], mtxMRI[1];
+  FMField bf1[1], gbfg1[1], bfg1[1];
+
+  fmf_pretend_nc(_coors, 1, coors->nRow, 1, coors->nCol, coors->val);
+  fmf_pretend_nc(coor, 1, 1, 1, dim, 0);
+  fmf_pretend_nc(bf1, 1, 1, out->nRow, out->nCol, 0);
+
+  if (diff && is_dx) {
+    n_cp = geo_ctx->n_cp;
+    fmf_pretend_nc(cell_coors, 1, 1, n_cp, dim, buf24_1);
+    fmf_pretend_nc(mtxMR, 1, 1, dim, dim, buf9_1);
+    fmf_pretend_nc(mtxMRI, 1, 1, dim, dim, buf9_2);
+    fmf_pretend_nc(gbfg1, 1, 1, dim, n_cp, buf24_2);
+    fmf_pretend_nc(bfg1, 1, 1, dim, out->nCol, 0);
+  }
+  if (ctx->is_bubble) {
+    coef = 1.0 / (ctx->n_nod - 1);
+  }
+
+  ctx->bc = bc;
+
+  if (n_v == (dim + 1)) {
+    fmf_pretend_nc(bc, 1, 1, 1, dim + 1, buf6);
+
+    for (iqp = 0; iqp < out->nLev; iqp++) {
+      fmf_set_qp(coor, iqp, _coors);
+      fmf_set_qp(bf1, iqp, out);
+
+      get_barycentric_coors(bc, coor, _ctx);
+      eval_lagrange_simplex(bf1, ctx->order, diff, _ctx);
+
+      if (ctx->is_bubble) {
+        int32 ir;
+        int32 order = 0;
+        int32 *nodes = ctx->nodes;
+        FMField bubble[1];
+        float64 buf3[3];
+
+        // slice [:, -1:].
+        fmf_pretend_nc(bubble, 1, 1, bf1->nRow, 1, buf3);
+
+        ctx->nodes += (ctx->n_nod - 1) * ctx->n_col;
+        for (ii = 0; ii < ctx->n_col; ii++) {
+          order += ctx->nodes[ii];
+        }
+        ctx->is_bubble = 0;
+        eval_lagrange_simplex(bubble, order, diff, _ctx);
+        ctx->nodes = nodes;
+        ctx->is_bubble = 1;
+
+        for (ir = 0; ir < bf1->nRow; ir++) {
+          bf1->val[bf1->nCol * ir + bf1->nCol - 1] = bubble->val[ir];
+
+          // out[:, :-1] -= bubble / (n_nod - 1).
+          for (ii = 0; ii < (bf1->nCol - 1); ii++) {
+            bf1->val[bf1->nCol * ir + ii] -= coef * bubble->val[ir];
+          }
+        }
+      }
+    }
+
+  } else {
+    fmf_pretend_nc(bc, dim, 1, 1, 2, buf6);
+
+    for (iqp = 0; iqp < out->nLev; iqp++) {
+      fmf_set_qp(coor, iqp, _coors);
+
+      fmf_set_qp(bf1, iqp, out);
+
+      for (ii = 0; ii < dim; ii++) {
+        FMF_SetCell(bc, ii);
+        // slice [:,ii:ii+1].
+        fmf_pretend_nc(_coor, 1, 1, 1, coor->nCol, coor->val + ii);
+        get_barycentric_coors(bc, _coor, ctx);
+      }
+
+      eval_lagrange_tensor_product(bf1, ctx->order, diff, ctx);
+    }
+  }
+
+  if (diff && is_dx) {
+    ele_extractNodalValuesNBN(cell_coors, geo_ctx->mesh_coors,
+                              geo_ctx->mesh_conn + n_cp * ctx->iel);
+
+    for (iqp = 0; iqp < out->nLev; iqp++) {
+      fmf_set_qp(coor, iqp, _coors);
+
+      geo_ctx->eval_basis(gbfg1, coor, 1, geo_ctx);
+
+      fmf_set_qp(bfg1, iqp, out);
+
+      // Jacobi matrix from reference to material system.
+      fmf_mulATBT_1n(mtxMR, cell_coors, gbfg1);
+      // Inverse of Jacobi matrix reference to material system.
+      geme_invert3x3(mtxMRI, mtxMR);
+      // Base function gradient w.r.t. material system.
+      fmf_mulATB_nn(_out, mtxMRI, bfg1);
+
+      fmf_copy(bfg1, _out);
+    }
+  }
+
+  ERR_CheckGo(ret);
+
+ end_label:
+  return(ret);
+}
+
+/*
   Evaluate Lagrange base polynomials in given points on simplex domain.
 */
 int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
                             void *_ctx)
 {
   LagrangeContext *ctx = (LagrangeContext *) _ctx;
-  FMField *bc = ctx->bc;
   FMField *mtx_i = ctx->mtx_i;
+  FMField *bc = ctx->bc;
   int32 *nodes = ctx->nodes;
   int32 n_col = ctx->n_col;
+  int32 n_v = bc->nCol;
 
   int32 ret = RET_OK;
-  int32 n_coor = bc->nRow;
-  int32 n_v = bc->nCol;
+  int32 n_coor = 1;  // assume single qp!!!
   int32 dim = n_v - 1;
-  int32 n_nod = out->nCol;
+  int32 n_ocol = out->nCol;
+  int32 n_nod = n_ocol - ctx->is_bubble;
   int32 ii, ir, ic, i1, i2, inod, n_i1, n_ii;
   float64 dval, dd, vv, bci1, bcii;
   float64 *pout;
 
   if (n_coor != out->nLev) {
-    errset("coordinates size mismatch!");
+    errput("%d == %d!\n", n_coor, out->nLev);
+    errset("only single point supported (see above)!");
     ERR_CheckGo(ret);
   }
 
@@ -374,7 +523,7 @@ int32 eval_lagrange_simplex(FMField *out, int32 order, int32 diff,
           }
 
           for (ir = 0; ir < dim; ir++) {
-            pout[n_nod*ir+inod] += vv * dval * mtx_i->val[n_v*ii+ir];
+            pout[n_ocol*ir+inod] += vv * dval * mtx_i->val[n_v*ii+ir];
           }
         }
       }

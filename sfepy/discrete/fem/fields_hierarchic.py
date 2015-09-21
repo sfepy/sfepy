@@ -226,85 +226,13 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         """
         Create the context required for evaluating the field basis.
         """
-        from sfepy.discrete.fem.extmods.bases import CLagrangeContext
+        # Hack for tests to pass - the reference coordinates are determined
+        # from vertices only - we can use the Lagrange basis context for the
+        # moment. The true context for Field.evaluate_at() is not implemented.
+        gps = self.ap.get_poly_space('v', from_geometry=True)
+        mesh = self.create_mesh(extra_nodes=False)
 
-        # Hack - the reference coordinates are determined from vertices only -
-        # we can use the Lagrange basis for the moment.
-        ap = self.ap
-        ps = ap.interp.gel.interp.poly_spaces['v']
-
-        ref_coors = ps.geometry.coors
-
-        ctx = CLagrangeContext(mtx_i=ps.get_mtx_i(),
-                               ref_coors=ref_coors,
-                               vmin=ref_coors[0, 0],
-                               vmax=ref_coors[1, 0],
-                               nodes=ps.nodes,
-                               tdim=self.domain.shape.tdim,
-                               eps=1e-15,
-                               i_max=100,
-                               newton_eps=1e-8)
+        ctx = geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx.geo_ctx = geo_ctx
 
         return ctx
-
-    def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
-                    close_limit=0.1, get_cells_fun=None, cache=None,
-                    ret_cells=False, ret_status=False, ret_ref_coors=False,
-                    verbose=False):
-        """
-        Evaluate source DOF values corresponding to the field in the given
-        coordinates using the field interpolation.
-
-        Parameters
-        ----------
-        coors : array
-            The coordinates the source values should be interpolated into.
-        source_vals : array
-            The source DOF values corresponding to the field.
-        mode : {'val', 'grad'}, optional
-            The evaluation mode: the field value (default) or the field value
-            gradient.
-        strategy : {'general', 'convex'}, optional
-            The strategy for finding the elements that contain the
-            coordinates. For convex meshes, the 'convex' strategy might be
-            faster than the 'general' one.
-        close_limit : float, optional
-            The maximum limit distance of a point from the closest
-            element allowed for extrapolation.
-        get_cells_fun : callable, optional
-            If given, a function with signature ``get_cells_fun(coors, cmesh,
-            **kwargs)`` returning cells and offsets that potentially contain
-            points with the coordinates `coors`. Applicable only when
-            `strategy` is 'general'. When not given,
-            :func:`get_potential_cells()
-            <sfepy.discrete.fem.global_interp.get_potential_cells>` is used.
-        cache : Struct, optional
-            To speed up a sequence of evaluations, the field mesh, the inverse
-            connectivity of the field mesh and the KDTree instance can
-            be cached as `cache.mesh`, `cache.offsets`, `cache.iconn` and
-            `cache.kdtree`. Optionally, the cache can also contain the
-            reference element coordinates as `cache.ref_coors`,
-            `cache.cells` and `cache.status`, if the evaluation occurs
-            in the same coordinates repeatedly. In that case the KDTree
-            related data are ignored.
-        ret_cells : bool, optional
-            If True, return also the cell indices the coordinates are in.
-        ret_status : bool, optional
-            If True, return also the status for each point: 0 is
-            success, 1 is extrapolation within `close_limit`, 2 is
-            extrapolation outside `close_limit`, 3 is failure.
-        ret_ref_coors : bool, optional
-            If True, return also the found reference element coordinates.
-        verbose : bool
-            If False, reduce verbosity.
-
-        Returns
-        -------
-        vals : array
-            The interpolated values.
-        cells : array
-            The cell indices, if `ret_cells` or `ret_status` are True.
-        status : array
-            The status, if `ret_status` is True.
-        """
-        raise NotImplementedError

@@ -351,11 +351,58 @@ class PolySpace(Struct):
     def describe_nodes(self):
         return NodeDescription(self.nts, self.nodes)
 
-class LagrangeSimplexPolySpace(PolySpace):
+class LagrangePolySpace(PolySpace):
+
+    def create_context(self, cmesh, eps, check_errors, i_max, newton_eps,
+                       tdim=None):
+        from sfepy.discrete.fem.extmods.bases import CLagrangeContext
+
+        ref_coors = self.geometry.coors
+
+        if cmesh is not None:
+            mesh_coors = cmesh.coors
+
+            conn = cmesh.get_conn(cmesh.tdim, 0)
+            mesh_conn = conn.indices.reshape(cmesh.n_el, -1).astype(nm.int32)
+
+            if tdim is None:
+                tdim = cmesh.tdim
+
+        else:
+            mesh_coors = mesh_conn = None
+
+        if tdim is None:
+            raise ValueError('supply either cmesh or tdim!')
+
+        ctx = CLagrangeContext(order=self.order,
+                               tdim=tdim,
+                               nodes=self.nodes,
+                               ref_coors=ref_coors,
+                               mesh_coors=mesh_coors,
+                               mesh_conn=mesh_conn,
+                               mtx_i=self.get_mtx_i(),
+                               eps=eps,
+                               check_errors=check_errors,
+                               i_max=i_max,
+                               newton_eps=newton_eps)
+
+        return ctx
+
+    def _eval_base(self, coors, diff=False, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        """
+        See :func:`PolySpace.eval_base()`.
+        """
+        base = self.eval_ctx.evaluate(coors, diff=diff,
+                                      eps=eps,
+                                      check_errors=not suppress_errors)
+        return base
+
+class LagrangeSimplexPolySpace(LagrangePolySpace):
     """Lagrange polynomial space on a simplex domain."""
     name = 'lagrange_simplex'
 
-    def __init__(self, name, geometry, order):
+    def __init__(self, name, geometry, order, init_context=True):
         PolySpace.__init__(self, name, geometry, order)
 
         n_v = geometry.n_vertex
@@ -368,6 +415,13 @@ class LagrangeSimplexPolySpace(PolySpace):
         self.nodes, self.nts, node_coors = self._define_nodes()
         self.node_coors = nm.ascontiguousarray(node_coors)
         self.n_nod = self.nodes.shape[0]
+
+        if init_context:
+            self.eval_ctx = self.create_context(None, 0, 1e-15, 100, 1e-8,
+                                                tdim=n_v - 1)
+
+        else:
+            self.eval_ctx = None
 
     def _define_nodes(self):
         # Factorial.
@@ -432,24 +486,14 @@ class LagrangeSimplexPolySpace(PolySpace):
 
         return nodes, nts, node_coors
 
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
-        """See PolySpace.eval_base()."""
-        from extmods.bases import eval_lagrange_simplex
-
-        base = eval_lagrange_simplex(coors, self.mtx_i, self.nodes,
-                                     self.order, diff,
-                                     eps, not suppress_errors)
-
-        return base
-
 class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
     """Lagrange polynomial space with forced bubble function on a simplex
     domain."""
     name = 'lagrange_simplex_bubble'
 
-    def __init__(self, name, geometry, order):
-        LagrangeSimplexPolySpace.__init__(self, name, geometry, order)
+    def __init__(self, name, geometry, order, init_context=True):
+        LagrangeSimplexPolySpace.__init__(self, name, geometry, order,
+                                          init_context=False)
 
         nodes, nts, node_coors = self.nodes, self.nts, self.node_coors
 
@@ -475,38 +519,43 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
 
         self.n_nod = self.nodes.shape[0]
 
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
-        """See PolySpace.eval_base()."""
-        from extmods.bases import eval_lagrange_simplex
+        if init_context:
+            self.eval_ctx = self.create_context(None, 0, 1e-15, 100, 1e-8,
+                                                tdim=n_v - 1)
 
-        base = eval_lagrange_simplex(coors, self.mtx_i, self.nodes[:-1],
-                                     self.order, diff,
-                                     eps, not suppress_errors)
-        bubble = eval_lagrange_simplex(coors, self.mtx_i, self.bnode,
-                                       int(self.bnode.sum()), diff,
-                                       eps, not suppress_errors)
+        else:
+            self.eval_ctx = None
 
-        base -= bubble / (self.n_nod - 1)
-        base = nm.ascontiguousarray(nm.dstack((base, bubble)))
+    def create_context(self, *args, **kwargs):
+        ctx = LagrangePolySpace.create_context(self, *args, **kwargs)
+        ctx.is_bubble = 1
 
-        return base
+        return ctx
 
-class LagrangeTensorProductPolySpace(PolySpace):
+class LagrangeTensorProductPolySpace(LagrangePolySpace):
     """Lagrange polynomial space on a tensor product domain."""
     name = 'lagrange_tensor_product'
 
-    def __init__(self, name, geometry, order):
+    def __init__(self, name, geometry, order, init_context=True):
         PolySpace.__init__(self, name, geometry, order)
 
         g1d = Struct(n_vertex = 2,
                      dim = 1,
                      coors = self.bbox[:,0:1])
-        self.ps1d = LagrangeSimplexPolySpace('P_aux', g1d, order)
+        self.ps1d = LagrangeSimplexPolySpace('P_aux', g1d, order,
+                                             init_context=False)
 
         self.nodes, self.nts, node_coors = self._define_nodes()
         self.node_coors = nm.ascontiguousarray(node_coors)
         self.n_nod = self.nodes.shape[0]
+
+        if init_context:
+            tdim = int(nm.sqrt(geometry.n_vertex))
+            self.eval_ctx = self.create_context(None, 0, 1e-15, 100, 1e-8,
+                                                tdim=tdim)
+
+        else:
+            self.eval_ctx = None
 
     def _define_nodes(self):
         geometry = self.geometry
@@ -625,17 +674,6 @@ class LagrangeTensorProductPolySpace(PolySpace):
                            diff=diff,
                            suppress_errors=suppress_errors,
                            eps=eps)
-
-        return base
-
-    def _eval_base(self, coors, diff=False, ori=None,
-                   suppress_errors=False, eps=1e-15):
-        """See PolySpace.eval_base()."""
-        from extmods.bases import eval_lagrange_tensor_product as ev
-        ps1d = self.ps1d
-
-        base = ev(coors, ps1d.mtx_i, self.nodes, self.order, diff,
-                  eps, not suppress_errors)
 
         return base
 

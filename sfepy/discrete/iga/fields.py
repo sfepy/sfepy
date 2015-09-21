@@ -77,6 +77,7 @@ class IGField(Field):
         self.val_shape = self.shape
         self.n_nod = self.nurbs.weights.shape[0]
         self.n_efun = nm.prod(self.nurbs.degrees + 1)
+        self.approx_order = self.nurbs.degrees.max()
 
         self.mappings = {}
 
@@ -361,6 +362,34 @@ class IGField(Field):
         cmap = mapping.get_mapping(vals, weights)
 
         return cmap, mapping
+
+    def create_mesh(self, extra_nodes=True):
+        """
+        Create a mesh corresponding to the field region. For IGA fields, this
+        is directly the topological mesh. The `extra_nodes` argument is
+        ignored.
+        """
+        return self.domain.mesh
+
+    def create_eval_mesh(self):
+        """
+        Create a mesh with the original NURBS connectivity for evaluating the
+        field. The mesh coordinates are the NURBS control points.
+        """
+        return self.domain.eval_mesh
+
+    def create_basis_context(self):
+        """
+        Create the context required for evaluating the field basis.
+        """
+        from sfepy.discrete.iga.extmods.igac import CNURBSContext
+
+        nurbs = self.nurbs
+
+        ctx = CNURBSContext(nurbs.cps, nurbs.weights, nurbs.degrees,
+                            nurbs.cs, nurbs.conn, i_max=100)
+
+        return ctx
 
     def create_output(self, dofs, var_name, dof_names=None,
                       key=None, **kwargs):
