@@ -67,19 +67,19 @@ helps = {
     'shape' :
     'numbers of vertices along each axis [default: %default]',
     'bc_kind' :
-    'kind of Dirichlet boundary conditions on the bottom and top surfaces, one of:'
-    ' free, cantilever, fixed [default: %default]',
+    'kind of Dirichlet boundary conditions on the bottom and top surfaces,'
+    ' one of: free, cantilever, fixed [default: %default]',
     'axis' :
-    'the axis index of the block that the bottom and top surfaces are related to'
-    ' [default: %default]',
+    'the axis index of the block that the bottom and top surfaces are related'
+    ' to [default: %default]',
     'young' : "the Young's modulus [default: %default]",
     'poisson' : "the Poisson's ratio [default: %default]",
     'density' : "the material density [default: %default]",
     'order' : 'displacement field approximation order [default: %default]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %default]',
-    'ignore' : 'if given, the number of eigenvalues to ignore (e.g. rigid body modes);'
-    ' has precedence over the default setting determined by --bc-kind'
-    ' [default: %default]',
+    'ignore' : 'if given, the number of eigenvalues to ignore (e.g. rigid'
+    ' body modes); has precedence over the default setting determined by'
+    ' --bc-kind [default: %default]',
     'solver' : 'the eigenvalue problem solver to use. It should be given'
     ' as a comma-separated list: solver_kind,option0:value0,option1:value1,...'
     ' [default: %default]',
@@ -190,7 +190,8 @@ def main():
 
     omega = domain.create_region('Omega', 'all')
     bottom = domain.create_region('Bottom',
-                                  'vertices in (%s < %.10f)' % (ax, min_coor + eps),
+                                  'vertices in (%s < %.10f)'
+                                  % (ax, min_coor + eps),
                                   'facet')
     bottom_top = domain.create_region('BottomTop',
                                       'r.Bottom +v vertices in (%s > %.10f)'
@@ -263,9 +264,11 @@ def main():
     omegas = nm.sqrt(eigs)
     freqs = omegas / (2 * nm.pi)
 
-    output('number |         eigenvalue |  angular frequency |          frequency')
+    output('number |         eigenvalue |  angular frequency '
+           '|          frequency')
     for ii, eig in enumerate(eigs):
-        output('%6d | %17.12e | %17.12e | %17.12e' % (ii + 1, eig, omegas[ii], freqs[ii]))
+        output('%6d | %17.12e | %17.12e | %17.12e'
+               % (ii + 1, eig, omegas[ii], freqs[ii]))
 
     # Make full eigenvectors (add DOFs fixed by boundary conditions).
     variables = pb.get_variables()
