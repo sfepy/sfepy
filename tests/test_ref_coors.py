@@ -1,3 +1,5 @@
+import os.path as op
+
 import numpy as nm
 
 import sfepy
@@ -89,7 +91,8 @@ class Test(TestCommon):
     def test_ref_coors_iga(self):
         from sfepy.discrete.iga.domain import IGDomain
 
-        domain = IGDomain.from_file('meshes/iga/block2d.iga')
+        domain = IGDomain.from_file(op.join(sfepy.data_dir,
+                                            'meshes/iga/block2d.iga'))
 
         omega = domain.create_region('Omega', 'all')
 
