@@ -39,8 +39,9 @@ ebcs = {
     'u2' : ('Gamma_Right', {'u.0' : 0.0}),
 }
 
+# Units: D: 0.0001 m^2 / day, v: [0.1, 0] m / day -> time in days.
 materials = {
-    'm' : ({'D' : 1.0, 'v' : [[5.0], [0.1]]},),
+    'm' : ({'D' : 0.0001, 'v' : [[0.1], [0.0]]},),
 }
 
 integrals = {
@@ -60,7 +61,7 @@ equations = {
 solvers = {
     'ts' : ('ts.simple', {
         't0' : 0.0,
-        't1' : 1.0,
+        't1' : 10.0,
         'dt' : None,
         'n_step' : 11, # Has precedence over dt.
     }),
