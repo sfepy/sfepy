@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **23.05.2014** Version 2014.2 released (preliminary support for isogeometric
+  analysis, improved postprocessing and visualization script for time-dependent
+  problems with adaptive time steps, three new terms, etc.), see :ref:`release
+  notes <2014.1-2014.2>`.
+
 * **25.02.2014** Version 2014.1 released (sfepy.fem was split to separate
   FEM-specific and general modules, lower memory usage by creating active DOF
   connectivities directly from field connectivities, new handling of field and
