@@ -1041,6 +1041,7 @@ sfepy.linalg package
    src/sfepy/linalg/eigen
    src/sfepy/linalg/geometry
    src/sfepy/linalg/sparse
+   src/sfepy/linalg/sympy_operators
    src/sfepy/linalg/utils
    src/sfepy/linalg/extmods/crcm
 
