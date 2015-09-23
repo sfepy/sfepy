@@ -431,3 +431,58 @@ class ConvectVGradSTerm(Term):
             fmode = 2
 
         return val_v, grad_s, vvg, svg, fmode
+
+class AdvectDivFreeTerm(Term):
+    r"""
+    Advection of a scalar quantity :math:`p` with the advection velocity
+    :math:`\ul{y}` given as a material parameter (a known function of space and
+    time).
+
+    The advection velocity has to be divergence-free!
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \nabla \cdot (\ul{y} p) q
+        = \int_{\Omega} (\underbrace{(\nabla \cdot \ul{y})}_{\equiv 0}
+        + (\ul{y}, \nabla)) p) q
+
+    :Arguments:
+        - material : :math:`\ul{y}`
+        - virtual  : :math:`q`
+        - virtual  : :math:`p`
+    """
+    name = 'dw_advect_div_free'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : 'D, 1', 'virtual' : ('1', 'state'),
+                  'state' : '1'}
+
+    @staticmethod
+    def function(out, mat, vg, grad, fmode):
+        bf_t = vg.bf.transpose((0, 1, 3, 2))
+
+        if fmode == 0:
+            out_qp = bf_t * dot_sequences(mat, grad, 'ATB')
+
+        else:
+            bfg = vg.bfg
+
+            out_qp = bf_t * dot_sequences(mat, bfg, 'ATB')
+
+        status = vg.integrate(out, out_qp)
+
+        return status
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(virtual)
+
+        if diff_var is None:
+            grad = self.get(state, 'grad')
+            fmode = 0
+
+        else:
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
+
+        return mat, vg, grad, fmode
