@@ -110,6 +110,12 @@ class FEDomain(Domain):
         """
         from sfepy.discrete.common.extmods.cmesh import orient_elements
 
+        if self.cmesh.tdim != self.cmesh.dim:
+            output('warning: mesh with topological dimension %d lower than'
+                   ' space dimension %d' % (self.cmesh.tdim, self.cmesh.dim))
+            output('- element orientation not checked!')
+            return
+
         cmesh = self.cmesh
         for key, gel in self.geom_els.iteritems():
             ori = gel.orientation
