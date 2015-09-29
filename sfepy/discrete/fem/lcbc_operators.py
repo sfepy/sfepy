@@ -35,6 +35,12 @@ class LCBCOperator(Struct):
 class MRLCBCOperator(LCBCOperator):
     """
     Base class for model-reduction type LCBC operators.
+
+    These operators are applied to a single field, and replace its DOFs in a
+    given region by new DOFs. In case some field DOFs are to be preserved,
+    those have to be "copied" explicitly, by setting the corresponding row of
+    the operator matrix to a single value one (see, for example,
+    :class:`NoPenetrationOperator`).
     """
 
     def __init__(self, name, regions, dof_names, dof_map_fun, variables,
@@ -307,7 +313,11 @@ class IntegralMeanValueOperator(MRLCBCOperator):
 
 class ShiftedPeriodicOperator(LCBCOperator):
     """
-    Transformation matrix operator shifted periodic boundary conditions.
+    Transformation matrix operator for shifted periodic boundary conditions.
+
+    This operator ties existing DOFs of two fields in two disjoint regions
+    together. Unlike :class:`MRLCBCOperator` subclasses, it does not create any
+    new DOFs.
     """
     kind = 'shifted_periodic'
 
