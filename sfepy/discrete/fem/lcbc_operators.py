@@ -369,7 +369,7 @@ class ShiftedPeriodicOperator(LCBCOperator):
         num = len(ia)
 
         ones = nm.ones(num, dtype=nm.float64)
-        n_dofs = [variables.adi.n_dof[name] for name in self.var_names]
+        n_dofs = [variables.adi.n_dof[ii] for ii in self.var_names]
         mtx = sp.coo_matrix((ones, (meq, seq)), shape=n_dofs)
 
         self.mtx = mtx.tocsr()
