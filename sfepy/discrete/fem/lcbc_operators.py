@@ -589,7 +589,8 @@ class LCBCOperators(Container):
                 cols.append(coff + ii2)
                 data.append(lv)
 
-                vec_lc[irs] += op.rhs
+            if vec_lc is not None:
+                vec_lc[irs] += op.get('rhs', 0)
 
         rows = nm.concatenate(rows)
         cols = nm.concatenate(cols)
