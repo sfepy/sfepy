@@ -358,9 +358,7 @@ class NodalLCOperator(MRLCBCOperator):
 
         assert_(n_ceq == rhs.shape[1])
         assert_(dpn == mtx.shape[2])
-        assert_(n_ceq < dpn)
-
-        irs = set(range(dpn))
+        assert_(n_ceq <= dpn)
 
         data = []
         rows = []
@@ -375,28 +373,40 @@ class NodalLCOperator(MRLCBCOperator):
             assert_(len(sol) == n_ceq)
 
             imasters = []
+            ifixed = []
+            islaves = set()
             ccs = []
             for key, _poly in sol.iteritems():
-                poly = _poly.as_poly()
-
                 imaster = int(key.name[1:])
                 imasters.append(imaster)
 
-                # Workaround for poly.all_coeffs() not applicable to
-                # multivariate polynomials.
-                coefs = []
-                for uu in us + [1]:
-                    if uu in poly:
-                        coefs.append(poly.coeff_monomial(uu))
-                coefs.append(poly.TC())
-                ccs.append(coefs)
+                if not isinstance(_poly, sm.Float):
+                    poly = _poly.as_poly()
 
-            islaves = nm.setdiff1d(irs, imasters)
+                    # Workaround for poly.all_coeffs() not applicable to
+                    # multivariate polynomials.
+                    coefs = []
+                    for ii, uu in enumerate(us):
+                        if uu in poly:
+                            coefs.append(poly.coeff_monomial(uu))
+                            islaves.add(ii)
+                    coefs.append(poly.TC())
+                    ccs.append(coefs)
+
+                else: # Degenerated constraint - fixed master.
+                    ifixed.append(imaster)
+                    ccs.append([float(_poly)])
+
+            islaves = sorted(islaves)
 
             for ii, imaster in enumerate(imasters):
                 coefs = ccs[ii]
 
                 em = dpn * im + imaster
+                rhss[em] = coefs[-1]
+
+                if imaster in ifixed: continue
+
                 # Master DOF is expressed in terms of slave DOFs.
                 for ii, islave in enumerate(islaves):
                     es = ii + n_new
@@ -404,8 +414,6 @@ class NodalLCOperator(MRLCBCOperator):
                     rows.append(em)
                     cols.append(es)
                     data.append(coefs[ii])
-
-                    rhss[em] = coefs[-1]
 
             # Slave DOFs are copied.
             for ii, islave in enumerate(islaves):
