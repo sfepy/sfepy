@@ -10,7 +10,7 @@ from sfepy.base.base import (basestr, output, assert_, find_subclasses,
 from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
-from sfepy.discrete.conditions import get_condition_value
+from sfepy.discrete.conditions import get_condition_value, Function
 
 class LCBCOperator(Struct):
     """
@@ -342,7 +342,8 @@ class NodalLCOperator(MRLCBCOperator):
 
         assert_(dpn <= n_c)
 
-        if isinstance(constraints, basestr):
+        if (isinstance(constraints, basestr)
+            or isinstance(constraints, Function)):
             fun = get_condition_value(constraints, functions,
                                       'nodal', 'constraints')
             coors = self.field.get_coor(self.mdofs)
