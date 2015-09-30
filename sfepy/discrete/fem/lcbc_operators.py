@@ -378,8 +378,17 @@ class NodalLCOperator(MRLCBCOperator):
             for key, _poly in sol.iteritems():
                 poly = _poly.as_poly()
 
-                imasters.append(int(key.name[1:]))
-                ccs.append([float(ii) for ii in poly.all_coeffs()])
+                imaster = int(key.name[1:])
+                imasters.append(imaster)
+
+                # Workaround for poly.all_coeffs() not applicable to
+                # multivariate polynomials.
+                coefs = []
+                for uu in us + [1]:
+                    if uu in poly:
+                        coefs.append(poly.coeff_monomial(uu))
+                coefs.append(poly.TC())
+                ccs.append(coefs)
 
             islaves = nm.setdiff1d(irs, imasters)
 
