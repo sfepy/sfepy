@@ -5,11 +5,12 @@ setting.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import output, assert_, find_subclasses, Container, Struct
+from sfepy.base.base import (basestr, output, assert_, find_subclasses,
+                             Container, Struct)
 from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
-from sfepy.discrete.conditions import get_condition_value
+from sfepy.discrete.conditions import get_condition_value, Function
 
 class LCBCOperator(Struct):
     """
@@ -311,6 +312,135 @@ class IntegralMeanValueOperator(MRLCBCOperator):
         self.n_new_dof = dpn
         self.mtx = mtx.tocsr()
 
+class NodalLCOperator(MRLCBCOperator):
+    r"""
+    Transformation matrix operator for the general linear combination of DOFs
+    in each node of a field in the given region.
+
+    The DOFs can be fully constrained - then the operator corresponds to
+    enforcing Dirichlet boundary conditions.
+
+    The linear combination is given by:
+
+    .. math::
+        \sum_{j=1}^n A_{ij} u_j = b_i \;,\ \forall i \;,
+
+    where :math:`u_j`, :math:`j = 1, \dots, n` are the DOFs in the node and
+    :math:`i = 1, \dots, m`, :math:`m < n`, are the linear constraint indices.
+
+    SymPy is used to solve the constraint linear system in each node for the
+    dependent DOF(s).
+    """
+    kind = 'nodal_combination'
+
+    def __init__(self, name, regions, dof_names, dof_map_fun,
+                 constraints, variables, ts=None, functions=None):
+        MRLCBCOperator.__init__(self, name, regions, dof_names, dof_map_fun,
+                                variables, functions=functions)
+        import sympy as sm
+
+        n_c = self.field.n_components
+        dpn = len(self.dof_names)
+        n_nod = self.mdofs.shape[0]
+
+        assert_(dpn <= n_c)
+
+        if (isinstance(constraints, basestr)
+            or isinstance(constraints, Function)):
+            fun = get_condition_value(constraints, functions,
+                                      'nodal', 'constraints')
+            coors = self.field.get_coor(self.mdofs)
+            mtx, rhs = fun(ts, coors, self.region)
+
+        else:
+            mtx, rhs = constraints
+            mtx = nm.tile(mtx, (n_nod, 1, 1))
+            rhs = nm.tile(rhs, (n_nod, 1))
+
+        n_ceq = mtx.shape[1]
+
+        assert_(n_ceq == rhs.shape[1])
+        assert_(dpn == mtx.shape[2])
+        assert_(n_ceq <= dpn)
+
+        data = []
+        rows = []
+        cols = []
+        rhss = nm.zeros(n_nod * dpn, dtype=nm.float64)
+        n_new = 0
+        us = [sm.Symbol('u%d' % ii) for ii in range(dpn)]
+        for im, nmtx in enumerate(mtx):
+            eqs = sm.Matrix(nmtx) * sm.Matrix(us) - rhs[im][:, None]
+            sol = sm.solve(eqs)
+
+            assert_(len(sol) == n_ceq)
+
+            imasters = []
+            ifixed = []
+            islaves = set()
+            ccs = []
+            for key, _poly in sol.iteritems():
+                imaster = int(key.name[1:])
+                imasters.append(imaster)
+
+                if not isinstance(_poly, sm.Float):
+                    poly = _poly.as_poly()
+
+                    # Workaround for poly.all_coeffs() not applicable to
+                    # multivariate polynomials.
+                    coefs = []
+                    for ii, uu in enumerate(us):
+                        if uu in poly:
+                            coefs.append(poly.coeff_monomial(uu))
+                            islaves.add(ii)
+                    coefs.append(poly.TC())
+                    ccs.append(coefs)
+
+                else: # Degenerated constraint - fixed master.
+                    ifixed.append(imaster)
+                    ccs.append([float(_poly)])
+
+            islaves = sorted(islaves)
+
+            for ii, imaster in enumerate(imasters):
+                coefs = ccs[ii]
+
+                em = dpn * im + imaster
+                rhss[em] = coefs[-1]
+
+                if imaster in ifixed: continue
+
+                # Master DOF is expressed in terms of slave DOFs.
+                for ii, islave in enumerate(islaves):
+                    es = ii + n_new
+
+                    rows.append(em)
+                    cols.append(es)
+                    data.append(coefs[ii])
+
+            # Slave DOFs are copied.
+            for ii, islave in enumerate(islaves):
+                em = dpn * im + islave
+                es = ii + n_new
+
+                rows.append(em)
+                cols.append(es)
+                data.append(1.0)
+
+            n_new += len(islaves)
+
+        rows = nm.array(rows, dtype=nm.int32)
+        cols = nm.array(cols, dtype=nm.int32)
+        data = nm.array(data, dtype=nm.float64)
+
+        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, n_new))
+
+        self.n_mdof = n_nod * dpn
+        self.n_new_dof = n_new
+        self.mtx = mtx.tocsr()
+
+        self.rhs = rhss
+
 class ShiftedPeriodicOperator(LCBCOperator):
     """
     Transformation matrix operator for shifted periodic boundary conditions.
@@ -589,7 +719,8 @@ class LCBCOperators(Container):
                 cols.append(coff + ii2)
                 data.append(lv)
 
-                vec_lc[irs] += op.rhs
+            if vec_lc is not None:
+                vec_lc[irs] += op.get('rhs', 0)
 
         rows = nm.concatenate(rows)
         cols = nm.concatenate(cols)
