@@ -317,6 +317,9 @@ class NodalLCOperator(MRLCBCOperator):
     Transformation matrix operator for the general linear combination of DOFs
     in each node of a field in the given region.
 
+    The DOFs can be fully constrained - then the operator corresponds to
+    enforcing Dirichlet boundary conditions.
+
     The linear combination is given by:
 
     .. math::
