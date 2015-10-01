@@ -31,7 +31,16 @@ description file using ``--define`` option of ``simple.py``. Try::
 
   python simple.py examples/linear_elasticity/nodal_lcbcs.py --define='dim: 3'
 
-to use a 3D mesh, instead of the default 2D mesh.
+to use a 3D mesh, instead of the default 2D mesh. The example also shows that
+the nodal constraints can be used in place of the Dirichlet boundary
+conditions. Try::
+
+  python simple.py examples/linear_elasticity/nodal_lcbcs.py --define='use_ebcs: False'
+
+to replace ``ebcs`` with the ``'nlcbc4'`` constraints. The results should be
+the same for the two cases. Both options can be combined::
+
+  python simple.py examples/linear_elasticity/nodal_lcbcs.py --define='dim: 3, use_ebcs: False'
 
 The :func:`post_process()` function is used both to compute the von Mises
 stress and to verify the linear combination constraints.
@@ -106,7 +115,7 @@ def post_process(out, pb, state, extend=False):
 
     return out
 
-def define(dim=2):
+def define(dim=2, use_ebcs=True):
     assert_(dim in (2, 3))
 
     if dim == 2:
@@ -158,10 +167,6 @@ def define(dim=2):
         'Right' : ('vertices in (x > 0.499) -v (r.Bottom +v r.Top)', 'facet'),
     }
 
-    ebcs = {
-        'fix' : ('Left', {'u.all' : 0.0}),
-    }
-
     if dim == 2:
         lcbcs = {
             'nlcbc1' : ('Top', {'u.all' : None}, None, 'nodal_combination',
@@ -181,6 +186,19 @@ def define(dim=2):
             'nlcbc3' : ('Right', {'u.all' : None}, None, 'nodal_combination',
                         'get_constraints'),
         }
+
+    if use_ebcs:
+        ebcs = {
+            'fix' : ('Left', {'u.all' : 0.0}),
+        }
+
+    else:
+        ebcs = {}
+
+        lcbcs.update({
+            'nlcbc4' : ('Left', {'u.all' : None}, None, 'nodal_combination',
+                        (nm.eye(dim), nm.zeros(dim))),
+        })
 
     equations = {
         'elasticity' : """
