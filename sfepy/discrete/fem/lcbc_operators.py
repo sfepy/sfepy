@@ -290,7 +290,7 @@ class EdgeDirectionOperator(NormalDirectionOperator):
 class IntegralMeanValueOperator(MRLCBCOperator):
     """
     Transformation matrix operator for integral mean value LCBCs.
-    All node DOFs are sumed to the new one.
+    All DOFs in a region are summed to form a single new DOF.
     """
     kind = 'integral_mean_value'
 
@@ -306,10 +306,10 @@ class IntegralMeanValueOperator(MRLCBCOperator):
         rows = nm.arange(data.shape[0])
         cols = nm.zeros((data.shape[0],))
 
-        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, dpn))
+        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dpn, 1))
 
         self.n_mdof = n_nod * dpn
-        self.n_new_dof = dpn
+        self.n_new_dof = 1
         self.mtx = mtx.tocsr()
 
 class NodalLCOperator(MRLCBCOperator):
