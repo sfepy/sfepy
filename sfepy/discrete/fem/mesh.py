@@ -298,6 +298,9 @@ class Mesh(Struct):
         name : str
             Name of the copied mesh.
         """
+        if name is None:
+            name = self.name
+
         cmesh = self.cmesh.create_new()
         return Mesh(name=name, cmesh=cmesh)
 
