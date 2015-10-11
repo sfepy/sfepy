@@ -234,6 +234,9 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
 
         ap = self.ap
 
+        ii = self.region.get_cells()
+        self.bubble_remap = prepare_remap(ii, self.domain.cmesh.n_el)
+
         n_dof = nm.prod(ap.econn.shape)
         all_dofs = nm.arange(n_dof, dtype=nm.int32)
         all_dofs.shape = ap.econn.shape
