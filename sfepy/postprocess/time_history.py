@@ -122,9 +122,9 @@ def extract_time_history(filename, extract, verbose=True):
     Returns
     -------
     ths : dict
-        The time histories in a dict with variable names as keys. If a
-        nodal variable is requested in elements, its value is a dict of histories
-        in the element nodes.
+        The time histories in a dict with variable names as keys. If a nodal
+        variable is requested in elements, its value is a dict of histories in
+        the element nodes.
     ts : TimeStepper instance
         The time stepping information.
     """
@@ -137,10 +137,10 @@ def extract_time_history(filename, extract, verbose=True):
     pes = OneTypeList(Struct)
     for chunk in extract.split(','):
         aux = chunk.strip().split()
-        pes.append(Struct(var = aux[0],
-                          mode = aux[1],
-                          indx = map(int, aux[2:]),
-                          igs = None))
+        pes.append(Struct(var=aux[0],
+                          mode=aux[1],
+                          indx=map(int, aux[2:]),
+                          igs=None))
 
     ##
     # Verify array limits, set igs for element data, shift indx.
@@ -163,8 +163,6 @@ def extract_time_history(filename, extract, verbose=True):
                 pe.igs.append(ig)
                 pe.indx[ii] = ie - offs[ig]
 
-##     print pes
-
     ##
     # Extract data.
     # Assumes only one element group (ignores igs)!
@@ -186,7 +184,7 @@ def extract_time_history(filename, extract, verbose=True):
                 th[iel] = io.read_time_history(nname, ips)
         else:
             raise ValueError('cannot extract cell data %s in nodes!' % pe.var)
-            
+
         ths[pe.var] = th
 
     output('...done', verbose=verbose)
