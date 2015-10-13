@@ -57,8 +57,8 @@ The following notation is used:
    * - :math:`\ull{C}`
      -  right Cauchy-Green deformation tensor :math:`C = F^T F`
    * - :math:`\ull{E}(\ul{u})`
-     - Green strain tensor :math:`E_{ij} = \frac{1}{2}(\pdiff{u_i}{x_j} +
-       \pdiff{u_j}{x_i} + \pdiff{u_m}{x_i}\pdiff{u_m}{x_j})`
+     - Green strain tensor :math:`E_{ij} = \frac{1}{2}(\pdiff{u_i}{X_j} +
+       \pdiff{u_j}{X_i} + \pdiff{u_m}{X_i}\pdiff{u_m}{X_j})`
    * - :math:`\ull{S}`
      -  second Piola-Kirchhoff stress tensor
    * - :math:`\ul{f}`
