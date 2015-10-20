@@ -155,6 +155,10 @@ class ScipySGEigenvalueSolver(EigenvalueSolver):
         else:
             out = fun(mtx_a, mtx_b)
 
+        # Fix output order of scipy.linalg.lapack functions.
+        if out[0].ndim == 2:
+            out = (out[1], out[0]) + out[2:]
+
         if not eigenvectors:
             if n_eigs is None:
                 out = out[0]
