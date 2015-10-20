@@ -121,7 +121,11 @@ class ScipySGEigenvalueSolver(EigenvalueSolver):
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
 
-        import scipy.lib.lapack as llapack
+        try:
+            import scipy.linalg.lapack as llapack
+        except ImportError:
+            import scipy.lib.lapack as llapack
+
         self.llapack = llapack
 
     @standard_call
