@@ -390,7 +390,7 @@ class NodalLCOperator(MRLCBCOperator):
                     # multivariate polynomials.
                     coefs = []
                     for ii, uu in enumerate(us):
-                        if uu in poly:
+                        if poly.has(uu):
                             coefs.append(poly.coeff_monomial(uu))
                             islaves.add(ii)
                     coefs.append(poly.TC())
