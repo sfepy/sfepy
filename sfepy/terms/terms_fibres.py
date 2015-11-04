@@ -1,7 +1,30 @@
 import numpy as nm
 
 from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
+from sfepy.mechanics.tensors import dim2sym
 from sfepy.homogenization.utils import iter_sym
+
+def create_omega(fdir):
+    r"""
+    Create the fibre direction tensor :math:`\omega_{ij} = d_i d_j`.
+    """
+    n_el, n_qp, dim, _ = fdir.shape
+    sym = dim2sym(dim)
+    omega = nm.empty((n_el, n_qp, sym, 1), dtype=nm.float64)
+    for ii, (ir, ic) in enumerate(iter_sym(dim)):
+        omega[..., ii, 0] = fdir[..., ir, 0] * fdir[..., ic, 0]
+
+    return omega
+
+def compute_fibre_strain(green_strain, omega):
+    """
+    Compute the Green strain projected to the fibre direction.
+    """
+    eps = nm.zeros_like(omega[..., :1, :])
+    for ii in range(omega.shape[2]):
+        eps[..., 0, 0] += omega[..., ii, 0] * green_strain[..., ii, 0]
+
+    return eps
 
 def fibre_function(out, pars, green_strain, fmode):
     """
