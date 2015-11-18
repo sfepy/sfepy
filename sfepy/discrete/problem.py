@@ -721,6 +721,8 @@ class Problem(Struct):
         self.equations.init_time(ts)
         self.update_materials(mode='force')
 
+        self._restart_filenames = []
+
     def advance(self, ts=None):
         self.update_time_stepper(ts)
         self.equations.advance(self.ts)
@@ -1401,3 +1403,100 @@ class Problem(Struct):
         Convenience function to remove boundary conditions.
         """
         self.time_update(ebcs={}, epbcs={}, lcbcs={})
+
+    def get_restart_filename(self, ts=None):
+        """
+        If restarts are allowed in problem definition options, return the
+        restart file name, based on the output directory and time step.
+        """
+        if self.conf.options.get('save_restart', None) is None:
+            return
+
+        suffix = 'restart'
+        if ts is not None:
+            suffix += '-' + ts.suffix % ts.step
+
+        aux = self.get_output_name(extra=suffix)
+        iext = len(aux) - len('.' + self.output_format)
+        restart_filename = aux[:iext] + '.h5'
+
+        return restart_filename
+
+    def save_restart(self, filename, state=None, ts=None):
+        """
+        Save the current state and time step to a restart file.
+
+        Notes
+        -----
+        Does not support terms with internal state.
+        Does not support variable time stepper.
+        """
+        import tables as pt
+
+        if state is None:
+            state = self.create_state()
+
+        if ts is None:
+            ts = self.get_default_ts()
+
+        fd = pt.open_file(filename, mode='w')
+        fd.create_array('/', 'step', ts.step, 'restart file time step')
+
+        variables = state.variables
+        for var in variables.iter_state():
+            vgroup = fd.create_group('/', var.name, var.name)
+
+            history_length = len(var.data)
+            fd.create_array(vgroup, 'history_length', history_length,
+                            'history length')
+            for ii in xrange(history_length):
+                data = var(step=-ii)
+                fd.create_array(vgroup, 'data_%d' % ii, data, 'data')
+
+        fd.close()
+
+        mode = self.conf.options.get('save_restart', None)
+
+        if (mode == -1) and len(self._restart_filenames):
+            last_filename = self._restart_filenames.pop()
+
+            try:
+                os.remove(last_filename)
+
+            except OSError:
+                pass
+
+        self._restart_filenames.append(filename)
+
+    def load_restart(self, filename, state=None, ts=None):
+        """
+        Load the current state and time step from a restart file.
+        """
+        import tables as pt
+
+        if state is None:
+            state = self.create_state()
+
+        if ts is None:
+            ts = self.get_default_ts()
+
+        fd = pt.open_file(filename, mode='r')
+
+        step = fd.root.step.read()
+        ts.set_step(step)
+
+        variables = state.variables
+
+        vec = state.vec
+        di = variables.di
+        for var in variables.iter_state():
+            vgroup = fd.root._f_get_child(var.name)
+
+            history_length = vgroup.history_length.read()
+            for ii in xrange(history_length):
+                data = vgroup._f_get_child('data_%d' % ii).read()
+                vec[di.indx[var.name]] = data
+
+        variables.set_data(vec, step=-ii)
+
+        fd.close()
