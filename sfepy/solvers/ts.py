@@ -161,9 +161,10 @@ class VariableTimeStepper(TimeStepper):
             raise ValueError('cannot set step > 0 in VariableTimeStepper!')
 
         self.step = 0
+        self.time = self.t0
         self.nt = 0.0
         self.dts = []
-        self.times = [self.t0]
+        self.times = []
         self.n_step = 1
 
     def get_default_time_step(self):
@@ -177,25 +178,30 @@ class VariableTimeStepper(TimeStepper):
             self.times[self.step] = self.time
             self.normalize_time()
 
-    def __iter__(self):
+    def advance(self):
+        self.step += 1
+        self.time += self.dt
+        self.normalize_time()
+
+        self.n_step = self.step + 1
+
+    def iter_from_current(self):
         """
         ts.step, ts.time is consistent with step, time returned here
         ts.nt is normalized time in [0, 1].
         """
-        self.set_step(0)
-
         while 1:
-            self.time = self.times[self.step]
+            self.times.append(self.time)
+            self.dts.append(self.dt)
 
             yield self.step, self.time
 
             if self.nt >= 1.0:
                 break
 
-            self.step += 1
-            self.time += self.dt
-            self.normalize_time()
+            self.advance()
 
-            self.times.append(self.time)
-            self.dts.append(self.dt)
-            self.n_step = self.step + 1
+    def __iter__(self):
+        self.set_step(0)
+
+        return self.iter_from_current()
