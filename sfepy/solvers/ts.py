@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import output, get_default, assert_, Struct
 
 def get_print_info(n_step):
     if n_step > 1:
@@ -137,6 +137,20 @@ class VariableTimeStepper(TimeStepper):
 
     def set_from_ts(self, ts, step=None):
         self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step0, step=0)
+
+    def get_state(self):
+        return {'step' : self.step, 'dts' : self.dts, 'times' : self.times}
+
+    def set_state(self, step=0, dts=None, times=None, **kwargs):
+        assert_(len(dts) == len(times) == (step + 1))
+
+        self.step = step
+        self.dts = dts
+        self.times = times
+
+        self.dt = self.dts[-1]
+        self.time = self.times[-1]
+        self.normalize_time()
 
     def set_n_digit_from_min_dt(self, dt):
         n_step = self._get_n_step(self.t0, self.t1, dt)
