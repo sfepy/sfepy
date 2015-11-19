@@ -362,7 +362,8 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
         restart_filename = problem.conf.options.get('load_restart', None)
         if restart_filename is not None:
-            problem.load_restart(restart_filename, state=state0, ts=ts)
+            state0.init_history()
+            state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
             problem.advance(ts)
 
         ii = 0 # Broken with restart.
