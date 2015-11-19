@@ -351,8 +351,13 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
         if state0 is None:
             state0 = get_initial_state(problem)
 
-        ii = 0
-        for step, time in ts:
+        restart_filename = problem.conf.options.get('load_restart', None)
+        if restart_filename is not None:
+            problem.load_restart(restart_filename, state=state0, ts=ts)
+            problem.advance(ts)
+
+        ii = 0 # Broken with restart.
+        for step, time in ts.iter_from(ts.step + 1):
             output(self.format % (time, step + 1, ts.n_step))
 
             state = self.solve_step(ts, state0, nls_status=nls_status)
@@ -360,6 +365,10 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
             if step_hook is not None:
                 step_hook(problem, ts, state)
+
+            restart_filename = problem.get_restart_filename(ts=ts)
+            if restart_filename is not None:
+                problem.save_restart(restart_filename, state, ts=ts)
 
             if save_results and (is_save[ii] == ts.step):
                 filename = problem.get_output_name(suffix=suffix % ts.step)
