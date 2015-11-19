@@ -26,10 +26,19 @@ class StationarySolver(TimeSteppingSolver):
                  post_process_hook=None, nls_status=None):
         problem = self.problem
 
-        state = problem.solve(state0=state0, nls_status=nls_status)
+        restart_filename = problem.conf.options.get('load_restart', None)
+        if restart_filename is not None:
+            state = problem.load_restart(restart_filename, state=state0)
+
+        else:
+            state = problem.solve(state0=state0, nls_status=nls_status)
 
         if step_hook is not None:
             step_hook(problem, None, state)
+
+        restart_filename = problem.get_restart_filename()
+        if restart_filename is not None:
+            problem.save_restart(restart_filename, state)
 
         if save_results:
             problem.save_state(problem.get_output_name(), state,
