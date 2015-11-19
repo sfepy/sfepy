@@ -692,7 +692,7 @@ class Variables(Container):
 
             for ii in self.state:
                 var = self[ii]
-                var.set_data(data, self.di.indx[var.name],
+                var.set_data(data, self.di.indx[var.name], step=step,
                              preserve_caches=preserve_caches)
 
         else:
