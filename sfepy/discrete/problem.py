@@ -1443,6 +1443,9 @@ class Problem(Struct):
         fd = pt.open_file(filename, mode='w')
         fd.create_array('/', 'step', ts.step, 'restart file time step')
 
+        if state.r_vec is not None:
+            fd.create_array('/', 'r_vec', state.r_vec, 'reduced state vector')
+
         variables = state.variables
         for var in variables.iter_state():
             vgroup = fd.create_group('/', var.name, var.name)
@@ -1485,6 +1488,10 @@ class Problem(Struct):
 
         step = fd.root.step.read()
         ts.set_step(step)
+
+        if '/r_vec' in fd:
+            r_vec = fd.root.r_vec.read()
+            state.r_vec = r_vec
 
         variables = state.variables
 
