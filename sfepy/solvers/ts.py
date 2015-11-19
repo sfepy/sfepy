@@ -55,6 +55,12 @@ class TimeStepper(Struct):
         step = get_default(step, ts.step)
         self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step, step=step)
 
+    def get_state(self):
+        return {'step' : self.step}
+
+    def set_state(self, step=0, **kwargs):
+        self.set_step(step=step)
+
     def __iter__(self):
         """ts.step, ts.time is consistent with step, time returned here
         ts.nt is normalized time in [0, 1]"""
