@@ -1432,7 +1432,6 @@ class Problem(Struct):
         Notes
         -----
         Does not support terms with internal state.
-        Does not support variable time stepper.
         """
         import tables as pt
 
@@ -1443,7 +1442,10 @@ class Problem(Struct):
             ts = self.get_default_ts()
 
         fd = pt.open_file(filename, mode='w')
-        fd.create_array('/', 'step', ts.step, 'restart file time step')
+
+        tgroup = fd.create_group('/', 'ts', 'ts')
+        for key, val in ts.get_state().iteritems():
+            fd.create_array(tgroup, key, val, key)
 
         if state.r_vec is not None:
             fd.create_array('/', 'r_vec', state.r_vec, 'reduced state vector')
@@ -1488,26 +1490,26 @@ class Problem(Struct):
 
         fd = pt.open_file(filename, mode='r')
 
-        step = fd.root.step.read()
-        ts.set_step(step)
+        ts_state = {}
+        for val in fd.root.ts._f_walknodes():
+            ts_state[val.name] = val.read()
 
+        ts.set_state(**ts_state)
         if '/r_vec' in fd:
             r_vec = fd.root.r_vec.read()
             state.r_vec = r_vec
 
         variables = state.variables
 
-        vec = state.vec
-        di = variables.di
         for var in variables.iter_state():
             vgroup = fd.root._f_get_child(var.name)
 
             history_length = vgroup.history_length.read()
-            for ii in xrange(history_length):
+            for ii in xrange(0, history_length):
                 data = vgroup._f_get_child('data_%d' % ii).read()
-                vec[di.indx[var.name]] = data
+                var.set_data(data, step=-ii)
 
-        variables.set_data(vec, step=-ii)
+        state = State.from_variables(variables)
 
         fd.close()
 
