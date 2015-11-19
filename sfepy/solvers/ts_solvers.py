@@ -507,8 +507,14 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
         if state0 is None:
             state0 = get_initial_state(problem)
 
-        ii = 0
-        for step, time in ts:
+        restart_filename = problem.conf.options.get('load_restart', None)
+        if restart_filename is not None:
+            state0.init_history()
+            state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
+            problem.advance(ts)
+            ts.advance()
+
+        for step, time in ts.iter_from_current():
             output(self.format % (time, ts.dt, self.adt.wait,
                                   step + 1, ts.n_step))
 
@@ -518,13 +524,16 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
             if step_hook is not None:
                 step_hook(problem, ts, state)
 
+            restart_filename = problem.get_restart_filename(ts=ts)
+            if restart_filename is not None:
+                problem.save_restart(restart_filename, state, ts=ts)
+
             if save_results:
                 filename = problem.get_output_name(suffix=ts.suffix % ts.step)
                 problem.save_state(filename, state,
                                    post_process_hook=post_process_hook,
                                    file_per_var=None,
                                    ts=ts)
-                ii += 1
 
             yield step, time, state
 
