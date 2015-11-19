@@ -172,6 +172,8 @@ class Problem(Struct):
         self.nls = None
         self.clear_equations()
 
+        self._restart_filenames = []
+
     def setup_hooks(self, options=None):
         """
         Setup various hooks (user-defined functions), as given in `options`.
@@ -1508,3 +1510,5 @@ class Problem(Struct):
         variables.set_data(vec, step=-ii)
 
         fd.close()
+
+        return state
