@@ -139,7 +139,8 @@ class Problem(Struct):
                 domain = fields.values()[0].domain
 
             if conf is None:
-                self.conf = Struct(ebcs={}, epbcs={}, lcbcs={}, materials={})
+                self.conf = Struct(options={},
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={})
 
         self.equations = equations
         self.fields = fields
