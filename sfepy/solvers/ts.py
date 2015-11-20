@@ -61,21 +61,25 @@ class TimeStepper(Struct):
     def set_state(self, step=0, **kwargs):
         self.set_step(step=step)
 
+    def advance(self):
+        if self.step < (self.n_step - 1):
+            self.step += 1
+            self.time = self.times[self.step]
+            self.normalize_time()
+
     def __iter__(self):
         """ts.step, ts.time is consistent with step, time returned here
         ts.nt is normalized time in [0, 1]"""
         return self.iter_from(0)
 
     def iter_from(self, step):
-        self.step = step - 1
+        self.set_step(step=step)
 
         for time in self.times[step:]:
 
-            self.time = time
-            self.step += 1
-            self.normalize_time()
-
             yield self.step, self.time
+
+            self.advance()
 
     def normalize_time(self):
         self.nt = (self.time - self.t0) / (self.t1 - self.t0)
