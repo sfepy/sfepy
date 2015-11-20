@@ -1101,6 +1101,10 @@ class Variable(Struct):
                   % (self.n_dof, n_data_dof)
             raise ValueError(msg)
 
+        elif (step > 0) or (-step >= len(self.data)):
+            raise ValueError('step %d out of range! ([%d, 0])'
+                             % (step, -(len(self.data) - 1)))
+
         else:
             self.data[step] = data
             self.indx = indx
