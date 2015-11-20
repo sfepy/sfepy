@@ -1495,9 +1495,6 @@ class Problem(Struct):
             ts_state[val.name] = val.read()
 
         ts.set_state(**ts_state)
-        if '/r_vec' in fd:
-            r_vec = fd.root.r_vec.read()
-            state.r_vec = r_vec
 
         variables = state.variables
 
@@ -1510,6 +1507,10 @@ class Problem(Struct):
                 var.set_data(data, step=-ii)
 
         state = State.from_variables(variables)
+
+        if '/r_vec' in fd:
+            r_vec = fd.root.r_vec.read()
+            state.r_vec = r_vec
 
         fd.close()
 
