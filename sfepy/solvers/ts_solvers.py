@@ -365,9 +365,10 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
             state0.init_history()
             state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
             problem.advance(ts)
+            ts.advance()
 
         ii = 0 # Broken with restart.
-        for step, time in ts.iter_from(ts.step + 1):
+        for step, time in ts.iter_from(ts.step):
             output(self.format % (time, step + 1, ts.n_step))
 
             state = self.solve_step(ts, state0, nls_status=nls_status)
