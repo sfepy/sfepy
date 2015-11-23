@@ -166,30 +166,53 @@ If it is run without arguments, a help message is printed::
     $ ./simple.py
     Usage: simple.py [options] filename_in
 
+    Solve partial differential equations given in a SfePy problem definition file.
+
+    Example problem definition files can be found in ``examples/`` directory of the
+    SfePy top-level directory. This script works with all the examples except those
+    in ``examples/standalone/``.
+
+    Both normal and parametric study runs are supported. A parametric study allows
+    repeated runs for varying some of the simulation parameters - see
+    ``examples/diffusion/poisson_parametric_study.py`` file.
+
     Options:
       --version             show program's version number and exit
       -h, --help            show this help message and exit
       -c "key : value, ...", --conf="key : value, ..."
                             override problem description file items, written as
-                            python dictionary without surrouding braces
+                            python dictionary without surrounding braces
       -O "key : value, ...", --options="key : value, ..."
                             override options item of problem description, written
-                            as python dictionary without surrouding braces
+                            as python dictionary without surrounding braces
+      -d "key : value, ...", --define="key : value, ..."
+                            pass given arguments written as python dictionary
+                            without surrounding braces to define() function of
+                            problem description file
       -o filename           basename of output file(s) [default: <basename of
                             input file>]
-      --format=format       output file format, one of: {vtk, h5, mesh} [default:
-                            vtk]
+      --format=format       output file format, one of: {vtk, h5} [default: vtk]
+      --save-restart=mode   if given, save restart files according to the given
+                            mode.
+      --load-restart=filename
+                            if given, load the given restart file
       --log=file            log all messages to specified file (existing file will
                             be overwritten!)
       -q, --quiet           do not print any messages to screen
-      --save-ebc            save problem state showing EBC (Dirichlet conditions)
+      --save-ebc            save a zero solution with applied EBCs (Dirichlet
+                            boundary conditions)
+      --save-ebc-nodes      save a zero solution with added non-zeros in EBC
+                            (Dirichlet boundary conditions) nodes - scalar
+                            variables are shown using colors, vector variables
+                            using arrows with non-zero components corresponding to
+                            constrained components
       --save-regions        save problem regions as meshes
       --save-regions-as-groups
                             save problem regions in a single mesh but mark them by
                             using different element/node group numbers
       --save-field-meshes   save meshes of problem fields (with extra DOF nodes)
       --solve-not           do not solve (use in connection with --save-*)
-      --list=what           list data, what can be one of: {terms}
+      --list=what           list data, what can be one of: {terms, solvers}
 
 Additional (stand-alone) examples are in the examples/ directory, e.g.::
 
@@ -214,6 +237,32 @@ Common Tasks
 * Run a simulation and also save Dirichlet boundary conditions::
 
     ./simple.py --save-ebc examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
+
+* Use a restart file to continue an interrupted simulation:
+
+  - **Warning:** This feature is preliminary and does not support terms with
+    internal state.
+  - Run::
+
+      ./simple.py examples/large_deformation/balloon.py --save-restart=-1
+
+    and break the computation after a while (hit Ctrl-C). The mode
+    ``--save-restart=-1`` is currently the only supported mode. It saves a
+    restart file for each time step, and only the last computed time step
+    restart file is kept.
+  - A file named ``'unit_ball.restart-??.h5'`` should be created, where ``'??'``
+    indicates the last stored time step. Let us assume it is
+    ``'unit_ball.restart-04.h5'``, i.e. the fifth step.
+  - Restart the simulation by::
+
+      ./simple.py examples/large_deformation/balloon.py --load-restart=unit_ball.restart-04.h5
+
+    The simulation should continue from the next time step. Verify that by
+    running::
+
+      ./simple.py examples/large_deformation/balloon.py
+
+    and compare the residuals printed in the corresponding time steps.
 
 Visualization of Results
 ------------------------
@@ -1020,6 +1069,10 @@ Additional options (including solver selection)::
         # int, number of time steps when results should be saved (spaced
         # regularly from 0 to n_step), or -1 for all time steps
         'save_steps' : -1,
+
+        # save a restart file for each time step, only the last computed time
+        # step restart file is kept.
+        'save_restart' : -1,
 
         # string, a function to be called after each time step
         'step_hook'  : '<step_hook_function>',
