@@ -692,7 +692,7 @@ class Variables(Container):
 
             for ii in self.state:
                 var = self[ii]
-                var.set_data(data, self.di.indx[var.name],
+                var.set_data(data, self.di.indx[var.name], step=step,
                              preserve_caches=preserve_caches)
 
         else:
@@ -1100,6 +1100,10 @@ class Variable(Struct):
             msg = 'incompatible data shape! (%d (variable) == %d (data))' \
                   % (self.n_dof, n_data_dof)
             raise ValueError(msg)
+
+        elif (step > 0) or (-step >= len(self.data)):
+            raise ValueError('step %d out of range! ([%d, 0])'
+                             % (step, -(len(self.data) - 1)))
 
         else:
             self.data[step] = data

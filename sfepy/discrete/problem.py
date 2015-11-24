@@ -139,7 +139,8 @@ class Problem(Struct):
                 domain = fields.values()[0].domain
 
             if conf is None:
-                self.conf = Struct(ebcs={}, epbcs={}, lcbcs={}, materials={})
+                self.conf = Struct(options={},
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={})
 
         self.equations = equations
         self.fields = fields
@@ -170,6 +171,8 @@ class Problem(Struct):
         self.mtx_a = None
         self.nls = None
         self.clear_equations()
+
+        self._restart_filenames = []
 
     def setup_hooks(self, options=None):
         """
@@ -720,6 +723,8 @@ class Problem(Struct):
         self.update_time_stepper(ts)
         self.equations.init_time(ts)
         self.update_materials(mode='force')
+
+        self._restart_filenames = []
 
     def advance(self, ts=None):
         self.update_time_stepper(ts)
@@ -1401,3 +1406,172 @@ class Problem(Struct):
         Convenience function to remove boundary conditions.
         """
         self.time_update(ebcs={}, epbcs={}, lcbcs={})
+
+    def get_restart_filename(self, ts=None):
+        """
+        If restarts are allowed in problem definition options, return the
+        restart file name, based on the output directory and time step.
+        """
+        if self.conf.options.get('save_restart', None) is None:
+            return
+
+        suffix = 'restart'
+        if ts is not None:
+            suffix += '-' + ts.suffix % ts.step
+
+        aux = self.get_output_name(extra=suffix)
+        iext = len(aux) - len('.' + self.output_format)
+        restart_filename = aux[:iext] + '.h5'
+
+        return restart_filename
+
+    def save_restart(self, filename, state=None, ts=None):
+        """
+        Save the current state and time step to a restart file.
+
+        Parameters
+        ----------
+        filename : str
+            The restart file name.
+        state : State instance, optional
+            The state instance. If not given, a new state is created using the
+            variables in problem equations.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, a default one is created.
+
+        Notes
+        -----
+        Does not support terms with internal state.
+        """
+        import tables as pt
+
+        if state is None:
+            state = self.create_state()
+
+        if ts is None:
+            ts = self.get_default_ts()
+
+        fd = pt.open_file(filename, mode='w', title='SfePy restart file')
+
+        tgroup = fd.create_group('/', 'ts', 'ts')
+        for key, val in ts.get_state().iteritems():
+            fd.create_array(tgroup, key, val, key)
+
+        if state.r_vec is not None:
+            fd.create_array('/', 'r_vec', state.r_vec, 'reduced state vector')
+
+        variables = state.variables
+        for var in variables.iter_state():
+            vgroup = fd.create_group('/', var.name, var.name)
+
+            history_length = len(var.data)
+            fd.create_array(vgroup, 'history_length', history_length,
+                            'history length')
+            for ii in xrange(history_length):
+                data = var(step=-ii)
+                fd.create_array(vgroup, 'data_%d' % ii, data, 'data')
+
+        fd.close()
+
+        mode = self.conf.options.get('save_restart', None)
+
+        if (mode == -1) and len(self._restart_filenames):
+            last_filename = self._restart_filenames.pop()
+
+            try:
+                os.remove(last_filename)
+
+            except OSError:
+                pass
+
+        self._restart_filenames.append(filename)
+
+    def load_restart(self, filename, state=None, ts=None):
+        """
+        Load the current state and time step from a restart file.
+
+        Alternatively, a regular output file in the HDF5 format can be used in
+        place of the restart file. In that case the restart is only
+        approximate, because higher order field DOFs (if any) were stripped
+        out. Files with the adaptive linearization are not supported. Use with
+        caution!
+
+        Parameters
+        ----------
+        filename : str
+            The restart file name.
+        state : State instance, optional
+            The state instance. If not given, a new state is created using the
+            variables in problem equations. Otherwise, its variables are
+            modified in place.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, a default one is created.
+            Otherwise, it is modified in place.
+
+        Returns
+        -------
+        new_state : State instance
+            The loaded state.
+        """
+        import tables as pt
+
+        if state is None:
+            state = self.create_state()
+
+        if ts is None:
+            ts = self.get_default_ts()
+
+        variables = state.variables
+
+        output('loading restart file "%s"...' % filename)
+
+        fd = pt.open_file(filename, mode='r')
+
+        if fd.title == 'SfePy restart file':
+            ts_state = {}
+            for val in fd.root.ts._f_walknodes():
+                ts_state[val.name] = val.read()
+
+            ts.set_state(**ts_state)
+
+            for var in variables.iter_state():
+                vgroup = fd.root._f_get_child(var.name)
+
+                history_length = vgroup.history_length.read()
+                for ii in xrange(0, history_length):
+                    data = vgroup._f_get_child('data_%d' % ii).read()
+                    var.set_data(data, step=-ii)
+
+            new_state = State.from_variables(variables)
+
+            if '/r_vec' in fd:
+                r_vec = fd.root.r_vec.read()
+                state.r_vec = r_vec
+
+            fd.close()
+
+        elif fd.title == 'SfePy output file':
+            from sfepy.discrete.fem.meshio import MeshIO
+
+            output('WARNING: using a SfePy output file in place of a restart'
+                   ' file discards higher order DOFs! Use with caution!')
+
+            fd.close()
+            io = MeshIO.for_format(filename)
+
+            out = io.read_data(step=ts.step)
+
+            for var in variables.iter_state():
+                val = out[var.name]
+                var.set_from_mesh_vertices(val.data)
+
+            new_state = State.from_variables(variables)
+
+        else:
+            raise IOError('unknown file type! ("%s" in ("%s", "%s"))'
+                          % (fd.title,
+                             'SfePy restart file', 'SfePy output file'))
+
+        output('...done')
+
+        return new_state

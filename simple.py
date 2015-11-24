@@ -44,6 +44,10 @@ help = {
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
     'output file format, one of: {vtk, h5} [default: vtk]',
+    'save_restart' :
+    'if given, save restart files according to the given mode.',
+    'load_restart' :
+    'if given, load the given restart file',
     'log' :
     'log all messages to specified file (existing file will be overwritten!)',
     'quiet' :
@@ -85,6 +89,12 @@ def main():
     parser.add_option('', '--format', metavar='format',
                       action='store', dest='output_format',
                       default=None, help=help['output_format'])
+    parser.add_option('', '--save-restart', metavar='mode', type='int',
+                      action='store', dest='save_restart',
+                      default=None, help=help['save_restart'])
+    parser.add_option('', '--load-restart', metavar='filename',
+                      action='store', dest='load_restart',
+                      default=None, help=help['load_restart'])
     parser.add_option('', '--log', metavar='file',
                       action='store', dest='log',
                       default=None, help=help['log'])
@@ -144,6 +154,9 @@ def main():
 
     opts = conf.options
     output_prefix = opts.get('output_prefix', 'sfepy:')
+
+    opts.save_restart = options.save_restart
+    opts.load_restart = options.load_restart
 
     app = PDESolverApp(conf, options, output_prefix)
     if hasattr(opts, 'parametric_hook'): # Parametric study.
