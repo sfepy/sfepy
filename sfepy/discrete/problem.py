@@ -1515,7 +1515,7 @@ class Problem(Struct):
                     data = vgroup._f_get_child('data_%d' % ii).read()
                     var.set_data(data, step=-ii)
 
-            state = State.from_variables(variables)
+            new_state = State.from_variables(variables)
 
             if '/r_vec' in fd:
                 r_vec = fd.root.r_vec.read()
@@ -1538,11 +1538,11 @@ class Problem(Struct):
                 val = out[var.name]
                 var.set_from_mesh_vertices(val.data)
 
-            state = State.from_variables(variables)
+            new_state = State.from_variables(variables)
 
         else:
             raise IOError('unknown file type! ("%s" in ("%s", "%s"))'
                           % (fd.title,
                              'SfePy restart file', 'SfePy output file'))
 
-        return state
+        return new_state
