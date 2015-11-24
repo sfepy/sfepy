@@ -110,7 +110,9 @@ class ConstantFunctionByRegion(Function):
                         region = problem.domain.regions[rkey]
                         rval = nm.array(rval, dtype=nm.float64, ndmin=3)
 
-                        ii = term.region.get_cell_indices(region.cells)
+                        cells = region.get_cells(true_cells_only=False)
+                        ii = term.region.get_cell_indices(cells,
+                                                          true_cells_only=False)
                         matdata[ii] = rval
 
                     out[key] = matdata.reshape((-1,) + s0)

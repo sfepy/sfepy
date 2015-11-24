@@ -598,11 +598,36 @@ class Region(Struct):
         Raises ValueError if `true_cells_only` is True and the region kind does
         not allow cells. For `true_cells_only` equal to False, cells incident
         to facets are returned if the region itself contains no cells.
+
+        Notes
+        -----
+        If the number of unique values in `cells` is smaller or equal to the
+        number of cells in the region, all `cells` has to be also the region
+        cells (`self` is a superset of `cells`). The region cells are
+        considered depending on `true_cells_only`.
+
+        Otherwise, either all cells of the region has to be contained in
+        `cells` (`self` is a subset of `cells`), or None (disjoint cells).
         """
         fcells = self.get_cells(true_cells_only=true_cells_only)
 
-        ii = nm.searchsorted(fcells, cells)
-        assert_((fcells[ii] == cells).all())
+        if len(nm.unique(cells)) <= len(nm.unique(fcells)):
+            # self is a superset of cells.
+            ii = nm.searchsorted(fcells, cells)
+            assert_((fcells[ii] == cells).all())
+
+        else:
+            # self can be a subset of cells or disjoint.
+            common = nm.intersect1d(cells, fcells)
+
+            if len(common):
+                aux = nm.searchsorted(cells, fcells)
+                assert_((fcells == cells[aux]).all())
+
+                ii = nm.arange(len(fcells), dtype=nm.int32)
+
+            else:
+                ii = nm.array([], dtype=nm.int32)
 
         return ii
 
