@@ -1429,6 +1429,16 @@ class Problem(Struct):
         """
         Save the current state and time step to a restart file.
 
+        Parameters
+        ----------
+        filename : str
+            The restart file name.
+        state : State instance, optional
+            The state instance. If not given, a new state is created using the
+            variables in problem equations.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, a default one is created.
+
         Notes
         -----
         Does not support terms with internal state.
@@ -1480,13 +1490,28 @@ class Problem(Struct):
         """
         Load the current state and time step from a restart file.
 
-        Modifies `state.variables` and `ts` in place, if given.
-
         Alternatively, a regular output file in the HDF5 format can be used in
         place of the restart file. In that case the restart is only
         approximate, because higher order field DOFs (if any) were stripped
         out. Files with the adaptive linearization are not supported. Use with
         caution!
+
+        Parameters
+        ----------
+        filename : str
+            The restart file name.
+        state : State instance, optional
+            The state instance. If not given, a new state is created using the
+            variables in problem equations. Otherwise, its variables are
+            modified in place.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, a default one is created.
+            Otherwise, it is modified in place.
+
+        Returns
+        -------
+        new_state : State instance
+            The loaded state.
         """
         import tables as pt
 
