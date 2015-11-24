@@ -1441,7 +1441,7 @@ class Problem(Struct):
         if ts is None:
             ts = self.get_default_ts()
 
-        fd = pt.open_file(filename, mode='w')
+        fd = pt.open_file(filename, mode='w', title='SfePy restart file')
 
         tgroup = fd.create_group('/', 'ts', 'ts')
         for key, val in ts.get_state().iteritems():
