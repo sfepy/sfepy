@@ -1523,6 +1523,8 @@ class Problem(Struct):
 
         variables = state.variables
 
+        output('loading restart file "%s"...' % filename)
+
         fd = pt.open_file(filename, mode='r')
 
         if fd.title == 'SfePy restart file':
@@ -1569,5 +1571,7 @@ class Problem(Struct):
             raise IOError('unknown file type! ("%s" in ("%s", "%s"))'
                           % (fd.title,
                              'SfePy restart file', 'SfePy output file'))
+
+        output('...done')
 
         return new_state
