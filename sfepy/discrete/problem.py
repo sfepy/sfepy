@@ -1479,6 +1479,14 @@ class Problem(Struct):
     def load_restart(self, filename, state=None, ts=None):
         """
         Load the current state and time step from a restart file.
+
+        Modifies `state.variables` and `ts` in place, if given.
+
+        Alternatively, a regular output file in the HDF5 format can be used in
+        place of the restart file. In that case the restart is only
+        approximate, because higher order field DOFs (if any) were stripped
+        out. Files with the adaptive linearization are not supported. Use with
+        caution!
         """
         import tables as pt
 
@@ -1488,30 +1496,53 @@ class Problem(Struct):
         if ts is None:
             ts = self.get_default_ts()
 
-        fd = pt.open_file(filename, mode='r')
-
-        ts_state = {}
-        for val in fd.root.ts._f_walknodes():
-            ts_state[val.name] = val.read()
-
-        ts.set_state(**ts_state)
-
         variables = state.variables
 
-        for var in variables.iter_state():
-            vgroup = fd.root._f_get_child(var.name)
+        fd = pt.open_file(filename, mode='r')
 
-            history_length = vgroup.history_length.read()
-            for ii in xrange(0, history_length):
-                data = vgroup._f_get_child('data_%d' % ii).read()
-                var.set_data(data, step=-ii)
+        if fd.title == 'SfePy restart file':
+            ts_state = {}
+            for val in fd.root.ts._f_walknodes():
+                ts_state[val.name] = val.read()
 
-        state = State.from_variables(variables)
+            ts.set_state(**ts_state)
 
-        if '/r_vec' in fd:
-            r_vec = fd.root.r_vec.read()
-            state.r_vec = r_vec
+            for var in variables.iter_state():
+                vgroup = fd.root._f_get_child(var.name)
 
-        fd.close()
+                history_length = vgroup.history_length.read()
+                for ii in xrange(0, history_length):
+                    data = vgroup._f_get_child('data_%d' % ii).read()
+                    var.set_data(data, step=-ii)
+
+            state = State.from_variables(variables)
+
+            if '/r_vec' in fd:
+                r_vec = fd.root.r_vec.read()
+                state.r_vec = r_vec
+
+            fd.close()
+
+        elif fd.title == 'SfePy output file':
+            from sfepy.discrete.fem.meshio import MeshIO
+
+            output('WARNING: using a SfePy output file in place of a restart'
+                   ' file discards higher order DOFs! Use with caution!')
+
+            fd.close()
+            io = MeshIO.for_format(filename)
+
+            out = io.read_data(step=ts.step)
+
+            for var in variables.iter_state():
+                val = out[var.name]
+                var.set_from_mesh_vertices(val.data)
+
+            state = State.from_variables(variables)
+
+        else:
+            raise IOError('unknown file type! ("%s" in ("%s", "%s"))'
+                          % (fd.title,
+                             'SfePy restart file', 'SfePy output file'))
 
         return state
