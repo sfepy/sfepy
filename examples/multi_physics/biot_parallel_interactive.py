@@ -262,6 +262,12 @@ def solve_problem(mesh_filename, options, comm):
     status = {}
     ls = PETScKrylovSolver(conf, comm=comm, mtx=pmtx, status=status)
 
+    field_ranges = {}
+    for ii, variable in enumerate(variables.iter_state(ordered=True)):
+        field_ranges[variable.name] = lfds[ii].petsc_dofs_range
+
+    ls.set_field_split(field_ranges, comm=comm)
+
     ev = PETScParallelEvaluator(pb, pdofs, drange, True,
                                 psol, comm, verbose=True)
 
