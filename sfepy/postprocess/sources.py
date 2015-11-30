@@ -228,7 +228,7 @@ class GenericFileSource(FileSource):
             self.add_data_to_dataset(dataset, out)
 
         if self.mat_id_name is not None:
-            mat_id = nm.concatenate(self.mesh.mat_ids)
+            mat_id = self.mesh.cmesh.cell_groups
             if self.single_color:
                 rm = mat_id.min(), mat_id.max()
                 mat_id[mat_id > rm[0]] = rm[1]
@@ -257,7 +257,7 @@ class GenericFileSource(FileSource):
         Get material ID numbers of the underlying mesh elements.
         """
         if self.source is not None:
-            mat_id = nm.concatenate(self.mesh.mat_ids)
+            mat_id = self.mesh.cmesh.cell_groups
             return mat_id
 
     def file_changed(self):
