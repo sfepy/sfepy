@@ -1,6 +1,10 @@
 News
 ====
 
+* **01.12.2015** Version 2015.4 released (basic support for restart files,
+  new type of linear combination boundary conditions, balloon inflation
+  example, etc.), see :ref:`release notes <2015.3-2015.4>`.
+
 * **23.09.2015** Version 2015.3 released (preliminary support for parallel
   computing, unified evaluation of basis functions (= isogeometric analysis
   fields can be evaluated in arbitrary points), (mostly) fixed finding of
@@ -20,12 +24,5 @@ News
 * **28.11.2014** Version 2014.4 released (preliminary support for 1D problems,
   data probes using pyVTK library, etc.), see :ref:`release notes
   <2014.3-2014.4>`.
-
-* **25.09.2014** Version 2014.3 released (isogeometric analysis (IGA) speed-up
-  by C implementation of NURBS basis evaluation, generalized linear combination
-  boundary conditions that work between different fields/variables and support
-  non-homogeneous periodic conditions, non-constant essential boundary
-  conditions given by a function in IGA, reorganized and improved
-  documentation, etc.), see :ref:`release notes <2014.2-2014.3>`.
 
 For historians: see :ref:`archived_news`.
