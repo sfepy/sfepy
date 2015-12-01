@@ -1,5 +1,82 @@
 # created: 20.07.2007 (-1)
 
+.. _2015.3-2015.4:
+
+from 2015.3 to 2015.4
+=====================
+
+- basic support for restart files
+
+  - merge branch restart-files
+  - simple.py: new --save-restart, --load-restart options
+  - new Problem.get_restart_filename(), .save_restart(), .load_restart() -
+    update .init_time() to initialize new ._restart_filenames attribute
+  - update Problem.__init__(): update default conf to have options attribute
+  - fix Variables.set_data() to use step argument
+  - update SimpleTimeSteppingSolver.__call__() to support restart files
+  - update Problem for restarting stationary problems - update .reset() to
+    initialize ._restart_filenames attribute
+  - update StationarySolver.__call__() to support restart files
+  - new TimeStepper.get_state(), .set_state()
+  - new VariableTimeStepper.get_state(), .set_state()
+  - update VariableTimeStepper to have current state stored in .times, .dts
+
+    - new .advance(), .iter_from_current()
+    - update .set_step(), .__iter__()
+
+  - update AdaptiveTimeSteppingSolver.__call__() to support restart files
+  - update SimpleTimeSteppingSolver.__call__() for variables with history
+  - update TimeStepper.iter_from(), new .advance()
+  - check step in Variable.set_data()
+  - docs: update user's guide - introduce restart files
+
+- linear combination boundary conditions:
+
+  - improve docstrings of MRLCBCOperator, ShiftedPeriodicOperator
+  - update ShiftedPeriodicOperator.__init__() for pyflakes
+  - support general linear combination of DOFs in a node
+
+    - merge branch nodal-lcbcs
+    - update LCBCOperators.make_global_operator() for rhs without column
+      variable
+    - new NodalLCOperator - general linear combination of DOFs in a node
+    - new examples/linear_elasticity/nodal_lcbcs.py + test
+
+  - fix IntegralMeanValueOperator for several DOFs per node
+
+- examples and tests:
+
+  - merge branch example-balloon
+
+    - new meshes/3d/unit_ball.mesh
+    - new examples/large_deformation/balloon.py + test
+
+- miscellaneous updates:
+
+  - do not check facet-only meshes in FEDomain.fix_element_orientation() -
+    fixes segfault
+  - remove unused doc/images/sfepy_gui.png
+  - fix Mesh.copy() to provide default name
+  - fix bubble DOFs setup in H1DiscontinuousField._setup_global_base() -
+    initialize .bubble_remap attribute
+  - clean up sfepy/postprocess/time_history.py
+  - fix extract_time_history() for no element groups
+  - docs: fix Green strain definitions
+  - allow None as problem argument in MiniAppBase.__init__()
+  - lib.lapack import bug fix (merge pull request #301 from rexfuzzle/master)
+  - fix output order of scipy.linalg.lapack functions in ScipySGEigenvalueSolver
+  - fix version comparison in dets_fast()
+  - set SYMPY_MIN_VERSION to 0.7.3 in sfepy/version.py (merge branch
+    sympy-lcbc-compat)
+  - fix describe_geometry() to initialize base functions in membrane_geo
+  - merge branch fix-mat-by-region-for-surfaces
+
+    - allow non-cell regions in ConstantFunctionByRegion.get_constants()
+    - update Region.get_cell_indices() to allow cells to be sutperset of region
+      cells
+
+  - fix access to mat_id in GenericFileSource.create_source(), .get_mat_id()
+
 .. _2015.2-2015.3:
 
 from 2015.2 to 2015.3
