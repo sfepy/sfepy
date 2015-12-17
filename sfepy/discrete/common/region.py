@@ -572,7 +572,8 @@ class Region(Struct):
 
         Raises ValueError if `true_cells_only` is True and the region kind does
         not allow cells. For `true_cells_only` equal to False, cells incident
-        to facets are returned if the region itself contains no cells.
+        to facets are returned if the region itself contains no cells. Obeys
+        parent region, if given.
         """
         if self.cells.shape[0] == 0:
             if true_cells_only:
@@ -585,6 +586,11 @@ class Region(Struct):
                 cmesh = self.domain.cmesh
                 cmesh.setup_connectivity(self.tdim - 1, self.tdim)
                 out = cmesh.get_incident(self.tdim, self.facets, self.tdim - 1)
+
+                if self.parent is not None:
+                    pcells = self.domain.regions[self.parent].cells
+                    ip = nm.in1d(out, pcells, assume_unique=False)
+                    out = out[ip]
 
         else:
             out = self.cells
