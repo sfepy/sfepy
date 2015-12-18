@@ -572,7 +572,8 @@ class Region(Struct):
 
         Raises ValueError if `true_cells_only` is True and the region kind does
         not allow cells. For `true_cells_only` equal to False, cells incident
-        to facets are returned if the region itself contains no cells.
+        to facets are returned if the region itself contains no cells. Obeys
+        parent region, if given.
         """
         if self.cells.shape[0] == 0:
             if true_cells_only:
@@ -585,6 +586,11 @@ class Region(Struct):
                 cmesh = self.domain.cmesh
                 cmesh.setup_connectivity(self.tdim - 1, self.tdim)
                 out = cmesh.get_incident(self.tdim, self.facets, self.tdim - 1)
+
+                if self.parent is not None:
+                    pcells = self.domain.regions[self.parent].cells
+                    ip = nm.in1d(out, pcells, assume_unique=False)
+                    out = out[ip]
 
         else:
             out = self.cells
@@ -606,8 +612,8 @@ class Region(Struct):
         cells (`self` is a superset of `cells`). The region cells are
         considered depending on `true_cells_only`.
 
-        Otherwise, either all cells of the region has to be contained in
-        `cells` (`self` is a subset of `cells`), or None (disjoint cells).
+        Otherwise, indices of all cells in `self` that are in `cells` are
+        returned.
         """
         fcells = self.get_cells(true_cells_only=true_cells_only)
 
@@ -617,17 +623,8 @@ class Region(Struct):
             assert_((fcells[ii] == cells).all())
 
         else:
-            # self can be a subset of cells or disjoint.
-            common = nm.intersect1d(cells, fcells)
-
-            if len(common):
-                aux = nm.searchsorted(cells, fcells)
-                assert_((fcells == cells[aux]).all())
-
-                ii = nm.arange(len(fcells), dtype=nm.int32)
-
-            else:
-                ii = nm.array([], dtype=nm.int32)
+            aux = nm.searchsorted(cells, fcells)
+            ii = nm.where(nm.take(cells, aux, mode='clip') == fcells)[0]
 
         return ii
 
