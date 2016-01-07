@@ -340,7 +340,24 @@ class PETScKrylovSolver(LinearSolver):
                 converged_reasons[val] = key
 
         LinearSolver.__init__(self, conf, petsc=petsc, comm=comm,
-                              converged_reasons=converged_reasons, **kwargs)
+                              converged_reasons=converged_reasons,
+                              fields=None, **kwargs)
+
+    def set_field_split(self, field_ranges, comm=None):
+        """
+        Setup local PETSc ranges for fields to be used with 'fieldsplit'
+        preconditioner.
+
+        This function must be called before solving the linear system.
+        """
+        comm = get_default(comm, self.comm)
+
+        self.fields = []
+        for key, rng in field_ranges.iteritems():
+            size = rng[1] - rng[0]
+            field_is = self.petsc.IS().createStride(size, first=rng[0], step=1,
+                                                    comm=comm)
+            self.fields.append((key, field_is))
 
     def create_ksp(self, comm=None):
         optDB = self.petsc.Options()
@@ -351,7 +368,18 @@ class PETScKrylovSolver(LinearSolver):
         ksp.create(comm)
 
         ksp.setType(self.conf.method)
-        ksp.getPC().setType(self.conf.precond)
+        pc = ksp.getPC()
+        pc.setType(self.conf.precond)
+        ksp.setFromOptions()
+
+        if (pc.type == 'fieldsplit'):
+            if self.fields is not None:
+                pc.setFieldSplitIS(*self.fields)
+
+            else:
+                msg = 'PETScKrylovSolver.set_field_split() has to be called!'
+                raise ValueError(msg)
+
         side = self._precond_sides[self.conf.precond_side]
         if side is not None:
             ksp.setPCSide(side)

@@ -70,6 +70,12 @@ Parallel runs::
 
   $ mpiexec -n 8 python examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --shape 101,101 --metis -snes_monitor -snes_view -snes_converged_reason -ksp_monitor
 
+Using FieldSplit preconditioner::
+
+  $ mpiexec -n 2 python examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=101,101 -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit
+
+  $ mpiexec -n 8 python examples/multi_physics/biot_parallel_interactive.py output-parallel --shape=1001,1001 --metis -snes_monitor -snes_converged_reason -ksp_monitor -pc_type fieldsplit -pc_fieldsplit_type additive
+
 View the results using (strip linearization or approximation orders one)::
 
   $ python postproc.py output-parallel/sol.h5 --wireframe -b -d'p,plot_warp_scalar:u,plot_displacements'
@@ -261,6 +267,12 @@ def solve_problem(mesh_filename, options, comm):
                   verbose=True)
     status = {}
     ls = PETScKrylovSolver(conf, comm=comm, mtx=pmtx, status=status)
+
+    field_ranges = {}
+    for ii, variable in enumerate(variables.iter_state(ordered=True)):
+        field_ranges[variable.name] = lfds[ii].petsc_dofs_range
+
+    ls.set_field_split(field_ranges, comm=comm)
 
     ev = PETScParallelEvaluator(pb, pdofs, drange, True,
                                 psol, comm, verbose=True)
