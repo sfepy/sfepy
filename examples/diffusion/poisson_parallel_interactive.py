@@ -427,10 +427,13 @@ def main():
 
     output_dir = options.output_dir
 
+    filename = os.path.join(output_dir, 'output_log_%02d.txt' % comm.rank)
+    if comm.rank == 0:
+        ensure_path(filename)
+    comm.barrier()
+
     output.prefix = 'sfepy_%02d:' % comm.rank
-    output.set_output(filename=os.path.join(output_dir,
-                                            'output_log_%02d.txt' % comm.rank),
-                      combined=options.silent == False)
+    output.set_output(filename=filename, combined=options.silent == False)
 
     output('petsc options:', petsc_opts)
 
@@ -457,8 +460,6 @@ def main():
 
         mesh = gen_block_mesh(dims, shape, centre, name='block-fem',
                               verbose=True)
-
-        ensure_path(mesh_filename)
         mesh.write(mesh_filename, io='auto')
 
     comm.barrier()
