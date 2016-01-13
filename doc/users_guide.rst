@@ -1468,6 +1468,7 @@ The following already works:
 - single patch tensor product domain support in 2D and 3D
 - region selection based on topological Bezier mesh, see below
 - Dirichlet boundary conditions using projections for non-constant values
+- evaluation in arbitrary point in the physical domain
 - both scalar and vector volume terms work
 - term integration over the whole domain as well as a volume subdomain
 - simple linearization (output file generation) based on sampling the results
@@ -1478,10 +1479,8 @@ The following is not implemented yet:
 
 - tests
 - theoretical convergence rate verification
-- fast basis evaluation
 - surface terms
 - other boundary conditions
-- evaluation in arbitrary point in the physical domain
 - proper (adaptive) linearization for post-processing
 - support for multiple NURBS patches
 
