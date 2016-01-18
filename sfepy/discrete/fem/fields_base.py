@@ -209,14 +209,6 @@ class FEField(Field):
             self.approx_order = approx_order
             self.force_bubble = False
 
-    def _create_interpolant(self):
-        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
-                                  self.poly_space_base, self.approx_order,
-                                  'B' * self.force_bubble)
-        self.interp = fea.Interpolant(name, self.gel, self.space,
-                                      self.poly_space_base, self.approx_order,
-                                      self.force_bubble)
-
     def get_true_order(self):
         """
         Get the true approximation order depending on the reference
