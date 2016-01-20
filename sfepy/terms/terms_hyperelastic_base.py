@@ -77,7 +77,7 @@ class HyperElasticBase(Term):
         fargs = [get(name, msg_if_none=_msg_missing_data)
                  for name in self.family_data_names]
 
-        self.stress_function(out, mat, *fargs)
+        self.stress_function(out, mat, *fargs, **kwargs)
 
         return out
 
@@ -90,7 +90,7 @@ class HyperElasticBase(Term):
         fargs = [get(name, msg_if_none=_msg_missing_data)
                  for name in self.family_data_names]
 
-        self.tan_mod_function(out, mat, *fargs)
+        self.tan_mod_function(out, mat, *fargs, **kwargs)
 
         return out
 

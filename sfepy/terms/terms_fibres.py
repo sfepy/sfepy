@@ -1,33 +1,50 @@
 import numpy as nm
 
+from sfepy.base.base import Struct
 from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
+from sfepy.mechanics.tensors import dim2sym
 from sfepy.homogenization.utils import iter_sym
 
-def fibre_function(out, pars, green_strain, fmode):
+def create_omega(fdir):
+    r"""
+    Create the fibre direction tensor :math:`\omega_{ij} = d_i d_j`.
     """
-    Depending on `fmode`, compute fibre stress (0) or tangent modulus (!= 0).
-    """
-    fmax, eps_opt, s, fdir, act = pars
-
-    eps = nm.zeros_like(fmax)
-    omega = nm.empty_like(green_strain)
-    for ii, (ir, ic) in enumerate(iter_sym(fdir.shape[2])):
+    n_el, n_qp, dim, _ = fdir.shape
+    sym = dim2sym(dim)
+    omega = nm.empty((n_el, n_qp, sym, 1), dtype=nm.float64)
+    for ii, (ir, ic) in enumerate(iter_sym(dim)):
         omega[..., ii, 0] = fdir[..., ir, 0] * fdir[..., ic, 0]
+
+    return omega
+
+def compute_fibre_strain(green_strain, omega):
+    """
+    Compute the Green strain projected to the fibre direction.
+    """
+    eps = nm.zeros_like(omega[..., :1, :])
+    for ii in range(omega.shape[2]):
         eps[..., 0, 0] += omega[..., ii, 0] * green_strain[..., ii, 0]
 
-    tau = act * fmax * nm.exp(-((eps - eps_opt) / s)**2.0)
+    return eps
 
-    if fmode == 0:
-        out[:] = omega * tau
+def _setdefault_fibre_data(self, state):
+    """
+    Returns `fibre_data` :class:``Struct`` for storing/caching fibre-related
+    data.
+    """
+    cache = self.set_default('fibre_cache', {})
+
+    _, _, key = self.get_mapping(state, return_key=True)
+
+    data_key = key + ('fibre_data',)
+    if data_key in cache:
+        fibre_data = cache[data_key]
 
     else:
-        for ir in range(omega.shape[2]):
-            for ic in range(omega.shape[2]):
-                out[..., ir, ic] = omega[..., ir, 0] * omega[..., ic, 0]
+        fibre_data = Struct()
+        cache[data_key] = fibre_data
 
-        out[:] *= -2.0 * ((eps - eps_opt) / (s**2.0)) * tau
-
-    return out
+    return fibre_data
 
 class FibresActiveTLTerm(HyperElasticTLBase):
     r"""
@@ -62,20 +79,43 @@ class FibresActiveTLTerm(HyperElasticTLBase):
 
     def get_fargs(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
+        fibre_data = _setdefault_fibre_data(self, state)
+
         fargs = HyperElasticTLBase.get_fargs(self,
                                              (mat1, mat2, mat3, mat4, mat5),
                                              virtual, state,
                                              mode, term_mode, diff_var,
+                                             fibre_data=fibre_data,
                                              **kwargs)
         return fargs
 
     @staticmethod
-    def stress_function(out, pars, green_strain):
-        fibre_function(out, pars, green_strain, 0)
+    def stress_function(out, pars, green_strain,
+                        fibre_data=None):
+        fmax, eps_opt, s, fdir, act = pars
+
+        omega = fibre_data.get('omega', None)
+        if omega is None:
+            omega = fibre_data.omega = create_omega(fdir)
+
+        eps = fibre_data.eps = compute_fibre_strain(green_strain, omega)
+
+        tau = fibre_data.tau = act * fmax * nm.exp(-((eps - eps_opt) / s)**2.0)
+
+        out[:] = omega * tau
 
     @staticmethod
-    def tan_mod_function(out, pars, green_strain):
-        fibre_function(out, pars, green_strain, 1)
+    def tan_mod_function(out, pars, green_strain,
+                         fibre_data=None):
+        fmax, eps_opt, s, fdir, act = pars
+
+        omega, eps, tau = fibre_data.omega, fibre_data.eps, fibre_data.tau
+
+        for ir in range(omega.shape[2]):
+            for ic in range(omega.shape[2]):
+                out[..., ir, ic] = omega[..., ir, 0] * omega[..., ic, 0]
+
+        out[:] *= -2.0 * ((eps - eps_opt) / (s**2.0)) * tau
 
     def get_eval_shape(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
