@@ -6,9 +6,9 @@ import numpy as nm
 from sfepy.base.base import output, Struct
 from geometry_element import GeometryElement
 from sfepy.discrete.common.domain import Domain
+from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.discrete.fem.fe_surface import FESurface
-import fea
 
 class FEDomain(Domain):
     """
@@ -42,15 +42,14 @@ class FEDomain(Domain):
 
             geom_els[desc] = gel
 
-        self.geom_interps = interps = {}
         for gel in geom_els.itervalues():
             key = gel.get_interpolation_name()
 
-            gel.interp = interps.setdefault(key, fea.Interpolant(key, gel))
+            gel.poly_space = PolySpace.any_from_args(key, gel, 1)
             gel = gel.surface_facet
             if gel is not None:
                 key = gel.get_interpolation_name()
-                gel.interp = interps.setdefault(key, fea.Interpolant(key, gel))
+                gel.poly_space = PolySpace.any_from_args(key, gel, 1)
 
         self.vertex_set_bcs = self.mesh.nodal_bcs
 

@@ -205,8 +205,7 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
 
             coors = ap.interp.poly_spaces['v'].node_coors
 
-            ginterp = ap.interp.gel.interp
-            bf = ginterp.poly_spaces['v'].eval_base(coors)
+            bf = ap.interp.gel.poly_space.eval_base(coors)
             bf = bf[:,0,:].copy()
 
             conn = econn[:, :self.gel.n_vertex]

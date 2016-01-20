@@ -93,11 +93,10 @@ class Interpolant(Struct):
 
     def get_geom_poly_space(self, key):
         if key == 'v':
-            ps = self.gel.interp.poly_spaces['v']
+            ps = self.gel.poly_space
 
         elif key[0] == 's':
-            n_v = self.gel.surface_facet.n_vertex
-            ps = self.gel.interp.poly_spaces['s%d' % n_v]
+            ps = self.gel.surface_facet.poly_space
 
         else:
             raise ValueError('bad polynomial space key! (%s)' % key)
@@ -123,7 +122,7 @@ class SurfaceInterpolant(Interpolant):
     def get_geom_poly_space(self, key):
         assert_(key[0] == 's')
 
-        ps = self.gel.interp.poly_spaces['v']
+        ps = self.gel.poly_space
 
         return ps
 
@@ -148,7 +147,7 @@ class Approximation(Struct):
         """
         Compute coordinates of extra nodes.
         """
-        gps = self.interp.gel.interp.poly_spaces['v']
+        gps = self.interp.gel.poly_space
         ps = self.interp.poly_spaces['v']
 
         eval_nodal_coors(coors, mesh_coors, self.region, ps, gps, self.econn)
@@ -419,7 +418,7 @@ class DiscontinuousApproximation(Approximation):
         Compute coordinates of extra nodes. For discontinuous
         approximations, all nodes are treated as extra.
         """
-        gps = self.interp.gel.interp.poly_spaces['v']
+        gps = self.interp.gel.poly_space
         ps = self.interp.poly_spaces['v']
 
         eval_nodal_coors(coors, mesh_coors, self.region, ps, gps,

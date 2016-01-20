@@ -106,7 +106,7 @@ def create_expression_output(expression, name, primary_field_name,
     ap = field.ap
 
     ps = ap.interp.poly_spaces['v']
-    gps = ap.interp.gel.interp.poly_spaces['v']
+    gps = ap.interp.gel.poly_space
     vertex_conn = ap.econn[:, :field.gel.n_vertex]
 
     eval_dofs = get_eval_expression(expression,
@@ -503,7 +503,7 @@ class FEField(Field):
         ap = self.ap
 
         ps = ap.interp.poly_spaces['v']
-        gps = ap.interp.gel.interp.poly_spaces['v']
+        gps = ap.interp.gel.poly_space
 
         vertex_conn = ap.econn[:, :self.gel.n_vertex]
 
