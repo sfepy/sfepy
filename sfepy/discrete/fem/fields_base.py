@@ -26,6 +26,18 @@ from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
 
+def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
+                   clear_all=True):
+    if actual:
+        domain.mesh.coors_act = coors.copy()
+    else:
+        domain.cmesh.coors[:] = coors
+
+    if update_fields:
+        for field in fields.itervalues():
+            field.setup_coors(coors)
+            field.clear_mappings(clear_all=clear_all)
+
 def get_eval_expression(expression,
                         fields, materials, variables,
                         functions=None, mode='eval', term_mode=None,
