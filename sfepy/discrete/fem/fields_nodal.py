@@ -14,7 +14,6 @@ region-local field connectivity.
 import numpy as nm
 
 from sfepy.base.base import assert_
-import fea
 from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
@@ -25,7 +24,7 @@ class H1NodalMixin(H1Mixin):
 
     def _setup_facet_orientations(self):
         order = self.approx_order
-        self.node_desc = self.interp.describe_nodes()
+        self.node_desc = self.poly_space.describe_nodes()
 
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
@@ -107,7 +106,7 @@ class H1NodalMixin(H1Mixin):
         iep = facet_desc[ies]
 
         iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
-        self.ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
+        self.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
 
         n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
@@ -124,8 +123,6 @@ class H1NodalMixin(H1Mixin):
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof_per_cell = self.node_desc.bubble.shape[0]
 
-        ap = self.ap
-
         ii = self.region.get_cells()
         remap = prepare_remap(ii, self.domain.cmesh.n_el)
 
@@ -135,7 +132,7 @@ class H1NodalMixin(H1Mixin):
         all_dofs = nm.arange(offset, offset + n_dof, dtype=nm.int32)
         all_dofs.shape = (n_cell, n_dof_per_cell)
         iep = self.node_desc.bubble[0]
-        ap.econn[:,iep:] = all_dofs
+        self.econn[:,iep:] = all_dofs
 
         return n_dof, all_dofs, remap
 
@@ -172,8 +169,8 @@ class H1NodalMixin(H1Mixin):
         """
         Create the context required for evaluating the field basis.
         """
-        ps = self.ap.get_poly_space('v', from_geometry=False)
-        gps = self.ap.get_poly_space('v', from_geometry=True)
+        ps = self.poly_space
+        gps = self.domain.poly_space
 
         mesh = self.create_mesh(extra_nodes=False)
 
@@ -200,18 +197,16 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
         else:
             dim = vec.shape[1]
             enod_vol_val = nm.zeros((self.n_nod, dim), dtype=nm.float64)
-            ap = self.ap
-            econn = ap.econn
 
-            coors = ap.interp.poly_spaces['v'].node_coors
+            coors = self.poly_space.node_coors
 
-            bf = ap.interp.gel.poly_space.eval_base(coors)
+            bf = self.gel.poly_space.eval_base(coors)
             bf = bf[:,0,:].copy()
 
-            conn = econn[:, :self.gel.n_vertex]
+            conn = self.econn[:, :self.gel.n_vertex]
 
             evec = nm.dot(bf, vec[conn])
-            enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
+            enod_vol_val[self.econn] = nm.swapaxes(evec, 0, 1)
 
         return enod_vol_val
 
