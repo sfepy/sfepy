@@ -170,7 +170,7 @@ class H1NodalMixin(H1Mixin):
         Create the context required for evaluating the field basis.
         """
         ps = self.poly_space
-        gps = self.domain.poly_space
+        gps = self.gel.poly_space
 
         mesh = self.create_mesh(extra_nodes=False)
 
