@@ -244,6 +244,7 @@ class FEField(Field):
         self._setup_kind()
         self._setup_shape()
 
+        self.ori = None
         self._create_interpolant()
         self._setup_global_base()
         self.setup_coors()
@@ -251,7 +252,6 @@ class FEField(Field):
 
         self.surface_data = {}
         self.point_data = {}
-        self.ori = None
 
         self.clear_qp_base()
 
