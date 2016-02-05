@@ -213,11 +213,6 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
 class H1DiscontinuousField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
-    def _setup_approximations(self):
-        name = self.interp.name + '_%s' % self.region.name
-        self.ap = fea.DiscontinuousApproximation(name, self.interp,
-                                                 self.region)
-
     def _setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
@@ -226,16 +221,14 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
 
         self._init_econn()
 
-        ap = self.ap
-
         ii = self.region.get_cells()
         self.bubble_remap = prepare_remap(ii, self.domain.cmesh.n_el)
 
-        n_dof = nm.prod(ap.econn.shape)
+        n_dof = nm.prod(self.econn.shape)
         all_dofs = nm.arange(n_dof, dtype=nm.int32)
-        all_dofs.shape = ap.econn.shape
+        all_dofs.shape = self.econn.shape
 
-        ap.econn[:] = all_dofs
+        self.econn[:] = all_dofs
 
         self.n_nod = n_dof
 
