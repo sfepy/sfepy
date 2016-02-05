@@ -424,7 +424,7 @@ class FEField(Field):
             n_qp = weights.shape[0]
 
             if integration == 'surface':
-                data_shape = (sd.n_fa, n_qp, dim, ap.n_ep[key])
+                data_shape = (sd.n_fa, n_qp, dim, sd.n_fp)
 
             else:
                 data_shape = (sd.n_fa, n_qp, dim, self.econn.shape[1])
@@ -546,9 +546,10 @@ class FEField(Field):
         sd = self.surface_data[region_name]
         bqpkey = (integral.order, sd.bkey)
         if not bqpkey in self.qp_coors:
-            bf_s = self.get_base(sd.face_type, 0, integral,
-                                 from_geometry=True)
             qp = self.get_qp(sd.face_type, integral)
+
+            ps_s = self.gel.surface_facet.poly_space
+            bf_s = ps_s.eval_base(qp.vals)
 
             coors, faces = gel.coors, gel.get_surface_entities()
 
@@ -940,26 +941,32 @@ class FEField(Field):
             sd = domain.surface_groups[region.name]
             esd = self.surface_data[region.name]
 
-            qp = self.get_qp(sd.face_type, integral)
+            self.create_bqp(region.name, integral)
+            qp = self.qp_coors[(integral.order, esd.bkey)]
 
-            geo_ps = self.interp.get_geom_poly_space(sd.face_type)
-            ps = self.interp.poly_spaces[esd.face_type]
-            bf = self.get_base(esd.face_type, 0, integral)
+            geo_ps = self.gel.poly_space
+            ps = self.poly_space
+
+            abf = ps.eval_base(qp.vals[0])
+            bf = abf[..., self.efaces[0]]
 
             conn = sd.get_connectivity()
 
             mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
-            sg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+
+            indx = self.gel.get_surface_entities()[0]
+            # Fix geometry element's 1st facet orientation for gradients.
+            indx = nm.roll(indx, -1)[::-1]
+            mapping.set_basis_indices(indx)
+
+            sg = mapping.get_mapping(qp.vals[0], qp.weights,
+                                     poly_space=Struct(n_nod=bf.shape[-1]),
                                      mode=integration)
 
             if integration == 'surface_extra':
-                sg.alloc_extra_data(self.n_ep['v'])
+                sg.alloc_extra_data(self.econn.shape[1])
 
-                self.create_bqp(region.name, integral)
-                qp = self.qp_coors[(integral.order, esd.bkey)]
-
-                v_geo_ps = self.interp.get_geom_poly_space('v')
-                bf_bg = v_geo_ps.eval_base(qp.vals, diff=True)
+                bf_bg = geo_ps.eval_base(qp.vals, diff=True)
                 ebf_bg = self.get_base(esd.bkey, 1, integral)
 
                 sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, dconn)
