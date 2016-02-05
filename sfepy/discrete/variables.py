@@ -1821,8 +1821,7 @@ class FieldVariable(Variable):
 
         integral = Integral('i_tmp', 1)
 
-        ap = field.ap
-        vg = ap.describe_geometry(field, 'volume', field.region, integral)
+        vg = field.get_mapping(field.region, integral, 'volume')
 
         diameters = domain.get_element_diameters(cells, vg, mode, square=square)
 

@@ -52,7 +52,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     dim = region.dim
 
     field.domain.create_surface_group(region)
-    field._setup_surface_data(region)
+    field.setup_surface_data(region)
 
     # Custom integral with quadrature points very close to facet vertices.
     coors = field.gel.surface_facet.coors

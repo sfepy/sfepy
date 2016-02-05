@@ -739,12 +739,11 @@ class FEField(Field):
         mesh = self.domain.mesh
 
         if self.approx_order != 0:
-            ap = self.ap
             if extra_nodes:
-                conn = ap.econn
+                conn = self.econn
 
             else:
-                conn = ap.econn[:, :self.gel.n_vertex]
+                conn = self.econn[:, :self.gel.n_vertex]
 
             conns = [conn]
             mat_ids = [mesh.cmesh.cell_groups]
@@ -1182,19 +1181,17 @@ class VolumeField(FEField):
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
         data_vertex = nm.zeros((n_vertex, nc), dtype=nm.float64)
 
-        ap = self.ap
-
-        vg = ap.describe_geometry(self, 'volume', ap.region, integral)
+        vg = self.get_mapping(self.region, integral, 'volume')[0]
 
         volume = nm.squeeze(vg.volume)
-        iels = ap.region.get_cells()
+        iels = self.region.get_cells()
 
         data_e = nm.zeros((volume.shape[0], 1, nc, 1), dtype=nm.float64)
         vg.integrate(data_e, data_qp[iels])
 
         ir = nm.arange(nc, dtype=nm.int32)
 
-        conn = ap.econn[:, :self.gel.n_vertex]
+        conn = self.econn[:, :self.gel.n_vertex]
         for ii, cc in enumerate(conn):
             # Assumes unique nodes in cc!
             ind2, ind1 = nm.meshgrid(ir, cc)
