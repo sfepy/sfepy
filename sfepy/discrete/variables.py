@@ -1494,7 +1494,7 @@ class FieldVariable(Variable):
             self.initial_condition[eq] = vv
 
     def get_approximation(self):
-        return self.field.ap
+        return self.field
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
