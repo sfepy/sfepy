@@ -80,11 +80,11 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
         import sfepy.postprocess.plot_dofs as pd
         import sfepy.postprocess.plot_cmesh as pc
         ax = pc.plot_wireframe(None, mesh.cmesh)
-        ax = pd.plot_global_dofs(ax, field.get_coor(), field.ap.econn)
-        ax = pd.plot_local_dofs(ax, field.get_coor(), field.ap.econn)
+        ax = pd.plot_global_dofs(ax, field.get_coor(), field.econn)
+        ax = pd.plot_local_dofs(ax, field.get_coor(), field.econn)
         if options.dofs is not None:
-            ax = pd.plot_nodes(ax, field.get_coor(), field.ap.econn,
-                               field.ap.interp.poly_spaces['v'].nodes,
+            ax = pd.plot_nodes(ax, field.get_coor(), field.econn,
+                               field.poly_space.nodes,
                                get_dofs(options.dofs, var.n_dof))
         pd.plt.show()
 
