@@ -866,6 +866,12 @@ class FEField(Field):
         else:
             return self.coors[nods]
 
+    def get_connectivity(self, region, integration, is_trace=False):
+        """
+        Convenience alias to `Field.get_econn()`, that is used in some terms.
+        """
+        return self.get_econn(integration, region, is_trace=is_trace)
+
     def create_mapping(self, region, integral, integration,
                        return_mapping=True):
         """
