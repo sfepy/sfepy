@@ -146,7 +146,7 @@ def describe_geometry(field, region, integral):
     """
     # Coordinates of element vertices.
     sg, _ = field.get_mapping(region, integral, 'surface')
-    sd = field.ap.surface_data[region.name]
+    sd = field.surface_data[region.name]
     coors = field.coors[sd.econn[:, :sg.n_ep]]
 
     # Coordinate transformation matrix (transposed!).

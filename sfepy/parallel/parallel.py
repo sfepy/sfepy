@@ -168,9 +168,8 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
 
             inter_dofs.append(_get_dofs_region(field, region))
 
-            ap = field.ap
             sd = FESurface('surface_data_%s' % region.name, region,
-                           ap.efaces, ap.econn, field.region)
+                           field.efaces, field.econn, field.region)
             econn = sd.get_connectivity()
             n_facet = econn.shape[0]
 
@@ -359,7 +358,7 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
             mpi.send(gfd.coffsets[it] + dof_map[3], it)
 
             # Send petsc_dofs of global_dofs.
-            global_dofs = field.ap.econn[cells]
+            global_dofs = field.econn[cells]
             if use_expand_dofs:
                 global_dofs = expand_dofs(global_dofs, field.n_components)
             petsc_dofs_conn = id_map[global_dofs]
@@ -370,7 +369,7 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
         cells = nm.union1d(gfd.cell_parts[0], gfd.overlap_cells[0])
         n_cell = len(cells)
 
-        global_dofs = field.ap.econn[cells]
+        global_dofs = field.econn[cells]
         if use_expand_dofs:
             global_dofs = expand_dofs(global_dofs, field.n_components)
 
@@ -490,7 +489,7 @@ def get_local_ordering(field_i, petsc_dofs_conn, use_expand_dofs=False):
 
     else:
         petsc_dofs = nm.empty(field_i.n_nod, dtype=nm.int32)
-    econn = field_i.ap.econn
+    econn = field_i.econn
     if use_expand_dofs:
         econn = expand_dofs(econn, field_i.n_components)
     petsc_dofs[econn] = petsc_dofs_conn

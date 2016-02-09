@@ -12,6 +12,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
+from sfepy.discrete.fem.fields_base import set_mesh_coors
 from sfepy.discrete.common.fields import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
@@ -20,7 +21,6 @@ from integrals import Integrals
 from sfepy.discrete.state import State
 from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations
-from sfepy.discrete.fem import fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import BasicEvaluator, LCBCEvaluator
 from sfepy.solvers import Solver
@@ -682,9 +682,9 @@ class Problem(Struct):
             If True, update the actual configuration coordinates,
             otherwise the undeformed configuration ones.
         """
-        fea.set_mesh_coors(self.domain, self.fields, coors,
-                           update_fields=update_fields, actual=actual,
-                           clear_all=clear_all)
+        set_mesh_coors(self.domain, self.fields, coors,
+                       update_fields=update_fields, actual=actual,
+                       clear_all=clear_all)
 
     def refine_uniformly(self, level):
         """

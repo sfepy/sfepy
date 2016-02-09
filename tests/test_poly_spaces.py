@@ -94,8 +94,7 @@ def _gen_common_data(orders, gels, report):
 
                 vec = nm.empty(var.n_dof, dtype=var.dtype)
 
-                ap = field.ap
-                ps = ap.interp.poly_spaces['v']
+                ps = field.poly_space
 
                 dofs = field.get_dofs_in_region(region, merge=False)
                 edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
@@ -107,7 +106,7 @@ def _gen_common_data(orders, gels, report):
                 assert_((rstatus == 0).all() and (cstatus == 0).all())
 
                 yield (geom, poly_space_base, qp_weights, mesh, ir, ic,
-                       ap, ps, rrc, rcells[0], crc, ccells[0],
+                       field, ps, rrc, rcells[0], crc, ccells[0],
                        vec, edofs, fdofs)
 
 class Test(TestCommon):
@@ -131,7 +130,7 @@ class Test(TestCommon):
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
-             ap, ps, rrc, rcell, crc, ccell, vec,
+             field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
             if poly_space_base == 'lagrange':
@@ -139,8 +138,8 @@ class Test(TestCommon):
                 cbf = ps.eval_base(crc)
 
             else:
-                rbf = ps.eval_base(rrc, ori=ap.ori[:1])
-                cbf = ps.eval_base(crc, ori=ap.ori[1:])
+                rbf = ps.eval_base(rrc, ori=field.ori[:1])
+                cbf = ps.eval_base(crc, ori=field.ori[1:])
 
             dofs = nm.r_[edofs, fdofs]
 
@@ -150,7 +149,7 @@ class Test(TestCommon):
                 vec.fill(0.0)
                 vec[ip] = 1.0
 
-                evec = vec[ap.econn]
+                evec = vec[field.econn]
 
                 rvals = nm.dot(rbf, evec[rcell])
                 cvals = nm.dot(cbf, evec[ccell])
@@ -182,22 +181,22 @@ class Test(TestCommon):
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
-             ap, ps, rrc, rcell, crc, ccell, vec,
+             field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
             gel = self.gels[geom]
             conn = mesh.get_conn(gel.name)
 
-            geo_ps = ap.interp.get_geom_poly_space('v')
+            geo_ps = field.gel.poly_space
             rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],
                                      poly_space=geo_ps)
-            rori = ap.ori[:1] if ap.ori is not None else None
+            rori = field.ori[:1] if field.ori is not None else None
             rvg = rmapping.get_mapping(rrc, qp_weights,
                                        poly_space=ps, ori=rori)
             rbfg = rvg.bfg
 
             cmapping = VolumeMapping(mesh.coors, conn[ccell:ccell+1],
                                      poly_space=geo_ps)
-            cori = ap.ori[1:] if ap.ori is not None else None
+            cori = field.ori[1:] if field.ori is not None else None
             cvg = cmapping.get_mapping(crc, qp_weights,
                                        poly_space=ps, ori=cori)
             cbfg = cvg.bfg
@@ -210,7 +209,7 @@ class Test(TestCommon):
                 vec.fill(0.0)
                 vec[ip] = 1.0
 
-                evec = vec[ap.econn]
+                evec = vec[field.econn]
 
                 rvals = nm.dot(rbfg, evec[rcell])[0]
                 cvals = nm.dot(cbfg, evec[ccell])[0]

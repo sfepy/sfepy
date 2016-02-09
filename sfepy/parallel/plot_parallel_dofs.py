@@ -67,7 +67,7 @@ def plot_partitioning(axs, field, cell_tasks, gfd, output_dir, size):
 
     ax = pc.plot_wireframe(axs[0], mesh.cmesh)
     coors = field.get_coor()
-    econn = field.ap.econn
+    econn = field.econn
     ax = pd.plot_global_dofs(ax, coors, econn)
     ax.set_title('global DOFs')
     ax.figure.savefig(os.path.join(output_dir, 'global_dofs.png'),
@@ -76,7 +76,7 @@ def plot_partitioning(axs, field, cell_tasks, gfd, output_dir, size):
     ax = pc.plot_wireframe(axs[1], mesh.cmesh)
     fig = ax.figure
     coors = field.get_coor()
-    econn = field.ap.econn
+    econn = field.econn
 
     id_map = gfd.id_map
 
@@ -124,7 +124,7 @@ def plot_local_dofs(axs, field, field_i, omega_gi, output_dir, rank):
 
     ax = pc.plot_wireframe(axs[0], mesh.cmesh)
     coors = field_i.get_coor()
-    econn = field_i.ap.econn
+    econn = field_i.econn
     ax = pd.plot_global_dofs(ax, coors, econn)
     ax.set_title('local DOFs on task %d' % rank)
     ax.figure.savefig(os.path.join(output_dir, 'local_dofs_%02d.png' % rank),

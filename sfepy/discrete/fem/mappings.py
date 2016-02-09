@@ -35,6 +35,7 @@ class FEMapping(Mapping):
                                                  force_bubble=False)
 
         self.poly_space = poly_space
+        self.indices = slice(None)
 
     def get_geometry(self):
         """
@@ -103,6 +104,20 @@ class SurfaceMapping(FEMapping):
     Mapping from reference domain to physical domain of the space
     dimension higher by one.
     """
+
+    def set_basis_indices(self, indices):
+        """
+        Set indices to cell-based basis that give the facet-based basis.
+        """
+        self.indices = indices
+
+    def get_base(self, coors, diff=False):
+        """
+        Get base functions or their gradient evaluated in given
+        coordinates.
+        """
+        bf = self.poly_space.eval_base(coors, diff=diff)
+        return nm.ascontiguousarray(bf[..., :self.dim-1:, self.indices])
 
     def get_mapping(self, qp_coors, weights, poly_space=None, mode='surface'):
         """

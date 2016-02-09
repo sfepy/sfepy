@@ -1494,7 +1494,7 @@ class FieldVariable(Variable):
             self.initial_condition[eq] = vv
 
     def get_approximation(self):
-        return self.field.ap
+        return self.field
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
@@ -1821,8 +1821,7 @@ class FieldVariable(Variable):
 
         integral = Integral('i_tmp', 1)
 
-        ap = field.ap
-        vg = ap.describe_geometry(field, 'volume', field.region, integral)
+        vg = field.get_mapping(field.region, integral, 'volume')
 
         diameters = domain.get_element_diameters(cells, vg, mode, square=square)
 

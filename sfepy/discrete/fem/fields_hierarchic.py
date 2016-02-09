@@ -14,10 +14,10 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         """
         VolumeField._init_econn(self)
 
-        self.ap.ori = nm.zeros_like(self.ap.econn)
+        self.ori = nm.zeros_like(self.econn)
 
     def _setup_facet_orientations(self):
-        self.node_desc = self.interp.describe_nodes()
+        self.node_desc = self.poly_space.describe_nodes()
 
     def _setup_edge_dofs(self):
         """
@@ -65,7 +65,6 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         n_fp = 2 if dim == 1 else self.gel.surface_facet.n_vertex
 
         oris = cmesh.get_orientations(dim)
-        ap = self.ap
 
         gcells = self.region.get_cells()
         n_el = gcells.shape[0]
@@ -87,13 +86,13 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         # each element.
         iep = facet_desc[ies]
 
-        ap.econn[iel[:, None], iep] = gdofs
+        self.econn[iel[:, None], iep] = gdofs
 
         ori = oris[aux].ravel()
 
-        if (n_fp == 2) and (ap.interp.gel.name in ['2_4', '3_8']):
-            tp_edges = ap.interp.gel.edges
-            ecs = ap.interp.gel.coors[tp_edges]
+        if (n_fp == 2) and (self.gel.name in ['2_4', '3_8']):
+            tp_edges = self.gel.edges
+            ecs = self.gel.coors[tp_edges]
             # True = positive, False = negative edge orientation w.r.t.
             # reference tensor product axes.
             tp_edge_ori = (nm.diff(ecs, axis=1).sum(axis=2) > 0).squeeze()
@@ -102,11 +101,11 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
         if n_fp == 2: # Edges.
             # ori == 1 means the basis has to be multiplied by -1.
-            ps = ap.interp.poly_spaces['v']
+            ps = self.poly_space
             orders = ps.node_orders
             eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
             eoo = orders[iep] % 2 # Odd orders.
-            ap.ori[iel[:, None], iep] = eori * eoo
+            self.ori[iel[:, None], iep] = eori * eoo
 
         elif n_fp == 3: # Triangular faces.
             raise NotImplementedError
@@ -139,7 +138,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
             ori = translate[ori]
             eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
 
-            ps = ap.interp.poly_spaces['v']
+            ps = self.poly_space
             orders = ps.face_axes_nodes[iep - ps.face_indx[0]]
             eoo = orders % 2
             eoo0, eoo1 = eoo[..., 0], eoo[..., 1]
@@ -153,7 +152,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
             eori[i1] = nm.bitwise_and(eori[i1], eoo0[i1] + 6)
             eori[i1] = nm.bitwise_and(eori[i1], 2*eoo1[i1] + 5)
 
-            ap.ori[iel[:, None], iep] = eori
+            self.ori[iel[:, None], iep] = eori
 
         n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
@@ -170,8 +169,6 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof_per_cell = self.node_desc.bubble.shape[0]
 
-        ap = self.ap
-
         ii = self.region.get_cells()
         remap = prepare_remap(ii, self.domain.cmesh.n_el)
 
@@ -181,7 +178,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         all_dofs = nm.arange(offset, offset + n_dof, dtype=nm.int32)
         all_dofs.shape = (n_cell, n_dof_per_cell)
         iep = self.node_desc.bubble[0]
-        ap.econn[:,iep:] = all_dofs
+        self.econn[:,iep:] = all_dofs
 
         return n_dof, all_dofs, remap
 
@@ -229,7 +226,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         # Hack for tests to pass - the reference coordinates are determined
         # from vertices only - we can use the Lagrange basis context for the
         # moment. The true context for Field.evaluate_at() is not implemented.
-        gps = self.ap.get_poly_space('v', from_geometry=True)
+        gps = self.gel.poly_space
         mesh = self.create_mesh(extra_nodes=False)
 
         ctx = geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
