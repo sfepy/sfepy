@@ -1578,7 +1578,7 @@ class FieldVariable(Variable):
             `integral`.
         step : int, default 0
             The time step (0 means current, -1 previous, ...).
-        derivative : None or 'dt'
+        time_derivative : None or 'dt'
             If not None, return time derivative of the data,
             approximated by the backward finite difference.
         is_trace : bool, default False
