@@ -1051,6 +1051,9 @@ solution (the `hooks`), and for other settings.
 Additional options (including solver selection)::
 
     options = {
+        # int >= 0, uniform mesh refinement level
+        'refinement_level : 0',
+
         # string, output directory
         'output_dir'        : 'output/<output_dir>',
 
