@@ -5,7 +5,6 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct, IndexedStruct, basestr
 from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
-from sfepy.discrete.mass_operator import MassOperator
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
 class StationarySolver(TimeSteppingSolver):
@@ -205,44 +204,6 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
 
     return state
 
-def make_explicit_step(ts, state0, problem, mass, nls_status=None):
-    """
-    Make a step of an explicit time stepping solver.
-    """
-    if ts.step == 0:
-        state0.apply_ebc()
-        state = state0.copy(deep=True)
-
-        # Initialize variables with history.
-        state0.init_history()
-
-    else:
-        problem.time_update(ts)
-
-    ev = problem.get_evaluator()
-    try:
-        vec_r = ev.eval_residual(state0(), is_full=True)
-    except ValueError:
-        output('residual evaluation failed, giving up...')
-        raise
-    else:
-        err = nm.linalg.norm(vec_r)
-        output('residual: %e' % err)
-
-    if ts.step > 0:
-        variables = problem.get_variables()
-        vec_rf = variables.make_full_vec(vec_r, force_value=0.0)
-
-        rhs = -ts.dt * vec_rf + mass.action(state0())
-
-        vec = mass.inverse_action(rhs)
-
-        state = state0.copy(preserve_caches=True)
-        state.set_full(vec)
-        state.apply_ebc()
-
-    return state
-
 def get_min_dt(adt):
     red = adt.red
     while red >= adt.red_max:
@@ -408,35 +369,6 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
         Solve a single time step.
         """
         state = make_implicit_step(ts, state0, self.problem,
-                                   nls_status=nls_status)
-
-        return state
-
-class ExplicitTimeSteppingSolver(SimpleTimeSteppingSolver):
-    """
-    Explicit time stepping solver with a fixed time step.
-    """
-    name = 'ts.explicit'
-
-    __metaclass__ = SolverMeta
-
-    _parameters = SimpleTimeSteppingSolver._parameters + [
-        ('mass', 'term', None, True,
-         'The term for assembling the mass matrix.'),
-        ('lump', 'bool', False, False,
-         'If True, use the lumped mass matrix.'),
-    ]
-
-    def __init__(self, conf, **kwargs):
-        SimpleTimeSteppingSolver.__init__(self, conf, **kwargs)
-
-        self.mass = MassOperator(self.problem, self.conf)
-
-    def solve_step(self, ts, state0, nls_status=None):
-        """
-        Solve a single time step.
-        """
-        state = make_explicit_step(ts, state0, self.problem, self.mass,
                                    nls_status=nls_status)
 
         return state
