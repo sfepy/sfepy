@@ -84,6 +84,15 @@ class Problem(Struct):
 
             mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
             domain = FEDomain(mesh.name, mesh)
+
+            refine = conf.options.get('refinement_level', 0)
+            if refine > 0:
+                for ii in xrange(refine):
+                    output('refine %d...' % ii)
+                    domain = domain.refine()
+                    output('... %d nodes %d elements'
+                           % (domain.shape.n_nod, domain.shape.n_el))
+
             if conf.options.get('ulf', False):
                 domain.mesh.coors_act = domain.mesh.coors.copy()
 
