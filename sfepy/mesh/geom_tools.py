@@ -211,11 +211,13 @@ class geometry(object):
         s = "# nodes\n%d %d 0 0\n" % (len(nodes), self.dim)
         if self.dim == 2:
             ptstr = " %d %f %f\n"
+            ptstr2 = " %d %f %f %d\n"
         else:
             ptstr = " %d %f %f %f\n"
+            ptstr2 = " %d %f %f %f %d\n"
 
         for n, x in enumerate(nodes):
-            s += ptstr % tuple([n + 1] + list(x))
+            s += ptstr % tuple([n + 1] + list(x[:self.dim]))
 
         # facets
         # first write external polygon, then hole polygons and then point in each
@@ -294,7 +296,7 @@ class geometry(object):
                     regions.append(v.getinsidepoint().getxyz()+[x.getn()])
             s += "# regions\n%d\n" % len(regions)
             for i, x in enumerate(regions):
-                s += ptstr % tuple([i + 1], list(x))
+                s += ptstr2 % tuple([i + 1] + list(x))
 
         open(filename, "w").write(s)
 
