@@ -237,6 +237,8 @@ class DotSProductVolumeOperatorWTHTerm(THTerm):
     """
     name = 'dw_volume_dot_w_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
+    arg_shapes = {'material' : '.: N, 1, 1',
+                  'virtual' : (1, 'state'), 'state' : 1}
 
     function = staticmethod(terms.dw_volume_dot_scalar)
 
@@ -283,6 +285,8 @@ class DotSProductVolumeOperatorWETHTerm(ETHTerm):
     """
     name = 'dw_volume_dot_w_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
+    arg_shapes = {'material_0' : '1, 1', 'material_1' : '1, 1',
+                  'virtual' : (1, 'state'), 'state' : 1}
 
     function = staticmethod(terms.dw_volume_dot_scalar)
 

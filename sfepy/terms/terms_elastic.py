@@ -239,6 +239,8 @@ class LinearElasticTHTerm(THTerm):
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
+    arg_shapes = {'material' : '.: N, S, S',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic)
 
@@ -291,6 +293,8 @@ class LinearElasticETHTerm(ETHTerm):
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
+    arg_shapes = {'material_0' : 'S, S', 'material_1' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic)
 
@@ -594,7 +598,7 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     """
     name = 'ev_cauchy_stress_th'
     arg_types = ('ts', 'material', 'parameter')
-    arg_shapes = {}
+    arg_shapes = {'material' : '.: N, S, S', 'parameter' : 'D'}
 
     def get_fargs(self, ts, mats, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -653,7 +657,8 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     """
     name = 'ev_cauchy_stress_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'parameter')
-    arg_shapes = {}
+    arg_shapes = {'material_0' : 'S, S', 'material_1' : '1, 1',
+                  'parameter' : 'D'}
 
     def get_fargs(self, ts, mat0, mat1, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
