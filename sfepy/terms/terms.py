@@ -1150,10 +1150,14 @@ class Term(Struct):
                     sh = arg_shapes[extended_ats]
 
                 if arg_kind.endswith('variable'):
-                    n_el, n_qp, dim, n_en, n_c = self.get_data_shape(arg)
+                    n_el, n_qp, _dim, n_en, n_c = self.get_data_shape(arg)
                     shape = _parse_scalar_shape(sh[0] if isinstance(sh, tuple)
                                                 else sh)
-                    n_ok += shape == n_c
+                    if nm.isinf(shape):
+                        n_ok += 1
+
+                    else:
+                        n_ok += shape == n_c
 
                 elif arg_kind.endswith('material'):
                     if arg is None: # Switched-off opt_material.
