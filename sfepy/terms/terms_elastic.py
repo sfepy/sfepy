@@ -201,11 +201,6 @@ class LinearElasticIsotropicTerm(Term):
 
     function = staticmethod(terms.dw_lin_elastic_iso)
 
-    def check_shapes(self, lam, mu, virtual, state):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        assert_(lam.shape == (n_el, n_qp, 1, 1))
-        assert_(mu.shape == (n_el, n_qp, 1, 1))
-
     def get_fargs(self, lam, mu, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
@@ -244,6 +239,8 @@ class LinearElasticTHTerm(THTerm):
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
+    arg_shapes = {'material' : '.: N, S, S',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic)
 
@@ -296,6 +293,8 @@ class LinearElasticETHTerm(ETHTerm):
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
+    arg_shapes = {'material_0' : 'S, S', 'material_1' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic)
 
@@ -344,11 +343,6 @@ class LinearPrestressTerm(Term):
     arg_shapes = {'material' : 'S, 1', 'virtual' : ('D', None),
                   'parameter' : 'D'}
     modes = ('weak', 'eval')
-
-    def check_shapes(self, mat, virtual):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
-        sym = (dim + 1) * dim / 2
-        assert_(mat.shape == (n_el, n_qp, sym, 1))
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -411,12 +405,6 @@ class LinearStrainFiberTerm(Term):
                   'virtual' : ('D', None)}
 
     function = staticmethod(terms.dw_lin_strain_fib)
-
-    def check_shapes(self, mat1, mat2, virtual):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
-        sym = (dim + 1) * dim / 2
-        assert_(mat1.shape == (n_el, n_qp, sym, sym))
-        assert_(mat2.shape == (n_el, n_qp, dim, 1))
 
     def get_fargs(self, mat1, mat2, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -610,7 +598,7 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     """
     name = 'ev_cauchy_stress_th'
     arg_types = ('ts', 'material', 'parameter')
-    arg_shapes = {}
+    arg_shapes = {'material' : '.: N, S, S', 'parameter' : 'D'}
 
     def get_fargs(self, ts, mats, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -669,7 +657,8 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     """
     name = 'ev_cauchy_stress_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'parameter')
-    arg_shapes = {}
+    arg_shapes = {'material_0' : 'S, S', 'material_1' : '1, 1',
+                  'parameter' : 'D'}
 
     def get_fargs(self, ts, mat0, mat1, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

@@ -175,7 +175,9 @@ class BiotTHTerm(BiotTerm, THTerm):
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
                  ('ts', 'material', 'state', 'virtual'))
-    arg_shapes = {}
+    arg_shapes = {'material' : '.: N, S, 1',
+                  'virtual/grad' : ('D', None), 'state/grad' : 1,
+                  'virtual/div' : (1, None), 'state/div' : 'D'}
     modes = ('grad', 'div')
 
     def get_fargs(self, ts, mats, vvar, svar,
@@ -244,7 +246,9 @@ class BiotETHTerm(BiotTerm, ETHTerm):
     name = 'dw_biot_eth'
     arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),
                  ('ts', 'material_0', 'material_1', 'state', 'virtual'))
-    arg_shapes = {}
+    arg_shapes = {'material_0' : 'S, 1', 'material_1' : '1, 1',
+                  'virtual/grad' : ('D', None), 'state/grad' : 1,
+                  'virtual/div' : (1, None), 'state/div' : 'D'}
     modes = ('grad', 'div')
 
     def get_fargs(self, ts, mat0, mat1, vvar, svar,

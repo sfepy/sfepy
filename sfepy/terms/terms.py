@@ -17,6 +17,7 @@ _match_parameter = re.compile('^parameter(_[_a-zA-Z0-9]+)?$').match
 _match_material = re.compile('^material(_[_a-zA-Z0-9]+)?$').match
 _match_material_opt = re.compile('^opt_material(_[_a-zA-Z0-9]+)?$').match
 _match_material_root = re.compile('(.+)\.(.*)').match
+_match_ts = re.compile('^ts$').match
 
 def get_arg_kinds(arg_types):
     """
@@ -31,7 +32,7 @@ def get_arg_kinds(arg_types):
     -------
     arg_kinds : list of strings
         The argument kinds - one of 'virtual_variable', 'state_variable',
-        'parameter_variable', 'opt_material', 'user'.
+        'parameter_variable', 'opt_material', 'ts', 'user'.
     """
     arg_kinds = []
     for ii, arg_type in enumerate(arg_types):
@@ -52,6 +53,10 @@ def get_arg_kinds(arg_types):
             if ii > 0:
                 msg = 'opt_material at position %d, must be at 0!' % ii
                 raise ValueError(msg)
+
+        elif _match_ts(arg_type):
+            arg_kinds.append('ts')
+
         else:
             arg_kinds.append('user')
 
@@ -1079,10 +1084,134 @@ class Term(Struct):
 
     def check_shapes(self, *args, **kwargs):
         """
-        Default implementation of function to check term argument shapes
-        at run-time.
+        Check term argument shapes at run-time.
         """
-        pass
+        from sfepy.base.base import output
+        from sfepy.mechanics.tensors import dim2sym
+
+        dim = self.region.dim
+        sym = dim2sym(dim)
+
+        def _parse_scalar_shape(sh):
+            if isinstance(sh, basestr):
+                if sh == 'D':
+                    return dim
+
+                elif sh == 'S':
+                    return sym
+
+                elif sh == 'N': # General number.
+                    return nm.inf
+
+                else:
+                    return int(sh)
+
+            else:
+                return sh
+
+        def _parse_tuple_shape(sh):
+            if isinstance(sh, basestr):
+                return tuple((_parse_scalar_shape(ii.strip())
+                              for ii in sh.split(',')))
+
+            else:
+                return (int(sh),)
+
+        arg_kinds = get_arg_kinds(self.ats)
+
+        arg_shapes_list = self.arg_shapes
+        if not isinstance(arg_shapes_list, list):
+            arg_shapes_list = [arg_shapes_list]
+
+        # Loop allowed shapes until a match is found, else error.
+        allowed_shapes = []
+        prev_shapes = {}
+        for _arg_shapes in arg_shapes_list:
+            # Unset shapes are taken from the previous iteration.
+            arg_shapes = copy(prev_shapes)
+            arg_shapes.update(_arg_shapes)
+            prev_shapes = arg_shapes
+
+            allowed_shapes.append(arg_shapes)
+
+            n_ok = 0
+            for ii, arg_kind in enumerate(arg_kinds):
+                if arg_kind in ('user', 'ts'):
+                    n_ok += 1
+                    continue
+
+                arg = args[ii]
+
+                if self.mode is not None:
+                    extended_ats = self.ats[ii] + ('/%s' % self.mode)
+
+                else:
+                    extended_ats = self.ats[ii]
+
+                try:
+                    sh = arg_shapes[self.ats[ii]]
+
+                except KeyError:
+                    sh = arg_shapes[extended_ats]
+
+                if arg_kind.endswith('variable'):
+                    n_el, n_qp, _dim, n_en, n_c = self.get_data_shape(arg)
+                    shape = _parse_scalar_shape(sh[0] if isinstance(sh, tuple)
+                                                else sh)
+                    if nm.isinf(shape):
+                        n_ok += 1
+
+                    else:
+                        n_ok += shape == n_c
+
+                elif arg_kind.endswith('material'):
+                    if arg is None: # Switched-off opt_material.
+                        n_ok += sh is None
+                        continue
+
+                    if sh is None:
+                        continue
+
+                    prefix = ''
+                    if isinstance(sh, basestr):
+                        aux = sh.split(':')
+                        if len(aux) == 2:
+                            prefix, sh = aux
+
+                    shape = _parse_tuple_shape(sh)
+                    ls = len(shape)
+
+                    aarg = nm.asarray(arg)
+
+                    # Substiture general dimension 'N' with actual value.
+                    ij = nm.where(nm.isinf(shape))[0]
+                    if len(ij):
+                        shape = list(shape)
+                        shape[ij] = aarg.shape[-ls+ij]
+                        shape = tuple(shape)
+
+                    if (ls > 1) or (shape[0] > 1):
+                        # Array.
+                        n_ok += shape == aarg.shape[-ls:]
+
+                    elif (ls == 1) and (shape[0] == 1):
+                        # Scalar constant.
+                        from numbers import Number
+                        n_ok += isinstance(arg, Number)
+
+                else:
+                    n_ok += 1
+
+            if n_ok == len(arg_kinds):
+                break
+
+        else:
+            term_str = '%s.%d.%s(%s)' % (self.name, self.integral.order,
+                                         self.region.name, self.arg_str)
+            output('allowed argument shapes for term "%s":' % term_str)
+            output(allowed_shapes)
+            raise ValueError('wrong arguments shapes for "%s" term! (see above)'
+                             % term_str)
 
     def standalone_setup(self):
         from sfepy.discrete import create_adof_conns, Variables
