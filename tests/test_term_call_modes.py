@@ -30,7 +30,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
                 return sym
 
             elif sh == 'N': # General number ;)
-                return 5
+                return 1
 
             else:
                 return int(sh)
