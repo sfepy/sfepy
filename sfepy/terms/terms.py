@@ -1131,6 +1131,9 @@ class Term(Struct):
 
             n_ok = 0
             for ii, arg_kind in enumerate(arg_kinds):
+                if arg_kind == 'user':
+                    n_ok += 1
+                    continue
 
                 arg = args[ii]
 
@@ -1168,16 +1171,18 @@ class Term(Struct):
 
                     shape = _parse_tuple_shape(sh)
 
+                    aarg = nm.asarray(arg)
+
                     # Substiture general dimension 'N' with actual value.
                     ij = nm.where(nm.isinf(shape))[0]
                     if len(ij):
                         shape = list(shape)
-                        shape[ij] = arg.shape[-2+ij]
+                        shape[ij] = aarg.shape[-2+ij]
                         shape = tuple(shape)
 
                     if (len(shape) > 1) or (shape[0] > 1):
                         # Array.
-                        n_ok += shape == arg.shape[-2:]
+                        n_ok += shape == aarg.shape[-2:]
 
                     elif (len(shape) == 1) and (shape[0] == 1):
                         # Scalar constant.
