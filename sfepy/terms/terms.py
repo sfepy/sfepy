@@ -1179,6 +1179,7 @@ class Term(Struct):
                             prefix, sh = aux
 
                     shape = _parse_tuple_shape(sh)
+                    ls = len(shape)
 
                     aarg = nm.asarray(arg)
 
@@ -1186,14 +1187,14 @@ class Term(Struct):
                     ij = nm.where(nm.isinf(shape))[0]
                     if len(ij):
                         shape = list(shape)
-                        shape[ij] = aarg.shape[-2+ij]
+                        shape[ij] = aarg.shape[-ls+ij]
                         shape = tuple(shape)
 
-                    if (len(shape) > 1) or (shape[0] > 1):
+                    if (ls > 1) or (shape[0] > 1):
                         # Array.
-                        n_ok += shape == aarg.shape[-2:]
+                        n_ok += shape == aarg.shape[-ls:]
 
-                    elif (len(shape) == 1) and (shape[0] == 1):
+                    elif (ls == 1) and (shape[0] == 1):
                         # Scalar constant.
                         from numbers import Number
                         n_ok += isinstance(arg, Number)
