@@ -17,6 +17,7 @@ _match_parameter = re.compile('^parameter(_[_a-zA-Z0-9]+)?$').match
 _match_material = re.compile('^material(_[_a-zA-Z0-9]+)?$').match
 _match_material_opt = re.compile('^opt_material(_[_a-zA-Z0-9]+)?$').match
 _match_material_root = re.compile('(.+)\.(.*)').match
+_match_ts = re.compile('^ts$').match
 
 def get_arg_kinds(arg_types):
     """
@@ -31,7 +32,7 @@ def get_arg_kinds(arg_types):
     -------
     arg_kinds : list of strings
         The argument kinds - one of 'virtual_variable', 'state_variable',
-        'parameter_variable', 'opt_material', 'user'.
+        'parameter_variable', 'opt_material', 'ts', 'user'.
     """
     arg_kinds = []
     for ii, arg_type in enumerate(arg_types):
@@ -52,6 +53,10 @@ def get_arg_kinds(arg_types):
             if ii > 0:
                 msg = 'opt_material at position %d, must be at 0!' % ii
                 raise ValueError(msg)
+
+        elif _match_ts(arg_type):
+            arg_kinds.append('ts')
+
         else:
             arg_kinds.append('user')
 
