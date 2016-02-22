@@ -14,6 +14,7 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
     from sfepy.base.base import basestr
     from sfepy.discrete import FieldVariable, Material, Variables, Materials
     from sfepy.discrete.fem import Field
+    from sfepy.solvers.ts import TimeStepper
     from sfepy.mechanics.tensors import dim2sym
 
     omega = domain.regions['Omega']
@@ -49,17 +50,18 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
     materials = []
     variables = []
     for ii, arg_kind in enumerate(arg_kinds):
-        if ats_mode is not None:
-            extended_ats = arg_types[ii] + ('/%s' % ats_mode)
+        if arg_kind != 'ts':
+            if ats_mode is not None:
+                extended_ats = arg_types[ii] + ('/%s' % ats_mode)
 
-        else:
-            extended_ats = arg_types[ii]
+            else:
+                extended_ats = arg_types[ii]
 
-        try:
-            sh = arg_shapes[arg_types[ii]]
+            try:
+                sh = arg_shapes[arg_types[ii]]
 
-        except KeyError:
-            sh = arg_shapes[extended_ats]
+            except KeyError:
+                sh = arg_shapes[extended_ats]
 
         if arg_kind.endswith('variable'):
             shape = _parse_scalar_shape(sh[0] if isinstance(sh, tuple) else sh)
@@ -127,6 +129,11 @@ def make_term_args(arg_shapes, arg_kinds, arg_types, ats_mode, domain,
             materials.append(mat)
             str_args.append(mat.name + '.' + 'c%d' % ii)
             args[mat.name] = mat
+
+        elif arg_kind == 'ts':
+            ts = TimeStepper(0.0, 1.0, 1.0, 5)
+            str_args.append('ts')
+            args['ts'] = ts
 
         else:
             str_args.append('user%d' % ii)
