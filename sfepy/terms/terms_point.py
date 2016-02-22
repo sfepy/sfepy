@@ -71,6 +71,7 @@ class ConcentratedPointLoadTerm(Term):
     """
     name = 'dw_point_load'
     arg_types = ('material', 'virtual')
+    arg_shapes = {'material' : '.: D', 'virtual' : ('D', None)}
     integration = 'point'
 
     @staticmethod
@@ -78,10 +79,6 @@ class ConcentratedPointLoadTerm(Term):
         out[:, 0, :, 0] = mat
 
         return 0
-
-    def check_shapes(self, mat, virtual):
-        mat = nm.asarray(mat)
-        assert_(mat.shape[-1] == virtual.dim)
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

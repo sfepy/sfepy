@@ -477,12 +477,6 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
 
     function = staticmethod(terms.dw_tl_surface_traction)
 
-    def check_shapes(self, mat, virtual, state):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        if mat is not None:
-            assert_(mat.shape == (n_el, n_qp, dim, dim))
-
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         ap, sg = self.get_approximation(virtual)
@@ -528,11 +522,6 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
     integration = 'surface_extra'
 
     function = staticmethod(terms.d_tl_volume_surface)
-
-    def check_shapes(self, parameter):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        assert_(dim == n_c)
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

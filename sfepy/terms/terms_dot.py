@@ -79,21 +79,6 @@ class DotProductVolumeTerm(Term):
 
         return status
 
-    def check_shapes(self, mat, virtual, state):
-        is_vector_scalar = ((virtual.n_components == 1)
-            and (state.n_components == state.dim))\
-            or ((virtual.n_components == virtual.dim)
-            and (state.n_components == 1))
-
-        assert_((virtual.n_components == state.n_components)
-                or is_vector_scalar)
-
-        if mat is not None:
-            n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-            assert_((mat.shape[1:] == (n_qp, 1, 1))
-                    or ((mat.shape[1:] == (n_qp, dim, dim)) and (n_c == dim)))
-            assert_((mat.shape[0] == 1) or (mat.shape[0] == n_el))
-
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vgeo, _ = self.get_mapping(virtual)
@@ -188,6 +173,19 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
     name = 'dw_surface_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
+                   'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'virtual' : (1, None),
+                   'state' : 'D'},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'virtual' : ('D', None),
+                   'state' : 1},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : 'D, D'},
+                  {'opt_material' : None}]
     modes = ('weak', 'eval')
     integration = 'surface'
 
@@ -211,9 +209,6 @@ class BCNewtonTerm(DotProductSurfaceTerm):
     arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
                   'virtual' : (1, 'state'), 'state' : 1}
     mode = 'weak'
-
-    def check_shapes(self, alpha, p_outer, virtual, state):
-        pass
 
     def get_fargs(self, alpha, p_outer, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -351,16 +346,6 @@ class VectorDotGradScalarTerm(Term):
                   {'opt_material' : None}]
     modes = ('v_weak', 's_weak', 'eval')
 
-    def check_shapes(self, coef, vvar, svar):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
-        assert_(n_c == dim)
-        assert_(svar.n_components == 1)
-
-        if coef is not None:
-            assert_((coef.shape[1:] == (n_qp, 1, 1))
-                    or (coef.shape[1:] == (n_qp, dim, dim)))
-            assert_((coef.shape[0] == 1) or (coef.shape[0] == n_el))
-
     def get_fargs(self, coef, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
@@ -484,14 +469,6 @@ class VectorDotScalarTerm(Term):
         status = geo.integrate(out, vec)
 
         return status
-
-    def check_shapes(self, coef, vvar, svar):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
-        assert_(n_c == dim)
-        assert_(svar.n_components == 1)
-        assert_((coef.shape[1:] == (n_qp, dim, 1))
-                or (coef.shape[1:] == (n_qp, 1, dim)))
-        assert_((coef.shape[0] == 1) or (coef.shape[0] == n_el))
 
     def get_fargs(self, coef, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
