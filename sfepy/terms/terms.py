@@ -1079,10 +1079,124 @@ class Term(Struct):
 
     def check_shapes(self, *args, **kwargs):
         """
-        Default implementation of function to check term argument shapes
-        at run-time.
+        Check term argument shapes at run-time.
         """
-        pass
+        from sfepy.base.base import output
+        from sfepy.mechanics.tensors import dim2sym
+
+        dim = self.region.dim
+        sym = dim2sym(dim)
+
+        def _parse_scalar_shape(sh):
+            if isinstance(sh, basestr):
+                if sh == 'D':
+                    return dim
+
+                elif sh == 'S':
+                    return sym
+
+                elif sh == 'N': # General number.
+                    return nm.inf
+
+                else:
+                    return int(sh)
+
+            else:
+                return sh
+
+        def _parse_tuple_shape(sh):
+            if isinstance(sh, basestr):
+                return tuple((_parse_scalar_shape(ii.strip())
+                              for ii in sh.split(',')))
+
+            else:
+                return (int(sh),)
+
+        arg_kinds = get_arg_kinds(self.ats)
+
+        arg_shapes_list = self.arg_shapes
+        if not isinstance(arg_shapes_list, list):
+            arg_shapes_list = [arg_shapes_list]
+
+        # Loop allowed shapes until a match is found, else error.
+        allowed_shapes = []
+        prev_shapes = {}
+        for _arg_shapes in arg_shapes_list:
+            # Unset shapes are taken from the previous iteration.
+            arg_shapes = copy(prev_shapes)
+            arg_shapes.update(_arg_shapes)
+            prev_shapes = arg_shapes
+
+            allowed_shapes.append(arg_shapes)
+
+            n_ok = 0
+            for ii, arg_kind in enumerate(arg_kinds):
+
+                arg = args[ii]
+
+                if self.mode is not None:
+                    extended_ats = self.ats[ii] + ('/%s' % self.mode)
+
+                else:
+                    extended_ats = self.ats[ii]
+
+                try:
+                    sh = arg_shapes[self.ats[ii]]
+
+                except KeyError:
+                    sh = arg_shapes[extended_ats]
+
+                if arg_kind.endswith('variable'):
+                    n_el, n_qp, dim, n_en, n_c = self.get_data_shape(arg)
+                    shape = _parse_scalar_shape(sh[0] if isinstance(sh, tuple)
+                                                else sh)
+                    n_ok += shape == n_c
+
+                elif arg_kind.endswith('material'):
+                    if arg is None: # Switched-off opt_material.
+                        n_ok += sh is None
+                        continue
+
+                    if sh is None:
+                        continue
+
+                    prefix = ''
+                    if isinstance(sh, basestr):
+                        aux = sh.split(':')
+                        if len(aux) == 2:
+                            prefix, sh = aux
+
+                    shape = _parse_tuple_shape(sh)
+
+                    # Substiture general dimension 'N' with actual value.
+                    ij = nm.where(nm.isinf(shape))[0]
+                    if len(ij):
+                        shape = list(shape)
+                        shape[ij] = arg.shape[-2+ij]
+                        shape = tuple(shape)
+
+                    if (len(shape) > 1) or (shape[0] > 1):
+                        # Array.
+                        n_ok += shape == arg.shape[-2:]
+
+                    elif (len(shape) == 1) and (shape[0] == 1):
+                        # Scalar constant.
+                        from numbers import Number
+                        n_ok += isinstance(arg, Number)
+
+                else:
+                    n_ok += 1
+
+            if n_ok == len(arg_kinds):
+                break
+
+        else:
+            term_str = '%s.%d.%s(%s)' % (self.name, self.integral.order,
+                                         self.region.name, self.arg_str)
+            output('allowed argument shapes for term "%s":' % term_str)
+            output(allowed_shapes)
+            raise ValueError('wrong arguments shapes for "%s" term! (see above)'
+                             % term_str)
 
     def standalone_setup(self):
         from sfepy.discrete import create_adof_conns, Variables
