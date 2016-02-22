@@ -297,7 +297,7 @@ class GradTerm(Term):
     """
     name = 'ev_grad'
     arg_types = ('parameter',)
-    arg_shapes = [{'parameter' : 1}, {'parameter' : 'D'}]
+    arg_shapes = {'parameter' : 'N'}
 
     @staticmethod
     def function(out, grad, vg, fmode):
