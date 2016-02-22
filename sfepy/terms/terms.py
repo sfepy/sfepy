@@ -1136,7 +1136,7 @@ class Term(Struct):
 
             n_ok = 0
             for ii, arg_kind in enumerate(arg_kinds):
-                if arg_kind == 'user':
+                if arg_kind in ('user', 'ts'):
                     n_ok += 1
                     continue
 
