@@ -2273,14 +2273,18 @@ class NEUMeshIO(MeshIO):
 
         fd = open(self.filename, 'r')
 
-        row = fd.readline().split()
+        row = fd.readline()
         while 1:
             if not row: break
-            if len(row) == 0: continue
+            row = row.split()
+
+            if len(row) == 0:
+                row = fd.readline()
+                continue
 
             if (row[0] == 'NUMNP'):
                 row = fd.readline().split()
-                n_nod, n_el, dim = row[0], row[1], int(row[4])
+                n_nod, n_el, dim = int(row[0]), int(row[1]), int(row[4])
 
             elif (row[0] == 'NODAL'):
                 row = fd.readline().split()
@@ -2334,8 +2338,7 @@ class NEUMeshIO(MeshIO):
                 row = fd.readline().split()
                 assert_(row[0] == 'ENDOFSECTION')
 
-            else:
-                row = fd.readline().split()
+            row = fd.readline()
 
         fd.close()
 
@@ -2343,18 +2346,21 @@ class NEUMeshIO(MeshIO):
             print 'wrong total number of group elements! (%d == %d)'\
                   % (int(n_el), len(group_n_els))
 
-        mat_ids = [None] * int(n_el)
+        mat_ids = nm.zeros(n_el, dtype=nm.int32)
         for ii, els in enumerate(groups):
-            for iel in els:
-                mat_ids[int(iel) - 1] = group_ids[ii]
+            els = nm.array(els, dtype=nm.int32)
+            mat_ids[els - 1] = group_ids[ii]
 
         for elem in el.keys():
             if len(el[elem]) > 0:
-                for iel in el[elem]:
-                    for ii in range(len(iel)):
-                        iel[ii] = int(iel[ii]) - 1
-                    iel[-1] = mat_ids[iel[-1]]
-                conns_in.append(el[elem])
+                els = nm.array(el[elem], dtype=nm.int32)
+                els[:, :-1] -= 1
+                els[:, -1] = mat_ids[els[:, -1]-1]
+
+                if elem == '3_8':
+                    els = els[:, [0, 1, 3, 2, 4, 5, 7, 6, 8]]
+
+                conns_in.append(els)
                 descs.append(elem)
 
         nod = nm.array(nod, nm.float64)
