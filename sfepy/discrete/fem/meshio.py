@@ -4,7 +4,7 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import (complex_types, dict_from_keys_init,
-                             assert_, is_derived_class,
+                             assert_, is_derived_class, ordered_iteritems,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils \
@@ -66,11 +66,16 @@ supported_cell_types = {
     'function' : ['user'],
 }
 
-def output_writable_meshes():
-    output('Supported writable mesh formats are:')
-    for key, val in supported_capabilities.iteritems():
-        if 'w' in val:
-            output(key)
+def output_mesh_formats(mode='r'):
+    for key, vals in ordered_iteritems(supported_formats):
+        if isinstance(vals, basestr):
+            vals = [vals]
+
+        for val in vals:
+            caps = supported_capabilities[val]
+            if mode in caps:
+                output('%s (%s), cell types: %s'
+                       % (val, key, supported_cell_types[val]))
 
 def split_conns_mat_ids(conns_in):
     """
