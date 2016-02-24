@@ -715,7 +715,7 @@ def gen_mesh_from_voxels(voxels, dims, etype='q'):
         Finite element mesh.
     """
 
-    dims = dims.squeeze()
+    dims = nm.array(dims).squeeze()
     dim = len(dims)
     nddims = nm.array(voxels.shape) + 2
 
@@ -801,9 +801,9 @@ def gen_mesh_from_voxels(voxels, dims, etype='q'):
 
     mesh = Mesh.from_data('voxel_data',
                           coors, nm.ones((nnod,), dtype=nm.int32),
-                          {0: nm.ascontiguousarray(elems)},
-                          {0: nm.ones((nel,), dtype=nm.int32)},
-                          {0: '%d_%d' % (dim, eltab[eid])})
+                          [nm.ascontiguousarray(elems)],
+                          [nm.ones((nel,), dtype=nm.int32)],
+                          ['%d_%d' % (dim, eltab[eid])])
 
     return mesh
 
