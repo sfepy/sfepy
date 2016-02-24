@@ -882,6 +882,7 @@ Utility scripts
    src/script/plot_times
    src/script/save_basis
    src/script/show_authors
+   src/script/show_mesh_info.rst
    src/script/show_terms_use
    src/script/sync_module_docs
    src/script/tile_periodic_mesh
@@ -937,7 +938,6 @@ This package implements various PDE discretization schemes (FEM or IGA).
    src/sfepy/discrete/evaluate_variable
    src/sfepy/discrete/functions
    src/sfepy/discrete/integrals
-   src/sfepy/discrete/mass_operator
    src/sfepy/discrete/materials
    src/sfepy/discrete/parse_equations
    src/sfepy/discrete/parse_regions
@@ -981,7 +981,6 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/extmods/lobatto_bases
    src/sfepy/discrete/fem/facets
    src/sfepy/discrete/fem/fe_surface
-   src/sfepy/discrete/fem/fea
    src/sfepy/discrete/fem/fields_base
    src/sfepy/discrete/fem/fields_hierarchic
    src/sfepy/discrete/fem/fields_nodal
