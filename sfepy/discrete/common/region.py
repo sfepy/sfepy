@@ -645,8 +645,8 @@ class Region(Struct):
             ip = nm.in1d(cells, pcells, assume_unique=False)
             cells = cells[ip]
 
-            counts = nm.diff(offs).astype(nm.uint32)
-            pos = nm.repeat(nm.arange(facets.shape[0], dtype=nm.uint32), counts)
+            counts = nm.diff(offs).astype(nm.int32)
+            pos = nm.repeat(nm.arange(facets.shape[0], dtype=nm.int32), counts)
             new_counts = nm.bincount(pos, weights=ip).astype(nm.uint32)
             offs = nm.cumsum(nm.r_[0, new_counts], dtype=nm.uint32)
 
