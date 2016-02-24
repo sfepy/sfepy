@@ -1184,10 +1184,11 @@ class Term(Struct):
                     aarg = nm.asarray(arg)
 
                     # Substiture general dimension 'N' with actual value.
-                    ij = nm.where(nm.isinf(shape))[0]
-                    if len(ij):
+                    iinfs = nm.where(nm.isinf(shape))[0]
+                    if len(iinfs):
                         shape = list(shape)
-                        shape[ij] = aarg.shape[-ls+ij]
+                        for iinf in iinfs:
+                            shape[iinf] = aarg.shape[-ls+iinf]
                         shape = tuple(shape)
 
                     if (ls > 1) or (shape[0] > 1):
