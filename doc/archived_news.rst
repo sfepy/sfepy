@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **28.11.2014** Version 2014.4 released (preliminary support for 1D problems,
+  data probes using pyVTK library, etc.), see :ref:`release notes
+  <2014.3-2014.4>`.
+
 * **25.09.2014** Version 2014.3 released (isogeometric analysis (IGA) speed-up
   by C implementation of NURBS basis evaluation, generalized linear combination
   boundary conditions that work between different fields/variables and support
