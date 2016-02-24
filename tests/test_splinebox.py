@@ -70,7 +70,7 @@ class Test(TestCommon):
         """
         Check position of a given vertex in the deformed mesh.
         """
-        mesh = Mesh.from_file('meshes/2d/square_tri1.mesh')
+        mesh = Mesh.from_file(data_dir + '/meshes/2d/square_tri1.mesh')
         spb = SplineBox([[-1, 1], [-1, 0.6]], mesh.coors, nsg=[2,1])
         spb.move_control_point(1, [0.1, -0.2])
         spb.move_control_point(2, [0.2, -0.3])
@@ -114,7 +114,7 @@ class Test(TestCommon):
         sp_t = BSpline(3, is_cyclic=False)
         sp_t.approximate(line_t, knots=kn_bt)
 
-        mesh = Mesh.from_file('meshes/2d/square_tri1.mesh')
+        mesh = Mesh.from_file(data_dir + '/meshes/2d/square_tri1.mesh')
         spb = SplineRegion2D([sp_b, sp_r, sp_t, sp_l], mesh.coors)
         spb.move_control_point(5, [-.2, .1])
         spb.move_control_point(10, [-.3, .2])
