@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Print various inforamation about a mesh.
+Print various information about a mesh.
 """
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
