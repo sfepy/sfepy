@@ -1,5 +1,213 @@
 # created: 20.07.2007 (-1)
 
+.. _2015.4-2016.1:
+
+from 2015.4 to 2016.1
+=====================
+
+- merge pull request #307 from 'vlukes/mesh_generators'
+
+  - fix gen_mesh_from_voxels()
+  - new tests of gen_mesh_from_geom(), gen_tiled_mesh(), gen_mesh_from_voxels()
+
+- merge branch 'auto-check-material-shapes'
+
+  - implement general Term.check_shapes() - check term argument shapes at
+    run-time
+  - update terms to use generic variable size in .arg_shapes where appropriate
+
+    - update IntegrateVolumeTerm, IntegrateSurfaceTerm, VolumeTerm,
+      SurfaceTerm, VolumeSurfaceTerm, IntegrateMatTerm, SumNodalValuesTerm,
+      GradTerm
+
+  - remove .check_shapes() from all terms having it
+
+    - remove it from DotProductVolumeTerm, BCNewtonTerm,
+      VectorDotGradScalarTerm, VectorDotScalarTerm, LinearElasticIsotropicTerm,
+      LinearPrestressTerm, LinearStrainFiberTerm, SurfaceTractionTLTerm,
+      VolumeSurfaceTLTerm, ConcentratedPointLoadTerm
+    - new .arg_shapes class attribute in DotProductSurfaceTerm,
+      ConcentratedPointLoadTerm
+
+  - update LinearPointSpringTerm for new .arg_shapes class attribute
+
+    - change special material argument to a single float
+    - update tests/test_elasticity_small_strain.py
+
+  - update get_arg_kinds() to distinguish 'ts' argument, new _match_ts
+  - update tests/test_term_call_modes.py for TimeStepper ('ts') term argument -
+    update make_term_args()
+  - new/fill-in .arg_shapes class attributes in time history terms
+
+    - update BiotTHTerm, BiotETHTerm, DotSProductVolumeOperatorWTHTerm,
+      DotSProductVolumeOperatorWETHTerm, LinearElasticTHTerm,
+      LinearElasticETHTerm, CauchyStressTHTerm, CauchyStressETHTerm
+
+  - change 'N' value to 1 in _parse_scalar_shape() in make_term_args() - fix
+    for time history terms
+
+- merge pull request #306 from 'vlukes/fix-gen_mesh_from_geom'
+
+  - fix to_poly_file() in geom_tools.py
+  - fix gen_mesh_from_geom(), remove gen_mesh_from_poly()
+
+- merge branch 'remove-ts-explicit'
+
+  - remove make_explicit_step(), ExplicitTimeSteppingSolver
+  - remove MassOperator and sfepy/discrete/mass_operator.py
+  - update time_poisson_explicit.py to use ts.simple
+
+- merge pull request #304 from 'vlukes/splines'
+
+  - new documentation to SplineBox and SplineRegion2D classes
+  - update bspline.py, new SplineRegion2D in splinebox.py
+
+- merge branch 'no-fea'
+
+  - replace Interpolant by PolySpace in GeometryElement
+
+    - GeometryElement.interp -> .poly_space
+    - update FEDomain.__init__() and affected code
+
+  - move set_mesh_coors() into sfepy/discrete/fem/fields_base.py - update
+    Problem.set_mesh_coors()
+  - move Approximation into FEField and subclasses, part 1
+
+    - update volume fields
+    - prepare for volume-only PolySpace in fields
+    - remove imports of fea.py
+    - sfepy/discrete/fem/fea.py:
+
+      - move eval_nodal_coors(), _interp_to_faces() into
+        sfepy/discrete/fem/fields_base.py
+      - remove Interpolant
+      - remove Approximation.eval_extra_coor(), .get_connectivity(),
+        .get_poly_space()
+      - move into FEField:
+
+        - Approximation.clear_qp_base(), .get_qp(), .get_base()
+        - Approximation._create_bqp(), .create_bqp() into new
+          FEField.create_bqp()
+        - Approximation.describe_geometry() into FEField.create_mapping()
+
+    - new FEField attributes:
+
+      - from Approximation .surface_data, .point_data, .ori, .efaces, .econn
+      - .poly_space
+
+    - update FEField.__init__(), ._setup_esurface(), .setup_coors(),
+      .get_data_shape(), .linearize(), .interp_to_qp()
+    - replace Interpolant by PolySpace in VolumeField
+    - update VolumeField._create_interpolant(), ._init_econn(),
+      ._setup_vertex_dofs(), .setup_extra_data(), .get_econn()
+    - remove VolumeField._setup_approximations()
+    - rename VolumeField._setup_surface_data(), ._setup_point_data() to
+      .setup_surface_data(), .setup_point_data(), merge with
+      Approximation.setup_surface_data(), .setup_point_data()
+    - update H1NodalMixin._setup_facet_orientations(), ._setup_facet_dofs(),
+      ._setup_bubble_dofs(), .create_basis_context()
+    - update H1NodalVolumeField.interp_v_vals_to_n_vals()
+    - update H1HierarchicVolumeField._init_econn(),
+      ._setup_facet_orientations(), ._setup_facet_dofs(),
+      ._setup_bubble_dofs(), .create_basis_context()
+    - update eval_in_els_and_qp(), create_expression_output()
+
+  - move Approximation into FEField and subclasses, part 2
+
+    - update surface integration/mappings for volume-only PolySpace in fields
+    - update FEField.get_data_shape(), .create_bqp(), .create_mapping()
+    - update FEMapping.__init__() - new .indices attribute
+    - new SurfaceMapping.set_basis_indices(), .get_base()
+
+  - move Approximation into FEField and subclasses, part 3
+
+    - update FEField.create_mesh(), VolumeField.average_qp_to_vertices()
+    - update compute_nodal_normals()
+    - update FieldVariable.get_element_diameters()
+    - update describe_geometry() in membranes.py
+
+  - move Approximation into FEField and subclasses, part 4
+
+    - remove H1DiscontinuousField._setup_approximations()
+    - update H1DiscontinuousField._setup_global_base()
+
+  - move Approximation into FEField and subclasses, part 5
+
+    - update surface fields
+    - fix .surface_data, .point_data initialization in FEField.__init__()
+    - update FEField.get_qp(), .create_mapping()
+    - update SurfaceField._create_interpolant(), .setup_extra_data(),
+      ._init_econn(), ._setup_vertex_dofs(), .get_econn(),
+      .average_qp_to_vertices()
+    - remove SurfaceField._setup_approximations()
+
+  - remove sfepy/discrete/fem/fea.py
+  - update FieldVariable.get_approximation() to return Field
+  - new FEField.get_connectivity() convenience alias
+  - update sfepy/parallel/ code for no Approximation
+
+    - update create_task_dof_maps(), distribute_field_dofs(),
+      distribute_fields_dofs(), get_local_ordering(), plot_partitioning(),
+      plot_local_dofs()
+
+  - script/save_basis.py: update save_basis_on_mesh() for no Approximation
+  - update tests/test_poly_spaces.py for no Approximation
+
+- merge branch 'active-fibres-update'
+
+  - update HyperElasticBase to pass kwargs to stress and tangent modulus
+    functions - update HyperElasticBase.compute_stress(), .compute_tan_mod()
+  - new create_omega(), compute_fibre_strain()
+  - update FibresActiveTLTerm - move fibre_function() into the class, cache data
+
+    - remove fibre_function()
+    - new _setdefault_fibre_data()
+    - update FibresActiveTLTerm.get_fargs(), .stress_function(),
+      tan_mod_function()
+
+- merge branch 'parallel-pc-fieldsplit'
+
+  - support 'fieldsplit' preconditioner in PETScKrylovSolver
+
+    - new .set_field_split()
+    - update .__init__(), .create_ksp()
+
+  - setup 'fieldsplit' preconditioner in biot_parallel_interactive.py example
+  - update docstring of biot_parallel_interactive.py example
+
+- docs:
+
+  - sync IGA section with current state
+  - document refinement_level configuration option in users guide
+  - stop omitting time_poisson_explicit.py in script/gen_gallery.py
+  - sync module index of developer guide with current sources
+
+- scripts:
+
+  - new script/show_mesh_info.py
+  - script/convert_mesh.py: update --list option to list also readable formats
+
+    - rename & update output_writable_meshes() -> output_mesh_formats()
+
+- examples and tests:
+
+  - parallel examples: fix race condition when output directory does not exist
+  - adjust final time in time_poisson_explicit.py
+
+- miscellaneous updates:
+
+  - merge branch 'fix-mat-by-region-for-surfaces2'
+
+    - update Region.get_cells() to obey parent region
+    - fix Region.get_cell_indices() for non-disjoint, non-subset cells
+
+  - remove useless FEField._create_interpolant()
+  - remove obsolete SurfaceLaplaceLayerTerm, SurfaceCoupleLayerTerm
+  - update Problem.from_conf() to support refinement_level configuration option
+  - fix argument name in docstring of FieldVariable.evaluate()
+  - fix NEUMeshIO.read() for empty lines and 3_8 cells
+  - fix Region.get_facet_indices() for safe numpy casting on windows10
+
 .. _2015.3-2015.4:
 
 from 2015.3 to 2015.4
