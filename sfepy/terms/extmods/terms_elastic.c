@@ -338,8 +338,8 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
     fmf_freeDestroy( &gtd );
     fmf_freeDestroy( &gtdg );
   } else {
-    fmf_freeDestroy( &res ); 
-    fmf_freeDestroy( &stress ); 
+    fmf_freeDestroy( &res );
+    fmf_freeDestroy( &stress );
   }
 
   return( ret );
@@ -354,12 +354,10 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 		     FMField *strainU, FMField *mtxD, Mapping *vg )
 {
-  int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
+  int32 ii, sym, nQP, ret = RET_OK;
   FMField *std = 0, *stds = 0;
 
   nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
   sym = mtxD->nRow;
 
   fmf_createAlloc( &std, 1, nQP, 1, sym );
@@ -464,11 +462,7 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
 int32 de_cauchy_strain( FMField *out, FMField *strain,
 			Mapping *vg, int32 mode )
 {
-  int32 ii, dim, sym, nQP, ret = RET_OK;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-  sym = (dim + 1) * dim / 2;
+  int32 ii, ret = RET_OK;
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
@@ -537,7 +531,7 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, dim, sym, nQP, ret = RET_OK;
+  int32 ii, dim, nQP, ret = RET_OK;
   FMField *st = 0, *disG = 0;
 
   state->val = FMF_PtrFirst( state ) + offset;
@@ -545,7 +539,6 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
 
-  sym = (dim + 1) * dim / 2;
   fmf_createAlloc( &st, 1, 1, nEP, dim );
   fmf_createAlloc( &disG, 1, nQP, dim, dim );
 
@@ -562,8 +555,8 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
-  fmf_freeDestroy( &disG ); 
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &disG );
 
   return( ret );
 }
