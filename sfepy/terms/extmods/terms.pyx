@@ -251,6 +251,11 @@ cdef extern from 'terms.h':
          'd_lin_elastic'(FMField *out, float64 coef, FMField *strainV,
                          FMField *strainU, FMField *mtxD, Mapping *vg)
 
+    cdef int32 _d_sd_lin_elastic \
+         'd_sd_lin_elastic'(FMField *out, float64 coef, FMField *gradV,
+                            FMField *gradU, FMField *gradW, FMField *mtxD,
+                            Mapping *vg)
+
     cdef int32 _dw_lin_prestress \
          'dw_lin_prestress'(FMField *out, FMField *stress, Mapping *vg)
 
@@ -1361,6 +1366,26 @@ def d_lin_elastic(np.ndarray out not None,
     array2fmfield4(_mtx_d, mtx_d)
 
     ret = _d_lin_elastic(_out, coef, _strain_u, _strain_v, _mtx_d, cmap.geo)
+    return ret
+
+def d_sd_lin_elastic(np.ndarray out not None,
+                     float64 coef,
+                     np.ndarray grad_v not None,
+                     np.ndarray grad_u not None,
+                     np.ndarray grad_w not None,
+                     np.ndarray mtx_d not None,
+                     CMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _grad_u[1], _grad_v[1], _grad_w[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_grad_v, grad_v)
+    array2fmfield4(_grad_w, grad_w)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _d_sd_lin_elastic(_out, coef, _grad_u, _grad_v, _grad_w,
+                            _mtx_d, cmap.geo)
     return ret
 
 def dw_lin_prestress(np.ndarray out not None,
