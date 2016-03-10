@@ -1,4 +1,6 @@
 import sys
+sys.path.append('.')
+
 import numpy as nm
 from sfepy.base.base import Struct
 
@@ -11,11 +13,10 @@ nm_f64_eps = nm.finfo(nm.float64).eps
 def to_ndarray(a):
     if a is None:
         return None
-    elif nm.isscalar(a):
-        return nm.array([a])
-    elif type(a) is not nm.ndarray:
-        return nm.array(a)
     else:
+        a = nm.asarray(a)
+        if len(a.shape) == 0:
+            a = a.reshape(1)
         return a
 
 class BSpline(Struct):
@@ -225,7 +226,7 @@ class BSpline(Struct):
             The knot vector.
         """
         self.knot_type = 'userdef'
-        self.knots = knots
+        self.knots = to_ndarray(knots)
 
     def get_knot_vector(self):
         """
@@ -348,8 +349,7 @@ class BSpline(Struct):
             If True, label control points.
         """
         if self.curve_coors is None:
-            print 'curve coordinates not evaluated!'
-            raise ValueError
+            self.eval()
 
         cc = self.curve_coors
         cp = self.cp_coors
