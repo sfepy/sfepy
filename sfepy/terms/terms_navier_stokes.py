@@ -28,8 +28,9 @@ class DivGradTerm(Term):
     name = 'dw_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
-    arg_shapes = {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
-                  'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : None}]
     modes = ('weak', 'eval')
 
     function = staticmethod(terms.term_ns_asm_div_grad)
