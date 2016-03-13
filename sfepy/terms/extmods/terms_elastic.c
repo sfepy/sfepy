@@ -338,8 +338,8 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
     fmf_freeDestroy( &gtd );
     fmf_freeDestroy( &gtdg );
   } else {
-    fmf_freeDestroy( &res ); 
-    fmf_freeDestroy( &stress ); 
+    fmf_freeDestroy( &res );
+    fmf_freeDestroy( &stress );
   }
 
   return( ret );
@@ -354,12 +354,10 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 		     FMField *strainU, FMField *mtxD, Mapping *vg )
 {
-  int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
+  int32 ii, sym, nQP, ret = RET_OK;
   FMField *std = 0, *stds = 0;
 
   nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
   sym = mtxD->nRow;
 
   fmf_createAlloc( &std, 1, nQP, 1, sym );
@@ -387,6 +385,125 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
   fmf_freeDestroy( &stds );
 
   return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "d_sd_lin_elastic"
+int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
+		       FMField *gradU, FMField *gradW, FMField *mtxD,
+                       Mapping *vg)
+{
+  int32 ii, i, j, iqp, dim, dim2, nQP, nEL, ret = RET_OK;
+  float64 *pD, *pDf, divw[vg->bfGM->nLev], *pw, *pw2;
+  FMField *std = 0, *stds = 0, *mtxDf = 0, *dgw = 0;
+  FMField gradu[1], gradv[1];
+  int32 dtab_2d[4] = {0, 2, 2, 1}, dtab_3d[9] = {0, 3, 4, 3, 1, 5, 4, 5, 2};
+
+  nEL = out->nCell;
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+  dim2 = dim * dim;
+
+  fmf_createAlloc(&std, 1, nQP, 1, dim2);
+  fmf_createAlloc(&stds, 1, nQP, 1, 1);
+  fmf_createAlloc(&dgw, 1, nQP, dim2, dim2);
+  fmf_createAlloc(&mtxDf, 1, nQP, dim2, dim2);
+
+  gradv->nAlloc = -1;
+  fmf_pretend(gradv, nEL, nQP, dim2, 1, gradV->val0);
+  gradu->nAlloc = -1;
+  fmf_pretend(gradu, nEL, nQP, dim2, 1, gradU->val0);
+
+  for (ii = 0; ii < nEL; ii++) {
+    FMF_SetCell(out, ii);
+    FMF_SetCell(mtxD, ii);
+    FMF_SetCell(vg->det, ii);
+    FMF_SetCell(gradv, ii);
+    FMF_SetCell(gradu, ii);
+    FMF_SetCell(gradW, ii);
+
+    if (dim == 2) {
+      for (iqp = 0; iqp < nQP; iqp++) {
+        pDf = FMF_PtrLevel(mtxDf, iqp);
+        pw = FMF_PtrLevel(gradW, iqp);
+        pw2 = FMF_PtrLevel(dgw, iqp);
+        divw[iqp] = pw[0] + pw[3];
+        for (j = 0; j < dim2; j++) {
+          pD = FMF_PtrLevel(mtxD, iqp) + dtab_2d[j] * 3;
+          pDf[0] = pD[0];
+          pDf[1] = pD[2];
+          pDf[2] = pD[2];
+          pDf[3] = pD[1];
+          pw2[0] = pDf[0] * pw[0] + pDf[1] * pw[2];
+          pw2[2] = pDf[0] * pw[1] + pDf[1] * pw[3];
+          pw2[1] = pDf[2] * pw[0] + pDf[3] * pw[2];
+          pw2[3] = pDf[2] * pw[1] + pDf[3] * pw[3];
+          pDf += dim2;
+          pw2 += dim2;
+        } // for (j)
+      } // for (iqp)
+    }
+    else {
+      for (iqp = 0; iqp < nQP; iqp++) {
+        pDf = FMF_PtrLevel(mtxDf, iqp);
+        pw = FMF_PtrLevel(gradW, iqp);
+        pw2 = FMF_PtrLevel(dgw, iqp);
+        divw[iqp] = pw[0] + pw[4] + pw[8];
+        for (j = 0; j < dim2; j++) {
+          pD = FMF_PtrLevel(mtxD, iqp) + dtab_3d[j] * 6;
+          pDf[0] = pD[0];
+          pDf[1] = pD[3];
+          pDf[2] = pD[4];
+          pDf[3] = pD[3];
+          pDf[4] = pD[1];
+          pDf[5] = pD[5];
+          pDf[6] = pD[4];
+          pDf[7] = pD[5];
+          pDf[8] = pD[2];
+          pw2[0] = pDf[0] * pw[0] + pDf[1] * pw[3] + pDf[2] * pw[6];
+          pw2[3] = pDf[0] * pw[1] + pDf[1] * pw[4] + pDf[2] * pw[7];
+          pw2[6] = pDf[0] * pw[2] + pDf[1] * pw[5] + pDf[2] * pw[8];
+          pw2[1] = pDf[3] * pw[0] + pDf[4] * pw[3] + pDf[5] * pw[6];
+          pw2[4] = pDf[3] * pw[1] + pDf[4] * pw[4] + pDf[5] * pw[7];
+          pw2[7] = pDf[3] * pw[2] + pDf[4] * pw[5] + pDf[5] * pw[8];
+          pw2[2] = pDf[6] * pw[0] + pDf[7] * pw[3] + pDf[8] * pw[6];
+          pw2[5] = pDf[6] * pw[1] + pDf[7] * pw[4] + pDf[8] * pw[7];
+          pw2[8] = pDf[6] * pw[2] + pDf[7] * pw[5] + pDf[8] * pw[8];
+          pDf += dim2;
+          pw2 += dim2;
+        } // for (j)
+      } // for (iqp)
+    }
+
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pD = FMF_PtrLevel(mtxDf, iqp);
+      pw = FMF_PtrLevel(dgw, iqp);
+      pw2 = FMF_PtrLevel(dgw, iqp);
+      for (i = 0; i < dim2; i++) {
+        for (j = 0; j < dim2; j++) {
+          pD[j] = pD[j] * divw[iqp] - pw[j] - pw2[j * dim2];
+        } // for (j)
+        pD += dim2;
+        pw += dim2;
+        pw2 += 1;
+      } // for (i)
+    } // for (iqp)
+
+    fmf_mulATB_nn(std, gradv, mtxDf);
+    fmf_mulAB_nn(stds, std, gradu);
+    fmf_sumLevelsMulF(out, stds, vg->det->val);
+
+    ERR_CheckGo(ret);
+  }
+
+  // E.g. 1/dt.
+  fmfc_mulC(out, coef);
+
+ end_label:
+  fmf_freeDestroy(&std);
+  fmf_freeDestroy(&stds);
+
+  return(ret);
 }
 
 #undef __FUNC__
@@ -464,11 +581,7 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
 int32 de_cauchy_strain( FMField *out, FMField *strain,
 			Mapping *vg, int32 mode )
 {
-  int32 ii, dim, sym, nQP, ret = RET_OK;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-  sym = (dim + 1) * dim / 2;
+  int32 ii, ret = RET_OK;
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
@@ -537,7 +650,7 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, dim, sym, nQP, ret = RET_OK;
+  int32 ii, dim, nQP, ret = RET_OK;
   FMField *st = 0, *disG = 0;
 
   state->val = FMF_PtrFirst( state ) + offset;
@@ -545,7 +658,6 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
 
-  sym = (dim + 1) * dim / 2;
   fmf_createAlloc( &st, 1, 1, nEP, dim );
   fmf_createAlloc( &disG, 1, nQP, dim, dim );
 
@@ -562,8 +674,8 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
-  fmf_freeDestroy( &disG ); 
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &disG );
 
   return( ret );
 }

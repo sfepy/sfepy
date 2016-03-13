@@ -35,7 +35,7 @@ int32 dq_state_in_qp( FMField *out, FMField *state, int32 offset,
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
+  fmf_freeDestroy( &st );
 
   return( ret );
 }
@@ -45,12 +45,10 @@ int32 dq_state_in_qp( FMField *out, FMField *state, int32 offset,
 int32 dq_grad( FMField *out, FMField *state, int32 offset,
 	       Mapping *vg, int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, nQP, ret = RET_OK;
+  int32 ii, ret = RET_OK;
   FMField *st = 0;
 
   state->val = FMF_PtrFirst( state ) + offset;
-
-  nQP = vg->bfGM->nLev;
 
   fmf_createAlloc( &st, 1, 1, nEP, out->nCol );
 
@@ -107,7 +105,7 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
+  fmf_freeDestroy( &st );
 
   return( ret );
 }

@@ -35,7 +35,7 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
       }
     }
     break;
-    
+
   case 2:
     for (iqp = 0; iqp < nQP; iqp++) {
       pg1 = FMF_PtrLevel( gc, iqp );
@@ -51,7 +51,7 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
       }
     }
     break;
-    
+
   case 1:
     for (iqp = 0; iqp < nQP; iqp++) {
       pg1 = FMF_PtrLevel(gc, iqp);
@@ -70,7 +70,7 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
   default:
     errput( ErrHead "ERR_Switch\n" );
     return( RET_Fail );
-  }    
+  }
   return( RET_OK );
 }
 
@@ -101,7 +101,7 @@ int32 laplace_act_g_m( FMField *out, FMField *gc, FMField *mtx )
       pg2 = pg1 + nEP;
       pg3 = pg2 + nEP;
       pout = FMF_PtrLevel( out, iqp );
-      
+
       if (mtx->nLev == nQP) {
 	pmtx = FMF_PtrLevel( mtx, iqp );
       } else {
@@ -127,7 +127,7 @@ int32 laplace_act_g_m( FMField *out, FMField *gc, FMField *mtx )
       pg1 = FMF_PtrLevel( gc, iqp );
       pg2 = pg1 + nEP;
       pout = FMF_PtrLevel( out, iqp );
-      
+
       if (mtx->nLev == nQP) {
 	pmtx = FMF_PtrLevel( mtx, iqp );
       } else {
@@ -196,7 +196,7 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
       pg1 = FMF_PtrLevel( gc, iqp );
       pg2 = pg1 + nEP;
       pg3 = pg2 + nEP;
-      
+
       pmtx = FMF_PtrLevel( mtx, iqp );
       for (iep = 0; iep < nEP; iep++) {
 	pout = FMF_PtrLevel( out, iqp ) + nCol * iep;
@@ -214,7 +214,7 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
     for (iqp = 0; iqp < nQP; iqp++) {
       pg1 = FMF_PtrLevel( gc, iqp );
       pg2 = pg1 + nEP;
-      
+
       pmtx = FMF_PtrLevel( mtx, iqp );
       for (iep = 0; iep < nEP; iep++) {
 	pout = FMF_PtrLevel( out, iqp ) + nCol * iep;
@@ -262,13 +262,11 @@ int32 dw_laplace( FMField *out, FMField *grad,
 		  FMField *coef, Mapping *vg,
 		  int32 isDiff )
 {
-  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  int32 ii, nQP, nEP, ret = RET_OK;
   FMField *gtg = 0, *gtgu = 0;
 
   nQP = vg->bfGM->nLev;
   nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
-
 
   if (isDiff) {
     fmf_createAlloc( &gtg, 1, nQP, nEP, nEP );

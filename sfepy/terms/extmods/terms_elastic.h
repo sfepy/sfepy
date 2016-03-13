@@ -20,6 +20,10 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 		     FMField *strainU, FMField *mtxD, Mapping *vg );
 
+int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
+                       FMField *gradU, FMField *gradW, FMField *mtxD,
+                       Mapping *vg);
+
 int32 dw_lin_prestress( FMField *out, FMField *stress, Mapping *vg );
 
 int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,

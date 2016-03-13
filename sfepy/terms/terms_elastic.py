@@ -121,55 +121,18 @@ class SDLinearElasticTerm(Term):
     arg_shapes = {'material' : 'S, S',
                   'parameter_w' : 'D', 'parameter_u' : 'D',
                   'parameter_mesh_velocity' : 'D'}
-    function = terms.d_lin_elastic
-
-    @staticmethod
-    def op_dv(vgrad):
-        nel, nlev, dim, _ = vgrad.shape
-        sd = nm.zeros((nel, nlev, dim**2, dim**2), dtype=vgrad.dtype)
-
-        if dim == 1:
-            sd[...] = vgrad[:,:]
-
-        elif dim == 2:
-            sd[:,:,0:2,0:2] = vgrad[:,:]
-            sd[:,:,2:4,2:4] = vgrad[:,:]
-
-        elif dim == 3:
-            sd[:,:,0:3,0:3] = vgrad[:,:]
-            sd[:,:,3:6,3:6] = vgrad[:,:]
-            sd[:,:,6:9,6:9] = vgrad[:,:]
-        else:
-            exit('not yet implemented!')
-
-        return sd
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+    function = terms.d_sd_lin_elastic
 
     def get_fargs(self, mat, par_w, par_u, par_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(par_u)
 
-        grad_w = self.get(par_w, 'grad').transpose((0,1,3,2))
-        grad_u = self.get(par_u, 'grad').transpose((0,1,3,2))
-        nel, nqp, nr, nc = grad_u.shape
-        strain_w = grad_w.reshape((nel, nqp, nr * nc, 1))
-        strain_u = grad_u.reshape((nel, nqp, nr * nc, 1))
-
-        mat_map = {1: nm.array([0]),
-                   3: nm.array([0, 2, 2, 1]),
-                   6: nm.array([0, 3, 4, 3, 1, 5, 4, 5, 2])}
-
-        mmap = mat_map[mat.shape[-1]]
-        mat_ns = mat[nm.ix_(nm.arange(nel), nm.arange(nqp),
-                            mmap, mmap)]
-
-        div_mv = self.get(par_mv, 'div')
+        grad_w = self.get(par_w, 'grad')
+        grad_u = self.get(par_u, 'grad')
         grad_mv = self.get(par_mv, 'grad')
-        opd_mv = self.op_dv(grad_mv)
 
-        aux = dot_sequences(mat_ns, opd_mv)
-        mat_mv = mat_ns * div_mv - (aux + aux.transpose((0,1,3,2)))
-
-        return 1.0, strain_w, strain_u, mat_mv, vg
+        return 1.0, grad_w, grad_u, grad_mv, mat, vg
 
     def get_eval_shape(self, mat, par_w, par_u, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
