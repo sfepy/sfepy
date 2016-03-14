@@ -226,13 +226,13 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
                     _out.val[ic] = aux
 
             else:
-                for ib in range(0, bdim):
-                    for ic in range(0, dpn):
+                for ic in range(0, dpn):
+                    for ib in range(0, bdim):
                         aux = 0.0
                         for ik in range(0, n_ep):
                             aux += bf.val[n_ep*ib+ik] * src.val[n_ep*ic+ik]
 
-                        _out.val[dpn*ib+ic] = aux
+                        _out.val[bdim*ic+ib] = aux
 
         else:
             _f.fmf_fillC(_out, 0.0)

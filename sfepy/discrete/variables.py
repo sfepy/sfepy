@@ -1916,7 +1916,7 @@ class FieldVariable(Variable):
         """
         Evaluate the variable in the given physical coordinates. Convenience
         wrapper around :func:`Field.evaluate_at()
-        <sfepy.discrete.fem.fields_nodal.H1NodalMixin.evaluate_at()>`, see its
+        <sfepy.discrete.common.fields.Field.evaluate_at()>`, see its
         docstring for more details.
         """
         source_vals = self().reshape((self.n_nod, self.n_components))

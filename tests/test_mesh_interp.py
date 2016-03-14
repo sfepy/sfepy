@@ -98,7 +98,7 @@ def prepare_variable(filename, n_components):
 
     u = FieldVariable('u', 'parameter', field,
                       primary_var_name='(set-to-None)')
-    u.set_from_mesh_vertices(nm.c_[tuple([data] * n_components)])
+    u.set_from_mesh_vertices(data * nm.arange(1, n_components + 1)[None, :])
 
     return u
 
@@ -278,7 +278,7 @@ class Test(TestCommon):
                      'meshes/2d/square_unit_tri.mesh']:
             self.report(name)
 
-            u = prepare_variable(op.join(data_dir, name), n_components=1)
+            u = prepare_variable(op.join(data_dir, name), n_components=5)
 
             bbox = u.field.domain.get_mesh_bounding_box()
             coors = nm.c_[tuple([nm.linspace(ii[0] + 1e-3, ii[1] - 1e-3, 100)
@@ -287,8 +287,7 @@ class Test(TestCommon):
             grad, cells, status = u.evaluate_at(coors, mode='grad',
                                                 close_limit=0.0,
                                                 ret_status=True)
-
-            agrad = nm.dot(grad[:, 0, :], nm.ones((grad.shape[2], 1)))
+            agrad = nm.dot(grad[:, :, :], nm.ones((grad.shape[2], 1)))[..., 0]
 
             eps = 1e-5
             val0 = u.evaluate_at(coors - eps, close_limit=0.0)
@@ -304,5 +303,14 @@ class Test(TestCommon):
             self.report('->', _ok)
 
             ok = ok and _ok
+
+            for ic in range(1, u.n_components):
+                _ok = nm.allclose((ic + 1) * agrad[ii, 0], agrad[ii, ic],
+                                  rtol=0.0, atol=1e-12)
+                self.report('component %d / component 0: mean: %.2f'
+                            % (ic, (agrad[ii, ic] / agrad[ii, 0]).mean()))
+                self.report('->', _ok)
+
+                ok = ok and _ok
 
         return ok
