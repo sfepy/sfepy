@@ -11,7 +11,6 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geommech.h"
 
-#include "terms_acoustic.h"
 #include "terms_adj_navier_stokes.h"
 #include "terms_basic.h"
 #include "terms_biot.h"
