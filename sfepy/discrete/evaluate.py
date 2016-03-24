@@ -366,7 +366,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
     be encoded in the equation's name, as in::
 
         conf_equations = {
-          'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
+          'A,v,u' : "dw_lin_elastic.i1.Y2( inclusion.D, v, u )",
         }
 
     Notes
