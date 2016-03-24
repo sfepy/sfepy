@@ -20,6 +20,7 @@ and :math:`\ull{\sigma} \cdot \ul{n} = \bar{p} \ull{I} \cdot \ul{n}`
 with given traction pressure :math:`\bar{p}`.
 """
 import numpy as nm
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 def linear_tension(ts, coor, mode=None, **kwargs):
     if mode == 'qp':
@@ -47,10 +48,7 @@ def define():
     }
 
     materials = {
-        'solid' : ({
-            'lam' : 5.769,
-            'mu' : 3.846,
-        },),
+        'solid' : ({'D': stiffness_from_lame(3, lam=5.769, mu=3.846)},),
         'load' : (None, 'linear_tension')
     }
 
@@ -74,7 +72,7 @@ def define():
     # Balance of forces.
     equations = {
         'elasticity' :
-        """dw_lin_elastic_iso.2.Omega( solid.lam, solid.mu, v, u )
+        """dw_lin_elastic.2.Omega( solid.D, v, u )
          = - dw_surface_ltr.2.Right( load.val, v )""",
     }
 
@@ -88,7 +86,7 @@ def define():
                       'eps_r'      : 1.0,
                       'macheps'   : 1e-16,
                       # Linear system error < (eps_a * lin_red).
-                      'lin_red'    : 1e-2,                
+                      'lin_red'    : 1e-2,
                       'ls_red'     : 0.1,
                       'ls_red_warp' : 0.001,
                       'ls_on'      : 1.1,

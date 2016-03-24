@@ -23,6 +23,7 @@ problem is highly nonlinear due to contacts with the sphere. See also
 elastic_contact_planes.py example.
 """
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
@@ -42,8 +43,7 @@ fields = {
 
 materials = {
     'solid' : ({
-        'lam' : 5.769,
-        'mu' : 3.846,
+        'D': stiffness_from_lame(dim=3, lam=5.769, mu=3.846),
     },),
     'cs' : ({
         'f' : [k, f0],
@@ -69,7 +69,7 @@ ebcs = {
 
 equations = {
     'elasticity' :
-    """dw_lin_elastic_iso.2.Omega(solid.lam, solid.mu, v, u)
+    """dw_lin_elastic.2.Omega(solid.D, v, u)
      + dw_contact_sphere.2.Top(cs.f, cs.c, cs.r, v, u)
      = 0""",
 }

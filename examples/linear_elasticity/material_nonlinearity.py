@@ -19,6 +19,7 @@ import numpy as nm
 
 from sfepy.linalg import norm_l2_along_axis
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
@@ -68,7 +69,7 @@ def get_pars(ts, coors, mode='qp',
     # Store history.
     strains[0] = strain
 
-    return {'mu' : val}
+    return {'D': stiffness_from_lame(dim=3, lam=1e1, mu=val), 'mu': val}
 
 def pull(ts, coors, **kwargs):
     val = nm.empty_like(coors[:,0])
@@ -96,7 +97,6 @@ regions = {
 }
 
 materials = {
-    'linear' : ({'lam' : 1e1},),
     'nonlinear' : 'get_pars',
 }
 
@@ -116,7 +116,7 @@ ebcs = {
 
 equations = {
     'balance_of_forces in time' :
-    """dw_lin_elastic_iso.2.Omega(linear.lam, nonlinear.mu, v, u) = 0""",
+    """dw_lin_elastic.2.Omega(nonlinear.D, v, u) = 0""",
 }
 
 solvers = {

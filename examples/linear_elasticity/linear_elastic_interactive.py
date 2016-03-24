@@ -14,6 +14,7 @@ from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.postprocess.viewer import Viewer
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
     """
@@ -55,12 +56,12 @@ def main():
     u = FieldVariable('u', 'unknown', field)
     v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-    m = Material('m', lam=1.0, mu=1.0)
+    m = Material('m', D=stiffness_from_lame(dim=2, lam=1.0, mu=1.0))
     f = Material('f', val=[[0.02], [0.01]])
 
     integral = Integral('i', order=3)
 
-    t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+    t1 = Term.new('dw_lin_elastic(m.D, v, u)',
          integral, omega, m=m, v=v, u=u)
     t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
     eq = Equation('balance', t1 + t2)

@@ -38,6 +38,7 @@ cylinder.vtk. View the results using::
   $ ./postproc.py cylinder.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1'
 """
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
@@ -50,7 +51,7 @@ regions = {
 }
 
 materials = {
-    'solid' : ({'lam' : 1e1, 'mu' : 1e0},),
+    'solid' : ({'D': stiffness_from_lame(dim=3, lam=1e1, mu=1e0)},),
 }
 
 fields = {
@@ -74,7 +75,7 @@ ebcs = {
 
 equations = {
     'balance_of_forces' :
-    """dw_lin_elastic_iso.i.Omega(solid.lam, solid.mu, v, u) = 0""",
+    """dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
 }
 
 solvers = {

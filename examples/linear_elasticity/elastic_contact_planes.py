@@ -31,6 +31,7 @@ penetration and large enough contact boundary polygons (hard!), or by tweaking
 the dw_contact_plane term to mask points only by undeformed coordinates.
 """
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
@@ -54,8 +55,7 @@ fields = {
 
 materials = {
     'solid' : ({
-        'lam' : 5.769,
-        'mu' : 3.846,
+        'D': stiffness_from_lame(dim=3, lam=5.769, mu=3.846),
     },),
     'cp0' : ({
         'f' : [k, f0],
@@ -108,7 +108,7 @@ ebcs = {
 
 equations = {
     'elasticity' :
-    """dw_lin_elastic_iso.2.Omega(solid.lam, solid.mu, v, u)
+    """dw_lin_elastic.2.Omega(solid.D, v, u)
      + dw_contact_plane.2.Top(cp0.f, cp0.n, cp0.a, cp0.bs, v, u)
      + dw_contact_plane.2.Top(cp1.f, cp1.n, cp1.a, cp1.bs, v, u)
      + dw_contact_plane.2.Top(cp2.f, cp2.n, cp2.a, cp2.bs, v, u)

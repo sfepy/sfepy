@@ -52,7 +52,7 @@ def ebc_sin(ts, coors, **kwargs):
 equations = {
     'balance_of_forces in time' :
     """dw_volume_dot.i.Omega( solid.c, v, du/dt )
-     + dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu, v, u ) = 0""",
+     + dw_lin_elastic.i.Omega( solid.D, v, u ) = 0""",
 }
 
 solvers = deepcopy(solvers) # Do not spoil linear_elastic.py namespace in tests.
@@ -62,7 +62,6 @@ solvers.update({
         't1' : 1.0,
         'dt' : None,
         'n_step' : 101,
-
         'adapt_fun' : 'adapt_time_step',
     }),
 })

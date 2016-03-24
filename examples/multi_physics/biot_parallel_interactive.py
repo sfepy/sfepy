@@ -103,6 +103,7 @@ from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.terms import Term
 from sfepy.solvers.ls import PETScKrylovSolver
 from sfepy.solvers.nls import PETScNonlinearSolver
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 import sfepy.parallel.parallel as pl
 from sfepy.parallel.evaluate import PETScParallelEvaluator
@@ -162,10 +163,11 @@ def create_local_problem(omega_gi, orders):
         alpha = 1e2 * nm.array([[0.132], [0.132], [0.132],
                                 [0.092], [0.092], [0.092]])
 
-    mat = Material('m', lam=10, mu=5, k=1, alpha=alpha)
+    mat = Material('m', D=stiffness_from_lame(mesh.dim, lam=10, mu=5),
+                   k=1, alpha=alpha)
     integral = Integral('i', order=2*(max(order_u, order_p)))
 
-    t11 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v_i, u_i)',
+    t11 = Term.new('dw_lin_elastic(m.D, v_i, u_i)',
                    integral, omega_i, m=mat, v_i=v_i, u_i=u_i)
     t12 = Term.new('dw_biot(m.alpha, v_i, p_i)',
                    integral, omega_i, m=mat, v_i=v_i, p_i=p_i)
