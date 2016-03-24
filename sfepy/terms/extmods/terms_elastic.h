@@ -11,9 +11,6 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "refmaps.h"
 
-int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
-			  FMField *lam, FMField *mu, Mapping *vg,
-			  int32 isDiff );
 int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 		      FMField *mtxD, Mapping *vg,
 		      int32 isDiff );

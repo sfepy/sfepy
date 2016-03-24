@@ -239,10 +239,6 @@ cdef extern from 'terms.h':
                                Mapping *vvg, Mapping *svg,
                                int32 isDiff)
 
-    cdef int32 _dw_lin_elastic_iso \
-         'dw_lin_elastic_iso'(FMField *out, FMField *strain,
-                              FMField *lam, FMField *mu, Mapping *vg,
-                              int32 isDiff)
     cdef int32 _dw_lin_elastic \
          'dw_lin_elastic'(FMField *out, float64 coef, FMField *strain,
                           FMField *mtxD, Mapping *vg,
@@ -1296,23 +1292,6 @@ def dw_convect_v_grad_s(np.ndarray out not None,
 
     ret = _dw_convect_v_grad_s(_out, _val_v, _grad_s,
                                cmap_v.geo, cmap_s.geo, is_diff)
-    return ret
-
-def dw_lin_elastic_iso(np.ndarray out not None,
-                       np.ndarray strain not None,
-                       np.ndarray lam not None,
-                       np.ndarray mu not None,
-                       CMapping cmap not None,
-                       int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _strain[1], _lam[1], _mu[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_strain, strain)
-    array2fmfield4(_lam, lam)
-    array2fmfield4(_mu, mu)
-
-    ret = _dw_lin_elastic_iso(_out, _strain, _lam, _mu, cmap.geo, is_diff)
     return ret
 
 def dw_lin_elastic(np.ndarray out not None,
