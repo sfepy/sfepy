@@ -1,6 +1,7 @@
 # 05.10.2007, c
 # last revision: 25.02.2008
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
 
@@ -36,10 +37,8 @@ region_11 = {
 
 material_1 = {
     'name' : 'solid',
-    
     'values' : {
-        'lam' : 1e1,
-        'mu' : 1e0,
+        'D' : stiffness_from_lame(3, 1e1, 1e0),
         'density' : 1e-1,
     },
 }
@@ -89,7 +88,7 @@ integral_1 = {
 }
 
 equations = {
-    'balance' : """dw_lin_elastic_iso.i.Y( solid.lam, solid.mu, v, u ) = 0""",
+    'balance' : """dw_lin_elastic.i.Y( solid.D, v, u ) = 0""",
 }
 
 solver_0 = {
