@@ -14,6 +14,7 @@ def define():
     """Define the problem to solve."""
     from sfepy.discrete.fem.meshio import UserMeshIO
     from sfepy.mesh.mesh_generators import gen_block_mesh
+    from sfepy.mechanics.matcoefs import stiffness_from_lame
 
     def mesh_hook(mesh, mode):
         """
@@ -55,8 +56,8 @@ def define():
             'mu_nh' : 3.846, # shear modulus of neoHookean term
             'mu_mr' : 1.923, # shear modulus of Mooney-Rivlin term
             'kappa' : 1.923, # second modulus of Mooney-Rivlin term
-            'lam' : 5.769, # Lame coefficients for LE term
-            'mu_le' : 3.846,
+            # elasticity for LE term
+            'D' : stiffness_from_lame(dim=3, lam=5.769, mu=3.846),
         },),
         'load' : 'empty',
     }
@@ -82,7 +83,7 @@ def define():
         'isurf' : 2,
     }
     equations = {
-        'linear' : """dw_lin_elastic_iso.i.Omega(solid.lam, solid.mu_le, v, u)
+        'linear' : """dw_lin_elastic.i.Omega(solid.D, v, u)
                     = dw_surface_ltr.isurf.Top(load.val, v)""",
         'neo-Hookean' : """dw_tl_he_neohook.i.Omega(solid.mu_nh, v, u)
                          + dw_tl_bulk_penalty.i.Omega(solid.K, v, u)

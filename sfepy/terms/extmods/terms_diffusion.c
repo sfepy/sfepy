@@ -441,6 +441,67 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 }
 
 #undef __FUNC__
+#define __FUNC__ "d_sd_diffusion"
+int32 d_sd_diffusion(FMField *out,
+                     FMField *grad_q, FMField *grad_p,
+                     FMField *grad_w, FMField *div_w,
+                     FMField *mtxD, Mapping *vg)
+{
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *aux2 = 0, *aux3 = 0, *aux4 = 0, *out0 = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  FMF_SetFirst( out );
+
+  fmf_createAlloc( &aux2, 1, nQP, dim, 1 );
+  fmf_createAlloc( &aux3, 1, nQP, 1, 1 );
+  fmf_createAlloc( &aux4, 1, nQP, dim, 1 );
+  fmf_createAlloc( &out0, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( mtxD, ii );
+    FMF_SetCell( grad_q, ii );
+    FMF_SetCell( grad_p, ii );
+    FMF_SetCell( grad_w, ii );
+    FMF_SetCell( div_w, ii );
+
+    /* div w K_ij grad_j q grad_i p */
+    fmf_mulAB_nn( aux2, mtxD, grad_p );
+    fmf_mulATB_nn( aux3, grad_q, aux2 );
+    fmf_mulAB_nn( out0, div_w, aux3 );
+
+    /* grad_k q K_ij grad_j w_k grad_i p */
+    fmf_mulATB_nn( aux4, grad_w, aux2 );
+    fmf_mulATB_nn( aux3, grad_q, aux4 );
+    fmf_subAB_nn( out0, out0, aux3 );
+
+    /* grad_k q K_ij grad_j w_k grad_i p */
+    fmf_mulAB_nn( aux2, grad_w, grad_p );
+    fmf_mulAB_nn( aux4, mtxD, aux2 );
+    fmf_mulATB_nn( aux3, grad_q, aux4 );
+    fmf_subAB_nn( out0, out0, aux3 );
+
+    fmf_sumLevelsMulF( out, out0, vg->det->val );
+
+    FMF_SetCellNext( out );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &out0 );
+  fmf_freeDestroy( &aux2 );
+  fmf_freeDestroy( &aux3 );
+  fmf_freeDestroy( &aux4 );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_diffusion_r"
 /*!
   @par Revision history:

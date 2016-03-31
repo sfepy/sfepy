@@ -24,6 +24,7 @@ where
 import numpy as nm
 
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
@@ -66,8 +67,7 @@ ebcs = {
 material_1 = {
     'name' : 'm',
     'values' : {
-        'lam' : 1.7,
-        'mu' : 0.3,
+        'D': stiffness_from_lame(dim=3, lam=1.7, mu=0.3),
         'alpha' : nm.array( [[0.132], [0.132], [0.132],
                              [0.092], [0.092], [0.092]],
                             dtype = nm.float64 ),
@@ -88,7 +88,7 @@ integral_2 = {
 
 equations = {
     'eq_1' :
-    """dw_lin_elastic_iso.i2.Omega( m.lam, m.mu, v, u )
+    """dw_lin_elastic.i2.Omega( m.D, v, u )
      - dw_biot.i1.Omega( m.alpha, v, p )
        = 0""",
     'eq_2' :

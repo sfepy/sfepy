@@ -319,7 +319,7 @@ class SurfaceMomentTerm(Term):
         - parameter : any variable
         - shift     : :math:`\ul{x}_0`
     """
-    name = 'di_surface_moment'
+    name = 'd_surface_moment'
     arg_types = ('parameter', 'shift')
     integration = 'surface'
 

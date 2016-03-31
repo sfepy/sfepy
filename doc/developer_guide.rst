@@ -1143,7 +1143,6 @@ sfepy.terms package
 
    terms_overview
    src/sfepy/terms/terms
-   src/sfepy/terms/terms_acoustic
    src/sfepy/terms/terms_adj_navier_stokes
    src/sfepy/terms/terms_basic
    src/sfepy/terms/terms_biot

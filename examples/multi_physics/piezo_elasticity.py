@@ -117,15 +117,13 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
 
         out = {
             # Lame coefficients in 1e+10 Pa.
-            'lam' : 0.1798,
-            'mu' : 0.148,
+            'D' : stiffness_from_lame(dim=2, lam=0.1798, mu=0.148),
             # dielectric tensor
             'dielectric' : dielectric,
             # piezoelectric coupling
             'coupling' : coupling,
             'density' : 0.1142, # in 1e4 kg/m3
         }
-        out['D'] = stiffness_from_lame(2, out['lam'], out['mu']),
 
         for key, val in out.iteritems():
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
@@ -145,7 +143,7 @@ integrals = {
 
 equations = {
     '1' : """- %f * dw_volume_dot.i.Y(inclusion.density, v, u)
-             + dw_lin_elastic_iso.i.Y(inclusion.lam, inclusion.mu, v, u)
+             + dw_lin_elastic.i.Y(inclusion.D, v, u)
              - dw_piezo_coupling.i.Y2(inclusion.coupling, v, phi)
            = 0""" % omega_squared,
     '2' : """dw_piezo_coupling.i.Y2(inclusion.coupling, u, psi)

@@ -52,11 +52,6 @@ class LinearElasticTerm(Term):
 ##     symbolic = {'expression': expr,
 ##                 'map' : {'u' : 'state', 'D_sym' : 'material'}}
 
-    def check_shapes(self, mat, virtual, state):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = (dim + 1) * dim / 2
-        assert_(mat.shape == (n_el, n_qp, sym, sym))
-
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
@@ -94,6 +89,49 @@ class LinearElasticTerm(Term):
 
         else:
             self.function = terms.d_lin_elastic
+
+class LinearElasticIsotropicTerm(LinearElasticTerm):
+    r"""
+    Isotropic linear elasticity term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
+        D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+        \lambda \ \delta_{ij} \delta_{kl}
+
+    :Arguments:
+        - material_1 : :math:`\lambda`
+        - material_2 : :math:`\mu`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`D_{ijkl}`
+        - parameter_1 : :math:`\ul{w}`
+        - parameter_2 : :math:`\ul{u}`
+    """
+    name = 'dw_lin_elastic_iso'
+    arg_types = (('material_1', 'material_2', 'virtual', 'state'),
+                 ('material_1', 'material_2', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D',
+                  'parameter_1' : 'D', 'parameter_2' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    def get_fargs(self, lam, mu, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.mechanics.matcoefs import stiffness_from_lame
+
+        mat = stiffness_from_lame(self.region.dim, lam, mu)
+        return LinearElasticTerm.get_fargs(self, mat, virtual, state,
+                                           mode=mode, term_mode=term_mode,
+                                           diff_var=diff_var, **kwargs)
+
+    def get_eval_shape(self, mat1, mat2, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        return LinearElasticTerm.get_eval_shape(self, None, None, state)
 
 class SDLinearElasticTerm(Term):
     r"""
@@ -139,49 +177,6 @@ class SDLinearElasticTerm(Term):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
 
         return (n_el, 1, 1, 1), par_u.dtype
-
-class LinearElasticIsotropicTerm(Term):
-    r"""
-    Isotropic linear elasticity term.
-
-    :Definition:
-
-    .. math::
-        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
-        D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
-        \lambda \ \delta_{ij} \delta_{kl}
-
-    :Arguments:
-        - material_1 : :math:`\lambda`
-        - material_2 : :math:`\mu`
-        - virtual    : :math:`\ul{v}`
-        - state      : :math:`\ul{u}`
-    """
-    name = 'dw_lin_elastic_iso'
-    arg_types = ('material_1', 'material_2', 'virtual', 'state')
-    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
-                  'virtual' : ('D', 'state'), 'state' : 'D'}
-
-    function = staticmethod(terms.dw_lin_elastic_iso)
-
-    def get_fargs(self, lam, mu, virtual, state,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(state)
-
-        if mode == 'weak':
-            if diff_var is None:
-                strain = self.get(state, 'cauchy_strain')
-                fmode = 0
-
-            else:
-                strain = nm.array([0], ndmin=4, dtype=nm.float64)
-                fmode = 1
-
-            return strain, lam, mu, vg, fmode
-
-        else:
-            raise ValueError('unsupported evaluation mode in %s! (%s)'
-                             % (self.name, mode))
 
 class LinearElasticTHTerm(THTerm):
     r"""

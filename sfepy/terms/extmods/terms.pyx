@@ -239,10 +239,6 @@ cdef extern from 'terms.h':
                                Mapping *vvg, Mapping *svg,
                                int32 isDiff)
 
-    cdef int32 _dw_lin_elastic_iso \
-         'dw_lin_elastic_iso'(FMField *out, FMField *strain,
-                              FMField *lam, FMField *mu, Mapping *vg,
-                              int32 isDiff)
     cdef int32 _dw_lin_elastic \
          'dw_lin_elastic'(FMField *out, float64 coef, FMField *strain,
                           FMField *mtxD, Mapping *vg,
@@ -394,31 +390,11 @@ cdef extern from 'terms.h':
          'dw_electric_source'(FMField *out, FMField *grad, FMField *coef,
                               Mapping *vg)
 
-    cdef int32 _d_diffusion_sa \
-         'd_diffusion_sa'(FMField *out,
+    cdef int32 _d_sd_diffusion \
+         'd_sd_diffusion'(FMField *out,
                           FMField *grad_q, FMField *grad_p,
                           FMField *grad_w, FMField *div_w,
                           FMField *mtxD, Mapping *vg)
-
-    cdef int32 _dw_surf_laplace \
-         'dw_surf_laplace'(FMField *out, FMField *grad, FMField *coef,
-                           FMField *gbf, Mapping *sg,
-                           int32 isDiff)
-
-    cdef int32 _d_surf_laplace \
-         'd_surf_laplace'(FMField *out, FMField *gradP,
-                          FMField *gradQ, FMField *coef,
-                          Mapping *sg)
-
-    cdef int32 _dw_surf_lcouple \
-         'dw_surf_lcouple'(FMField *out, FMField *state, FMField *coef,
-                           FMField *bf, FMField *gbf, Mapping *sg,
-                           int32 isDiff)
-
-    cdef int32 _d_surf_lcouple \
-         'd_surf_lcouple'(FMField *out, FMField *stateP,
-                          FMField *gradQ, FMField *coef,
-                          Mapping *sg)
 
     cdef int32 _dw_adj_convect1 \
          'dw_adj_convect1'(FMField *out, FMField *stateW, FMField *gradU,
@@ -1318,23 +1294,6 @@ def dw_convect_v_grad_s(np.ndarray out not None,
                                cmap_v.geo, cmap_s.geo, is_diff)
     return ret
 
-def dw_lin_elastic_iso(np.ndarray out not None,
-                       np.ndarray strain not None,
-                       np.ndarray lam not None,
-                       np.ndarray mu not None,
-                       CMapping cmap not None,
-                       int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _strain[1], _lam[1], _mu[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_strain, strain)
-    array2fmfield4(_lam, lam)
-    array2fmfield4(_mu, mu)
-
-    ret = _dw_lin_elastic_iso(_out, _strain, _lam, _mu, cmap.geo, is_diff)
-    return ret
-
 def dw_lin_elastic(np.ndarray out not None,
                    float64 coef,
                    np.ndarray strain not None,
@@ -1840,7 +1799,7 @@ def dw_electric_source(np.ndarray out not None,
     ret = _dw_electric_source(_out, _grad, _coef, cmap.geo)
     return ret
 
-def d_diffusion_sa(np.ndarray out not None,
+def d_sd_diffusion(np.ndarray out not None,
                    np.ndarray grad_q not None,
                    np.ndarray grad_p not None,
                    np.ndarray grad_w not None,
@@ -1857,76 +1816,8 @@ def d_diffusion_sa(np.ndarray out not None,
     array2fmfield4(_div_w, div_w)
     array2fmfield4(_mtx_d, mtx_d)
 
-    ret = _d_diffusion_sa(_out, _grad_q, _grad_p, _grad_w, _div_w,
+    ret = _d_sd_diffusion(_out, _grad_q, _grad_p, _grad_w, _div_w,
                           _mtx_d, cmap.geo)
-    return ret
-
-def dw_surf_laplace(np.ndarray out not None,
-                    np.ndarray grad not None,
-                    np.ndarray coef not None,
-                    np.ndarray gbf not None,
-                    CMapping cmap not None,
-                    int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _grad[1], _coef[1], _gbf[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_grad, grad)
-    array2fmfield4(_coef, coef)
-    array2fmfield3(_gbf, gbf)
-
-    ret = _dw_surf_laplace(_out, _grad, _coef, _gbf, cmap.geo, is_diff)
-    return ret
-
-def d_surf_laplace(np.ndarray out not None,
-                   np.ndarray grad_p not None,
-                   np.ndarray grad_q not None,
-                   np.ndarray coef not None,
-                   CMapping cmap not None):
-    cdef int32 ret
-    cdef FMField _out[1], _grad_p[1], _grad_q[1], _coef[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_grad_p, grad_p)
-    array2fmfield4(_grad_q, grad_q)
-    array2fmfield4(_coef, coef)
-
-    ret = _d_surf_laplace(_out, _grad_p, _grad_q, _coef, cmap.geo)
-    return ret
-
-def dw_surf_lcouple(np.ndarray out not None,
-                    np.ndarray state not None,
-                    np.ndarray coef not None,
-                    np.ndarray bf not None,
-                    np.ndarray gbf not None,
-                    CMapping cmap not None,
-                    int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _state[1], _coef[1], _bf[1], _gbf[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_state, state)
-    array2fmfield4(_coef, coef)
-    array2fmfield3(_bf, bf)
-    array2fmfield3(_gbf, gbf)
-
-    ret = _dw_surf_lcouple(_out, _state, _coef, _bf, _gbf, cmap.geo, is_diff)
-    return ret
-
-def d_surf_lcouple(np.ndarray out not None,
-                   np.ndarray state_p not None,
-                   np.ndarray grad_q not None,
-                   np.ndarray coef not None,
-                   CMapping cmap not None):
-    cdef int32 ret
-    cdef FMField _out[1], _state_p[1], _grad_q[1], _coef[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_state_p, state_p)
-    array2fmfield4(_grad_q, grad_q)
-    array2fmfield4(_coef, coef)
-
-    ret = _d_surf_lcouple(_out, _state_p, _grad_q, _coef, cmap.geo)
     return ret
 
 def mulAB_integrate(np.ndarray out not None,

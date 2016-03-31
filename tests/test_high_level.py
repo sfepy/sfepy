@@ -106,7 +106,7 @@ class Test(TestCommon):
 
         ok = nm.allclose(vec, 1.0)
 
-        ## print u() 
+        ## print u()
         ## print u.get_vector() # Coefficient vector w.r.t. the field space basis.
         ## print u(gamma1)
         ## print u.get_vector(gamma2)
@@ -121,11 +121,12 @@ class Test(TestCommon):
         from sfepy.terms import Term
         from sfepy.solvers.ls import ScipyDirect
         from sfepy.solvers.nls import Newton
+        from sfepy.mechanics.matcoefs import stiffness_from_lame
 
         u = FieldVariable('u', 'unknown', self.field)
         v = FieldVariable('v', 'test', self.field, primary_var_name='u')
 
-        m = Material('m', lam=1.0, mu=1.0)
+        m = Material('m', D=stiffness_from_lame(self.dim, 1.0, 1.0))
         f = Material('f', val=[[0.02], [0.01]])
 
         bc_fun = Function('fix_u_fun', fix_u_fun,
@@ -136,7 +137,7 @@ class Test(TestCommon):
 
         integral = Integral('i', order=3)
 
-        t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+        t1 = Term.new('dw_lin_elastic(m.D, v, u)',
                       integral, self.omega, m=m, v=v, u=u)
 
         t2 = Term.new('dw_volume_lvf(f.val, v)', integral, self.omega, f=f, v=v)
