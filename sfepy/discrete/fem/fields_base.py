@@ -388,11 +388,10 @@ class FEField(Field):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
+        integration : 'volume', 'surface', 'surface_extra', 'point' or 'custom'
             The term integration type.
         region_name : str
-            The name of surface region, required when `shape_kind` is
-            'surface'.
+            The name of the region of the integral.
 
         Returns
         -------
@@ -427,7 +426,7 @@ class FEField(Field):
             else:
                 data_shape = (sd.n_fa, n_qp, dim, self.econn.shape[1])
 
-        elif integration in ('volume', 'plate'):
+        elif integration in ('volume', 'custom'):
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
 
@@ -907,32 +906,6 @@ class FEField(Field):
 
             out = vg
 
-        elif integration == 'plate':
-            import sfepy.mechanics.membranes as mm
-            from sfepy.linalg import dot_sequences
-
-            qp = self.get_qp('v', integral)
-            iels = region.get_cells()
-
-            ps = self.interp.poly_spaces['v']
-            bf = self.get_base('v', 0, integral, iels=iels)
-
-            conn = nm.take(dconn, nm.int32(iels), axis=0)
-            ccoors = coors[conn]
-
-            # Coordinate transformation matrix (transposed!).
-            mtx_t = mm.create_transformation_matrix(ccoors)
-
-            # Transform coordinates to the local coordinate system.
-            coors_loc = dot_sequences((ccoors - ccoors[:, 0:1, :]), mtx_t)
-
-            # Mapping from transformed elements to reference elements.
-            mapping = mm.create_mapping(coors_loc, self.gel, 1)
-            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
-                                     ori=self.ori)
-            vg.mtx_t = mtx_t
-            out = vg
-
         elif (integration == 'surface') or (integration == 'surface_extra'):
             assert_(self.approx_order > 0)
 
@@ -988,8 +961,11 @@ class FEField(Field):
         elif integration == 'point':
             out = mapping = None
 
+        elif integration == 'custom':
+            raise ValueError('cannot create custom mapping!')
+
         else:
-            raise ValueError('unknown inegration geometry type: %s'
+            raise ValueError('unknown integration geometry type: %s'
                              % integration)
 
         if out is not None:
@@ -1117,7 +1093,7 @@ class VolumeField(FEField):
         elif dct == 'point':
             self.setup_point_data(self, info.region)
 
-        elif dct not in ('volume', 'scalar', 'plate'):
+        elif dct not in ('volume', 'scalar', 'custom'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def setup_point_data(self, field, region):
@@ -1146,12 +1122,12 @@ class VolumeField(FEField):
         """
         ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
 
-        if ct in ('volume', 'plate'):
+        if ct in ('volume', 'custom'):
             if region.name == self.region.name:
                 conn = self.econn
 
             else:
-                tco = integration in ('volume', 'plate')
+                tco = integration in ('volume', 'custom')
                 cells = region.get_cells(true_cells_only=tco)
                 ii = self.region.get_cell_indices(cells, true_cells_only=tco)
                 conn = nm.take(self.econn, ii, axis=0)

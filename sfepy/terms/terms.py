@@ -1003,10 +1003,6 @@ class Term(Struct):
         if self.integration == 'point':
             phys_qps = PhysicalQPs()
 
-        elif self.integration == 'plate':
-            phys_qps = get_physical_qps(self.region, self.integral,
-                                        map_kind='v')
-
         else:
             phys_qps = get_physical_qps(self.region, self.integral)
 

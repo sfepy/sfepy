@@ -1504,11 +1504,10 @@ class FieldVariable(Variable):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
+        integration : 'volume', 'surface', 'surface_extra', 'point' or 'custom'
             The term integration type.
         region_name : str
-            The name of surface region, required when `shape_kind` is
-            'surface'.
+            The name of the region of the integral.
 
         Returns
         -------
@@ -1573,7 +1572,7 @@ class FieldVariable(Variable):
             The integral defining quadrature points in which the
             evaluation occurs. If None, the first order volume integral
             is created. Must not be None for surface integrations.
-        integration : one of 'volume', 'plate', 'surface', 'surface_extra'
+        integration : 'volume', 'surface', 'surface_extra', or 'point'
             The term integration type. If None, it is derived from
             `integral`.
         step : int, default 0
@@ -1597,6 +1596,10 @@ class FieldVariable(Variable):
             `(n_el, n_qp, n_row, n_col)` with the requested data,
             where `n_row`, `n_col` depend on `mode`.
         """
+        if integration == 'custom':
+            msg = 'cannot use FieldVariable.evaluate() with custom integration!'
+            raise ValueError(msg)
+
         step_cache = self.evaluate_cache.setdefault(mode, {})
         cache = step_cache.setdefault(step, {})
 
