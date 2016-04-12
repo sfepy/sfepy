@@ -73,6 +73,7 @@ options = {
                     'ytick.labelsize': 'large',
                     'text.usetex': True},
     },
+    'multiprocessing' : False,
 }
 
 evp_options = {

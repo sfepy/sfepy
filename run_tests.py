@@ -51,6 +51,9 @@ class OutputFilter(object):
                 self.stdout.write(msg)
                 self.stdout.write('\n')
 
+    def flush(self):
+        self.stdout.flush()
+
     def stop(self):
         sys.stdout = self.stdout
         self.stdout = None
