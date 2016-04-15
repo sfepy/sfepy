@@ -71,7 +71,7 @@ class ConcentratedPointLoadTerm(Term):
     """
     name = 'dw_point_load'
     arg_types = ('material', 'virtual')
-    arg_shapes = {'material' : '.: D', 'virtual' : ('D', None)}
+    arg_shapes = {'material' : '.: N', 'virtual' : ('N', None)}
     integration = 'point'
 
     @staticmethod
