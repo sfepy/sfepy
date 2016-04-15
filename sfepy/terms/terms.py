@@ -1177,7 +1177,7 @@ class Term(Struct):
                     shape = _parse_tuple_shape(sh)
                     ls = len(shape)
 
-                    aarg = nm.asarray(arg)
+                    aarg = nm.array(arg, ndmin=1)
 
                     # Substiture general dimension 'N' with actual value.
                     iinfs = nm.where(nm.isinf(shape))[0]
