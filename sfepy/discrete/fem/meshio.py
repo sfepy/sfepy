@@ -460,10 +460,8 @@ DATASET UNSTRUCTURED_GRID
 vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
                   '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
 vtk_dims = {1 : 1, 3 : 1, 5 : 2, 9 : 2, 10 : 3, 12 : 3}
-vtk_inverse_cell_types = {(3, 2) : '1_2', (5, 2) : '2_3',
-                          (8, 2) : '2_4', (9, 2) : '2_4',
-                          (3, 3) : '1_2', (10, 3) : '3_4',
-                          (11, 3) : '3_8', (12, 3) : '3_8' }
+vtk_inverse_cell_types = {3 : '1_2', 5 : '2_3', 8 : '2_4', 9 : '2_4',
+                          10 : '3_4', 11 : '3_8', 12 : '3_8'}
 vtk_remap = {8 : nm.array([0, 1, 3, 2], dtype=nm.int32),
              11 : nm.array([0, 1, 3, 2, 4, 5, 7, 6], dtype=nm.int32)}
 vtk_remap_keys = vtk_remap.keys()
@@ -622,19 +620,17 @@ class VTKMeshIO(MeshIO):
 
         dconns = {}
         for iel, row in enumerate(raw_conn):
-            ct = cell_types[iel]
-            key = (ct, dim)
-            if key not in vtk_inverse_cell_types:
+            vct = cell_types[iel]
+            if vct not in vtk_inverse_cell_types:
                 continue
-            ct = vtk_inverse_cell_types[key]
-            dconns.setdefault(key, []).append(row[1:] + mat_id[iel])
+            ct = vtk_inverse_cell_types[vct]
+            dconns.setdefault(vct, []).append(row[1:] + mat_id[iel])
 
         descs = []
         conns = []
         mat_ids = []
-        for key, conn in dconns.iteritems():
-            ct = key[0]
-            sct = vtk_inverse_cell_types[key]
+        for ct, conn in dconns.iteritems():
+            sct = vtk_inverse_cell_types[ct]
             descs.append(sct)
 
             aux = nm.array(conn, dtype=nm.int32)
