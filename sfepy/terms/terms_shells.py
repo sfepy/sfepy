@@ -90,7 +90,7 @@ class Shell10XTerm(Term):
                            k12.transpose(0, 2, 1))
 
         if drill != 0.0:
-            coefs =  mtx_dr[:, -1, 3, 3] * geo.volume * drill
+            coefs =  mtx_dr[..., 3, 3].mean(1) * geo.volume * drill
             mtx_k = shell10x.lock_drilling_rotations(mtx_k, geo.ebs, coefs)
 
         # DOFs in mtx_k are DOF-by-DOF. Transform is u and phi node-by-node.
