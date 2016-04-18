@@ -177,27 +177,32 @@ def get_mapping_data(ebs, rops, ps, coors_loc, qp_coors, qp_weights,
                      special_dx3=False):
     """
     Compute reference element mapping data for shell10x elements.
+
+    Notes
+    -----
+    The code assumes that the quadrature points are w.r.t. (:math:`t` =
+    thickness of the shell) :math:`[0, 1] x [0, 1] x [-t/2, t/2]` reference
+    cell and the quadrature weights are multiplied by :math:`t`.
     """
     n_el = coors_loc.shape[0]
     n_qp = qp_weights.shape[0]
 
-    # qp_coors are w.r.t. [0, 1] x [0, 1] x [0, t]
     bfu = ps.eval_base(qp_coors[:, :2].copy())
     bfgu = ps.eval_base(qp_coors[:, :2].copy(), diff=True)
 
     nh = ebs[..., -1, :]
 
-    # (td = ) tilde dzeta = 0.5 * t * (2 * dzeta - 1), (d = ) dzeta in [0, 1]
-    # dtd/dd = t
-
-    # w.r.t. [-t/2, t/2]
-    h = 2 * (qp_coors[:, -1, None, None] - 0.5)
+    # h = tilde dzeta = t * (dzeta - 0.5), d = dzeta in [0, 1]
+    # dh/dd = t
+    h = qp_coors[:, -1, None, None]
 
     dxdxi = nm.empty((n_el, n_qp, 3, 3), dtype=nm.float64)
     coors_loc_3d = coors_loc[:, None, ...] + (nh[:, None, ...] * h)
     dxdxi[..., :2, :] = nm.einsum('qij,cqjk->cqik', bfgu, coors_loc_3d)
 
-    # ? why not factor of t from dtd/dd?
+    # The factor of t from dh/dd is not here because quadrature weights were
+    # multiplied by t. This seems more accurate than having t here and the
+    # usual weights.
     # dx_col/dxi_row
     dxdxi[..., 2:, :] = nm.einsum('qij,cjk->cqik', bfu, nh) # * 2
     if special_dx3:
