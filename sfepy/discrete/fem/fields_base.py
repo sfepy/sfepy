@@ -693,8 +693,7 @@ class FEField(Field):
                               data=dofs, var_name=var_name,
                               dofs=dof_names, field_name=self.name)
 
-        elif ((not self.is_higher_order())
-            or (linearization.kind == 'strip')):
+        elif linearization.kind == 'strip':
             if extend:
                 ext = self.extend_dofs(dofs, fill_value)
 
