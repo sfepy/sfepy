@@ -23,6 +23,7 @@ class Shell10XTerm(Term):
                   'virtual' : (6, 'state'), 'state' : 6}
     geometries = ['3_2_4']
     integration = 'custom'
+    poly_space_base = 'shell10x'
 
     def set_integral(self, integral):
         """
