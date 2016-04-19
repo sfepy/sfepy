@@ -545,7 +545,7 @@ class ScalarDotGradIScalarTerm(Term):
     """
     name = 'dw_s_dot_grad_i_s'
     arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material' : '1, 1', 'virtual' : (1, 'state'), 'state' : 1}
+    arg_shapes = {'material' : '.: 1, 1', 'virtual' : (1, 'state'), 'state' : 1}
 
     @staticmethod
     def dw_fun(out, bf, vg, grad, idx, fmode):
@@ -579,7 +579,7 @@ class ScalarDotGradIScalarTerm(Term):
             aps, vgs = self.get_approximation(state)
 
             bf = aps.get_base('v', 0, self.integral)
-            idx = int(material[0, 0, 0, 0])
+            idx = int(material)
 
             return bf, vg, grad, idx, fmode
 
