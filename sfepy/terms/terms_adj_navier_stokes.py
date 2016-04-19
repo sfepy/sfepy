@@ -231,8 +231,9 @@ class SDDotVolumeTerm(Term):
     """
     name = 'd_sd_volume_dot'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_mesh_velocity')
-    arg_shapes = {'parameter_1' : 'D', 'parameter_2' : 'D',
-                  'parameter_mesh_velocity' : 'D'}
+    arg_shapes = [{'parameter_1' : 'D', 'parameter_2' : 'D',
+                   'parameter_mesh_velocity' : 'D'},
+                  {'parameter_1' : 1, 'parameter_2' : 1}]
 
     function = staticmethod(terms.d_sd_volume_dot)
 
