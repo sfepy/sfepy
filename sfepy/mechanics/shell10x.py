@@ -24,11 +24,11 @@ def create_elastic_tensor(young, poisson, shear_correction=True):
     return mtx
 
 def create_transformation_matrix(coors):
-    """
+    r"""
     Create a transposed coordinate transformation matrix, that transforms 3D
     coordinates of quadrilateral cell vertices so that the transformed vertices
-    of a plane cell are in the `x-y` plane. The rotation is performed w.r.t.
-    the centres of quadrilaterals.
+    of a plane cell are in the :math:`x-y` plane. The rotation is performed
+    w.r.t. the centres of quadrilaterals.
 
     Parameters
     ----------
@@ -97,7 +97,7 @@ def create_local_bases(coors):
     Returns
     -------
     ebs : array
-        The local bases, shape (n_el, 4, 3, 3). The basis vectors are rows of
+        The local bases, shape `(n_el, 4, 3, 3)`. The basis vectors are rows of
         the (..., 3, 3) blocks.
     """
     ebs = nm.zeros((coors.shape[0], 4, 3, 3), dtype=nm.float64)
@@ -129,7 +129,7 @@ def create_rotation_ops(ebs):
     Parameters
     ----------
     ebs : array
-        The local bases, shape (n_el, 4, 3, 3).
+        The local bases, shape `(n_el, 4, 3, 3)`.
 
     Returns
     -------
@@ -144,14 +144,15 @@ def create_rotation_ops(ebs):
     return rops
 
 def create_strain_transform(mtx_ts):
-    """
+    r"""
     Create strain tensor transformation matrices, given coordinate
     transformation matrices.
 
     Notes
     -----
-    Expresses T E T^T in terms of symmetrix storage as Q * e, with the
-    ordering of components: e = [e11, e22, e33, 2 e12, 2 e13, 2 e23].
+    Expresses :math:`T E T^T` in terms of symmetrix storage as :math:`Q e`,
+    with the ordering of components:
+    :math:`e = [e_{11}, e_{22}, e_{33}, 2 e_{12}, 2 e_{13}, 2 e_{23}]`.
     """
     mtx_qs = nm.empty((mtx_ts.shape[0], mtx_ts.shape[1], 6, 6),
                       dtype=nm.float64)
@@ -175,14 +176,14 @@ def create_strain_transform(mtx_ts):
 
 def get_mapping_data(ebs, rops, ps, coors_loc, qp_coors, qp_weights,
                      special_dx3=False):
-    """
+    r"""
     Compute reference element mapping data for shell10x elements.
 
     Notes
     -----
     The code assumes that the quadrature points are w.r.t. (:math:`t` =
-    thickness of the shell) :math:`[0, 1] x [0, 1] x [-t/2, t/2]` reference
-    cell and the quadrature weights are multiplied by :math:`t`.
+    thickness of the shell) :math:`[0, 1] \times [0, 1] \times [-t/2, t/2]`
+    reference cell and the quadrature weights are multiplied by :math:`t`.
     """
     n_el = coors_loc.shape[0]
     n_qp = qp_weights.shape[0]
@@ -254,12 +255,14 @@ def get_mapping_data(ebs, rops, ps, coors_loc, qp_coors, qp_weights,
     return coors_loc_3d, bfu, bfgm, dxidx, det
 
 def get_dsg_strain(coors_loc, qp_coors):
-    """
+    r"""
     Compute DSG strain components.
 
     Returns
     -------
-    The strain matrix components corresponding to e_{13}, e_{23}.
+    dsg : array
+        The strain matrix components corresponding to :math:`e_{13}`,
+        :math:`e_{23}`, shape `(n_el, n_qp, 2, 24)`.
 
     Notes
     -----

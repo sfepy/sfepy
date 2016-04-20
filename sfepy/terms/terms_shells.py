@@ -18,8 +18,10 @@ class Shell10XTerm(Term):
     :math:`[-t/2, t/2]`, and the quadrature weights are multiplied by
     :math:`t`. The variables :math:`\ul{v}` and :math:`\ul{u}` have to use
     :class:`Shell10XField <sfepy.discrete.structural.fields.Shell10XField>` and
-    have six components. The term does not implement the piezo-electric
-    components of the shell10x element yet.
+    have six components. The reference element mapping is implemented by
+    :class:`Shell10XMapping
+    <sfepy.discrete.structural.mappings.Shell10XMapping>`. The term does not
+    implement the piezo-electric components of the shell10x element yet.
 
     The term has to be used with quadrilateral cells in 3D and should behave as
     the linear elastic term, but with fewer degrees of freedom for the same

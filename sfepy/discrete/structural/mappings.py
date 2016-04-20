@@ -9,7 +9,7 @@ import sfepy.mechanics.shell10x as shell10x
 
 class Shell10XMapping(Mapping):
     """
-    The reference mapping for dw_shell10x element.
+    The reference mapping for the shell10x element.
     """
 
     def __init__(self, region, field):
