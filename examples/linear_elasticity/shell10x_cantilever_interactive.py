@@ -101,30 +101,60 @@ def get_analytical_displacement(dims, young, force):
     return u
 
 usage = """%prog [options]"""
-help = {
+helps = {
+    'dims' :
+    'dimensions of the cantilever [default: %default]',
+    'nx' :
+    'the tange for the numbers of cells in the x direction [default: %default]',
+    'young' : "the Young's modulus [default: %default]",
+    'poisson' : "the Poisson's ratio [default: %default]",
+    'force' : "the force load [default: %default]",
     'plot' : 'plot the max. displacement w.r.t. number of cells',
     'show' : 'show the results figure',
 }
 
 def main():
     parser = OptionParser(usage=usage, version='%prog')
+    parser.add_option('-d', '--dims', metavar='l,w,t',
+                      action='store', dest='dims',
+                      default='0.2,0.01,0.001', help=helps['dims'])
+    parser.add_option('-n', '--nx', metavar='start,stop,step',
+                      action='store', dest='nx',
+                      default='2,203,8', help=helps['nx'])
+    parser.add_option('--young', metavar='float', type=float,
+                      action='store', dest='young',
+                      default=210e9, help=helps['young'])
+    parser.add_option('--poisson', metavar='float', type=float,
+                      action='store', dest='poisson',
+                      default=0.3, help=helps['poisson'])
+    parser.add_option('--force', metavar='float', type=float,
+                      action='store', dest='force',
+                      default=-1.0, help=helps['force'])
     parser.add_option('-p', '--plot',
                       action="store_true", dest='plot',
-                      default=False, help=help['plot'])
+                      default=False, help=helps['plot'])
     parser.add_option('-s', '--show',
                       action="store_true", dest='show',
-                      default=False, help=help['show'])
+                      default=False, help=helps['show'])
     options, args = parser.parse_args()
 
-    dims = (0.2, 0.01, 0.001)
-    young = 210e9
-    poisson = 0.3
-    force = -1.0
+    dims = nm.array([float(ii) for ii in options.dims.split(',')],
+                    dtype=nm.float64)
+    nxs = tuple([int(ii) for ii in options.nx.split(',')])
+    young = options.young
+    poisson = options.poisson
+    force = options.force
+
+    output('using values:')
+    output("  dimensions:", dims)
+    output("  Young's modulus:", options.young)
+    output("  Poisson's ratio:", options.poisson)
+    output('  force:', options.force)
 
     u_exact = get_analytical_displacement(dims, young, force)
 
     log = []
-    for nx in xrange(2, 203, 8):
+    for nx in xrange(*nxs):
         shape = (nx, 2)
 
         pb, state, u, gamma2 = solve_problem(shape, dims, young, poisson, force)
