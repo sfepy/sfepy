@@ -199,7 +199,7 @@ def main():
         lines1, labels1 = ax1.get_legend_handles_labels()
         lines2, labels2 = ax2.get_legend_handles_labels()
 
-        ax2.legend(lines1 + lines2, labels1 + labels2)
+        ax2.legend(lines1 + lines2, labels1 + labels2, loc='best')
 
         plt.tight_layout()
         ax1.set_xlim([log[0, 0] - 2, log[-1, 0] + 2])
