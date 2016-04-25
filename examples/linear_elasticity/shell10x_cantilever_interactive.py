@@ -105,7 +105,7 @@ helps = {
     'dims' :
     'dimensions of the cantilever [default: %default]',
     'nx' :
-    'the tange for the numbers of cells in the x direction [default: %default]',
+    'the range for the numbers of cells in the x direction [default: %default]',
     'young' : "the Young's modulus [default: %default]",
     'poisson' : "the Poisson's ratio [default: %default]",
     'force' : "the force load [default: %default]",
