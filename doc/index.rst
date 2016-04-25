@@ -126,8 +126,11 @@
    Support
    -------
 
-   Work on SfePy is partially supported by the following projects:
+   Work on SfePy is partially supported by the following ongoing projects:
 
+   - project GA16-03823S (Homogenization and multi-scale computational modelling
+     of flow and nonlinear interactions in porous smart structures) of Czech
+     Science Foundation, since 2016;
    - project GAP101/12/2315 (Modelling of acoustic wave propagation in strongly
      heterogeneous media; multi-scale numerical and analytical approaches) of
      Czech Science Foundation, since 2012.
@@ -171,4 +174,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
