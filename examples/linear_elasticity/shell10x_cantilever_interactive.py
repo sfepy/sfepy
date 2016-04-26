@@ -56,6 +56,15 @@ def make_domain(dims, shape, transform=None):
 
         mesh.coors[:] = transform_data(coors, mtx=mtx)
 
+    elif transform == 'twist':
+        bbox = mesh.get_bounding_box()
+        x0, x1 = bbox[:, 0]
+
+        angles = 0.5 *  nm.pi * (coors[:, 0] - x0) / (x1 - x0)
+        mtx = make_axis_rotation_matrix([-1, 0, 0], angles[:, None, None])
+
+        mesh.coors[:] = transform_data(mesh.coors, mtx=mtx)
+
     return domain
 
 def solve_problem(shape, dims, young, poisson, force, transform=None):
@@ -76,6 +85,9 @@ def solve_problem(shape, dims, young, poisson, force, transform=None):
 
     elif transform == 'bend':
         pload = [[force / shape[1], 0.0, 0.0, 0.0, 0.0, 0.0]] * shape[1]
+
+    elif transform == 'twist':
+        pload = [[0.0, force / shape[1], 0.0, 0.0, 0.0, 0.0]] * shape[1]
 
     m = Material('m', D=sh.create_elastic_tensor(young=young, poisson=poisson),
                  values={'.drill' : 1e-7})
@@ -123,6 +135,9 @@ def get_analytical_displacement(dims, young, force, transform=None):
     elif transform == 'bend':
         u = force * 3.0 * nm.pi * l**3 / (young * b * h**3)
 
+    elif transform == 'twist':
+        u = None
+
     return u
 
 usage = """%prog [options]"""
@@ -148,9 +163,9 @@ def main():
     parser.add_option('-n', '--nx', metavar='start,stop,step',
                       action='store', dest='nx',
                       default='2,203,8', help=helps['nx'])
-    parser.add_option('-t', '--transform', metavar='none,bend',
+    parser.add_option('-t', '--transform', metavar='{none, bend, twist}',
                       action='store', dest='transform',
-                      choices=['none', 'bend'],
+                      choices=['none', 'bend', 'twist'],
                       default='none', help=helps['transform'])
     parser.add_option('--young', metavar='float', type=float,
                       action='store', dest='young',
@@ -191,11 +206,17 @@ def main():
 
     if options.transform is None:
         ilog = 2
-        label = 'u_3'
+        labels = ['u_3']
 
     elif options.transform == 'bend':
         ilog = 0
-        label = 'u_0'
+        labels = ['u_1']
+
+    elif options.transform == 'twist':
+        ilog = [0, 1, 2]
+        labels = ['u_1', 'u_2', 'u_3']
+
+    label = ', '.join(labels)
 
     log = []
     for nx in xrange(*nxs):
@@ -208,7 +229,7 @@ def main():
         output('DOFs along the loaded edge:')
         output('\n%s' % dofs)
 
-        log.append((nx - 1, dofs[0, ilog]))
+        log.append([nx - 1] + nm.array(dofs[0, ilog], ndmin=1).tolist())
 
     pb.save_state('shell10x_cantilever.vtk', state)
 
@@ -229,22 +250,30 @@ def main():
         fig, ax1 = plt.subplots()
         fig.suptitle('max. $%s$ displacement' % label)
 
-        ax1.plot(log[:, 0], log[:, 1], 'b', label=r'$%s$' % label)
+        for ic in range(log.shape[1] - 1):
+            ax1.plot(log[:, 0], log[:, ic + 1], label=r'$%s$' % labels[ic])
         ax1.set_xlabel('# of cells')
         ax1.set_ylabel(r'$%s$' % label)
         ax1.grid(which='both')
-        ax1.hlines(u_exact, log[0, 0], log[-1, 0],
-                   'r', 'dotted', label=r'$%s^{analytical}$' % label)
-
-        ax2 = ax1.twinx()
-        ax2.semilogy(log[:, 0], nm.abs(log[:, 1] - u_exact), 'g',
-                     label=r'$|%s - %s^{analytical}|$' % (label, label))
-        ax2.set_ylabel(r'$|%s - %s^{analytical}|$' % (label, label))
 
         lines1, labels1 = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
 
-        ax2.legend(lines1 + lines2, labels1 + labels2, loc='best')
+        if u_exact is not None:
+            ax1.hlines(u_exact, log[0, 0], log[-1, 0],
+                       'r', 'dotted', label=r'$%s^{analytical}$' % label)
+
+            ax2 = ax1.twinx()
+            # Assume single log column.
+            ax2.semilogy(log[:, 0], nm.abs(log[:, 1] - u_exact), 'g',
+                         label=r'$|%s - %s^{analytical}|$' % (label, label))
+            ax2.set_ylabel(r'$|%s - %s^{analytical}|$' % (label, label))
+
+            lines2, labels2 = ax2.get_legend_handles_labels()
+
+        else:
+            lines2, labels2 = [], []
+
+        ax1.legend(lines1 + lines2, labels1 + labels2, loc='best')
 
         plt.tight_layout()
         ax1.set_xlim([log[0, 0] - 2, log[-1, 0] + 2])
