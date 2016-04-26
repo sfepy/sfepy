@@ -77,7 +77,7 @@ def solve_problem(shape, dims, young, poisson, force, transform=None):
     elif transform == 'bend':
         pload = [[force / shape[1], 0.0, 0.0, 0.0, 0.0, 0.0]] * shape[1]
 
-    m = Material('m', D=sh.create_elastic_tensor(young=210e9, poisson=0.3),
+    m = Material('m', D=sh.create_elastic_tensor(young=young, poisson=poisson),
                  values={'.drill' : 1e-7})
     load = Material('load', values={'.val' : pload})
 
