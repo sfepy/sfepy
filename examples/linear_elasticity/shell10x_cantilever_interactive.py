@@ -121,7 +121,7 @@ def get_analytical_displacement(dims, young, force, transform=None):
         u = force * l**3 / (3 * young * moment)
 
     elif transform == 'bend':
-        u = - 3.0 * nm.pi * l**3 / (young * b * h**3)
+        u = force * 3.0 * nm.pi * l**3 / (young * b * h**3)
 
     return u
 
