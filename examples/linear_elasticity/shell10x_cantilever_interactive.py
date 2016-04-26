@@ -152,6 +152,7 @@ helps = {
     'poisson' : "the Poisson's ratio [default: %default]",
     'force' : "the force load [default: %default]",
     'plot' : 'plot the max. displacement w.r.t. number of cells',
+    'scaling' : 'the displacement scaling, with --show [default: %default]',
     'show' : 'show the results figure',
 }
 
@@ -179,6 +180,9 @@ def main():
     parser.add_option('-p', '--plot',
                       action="store_true", dest='plot',
                       default=False, help=helps['plot'])
+    parser.add_option('--u-scaling', metavar='float', type=float,
+                      action='store', dest='scaling',
+                      default=1.0, help=helps['scaling'])
     parser.add_option('-s', '--show',
                       action="store_true", dest='show',
                       default=False, help=helps['show'])
@@ -284,10 +288,8 @@ def main():
         from sfepy.postprocess.viewer import Viewer
         from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
-        scaling = 1.0
-
         ds = {'uu' : DomainSpecificPlot('plot_displacements',
-                                        ['rel_scaling=%s' % scaling])}
+                                        ['rel_scaling=%f' % options.scaling])}
         view = Viewer('shell10x_cantilever.vtk')
         view(domain_specific=ds, is_scalar_bar=True, is_wireframe=True,
              opacity={'wireframe' : 0.5})
