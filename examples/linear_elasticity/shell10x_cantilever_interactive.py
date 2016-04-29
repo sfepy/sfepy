@@ -10,6 +10,7 @@ sys.path.append('.')
 import numpy as nm
 
 from sfepy.base.base import output, IndexedStruct
+from sfepy.base.ioutils import ensure_path
 from sfepy.discrete import (FieldVariable, Material, Integral,
                             Equation, Equations, Problem)
 from sfepy.discrete.fem import Mesh, FEDomain, Field
@@ -143,6 +144,7 @@ def get_analytical_displacement(dims, young, force, transform=None):
 
 usage = """%prog [options]"""
 helps = {
+    'output_dir' : 'output directory',
     'dims' :
     'dimensions of the cantilever [default: %(default)s]',
     'nx' :
@@ -156,11 +158,13 @@ helps = {
     'plot' : 'plot the max. displacement w.r.t. number of cells',
     'scaling' : 'the displacement scaling, with --show [default: %(default)s]',
     'show' : 'show the results figure',
+    'silent' : 'do not print messages to screen',
 }
 
 def main():
     parser = ArgumentParser(description=__doc__.rstrip(),
                             formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('output_dir', help=helps['output_dir'])
     parser.add_argument('-d', '--dims', metavar='l,w,t',
                         action='store', dest='dims',
                         default='0.2,0.01,0.001', help=helps['dims'])
@@ -188,6 +192,9 @@ def main():
     parser.add_argument('-s', '--show',
                         action="store_true", dest='show',
                         default=False, help=helps['show'])
+    parser.add_argument('--silent',
+                        action='store_true', dest='silent',
+                        default=False, help=helps['silent'])
     options = parser.parse_args()
 
     dims = nm.array([float(ii) for ii in options.dims.split(',')],
@@ -197,8 +204,18 @@ def main():
     poisson = options.poisson
     force = options.force
 
+    output_dir = options.output_dir
+
+    odir = lambda filename: os.path.join(output_dir, filename)
+
+    filename = odir('output_log.txt')
+    ensure_path(filename)
+    output.set_output(filename=filename, combined=options.silent == False)
+
+    output('output directory:', output_dir)
     output('using values:')
     output("  dimensions:", dims)
+    output("  nx range:", nxs)
     output("  Young's modulus:", options.young)
     output("  Poisson's ratio:", options.poisson)
     output('  force:', options.force)
@@ -237,7 +254,7 @@ def main():
 
         log.append([nx - 1] + nm.array(dofs[0, ilog], ndmin=1).tolist())
 
-    pb.save_state('shell10x_cantilever.vtk', state)
+    pb.save_state(odir('shell10x_cantilever.vtk'), state)
 
     log = nm.array(log)
 
@@ -284,6 +301,10 @@ def main():
         plt.tight_layout()
         ax1.set_xlim([log[0, 0] - 2, log[-1, 0] + 2])
 
+        suffix = {None: 'straight',
+                  'bend' : 'bent', 'twist' : 'twisted'}[options.transform]
+        fig.savefig(odir('shell10x_cantilever_convergence_%s.png' % suffix))
+
         plt.show()
 
     if options.show:
@@ -292,7 +313,7 @@ def main():
 
         ds = {'uu' : DomainSpecificPlot('plot_displacements',
                                         ['rel_scaling=%f' % options.scaling])}
-        view = Viewer('shell10x_cantilever.vtk')
+        view = Viewer(odir('shell10x_cantilever.vtk'))
         view(domain_specific=ds, is_scalar_bar=True, is_wireframe=True,
              opacity={'wireframe' : 0.5})
 
