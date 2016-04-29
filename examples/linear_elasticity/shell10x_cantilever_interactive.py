@@ -1,6 +1,35 @@
 #!/usr/bin/env python
 """
-The bending of a long thin cantilever beam computed using the dw_shell10x term.
+Bending of a long thin cantilever beam computed using the
+:class:`dw_shell10x <sfepy.terms.terms_shells.Shell10XTerm>` term.
+
+The material, loading and discretization parameters can be given using command
+line options.
+
+Besides the default straight beam, two coordinate transformations can be applied
+(see the ``--transform`` option):
+
+- bend: the beam is bent
+- twist: the beam is twisted
+
+For the straight and bent beam a comparison with the analytical solution
+coming from the Euler-Bernoulli theory is shown.
+
+Usage Examples
+--------------
+
+See all options::
+
+  python examples/linear_elasticity/shell10x_cantilever_interactive.py -h
+
+Apply the bending transformation to the beam domain coordinates, plot
+convergence curves w.r.t. number of elements::
+
+  python examples/linear_elasticity/shell10x_cantilever_interactive.py output -t bend -p
+
+Apply the twisting transformation to the beam domain coordinates, change number of cells, show the solution::
+
+  python examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3 -s
 """
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
