@@ -343,8 +343,8 @@ class Term(Struct):
         if integrals is None:
             integrals = Integrals()
 
-        obj = constructor(desc.name, desc.args, None, region)
-        obj.set_integral(integrals.get(desc.integral))
+        integral = integrals.get(desc.integral)
+        obj = constructor(desc.name, desc.args, integral, region)
         obj.sign = desc.sign
 
         return obj
