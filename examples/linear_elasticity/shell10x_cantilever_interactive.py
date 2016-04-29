@@ -2,11 +2,12 @@
 """
 The bending of a long thin cantilever beam computed using the dw_shell10x term.
 """
-from optparse import OptionParser
-import numpy as nm
-
+from argparse import RawDescriptionHelpFormatter, ArgumentParser
+import os
 import sys
 sys.path.append('.')
+
+import numpy as nm
 
 from sfepy.base.base import output, IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral,
@@ -143,50 +144,51 @@ def get_analytical_displacement(dims, young, force, transform=None):
 usage = """%prog [options]"""
 helps = {
     'dims' :
-    'dimensions of the cantilever [default: %default]',
+    'dimensions of the cantilever [default: %(default)s]',
     'nx' :
-    'the range for the numbers of cells in the x direction [default: %default]',
+    'the range for the numbers of cells in the x direction'
+    ' [default: %(default)s]',
     'transform' :
-    'the transformation of the domain coordinates [default: %default]',
-    'young' : "the Young's modulus [default: %default]",
-    'poisson' : "the Poisson's ratio [default: %default]",
-    'force' : "the force load [default: %default]",
+    'the transformation of the domain coordinates [default: %(default)s]',
+    'young' : "the Young's modulus [default: %(default)s]",
+    'poisson' : "the Poisson's ratio [default: %(default)s]",
+    'force' : "the force load [default: %(default)s]",
     'plot' : 'plot the max. displacement w.r.t. number of cells',
-    'scaling' : 'the displacement scaling, with --show [default: %default]',
+    'scaling' : 'the displacement scaling, with --show [default: %(default)s]',
     'show' : 'show the results figure',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-d', '--dims', metavar='l,w,t',
-                      action='store', dest='dims',
-                      default='0.2,0.01,0.001', help=helps['dims'])
-    parser.add_option('-n', '--nx', metavar='start,stop,step',
-                      action='store', dest='nx',
-                      default='2,203,8', help=helps['nx'])
-    parser.add_option('-t', '--transform', metavar='{none, bend, twist}',
-                      action='store', dest='transform',
-                      choices=['none', 'bend', 'twist'],
-                      default='none', help=helps['transform'])
-    parser.add_option('--young', metavar='float', type=float,
-                      action='store', dest='young',
-                      default=210e9, help=helps['young'])
-    parser.add_option('--poisson', metavar='float', type=float,
-                      action='store', dest='poisson',
-                      default=0.3, help=helps['poisson'])
-    parser.add_option('--force', metavar='float', type=float,
-                      action='store', dest='force',
-                      default=-1.0, help=helps['force'])
-    parser.add_option('-p', '--plot',
-                      action="store_true", dest='plot',
-                      default=False, help=helps['plot'])
-    parser.add_option('--u-scaling', metavar='float', type=float,
-                      action='store', dest='scaling',
-                      default=1.0, help=helps['scaling'])
-    parser.add_option('-s', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__.rstrip(),
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('-d', '--dims', metavar='l,w,t',
+                        action='store', dest='dims',
+                        default='0.2,0.01,0.001', help=helps['dims'])
+    parser.add_argument('-n', '--nx', metavar='start,stop,step',
+                        action='store', dest='nx',
+                        default='2,203,8', help=helps['nx'])
+    parser.add_argument('-t', '--transform', choices=['none', 'bend', 'twist'],
+                        action='store', dest='transform',
+                        default='none', help=helps['transform'])
+    parser.add_argument('--young', metavar='float', type=float,
+                        action='store', dest='young',
+                        default=210e9, help=helps['young'])
+    parser.add_argument('--poisson', metavar='float', type=float,
+                        action='store', dest='poisson',
+                        default=0.3, help=helps['poisson'])
+    parser.add_argument('--force', metavar='float', type=float,
+                        action='store', dest='force',
+                        default=-1.0, help=helps['force'])
+    parser.add_argument('-p', '--plot',
+                        action="store_true", dest='plot',
+                        default=False, help=helps['plot'])
+    parser.add_argument('--u-scaling', metavar='float', type=float,
+                        action='store', dest='scaling',
+                        default=1.0, help=helps['scaling'])
+    parser.add_argument('-s', '--show',
+                        action="store_true", dest='show',
+                        default=False, help=helps['show'])
+    options = parser.parse_args()
 
     dims = nm.array([float(ii) for ii in options.dims.split(',')],
                     dtype=nm.float64)
