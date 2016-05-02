@@ -226,7 +226,7 @@ def main():
                         default='0.2,0.01,0.001', help=helps['dims'])
     parser.add_argument('-n', '--nx', metavar='start,stop,step',
                         action='store', dest='nx',
-                        default='2,203,8', help=helps['nx'])
+                        default='2,103,10', help=helps['nx'])
     parser.add_argument('-t', '--transform', choices=['none', 'bend', 'twist'],
                         action='store', dest='transform',
                         default='none', help=helps['transform'])
