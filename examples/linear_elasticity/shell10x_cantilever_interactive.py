@@ -52,11 +52,12 @@ from sfepy.mechanics.tensors import transform_data
 from sfepy.mesh.mesh_generators import gen_block_mesh
 import sfepy.mechanics.shell10x as sh
 
-def make_domain(dims, shape, transform=None):
+def make_mesh(dims, shape, transform=None):
     """
-    Generate a 2D rectangle domain in 3D space, define regions.
+    Generate a 2D rectangle mesh in 3D space, and optionally apply a coordinate
+    transform.
     """
-    _mesh = gen_block_mesh(dims, shape, [0, 0], name='shell100', verbose=False)
+    _mesh = gen_block_mesh(dims, shape, [0, 0], name='shell10x', verbose=False)
 
     coors = nm.c_[_mesh.coors, nm.zeros(_mesh.n_nod, dtype=nm.float64)]
     coors = nm.ascontiguousarray(coors)
@@ -65,14 +66,6 @@ def make_domain(dims, shape, transform=None):
 
     mesh = Mesh.from_data(_mesh.name, coors, _mesh.cmesh.vertex_groups, conns,
                           [_mesh.cmesh.cell_groups], _mesh.descs)
-
-    xmin = (-0.5 + 1e-8) * dims[0]
-    xmax = (0.5 - 1e-8) * dims[0]
-
-    domain = FEDomain('domain', mesh)
-    domain.create_region('Omega', 'all')
-    domain.create_region('Gamma1', 'vertices in (x < %.10f)' % xmin, 'facet')
-    domain.create_region('Gamma2', 'vertices in (x > %.10f)' % xmax, 'facet')
 
     if transform == 'bend':
         bbox = mesh.get_bounding_box()
@@ -86,6 +79,7 @@ def make_domain(dims, shape, transform=None):
         coors[:, 2] = (x1 - x0)
 
         mesh.coors[:] = transform_data(coors, mtx=mtx)
+        mesh.coors[:, 0] -= 0.5 * (x1 - x0)
 
     elif transform == 'twist':
         bbox = mesh.get_bounding_box()
@@ -95,6 +89,21 @@ def make_domain(dims, shape, transform=None):
         mtx = make_axis_rotation_matrix([-1, 0, 0], angles[:, None, None])
 
         mesh.coors[:] = transform_data(mesh.coors, mtx=mtx)
+
+    return mesh
+
+def make_domain(dims, shape, transform=None):
+    """
+    Generate a 2D rectangle domain in 3D space, define regions.
+    """
+    xmin = (-0.5 + 1e-12) * dims[0]
+    xmax = (0.5 - 1e-12) * dims[0]
+
+    mesh = make_mesh(dims, shape, transform=transform)
+    domain = FEDomain('domain', mesh)
+    domain.create_region('Omega', 'all')
+    domain.create_region('Gamma1', 'vertices in (x < %.14f)' % xmin, 'facet')
+    domain.create_region('Gamma2', 'vertices in (x > %.14f)' % xmax, 'facet')
 
     return domain
 
