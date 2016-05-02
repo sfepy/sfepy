@@ -68,7 +68,7 @@ def post_process(out, problem, state, extend=False):
 
         u_exact = sci.get_analytical_displacement(dims, young, force,
                                                   transform=transform)
-        output('max. %s displacements:' % label, dofs[0, ii])
+        output('max. %s displacement:' % label, dofs[0, ii])
         output('analytical value:', u_exact)
 
     return out

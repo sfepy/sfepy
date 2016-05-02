@@ -314,7 +314,7 @@ def main():
 
     log = nm.array(log)
 
-    output('max. %s displacements w.r.t. number of cells:' % label)
+    output('max. %s displacement w.r.t. number of cells:' % label)
     output('\n%s' % log)
     output('analytical value:', u_exact)
 
