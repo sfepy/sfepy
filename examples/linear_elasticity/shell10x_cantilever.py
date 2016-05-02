@@ -14,15 +14,15 @@ Find displacements of the central plane :math:`\ul{u}`, and rotations
 where :math:`D_{ijkl}` is the isotropic elastic tensor, given using the Young's
 modulus :math:`E` and the Poisson's ratio :math:`\nu`.
 
-The variable ``u`` below holds both :math:`\ul{u}` and :math:`\ul{\alpha}` DOFs.
-For visualization, it is saved as two fields ``uu`` and ``ub``, corresponding
-to :math:`\ul{u}` and :math:`\ul{\alpha}`, respectively.
+The variable ``u`` below holds both :math:`\ul{u}` and :math:`\ul{\alpha}`
+DOFs. For visualization, it is saved as two fields ``u_disp`` and ``u_rot``,
+corresponding to :math:`\ul{u}` and :math:`\ul{\alpha}`, respectively.
 
 See also :ref:`linear_elasticity-shell10x_cantilever_interactive` example.
 
 View the results using::
 
-  python postproc.py shell10x.vtk -d 'uu,plot_displacements,rel_scaling=1.0' --opacity='wireframe=0.5' -b --wireframe
+  python postproc.py shell10x.vtk -d 'u_disp,plot_displacements,rel_scaling=1.0' --opacity='wireframe=0.5' -b --wireframe
 """
 from sfepy.base.base import output
 from sfepy.discrete.fem.meshio import UserMeshIO

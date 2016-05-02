@@ -15,9 +15,9 @@ Find displacements of the central plane :math:`\ul{u}`, and rotations
 where :math:`D_{ijkl}` is the isotropic elastic tensor, given using the Young's
 modulus :math:`E` and the Poisson's ratio :math:`\nu`.
 
-The variable ``u`` below holds both :math:`\ul{u}` and :math:`\ul{\alpha}` DOFs.
-For visualization, it is saved as two fields ``uu`` and ``ub``, corresponding
-to :math:`\ul{u}` and :math:`\ul{\alpha}`, respectively.
+The variable ``u`` below holds both :math:`\ul{u}` and :math:`\ul{\alpha}`
+DOFs. For visualization, it is saved as two fields ``u_disp`` and ``u_rot``,
+corresponding to :math:`\ul{u}` and :math:`\ul{\alpha}`, respectively.
 
 The material, loading and discretization parameters can be given using command
 line options.
@@ -367,8 +367,9 @@ def main():
         from sfepy.postprocess.viewer import Viewer
         from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
-        ds = {'uu' : DomainSpecificPlot('plot_displacements',
-                                        ['rel_scaling=%f' % options.scaling])}
+        ds = {'u_disp' :
+                  DomainSpecificPlot('plot_displacements',
+                                     ['rel_scaling=%f' % options.scaling])}
         view = Viewer(odir('shell10x_cantilever.vtk'))
         view(domain_specific=ds, is_scalar_bar=True, is_wireframe=True,
              opacity={'wireframe' : 0.5})

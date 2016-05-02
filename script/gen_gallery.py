@@ -200,8 +200,8 @@ custom = {
         '' : {
             'is_wireframe' : True,
             'domain_specific' : {
-                'uu' : DomainSpecificPlot('plot_displacements',
-                                         ['rel_scaling=1']),
+                'u_disp' : DomainSpecificPlot('plot_displacements',
+                                              ['rel_scaling=1']),
             },
             'view' : (-45, 81, 0.59, [-0.075,  0.023,  0.093]),
             'roll' : -75.0,
