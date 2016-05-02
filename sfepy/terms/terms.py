@@ -343,8 +343,8 @@ class Term(Struct):
         if integrals is None:
             integrals = Integrals()
 
-        obj = constructor(desc.name, desc.args, None, region)
-        obj.set_integral(integrals.get(desc.integral))
+        integral = integrals.get(desc.integral)
+        obj = constructor(desc.name, desc.args, integral, region)
         obj.sign = desc.sign
 
         return obj
@@ -1003,10 +1003,6 @@ class Term(Struct):
         if self.integration == 'point':
             phys_qps = PhysicalQPs()
 
-        elif self.integration == 'plate':
-            phys_qps = get_physical_qps(self.region, self.integral,
-                                        map_kind='v')
-
         else:
             phys_qps = get_physical_qps(self.region, self.integral)
 
@@ -1181,7 +1177,7 @@ class Term(Struct):
                     shape = _parse_tuple_shape(sh)
                     ls = len(shape)
 
-                    aarg = nm.asarray(arg)
+                    aarg = nm.array(arg, ndmin=1)
 
                     # Substiture general dimension 'N' with actual value.
                     iinfs = nm.where(nm.isinf(shape))[0]

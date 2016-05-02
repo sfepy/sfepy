@@ -1,18 +1,11 @@
-def configuration(parent_package='',top_path=None):
+#!/usr/bin/env python
+
+def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     import os.path as op
 
     auto_name = op.split(op.dirname(__file__))[-1]
     config = Configuration(auto_name, parent_package, top_path)
-
-    subdirs = [
-        'common',
-        'fem',
-        'iga',
-        'structural',
-    ]
-    for subdir in subdirs:
-        config.add_subpackage(subdir)
 
     return config
 

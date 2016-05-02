@@ -134,11 +134,10 @@ class IGField(Field):
         ----------
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
-            The term integration type.
+        integration : 'volume'
+            The term integration type. Only 'volume' type is implemented.
         region_name : str
-            The name of surface region, required when `shape_kind` is
-            'surface'.
+            The name of the region of the integral.
 
         Returns
         -------

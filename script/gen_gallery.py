@@ -196,6 +196,18 @@ custom = {
             'opacity' : {'wireframe' : 0.2},
         },
     },
+    'linear_elasticity/shell10x_cantilever.py' : {
+        '' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                'u_disp' : DomainSpecificPlot('plot_displacements',
+                                              ['rel_scaling=1']),
+            },
+            'view' : (-45, 81, 0.59, [-0.075,  0.023,  0.093]),
+            'roll' : -75.0,
+            'opacity' : {'wireframe' : 0.5},
+        },
+    },
     'navier_stokes/stokes_slip_bc.py' : {
         '' : {
             'view' : (-63, 52, 5.2, [-1.5, -0.65, 0.12]),

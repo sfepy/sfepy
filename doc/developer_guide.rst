@@ -1012,6 +1012,15 @@ sfepy.discrete.iga sub-package
    src/sfepy/discrete/iga/plot_nurbs
    src/sfepy/discrete/iga/utils
 
+sfepy.discrete.structural sub-package
+"""""""""""""""""""""""""""""""""""""
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/discrete/structural/fields
+   src/sfepy/discrete/structural/mappings
+
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1054,6 +1063,7 @@ sfepy.mechanics package
    src/sfepy/mechanics/elastic_constants
    src/sfepy/mechanics/matcoefs
    src/sfepy/mechanics/membranes
+   src/sfepy/mechanics/shell10x
    src/sfepy/mechanics/tensors
    src/sfepy/mechanics/units
 
@@ -1159,6 +1169,7 @@ sfepy.terms package
    src/sfepy/terms/terms_navier_stokes
    src/sfepy/terms/terms_piezo
    src/sfepy/terms/terms_point
+   src/sfepy/terms/terms_shells
    src/sfepy/terms/terms_surface
    src/sfepy/terms/terms_th
    src/sfepy/terms/terms_volume

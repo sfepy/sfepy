@@ -20,11 +20,15 @@ class PhysicalQPs(Struct):
         """
         n_qp = self.shape[1]
 
-        if (rshape[0] / n_qp) * n_qp != rshape[0]:
-            raise ValueError('incompatible shapes! (n_qp: %d, %s)'
-                             % (n_qp, rshape))
+        if n_qp > 0:
+            if (rshape[0] / n_qp) * n_qp != rshape[0]:
+                raise ValueError('incompatible shapes! (n_qp: %d, %s)'
+                                 % (n_qp, rshape))
 
-        shape = (rshape[0] / n_qp, n_qp) + rshape[1:]
+            shape = (rshape[0] / n_qp, n_qp) + rshape[1:]
+
+        else:
+            shape = (rshape[0], 0, 0, 0)
 
         return shape
 

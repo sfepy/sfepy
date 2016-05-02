@@ -121,13 +121,14 @@ class Field(Struct):
         Create a Field subclass instance based on the configuration.
         """
         if Field._all is None:
-            import sfepy
+            from sfepy import get_paths
             from sfepy.base.base import load_classes
 
             field_files = [ii for ii
-                           in sfepy.get_paths('sfepy/discrete/fem/fields*.py')
-                           if 'fields_base.py' not in ii] \
-                           + sfepy.get_paths('sfepy/discrete/iga/fields*.py')
+                           in get_paths('sfepy/discrete/fem/fields*.py')
+                           if 'fields_base.py' not in ii]
+            field_files += get_paths('sfepy/discrete/iga/fields*.py')
+            field_files += get_paths('sfepy/discrete/structural/fields*.py')
             Field._all = load_classes(field_files, [Field], ignore_errors=True,
                                       name_attr='family_name')
         table = Field._all
