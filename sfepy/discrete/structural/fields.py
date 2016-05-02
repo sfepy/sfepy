@@ -68,12 +68,12 @@ class Shell10XField(H1NodalMixin, VolumeField):
         """
         out = {}
 
-        out[key+'u'] = Struct(name='output_data', mode='vertex',
-                              data=dofs[:, :3], var_name=var_name,
-                              dofs=dof_names[:3])
+        out[key + '_disp'] = Struct(name='output_data', mode='vertex',
+                                    data=dofs[:, :3], var_name=var_name,
+                                    dofs=dof_names[:3])
 
-        out[key+'b'] = Struct(name='output_data', mode='vertex',
-                              data=dofs[:, 3:], var_name=var_name,
-                              dofs=dof_names[3:])
+        out[key + '_rot'] = Struct(name='output_data', mode='vertex',
+                                   data=dofs[:, 3:], var_name=var_name,
+                                   dofs=dof_names[3:])
 
         return out
