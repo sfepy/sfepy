@@ -90,7 +90,8 @@ class Shell10XTerm(Term):
 
     - DSG method
     - EAS method
-    - drilling rotations lock (parameter :math:`\chi`)
+    - drilling rotations lock (parameter :math:`\chi` - a good value is about
+      :math:`10^{-7}`)
 
     For detailed theoretical information see the references.
 
