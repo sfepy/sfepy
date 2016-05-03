@@ -20,7 +20,7 @@ def gen_datas(meshes):
         bbox = mesh.get_bounding_box()
         nx = bbox[1,0] - bbox[0,0]
         centre = 0.5 * bbox.sum(axis=0)
-        mesh.coors -= centre
+        mesh.coors[:] -= centre
 
         data = nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / nx)
         datas['scalar_' + key] = data
@@ -80,6 +80,28 @@ def do_interpolation(m2, m1, data, field_name, force=False):
 
     return u1, u2
 
+def prepare_variable(filename, n_components):
+    from sfepy.discrete import FieldVariable
+    from sfepy.discrete.fem import Mesh, FEDomain, Field
+
+    mesh = Mesh.from_file(filename)
+
+    bbox = mesh.get_bounding_box()
+    dd = bbox[1,:] - bbox[0,:]
+    data = (nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / dd[0])
+            * nm.cos(4.0 * nm.pi * mesh.coors[:,1:2] / dd[1]))
+
+    domain = FEDomain('domain', mesh)
+    omega = domain.create_region('Omega', 'all')
+    field = Field.from_args('field', nm.float64, n_components, omega,
+                            approx_order=2)
+
+    u = FieldVariable('u', 'parameter', field,
+                      primary_var_name='(set-to-None)')
+    u.set_from_mesh_vertices(data * nm.arange(1, n_components + 1)[None, :])
+
+    return u
+
 class Test(TestCommon):
 
     @staticmethod
@@ -95,15 +117,14 @@ class Test(TestCommon):
         fname = in_dir(self.options.out_dir)
 
         meshes = {
-            'tp' : Mesh('original mesh', data_dir + '/meshes/3d/block.mesh'),
-            'si' : Mesh('original mesh', data_dir + '/meshes/3d/cylinder.mesh'),
+            'tp' : Mesh.from_file(data_dir + '/meshes/3d/block.mesh'),
+            'si' : Mesh.from_file(data_dir + '/meshes/3d/cylinder.mesh'),
         }
 
         datas = gen_datas(meshes)
 
         for field_name in ['scalar_si', 'vector_si', 'scalar_tp', 'vector_tp']:
             m1 = meshes[field_name[-2:]]
-
             for ia, angle in enumerate(nm.linspace(0.0, nm.pi, 11)):
                 self.report('%s: %d. angle: %f' % (field_name, ia, angle))
                 shift = [0.0, 0.0, 0.0]
@@ -129,10 +150,10 @@ class Test(TestCommon):
         from sfepy.discrete import Variables
         from sfepy.discrete.fem import Mesh, FEDomain, Field
 
-        m1 = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
+        m1 = Mesh.from_file(data_dir + '/meshes/3d/block.mesh')
 
-        m2 = Mesh('target mesh', data_dir + '/meshes/3d/cube_medium_tetra.mesh')
-        m2.coors *= 2.0
+        m2 = Mesh.from_file(data_dir + '/meshes/3d/cube_medium_tetra.mesh')
+        m2.coors[:] *= 2.0
 
         bbox = m1.get_bounding_box()
         dd = bbox[1,:] - bbox[0,:]
@@ -183,8 +204,8 @@ class Test(TestCommon):
         from sfepy.discrete.fem import Mesh
 
         meshes = {
-            'tp' : Mesh('original mesh', data_dir + '/meshes/3d/block.mesh'),
-            'si' : Mesh('original mesh', data_dir + '/meshes/3d/cylinder.mesh'),
+            'tp' : Mesh.from_file(data_dir + '/meshes/3d/block.mesh'),
+            'si' : Mesh.from_file(data_dir + '/meshes/3d/cylinder.mesh'),
         }
         datas = gen_datas(meshes)
 
@@ -205,46 +226,91 @@ class Test(TestCommon):
 
     def test_invariance_qp(self):
         from sfepy import data_dir
-        from sfepy.discrete import Variables, Integral
-        from sfepy.discrete.fem import Mesh, FEDomain, Field
+        from sfepy.discrete import Integral
         from sfepy.terms import Term
         from sfepy.discrete.common.mappings import get_physical_qps
 
-        mesh = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
+        ok = True
+        for name in ['meshes/3d/block.mesh', 'meshes/3d/cylinder.mesh',
+                     'meshes/2d/square_quad.mesh',
+                     'meshes/2d/square_unit_tri.mesh']:
+            self.report(name)
 
-        bbox = mesh.get_bounding_box()
-        dd = bbox[1,:] - bbox[0,:]
-        data = nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / dd[0]) \
-               * nm.cos(4.0 * nm.pi * mesh.coors[:,1:2] / dd[1])
+            u = prepare_variable(op.join(data_dir, name), n_components=3)
+            omega = u.field.region
 
-        variables = {
-            'u'       : ('unknown field', 'scalar_tp', 0),
-            'v'       : ('test field',    'scalar_tp', 'u'),
-        }
+            integral = Integral('i', order=3)
+            qps = get_physical_qps(omega, integral)
+            coors = qps.values
 
-        domain = FEDomain('domain', mesh)
-        omega = domain.create_region('Omega', 'all')
-        field = Field.from_args('scalar_tp', nm.float64, 1, omega,
-                                approx_order=1)
-        ff = {field.name : field}
+            term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
+            term.setup()
+            val1 = term.evaluate(mode='qp')
+            val1 = val1.ravel()
 
-        vv = Variables.from_conf(transform_variables(variables), ff)
-        u = vv['u']
-        u.set_from_mesh_vertices(data)
+            val2 = u.evaluate_at(coors).ravel()
 
-        integral = Integral('i', order=2)
-        term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
-        term.setup()
-        val1, _ = term.evaluate(mode='qp')
-        val1 = val1.ravel()
+            self.report('value: max. difference:', nm.abs(val1 - val2).max())
+            ok1 = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
+            self.report('->', ok1)
 
-        qps = get_physical_qps(omega, integral)
-        coors = qps.get_merged_values()
+            term = Term.new('ev_grad(u)', integral, omega, u=u)
+            term.setup()
+            val1 = term.evaluate(mode='qp')
+            val1 = val1.ravel()
 
-        val2 = u.evaluate_at(coors).ravel()
+            val2 = u.evaluate_at(coors, mode='grad').ravel()
 
-        self.report('max. difference:', nm.abs(val1 - val2).max())
-        ok = nm.allclose(val1, val2, rtol=0.0, atol=1e-12)
-        self.report('invariance in qp: %s' % ok)
+            self.report('gradient: max. difference:', nm.abs(val1 - val2).max())
+            ok2 = nm.allclose(val1, val2, rtol=0.0, atol=1e-10)
+            self.report('->', ok2)
+
+            ok = ok and ok1 and ok2
+
+        return ok
+
+    def test_field_gradient(self):
+        from sfepy import data_dir
+
+        ok = True
+        for name in ['meshes/3d/block.mesh', 'meshes/3d/cylinder.mesh',
+                     'meshes/2d/square_quad.mesh',
+                     'meshes/2d/square_unit_tri.mesh']:
+            self.report(name)
+
+            u = prepare_variable(op.join(data_dir, name), n_components=5)
+
+            bbox = u.field.domain.get_mesh_bounding_box()
+            coors = nm.c_[tuple([nm.linspace(ii[0] + 1e-3, ii[1] - 1e-3, 100)
+                                 for ii in bbox.T])]
+
+            grad, cells, status = u.evaluate_at(coors, mode='grad',
+                                                close_limit=0.0,
+                                                ret_status=True)
+            agrad = nm.dot(grad[:, :, :], nm.ones((grad.shape[2], 1)))[..., 0]
+
+            eps = 1e-5
+            val0 = u.evaluate_at(coors - eps, close_limit=0.0)
+            val1 = u.evaluate_at(coors + eps, close_limit=0.0)
+
+            ngrad = 0.5 * (val1 - val0) / eps
+
+            ii = nm.where(status == 0)
+
+            self.report('max. difference:', nm.abs(agrad[ii] - ngrad[ii]).max())
+
+            _ok = nm.allclose(agrad[ii], ngrad[ii], rtol=0.0, atol=10 * eps)
+            self.report('->', _ok)
+
+            ok = ok and _ok
+
+            for ic in range(1, u.n_components):
+                _ok = nm.allclose((ic + 1) * agrad[ii, 0], agrad[ii, ic],
+                                  rtol=0.0, atol=1e-12)
+                self.report('component %d / component 0: mean: %.2f'
+                            % (ic, (agrad[ii, ic] / agrad[ii, 0]).mean()))
+                self.report('->', _ok)
+
+                ok = ok and _ok
 
         return ok

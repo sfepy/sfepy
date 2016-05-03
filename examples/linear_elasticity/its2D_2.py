@@ -29,7 +29,8 @@ def stress_strain(out, pb, state, extend=False):
 
     ev = pb.evaluate
     strain = ev('ev_cauchy_strain.2.Omega(u)', mode='el_avg')
-    stress = ev('ev_cauchy_stress.2.Omega(Asphalt.D, u)', mode='el_avg')
+    stress = ev('ev_cauchy_stress.2.Omega(Asphalt.D, u)', mode='el_avg',
+                copy_materials=False)
 
     out['cauchy_strain'] = Struct(name='output_data', mode='cell',
                                   data=strain, dofs=None)

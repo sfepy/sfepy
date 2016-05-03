@@ -60,13 +60,13 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
                        permutations=None, suffix=''):
     if permutations is not None:
         mesh = mesh.copy()
-        for ig, conn in enumerate(mesh.conns):
-            gel = GeometryElement(mesh.descs[ig])
-            perms = gel.get_conn_permutations()[permutations]
-            n_el, n_ep = conn.shape
-            offsets = nm.arange(n_el) * n_ep
+        gel = GeometryElement(mesh.descs[0])
+        perms = gel.get_conn_permutations()[permutations]
+        conn = mesh.cmesh.get_cell_conn()
+        n_el, n_ep = conn.num, gel.n_vertex
+        offsets = nm.arange(n_el) * n_ep
 
-            conn[:] = conn.take(perms + offsets[:, None])
+        conn.indices[:] = conn.indices.take((perms + offsets[:, None]).ravel())
 
     domain = FEDomain('domain', mesh)
 
@@ -78,13 +78,13 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
 
     if options.plot_dofs:
         import sfepy.postprocess.plot_dofs as pd
-        group = domain.groups[0]
-        ax = pd.plot_mesh(None, mesh.coors, mesh.conns[0], group.gel.edges)
-        ax = pd.plot_global_dofs(ax, field.get_coor(), field.aps[0].econn)
-        ax = pd.plot_local_dofs(ax, field.get_coor(), field.aps[0].econn)
+        import sfepy.postprocess.plot_cmesh as pc
+        ax = pc.plot_wireframe(None, mesh.cmesh)
+        ax = pd.plot_global_dofs(ax, field.get_coor(), field.econn)
+        ax = pd.plot_local_dofs(ax, field.get_coor(), field.econn)
         if options.dofs is not None:
-            ax = pd.plot_nodes(ax, field.get_coor(), field.aps[0].econn,
-                               field.aps[0].interp.poly_spaces['v'].nodes,
+            ax = pd.plot_nodes(ax, field.get_coor(), field.econn,
+                               field.poly_space.nodes,
                                get_dofs(options.dofs, var.n_dof))
         pd.plt.show()
 

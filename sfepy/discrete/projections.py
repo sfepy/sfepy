@@ -36,18 +36,19 @@ def create_mass_matrix(field):
 
     return mtx
 
-def project_by_component(tensor, tensor_qp, component, order):
+def project_by_component(tensor, tensor_qp, component, order,
+                         ls=None, nls_options=None):
     """
     Wrapper around make_l2_projection_data() for non-scalar fields.
     """
     aux = []
     for ic in range(3):
         make_l2_projection_data(component, tensor_qp[..., ic, :].copy(),
-                                order=order)
+                                order=order, ls=ls, nls_options=nls_options)
         aux.append(component())
     tensor.set_data(nm.array(aux).T.ravel())
 
-def make_l2_projection(target, source, ls=None):
+def make_l2_projection(target, source, ls=None, nls_options=None):
     """
     Project a scalar `source` field variable to a scalar `target` field
     variable using the :math:`L^2` dot product.
@@ -57,9 +58,11 @@ def make_l2_projection(target, source, ls=None):
         val.shape = val.shape + (1,)
         return val
 
-    make_l2_projection_data(target, eval_variable, ls=ls)
+    make_l2_projection_data(target, eval_variable,
+                            ls=ls, nls_options=nls_options)
 
-def make_l2_projection_data(target, eval_data, order=None, ls=None):
+def make_l2_projection_data(target, eval_data, order=None,
+                            ls=None, nls_options=None):
     """
     Project scalar data to a scalar `target` field variable using the
     :math:`L^2` dot product.
@@ -106,9 +109,11 @@ def make_l2_projection_data(target, eval_data, order=None, ls=None):
     if ls is None:
         ls = ScipyDirect({})
 
+    if nls_options is None:
+        nls_options = {}
+
     nls_status = IndexedStruct()
-    nls = Newton({'eps_a' : 1e-16, 'i_max' : 1},
-                 lin_solver=ls, status=nls_status)
+    nls = Newton(nls_options, lin_solver=ls, status=nls_status)
 
     pb = Problem('aux', equations=eqs, nls=nls, ls=ls)
 

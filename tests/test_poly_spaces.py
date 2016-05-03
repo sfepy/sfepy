@@ -42,7 +42,7 @@ def _gen_common_data(orders, gels, report):
     from sfepy.linalg import combine
     from sfepy.discrete import FieldVariable, Integral
     from sfepy.discrete.fem import Mesh, FEDomain, Field
-    from sfepy.discrete.fem.global_interp import get_ref_coors
+    from sfepy.discrete.common.global_interp import get_ref_coors
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
                                     ['lagrange', 'lobatto']])]
@@ -77,7 +77,7 @@ def _gen_common_data(orders, gels, report):
                 report('pr: %s, pc: %s' % (pr, pc))
 
                 mesh = mesh0.copy()
-                conn = mesh.conns[0]
+                conn = mesh.get_conn(gel.name)
                 conn[0, :] = conn[0, pr]
                 conn[1, :] = conn[1, pc]
 
@@ -94,11 +94,9 @@ def _gen_common_data(orders, gels, report):
 
                 vec = nm.empty(var.n_dof, dtype=var.dtype)
 
-                ap = field.aps[0]
-                ps = ap.interp.poly_spaces['v']
+                ps = field.poly_space
 
-                dofs = field.get_dofs_in_region_group(region, 0,
-                                                      merge=False)
+                dofs = field.get_dofs_in_region(region, merge=False)
                 edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
 
                 rrc, rcells, rstatus = get_ref_coors(field, rcoors,
@@ -108,7 +106,7 @@ def _gen_common_data(orders, gels, report):
                 assert_((rstatus == 0).all() and (cstatus == 0).all())
 
                 yield (geom, poly_space_base, qp_weights, mesh, ir, ic,
-                       ap, ps, rrc, rcells[0, 1], crc, ccells[0, 1],
+                       field, ps, rrc, rcells[0], crc, ccells[0],
                        vec, edofs, fdofs)
 
 class Test(TestCommon):
@@ -132,7 +130,7 @@ class Test(TestCommon):
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
-             ap, ps, rrc, rcell, crc, ccell, vec,
+             field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
             if poly_space_base == 'lagrange':
@@ -140,8 +138,8 @@ class Test(TestCommon):
                 cbf = ps.eval_base(crc)
 
             else:
-                rbf = ps.eval_base(rrc, ori=ap.ori[:1])
-                cbf = ps.eval_base(crc, ori=ap.ori[1:])
+                rbf = ps.eval_base(rrc, ori=field.ori[:1])
+                cbf = ps.eval_base(crc, ori=field.ori[1:])
 
             dofs = nm.r_[edofs, fdofs]
 
@@ -151,7 +149,7 @@ class Test(TestCommon):
                 vec.fill(0.0)
                 vec[ip] = 1.0
 
-                evec = vec[ap.econn]
+                evec = vec[field.econn]
 
                 rvals = nm.dot(rbf, evec[rcell])
                 cvals = nm.dot(cbf, evec[ccell])
@@ -183,22 +181,22 @@ class Test(TestCommon):
         bads = []
         bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
-             ap, ps, rrc, rcell, crc, ccell, vec,
+             field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
-            conn = mesh.conns[0]
             gel = self.gels[geom]
+            conn = mesh.get_conn(gel.name)
 
-            geo_ps = ap.interp.get_geom_poly_space('v')
+            geo_ps = field.gel.poly_space
             rmapping = VolumeMapping(mesh.coors, conn[rcell:rcell+1],
                                      poly_space=geo_ps)
-            rori = ap.ori[:1] if ap.ori is not None else None
+            rori = field.ori[:1] if field.ori is not None else None
             rvg = rmapping.get_mapping(rrc, qp_weights,
                                        poly_space=ps, ori=rori)
             rbfg = rvg.bfg
 
             cmapping = VolumeMapping(mesh.coors, conn[ccell:ccell+1],
                                      poly_space=geo_ps)
-            cori = ap.ori[1:] if ap.ori is not None else None
+            cori = field.ori[1:] if field.ori is not None else None
             cvg = cmapping.get_mapping(crc, qp_weights,
                                        poly_space=ps, ori=cori)
             cbfg = cvg.bfg
@@ -211,7 +209,7 @@ class Test(TestCommon):
                 vec.fill(0.0)
                 vec[ip] = 1.0
 
-                evec = vec[ap.econn]
+                evec = vec[field.econn]
 
                 rvals = nm.dot(rbfg, evec[rcell])[0]
                 cvals = nm.dot(cbfg, evec[ccell])[0]

@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 
 class PiezoCouplingTerm(Term):
@@ -89,3 +90,57 @@ class PiezoCouplingTerm(Term):
             'div' : terms.dw_piezo_coupling,
             'eval' : terms.d_piezo_coupling,
         }[self.mode]
+
+class PiezoStressTerm(Term):
+    r"""
+    Evaluate piezoelectric stress tensor.
+
+    It is given in the usual vector form exploiting symmetry: in 3D it has 6
+    components with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in
+    2D it has 3 components with the indices ordered as :math:`[11, 22, 12]`.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} g_{kij} \nabla_k p
+
+    :Arguments:
+        - material  : :math:`g_{kij}`
+        - parameter : :math:`p`
+    """
+    name = 'ev_piezo_stress'
+    arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'D, S', 'parameter' : '1'}
+
+    @staticmethod
+    def function(out, val_qp, vg, fmode):
+        if fmode == 2:
+            out[:] = val_qp
+            status = 0
+
+        else:
+            status = vg.integrate(out, val_qp, fmode)
+
+        return status
+
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
+
+        grad = self.get(parameter, 'grad')
+        val_qp = dot_sequences(mat, grad, mode='ATB')
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+
+        return val_qp, vg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype

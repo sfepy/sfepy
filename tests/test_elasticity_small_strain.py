@@ -1,6 +1,7 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
 from sfepy import data_dir
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_meshes = ['/meshes/3d/cube_medium_tetra.mesh',
                    '/meshes/3d/cube_medium_tetra.mesh',
@@ -34,16 +35,17 @@ def get_pars( dim, full = False ):
 material_1 = {
     'name' : 'solid',
     'values' : {
-        'lam' : get_pars( 3 )[0],
-        'mu' : get_pars( 3 )[1],
         'Dijkl' : get_pars( 3, True ),
+        'D' : stiffness_from_lame(3, get_pars(3)[0], get_pars(3)[1]),
+        'lam' : get_pars(3)[0],
+        'mu' : get_pars(3)[1],
     }
 }
 
 material_2 = {
     'name' : 'spring',
     'values' : {
-        '.pars' : {'stiffness' : 1e0, 'projection' : None},
+        '.stiffness' : 1e0,
     }
 }
 
@@ -87,15 +89,22 @@ integral_1 = {
     'order' : 2,
 }
 
+equations_getpars = {
+    'balance_of_forces' :
+    """dw_lin_elastic.i.Omega(solid.Dijkl, v, u)
+     = dw_point_lspring.i.Bottom(spring.stiffness, v, u)""",
+}
+
+equations_matcoefs = {
+    'balance_of_forces' :
+    """dw_lin_elastic.i.Omega(solid.D, v, u)
+     = dw_point_lspring.i.Bottom(spring.stiffness, v, u)""",
+}
+
 equations_iso = {
     'balance_of_forces' :
-    """dw_lin_elastic_iso.i.Omega( solid.lam, solid.mu, v, u )
-     = dw_point_lspring.i.Bottom( spring.pars, v, u )""",
-}
-equations_general = {
-    'balance_of_forces' :
-    """dw_lin_elastic.i.Omega( solid.Dijkl, v, u )
-     = dw_point_lspring.i.Bottom( spring.pars, v, u )""",
+    """dw_lin_elastic_iso.i.Omega(solid.lam, solid.mu, v, u)
+     = dw_point_lspring.i.Bottom(spring.stiffness, v, u)""",
 }
 
 solver_0 = {
@@ -106,7 +115,6 @@ solver_0 = {
 solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
-
     'i_max'      : 1,
     'eps_a'      : 1e-10,
 }
@@ -129,11 +137,14 @@ class Test( TestCommon ):
     def test_linear_terms( self ):
         ok = True
         for sols in self.solutions:
-            ok = ok and self.compare_vectors( sols[0], sols[1],
-                                             label1 = 'isotropic',
-                                             label2 = 'general' )
+            ok = ok and self.compare_vectors(sols[0], sols[1],
+                                             label1 = 'getpars',
+                                             label2 = 'matcoefs')
+            ok = ok and self.compare_vectors(sols[0], sols[2],
+                                             label1 = 'getpars',
+                                             label2 = 'iso')
         return ok
-        
+
     ##
     # c: 10.07.2007, r: 25.03.2008
     def test_get_solution( self ):
@@ -156,26 +167,34 @@ class Test( TestCommon ):
                     }
             }
             self.conf.edit('fields', fields)
-            self.report( 'mesh: %s, base: %s' % (fname, approx_order) )
+            self.report('mesh: %s, base: %s' % (fname, approx_order))
             status = IndexedStruct()
 
-            self.report( 'isotropic' )
-            self.conf.equations = self.conf.equations_iso
+            self.report('getpars')
+            self.conf.equations = self.conf.equations_getpars
             problem, state1 = solve_pde(self.conf, nls_status=status,
                                         save_results=False)
             converged = status.condition == 0
             ok = ok and converged
-            self.report( 'converged: %s' % converged )
+            self.report('converged: %s' % converged)
 
-            self.report( 'general' )
-            self.conf.equations = self.conf.equations_general
+            self.report('matcoefs')
+            self.conf.equations = self.conf.equations_matcoefs
             problem, state2 = solve_pde(self.conf, nls_status=status,
                                         save_results=False)
             converged = status.condition == 0
             ok = ok and converged
-            self.report( 'converged: %s' % converged )
+            self.report('converged: %s' % converged)
 
-            self.solutions.append((state1(), state2()))
+            self.report('iso')
+            self.conf.equations = self.conf.equations_iso
+            problem, state3 = solve_pde(self.conf, nls_status=status,
+                                        save_results=False)
+            converged = status.condition == 0
+            ok = ok and converged
+            self.report('converged: %s' % converged)
+
+            self.solutions.append((state1(), state2(), state3()))
 
             name = op.join(self.options.out_dir,
                            '_'.join(('test_elasticity_small_strain',
@@ -184,9 +203,4 @@ class Test( TestCommon ):
                            + '.vtk')
             problem.save_state(name, state1)
 
-##             trunk = op.join( self.options.out_dir,
-##                              op.splitext( op.basename( fname ) )[0] )
-##             problem.save_field_meshes( trunk )
-##             problem.save_regions( trunk )
-            
         return ok

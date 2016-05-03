@@ -443,3 +443,105 @@ class ScipyBroyden(NonlinearSolver):
             status['time_stats'] = time.clock() - tt
 
         return vec_x
+
+class PETScNonlinearSolver(NonlinearSolver):
+    """
+    Interface to PETSc SNES (Scalable Nonlinear Equations Solvers).
+
+    The solver supports parallel use with a given MPI communicator (see `comm`
+    argument of :func:`PETScNonlinearSolver.__init__()`). Returns a (global)
+    PETSc solution vector instead of a (local) numpy array, when given a PETSc
+    initial guess vector.
+
+    For parallel use, the `fun` and `fun_grad` callbacks should be provided by
+    :class:`PETScParallelEvaluator
+    <sfepy.parallel.evaluate.PETScParallelEvaluator>`.
+    """
+    name = 'nls.petsc'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('method', 'str', 'newtonls', False,
+         'The SNES type.'),
+        ('i_max', 'int', 10, False,
+         'The maximum number of iterations.'),
+        ('if_max', 'int', 100, False,
+         'The maximum number of function evaluations.'),
+        ('eps_a', 'float', 1e-10, False,
+         'The absolute tolerance for the residual, i.e. :math:`||f(x^i)||`.'),
+        ('eps_r', 'float', 1.0, False,
+         """The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
+            ||f(x^0)||`."""),
+        ('eps_s', 'float', 0.0, False,
+         """The convergence tolerance in terms of the norm of the change in
+            the solution between steps,
+            i.e. $||delta x|| < \epsilon_s ||x||$"""),
+    ]
+
+    def __init__(self, conf, pmtx=None, prhs=None, comm=None, **kwargs):
+        if comm is None:
+            try:
+                import petsc4py
+                petsc4py.init([])
+            except ImportError:
+                msg = 'cannot import petsc4py!'
+                raise ImportError(msg)
+
+        from petsc4py import PETSc as petsc
+
+        NonlinearSolver.__init__(self, conf, petsc=petsc,
+                                 pmtx=pmtx, prhs=prhs, comm=comm, **kwargs)
+
+    def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
+                 lin_solver=None, iter_hook=None, status=None,
+                 pmtx=None, prhs=None, comm=None):
+        conf = self.conf
+        fun = get_default(fun, self.fun)
+        fun_grad = get_default(fun_grad, self.fun_grad)
+        lin_solver = get_default(lin_solver, self.lin_solver)
+        iter_hook = get_default(iter_hook, self.iter_hook)
+        status = get_default(status, self.status)
+        pmtx = get_default(pmtx, self.pmtx)
+        prhs = get_default(prhs, self.prhs)
+        comm = get_default(comm, self.comm)
+
+        tt = time.clock()
+
+        if isinstance(vec_x0, self.petsc.Vec):
+            psol = vec_x0
+
+        else:
+            psol = pmtx.getVecLeft()
+            psol[...] = vec_x0
+
+        snes = self.petsc.SNES()
+        snes.create(comm)
+        snes.setType(conf.method)
+
+        ksp = lin_solver.create_ksp()
+        snes.setKSP(ksp)
+        ls_conf = lin_solver.conf
+        ksp.setTolerances(atol=ls_conf.eps_a, rtol=ls_conf.eps_r,
+                          divtol=ls_conf.eps_d, max_it=ls_conf.i_max)
+
+        snes.setFunction(fun, prhs)
+        snes.setJacobian(fun_grad, pmtx)
+
+        snes.setTolerances(atol=conf.eps_a, rtol=conf.eps_r,
+                           stol=conf.eps_s, max_it=conf.i_max)
+        snes.setMaxFunctionEvaluations(conf.if_max)
+        snes.setFromOptions()
+
+        snes.solve(prhs.duplicate(), psol)
+
+        if status is not None:
+            status['time_stats'] = time.clock() - tt
+
+        if isinstance(vec_x0, self.petsc.Vec):
+            sol = psol
+
+        else:
+            sol = psol[...].copy()
+
+        return sol

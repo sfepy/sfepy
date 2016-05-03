@@ -26,6 +26,7 @@
 
 .. _SciPy: http://www.scipy.org
 .. _NumPy: http://www.numpy.org
+.. _scikit-umfpack: http://rc.github.io/scikit-umfpack
 .. _sparse matrix: http://docs.scipy.org/doc/scipy/reference/sparse.html
 .. _numpy documentation guide: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
@@ -51,10 +52,16 @@
 .. _pysparse: http://pysparse.sourceforge.net
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _igakit: https://bitbucket.org/dalcinl/igakit
+.. _petsc4py: https://bitbucket.org/petsc/petsc4py
+.. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
+.. _pymetis: http://mathema.tician.de/software/pymetis
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
+.. _create a github account: https://github.com/signup/free
+.. _gist: https://gist.github.com
 .. _gitwash: http://github.com/matthew-brett/gitwash
+.. _numpy gitwash: http://docs.scipy.org/doc/numpy/dev/gitwash
 .. _tbaggery.com: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
 .. _msysgit: http://code.google.com/p/msysgit
 

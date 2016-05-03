@@ -88,17 +88,15 @@ def region_leaf(domain, regions, rdef, functions):
         elif token == 'E_COG':
             group = int(details[3])
 
-            ig = domain.mat_ids_to_i_gs[group]
-            region.cells = nm.where(domain.cmesh.cell_groups == ig)[0]
+            region.cells = nm.where(domain.cmesh.cell_groups == group)[0]
 
         elif token == 'E_COSET':
             raise NotImplementedError('element sets not implemented!')
 
         elif token == 'E_VOG':
             group = int(details[3])
-            vertices = nm.where(domain.mesh.ngroups == group)[0]
 
-            region.vertices = vertices
+            region.vertices = nm.where(domain.cmesh.vertex_groups == group)[0]
 
         elif token == 'E_VOSET':
             try:
@@ -118,19 +116,9 @@ def region_leaf(domain, regions, rdef, functions):
             region.vertices = nm.array([int(ii) for ii in details[1:]],
                                        dtype=nm.uint32)
 
-        elif token == 'E_CI1':
+        elif token == 'E_CI':
             region.cells = nm.array([int(ii) for ii in details[1:]],
                                     dtype=nm.uint32)
-
-        elif token == 'E_CI2':
-            num = len(details[1:]) / 2
-
-            cells = []
-            for ii in range(num):
-                ig, iel = int(details[1+2*ii]), int(details[2+2*ii])
-                cells.append(iel + domain.mesh.el_offsets[ig])
-
-            region.cells = cells
 
         else:
             output('token "%s" unkown - check regions!' % token)
@@ -187,7 +175,8 @@ class Domain(Struct):
         self._bnf = create_bnf(self._region_stack)
 
     def create_region(self, name, select, kind='cell', parent=None,
-                      check_parents=True, functions=None, add_to_regions=True):
+                      check_parents=True, functions=None, add_to_regions=True,
+                      allow_empty=False):
         """
         Region factory constructor. Append the new region to
         self.regions list.
@@ -211,7 +200,7 @@ class Domain(Struct):
         region.name = name
         region.definition = select
         region.set_kind(kind)
-        region.finalize()
+        region.finalize(allow_empty=allow_empty)
         region.parent = parent
         region.update_shape()
 
@@ -314,7 +303,7 @@ class Domain(Struct):
             region = self.regions[name]
             output(region.name)
 
-            aux.ngroups[region.vertices] = n_ig
+            aux.cmesh.vertex_groups[region.vertices] = n_ig
             n_ig += 1
 
             mask = nm.zeros((n_nod, 1), dtype=nm.float64)
@@ -323,10 +312,9 @@ class Domain(Struct):
                                var_name=name, dofs=None)
 
             if region.has_cells():
-                for ig in region.igs:
-                    ii = region.get_cells(ig)
-                    aux.mat_ids[ig][ii] = c_ig
-                    c_ig += 1
+                ii = region.get_cells()
+                aux.cmesh.cell_groups[ii] = c_ig
+                c_ig += 1
 
         aux.write(filename, io='auto', out=out)
         output('...done')

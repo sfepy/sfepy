@@ -1,5 +1,8 @@
 import sys
+sys.path.append('.')
+
 import numpy as nm
+from sfepy.base.base import Struct
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -10,14 +13,13 @@ nm_f64_eps = nm.finfo(nm.float64).eps
 def to_ndarray(a):
     if a is None:
         return None
-
-    elif type(a) is not nm.ndarray:
-        return nm.array(a)
-
     else:
+        a = nm.asarray(a)
+        if len(a.shape) == 0:
+            a = a.reshape(1)
         return a
 
-class BSpline:
+class BSpline(Struct):
     """
     B-spline curve representation
     """
@@ -76,7 +78,6 @@ class BSpline:
         """
         if self.is_cyclic:
             return self.cp_coors[:-self.degree,:]
-
         else:
             return self.cp_coors
 
@@ -93,8 +94,8 @@ class BSpline:
 
         if self.knots is not None:
             endval = self.knots[-(self.degree + 1)]
-            idxs = nm.where(t == endval)[0]
-            t[idxs] -= nm_f64_eps
+            idxs = nm.where(self.t == endval)[0]
+            self.t[idxs] -= nm_f64_eps
 
     def set_param_n(self, n=100, knot_range=(0.0, 1.0)):
         """
@@ -158,7 +159,8 @@ class BSpline:
            The spline basis function evaluated for given values.
         """
         if degree >= 1:
-            bfun_dgm1 = BSpline.basis_function_dg(degree - 1, t, knots, n + 1)
+            bfun_dgm1 = BSpline.basis_function_dg(degree - 1, t,
+                                                  knots, n + 1)
 
             nt = len(t)
             bfun = nm.zeros((nt,n), dtype=nm.float64)
@@ -187,7 +189,7 @@ class BSpline:
         Parameters
         ----------
         knot_type : str
-            The knot vector type: clamped/cyclic.
+            The knot vector type: clamped/cyclic/userdef.
         knot_data :
             The extra knot data.
         """
@@ -206,7 +208,7 @@ class BSpline:
                                     nm.arange(1, dg + 1) * dd + 1))
 
         elif knot_type == 'clamped':
-            self.knots = nm.array([aux[0]] * dg + list(aux) + [aux[-1]] * dg,
+            self.knots = nm.array([aux[0]]* dg + list(aux) + [aux[-1]]* dg,
                                   dtype=nm.float64)
 
         else:
@@ -223,7 +225,8 @@ class BSpline:
         knots : array
             The knot vector.
         """
-        self.knots = knots
+        self.knot_type = 'userdef'
+        self.knots = to_ndarray(knots)
 
     def get_knot_vector(self):
         """
@@ -330,7 +333,7 @@ class BSpline:
 
         return self.curve_coors
 
-    def draw(self, ret_ax=False, ax=None):
+    def draw(self, ret_ax=False, ax=None, color='r', cp_id=True):
         """
         Draw B-spline curve.
 
@@ -340,6 +343,10 @@ class BSpline:
             Return an axes object?
         ax : axes object
             The axes to which will be drawn.
+        color : str
+            Line color.
+        cp_id : bool
+            If True, label control points.
         """
         if self.curve_coors is None:
             self.eval()
@@ -354,8 +361,9 @@ class BSpline:
             if ax is None:
                 fig = plt.figure()
                 ax = Axes3D(fig)
-            ax.plot(cc[:,0], cc[:,1], cc[:,2], 'r-')
-            ax.plot(cp[:,0], cp[:,1], cp[:,2], 'ko:', alpha=0.6)
+            ax.plot(cc[:,0], cc[:,1], cc[:,2], color + '-')
+            if cp_id:
+                ax.plot(cp[:,0], cp[:,1], cp[:,2], 'ko:', alpha=0.6)
             if ci is not None:
                 ax.plot(ci[:,0], ci[:,1], ci[:,2], 'b--', alpha=0.6)
 
@@ -363,13 +371,13 @@ class BSpline:
             if ax is None:
                 fig = plt.figure()
                 ax = fig.add_subplot(111)
-            ax.plot(cc[:,0], cc[:,1], 'r-')
-            ax.plot(cp[:,0], cp[:,1], 'ko:', alpha=0.6)
+            ax.plot(cc[:,0], cc[:,1], color + '-')
+            if cp_id:
+                ax.plot(cp[:,0], cp[:,1], 'ko:', alpha=0.6)
+                for jj, icp in enumerate(self.cp_coors):
+                    ax.text(icp[0], icp[1], 'N%d' % (jj + 1), fontsize=10)
             if ci is not None:
                 ax.plot(ci[:,0], ci[:,1], 'b--', alpha=0.6)
-
-            for jj, icp in enumerate(self.cp_coors):
-                ax.text(icp[0], icp[1], 'N%d' % (jj + 1), fontsize=10)
 
         ax.set_aspect('equal')
 
@@ -478,7 +486,7 @@ class BSpline:
         """
         self.approx_coors = to_ndarray(coors)
 
-class BSplineSurf:
+class BSplineSurf(Struct):
     """
     B-spline surface representation
     """
@@ -558,8 +566,7 @@ class BSplineSurf:
             The extra knot data.
         """
         for ii in range(2):
-            self.splines[ii].make_knot_vector(knot_type[ii],
-                                              knot_data[ii])
+            self.splines[ii].make_knot_vector(knot_type[ii], knot_data[ii])
 
     def set_param_n(self, n=(100, 100)):
         """
@@ -817,24 +824,24 @@ def approximation_example():
 
 def simple_example():
     """
-    The example of using BSpline class.
+    The example of using B-spline class.
     """
     # define control points in 2D
     cp = get_2d_points()
 
-    spl1 = BSpline(3, is_cyclic=True)
-    spl1.set_control_points(cp)
-    spl1.make_knot_vector()
-    spl1.set_param_n(150)
+    spl = BSpline(3, is_cyclic=True)
+    spl.set_control_points(cp)
+    spl.make_knot_vector()
+    spl.set_param_n(150)
 
-    spl1.insert_knot(0.7)
-    spl1.insert_knot(0.7)
-    spl1.insert_knot(0.7)
-    spl1.eval()
-    spl1.draw()
+    spl.insert_knot(0.7)
+    spl.insert_knot(0.7)
+    spl.insert_knot(0.7)
+    spl.eval()
+    spl.draw()
 
 def main(argv):
-    simple_example()
+    # simple_example()
     approximation_example()
 
 if __name__ == '__main__':

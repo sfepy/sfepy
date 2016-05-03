@@ -170,7 +170,6 @@ def tetrahedralize_vtk_mesh(vtkdata):
     else:
         tetra.SetInputData(vtkdata)
 
-    tetra.SetInput(vtkdata)
     tetra.Update()
 
     return tetra.GetOutput()

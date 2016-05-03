@@ -888,7 +888,7 @@ output = Output('sfepy:')
 
 def configure_output(options):
     """
-    Configure the standard :function:`output()` function using
+    Configure the standard :func:`output()` function using
     `output_log_name` and `output_screen` attributes of `options`.
 
     Parameters

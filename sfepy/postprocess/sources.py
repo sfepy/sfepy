@@ -22,6 +22,10 @@ from sfepy.discrete.fem.meshio import MeshIO, vtk_cell_types, supported_formats
 def create_file_source(filename, watch=False, offscreen=True):
     """Factory function to create a file source corresponding to the
     given file format."""
+
+    if isinstance(filename, FileSource):
+        return filename
+
     kwargs = {'watch' : watch, 'offscreen' : offscreen}
 
     if isinstance(filename, basestr):
@@ -224,7 +228,7 @@ class GenericFileSource(FileSource):
             self.add_data_to_dataset(dataset, out)
 
         if self.mat_id_name is not None:
-            mat_id = nm.concatenate(self.mesh.mat_ids)
+            mat_id = self.mesh.cmesh.cell_groups
             if self.single_color:
                 rm = mat_id.min(), mat_id.max()
                 mat_id[mat_id > rm[0]] = rm[1]
@@ -253,7 +257,7 @@ class GenericFileSource(FileSource):
         Get material ID numbers of the underlying mesh elements.
         """
         if self.source is not None:
-            mat_id = nm.concatenate(self.mesh.mat_ids)
+            mat_id = self.mesh.cmesh.cell_groups
             return mat_id
 
     def file_changed(self):
@@ -264,7 +268,6 @@ class GenericFileSource(FileSource):
         file source."""
         mesh = self.mesh
         n_nod, dim = self.n_nod, self.dim
-        n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
 
         if dim < 3:
             nod_zz = nm.zeros((n_nod, 3 - dim), dtype=mesh.coors.dtype)
@@ -277,21 +280,32 @@ class GenericFileSource(FileSource):
         cell_types = []
         cells = []
         offset = [0]
-        for ig, conn in enumerate(mesh.conns):
-            cell_types += [vtk_cell_types[mesh.descs[ig]]] * n_els[ig]
+        n_cells = [1]
+        for ig, desc in enumerate(mesh.descs):
+            conn = mesh.get_conn(desc)
+            n_cell, n_cv = conn.shape
 
-            nn = nm.array([conn.shape[1]] * n_els[ig])
-            aux = nm.c_[nn[:,None], conn]
-            cells.extend(aux.ravel())
+            n_cells.append(n_cell)
 
-            offset.extend([aux.shape[1]] * n_els[ig])
+            aux = nm.empty(n_cell, dtype=nm.int32)
+            aux.fill(vtk_cell_types[desc])
+            cell_types.append(aux)
 
-        cells = nm.array(cells)
-        cell_types = nm.array(cell_types)
+            aux = nm.empty((n_cell, n_cv + 1), dtype=nm.int32)
+            aux[:, 0] = n_cv
+            aux[:, 1:] = conn
+            cells.append(aux.ravel())
+
+            offset.append(aux.shape[1])
+
+        cells = nm.concatenate(cells)
+        cell_types = nm.concatenate(cell_types)
+
+        offset = nm.repeat(offset, n_cells)
         offset = nm.cumsum(offset)[:-1]
-        
+
         cell_array = tvtk.CellArray()
-        cell_array.set_cells(n_el, cells)
+        cell_array.set_cells(mesh.n_el, cells)
 
         dataset.set_cells(cell_types, offset, cell_array)
 

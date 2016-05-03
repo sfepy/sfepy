@@ -16,6 +16,7 @@ from sfepy.discrete import FieldVariable, Material, Integral
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.solvers import eig
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 usage = '%prog [options]\n' + __doc__.rstrip()
 
@@ -88,7 +89,7 @@ def main():
         u = FieldVariable('u', 'unknown', field)
         v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-        m = Material('m', lam=1.0, mu=1.0)
+        m = Material('m', D=stiffness_from_lame(dim, 1.0, 1.0), mu=1.0)
 
         if options.matrix_type == 'laplace':
             term = Term.new('dw_laplace(m.mu, v, u)',
@@ -97,7 +98,7 @@ def main():
 
         else:
             assert_(options.matrix_type == 'elasticity')
-            term = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+            term = Term.new('dw_lin_elastic(m.D, v, u)',
                             integral, omega, m=m, v=v, u=u)
             n_zero = (dim + 1) * dim / 2
 

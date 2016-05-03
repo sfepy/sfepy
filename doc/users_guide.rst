@@ -1,3 +1,5 @@
+.. include:: links.inc
+
 User's Guide
 ============
 
@@ -63,6 +65,38 @@ Applications
     3. ::
 
         $ ./postproc.py mesh.vtk
+
+Using Command Wrapper
+^^^^^^^^^^^^^^^^^^^^^
+
+All top-level *SfePy* scripts (applications) can be run via single
+``sfepy-run`` wrapper::
+
+  $ ./sfepy-run
+  usage: sfepy-run [command] [options]
+
+  Simple wrapper for main SfePy commands.
+
+  positional arguments:
+  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,shaper,simple}
+                        Available SfePy command(s).
+  options               Additional options passed directly to selected
+                        [command].
+
+  optional arguments:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  -w, --window          use alternative (pythonw) interpreter
+
+Notes
+"""""
+
+* This is a "new" supported method. Any *SfePy* script can be still
+  run as stand-alone (as mentioned above).
+* Only Posix-based systems (Linux, Mac OS) are currently supported.
+* Both "--inplace" and "system-wide" installations are supported.
+* Available commands can be customized by add/delete scripts to
+  ``scripts-common`` directory.
 
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^
@@ -132,30 +166,53 @@ If it is run without arguments, a help message is printed::
     $ ./simple.py
     Usage: simple.py [options] filename_in
 
+    Solve partial differential equations given in a SfePy problem definition file.
+
+    Example problem definition files can be found in ``examples/`` directory of the
+    SfePy top-level directory. This script works with all the examples except those
+    in ``examples/standalone/``.
+
+    Both normal and parametric study runs are supported. A parametric study allows
+    repeated runs for varying some of the simulation parameters - see
+    ``examples/diffusion/poisson_parametric_study.py`` file.
+
     Options:
       --version             show program's version number and exit
       -h, --help            show this help message and exit
       -c "key : value, ...", --conf="key : value, ..."
                             override problem description file items, written as
-                            python dictionary without surrouding braces
+                            python dictionary without surrounding braces
       -O "key : value, ...", --options="key : value, ..."
                             override options item of problem description, written
-                            as python dictionary without surrouding braces
+                            as python dictionary without surrounding braces
+      -d "key : value, ...", --define="key : value, ..."
+                            pass given arguments written as python dictionary
+                            without surrounding braces to define() function of
+                            problem description file
       -o filename           basename of output file(s) [default: <basename of
                             input file>]
-      --format=format       output file format, one of: {vtk, h5, mesh} [default:
-                            vtk]
+      --format=format       output file format, one of: {vtk, h5} [default: vtk]
+      --save-restart=mode   if given, save restart files according to the given
+                            mode.
+      --load-restart=filename
+                            if given, load the given restart file
       --log=file            log all messages to specified file (existing file will
                             be overwritten!)
       -q, --quiet           do not print any messages to screen
-      --save-ebc            save problem state showing EBC (Dirichlet conditions)
+      --save-ebc            save a zero solution with applied EBCs (Dirichlet
+                            boundary conditions)
+      --save-ebc-nodes      save a zero solution with added non-zeros in EBC
+                            (Dirichlet boundary conditions) nodes - scalar
+                            variables are shown using colors, vector variables
+                            using arrows with non-zero components corresponding to
+                            constrained components
       --save-regions        save problem regions as meshes
       --save-regions-as-groups
                             save problem regions in a single mesh but mark them by
                             using different element/node group numbers
       --save-field-meshes   save meshes of problem fields (with extra DOF nodes)
       --solve-not           do not solve (use in connection with --save-*)
-      --list=what           list data, what can be one of: {terms}
+      --list=what           list data, what can be one of: {terms, solvers}
 
 Additional (stand-alone) examples are in the examples/ directory, e.g.::
 
@@ -180,6 +237,32 @@ Common Tasks
 * Run a simulation and also save Dirichlet boundary conditions::
 
     ./simple.py --save-ebc examples/diffusion/poisson_short_syntax.py # -> produces an additional .vtk file with BC visualization
+
+* Use a restart file to continue an interrupted simulation:
+
+  - **Warning:** This feature is preliminary and does not support terms with
+    internal state.
+  - Run::
+
+      ./simple.py examples/large_deformation/balloon.py --save-restart=-1
+
+    and break the computation after a while (hit Ctrl-C). The mode
+    ``--save-restart=-1`` is currently the only supported mode. It saves a
+    restart file for each time step, and only the last computed time step
+    restart file is kept.
+  - A file named ``'unit_ball.restart-??.h5'`` should be created, where ``'??'``
+    indicates the last stored time step. Let us assume it is
+    ``'unit_ball.restart-04.h5'``, i.e. the fifth step.
+  - Restart the simulation by::
+
+      ./simple.py examples/large_deformation/balloon.py --load-restart=unit_ball.restart-04.h5
+
+    The simulation should continue from the next time step. Verify that by
+    running::
+
+      ./simple.py examples/large_deformation/balloon.py
+
+    and compare the residuals printed in the corresponding time steps.
 
 Visualization of Results
 ------------------------
@@ -438,9 +521,7 @@ vertices and cells - the other entities are computed as needed.
    * - ``cells by <efunction>``
      - cells given by a function of coordinates [#f4]_
    * - ``cell <id>[, <id>, ...]``,
-     - cells given by their ids (assumes cell group 0)
-   * - ``cell (<ig>, <id>)[, (<ig>, <id>), ...]``
-     - cells given by their (group, id) pairs
+     - cells given by their ids
    * - ``copy r.<name of another region>``
      - a copy of the given region
    * - ``r.<name of another region>``
@@ -519,7 +600,7 @@ where
     'real' or 'complex'
   * <shape> is the number of DOFs per node: 1 or (1,) or 'scalar', space
     dimension (2, or (2,) or 3 or (3,)) or 'vector'; it can be other
-      positive integer than just 1, 2, or 3
+    positive integer than just 1, 2, or 3
   * <region_name> is the name of region where the field is defined
   * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
     with bubble)
@@ -970,6 +1051,9 @@ solution (the `hooks`), and for other settings.
 Additional options (including solver selection)::
 
     options = {
+        # int >= 0, uniform mesh refinement level
+        'refinement_level : 0',
+
         # string, output directory
         'output_dir'        : 'output/<output_dir>',
 
@@ -988,6 +1072,10 @@ Additional options (including solver selection)::
         # int, number of time steps when results should be saved (spaced
         # regularly from 0 to n_step), or -1 for all time steps
         'save_steps' : -1,
+
+        # save a restart file for each time step, only the last computed time
+        # step restart file is kept.
+        'save_restart' : -1,
 
         # string, a function to be called after each time step
         'step_hook'  : '<step_hook_function>',
@@ -1100,12 +1188,11 @@ Each term supports one or more *evaluation modes*:
   quantities during postprocessing such as fluxes or total values of extensive
   quantities (mass, volume, energy, ...).
 
+- `'el_eval'` : The element evaluation mode results in an array of a quantity
+  integrated over each element of a region.
+
 - `'el_avg'` : The element average mode results in an array of a quantity
   averaged in each element of a region. This is the mode for postprocessing.
-
-- `'el'` : The element integral value mode results in an array of a quantity
-  integrated over each element of a region. This mode is supported only by
-  some special terms.
 
 - `'qp'` : The quadrature points mode results in an array of a quantity
   interpolated into quadrature points of each element in a region. This mode is
@@ -1118,8 +1205,8 @@ individual terms. There are, however, certain naming conventions:
 
 - `'dw_*'` terms support `'weak'` mode
 - `'dq_*'` terms support `'qp'` mode
-- `'d_*'`, `'di_*'` terms support `'eval'` mode
-- `'ev_*'` terms support `'eval'`, `'el_avg'` and `'qp'` modes
+- `'d_*'`, `'di_*'` terms support `'eval'` and `'el_eval'` modes
+- `'ev_*'` terms support `'eval'`, `'el_eval'`, `'el_avg'` and `'qp'` modes
 
 Note that the naming prefixes are due to history when the `mode` argument to
 :func:`Problem.evaluate()
@@ -1299,6 +1386,8 @@ The following solvers are available:
   from scipy.optimize.
 - 'nls.semismooth_newton': Semismooth Newton method for contact/friction
   problems.
+- 'nls.petsc': Interface to PETSc SNES (Scalable Nonlinear Equations Solvers)
+   supporting parallel use.
 
 Linear Solvers
 ^^^^^^^^^^^^^^
@@ -1312,11 +1401,50 @@ available:
   and its SciPy wrappers to get good performance.
 - 'ls.scipy_iterative': Interface to SciPy iterative solvers.
 - 'ls.pyamg': Interface to PyAMG solvers.
-- 'ls.petsc': Interface to Krylov subspace solvers of PETSc.
+- 'ls.petsc': Interface to Krylov subspace solvers of PETSc supporting parallel
+  use.
 - 'ls.petsc_parallel': Interface to Krylov subspace solvers of PETSc
   able to run in parallel by storing the system to disk and running a
   separate script via `mpiexec`.
 - 'ls.schur_complement': Schur complement problem solver.
+
+.. _solving_problems_in_parallel:
+
+Solving Problems in Parallel
+----------------------------
+
+The PETSc-based nonlinear equations solver 'nls.petsc' and linear system solver
+'ls.petsc' can be used for parallel computations, together with the modules in
+:ref:`sfepy_parallel_package`. This feature is **very preliminary**, and can be
+used only with the commands for interactive use - problem description files are
+not supported (yet). The key module is :mod:`sfepy.parallel.parallel` that
+takes care of the domain and field DOFs distribution among parallel tasks, as
+well as parallel assembling to PETSc vectors and matrices.
+
+Current Implementation Drawbacks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- The partitioning of the domain and fields DOFs is not done in parallel and
+  all tasks need to load the whole mesh and define the global fields - those
+  must fit into memory available to each task.
+- While all KSP and SNES solver are supported, in principle, most of their
+  options have to be passed using the command-line parameters of PETSc - they
+  are not supported yet in the SfePy solver parameters.
+- There are no performance statistics yet. The code was tested on a single
+  multi-cpu machine only.
+- The global solution is gathered to task 0 and saved to disk serially.
+- The ``vertices of surface`` region selector does not work in parallel,
+  because the region definition is applied to a task-local domain.
+
+Examples
+^^^^^^^^
+
+The examples demonstrating the use parallel problem solving in SfePy are:
+
+- :ref:`diffusion-poisson_parallel_interactive`
+- :ref:`multi_physics-biot_parallel_interactive`
+
+See their help messages for further information.
 
 .. _isogeometric_analysis:
 
@@ -1343,6 +1471,7 @@ The following already works:
 - single patch tensor product domain support in 2D and 3D
 - region selection based on topological Bezier mesh, see below
 - Dirichlet boundary conditions using projections for non-constant values
+- evaluation in arbitrary point in the physical domain
 - both scalar and vector volume terms work
 - term integration over the whole domain as well as a volume subdomain
 - simple linearization (output file generation) based on sampling the results
@@ -1353,10 +1482,8 @@ The following is not implemented yet:
 
 - tests
 - theoretical convergence rate verification
-- fast basis evaluation
 - surface terms
 - other boundary conditions
-- evaluation in arbitrary point in the physical domain
 - proper (adaptive) linearization for post-processing
 - support for multiple NURBS patches
 

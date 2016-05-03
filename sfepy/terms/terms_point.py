@@ -21,6 +21,8 @@ class LinearPointSpringTerm(Term):
     """
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '.: 1', 'virtual' : ('D', 'state'),
+                  'state' : 'D'}
     integration = 'point'
 
     @staticmethod
@@ -40,9 +42,7 @@ class LinearPointSpringTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vec = state.get_state_in_region(self.region)
 
-        stiffness = mat['stiffness']
-
-        return stiffness, vec, diff_var
+        return mat, vec, diff_var
 
 class ConcentratedPointLoadTerm(Term):
     r"""
@@ -71,6 +71,7 @@ class ConcentratedPointLoadTerm(Term):
     """
     name = 'dw_point_load'
     arg_types = ('material', 'virtual')
+    arg_shapes = {'material' : '.: N', 'virtual' : ('N', None)}
     integration = 'point'
 
     @staticmethod
@@ -78,10 +79,6 @@ class ConcentratedPointLoadTerm(Term):
         out[:, 0, :, 0] = mat
 
         return 0
-
-    def check_shapes(self, mat, virtual):
-        mat = nm.asarray(mat)
-        assert_(mat.shape[-1] == virtual.dim)
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

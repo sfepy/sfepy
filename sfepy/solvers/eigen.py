@@ -121,7 +121,11 @@ class ScipySGEigenvalueSolver(EigenvalueSolver):
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
 
-        import scipy.lib.lapack as llapack
+        try:
+            import scipy.linalg.lapack as llapack
+        except ImportError:
+            import scipy.lib.lapack as llapack
+
         self.llapack = llapack
 
     @standard_call
@@ -150,6 +154,10 @@ class ScipySGEigenvalueSolver(EigenvalueSolver):
             out = fun(mtx_a)
         else:
             out = fun(mtx_a, mtx_b)
+
+        # Fix output order of scipy.linalg.lapack functions.
+        if out[0].ndim == 2:
+            out = (out[1], out[0]) + out[2:]
 
         if not eigenvectors:
             if n_eigs is None:
@@ -236,6 +244,8 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
          """The shifting and sorting strategy of JDSYM: strategy=0 enables the
             default JDSYM algorithm, strategy=1 enables JDSYM to avoid
             convergence to eigenvalues smaller than `tau`."""),
+        ('*', '*', None, False,
+         'Additional parameters supported by the solver.'),
     ]
 
     @staticmethod
@@ -260,6 +270,8 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
+        kwargs = self.build_solver_kwargs(conf)
+
         jdsym = self.imp['jdsym']
         itsolvers = self.imp['itsolvers']
         precon = self.imp['precon']
@@ -287,7 +299,8 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
                                                 conf.eps_a, conf.i_max,
                                                 method,
                                                 clvl=conf.verbosity,
-                                                strategy=conf.strategy)
+                                                strategy=conf.strategy,
+                                                **kwargs)
 
         output('number of converged eigenvalues:', kconv, verbose=conf.verbose)
 

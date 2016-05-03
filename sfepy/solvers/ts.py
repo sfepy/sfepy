@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import output, get_default, assert_, Struct
 
 def get_print_info(n_step):
     if n_step > 1:
@@ -55,21 +55,31 @@ class TimeStepper(Struct):
         step = get_default(step, ts.step)
         self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step, step=step)
 
+    def get_state(self):
+        return {'step' : self.step}
+
+    def set_state(self, step=0, **kwargs):
+        self.set_step(step=step)
+
+    def advance(self):
+        if self.step < (self.n_step - 1):
+            self.step += 1
+            self.time = self.times[self.step]
+            self.normalize_time()
+
     def __iter__(self):
         """ts.step, ts.time is consistent with step, time returned here
         ts.nt is normalized time in [0, 1]"""
         return self.iter_from(0)
 
     def iter_from(self, step):
-        self.step = step - 1
+        self.set_step(step=step)
 
         for time in self.times[step:]:
 
-            self.time = time
-            self.step += 1
-            self.normalize_time()
-
             yield self.step, self.time
+
+            self.advance()
 
     def normalize_time(self):
         self.nt = (self.time - self.t0) / (self.t1 - self.t0)
@@ -132,6 +142,20 @@ class VariableTimeStepper(TimeStepper):
     def set_from_ts(self, ts, step=None):
         self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step0, step=0)
 
+    def get_state(self):
+        return {'step' : self.step, 'dts' : self.dts, 'times' : self.times}
+
+    def set_state(self, step=0, dts=None, times=None, **kwargs):
+        assert_(len(dts) == len(times) == (step + 1))
+
+        self.step = step
+        self.dts = dts
+        self.times = times
+
+        self.dt = self.dts[-1]
+        self.time = self.times[-1]
+        self.normalize_time()
+
     def set_n_digit_from_min_dt(self, dt):
         n_step = self._get_n_step(self.t0, self.t1, dt)
         self.n_digit, self.format, self.suffix = get_print_info(n_step)
@@ -141,9 +165,10 @@ class VariableTimeStepper(TimeStepper):
             raise ValueError('cannot set step > 0 in VariableTimeStepper!')
 
         self.step = 0
+        self.time = self.t0
         self.nt = 0.0
         self.dts = []
-        self.times = [self.t0]
+        self.times = []
         self.n_step = 1
 
     def get_default_time_step(self):
@@ -157,25 +182,30 @@ class VariableTimeStepper(TimeStepper):
             self.times[self.step] = self.time
             self.normalize_time()
 
-    def __iter__(self):
+    def advance(self):
+        self.step += 1
+        self.time += self.dt
+        self.normalize_time()
+
+        self.n_step = self.step + 1
+
+    def iter_from_current(self):
         """
         ts.step, ts.time is consistent with step, time returned here
         ts.nt is normalized time in [0, 1].
         """
-        self.set_step(0)
-
         while 1:
-            self.time = self.times[self.step]
+            self.times.append(self.time)
+            self.dts.append(self.dt)
 
             yield self.step, self.time
 
             if self.nt >= 1.0:
                 break
 
-            self.step += 1
-            self.time += self.dt
-            self.normalize_time()
+            self.advance()
 
-            self.times.append(self.time)
-            self.dts.append(self.dt)
-            self.n_step = self.step + 1
+    def __iter__(self):
+        self.set_step(0)
+
+        return self.iter_from_current()

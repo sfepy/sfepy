@@ -235,18 +235,18 @@ def inverse_element_mapping(coors, e_coors, eval_base, ref_coors,
 
     else: # Tensor-product and other.
         def residual(xi):
-            bf = eval_base(xi[nm.newaxis,:],
+            bf = eval_base(xi[nm.newaxis,:].copy(),
                            suppress_errors=suppress_errors).squeeze()
             res = coors - nm.dot(bf, e_coors)
             return res.squeeze()
 
         def matrix(xi):
-            bfg = eval_base(xi[nm.newaxis,:], diff=True,
+            bfg = eval_base(xi[nm.newaxis,:].copy(), diff=True,
                             suppress_errors=suppress_errors).squeeze()
             mtx = - nm.dot(bfg, e_coors)
             return mtx
 
-        xi0 = nm.array([0.0, 0.0, 0.0])
+        xi0 = nm.zeros(dim, dtype=nm.float64)
         xi = mini_newton(residual, xi0, matrix)
 
     return xi

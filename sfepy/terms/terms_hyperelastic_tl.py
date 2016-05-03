@@ -195,18 +195,16 @@ class BulkPressureTLTerm(HyperElasticTLBase):
         fd.p_qp = self.get(state_p, 'val')
 
         if mode == 'weak':
-            ig = self.char_fun.ig
-
             if diff_var != state_p.name:
                 if diff_var is None:
                     stress = self.compute_data(fd, 0, **kwargs)
-                    self.stress_cache[ig] = stress
+                    self.stress_cache = stress
                     tan_mod = nm.array([0], ndmin=4, dtype=nm.float64)
 
                     fmode = 0
 
                 else:
-                    stress = self.stress_cache[ig]
+                    stress = self.stress_cache
                     if stress is None:
                         stress = self.compute_data(fd, 0, **kwargs)
 
@@ -439,7 +437,7 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
                                   self.family_data_names)
         grad = self.get(pressure, 'grad')
 
-        fmode = {'eval' : 0, 'el_avg' : 1, 'el' : 0}.get(mode, 0)
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 0)
 
         return grad, perm, ref_porosity, fd.inv_f, fd.det_f, sg, fmode
 
@@ -478,12 +476,6 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
     integration = 'surface_extra'
 
     function = staticmethod(terms.dw_tl_surface_traction)
-
-    def check_shapes(self, mat, virtual, state):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        if mat is not None:
-            assert_(mat.shape == (n_el, n_qp, dim, dim))
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -530,11 +522,6 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
     integration = 'surface_extra'
 
     function = staticmethod(terms.d_tl_volume_surface)
-
-    def check_shapes(self, parameter):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        assert_(dim == n_c)
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

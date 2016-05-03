@@ -15,9 +15,6 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-# Just grab the problem definition of linear_elastic.py.
-from copy import deepcopy
-
 from linear_elastic import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
@@ -26,22 +23,12 @@ import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.postprocess.probes_vtk import Probe
-from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 # Define options.
 options = {
     'output_dir' : '.',
     'post_process_hook' : 'post_process',
 }
-
-# Update materials, as ev_cauchy_stress below needs the elastic constants in
-# the tensor form.
-materials = deepcopy(materials)
-solid = materials['solid'][0]
-lam, mu = solid['lam'], solid['mu']
-solid.update({
-    'D' : stiffness_from_lame(3, lam=lam, mu=mu),
-})
 
 # The function returning the probe parametrization.
 def par_fun(idx):

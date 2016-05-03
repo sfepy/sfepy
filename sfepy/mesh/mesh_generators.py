@@ -1,4 +1,6 @@
 import numpy as nm
+import sys
+sys.path.append('.')
 
 from sfepy.base.base import output, assert_
 from sfepy.base.ioutils import ensure_path
@@ -216,7 +218,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     assert_(ii == n_nod)
     output('...done', verbose=verbose)
 
-    n_el = (nr - 1) * nnfi * (nl - 1)
+    n_el = (nr - 1) * nfi * (nl - 1)
     conn = nm.zeros((n_el, 8), dtype=nm.int32)
 
     output('generating %d cells...' % n_el, verbose=verbose)
@@ -365,7 +367,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'x'.
     e_mesh.coors[:, 0] = (2 * centre[0]) - e_mesh.coors[:, 0]
-    e_mesh.mat_ids[0].fill(11)
+    e_mesh.cmesh.cell_groups.fill(11)
     mesh = mesh + e_mesh
 
     # 'y' extension.
@@ -375,7 +377,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'y'.
     e_mesh.coors[:, 1] = (2 * centre[1]) - e_mesh.coors[:, 1]
-    e_mesh.mat_ids[0].fill(21)
+    e_mesh.cmesh.cell_groups.fill(21)
     mesh = mesh + e_mesh
 
     # 'z' extension.
@@ -385,7 +387,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     # Mirror by 'z'.
     e_mesh.coors[:, 2] = (2 * centre[2]) - e_mesh.coors[:, 2]
-    e_mesh.mat_ids[0].fill(31)
+    e_mesh.cmesh.cell_groups.fill(31)
     mesh = mesh + e_mesh
 
     if name is not None:
@@ -401,7 +403,7 @@ def gen_extended_block_mesh(b_dims, b_shape, e_dims, e_shape, centre,
 
     return mesh
 
-def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
+def tiled_mesh1d(conn, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
     from sfepy.discrete.fem.periodic import match_grid_plane
 
     s1 = nm.nonzero(coors[:,idim] < (bb[0] + eps))[0]
@@ -413,7 +415,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
 
     (nnod0, dim) = coors.shape
     nnod = nnod0 * n_rep - s1.shape[0] * (n_rep - 1)
-    (nel0, nnel) = conns.shape
+    (nel0, nnel) = conn.shape
     nel = nel0 * n_rep
 
     dd = nm.zeros((dim,), dtype=nm.float64)
@@ -421,7 +423,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
 
     m1, m2 = match_grid_plane(coors[s1], coors[s2], idim)
 
-    oconns = nm.zeros((nel, nnel), dtype=nm.int32)
+    oconn = nm.zeros((nel, nnel), dtype=nm.int32)
     ocoors = nm.zeros((nnod, dim), dtype=nm.float64)
     ongrps = nm.zeros((nnod,), dtype=nm.int32)
 
@@ -437,7 +439,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
 
     for ii in range(n_rep):
         if ii == 0:
-            oconns[0:nel0,:] = conns
+            oconn[0:nel0,:] = conn
             ocoors[0:nnod0,:] = coors
             ongrps[0:nnod0] = ngrps.squeeze()
             nd_off += nnod0
@@ -459,7 +461,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
             ocoors[nd_off:(nd_off + nnod0r),:] =\
               (coors[cidx,:] + ii * dd)
             ongrps[nd_off:(nd_off + nnod0r)] = ngrps[cidx].squeeze()
-            oconns[el_off:(el_off + nel0),:] = remap[conns]
+            oconn[el_off:(el_off + nel0),:] = remap[conn]
             if ret_ndmap:
                 ndmap_out[nd_off:(nd_off + nnod0r)] = cidx[0]
 
@@ -473,10 +475,10 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
             idxs = nm.where(ndmap_out > max_nd_ref)
             ndmap_out[idxs] = ndmap[ndmap_out[idxs]]
 
-        return oconns, ocoors, ongrps, ndmap_out
+        return oconn, ocoors, ongrps, ndmap_out
 
     else:
-        return oconns, ocoors, ongrps
+        return oconn, ocoors, ongrps
 
 def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     """
@@ -509,15 +511,11 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
         iscale = max(int(1.0 / scale), 1)
         grid = [iscale] * mesh.dim
 
-    conns = mesh.conns[0]
-    for ii in mesh.conns[1:]:
-        conns = nm.vstack((conns, ii))
-    mat_ids = mesh.mat_ids[0]
-    for ii in mesh.mat_ids[1:]:
-        mat_ids = nm.hstack((mat_ids, ii))
+    conn = mesh.get_conn(mesh.descs[0])
+    mat_ids = mesh.cmesh.cell_groups
 
     coors = mesh.coors
-    ngrps = mesh.ngroups
+    ngrps = mesh.cmesh.vertex_groups
     nrep = nm.prod(grid)
     ndmap = None
 
@@ -525,23 +523,23 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     nblk = 1
     for ii, gr in enumerate(grid):
         if ret_ndmap:
-            (conns, coors,
-             ngrps, ndmap0) = tiled_mesh1d(conns, coors, ngrps,
+            (conn, coors,
+             ngrps, ndmap0) = tiled_mesh1d(conn, coors, ngrps,
                                            ii, gr, bbox.transpose()[ii],
                                            eps=eps, ndmap=ndmap)
             ndmap = ndmap0
 
         else:
-            conns, coors, ngrps = tiled_mesh1d(conns, coors, ngrps,
-                                               ii, gr, bbox.transpose()[ii],
-                                               eps=eps)
+            conn, coors, ngrps = tiled_mesh1d(conn, coors, ngrps,
+                                              ii, gr, bbox.transpose()[ii],
+                                              eps=eps)
         nblk *= gr
 
     output('...done')
 
     mat_ids = nm.tile(mat_ids, (nrep,))
     mesh_out = Mesh.from_data('tiled mesh', coors * scale, ngrps,
-                              [conns], [mat_ids], [mesh.descs[0]])
+                              [conn], [mat_ids], [mesh.descs[0]])
 
     if ret_ndmap:
         return mesh_out, ndmap
@@ -643,9 +641,7 @@ def gen_mesh_from_string(mesh_name, mesh_dir):
         kind = result.group(1)
         return gen_misc_mesh(mesh_dir, result.group(3)=='*', kind, args)
 
-def gen_mesh_from_goem(geo, a=None, quadratic=False, verbose=True,
-                       refine=False, polyfilename='./meshgen.poly',
-                       out='mesh', **kwargs):
+def gen_mesh_from_geom(geo, a=None, verbose=False, refine=False):
     """
     Runs mesh generator - tetgen for 3D or triangle for 2D meshes.
 
@@ -655,8 +651,6 @@ def gen_mesh_from_goem(geo, a=None, quadratic=False, verbose=True,
         geometry description
     a : int, optional
         a maximum area/volume constraint
-    quadratic : bool, optional
-        set True for quadratic elements
     verbose : bool, optional
         detailed information
     refine : bool, optional
@@ -670,117 +664,37 @@ def gen_mesh_from_goem(geo, a=None, quadratic=False, verbose=True,
 
     import os.path as op
     import pexpect
+    import tempfile
+    import shutil
+
+    tmp_dir = tempfile.mkdtemp()
+    polyfilename = op.join(tmp_dir, 'meshgen.poly')
 
     # write geometry to poly file
     geo.to_poly_file(polyfilename)
+    meshgen_call = {2: ('triangle', ''), 3: ('tetgen', 'BFENk')}
 
-    if not refine:
-        params = "-Apq"
-    else:
-        params = "-Arq"
-    if verbose:
-        params = params + " -Q"
-    if a != None and not refine:
-        params = params + " -a%f" % (a)
-    if refine:
-        params = params + " -a"
-    if quadratic:
-        params = params + " -o2"
-    params = params + " %s" % (polyfilename)
+    params = "-ACp"
+    params += "q" if refine else ''
+    params += "V" if verbose else "Q"
+    params += meshgen_call[geo.dim][1]
+    if a is not None:
+        params += "a%f" % (a)
+    params += " %s" % (polyfilename)
 
-    meshgen_call = {2: 'triangle', 3: 'tetgen'}
-    cmd = "%s %s" % (meshgen_call[geo.dim], params)
+    cmd = "%s %s" % (meshgen_call[geo.dim][0], params)
     if verbose: print "Generating mesh using", cmd
+
+    p=pexpect.run(cmd, timeout=None)
+    bname, ext = op.splitext(polyfilename)
     if geo.dim == 2:
-        p=pexpect.run(cmd, timeout=None)
-        bname, ext = op.splitext(polyfilename)
         mesh = Mesh.from_file(bname + '.1.node')
-        mesh.write(bname + '.' + out)
     if geo.dim == 3:
-        p=pexpect.spawn(cmd, timeout=None)
-        if not refine:
-            p.expect("Opening %s." % (polyfilename))
-        else:
-            p.expect("Opening %s.node.\r\n" % (polyfilename))
-            p.expect("Opening %s.ele.\r\n" % (polyfilename))
-            p.expect("Opening %s.face.\r\n" % (polyfilename))
-            p.expect("Opening %s.vol." % (polyfilename))
-        assert p.before == ""
-        p.expect(pexpect.EOF)
-        if p.before != "\r\n":
-            print p.before
-            raise "Error when running mesh generator (see above for output): %s" % cmd
+        mesh = Mesh.from_file(bname + '.1.vtk')
 
-# http://www.cs.cmu.edu/~quake/triangle.html
-#
-# triangle [-prq__a__uAcDjevngBPNEIOXzo_YS__iFlsCQVh] input_file
-#     -p  Triangulates a Planar Straight Line Graph (.poly file).
-#     -r  Refines a previously generated mesh.
-#     -q  Quality mesh generation.  A minimum angle may be specified.
-#     -a  Applies a maximum triangle area constraint.
-#     -u  Applies a user-defined triangle constraint.
-#     -A  Applies attributes to identify triangles in certain regions.
-#     -c  Encloses the convex hull with segments.
-#     -D  Conforming Delaunay:  all triangles are truly Delaunay.
-#     -j  Jettison unused vertices from output .node file.
-#     -e  Generates an edge list.
-#     -v  Generates a Voronoi diagram.
-#     -n  Generates a list of triangle neighbors.
-#     -g  Generates an .off file for Geomview.
-#     -B  Suppresses output of boundary information.
-#     -P  Suppresses output of .poly file.
-#     -N  Suppresses output of .node file.
-#     -E  Suppresses output of .ele file.
-#     -I  Suppresses mesh iteration numbers.
-#     -O  Ignores holes in .poly file.
-#     -X  Suppresses use of exact arithmetic.
-#     -z  Numbers all items starting from zero (rather than one).
-#     -o2 Generates second-order subparametric elements.
-#     -Y  Suppresses boundary segment splitting.
-#     -S  Specifies maximum number of added Steiner points.
-#     -i  Uses incremental method, rather than divide-and-conquer.
-#     -F  Uses Fortune's sweepline algorithm, rather than d-and-c.
-#     -l  Uses vertical cuts only, rather than alternating cuts.
-#     -s  Force segments into mesh by splitting (instead of using CDT).
-#     -C  Check consistency of final mesh.
-#     -Q  Quiet:  No terminal output except errors.
-#     -V  Verbose:  Detailed information on what I'm doing.
-#     -h  Help:  Detailed instructions for Triangle.
+    shutil.rmtree(tmp_dir)
 
-# http://tetgen.berlios.de/
-#
-# tetgen [-prq_a_AiMYS_T_dzo_fenvgGOJBNEFICQVh] input_file
-#     -p  Tetrahedralizes a piecewise linear complex (PLC).
-#     -r  Reconstructs a previously generated mesh.
-#     -q  Refines mesh (to improve mesh quality).
-#     -a  Applies a maximum tetrahedron volume constraint.
-#     -A  Assigns attributes to tetrahedra in different regions.
-#     -i  Inserts a list of additional points into mesh.
-#     -M  No merge of coplanar facets.
-#     -Y  No splitting of input boundaries (facets and segments).
-#     -S  Specifies maximum number of added points.
-#     -T  Sets a tolerance for coplanar test (default 1e-8).
-#     -d  Detects self-intersections of facets of the PLC.
-#     -z  Numbers all output items starting from zero.
-#     -o2 Generates second-order subparametric elements.
-#     -f  Outputs all faces to .face file.
-#     -e  Outputs all edges to .edge file.
-#     -n  Outputs tetrahedra neighbors to .neigh file.
-#     -v  Outputs Voronoi diagram to files.
-#     -g  Outputs mesh to .mesh file for viewing by Medit.
-#     -G  Outputs mesh to .msh file for viewing by Gid.
-#     -O  Outputs mesh to .off file for viewing by Geomview.
-#     -K  Outputs mesh to .vtk file for viewing by Paraview.
-#     -J  No jettison of unused vertices from output .node file.
-#     -B  Suppresses output of boundary information.
-#     -N  Suppresses output of .node file.
-#     -E  Suppresses output of .ele file.
-#     -F  Suppresses output of .face file.
-#     -I  Suppresses mesh iteration numbers.
-#     -C  Checks the consistency of the final mesh.
-#     -Q  Quiet:  No terminal output except errors.
-#     -V  Verbose:  Detailed information, more terminal output.
-#     -h  Help:  A brief instruction for using TetGen.
+    return mesh
 
 def gen_mesh_from_voxels(voxels, dims, etype='q'):
     """
@@ -801,7 +715,7 @@ def gen_mesh_from_voxels(voxels, dims, etype='q'):
         Finite element mesh.
     """
 
-    dims = dims.squeeze()
+    dims = nm.array(dims).squeeze()
     dim = len(dims)
     nddims = nm.array(voxels.shape) + 2
 
@@ -887,147 +801,12 @@ def gen_mesh_from_voxels(voxels, dims, etype='q'):
 
     mesh = Mesh.from_data('voxel_data',
                           coors, nm.ones((nnod,), dtype=nm.int32),
-                          {0: nm.ascontiguousarray(elems)},
-                          {0: nm.ones((nel,), dtype=nm.int32)},
-                          {0: '%d_%d' % (dim, eltab[eid])})
+                          [nm.ascontiguousarray(elems)],
+                          [nm.ones((nel,), dtype=nm.int32)],
+                          ['%d_%d' % (dim, eltab[eid])])
 
     return mesh
 
-def gen_mesh_from_poly(filename, verbose=True):
-    """
-    Import mesh generated by tetgen or triangle.
-
-    Parameters
-    ----------
-    filename : string
-        file name
-
-    Returns
-    -------
-    mesh : Mesh instance
-        triangular or tetrahedral mesh
-    """
-
-    def getnodes(fnods,up):
-        f=file(fnods)
-        l=[int(x) for x in f.readline().split()]
-        npoints,dim,nattrib,nbound=l
-        if verbose: up.init(npoints)
-        nodes=[]
-        for line in f:
-            if line[0]=="#": continue
-            l=[float(x) for x in line.split()]
-            l = l[:(dim + 1)]
-            l[0]=int(l[0])
-            nodes.append(tuple(l))
-            assert l[0]==len(nodes)
-        assert npoints==len(nodes)
-        return nodes
-
-    def getele(fele,up):
-        f=file(fele)
-        l=[int(x) for x in f.readline().split()]
-        nele,nnod,nattrib=l
-        #we have either linear or quadratic tetrahedra:
-        if nnod in [4,10]:
-            elem = 'tetra'
-            linear = (nnod == 4)
-        if nnod in [3, 7]:
-            elem = 'tri'
-            linear = (nnod == 3)
-
-        # if nattrib!=1:
-        #     raise "tetgen didn't assign an entity number to each element (option -A)"
-        els=[]
-        regions={}
-        for line in f:
-            if line[0]=="#": continue
-            l=[int(x) for x in line.split()]
-            if elem == 'tri':
-                if linear:
-                    assert (len(l) - 1 - nattrib) == 3
-                    els.append((l[0],l[1],l[2],l[3]))
-                    regionnum=l[5]
-                else:
-                    assert len(l)-2 == 10
-                    els.append((l[0],54,l[1],l[2],l[3],l[4],
-                                l[5],l[6],l[7],l[8],l[9],l[10]))
-                    regionnum=l[11]
-            if elem == 'tetra':
-                if linear:
-                    assert len(l)-2 == 4
-                    els.append((l[0],54,l[1],l[2],l[3],l[4]))
-                    regionnum=l[5]
-                else:
-                    assert len(l)-2 == 10
-                    els.append((l[0],54,l[1],l[2],l[3],l[4],
-                                l[5],l[6],l[7],l[8],l[9],l[10]))
-                    regionnum=l[11]
-            if regionnum==0:
-                print "see %s, element # %d"%(fele,l[0])
-                raise "there are elements not belonging to any physical entity"
-            if regions.has_key(regionnum):
-                regions[regionnum].append(l[0])
-            else:
-                regions[regionnum]=[l[0]]
-            assert l[0]==len(els)
-            if verbose: up.update(l[0])
-        return els,regions,linear
-
-    def getBCfaces(ffaces,up):
-        f=file(ffaces)
-        l=[int(x) for x in f.readline().split()]
-        nfaces,nattrib=l
-        if nattrib!=1:
-            raise "tetgen didn't assign an entity number to each face \
-(option -A)"
-        if verbose: up.init(nfaces)
-        faces={}
-        for line in f:
-            if line[0]=="#": continue
-            l=[int(x) for x in line.split()]
-            assert len(l)==5
-            regionnum=l[4]
-            if regionnum==0: continue
-            if faces.has_key(regionnum):
-                faces[regionnum].append((l[1],l[2],l[3]))
-            else:
-                faces[regionnum]=[(l[1],l[2],l[3])]
-            if verbose: up.update(l[0])
-        return faces
-
-    def calculatexyz(nodes, els):
-        """Calculate the missing xyz values in place"""
-        def avg(i,j,n4,nodes):
-            a=nodes[n4[i-1]-1]
-            b=nodes[n4[j-1]-1]
-            return (a[1]+b[1])/2, (a[2]+b[2])/2, (a[3]+b[3])/2
-        def getxyz(i,n4,nodes):
-            if i+5==5: return avg(1,2,n4,nodes)
-            if i+5==6: return avg(2,3,n4,nodes)
-            if i+5==7: return avg(1,3,n4,nodes)
-            if i+5==8: return avg(1,4,n4,nodes)
-            if i+5==9: return avg(2,4,n4,nodes)
-            if i+5==10: return avg(3,4,n4,nodes)
-            raise "wrong topology"
-        for e in els:
-            n4=e[2:2+4]
-            n6=e[2+4:2+4+10]
-            for i,n in enumerate(n6):
-                x,y,z=getxyz(i,n4,nodes)
-                nodes[n-1]=(n,x,y,z)
-
-    if verbose: print "Reading geometry from poly file..."
-    m=Mesh()
-    m.nodes=getnodes(filename+".node")
-    m.elements,m.regions, lin=getele(filename+".ele")
-    if not lin:
-        #tetgen doesn't compute xyz coordinates of the aditional 6 nodes
-        #(only of the 4 corner nodes) in tetrahedra.
-        calculatexyz(m.nodes,m.elements)
-    m.faces=getBCfaces(filename+".face")
-
-    return m
 
 def main():
     mesh = gen_block_mesh(nm.array((1.0, 2.0, 3.0)),

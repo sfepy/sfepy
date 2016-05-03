@@ -52,11 +52,6 @@ class LinearElasticTerm(Term):
 ##     symbolic = {'expression': expr,
 ##                 'map' : {'u' : 'state', 'D_sym' : 'material'}}
 
-    def check_shapes(self, mat, virtual, state):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = (dim + 1) * dim / 2
-        assert_(mat.shape == (n_el, n_qp, sym, sym))
-
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
@@ -95,6 +90,49 @@ class LinearElasticTerm(Term):
         else:
             self.function = terms.d_lin_elastic
 
+class LinearElasticIsotropicTerm(LinearElasticTerm):
+    r"""
+    Isotropic linear elasticity term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
+        D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+        \lambda \ \delta_{ij} \delta_{kl}
+
+    :Arguments:
+        - material_1 : :math:`\lambda`
+        - material_2 : :math:`\mu`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`D_{ijkl}`
+        - parameter_1 : :math:`\ul{w}`
+        - parameter_2 : :math:`\ul{u}`
+    """
+    name = 'dw_lin_elastic_iso'
+    arg_types = (('material_1', 'material_2', 'virtual', 'state'),
+                 ('material_1', 'material_2', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D',
+                  'parameter_1' : 'D', 'parameter_2' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    def get_fargs(self, lam, mu, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.mechanics.matcoefs import stiffness_from_lame
+
+        mat = stiffness_from_lame(self.region.dim, lam, mu)
+        return LinearElasticTerm.get_fargs(self, mat, virtual, state,
+                                           mode=mode, term_mode=term_mode,
+                                           diff_var=diff_var, **kwargs)
+
+    def get_eval_shape(self, mat1, mat2, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        return LinearElasticTerm.get_eval_shape(self, None, None, state)
+
 class SDLinearElasticTerm(Term):
     r"""
     Sensitivity analysis of the linear elastic term.
@@ -121,109 +159,24 @@ class SDLinearElasticTerm(Term):
     arg_shapes = {'material' : 'S, S',
                   'parameter_w' : 'D', 'parameter_u' : 'D',
                   'parameter_mesh_velocity' : 'D'}
-    function = terms.d_lin_elastic
-
-    @staticmethod
-    def op_dv(vgrad):
-        nel, nlev, dim, _ = vgrad.shape
-        sd = nm.zeros((nel, nlev, dim**2, dim**2), dtype=vgrad.dtype)
-
-        if dim == 1:
-            sd[...] = vgrad[:,:]
-
-        elif dim == 2:
-            sd[:,:,0:2,0:2] = vgrad[:,:]
-            sd[:,:,2:4,2:4] = vgrad[:,:]
-
-        elif dim == 3:
-            sd[:,:,0:3,0:3] = vgrad[:,:]
-            sd[:,:,3:6,3:6] = vgrad[:,:]
-            sd[:,:,6:9,6:9] = vgrad[:,:]
-        else:
-            exit('not yet implemented!')
-
-        return sd
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+    function = terms.d_sd_lin_elastic
 
     def get_fargs(self, mat, par_w, par_u, par_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(par_u)
 
-        grad_w = self.get(par_w, 'grad').transpose((0,1,3,2))
-        grad_u = self.get(par_u, 'grad').transpose((0,1,3,2))
-        nel, nqp, nr, nc = grad_u.shape
-        strain_w = grad_w.reshape((nel, nqp, nr * nc, 1))
-        strain_u = grad_u.reshape((nel, nqp, nr * nc, 1))
-
-        mat_map = {1: nm.array([0]),
-                   3: nm.array([0, 2, 2, 1]),
-                   6: nm.array([0, 3, 4, 3, 1, 5, 4, 5, 2])}
-
-        mmap = mat_map[mat.shape[-1]]
-        mat_ns = mat[nm.ix_(nm.arange(nel), nm.arange(nqp),
-                            mmap, mmap)]
-
-        div_mv = self.get(par_mv, 'div')
+        grad_w = self.get(par_w, 'grad')
+        grad_u = self.get(par_u, 'grad')
         grad_mv = self.get(par_mv, 'grad')
-        opd_mv = self.op_dv(grad_mv)
 
-        aux = dot_sequences(mat_ns, opd_mv)
-        mat_mv = mat_ns * div_mv - (aux + aux.transpose((0,1,3,2)))
-
-        return 1.0, strain_w, strain_u, mat_mv, vg
+        return 1.0, grad_w, grad_u, grad_mv, mat, vg
 
     def get_eval_shape(self, mat, par_w, par_u, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
 
         return (n_el, 1, 1, 1), par_u.dtype
-
-class LinearElasticIsotropicTerm(Term):
-    r"""
-    Isotropic linear elasticity term.
-
-    :Definition:
-
-    .. math::
-        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
-        D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
-        \lambda \ \delta_{ij} \delta_{kl}
-
-    :Arguments:
-        - material_1 : :math:`\lambda`
-        - material_2 : :math:`\mu`
-        - virtual    : :math:`\ul{v}`
-        - state      : :math:`\ul{u}`
-    """
-    name = 'dw_lin_elastic_iso'
-    arg_types = ('material_1', 'material_2', 'virtual', 'state')
-    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
-                  'virtual' : ('D', 'state'), 'state' : 'D'}
-
-    function = staticmethod(terms.dw_lin_elastic_iso)
-
-    def check_shapes(self, lam, mu, virtual, state):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        assert_(lam.shape == (n_el, n_qp, 1, 1))
-        assert_(mu.shape == (n_el, n_qp, 1, 1))
-
-    def get_fargs(self, lam, mu, virtual, state,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(state)
-
-        if mode == 'weak':
-            if diff_var is None:
-                strain = self.get(state, 'cauchy_strain')
-                fmode = 0
-
-            else:
-                strain = nm.array([0], ndmin=4, dtype=nm.float64)
-                fmode = 1
-
-            return strain, lam, mu, vg, fmode
-
-        else:
-            raise ValueError('unsupported evaluation mode in %s! (%s)'
-                             % (self.name, mode))
 
 class LinearElasticTHTerm(THTerm):
     r"""
@@ -244,6 +197,8 @@ class LinearElasticTHTerm(THTerm):
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
+    arg_shapes = {'material' : '.: N, S, S',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic)
 
@@ -296,6 +251,8 @@ class LinearElasticETHTerm(ETHTerm):
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
+    arg_shapes = {'material_0' : 'S, S', 'material_1' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
 
     function = staticmethod(terms.dw_lin_elastic)
 
@@ -344,11 +301,6 @@ class LinearPrestressTerm(Term):
     arg_shapes = {'material' : 'S, 1', 'virtual' : ('D', None),
                   'parameter' : 'D'}
     modes = ('weak', 'eval')
-
-    def check_shapes(self, mat, virtual):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
-        sym = (dim + 1) * dim / 2
-        assert_(mat.shape == (n_el, n_qp, sym, 1))
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -411,12 +363,6 @@ class LinearStrainFiberTerm(Term):
                   'virtual' : ('D', None)}
 
     function = staticmethod(terms.dw_lin_strain_fib)
-
-    def check_shapes(self, mat1, mat2, virtual):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
-        sym = (dim + 1) * dim / 2
-        assert_(mat1.shape == (n_el, n_qp, sym, sym))
-        assert_(mat2.shape == (n_el, n_qp, dim, 1))
 
     def get_fargs(self, mat1, mat2, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -610,7 +556,7 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     """
     name = 'ev_cauchy_stress_th'
     arg_types = ('ts', 'material', 'parameter')
-    arg_shapes = {}
+    arg_shapes = {'material' : '.: N, S, S', 'parameter' : 'D'}
 
     def get_fargs(self, ts, mats, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -669,7 +615,8 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     """
     name = 'ev_cauchy_stress_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'parameter')
-    arg_shapes = {}
+    arg_shapes = {'material_0' : 'S, S', 'material_1' : '1, 1',
+                  'parameter' : 'D'}
 
     def get_fargs(self, ts, mat0, mat1, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

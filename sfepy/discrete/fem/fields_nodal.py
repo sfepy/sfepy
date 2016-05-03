@@ -11,36 +11,30 @@ Important attributes of continuous (order > 0) :class:`Field` and
 where `conn` is the mesh vertex connectivity, `econn` is the
 region-local field connectivity.
 """
-import time
 import numpy as nm
 
-from sfepy.base.base import output, assert_
-import fea
+from sfepy.base.base import assert_
 from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
-from sfepy.discrete.fem.global_interp import get_ref_coors
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
 from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
                                             H1Mixin)
-from sfepy.discrete.fem.extmods.bases import evaluate_in_rc
 
 class H1NodalMixin(H1Mixin):
 
     def _setup_facet_orientations(self):
         order = self.approx_order
-        self.node_desc = self.interp.describe_nodes()
+        self.node_desc = self.poly_space.describe_nodes()
 
         edge_nodes = self.node_desc.edge_nodes
         if edge_nodes is not None:
             n_fp = self.gel.edges.shape[1]
-            self.edge_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             order)
+            self.edge_dof_perms = get_facet_dof_permutations(n_fp, order)
 
         face_nodes = self.node_desc.face_nodes
         if face_nodes is not None:
             n_fp = self.gel.faces.shape[1]
-            self.face_dof_perms = get_facet_dof_permutations(n_fp, self.igs,
-                                                             order)
+            self.face_dof_perms = get_facet_dof_permutations(n_fp, order)
 
     def _setup_edge_dofs(self):
         """
@@ -88,29 +82,31 @@ class H1NodalMixin(H1Mixin):
         n_f = self.gel.edges.shape[0] if dim == 1 else self.gel.faces.shape[0]
 
         oris = cmesh.get_orientations(dim)
-        for ig, ap in self.aps.iteritems():
-            gcells = self.region.get_cells(ig, offset=False)
-            n_el = gcells.shape[0]
 
-            indices = cconn.indices[offs[gcells[0]]:offs[gcells[-1]+1]]
-            facets_of_cells = remap[indices]
+        gcells = self.region.get_cells()
+        n_el = gcells.shape[0]
 
-            ori = oris[offs[gcells[0]]:offs[gcells[-1]+1]]
-            perms = facet_perms[ig][ori]
+        # Elements of facets.
+        iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
+        ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
 
-            # Define global facet dof numbers.
-            gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
-                                                  n_dof_per_facet)
+        aux = offs[gcells][:, None] + ies.reshape((n_el, n_f))
 
-            # Elements of facets.
-            iel = nm.arange(n_el, dtype=nm.int32).repeat(n_f)
-            ies = nm.tile(nm.arange(n_f, dtype=nm.int32), n_el)
+        indices = cconn.indices[aux]
+        facets_of_cells = remap[indices].ravel()
 
-            # DOF columns in econn for each facet.
-            iep = facet_desc[ies]
+        ori = oris[aux].ravel()
+        perms = facet_perms[ori]
 
-            iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
-            ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
+        # Define global facet dof numbers.
+        gdofs = offset + expand_nodes_to_dofs(facets_of_cells,
+                                              n_dof_per_facet)
+
+        # DOF columns in econn for each facet.
+        iep = facet_desc[ies]
+
+        iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
+        self.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
 
         n_dof = n_dof_per_facet * facets.shape[0]
         assert_(n_dof == nm.prod(all_dofs.shape))
@@ -125,28 +121,20 @@ class H1NodalMixin(H1Mixin):
             return 0, None, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
-        n_dof = 0
         n_dof_per_cell = self.node_desc.bubble.shape[0]
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            n_cell = ii.shape[0]
-            nd = n_dof_per_cell * n_cell
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        ii = self.region.get_cells()
+        remap = prepare_remap(ii, self.domain.cmesh.n_el)
 
-            aux = nm.arange(offset + n_dof, offset + n_dof + nd,
-                            dtype=nm.int32)
-            aux.shape = (n_cell, n_dof_per_cell)
-            iep = self.node_desc.bubble[0]
-            ap.econn[:,iep:] = aux
-            all_dofs[ig] = aux
+        n_cell = ii.shape[0]
+        n_dof = n_dof_per_cell * n_cell
 
-            n_dof += nd
+        all_dofs = nm.arange(offset, offset + n_dof, dtype=nm.int32)
+        all_dofs.shape = (n_cell, n_dof_per_cell)
+        iep = self.node_desc.bubble[0]
+        self.econn[:,iep:] = all_dofs
 
-        return n_dof, all_dofs, remaps
+        return n_dof, all_dofs, remap
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
@@ -159,7 +147,7 @@ class H1NodalMixin(H1Mixin):
         if dpn is None:
             dpn = self.n_components
 
-        aux = self.get_dofs_in_region(region, clean=True, warn=warn)
+        aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
 
         if callable(fun):
@@ -177,99 +165,22 @@ class H1NodalMixin(H1Mixin):
 
         return nods, vals
 
-    def evaluate_at(self, coors, source_vals, strategy='kdtree',
-                    close_limit=0.1, cache=None, ret_cells=False,
-                    ret_status=False, ret_ref_coors=False, verbose=False):
+    def create_basis_context(self):
         """
-        Evaluate source DOF values corresponding to the field in the given
-        coordinates using the field interpolation.
-
-        Parameters
-        ----------
-        coors : array
-            The coordinates the source values should be interpolated into.
-        source_vals : array
-            The source DOF values corresponding to the field.
-        strategy : str, optional
-            The strategy for finding the elements that contain the
-            coordinates. Only 'kdtree' is supported for the moment.
-        close_limit : float, optional
-            The maximum limit distance of a point from the closest
-            element allowed for extrapolation.
-        cache : Struct, optional
-            To speed up a sequence of evaluations, the field mesh, the inverse
-            connectivity of the field mesh and the KDTree instance can
-            be cached as `cache.mesh`, `cache.offsets`, `cache.iconn` and
-            `cache.kdtree`. Optionally, the cache can also contain the
-            reference element coordinates as `cache.ref_coors`,
-            `cache.cells` and `cache.status`, if the evaluation occurs
-            in the same coordinates repeatedly. In that case the KDTree
-            related data are ignored.
-        ret_cells : bool, optional
-            If True, return also the cell indices the coordinates are in.
-        ret_status : bool, optional
-            If True, return also the status for each point: 0 is
-            success, 1 is extrapolation within `close_limit`, 2 is
-            extrapolation outside `close_limit`, 3 is failure.
-        ret_ref_coors : bool, optional
-            If True, return also the found reference element coordinates.
-        verbose : bool
-            If False, reduce verbosity.
-
-        Returns
-        -------
-        vals : array
-            The interpolated values.
-        cells : array
-            The cell indices, if `ret_cells` or `ret_status` are True.
-        status : array
-            The status, if `ret_status` is True.
+        Create the context required for evaluating the field basis.
         """
-        output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
+        ps = self.poly_space
+        gps = self.gel.poly_space
 
-        ref_coors, cells, status = get_ref_coors(self, coors,
-                                                 strategy=strategy,
-                                                 close_limit=close_limit,
-                                                 cache=cache,
-                                                 verbose=verbose)
+        mesh = self.create_mesh(extra_nodes=False)
 
-        tt = time.clock()
-        vertex_coorss, nodess, orders, mtx_is = [], [], [], []
-        conns = []
-        for ap in self.aps.itervalues():
-            ps = ap.interp.poly_spaces['v']
+        ctx = ps.create_context(None, 0, 1e-15, 100, 1e-8,
+                                tdim=mesh.cmesh.tdim)
+        geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
 
-            vertex_coorss.append(ps.geometry.coors)
-            nodess.append(ps.nodes)
-            mtx_is.append(ps.get_mtx_i())
+        ctx.geo_ctx = geo_ctx
 
-            orders.append(ps.order)
-            conns.append(ap.econn)
-
-        orders = nm.array(orders, dtype=nm.int32)
-
-        # Interpolate to the reference coordinates.
-        vals = nm.empty((coors.shape[0], source_vals.shape[1]),
-                        dtype=source_vals.dtype)
-
-        evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       conns, vertex_coorss, nodess, orders, mtx_is,
-                       1e-15)
-        output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
-
-        output('...done',verbose=verbose)
-
-        if ret_ref_coors:
-            return vals, ref_coors, cells, status
-
-        elif ret_status:
-            return vals, cells, status
-
-        elif ret_cells:
-            return vals, cells
-
-        else:
-            return vals
+        return ctx
 
 class H1NodalVolumeField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange'
@@ -286,35 +197,23 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
         else:
             dim = vec.shape[1]
             enod_vol_val = nm.zeros((self.n_nod, dim), dtype=nm.float64)
-            for ig, ap in self.aps.iteritems():
-                group = self.domain.groups[ig]
-                econn = ap.econn
 
-                coors = ap.interp.poly_spaces['v'].node_coors
+            coors = self.poly_space.node_coors
 
-                ginterp = ap.interp.gel.interp
-                bf = ginterp.poly_spaces['v'].eval_base(coors)
-                bf = bf[:,0,:].copy()
+            bf = self.gel.poly_space.eval_base(coors)
+            bf = bf[:,0,:].copy()
 
-                evec = nm.dot(bf, vec[group.conn])
-                enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
+            conn = self.econn[:, :self.gel.n_vertex]
+
+            evec = nm.dot(bf, vec[conn])
+            enod_vol_val[self.econn] = nm.swapaxes(evec, 0, 1)
 
         return enod_vol_val
 
 class H1DiscontinuousField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
-    def _setup_approximations(self):
-        self.aps = {}
-        self.aps_by_name = {}
-        for ig in self.igs:
-            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
-            ap = fea.DiscontinuousApproximation(name, self.interp,
-                                                self.region, ig)
-            self.aps[ig] = ap
-            self.aps_by_name[ap.name] = ap
-
-    def _setup_global_base( self ):
+    def _setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
         """
@@ -322,29 +221,19 @@ class H1DiscontinuousField(H1NodalMixin, VolumeField):
 
         self._init_econn()
 
-        n_dof = 0
-        all_dofs = {}
-        remaps = {}
-        for ig, ap in self.aps.iteritems():
-            ii = self.region.get_cells(ig)
-            nd = nm.prod(ap.econn.shape)
+        ii = self.region.get_cells()
+        self.bubble_remap = prepare_remap(ii, self.domain.cmesh.n_el)
 
-            group = self.domain.groups[ig]
-            remaps[ig] = prepare_remap(ii, group.shape.n_el)
+        n_dof = nm.prod(self.econn.shape)
+        all_dofs = nm.arange(n_dof, dtype=nm.int32)
+        all_dofs.shape = self.econn.shape
 
-            aux = nm.arange(n_dof, n_dof + nd, dtype=nm.int32)
-            aux.shape = ap.econn.shape
-
-            ap.econn[:] = aux
-            all_dofs[ig] = aux
-
-            n_dof += nd
+        self.econn[:] = all_dofs
 
         self.n_nod = n_dof
 
         self.n_bubble_dof = n_dof
         self.bubble_dofs = all_dofs
-        self.bubble_remaps = remaps
 
         self.n_vertex_dof = self.n_edge_dof = self.n_face_dof = 0
 

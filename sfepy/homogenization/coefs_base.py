@@ -26,7 +26,9 @@ class MiniAppBase(Struct):
     def __init__(self, name, problem, kwargs):
         Struct.__init__(self, name=name, problem=problem, **kwargs)
 
-        self.problem.clear_equations()
+        if self.problem is not None:
+            self.problem.clear_equations()
+
         self.set_default('requires', [])
         self.set_default('is_linear', False)
         self.set_default('dtype', nm.float64)

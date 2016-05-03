@@ -50,10 +50,9 @@ def gen_lines(problem):
 
     centre = 0.5 * (p0 + p1)
     normal = [0.0, 1.0, 0.0]
-    r = 0.02
+    r = 0.019
     circle = CircleProbe(centre, normal, r, n_point)
-    # Workaround current probe code shortcoming.
-    circle.set_options(close_limit=0.5)
+    circle.set_options(close_limit=0.0)
 
     probes = [line, circle]
     labels = ['%s -> %s' % (p0, p1),
@@ -215,6 +214,8 @@ def main():
         component = FieldVariable('component', 'parameter', cfield,
                                   primary_var_name='(set-to-None)')
 
+        nls_options = {'eps_a' : 1e-16, 'i_max' : 1}
+
         if options.show:
             plt.ion()
 
@@ -224,8 +225,9 @@ def main():
         if options.probe:
             # Probe the solution.
             dvel_qp = ev('ev_diffusion_velocity.%d.Omega(m.diffusivity, T)'
-                         % order, mode='qp')
-            project_by_component(dvel, dvel_qp, component, order)
+                         % order, copy_materials=False, mode='qp')
+            project_by_component(dvel, dvel_qp, component, order,
+                                 nls_options=nls_options)
 
             all_results = []
             for ii, probe in enumerate(probes):

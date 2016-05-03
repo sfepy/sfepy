@@ -12,6 +12,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
+from sfepy.discrete.fem.fields_base import set_mesh_coors
 from sfepy.discrete.common.fields import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
@@ -20,7 +21,6 @@ from integrals import Integrals
 from sfepy.discrete.state import State
 from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations
-from sfepy.discrete.fem import fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import BasicEvaluator, LCBCEvaluator
 from sfepy.solvers import Solver
@@ -40,6 +40,15 @@ class Problem(Struct):
 
     For interactive use, the constructor requires only the `equations`,
     `nls` and `ls` keyword arguments.
+
+    Notes
+    -----
+    The Problem is by default created with `active_only` set to True. Then the
+    (tangent) matrices and residual vectors (right-hand sides) have reduced
+    sizes and contain only the active DOFs, i.e., DOFs not constrained by EBCs
+    or EPBCs. Setting `active_only` to False results in full-size vectors and
+    matrices. Then the matrix size non-zeros structure does not depend on the
+    actual E(P)BCs applied. It must be False when using parallel PETSc solvers.
     """
 
     @staticmethod
@@ -75,6 +84,15 @@ class Problem(Struct):
 
             mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
             domain = FEDomain(mesh.name, mesh)
+
+            refine = conf.options.get('refinement_level', 0)
+            if refine > 0:
+                for ii in xrange(refine):
+                    output('refine %d...' % ii)
+                    domain = domain.refine()
+                    output('... %d nodes %d elements'
+                           % (domain.shape.n_nod, domain.shape.n_el))
+
             if conf.options.get('ulf', False):
                 domain.mesh.coors_act = domain.mesh.coors.copy()
 
@@ -105,7 +123,9 @@ class Problem(Struct):
 
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
-                 nls=None, ls=None, ts=None, auto_solvers=True):
+                 nls=None, ls=None, ts=None, auto_solvers=True,
+                 active_only=True):
+        self.active_only = active_only
         self.name = name
         self.conf = conf
         self.functions = functions
@@ -128,7 +148,8 @@ class Problem(Struct):
                 domain = fields.values()[0].domain
 
             if conf is None:
-                self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
+                self.conf = Struct(options={},
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={})
 
         self.equations = equations
         self.fields = fields
@@ -159,6 +180,8 @@ class Problem(Struct):
         self.mtx_a = None
         self.nls = None
         self.clear_equations()
+
+        self._restart_filenames = []
 
     def setup_hooks(self, options=None):
         """
@@ -520,7 +543,8 @@ class Problem(Struct):
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
-                         lcbcs=None, functions=None, create_matrix=False):
+                         lcbcs=None, functions=None, create_matrix=False,
+                         is_matrix=True):
         """
         Update equations for current time step.
 
@@ -544,17 +568,25 @@ class Problem(Struct):
         functions : Functions instance, optional
             The user functions for boundary conditions, materials,
             etc. If not given, `self.functions` are used.
+        create_matrix : bool
+            If True, force the matrix graph computation.
+        is_matrix : bool
+            If False, the matrix is not created. Has precedence over
+            `create_matrix`.
         """
         self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
 
+        ac = self.active_only
         graph_changed = self.equations.time_update(self.ts,
                                                    ebcs, epbcs, lcbcs,
-                                                   functions, self)
+                                                   functions, self,
+                                                   active_only=ac)
         self.graph_changed = graph_changed
 
-        if graph_changed or (self.mtx_a is None) or create_matrix:
-            self.mtx_a = self.equations.create_matrix_graph()
+        if (is_matrix
+            and (graph_changed or (self.mtx_a is None) or create_matrix)):
+            self.mtx_a = self.equations.create_matrix_graph(active_only=ac)
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
             ## plu.plt.show()
@@ -586,12 +618,12 @@ class Problem(Struct):
 
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
-                    functions=None, create_matrix=False):
+                    functions=None, create_matrix=False, is_matrix=True):
         self.set_bcs(get_default(ebcs, self.ebcs),
                      get_default(epbcs, self.epbcs),
                      get_default(lcbcs, self.lcbcs))
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
-                              functions, create_matrix)
+                              functions, create_matrix, is_matrix)
 
     def set_ics(self, ics=None):
         """
@@ -659,9 +691,9 @@ class Problem(Struct):
             If True, update the actual configuration coordinates,
             otherwise the undeformed configuration ones.
         """
-        fea.set_mesh_coors(self.domain, self.fields, coors,
-                           update_fields=update_fields, actual=actual,
-                           clear_all=clear_all)
+        set_mesh_coors(self.domain, self.fields, coors,
+                       update_fields=update_fields, actual=actual,
+                       clear_all=clear_all)
 
     def refine_uniformly(self, level):
         """
@@ -700,6 +732,8 @@ class Problem(Struct):
         self.update_time_stepper(ts)
         self.equations.init_time(ts)
         self.update_materials(mode='force')
+
+        self._restart_filenames = []
 
     def advance(self, ts=None):
         self.update_time_stepper(ts)
@@ -1123,16 +1157,12 @@ class Problem(Struct):
             variables = self.create_variables(possible_var_names)
 
         materials = self.get_materials()
-        if materials is not None:
-            if copy_materials:
-                materials = materials.semideep_copy()
-
-            else:
-                materials = Materials(objs=materials._objs)
-
-        else:
+        if copy_materials or (materials is None):
             possible_mat_names = get_expression_arg_names(expression)
             materials = self.create_materials(possible_mat_names)
+
+        else:
+            materials = Materials(objs=materials._objs)
 
         _kwargs = copy(kwargs)
         for key, val in kwargs.iteritems():
@@ -1385,3 +1415,172 @@ class Problem(Struct):
         Convenience function to remove boundary conditions.
         """
         self.time_update(ebcs={}, epbcs={}, lcbcs={})
+
+    def get_restart_filename(self, ts=None):
+        """
+        If restarts are allowed in problem definition options, return the
+        restart file name, based on the output directory and time step.
+        """
+        if self.conf.options.get('save_restart', None) is None:
+            return
+
+        suffix = 'restart'
+        if ts is not None:
+            suffix += '-' + ts.suffix % ts.step
+
+        aux = self.get_output_name(extra=suffix)
+        iext = len(aux) - len('.' + self.output_format)
+        restart_filename = aux[:iext] + '.h5'
+
+        return restart_filename
+
+    def save_restart(self, filename, state=None, ts=None):
+        """
+        Save the current state and time step to a restart file.
+
+        Parameters
+        ----------
+        filename : str
+            The restart file name.
+        state : State instance, optional
+            The state instance. If not given, a new state is created using the
+            variables in problem equations.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, a default one is created.
+
+        Notes
+        -----
+        Does not support terms with internal state.
+        """
+        import tables as pt
+
+        if state is None:
+            state = self.create_state()
+
+        if ts is None:
+            ts = self.get_default_ts()
+
+        fd = pt.open_file(filename, mode='w', title='SfePy restart file')
+
+        tgroup = fd.create_group('/', 'ts', 'ts')
+        for key, val in ts.get_state().iteritems():
+            fd.create_array(tgroup, key, val, key)
+
+        if state.r_vec is not None:
+            fd.create_array('/', 'r_vec', state.r_vec, 'reduced state vector')
+
+        variables = state.variables
+        for var in variables.iter_state():
+            vgroup = fd.create_group('/', var.name, var.name)
+
+            history_length = len(var.data)
+            fd.create_array(vgroup, 'history_length', history_length,
+                            'history length')
+            for ii in xrange(history_length):
+                data = var(step=-ii)
+                fd.create_array(vgroup, 'data_%d' % ii, data, 'data')
+
+        fd.close()
+
+        mode = self.conf.options.get('save_restart', None)
+
+        if (mode == -1) and len(self._restart_filenames):
+            last_filename = self._restart_filenames.pop()
+
+            try:
+                os.remove(last_filename)
+
+            except OSError:
+                pass
+
+        self._restart_filenames.append(filename)
+
+    def load_restart(self, filename, state=None, ts=None):
+        """
+        Load the current state and time step from a restart file.
+
+        Alternatively, a regular output file in the HDF5 format can be used in
+        place of the restart file. In that case the restart is only
+        approximate, because higher order field DOFs (if any) were stripped
+        out. Files with the adaptive linearization are not supported. Use with
+        caution!
+
+        Parameters
+        ----------
+        filename : str
+            The restart file name.
+        state : State instance, optional
+            The state instance. If not given, a new state is created using the
+            variables in problem equations. Otherwise, its variables are
+            modified in place.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, a default one is created.
+            Otherwise, it is modified in place.
+
+        Returns
+        -------
+        new_state : State instance
+            The loaded state.
+        """
+        import tables as pt
+
+        if state is None:
+            state = self.create_state()
+
+        if ts is None:
+            ts = self.get_default_ts()
+
+        variables = state.variables
+
+        output('loading restart file "%s"...' % filename)
+
+        fd = pt.open_file(filename, mode='r')
+
+        if fd.title == 'SfePy restart file':
+            ts_state = {}
+            for val in fd.root.ts._f_walknodes():
+                ts_state[val.name] = val.read()
+
+            ts.set_state(**ts_state)
+
+            for var in variables.iter_state():
+                vgroup = fd.root._f_get_child(var.name)
+
+                history_length = vgroup.history_length.read()
+                for ii in xrange(0, history_length):
+                    data = vgroup._f_get_child('data_%d' % ii).read()
+                    var.set_data(data, step=-ii)
+
+            new_state = State.from_variables(variables)
+
+            if '/r_vec' in fd:
+                r_vec = fd.root.r_vec.read()
+                state.r_vec = r_vec
+
+            fd.close()
+
+        elif fd.title == 'SfePy output file':
+            from sfepy.discrete.fem.meshio import MeshIO
+
+            output('WARNING: using a SfePy output file in place of a restart'
+                   ' file discards higher order DOFs! Use with caution!')
+
+            fd.close()
+            io = MeshIO.for_format(filename)
+
+            out = io.read_data(step=ts.step)
+
+            for var in variables.iter_state():
+                val = out[var.name]
+                var.set_from_mesh_vertices(val.data)
+
+            new_state = State.from_variables(variables)
+
+        else:
+            raise IOError('unknown file type! ("%s" in ("%s", "%s"))'
+                          % (fd.title,
+                             'SfePy restart file', 'SfePy output file'))
+
+        output('...done')
+
+        return new_state

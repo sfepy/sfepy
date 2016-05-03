@@ -28,13 +28,21 @@ Installation prerequisites, required to build *SfePy*:
 Python packages required for using *SfePy*:
 
 - `Pyparsing`_
-- `SciPy`_, preferably with umfpack wrapper, or umfpack scikit
+- `SciPy`_
+- `scikit-umfpack`_, for enabling UMFPACK solver for SciPy >= 0.14.0
 - `Matplotlib`_, for various plots; GTKAgg for live plotting via log.py
 - `PyTables`_, for storing results in HDF5 files
-- `SymPy`_, for some tests and functions)
+- `SymPy`_, for some tests and functions
 - `Mayavi`_, for postproc.py
 - `Pysparse`_, for schroedinger.py
 - `igakit`_, for script/gen_iga_patch.py - simple IGA domain generator
+- `petsc4py`_ and `mpi4py`_, for running parallel examples and using parallel
+  solvers from PETSc
+- `pymetis`_, for mesh partitioning using Metis
+
+Make sure the dependencies of those packages are also installed -
+`scikit-umfpack`_ does not work without UMFPACK, `petsc4py`_ without PETSc,
+etc.
 
 Other dependencies:
 
@@ -70,12 +78,22 @@ system-wide.
 Generic Installation Instructions
 ---------------------------------
 
-Download the latest source release or the development version from
+Download the latest development version of the code from
 `SfePy git repository`_::
 
     git clone git://github.com/sfepy/sfepy.git
 
+In case you wish to use a specific release instead of the latest master
+version, use::
+
+    git tag -l
+
+to see the available releases - the release tags have form
+``release_<year>.<int>``.
+
 See the `download`_ page for additional download options.
+
+.. _compilation:
 
 Compilation of C Extension Modules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,6 +129,8 @@ Installation
     python setup.py install --root=<installation prefix>
 
 If all went well, proceed with `Testing`_.
+
+.. _testing:
 
 Testing
 -------

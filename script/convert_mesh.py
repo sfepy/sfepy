@@ -15,8 +15,8 @@ sys.path.append('.')
 from optparse import OptionParser
 from sfepy.base.base import nm, output
 from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.meshio import (output_writable_meshes, MeshIO,
-                              supported_cell_types)
+from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
+                                       supported_cell_types)
 
 usage = '%prog [options] filename_in filename_out\n' + __doc__.rstrip()
 
@@ -28,7 +28,7 @@ help = {
     ' [default: %default]',
     'refine' : 'uniform refinement level [default: %default]',
     'format' : 'output mesh format (overrides filename_out extension)',
-    'list' : 'list supported writable output mesh formats',
+    'list' : 'list supported readable/writable output mesh formats',
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -65,7 +65,13 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.list:
-        output_writable_meshes()
+        output('Supported readable mesh formats:')
+        output('--------------------------------')
+        output_mesh_formats('r')
+        output('')
+        output('Supported writable mesh formats:')
+        output('--------------------------------')
+        output_mesh_formats('w')
         sys.exit(0)
 
     if len(args) != 2:

@@ -20,15 +20,15 @@ shared = Struct()
 # TODO : clean-up!
 #
 
-def get_output_suffix(ig, iel, ts, naming_scheme, format, output_format):
+def get_output_suffix(iel, ts, naming_scheme, format, output_format):
     if output_format != 'h5':
         if naming_scheme == 'step_iel':
-            suffix = '.'.join( (ts.suffix % ts.step, format % (ig, iel)) )
+            suffix = '.'.join((ts.suffix % ts.step, format % iel))
         else:
-            suffix = '.'.join( (format % (ig, iel), ts.suffix % ts.step) )
+            suffix = '.'.join((format % iel, ts.suffix % ts.step))
 
     else:
-        suffix = format % (ig, iel)
+        suffix = format % iel
 
     return suffix
 
@@ -304,12 +304,10 @@ def recover_bones( problem, micro_problem, region, eps0,
     nodes_yc = micro_problem.domain.regions['Yc'].vertices
 
     join = os.path.join
-    aux = max(problem.domain.shape.n_gr, 2)
-    format = get_print_info( aux, fill = '0' )[1] \
-             + '_' + get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
+    format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
-    for ig, ii, iel in region.iter_cells():
-        print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
+    for ii, iel in enumerate(region.cells):
+        print 'ii: %d, iel: %d' % (ii, iel)
 
         pressure = pressures[-1][ii,0,0,0]
 
@@ -380,7 +378,7 @@ def recover_bones( problem, micro_problem, region, eps0,
                                 mode = 'cell', data = aux,
                                 dofs = None)
 
-        suffix = get_output_suffix(ig, iel, ts, naming_scheme, format,
+        suffix = get_output_suffix(iel, ts, naming_scheme, format,
                                    micro_problem.output_format)
         micro_name = micro_problem.get_output_name(extra=suffix)
         filename = join(problem.output_dir,
@@ -411,12 +409,10 @@ def recover_paraflow( problem, micro_problem, region,
     to_output = micro_problem.variables.state_to_output
 
     join = os.path.join
-    aux = max(problem.domain.shape.n_gr, 2)
-    format = get_print_info( aux, fill = '0' )[1] \
-             + '_' + get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
+    format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
-    for ig, ii, iel in region.iter_cells():
-        print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
+    for ii, iel in enumerate(region.cells):
+        print 'ii: %d, iel: %d' % (ii, iel)
 
         p1, p2 = pressures1[-1][ii,0,0,0], pressures2[-1][ii,0,0,0]
 
@@ -454,7 +450,7 @@ def recover_paraflow( problem, micro_problem, region,
                           mode = 'vertex', data = p_mic,
                           var_name = vp, dofs = micro_p.dofs )
 
-        suffix = get_output_suffix(ig, iel, ts, naming_scheme, format,
+        suffix = get_output_suffix(iel, ts, naming_scheme, format,
                                    micro_problem.output_format)
         micro_name = micro_problem.get_output_name(extra=suffix)
         filename = join( problem.output_dir, 'recovered_' + micro_name )
@@ -505,12 +501,10 @@ def recover_micro_hook( micro_filename, region, macro,
     if recovery_hook is not None:
         recovery_hook = pb.conf.get_function(recovery_hook)
 
-        aux = max(pb.domain.shape.n_gr, 2)
-        format = get_print_info( aux, fill = '0' )[1] \
-            + '_' + get_print_info( pb.domain.mesh.n_el, fill = '0' )[1]
+        format = get_print_info(pb.domain.mesh.n_el, fill='0')[1]
 
-        for ig, ii, iel in region.iter_cells():
-            print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
+        for ii, iel in enumerate(region.cells):
+            print 'ii: %d, iel: %d' % (ii, iel)
 
             local_macro = {}
             for k, v in macro.iteritems():
@@ -533,7 +527,7 @@ def recover_micro_hook( micro_filename, region, macro,
 
             # save data
             if out is not None:
-                suffix = format % (ig, iel)
+                suffix = format % iel
                 micro_name = pb.get_output_name(extra='recovered_'\
                                                 + recovery_file_tag + suffix)
                 filename = op.join(output_dir, op.basename(micro_name))

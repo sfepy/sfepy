@@ -22,6 +22,10 @@ int32 dw_diffusion( FMField *out, FMField *grad,
 		    int32 isDiff );
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 		   FMField *mtxD, Mapping *vg );
+int32 d_sd_diffusion(FMField *out,
+                     FMField *grad_q, FMField *grad_p,
+                     FMField *grad_w, FMField *div_w,
+                     FMField *mtxD, Mapping *vg);
 
 int32 dw_diffusion_r( FMField *out, FMField *mtxD, Mapping *vg );
 int32 d_surface_flux( FMField *out, FMField *grad,

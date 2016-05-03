@@ -35,7 +35,7 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
       }
     }
     break;
-    
+
   case 2:
     for (iqp = 0; iqp < nQP; iqp++) {
       pg1 = FMF_PtrLevel( gc, iqp );
@@ -51,7 +51,7 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
       }
     }
     break;
-    
+
   case 1:
     for (iqp = 0; iqp < nQP; iqp++) {
       pg1 = FMF_PtrLevel(gc, iqp);
@@ -70,7 +70,7 @@ int32 laplace_build_gtg( FMField *out, FMField *gc )
   default:
     errput( ErrHead "ERR_Switch\n" );
     return( RET_Fail );
-  }    
+  }
   return( RET_OK );
 }
 
@@ -101,7 +101,7 @@ int32 laplace_act_g_m( FMField *out, FMField *gc, FMField *mtx )
       pg2 = pg1 + nEP;
       pg3 = pg2 + nEP;
       pout = FMF_PtrLevel( out, iqp );
-      
+
       if (mtx->nLev == nQP) {
 	pmtx = FMF_PtrLevel( mtx, iqp );
       } else {
@@ -127,7 +127,7 @@ int32 laplace_act_g_m( FMField *out, FMField *gc, FMField *mtx )
       pg1 = FMF_PtrLevel( gc, iqp );
       pg2 = pg1 + nEP;
       pout = FMF_PtrLevel( out, iqp );
-      
+
       if (mtx->nLev == nQP) {
 	pmtx = FMF_PtrLevel( mtx, iqp );
       } else {
@@ -196,7 +196,7 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
       pg1 = FMF_PtrLevel( gc, iqp );
       pg2 = pg1 + nEP;
       pg3 = pg2 + nEP;
-      
+
       pmtx = FMF_PtrLevel( mtx, iqp );
       for (iep = 0; iep < nEP; iep++) {
 	pout = FMF_PtrLevel( out, iqp ) + nCol * iep;
@@ -214,7 +214,7 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
     for (iqp = 0; iqp < nQP; iqp++) {
       pg1 = FMF_PtrLevel( gc, iqp );
       pg2 = pg1 + nEP;
-      
+
       pmtx = FMF_PtrLevel( mtx, iqp );
       for (iep = 0; iep < nEP; iep++) {
 	pout = FMF_PtrLevel( out, iqp ) + nCol * iep;
@@ -262,13 +262,11 @@ int32 dw_laplace( FMField *out, FMField *grad,
 		  FMField *coef, Mapping *vg,
 		  int32 isDiff )
 {
-  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  int32 ii, nQP, nEP, ret = RET_OK;
   FMField *gtg = 0, *gtgu = 0;
 
   nQP = vg->bfGM->nLev;
   nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
-
 
   if (isDiff) {
     fmf_createAlloc( &gtg, 1, nQP, nEP, nEP );
@@ -438,6 +436,67 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
  end_label:
   fmf_freeDestroy( &dgp2 );
   fmf_freeDestroy( &gp1tdgp2 );
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "d_sd_diffusion"
+int32 d_sd_diffusion(FMField *out,
+                     FMField *grad_q, FMField *grad_p,
+                     FMField *grad_w, FMField *div_w,
+                     FMField *mtxD, Mapping *vg)
+{
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *aux2 = 0, *aux3 = 0, *aux4 = 0, *out0 = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  FMF_SetFirst( out );
+
+  fmf_createAlloc( &aux2, 1, nQP, dim, 1 );
+  fmf_createAlloc( &aux3, 1, nQP, 1, 1 );
+  fmf_createAlloc( &aux4, 1, nQP, dim, 1 );
+  fmf_createAlloc( &out0, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( mtxD, ii );
+    FMF_SetCell( grad_q, ii );
+    FMF_SetCell( grad_p, ii );
+    FMF_SetCell( grad_w, ii );
+    FMF_SetCell( div_w, ii );
+
+    /* div w K_ij grad_j q grad_i p */
+    fmf_mulAB_nn( aux2, mtxD, grad_p );
+    fmf_mulATB_nn( aux3, grad_q, aux2 );
+    fmf_mulAB_nn( out0, div_w, aux3 );
+
+    /* grad_k q K_ij grad_j w_k grad_i p */
+    fmf_mulATB_nn( aux4, grad_w, aux2 );
+    fmf_mulATB_nn( aux3, grad_q, aux4 );
+    fmf_subAB_nn( out0, out0, aux3 );
+
+    /* grad_k q K_ij grad_j w_k grad_i p */
+    fmf_mulAB_nn( aux2, grad_w, grad_p );
+    fmf_mulAB_nn( aux4, mtxD, aux2 );
+    fmf_mulATB_nn( aux3, grad_q, aux4 );
+    fmf_subAB_nn( out0, out0, aux3 );
+
+    fmf_sumLevelsMulF( out, out0, vg->det->val );
+
+    FMF_SetCellNext( out );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &out0 );
+  fmf_freeDestroy( &aux2 );
+  fmf_freeDestroy( &aux3 );
+  fmf_freeDestroy( &aux4 );
 
   return( ret );
 }

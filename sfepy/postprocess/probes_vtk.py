@@ -30,10 +30,14 @@ class Probe(Struct):
         Struct.__init__(self, name=mesh.name, **kwargs)
 
         self.mesh_name = mesh.name[mesh.name.rfind(osp.sep) + 1:]
+        self.dim = mesh.dim
         self.vtkdata = get_vtk_from_mesh(mesh, data, 'probe_')
 
         self.vtkprobe = vtk.vtkProbeFilter()
-        self.vtkprobe.SetSource(self.vtkdata)
+        if vtk_version < 6:
+            self.vtkprobe.SetSource(self.vtkdata)
+        else:
+            self.vtkprobe.SetSourceData(self.vtkdata)
 
         self.probes = {}
         self.probes_png = {}
@@ -73,7 +77,8 @@ class Probe(Struct):
         vtkpd = vtk.vtkPolyData()
         vtkpd.SetPoints(pts)
         vtkpd.SetLines(lns)
-        vtkpd.Update()
+        if vtk_version < 6:
+            vtkpd.Update()
 
         return vtkpd
 
@@ -264,7 +269,8 @@ class Probe(Struct):
 
         writer.Write()
 
-    def __call__(self, probe_name, variable, probe_view=False):
+    def __call__(self, probe_name, variable, probe_view=False,
+                 ret_points=False):
         """
         Do the probe for the given variable.
 
@@ -274,11 +280,18 @@ class Probe(Struct):
             The name of previously defined probe.
         variable : str
             The variable to be probed.
+        probe_view: bool
+            If True, save the probe visualization.
+        ret_points : bool
+            If True, return also the probe points.
 
         Returns
         -------
         params : array
             The parametrization of the probe points.
+        points : array, optional
+            If `ret_points` is True, the coordinates of points corresponding to
+            `params`, where the `variable` is evaluated.
         values : array
             The probe values in the points.
         """
@@ -310,4 +323,11 @@ class Probe(Struct):
             self.gen_mesh_probe_png(inp, pngname)
             self.probes_png[probe_name] = True
 
-        return params, values
+        if ret_points:
+            points = vtknm.vtk_to_numpy(pdata.GetPoints().GetData())
+            points = points[:, :self.dim]
+
+            return params, points, values
+
+        else:
+            return params, values

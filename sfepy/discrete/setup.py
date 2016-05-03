@@ -9,6 +9,7 @@ def configuration(parent_package='',top_path=None):
         'common',
         'fem',
         'iga',
+        'structural',
     ]
     for subdir in subdirs:
         config.add_subpackage(subdir)

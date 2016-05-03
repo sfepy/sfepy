@@ -4,25 +4,82 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from sfepy.discrete.fem.extmods.types cimport int32, uint32, float64
+from sfepy.discrete.common.extmods.types cimport int32, uint32, float64
 
-from sfepy.discrete.fem.extmods._fmfield cimport (FMField,
-                                                  array2fmfield4,
-                                                  array2fmfield2,
-                                                  array2fmfield1,
-                                                  array2pint2,
-                                                  array2pint1,
-                                                  array2puint1,
-                                                  fmf_alloc,
-                                                  fmf_free)
+from sfepy.discrete.common.extmods._fmfield cimport (FMField,
+                                                     array2fmfield4,
+                                                     array2fmfield3,
+                                                     array2fmfield2,
+                                                     array2fmfield1,
+                                                     array2pint2,
+                                                     array2pint1,
+                                                     array2puint1,
+                                                     fmf_pretend_nc,
+                                                     fmf_alloc,
+                                                     fmf_free)
+
+cdef extern from 'common.h':
+    void *pyalloc(size_t size)
+    void pyfree(void *pp)
 
 cdef extern from 'nurbs.h':
+    ctypedef struct NURBSContext:
+        int32 (*get_xi_dist)(float64 *pdist, FMField *xi,
+                             FMField *point, FMField *e_coors,
+                             void *_ctx)
+        int32 (*eval_basis)(FMField *out, FMField *coors, int32 diff,
+                            void *_ctx)
+        int32 iel # >= 0.
+        int32 is_dx # 1 => apply reference mapping to gradient.
+        FMField e_coors_max[1] # Buffer for coordinates of element nodes.
+
+        FMField control_points[1]
+        FMField weights[1]
+        int32 *degrees
+        int32 dim
+        FMField cs[3]
+        int32 *conn
+        int32 n_cell
+        int32 n_efun
+
+        FMField bf[1]
+        FMField bfg[1]
+
+        FMField R[1]
+        FMField dR_dxi[1]
+        FMField dR_dx[1]
+
+        FMField B[3]
+        FMField dB_dxi[3]
+        FMField N[3]
+        FMField dN_dxi[3]
+
+        int32 reuse
+
+        int32 has_bernstein
+        int32 is_nurbs
+
+        int32 i_max
+        float64 newton_eps
+
     cdef void _ravel_multi_index \
          'ravel_multi_index'(uint32 *index, uint32 *indices,
                              uint32 *shape, uint32 num)
     cdef void _unravel_index \
          'unravel_index'(uint32 *indices, uint32 index,
                          uint32 *shape, uint32 num)
+
+    void _print_context_nurbs \
+         'print_context_nurbs'(NURBSContext *ctx)
+
+    int32 _get_xi_dist \
+          'get_xi_dist'(float64 *pdist, FMField *xi,
+                        FMField *point, FMField *e_coors,
+                        void *_ctx)
+
+    int32 _eval_basis_nurbs \
+          'eval_basis_nurbs'(FMField *out, FMField *coors, int32 diff,
+                             void *_ctx)
 
     cdef int32 _eval_bernstein_basis \
          'eval_bernstein_basis'(FMField *funs, FMField *ders,
@@ -38,7 +95,7 @@ cdef extern from 'nurbs.h':
                                  int32 *degrees, int32 dim,
                                  FMField *cs,
                                  int32 *conn, int32 n_el, int32 n_ep,
-                                 int32 has_bernstein)
+                                 int32 has_bernstein, int32 is_dx)
     cdef int32 _eval_nurbs_basis_tp \
          'eval_nurbs_basis_tp'(FMField *R, FMField *dR_dx, FMField *det,
                                FMField *dR_dxi,
@@ -49,7 +106,150 @@ cdef extern from 'nurbs.h':
                                FMField *weights, int32 *degrees, int32 dim,
                                FMField *cs,
                                int32 *conn, int32 n_el, int32 n_ep,
-                               int32 has_bernstein)
+                               int32 has_bernstein, int32 is_dx)
+
+cdef class CNURBSContext:
+
+    cdef NURBSContext *ctx
+
+    # Store arrays to prevent their deallocation in Python.
+    cdef readonly np.ndarray e_coors_max # Auxiliary buffer.
+
+    cdef readonly np.ndarray bf # Auxiliary buffer.
+    cdef readonly np.ndarray bfg # Auxiliary buffer.
+
+    cdef readonly np.ndarray R # Auxiliary buffer.
+    cdef readonly np.ndarray dR_dxi # Auxiliary buffer.
+    cdef readonly np.ndarray dR_dx # Auxiliary buffer.
+
+    cdef readonly np.ndarray bufBN # Auxiliary buffer.
+
+    property iel:
+
+        def __get__(self):
+            return self.ctx.iel
+
+        def __set__(self, int32 iel):
+            assert iel < self.ctx.n_cell
+            self.ctx.iel = iel
+
+    def __cinit__(self,
+                  np.ndarray[float64, mode='c', ndim=2] control_points not None,
+                  np.ndarray[float64, mode='c', ndim=1] weights not None,
+                  np.ndarray[int32, mode='c', ndim=1] degrees not None,
+                  cs not None,
+                  np.ndarray[int32, mode='c', ndim=2] conn not None,
+                  int32 i_max=100,
+                  float64 newton_eps=1e-8):
+        cdef NURBSContext *ctx
+        cdef int32 ii, num
+        cdef float64 *buf
+        cdef np.ndarray[float64, mode='c', ndim=2] _e_coors_max
+        cdef np.ndarray[float64, mode='c', ndim=1] _bf
+        cdef np.ndarray[float64, mode='c', ndim=2] _bfg
+        cdef np.ndarray[float64, mode='c', ndim=1] _R
+        cdef np.ndarray[float64, mode='c', ndim=2] _dR_dxi
+        cdef np.ndarray[float64, mode='c', ndim=2] _dR_dx
+        cdef np.ndarray[float64, mode='c', ndim=1] _bufBN
+
+        ctx = self.ctx = <NURBSContext *> pyalloc(sizeof(NURBSContext))
+
+        if ctx is NULL:
+            raise MemoryError()
+
+        ctx.get_xi_dist = &_get_xi_dist
+        ctx.eval_basis = &_eval_basis_nurbs
+        ctx.iel = 0
+        ctx.is_dx = 1
+
+        array2fmfield2(ctx.control_points, control_points)
+        array2fmfield1(ctx.weights, weights)
+
+        array2pint1(&ctx.degrees, &ctx.dim, degrees)
+
+        for ii in range(ctx.dim):
+            array2fmfield4(ctx.cs + ii, cs[ii])
+
+        array2pint2(&ctx.conn, &ctx.n_cell, &ctx.n_efun, conn)
+
+        _e_coors_max = self.e_coors_max = np.zeros((ctx.n_efun, ctx.dim),
+                                                   dtype=np.float64)
+        array2fmfield2(ctx.e_coors_max, _e_coors_max)
+
+        _bf = self.bf = np.zeros((ctx.n_efun,), dtype=np.float64)
+        array2fmfield1(ctx.bf, _bf)
+
+        _bfg = self.bfg = np.zeros((ctx.dim, ctx.n_efun),
+                                   dtype=np.float64)
+        array2fmfield2(ctx.bfg, _bfg)
+
+        _R = self.R = np.zeros((ctx.n_efun,), dtype=np.float64)
+        array2fmfield1(ctx.R, _R)
+
+        _dR_dxi = self.dR_dxi = np.zeros((ctx.dim, ctx.n_efun),
+                                         dtype=np.float64)
+        array2fmfield2(ctx.dR_dxi, _dR_dxi)
+
+        _dR_dx = self.dR_dx = np.zeros((ctx.dim, ctx.n_efun),
+                                       dtype=np.float64)
+        array2fmfield2(ctx.dR_dx, _dR_dx)
+
+        n_efuns = degrees + 1
+
+        _bufBN = self.bufBN = np.zeros((4 * n_efuns.sum(),), dtype=np.float64)
+        buf = &_bufBN[0]
+        for ii in range(0, ctx.dim):
+            num = n_efuns[ii]
+            fmf_pretend_nc(ctx.B + ii, 1, 1, num, 1, buf)
+            buf += num
+            fmf_pretend_nc(ctx.dB_dxi + ii, 1, 1, num, 1, buf)
+            buf += num
+            fmf_pretend_nc(ctx.N + ii, 1, 1, num, 1, buf)
+            buf += num
+            fmf_pretend_nc(ctx.dN_dxi + ii, 1, 1, num, 1, buf)
+            buf += num
+
+        ctx.reuse = 0
+
+        ctx.is_nurbs = is_nurbs(weights)
+
+        ctx.i_max = i_max
+        ctx.newton_eps = newton_eps
+
+    def __dealloc__(self):
+        pyfree(self.ctx)
+
+    def __str__(self):
+        return 'CNURBSContext'
+
+    def cprint(self):
+        _print_context_nurbs(self.ctx)
+
+    def evaluate(self, np.ndarray[float64, mode='c', ndim=2] coors not None,
+                 int32 diff=False, **kwargs):
+        cdef int32 n_coor = coors.shape[0]
+        cdef int32 n_efun = self.ctx.n_efun
+        cdef int32 dim = coors.shape[1]
+        cdef int32 bdim
+        cdef FMField _out[1], _coors[1]
+
+        ctx = self.ctx
+
+        if diff:
+            bdim = dim
+
+        else:
+            bdim = 1
+
+        cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_efun),
+                                                        dtype=np.float64)
+
+        array2fmfield3(_out, out)
+        array2fmfield2(_coors, coors)
+
+        self.ctx.eval_basis(_out, _coors, diff, ctx)
+
+        return out
 
 def is_nurbs(np.ndarray[float64, mode='c', ndim=1] weights not None):
     """
@@ -214,7 +414,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                      _qp, ie,
                                      _control_points, _weights,
                                      _degrees, dim, _cs, _conn, n_el, n_ep,
-                                     1)
+                                     1, 1)
                 _bf.val += n_efun
                 _bfg.val += dim * n_efun
                 _det.val += 1
@@ -244,7 +444,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                                        _qp, ie,
                                        _control_points,
                                        _degrees, dim, _cs, _conn, n_el, n_ep,
-                                       1)
+                                       1, 1)
                 _bf.val += n_efun
                 _bfg.val += dim * n_efun
                 _det.val += 1
@@ -413,7 +613,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                                      _qp, ie,
                                      _control_points, _weights,
                                      _degrees, dim, _cs, _conn, n_el, n_ep,
-                                     1)
+                                     1, 1)
 
                 # vals[ii, :] = np.dot(bf, variable[ec])
                 for ir in range(0, nc):
@@ -462,7 +662,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                                        _qp, ie,
                                        _control_points,
                                        _degrees, dim, _cs, _conn, n_el, n_ep,
-                                       1)
+                                       1, 1)
 
                 # vals[ii, :] = np.dot(bf, variable[ec])
                 for ir in range(0, nc):
@@ -625,7 +825,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
                                  _rc, ie,
                                  _control_points, _weights,
                                  _degrees, dim, _cs, _conn, n_el, n_ep,
-                                 0)
+                                 0, 1)
 
             # vals[ip, :] = np.dot(bf, variable[ec])
             ec = _conn + n_ep * ie;
@@ -653,7 +853,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
                                    _rc, ie,
                                    _control_points,
                                    _degrees, dim, _cs, _conn, n_el, n_ep,
-                                   0)
+                                   0, 1)
 
             # vals[ip, :] = np.dot(bf, variable[ec])
             ec = _conn + n_ep * ie;

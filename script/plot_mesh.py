@@ -6,6 +6,8 @@ import sys
 sys.path.append('.')
 from optparse import OptionParser
 
+import matplotlib.pyplot as plt
+
 from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, FEDomain
 import sfepy.postprocess.plot_cmesh as pc
@@ -53,7 +55,7 @@ def main():
     ax = pc.plot_entities(ax, domain.cmesh, dim, 'r')
     ax = pc.label_global_entities(ax, domain.cmesh, dim, 'r', 12)
 
-    pc.plt.show()
+    plt.show()
 
 if __name__ == '__main__':
     main()

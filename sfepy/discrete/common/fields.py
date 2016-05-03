@@ -1,3 +1,5 @@
+import time
+
 import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
@@ -119,13 +121,14 @@ class Field(Struct):
         Create a Field subclass instance based on the configuration.
         """
         if Field._all is None:
-            import sfepy
+            from sfepy import get_paths
             from sfepy.base.base import load_classes
 
             field_files = [ii for ii
-                           in sfepy.get_paths('sfepy/discrete/fem/fields*.py')
-                           if 'fields_base.py' not in ii] \
-                           + sfepy.get_paths('sfepy/discrete/iga/fields*.py')
+                           in get_paths('sfepy/discrete/fem/fields*.py')
+                           if 'fields_base.py' not in ii]
+            field_files += get_paths('sfepy/discrete/iga/fields*.py')
+            field_files += get_paths('sfepy/discrete/structural/fields*.py')
             Field._all = load_classes(field_files, [Field], ignore_errors=True,
                                       name_attr='family_name')
         table = Field._all
@@ -169,36 +172,6 @@ class Field(Struct):
         self.space = aux[1]
         self.poly_space_base = aux[2]
 
-    def get_dofs_in_region(self, region, merge=False, clean=False,
-                           warn=False, igs=None):
-        """
-        Return indices of DOFs that belong to the given region.
-        """
-        if igs is None:
-            igs = region.igs
-
-        nods = []
-        for ig in self.igs:
-            if not ig in igs:
-                nods.append(None)
-                continue
-
-            nn = self.get_dofs_in_region_group(region, ig)
-            nods.append(nn)
-
-        if merge:
-            nods = [nn for nn in nods if nn is not None]
-            nods = nm.unique(nm.hstack(nods))
-
-        elif clean:
-            for nn in nods[:]:
-                if nn is None:
-                    nods.remove(nn)
-                    if warn is not None:
-                        output(warn + ('%s' % region.name))
-
-        return nods
-
     def clear_mappings(self, clear_all=False):
         """
         Clear current reference mappings.
@@ -213,7 +186,7 @@ class Field(Struct):
         """
         self.mappings0 = self.mappings.copy()
 
-    def get_mapping(self, ig, region, integral, integration,
+    def get_mapping(self, region, integral, integration,
                     get_saved=False, return_key=False):
         """
         For given region, integral and integration type, get a reference
@@ -237,7 +210,7 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
-        key = (region.name, integral.order, ig, integration)
+        key = (region.name, integral.order, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)
@@ -246,10 +219,139 @@ class Field(Struct):
             out = self.mappings.get(key, None)
 
         if out is None:
-            out = self.create_mapping(ig, region, integral, integration)
+            out = self.create_mapping(region, integral, integration)
             self.mappings[key] = out
 
         if return_key:
             out = out + (key,)
 
         return out
+
+    def create_eval_mesh(self):
+        """
+        Create a mesh for evaluating the field. The default implementation
+        returns None, because this mesh is for most fields the same as the one
+        created by `Field.create_mesh()`.
+        """
+
+    def evaluate_at(self, coors, source_vals, mode='val', strategy='general',
+                    close_limit=0.1, get_cells_fun=None, cache=None,
+                    ret_cells=False, ret_status=False, ret_ref_coors=False,
+                    verbose=False):
+        """
+        Evaluate source DOF values corresponding to the field in the given
+        coordinates using the field interpolation.
+
+        Parameters
+        ----------
+        coors : array, shape ``(n_coor, dim)``
+            The coordinates the source values should be interpolated into.
+        source_vals : array, shape ``(n_nod, n_components)``
+            The source DOF values corresponding to the field.
+        mode : {'val', 'grad'}, optional
+            The evaluation mode: the field value (default) or the field value
+            gradient.
+        strategy : {'general', 'convex'}, optional
+            The strategy for finding the elements that contain the
+            coordinates. For convex meshes, the 'convex' strategy might be
+            faster than the 'general' one.
+        close_limit : float, optional
+            The maximum limit distance of a point from the closest
+            element allowed for extrapolation.
+        get_cells_fun : callable, optional
+            If given, a function with signature ``get_cells_fun(coors, cmesh,
+            **kwargs)`` returning cells and offsets that potentially contain
+            points with the coordinates `coors`. Applicable only when
+            `strategy` is 'general'. When not given,
+            :func:`get_potential_cells()
+            <sfepy.discrete.common.global_interp.get_potential_cells>` is used.
+        cache : Struct, optional
+            To speed up a sequence of evaluations, the field mesh and other
+            data can be cached. Optionally, the cache can also contain the
+            reference element coordinates as `cache.ref_coors`, `cache.cells`
+            and `cache.status`, if the evaluation occurs in the same
+            coordinates repeatedly. In that case the mesh related data are
+            ignored. See :func:`Field.get_evaluate_cache()
+            <sfepy.discrete.fem.fields_base.FEField.get_evaluate_cache()>`.
+        ret_ref_coors : bool, optional
+            If True, return also the found reference element coordinates.
+        ret_status : bool, optional
+            If True, return also the enclosing cell status for each point.
+        ret_cells : bool, optional
+            If True, return also the cell indices the coordinates are in.
+        verbose : bool
+            If False, reduce verbosity.
+
+        Returns
+        -------
+        vals : array
+            The interpolated values with shape ``(n_coor, n_components)`` or
+            gradients with shape ``(n_coor, n_components, dim)`` according to
+            the `mode`. If `ret_status` is False, the values where the status
+            is greater than one are set to ``numpy.nan``.
+        ref_coors : array
+            The found reference element coordinates, if `ret_ref_coors` is True.
+        cells : array
+            The cell indices, if `ret_ref_coors` or `ret_cells` or `ret_status`
+            are True.
+        status : array
+            The status, if `ret_ref_coors` or `ret_status` are True, with the
+            following meaning: 0 is success, 1 is extrapolation within
+            `close_limit`, 2 is extrapolation outside `close_limit`, 3 is
+            failure, 4 is failure due to non-convergence of the Newton
+            iteration in tensor product cells. If close_limit is 0, then for
+            the 'general' strategy the status 5 indicates points outside of the
+            field domain that had no potential cells.
+        """
+        from sfepy.discrete.common.global_interp import get_ref_coors
+        from sfepy.discrete.common.extmods.crefcoors import evaluate_in_rc
+
+        output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
+
+        ref_coors, cells, status = get_ref_coors(self, coors,
+                                                 strategy=strategy,
+                                                 close_limit=close_limit,
+                                                 get_cells_fun=get_cells_fun,
+                                                 cache=cache,
+                                                 verbose=verbose)
+
+        tt = time.clock()
+
+        # Interpolate to the reference coordinates.
+        if mode == 'val':
+            vals = nm.empty((coors.shape[0], source_vals.shape[1], 1),
+                            dtype=source_vals.dtype)
+            cmode = 0
+
+        elif mode == 'grad':
+            vals = nm.empty((coors.shape[0], source_vals.shape[1],
+                             coors.shape[1]),
+                            dtype=source_vals.dtype)
+            cmode = 1
+
+        ctx = self.create_basis_context()
+
+        evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
+                       self.get_econn('volume', self.region), cmode, ctx)
+        output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
+
+        output('...done',verbose=verbose)
+
+        if mode == 'val':
+            vals.shape = (coors.shape[0], source_vals.shape[1])
+
+        if not ret_status:
+            ii = nm.where(status > 1)[0]
+            vals[ii] = nm.nan
+
+        if ret_ref_coors:
+            return vals, ref_coors, cells, status
+
+        elif ret_status:
+            return vals, cells, status
+
+        elif ret_cells:
+            return vals, cells
+
+        else:
+            return vals

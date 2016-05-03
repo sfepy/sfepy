@@ -70,26 +70,33 @@ def dets_fast(a):
     out : array
         The output array with shape (m,): out[i] = det(a[i, :, :]).
     """
-    from numpy.linalg import lapack_lite
-    from numpy.core import intc
+    from distutils.version import LooseVersion
 
-    m = a.shape[0]
-    n = a.shape[1]
-    lapack_routine = lapack_lite.dgetrf
-    pivots = nm.zeros((m, n), intc)
-    flags = nm.arange(1, n + 1).reshape(1, -1)
-    for i in xrange(m):
-        tmp = a[i]
-        lapack_routine(n, n, tmp, n, pivots[i], 0)
-    sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
-    idx = nm.arange(n)
-    d = a[:, idx, idx]
-    absd = nm.absolute(d)
-    sign *= nm.multiply.reduce(d / absd, axis=1)
-    nm.log(absd, absd)
-    logdet = nm.add.reduce(absd, axis=-1)
+    if LooseVersion(nm.__version__) >= '1.8':
+        return nm.linalg.det(a)
 
-    return sign * nm.exp(logdet)
+    else:
+        from numpy.linalg import lapack_lite
+        from numpy.core import intc
+
+        a = a.copy()
+        m = a.shape[0]
+        n = a.shape[1]
+        lapack_routine = lapack_lite.dgetrf
+        pivots = nm.zeros((m, n), intc)
+        flags = nm.arange(1, n + 1).reshape(1, -1)
+        for i in xrange(m):
+            tmp = a[i]
+            lapack_routine(n, n, tmp, n, pivots[i], 0)
+        sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
+        idx = nm.arange(n)
+        d = a[:, idx, idx]
+        absd = nm.absolute(d)
+        sign *= nm.multiply.reduce(d / absd, axis=1)
+        nm.log(absd, absd)
+        logdet = nm.add.reduce(absd, axis=-1)
+
+        return sign * nm.exp(logdet)
 
 def print_array_info(ar):
     """
@@ -283,7 +290,7 @@ def insert_strided_axis(ar, axis, length):
     axis : int
         The axis before which the new axis will be inserted.
     length : int
-        The length of the inserted axis. 
+        The length of the inserted axis.
 
     Returns
     -------
@@ -364,7 +371,7 @@ def dot_sequences(mtx, vec, mode='AB'):
 
     Notes
     -----
-    Uses `numpy.core.umath_tests.matrix_multiply()` if available, which is much 
+    Uses `numpy.core.umath_tests.matrix_multiply()` if available, which is much
     faster than the default implementation.
 
     The default implementation uses `numpy.sum()` and element-wise
@@ -514,7 +521,7 @@ class MatrixAction( Struct ):
         insert_method( obj, call )
         return obj
     from_array = staticmethod( from_array )
-    
+
     ##
     # 30.08.2007, c
     def __call__( self, vec ):

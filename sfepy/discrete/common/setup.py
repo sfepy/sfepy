@@ -7,6 +7,8 @@ def configuration(parent_package='', top_path=None):
     auto_name = op.split(op.dirname(__file__))[-1]
     config = Configuration(auto_name, parent_package, top_path)
 
+    config.add_subpackage('extmods')
+
     return config
 
 if __name__ == '__main__':

@@ -77,6 +77,47 @@ class DiffusionTerm(Term):
         else:
             self.function = terms.d_diffusion
 
+class SDDiffusionTerm(Term):
+    r"""
+    Diffusion sensitivity analysis term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \left[ (\dvg \ul{\Vcal}) K_{ij} \nabla_i q\, \nabla_j p -
+        K_{ij} (\nabla_j \ul{\Vcal} \nabla q) \nabla_i p - K_{ij} \nabla_j q
+        (\nabla_i \ul{\Vcal} \nabla p)\right]
+
+    :Arguments:
+        - material:    :math:`K_{ij}`
+        - parameter_q: :math:`q`
+        - parameter_p: :math:`p`
+        - parameter_v: :math:`\ul{\Vcal}`
+    """
+    name = 'd_sd_diffusion'
+    arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_v')
+    arg_shapes = {'material' : 'D, D',
+                  'parameter_q' : 1, 'parameter_p' : 1, 'parameter_v' : 'D'}
+
+    function = staticmethod(terms.d_sd_diffusion)
+
+    def get_fargs(self, mat, parameter_q, parameter_p, parameter_v,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter_p)
+
+        grad_q = self.get(parameter_q, 'grad')
+        grad_p = self.get(parameter_p, 'grad')
+        grad_v = self.get(parameter_v, 'grad')
+        div_v = self.get(parameter_v, 'div')
+
+        return grad_q, grad_p, grad_v, div_v, mat, vg
+
+    def get_eval_shape(self, mat, parameter_q, parameter_p, parameter_v,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter_q)
+
+        return (n_el, 1, 1, 1), parameter_q.dtype
+
 class LaplaceTerm(DiffusionTerm):
     r"""
     Laplace term with :math:`c` coefficient. Can be
@@ -147,7 +188,8 @@ class DiffusionCoupling(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega}  p K_{j} \nabla_j q
+        \int_{\Omega}  p K_{j} \nabla_j q \mbox{ , }
+        \int_{\Omega}  q K_{j} \nabla_j p
 
     :Arguments:
         - material : :math:`K_{j}`
@@ -174,16 +216,19 @@ class DiffusionCoupling(Term):
     def dw_fun(out, val, mat, bf, vg, fmode):
 
         if fmode == 0:
-            status = terms.mulATB_integrate(out, vg.bfg, mat * val, vg)
+            status = terms.mulAB_integrate(out, vg.bfg, mat * val, vg,
+                                           mode='ATB')
 
         elif fmode == 1:
-            status = terms.mulATB_integrate(out, bf * mat, val, vg)
+            status = terms.mulAB_integrate(out, bf * mat, val, vg, mode='ATB')
 
         elif fmode == 2:
-            status = terms.mulATB_integrate(out, vg.bfg, mat * bf, vg)
+            status = terms.mulAB_integrate(out, vg.bfg, mat * bf, vg,
+                                           mode='ATB')
 
         elif fmode == 3:
-            status = terms.mulATB_integrate(out, mat * bf, vg.bfg, vg)
+            status = terms.mulAB_integrate(out, mat * bf, vg.bfg, vg,
+                                           mode='ATB')
 
         return status
 
@@ -301,7 +346,7 @@ class SurfaceFluxTerm(Term):
     r"""
     Surface flux term.
 
-    Supports 'eval', 'el_avg' and 'el' evaluation modes.
+    Supports 'eval', 'el_eval' and 'el_avg' evaluation modes.
 
     :Definition:
 
@@ -333,7 +378,7 @@ class SurfaceFluxTerm(Term):
 
         grad = self.get(parameter, 'grad')
 
-        fmode = {'eval' : 0, 'el_avg' : 1, 'el' : 0}.get(mode, 0)
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 0)
 
         return grad, mat, sg, fmode
 
@@ -427,3 +472,58 @@ class ConvectVGradSTerm(Term):
             fmode = 2
 
         return val_v, grad_s, vvg, svg, fmode
+
+class AdvectDivFreeTerm(Term):
+    r"""
+    Advection of a scalar quantity :math:`p` with the advection velocity
+    :math:`\ul{y}` given as a material parameter (a known function of space and
+    time).
+
+    The advection velocity has to be divergence-free!
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \nabla \cdot (\ul{y} p) q
+        = \int_{\Omega} (\underbrace{(\nabla \cdot \ul{y})}_{\equiv 0}
+        + (\ul{y}, \nabla)) p) q
+
+    :Arguments:
+        - material : :math:`\ul{y}`
+        - virtual  : :math:`q`
+        - virtual  : :math:`p`
+    """
+    name = 'dw_advect_div_free'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : 'D, 1', 'virtual' : ('1', 'state'),
+                  'state' : '1'}
+
+    @staticmethod
+    def function(out, mat, vg, grad, fmode):
+        bf_t = vg.bf.transpose((0, 1, 3, 2))
+
+        if fmode == 0:
+            out_qp = bf_t * dot_sequences(mat, grad, 'ATB')
+
+        else:
+            bfg = vg.bfg
+
+            out_qp = bf_t * dot_sequences(mat, bfg, 'ATB')
+
+        status = vg.integrate(out, out_qp)
+
+        return status
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(virtual)
+
+        if diff_var is None:
+            grad = self.get(state, 'grad')
+            fmode = 0
+
+        else:
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
+
+        return mat, vg, grad, fmode

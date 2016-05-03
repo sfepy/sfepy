@@ -226,7 +226,7 @@ def make_square_matrix(order):
 
     return mtx
 
-def get_facet_dof_permutations(n_fp, igs, order):
+def get_facet_dof_permutations(n_fp, order):
     """
     Prepare DOF permutation vector for each possible facet orientation.
     """
@@ -253,12 +253,10 @@ def get_facet_dof_permutations(n_fp, igs, order):
         raise ValueError('unsupported number of facet points! (%d)' % n_fp)
 
     dof_perms = {}
-    for ig in igs:
-        dof_perms[ig] = {}
-        for key, itfun in ori_map.iteritems():
-            dof_perms[ig][key] = [mtx[ii] for ii in itfun(fo)]
+    for key, itfun in ori_map.iteritems():
+        dof_perms[key] = [mtx[ii] for ii in itfun(fo)]
 
-        dof_perms[ig] = dict_to_array(dof_perms[ig])
+    dof_perms = dict_to_array(dof_perms)
 
     return dof_perms
 

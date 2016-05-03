@@ -15,7 +15,7 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from sfepy.mechanics.matcoefs import lame_from_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.utils import refine_mesh
 from sfepy import data_dir
 
@@ -42,10 +42,7 @@ regions = {
 }
 
 materials = {
-    'Asphalt' : ({
-        'lam' : lame_from_youngpoisson(young, poisson)[0],
-        'mu' : lame_from_youngpoisson(young, poisson)[1],
-    },),
+    'Asphalt' : ({'D': stiffness_from_youngpoisson(2, young, poisson)},),
     'Load' : ({'.val' : [0.0, -1000.0]},),
 }
 
@@ -55,7 +52,7 @@ fields = {
 
 equations = {
    'balance_of_forces' :
-   """dw_lin_elastic_iso.2.Omega(Asphalt.lam, Asphalt.mu, v, u )
+   """dw_lin_elastic.2.Omega(Asphalt.D, v, u)
       = dw_point_load.0.Top(Load.val, v)""",
 }
 

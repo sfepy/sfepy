@@ -33,7 +33,7 @@ fields = {
 }
 
 variables = {
-    'T' : ('unknown field', 'temperature', 0),
+    'T' : ('unknown field', 'temperature', 0, 1),
     's' : ('test field',    'temperature', 'T'),
 }
 
@@ -55,18 +55,22 @@ integrals = {
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i.Omega( coef.val, s, T ) = 0"""
+    'Temperature' :
+    """dw_volume_dot.i.Omega( s, dT/dt )
+     + dw_laplace.i.Omega( coef.val, s, T[-1] ) = 0"""
 }
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
-    'ts' : ('ts.explicit', {
+    'newton' : ('nls.newton', {
+            'i_max'      : 1,
+            'is_linear'  : True,
+    }),
+    'ts' : ('ts.simple', {
         't0' : 0.0,
-        't1' : 1.0,
+        't1' : 0.07,
         'dt' : 0.00002,
         'n_step' : None,
-        'mass' : 'dw_volume_dot.i.Omega( s, T )',
-        'lumped' : False, # If True, lump mass matrix so that it is diagonal.
     }),
 }
 

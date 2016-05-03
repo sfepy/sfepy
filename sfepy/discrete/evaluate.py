@@ -50,6 +50,8 @@ class BasicEvaluator( Evaluator ):
             vec = self.make_full_vec( vec )
 
         vec_r = self.problem.equations.eval_residuals(vec)
+        if self.matrix_hook is not None:
+            vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
 
         return vec_r
 
@@ -90,6 +92,9 @@ class LCBCEvaluator( BasicEvaluator ):
             vec = self.make_full_vec( vec )
         vec_r = BasicEvaluator.eval_residual( self, vec, is_full = True )
         vec_rr = self.mtx_lcbc.T * vec_r
+        if self.matrix_hook is not None:
+            vec_rr = self.matrix_hook(vec_rr, self.problem,
+                                      call_mode='lcbc_residual')
         return vec_rr
 
     ##
@@ -286,7 +291,7 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
 
     return out
 
-def eval_in_els_and_qp(expression, ig, iels, coors,
+def eval_in_els_and_qp(expression, iels, coors,
                        fields, materials, variables,
                        functions=None, mode='eval', term_mode=None,
                        extra_args=None, verbose=True, kwargs=None):
@@ -332,14 +337,13 @@ def eval_in_els_and_qp(expression, ig, iels, coors,
     domain = fields.values()[0].domain
 
     region = Region('Elements', 'given elements', domain, '')
-    region.cells = iels + domain.mesh.el_offsets[ig]
+    region.cells = iels
     region.update_shape()
     domain.regions.append(region)
 
     for field in fields.itervalues():
         field.clear_mappings(clear_all=True)
-        for ap in field.aps.itervalues():
-            ap.clear_qp_base()
+        field.clear_qp_base()
 
     aux = create_evaluable(expression, fields, materials,
                            variables.itervalues(), Integrals([integral]),
@@ -362,7 +366,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
     be encoded in the equation's name, as in::
 
         conf_equations = {
-          'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
+          'A,v,u' : "dw_lin_elastic.i1.Y2( inclusion.D, v, u )",
         }
 
     Notes

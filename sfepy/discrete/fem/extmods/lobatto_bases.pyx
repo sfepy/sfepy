@@ -7,10 +7,10 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-cimport _fmfield as _f
-from _fmfield cimport FMField
+cimport sfepy.discrete.common.extmods._fmfield as _f
+from sfepy.discrete.common.extmods._fmfield cimport FMField
 
-from types cimport int32, float64, complex128
+from sfepy.discrete.common.extmods.types cimport int32, float64, complex128
 
 cdef extern from 'lobatto.h':
     int32 _eval_lobatto1d \

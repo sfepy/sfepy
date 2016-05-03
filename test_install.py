@@ -77,6 +77,35 @@ def report(out, name, line, item, value, eps=None, return_item=False):
     else:
         return ok
 
+def report2(out, name, items, return_item=False):
+    """
+    Check that `items` are in the output string `out`.
+    If not, print the output.
+    """
+    ok = True
+    for s in items:
+        print '  checking:', s
+        if s not in out:
+            ok = False
+            break
+
+    if ok:
+        print '  %s:' % name, ok
+
+    else:
+        print '! %s:' % name, ok
+
+        fd = open('test_install.log', 'a')
+        fd.write('*' * 55)
+        fd.write(out)
+        fd.write('*' * 55)
+
+    if return_item:
+        return ok, s
+
+    else:
+        return ok
+
 usage = '%prog' + '\n' + __doc__
 
 def main():
@@ -133,9 +162,12 @@ def main():
     out, err = check_output('python ./extractor_sfepy.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
 
+    out, err = check_output('python ./postproc.py -n --no-offscreen -o cylinder.png cylinder.h5')
+    eok += report(out, '...', -3, 2, 'cylinder.png...')
+
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
-    eok += report(out, '...', -6, 2, '208.54511594')
-    eok += report(out, '...', -5, 1, '116309.22337295]')
+    eok += report(out, '...', -7, 2, '208.54511594')
+    eok += report(out, '...', -6, 1, '116309.22337295]')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py --phase-velocity')
     eok += report(out, '...', -2, 3, '4.1894123')
@@ -145,29 +177,37 @@ def main():
     eok += report(out, '...', -6, 1, '[0,')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps_rigid.py')
-    eok += report(out, '...', -6, 2, '4.58709531e+01')
-    eok += report(out, '...', -5, 1, '1.13929200e+05]')
+    eok += report(out, '...', -7, 2, '4.58709531e+01')
+    eok += report(out, '...', -6, 1, '1.13929200e+05]')
 
     out, err = check_output('python ./schroedinger.py --hydrogen')
     eok += report(out, '...', -4, -2, '-0.01913506', eps=1e-4)
 
     out, err = check_output('python ./homogen.py examples/homogenization/perfusion_micro.py')
-    eok += report(out, '...', -7, -1, 'EpA...')
+    eok += report2(out, '...', ['computing EpA', 'computing PA_3',
+                                'computing GA', 'computing EmA',
+                                'computing KA'])
 
-    out, err = check_output('python examples/standalone/homogenized_elasticity/rs_correctors.py -n')
+    out, err = check_output('python examples/homogenization/rs_correctors.py -n')
     eok += report(out, '...', -2, -1, '1.644e-01]]')
 
-    out, err = check_output('python examples/standalone/elastic_materials/compare_elastic_materials.py -n')
+    out, err = check_output('python examples/large_deformation/compare_elastic_materials.py -n')
     eok += report(out, '...', -2, 5, '1.068759e-14', eps=1e-13)
 
-    out, err = check_output('python examples/standalone/interactive/linear_elasticity.py')
+    out, err = check_output('python examples/linear_elasticity/linear_elastic_interactive.py')
     eok += report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
 
-    out, err = check_output('python examples/standalone/interactive/modal_analysis.py')
-    eok += report(out, '...', -7, 3, '12142.11470773', eps=1e-13)
+    out, err = check_output('python examples/linear_elasticity/modal_analysis.py')
+    eok += report(out, '...', -12, 5, '12142.11470773', eps=1e-13)
 
-    out, err = check_output('python examples/standalone/thermal_electric/thermal_electric.py')
+    out, err = check_output('python examples/multi_physics/thermal_electric.py')
     eok += report(out, '...', -3, 5, '2.612933e-14', eps=1e-13)
+
+    out, err = check_output('mpiexec -n 2 python examples/diffusion/poisson_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    eok += report(out, '...', -2, 4, '8.021313824020e-07', eps=1e-6)
+
+    out, err = check_output('mpiexec -n 2 python examples/multi_physics/biot_parallel_interactive.py output-parallel -2 --silent -ksp_monitor')
+    eok += report(out, '...', -2, 4, '3.787214380277e-09', eps=1e-8)
 
     t1 = time.time()
 

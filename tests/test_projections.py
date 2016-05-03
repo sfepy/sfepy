@@ -80,3 +80,60 @@ class Test(TestCommon):
         ok = (nm.abs(vec1 - vec2) < 0.01).all()
 
         return ok
+
+    def test_projection_iga_fem(self):
+        from sfepy.discrete import FieldVariable
+        from sfepy.discrete.fem import FEDomain, Field
+        from sfepy.discrete.iga.domain import IGDomain
+        from sfepy.mesh.mesh_generators import gen_block_mesh
+        from sfepy.discrete.iga.domain_generators import gen_patch_block_domain
+        from sfepy.discrete.projections import (make_l2_projection,
+                                                make_l2_projection_data)
+
+        shape = [10, 12, 12]
+        dims = [5, 6, 6]
+        centre = [0, 0, 0]
+        degrees = [2, 2, 2]
+
+        nurbs, bmesh, regions = gen_patch_block_domain(dims, shape, centre,
+                                                       degrees,
+                                                       cp_mode='greville',
+                                                       name='iga')
+        ig_domain = IGDomain('iga', nurbs, bmesh, regions=regions)
+
+        ig_omega = ig_domain.create_region('Omega', 'all')
+        ig_field = Field.from_args('iga', nm.float64, 1, ig_omega,
+                                   approx_order='iga', poly_space_base='iga')
+        ig_u = FieldVariable('ig_u', 'parameter', ig_field,
+                             primary_var_name='(set-to-None)')
+
+        mesh = gen_block_mesh(dims, shape, centre, name='fem')
+        fe_domain = FEDomain('fem', mesh)
+
+        fe_omega = fe_domain.create_region('Omega', 'all')
+        fe_field = Field.from_args('fem', nm.float64, 1, fe_omega,
+                                   approx_order=2)
+        fe_u = FieldVariable('fe_u', 'parameter', fe_field,
+                             primary_var_name='(set-to-None)')
+
+        def _eval_data(ts, coors, mode, **kwargs):
+            return nm.prod(coors**2, axis=1)[:, None, None]
+
+        make_l2_projection_data(ig_u, _eval_data)
+
+        make_l2_projection(fe_u, ig_u) # This calls ig_u.evaluate_at().
+
+        coors = 0.5 * nm.random.rand(20, 3) * dims
+
+        ig_vals = ig_u.evaluate_at(coors)
+        fe_vals = fe_u.evaluate_at(coors)
+
+        ok = nm.allclose(ig_vals, fe_vals, rtol=0.0, atol=1e-12)
+        if not ok:
+            self.report('iga-fem projection failed!')
+            self.report('coors:')
+            self.report(coors)
+            self.report('iga fem diff:')
+            self.report(nm.c_[ig_vals, fe_vals, nm.abs(ig_vals - fe_vals)])
+
+        return ok

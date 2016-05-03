@@ -19,6 +19,9 @@
    get you started, check :ref:`sfepy-gallery-examples-index` and
    :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
 
+   SfePy can be used in parallel (work in progress), see
+   :ref:`solving_problems_in_parallel`.
+
    There is also a preliminary support for the isogeometric analysis,
    outlined in :ref:`isogeometric_analysis`.
 
@@ -123,17 +126,20 @@
    Support
    -------
 
-   Work on SfePy is partially supported by the following projects:
+   Work on SfePy is partially supported by the following ongoing projects:
 
-   - project GAP108/11/0853 (Nanostructures with transition metals: Towards
-     ab-initio material design) of Czech Science Foundation, since 2011;
-   - project NT13326 of Ministry of Health of the Czech Republic, since 2012;
+   - project GA16-03823S (Homogenization and multi-scale computational modelling
+     of flow and nonlinear interactions in porous smart structures) of Czech
+     Science Foundation, since 2016;
    - project GAP101/12/2315 (Modelling of acoustic wave propagation in strongly
      heterogeneous media; multi-scale numerical and analytical approaches) of
      Czech Science Foundation, since 2012.
 
    In past, work on SfePy was partially supported by the following projects:
 
+   - project NT13326 of Ministry of Health of the Czech Republic, in 2012-2015;
+   - project GAP108/11/0853 (Nanostructures with transition metals: Towards
+     ab-initio material design) of Czech Science Foundation, in 2011-2015;
    - project MSM4977751303 (Failure prediction of heterogeneous materials,
      components of mechanical and biomechanical systems) of Ministry of
      Education, Youth and Sports of the Czech Republic, in 2005-2011;
@@ -168,4 +174,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

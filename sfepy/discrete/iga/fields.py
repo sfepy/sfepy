@@ -77,10 +77,10 @@ class IGField(Field):
         self.val_shape = self.shape
         self.n_nod = self.nurbs.weights.shape[0]
         self.n_efun = nm.prod(self.nurbs.degrees + 1)
+        self.approx_order = self.nurbs.degrees.max()
 
         self.mappings = {}
 
-        self.igs = self.region.igs
         self.is_surface = False
 
     def _get_facets(self, tdim):
@@ -96,15 +96,11 @@ class IGField(Field):
         """
         return (self.nurbs.degrees > 1).any()
 
-    def get_econn(self, conn_type, region, ig, is_trace=False,
-                  integration=None):
+    def get_econn(self, conn_type, region, is_trace=False, integration=None):
         """
         Get DOF connectivity of the given type in the given region.
         """
         ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
-
-        if (ig not in self.igs) or (ig not in region.igs):
-            return None
 
         nconn = self.nurbs.conn
 
@@ -113,11 +109,11 @@ class IGField(Field):
                 conn = nconn
 
             else:
-                cells = region.get_cells(ig, true_cells_only=True)
+                cells = region.get_cells(true_cells_only=True)
                 conn = nm.take(nconn, cells.astype(nm.int32), axis=0)
 
         elif ct == 'surface':
-            fis = region.get_facet_indices(ig, offset=False, force_ig=False)
+            fis = region.get_facet_indices()
             tdim = region.kind_tdim
             facets = self._get_facets(tdim)
 
@@ -130,22 +126,18 @@ class IGField(Field):
 
         return conn
 
-    def get_data_shape(self, ig, integral,
-                       integration='volume', region_name=None):
+    def get_data_shape(self, integral, integration='volume', region_name=None):
         """
         Get element data dimensions.
 
         Parameters
         ----------
-        ig : int
-            The element group index.
         integral : Integral instance
             The integral describing used numerical quadrature.
-        integration : 'volume', 'plate', 'surface', 'surface_extra' or 'point'
-            The term integration type.
+        integration : 'volume'
+            The term integration type. Only 'volume' type is implemented.
         region_name : str
-            The name of surface region, required when `shape_kind` is
-            'surface'.
+            The name of the region of the integral.
 
         Returns
         -------
@@ -160,23 +152,21 @@ class IGField(Field):
         - `n_en` = number of element nodes
         """
         region = self.domain.regions[region_name]
-        shape = region.shape[ig]
-        dim = region.dim
 
         _, weights = integral.get_qp(self.domain.gel.name)
         n_qp = weights.shape[0]
 
-        data_shape = (shape.n_cell, n_qp, dim, self.n_efun)
+        data_shape = (region.shape.n_cell, n_qp, region.dim, self.n_efun)
 
         return data_shape
 
-    def get_dofs_in_region_group(self, region, ig, merge=True):
+    def get_dofs_in_region(self, region, merge=True):
         """
         Return indices of DOFs that belong to the given region and group.
 
         Notes
         -----
-        `ig`, `merge` are not used.
+        `merge` is not used.
         """
         idim = region.kind_tdim
         if idim < (self.domain.shape.tdim - 1):
@@ -184,11 +174,11 @@ class IGField(Field):
                              % region.name)
 
         if idim == region.tdim: # Cells.
-            rconn = self.get_econn('volume', region, ig)
+            rconn = self.get_econn('volume', region)
             dofs = nm.unique(rconn)
 
         else: # Facets.
-            rconn = self.get_econn('surface', region, ig)
+            rconn = self.get_econn('surface', region)
             dofs = nm.unique(nm.concatenate(rconn))
 
         if not merge:
@@ -238,7 +228,7 @@ class IGField(Field):
         nods = []
         vals = []
 
-        aux = self.get_dofs_in_region(region, clean=True, warn=warn)
+        aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
 
         if nm.isscalar(fun):
@@ -260,14 +250,14 @@ class IGField(Field):
             facets = self._get_facets(region.kind_tdim)
 
             # Region facet connectivity.
-            rconn = self.get_econn('surface', region, region.igs[0])
+            rconn = self.get_econn('surface', region)
 
             # Local connectivity.
             remap = prepare_remap(nods, nods.max() + 1)
             lconn = [remap[ii] for ii in rconn]
 
             # Cell and face(cell) ids for each facet.
-            fis = region.get_facet_indices(0, offset=False, force_ig=False)
+            fis = region.get_facet_indices()
 
             # Integral given by max. NURBS surface degree.
             fdegrees = iga.get_surface_degrees(nurbs.degrees)
@@ -362,7 +352,7 @@ class IGField(Field):
         if dct != 'volume':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
-    def create_mapping(self, ig, region, integral, integration):
+    def create_mapping(self, region, integral, integration):
         """
         Create a new reference mapping.
         """
@@ -371,6 +361,34 @@ class IGField(Field):
         cmap = mapping.get_mapping(vals, weights)
 
         return cmap, mapping
+
+    def create_mesh(self, extra_nodes=True):
+        """
+        Create a mesh corresponding to the field region. For IGA fields, this
+        is directly the topological mesh. The `extra_nodes` argument is
+        ignored.
+        """
+        return self.domain.mesh
+
+    def create_eval_mesh(self):
+        """
+        Create a mesh with the original NURBS connectivity for evaluating the
+        field. The mesh coordinates are the NURBS control points.
+        """
+        return self.domain.eval_mesh
+
+    def create_basis_context(self):
+        """
+        Create the context required for evaluating the field basis.
+        """
+        from sfepy.discrete.iga.extmods.igac import CNURBSContext
+
+        nurbs = self.nurbs
+
+        ctx = CNURBSContext(nurbs.cps, nurbs.weights, nurbs.degrees,
+                            nurbs.cs, nurbs.conn, i_max=100)
+
+        return ctx
 
     def create_output(self, dofs, var_name, dof_names=None,
                       key=None, **kwargs):

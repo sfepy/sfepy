@@ -34,7 +34,7 @@ def nodal_stress(out, pb, state, extend=False, integrals=None):
 
     # Point load.
     mat = pb.get_materials()['Load']
-    P = 2.0 * mat.get_data('special', None, 'val')[1]
+    P = 2.0 * mat.get_data('special', 'val')[1]
 
     # Calculate nodal stress.
     pb.time_update()
@@ -42,7 +42,7 @@ def nodal_stress(out, pb, state, extend=False, integrals=None):
     if integrals is None: integrals = pb.get_integrals()
 
     stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp',
-                         integrals=integrals)
+                         integrals=integrals, copy_materials=False)
     sfield = Field.from_args('stress', nm.float64, (3,),
                              pb.domain.regions['Omega'])
     svar = FieldVariable('sigma', 'parameter', sfield,

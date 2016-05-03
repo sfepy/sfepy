@@ -123,14 +123,12 @@ def create_mapping(coors, gel, order):
 
     return mapping
 
-def describe_geometry(ig, field, region, integral):
+def describe_geometry(field, region, integral):
     """
     Describe membrane geometry in a given region.
 
     Parameters
     ----------
-    ig : int
-        The element group index.
     field : Field instance
         The field defining the FE approximation.
     region : Region instance
@@ -147,8 +145,8 @@ def describe_geometry(ig, field, region, integral):
         The mapping from transformed elements to a reference elements.
     """
     # Coordinates of element vertices.
-    sg, _ = field.get_mapping(ig, region, integral, 'surface')
-    sd = field.aps[ig].surface_data[region.name]
+    sg, _ = field.get_mapping(region, integral, 'surface')
+    sd = field.surface_data[region.name]
     coors = field.coors[sd.econn[:, :sg.n_ep]]
 
     # Coordinate transformation matrix (transposed!).
@@ -164,6 +162,7 @@ def describe_geometry(ig, field, region, integral):
     qp = integral.get_qp(gel.name)
     ps = PolySpace.any_from_args(None, gel, field.approx_order)
     membrane_geo = vm.get_mapping(qp[0], qp[1], poly_space=ps)
+    membrane_geo.bf[:] = ps.eval_base(qp[0])
 
     return mtx_t, membrane_geo
 

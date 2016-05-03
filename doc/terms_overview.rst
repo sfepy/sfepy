@@ -50,15 +50,15 @@ The following notation is used:
      - vector parameter function
    * - :math:`\ull{e}(\ul{u})`
      - Cauchy strain tensor (:math:`\frac{1}{2}((\nabla u) + (\nabla u)^T)`)
-   * - :math:`\ull{F}`  
+   * - :math:`\ull{F}`
      - deformation gradient :math:`F_{ij} = \pdiff{x_i}{X_j}`
    * - :math:`J`
      - :math:`\det(F)`
    * - :math:`\ull{C}`
      -  right Cauchy-Green deformation tensor :math:`C = F^T F`
    * - :math:`\ull{E}(\ul{u})`
-     - Green strain tensor :math:`E_{ij} = \frac{1}{2}(\pdiff{u_i}{x_j} +
-       \pdiff{u_j}{x_i} + \pdiff{u_m}{x_i}\pdiff{u_m}{x_j})`
+     - Green strain tensor :math:`E_{ij} = \frac{1}{2}(\pdiff{u_i}{X_j} +
+       \pdiff{u_j}{X_i} + \pdiff{u_m}{X_i}\pdiff{u_m}{X_j})`
    * - :math:`\ull{S}`
      -  second Piola-Kirchhoff stress tensor
    * - :math:`\ul{f}`
@@ -104,21 +104,12 @@ Term names are (usually) prefixed according to the following conventions:
        arguments, used for FE assembling
    * - d
      - discrete
-     - `'eval'`
-     - terms having all arguments known, the result is the scalar value of
-       the integral
-   * - di
-     - discrete integrated
-     - `'eval'`
-     - like 'd' but the result is not a scalar (e.g. a vector)
-   * - dq
-     - discrete quadrature
-     - `'qp'`
-     - terms having all arguments known, the result are the values in
-       quadrature points of elements
+     - `'eval'`, `'el_eval'`
+     - terms having all arguments known, the result is the value of the term
+       integral evaluation
    * - ev
      - evaluate
-     - `'eval'`, `'el_avg'`, `'qp'`
+     - `'eval'`, `'el_eval'`, `'el_avg'`, `'qp'`
      - terms having all arguments known and supporting all evaluation modes
        except `'weak'` (no virtual variables in arguments, no FE assembling)
 
@@ -127,9 +118,18 @@ Term names are (usually) prefixed according to the following conventions:
 Term Table
 ----------
 
-Below we list all the terms available in an automatically generated table. The
+Below we list all the terms available in automatically generated tables. The
 first column lists the name, the second column the argument lists and the third
-column the mathematical definition of each term.
+column the mathematical definition of each term. The terms are devided into the
+following tables:
+
+* `Table of basic terms`_
+
+* `Table of large deformation terms`_ (total/updated Lagrangian formulation)
+
+* `Table of sensitivity terms`_
+
+* `Table of special terms`_
 
 The notation ``<virtual>`` corresponds to a test function,
 ``<state>`` to a unknown function and ``<parameter>`` to a known function. By

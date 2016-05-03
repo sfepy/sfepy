@@ -122,9 +122,9 @@ def extract_time_history(filename, extract, verbose=True):
     Returns
     -------
     ths : dict
-        The time histories in a dict with variable names as keys. If a
-        nodal variable is requested in elements, its value is a dict of histories
-        in the element nodes.
+        The time histories in a dict with variable names as keys. If a nodal
+        variable is requested in elements, its value is a dict of histories in
+        the element nodes.
     ts : TimeStepper instance
         The time stepping information.
     """
@@ -137,15 +137,13 @@ def extract_time_history(filename, extract, verbose=True):
     pes = OneTypeList(Struct)
     for chunk in extract.split(','):
         aux = chunk.strip().split()
-        pes.append(Struct(var = aux[0],
-                          mode = aux[1],
-                          indx = map(int, aux[2:]),
-                          igs = None))
+        pes.append(Struct(var=aux[0],
+                          mode=aux[1],
+                          indx=map(int, aux[2:])))
 
     ##
-    # Verify array limits, set igs for element data, shift indx.
+    # Verify array limits.
     mesh = Mesh.from_file(filename)
-    n_el, n_els, offs = mesh.n_el, mesh.n_els, mesh.el_offsets
     for pe in pes:
         if pe.mode == 'n':
             for ii in pe.indx:
@@ -154,20 +152,14 @@ def extract_time_history(filename, extract, verbose=True):
                                      % (ii, mesh.n_nod))
 
         if pe.mode == 'e':
-            pe.igs = []
             for ii, ie in enumerate(pe.indx[:]):
-                if (ie < 0) or (ie >= n_el):
+                if (ie < 0) or (ie >= mesh.n_el):
                     raise ValueError('element index 0 <= %d < %d!'
-                                     % (ie, n_el))
-                ig = (ie < n_els).argmax()
-                pe.igs.append(ig)
-                pe.indx[ii] = ie - offs[ig]
-
-##     print pes
+                                     % (ie, mesh.n_el))
+                pe.indx[ii] = ie
 
     ##
     # Extract data.
-    # Assumes only one element group (ignores igs)!
     io = MeshIO.any_from_filename(filename)
     ths = {}
     for pe in pes:
@@ -186,7 +178,7 @@ def extract_time_history(filename, extract, verbose=True):
                 th[iel] = io.read_time_history(nname, ips)
         else:
             raise ValueError('cannot extract cell data %s in nodes!' % pe.var)
-            
+
         ths[pe.var] = th
 
     output('...done', verbose=verbose)

@@ -50,15 +50,8 @@ def plot_control_mesh(ax, control_points, label=False):
 
     if label:
         for ii, cc in enumerate(coors):
-            if dim == 3:
-                cx, cy, cz = cc
-                ax.text(cx, cy, cz, '%d' % ii,
-                        color='g', fontsize=12, weight='bold')
-
-            else:
-                cx, cy = cc
-                ax.text(cx, cy, '%d' % ii,
-                        color='g', fontsize=12, weight='bold')
+            ax.text(*cc, s='%d' % ii,
+                    color='g', fontsize=12, weight='bold')
 
     return ax
 

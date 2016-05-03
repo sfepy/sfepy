@@ -38,9 +38,7 @@ class IntegrateVolumeTerm(Term):
     """
     name = 'ev_volume_integrate'
     arg_types = ('opt_material', 'parameter')
-    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 1},
-                  {'opt_material' : None},
-                  {'opt_material' : '1, 1', 'parameter' : 'D'},
+    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 'N'},
                   {'opt_material' : None}]
 
     @staticmethod
@@ -117,9 +115,7 @@ class IntegrateSurfaceTerm(Term):
     """
     name = 'ev_surface_integrate'
     arg_types = ('opt_material', 'parameter')
-    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 1},
-                  {'opt_material' : None},
-                  {'opt_material' : '1, 1', 'parameter' : 'D'},
+    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 'N'},
                   {'opt_material' : None}]
     integration = 'surface'
 
@@ -237,7 +233,7 @@ class VolumeTerm(Term):
     """
     name = 'd_volume'
     arg_types = ('parameter',)
-    arg_shapes = {'parameter' : 1}
+    arg_shapes = [{'parameter' : 'N'}]
 
     @staticmethod
     def function(out, geo):
@@ -271,7 +267,7 @@ class SurfaceTerm(VolumeTerm):
     """
     name = 'd_surface'
     arg_types = ('parameter',)
-    arg_shapes = {'parameter' : 1}
+    arg_shapes = {'parameter' : 'N'}
     integration = 'surface'
 
 class VolumeSurfaceTerm(Term):
@@ -289,7 +285,7 @@ class VolumeSurfaceTerm(Term):
     """
     name = 'd_volume_surface'
     arg_types = ('parameter',)
-    arg_shapes = {'parameter' : 1}
+    arg_shapes = {'parameter' : 'N'}
     integration = 'surface'
 
     function = staticmethod(terms.d_volume_surface)
@@ -323,7 +319,7 @@ class SurfaceMomentTerm(Term):
         - parameter : any variable
         - shift     : :math:`\ul{x}_0`
     """
-    name = 'di_surface_moment'
+    name = 'd_surface_moment'
     arg_types = ('parameter', 'shift')
     integration = 'surface'
 
@@ -374,7 +370,7 @@ class IntegrateMatTerm(Term):
     """
     name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
-    arg_shapes = [{'material' : '1, 1', 'parameter' : 1},
+    arg_shapes = [{'material' : '1, 1', 'parameter' : 'N'},
                   {'material' : 'D, D'},
                   {'material' : 'S, S'},
                   {'material' : 'D, S'}]
@@ -417,7 +413,7 @@ class SumNodalValuesTerm(Term):
     """
     name = 'd_sum_vals'
     arg_types = ('parameter',)
-    arg_shapes = [{'parameter' : 1}, {'parameter' : 'D'}]
+    arg_shapes = {'parameter' : 'N'}
 
     @staticmethod
     def function(out, vec):

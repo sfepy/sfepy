@@ -49,7 +49,7 @@ Things to check before a release
 
      $ python setup.py install --root=<some path>
      $ cd
-     $ run_tests.py
+     $ sfepy-run run_tests # Posix only.
      $ rm -r output/
 
    then remove the installed files so that they do not interfere with

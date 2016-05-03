@@ -50,7 +50,7 @@ def create_parser(slist, current_section):
 
 header = """
 .. tabularcolumns:: |p{0.2\linewidth}|p{0.2\linewidth}|p{0.6\linewidth}|
-.. list-table:: Table of all terms.
+.. list-table:: %s terms
    :widths: 20 20 60
    :header-rows: 1
 
@@ -117,15 +117,17 @@ def typeset_term_syntax(term_class):
         text = '``%s``' % text
     return text
 
-def typeset_term_table(fd, table):
+def typeset_term_table(fd, keys, table, title):
     """Terms are sorted by name without the d*_ prefix."""
     sec_list = []
     current_section = ['']
     parser = create_parser(sec_list, current_section)
 
-    fd.write(header)
+    fd.write('.. _term_table_%s:\n' % title)
+    label = 'Table of %s terms' % title
+    fd.write(''.join([label, '\n', '"' * len(label), '\n']))
+    fd.write(header % (title[0].upper() + title[1:]))
 
-    keys = table.keys()
     sort_keys = [key[key.find('_'):] for key in keys]
     iis = nm.argsort(sort_keys)
     for ii in iis:
@@ -156,10 +158,36 @@ def typeset_term_table(fd, table):
 
     fd.write('\n')
 
+def typeset_term_tables(fd, table):
+    """Generate tables: basic, sensitivity, special."""
+    scattab = [
+        ('_st_', 2),
+        ('_sd_', 0),
+        ('_adj_', 0),
+        ('_tl_', 1),
+        ('_ul_', 1),
+        ('_th', 2),
+        ('_eth', 2),
+        ('_of_', 2)]
+
+    new_tabs = [[],[],[]]
+    for term_name in table.iterkeys():
+        for term_tag, tab_id in scattab:
+            if term_tag in term_name:
+                new_tabs[tab_id].append(term_name)
+                break
+
+    basic_keys = list(set(table.keys())\
+        - set(new_tabs[0]) - set(new_tabs[1]) - set(new_tabs[2]))
+    typeset_term_table(fd, basic_keys, table, 'basic')
+    typeset_term_table(fd, new_tabs[0], table, 'sensitivity')
+    typeset_term_table(fd, new_tabs[1], table, 'large deformation')
+    typeset_term_table(fd, new_tabs[2], table, 'special')
+
 def typeset(filename):
     """Utility function called by sphinx. """
     fd = open(filename, 'w')
-    typeset_term_table(fd, term_table)
+    typeset_term_tables(fd, term_table)
     fd.close()
 
 def gen_term_table(app):

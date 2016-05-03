@@ -20,7 +20,7 @@ op_codes = ['OA_SubV', 'OA_SubE', 'OA_SubF', 'OA_SubC', 'OA_SubS',
             'OA_IntersectV', 'OA_IntersectE', 'OA_IntersectF',
             'OA_IntersectC', 'OA_IntersectS']
 eval_codes = ['E_VIR', 'E_VOS', 'E_VBF', 'E_VOG', 'E_OVIR', 'E_VI', 'E_VOSET',
-              'E_CBF', 'E_COG', 'E_CI1', 'E_CI2', 'E_COSET']
+              'E_CBF', 'E_COG', 'E_CI', 'E_COSET']
 kw_codes = ['KW_All', 'KW_Region']
 
 def to_stack(stack):
@@ -86,7 +86,6 @@ def print_stack(stack):
 
 def create_bnf(stack):
     point = Literal(".")
-    comma = Literal(",")
     e = CaselessLiteral("E")
     inumber = Word(nums)
     fnumber = Combine(Word("+-"+nums, nums) +
@@ -165,12 +164,8 @@ def create_bnf(stack):
         replace_with_region('E_OVIR', 2))
     ni = Group(vertex + delimitedList(inumber)).setParseAction(
         replace('E_VI', keep=True))
-    ei1 = Group(cell + delimitedList(inumber)).setParseAction(
-        replace('E_CI1', keep=True))
-    etuple = (lpar.suppress() + inumber + comma.suppress()
-              + inumber + rpar.suppress())
-    ei2 = Group(cell + delimitedList(etuple)).setParseAction(
-        replace('E_CI2', keep=True))
+    ei = Group(cell + delimitedList(inumber)).setParseAction(
+        replace('E_CI', keep=True))
     noset = Group(vertices + _of + _set + set_name).setParseAction(
         replace('E_VOSET', keep=True))
     eoset = Group(cells + _of + _set + set_name).setParseAction(
@@ -179,7 +174,7 @@ def create_bnf(stack):
     region_expression = Forward()
 
     atom1 = (_all | region | ni | onir | nos | nir | nbf
-             | ei1 | ei2 | ebf | eog | nog | noset | eoset)
+             | ei | ebf | eog | nog | noset | eoset)
     atom1.setParseAction(to_stack(stack))
     atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)

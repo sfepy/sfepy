@@ -49,7 +49,7 @@ class Test(TestCommon):
                                            'facet')
             domain.create_surface_group(surface)
 
-            sd = domain.surface_groups[0][surface.name]
+            sd = domain.surface_groups[surface.name]
 
             coors = domain.get_mesh_coors()
             gel = domain.geom_els[geom].surface_facet

@@ -11,4 +11,6 @@ generated list of the standard examples that come with SfePy.
 
    primer
    using_salome
+   mat_optim
+   splinebox
    examples/index

@@ -28,8 +28,9 @@ class DivGradTerm(Term):
     name = 'dw_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
-    arg_shapes = {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
-                  'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : None}]
     modes = ('weak', 'eval')
 
     function = staticmethod(terms.term_ns_asm_div_grad)
@@ -297,7 +298,7 @@ class GradTerm(Term):
     """
     name = 'ev_grad'
     arg_types = ('parameter',)
-    arg_shapes = [{'parameter' : 1}, {'parameter' : 'D'}]
+    arg_shapes = {'parameter' : 'N'}
 
     @staticmethod
     def function(out, grad, vg, fmode):
@@ -315,6 +316,7 @@ class GradTerm(Term):
         vg, _ = self.get_mapping(parameter)
 
         grad = self.get(parameter, 'grad')
+        grad = nm.ascontiguousarray(grad.transpose((0, 1, 3, 2)))
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
@@ -327,7 +329,7 @@ class GradTerm(Term):
         if mode != 'qp':
             n_qp = 1
 
-        return (n_el, n_qp, dim, n_c), parameter.dtype
+        return (n_el, n_qp, n_c, dim), parameter.dtype
 
 class DivTerm(Term):
     r"""

@@ -11,11 +11,14 @@ DOCLINES = __doc__.split("\n")
 
 import os
 import sys
+import glob
+import shutil
 
-from build_helpers import (generate_a_pyrex_source, package_check,
+from build_helpers import (generate_a_pyrex_source, package_check, log,
                            cmdclass, INFO)
 # monkey-patch numpy distutils to use Cython instead of Pyrex
 from numpy.distutils.command.build_src import build_src
+
 build_src.generate_a_pyrex_source = generate_a_pyrex_source
 
 VERSION = INFO.__version__
@@ -34,14 +37,15 @@ Operating System :: MacOS :: MacOS X
 Operating System :: Microsoft :: Windows
 """
 
-DOWNLOAD_URL = "http://code.google.com/p/sfepy/wiki/Downloads?tm=2"
+DOWNLOAD_URL = "http://sfepy.org/doc-devel/downloads.html"
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-def configuration(parent_package='',top_path=None):
+def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
+
     config = Configuration(None, parent_package, top_path)
     config.set_options(ignore_setup_xxx_py=True,
                        assume_default_configuration=True,
@@ -49,6 +53,7 @@ def configuration(parent_package='',top_path=None):
                        quiet=True)
 
     config.add_subpackage('sfepy')
+
     aux_scripts = [
         'blockgen.py',
         'convert_mesh.py',
@@ -79,11 +84,17 @@ def configuration(parent_package='',top_path=None):
                                      'AUTHORS', 'build_helpers.py',
                                      'site_cfg_template.py', 'Makefile')))
     config.add_data_files(('sfepy/script', aux_scripts))
+
+    if os.name == 'posix':
+        common_scripts = [
+            glob.glob(os.path.normpath(os.path.join('scripts-common', '*.py')))]
+        config.add_data_files(('sfepy/scripts-common', common_scripts))
+
     config.add_data_dir(('sfepy/meshes', 'meshes'))
     config.add_data_dir(('sfepy/examples', 'examples'))
     config.add_data_dir(('sfepy/tests', 'tests'))
 
-    config.get_version('sfepy/version.py') # sets config.version
+    config.get_version('sfepy/version.py')  # sets config.version
 
     return config
 
@@ -98,25 +109,65 @@ def _mayavi_version(pkg_name):
 
 def _cython_version(pkg_name):
     from Cython.Compiler.Version import version
+
     return version
 
-# Hard and soft dependency checking
-package_check('numpy', INFO.NUMPY_MIN_VERSION)
-package_check('scipy', INFO.SCIPY_MIN_VERSION)
-package_check('matplotlib', INFO.MATPLOTLIB_MIN_VERSION)
-package_check('pyparsing', INFO.PYPARSING_MIN_VERSION)
-package_check('tables', INFO.PYTABLES_MIN_VERSION)
-package_check(('enthought.mayavi', 'mayavi'),
-              INFO.MAYAVI_MIN_VERSION,
-              optional=True,
-              version_getter=_mayavi_version)
-package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
-              messages={'missing opt'
-                        : '%s was not found: some tests are going to fail!'})
-# Cython can be a build dependency
-package_check('cython',
-              INFO.CYTHON_MIN_VERSION,
-              version_getter=_cython_version)
+def _igakit_version(pkg_name):
+    return '0.1'
+
+def _pymetis_version(pkg_name):
+    import pymetis
+
+    return pymetis.version
+
+def _scikit_umfpack_version(pkg_name):
+    try:
+        import scikits.umfpack; scikits.umfpack
+        return '0.1'
+
+    except:
+        return None
+
+def check_versions(show_only=False):
+    # Cython is a build dependency.
+    package_check('cython', INFO.CYTHON_MIN_VERSION,
+                  version_getter=_cython_version,
+                  show_only=show_only)
+
+    # Check hard and soft dependencies.
+    package_check('numpy', INFO.NUMPY_MIN_VERSION,
+                  show_only=show_only)
+    package_check('scipy', INFO.SCIPY_MIN_VERSION,
+                  show_only=show_only)
+    package_check('matplotlib', INFO.MATPLOTLIB_MIN_VERSION,
+                  show_only=show_only)
+    package_check('pyparsing', INFO.PYPARSING_MIN_VERSION,
+                  show_only=show_only)
+    package_check('tables', INFO.PYTABLES_MIN_VERSION,
+                  show_only=show_only)
+    package_check(('enthought.mayavi', 'mayavi'),
+                  INFO.MAYAVI_MIN_VERSION, optional=True,
+                  version_getter=_mayavi_version,
+                  show_only=show_only)
+    package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
+                  messages={'opt suffix' : '; some tests are going to fail!'},
+                  show_only=show_only)
+    package_check('igakit', INFO.IGAKIT_MIN_VERSION, optional=True,
+                  version_getter=_igakit_version,
+                  show_only=show_only)
+    package_check('petsc4py', INFO.PETSC4PY_MIN_VERSION, optional=True,
+                  show_only=show_only)
+    package_check('mpi4py', INFO.MPI4PY_MIN_VERSION, optional=True,
+                  show_only=show_only)
+    package_check('pymetis', INFO.PYMETIS_MIN_VERSION, optional=True,
+                  version_getter=_pymetis_version,
+                  show_only=show_only)
+    package_check('scikits.umfpack', INFO.SCIKIT_UMFPACK_MIN_VERSION,
+                  optional=True,
+                  version_getter=_scikit_umfpack_version,
+                  show_only=show_only)
+    package_check('pysparse', INFO.PYSPARSE_MIN_VERSION, optional=True,
+                  show_only=show_only)
 
 def setup_package():
     from numpy.distutils.core import setup
@@ -125,7 +176,7 @@ def setup_package():
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     os.chdir(local_path)
     sys.path.insert(0, local_path)
-    sys.path.insert(0, os.path.join(local_path, 'sfepy')) # to retrive version
+    sys.path.insert(0, os.path.join(local_path, 'sfepy'))  # to retrive version
 
     # Write the version file.
     fd = open('VERSION', 'w')
@@ -133,8 +184,8 @@ def setup_package():
     fd.close()
 
     # Create version.h file.
-    filename_in = 'sfepy/discrete/fem/extmods/version.h.in'
-    filename_out = 'sfepy/discrete/fem/extmods/version.h'
+    filename_in = 'sfepy/discrete/common/extmods/version.h.in'
+    filename_out = 'sfepy/discrete/common/extmods/version.h'
     fdi = open(filename_in, 'r')
     fdo = open(filename_out, 'w')
     for line in fdi:
@@ -146,7 +197,7 @@ def setup_package():
     fdi.close()
     fdo.close()
 
-    main_scripts = [
+    data_files = main_scripts = [
         'phonon.py',
         'extractor_sfepy.py',
         'homogen.py',
@@ -159,20 +210,25 @@ def setup_package():
         'test_install.py',
     ]
 
+    if os.name == 'posix':
+        main_scripts = ['sfepy-run']
+
     try:
-        setup(name = 'sfepy',
-              maintainer = "Robert Cimrman",
-              maintainer_email = "cimrman3@ntc.zcu.cz",
-              description = DOCLINES[0],
-              long_description = "\n".join(DOCLINES[2:]),
-              url = "http://sfepy.org",
-              download_url = DOWNLOAD_URL,
-              license = 'BSD',
-              classifiers = filter(None, CLASSIFIERS.split('\n')),
-              platforms = ["Linux", "Mac OS-X", 'Windows'],
-              scripts = main_scripts,
-              cmdclass = cmdclass,
-              configuration = configuration)
+        setup(name='sfepy',
+              maintainer="Robert Cimrman",
+              maintainer_email="cimrman3@ntc.zcu.cz",
+              description=DOCLINES[0],
+              long_description="\n".join(DOCLINES[2:]),
+              url="http://sfepy.org",
+              download_url=DOWNLOAD_URL,
+              license='BSD',
+              classifiers=filter(None, CLASSIFIERS.split('\n')),
+              platforms=["Linux", "Mac OS-X", 'Windows'],
+              scripts=main_scripts,
+              data_files=data_files,
+              cmdclass=cmdclass,
+              configuration=configuration)
+
     finally:
         del sys.path[0]
         os.chdir(old_path)
@@ -180,4 +236,8 @@ def setup_package():
     return
 
 if __name__ == '__main__':
+    check_versions()
     setup_package()
+
+    log.info('\nRequired and optional packages found:\n')
+    check_versions(show_only=True)

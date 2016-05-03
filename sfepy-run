@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+"""
+Simple wrapper for main SfePy commands (scripts).
+
+Available commands are dynamically defined by presence of *.py scripts
+in default directory (scripts-common).
+"""
+import os.path as op
+import sys
+import glob
+import argparse
+import subprocess
+
+import sfepy
+
+def get_commands():
+    """
+    Get available commands (and corresponding scripts) for SfePy wrapper.
+
+    Commands are dynamically defined by presence *.py scripts in pre-defined
+    directory ``scripts-common``.
+
+    Returns
+    -------
+    commands : dict
+        The command : path_to_script dictionary.
+    """
+
+    bin_dir = 'scripts-common'
+    hidden_cmd = 'test_install'
+
+    if not sfepy.in_source_tree:
+        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
+
+    scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
+    cmd = [op.splitext(op.basename(i))[0] for i in scripts]
+
+    commands = dict(zip(cmd, scripts))
+
+    if hidden_cmd in commands:
+        del commands[hidden_cmd]
+
+    return commands
+
+def main():
+    cmd_list = get_commands()
+
+    parser = argparse.ArgumentParser(
+        description='Simple wrapper for main SfePy commands.',
+        version='%(prog)s' + sfepy.__version__,
+        usage='%(prog)s [command] [options]'
+    )
+
+    parser.add_argument(
+        '-w',
+        '--window',
+        help='use alternative (pythonw) interpreter',
+        action='store_true',
+        dest='py_cmd'
+    )
+
+    parser.add_argument(
+        'command',
+        choices=sorted(cmd_list.keys()),
+        help='Available SfePy command(s).')
+
+    parser.add_argument(
+        'options',
+        nargs=argparse.REMAINDER,
+        help='Additional options passed directly to selected [command].')
+
+    if not len(sys.argv) > 1:
+        parser.print_help()
+        return
+
+    options = parser.parse_args()
+
+    py_cmd = 'python' if not options.py_cmd else 'pythonw'
+
+    args = [py_cmd, cmd_list[options.command]] + options.options
+
+    subprocess.call(args)
+
+if __name__ == '__main__':
+    main()

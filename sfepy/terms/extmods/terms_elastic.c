@@ -2,110 +2,6 @@
 #include "terms_elastic.h"
 #include "terms.h"
 
-#undef __FUNC__
-#define __FUNC__ "mat_le_tanModuli11"
-/*!
-  @par Revision history:
-  - 17.03.2003, c
-  - 31.01.2006
-  - 06.02.2006
-  - 07.03.2006, adopted from mafest1
-*/
-int32 mat_le_tanModuli11( FMField *mtx, FMField *lam, FMField *mu, int32 mode  )
-#define MAT_LE_AuxMacro1_3D \
-    do { for (iqp = 0; iqp < nQP; iqp++) { \
-      _lam = lam->val[iqp]; \
-      _mu = mu->val[iqp]; \
-      pd[0] = _lam + 2.0 * _mu; \
-      pd[1] = _lam; \
-      pd[2] = _lam; \
-      pd[6] = _lam; \
-      pd[7] = _lam + 2.0 * _mu; \
-      pd[8] = _lam; \
-      pd[12] = _lam; \
-      pd[13] = _lam; \
-      pd[14] = _lam + 2.0 * _mu; \
-      pd[21] = _mu; \
-      pd[28] = _mu; \
-      pd[35] = _mu; \
-      pd += 36; \
-    } } while (0)
-#define MAT_LE_AuxMacro2_3D \
-    do { for (iqp = 0; iqp < nQP; iqp++) { \
-      _lam = lam->val[iqp]; \
-      _mu = mu->val[iqp]; \
-      mu23 = _mu * (2.0/3.0); \
-      mu43 = 2.0 * mu23; \
-      pd[0] = mu43; \
-      pd[1] = -mu23; \
-      pd[2] = -mu23; \
-      pd[6] = -mu23; \
-      pd[7] = mu43; \
-      pd[8] = -mu23; \
-      pd[12] = -mu23; \
-      pd[13] = -mu23; \
-      pd[14] = mu43; \
-      pd[21] = _mu; \
-      pd[28] = _mu; \
-      pd[35] = _mu; \
-      pd += 36; \
-    } } while (0)
-#define MAT_LE_AuxMacro1_2D \
-    do { for (iqp = 0; iqp < nQP; iqp++) { \
-      _lam = lam->val[iqp]; \
-      _mu = mu->val[iqp]; \
-      pd[0] = _lam + 2.0 * _mu; \
-      pd[1] = _lam; \
-      pd[3] = _lam; \
-      pd[4] = _lam + 2.0 * _mu; \
-      pd[8] = _mu; \
-      pd += 9; \
-    } } while (0)
-#define MAT_LE_AuxMacro2_2D \
-    do { for (iqp = 0; iqp < nQP; iqp++) { \
-      _lam = lam->val[iqp]; \
-      _mu = mu->val[iqp]; \
-      mu23 = _mu * (2.0/3.0); \
-      mu43 = 2.0 * mu23; \
-      pd[0] = mu43; \
-      pd[1] = -mu23; \
-      pd[3] = -mu23; \
-      pd[4] = mu43; \
-      pd[8] = _mu; \
-      pd += 9; \
-    } } while (0)
-{
-  float64 *pd;
-  float64 _lam, _mu;
-  int32 nQP, iqp, sym;
-
-  nQP = mtx->nLev;
-  sym = mtx->nRow;
-
-  pd = FMF_PtrCurrent( mtx );
-
-  if (sym == 6) {
-    if (1) {
-      MAT_LE_AuxMacro1_3D;
-    } else {
-      float64 mu23, mu43;
-      MAT_LE_AuxMacro2_3D;
-    }
-  } else if (sym == 3) {
-    if (1) {
-      MAT_LE_AuxMacro1_2D;
-    } else {
-      float64 mu23, mu43;
-      MAT_LE_AuxMacro2_2D;
-    }
-  }
-
-  return( RET_OK );
-}
-#undef MAT_LE_AuxMacro1_3D
-#undef MAT_LE_AuxMacro2_3D
-#undef MAT_LE_AuxMacro1_2D
-#undef MAT_LE_AuxMacro2_2D
 
 #undef __FUNC__
 #define __FUNC__ "mat_le_stress"
@@ -203,78 +99,6 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_lin_elastic_iso"
-/*!
-  @par Revision history:
-  - 07.03.2006, c
-*/
-int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
-			  FMField *lam, FMField *mu, Mapping *vg,
-			  int32 isDiff )
-{
-  int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
-  FMField *stress = 0;
-  FMField *res = 0, *d11 = 0, *gtd11 = 0, *gtd11g = 0;
-
-  nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
-  sym = (dim + 1) * dim / 2;
-
-  if (isDiff) {
-    fmf_createAlloc( &d11, 1, nQP, sym, sym );
-    fmf_createAlloc( &gtd11, 1, nQP, nEP * dim, sym );
-    fmf_createAlloc( &gtd11g, 1, nQP, nEP * dim, nEP * dim );
-
-    for (ii = 0; ii < out->nCell; ii++) {
-      FMF_SetCell( out, ii );
-      FMF_SetCell( lam, ii );
-      FMF_SetCell( mu, ii );
-      FMF_SetCell( vg->bfGM, ii );
-      FMF_SetCell( vg->det, ii );
-
-      mat_le_tanModuli11( d11, lam, mu, 0 );
-/*       fmf_print( d11, stdout, 0 ); */
-/*       sys_pause(); */
-
-      form_sdcc_actOpGT_M3( gtd11, vg->bfGM, d11 );
-      form_sdcc_actOpG_RM3( gtd11g, gtd11, vg->bfGM );
-      fmf_sumLevelsMulF( out, gtd11g, vg->det->val );
-
-      ERR_CheckGo( ret );
-    }
-  } else {
-    fmf_createAlloc( &stress, strain->nCell, nQP, sym, 1 );
-    fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
-
-    mat_le_stress( stress, strain, lam, mu );
-
-    for (ii = 0; ii < out->nCell; ii++) {
-      FMF_SetCell( out, ii );
-      FMF_SetCell( stress, ii );
-      FMF_SetCell( vg->bfGM, ii );
-      FMF_SetCell( vg->det, ii );
-
-      form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
-      fmf_sumLevelsMulF( out, res, vg->det->val );
-      ERR_CheckGo( ret );
-    }
-  }
-
- end_label:
-  if (isDiff) {
-    fmf_freeDestroy( &d11 );
-    fmf_freeDestroy( &gtd11 );
-    fmf_freeDestroy( &gtd11g );
-  } else {
-    fmf_freeDestroy( &res );
-    fmf_freeDestroy( &stress );
-  }
-
-  return( ret );
-}
-
-#undef __FUNC__
 #define __FUNC__ "dw_lin_elastic"
 /*!
   @par Revision history:
@@ -338,8 +162,8 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
     fmf_freeDestroy( &gtd );
     fmf_freeDestroy( &gtdg );
   } else {
-    fmf_freeDestroy( &res ); 
-    fmf_freeDestroy( &stress ); 
+    fmf_freeDestroy( &res );
+    fmf_freeDestroy( &stress );
   }
 
   return( ret );
@@ -354,12 +178,10 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 		     FMField *strainU, FMField *mtxD, Mapping *vg )
 {
-  int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
+  int32 ii, sym, nQP, ret = RET_OK;
   FMField *std = 0, *stds = 0;
 
   nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
   sym = mtxD->nRow;
 
   fmf_createAlloc( &std, 1, nQP, 1, sym );
@@ -387,6 +209,125 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
   fmf_freeDestroy( &stds );
 
   return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "d_sd_lin_elastic"
+int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
+		       FMField *gradU, FMField *gradW, FMField *mtxD,
+                       Mapping *vg)
+{
+  int32 ii, i, j, iqp, dim, dim2, nQP, nEL, ret = RET_OK;
+  float64 *pD, *pDf, divw[vg->bfGM->nLev], *pw, *pw2;
+  FMField *std = 0, *stds = 0, *mtxDf = 0, *dgw = 0;
+  FMField gradu[1], gradv[1];
+  int32 dtab_2d[4] = {0, 2, 2, 1}, dtab_3d[9] = {0, 3, 4, 3, 1, 5, 4, 5, 2};
+
+  nEL = out->nCell;
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+  dim2 = dim * dim;
+
+  fmf_createAlloc(&std, 1, nQP, 1, dim2);
+  fmf_createAlloc(&stds, 1, nQP, 1, 1);
+  fmf_createAlloc(&dgw, 1, nQP, dim2, dim2);
+  fmf_createAlloc(&mtxDf, 1, nQP, dim2, dim2);
+
+  gradv->nAlloc = -1;
+  fmf_pretend(gradv, nEL, nQP, dim2, 1, gradV->val0);
+  gradu->nAlloc = -1;
+  fmf_pretend(gradu, nEL, nQP, dim2, 1, gradU->val0);
+
+  for (ii = 0; ii < nEL; ii++) {
+    FMF_SetCell(out, ii);
+    FMF_SetCell(mtxD, ii);
+    FMF_SetCell(vg->det, ii);
+    FMF_SetCell(gradv, ii);
+    FMF_SetCell(gradu, ii);
+    FMF_SetCell(gradW, ii);
+
+    if (dim == 2) {
+      for (iqp = 0; iqp < nQP; iqp++) {
+        pDf = FMF_PtrLevel(mtxDf, iqp);
+        pw = FMF_PtrLevel(gradW, iqp);
+        pw2 = FMF_PtrLevel(dgw, iqp);
+        divw[iqp] = pw[0] + pw[3];
+        for (j = 0; j < dim2; j++) {
+          pD = FMF_PtrLevel(mtxD, iqp) + dtab_2d[j] * 3;
+          pDf[0] = pD[0];
+          pDf[1] = pD[2];
+          pDf[2] = pD[2];
+          pDf[3] = pD[1];
+          pw2[0] = pDf[0] * pw[0] + pDf[1] * pw[2];
+          pw2[2] = pDf[0] * pw[1] + pDf[1] * pw[3];
+          pw2[1] = pDf[2] * pw[0] + pDf[3] * pw[2];
+          pw2[3] = pDf[2] * pw[1] + pDf[3] * pw[3];
+          pDf += dim2;
+          pw2 += dim2;
+        } // for (j)
+      } // for (iqp)
+    }
+    else {
+      for (iqp = 0; iqp < nQP; iqp++) {
+        pDf = FMF_PtrLevel(mtxDf, iqp);
+        pw = FMF_PtrLevel(gradW, iqp);
+        pw2 = FMF_PtrLevel(dgw, iqp);
+        divw[iqp] = pw[0] + pw[4] + pw[8];
+        for (j = 0; j < dim2; j++) {
+          pD = FMF_PtrLevel(mtxD, iqp) + dtab_3d[j] * 6;
+          pDf[0] = pD[0];
+          pDf[1] = pD[3];
+          pDf[2] = pD[4];
+          pDf[3] = pD[3];
+          pDf[4] = pD[1];
+          pDf[5] = pD[5];
+          pDf[6] = pD[4];
+          pDf[7] = pD[5];
+          pDf[8] = pD[2];
+          pw2[0] = pDf[0] * pw[0] + pDf[1] * pw[3] + pDf[2] * pw[6];
+          pw2[3] = pDf[0] * pw[1] + pDf[1] * pw[4] + pDf[2] * pw[7];
+          pw2[6] = pDf[0] * pw[2] + pDf[1] * pw[5] + pDf[2] * pw[8];
+          pw2[1] = pDf[3] * pw[0] + pDf[4] * pw[3] + pDf[5] * pw[6];
+          pw2[4] = pDf[3] * pw[1] + pDf[4] * pw[4] + pDf[5] * pw[7];
+          pw2[7] = pDf[3] * pw[2] + pDf[4] * pw[5] + pDf[5] * pw[8];
+          pw2[2] = pDf[6] * pw[0] + pDf[7] * pw[3] + pDf[8] * pw[6];
+          pw2[5] = pDf[6] * pw[1] + pDf[7] * pw[4] + pDf[8] * pw[7];
+          pw2[8] = pDf[6] * pw[2] + pDf[7] * pw[5] + pDf[8] * pw[8];
+          pDf += dim2;
+          pw2 += dim2;
+        } // for (j)
+      } // for (iqp)
+    }
+
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pD = FMF_PtrLevel(mtxDf, iqp);
+      pw = FMF_PtrLevel(dgw, iqp);
+      pw2 = FMF_PtrLevel(dgw, iqp);
+      for (i = 0; i < dim2; i++) {
+        for (j = 0; j < dim2; j++) {
+          pD[j] = pD[j] * divw[iqp] - pw[j] - pw2[j * dim2];
+        } // for (j)
+        pD += dim2;
+        pw += dim2;
+        pw2 += 1;
+      } // for (i)
+    } // for (iqp)
+
+    fmf_mulATB_nn(std, gradv, mtxDf);
+    fmf_mulAB_nn(stds, std, gradu);
+    fmf_sumLevelsMulF(out, stds, vg->det->val);
+
+    ERR_CheckGo(ret);
+  }
+
+  // E.g. 1/dt.
+  fmfc_mulC(out, coef);
+
+ end_label:
+  fmf_freeDestroy(&std);
+  fmf_freeDestroy(&stds);
+
+  return(ret);
 }
 
 #undef __FUNC__
@@ -464,11 +405,7 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
 int32 de_cauchy_strain( FMField *out, FMField *strain,
 			Mapping *vg, int32 mode )
 {
-  int32 ii, dim, sym, nQP, ret = RET_OK;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-  sym = (dim + 1) * dim / 2;
+  int32 ii, ret = RET_OK;
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
@@ -537,7 +474,7 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, dim, sym, nQP, ret = RET_OK;
+  int32 ii, dim, nQP, ret = RET_OK;
   FMField *st = 0, *disG = 0;
 
   state->val = FMF_PtrFirst( state ) + offset;
@@ -545,7 +482,6 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
 
-  sym = (dim + 1) * dim / 2;
   fmf_createAlloc( &st, 1, 1, nEP, dim );
   fmf_createAlloc( &disG, 1, nQP, dim, dim );
 
@@ -562,8 +498,8 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   }
 
  end_label:
-  fmf_freeDestroy( &st ); 
-  fmf_freeDestroy( &disG ); 
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &disG );
 
   return( ret );
 }

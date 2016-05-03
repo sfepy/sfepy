@@ -160,6 +160,13 @@ class Probe(Struct):
 
         self.is_refined = False
 
+    def get_evaluate_cache(self):
+        """
+        Return the evaluate cache for domain-related data given by
+        `self.share_geometry`.
+        """
+        return Probe.cache if self.share_geometry else self.cache
+
     def set_n_point(self, n_point):
         """
         Set the number of probe points.
@@ -215,7 +222,7 @@ class Probe(Struct):
 
         return out
 
-    def __call__(self, variable):
+    def __call__(self, variable, **kwargs):
         """
         Probe the given variable. The actual implementation is in self.probe(),
         so that it can be overridden in subclasses.
@@ -224,10 +231,12 @@ class Probe(Struct):
         ----------
         variable : Variable instance
             The variable to be sampled along the probe.
+        **kwargs : additional arguments
+            See :func:`Probe.probe()`.
         """
-        return self.probe(variable)
+        return self.probe(variable, **kwargs)
 
-    def probe(self, variable):
+    def probe(self, variable, mode='val', ret_points=False):
         """
         Probe the given variable.
 
@@ -235,20 +244,29 @@ class Probe(Struct):
         ----------
         variable : Variable instance
             The variable to be sampled along the probe.
+        mode : {'val', 'grad'}, optional
+            The evaluation mode: the variable value (default) or the
+            variable value gradient.
+        ret_points : bool
+            If True, return also the probe points.
+
+        Returns
+        -------
+        pars : array
+            The parametrization of the probe points.
+        points : array, optional
+            If `ret_points` is True, the coordinates of points corresponding to
+            `pars`, where the `variable` is evaluated.
+        vals : array
+            The probed values.
         """
         refine_flag = None
 
         ev = variable.evaluate_at
-        domain = variable.field.domain
+        field = variable.field
 
-        if self.share_geometry:
-            cache = domain.get_evaluate_cache(cache=Probe.cache,
-                                              share_geometry=True)
-
-        else:
-            cache = domain.get_evaluate_cache(cache=self.cache,
-                                              share_geometry=False)
-
+        cache = field.get_evaluate_cache(cache=self.get_evaluate_cache(),
+                                         share_geometry=self.share_geometry)
         self.reset_refinement()
 
         while True:
@@ -256,11 +274,9 @@ class Probe(Struct):
             if not nm.isfinite(points).all():
                 raise ValueError('Inf/nan in probe points!')
 
-            vals, cells, status = ev(points, strategy='kdtree',
-                                     close_limit=self.options.close_limit,
-                                     cache=cache, ret_status=True)
-            ii = nm.where(status > 1)[0]
-            vals[ii] = nm.nan
+            vals, cells = ev(points, mode=mode, strategy='general',
+                             close_limit=self.options.close_limit,
+                             cache=cache, ret_cells=True)
 
             if self.is_refined:
                 break
@@ -272,7 +288,11 @@ class Probe(Struct):
 
         self.is_refined = True
 
-        return pars, vals
+        if ret_points:
+            return pars, points, vals
+
+        else:
+            return pars, vals
 
     def reset_refinement(self):
         """
@@ -351,7 +371,8 @@ class PointsProbe(Probe):
         n_point = points.shape[0]
         name = 'points %d' % n_point
 
-        Probe.__init__(self, name=name, points=points, n_point=n_point)
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       points=points, n_point=n_point)
 
         self.n_point_single = n_point
 
@@ -405,7 +426,8 @@ class LineProbe(Probe):
         p1 = nm.array(p1, dtype=nm.float64)
         name = 'line [%s, %s]' % (p0, p1)
 
-        Probe.__init__(self, name=name, p0=p0, p1=p1, n_point=n_point)
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       p0=p0, p1=p1, n_point=n_point)
 
         dirvec = self.p1 - self.p0
         self.length = nm.linalg.norm(dirvec)
@@ -479,7 +501,8 @@ class RayProbe(Probe):
         else:
             n_point_true = n_point
 
-        Probe.__init__(self, name=name, p0=p0, dirvec=dirvec, p_fun=p_fun,
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       p0=p0, dirvec=dirvec, p_fun=p_fun,
                        n_point=n_point_true, both_dirs=both_dirs)
 
         self.n_point_single = n_point
@@ -551,7 +574,8 @@ class CircleProbe(Probe):
 
         name = 'circle [%s, %s, %s]' % (centre, normal, radius)
 
-        Probe.__init__(self, name=name, centre=centre, normal=normal,
+        Probe.__init__(self, name=name, share_geometry=share_geometry,
+                       centre=centre, normal=normal,
                        radius=radius, n_point=n_point)
 
     def report(self):
