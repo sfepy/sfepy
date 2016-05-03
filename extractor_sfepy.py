@@ -3,10 +3,10 @@
 Examples
 --------
 
-$ ./extractor.py -e "p e 0 1999" bone.h5
-$ ./extractor.py -e "p e 0 1999" bone.h5 -a
-$ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
-$ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
+$ ./extractor_sfepy.py -e "p e 0 1999" bone.h5
+$ ./extractor_sfepy.py -e "p e 0 1999" bone.h5 -a
+$ ./extractor_sfepy.py -e "p e 0 1999" bone.h5 -o extracted.h5
+$ ./extractor_sfepy.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
 """
 import os
 from optparse import OptionParser

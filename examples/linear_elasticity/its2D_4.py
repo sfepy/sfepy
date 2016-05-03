@@ -15,7 +15,7 @@ may need to prefix all the commands with "python " and remove "./"):
 
 3. optionally, convert results to VTK, and view again::
 
-   ./extractor.py -d its2D.h5
+   ./extractor_sfepy.py -d its2D.h5
    ./postproc.py its2D.vtk -b
 
 4. probe the data::

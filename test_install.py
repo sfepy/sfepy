@@ -130,7 +130,7 @@ def main():
     out, err = check_output('python ./simple.py examples/linear_elasticity/linear_elastic.py --format h5')
     eok += report(out, '...', -2, 5, '4.638192e-18', eps=1e-15)
 
-    out, err = check_output('python ./extractor.py -d cylinder.h5')
+    out, err = check_output('python ./extractor_sfepy.py -d cylinder.h5')
     eok += report(out, '...', -2, 1, '...done')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
