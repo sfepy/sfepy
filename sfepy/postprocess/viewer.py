@@ -12,6 +12,7 @@ try:
     from enthought.tvtk.pyface.scene_editor import SceneEditor
     from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
     from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
+    from enthought.mayavi.core.dataset_manager import DatasetManager
 
 except ImportError:
     from traits.api \
@@ -22,9 +23,7 @@ except ImportError:
     from tvtk.pyface.scene_editor import SceneEditor
     from mayavi.tools.mlab_scene_model import MlabSceneModel
     from mayavi.core.ui.mayavi_scene import MayaviScene
-
-
-from dataset_manager import DatasetManager
+    from mayavi.core.dataset_manager import DatasetManager
 
 from sfepy.base.base import (insert_as_static_method, output, assert_,
                              get_arguments, get_default, Struct, basestr)

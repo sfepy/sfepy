@@ -1115,7 +1115,6 @@ sfepy.postprocess package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/domain_specific
    src/sfepy/postprocess/plot_cmesh
    src/sfepy/postprocess/plot_dofs
