@@ -844,7 +844,7 @@ Main scripts
 .. toctree::
    :maxdepth: 2
 
-   src/extractor
+   src/extractor_sfepy
    src/homogen
    src/phonon
    src/postproc

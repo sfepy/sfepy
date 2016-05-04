@@ -199,7 +199,7 @@ def setup_package():
 
     data_files = main_scripts = [
         'phonon.py',
-        'extractor.py',
+        'extractor_sfepy.py',
         'homogen.py',
         'postproc.py',
         'probe.py',
