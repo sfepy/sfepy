@@ -14,7 +14,7 @@ if mayavi:
     from mayavi import mlab
     from mayavi.core.source import Source
     from mayavi.core.filter import Filter
-    import dataset_manager
+    import mayavi.core.dataset_manager as dataset_manager
 
 from sfepy.base.base import basestr
 
