@@ -7,7 +7,6 @@ in default directory (scripts-common).
 """
 import os.path as op
 import sys
-import glob
 import argparse
 import subprocess
 
@@ -17,28 +16,29 @@ def get_commands():
     """
     Get available commands (and corresponding scripts) for SfePy wrapper.
 
-    Commands are dynamically defined by presence *.py scripts in pre-defined
-    directory ``scripts-common``.
-
     Returns
     -------
     commands : dict
         The command : path_to_script dictionary.
     """
-
-    bin_dir = 'scripts-common'
-    hidden_cmd = 'test_install'
+    scripts = [
+        'phonon.py',
+        'extractor.py',
+        'homogen.py',
+        'postproc.py',
+        'probe.py',
+        'run_tests.py',
+        'schroedinger.py',
+        'shaper.py',
+        'simple.py',
+    ]
 
     if not sfepy.in_source_tree:
-        bin_dir = op.normpath(op.join(sfepy.data_dir, bin_dir))
+        bin_dir = op.normpath(op.join(sfepy.data_dir, 'script'))
+        scripts = [op.normpath(op.join(bin_dir, i)) for i in scripts]
 
-    scripts = glob.glob(op.normpath(op.join(bin_dir, '*.py')))
     cmd = [op.splitext(op.basename(i))[0] for i in scripts]
-
     commands = dict(zip(cmd, scripts))
-
-    if hidden_cmd in commands:
-        del commands[hidden_cmd]
 
     return commands
 
