@@ -93,10 +93,7 @@ Notes
 
 * This is a "new" supported method. Any *SfePy* script can be still
   run as stand-alone (as mentioned above).
-* Only Posix-based systems (Linux, Mac OS) are currently supported.
 * Both "--inplace" and "system-wide" installations are supported.
-* Available commands can be customized by add/delete scripts to
-  ``scripts-common`` directory.
 
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^

@@ -11,8 +11,6 @@ DOCLINES = __doc__.split("\n")
 
 import os
 import sys
-import glob
-import shutil
 
 from build_helpers import (generate_a_pyrex_source, package_check, log,
                            cmdclass, INFO)
@@ -54,6 +52,19 @@ def configuration(parent_package='', top_path=None):
 
     config.add_subpackage('sfepy')
 
+    main_scripts = [
+        'phonon.py',
+        'extractor.py',
+        'homogen.py',
+        'postproc.py',
+        'probe.py',
+        'run_tests.py',
+        'schroedinger.py',
+        'shaper.py',
+        'simple.py',
+        'test_install.py',
+    ]
+
     aux_scripts = [
         'blockgen.py',
         'convert_mesh.py',
@@ -83,12 +94,8 @@ def configuration(parent_package='', top_path=None):
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
                                      'AUTHORS', 'build_helpers.py',
                                      'site_cfg_template.py', 'Makefile')))
+    config.add_data_files(('sfepy/script', main_scripts))
     config.add_data_files(('sfepy/script', aux_scripts))
-
-    if os.name == 'posix':
-        common_scripts = [
-            glob.glob(os.path.normpath(os.path.join('scripts-common', '*.py')))]
-        config.add_data_files(('sfepy/scripts-common', common_scripts))
 
     config.add_data_dir(('sfepy/meshes', 'meshes'))
     config.add_data_dir(('sfepy/examples', 'examples'))
@@ -197,22 +204,6 @@ def setup_package():
     fdi.close()
     fdo.close()
 
-    data_files = main_scripts = [
-        'phonon.py',
-        'extractor.py',
-        'homogen.py',
-        'postproc.py',
-        'probe.py',
-        'run_tests.py',
-        'schroedinger.py',
-        'shaper.py',
-        'simple.py',
-        'test_install.py',
-    ]
-
-    if os.name == 'posix':
-        main_scripts = ['sfepy-run']
-
     try:
         setup(name='sfepy',
               maintainer="Robert Cimrman",
@@ -224,8 +215,7 @@ def setup_package():
               license='BSD',
               classifiers=filter(None, CLASSIFIERS.split('\n')),
               platforms=["Linux", "Mac OS-X", 'Windows'],
-              scripts=main_scripts,
-              data_files=data_files,
+              scripts=['sfepy-run'],
               cmdclass=cmdclass,
               configuration=configuration)
 

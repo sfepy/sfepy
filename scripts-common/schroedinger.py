@@ -1,1 +1,0 @@
-../schroedinger.py
