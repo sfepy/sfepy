@@ -20,12 +20,13 @@ def configuration(parent_package='', top_path=None):
 
     common_path = '../../common/extmods'
 
-    fem_src = ['fmfield.c', 'geommech.c', 'common_python.c']
-    fem_src = [op.join(common_path, ii) for ii in fem_src]
+    common_src = ['fmfield.c', 'geommech.c', 'common_python.c']
+    common_src = [op.join(common_path, ii) for ii in common_src]
 
     src = ['igac.pyx', 'nurbs.c']
     config.add_extension('igac',
-                         sources=src + fem_src,
+                         sources=src + common_src,
+                         depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir, common_path],
