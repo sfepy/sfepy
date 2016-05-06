@@ -218,8 +218,8 @@ int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
                        Mapping *vg)
 {
   int32 ii, i, j, iqp, dim, dim2, nQP, nEL, ret = RET_OK;
-  float64 *pD, *pDf, divw[vg->bfGM->nLev], *pw, *pw2;
-  FMField *std = 0, *stds = 0, *mtxDf = 0, *dgw = 0;
+  float64 *pD, *pDf, *pw, *pw2, *divw;
+  FMField *std = 0, *stds = 0, *mtxDf = 0, *dgw = 0, *divw0 = 0;
   FMField gradu[1], gradv[1];
   int32 dtab_2d[4] = {0, 2, 2, 1}, dtab_3d[9] = {0, 3, 4, 3, 1, 5, 4, 5, 2};
 
@@ -232,6 +232,8 @@ int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
   fmf_createAlloc(&stds, 1, nQP, 1, 1);
   fmf_createAlloc(&dgw, 1, nQP, dim2, dim2);
   fmf_createAlloc(&mtxDf, 1, nQP, dim2, dim2);
+  fmf_createAlloc(&divw0, 1, 1, vg->bfGM->nLev, 1);
+  divw = divw0->val0;
 
   gradv->nAlloc = -1;
   fmf_pretend(gradv, nEL, nQP, dim2, 1, gradV->val0);
@@ -326,6 +328,9 @@ int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
  end_label:
   fmf_freeDestroy(&std);
   fmf_freeDestroy(&stds);
+  fmf_freeDestroy(&dgw);
+  fmf_freeDestroy(&mtxDf);
+  fmf_freeDestroy(&divw0);
 
   return(ret);
 }
