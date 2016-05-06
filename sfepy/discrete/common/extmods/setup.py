@@ -7,14 +7,18 @@ def configuration(parent_package='', top_path=None):
     from sfepy import Config
 
     site_config = Config()
-    os_flag = {'posix' : 0, 'windows' : 1}
+    system = site_config.system()
+    os_flag = {'posix' : 0, 'windows' : 1}[system]
 
     auto_dir = op.dirname(__file__)
     auto_name = op.split(auto_dir)[-1]
     config = Configuration(auto_name, parent_package, top_path)
 
-    defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
-               ('SFEPY_PLATFORM', os_flag[site_config.system()])]
+    sdir = '\\"%s\\"' % auto_dir.replace('\\', '\\\\')
+    inline = 'inline' if system == 'posix' else '__inline'
+    defines = [('__SDIR__', sdir),
+               ('SFEPY_PLATFORM', os_flag),
+               ('inline', inline)]
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
     if '-DDEBUG_MESH' in site_config.debug_flags():
