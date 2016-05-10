@@ -177,6 +177,10 @@ def check_versions(show_only=False):
                   show_only=show_only)
 
 def setup_package():
+    if not 'sdist' in sys.argv[1:]:
+        # Import setuptools to find a C compiler on windows.
+        import setuptools; setuptools
+
     from numpy.distutils.core import setup
 
     old_path = os.getcwd()

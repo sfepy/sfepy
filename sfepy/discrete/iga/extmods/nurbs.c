@@ -1,7 +1,13 @@
 #include "nurbs.h"
 
+#ifdef _WIN32
+// If inline is used here on Windows, msvc linker does not find this function.
+void ravel_multi_index(uint32 *index, uint32 *indices,
+                       uint32 *shape, uint32 num)
+#else
 inline void ravel_multi_index(uint32 *index, uint32 *indices,
                               uint32 *shape, uint32 num)
+#endif
 {
   uint32 ii, stride = 1;
   uint32 raveled = 0;
