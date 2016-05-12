@@ -1,5 +1,142 @@
 # created: 20.07.2007 (-1)
 
+.. _2016.1-2016.2:
+
+from 2016.1 to 2016.2
+=====================
+
+- merge pull request #309 from 'vlukes/splines'
+
+  - bsplines: update to_ndarray(), fix draw() - evaluate curve/surface
+    coordinates, if needed
+
+- merge branch 'fix-gradient-items-ordering'
+
+  - fix ordering of gradient items in evaluate_in_rc() - ordering corresponds
+    to (n_coor, n_components, dim) as described in Field.evaluate_at()
+    docstring
+  - fix docstring of FieldVariable.evaluate_at()
+  - change data shape of GradTerm values to correspond to Field.evaluate_at() -
+    update GradTerm.get_fargs(), .get_eval_shape()
+  - update test_field_gradient() to test fields with more than one component
+
+    - test proportions of component gradients
+    - update prepare_variable() so that components are multiples of the first
+      one
+
+- merge pull request #310 from 'vlukes/meshio_msh'
+
+  - update meshio.py: support for msh file format (gmsh) - reading
+  - MSH mesh format: update tests, add test meshes
+
+- merge pull request #315 from 'vlukes/terms_cleanup'
+
+  - rename 'd_diffusion_sa' term to 'd_sd_diffusion', remove unused functions
+  - remove terms_acoustic from doc
+  - make dw_lin_elastic_iso as the shortcut to dw_lin_elastic +
+    stiffness_from_lame()
+  - fix docstring of assemble_by_blocks()
+  - update examples: replace dw_lin_elastic_iso
+  - update tests and scripts: linear elastic terms
+  - rename di_surface_moment to d_surface_moment
+  - term table divided into: basic, sensitivity, large deformation, special
+    terms
+
+- merge pull request #316 from 'vlukes/parallel_homog'
+
+  - new: parallel computation of homogenized coefficients
+  - examples/phononic/band_gaps.py: no multiprocessing
+  - update test_install.py - new test to check presence of lines in the output
+  - new flush() method in OutputFilter class - needed for multiprocessing
+
+- merge branch 'shell10x'
+
+  - partial shell10x element implementation
+  - new sfepy/discrete/structural/ for structural elements
+  - fix docstring of IGField.get_data_shape()
+  - replace 'plate' integration with 'custom'
+  - update Field.from_conf() to scan sfepy/discrete/structural/
+  - new sfepy/mechanics/shell10x.py - shell10x element implementation
+    functions
+
+    - new create_elastic_tensor(), create_transformation_matrix(),
+      transform_asm_matrices(), create_local_bases(), create_rotation_ops(),
+      create_strain_transform(), get_mapping_data(), get_dsg_strain(),
+      create_strain_matrix(), add_eas_dofs(), rotate_elastic_tensor(),
+      create_drl_transform(), lock_drilling_rotations()
+
+  - new sfepy/discrete/structural/mappings.py - new Shell10XMapping
+  - new sfepy/discrete/structural/fields.py - new Shell10XField
+  - new sfepy/terms/terms_shells.py - new Shell10XTerm (dw_shell10x)
+  - update ConcentratedPointLoadTerm.arg_shapes for general number of
+    components
+  - fix PhysicalQPs.get_shape() for no quadrature points (point integration
+    terms)
+  - fix Term.check_shapes() for scalar 'N' values
+  - new Shell10XTerm.poly_space_base class attribute
+  - update tests/test_term_call_modes.py to report shapes of all values
+  - update tests/test_term_call_modes.py to test Shell10XTerm
+
+    - update make_term_args(), Test
+    - support custom integration and dim != tdim geometry
+    - obey optional Term.poly_space_base attribute
+    - use identity for 2D material matrix
+
+  - new examples/linear_elasticity/shell10x_cantilever_interactive.py
+  - update Term.from_desc() to pass integral to term constructor
+  - new examples/linear_elasticity/shell10x_cantilever.py + test
+  - add custom view for shell10x_cantilever.py example to script/gen_gallery.py
+
+- merge branch 'mayavi-dataset-manager'
+
+  - remove sfepy/postprocess/dataset_manager.py
+  - use dataset_manager.py from mayavi
+
+- merge branch 'no-symlinks'
+
+  - remove scripts-common/
+  - update setup.py to install main scripts into sfepy/script/
+  - sfepy-run: update for no scripts-common/ symlinks, use explicit script
+    names
+  - docs: update for no posix only sfepy-run
+
+- merge branch 'fix-windows-build' - closes #317, #318, #325
+
+  - setup.py: import setuptools in setup_package() to find a C compiler on
+    windows
+  - fix __SDIR__ definition, new inline definition for windows in setup.py
+    files
+  - allow long shape in parse_shape()
+  - remove inline directive for ravel_multi_index() on windows - fixes linker
+    error
+
+- materials:
+
+  - merge pull request #311 from 'vlukes/sd_elastic'
+
+    - remove unused variables in terms_[elastic, diffusion, basic].c
+    - update d_sd_lin_elastic term: new, much faster implementation
+
+  - fix .arg_shapes class attribute of DivGradTerm for no material
+  - use special material for index in ScalarDotGradIScalarTerm - update
+    .arg_shapes, .dw_fun()
+  - fix arg_shapes in SDDotVolumeTerm
+
+- docs:
+
+  - remove no longer used terms_acoustic.rst
+  - update support section
+  - sync module index of developer guide with current sources
+
+- miscellaneous updates:
+
+  - fix mesh_get_centroids() for cells of lower topological dimension
+  - fix VTKMeshIO.read() for cells of lower topological dimension than space -
+    simplify vtk_inverse_cell_types
+  - obey linearization kind in FEField.create_output() - allows adaptive
+    linearization also for, e.g., Q1 fields
+  - add common sources to dependencies of igac extension module
+
 .. _2015.4-2016.1:
 
 from 2015.4 to 2016.1
