@@ -1,6 +1,11 @@
 News
 ====
 
+* **12.05.2016** Version 2016.2 released (partial shell10x element
+  implementation, parallel computation of homogenized coefficients, clean up of
+  elastic terms, read support for msh mesh file format of gmsh, etc.), see
+  :ref:`release notes <2016.1-2016.2>`.
+
 * **24.02.2016** Version 2016.1 released (major simplification of finite
   element field code, automatic checking of shapes of term arguments, improved
   mesh parametrization code and documentation, support for fieldsplit
@@ -21,9 +26,5 @@ News
   finding of reference element coordinates of physical points, reorganized
   examples, reorganized installation on POSIX systems (sfepy-run script),
   etc.), see :ref:`release notes <2015.1-2015.2>`.
-
-* **26.02.2015** Version 2015.1 released (support for multiple fields in
-  isogeometric analysis, redesigned handling of solver parameters, new modal
-  analysis example, etc.), see :ref:`release notes <2014.4-2015.1>`.
 
 For historians: see :ref:`archived_news`.
