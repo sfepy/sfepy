@@ -636,3 +636,77 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
         out = CauchyStressTerm.get_eval_shape(self, mat0, parameter, mode,
                                               term_mode, diff_var, **kwargs)
         return out
+
+class NonsymElasticTerm(Term):
+    r"""
+    Elasticity term with non-symmetric gradient. The indices of matrix
+    :math:`D_{ijkl}` are ordered as
+    :math:`[11, 12, 13, 21, 22, 23, 31, 32, 33]` in 3D and as
+    :math:`[11, 12, 21, 22]` in 2D.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \ull{D} \nabla\ul{u} : \nabla\ul{v}
+
+    :Arguments 1:
+        - material : :math:`\ull{D}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`\ull{D}`
+        - parameter_1 : :math:`\ul{w}`
+        - parameter_2 : :math:`\ul{u}`
+    """
+    name = 'dw_nonsym_elastic'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : 'D2, D2', 'virtual' : ('D', 'state'),
+                  'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
+    modes = ('weak', 'eval')
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
+
+        if mode == 'weak':
+            if diff_var is None:
+                grad = self.get(state, 'grad').transpose((0,1,3,2))
+                nel, nqp, nr, nc = grad.shape
+                grad = grad.reshape((nel,nqp,nr*nc,1))
+                fmode = 0
+
+            else:
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return grad, mat, vg, fmode
+
+        elif mode == 'eval':
+            grad1 = self.get(virtual, 'grad').transpose((0,1,3,2))
+            grad2 = self.get(state, 'grad').transpose((0,1,3,2))
+            nel, nqp, nr, nc = grad1.shape
+
+            return 1.0,\
+                   grad1.reshape((nel,nqp,nr*nc,1)),\
+                   grad2.reshape((nel,nqp,nr*nc,1)),\
+                   mat, vg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
+
+    def set_arg_types(self):
+        if self.mode == 'weak':
+            self.function = terms.dw_nonsym_elastic
+
+        else:
+            self.function = terms.d_lin_elastic

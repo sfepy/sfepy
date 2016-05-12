@@ -271,6 +271,10 @@ cdef extern from 'terms.h':
                             Mapping *vg,
                             int32 *conn, int32 nEl, int32 nEP)
 
+    cdef int32 _dw_nonsym_elastic \
+         'dw_nonsym_elastic'(FMField *out, FMField *grad, FMField *mtxD,
+                             Mapping *vg, int32 isDiff)
+
     cdef int32 _dw_surface_ltr \
          'dw_surface_ltr'(FMField *out, FMField *traction, Mapping *sg)
 
@@ -1414,6 +1418,21 @@ def dq_cauchy_strain(np.ndarray out not None,
     array2pint2(&_conn, &n_el, &n_ep, conn)
 
     ret = _dq_cauchy_strain(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def dw_nonsym_elastic(np.ndarray out not None,
+                      np.ndarray grad not None,
+                      np.ndarray mtx_d not None,
+                      CMapping cmap not None,
+                      int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _dw_nonsym_elastic(_out, _grad, _mtx_d, cmap.geo, is_diff)
     return ret
 
 def dw_surface_ltr(np.ndarray out not None,

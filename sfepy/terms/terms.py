@@ -1097,6 +1097,9 @@ class Term(Struct):
                 if sh == 'D':
                     return dim
 
+                elif sh == 'D2':
+                    return dim**2
+
                 elif sh == 'S':
                     return sym
 
