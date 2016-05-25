@@ -195,9 +195,10 @@ int32 mesh_graph(int32 *p_nnz, int32 **p_prow, int32 **p_icol,
                  int32 n_row, int32 n_col, int32 n_gr, int32 *n_el,
                  int32 *n_epr, int32 **conn_r, int32 *n_epc, int32 **conn_c)
 {
-  int32 in, ii, ip, ig, iel, iep, ir, ic, nn, np, pr,
+  int32 in, ii, ip, ig, iel, iep, ir, ic, np, pr,
     niec_max_r, n_ep_max_c, n_unique, iir, iic, found;
   int32 *niec, *pconn_r, *pconn_c, *eonlist, *nir, *nods, *icol;
+  uint64 nn;
 
 /*   output("%d %d %d %d %d %d\n", n_row, n_col, n_gr, n_el[0], n_epr[0], n_epc[0]); */
 
