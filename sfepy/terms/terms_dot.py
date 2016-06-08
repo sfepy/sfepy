@@ -19,9 +19,9 @@ class DotProductVolumeTerm(Term):
         \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u}
         \mbox{ , }
         \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w} \\
-        \int_\Omega \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \int_\Omega \ul{v} \cdot (\ull{M} \ul{u})
         \mbox{ , }
-        \int_\Omega \ul{u} \cdot \ull{M} \cdot \ul{w}
+        \int_\Omega \ul{u} \cdot (\ull{M} \ul{w})
 
     :Arguments 1:
         - material : :math:`c` or :math:`\ull{M}` (optional)
@@ -320,8 +320,8 @@ class VectorDotGradScalarTerm(Term):
         \int_{\Omega} \ul{u} \cdot \nabla q \\
         \int_{\Omega} c \ul{v} \cdot \nabla p \mbox{ , }
         \int_{\Omega} c \ul{u} \cdot \nabla q \\
-        \int_{\Omega} \ul{v} \cdot \ull{M} \cdot \nabla p \mbox{ , }
-        \int_{\Omega} \ul{u} \cdot \ull{M} \cdot \nabla q
+        \int_{\Omega} \ul{v} \cdot (\ull{M} \nabla p) \mbox{ , }
+        \int_{\Omega} \ul{u} \cdot (\ull{M} \nabla q)
 
     :Arguments 1:
         - material : :math:`c` or :math:`\ull{M}` (optional)
