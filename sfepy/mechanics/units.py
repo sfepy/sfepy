@@ -48,6 +48,9 @@ prefixes = {
 
 inv_prefixes = invert_dict(prefixes)
 
+num_prefixes = [str(ii) for ii in range(-12, 13)]
+prefixes.update(dict(((key, 10**int(key)) for key in num_prefixes)))
+
 class Unit(Struct):
     """
     A unit of a physical quantity. The prefix and coefficient of the unit
@@ -94,15 +97,21 @@ class Unit(Struct):
     """
     
     @staticmethod
-    def get_prefix(coef, bias=0.1, omit=()):
+    def get_prefix(coef, bias=0.1, omit=None):
         """
         Get the prefix and numerical multiplier corresponding to a numerical
         coefficient, omitting prefixes in omit tuple.
         """
+        if omit is None:
+            omit = num_prefixes
+
         values = [val for key, val in prefixes.iteritems() if key not in omit]
         coefs = nm.array(values, dtype=nm.float64)
         coefs.sort()
         ii = nm.searchsorted(coefs, bias*coef, side='left')
+
+        if ii == len(coefs):
+            ii = ii - 1
 
         cc = coefs[ii]
         prefix = inv_prefixes[cc]
@@ -210,9 +219,11 @@ class Quantity(Struct):
 
         return name_dict, unit_dict
 
-    def __call__(self, prefix=None, omit=('c', 'd')):
+    def __call__(self, prefix=None, omit=None):
         """Get the quantity units."""
         if prefix is None:
+            if omit is None:
+                omit = ['c', 'd'] + num_prefixes
             prefix, mul = Unit.get_prefix(self.coef, omit=omit)
 
         else:
