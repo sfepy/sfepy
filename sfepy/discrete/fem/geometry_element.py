@@ -174,7 +174,7 @@ geometry_data = {
 }
 
 def setup_orientation(vecs_tuple):
-    cycle = list(range(len(vecs_tuple) / 4))
+    cycle = list(range(len(vecs_tuple) // 4))
 
     roots = nm.array([vecs_tuple[4*ii] for ii in cycle], dtype=nm.int32)
     vecs = nm.array([vecs_tuple[4*ii+1] for ii in cycle],
