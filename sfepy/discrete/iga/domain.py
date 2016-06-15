@@ -12,6 +12,7 @@ import sfepy.discrete.iga as iga
 import sfepy.discrete.iga.io as io
 from sfepy.discrete.iga.extmods.igac import eval_in_tp_coors
 import six
+from six.moves import range
 
 class NurbsPatch(Struct):
     """
@@ -34,7 +35,7 @@ class NurbsPatch(Struct):
         uk = nm.unique(self.knots[axis])
         indices = nm.searchsorted(uk[1:], pars)
         ref_coors = nm.empty_like(pars)
-        for ii in xrange(len(uk) - 1):
+        for ii in range(len(uk) - 1):
             ispan = nm.where(indices == ii)[0]
             pp = pars[ispan]
             ref_coors[ispan] = (pp - uk[ii]) / (uk[ii+1] - uk[ii])

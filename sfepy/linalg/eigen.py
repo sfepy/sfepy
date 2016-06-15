@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 import scipy.sparse as sp
 from scipy.sparse.linalg import aslinearoperator
@@ -5,6 +6,7 @@ from scipy.linalg import eigvals_banded
 
 from sfepy.base.base import get_default, output
 from sfepy.linalg import infinity_norm
+from six.moves import range
 
 def sym_tri_eigen(diags, select_indices=None):
     """
@@ -108,7 +110,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
 
     norm_rs = [norm_r0]
 
-    for ii in xrange(i_max):
+    for ii in range(i_max):
         p = z + beta * p
         q = mtx * p
 

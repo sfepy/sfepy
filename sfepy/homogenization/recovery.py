@@ -14,6 +14,7 @@ from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file
 import os.path as op
 import six
+from six.moves import range
 
 shared = Struct()
 
@@ -55,7 +56,7 @@ def convolve_field_scalar( fvars, pvars, iel, ts ):
 ##     print step0, ts.step
 
     val = nm.zeros_like( fvars[0] )
-    for ik in xrange( step0, ts.step + 1 ):
+    for ik in range( step0, ts.step + 1 ):
 ##         print ' ', ik, ts.step-ik
         vf = fvars[ts.step-ik]
         vp = pvars[ik][iel,0,0,0]
@@ -82,7 +83,7 @@ def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
     step0 = max( 0, ts.step - fvars[0,0][var_name].steps[-1] )
 
     val = nm.zeros_like( fvars[0,0][var_name][0] )
-    for ik in xrange( step0, ts.step + 1 ):
+    for ik in range( step0, ts.step + 1 ):
 ##         print ' ', ik, ts.step-ik
         for ir in range( dim ):
             for ic in range( dim ):

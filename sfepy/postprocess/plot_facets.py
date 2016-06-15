@@ -14,6 +14,7 @@ from sfepy.linalg import (get_perpendiculars, normalize_vectors,
                           make_axis_rotation_matrix)
 from sfepy.postprocess.plot_dofs import _get_axes, plot_mesh, plot_global_dofs
 import six
+from six.moves import range
 
 def plot_geometry(ax, gel):
     """

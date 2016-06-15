@@ -6,6 +6,7 @@ import scipy.sparse as sps
 from sfepy.base.base import dict_to_struct
 from sfepy.base.testing import TestCommon
 import six
+from six.moves import range
 
 conf = {
     'name' : 'semismooth_newton',

@@ -28,6 +28,7 @@ from sfepy.solvers import Solver
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 import six
+from six.moves import range
 
 ##
 # 29.01.2006, c
@@ -89,7 +90,7 @@ class Problem(Struct):
 
             refine = conf.options.get('refinement_level', 0)
             if refine > 0:
-                for ii in xrange(refine):
+                for ii in range(refine):
                     output('refine %d...' % ii)
                     domain = domain.refine()
                     output('... %d nodes %d elements'
@@ -1478,7 +1479,7 @@ class Problem(Struct):
             history_length = len(var.data)
             fd.create_array(vgroup, 'history_length', history_length,
                             'history length')
-            for ii in xrange(history_length):
+            for ii in range(history_length):
                 data = var(step=-ii)
                 fd.create_array(vgroup, 'data_%d' % ii, data, 'data')
 
@@ -1549,7 +1550,7 @@ class Problem(Struct):
                 vgroup = fd.root._f_get_child(var.name)
 
                 history_length = vgroup.history_length.read()
-                for ii in xrange(0, history_length):
+                for ii in range(0, history_length):
                     data = vgroup._f_get_child('data_%d' % ii).read()
                     var.set_data(data, step=-ii)
 

@@ -1,8 +1,10 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
 from numpy.lib.stride_tricks import as_strided
 import numpy.linalg as nla
 import scipy as sc
+from six.moves import range
 
 try:
     from numpy.core.umath_tests import matrix_multiply
@@ -30,10 +32,10 @@ def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
         n_item = min( n_item, ar.shape[axis] )
 
     if axis == 1:
-        for ii in xrange( n_item ):
+        for ii in range( n_item ):
             vec += ar[:,ii]**2
     else:
-        for ii in xrange( n_item ):
+        for ii in range( n_item ):
             vec += ar[ii,:]**2
 
     if not squared:
@@ -86,7 +88,7 @@ def dets_fast(a):
         lapack_routine = lapack_lite.dgetrf
         pivots = nm.zeros((m, n), intc)
         flags = nm.arange(1, n + 1).reshape(1, -1)
-        for i in xrange(m):
+        for i in range(m):
             tmp = a[i]
             lapack_routine(n, n, tmp, n, pivots[i], 0)
         sign = 1. - 2. * (nm.add.reduce(pivots != flags, axis=1) % 2)
@@ -130,7 +132,7 @@ def permutations( seq ):
     if ls <= 1:
         yield seq
     else:
-        for ii in xrange( ls ):
+        for ii in range( ls ):
             for perm in permutations( seq[:ii] + seq[ii+1:] ):
                 yield [seq[ii]] + perm
 
@@ -155,10 +157,10 @@ def cycle( bounds ):
 
     nb  = len( bounds )
     if nb == 1:
-        for ii in xrange( bounds[0] ):
+        for ii in range( bounds[0] ):
             yield [ii]
     else:
-        for ii in xrange( bounds[0] ):
+        for ii in range( bounds[0] ):
             for perm in cycle( bounds[1:] ):
                 yield [ii] + perm
 
@@ -389,11 +391,11 @@ def dot_sequences(mtx, vec, mode='AB'):
             vec = vec[..., None]
 
         if 'BT' in mode:
-            ax = range(vec.ndim)
+            ax = list(range(vec.ndim))
             vec = vec.transpose((ax[:-2]) + [ax[-1], ax[-2]])
 
         if 'AT' in mode:
-            ax = range(mtx.ndim)
+            ax = list(range(mtx.ndim))
             mtx = mtx.transpose((ax[:-2]) + [ax[-1], ax[-2]])
 
         out = matrix_multiply(mtx, vec)

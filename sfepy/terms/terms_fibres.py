@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
 from sfepy.mechanics.tensors import dim2sym
 from sfepy.homogenization.utils import iter_sym
+from six.moves import range
 
 def create_omega(fdir):
     r"""

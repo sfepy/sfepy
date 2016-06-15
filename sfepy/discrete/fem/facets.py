@@ -38,6 +38,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import numpy as nm
 import six
+from six.moves import range
 
 _quad_ori_groups = {
     0 : 0,
@@ -77,7 +78,7 @@ def build_orientation_map(n_fp):
     """
     from sfepy.linalg import permutations
 
-    indices = range(n_fp)
+    indices = list(range(n_fp))
 
     cmps = [(i1, i2) for i2 in indices for i1 in indices[:i2]]
     powers = [2**ii for ii in range(len(cmps))]
@@ -99,11 +100,11 @@ def build_orientation_map(n_fp):
     return ori_map, cmps, powers
 
 def iter0(num):
-    for ir in xrange(num - 1, -1, -1):
+    for ir in range(num - 1, -1, -1):
         yield ir
 
 def iter1(num):
-    for ir in xrange(num):
+    for ir in range(num):
         yield ir
 
 ori_line_to_iter = {
@@ -121,35 +122,35 @@ def make_line_matrix(order):
     return mtx
 
 def iter01(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(ir + 1):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(ir + 1):
             yield ir, ic
 
 def iter10(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(ir, -1, -1):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(ir, -1, -1):
             yield ir, ic
 
 def iter02(num):
-    for ic in xrange(num):
-        for ir in xrange(num - 1, ic - 1, -1):
+    for ic in range(num):
+        for ir in range(num - 1, ic - 1, -1):
             yield ir, ic
 
 def iter20(num):
-    for ic in xrange(num):
-        for ir in xrange(ic, num):
+    for ic in range(num):
+        for ir in range(ic, num):
             yield ir, ic
 
 def iter12(num):
-    for idiag in xrange(num):
+    for idiag in range(num):
         irs, ics = nm.diag_indices(num - idiag)
-        for ii in xrange(irs.shape[0] - 1, -1, -1):
+        for ii in range(irs.shape[0] - 1, -1, -1):
             yield irs[ii] + idiag, ics[ii]
 
 def iter21(num):
-    for idiag in xrange(num):
+    for idiag in range(num):
         irs, ics = nm.diag_indices(num - idiag)
-        for ii in xrange(irs.shape[0]):
+        for ii in range(irs.shape[0]):
             yield irs[ii] + idiag, ics[ii]
 
 ori_triangle_to_iter = {
@@ -173,8 +174,8 @@ def make_triangle_matrix(order):
     return mtx
 
 def iter01x01y(num):
-    for ir in xrange(num):
-        for ic in xrange(num):
+    for ir in range(num):
+        for ic in range(num):
             yield ir, ic
 
 def iter01y01x(num):
@@ -182,8 +183,8 @@ def iter01y01x(num):
         yield ic, ir
 
 def iter10x01y(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(num):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(num):
             yield ir, ic
 
 def iter10y01x(num):
@@ -191,8 +192,8 @@ def iter10y01x(num):
         yield ic, ir
 
 def iter01x10y(num):
-    for ir in xrange(num):
-        for ic in xrange(num - 1, -1, -1):
+    for ir in range(num):
+        for ic in range(num - 1, -1, -1):
             yield ir, ic
 
 def iter01y10x(num):
@@ -200,8 +201,8 @@ def iter01y10x(num):
         yield ic, ir
 
 def iter10x10y(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(num - 1, -1, -1):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(num - 1, -1, -1):
             yield ir, ic
 
 def iter10y10x(num):

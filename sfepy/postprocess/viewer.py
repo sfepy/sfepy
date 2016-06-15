@@ -1,8 +1,10 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 import shutil, tempfile
 
 import numpy as nm
+from six.moves import range
 
 try:
     from enthought.traits.api \
@@ -473,7 +475,7 @@ class Viewer(Struct):
             for ij, iric in enumerate(cycle((n_row, n_col))):
                 ir, ic = iric
                 if ij < len(repeat):
-                    for ik in xrange(repeat[ij]):
+                    for ik in range(repeat[ij]):
                         yield ii, ir, ic
                         ii += 1
 

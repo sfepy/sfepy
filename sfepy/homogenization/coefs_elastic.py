@@ -9,6 +9,7 @@ from sfepy.homogenization.coefs_base import CoefOne, CorrDim, \
 from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
 import six
+from six.moves import range
 
 class CorrectorsPermeability( CorrDim ):
 

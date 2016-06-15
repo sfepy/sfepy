@@ -13,6 +13,7 @@ from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
 from sfepy.discrete.conditions import get_condition_value, Function
 import six
+from six.moves import range
 
 class LCBCOperator(Struct):
     """
@@ -186,7 +187,7 @@ class NoPenetrationOperator(MRLCBCOperator):
         data = []
         rows = []
         cols = []
-        for idim in xrange(dim):
+        for idim in range(dim):
             ic = nm.where(ii == idim)[0]
             if len(ic) == 0: continue
 
@@ -196,8 +197,8 @@ class NoPenetrationOperator(MRLCBCOperator):
                 nn[:,ik] = - normals[ic,il] / normals[ic,idim]
 
             irn = dim * ic + idim
-            ics = [(dim - 1) * ic + ik for ik in xrange(dim - 1)]
-            for ik in xrange(dim - 1):
+            ics = [(dim - 1) * ic + ik for ik in range(dim - 1)]
+            for ik in range(dim - 1):
                 rows.append(irn)
                 cols.append(ics[ik])
                 data.append(nn[:,ik])

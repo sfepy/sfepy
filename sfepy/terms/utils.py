@@ -1,5 +1,7 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
+from six.moves import range
 
 def check_finiteness(data, info):
     is_finite = nm.isfinite(data)

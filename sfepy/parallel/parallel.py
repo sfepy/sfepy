@@ -1,11 +1,13 @@
 """
 Functions for a high-level PETSc-based parallelization.
 """
+from __future__ import absolute_import
 import time
 
 import numpy as nm
 
 import sys, petsc4py
+from six.moves import range
 argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
 petsc4py.init(argv)
 
@@ -345,7 +347,7 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
         id_map = gfd.id_map
 
         # Send subdomain data to other tasks.
-        for it in xrange(1, size):
+        for it in range(1, size):
             # Send owned and overlap cells.
             cells = nm.union1d(gfd.cell_parts[it], gfd.overlap_cells[it])
             mpi.send(len(cells), it)
@@ -446,7 +448,7 @@ def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
         if len(fields) > 1:
             # Renumber id_maps for field inter-leaving.
             offset = 0
-            for ir in xrange(size):
+            for ir in range(size):
                 for ii, gfd in enumerate(gfds):
                     dof_map = gfd.dof_maps[ir]
                     n_owned = dof_map[3]
@@ -460,7 +462,7 @@ def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
 
         else:
             gfd = gfds[0]
-            gfd.coffsets[:] = [gfd.dof_maps[ir][4] for ir in xrange(size)]
+            gfd.coffsets[:] = [gfd.dof_maps[ir][4] for ir in range(size)]
 
     else:
         gfds = [None] * len(fields)
@@ -562,7 +564,7 @@ def expand_dofs(dofs, n_components):
         sh = None
 
     edofs = nm.empty(n_components * dofs.shape[0], nm.int32)
-    for idof in xrange(n_components):
+    for idof in range(n_components):
         aux = n_components * dofs + idof
         edofs[idof::n_components] = aux
 
@@ -579,7 +581,7 @@ def view_petsc_local(data, name='data', viewer=None, comm=None):
     if comm is None:
         comm = PETSc.COMM_WORLD
 
-    for rank in xrange(comm.size):
+    for rank in range(comm.size):
         if rank == comm.rank:
             output('contents of local %s on rank %d:' % (name, rank))
             data.view(viewer=viewer)
@@ -712,7 +714,7 @@ def apply_ebc_to_matrix(mtx, ebc_rows):
     """
     data, prows, cols = mtx.data, mtx.indptr, mtx.indices
     for ir in ebc_rows:
-        for ic in xrange(prows[ir], prows[ir + 1]):
+        for ic in range(prows[ir], prows[ir + 1]):
             if (cols[ic] == ir):
                 data[ic] = 1.0
 
@@ -781,7 +783,7 @@ def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
         for ir, rdof in enumerate(pdofs):
             if (rdof < drange[0]) or (rdof >= drange[1]): continue
 
-            for ic in xrange(prows[ir], prows[ir + 1]):
+            for ic in range(prows[ir], prows[ir + 1]):
                 # output(ir, rdof, cols[ic])
                 pmtx.setValueLocal(ir, cols[ic], data[ic],
                                    PETSc.InsertMode.INSERT_VALUES)

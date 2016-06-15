@@ -11,6 +11,7 @@ from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
 import six
+from six.moves import range
 
 def check_tangent_matrix(conf, vec_x0, fun, fun_grad):
     """

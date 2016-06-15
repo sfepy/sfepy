@@ -3,6 +3,7 @@ import time
 import os
 import atexit
 import six
+from six.moves import range
 
 try:
     from multiprocessing import Process, Pipe

@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import os.path as op
 import numpy as nm
 
 import sfepy
 from sfepy.base.testing import TestCommon
+from six.moves import range
 
 test_bases = {
     '2_3_P1'

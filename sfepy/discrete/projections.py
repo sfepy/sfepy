@@ -1,6 +1,7 @@
 """
 Construct projections between FE spaces.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, IndexedStruct
@@ -10,6 +11,7 @@ from sfepy.discrete import Problem
 from sfepy.terms import Term
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
+from six.moves import range
 
 def create_mass_matrix(field):
     """

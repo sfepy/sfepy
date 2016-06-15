@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import os
 
 import numpy as nm
 
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
+from six.moves import range
 
 # n_vertex, n_edge, n_face, n_cell
 # d1 -> d2 : num, n_incident

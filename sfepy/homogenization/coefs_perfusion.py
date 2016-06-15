@@ -4,6 +4,7 @@ import numpy as nm
 from sfepy.base.base import assert_, get_default, Struct
 from sfepy.homogenization.coefs_base import CorrMiniApp, CoefN
 import six
+from six.moves import range
 
 class CorrRegion( CorrMiniApp ):
 

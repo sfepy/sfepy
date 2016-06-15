@@ -8,6 +8,7 @@ from sfepy.base.base import Struct
 from sfepy.discrete.fem import Mesh
 from sfepy.mesh.mesh_generators import get_tensor_product_conn
 import six
+from six.moves import range
 
 def create_linear_fe_mesh(nurbs, pars=None):
     """
@@ -117,7 +118,7 @@ def save_basis(nurbs, pars):
     n_dof = nurbs.weights.ravel().shape[0]
     variable = nm.zeros(n_dof, dtype=nm.float64)
     field = variable.reshape(nurbs.weights.shape)
-    for ic in xrange(n_dof):
+    for ic in range(n_dof):
         variable[ic - 1] = 0.0
         variable[ic] = 1.0
 

@@ -14,6 +14,7 @@ from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
 from .utils import iter_sym, create_pis, create_scalar_pis
 import six
+from six.moves import range
 
 class MiniAppBase(Struct):
     def any_from_conf(name, problem, kwargs):
@@ -564,7 +565,7 @@ class PressureEigenvalueProblem(CorrMiniApp):
         if self.mode == 'explicit':
             tt = time.clock()
             mtx_aibt = nm.zeros(mtx_bt.shape, dtype=mtx_bt.dtype)
-            for ic in xrange(mtx_bt.shape[1]):
+            for ic in range(mtx_bt.shape[1]):
                 mtx_aibt[:,ic] = ls(mtx_bt[:,ic].toarray().squeeze())
             output('mtx_aibt: %.2f s' % (time.clock() - tt))
             action_aibt = MatrixAction.from_array(mtx_aibt)

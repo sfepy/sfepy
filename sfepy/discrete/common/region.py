@@ -6,6 +6,7 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 import six
+from six.moves import range
 
 _depends = re.compile('r\.([a-zA-Z_0-9.]+)').findall
 

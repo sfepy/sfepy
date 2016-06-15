@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 import numpy as nm
+from six.moves import range
 
 def build_op_pi(var, ir, ic):
     """\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""
@@ -38,10 +40,10 @@ def create_scalar_pis( problem, var_name ):
     return names, pis
 
 def iter_sym( dim ):
-    for ii in xrange( dim ):
+    for ii in range( dim ):
         yield ii, ii
-    for ir in xrange( 0, dim ):
-        for ic in xrange( ir + 1, dim ):
+    for ir in range( 0, dim ):
+        for ic in range( ir + 1, dim ):
             yield ir, ic
 c2s = {
     2 : [0, 2, 2, 1],
@@ -56,7 +58,7 @@ def interp_conv_mat( mat, ts, tdiff ):
     n_t = mat.shape[0]
     out = []
     tn = ts.time
-    for ii, step in enumerate( xrange( ts.step, 0, -1 ) ):
+    for ii, step in enumerate( range( ts.step, 0, -1 ) ):
         if ii == 0:
             out.append( mat[0] )
             continue

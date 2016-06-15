@@ -3,7 +3,9 @@ Utilities for checking derivatives of functions.
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
+from six.moves import range
 
 def check_fx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
     """
@@ -44,7 +46,7 @@ def check_vfvx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
     dfx_a = dfx(x0, *dfx_args)
     dfx_d = nm.zeros_like(dfx_a)
 
-    for ic in xrange(x0.shape[1]):
+    for ic in range(x0.shape[1]):
         x = x0.copy()
         x[:, ic] += delta
         f1 = fx(x, *fx_args)

@@ -14,6 +14,7 @@ from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import PDESolverApp
 from sfepy.base.plotutils import plt
 import six
+from six.moves import range
 
 def try_set_defaults(obj, attr, defaults, recur=False):
     try:
@@ -211,7 +212,7 @@ def plot_gaps(fig_num, plot_rsc, gaps, kinds, freq_range,
     else:
         ax = fig.gca()
 
-    for ii in xrange(len(freq_range) - 1):
+    for ii in range(len(freq_range) - 1):
         f0, f1 = freq_range[[ii, ii+1]]
         gap = gaps[ii]
 

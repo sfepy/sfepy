@@ -1,6 +1,8 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
 import sys
+from six.moves import range
 sys.path.append('.')
 
 from sfepy.base.base import output, assert_

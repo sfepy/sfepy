@@ -7,6 +7,7 @@ from sfepy.discrete.fem.meshio import MeshIO
 from sfepy.solvers.ts import TimeStepper
 from sfepy.base.ioutils import get_trunk, write_dict_hdf5
 import six
+from six.moves import range
 
 def _linearize(out, fields, linearization):
     new = {}
@@ -65,7 +66,7 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None,
         if steps is None:
             ii0 = nm.searchsorted(all_steps, step0)
             iterator = ((all_steps[ii], times[ii])
-                        for ii in xrange(ii0, len(times)))
+                        for ii in range(ii0, len(times)))
 
         else:
             iterator = [(step, ts.times[step]) for step in steps]

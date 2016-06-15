@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as nm
 from .bspline import BSpline
 from sfepy.base.base import Struct
+from six.moves import range
 
 class SplineBox(Struct):
     """

@@ -1,12 +1,14 @@
 """
 Fields for isogeometric analysis.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, basestr, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.iga.mappings import IGMapping
 from sfepy.discrete.iga.iga import get_bezier_element_entities
+from six.moves import range
 
 def parse_approx_order(approx_order):
     if (approx_order is None): return 0
@@ -317,7 +319,7 @@ class IGField(Field):
                 dets = all_dets[ii]
 
                 # Local projection system.
-                for idof in xrange(dpn):
+                for idof in range(dpn):
                     lrhs = (fbfs * (fvals[idof, :, None] * dets)).sum(0)
                     rhs[idof, elc] += lrhs
 
@@ -337,7 +339,7 @@ class IGField(Field):
             vals = nm.zeros((dpn, n_dof), dtype=nm.float64)
 
             # Solve l2 projection system.
-            for idof in xrange(dpn):
+            for idof in range(dpn):
                 dofs = solve(mtx, rhs[idof, :])
                 vals[idof, remap[nods]] = dofs
 

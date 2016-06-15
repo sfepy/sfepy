@@ -22,6 +22,7 @@ from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
 import six
+from six.moves import range
 
 is_state = 0
 is_virtual = 1
@@ -130,7 +131,7 @@ def create_adof_conn(eq, conn, dpn, offset):
         n_el, n_ep = conn.shape
         adc = nm.empty((n_el, n_ep * dpn), dtype=conn.dtype)
         ii = 0
-        for idof in xrange(dpn):
+        for idof in range(dpn):
             aux = nm.take(eq, dpn * conn + idof)
             adc[:, ii : ii + n_ep] = aux + nm.asarray(offset * (aux >= 0),
                                                       dtype=nm.int32)
@@ -324,8 +325,8 @@ class Variables(Container):
                         regs.append(bc.regions[1])
                         var_names.append(vns[1])
 
-            for i0 in xrange(len(regs) - 1):
-                for i1 in xrange(i0 + 1, len(regs)):
+            for i0 in range(len(regs) - 1):
+                for i1 in range(i0 + 1, len(regs)):
                     if ((var_names[i0] == var_names[i1])
                         and not are_disjoint(regs[i0], regs[i1])):
                         raise ValueError('regions %s and %s are not disjoint!'

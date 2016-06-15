@@ -11,6 +11,7 @@ from sfepy.solvers.solvers import SolverMeta, OptimizationSolver
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
 import six
+from six.moves import range
 
 def conv_test(conf, it, of, of0, ofg_norm=None):
     """
@@ -57,7 +58,7 @@ def check_gradient(xit, aofg, fn_of, delta, check):
 
     dofg = nm.zeros_like(aofg)
     xd = xit.copy()
-    for ii in xrange(xit.shape[0]):
+    for ii in range(xit.shape[0]):
         xd[ii] = xit[ii] + delta
         ofp = fn_of(xd)
 

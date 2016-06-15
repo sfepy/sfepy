@@ -4,6 +4,7 @@ from copy import copy
 from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
 from .coefs_base import MiniAppBase
+from six.moves import range
 
 try:
     import multiprocessing
@@ -222,7 +223,7 @@ class HomogenizationEngine(PDESolverApp):
 
             num_workers = multiprocessing.cpu_count()
             workers = []
-            for ii in xrange(num_workers):
+            for ii in range(num_workers):
                 args = (tasks, lock, remaining, numdeps, inverse_deps,
                         problem, opts, self.volume, self.post_process_hook,
                         req_info, coef_info, sd_names, dependencies)

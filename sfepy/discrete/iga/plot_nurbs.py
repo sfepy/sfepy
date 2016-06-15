@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 import matplotlib.pyplot as plt
 
@@ -7,6 +8,7 @@ import sfepy.postprocess.plot_dofs as pd
 from sfepy.postprocess.plot_dofs import _get_axes
 
 from sfepy.discrete.iga.iga import _get_knots_tuple
+from six.moves import range
 
 def plot_parametric_mesh(ax, knots):
     """
@@ -61,35 +63,35 @@ def _get_edges(n_ep, shape):
 
     edges = []
     if dim == 3:
-        for ii in xrange(shape[2] - 1):
+        for ii in range(shape[2] - 1):
             edges.append(aux[0, 0, ii:ii+2])
             edges.append(aux[-1, 0, ii:ii+2])
             edges.append(aux[0, -1, ii:ii+2])
             edges.append(aux[-1, -1, ii:ii+2])
 
-        for ii in xrange(shape[1] - 1):
+        for ii in range(shape[1] - 1):
             edges.append(aux[0, ii:ii+2, 0])
             edges.append(aux[-1, ii:ii+2, 0])
             edges.append(aux[0, ii:ii+2, -1])
             edges.append(aux[-1, ii:ii+2, -1])
 
-        for ii in xrange(shape[0] - 1):
+        for ii in range(shape[0] - 1):
             edges.append(aux[ii:ii+2, 0, 0])
             edges.append(aux[ii:ii+2, -1, 0])
             edges.append(aux[ii:ii+2, 0, -1])
             edges.append(aux[ii:ii+2, -1, -1])
 
     elif dim == 2:
-        for ii in xrange(shape[1] - 1):
+        for ii in range(shape[1] - 1):
             edges.append(aux[0, ii:ii+2])
             edges.append(aux[-1, ii:ii+2])
 
-        for ii in xrange(shape[0] - 1):
+        for ii in range(shape[0] - 1):
             edges.append(aux[ii:ii+2, 0])
             edges.append(aux[ii:ii+2, -1])
 
     else:
-        for ii in xrange(shape[0] - 1):
+        for ii in range(shape[0] - 1):
             edges.append(aux[ii:ii+2])
 
     return nm.array(edges)
@@ -182,7 +184,7 @@ def plot_nurbs_basis_1d(ax, nurbs, n_points=100, x_axis='parametric',
 
     n_fun = nurbs.weights.shape[0]
     line = nm.linspace(ga[0], ga[-1], n_points)
-    for ii in xrange(n_fun):
+    for ii in range(n_fun):
         field = nm.zeros(n_fun)
         field[ii] = 1.0
 
@@ -209,7 +211,7 @@ def plot_bezier_nurbs_basis_1d(ax, control_points, weights, degrees, cs, conn,
 
     n_fun = weights.shape[0]
     line = nm.linspace(0, 1, n_points)[:, None]
-    for ii in xrange(n_fun):
+    for ii in range(n_fun):
         variable = nm.zeros((n_fun, 1))
         variable[ii] = 1.0
 

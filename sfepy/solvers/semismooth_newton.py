@@ -10,6 +10,7 @@ from sfepy.solvers.solvers import SolverMeta
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse
 import six
+from six.moves import range
 
 class SemismoothNewton(Newton):
     r"""

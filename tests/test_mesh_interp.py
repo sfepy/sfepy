@@ -6,6 +6,7 @@ import numpy as nm
 from sfepy.base.conf import transform_variables
 from sfepy.base.testing import TestCommon
 import six
+from six.moves import range
 
 variables = {
     'u'       : ('unknown field', 'f', 0),

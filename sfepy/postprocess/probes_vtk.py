@@ -1,6 +1,7 @@
 """Classes for probing values of Variables, for example, along a line,
 using PyVTK library"""
 
+from __future__ import absolute_import
 import numpy as nm
 import vtk
 from vtk.util import numpy_support as vtknm
@@ -9,6 +10,7 @@ import os.path as osp
 from sfepy.base.base import Struct, output
 from sfepy.linalg import make_axis_rotation_matrix
 from sfepy.postprocess.utils_vtk import get_vtk_from_mesh
+from six.moves import range
 
 vtk_version = vtk.vtkVersion().GetVTKMajorVersion()
 

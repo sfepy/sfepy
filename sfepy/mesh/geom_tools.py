@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import numpy as nm
 import six
+from six.moves import range
 
 class geometry(object):
     """The geometry is given by a sets of points (d0), lines (d1), surfaces

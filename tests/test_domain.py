@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import os.path as op
 
 import numpy as nm
@@ -6,6 +7,7 @@ import numpy as nm
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
 from sfepy.discrete.fem import Mesh, FEDomain
+from six.moves import range
 
 def refine(domain, out_dir, level=3):
     for ii in range(level):

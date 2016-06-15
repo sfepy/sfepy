@@ -6,6 +6,7 @@ import warnings
 
 import scipy.sparse as sps
 import six
+from six.moves import range
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 

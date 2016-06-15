@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
@@ -5,6 +6,7 @@ from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
 from sfepy.discrete.common.extmods._geommech import geme_mulAVSB3py
+from six.moves import range
 
 ##
 # 22.08.2006, c

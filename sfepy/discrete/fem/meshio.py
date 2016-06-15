@@ -13,6 +13,7 @@ from sfepy.base.ioutils \
      import skip_read_line, read_token, read_array, read_list, pt
 import os.path as op
 import six
+from six.moves import range
 
 supported_formats = {
     '.mesh' : 'medit',
@@ -1026,10 +1027,10 @@ class ComsolMeshIO(MeshIO):
                 line = skip_read_line(fd)
 
                 n_tags = self._read_commented_int()
-                for ii in xrange(n_tags):
+                for ii in range(n_tags):
                     skip_read_line(fd)
                 n_types = self._read_commented_int()
-                for ii in xrange(n_types):
+                for ii in range(n_types):
                     skip_read_line(fd)
 
                 skip_read_line(fd)
@@ -1052,7 +1053,7 @@ class ComsolMeshIO(MeshIO):
                 conns = []
                 descs = []
                 mat_ids = []
-                for it in xrange(n_types):
+                for it in range(n_types):
                     t_name = skip_read_line(fd).split()[1]
                     n_ep = self._read_commented_int()
                     n_el = self._read_commented_int()
@@ -1085,7 +1086,7 @@ class ComsolMeshIO(MeshIO):
                     # Skip parameters.
                     n_pv = self._read_commented_int()
                     n_par = self._read_commented_int()
-                    for ii in xrange(n_par):
+                    for ii in range(n_par):
                         skip_read_line(fd)
 
                     n_domain = self._read_commented_int()
@@ -1095,12 +1096,12 @@ class ComsolMeshIO(MeshIO):
                         mat_id = read_array(fd, n_domain, 1, nm.int32)
                         mat_ids.append(mat_id)
                     else:
-                        for ii in xrange(n_domain):
+                        for ii in range(n_domain):
                             skip_read_line(fd)
 
                     # Skip up/down pairs.
                     n_ud = self._read_commented_int()
-                    for ii in xrange(n_ud):
+                    for ii in range(n_ud):
                         skip_read_line(fd)
                 break
 
@@ -1208,7 +1209,7 @@ class HDF5MeshIO(MeshIO):
     format = "hdf5"
 
     import string
-    _all = ''.join(map(chr, range(256)))
+    _all = ''.join(map(chr, list(range(256))))
     _letters = string.letters + string.digits + '_'
     _rubbish = ''.join([ch for ch in set(_all) - set(_letters)])
     _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
@@ -1266,7 +1267,7 @@ class HDF5MeshIO(MeshIO):
         conns = []
         descs = []
         mat_ids = []
-        for ig in xrange(n_gr):
+        for ig in range(n_gr):
             gr_name = 'group%d' % ig
             group = mesh_group._f_getChild(gr_name)
             conns.append(group.conn.read())
@@ -1533,7 +1534,7 @@ class HDF5MeshIO(MeshIO):
         fd = pt.openFile(filename, mode="r")
 
         th = dict_from_keys_init(indx, list)
-        for step in xrange(fd.root.last_step[0] + 1):
+        for step in range(fd.root.last_step[0] + 1):
             gr_name = 'step%d' % step
 
             step_group = fd.getNode(fd.root, gr_name)
@@ -1561,7 +1562,7 @@ class HDF5MeshIO(MeshIO):
         ths = dict_from_keys_init(var_names, list)
 
         arr = nm.asarray
-        for step in xrange(ts.n_step):
+        for step in range(ts.n_step):
             gr_name = 'step%d' % step
             step_group = fd.getNode(fd.root, gr_name)
             name_dict = step_group._v_attrs.name_dict
@@ -1762,7 +1763,7 @@ def mesh_from_groups(mesh, ids, coors, ngroups,
 
     # Remove empty groups.
     conns, mat_ids, descs = zip(*[(conns[ig], mat_ids[ig], descs[ig])
-                                  for ig in xrange(4)
+                                  for ig in range(4)
                                   if conns[ig].shape[0] > 0])
 
     mesh._set_io_data(coors, ngroups, conns, mat_ids, descs)
@@ -1790,7 +1791,7 @@ class AVSUCDMeshIO(MeshIO):
         ids = nm.zeros((n_nod,), dtype=nm.int32)
         dim = 3
         coors = nm.zeros((n_nod, dim), dtype=nm.float64)
-        for ii in xrange(n_nod):
+        for ii in range(n_nod):
             line = fd.readline().split()
             ids[ii] = int(line[0])
             coors[ii] = [float(coor) for coor in line[1:]]
@@ -1799,7 +1800,7 @@ class AVSUCDMeshIO(MeshIO):
         tetras = []
         mat_hexas = []
         hexas = []
-        for ii in xrange(n_el):
+        for ii in range(n_el):
             line = fd.readline().split()
             if line[2] == 'tet':
                 mat_tetras.append(int(line[1]))
@@ -1888,7 +1889,7 @@ class AbaqusMeshIO(MeshIO):
     def guess(filename):
         ok = False
         fd = open(filename, 'r')
-        for ii in xrange(100):
+        for ii in range(100):
             try:
                 line = fd.readline().strip().split(',')
             except:
@@ -2384,7 +2385,7 @@ class ANSYSCDBMeshIO(MeshIO):
     def guess(filename):
         fd = open(filename, 'r')
 
-        for ii in xrange(1000):
+        for ii in range(1000):
             row = fd.readline()
             if not row: break
             if len(row) == 0: continue
