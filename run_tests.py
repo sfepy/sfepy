@@ -200,7 +200,8 @@ def main():
             run_tests(stats, dirname, [filename])
 
     else:
-        op.walk(options.test_dir, run_tests, stats)
+        for dirpath, dirnames, filenames in os.walk(options.test_dir):
+            run_tests(stats, dirpath, filenames)
 
     print('%d test file(s) executed in %.2f s, %d failure(s) of %d test(s)'
           % (stats[0], stats[3], stats[1], stats[2]))
