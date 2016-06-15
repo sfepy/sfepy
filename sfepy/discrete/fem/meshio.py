@@ -1210,9 +1210,12 @@ class HDF5MeshIO(MeshIO):
 
     import string
     _all = ''.join(map(chr, list(range(256))))
-    _letters = string.letters + string.digits + '_'
+    _letters = string.ascii_letters + string.digits + '_'
     _rubbish = ''.join([ch for ch in set(_all) - set(_letters)])
-    _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
+    if sys.version_info[0] >= 3:
+        _tr = str.maketrans(_rubbish, '_' * len(_rubbish))
+    else:
+        _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
 
     def read_dimension(self, ret_fd=False):
         fd = pt.openFile(self.filename, mode="r")
