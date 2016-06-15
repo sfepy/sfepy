@@ -952,7 +952,7 @@ class TetgenMeshIO(MeshIO):
         ...}
 
         """
-        f = file(fele)
+        f = open(fele)
         l = [int(x) for x in f.readline().split()]
         ntetra,nnod,nattrib = l
         #we have either linear or quadratic tetrahedra:
@@ -1597,7 +1597,7 @@ class MEDMeshIO(MeshIO):
         n_nodes = mesh_group.NOE.COO.getAttr('NBR')
 
         # Unflatten the node coordinate array
-        dim = aux_coors.shape[0] / n_nodes
+        dim = aux_coors.shape[0] // n_nodes
         coors = nm.zeros((n_nodes,dim), dtype=nm.float64)
         for ii in range(dim):
             coors[:,ii] = aux_coors[n_nodes*ii:n_nodes*(ii+1)]
@@ -1641,7 +1641,7 @@ class MEDMeshIO(MeshIO):
                 n_conns = group.NOD.getAttr('NBR')
 
                 # (0 based indexing in numpy vs. 1 based in MED)
-                nne = aux_conn.shape[0] / n_conns
+                nne = aux_conn.shape[0] // n_conns
                 conn = nm.zeros((n_conns,nne), dtype=nm.int32)
                 for ii in range(nne):
                     conn[:,ii] = aux_conn[n_conns*ii:n_conns*(ii+1)] - 1
@@ -2121,7 +2121,7 @@ class BDFMeshIO(MeshIO):
             elif cmd == 'CHEXAX':
                 cmd = ''
                 aux4 = row[0]
-                aux5 = string.find(aux4, aux3)
+                aux5 = aux4.find(aux3)
                 aux.append(int(aux4[(aux5+len(aux3)):])-1)
                 aux.extend([int(ii)-1 for ii in row[1:]])
                 aux.append(aux2)
