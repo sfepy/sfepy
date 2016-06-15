@@ -34,6 +34,7 @@ Possible couples:
 
 7, 33, 52, 63 <-> 0, 11, 30, 56
 """
+from __future__ import print_function
 import numpy as nm
 
 _quad_ori_groups = {
@@ -263,26 +264,26 @@ def get_facet_dof_permutations(n_fp, order):
 if __name__ == '__main__':
     order = 5
     mtx = make_triangle_matrix(order)
-    print mtx
+    print(mtx)
 
     oo = order - 2
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[0](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[1](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[3](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[4](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[6](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[7](oo)]
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[0](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[1](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[3](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[4](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[6](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[7](oo)])
 
     order = 4
     mtx = make_square_matrix(order)
-    print mtx
+    print(mtx)
 
     oo = order - 1
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[0](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[7](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[11](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[30](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[33](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[52](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[56](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[63](oo)]
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[0](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[7](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[11](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[30](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[33](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[52](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[56](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[63](oo)])

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import shutil, tempfile
 
@@ -1232,10 +1233,10 @@ class ViewerGUI(HasTraits):
         self.scene.camera.print_traits()
         view = mlab.view()
         roll = mlab.roll()
-        print 'view:', view
-        print 'roll:', roll
-        print 'as args: --view=%.2e,%.2e,%.2e,%.2e,%.2e,%.2e --roll=%.2e' \
-              % (view[:3] + tuple(view[3]) + (roll,))
+        print('view:', view)
+        print('roll:', roll)
+        print('as args: --view=%.2e,%.2e,%.2e,%.2e,%.2e,%.2e --roll=%.2e' \
+              % (view[:3] + tuple(view[3]) + (roll,)))
 
     def _button_make_animation_steps_fired(self):
         view = mlab.view()

@@ -1,6 +1,7 @@
 """
 Classes of variables for equations/terms.
 """
+from __future__ import print_function
 import time
 from collections import deque
 
@@ -1257,13 +1258,13 @@ class CloseNodesIterator(Struct):
         c1 = self.mesh.coors
         d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
         d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
-        print d1.min(), d1.mean(), d1.max(), d1.std(), d1.var()
-        print d2.min(), d2.mean(), d2.max(), d2.std(), d2.var()
+        print(d1.min(), d1.mean(), d1.max(), d1.std(), d1.var())
+        print(d2.min(), d2.mean(), d2.max(), d2.std(), d2.var())
         ds = []
         for g_perm in g_perms:
             d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
             ds.append(d3)
-            print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
+            print(d3.min(), d3.mean(), d3.max(), d3.std(), d3.var())
 
         permute_in_place(graph, perm)
         save_sparse_txt('graph_rcm', graph, fmt='%d %d %d\n')

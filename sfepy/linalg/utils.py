@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as nm
 from numpy.lib.stride_tricks import as_strided
 import numpy.linalg as nla
@@ -104,9 +105,9 @@ def print_array_info(ar):
     """
     ar = nm.asanyarray(ar)
 
-    print ar.shape, 'c_contiguous:', ar.flags.c_contiguous, \
-          'f_contiguous:', ar.flags.f_contiguous
-    print 'min:', ar.min(), 'mean:', ar.mean(), 'max:', ar.max()
+    print(ar.shape, 'c_contiguous:', ar.flags.c_contiguous, \
+          'f_contiguous:', ar.flags.f_contiguous)
+    print('min:', ar.min(), 'mean:', ar.mean(), 'max:', ar.max())
 
 ##
 # 21.11.2005, c
@@ -533,5 +534,5 @@ class MatrixAction( Struct ):
         if self.kind == 'array':
             return self.arr
         else:
-            print 'cannot make array from MatrixAction of kind %s!' % self.kind
+            print('cannot make array from MatrixAction of kind %s!' % self.kind)
             raise ValueError

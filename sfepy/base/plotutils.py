@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as nm
 
 try:
@@ -49,7 +50,7 @@ def spy_and_show(mtx, **kwargs):
 def print_matrix_diff( title, legend, mtx1, mtx2, mtx_da, mtx_dr, iis ):
     import copy
 
-    print '%s: ir, ic, %s, %s, adiff, rdiff' % ((title,) + tuple( legend ))
+    print('%s: ir, ic, %s, %s, adiff, rdiff' % ((title,) + tuple( legend )))
 
     aux = copy.copy(mtx_da)
     aux.data = nm.ones(mtx_da.data.shape[0])
@@ -57,10 +58,10 @@ def print_matrix_diff( title, legend, mtx1, mtx2, mtx_da, mtx_dr, iis ):
 
     for ii in iis:
         ir, ic = irs[ii], ics[ii]
-        print '%5d %5d %11.4e %11.4e %9.2e %9.2e'\
-              % (ir, ic, mtx1[ir,ic], mtx2[ir,ic], mtx_da[ir,ic], mtx_dr[ir,ic] )
+        print('%5d %5d %11.4e %11.4e %9.2e %9.2e'\
+              % (ir, ic, mtx1[ir,ic], mtx2[ir,ic], mtx_da[ir,ic], mtx_dr[ir,ic] ))
 
-    print 'total: %d' % len( iis )
+    print('total: %d' % len( iis ))
 
 ##
 # 13.12.2005, c
@@ -71,8 +72,8 @@ def plot_matrix_diff( mtx1, mtx2, delta, legend, mode ):
 
     eps = 1e-16
 
-    print nm.amin( mtx1.data ), nm.amin( mtx2.data )
-    print nm.amax( mtx1.data ), nm.amax( mtx2.data )
+    print(nm.amin( mtx1.data ), nm.amin( mtx2.data ))
+    print(nm.amax( mtx1.data ), nm.amax( mtx2.data ))
 
     mtx_da = mtx1.copy() # To preserve structure of mtx1.
     mtx_da.data[:] = nm.abs( mtx1.data - mtx2.data )
@@ -82,12 +83,12 @@ def plot_matrix_diff( mtx1, mtx2, delta, legend, mode ):
     iin = nm.where( nm.abs( mtx1.data ) > eps )[0]
     mtx_dr.data[iin] = mtx_da.data[iin] / nm.abs( mtx1.data[iin] )
 
-    print nm.amin( mtx_da.data ), nm.amax( mtx_da.data )
-    print nm.amin( mtx_dr.data ), nm.amax( mtx_dr.data )
+    print(nm.amin( mtx_da.data ), nm.amax( mtx_da.data ))
+    print(nm.amin( mtx_dr.data ), nm.amax( mtx_dr.data ))
 
     epsilon = max( 1e-5, 10 * delta )
 
-    print 'epsilon:', epsilon
+    print('epsilon:', epsilon)
     pause()
 
     ija = nm.where( mtx_da.data > epsilon )[0]

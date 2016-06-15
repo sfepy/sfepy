@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as nm
 import sys
 sys.path.append('.')
@@ -683,7 +684,7 @@ def gen_mesh_from_geom(geo, a=None, verbose=False, refine=False):
     params += " %s" % (polyfilename)
 
     cmd = "%s %s" % (meshgen_call[geo.dim][0], params)
-    if verbose: print "Generating mesh using", cmd
+    if verbose: print("Generating mesh using", cmd)
 
     p=pexpect.run(cmd, timeout=None)
     bname, ext = op.splitext(polyfilename)

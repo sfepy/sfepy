@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os.path as op
 import shutil
 
@@ -126,7 +127,7 @@ class HomogenizationApp( HomogenizationEngine ):
             prec = nm.get_printoptions()[ 'precision']
             if hasattr(opts, 'print_digits'):
                 nm.set_printoptions(precision=opts.print_digits)
-            print coefs
+            print(coefs)
             nm.set_printoptions(precision=prec)
 
         coef_save_name = op.join( opts.output_dir, opts.coefs_filename )

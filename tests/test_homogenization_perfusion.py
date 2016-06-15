@@ -1,3 +1,4 @@
+from __future__ import print_function
 input_name = '../examples/homogenization/perfusion_micro.py'
 
 from sfepy.base.testing import TestCommon
@@ -31,7 +32,7 @@ class Test(TestCommon):
 
         required, other = get_standard_keywords()
         required.remove('equations')
-        print input_name
+        print(input_name)
         full_name = op.join(op.dirname(__file__), input_name)
         test_conf = ProblemConf.from_file(full_name, required, other)
 

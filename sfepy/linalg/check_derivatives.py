@@ -2,6 +2,7 @@
 Utilities for checking derivatives of functions.
 """
 
+from __future__ import print_function
 import numpy as nm
 
 def check_fx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
@@ -23,9 +24,9 @@ def check_fx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
 
     error = nm.linalg.norm(dfx_a - dfx_d, nm.inf)
 
-    print 'analytical:', dfx_a
-    print 'difference:', dfx_d
-    print 'error:', error
+    print('analytical:', dfx_a)
+    print('difference:', dfx_d)
+    print('error:', error)
 
     return dfx_a, dfx_d, error
 
@@ -56,8 +57,8 @@ def check_vfvx(x0, fx, fx_args, dfx, dfx_args=None, delta=1e-5):
 
     error = nm.linalg.norm((dfx_a - dfx_d).ravel(), nm.inf)
 
-    print 'analytical:', dfx_a
-    print 'difference:', dfx_d
-    print 'error:', error
+    print('analytical:', dfx_a)
+    print('difference:', dfx_d)
+    print('error:', error)
 
     return dfx_a, dfx_d, error

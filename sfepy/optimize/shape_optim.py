@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 import os.path as op
 
 import numpy as nm
@@ -163,8 +164,8 @@ class ShapeOptimFlowCase( Struct ):
         dsg_vars = ffd.read_dsg_vars_hdf5( opts.ffd_spline_data )
         dsg_vars.renumber_by_boxes( sp_boxes )
         dsg_vars.normalize_null_space_base()
-        print dsg_vars.indx.shape
-        print dsg_vars.null_space_b.shape
+        print(dsg_vars.indx.shape)
+        print(dsg_vars.null_space_b.shape)
 
         control_region = regions[opts.control_domain]
         design_region = regions[opts.design_domain]

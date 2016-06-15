@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 
 import numpy as nm
@@ -192,7 +193,7 @@ class Domain(Struct):
         try:
             self._bnf.parseString(select)
         except ParseException:
-            print 'parsing failed:', select
+            print('parsing failed:', select)
             raise
 
         region = visit_stack(stack, region_op,

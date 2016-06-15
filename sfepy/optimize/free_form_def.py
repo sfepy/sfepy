@@ -1,3 +1,4 @@
+from __future__ import print_function
 import tables as pt
 
 import numpy as nm
@@ -38,7 +39,7 @@ def read_spline_box_hdf5( filename ):
             spb.ax.append( nm.asarray( axi.bsc.read() ) )
 
         sp_boxes.n_vertex = max( sp_boxes.n_vertex, nm.amax( spb.gpi ) + 1 )
-        print nm.amin( spb.gpi ), nm.amax( spb.gpi )
+        print(nm.amin( spb.gpi ), nm.amax( spb.gpi ))
 
         ##
         # Fix cpi by rebuilding :).
@@ -118,7 +119,7 @@ class DesignVariables( Struct ):
                          dtype = nm.int32 )
         bpos = nm.zeros( (nm.amax( bmap[:,1] ) + 1,), dtype = nm.int32 )
         bpos[bmap[:,1]] = bmap[:,0]
-        print bmap, bpos
+        print(bmap, bpos)
         self.indx[:,0] = bpos[self.indx[:,0]]
 
     ##

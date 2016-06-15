@@ -1,8 +1,9 @@
 from __future__ import absolute_import
+from __future__ import print_function
 try:
     from .extmods import *
 except (ImportError, AttributeError):
-    print 'sfepy extension modules may not be compiled!\nTry typing "make".'
+    print('sfepy extension modules may not be compiled!\nTry typing "make".')
     raise
 
 from .mesh import Mesh

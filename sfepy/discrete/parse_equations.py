@@ -1,3 +1,4 @@
+from __future__ import print_function
 from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
      ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
      StringStart, StringEnd, CaselessLiteral, Forward, oneOf
@@ -103,6 +104,6 @@ if __name__ == "__main__":
     bnf = create_bnf(term_descs)
     out = bnf.parseString(test_str)
 
-    print 'out:', out, '\n'
+    print('out:', out, '\n')
     for tp in term_descs:
-        print tp
+        print(tp)

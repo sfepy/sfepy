@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 import numpy as nm
@@ -307,7 +308,7 @@ def recover_bones( problem, micro_problem, region, eps0,
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
     for ii, iel in enumerate(region.cells):
-        print 'ii: %d, iel: %d' % (ii, iel)
+        print('ii: %d, iel: %d' % (ii, iel))
 
         pressure = pressures[-1][ii,0,0,0]
 
@@ -412,7 +413,7 @@ def recover_paraflow( problem, micro_problem, region,
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
     for ii, iel in enumerate(region.cells):
-        print 'ii: %d, iel: %d' % (ii, iel)
+        print('ii: %d, iel: %d' % (ii, iel))
 
         p1, p2 = pressures1[-1][ii,0,0,0], pressures2[-1][ii,0,0,0]
 
@@ -504,7 +505,7 @@ def recover_micro_hook( micro_filename, region, macro,
         format = get_print_info(pb.domain.mesh.n_el, fill='0')[1]
 
         for ii, iel in enumerate(region.cells):
-            print 'ii: %d, iel: %d' % (ii, iel)
+            print('ii: %d, iel: %d' % (ii, iel))
 
             local_macro = {}
             for k, v in macro.iteritems():

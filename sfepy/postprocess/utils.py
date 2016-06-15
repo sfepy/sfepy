@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 
 try:
@@ -68,7 +69,7 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
             names = use_names
 
         if not return_only and (set(data.keys()).intersection(names)):
-            print family, kind
+            print(family, kind)
 
         for key, arr in data.iteritems():
             if (key in filter_names) or (key not in names): continue
@@ -83,6 +84,6 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
 
             if not return_only:
                 aux = (key,) + ranges[key][2:]
-                print '"%s" %s range: %s %s l2 norm range: %s %s' % aux
+                print('"%s" %s range: %s %s l2 norm range: %s %s' % aux)
 
     return ranges

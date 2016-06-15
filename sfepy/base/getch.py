@@ -5,6 +5,7 @@ _Getch classes inspired by Danny Yoo, iskeydown() based on code by Zachary
 Pincus.
 """
 from __future__ import absolute_import
+from __future__ import print_function
 import os, sys
 
 class _Getch:
@@ -82,4 +83,4 @@ if __name__ == '__main__':
     pause('press a key anytime the script stops!')
     pause()
     spause('last time...')
-    print 'done.'
+    print('done.')

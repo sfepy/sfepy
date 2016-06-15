@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 import numpy as nm
 import os
 import os.path as op
@@ -268,8 +269,8 @@ def write_sparse_matrix_hdf5(filename, mtx, name='a sparse matrix'):
         fd.createArray(data, 'indices', mtx.indices)
 
     except:
-        print 'matrix must be in SciPy sparse CSR/CSC format!'
-        print mtx.__repr__()
+        print('matrix must be in SciPy sparse CSR/CSC format!')
+        print(mtx.__repr__())
         raise
 
     fd.close()
@@ -307,7 +308,7 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
                            nm.c_[data.rows.read(), data.cols.read()].T),
                           shape=info.shape.read(), dtype=dtype)
     else:
-        print format
+        print(format)
         raise ValueError
     fd.close()
 

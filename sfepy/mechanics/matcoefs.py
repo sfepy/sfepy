@@ -3,6 +3,7 @@
 Conversion of material parameters and other utilities.
 """
 from __future__ import absolute_import
+from __future__ import print_function
 import os
 
 import numpy as nm
@@ -207,7 +208,7 @@ class ElasticConstants(Struct):
                 skey = tuple(sorted([ii.name for ii in val.atoms()
                                      if ii.is_Symbol])) + (key.name,)
                 if skey in relations:
-                    print '!', skey
+                    print('!', skey)
                 relations[skey] = val
 
         bulk, lam, mu, young, poisson, p_wave = sm.symbols(self.names,

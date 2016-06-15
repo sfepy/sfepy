@@ -1,3 +1,4 @@
+from __future__ import print_function
 import inspect
 
 import numpy as nm
@@ -21,7 +22,7 @@ class TestCommon(Struct):
                 ret = False
 
             if not ret:
-                print '--- test expected to fail.'
+                print('--- test expected to fail.')
                 ret = True
 
             return ret
@@ -46,7 +47,7 @@ class TestCommon(Struct):
             for key, method in methods:
                 dmethods[key] = method
             tests = [(ii, dmethods[ii]) for ii in self.tests]
-            print tests
+            print(tests)
         else:
             tests = [ii for ii in methods
                      if (len(ii[0]) > 5) and ii[0][:5] == 'test_']
@@ -68,7 +69,7 @@ class TestCommon(Struct):
             else:
                 aux = '+++' + aux + 'ok'
 
-            print aux
+            print(aux)
 
         return ok, n_fail, len(tests)
 
@@ -77,7 +78,7 @@ class TestCommon(Struct):
         """All tests should print via this function."""
         format = '...' + ' %s' * len(argc)
         msg = format % argc
-        print msg
+        print(msg)
 
     @staticmethod
     def eval_coor_expression(expression, coor):

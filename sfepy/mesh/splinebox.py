@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import print_function
 import numpy as nm
 from .bspline import BSpline
 from sfepy.base.base import Struct
@@ -342,7 +343,7 @@ class SplineRegion2D(SplineBox):
         """
         dim = 2
         if coors.shape[1] != dim:
-            print 'Only 2D SplineBoxSBnd is supported!'
+            print('Only 2D SplineBoxSBnd is supported!')
             raise(ValueError)
 
         bnd_poly = []

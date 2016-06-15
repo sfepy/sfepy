@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 from copy import copy
 
@@ -2344,8 +2345,8 @@ class NEUMeshIO(MeshIO):
         fd.close()
 
         if int(n_el) != sum(group_n_els):
-            print 'wrong total number of group elements! (%d == %d)'\
-                  % (int(n_el), len(group_n_els))
+            print('wrong total number of group elements! (%d == %d)'\
+                  % (int(n_el), len(group_n_els)))
 
         mat_ids = nm.zeros(n_el, dtype=nm.int32)
         for ii, els in enumerate(groups):
