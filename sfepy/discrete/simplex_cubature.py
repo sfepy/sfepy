@@ -89,7 +89,8 @@ def _extended_euclidean(q, r):
 def _gcd(q, r):
     return _extended_euclidean(q, r)[0]
 
-def _simplify_fraction((a, b)):
+def _simplify_fraction(a_b):
+    (a, b) = a_b
     gcd = _gcd(a,b)
     return (a//gcd, b//gcd)
 
