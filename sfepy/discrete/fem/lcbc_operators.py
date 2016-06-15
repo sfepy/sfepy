@@ -269,7 +269,7 @@ class NormalDirectionOperator(MRLCBCOperator):
         return normals
 
 class EdgeDirectionOperator(NormalDirectionOperator):
-    """
+    r"""
     Transformation matrix operator for edges direction LCBCs.
 
     The substitution (in 3D) is:

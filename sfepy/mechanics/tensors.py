@@ -321,7 +321,7 @@ class StressTransform(Struct):
     """
 
     def __init__(self, def_grad, jacobian=None):
-        """
+        r"""
         Set :math:`\ull{F} = \pdiff{\ul{x}}{\ul{X}}` and optionally also
         :math:`J = \det(\ull{F})`.
         """
