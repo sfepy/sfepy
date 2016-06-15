@@ -22,7 +22,7 @@ sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-if sys.version[0] < 3:
+if sys.version_info[0] < 3:
     PY3 = False
     basestr = basestring
 else:
