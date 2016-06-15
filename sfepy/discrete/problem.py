@@ -1142,7 +1142,7 @@ class Problem(Struct):
         """
         from sfepy.discrete.equations import get_expression_arg_names
 
-        variables = get_default(var_dict, {})
+        variables = Variables(six.itervalues(get_default(var_dict, {})))
         var_context = get_default(var_dict, {})
 
         if try_equations and self.equations is not None:

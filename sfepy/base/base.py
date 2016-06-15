@@ -643,7 +643,7 @@ class Container(Struct):
         Return stored objects in a dictionary with object names as keys.
         """
         out = {}
-        for key, val in six.iteritems(self):
+        for key, val in self.iteritems():
             out[key] = val
 
         return out
