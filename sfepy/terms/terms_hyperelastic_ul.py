@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.terms.terms import terms
 from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
+import six
 
 _msg_missing_data = 'missing family data!'
 
@@ -39,7 +41,7 @@ class HyperElasticULBase(HyperElasticBase):
             'green_strain' : (n_el, n_qp, sym, 1),
         }
         data = Struct(name='ul_family_data')
-        for key, shape in shapes.iteritems():
+        for key, shape in six.iteritems(shapes):
             setattr(data, key, nm.zeros(shape, dtype=nm.float64))
 
         self.family_function(data.mtx_f,

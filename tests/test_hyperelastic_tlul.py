@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+import six
 input_names = {'TL': '../examples/large_deformation/hyperelastic.py',
                'UL': '../examples/large_deformation/hyperelastic_ul.py',
                'ULM': '../examples/large_deformation/hyperelastic_ul_up.py'}
@@ -23,7 +25,7 @@ class Test(TestCommon):
         solutions = {}
         ok = True
 
-        for hp, pb_filename in input_names.iteritems():
+        for hp, pb_filename in six.iteritems(input_names):
 
             required, other = get_standard_keywords()
             input_name = op.join(op.dirname(__file__), pb_filename)

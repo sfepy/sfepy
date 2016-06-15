@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 
 import numpy as nm
@@ -12,6 +13,7 @@ from sfepy.discrete import Problem
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file
 import os.path as op
+import six
 
 shared = Struct()
 
@@ -508,7 +510,7 @@ def recover_micro_hook( micro_filename, region, macro,
             print('ii: %d, iel: %d' % (ii, iel))
 
             local_macro = {}
-            for k, v in macro.iteritems():
+            for k, v in six.iteritems(macro):
                 local_macro[k] = v[ii,0]
 
             out = recovery_hook( pb, corrs, local_macro )
@@ -517,7 +519,7 @@ def recover_micro_hook( micro_filename, region, macro,
                 new_keys = []
                 new_data = {}
                 new_idxs = []
-                for k in local_macro.iterkeys():
+                for k in six.iterkeys(local_macro):
                     if k not in macro:
                         new_keys.append(k)
                         new_data[k] = []

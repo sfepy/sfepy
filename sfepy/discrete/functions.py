@@ -1,13 +1,15 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, OneTypeList, Container, Struct
+import six
 
 class Functions(Container):
     """Container to hold all user-defined functions."""
 
     def from_conf(conf):
         objs = OneTypeList(Function)
-        for key, fc in conf.iteritems():
+        for key, fc in six.iteritems(conf):
             fun = Function(name = fc.name,
                            function = fc.function,
                            is_constant = False,
@@ -48,25 +50,25 @@ class ConstantFunction(Function):
         called with coors argument, the values are repeated for each
         coordinate."""
 
-        name = '_'.join(['get_constants'] + values.keys())
+        name = '_'.join(['get_constants'] + list(values.keys()))
 
         def get_constants(ts=None, coors=None, mode=None, **kwargs):
             out = {}
             if mode == 'special':
-                for key, val in values.iteritems():
+                for key, val in six.iteritems(values):
                     if '.' in key:
                         vkey = key.split('.')[1]
                         out[vkey] = val
 
             elif (mode == 'qp'):
-                for key, val in values.iteritems():
+                for key, val in six.iteritems(values):
                     if '.' in key: continue
 
                     val = nm.array(val, dtype=nm.float64, ndmin=3)
                     out[key] = nm.tile(val, (coors.shape[0], 1, 1))
 
             elif (mode == 'special_constant') or (mode is None):
-                for key, val in values.iteritems():
+                for key, val in six.iteritems(values):
                     if '.' in key: continue
 
                     out[key] = val
@@ -90,7 +92,7 @@ class ConstantFunctionByRegion(Function):
         coordinate in each of the given regions.
         """
 
-        name = '_'.join(['get_constants_by_region'] + values.keys())
+        name = '_'.join(['get_constants_by_region'] + list(values.keys()))
 
         def get_constants(ts=None, coors=None, mode=None,
                           term=None, problem=None, **kwargs):
@@ -99,14 +101,14 @@ class ConstantFunctionByRegion(Function):
                 qps = term.get_physical_qps()
                 assert_(qps.num == coors.shape[0])
 
-                for key, val in values.iteritems():
+                for key, val in six.iteritems(values):
                     if '.' in key: continue
-                    rval = nm.array(val[val.keys()[0]], dtype=nm.float64,
+                    rval = nm.array(val[list(val.keys())[0]], dtype=nm.float64,
                                     ndmin=3)
                     s0 = rval.shape[1:]
                     matdata = nm.zeros(qps.shape[:2] + s0, dtype=nm.float64)
 
-                    for rkey, rval in val.iteritems():
+                    for rkey, rval in six.iteritems(val):
                         region = problem.domain.regions[rkey]
                         rval = nm.array(rval, dtype=nm.float64, ndmin=3)
 

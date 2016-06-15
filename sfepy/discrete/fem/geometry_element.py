@@ -200,7 +200,7 @@ def create_geometry_elements(names=None):
         The dictionary of geometry elements with names as keys.
     """
     if names is None:
-        names = geometry_data.keys()
+        names = list(geometry_data.keys())
 
     gels = {}
     for name in names:

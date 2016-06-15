@@ -35,7 +35,9 @@ Possible couples:
 7, 33, 52, 63 <-> 0, 11, 30, 56
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
+import six
 
 _quad_ori_groups = {
     0 : 0,
@@ -246,7 +248,7 @@ def get_facet_dof_permutations(n_fp, order):
     elif n_fp == 4:
         mtx = make_square_matrix(order)
         ori_map = {}
-        for key, val in _quad_ori_groups.iteritems():
+        for key, val in six.iteritems(_quad_ori_groups):
             ori_map[key] = ori_square_to_iter[val]
         fo = order - 1
 
@@ -254,7 +256,7 @@ def get_facet_dof_permutations(n_fp, order):
         raise ValueError('unsupported number of facet points! (%d)' % n_fp)
 
     dof_perms = {}
-    for key, itfun in ori_map.iteritems():
+    for key, itfun in six.iteritems(ori_map):
         dof_perms[key] = [mtx[ii] for ii in itfun(fo)]
 
     dof_perms = dict_to_array(dof_perms)

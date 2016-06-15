@@ -1,6 +1,7 @@
 """
 Computational domain for isogeometric analysis.
 """
+from __future__ import absolute_import
 import os.path as op
 
 import numpy as nm
@@ -10,6 +11,7 @@ from sfepy.discrete.common.domain import Domain
 import sfepy.discrete.iga as iga
 import sfepy.discrete.iga.io as io
 from sfepy.discrete.iga.extmods.igac import eval_in_tp_coors
+import six
 
 class NurbsPatch(Struct):
     """
@@ -180,7 +182,7 @@ class IGDomain(Domain):
 
         if regions is not None:
             self.vertex_set_bcs = {}
-            for key, val in self.regions.iteritems():
+            for key, val in six.iteritems(self.regions):
                 self.vertex_set_bcs[key] = remap[val]
 
         self.reset_regions()

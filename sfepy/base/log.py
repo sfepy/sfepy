@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import time
 import os
 import atexit
+import six
 
 try:
     from multiprocessing import Process, Pipe
@@ -115,7 +117,7 @@ def read_log(filename):
 
     fd.close()
 
-    for key, (xs, ys, vlines) in log.iteritems():
+    for key, (xs, ys, vlines) in six.iteritems(log):
         log[key] = (nm.array(xs), nm.array(ys), nm.array(vlines))
 
     return log, info
@@ -157,7 +159,7 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
     if yticks is None:
         yticks = [None] * n_gr
 
-    for ii, (xlabel, ylabel, yscale, names) in info.iteritems():
+    for ii, (xlabel, ylabel, yscale, names) in six.iteritems(info):
         ax = fig.add_subplot(n_row, n_col, ii + 1)
         ax.set_yscale(yscale)
 

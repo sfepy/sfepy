@@ -1,6 +1,7 @@
 """
 Memory usage functions.
 """
+from __future__ import absolute_import
 import sys
 import collections
 
@@ -8,6 +9,7 @@ import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import basestr, Struct, Output
+import six
 
 def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
     """
@@ -74,7 +76,7 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
         record.usage = len(obj)
 
     elif isinstance(obj, Struct):
-        for subname, sub in obj.__dict__.iteritems():
+        for subname, sub in six.iteritems(obj.__dict__):
             to[0] += 1
             record.usage += get_mem_usage(sub, usage,
                                           name='attribute %s of %s'
@@ -84,7 +86,7 @@ def get_mem_usage(obj, usage=None, name=None, traversal_order=None, level=0):
 
     elif isinstance(obj, collections.Mapping):
         try:
-            for subname, sub in obj.iteritems():
+            for subname, sub in six.iteritems(obj):
                 to[0] += 1
                 record.usage += get_mem_usage(sub, usage,
                                               name='item %s of %s'
@@ -121,9 +123,9 @@ def print_mem_usage(usage, order_by='usage', direction='up', print_key=False):
     print_key : bool
         If True, print also the record key (object's id).
     """
-    keys = usage.keys()
+    keys = list(usage.keys())
     order_vals = nm.array([record.get(order_by)
-                           for record in usage.itervalues()])
+                           for record in six.itervalues(usage)])
 
     order = nm.argsort(order_vals)
     if direction == 'down':

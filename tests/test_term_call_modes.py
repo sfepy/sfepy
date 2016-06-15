@@ -187,7 +187,7 @@ class Test(TestCommon):
         for domain in self.domains:
             self.report('domain: %s' % domain.name)
 
-            domain_geometry = domain.geom_els.values()[0].name
+            domain_geometry = list(domain.geom_els.values())[0].name
             if domain.shape.dim != domain.shape.tdim:
                 domain_geometry = '%d_%s' % (domain.shape.dim, domain_geometry)
 

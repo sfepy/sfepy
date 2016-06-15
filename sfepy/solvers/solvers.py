@@ -1,7 +1,9 @@
 """
 Base (abstract) solver classes.
 """
+from __future__ import absolute_import
 from sfepy.base.base import Struct
+import six
 
 def make_get_conf(conf, kwargs):
     def _get_conf_item(name, default=None, msg_if_none=None):
@@ -146,7 +148,7 @@ class Solver(Struct):
 
         if allow_extra:
             all_keys = set(conf.to_dict().keys())
-            other = all_keys.difference(opts.to_dict().keys())
+            other = all_keys.difference(list(opts.to_dict().keys()))
             for name in other:
                 setattr(opts, name, get(name, None, None))
 
@@ -187,7 +189,7 @@ class Solver(Struct):
         std = set([ii[0] for ii in options if ii[0] != '*'])
 
         kwargs = {}
-        for key, val in conf.to_dict().iteritems():
+        for key, val in six.iteritems(conf.to_dict()):
             if key not in std:
                 kwargs[key] = val
 

@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
 import warnings
 
 import scipy.sparse as sps
+import six
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
@@ -335,7 +337,7 @@ class PETScKrylovSolver(LinearSolver):
         from petsc4py import PETSc as petsc
 
         converged_reasons = {}
-        for key, val in petsc.KSP.ConvergedReason.__dict__.iteritems():
+        for key, val in six.iteritems(petsc.KSP.ConvergedReason.__dict__):
             if isinstance(val, int):
                 converged_reasons[val] = key
 
@@ -353,7 +355,7 @@ class PETScKrylovSolver(LinearSolver):
         comm = get_default(comm, self.comm)
 
         self.fields = []
-        for key, rng in field_ranges.iteritems():
+        for key, rng in six.iteritems(field_ranges):
             size = rng[1] - rng[0]
             field_is = self.petsc.IS().createStride(size, first=rng[0], step=1,
                                                     comm=comm)
@@ -593,7 +595,7 @@ class SchurGeneralized(ScipyDirect):
         aux_state = State(equations.variables)
 
         conf.idxs = {}
-        for bk, bv in conf.blocks.iteritems():
+        for bk, bv in six.iteritems(conf.blocks):
             aux_state.fill(0.0)
             for jj in bv:
                 idx = equations.variables.di.indx[jj]
@@ -612,7 +614,7 @@ class SchurGeneralized(ScipyDirect):
         mtxslc_f = {}
         nn = {}
 
-        for ik, iv in mtxi.iteritems():
+        for ik, iv in six.iteritems(mtxi):
             ptr = 0
             nn[ik] = len(iv)
             mtxslc_s[ik] = []
@@ -629,13 +631,13 @@ class SchurGeneralized(ScipyDirect):
         rhss = {}
         ress = {}
         get_sub = mtx._get_submatrix
-        for ir in mtxi.iterkeys():
+        for ir in six.iterkeys(mtxi):
             rhss[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
             ress[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
             for jr, idxr in enumerate(mtxslc_f[ir]):
                 rhss[ir][mtxslc_s[ir][jr]] = rhs[idxr]
 
-            for ic in mtxi.iterkeys():
+            for ic in six.iterkeys(mtxi):
                 mtxid = '%s%s' % (ir, ic)
                 mtxs[mtxid] = nm.zeros((nn[ir], nn[ic]), dtype=nm.float64)
                 for jr, idxr in enumerate(mtxslc_f[ir]):
@@ -647,7 +649,7 @@ class SchurGeneralized(ScipyDirect):
         self.orig_conf.function(ress, mtxs, rhss, nn)
 
         res = nm.zeros_like(rhs)
-        for ir in mtxi.iterkeys():
+        for ir in six.iterkeys(mtxi):
             for jr, idxr in enumerate(mtxslc_f[ir]):
                 res[idxr] = ress[ir][mtxslc_s[ir][jr]]
 
@@ -751,7 +753,7 @@ class MultiProblem(ScipyDirect):
         pb_adi_indx = problem.equations.variables.adi.indx
         self.adi_indx = pb_adi_indx.copy()
         last_indx = -1
-        for ii in self.adi_indx.itervalues():
+        for ii in six.itervalues(self.adi_indx):
             last_indx = nm.max([last_indx, ii.stop])
 
         # coupling variables
@@ -813,7 +815,7 @@ class MultiProblem(ScipyDirect):
         self.subpb.append([problem, None, None])
 
         self.cvars_to_pb_map = {}
-        for varname, pbs in self.cvars_to_pb.iteritems():
+        for varname, pbs in six.iteritems(self.cvars_to_pb):
             # match field nodes
             coors = []
             for ii in pbs:
@@ -878,7 +880,7 @@ class MultiProblem(ScipyDirect):
 
         max_indx = 0
         hst = nm.hstack
-        for ii in self.adi_indx.itervalues():
+        for ii in six.itervalues(self.adi_indx):
             max_indx = nm.max([max_indx, ii.stop])
 
         new_rhs = nm.zeros((max_indx,), dtype=rhs.dtype)
@@ -892,7 +894,7 @@ class MultiProblem(ScipyDirect):
         aux_rows = nm.array([], dtype=nm.int32)
         aux_cols = nm.array([], dtype=nm.int32)
 
-        for jk, jv in adi_indxi.iteritems():
+        for jk, jv in six.iteritems(adi_indxi):
             if jk in self.cvars_to_pb:
                 if not(self.cvars_to_pb[jk][0] == -1):
                     continue
@@ -918,13 +920,13 @@ class MultiProblem(ScipyDirect):
             mtxs.append(mtxi)
 
             adi_indxi = pbi.equations.variables.adi.indx
-            for ik, iv in adi_indxi.iteritems():
+            for ik, iv in six.iteritems(adi_indxi):
                 if ik in self.cvars_to_pb:
                     if not(self.cvars_to_pb[ik][0] == kk):
                         continue
 
                 giv = self.adi_indx[ik]
-                for jk, jv in adi_indxi.iteritems():
+                for jk, jv in six.iteritems(adi_indxi):
                     gjv = self.adi_indx[jk]
                     if jk in self.cvars_to_pb:
                         if not(self.cvars_to_pb[jk][0] == kk):
@@ -938,14 +940,14 @@ class MultiProblem(ScipyDirect):
 
         mtxs.append(mtx)
         # copy "coupling" (sub)matricies
-        for varname, pbs in self.cvars_to_pb.iteritems():
+        for varname, pbs in six.iteritems(self.cvars_to_pb):
             idx = pbs[1]
             pbi = self.subpb[idx][0]
             mtxi = mtxs[idx]
             gjv = self.adi_indx[varname]
             jv = pbi.equations.variables.adi.indx[varname]
             adi_indxi = pbi.equations.variables.adi.indx
-            for ik, iv in adi_indxi.iteritems():
+            for ik, iv in six.iteritems(adi_indxi):
                 if ik == varname:
                     continue
 
@@ -972,11 +974,11 @@ class MultiProblem(ScipyDirect):
         for kk, (pbi, sti0, _) in enumerate(self.subpb):
             adi_indxi = pbi.equations.variables.adi.indx
             max_indx = 0
-            for ii in adi_indxi.itervalues():
+            for ii in six.itervalues(adi_indxi):
                 max_indx = nm.max([max_indx, ii.stop])
 
             resi = nm.zeros((max_indx,), dtype=res0.dtype)
-            for ik, iv in adi_indxi.iteritems():
+            for ik, iv in six.iteritems(adi_indxi):
                 giv = self.adi_indx[ik]
                 if ik in self.cvars_to_pb:
                     if pbi is self.subpb[self.cvars_to_pb[ik][1]][0]:

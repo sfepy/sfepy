@@ -2,10 +2,12 @@
 The Dirichlet, periodic and linear combination boundary condition
 classes, as well as the initial condition class.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import basestr, Container, Struct
 from sfepy.discrete.functions import Function
+import six
 
 def get_condition_value(val, functions, kind, name):
     """
@@ -50,7 +52,7 @@ class Conditions(Container):
     @staticmethod
     def from_conf(conf, regions):
         conds = []
-        for key, cc in conf.iteritems():
+        for key, cc in six.iteritems(conf):
             times = cc.get('times', None)
 
             if 'ebc' in key:
@@ -172,7 +174,7 @@ class Condition(Struct):
         Create a single condition instance for each item in self.dofs
         and yield it.
         """
-        for dofs, val in self.dofs.iteritems():
+        for dofs, val in six.iteritems(self.dofs):
             single_cond = self.copy(name=self.name)
             single_cond.is_single = True
             single_cond.dofs = [dofs, val]
@@ -219,7 +221,7 @@ class EssentialBC(Condition):
 
         else:
             new_dofs = {}
-            for key in self.dofs.iterkeys():
+            for key in six.iterkeys(self.dofs):
                 new_dofs[key] = 0.0
 
             self.dofs = new_dofs

@@ -9,6 +9,7 @@ import os
 import numpy as nm
 
 from sfepy.base.base import Struct
+import six
 
 def lame_from_youngpoisson(young, poisson, plane='strain'):
     r"""
@@ -200,7 +201,7 @@ class ElasticConstants(Struct):
         relations = {}
 
         def _expand_keys(sols):
-            for key, val in sols.iteritems():
+            for key, val in six.iteritems(sols):
                 if len(val) == 2 and (key.name == 'poisson'):
                     val = val[0]
                 else:
@@ -275,7 +276,7 @@ relations = {
 %s
 }
         """ % ',\n'.join(['    %s : %s' % (key, val)
-                         for key, val in relations.iteritems()]))
+                         for key, val in six.iteritems(relations)]))
         fd.close()
 
         return relations
@@ -290,12 +291,12 @@ relations = {
                         mu=mu, p_wave=p_wave)
 
         values = {}
-        for key, val in self.__dict__.iteritems():
+        for key, val in six.iteritems(self.__dict__):
             if (key in self.names) and (val is not None):
                 sym = getattr(self.ec, key)
                 values[sym] = val
 
-        known = values.keys()
+        known = list(values.keys())
         if len(known) != 2:
             raise ValueError('exactly two elastic constants must be provided!')
         known = [ii.name for ii in known]

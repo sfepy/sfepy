@@ -1,5 +1,7 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import numpy as np
+import six
 
 try:
     import enthought.mayavi as mayavi
@@ -64,14 +66,14 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
         data = getattr(dm, attr)
 
         if use_names is None:
-            names = data.keys()
+            names = list(data.keys())
         else:
             names = use_names
 
         if not return_only and (set(data.keys()).intersection(names)):
             print(family, kind)
 
-        for key, arr in data.iteritems():
+        for key, arr in six.iteritems(data):
             if (key in filter_names) or (key not in names): continue
 
             shape = arr.shape

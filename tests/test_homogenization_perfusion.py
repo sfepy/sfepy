@@ -1,4 +1,6 @@
 from __future__ import print_function
+from __future__ import absolute_import
+import six
 input_name = '../examples/homogenization/perfusion_micro.py'
 
 from sfepy.base.testing import TestCommon
@@ -82,7 +84,7 @@ class Test(TestCommon):
         # S = S_test ?
         coefsd = coefs.to_dict()
         compare = []
-        for ii in coefsd.iterkeys():
+        for ii in six.iterkeys(coefsd):
             if 'S_test' in ii:
                 ch = ii[6]
                 io = ii[-1]

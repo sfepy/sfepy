@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from sfepy import data_dir
+import six
 
 filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
 
@@ -116,7 +118,7 @@ class Test(TestCommon):
 
     def _list_linear_solvers(self, confs):
         d = []
-        for key, val in confs.iteritems():
+        for key, val in six.iteritems(confs):
             if val.kind.find('ls.') == 0:
                 d.append(val)
         d.sort(cmp = lambda a, b: cmp(a.name, b.name))
@@ -153,7 +155,7 @@ class Test(TestCommon):
             ok = ok and ((not failed) or (solver_conf.kind in self.can_fail))
 
             if status is not None:
-                for kv in status.time_stats.iteritems():
+                for kv in six.iteritems(status.time_stats):
                     self.report('%10s: %7.2f [s]' % kv)
                 self.report('condition: %d, err0: %.3e, err: %.3e'
                             % (status.condition, status.err0, status.err))

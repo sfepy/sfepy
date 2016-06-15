@@ -201,7 +201,7 @@ class SchroedingerApp(PDESolverApp):
                 if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
             state.set_full(mtx_phi[:,ii])
             aux = state.create_output_dict()
-            key = aux.keys()[0]
+            key = list(aux.keys())[0]
             out[key+'%03d' % ii] = aux[key]
 
         if aux.get('__mesh__') is not None:

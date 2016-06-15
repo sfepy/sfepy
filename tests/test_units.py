@@ -1,5 +1,7 @@
+from __future__ import absolute_import
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
+import six
 
 class Test(TestCommon):
 
@@ -116,11 +118,11 @@ class Test(TestCommon):
         }
 
         ok = True
-        for unit_set, true_derived_units in u_sets.iteritems():
+        for unit_set, true_derived_units in six.iteritems(u_sets):
             self.report('units:', unit_set)
             derived_units = get_consistent_unit_set(*unit_set)
 
-            for key, true_val in true_derived_units.iteritems():
+            for key, true_val in six.iteritems(true_derived_units):
                 val = derived_units[key]
                 _ok = true_val == val
                 self.report('%s: %s == %s -> %s' % (key, true_val, val, _ok))

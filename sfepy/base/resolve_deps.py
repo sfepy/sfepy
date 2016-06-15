@@ -1,16 +1,18 @@
 """
 Functions for resolving dependencies.
 """
+from __future__ import absolute_import
 import itertools as it
 
 from sfepy.base.base import basestr
+import six
 
 def get_nums(deps):
     """
     Get number of prerequisite names for each name in dependencies.
     """
     nums = {}
-    for key, val in deps.iteritems():
+    for key, val in six.iteritems(deps):
         nums[key] = len(val)
 
     return nums
@@ -34,7 +36,7 @@ def remove_known(deps, known):
     """
     if isinstance(known, basestr):
         out = {}
-        for key, val in deps.iteritems():
+        for key, val in six.iteritems(deps):
             if key == known: continue
             out[key] = [ii for ii in val if ii != known]
 
@@ -51,7 +53,7 @@ def try_block(deps, num):
     """
     Return generator of lists of solvable blocks of the length `num`.
     """
-    keys = deps.keys()
+    keys = list(deps.keys())
     for ic in it.combinations(keys, num):
         if solvable(deps, ic):
             yield sorted(ic)

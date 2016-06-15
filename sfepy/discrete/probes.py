@@ -1,9 +1,11 @@
 """Classes for probing values of Variables, for example, along a line."""
+from __future__ import absolute_import
 import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import get_default, basestr, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
+import six
 
 def write_results(filename, probe, results):
     """
@@ -22,7 +24,7 @@ def write_results(filename, probe, results):
     fd = open(filename, 'w') if isinstance(filename, basestr) else filename
 
     fd.write('\n'.join(probe.report()) + '\n')
-    for key, result in results.iteritems():
+    for key, result in six.iteritems(results):
         pars, vals = result
         fd.write('\n# %s %d\n' % (key, vals.shape[-1]))
 

@@ -6,6 +6,7 @@ import os.path as op
 import fnmatch
 import shutil
 from .base import output, Struct, basestr
+import six
 try:
     import tables as pt
 except:
@@ -222,7 +223,7 @@ def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
         fd = pt.openFile(filename, mode='w', title='Recursive dict dump')
         group = '/'
 
-    for key, val in adict.iteritems():
+    for key, val in six.iteritems(adict):
         if isinstance(val, dict):
             group2 = fd.createGroup(group, '_' + str(key), '%s group' % key)
             write_dict_hdf5(filename, val, level + 1, group2, fd)
@@ -239,11 +240,11 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
         fd = pt.openFile(filename, mode='r')
         group = fd.root
 
-    for name, gr in group._v_groups.iteritems():
+    for name, gr in six.iteritems(group._v_groups):
         name = name.replace('_', '', 1)
         out[name] = read_dict_hdf5(filename, level + 1, gr, fd)
 
-    for name, data in group._v_leaves.iteritems():
+    for name, data in six.iteritems(group._v_leaves):
         name = name.replace('_', '', 1)
         out[name] = data.read()
 

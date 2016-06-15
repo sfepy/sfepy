@@ -1,11 +1,13 @@
 """
 Utility functions based on igakit.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.discrete.fem import Mesh
 from sfepy.mesh.mesh_generators import get_tensor_product_conn
+import six
 
 def create_linear_fe_mesh(nurbs, pars=None):
     """
@@ -81,7 +83,7 @@ def create_mesh_and_output(nurbs, pars=None, **kwargs):
     mesh = Mesh.from_data('nurbs', coors, None, [conn], [mat_id], [desc])
 
     out = {}
-    for key, variable in kwargs.iteritems():
+    for key, variable in six.iteritems(kwargs):
         if variable.ndim == 2:
             nc = variable.shape[1]
             field = variable.reshape(nurbs.weights.shape + (nc,))

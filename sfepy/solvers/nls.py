@@ -1,6 +1,7 @@
 """
 Nonlinear solvers.
 """
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -9,6 +10,7 @@ import numpy.linalg as nla
 from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
+import six
 
 def check_tangent_matrix(conf, vec_x0, fun, fun_grad):
     """
@@ -347,7 +349,7 @@ class Newton(NonlinearSolver):
             if conf.verbose:
                 output('...done')
 
-            for kv in time_stats.iteritems():
+            for kv in six.iteritems(time_stats):
                 output('%10s: %7.2f [s]' % kv)
 
             vec_e = mtx_a * vec_dx - vec_r

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, assert_, get_default, Struct
@@ -7,6 +8,7 @@ from sfepy.homogenization.coefs_base import CoefOne, CorrDim, \
      CorrMiniApp, CorrSolution
 from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
+import six
 
 class CorrectorsPermeability( CorrDim ):
 
@@ -14,7 +16,7 @@ class CorrectorsPermeability( CorrDim ):
         problem = get_default( problem, self.problem )
 
         equations = {}
-        for key, eq in self.equations.iteritems():
+        for key, eq in six.iteritems(self.equations):
             equations[key] = eq % tuple( self.regions )
 
         index = [0]
@@ -59,7 +61,7 @@ class PressureRHSVector( CorrMiniApp ):
         state = problem.create_state()
         state.apply_ebc()
 
-        vec = eval_term_op( state, self.equations.values()[0],
+        vec = eval_term_op( state, list(self.equations.values())[0],
                             problem, dw_mode = 'vector' )
 ##         print vec.max(), vec.min()
 

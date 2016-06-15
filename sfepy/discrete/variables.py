@@ -2,6 +2,7 @@
 Classes of variables for equations/terms.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import time
 from collections import deque
 
@@ -20,6 +21,7 @@ from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
 from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
+import six
 
 is_state = 0
 is_virtual = 1
@@ -149,7 +151,7 @@ class Variables(Container):
         Variable.reset()
 
         obj = Variables()
-        for key, val in conf.iteritems():
+        for key, val in six.iteritems(conf):
             var = Variable.from_conf(key, val, fields)
 
             obj[var.name] = var
@@ -461,7 +463,7 @@ class Variables(Container):
         for var in self:
             var.adof_conns = {}
 
-        for key, val in adof_conns.iteritems():
+        for key, val in six.iteritems(adof_conns):
             if key[0] in self.names:
                 var = self[key[0]]
                 var.adof_conns[key] = val
@@ -673,7 +675,7 @@ class Variables(Container):
 
         if isinstance(data, dict):
 
-            for key, val in data.iteritems():
+            for key, val in six.iteritems(data):
                 try:
                     var = self[key]
 
@@ -736,10 +738,10 @@ class Variables(Container):
                 var_info[name] = (False, name)
 
         out = {}
-        for key, indx in di.indx.iteritems():
+        for key, indx in six.iteritems(di.indx):
             var = self[key]
 
-            if key not in var_info.keys(): continue
+            if key not in list(var_info.keys()): continue
             is_part, name = var_info[key]
 
             if is_part:
@@ -1041,13 +1043,13 @@ class Variable(Struct):
 
         if self.history > 0:
             # Advance evaluate cache.
-            for step_cache in self.evaluate_cache.itervalues():
+            for step_cache in six.itervalues(self.evaluate_cache):
                 steps = sorted(step_cache.keys())
                 for step in steps:
                     if step is None:
                         # Special caches with possible custom advance()
                         # function.
-                        for key, val in step_cache[step].iteritems():
+                        for key, val in six.iteritems(step_cache[step]):
                             if hasattr(val, '__advance__'):
                                 val.__advance__(ts, val)
 
@@ -1546,7 +1548,7 @@ class FieldVariable(Variable):
         This should be done, for example, prior to every nonlinear
         solver iteration.
         """
-        for step_cache in self.evaluate_cache.itervalues():
+        for step_cache in six.itervalues(self.evaluate_cache):
             for key in step_cache.keys():
                 if key == step: # Given time step to clear.
                     step_cache.pop(key)

@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import ordered_iteritems, Struct, basestr
 from sfepy.base.ioutils import read_dict_hdf5, write_dict_hdf5
 from sfepy.homogenization.utils import iter_sym
+import six
 
 class Coefficients(Struct):
     """
@@ -12,7 +14,7 @@ class Coefficients(Struct):
     def from_file_hdf5( filename ):
         obj = Coefficients()
         obj.__dict__ = read_dict_hdf5( filename )
-        for key, val in obj.__dict__.iteritems():
+        for key, val in six.iteritems(obj.__dict__):
             if type( val ) == list:
                 for ii, vv in enumerate( val ):
                     val[ii] = nm.array( vv, dtype = nm.float64 )
@@ -297,7 +299,7 @@ ijkl & value \\
 
         if isinstance( val, dict ):
             aux = ''
-            for key, dval in val.iteritems():
+            for key, dval in six.iteritems(val):
                 aux2 = r'\item %s : %s' % (key,
                                            self._typeset( dval, dim, style,
                                                           format, step ))

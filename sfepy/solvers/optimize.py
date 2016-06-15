@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -9,6 +10,7 @@ from sfepy.solvers.solvers import SolverMeta, OptimizationSolver
 
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
+import six
 
 def conv_test(conf, it, of, of0, ofg_norm=None):
     """
@@ -269,7 +271,7 @@ class FMinSteepestDescent(OptimizationSolver):
             else:
                 ofg = ofg1.copy()
 
-            for key, val in time_stats.iteritems():
+            for key, val in six.iteritems(time_stats):
                 if len(val):
                     output('%10s: %7.2f [s]' % (key, val[-1]))
 

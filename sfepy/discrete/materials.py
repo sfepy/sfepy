@@ -5,6 +5,7 @@ from copy import copy
 from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
                              output, get_default, basestr)
 from .functions import ConstantFunction, ConstantFunctionByRegion
+import six
 
 
 class Materials(Container):
@@ -15,10 +16,10 @@ class Materials(Container):
         Construct Materials instance from configuration.
         """
         if wanted is None:
-            wanted = conf.keys()
+            wanted = list(conf.keys())
 
         objs = OneTypeList(Material)
-        for key, mc in conf.iteritems():
+        for key, mc in six.iteritems(conf):
             if key not in wanted: continue
 
             mat = Material.from_conf(mc, functions)
@@ -122,7 +123,7 @@ class Material(Struct):
 
         elif (values is not None) or len(kwargs): # => function is None
             if isinstance(values, dict):
-                key0 = values.keys()[0]
+                key0 = list(values.keys())[0]
                 assert_(isinstance(key0, str))
 
             else:
@@ -185,7 +186,7 @@ class Material(Struct):
         # point values only.
         new_data = {}
         if data is not None:
-            for dkey, val in data.iteritems():
+            for dkey, val in six.iteritems(data):
                 if val.ndim != 3:
                     raise ValueError('material parameter array must have'
                                      " three dimensions! ('%s' has %d)"
@@ -243,7 +244,7 @@ class Material(Struct):
                               **self.extra_args)
         if datas is not None:
             self.datas['special'] = datas
-            self.special_names.update(datas.keys())
+            self.special_names.update(list(datas.keys()))
 
     def update_special_constant_data(self, equations=None, problem=None):
         """
@@ -263,7 +264,7 @@ class Material(Struct):
         datas = self.function(None, None, mode='special_constant',
                               problem=problem, equations=equations)
         self.datas['special_constant'] = datas
-        self.constant_names.update(datas.keys())
+        self.constant_names.update(list(datas.keys()))
 
     def time_update(self, ts, equations, mode='normal', problem=None):
         """
@@ -319,7 +320,7 @@ class Material(Struct):
             keys = None
 
         elif region_name is None:
-            keys = self.datas.keys()
+            keys = list(self.datas.keys())
 
         else:
             keys = [key for key in self.datas.keys()
@@ -361,7 +362,7 @@ class Material(Struct):
             return self._get_data(key, name)
         else:
             out = Struct()
-            for key, item in name.iteritems():
+            for key, item in six.iteritems(name):
                 setattr(out, key, self._get_data(key, item))
             return out
 
@@ -398,9 +399,9 @@ class Material(Struct):
 
     def reduce_on_datas(self, reduce_fun, init=0.0):
         """For non-special values only!"""
-        out = {}.fromkeys(self.datas[self.datas.keys()[0]].keys(), init)
-        for data in self.datas.itervalues():
-            for key, val in data.iteritems():
+        out = {}.fromkeys(list(self.datas[list(self.datas.keys())[0]].keys()), init)
+        for data in six.itervalues(self.datas):
+            for key, val in six.iteritems(data):
                 out[key] = reduce_fun(out[key], val)
 
         return out

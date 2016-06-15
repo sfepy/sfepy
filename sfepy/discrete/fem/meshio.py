@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import absolute_import
 import sys
 from copy import copy
 
@@ -11,6 +12,7 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
 from sfepy.base.ioutils \
      import skip_read_line, read_token, read_array, read_list, pt
 import os.path as op
+import six
 
 supported_formats = {
     '.mesh' : 'medit',
@@ -100,7 +102,7 @@ def convert_complex_output(out_in):
     real and imaginary parts.
     """
     out = {}
-    for key, val in out_in.iteritems():
+    for key, val in six.iteritems(out_in):
 
         if val.data.dtype in  complex_types:
             rval = copy(val)
@@ -449,7 +451,7 @@ class MeditMeshIO(MeshIO):
         fd.close()
 
         if out is not None:
-            for key, val in out.iteritems():
+            for key, val in six.iteritems(out):
                 raise NotImplementedError
 
 
@@ -465,7 +467,7 @@ vtk_inverse_cell_types = {3 : '1_2', 5 : '2_3', 8 : '2_4', 9 : '2_4',
                           10 : '3_4', 11 : '3_8', 12 : '3_8'}
 vtk_remap = {8 : nm.array([0, 1, 3, 2], dtype=nm.int32),
              11 : nm.array([0, 1, 3, 2, 4, 5, 7, 6], dtype=nm.int32)}
-vtk_remap_keys = vtk_remap.keys()
+vtk_remap_keys = list(vtk_remap.keys())
 
 class VTKMeshIO(MeshIO):
     format = 'vtk'
@@ -630,7 +632,7 @@ class VTKMeshIO(MeshIO):
         descs = []
         conns = []
         mat_ids = []
-        for ct, conn in dconns.iteritems():
+        for ct, conn in six.iteritems(dconns):
             sct = vtk_inverse_cell_types[ct]
             descs.append(sct)
 
@@ -725,7 +727,7 @@ class VTKMeshIO(MeshIO):
         fd.write(''.join(['%d\n' % ii for ii in ngroups]))
 
         if out is not None:
-            point_keys = [key for key, val in out.iteritems()
+            point_keys = [key for key, val in six.iteritems(out)
                           if val.mode == 'vertex']
         else:
             point_keys = {}
@@ -763,7 +765,7 @@ class VTKMeshIO(MeshIO):
                 raise NotImplementedError(nc)
 
         if out is not None:
-            cell_keys = [key for key, val in out.iteritems()
+            cell_keys = [key for key, val in six.iteritems(out)
                          if val.mode == 'cell']
         else:
             cell_keys = {}
@@ -887,7 +889,7 @@ class TetgenMeshIO(MeshIO):
         conns = []
         mat_ids = []
         elements = nm.array(elements, dtype=nm.int32) - 1
-        for key, value in regions.iteritems():
+        for key, value in six.iteritems(regions):
             descs.append(etype)
             mat_ids.append(nm.ones_like(value) * key)
             conns.append(elements[nm.array(value)-1].copy())
@@ -1199,7 +1201,7 @@ class ComsolMeshIO(MeshIO):
         fd.close()
 
         if out is not None:
-            for key, val in out.iteritems():
+            for key, val in six.iteritems(out):
                 raise NotImplementedError
 
 class HDF5MeshIO(MeshIO):
@@ -1322,7 +1324,7 @@ class HDF5MeshIO(MeshIO):
             node_sets_groups = fd.createGroup(mesh_group, 'node_sets',
                                              'node sets groups')
             ii = 0
-            for key, nods in mesh.nodal_bcs.iteritems():
+            for key, nods in six.iteritems(mesh.nodal_bcs):
                 group = fd.createGroup(node_sets_groups, 'group%d' % ii,
                                        'node sets group')
                 fd.createArray(group, 'key', key, 'key')
@@ -1364,7 +1366,7 @@ class HDF5MeshIO(MeshIO):
             fd.createArray(ts_group, 'nt', nt, 'normalized time')
 
             name_dict = {}
-            for key, val in out.iteritems():
+            for key, val in six.iteritems(out):
                 shape = val.get('shape', val.data.shape)
                 dofs = val.get('dofs', None)
                 if dofs is None:
@@ -1511,7 +1513,7 @@ class HDF5MeshIO(MeshIO):
         if fd is None: return None
 
         groups = step_group._v_groups
-        for name, data_group in groups.iteritems():
+        for name, data_group in six.iteritems(groups):
             try:
                 key = data_group.dname.read()
 
@@ -1542,7 +1544,7 @@ class HDF5MeshIO(MeshIO):
 
         fd.close()
 
-        for key, val in th.iteritems():
+        for key, val in six.iteritems(th):
             aux = nm.array(val)
             if aux.ndim == 4: # cell data.
                 aux = aux[:,0,:,0]
@@ -1580,10 +1582,10 @@ class MEDMeshIO(MeshIO):
         mesh_root = fd.root.ENS_MAA
 
         #TODO: Loop through multiple meshes?
-        mesh_group = mesh_root._f_getChild(mesh_root._v_groups.keys()[0])
+        mesh_group = mesh_root._f_getChild(list(mesh_root._v_groups.keys())[0])
 
-        if not ('NOE' in mesh_group._v_groups.keys()):
-            mesh_group = mesh_group._f_getChild(mesh_group._v_groups.keys()[0])
+        if not ('NOE' in list(mesh_group._v_groups.keys())):
+            mesh_group = mesh_group._f_getChild(list(mesh_group._v_groups.keys())[0])
 
         mesh.name = mesh_group._v_name
 
@@ -1625,7 +1627,7 @@ class MEDMeshIO(MeshIO):
         descs = []
         mat_ids = []
 
-        for md, desc in med_descs.iteritems():
+        for md, desc in six.iteritems(med_descs):
             if int(desc[0]) != dim: continue
 
             try:
@@ -1986,7 +1988,7 @@ class AbaqusMeshIO(MeshIO):
         fd.close()
 
         ngroups = nm.zeros((len(coors),), dtype=nm.int32)
-        for ing, ii in nsets.iteritems():
+        for ing, ii in six.iteritems(nsets):
             ngroups[nm.array(ii)-1] = ing
 
         mesh = mesh_from_groups(mesh, ids, coors, ngroups,
@@ -2217,7 +2219,7 @@ class BDFMeshIO(MeshIO):
         fd.write("*           0.000000E+00    0.000000E+00\n*       \n")
 
         fd.write("$\n$ MATERIALS\n$\n")
-        matkeys = mats.keys()
+        matkeys = list(mats.keys())
         matkeys.sort()
         for ii, imat in enumerate(matkeys):
             fd.write("$ material%d : Isotropic\n" % imat)
@@ -2574,7 +2576,7 @@ class ANSYSCDBMeshIO(MeshIO):
                                 hexas, mat_ids_hexas, remap=remap)
 
         mesh.nodal_bcs = {}
-        for key, nods in nodal_bcs.iteritems():
+        for key, nods in six.iteritems(nodal_bcs):
             mesh.nodal_bcs[key] = remap[nods]
 
         return mesh
@@ -2741,7 +2743,7 @@ def guess_format(filename, ext, formats, io_table):
 
     return format
 
-var_dict = vars().items()
+var_dict = list(vars().items())
 io_table = {}
 
 for key, var in var_dict:

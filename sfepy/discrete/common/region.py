@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import re
 from copy import copy
 
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
+import six
 
 _depends = re.compile('r\.([a-zA-Z_0-9.]+)').findall
 
@@ -22,7 +24,7 @@ def get_dependency_graph(region_defs):
     """
     graph = {}
     name_to_sort_name = {}
-    for sort_name, rdef in region_defs.iteritems():
+    for sort_name, rdef in six.iteritems(region_defs):
         name, sel = rdef.name, rdef.select
         if name_to_sort_name.has_key(name):
             msg = 'region %s/%s already defined!' % (sort_name, name)
@@ -49,7 +51,7 @@ def sort_by_dependency(graph):
     while idone < n_nod:
 
         dep_removed = 0
-        for node, deps in graph.iteritems():
+        for node, deps in six.iteritems(graph):
 
             if (len(deps) == 1) and not deps[0]:
                 out.append(node)

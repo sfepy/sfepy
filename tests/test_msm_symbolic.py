@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from sfepy import data_dir
+import six
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
@@ -135,12 +137,12 @@ class Test(TestCommon):
             self.report('  symbolic:', expr)
             self.report('  using argument map:', arg_map)
 
-            for sol_name, sol in sols.iteritems():
+            for sol_name, sol in six.iteritems(sols):
                 rhs = self._eval_term(sol[1], term, sops)
                 srhs = "(%s * (%s))" % (term.sign, rhs)
                 rhss.setdefault(sol_name, []).append(srhs)
 
-        for key, val in rhss.iteritems():
+        for key, val in six.iteritems(rhss):
             rhss[key] = '+'.join(val)
 
         return rhss
@@ -153,7 +155,7 @@ class Test(TestCommon):
                'y' : sops.Symbol('y'),
                'z' : sops.Symbol('z'),
                'dim' : dim}
-        for key, val in arg_map.iteritems():
+        for key, val in six.iteritems(arg_map):
             if val == 'state':
                 env[key] = sol
             else:
@@ -183,7 +185,7 @@ class Test(TestCommon):
 
         problem  = self.problem
         ok = True
-        for eq_name, equation in equations.iteritems():
+        for eq_name, equation in six.iteritems(equations):
             problem.set_equations({eq_name : equation})
             problem.update_materials()
 
@@ -196,7 +198,7 @@ class Test(TestCommon):
             materials = problem.get_materials()
             rhs_mat = materials['rhs']
 
-            for sol_name, sol in problem.conf.solutions.iteritems():
+            for sol_name, sol in six.iteritems(problem.conf.solutions):
                 self.report('testing', sol_name)
                 var_name, sol_expr = sol
                 rhs_expr = rhss[sol_name]

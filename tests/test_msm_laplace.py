@@ -1,5 +1,7 @@
 # c: 07.05.2007, r: 25.06.2008
+from __future__ import absolute_import
 from sfepy import data_dir
+import six
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
@@ -111,7 +113,7 @@ class Test( TestCommon ):
     ##
     # c: 09.05.2007, r: 25.06.2008
     def _build_rhs( self, sols ):
-        for sol in sols.itervalues():
+        for sol in six.itervalues(sols):
             assert_( len( sol ) == 3 )
         return sols
 
@@ -127,7 +129,7 @@ class Test( TestCommon ):
         sols = self._build_rhs( self.conf.solutions )
 
         ok = True
-        for sol_name, sol in sols.iteritems():
+        for sol_name, sol in six.iteritems(sols):
             self.report( 'testing', sol_name )
             var_name, sol_expr, rhs_expr = sol
 

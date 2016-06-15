@@ -2,6 +2,7 @@
 Operators for enforcing linear combination boundary conditions in nodal FEM
 setting.
 """
+from __future__ import absolute_import
 import numpy as nm
 import scipy.sparse as sp
 
@@ -11,6 +12,7 @@ from sfepy.discrete.common.dof_info import DofInfo, expand_nodes_to_equations
 from sfepy.discrete.fem.utils import (compute_nodal_normals,
                                       compute_nodal_edge_dirs)
 from sfepy.discrete.conditions import get_condition_value, Function
+import six
 
 class LCBCOperator(Struct):
     """
@@ -379,7 +381,7 @@ class NodalLCOperator(MRLCBCOperator):
             ifixed = []
             islaves = set()
             ccs = []
-            for key, _poly in sol.iteritems():
+            for key, _poly in six.iteritems(sol):
                 imaster = int(key.name[1:])
                 imasters.append(imaster)
 
@@ -599,20 +601,20 @@ class LCBCOperators(Container):
             ics.setdefault(op.var_names[0], []).append((ii, op.n_new_dof))
 
         self.ics = {}
-        for key, val in ics.iteritems():
+        for key, val in six.iteritems(ics):
             iis, ics = zip(*val)
             self.ics[key] = (iis, nm.cumsum(nm.r_[0, ics]))
 
         self.n_free = {}
         self.n_active = {}
         n_dof = self.variables.adi.n_dof
-        for key in self.n_master.iterkeys():
+        for key in six.iterkeys(self.n_master):
             self.n_free[key] = n_dof[key] - self.n_master[key]
             self.n_active[key] = self.n_free[key] + self.n_new[key]
 
         def _dict_to_di(name, dd):
             di = DofInfo(name)
-            for key, val in dd.iteritems():
+            for key, val in six.iteritems(dd):
                 di.append_raw(key, val)
             return di
 
@@ -645,10 +647,10 @@ class LCBCOperators(Container):
         if len(self) == 0: return (None,) * 3
 
         n_dof = self.variables.adi.ptr[-1]
-        n_constrained = nm.sum([val for val in self.n_master.itervalues()])
-        n_dof_free = nm.sum([val for val in self.n_free.itervalues()])
-        n_dof_new = nm.sum([val for val in self.n_new.itervalues()])
-        n_dof_active = nm.sum([val for val in self.n_active.itervalues()])
+        n_constrained = nm.sum([val for val in six.itervalues(self.n_master)])
+        n_dof_free = nm.sum([val for val in six.itervalues(self.n_free)])
+        n_dof_new = nm.sum([val for val in six.itervalues(self.n_new)])
+        n_dof_active = nm.sum([val for val in six.itervalues(self.n_active)])
 
         output('dofs: total %d, free %d, constrained %d, new %d'\
                % (n_dof, n_dof_free, n_constrained, n_dof_new))

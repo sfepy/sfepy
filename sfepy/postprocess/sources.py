@@ -1,6 +1,8 @@
+from __future__ import absolute_import
 import os
 
 import numpy as nm
+import six
 
 try:
     from enthought.tvtk.api import tvtk
@@ -45,7 +47,7 @@ def create_file_source(filename, watch=False, offscreen=True):
         else:
             return VTKFileSource(filename, **kwargs)
 
-    elif fmt in supported_formats.keys():
+    elif fmt in list(supported_formats.keys()):
         if is_sequence:
             if fmt == '.h5':
                 raise ValueError('format .h5 does not support file sequences!')
@@ -317,7 +319,7 @@ class GenericFileSource(FileSource):
         sym = (dim + 1) * dim / 2
 
         dm = DatasetManager(dataset=dataset)
-        for key, val in data.iteritems():
+        for key, val in six.iteritems(data):
             vd = val.data
 ##             print vd.shape
             if val.mode == 'vertex':

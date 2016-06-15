@@ -85,7 +85,7 @@ class HomogenizationEngine(PDESolverApp):
 
         reqcoef_info = copy(coef_info)
         reqcoef_info.update(req_info)
-        compute_names = set(get_default(compute_only, coef_info.keys()))
+        compute_names = set(get_default(compute_only, list(coef_info.keys())))
         compute_names = ['c.' + key for key in compute_names]
 
         dep_names = []

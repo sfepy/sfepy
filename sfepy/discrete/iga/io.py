@@ -1,8 +1,10 @@
 """
 IO for NURBS and Bezier extraction data.
 """
+from __future__ import absolute_import
 import numpy as nm
 import tables as pt
+import six
 
 def write_iga_data(filename, knots, degrees, control_points, weights, cs, conn,
                    bezier_control_points, bezier_weights, bezier_conn, regions):
@@ -38,7 +40,7 @@ def write_iga_data(filename, knots, degrees, control_points, weights, cs, conn,
                    'bezier_connectivity')
 
     regs = fd.createGroup('/', 'regions', 'regions')
-    for key, val in regions.iteritems():
+    for key, val in six.iteritems(regions):
         fd.createArray(regs, key, val, key)
 
     fd.close()

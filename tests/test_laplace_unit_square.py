@@ -1,6 +1,8 @@
 # 30.05.2007, c
 # last revision: 25.02.2008
+from __future__ import absolute_import
 from sfepy import data_dir
+import six
 
 filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 
@@ -143,7 +145,7 @@ class Test( TestCommon ):
         variables = problem.get_variables()
 
         ok = True
-        for var_name, expression in sol.iteritems():
+        for var_name, expression in six.iteritems(sol):
             coor = variables[var_name].field.get_coor()
             ana_sol = self.eval_coor_expression( expression, coor )
             num_sol = variables.get_state_part_view( vec, var_name )

@@ -4,7 +4,9 @@ by Andreas Kloeckner.
 """
 from __future__ import division
 
+from __future__ import absolute_import
 import numpy as nm
+import six
 
 def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0,
                                                       max=None):
@@ -141,7 +143,7 @@ def get_simplex_cubature(order, dimension):
     neg_weights = []
 
     dim_factor = 2**n
-    for p, w in points_to_weights.iteritems():
+    for p, w in six.iteritems(points_to_weights):
         real_p = reduce(add, (a/b*v for (a,b),v in zip(p, vertices)))
         if w > 0:
             pos_points.append(real_p)

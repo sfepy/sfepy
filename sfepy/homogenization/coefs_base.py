@@ -13,6 +13,7 @@ from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
 from .utils import iter_sym, create_pis, create_scalar_pis
+import six
 
 class MiniAppBase(Struct):
     def any_from_conf(name, problem, kwargs):
@@ -191,7 +192,7 @@ class CorrMiniApp(MiniAppBase):
                                                      None,
                                                      extend=extend)
 
-                    for _key, val in aux.iteritems():
+                    for _key, val in six.iteritems(aux):
                         if key:
                             new_key = _key + '_' + key
 
@@ -512,7 +513,7 @@ class CorrEqPar(CorrOne):
 
         eqns ={}
         for ir in range(self.dim):
-            for key_eq, val_eq in self.equations.iteritems():
+            for key_eq, val_eq in six.iteritems(self.equations):
                 eqns[key_eq] = val_eq % self.eq_pars[ir]
 
             problem.set_equations(eqns)
