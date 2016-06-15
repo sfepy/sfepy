@@ -146,7 +146,7 @@ class Test(TestCommon):
                                           force=True)
                 state = self.problem.solve()
                 failed = status.condition != 0
-            except Exception, exc:
+            except Exception as exc:
                 failed = True
                 status = None
 

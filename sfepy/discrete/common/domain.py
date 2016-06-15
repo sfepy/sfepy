@@ -26,7 +26,7 @@ def region_leaf(domain, regions, rdef, functions):
             details = details[1][2:]
             aux = regions.find(details)
             if not aux:
-                raise ValueError, 'region %s does not exist' % details
+                raise ValueError('region %s does not exist' % details)
             else:
                 if rdef[:4] == 'copy':
                     region = aux.copy()

@@ -16,8 +16,8 @@ def match_grid_line( coor1, coor2, which ):
     Match coordinates `coor1` with `coor2` along the axis `which`.
     """
     if coor1.shape != coor2.shape:
-        raise ValueError, 'incompatible shapes: %s == %s'\
-              % ( coor1.shape, coor2.shape)
+        raise ValueError('incompatible shapes: %s == %s'\
+              % ( coor1.shape, coor2.shape))
 
     c1 = coor1[:,which]
     c2 = coor2[:,which]
@@ -51,8 +51,8 @@ def match_grid_plane( coor1, coor2, which ):
     `which`.
     """
     if coor1.shape != coor2.shape:
-        raise ValueError, 'incompatible shapes: %s == %s'\
-              % ( coor1.shape, coor2.shape)
+        raise ValueError('incompatible shapes: %s == %s'\
+              % ( coor1.shape, coor2.shape))
 
     offset = coor1[0,which] - coor2[0,which]
     aux = coor2.copy()

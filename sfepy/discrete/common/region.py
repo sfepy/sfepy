@@ -69,7 +69,7 @@ def sort_by_dependency(graph):
                         dep_removed += 1
 
         if (idone <= idone0) and not dep_removed:
-            raise ValueError, 'circular dependency'
+            raise ValueError('circular dependency')
         idone0 = idone
 
     return out
@@ -479,7 +479,7 @@ class Region(Struct):
                     self.setup_from_highest(idim, allow_lower=False,
                                             allow_empty=allow_empty)
 
-                except ValueError, exc:
+                except ValueError as exc:
                     msg = '\n'.join((exc.message,
                                      'fix region kind? (region: %s, kind: %s)'
                                      % (self.name, self.kind)))

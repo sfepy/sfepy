@@ -760,7 +760,7 @@ class VTKMeshIO(MeshIO):
                 _write_tensors(aux)
 
             else:
-                raise NotImplementedError, nc
+                raise NotImplementedError(nc)
 
         if out is not None:
             cell_keys = [key for key, val in out.iteritems()
@@ -810,7 +810,7 @@ class VTKMeshIO(MeshIO):
                 _write_tensors(aux)
 
             else:
-                raise NotImplementedError, (nr, nc)
+                raise NotImplementedError(nr, nc)
 
         fd.close()
 

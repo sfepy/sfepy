@@ -72,7 +72,7 @@ def visit_stack(stack, op_visitor, leaf_visitor):
             return leaf_visitor(level, op)
 
         else:
-            raise ValueError, token
+            raise ValueError(token)
 
     return visit(stack, 0)
 

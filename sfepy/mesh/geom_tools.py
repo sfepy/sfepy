@@ -391,7 +391,7 @@ class geometry(object):
 
         try:
             tokens= grammar.parseFile(filename)
-        except ParseException, err:
+        except ParseException as err:
             print(err.line)
             print(" "*(err.column-1) + "^")
             print(err)

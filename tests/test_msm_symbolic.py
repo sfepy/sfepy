@@ -81,7 +81,7 @@ solver_1 = {
 import numpy as nm
 try:
     import sfepy.linalg.sympy_operators as sops
-except ImportError, exc:
+except ImportError as exc:
     sops = None
 
 from sfepy.base.testing import TestCommon

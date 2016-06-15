@@ -392,7 +392,7 @@ class Log(Struct):
                 if len(aux) == 1:
                     aux = aux[0]
                 else:
-                    raise ValueError, 'can log only scalars (%s)' % aux
+                    raise ValueError('can log only scalars (%s)' % aux)
             key = name_to_key(name, ii)
             self.data[key].append(aux)
 

@@ -180,7 +180,7 @@ def try_imports(imports, fail_msg=None):
             exec(imp)
             break
 
-        except Exception, inst:
+        except Exception as inst:
             msgs.append(str(inst))
 
     else:
@@ -524,7 +524,7 @@ class Container(Struct):
                 self._objs[ii] = obj
                 self.names[ii] = obj.name
 
-        except (IndexError, ValueError), msg:
+        except (IndexError, ValueError) as msg:
             raise IndexError(msg)
 
     def __getitem__(self, ii):
@@ -536,7 +536,7 @@ class Container(Struct):
 
             return  self._objs[ii]
 
-        except (IndexError, ValueError), msg:
+        except (IndexError, ValueError) as msg:
             raise IndexError(msg)
 
     def __iter__(self):
@@ -677,9 +677,9 @@ class OneTypeList(list):
             if ir:
                 return list.__getitem__(self, ir[0])
             else:
-                raise IndexError, ii
+                raise IndexError(ii)
         else:
-            raise IndexError, ii
+            raise IndexError(ii)
 
     def __str__(self):
         ss = "[\n"

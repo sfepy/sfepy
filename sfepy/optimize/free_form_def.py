@@ -16,7 +16,7 @@ from sfepy.discrete.fem.mesh import Mesh
 # 12.04.2006
 def read_spline_box_hdf5( filename ):
     if not pt.isHDF5File( filename ):
-        raise ValueError, 'not a HDF5 file! (%s)' % filename
+        raise ValueError('not a HDF5 file! (%s)' % filename)
 
     fd = pt.openFile( filename, mode = 'r' )
     boxes = fd.listNodes( '/box' )
@@ -67,7 +67,7 @@ def read_spline_box_hdf5( filename ):
 # 13.04.2006
 def read_dsg_vars_hdf5( filename ):
     if not pt.isHDF5File( filename ):
-        raise ValueError, 'not a HDF5 file! (%s)' % filename
+        raise ValueError('not a HDF5 file! (%s)' % filename)
 
     fd = pt.openFile( filename, mode = 'r' )
     aux1 = fd.getNode( '/dsgvar/inx' ).read()

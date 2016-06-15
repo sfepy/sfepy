@@ -46,7 +46,7 @@ def wrap_function(function, args):
         out = function(x, *args)
         tt2 = time.time()
         if tt2 < tt:
-            raise RuntimeError, '%f >= %f' % (tt, tt2)
+            raise RuntimeError('%f >= %f' % (tt, tt2))
         times.append(tt2 - tt)
         return out
     return ncalls, times, function_wrapper
@@ -229,7 +229,7 @@ class FMinSteepestDescent(OptimizationSolver):
 
                 if alpha < conf.ls_min:
                     if aux is None:
-                        raise RuntimeError, 'giving up...'
+                        raise RuntimeError('giving up...')
                     output('linesearch failed, continuing anyway')
                     break
 

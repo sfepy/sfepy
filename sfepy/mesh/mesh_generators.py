@@ -411,8 +411,8 @@ def tiled_mesh1d(conn, coors, ngrps, idim, n_rep, bb, eps=1e-6, ndmap=False):
     s2 = nm.nonzero(coors[:,idim] > (bb[1] - eps))[0]
 
     if s1.shape != s2.shape:
-        raise ValueError, 'incompatible shapes: %s == %s'\
-              % (s1.shape, s2.shape)
+        raise ValueError('incompatible shapes: %s == %s'\
+              % (s1.shape, s2.shape))
 
     (nnod0, dim) = coors.shape
     nnod = nnod0 * n_rep - s1.shape[0] * (n_rep - 1)
