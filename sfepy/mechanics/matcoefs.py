@@ -2,6 +2,7 @@
 """
 Conversion of material parameters and other utilities.
 """
+from __future__ import absolute_import
 import os
 
 import numpy as nm
@@ -177,7 +178,7 @@ class ElasticConstants(Struct):
             self.relations = self._construct_relations()
 
         else:
-            import elastic_constants as ec
+            from . import elastic_constants as ec
             self.relations = ec.relations
             self.ec = ec
 

@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import time
 from copy import copy
 
 from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
                              output, get_default, basestr)
-from functions import ConstantFunction, ConstantFunctionByRegion
+from .functions import ConstantFunction, ConstantFunctionByRegion
 
 
 class Materials(Container):

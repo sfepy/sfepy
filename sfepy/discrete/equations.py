@@ -1,6 +1,7 @@
 """
 Classes of equations composed of terms.
 """
+from __future__ import absolute_import
 import time
 from copy import copy
 
@@ -17,7 +18,7 @@ def parse_definition(equation_def):
     """
     Parse equation definition string to create term description list.
     """
-    from parse_equations import create_bnf
+    from .parse_equations import create_bnf
 
     term_descs = []
     bnf = create_bnf(term_descs)

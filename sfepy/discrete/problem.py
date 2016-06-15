@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import os.path as op
 import time
@@ -10,14 +11,14 @@ from sfepy.base.base import output, get_default, Struct, IndexedStruct
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
-from functions import Functions
+from .functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.fields_base import set_mesh_coors
 from sfepy.discrete.common.fields import fields_from_conf
-from variables import Variables, Variable
-from materials import Materials, Material
-from equations import Equations
-from integrals import Integrals
+from .variables import Variables, Variable
+from .materials import Materials, Material
+from .equations import Equations
+from .integrals import Integrals
 from sfepy.discrete.state import State
 from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations

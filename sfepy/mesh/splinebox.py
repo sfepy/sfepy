@@ -1,5 +1,6 @@
+from __future__ import absolute_import
 import numpy as nm
-from bspline import BSpline
+from .bspline import BSpline
 from sfepy.base.base import Struct
 
 class SplineBox(Struct):

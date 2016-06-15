@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import time
 import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import Struct, invert_dict, get_default, output, assert_
-from meshio import MeshIO, supported_cell_types
+from .meshio import MeshIO, supported_cell_types
 
 def find_map(x1, x2, eps=1e-8, allow_double=False, join=True):
     """

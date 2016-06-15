@@ -1,10 +1,11 @@
 """
 Computational domain, consisting of the mesh and regions.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, Struct
-from geometry_element import GeometryElement
+from .geometry_element import GeometryElement
 from sfepy.discrete.common.domain import Domain
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8

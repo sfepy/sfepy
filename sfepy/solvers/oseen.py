@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -6,7 +7,7 @@ import numpy.linalg as nla
 from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
-from nls import conv_test
+from .nls import conv_test
 
 class StabilizationFunction(Struct):
     """

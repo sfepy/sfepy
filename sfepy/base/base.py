@@ -1,9 +1,10 @@
+from __future__ import absolute_import
 import time
 import sys
 import os
 from copy import copy, deepcopy
 from types import UnboundMethodType
-from getch import getch
+from .getch import getch
 
 import numpy as nm
 import scipy.sparse as sp

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 
 from sfepy.base.base import output, dict_to_struct, Struct
@@ -5,7 +6,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 import sfepy.base.ioutils as io
 from sfepy.discrete import Problem
 from sfepy.discrete.fem.meshio import MeshIO
-from application import Application
+from .application import Application
 
 def solve_pde(conf, options=None, nls_status=None, **app_options):
     """

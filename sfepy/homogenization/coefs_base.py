@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import time
 
@@ -11,7 +12,7 @@ from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
-from utils import iter_sym, create_pis, create_scalar_pis
+from .utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase(Struct):
     def any_from_conf(name, problem, kwargs):

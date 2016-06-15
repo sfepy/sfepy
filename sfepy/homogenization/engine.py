@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 from copy import copy
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
-from coefs_base import MiniAppBase
+from .coefs_base import MiniAppBase
 
 try:
     import multiprocessing
