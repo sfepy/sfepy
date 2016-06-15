@@ -187,10 +187,10 @@ class MeshIO(Struct):
         self.set_float_format()
 
     def get_filename_trunk(self):
-        if isinstance(self.filename, file):
-            trunk = 'from_descriptor'
-        else:
+        if isinstance(self.filename, basestr):
             trunk = op.splitext(self.filename)[0]
+        else:
+            trunk = 'from_descriptor'
 
         return trunk
 
