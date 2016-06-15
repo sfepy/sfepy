@@ -53,7 +53,7 @@ def parse_shape(shape, dim):
         except KeyError:
             raise ValueError('unsupported field shape! (%s)', shape)
 
-    elif isinstance(shape, (int, long)):
+    elif isinstance(shape, six.integer_types):
         shape = (int(shape),)
 
     return shape
