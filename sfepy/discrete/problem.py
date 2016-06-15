@@ -795,7 +795,7 @@ class Problem(Struct):
 
             for var in itervars():
                 rname = var.field.region.name
-                if meshes.has_key(rname):
+                if rname in meshes:
                     mesh = meshes[rname]
                 else:
                     mesh = Mesh.from_region(var.field.region, self.domain.mesh,

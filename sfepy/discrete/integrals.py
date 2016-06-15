@@ -63,7 +63,7 @@ class Integrals(Container):
                 raise ValueError('unsupported integral reference! (%s)' % name)
 
             name = '__o%d' % order
-            if self.has_key(name):
+            if name in self:
                 obj = self[name]
 
             else:

@@ -481,7 +481,7 @@ class ProblemConf(Struct):
         # Keywords not in 'required', but needed even empty (e.g. for
         # running tests).
         for key in transforms.keys():
-            if not self.__dict__.has_key(key):
+            if key not in self.__dict__:
                 self.__dict__[key] = {}
 
         keys = list(self.__dict__.keys())
@@ -599,7 +599,7 @@ class ProblemConf(Struct):
             my = getattr(self, x, None)
             if isinstance(my, dict) and isinstance(his, dict):
                 for key in his:
-                    if not my.has_key(key):
+                    if key not in my:
                         my[key]=his[key]
             elif my is None:
                 setattr(self, x, his)

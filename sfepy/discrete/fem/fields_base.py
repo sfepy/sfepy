@@ -498,7 +498,7 @@ class FEField(Field):
         """
         qpkey = (integral.order, key)
 
-        if not self.qp_coors.has_key(qpkey):
+        if qpkey not in self.qp_coors:
             if (key[0] == 's') and not self.is_surface:
                 dim = self.gel.dim - 1
                 n_fp = self.gel.surface_facet.n_vertex
@@ -525,7 +525,7 @@ class FEField(Field):
         _key = key if not from_geometry else 'g' + key
         bf_key = (integral.order, _key, derivative)
 
-        if not self.bf.has_key(bf_key):
+        if bf_key not in self.bf:
             if (iels is not None) and (self.ori is not None):
                 ori = self.ori[iels]
 

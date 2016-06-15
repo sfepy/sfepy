@@ -987,7 +987,7 @@ class TetgenMeshIO(MeshIO):
                 msg += "there are elements not belonging to any physical entity"
                 raise ValueError(msg)
 
-            if regions.has_key(regionnum):
+            if regionnum in regions:
                 regions[regionnum].append(l[0])
             else:
                 regions[regionnum]=[l[0]]

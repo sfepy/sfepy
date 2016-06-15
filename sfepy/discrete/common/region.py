@@ -26,12 +26,12 @@ def get_dependency_graph(region_defs):
     name_to_sort_name = {}
     for sort_name, rdef in six.iteritems(region_defs):
         name, sel = rdef.name, rdef.select
-        if name_to_sort_name.has_key(name):
+        if name in name_to_sort_name:
             msg = 'region %s/%s already defined!' % (sort_name, name)
             raise ValueError(msg)
         name_to_sort_name[name] = sort_name
 
-        if not graph.has_key(name):
+        if name not in graph:
             graph[name] = [0]
 
         for parent in get_parents(sel):
