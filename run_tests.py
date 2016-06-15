@@ -61,7 +61,7 @@ class OutputFilter(object):
 def run_test(conf_name, options):
     try:
         os.makedirs(options.out_dir)
-    except OSError, e:
+    except OSError as e:
         if e.errno != 17: # [Errno 17] File exists
             raise
 
@@ -74,7 +74,7 @@ def run_test(conf_name, options):
     else:
         of = OutputFilter(['<<<', '+++', '---'])
 
-    print '<<< %s' % conf_name
+    print('<<< %s' % conf_name)
 
     _required, other = get_standard_keywords()
     required = ['Test']
@@ -86,12 +86,12 @@ def run_test(conf_name, options):
         test = conf.funmod.Test.from_conf(conf, options)
         num = test.get_number()
         ok = True
-        print '>>> test instance prepared (%d test(s))' % num
+        print('>>> test instance prepared (%d test(s))' % num)
     except KeyboardInterrupt:
-        print '>>> interrupted'
+        print('>>> interrupted')
         sys.exit(0)
     except:
-        print '--- test instance creation failed'
+        print('--- test instance creation failed')
         if options.debug:
             raise
         ok, n_fail, n_total = False, num, num
@@ -102,18 +102,18 @@ def run_test(conf_name, options):
             ok, n_fail, n_total = test.run(options.debug)
             test_time = time.clock() - tt
         except KeyboardInterrupt:
-            print '>>> interrupted'
+            print('>>> interrupted')
             sys.exit(0)
-        except Exception, e:
-            print '>>> %s' % e.__class__
+        except Exception as e:
+            print('>>> %s' % e.__class__)
             if options.debug:
                 raise
             ok, n_fail, n_total = False, num, num
 
     if ok:
-        print '>>> all passed in %.2f s' % test_time
+        print('>>> all passed in %.2f s' % test_time)
     else:
-        print '!!! %s test failed' % n_fail
+        print('!!! %s test failed' % n_fail)
 
     if of is not None:
         of.stop()
@@ -126,7 +126,7 @@ def wrap_run_tests(options):
                      if (len(filename) > 8) and
                      filename[:5] == 'test_' and filename[-3:] == '.py']
 
-        print '<<< directory: %s, test files: %d' % (dir_name, len(filenames))
+        print('<<< directory: %s, test files: %d' % (dir_name, len(filenames)))
 
         for filename in filenames:
             conf_name = op.join(dir_name, filename)
@@ -188,7 +188,7 @@ def main():
     options, args = parser.parse_args()
 
     if options.print_doc:
-        print __doc__
+        print(__doc__)
         return
 
     run_tests = wrap_run_tests(options)
@@ -202,8 +202,9 @@ def main():
     else:
         op.walk(options.test_dir, run_tests, stats)
 
-    print '%d test file(s) executed in %.2f s, %d failure(s) of %d test(s)'\
-          % (stats[0], stats[3], stats[1], stats[2])
+    print('%d test file(s) executed in %.2f s, %d failure(s) of %d test(s)'
+          % (stats[0], stats[3], stats[1], stats[2]))
+
 
 if __name__ == '__main__':
     main()

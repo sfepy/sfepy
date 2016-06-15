@@ -142,39 +142,39 @@ class Clean(clean):
     def run(self):
         clean.run(self)
 
-        print 'extra clean:'
+        print('extra clean:')
         suffixes = ['*.pyc', '*.o', '*.so', '*.pyd',
                     '*_wrap.c', '*.bak', '*~', '*%']
         for filename in recursive_glob('sfepy', suffixes):
-            print filename
+            print(filename)
             os.remove(filename)
 
         for filename in recursive_glob('examples', suffixes):
-            print filename
+            print(filename)
             os.remove(filename)
 
         for filename in recursive_glob('script', suffixes):
-            print filename
+            print(filename)
             os.remove(filename)
 
         for filename in recursive_glob('tests', suffixes):
-            print filename
+            print(filename)
             os.remove(filename)
 
         for filename in glob.glob('*.pyc'):
-            print filename
+            print(filename)
             os.remove(filename)
 
         for _filename in recursive_glob('sfepy', ['*.pyx']):
             filename = _filename.replace('.pyx', '.c')
-            print filename
+            print(filename)
             try:
                 os.remove(filename)
             except OSError:
                 pass
 
             filename = _filename.replace('.pyx', '.html')
-            print filename
+            print(filename)
             try:
                 os.remove(filename)
             except OSError:
