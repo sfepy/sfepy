@@ -152,6 +152,8 @@ def import_file(filename, package_name=None, can_reload=True):
         mod = __import__(name)
 
     if (name in sys.modules) and can_reload:
+        if PY3:
+            from importlib import reload
         reload(mod)
 
     if remove_path:
