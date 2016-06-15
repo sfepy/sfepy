@@ -5,6 +5,7 @@ import numpy.linalg as nla
 from sfepy.base.base import find_subclasses, assert_, Struct
 from sfepy.linalg import combine, insert_strided_axis
 from six.moves import range
+from functools import reduce
 
 # Requires fixed vertex numbering!
 vertex_maps = {3 : [[0, 0, 0],

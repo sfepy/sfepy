@@ -12,6 +12,7 @@ from sfepy.base.compat import in1d
 from sfepy.terms.extmods import terms
 import six
 from six.moves import range
+from functools import reduce
 
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
 _match_virtual = re.compile('^virtual$').match

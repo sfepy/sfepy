@@ -8,6 +8,7 @@ from __future__ import absolute_import
 import numpy as nm
 import six
 from six.moves import range
+from functools import reduce
 
 def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0,
                                                       max=None):
