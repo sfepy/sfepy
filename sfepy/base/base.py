@@ -177,7 +177,7 @@ def try_imports(imports, fail_msg=None):
     msgs = []
     for imp in imports:
         try:
-            exec imp
+            exec(imp)
             break
 
         except Exception, inst:
