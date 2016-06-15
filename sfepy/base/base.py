@@ -4,7 +4,7 @@ import time
 import sys
 import os
 from copy import copy, deepcopy
-from types import UnboundMethodType
+from types import MethodType
 from .getch import getch
 
 import numpy as nm
@@ -21,10 +21,11 @@ sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-if sys.version[0] < '3':
+if sys.version[0] < 3:
+    PY3 = False
     basestr = basestring
-
 else:
+    PY3 = True
     basestr = str
 
 def get_debug():
@@ -1002,8 +1003,11 @@ def insert_static_method(cls, function):
 ##
 # 23.10.2007, c
 def insert_method(instance, function):
-    setattr(instance, function.__name__,
-             UnboundMethodType(function, instance, instance.__class__))
+    if PY3:
+        meth = MethodType(function, instance)
+    else:
+        meth = MethodType(function, instance, type(instance))
+    setattr(instance, function.__name__, meth)
 
 def use_method_with_name(instance, method, new_name):
     setattr(instance, new_name, method)
