@@ -1195,7 +1195,7 @@ class Problem(Struct):
         integrals = get_default(integrals, self.get_integrals())
 
         out = create_evaluable(expression, self.fields, materials,
-                               six.itervalues(variables), integrals,
+                               variables, integrals,
                                ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                ts=ts, functions=functions,
                                auto_init=auto_init,

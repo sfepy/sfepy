@@ -1550,7 +1550,7 @@ class FieldVariable(Variable):
         solver iteration.
         """
         for step_cache in six.itervalues(self.evaluate_cache):
-            for key in step_cache.keys():
+            for key in list(step_cache.keys()):
                 if key == step: # Given time step to clear.
                     step_cache.pop(key)
 
