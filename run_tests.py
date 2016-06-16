@@ -206,6 +206,5 @@ def main():
     print('%d test file(s) executed in %.2f s, %d failure(s) of %d test(s)'
           % (stats[0], stats[3], stats[1], stats[2]))
 
-
 if __name__ == '__main__':
     main()
