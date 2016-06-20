@@ -17,6 +17,7 @@ View the results using::
   $ ./postproc.py patch2d.vtk --wireframe -b
   $ ./postproc.py patch2d.vtk --wireframe -b -d't,plot_warp_scalar,rel_scaling=1'
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_domain = data_dir + '/meshes/iga/patch2d.iga'

@@ -17,6 +17,7 @@ information::
 
   python examples/diffusion/time_poisson_interactive.py -h
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

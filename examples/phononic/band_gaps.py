@@ -5,12 +5,13 @@ homogenization techniques.
 A reference periodic cell contains two domains: the stiff matrix :math:`Y_m`
 and the soft (but heavy) inclusion :math:`Y_c`.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.base.base import Struct
 from sfepy.base.ioutils import InDir
 from sfepy.homogenization.coefficients import Coefficients
 
-from band_gaps_conf import BandGapsConf, get_pars, clip_sqrt, normalize
+from .band_gaps_conf import BandGapsConf, get_pars, clip_sqrt, normalize
 
 clip_sqrt, normalize # Make pyflakes happy...
 

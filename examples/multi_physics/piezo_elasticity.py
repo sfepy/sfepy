@@ -23,6 +23,7 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
+from __future__ import absolute_import
 import os
 import numpy as nm
 

@@ -2,6 +2,7 @@
 """
 Plot time steps, times of time steps and time deltas in a HDF5 results file.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

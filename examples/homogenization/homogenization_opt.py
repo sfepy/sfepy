@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.discrete.fem.periodic as per

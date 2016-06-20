@@ -1,6 +1,7 @@
 """
 Test computing volumes by volume or surface integrals.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/elbow.mesh'

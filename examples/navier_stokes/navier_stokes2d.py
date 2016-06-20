@@ -21,6 +21,7 @@ View the results using::
 
   $ ./postproc.py user_block.vtk -b
 """
+from __future__ import absolute_import
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 

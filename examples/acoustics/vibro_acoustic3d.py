@@ -43,6 +43,7 @@ and :math:`\ul{\theta}` (rotation) such that:
     = 0
     \;, \quad \forall \ul{\nu} \;,
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 filename_mesh = data_dir + '/meshes/3d/acoustic_wg.vtk'
 

@@ -26,6 +26,7 @@ Notes
 The ``--probe`` and ``--show`` options work simultaneously only if Mayavi and
 Matplotlib use the same backend type (for example wx).
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser
@@ -46,8 +47,8 @@ from sfepy.discrete.fem.geometry_element import geometry_data
 from sfepy.discrete.probes import LineProbe
 from sfepy.discrete.projections import project_by_component
 
-from its2D_2 import stress_strain
-from its2D_3 import nodal_stress
+from .its2D_2 import stress_strain
+from .its2D_3 import nodal_stress
 
 def gen_lines(problem):
     """

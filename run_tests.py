@@ -19,6 +19,7 @@ exception: if a certain order of their evaluation is required, a class
 attribute 'test' of the Test class with a list of the test function names
 should be defined (example: test_meshio.py)."""
 
+from __future__ import absolute_import
 import sys
 import time
 import os

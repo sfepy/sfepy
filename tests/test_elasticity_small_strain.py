@@ -1,5 +1,6 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
+from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 

@@ -59,6 +59,7 @@ View the results using::
 
   $ python postproc.py output-parallel/sol.h5 --wireframe -b -d'u,plot_warp_scalar'
 """
+from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import time

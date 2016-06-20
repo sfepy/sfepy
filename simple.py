@@ -12,6 +12,7 @@ repeated runs for varying some of the simulation parameters - see
 ``examples/diffusion/poisson_parametric_study.py`` file.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 from optparse import OptionParser
 
 import sfepy

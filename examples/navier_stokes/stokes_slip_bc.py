@@ -37,6 +37,7 @@ The mesh is created by ``gen_block_mesh()`` function - try different mesh
 dimensions and resolutions below. For large meshes use the ``'ls_i'`` linear
 solver - PETSc + petsc4py is needed in that case.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.discrete.fem.meshio import UserMeshIO

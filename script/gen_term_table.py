@@ -2,6 +2,7 @@
 """
 Generate the table of all terms for the sphinx documentation.
 """
+from __future__ import absolute_import
 import os
 import sys
 from optparse import OptionParser

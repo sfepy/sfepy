@@ -43,6 +43,7 @@ Examples
                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
 """
 from __future__ import print_function
+from __future__ import absolute_import
 from optparse import OptionParser, OptionGroup
 import os
 import glob

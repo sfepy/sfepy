@@ -6,6 +6,7 @@
 
 #! Homogenization of heterogeneous linear elastic material
 
+from __future__ import absolute_import
 import sfepy.discrete.fem.periodic as per
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.homogenization.utils import define_box_regions

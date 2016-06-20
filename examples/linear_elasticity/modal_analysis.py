@@ -40,6 +40,7 @@ Examples
 
   See :mod:`sfepy.solvers.eigen` for available solvers.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

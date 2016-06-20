@@ -10,6 +10,7 @@ Find :math:`t` such that:
     = 0
     \;, \quad \forall s \;.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'

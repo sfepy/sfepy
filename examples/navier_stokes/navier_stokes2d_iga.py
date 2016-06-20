@@ -24,6 +24,7 @@ View the results using::
 
   $ ./postproc.py block2d.vtk -b
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_domain = data_dir + '/meshes/iga/block2d.iga'

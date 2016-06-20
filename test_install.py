@@ -10,6 +10,7 @@ words to the expected ones.
 The output of failed commands is saved to 'test_install.log' file.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import time
 from optparse import OptionParser
 import shlex

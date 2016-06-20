@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 from sfepy import data_dir
 from sfepy.base.base import nm

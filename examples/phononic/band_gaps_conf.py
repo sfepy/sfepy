@@ -2,6 +2,7 @@
 Configuration classes for acoustic band gaps in a strongly heterogeneous
 elastic body.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import get_default, import_file, Struct

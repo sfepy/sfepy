@@ -57,6 +57,7 @@ View the 3D results using::
 
   python postproc.py cube_medium_tetra.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1,color_kind="scalars",color_name="von_mises_stress"'
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, assert_

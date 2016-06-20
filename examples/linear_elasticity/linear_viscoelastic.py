@@ -71,6 +71,7 @@ Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
 51. There is a visible notch on viscous stress curves in the 'th' mode, as the
 fading memory kernel is cut off before it goes close enough to zero.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output

@@ -32,6 +32,7 @@ Additional steps for sfepy.org deployment:
 - copy doc/_build/html/ to <sfepy.org>/doc-devel/
 - copy gallery/gallery.html and gallery/images/ to <sfepy.org>/
 """
+from __future__ import absolute_import
 import sys
 sys.path.append( '.' )
 import os

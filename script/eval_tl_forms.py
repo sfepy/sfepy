@@ -3,6 +3,7 @@ Operators present in the FE discretization of hyperelastic terms in the total
 Lagrangian formulation.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import sympy as s
 
 def main():

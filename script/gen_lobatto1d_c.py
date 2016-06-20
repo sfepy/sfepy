@@ -3,6 +3,7 @@
 Generate lobatto1d.c and lobatto1h.c files.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 import os

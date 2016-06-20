@@ -25,6 +25,7 @@ the following:
 In order to define the load :math:`b(x)` directly, the term ``dw_volume_dot``
 should be replaced by ``dw_volume_integrate``.
 """
+from __future__ import absolute_import
 import numpy as nm
 from sfepy import data_dir
 

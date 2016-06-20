@@ -32,6 +32,7 @@ reference element coordinates might converge to a spurious solution outside
 of the element. To obtain some values even in this case, try increasing the
 --close-limit option value.
 """
+from __future__ import absolute_import
 import os
 from optparse import OptionParser
 

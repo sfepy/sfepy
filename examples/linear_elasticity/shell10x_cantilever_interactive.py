@@ -49,6 +49,7 @@ Apply the twisting transformation to the beam domain coordinates, change number 
 
   python examples/linear_elasticity/shell10x_cantilever_interactive.py output -t twist -n 2,51,3 -s
 """
+from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys

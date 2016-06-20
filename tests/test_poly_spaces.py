@@ -15,6 +15,7 @@ All connectivity permutations of the two elements are tested.
 WARNING: Lagrange basis on 3_8 elements fails the test for order >= 3 for many
 connectivity permutations!
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.testing import TestCommon

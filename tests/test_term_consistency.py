@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'

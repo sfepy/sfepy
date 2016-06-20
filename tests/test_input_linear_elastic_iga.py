@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 input_name = '../examples/linear_elasticity/linear_elastic_iga.py'
 output_name = 'test_linear_elastic_iga.vtk'
 

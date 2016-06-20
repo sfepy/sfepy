@@ -34,6 +34,7 @@ Find :math:`\ul{u}`, :math:`p` such that:
     \;, \quad \forall q \;.
     \end{array}
 """
+from __future__ import absolute_import
 from sfepy.solvers.oseen import StabilizationFunction
 from sfepy import data_dir
 

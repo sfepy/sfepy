@@ -24,12 +24,13 @@ View the results using::
 
   python postproc.py shell10x.vtk -d 'u_disp,plot_displacements,rel_scaling=1.0' --opacity='wireframe=0.5' -b --wireframe
 """
+from __future__ import absolute_import
 from sfepy.base.base import output
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.discrete import Integral
 import sfepy.mechanics.shell10x as sh
 
-import shell10x_cantilever_interactive as sci
+from . import shell10x_cantilever_interactive as sci
 
 # Beam dimensions.
 dims = [0.2, 0.01, 0.001]

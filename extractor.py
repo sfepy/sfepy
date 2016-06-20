@@ -9,6 +9,7 @@ $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
 $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 from optparse import OptionParser
 

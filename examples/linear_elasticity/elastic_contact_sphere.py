@@ -22,6 +22,7 @@ Even though the material is linear elastic and small deformations are used, the
 problem is highly nonlinear due to contacts with the sphere. See also
 elastic_contact_planes.py example.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 

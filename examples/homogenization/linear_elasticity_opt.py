@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson

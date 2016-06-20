@@ -25,6 +25,7 @@ Find :math:`\ul{u}`, :math:`p` such that:
 #! (this boundary condition is named PerturbedSurface).
 #! The output is the displacement for each node, saved by default to
 #! simple_out.vtk. The material is linear elastic.
+from __future__ import absolute_import
 from sfepy import data_dir
 
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson_mixed, bulk_from_youngpoisson

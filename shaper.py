@@ -2,6 +2,7 @@
 # 06.04.2005, c
 # 16.06.2005
 from __future__ import print_function
+from __future__ import absolute_import
 from optparse import OptionParser
 
 import numpy as nm

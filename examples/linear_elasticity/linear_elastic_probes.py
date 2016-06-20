@@ -15,7 +15,8 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from linear_elastic import *
+from __future__ import absolute_import
+from .linear_elastic import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os

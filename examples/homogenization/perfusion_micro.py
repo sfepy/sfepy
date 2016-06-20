@@ -7,6 +7,7 @@ see paper [1].
 [1] http://seth.asc.tuwien.ac.at/proc12/full_paper/Contribution183.pdf
 """
 
+from __future__ import absolute_import
 from sfepy.discrete.fem.periodic import match_x_plane, match_y_plane
 import sfepy.homogenization.coefs_base as cb
 import numpy as nm

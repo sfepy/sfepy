@@ -3,6 +3,7 @@
 Convert mixedCase identifiers to under_scores.
 """
 from __future__ import print_function
+from __future__ import absolute_import
 import sys, re, os
 
 ##
