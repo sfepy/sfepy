@@ -35,7 +35,8 @@ where
     \;.
 """
 from __future__ import absolute_import
-from .biot_npbc import cinc_simple, define_regions, get_pars
+from examples.multi_physics.biot_npbc import (cinc_simple, define_regions,
+                                              get_pars)
 
 def define():
     from sfepy import data_dir

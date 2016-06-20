@@ -18,7 +18,7 @@ where
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from .its2D_1 import *
+from examples.linear_elasticity.its2D_1 import *
 
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.geometry_element import geometry_data

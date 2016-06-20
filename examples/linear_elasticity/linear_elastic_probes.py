@@ -16,7 +16,7 @@ where
     \;.
 """
 from __future__ import absolute_import
-from .linear_elastic import *
+from examples.linear_elasticity.linear_elastic import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os

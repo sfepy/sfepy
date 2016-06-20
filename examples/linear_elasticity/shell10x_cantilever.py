@@ -30,7 +30,7 @@ from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.discrete import Integral
 import sfepy.mechanics.shell10x as sh
 
-from . import shell10x_cantilever_interactive as sci
+import examples.linear_elasticity.shell10x_cantilever_interactive as sci
 
 # Beam dimensions.
 dims = [0.2, 0.01, 0.001]

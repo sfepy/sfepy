@@ -11,7 +11,8 @@ from sfepy.base.base import Struct
 from sfepy.base.ioutils import InDir
 from sfepy.homogenization.coefficients import Coefficients
 
-from .band_gaps_conf import BandGapsConf, get_pars, clip_sqrt, normalize
+from examples.phononic.band_gaps_conf import (BandGapsConf, get_pars,
+                                              clip_sqrt, normalize)
 
 clip_sqrt, normalize # Make pyflakes happy...
 

@@ -21,7 +21,7 @@ from __future__ import absolute_import
 from copy import deepcopy
 
 import numpy as nm
-from .linear_elastic import \
+from examples.linear_elasticity.linear_elastic import \
      filename_mesh, materials, regions, fields, ebcs, \
      integrals, solvers
 
