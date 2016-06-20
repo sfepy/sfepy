@@ -148,9 +148,10 @@ class Test(TestCommon):
                                           force=True)
                 state = self.problem.solve()
                 failed = status.condition != 0
-            except Exception as exc:
+            except Exception as aux:
                 failed = True
                 status = None
+                exc = aux
 
             ok = ok and ((not failed) or (solver_conf.kind in self.can_fail))
 
