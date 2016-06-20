@@ -121,7 +121,7 @@ class Test(TestCommon):
         for key, val in six.iteritems(confs):
             if val.kind.find('ls.') == 0:
                 d.append(val)
-        d.sort(cmp = lambda a, b: cmp(a.name, b.name))
+        d.sort(key=lambda a: a.name)
 
         return d
 
@@ -170,7 +170,7 @@ class Test(TestCommon):
                 self.report(exc)
                 tt.append([name, 1e10, 1e10])
 
-        tt.sort(cmp = lambda a, b: cmp(a[1], b[1]))
+        tt.sort(key=lambda a: a[1])
         self.report('solution times (rezidual norms):')
         for row in tt:
             self.report('%.2f [s]' % row[1], '(%.3e)' % row[2], ':', row[0])
