@@ -6,7 +6,6 @@ import numpy as nm
 
 from sfepy.base.base import as_float_or_complex, Container, Struct
 from sfepy.linalg import norm_l2_along_axis
-import six
 
 class CompoundPotential(Container):
     """
@@ -34,7 +33,7 @@ class CompoundPotential(Container):
 
     def __mul__(self, other):
         out = CompoundPotential()
-        for name, pot in six.iteritems(self):
+        for name, pot in self.iteritems():
             out.append(pot * other)
 
         return out

@@ -238,7 +238,7 @@ class Terms(Container):
 
     def __mul__(self, other):
         out = Terms()
-        for name, term in six.iteritems(self):
+        for name, term in self.iteritems():
             out.append(term * other)
 
         return out
@@ -880,7 +880,7 @@ class Term(Struct):
                     var = self.get_args(arg_types=[arg_type])[0]
                     self.geometry_types[var.name] = gtype
 
-        gtypes = list(set(six.itervalues(self.geometry_types)))
+        gtypes = list(set(self.geometry_types.values()))
 
         if 'surface_extra' in gtypes:
             self.dof_conn_type = 'volume'
