@@ -30,7 +30,7 @@ class HyperElasticULBase(HyperElasticBase):
         vec = self.get_vector(state)
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
+        sym = (dim + 1) * dim // 2
 
         shapes = {
             'mtx_f' : (n_el, n_qp, dim, dim),
@@ -218,7 +218,7 @@ class BulkPressureULTerm(HyperElasticULBase):
     def get_eval_shape(self, virtual, state, state_p,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
+        sym = (dim + 1) * dim // 2
 
         return (n_el, 1, sym, 1), state.dtype
 

@@ -241,7 +241,7 @@ ijkl & value \\
     # c: 09.07.2008, r: 09.07.2008
     def _typeset( self, val, dim, style = 'table', format = '%f',
                   step = None ):
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         mode = None
         if val.ndim == 0:

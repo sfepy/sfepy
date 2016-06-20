@@ -21,7 +21,7 @@ def get_pars(dim, lam, mu):
         try:
             c = tr.tensor_plane_stress(c3=c)
         except:
-            sym = (dim + 1) * dim / 2
+            sym = (dim + 1) * dim // 2
             c = nm.zeros((sym, sym), dtype=nm.float64)
 
     return c

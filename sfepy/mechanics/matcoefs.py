@@ -53,7 +53,7 @@ def stiffness_from_lame(dim, lam, mu):
         \lambda & \lambda & \lambda + 2\mu & 0 & 0 & 0 \\ 0 & 0 & 0 & \mu & 0 &
         0 \\ 0 & 0 & 0 & 0 & \mu & 0 \\ 0 & 0 & 0 & 0 & 0 & \mu\\ \end{bmatrix}
     """
-    sym = (dim + 1) * dim / 2
+    sym = (dim + 1) * dim // 2
     o = nm.array([1.] * dim + [0.] * (sym - dim), dtype=nm.float64)
     oot = nm.outer(o, o)[None, ...]
     do1 = nm.diag(o + 1.0)[None, ...]

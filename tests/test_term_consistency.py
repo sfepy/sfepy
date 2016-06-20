@@ -43,7 +43,7 @@ equations = {
 def get_pars(ts, coor, mode=None, term=None, **kwargs):
     if mode == 'qp':
         n_nod, dim = coor.shape
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         if 'biot' in term.name:
             val = nm.zeros((sym, 1), dtype=nm.float64)

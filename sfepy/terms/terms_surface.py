@@ -46,7 +46,7 @@ class LinearTractionTerm(Term):
     def d_fun(out, traction, val, sg):
         tdim = traction.shape[2]
         dim = val.shape[2]
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         if tdim == 0:
             aux = dot_sequences(val, sg.normal, 'ATB')

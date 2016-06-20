@@ -690,7 +690,7 @@ class VTKMeshIO(MeshIO):
         fd.write(vtk_header % (step, time, nt, op.basename(sys.argv[0])))
 
         n_nod, dim = coors.shape
-        sym = dim * (dim + 1) / 2
+        sym = (dim + 1) * dim // 2
 
         fd.write('\nPOINTS %d float\n' % n_nod)
 

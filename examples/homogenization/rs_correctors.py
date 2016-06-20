@@ -44,7 +44,7 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
     """
     if mode == 'qp':
         dim = coor.shape[1]
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         out = {}
 

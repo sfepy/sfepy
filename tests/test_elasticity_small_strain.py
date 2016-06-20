@@ -23,7 +23,7 @@ field_1 = {
 
 def get_pars( dim, full = False ):
     import numpy as nm
-    sym = (dim + 1) * dim / 2
+    sym = (dim + 1) * dim // 2
     lam = 1e1
     mu = 1e0
     o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )

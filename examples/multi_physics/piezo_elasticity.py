@@ -110,7 +110,7 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
     matrices."""
     if mode == 'qp':
         n_nod, dim = coor.shape
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         dielectric = nm.eye(dim, dtype=nm.float64)
         # !!!

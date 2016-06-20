@@ -316,7 +316,7 @@ class GenericFileSource(FileSource):
     def add_data_to_dataset(self, dataset, data):
         """Add point and cell data to the dataset."""
         dim = self.dim
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         dm = DatasetManager(dataset=dataset)
         for key, val in six.iteritems(data):
