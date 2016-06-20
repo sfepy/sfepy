@@ -9,6 +9,7 @@ from optparse import OptionParser
 import pyparsing as pp
 
 import numpy as nm
+import six
 
 sys.path.append('.')
 import sfepy.discrete.fem # Hack: fix circular dependency, as terms.pyx imports
@@ -172,7 +173,7 @@ def typeset_term_tables(fd, table):
         ('_of_', 2)]
 
     new_tabs = [[],[],[]]
-    for term_name in table.iterkeys():
+    for term_name in six.iterkeys(table):
         for term_tag, tab_id in scattab:
             if term_tag in term_name:
                 new_tabs[tab_id].append(term_name)

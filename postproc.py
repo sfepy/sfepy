@@ -53,6 +53,7 @@ from sfepy.base.base import assert_, get_default, output, nm
 from sfepy.postprocess.viewer import (Viewer, get_data_ranges,
                                       create_file_source)
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
+import six
 
 usage = '%prog [options] filename\n' + __doc__.rstrip()
 
@@ -472,7 +473,7 @@ def main():
                 file_source.get_step_time(step=step)
                 source = file_source.create_source()
                 ranges = get_data_ranges(source, return_only=True)
-                for key, val in ranges.iteritems():
+                for key, val in six.iteritems(ranges):
                     all_ranges.setdefault(key, []).append(val[3:])
 
         if (len(filenames) > 1) or (len(steps) > 1):
@@ -481,7 +482,7 @@ def main():
         else:
             output('ranges:')
 
-        for key, ranges in all_ranges.iteritems():
+        for key, ranges in six.iteritems(all_ranges):
             aux = nm.array(ranges)
             mins = aux[:, [0, 2]].min(axis=0)
             maxs = aux[:, [1, 3]].max(axis=0)

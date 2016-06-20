@@ -7,6 +7,7 @@ Requires Matplotlib.
 from __future__ import absolute_import
 from optparse import OptionParser
 import sys
+import six
 sys.path.append('.')
 
 import numpy as nm
@@ -138,7 +139,7 @@ def store_top_u(displacements):
 
 def solve_branch(problem, branch_function):
     displacements = {}
-    for key, eq in problem.conf.equations.iteritems():
+    for key, eq in six.iteritems(problem.conf.equations):
         problem.set_equations({key : eq})
 
         load = problem.get_materials()['load']
@@ -205,7 +206,7 @@ def main():
         output(load)
     else:
         legend = []
-        for key, val in displacements.iteritems():
+        for key, val in six.iteritems(displacements):
             plt.plot(load, val)
             legend.append(key)
 

@@ -34,6 +34,7 @@ Additional steps for sfepy.org deployment:
 """
 from __future__ import absolute_import
 import sys
+import six
 sys.path.append( '.' )
 import os
 import tempfile
@@ -345,7 +346,7 @@ def generate_images(images_dir, examples_dir):
 
             filename = problem.get_output_name(suffix=suffix)
 
-            for suffix, kwargs in views.iteritems():
+            for suffix, kwargs in six.iteritems(views):
                 fig_filename = _get_fig_filename(ebase, images_dir, suffix)
 
                 fname = edit_filename(filename, suffix=suffix)
@@ -440,7 +441,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
         dir_map.setdefault(base_dir, []).append((ex_filename, rst_filename))
 
-    for dirname, filenames in dir_map.iteritems():
+    for dirname, filenames in six.iteritems(dir_map):
         filenames = sorted(filenames, key=lambda a: a[1])
         dir_map[dirname ] = filenames
 

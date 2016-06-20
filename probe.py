@@ -45,6 +45,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.discrete import Problem
 from sfepy.discrete.fem import MeshIO
 from sfepy.discrete.probes import write_results, read_results
+import six
 
 usage = """%prog [generation options] <input file> <results file>
 %prog [postprocessing options] <probe file> <figure file>
@@ -95,14 +96,14 @@ def generate_probes(filename_input, filename_results, options,
     io = MeshIO.any_from_filename(filename_results)
     step = options.step if options.step >= 0 else io.read_last_step()
     all_data = io.read_data(step)
-    output('loaded:', all_data.keys())
+    output('loaded:', list(all_data.keys()))
     output('from step:', step)
 
     if options.only_names is None:
         data = all_data
     else:
         data = {}
-        for key, val in all_data.iteritems():
+        for key, val in six.iteritems(all_data):
             if key in options.only_names:
                 data[key] = val
 
@@ -133,7 +134,7 @@ def generate_probes(filename_input, filename_results, options,
 
         probe.set_options(close_limit=options.close_limit)
 
-        for key, probe_hook in probe_hooks.iteritems():
+        for key, probe_hook in six.iteritems(probe_hooks):
 
             out = probe_hook(data, probe, labels[ip], problem)
             if out is None: continue
@@ -150,7 +151,7 @@ def generate_probes(filename_input, filename_results, options,
 
             if fig is not None:
                 if isinstance(fig, dict):
-                    for fig_name, fig_fig in fig.iteritems():
+                    for fig_name, fig_fig in six.iteritems(fig):
                         fig_filename = edit_filename(filename,
                                                      suffix='_' + fig_name)
                         fig_fig.savefig(fig_filename)
@@ -196,7 +197,7 @@ def postprocess(filename_input, filename_results, options):
     output(header)
 
     fig = plt.figure()
-    for name, result in results.iteritems():
+    for name, result in six.iteritems(results):
         pars, vals = result[:, 0], result[:, 1]
 
         ii = nm.where(nm.isfinite(vals))[0]

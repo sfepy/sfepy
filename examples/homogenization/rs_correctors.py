@@ -6,6 +6,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from optparse import OptionParser
 import sys
+import six
 sys.path.append('.')
 
 import numpy as nm
@@ -54,7 +55,7 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
         oot = nm.outer(o, o)
         out['D'] = lam * oot + mu * nm.diag(o + 1.0)
 
-        for key, val in out.iteritems():
+        for key, val in six.iteritems(out):
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
 
         channels_cells = term.region.domain.regions['Yc'].cells
@@ -220,7 +221,7 @@ Press 'q' to quit the example, press any other key to continue...""")
     required.remove('equations')
     # Use this file as the input file.
     conf = ProblemConf.from_file(__file__, required, other)
-    print(conf.to_dict().keys())
+    print(list(conf.to_dict().keys()))
     spause(r""">>>
 ...the read input as a dict (keys only for brevity).
 ['q'/other key to quit/continue...]""")

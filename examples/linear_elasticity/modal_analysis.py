@@ -42,6 +42,7 @@ Examples
 """
 from __future__ import absolute_import
 import sys
+import six
 sys.path.append('.')
 from optparse import OptionParser
 
@@ -147,7 +148,7 @@ def main():
     output('requested %d eigenvalues' % options.n_eigs)
     output('using eigenvalue problem solver:', eig_conf.kind)
     output.level += 1
-    for key, val in kwargs.iteritems():
+    for key, val in six.iteritems(kwargs):
         output('%s: %r' % (key, val))
     output.level -= 1
 

@@ -15,6 +15,7 @@ import sfepy.base.ioutils as io
 import sfepy.optimize.shape_optim as so
 from sfepy.discrete.problem import Problem
 from sfepy.solvers import Solver
+import six
 
 def solve_stokes(dpb, equations_stokes, nls_conf):
     dpb.set_equations(equations_stokes)
@@ -50,7 +51,7 @@ def solve_navier_stokes(conf, options):
 
         # Plug in mass term.
         mequations = {}
-        for key, eq in equations.iteritems():
+        for key, eq in six.iteritems(equations):
             if 'dw_div_grad' in eq:
                 eq = '+'.join( (ts_conf.mass_term, eq) ).replace( '++', '+')
             mequations[key] = eq
@@ -149,7 +150,7 @@ def solve_direct( conf, options ):
         fd = pt.openFile( options.dump_filename, mode = 'w',
                           title = "Dump file" )
         out = state_dp.create_output_dict()
-        for key, val in out.iteritems():
+        for key, val in six.iteritems(out):
             fd.createArray( fd.root, key, nar.asarray( val.data ),
                             '%s data' % val.mode )
         fd.close()

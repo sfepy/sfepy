@@ -191,7 +191,7 @@ def main():
     pd = create_scalar_var_data('p', phic, gc, p)
     qd = create_scalar_var_data('q', phic, gc, q)
     rd = create_scalar_var_data('r', phic, gc, r)
-    print(ud.keys())
+    print(list(ud.keys()))
 
     assert bool(bd['op'].T * g == bd['opt'].T * gt)
     assert bool(bd['opt'].T * g == bd['op'].T * gt)
