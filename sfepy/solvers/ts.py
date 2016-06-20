@@ -161,6 +161,9 @@ class VariableTimeStepper(TimeStepper):
         self.n_digit, self.format, self.suffix = get_print_info(n_step)
 
     def set_step(self, step=0, nt=0.0):
+        if step is None:
+            step = 0
+
         if step > 0:
             raise ValueError('cannot set step > 0 in VariableTimeStepper!')
 
