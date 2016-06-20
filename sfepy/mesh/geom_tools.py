@@ -451,6 +451,8 @@ class point(geomobject):
         return point(self.geom,-1,[a-b for a,b in zip(self.p,p.p)])
     def __div__(self,num):
         return point(self.geom,-1,[a/num for a in self.p])
+    def __truediv__(self,num):
+        return self.__div__(num)
     def __mul__(self,num):
         return point(self.geom,-1,[a*num for a in self.p])
     def __rmul__(self,num):
