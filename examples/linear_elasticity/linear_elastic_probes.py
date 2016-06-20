@@ -1,4 +1,4 @@
-"""
+r"""
 This example shows how to use the post_process_hook to probe the output data.
 
 Find :math:`\ul{u}` such that:
