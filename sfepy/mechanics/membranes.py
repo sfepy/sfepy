@@ -63,7 +63,7 @@ def transform_asm_vectors(out, mtx_t):
         The transposed transformation matrix :math:`T`, see
         :func:`create_transformation_matrix`.
     """
-    n_ep = out.shape[2] / mtx_t.shape[2]
+    n_ep = out.shape[2] // mtx_t.shape[2]
     for iep in range(n_ep):
         ir = slice(iep, None, n_ep)
         fn = out[:, 0, ir, 0]
@@ -82,7 +82,7 @@ def transform_asm_matrices(out, mtx_t):
         The transposed transformation matrix :math:`T`, see
         :func:`create_transformation_matrix`.
     """
-    n_ep = out.shape[-1] / mtx_t.shape[-1]
+    n_ep = out.shape[-1] // mtx_t.shape[-1]
     for iepr in range(n_ep):
         ir = slice(iepr, None, n_ep)
         for iepc in range(n_ep):
@@ -282,7 +282,7 @@ def get_invariants(mtx_c, c33):
     Get the first and second invariants of the right Cauchy-Green
     deformation tensor describing deformation of an incompressible
     membrane.
-    
+
     Parameters
     ----------
     mtx_c ; array
