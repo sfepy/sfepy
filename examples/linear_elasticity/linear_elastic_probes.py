@@ -24,6 +24,7 @@ import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.postprocess.probes_vtk import Probe
+from six.moves import range
 
 # Define options.
 options = {

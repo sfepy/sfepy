@@ -31,6 +31,7 @@ from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO, MeshIO
 from sfepy.homogenization.utils import define_box_regions
+from six.moves import range
 
 base_mesh = data_dir + '/meshes/elements/2_4_2.mesh'
 

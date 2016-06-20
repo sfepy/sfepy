@@ -5,6 +5,7 @@ Operators present in the FE discretization of (adjoint) Navier-Stokes terms.
 from __future__ import print_function
 from __future__ import absolute_import
 import sympy as s
+from six.moves import range
 
 def create_scalar(name, n_ep):
     vec = s.zeros(n_ep, 1)

@@ -5,6 +5,7 @@ a given output directory.
 """
 from __future__ import absolute_import
 import sys
+from six.moves import range
 sys.path.append('.')
 import os
 from optparse import OptionParser
@@ -50,7 +51,7 @@ help = {
 
 def get_dofs(dofs, n_total):
     if dofs is None:
-        dofs = range(n_total)
+        dofs = list(range(n_total))
 
     else:
         dofs = [int(ii) for ii in dofs.split(',')]

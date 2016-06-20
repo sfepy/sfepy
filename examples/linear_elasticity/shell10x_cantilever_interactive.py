@@ -53,6 +53,7 @@ from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys
+from six.moves import range
 sys.path.append('.')
 
 import numpy as nm
@@ -299,7 +300,7 @@ def main():
     label = ', '.join(labels)
 
     log = []
-    for nx in xrange(*nxs):
+    for nx in range(*nxs):
         shape = (nx, 2)
 
         pb, state, u, gamma2 = solve_problem(shape, dims, young, poisson, force,

@@ -13,6 +13,7 @@ import sfepy.homogenization.coefs_base as cb
 import numpy as nm
 from sfepy import data_dir
 import six
+from six.moves import range
 
 def get_mats(pk, ph, pe, dim):
 

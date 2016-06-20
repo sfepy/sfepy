@@ -19,6 +19,7 @@ information::
 """
 from __future__ import absolute_import
 import sys
+from six.moves import range
 sys.path.append('.')
 from optparse import OptionParser
 
@@ -146,7 +147,7 @@ def main():
     domain = FEDomain('domain', mesh)
 
     if options.refine > 0:
-        for ii in xrange(options.refine):
+        for ii in range(options.refine):
             output('refine %d...' % ii)
             domain = domain.refine()
             output('... %d nodes %d elements'

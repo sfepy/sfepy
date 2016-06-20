@@ -23,6 +23,7 @@ from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.postprocess.probes_vtk import Probe
 
 import os
+from six.moves import range
 
 def stress_strain(out, pb, state, extend=False):
     """
@@ -49,7 +50,7 @@ def stress_strain(out, pb, state, extend=False):
 
     labels = ['%s -> %s' % (p0, p1) for p0, p1 in zip(ps0, ps1)]
     probes = []
-    for ip in xrange(len(ps0)):
+    for ip in range(len(ps0)):
         p0, p1 = ps0[ip], ps1[ip]
         probes.append('line%d' % ip)
         probe.add_line_probe('line%d' % ip, p0, p1, n_point)

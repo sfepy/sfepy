@@ -16,6 +16,7 @@ import sfepy.optimize.shape_optim as so
 from sfepy.discrete.problem import Problem
 from sfepy.solvers import Solver
 import six
+from six.moves import range
 
 def solve_stokes(dpb, equations_stokes, nls_conf):
     dpb.set_equations(equations_stokes)
@@ -77,7 +78,7 @@ def solve_navier_stokes(conf, options):
         n_step = ts_conf.n_step
         step = 0
         while 1:
-            for ii in xrange( n_step ):
+            for ii in range( n_step ):
                 output( step )
 
                 vec_u = state_dp0('w')
