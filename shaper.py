@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # 06.04.2005, c
 # 16.06.2005
+from __future__ import print_function
 from optparse import OptionParser
 
 import numpy as nm
@@ -207,12 +208,12 @@ def solve_adjoint(conf, options, dpb, state_dp, data):
     ##
     # Compute objective function.
     val = shape_opt.obj_fun(state_dp)
-    print 'actual obj_fun:', val
+    print('actual obj_fun:', val)
 
     ##
     # Compute shape sensitivity.
     vec_sa = shape_opt.sensitivity(var_data, state_ap)
-    print 'actual sensitivity:', vec_sa
+    print('actual sensitivity:', vec_sa)
 
 ##
 # c: 22.11.2006, r: 15.04.2008
@@ -270,14 +271,14 @@ def solve_optimize( conf, options ):
     ##
     # Optimize.
     des = optimizer( design0 )
-    print opt_status
+    print(opt_status)
 
     ##
     # Save final state (for "optimal" design).
     dpb.domain.mesh.write( trunk + '_opt.mesh', io = 'auto' )
     dpb.save_state(trunk + '_direct_current.vtk', shape_opt.cache.state)
 
-    print des
+    print(des)
 
 usage = """%prog [options] filename_in"""
 

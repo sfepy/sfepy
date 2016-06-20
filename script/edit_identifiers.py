@@ -2,6 +2,7 @@
 """
 Convert mixedCase identifiers to under_scores.
 """
+from __future__ import print_function
 import sys, re, os
 
 ##
@@ -56,7 +57,7 @@ def main():
     write = True
 
     for name in sys.argv[1:]:
-        print name
+        print(name)
 
         rfd = open(name, 'r')
         path = os.path.dirname(name)
@@ -74,7 +75,7 @@ def main():
 
         rfd.close()
 
-        print '%d edit candidates' % n_edit
+        print('%d edit candidates' % n_edit)
 
         if write:
             wfd.close()

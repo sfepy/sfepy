@@ -16,6 +16,7 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
+from __future__ import print_function
 from its2D_1 import *
 
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
@@ -49,17 +50,17 @@ def nodal_stress(out, pb, state, extend=False, integrals=None):
                          primary_var_name='(set-to-None)')
     svar.set_data_from_qp(stress, integrals['ivn'])
 
-    print '\n=================================================================='
-    print 'Given load = %.2f N' % -P
-    print '\nAnalytical solution'
-    print '==================='
-    print 'Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.))
-    print 'Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.))
-    print '\nFEM solution'
-    print '============'
-    print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
-    print 'Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1])
-    print '=================================================================='
+    print('\n==================================================================')
+    print('Given load = %.2f N' % -P)
+    print('\nAnalytical solution')
+    print('===================')
+    print('Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.)))
+    print('Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.)))
+    print('\nFEM solution')
+    print('============')
+    print('Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0]))
+    print('Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1]))
+    print('==================================================================')
     return out
 
 asphalt = materials['Asphalt'][0]

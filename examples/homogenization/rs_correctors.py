@@ -2,6 +2,7 @@
 """
 Compute homogenized elastic coefficients for a given microstructure.
 """
+from __future__ import print_function
 from optparse import OptionParser
 import sys
 sys.path.append('.')
@@ -218,7 +219,7 @@ Press 'q' to quit the example, press any other key to continue...""")
     required.remove('equations')
     # Use this file as the input file.
     conf = ProblemConf.from_file(__file__, required, other)
-    print conf.to_dict().keys()
+    print(conf.to_dict().keys())
     spause(r""">>>
 ...the read input as a dict (keys only for brevity).
 ['q'/other key to quit/continue...]""")
@@ -230,7 +231,7 @@ Now the input will be used to create a Problem instance.
     # The homogenization mini-apps need the output_dir.
     output_dir = ''
     problem.output_dir = output_dir
-    print problem
+    print(problem)
     spause(r""">>>
 ...the Problem instance.
 ['q'/other key to quit/continue...]""")
@@ -243,7 +244,7 @@ coordinates of the mesh nodes.
     req = conf.requirements['pis']
     mini_app = cb.ShapeDimDim('pis', problem, req)
     pis = mini_app()
-    print pis
+    print(pis)
     spause(r""">>>
 ...the $\Pi$ operators.
 ['q'/other key to quit/continue...]""")
@@ -261,7 +262,7 @@ computed now.
     mini_app.setup_output(save_format='vtk',
                           file_per_var=False)
     corrs_rs = mini_app(data={'pis': pis})
-    print corrs_rs
+    print(corrs_rs)
     spause(r""">>>
 ...the $\bar{\omega}^{rs}$ correctors.
 The results are saved in: %s.%s
@@ -276,7 +277,7 @@ Try to display them with:
 Then the volume of the domain is needed.
 ['q'/other key to quit/continue...]""")
     volume = problem.evaluate('d_volume.i3.Y(uc)')
-    print volume
+    print(volume)
 
     spause(r""">>>
 ...the volume.
@@ -288,10 +289,10 @@ Finally, $E_{ijkl}$ can be computed.
     mini_app = cb.CoefSymSym('homogenized elastic tensor',
                              problem, conf.coefs['E'])
     c_e = mini_app(volume, data={'pis': pis, 'corrs_rs' : corrs_rs})
-    print r""">>>
+    print(r""">>>
 The homogenized elastic coefficient $E_{ijkl}$, symmetric storage
-with rows, columns in 11, 22, 12 ordering:"""
-    print c_e
+with rows, columns in 11, 22, 12 ordering:""")
+    print(c_e)
 
 if __name__ == '__main__':
     main()

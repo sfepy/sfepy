@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from optparse import OptionParser
 import numpy as nm
 
@@ -83,7 +84,7 @@ def main():
     pb.time_update(ebcs=Conditions([fix_u, shift_u]))
 
     vec = pb.solve()
-    print nls_status
+    print(nls_status)
 
     pb.save_state('linear_elasticity.vtk', vec)
 

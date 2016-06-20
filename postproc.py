@@ -42,6 +42,7 @@ Examples
     $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk \
                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
 """
+from __future__ import print_function
 from optparse import OptionParser, OptionGroup
 import os
 import glob
@@ -159,13 +160,13 @@ def parse_view(option, opt, value, parser):
 
 def parse_resolution(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         setattr(parser.values, option.dest,
                 tuple([int(r) for r in value.split('x')]))
 
 def parse_ranges(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         ranges = {}
         for rng in value.split(':'):
             aux = rng.split(',')
@@ -191,13 +192,13 @@ def parse_opacity(option, opt, value, parser):
 
 def parse_group_names(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         group_names = [tuple(group.split(',')) for group in value.split(':')]
         setattr(parser.values, option.dest, group_names)
 
 def parse_subdomains(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         aux = value.split(',')
 
         try:
@@ -219,7 +220,7 @@ def parse_subdomains(option, opt, value, parser):
 
 def parse_domain_specific(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         out = {}
         confs = value.split(':')
         for conf in confs:

@@ -8,6 +8,7 @@ Examples
 
 $ ./script/gen_mesh_prev.py meshes/2d/
 """
+from __future__ import print_function
 from optparse import OptionParser
 import sys
 sys.path.append('.')
@@ -129,7 +130,7 @@ def main():
         else:
             fname_in = ii
 
-        print('writing %s...' % fname_out)
+        print(('writing %s...' % fname_out))
         gen_shot(fname_in, fname_out)
 
 if __name__ == "__main__":

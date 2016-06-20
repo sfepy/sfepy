@@ -2,6 +2,7 @@
 """
 Generate lobatto1d.c and lobatto1h.c files.
 """
+from __future__ import print_function
 import sys
 sys.path.append('.')
 import os
@@ -130,9 +131,9 @@ def plot_polys(fig, polys, var_name='x'):
     vx = nm.linspace(-1, 1, 100)
 
     for ii, poly in enumerate(polys):
-        print ii
-        print poly
-        print poly.as_poly(x).all_coeffs()
+        print(ii)
+        print(poly)
+        print(poly.as_poly(x).all_coeffs())
 
         vy = [float(poly.subs(x, xx)) for xx in vx]
         plt.plot(vx, vy)

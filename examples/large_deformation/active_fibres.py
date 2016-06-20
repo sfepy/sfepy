@@ -53,6 +53,7 @@ omitted):
     opt}}{s})^2\right\}} \mbox{ , } \epsilon = \ull{E} : \ull{\omega}
     \;.
 """
+from __future__ import print_function
 import numpy as nm
 
 from sfepy import data_dir
@@ -122,7 +123,7 @@ def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0, **kwargs):
     fdir.shape = (3, 1)
     fdir /= nm.linalg.norm(fdir)
 
-    print act
+    print(act)
 
     shape = (coors.shape[0], 1, 1)
     out = {

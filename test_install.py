@@ -9,6 +9,7 @@ words to the expected ones.
 
 The output of failed commands is saved to 'test_install.log' file.
 """
+from __future__ import print_function
 import time
 from optparse import OptionParser
 import shlex
@@ -23,7 +24,7 @@ def check_output(cmd):
     out : tuple
         The (stdout, stderr) output tuple.
     """
-    print cmd
+    print(cmd)
     args = shlex.split(cmd)
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -40,12 +41,12 @@ def report(out, name, line, item, value, eps=None, return_item=False):
         status = out.split('\n')[line].split()
 
     except IndexError:
-        print '  not enough output from command!'
+        print('  not enough output from command!')
         ok = False
 
     else:
         try:
-            print '  comparing:', status[item], value
+            print('  comparing:', status[item], value)
 
             if eps is None:
                 ok = (status[item] == value)
@@ -61,10 +62,10 @@ def report(out, name, line, item, value, eps=None, return_item=False):
             ok = False
 
     if ok:
-        print '  %s:' % name, ok
+        print('  %s:' % name, ok)
 
     else:
-        print '! %s:' % name, ok
+        print('! %s:' % name, ok)
 
         fd = open('test_install.log', 'a')
         fd.write('*' * 55)
@@ -84,16 +85,16 @@ def report2(out, name, items, return_item=False):
     """
     ok = True
     for s in items:
-        print '  checking:', s
+        print('  checking:', s)
         if s not in out:
             ok = False
             break
 
     if ok:
-        print '  %s:' % name, ok
+        print('  %s:' % name, ok)
 
     else:
-        print '! %s:' % name, ok
+        print('! %s:' % name, ok)
 
         fd = open('test_install.log', 'a')
         fd.write('*' * 55)
