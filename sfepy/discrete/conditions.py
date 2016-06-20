@@ -132,7 +132,7 @@ class Conditions(Container):
         """
         Sort boundary conditions by their key.
         """
-        self._objs.sort(cmp=lambda i1, i2: cmp(i1.key, i2.key))
+        self._objs.sort(key=lambda a: a.key)
         self.update()
 
     def zero_dofs(self):

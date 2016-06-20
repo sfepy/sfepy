@@ -441,7 +441,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
         dir_map.setdefault(base_dir, []).append((ex_filename, rst_filename))
 
     for dirname, filenames in dir_map.iteritems():
-        filenames = sorted(filenames, cmp=lambda a, b: cmp(a[1], b[1]))
+        filenames = sorted(filenames, key=lambda a: a[1])
         dir_map[dirname ] = filenames
 
     # Main index.
