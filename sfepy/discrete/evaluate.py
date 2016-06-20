@@ -348,7 +348,7 @@ def eval_in_els_and_qp(expression, iels, coors,
         field.clear_qp_base()
 
     aux = create_evaluable(expression, fields, materials,
-                           six.itervalues(variables), Integrals([integral]),
+                           variables.itervalues(), Integrals([integral]),
                            functions=functions,
                            mode=mode, extra_args=extra_args, verbose=verbose,
                            kwargs=kwargs)
