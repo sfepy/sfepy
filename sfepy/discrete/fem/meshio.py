@@ -10,7 +10,7 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils \
-     import skip_read_line, read_token, read_array, read_list, pt
+     import skip_read_line, read_token, read_array, read_list, pt, enc, dec
 import os.path as op
 import six
 from six.moves import range
@@ -1261,7 +1261,7 @@ class HDF5MeshIO(MeshIO):
 
         mesh_group = fd.root.mesh
 
-        mesh.name = mesh_group.name.read()
+        mesh.name = dec(mesh_group.name.read())
         coors = mesh_group.coors.read()
         ngroups = mesh_group.ngroups.read()
 
@@ -1275,7 +1275,7 @@ class HDF5MeshIO(MeshIO):
             group = mesh_group._f_getChild(gr_name)
             conns.append(group.conn.read())
             mat_ids.append(group.mat_id.read())
-            descs.append(group.desc.read())
+            descs.append(dec(group.desc.read()))
 
         nodal_bcs = {}
         try:
@@ -1286,7 +1286,7 @@ class HDF5MeshIO(MeshIO):
 
         else:
             for group in node_sets_groups:
-                key = group.key.read()
+                key = dec(group.key.read())
                 nods = group.nods.read()
                 nodal_bcs[key] = nods
 
@@ -1312,7 +1312,7 @@ class HDF5MeshIO(MeshIO):
 
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
 
-            fd.createArray(mesh_group, 'name', mesh.name, 'name')
+            fd.createArray(mesh_group, 'name', enc(mesh.name), 'name')
             fd.createArray(mesh_group, 'coors', coors, 'coors')
             fd.createArray(mesh_group, 'ngroups', ngroups, 'ngroups')
             fd.createArray(mesh_group, 'n_gr', len(conns), 'n_gr')
@@ -1322,7 +1322,7 @@ class HDF5MeshIO(MeshIO):
                 fd.createArray(conn_group, 'conn', conn, 'connectivity')
                 fd.createArray(conn_group, 'mat_id', mat_ids[ig],
                                'material id')
-                fd.createArray(conn_group, 'desc', descs[ig],
+                fd.createArray(conn_group, 'desc', enc(descs[ig]),
                                'element Type')
 
             node_sets_groups = fd.createGroup(mesh_group, 'node_sets',
@@ -1331,7 +1331,7 @@ class HDF5MeshIO(MeshIO):
             for key, nods in six.iteritems(mesh.nodal_bcs):
                 group = fd.createGroup(node_sets_groups, 'group%d' % ii,
                                        'node sets group')
-                fd.createArray(group, 'key', key, 'key')
+                fd.createArray(group, 'key', enc(key), 'key')
                 fd.createArray(group, 'nods', nods, 'nods')
                 ii += 1
 
@@ -1343,9 +1343,9 @@ class HDF5MeshIO(MeshIO):
                 fd.createArray(ts_group, 'n_step', ts.n_step, 'n_step')
 
             tstat_group = fd.createGroup('/', 'tstat', 'global time statistics')
-            fd.createArray(tstat_group, 'created', asctime(),
+            fd.createArray(tstat_group, 'created', enc(asctime()),
                            'file creation time')
-            fd.createArray(tstat_group, 'finished', '.' * 24,
+            fd.createArray(tstat_group, 'finished', enc('.' * 24),
                            'file closing time')
 
             fd.createArray(fd.root, 'last_step', nm.array([0], dtype=nm.int32),
@@ -1382,16 +1382,17 @@ class HDF5MeshIO(MeshIO):
                 data_group = fd.createGroup(step_group, group_name,
                                             '%s data' % key)
                 fd.createArray(data_group, 'data', val.data, 'data')
-                fd.createArray(data_group, 'mode', val.mode, 'mode')
-                fd.createArray(data_group, 'dofs', dofs, 'dofs')
+                fd.createArray(data_group, 'mode', enc(val.mode), 'mode')
+                fd.createArray(data_group, 'dofs', [enc(ic) for ic in dofs],
+                               'dofs')
                 fd.createArray(data_group, 'shape', shape, 'shape')
-                fd.createArray(data_group, 'name', name, 'object name')
+                fd.createArray(data_group, 'name', enc(name), 'object name')
                 fd.createArray(data_group, 'var_name',
-                               var_name, 'object parent name')
-                fd.createArray(data_group, 'dname', key, 'data name')
+                               enc(var_name), 'object parent name')
+                fd.createArray(data_group, 'dname', enc(key), 'data name')
                 if val.mode == 'full':
-                    fd.createArray(data_group, 'field_name', val.field_name,
-                                   'field name')
+                    fd.createArray(data_group, 'field_name',
+                                   enc(val.field_name), 'field name')
 
                 name_dict[key] = group_name
 
@@ -1399,7 +1400,7 @@ class HDF5MeshIO(MeshIO):
             fd.root.last_step[0] = step
 
             fd.removeNode(fd.root.tstat.finished)
-            fd.createArray(fd.root.tstat, 'finished', asctime(),
+            fd.createArray(fd.root.tstat, 'finished', enc(asctime()),
                            'file closing time')
             fd.close()
 
@@ -1481,15 +1482,15 @@ class HDF5MeshIO(MeshIO):
         out = {}
         for data_group in step_group:
             try:
-                key = data_group.dname.read()
+                key = dec(data_group.dname.read())
 
             except pt.exceptions.NoSuchNodeError:
                 continue
 
-            name = data_group.name.read()
-            mode = data_group.mode.read()
+            name = dec(data_group.name.read())
+            mode = dec(data_group.mode.read())
             data = data_group.data.read()
-            dofs = tuple(data_group.dofs.read())
+            dofs = tuple([dec(ic) for ic in data_group.dofs.read()])
             try:
                 shape = tuple(data_group.shape.read())
 
@@ -1497,7 +1498,7 @@ class HDF5MeshIO(MeshIO):
                 shape = data.shape
 
             if mode == 'full':
-                field_name = data_group.field_name.read()
+                field_name = dec(data_group.field_name.read())
 
             else:
                 field_name = None
@@ -1519,13 +1520,13 @@ class HDF5MeshIO(MeshIO):
         groups = step_group._v_groups
         for name, data_group in six.iteritems(groups):
             try:
-                key = data_group.dname.read()
+                key = dec(data_group.dname.read())
 
             except pt.exceptions.NoSuchNodeError:
                 continue
 
             if key == dname:
-                mode = data_group.mode.read()
+                mode = dec(data_group.mode.read())
                 fd.close()
                 return mode, name
 
