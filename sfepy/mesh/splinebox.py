@@ -411,7 +411,7 @@ class SplineRegion2D(SplineBox):
         ts = nm.zeros((coors.shape[0], self.dim), dtype=nm.float64)
         for ii, ic in enumerate(coors):
             idx = nm.argmin(nm.linalg.norm(grid - ic, axis=1))
-            x0 = nm.array([idx % rho, idx / rho]) / (rho - 1.)
+            x0 = nm.array([idx % rho, idx // rho]) / (rho - 1.)
             fce = lambda x: ptdist(x, ic, self)
             ts[ii] = minimize(fce, x0, method='nelder-mead',
                               options={'xtol': 1e-5, 'disp': False}).x
