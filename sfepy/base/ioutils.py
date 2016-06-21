@@ -62,6 +62,23 @@ def remove_files(root_dir):
         for dirname in dirnames:
             shutil.rmtree(os.path.join(root_dir, dirname))
 
+def enc(string, encoding='utf-8'):
+    """
+    Encode given string or bytes using the specified encoding.
+    """
+    val = string.encode(encoding)
+    return val
+
+def dec(val, encoding='utf-8'):
+    """
+    Decode given bytes using the specified encoding.
+    """
+    if isinstance(val, bytes):
+        return val.decode(encoding)
+
+    else:
+        return val
+
 ##
 # 27.04.2006, c
 def get_trunk(filename):
