@@ -245,7 +245,11 @@ def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
             group2 = fd.createGroup(group, '_' + str(key), '%s group' % key)
             write_dict_hdf5(filename, val, level + 1, group2, fd)
         else:
-            fd.createArray(group, '_' + str(key), val, '%s data' % key)
+            if not isinstance(val, basestr):
+                fd.createArray(group, '_' + str(key), val, '%s data' % key)
+
+            else:
+                fd.createArray(group, '_' + str(key), enc(val), '%s data' % key)
 
     if level == 0:
         fd.close()
@@ -263,7 +267,11 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
 
     for name, data in six.iteritems(group._v_leaves):
         name = name.replace('_', '', 1)
-        out[name] = data.read()
+        val = data.read()
+        if isinstance(val, bytes):
+            val = dec(val)
+
+        out[name] = val
 
     if level == 0:
         fd.close()
@@ -277,9 +285,9 @@ def write_sparse_matrix_hdf5(filename, mtx, name='a sparse matrix'):
     fd = pt.openFile(filename, mode='w', title=name)
     try:
         info = fd.createGroup('/', 'info')
-        fd.createArray(info, 'dtype', mtx.dtype.str)
+        fd.createArray(info, 'dtype', enc(mtx.dtype.str))
         fd.createArray(info, 'shape', mtx.shape)
-        fd.createArray(info, 'format', mtx.format)
+        fd.createArray(info, 'format', enc(mtx.format))
 
         data = fd.createGroup('/', 'data')
         fd.createArray(data, 'data', mtx.data)
@@ -304,13 +312,8 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
     info = fd.root.info
     data = fd.root.data
 
-    format = info.format.read()
-    if not isinstance(format, basestr):
-        format = format[0]
-
-    dtype = info.dtype.read()
-    if not isinstance(dtype, basestr):
-        dtype = dtype[0]
+    format = dec(info.format.read())
+    dtype = dec(info.dtype.read())
 
     if output_format is None:
         constructor = constructors[format]
