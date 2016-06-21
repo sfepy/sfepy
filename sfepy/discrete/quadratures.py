@@ -138,7 +138,7 @@ class QuadraturePoints(Struct):
 
         if geometry in simplex_geometries:
             if order > max_orders[geometry]:
-                oo = order / 2
+                oo = order // 2
                 dim = int(geometry[0])
                 tp_fix = 0.5 if dim == 2 else 1.0 / 6.0
 
