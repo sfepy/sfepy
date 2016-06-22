@@ -1,14 +1,16 @@
 """
 Computational domain, consisting of the mesh and regions.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, Struct
-from geometry_element import GeometryElement
+from .geometry_element import GeometryElement
 from sfepy.discrete.common.domain import Domain
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.refine import refine_2_3, refine_2_4, refine_3_4, refine_3_8
 from sfepy.discrete.fem.fe_surface import FESurface
+import six
 
 class FEDomain(Domain):
     """
@@ -42,7 +44,7 @@ class FEDomain(Domain):
 
             geom_els[desc] = gel
 
-        for gel in geom_els.itervalues():
+        for gel in six.itervalues(geom_els):
             key = gel.get_interpolation_name()
 
             gel.poly_space = PolySpace.any_from_args(key, gel, 1)
@@ -116,7 +118,7 @@ class FEDomain(Domain):
             return
 
         cmesh = self.cmesh
-        for key, gel in self.geom_els.iteritems():
+        for key, gel in six.iteritems(self.geom_els):
             ori = gel.orientation
 
             cells = nm.where(cmesh.cell_types == cmesh.key_to_index[gel.name])
@@ -155,7 +157,7 @@ class FEDomain(Domain):
         conn = conn.reshape((self.cmesh.n_el, -1)).astype(nm.int32)
 
         if ret_gel:
-            gel = self.geom_els.values()[0]
+            gel = list(self.geom_els.values())[0]
 
             return conn, gel
 
@@ -222,7 +224,7 @@ class FEDomain(Domain):
             msg = 'refine() works only for meshes with single element type!'
             raise NotImplementedError(msg)
 
-        el_type = self.geom_els.values()[0].name
+        el_type = list(self.geom_els.values())[0].name
         if el_type == '2_3':
             mesh = refine_2_3(self.mesh)
 

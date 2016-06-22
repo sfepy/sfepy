@@ -1,6 +1,9 @@
+from __future__ import absolute_import
 import time
 import os
 import atexit
+import six
+from six.moves import range
 
 try:
     from multiprocessing import Process, Pipe
@@ -115,7 +118,7 @@ def read_log(filename):
 
     fd.close()
 
-    for key, (xs, ys, vlines) in log.iteritems():
+    for key, (xs, ys, vlines) in six.iteritems(log):
         log[key] = (nm.array(xs), nm.array(ys), nm.array(vlines))
 
     return log, info
@@ -157,7 +160,7 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
     if yticks is None:
         yticks = [None] * n_gr
 
-    for ii, (xlabel, ylabel, yscale, names) in info.iteritems():
+    for ii, (xlabel, ylabel, yscale, names) in six.iteritems(info):
         ax = fig.add_subplot(n_row, n_col, ii + 1)
         ax.set_yscale(yscale)
 
@@ -392,7 +395,7 @@ class Log(Struct):
                 if len(aux) == 1:
                     aux = aux[0]
                 else:
-                    raise ValueError, 'can log only scalars (%s)' % aux
+                    raise ValueError('can log only scalars (%s)' % aux)
             key = name_to_key(name, ii)
             self.data[key].append(aux)
 

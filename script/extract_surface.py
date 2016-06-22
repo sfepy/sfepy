@@ -10,7 +10,9 @@ node belong to one component.
 With '-m' option, a mesh of the surface is created and saved in
 '<original path>/surf_<original mesh file name>.mesh'.
 """
+from __future__ import absolute_import
 import sys
+from six.moves import range
 sys.path.append('.')
 from optparse import OptionParser
 

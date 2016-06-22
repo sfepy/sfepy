@@ -2,7 +2,9 @@
 """
 Show terms use in problem description files in the given directory.
 """
+from __future__ import absolute_import
 import sys
+import six
 sys.path.append('.')
 import os
 from optparse import OptionParser
@@ -55,7 +57,7 @@ def main():
 
         use = conf.options.get('use_equations', 'equations')
         eqs_conf = getattr(conf, use)
-        for key, eq_conf in eqs_conf.iteritems():
+        for key, eq_conf in six.iteritems(eqs_conf):
             term_descs = parse_definition(eq_conf)
             for td in term_descs:
                 terms_use[td.name].add(base)

@@ -13,6 +13,7 @@ Find :math:`p` such that:
     = i w c^2 \rho v_n \int_{\Gamma_{in}} q
     \;, \quad \forall q \;.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/special/two_rectangles.mesh'

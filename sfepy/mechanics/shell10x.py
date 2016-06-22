@@ -1,10 +1,12 @@
 """
 Functions implementing the shell10x element.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.linalg import norm_l2_along_axis as norm
 from sfepy.linalg import dot_sequences as ddot
+from six.moves import range
 
 def create_elastic_tensor(young, poisson, shear_correction=True):
     """
@@ -156,8 +158,8 @@ def create_strain_transform(mtx_ts):
     """
     mtx_qs = nm.empty((mtx_ts.shape[0], mtx_ts.shape[1], 6, 6),
                       dtype=nm.float64)
-    for ie in xrange(mtx_ts.shape[0]):
-        for iq in xrange(mtx_ts.shape[1]):
+    for ie in range(mtx_ts.shape[0]):
+        for iq in range(mtx_ts.shape[1]):
             l = mtx_ts[ie, iq, :, 0]
             m = mtx_ts[ie, iq, :, 1]
             n = mtx_ts[ie, iq, :, 2]

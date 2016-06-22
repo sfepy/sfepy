@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -10,6 +11,8 @@ from sfepy.linalg import norm_l2_along_axis
 from sfepy.discrete.evaluate import eval_equations
 from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
+import six
+from six.moves import range
 
 def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
                          transform=None):
@@ -24,7 +27,7 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
     n_c = var.n_components
     eigenmomenta = nm.empty((n_eigs, n_c), dtype=nm.float64)
 
-    for ii in xrange(n_eigs):
+    for ii in range(n_eigs):
 
         if transform is None:
             vec_phi, is_zero = eig_vectors[:,ii], False
@@ -167,7 +170,7 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
     logs = [[] for ii in range(n_col + 1)]
     gaps = []
 
-    for ii in xrange(freq_info.freq_range.shape[0] + 1):
+    for ii in range(freq_info.freq_range.shape[0] + 1):
 
         f0, f1 = fm[[ii, ii+1]]
         output('interval: ]%.8f, %.8f[...' % (f0, f1))
@@ -543,7 +546,7 @@ class SimpleEVP(CorrMiniApp):
                            dtype=nm.float64)
 
         make_full = variables.make_full_vec
-        for ii in xrange(n_eigs):
+        for ii in range(n_eigs):
             mtx_phi[:,ii] = make_full(mtx_s_phi[:,ii])
 
         return mtx_phi, mtx_phi
@@ -555,11 +558,11 @@ class SimpleEVP(CorrMiniApp):
 
         out = {}
         state = problem.create_state()
-        for ii in xrange(n_eigs):
+        for ii in range(n_eigs):
             if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
             state.set_full(mtx_phi[:,ii], force=True)
             aux = state.create_output_dict()
-            for name, val in aux.iteritems():
+            for name, val in six.iteritems(aux):
                 out[name+'%03d' % ii] = val
 
         if self.post_process_hook is not None:
@@ -589,7 +592,7 @@ class SchurEVP(SimpleEVP):
 
         mtx_b, mtx_m = mtx['B'], mtx['M']
         mtx_dib = nm.empty(mtx_b.shape, dtype=mtx_b.dtype)
-        for ic in xrange(mtx_b.shape[1]):
+        for ic in range(mtx_b.shape[1]):
             mtx_dib[:,ic] = ls(mtx_b[:,ic].toarray().squeeze())
         mtx_a = mtx['K'] + mtx_b.T * mtx_dib
 
@@ -613,7 +616,7 @@ class SchurEVP(SimpleEVP):
         mtx_s_phi_schur = - sc.dot(mtx_dib, mtx_s_phi)
         aux = nm.empty((variables.adi.ptr[-1],), dtype=nm.float64)
         set = variables.set_state_part
-        for ii in xrange(n_eigs):
+        for ii in range(n_eigs):
             set(aux, mtx_s_phi[:,ii], primary_var, stripped=True)
             set(aux, mtx_s_phi_schur[:,ii], eliminated_var,
                 stripped=True)
@@ -640,7 +643,7 @@ class DensityVolumeInfo(MiniAppBase):
         total_volume = 0.0
         volumes = {}
         densities = {}
-        for region_name, aux in self.region_to_material.iteritems():
+        for region_name, aux in six.iteritems(self.region_to_material):
             vol = vf['volume_' + region_name]
 
             mat_name, item_name = aux
@@ -679,7 +682,7 @@ class DensityVolumeInfo(MiniAppBase):
         fd.write('average density:\n')
         fd.write(ff % dv_info.average_density)
 
-        for key, val in dv_info.volumes.iteritems():
+        for key, val in six.iteritems(dv_info.volumes):
             fd.write('%s volume:\n' % key)
             fd.write(ff % val)
             fd.write('%s density:\n' % key)
@@ -1022,7 +1025,7 @@ class BandGaps(MiniAppBase):
 
         n_row = len(freq_range) - 1
         fd.write('%d\n' % n_row)
-        for ir in xrange(n_row):
+        for ir in range(n_row):
             f0, f1 = freq_range[[ir, ir+1]]
             gmin, gmax = bg.gaps[ir]
             fd.write(format % ((f0, f1) + tuple(gmin) + tuple(gmax)
@@ -1034,7 +1037,7 @@ class BandGaps(MiniAppBase):
         fd.write('%d\n' % n_row)
         valid_in_range = bg.valid[bg.eig_range]
         format = "%%d %s\n" % ff
-        for ir in xrange(n_row):
+        for ir in range(n_row):
             fd.write(format % (valid_in_range[ir], freq_range[ir]))
         fd.close()
 
@@ -1122,7 +1125,7 @@ class PolarizationAngles(MiniAppBase):
         pas = []
 
         iw_dir = iw_dir / nla.norm(iw_dir)
-        idims = range(iw_dir.shape[0])
+        idims = list(range(iw_dir.shape[0]))
         pi2 = 0.5 * nm.pi
         for vecs in wave_vectors:
             pa = nm.empty(vecs.shape[:-1], dtype=nm.float64)

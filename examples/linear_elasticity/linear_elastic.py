@@ -37,6 +37,7 @@ cylinder.vtk. View the results using::
 
   $ ./postproc.py cylinder.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1'
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 

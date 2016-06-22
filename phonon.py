@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # 12.01.2007, c
+from __future__ import absolute_import
 from optparse import OptionParser
 
 import sfepy

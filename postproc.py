@@ -42,6 +42,8 @@ Examples
     $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk \
                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
 """
+from __future__ import print_function
+from __future__ import absolute_import
 from optparse import OptionParser, OptionGroup
 import os
 import glob
@@ -51,6 +53,7 @@ from sfepy.base.base import assert_, get_default, output, nm
 from sfepy.postprocess.viewer import (Viewer, get_data_ranges,
                                       create_file_source)
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
+import six
 
 usage = '%prog [options] filename\n' + __doc__.rstrip()
 
@@ -159,13 +162,13 @@ def parse_view(option, opt, value, parser):
 
 def parse_resolution(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         setattr(parser.values, option.dest,
                 tuple([int(r) for r in value.split('x')]))
 
 def parse_ranges(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         ranges = {}
         for rng in value.split(':'):
             aux = rng.split(',')
@@ -191,13 +194,13 @@ def parse_opacity(option, opt, value, parser):
 
 def parse_group_names(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         group_names = [tuple(group.split(',')) for group in value.split(':')]
         setattr(parser.values, option.dest, group_names)
 
 def parse_subdomains(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         aux = value.split(',')
 
         try:
@@ -219,7 +222,7 @@ def parse_subdomains(option, opt, value, parser):
 
 def parse_domain_specific(option, opt, value, parser):
     if value is not None:
-        print value
+        print(value)
         out = {}
         confs = value.split(':')
         for conf in confs:
@@ -470,7 +473,7 @@ def main():
                 file_source.get_step_time(step=step)
                 source = file_source.create_source()
                 ranges = get_data_ranges(source, return_only=True)
-                for key, val in ranges.iteritems():
+                for key, val in six.iteritems(ranges):
                     all_ranges.setdefault(key, []).append(val[3:])
 
         if (len(filenames) > 1) or (len(steps) > 1):
@@ -479,7 +482,7 @@ def main():
         else:
             output('ranges:')
 
-        for key, ranges in all_ranges.iteritems():
+        for key, ranges in six.iteritems(all_ranges):
             aux = nm.array(ranges)
             mins = aux[:, [0, 2]].min(axis=0)
             maxs = aux[:, [1, 3]].max(axis=0)

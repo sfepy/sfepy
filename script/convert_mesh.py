@@ -9,7 +9,9 @@ Examples::
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1 -c 0
 """
+from __future__ import absolute_import
 import sys
+from six.moves import range
 sys.path.append('.')
 
 from optparse import OptionParser

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import re
 from copy import copy
 
@@ -9,6 +10,9 @@ from sfepy.base.compat import in1d
 
 # Used for imports in term files.
 from sfepy.terms.extmods import terms
+import six
+from six.moves import range
+from functools import reduce
 
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
 _match_virtual = re.compile('^virtual$').match
@@ -694,7 +698,7 @@ class Term(Struct):
         region = self.get_region()
         if region is not None:
             is_any_trace = reduce(lambda x, y: x or y,
-                                  self.arg_traces.values())
+                                  list(self.arg_traces.values()))
             if is_any_trace:
                 region.setup_mirror_region()
 
@@ -872,11 +876,11 @@ class Term(Struct):
                 self.integration = self._integration[self.mode]
 
             if self.integration is not None:
-                for arg_type, gtype in self.integration.iteritems():
+                for arg_type, gtype in six.iteritems(self.integration):
                     var = self.get_args(arg_types=[arg_type])[0]
                     self.geometry_types[var.name] = gtype
 
-        gtypes = list(set(self.geometry_types.itervalues()))
+        gtypes = list(set(self.geometry_types.values()))
 
         if 'surface_extra' in gtypes:
             self.dof_conn_type = 'volume'

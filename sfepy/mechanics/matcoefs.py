@@ -2,11 +2,14 @@
 """
 Conversion of material parameters and other utilities.
 """
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 
 import numpy as nm
 
 from sfepy.base.base import Struct
+import six
 
 def lame_from_youngpoisson(young, poisson, plane='strain'):
     r"""
@@ -50,7 +53,7 @@ def stiffness_from_lame(dim, lam, mu):
         \lambda & \lambda & \lambda + 2\mu & 0 & 0 & 0 \\ 0 & 0 & 0 & \mu & 0 &
         0 \\ 0 & 0 & 0 & 0 & \mu & 0 \\ 0 & 0 & 0 & 0 & 0 & \mu\\ \end{bmatrix}
     """
-    sym = (dim + 1) * dim / 2
+    sym = (dim + 1) * dim // 2
     o = nm.array([1.] * dim + [0.] * (sym - dim), dtype=nm.float64)
     oot = nm.outer(o, o)[None, ...]
     do1 = nm.diag(o + 1.0)[None, ...]
@@ -177,7 +180,7 @@ class ElasticConstants(Struct):
             self.relations = self._construct_relations()
 
         else:
-            import elastic_constants as ec
+            from . import elastic_constants as ec
             self.relations = ec.relations
             self.ec = ec
 
@@ -198,7 +201,7 @@ class ElasticConstants(Struct):
         relations = {}
 
         def _expand_keys(sols):
-            for key, val in sols.iteritems():
+            for key, val in six.iteritems(sols):
                 if len(val) == 2 and (key.name == 'poisson'):
                     val = val[0]
                 else:
@@ -206,7 +209,7 @@ class ElasticConstants(Struct):
                 skey = tuple(sorted([ii.name for ii in val.atoms()
                                      if ii.is_Symbol])) + (key.name,)
                 if skey in relations:
-                    print '!', skey
+                    print('!', skey)
                 relations[skey] = val
 
         bulk, lam, mu, young, poisson, p_wave = sm.symbols(self.names,
@@ -273,7 +276,7 @@ relations = {
 %s
 }
         """ % ',\n'.join(['    %s : %s' % (key, val)
-                         for key, val in relations.iteritems()]))
+                         for key, val in six.iteritems(relations)]))
         fd.close()
 
         return relations
@@ -288,12 +291,12 @@ relations = {
                         mu=mu, p_wave=p_wave)
 
         values = {}
-        for key, val in self.__dict__.iteritems():
+        for key, val in six.iteritems(self.__dict__):
             if (key in self.names) and (val is not None):
                 sym = getattr(self.ec, key)
                 values[sym] = val
 
-        known = values.keys()
+        known = list(values.keys())
         if len(known) != 2:
             raise ValueError('exactly two elastic constants must be provided!')
         known = [ii.name for ii in known]

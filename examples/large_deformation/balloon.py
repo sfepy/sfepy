@@ -82,6 +82,7 @@ View the results using::
 
   python postproc.py unit_ball.h5 --wireframe -b -d'u,plot_displacements,rel_scaling=1' --step=-1
 """
+from __future__ import absolute_import
 import os
 import numpy as nm
 

@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
+import six
 
 def parse_approx_order(approx_order):
     """
@@ -51,7 +53,7 @@ def parse_shape(shape, dim):
         except KeyError:
             raise ValueError('unsupported field shape! (%s)', shape)
 
-    elif isinstance(shape, (int, long)):
+    elif isinstance(shape, six.integer_types):
         shape = (int(shape),)
 
     return shape
@@ -67,7 +69,7 @@ def setup_extra_data(conn_info):
 
 def fields_from_conf(conf, regions):
     fields = {}
-    for key, val in conf.iteritems():
+    for key, val in six.iteritems(conf):
         field = Field.from_conf(val, regions)
         fields[field.name] = field
 

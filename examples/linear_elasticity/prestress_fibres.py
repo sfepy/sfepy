@@ -30,6 +30,7 @@ displacements::
 
     $ ./postproc.py block.vtk -b --vector-mode=warp_norm -s 1 --wireframe
 """
+from __future__ import absolute_import
 import numpy as nm
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy import data_dir

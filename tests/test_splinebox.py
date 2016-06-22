@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 from sfepy.base.testing import TestCommon
 import numpy as nm
 from sfepy import data_dir
 from sfepy.mesh.splinebox import SplineBox, SplineRegion2D
 from sfepy.mesh.bspline import BSpline
 from sfepy.discrete.fem import Mesh
+from six.moves import range
 
 def tetravolume(cells, vertices):
     vol = 0.0

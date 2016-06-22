@@ -1,10 +1,12 @@
 """
 Linearization of higher order solutions for the purposes of visualization.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.linalg import dot_sequences
 from sfepy.discrete.fem.refine import refine_reference
+from six.moves import range
 
 def get_eval_dofs(dofs, dof_conn, ps, ori=None):
     """

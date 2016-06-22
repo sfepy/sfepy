@@ -59,6 +59,7 @@ where :math:`\ul{u}` relates to the previous time step :math:`(n-1)` and
 1)}{N_f}\right)\right)^2` expresses the dependence on volume
 compression/expansion.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy import data_dir

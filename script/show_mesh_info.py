@@ -2,6 +2,7 @@
 """
 Print various information about a mesh.
 """
+from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
 from sfepy.base.base import output

@@ -2,6 +2,7 @@
 """
 Block mesh generator.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

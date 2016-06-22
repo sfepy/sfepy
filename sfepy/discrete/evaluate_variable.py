@@ -37,7 +37,7 @@ def eval_real(vec, conn, geo, mode, shape, bf=None):
         assert_(n_comp == dim)
         function = terms.dq_cauchy_strain
 
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
         out = nm.empty((n_el, n_qp, sym, 1), dtype=dtype)
         function(out, vec, geo, conn)
 
@@ -90,7 +90,7 @@ def eval_complex(vec, conn, geo, mode, shape, bf=None):
         assert_(n_comp == dim)
         function = terms.dq_cauchy_strain
 
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
         rout = nm.empty((n_el, n_qp, sym, 1), dtype=nm.float64)
         iout = nm.empty((n_el, n_qp, sym, 1), dtype=nm.float64)
         function(rout, vec.real.copy(), geo, conn)

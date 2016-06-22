@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
 import numpy as nm

@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import os
 import sfepy
 from sfepy.base.base import load_classes, insert_static_method
-from solvers import *
-from eigen import eig
+from .solvers import *
+from .eigen import eig
 
 solver_files = sfepy.get_paths('sfepy/solvers/*.py')
 remove = ['setup.py', 'solvers.py', 'petsc_worker.py']

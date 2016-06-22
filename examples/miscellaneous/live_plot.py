@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import os
 import sys
 sys.path.append( '.' )
@@ -41,8 +43,8 @@ def main():
 
         log2(x*x*x, x=[x])
             
-    print log
-    print log2
+    print(log)
+    print(log2)
     pause()
 
     log(finished=True)

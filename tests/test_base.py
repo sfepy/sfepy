@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
 
@@ -65,10 +66,14 @@ class Test( TestCommon ):
         return True
 
     def test_verbose_output(self):
-        import StringIO
+        try:
+            from StringIO import StringIO  # Python 2
+        except ImportError:
+            from io import StringIO        # Python 3
+
         from sfepy.base.base import Output, goptions
 
-        fd = StringIO.StringIO()
+        fd = StringIO()
 
         output = Output('test', filename=fd)
 

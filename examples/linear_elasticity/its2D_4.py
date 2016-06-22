@@ -36,9 +36,11 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from its2D_1 import *
+from __future__ import absolute_import
+from examples.linear_elasticity.its2D_1 import *
 
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
+from six.moves import range
 
 def stress_strain(out, pb, state, extend=False):
     """
@@ -67,7 +69,7 @@ def gen_lines(problem):
 
     labels = ['%s -> %s' % (p0, p1) for p0, p1 in zip(ps0, ps1)]
     probes = []
-    for ip in xrange(len(ps0)):
+    for ip in range(len(ps0)):
         p0, p1 = ps0[ip], ps1[ip]
         probes.append(LineProbe(p0, p1, n_point))
 

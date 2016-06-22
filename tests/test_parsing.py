@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
@@ -43,7 +45,7 @@ class Test(TestCommon):
                     raise
                 n_fail += 1
             for td in term_descs:
-                print td
+                print(td)
         self.report('%d failure(s)' % n_fail)
 
         if n_fail:
@@ -91,7 +93,7 @@ class Test(TestCommon):
 
             try:
                 out = bnf.parseString(test_str)
-                print out
+                print(out)
 
             except:
                 self.report('failed: %s' % test_str)

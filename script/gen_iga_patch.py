@@ -5,6 +5,7 @@ using igakit.
 
 The grid has equally-spaced knot vectors.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

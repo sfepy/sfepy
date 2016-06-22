@@ -24,6 +24,7 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
+from __future__ import absolute_import
 import os
 import numpy as nm
 
@@ -76,7 +77,7 @@ def define_regions(filename):
 def get_pars(ts, coor, mode, output_dir='.', **kwargs):
     if mode == 'qp':
         n_nod, dim = coor.shape
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         out = {}
         out['D'] = nm.tile(stiffness_from_lame(dim, lam=1.7, mu=0.3),

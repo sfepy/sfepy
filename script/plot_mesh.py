@@ -2,6 +2,7 @@
 """
 Plot mesh connectivities, facet orientations, global and local DOF ids etc.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

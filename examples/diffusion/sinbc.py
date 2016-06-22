@@ -22,6 +22,7 @@ output directory and names)::
 The :class:`sfepy.discrete.fem.meshio.UserMeshIO` class is used to refine the original
 two-element mesh before the actual solution.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy import data_dir
@@ -30,6 +31,7 @@ from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO, MeshIO
 from sfepy.homogenization.utils import define_box_regions
+from six.moves import range
 
 base_mesh = data_dir + '/meshes/elements/2_4_2.mesh'
 

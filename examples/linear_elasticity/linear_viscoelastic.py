@@ -71,12 +71,14 @@ Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
 51. There is a visible notch on viscous stress curves in the 'th' mode, as the
 fading memory kernel is cut off before it goes close enough to zero.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy.homogenization.utils import interp_conv_mat
 from sfepy import data_dir
+import six
 
 def linear_tension(ts, coors, mode=None, verbose=True, **kwargs):
     if mode == 'qp':
@@ -103,7 +105,7 @@ def get_th_pars(ts, coors, mode=None, times=None, kernel=None, **kwargs):
         out['H0'] = kernel[0]
         out['Hd'] = kernel[1, 0, 0] / kernel[0, 0, 0]
 
-        for key, val in out.iteritems():
+        for key, val in six.iteritems(out):
             out[key] = nm.tile(val, (coors.shape[0], 1, 1))
 
     return out

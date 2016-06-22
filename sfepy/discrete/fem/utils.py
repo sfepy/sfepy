@@ -1,7 +1,9 @@
+from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.linalg as la
 from sfepy.discrete.integrals import Integral
+from six.moves import range
 
 def prepare_remap(indices, n_full):
     """
@@ -292,7 +294,7 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False,
         else:
             avg = 1.0
 
-        for ic in xrange(data.shape[2]):
+        for ic in range(data.shape[2]):
             evals = nm.bincount(cells, weights=data[dii, 0, ic, 0],
                                 minlength=n_el)[ucells]
 

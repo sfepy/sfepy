@@ -34,7 +34,11 @@ Possible couples:
 
 7, 33, 52, 63 <-> 0, 11, 30, 56
 """
+from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
+import six
+from six.moves import range
 
 _quad_ori_groups = {
     0 : 0,
@@ -74,7 +78,7 @@ def build_orientation_map(n_fp):
     """
     from sfepy.linalg import permutations
 
-    indices = range(n_fp)
+    indices = list(range(n_fp))
 
     cmps = [(i1, i2) for i2 in indices for i1 in indices[:i2]]
     powers = [2**ii for ii in range(len(cmps))]
@@ -96,11 +100,11 @@ def build_orientation_map(n_fp):
     return ori_map, cmps, powers
 
 def iter0(num):
-    for ir in xrange(num - 1, -1, -1):
+    for ir in range(num - 1, -1, -1):
         yield ir
 
 def iter1(num):
-    for ir in xrange(num):
+    for ir in range(num):
         yield ir
 
 ori_line_to_iter = {
@@ -118,35 +122,35 @@ def make_line_matrix(order):
     return mtx
 
 def iter01(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(ir + 1):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(ir + 1):
             yield ir, ic
 
 def iter10(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(ir, -1, -1):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(ir, -1, -1):
             yield ir, ic
 
 def iter02(num):
-    for ic in xrange(num):
-        for ir in xrange(num - 1, ic - 1, -1):
+    for ic in range(num):
+        for ir in range(num - 1, ic - 1, -1):
             yield ir, ic
 
 def iter20(num):
-    for ic in xrange(num):
-        for ir in xrange(ic, num):
+    for ic in range(num):
+        for ir in range(ic, num):
             yield ir, ic
 
 def iter12(num):
-    for idiag in xrange(num):
+    for idiag in range(num):
         irs, ics = nm.diag_indices(num - idiag)
-        for ii in xrange(irs.shape[0] - 1, -1, -1):
+        for ii in range(irs.shape[0] - 1, -1, -1):
             yield irs[ii] + idiag, ics[ii]
 
 def iter21(num):
-    for idiag in xrange(num):
+    for idiag in range(num):
         irs, ics = nm.diag_indices(num - idiag)
-        for ii in xrange(irs.shape[0]):
+        for ii in range(irs.shape[0]):
             yield irs[ii] + idiag, ics[ii]
 
 ori_triangle_to_iter = {
@@ -170,8 +174,8 @@ def make_triangle_matrix(order):
     return mtx
 
 def iter01x01y(num):
-    for ir in xrange(num):
-        for ic in xrange(num):
+    for ir in range(num):
+        for ic in range(num):
             yield ir, ic
 
 def iter01y01x(num):
@@ -179,8 +183,8 @@ def iter01y01x(num):
         yield ic, ir
 
 def iter10x01y(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(num):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(num):
             yield ir, ic
 
 def iter10y01x(num):
@@ -188,8 +192,8 @@ def iter10y01x(num):
         yield ic, ir
 
 def iter01x10y(num):
-    for ir in xrange(num):
-        for ic in xrange(num - 1, -1, -1):
+    for ir in range(num):
+        for ic in range(num - 1, -1, -1):
             yield ir, ic
 
 def iter01y10x(num):
@@ -197,8 +201,8 @@ def iter01y10x(num):
         yield ic, ir
 
 def iter10x10y(num):
-    for ir in xrange(num - 1, -1, -1):
-        for ic in xrange(num - 1, -1, -1):
+    for ir in range(num - 1, -1, -1):
+        for ic in range(num - 1, -1, -1):
             yield ir, ic
 
 def iter10y10x(num):
@@ -245,7 +249,7 @@ def get_facet_dof_permutations(n_fp, order):
     elif n_fp == 4:
         mtx = make_square_matrix(order)
         ori_map = {}
-        for key, val in _quad_ori_groups.iteritems():
+        for key, val in six.iteritems(_quad_ori_groups):
             ori_map[key] = ori_square_to_iter[val]
         fo = order - 1
 
@@ -253,7 +257,7 @@ def get_facet_dof_permutations(n_fp, order):
         raise ValueError('unsupported number of facet points! (%d)' % n_fp)
 
     dof_perms = {}
-    for key, itfun in ori_map.iteritems():
+    for key, itfun in six.iteritems(ori_map):
         dof_perms[key] = [mtx[ii] for ii in itfun(fo)]
 
     dof_perms = dict_to_array(dof_perms)
@@ -263,26 +267,26 @@ def get_facet_dof_permutations(n_fp, order):
 if __name__ == '__main__':
     order = 5
     mtx = make_triangle_matrix(order)
-    print mtx
+    print(mtx)
 
     oo = order - 2
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[0](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[1](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[3](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[4](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[6](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_triangle_to_iter[7](oo)]
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[0](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[1](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[3](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[4](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[6](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_triangle_to_iter[7](oo)])
 
     order = 4
     mtx = make_square_matrix(order)
-    print mtx
+    print(mtx)
 
     oo = order - 1
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[0](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[7](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[11](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[30](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[33](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[52](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[56](oo)]
-    print [mtx[ir, ic] for ir, ic in ori_square_to_iter[63](oo)]
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[0](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[7](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[11](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[30](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[33](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[52](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[56](oo)])
+    print([mtx[ir, ic] for ir, ic in ori_square_to_iter[63](oo)])

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 input_name = '../examples/diffusion/poisson.py'
 output_name = 'test_poisson.vtk'
 

@@ -2,10 +2,12 @@
 Classes for accessing quadrature points and weights for various reference
 element geometries.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import OneTypeList, Container, Struct, basestr
-from quadratures import QuadraturePoints
+from .quadratures import QuadraturePoints
+import six
 
 class Integrals(Container):
     """
@@ -16,7 +18,7 @@ class Integrals(Container):
     def from_conf(conf):
         objs = OneTypeList(Integral)
 
-        for desc in conf.itervalues():
+        for desc in six.itervalues(conf):
             if hasattr(desc, 'vals'):
                 aux = Integral(desc.name,
                                coors=desc.vals,
@@ -61,7 +63,7 @@ class Integrals(Container):
                 raise ValueError('unsupported integral reference! (%s)' % name)
 
             name = '__o%d' % order
-            if self.has_key(name):
+            if name in self:
                 obj = self[name]
 
             else:

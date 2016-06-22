@@ -40,6 +40,7 @@ View the results using::
 
   $ ./postproc.py block.vtk --wireframe -b --only-names=u -d'u,plot_displacements,rel_scaling=1,color_kind="scalars",color_name="von_mises_stress"'
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.mechanics.matcoefs import stiffness_from_lame

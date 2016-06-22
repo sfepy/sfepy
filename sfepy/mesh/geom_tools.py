@@ -1,4 +1,8 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
+import six
+from six.moves import range
 
 class geometry(object):
     """The geometry is given by a sets of points (d0), lines (d1), surfaces
@@ -75,40 +79,40 @@ class geometry(object):
                 return x
         return 0
     def printinfo(self, verbose=False):
-        print "General geometry information:"
-        print "  dimension:", self.dim
-        print "  points:", len(self.d0)
+        print("General geometry information:")
+        print("  dimension:", self.dim)
+        print("  points:", len(self.d0))
         if verbose:
-            for k, v in self.d0.iteritems():
-                print "    %d - %s" % (k, v.getstr())
-        print "  lines:", len(self.d1)
+            for k, v in six.iteritems(self.d0):
+                print("    %d - %s" % (k, v.getstr()))
+        print("  lines:", len(self.d1))
         if verbose:
-            for k, v in self.d1.iteritems():
-                print "    %d - " % k, v.points
-        print "  surfaces:", len(self.d2)
+            for k, v in six.iteritems(self.d1):
+                print("    %d - " % k, v.points)
+        print("  surfaces:", len(self.d2))
         if verbose:
-            for k, v in self.d2.iteritems():
+            for k, v in six.iteritems(self.d2):
                 if v.is_hole:
                     aux = '(hole)'
                 else:
                     aux = ''
-                print "    %d%s - " % (k, aux), v.lines
-        print "  volumes:", len(self.d3)
+                print("    %d%s - " % (k, aux), v.lines)
+        print("  volumes:", len(self.d3))
         if verbose:
-            for k, v in self.d3.iteritems():
-                print "    %d - " % k, v.surfaces
-        print "Physical entities:"
+            for k, v in six.iteritems(self.d3):
+                print("    %d - " % k, v.surfaces)
+        print("Physical entities:")
         if self.dim == 2:
-            print "  surfaces (regions):"
+            print("  surfaces (regions):")
             for d in self.phys2.values():
-                print "    %d: surface numbers %r"%(d.getn(),d.surfaces)
+                print("    %d: surface numbers %r"%(d.getn(),d.surfaces))
         elif self.dim == 3:
-            print "  surfaces (boundary conditions):"
+            print("  surfaces (boundary conditions):")
             for d in self.phys2.values():
-                print "    %d: surface numbers %r"%(d.getn(),d.surfaces)
-            print "  volumes (regions):"
+                print("    %d: surface numbers %r"%(d.getn(),d.surfaces))
+            print("  volumes (regions):")
             for d in self.phys3.values():
-                print "    %d: volume numbers %r"%(d.getn(),d.volumes)
+                print("    %d: volume numbers %r"%(d.getn(),d.volumes))
 
     def leaveonlyphysicalsurfaces(self):
         points={}
@@ -165,7 +169,7 @@ class geometry(object):
                 self.addline(lid, [points[ii], points[ii + 1]])
                 lines.append(lid)
 
-            for s in self.d2.itervalues():
+            for s in six.itervalues(self.d2):
                 try:
                     idx = s.lines.index(l.n)
                 except ValueError:
@@ -390,10 +394,10 @@ class geometry(object):
 
         try:
             tokens= grammar.parseFile(filename)
-        except ParseException, err:
-            print err.line
-            print " "*(err.column-1) + "^"
-            print err
+        except ParseException as err:
+            print(err.line)
+            print(" "*(err.column-1) + "^")
+            print(err)
             raise err
 
         lineloops={}
@@ -447,6 +451,8 @@ class point(geomobject):
         return point(self.geom,-1,[a-b for a,b in zip(self.p,p.p)])
     def __div__(self,num):
         return point(self.geom,-1,[a/num for a in self.p])
+    def __truediv__(self,num):
+        return self.__div__(num)
     def __mul__(self,num):
         return point(self.geom,-1,[a*num for a in self.p])
     def __rmul__(self,num):

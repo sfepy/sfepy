@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
 from sfepy.mechanics.tensors import dim2sym
 from sfepy.homogenization.utils import iter_sym
+from six.moves import range
 
 def create_omega(fdir):
     r"""
@@ -120,6 +122,6 @@ class FibresActiveTLTerm(HyperElasticTLBase):
     def get_eval_shape(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
+        sym = dim2sym(dim)
 
         return (n_el, 1, sym, 1), state.dtype

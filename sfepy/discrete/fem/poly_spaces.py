@@ -1,8 +1,11 @@
+from __future__ import absolute_import
 import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import find_subclasses, assert_, Struct
 from sfepy.linalg import combine, insert_strided_axis
+from six.moves import range
+from functools import reduce
 
 # Requires fixed vertex numbering!
 vertex_maps = {3 : [[0, 0, 0],
@@ -425,7 +428,7 @@ class LagrangeSimplexPolySpace(LagrangePolySpace):
 
     def _define_nodes(self):
         # Factorial.
-        fac = lambda n : reduce(lambda a, b : a * (b + 1), xrange(n), 1)
+        fac = lambda n : reduce(lambda a, b : a * (b + 1), range(n), 1)
 
         geometry = self.geometry
         n_v, dim = geometry.n_vertex, geometry.dim
@@ -646,11 +649,11 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
         if diff:
             base = nm.ones((coors.shape[0], dim, self.n_nod), dtype=nm.float64)
 
-            for ii in xrange(dim):
+            for ii in range(dim):
                 self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
                 self.ps1d.n_nod = self.n_nod
 
-                for iv in xrange(dim):
+                for iv in range(dim):
                     if ii == iv:
                         base[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
                                                 diff=True,
@@ -666,7 +669,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
         else:
             base = nm.ones((coors.shape[0], 1, self.n_nod), dtype=nm.float64)
 
-            for ii in xrange(dim):
+            for ii in range(dim):
                 self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
                 self.ps1d.n_nod = self.n_nod
                 
@@ -834,7 +837,7 @@ class LobattoTensorProductPolySpace(PolySpace):
         """
         See PolySpace.eval_base().
         """
-        from extmods.lobatto_bases import eval_lobatto_tensor_product as ev
+        from .extmods.lobatto_bases import eval_lobatto_tensor_product as ev
         c_min, c_max = self.bbox[:, 0]
 
         base = ev(coors, self.nodes, c_min, c_max, self.order, diff)

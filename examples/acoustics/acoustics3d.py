@@ -16,6 +16,7 @@ Find two complex acoustic pressures :math:`p_1`, :math:`p_2` such that:
     \;, \quad \forall q \;.
 """
 
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/acoustics_mesh3d.mesh'

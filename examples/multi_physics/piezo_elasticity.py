@@ -23,12 +23,14 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
+from __future__ import absolute_import
 import os
 import numpy as nm
 
 from sfepy import data_dir
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_lame
+import six
 
 def post_process(out, pb, state, extend=False):
     """
@@ -108,7 +110,7 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
     matrices."""
     if mode == 'qp':
         n_nod, dim = coor.shape
-        sym = (dim + 1) * dim / 2
+        sym = (dim + 1) * dim // 2
 
         dielectric = nm.eye(dim, dtype=nm.float64)
         # !!!
@@ -125,7 +127,7 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
             'density' : 0.1142, # in 1e4 kg/m3
         }
 
-        for key, val in out.iteritems():
+        for key, val in six.iteritems(out):
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
         return out
 

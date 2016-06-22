@@ -1,6 +1,9 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as nm
-from bspline import BSpline
+from .bspline import BSpline
 from sfepy.base.base import Struct
+from six.moves import range
 
 class SplineBox(Struct):
     """
@@ -341,7 +344,7 @@ class SplineRegion2D(SplineBox):
         """
         dim = 2
         if coors.shape[1] != dim:
-            print 'Only 2D SplineBoxSBnd is supported!'
+            print('Only 2D SplineBoxSBnd is supported!')
             raise(ValueError)
 
         bnd_poly = []
@@ -408,7 +411,7 @@ class SplineRegion2D(SplineBox):
         ts = nm.zeros((coors.shape[0], self.dim), dtype=nm.float64)
         for ii, ic in enumerate(coors):
             idx = nm.argmin(nm.linalg.norm(grid - ic, axis=1))
-            x0 = nm.array([idx % rho, idx / rho]) / (rho - 1.)
+            x0 = nm.array([idx % rho, idx // rho]) / (rho - 1.)
             fce = lambda x: ptdist(x, ic, self)
             ts[ii] = minimize(fce, x0, method='nelder-mead',
                               options={'xtol': 1e-5, 'disp': False}).x

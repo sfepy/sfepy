@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 
@@ -91,7 +93,7 @@ class MaterialOptimizer(object):
         val = 0.0
         aux = []
         for phi, exp_k in self.exp_data:
-            print 'phi = %d' % phi
+            print('phi = %d' % phi)
 
             mac_od['D_homog'] = self.rotate_mat(D, nm.deg2rad(phi))
             self.macro_app()
@@ -127,10 +129,10 @@ class MaterialOptimizer(object):
         istep = lambda x: self.iter_step(self.x_norm2real(x))
         self.iter_step(self.x_norm2real(x0), first_step=True)
 
-        print '>>> material optimization START <<<'
+        print('>>> material optimization START <<<')
         xopt = fmin_tnc(feval, x0, approx_grad=True, bounds=bnds,
                         xtol=1e-3, callback=istep)
-        print '>>> material optimization FINISHED <<<'
+        print('>>> material optimization FINISHED <<<')
 
         self.log(finished=True)
         return self.x_norm2real(xopt[0])
@@ -148,7 +150,7 @@ def main():
                            exp_data)
 
     optim_par = mo.material_optimize()
-    print 'optimized parameters: ', optim_par
+    print('optimized parameters: ', optim_par)
 
 if __name__ == '__main__':
     main()

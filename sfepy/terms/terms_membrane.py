@@ -208,6 +208,6 @@ class TLMembraneTerm(Term):
     def get_eval_shape(self, a1, a2, h0, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
+        sym = dim2sym(dim)
 
         return (n_el, 1, sym, 1), state.dtype

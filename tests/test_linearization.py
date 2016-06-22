@@ -1,7 +1,9 @@
+from __future__ import absolute_import
 import os
 import numpy as nm
 
 from sfepy.base.testing import TestCommon
+from six.moves import range
 
 class Test(TestCommon):
 

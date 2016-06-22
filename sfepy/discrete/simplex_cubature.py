@@ -4,7 +4,11 @@ by Andreas Kloeckner.
 """
 from __future__ import division
 
+from __future__ import absolute_import
 import numpy as nm
+import six
+from six.moves import range
+from functools import reduce
 
 def generate_decreasing_nonnegative_tuples_summing_to(n, length, min=0,
                                                       max=None):
@@ -59,7 +63,7 @@ def wandering_element(length, wanderer=1, landscape=0):
 def factorial(n):
     from operator import mul
     assert n == int(n)
-    return reduce(mul, (i for i in xrange(1,n+1)), 1)
+    return reduce(mul, (i for i in range(1,n+1)), 1)
 
 def _extended_euclidean(q, r):
     """
@@ -87,7 +91,8 @@ def _extended_euclidean(q, r):
 def _gcd(q, r):
     return _extended_euclidean(q, r)[0]
 
-def _simplify_fraction((a, b)):
+def _simplify_fraction(a_b):
+    (a, b) = a_b
     gcd = _gcd(a,b)
     return (a//gcd, b//gcd)
 
@@ -114,7 +119,7 @@ def get_simplex_cubature(order, dimension):
 
     points_to_weights = {}
 
-    for i in xrange(s+1):
+    for i in range(s+1):
         weight = (-1)**i * 2**(-2*s) \
                 * (d + n-2*i)**d \
                 / factorial(i) \
@@ -141,7 +146,7 @@ def get_simplex_cubature(order, dimension):
     neg_weights = []
 
     dim_factor = 2**n
-    for p, w in points_to_weights.iteritems():
+    for p, w in six.iteritems(points_to_weights):
         real_p = reduce(add, (a/b*v for (a,b),v in zip(p, vertices)))
         if w > 0:
             pos_points.append(real_p)

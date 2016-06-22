@@ -15,10 +15,12 @@ All the plot functions return:
 - `name` : name of a variable
 - `active` : Mayavi module
 """
+from __future__ import absolute_import
 from copy import copy
 
 from sfepy.base.base import assert_, Struct
 from sfepy.postprocess.utils import mlab
+import six
 
 class DomainSpecificPlot(Struct):
     """
@@ -213,7 +215,7 @@ def plot_velocity(source, ctp, bbox, position, family, kind, name,
     streamline.update_streamlines = True
     streamline.seed.widget.enabled = widget_enabled
 
-    for key, val in kwargs.iteritems():
+    for key, val in six.iteritems(kwargs):
         setattr(streamline.seed.widget, key, val)
 
     if color_name is None:

@@ -18,6 +18,7 @@ View the results using::
 
   $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' --wireframe --view=-90,90,1.5,0,0,0 --roll=0 laplace_1d.vtk
 """
+from __future__ import absolute_import
 import numpy as nm
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO

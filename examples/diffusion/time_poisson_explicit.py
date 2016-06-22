@@ -12,6 +12,7 @@ Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
     = 0
     \;, \quad \forall s \;.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 from examples.diffusion.time_poisson import get_ic

@@ -8,6 +8,8 @@ $ ./extractor.py -e "p e 0 1999" bone.h5 -a
 $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
 $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
 """
+from __future__ import print_function
+from __future__ import absolute_import
 import os
 from optparse import OptionParser
 
@@ -127,7 +129,7 @@ def main():
         steps, times, nts, dts = th.extract_times(filename_results)
         for ii, time in enumerate(times):
             step = steps[ii]
-            print '%d %e %e %e' % (step, time, nts[ii], dts[ii])
+            print('%d %e %e %e' % (step, time, nts[ii], dts[ii]))
 
     if options.dump:
         trunk = get_default(options.output_filename_trunk,
@@ -172,7 +174,7 @@ def main():
             th.save_time_history(ths, ts, options.output_filename_trunk + '.h5')
 
         else:
-            print dict_to_struct(ths, flag=(1, 1, 1)).str_all()
+            print(dict_to_struct(ths, flag=(1, 1, 1)).str_all())
 
 if __name__ == '__main__':
     main()

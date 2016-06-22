@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import os
 
 import numpy as nm
@@ -11,6 +13,8 @@ from sfepy.discrete import Problem
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file
 import os.path as op
+import six
+from six.moves import range
 
 shared = Struct()
 
@@ -52,7 +56,7 @@ def convolve_field_scalar( fvars, pvars, iel, ts ):
 ##     print step0, ts.step
 
     val = nm.zeros_like( fvars[0] )
-    for ik in xrange( step0, ts.step + 1 ):
+    for ik in range( step0, ts.step + 1 ):
 ##         print ' ', ik, ts.step-ik
         vf = fvars[ts.step-ik]
         vp = pvars[ik][iel,0,0,0]
@@ -79,7 +83,7 @@ def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
     step0 = max( 0, ts.step - fvars[0,0][var_name].steps[-1] )
 
     val = nm.zeros_like( fvars[0,0][var_name][0] )
-    for ik in xrange( step0, ts.step + 1 ):
+    for ik in range( step0, ts.step + 1 ):
 ##         print ' ', ik, ts.step-ik
         for ir in range( dim ):
             for ic in range( dim ):
@@ -307,7 +311,7 @@ def recover_bones( problem, micro_problem, region, eps0,
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
     for ii, iel in enumerate(region.cells):
-        print 'ii: %d, iel: %d' % (ii, iel)
+        print('ii: %d, iel: %d' % (ii, iel))
 
         pressure = pressures[-1][ii,0,0,0]
 
@@ -412,7 +416,7 @@ def recover_paraflow( problem, micro_problem, region,
     format = get_print_info(problem.domain.mesh.n_el, fill='0')[1]
 
     for ii, iel in enumerate(region.cells):
-        print 'ii: %d, iel: %d' % (ii, iel)
+        print('ii: %d, iel: %d' % (ii, iel))
 
         p1, p2 = pressures1[-1][ii,0,0,0], pressures2[-1][ii,0,0,0]
 
@@ -504,10 +508,10 @@ def recover_micro_hook( micro_filename, region, macro,
         format = get_print_info(pb.domain.mesh.n_el, fill='0')[1]
 
         for ii, iel in enumerate(region.cells):
-            print 'ii: %d, iel: %d' % (ii, iel)
+            print('ii: %d, iel: %d' % (ii, iel))
 
             local_macro = {}
-            for k, v in macro.iteritems():
+            for k, v in six.iteritems(macro):
                 local_macro[k] = v[ii,0]
 
             out = recovery_hook( pb, corrs, local_macro )
@@ -516,7 +520,7 @@ def recover_micro_hook( micro_filename, region, macro,
                 new_keys = []
                 new_data = {}
                 new_idxs = []
-                for k in local_macro.iterkeys():
+                for k in six.iterkeys(local_macro):
                     if k not in macro:
                         new_keys.append(k)
                         new_data[k] = []

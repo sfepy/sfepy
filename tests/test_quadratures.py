@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 import numpy as nm
+from six.moves import range
 
 try:
     import sympy as sm
@@ -94,13 +96,13 @@ class Test(TestCommon):
             self.report('geometry:', geometry)
 
             if geometry in tp_geometries:
-                iter_qp = xrange(1, 11)
+                iter_qp = range(1, 11)
 
             elif geometry == '2_3':
-                iter_qp = xrange(1, 25)
+                iter_qp = range(1, 25)
 
             elif geometry == '3_4':
-                iter_qp = xrange(1, 12)
+                iter_qp = range(1, 12)
 
             else:
                 iter_qp = sorted(qps.keys())

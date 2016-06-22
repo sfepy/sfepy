@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import os.path as op
 
 import numpy as nm
@@ -5,6 +7,7 @@ import numpy as nm
 from sfepy.base.testing import TestCommon
 from sfepy import data_dir
 from sfepy.discrete.fem import Mesh, FEDomain
+from six.moves import range
 
 def refine(domain, out_dir, level=3):
     for ii in range(level):
@@ -101,8 +104,8 @@ def compare_mesh(geo_name, coors, conn):
     _coors = expected_coors[geo_name]
     _conn = expected_conn[geo_name]
 
-    print coors.__repr__()
-    print conn.__repr__()
+    print(coors.__repr__())
+    print(conn.__repr__())
 
     ok = nm.allclose(coors, _coors, rtol=0.0, atol=1e-14)
     ok = ok and (conn == _conn).all()

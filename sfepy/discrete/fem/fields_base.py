@@ -11,6 +11,7 @@ Important attributes of continuous (order > 0) :class:`Field` and
 where `conn` is the mesh vertex connectivity, `econn` is the
 region-local field connectivity.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, get_default, assert_
@@ -26,6 +27,7 @@ from sfepy.discrete.fem.fe_surface import FESurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
                                            create_output)
+import six
 
 def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
                    clear_all=True):
@@ -35,7 +37,7 @@ def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
         domain.cmesh.coors[:] = coors
 
     if update_fields:
-        for field in fields.itervalues():
+        for field in six.itervalues(fields):
             field.setup_coors(coors)
             field.clear_mappings(clear_all=clear_all)
 
@@ -496,7 +498,7 @@ class FEField(Field):
         """
         qpkey = (integral.order, key)
 
-        if not self.qp_coors.has_key(qpkey):
+        if qpkey not in self.qp_coors:
             if (key[0] == 's') and not self.is_surface:
                 dim = self.gel.dim - 1
                 n_fp = self.gel.surface_facet.n_vertex
@@ -523,7 +525,7 @@ class FEField(Field):
         _key = key if not from_geometry else 'g' + key
         bf_key = (integral.order, _key, derivative)
 
-        if not self.bf.has_key(bf_key):
+        if bf_key not in self.bf:
             if (iels is not None) and (self.ori is not None):
                 ori = self.ori[iels]
 
@@ -1015,7 +1017,7 @@ class VolumeField(FEField):
         Setup the field region geometry.
         """
         cmesh = self.domain.cmesh
-        for key, gel in self.domain.geom_els.iteritems():
+        for key, gel in six.iteritems(self.domain.geom_els):
             ct = cmesh.cell_types
             if (ct[self.region.cells] == cmesh.key_to_index[gel.name]).all():
                 self.gel = gel
@@ -1215,7 +1217,7 @@ class SurfaceField(FEField):
         """
         Setup the field region geometry.
         """
-        for key, vgel in self.domain.geom_els.iteritems():
+        for key, vgel in six.iteritems(self.domain.geom_els):
             self.gel = vgel.surface_facet
             break
 

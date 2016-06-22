@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
@@ -6,6 +7,7 @@ from sfepy.linalg import dot_sequences, insert_strided_axis
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.mappings import VolumeMapping
 from sfepy.mechanics.tensors import dim2sym
+from six.moves import range
 
 def create_transformation_matrix(coors):
     """
@@ -61,7 +63,7 @@ def transform_asm_vectors(out, mtx_t):
         The transposed transformation matrix :math:`T`, see
         :func:`create_transformation_matrix`.
     """
-    n_ep = out.shape[2] / mtx_t.shape[2]
+    n_ep = out.shape[2] // mtx_t.shape[2]
     for iep in range(n_ep):
         ir = slice(iep, None, n_ep)
         fn = out[:, 0, ir, 0]
@@ -80,7 +82,7 @@ def transform_asm_matrices(out, mtx_t):
         The transposed transformation matrix :math:`T`, see
         :func:`create_transformation_matrix`.
     """
-    n_ep = out.shape[-1] / mtx_t.shape[-1]
+    n_ep = out.shape[-1] // mtx_t.shape[-1]
     for iepr in range(n_ep):
         ir = slice(iepr, None, n_ep)
         for iepc in range(n_ep):
@@ -280,7 +282,7 @@ def get_invariants(mtx_c, c33):
     Get the first and second invariants of the right Cauchy-Green
     deformation tensor describing deformation of an incompressible
     membrane.
-    
+
     Parameters
     ----------
     mtx_c ; array

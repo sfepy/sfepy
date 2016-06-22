@@ -1,9 +1,11 @@
 """
 Module for handling state variables.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import Struct
+import six
 
 class State(Struct):
     """
@@ -36,7 +38,7 @@ class State(Struct):
         parts = variables.get_state_parts()
         vec = variables.create_state_vector()
 
-        for key, part in parts.iteritems():
+        for key, part in six.iteritems(parts):
             indx = variables.get_indx(key)
             vec[indx] = part
 
@@ -211,7 +213,7 @@ class State(Struct):
             raise ValueError('cannot set full DOF vector with LCBCs!')
 
         self.variables.set_data(parts)
-        for key, part in parts.iteritems():
+        for key, part in six.iteritems(parts):
             indx = self.variables.get_indx(key)
             self.vec[indx] = part
 
@@ -280,7 +282,7 @@ class State(Struct):
             parts = self.get_parts()
 
             weights = {}
-            for key, part in parts.iteritems():
+            for key, part in six.iteritems(parts):
                 pnorm = nm.linalg.norm(part)
                 if pnorm < 10.0 * nm.finfo(nm.float64).eps:
                     pnorm = 1.0
@@ -292,7 +294,7 @@ class State(Struct):
                                  % self.variables.state)
 
         wvec = vec.copy()
-        for key in weights.iterkeys():
+        for key in six.iterkeys(weights):
             indx = self.variables.get_indx(key)
             wvec[indx] *= weights[key]
 

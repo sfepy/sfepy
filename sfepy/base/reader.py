@@ -1,5 +1,7 @@
-from base import Struct
+from __future__ import absolute_import
+from .base import Struct
 import os.path as op
+import six
 
 ##
 # 16.06.2005, c
@@ -41,7 +43,7 @@ class Reader( Struct ):
         execfile( filename, {}, aux )
 
         obj = obj_class()
-        for key, val in aux.iteritems():
+        for key, val in six.iteritems(aux):
             obj.__dict__[key] = val
 
         return obj

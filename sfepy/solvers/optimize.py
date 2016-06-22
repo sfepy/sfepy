@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -9,6 +10,8 @@ from sfepy.solvers.solvers import SolverMeta, OptimizationSolver
 
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
+import six
+from six.moves import range
 
 def conv_test(conf, it, of, of0, ofg_norm=None):
     """
@@ -46,7 +49,7 @@ def wrap_function(function, args):
         out = function(x, *args)
         tt2 = time.time()
         if tt2 < tt:
-            raise RuntimeError, '%f >= %f' % (tt, tt2)
+            raise RuntimeError('%f >= %f' % (tt, tt2))
         times.append(tt2 - tt)
         return out
     return ncalls, times, function_wrapper
@@ -55,7 +58,7 @@ def check_gradient(xit, aofg, fn_of, delta, check):
 
     dofg = nm.zeros_like(aofg)
     xd = xit.copy()
-    for ii in xrange(xit.shape[0]):
+    for ii in range(xit.shape[0]):
         xd[ii] = xit[ii] + delta
         ofp = fn_of(xd)
 
@@ -229,7 +232,7 @@ class FMinSteepestDescent(OptimizationSolver):
 
                 if alpha < conf.ls_min:
                     if aux is None:
-                        raise RuntimeError, 'giving up...'
+                        raise RuntimeError('giving up...')
                     output('linesearch failed, continuing anyway')
                     break
 
@@ -269,7 +272,7 @@ class FMinSteepestDescent(OptimizationSolver):
             else:
                 ofg = ofg1.copy()
 
-            for key, val in time_stats.iteritems():
+            for key, val in six.iteritems(time_stats):
                 if len(val):
                     output('%10s: %7.2f [s]' % (key, val[-1]))
 

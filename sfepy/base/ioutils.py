@@ -1,9 +1,12 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import numpy as nm
 import os
 import os.path as op
 import fnmatch
 import shutil
-from base import output, Struct, basestr
+from .base import output, Struct, basestr
+import six
 try:
     import tables as pt
 except:
@@ -58,6 +61,23 @@ def remove_files(root_dir):
 
         for dirname in dirnames:
             shutil.rmtree(os.path.join(root_dir, dirname))
+
+def enc(string, encoding='utf-8'):
+    """
+    Encode given string or bytes using the specified encoding.
+    """
+    val = string.encode(encoding)
+    return val
+
+def dec(val, encoding='utf-8'):
+    """
+    Decode given bytes using the specified encoding.
+    """
+    if isinstance(val, bytes):
+        return val.decode(encoding)
+
+    else:
+        return val
 
 ##
 # 27.04.2006, c
@@ -220,12 +240,16 @@ def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
         fd = pt.openFile(filename, mode='w', title='Recursive dict dump')
         group = '/'
 
-    for key, val in adict.iteritems():
+    for key, val in six.iteritems(adict):
         if isinstance(val, dict):
             group2 = fd.createGroup(group, '_' + str(key), '%s group' % key)
             write_dict_hdf5(filename, val, level + 1, group2, fd)
         else:
-            fd.createArray(group, '_' + str(key), val, '%s data' % key)
+            if not isinstance(val, basestr):
+                fd.createArray(group, '_' + str(key), val, '%s data' % key)
+
+            else:
+                fd.createArray(group, '_' + str(key), enc(val), '%s data' % key)
 
     if level == 0:
         fd.close()
@@ -237,13 +261,17 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
         fd = pt.openFile(filename, mode='r')
         group = fd.root
 
-    for name, gr in group._v_groups.iteritems():
+    for name, gr in six.iteritems(group._v_groups):
         name = name.replace('_', '', 1)
         out[name] = read_dict_hdf5(filename, level + 1, gr, fd)
 
-    for name, data in group._v_leaves.iteritems():
+    for name, data in six.iteritems(group._v_leaves):
         name = name.replace('_', '', 1)
-        out[name] = data.read()
+        val = data.read()
+        if isinstance(val, bytes):
+            val = dec(val)
+
+        out[name] = val
 
     if level == 0:
         fd.close()
@@ -257,9 +285,9 @@ def write_sparse_matrix_hdf5(filename, mtx, name='a sparse matrix'):
     fd = pt.openFile(filename, mode='w', title=name)
     try:
         info = fd.createGroup('/', 'info')
-        fd.createArray(info, 'dtype', mtx.dtype.str)
+        fd.createArray(info, 'dtype', enc(mtx.dtype.str))
         fd.createArray(info, 'shape', mtx.shape)
-        fd.createArray(info, 'format', mtx.format)
+        fd.createArray(info, 'format', enc(mtx.format))
 
         data = fd.createGroup('/', 'data')
         fd.createArray(data, 'data', mtx.data)
@@ -267,8 +295,8 @@ def write_sparse_matrix_hdf5(filename, mtx, name='a sparse matrix'):
         fd.createArray(data, 'indices', mtx.indices)
 
     except:
-        print 'matrix must be in SciPy sparse CSR/CSC format!'
-        print mtx.__repr__()
+        print('matrix must be in SciPy sparse CSR/CSC format!')
+        print(mtx.__repr__())
         raise
 
     fd.close()
@@ -284,13 +312,8 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
     info = fd.root.info
     data = fd.root.data
 
-    format = info.format.read()
-    if not isinstance(format, basestr):
-        format = format[0]
-
-    dtype = info.dtype.read()
-    if not isinstance(dtype, basestr):
-        dtype = dtype[0]
+    format = dec(info.format.read())
+    dtype = dec(info.dtype.read())
 
     if output_format is None:
         constructor = constructors[format]
@@ -306,7 +329,7 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
                            nm.c_[data.rows.read(), data.cols.read()].T),
                           shape=info.shape.read(), dtype=dtype)
     else:
-        print format
+        print(format)
         raise ValueError
     fd.close()
 

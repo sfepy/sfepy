@@ -15,6 +15,7 @@ Compute the 2D predefined problems::
 See ``examples/quantum/`` directory for the problem description files
 corresponding to the above examples.
 """
+from __future__ import absolute_import
 import os
 from optparse import OptionParser
 

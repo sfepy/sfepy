@@ -85,6 +85,7 @@ View the results using (adaptive linearization)::
   $ python postproc.py output-parallel/sol_u.h5 --wireframe -b -d'u,plot_displacements'
   $ python postproc.py output-parallel/sol_p.h5 --wireframe -b -d'p,plot_warp_scalar'
 """
+from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import time

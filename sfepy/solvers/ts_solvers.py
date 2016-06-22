@@ -1,11 +1,13 @@
 """
 Time stepping solvers.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, Struct, IndexedStruct, basestr
 from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
+import six
 
 class StationarySolver(TimeSteppingSolver):
     """
@@ -52,7 +54,7 @@ class StationarySolver(TimeSteppingSolver):
 
 def replace_virtuals(deps, pairs):
     out = {}
-    for key, val in deps.iteritems():
+    for key, val in six.iteritems(deps):
         out[pairs[key]] = val
 
     return out

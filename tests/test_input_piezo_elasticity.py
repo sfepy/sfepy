@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 input_name = '../examples/multi_physics/piezo_elasticity.py'
 output_name = 'test_piezo_elasticity.vtk'
 

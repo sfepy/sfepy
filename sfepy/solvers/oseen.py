@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -6,7 +7,8 @@ import numpy.linalg as nla
 from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
-from nls import conv_test
+from .nls import conv_test
+import six
 
 class StabilizationFunction(Struct):
     """
@@ -316,7 +318,7 @@ class Oseen(NonlinearSolver):
             dx_norm = nla.norm(vec_dx)
             output('||dx||: %.2e' % dx_norm)
 
-            for kv in time_stats.iteritems():
+            for kv in six.iteritems(time_stats):
                 output('%10s: %7.2f [s]' % kv)
 
             vec_x_prev = vec_x.copy()

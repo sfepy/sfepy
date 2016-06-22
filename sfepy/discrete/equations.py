@@ -1,6 +1,7 @@
 """
 Classes of equations composed of terms.
 """
+from __future__ import absolute_import
 import time
 from copy import copy
 
@@ -12,12 +13,13 @@ from sfepy.base.base import OneTypeList, Container, Struct
 from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
+import six
 
 def parse_definition(equation_def):
     """
     Parse equation definition string to create term description list.
     """
-    from parse_equations import create_bnf
+    from .parse_equations import create_bnf
 
     term_descs = []
     bnf = create_bnf(term_descs)
@@ -56,7 +58,7 @@ class Equations(Container):
         conf = copy(conf)
 
         ii = 0
-        for name, desc in conf.iteritems():
+        for name, desc in six.iteritems(conf):
             if verbose:
                 output('equation "%s":' %  name)
                 output(desc)

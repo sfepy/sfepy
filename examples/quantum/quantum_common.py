@@ -21,6 +21,7 @@ planar medit meshes.
 Also try changing approximation order ('approx_order') of the field below, as
 well as the integral order (should be two times the approximation order).
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 def common(fun_v, n_eigs=5, tau=0.0):

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from copy import copy
 
 import numpy as nm
@@ -5,6 +6,7 @@ import numpy as nm
 from sfepy.base.base import output, get_default, OneTypeList, Struct, basestr
 from sfepy.discrete import Equations, Variables, Region, Integral, Integrals
 from sfepy.discrete.common.fields import setup_extra_data
+import six
 
 ##
 # 02.10.2007, c
@@ -191,7 +193,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         regions = OneTypeList(Region, regions)
 
     else:
-        regions = fields[fields.keys()[0]].domain.regions
+        regions = fields[list(fields.keys())[0]].domain.regions
 
     # Create temporary variables.
     aux_vars = Variables(variables)
@@ -334,14 +336,14 @@ def eval_in_els_and_qp(expression, iels, coors,
     weights = nm.ones_like(coors[:, 0])
     integral = Integral('ie', coors=coors, weights=weights)
 
-    domain = fields.values()[0].domain
+    domain = list(fields.values())[0].domain
 
     region = Region('Elements', 'given elements', domain, '')
     region.cells = iels
     region.update_shape()
     domain.regions.append(region)
 
-    for field in fields.itervalues():
+    for field in six.itervalues(fields):
         field.clear_mappings(clear_all=True)
         field.clear_qp_base()
 
@@ -382,7 +384,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         raise TypeError('bad BC!')
 
     matrices = {}
-    for key, mtx_term in conf_equations.iteritems():
+    for key, mtx_term in six.iteritems(conf_equations):
         ks = key.split( ',' )
         mtx_name, var_names = ks[0], ks[1:]
         output( mtx_name, var_names )

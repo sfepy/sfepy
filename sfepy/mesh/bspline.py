@@ -1,4 +1,7 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import sys
+from six.moves import range
 sys.path.append('.')
 
 import numpy as nm
@@ -285,10 +288,10 @@ class BSpline(Struct):
                 self.eval_basis()
 
             else:
-                print 'knot insertion failed: multiplicity = spline degree!'
+                print('knot insertion failed: multiplicity = spline degree!')
 
         else:
-            print 'knot insertion failed: out of bounds!'
+            print('knot insertion failed: out of bounds!')
 
     def eval_basis(self, t=None, return_val=False):
         """

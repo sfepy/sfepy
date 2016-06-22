@@ -2,6 +2,7 @@
 Configuration classes for acoustic band gaps in a strongly heterogeneous
 elastic body.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import get_default, import_file, Struct
@@ -20,7 +21,7 @@ def get_pars(dim, lam, mu):
         try:
             c = tr.tensor_plane_stress(c3=c)
         except:
-            sym = (dim + 1) * dim / 2
+            sym = (dim + 1) * dim // 2
             c = nm.zeros((sym, sym), dtype=nm.float64)
 
     return c

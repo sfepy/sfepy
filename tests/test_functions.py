@@ -1,4 +1,5 @@
 # c: 14.04.2008, r: 14.04.2008
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy import data_dir

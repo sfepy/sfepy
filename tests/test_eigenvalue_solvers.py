@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
@@ -5,6 +6,7 @@ import numpy as nm
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.solvers import Solver
+import six
 
 # Mesh dimensions.
 dims = nm.array([1, 1])
@@ -95,7 +97,7 @@ class Test(TestCommon):
 
     def _list_eigenvalue_solvers(self, confs):
         d = []
-        for key, val in confs.iteritems():
+        for key, val in six.iteritems(confs):
             if val.kind.find('eig.') == 0:
                 d.append(val)
         d.sort(key=lambda a: a.name)

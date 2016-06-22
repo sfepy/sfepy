@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import time
 
@@ -11,7 +12,9 @@ from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
-from utils import iter_sym, create_pis, create_scalar_pis
+from .utils import iter_sym, create_pis, create_scalar_pis
+import six
+from six.moves import range
 
 class MiniAppBase(Struct):
     def any_from_conf(name, problem, kwargs):
@@ -190,7 +193,7 @@ class CorrMiniApp(MiniAppBase):
                                                      None,
                                                      extend=extend)
 
-                    for _key, val in aux.iteritems():
+                    for _key, val in six.iteritems(aux):
                         if key:
                             new_key = _key + '_' + key
 
@@ -511,7 +514,7 @@ class CorrEqPar(CorrOne):
 
         eqns ={}
         for ir in range(self.dim):
-            for key_eq, val_eq in self.equations.iteritems():
+            for key_eq, val_eq in six.iteritems(self.equations):
                 eqns[key_eq] = val_eq % self.eq_pars[ir]
 
             problem.set_equations(eqns)
@@ -562,7 +565,7 @@ class PressureEigenvalueProblem(CorrMiniApp):
         if self.mode == 'explicit':
             tt = time.clock()
             mtx_aibt = nm.zeros(mtx_bt.shape, dtype=mtx_bt.dtype)
-            for ic in xrange(mtx_bt.shape[1]):
+            for ic in range(mtx_bt.shape[1]):
                 mtx_aibt[:,ic] = ls(mtx_bt[:,ic].toarray().squeeze())
             output('mtx_aibt: %.2f s' % (time.clock() - tt))
             action_aibt = MatrixAction.from_array(mtx_aibt)

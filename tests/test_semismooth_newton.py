@@ -1,9 +1,12 @@
+from __future__ import absolute_import
 import sympy as sm
 import numpy as nm
 import scipy.sparse as sps
 
 from sfepy.base.base import dict_to_struct
 from sfepy.base.testing import TestCommon
+import six
+from six.moves import range
 
 conf = {
     'name' : 'semismooth_newton',
@@ -56,7 +59,7 @@ def eval_matrix(mtx, **kwargs):
 
 def convert_to_csr(m_in):
     m_out = {}
-    for key, mtx in m_in.iteritems():
+    for key, mtx in six.iteritems(m_in):
         m_out[key] = sps.csr_matrix(mtx)
 
     return m_out

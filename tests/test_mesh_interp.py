@@ -1,9 +1,12 @@
+from __future__ import absolute_import
 import os.path as op
 
 import numpy as nm
 
 from sfepy.base.conf import transform_variables
 from sfepy.base.testing import TestCommon
+import six
+from six.moves import range
 
 variables = {
     'u'       : ('unknown field', 'f', 0),
@@ -16,7 +19,7 @@ def in_dir(adir):
 def gen_datas(meshes):
     datas = {}
 
-    for key, mesh in meshes.iteritems():
+    for key, mesh in six.iteritems(meshes):
         bbox = mesh.get_bounding_box()
         nx = bbox[1,0] - bbox[0,0]
         centre = 0.5 * bbox.sum(axis=0)

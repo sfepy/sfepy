@@ -19,6 +19,7 @@ where
 and :math:`\ull{\sigma} \cdot \ul{n} = \bar{p} \ull{I} \cdot \ul{n}`
 with given traction pressure :math:`\bar{p}`.
 """
+from __future__ import absolute_import
 import numpy as nm
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 

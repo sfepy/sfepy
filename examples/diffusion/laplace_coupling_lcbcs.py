@@ -41,6 +41,7 @@ View the results using::
 
   $ ./postproc.py square_quad.vtk -b --wireframe -d'u1,plot_warp_scalar,rel_scaling=1:u2,plot_warp_scalar,rel_scaling=1'
 """
+from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.discrete.fem.periodic as per

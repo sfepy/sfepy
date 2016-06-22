@@ -2,6 +2,7 @@
 This module is not a test file. It contains classes grouping some common
 functionality, that is used in several test files.
 """
+from __future__ import absolute_import
 from sfepy.base.base import IndexedStruct
 from sfepy.base.testing import TestCommon
 import os.path as op

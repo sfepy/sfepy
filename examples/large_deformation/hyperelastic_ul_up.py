@@ -7,6 +7,8 @@ Incompressibility is treated by mixed displacement-pressure formulation.
 Models of this kind can be used to model e.g. rubber or some biological
 materials.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
 from sfepy import data_dir
 
@@ -62,7 +64,7 @@ def rotate_yz(ts, coor, **kwargs):
     vec = coor[:,1:3] - centre
 
     angle = 10.0 * ts.step
-    print 'angle:', angle
+    print('angle:', angle)
 
     mtx = rotation_matrix2d( angle )
     vec_rotated = nm.dot( vec, mtx )

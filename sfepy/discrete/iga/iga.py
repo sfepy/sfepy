@@ -11,9 +11,11 @@ The functions :func:`compute_bezier_extraction_1d()` and
     NURBS, Institute for Computational Engineering and Sciences, The University
     of Texas at Austin, Austin, Texas, March 2010.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
+from six.moves import range
 
 def _get_knots_tuple(knots):
     if isinstance(knots, nm.ndarray) and (knots.ndim == 1):
@@ -53,8 +55,8 @@ def tensor_product(a, b):
 
     n0 = b.shape[0]
     n1 = b.shape[1]
-    for ir in xrange(a.shape[0]):
-        for ic in xrange(a.shape[1]):
+    for ir in range(a.shape[0]):
+        for ic in range(a.shape[1]):
             c[n1 * ir : n1 * (ir + 1),
               n0 * ic : n0 * (ic + 1)] = a[ir, ic] * b
 
@@ -103,15 +105,15 @@ def compute_bezier_extraction_1d(knots, degree):
         if mult < degree:
             alphas = nm.zeros(degree - mult, dtype=nm.float64)
             numer = knots[b] - knots[a]
-            for ij in xrange(degree, mult, -1):
+            for ij in range(degree, mult, -1):
                 alphas[ij - mult - 1] = numer / (knots[a + ij] - knots[a])
 
             r = degree - mult
-            for ij in xrange(0, r):
+            for ij in range(0, r):
                 save = r - ij - 1
                 s = mult + ij
 
-                for ik in xrange(degree, s, -1):
+                for ik in range(degree, s, -1):
                     alpha = alphas[ik - s - 1]
                     cc[:, ik] = (alpha * cc[:, ik]
                                  + (1.0 - alpha) * cc[:, ik - 1])
@@ -181,9 +183,9 @@ def combine_bezier_extraction(cs):
 
         ncc = (len(c0), len(c1), len(c2))
         ccs = [None] * nm.prod(ncc)
-        for i0 in xrange(len(c0)):
-            for i1 in xrange(len(c1)):
-                for i2 in xrange(len(c2)):
+        for i0 in range(len(c0)):
+            for i1 in range(len(c1)):
+                for i2 in range(len(c2)):
                     cc = tensor_product(c0[i0], tensor_product(c1[i1], c2[i2]))
                     ii = get_raveled_index([i0, i1, i2], ncc)
                     ccs[ii] = cc
@@ -193,8 +195,8 @@ def combine_bezier_extraction(cs):
 
         ncc = (len(c0), len(c1))
         ccs = [None] * nm.prod(ncc)
-        for i0 in xrange(len(c0)):
-            for i1 in xrange(len(c1)):
+        for i0 in range(len(c0)):
+            for i1 in range(len(c1)):
                 cc = tensor_product(c0[i0], c1[i1])
                 ii = get_raveled_index([i0, i1], ncc)
                 ccs[ii] = cc
@@ -292,19 +294,19 @@ def create_connectivity(n_els, knots, degrees):
     if dim == 3:
         def make_conn_3d(conns, n_gfuns):
             conn = nm.empty((n_el, n_efun), dtype=nm.int32)
-            for ie0 in xrange(n_els[0]):
+            for ie0 in range(n_els[0]):
                 c0 = conns[0][ie0]
-                for ie1 in xrange(n_els[1]):
+                for ie1 in range(n_els[1]):
                     c1 = conns[1][ie1]
-                    for ie2 in xrange(n_els[2]):
+                    for ie2 in range(n_els[2]):
                         c2 = conns[2][ie2]
                         ie = get_raveled_index([ie0, ie1, ie2], n_els)
 
-                        for il0 in xrange(n_efuns[0]):
+                        for il0 in range(n_efuns[0]):
                             cl0 = c0[il0]
-                            for il1 in xrange(n_efuns[1]):
+                            for il1 in range(n_efuns[1]):
                                 cl1 = c1[il1]
-                                for il2 in xrange(n_efuns[2]):
+                                for il2 in range(n_efuns[2]):
                                     cl2 = c2[il2]
 
                                     iloc = get_raveled_index([il0, il1, il2],
@@ -321,15 +323,15 @@ def create_connectivity(n_els, knots, degrees):
     elif dim == 2:
         def make_conn_2d(conns, n_gfuns):
             conn = nm.empty((n_el, n_efun), dtype=nm.int32)
-            for ie0 in xrange(n_els[0]):
+            for ie0 in range(n_els[0]):
                 c0 = conns[0][ie0]
-                for ie1 in xrange(n_els[1]):
+                for ie1 in range(n_els[1]):
                     c1 = conns[1][ie1]
                     ie = get_raveled_index([ie0, ie1], n_els)
 
-                    for il0 in xrange(n_efuns[0]):
+                    for il0 in range(n_efuns[0]):
                         cl0 = c0[il0]
-                        for il1 in xrange(n_efuns[1]):
+                        for il1 in range(n_efuns[1]):
                             cl1 = c1[il1]
 
                             iloc = get_raveled_index([il0, il1], n_efuns)
@@ -591,8 +593,8 @@ def create_boundary_qp(coors, dim):
     bcoors = nm.empty((n_f, coors.shape[0], coors.shape[1] + 1),
                       dtype=nm.float64)
     ii = nm.arange(bcoors.shape[1], dtype=nm.uint32)
-    for ik in xrange(n_f):
-        for ic in xrange(bcoors.shape[2] - 1):
+    for ik in range(n_f):
+        for ic in range(bcoors.shape[2] - 1):
             bcoors[ik, :, axes[ik, ic]] = coors[:, ic]
         bcoors[ik, ii, axes[ik, -1]] = acoors[ik]
 
@@ -707,18 +709,18 @@ def eval_bernstein_basis(x, degree):
 
     if degree == 0: return funs, ders
 
-    for ip in xrange(1, n_fun - 1):
+    for ip in range(1, n_fun - 1):
         prev = 0.0
-        for ifun in xrange(ip + 1):
+        for ifun in range(ip + 1):
             tmp = x * funs[ifun]
             funs[ifun] = (1.0 - x) * funs[ifun] + prev
             prev = tmp
 
-    for ifun in xrange(n_fun):
+    for ifun in range(n_fun):
         ders[ifun] = degree * (funs[ifun - 1] - funs[ifun])
 
     prev = 0.0
-    for ifun in xrange(n_fun):
+    for ifun in range(n_fun):
         tmp = x * funs[ifun]
         funs[ifun] = (1.0 - x) * funs[ifun] + prev
         prev = tmp
@@ -779,7 +781,7 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
     # 1D Bernstein basis B, dB/dxi.
     B = nm.empty((dim, n_efuns_max), dtype=nm.float64)
     dB_dxi = nm.empty((dim, n_efuns_max), dtype=nm.float64)
-    for ii in xrange(dim):
+    for ii in range(dim):
         (B[ii, :n_efuns[ii]],
          dB_dxi[ii, :n_efuns[ii]]) = eval_bernstein_basis(qp[ii], degrees[ii])
 
@@ -788,7 +790,7 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
     dN_dxi = nm.empty((dim, n_efuns_max), dtype=nm.float64)
     n_els = [len(ii) for ii in cs]
     ic = get_unraveled_indices(ie, n_els)
-    for ii in xrange(dim):
+    for ii in range(dim):
         C = cs[ii][ic[ii]]
 
         N[ii, :n_efuns[ii]] = nm.dot(C, B[ii, :n_efuns[ii]])
@@ -802,9 +804,9 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
     dw_dxi = nm.zeros(dim, dtype=nm.float64) # dw_b/dxi
     a = 0 # Basis function index.
     if dim == 3:
-        for i0 in xrange(n_efuns[0]):
-            for i1 in xrange(n_efuns[1]):
-                for i2 in xrange(n_efuns[2]):
+        for i0 in range(n_efuns[0]):
+            for i1 in range(n_efuns[1]):
+                for i2 in range(n_efuns[2]):
                     R[a] = N[0, i0] * N[1, i1] * N[2, i2] * W[a]
                     w += R[a]
 
@@ -820,8 +822,8 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
                     a += 1
 
     elif dim == 2:
-        for i0 in xrange(n_efuns[0]):
-            for i1 in xrange(n_efuns[1]):
+        for i0 in range(n_efuns[0]):
+            for i1 in range(n_efuns[1]):
                 R[a] = N[0, i0] * N[1, i1] * W[a]
                 w += R[a]
 
@@ -834,7 +836,7 @@ def eval_nurbs_basis_tp(qp, ie, control_points, weights, degrees, cs, conn):
                 a += 1
 
     else:
-        for i0 in xrange(n_efuns[0]):
+        for i0 in range(n_efuns[0]):
             R[a] = N[0, i0] * W[a]
             w += R[a]
 

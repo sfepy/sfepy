@@ -1,5 +1,6 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
+from __future__ import absolute_import
 from sfepy import data_dir
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
@@ -22,7 +23,7 @@ field_1 = {
 
 def get_pars( dim, full = False ):
     import numpy as nm
-    sym = (dim + 1) * dim / 2
+    sym = (dim + 1) * dim // 2
     lam = 1e1
     mu = 1e0
     o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )

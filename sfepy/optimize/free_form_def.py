@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import tables as pt
 
 import numpy as nm
@@ -6,6 +8,7 @@ import numpy.linalg as nla
 from sfepy.base.base import assert_, OneTypeList, Struct
 from sfepy.linalg import cycle
 from sfepy.discrete.fem.mesh import Mesh
+from six.moves import range
 
 ##
 # 11.01.2006, c
@@ -15,7 +18,7 @@ from sfepy.discrete.fem.mesh import Mesh
 # 12.04.2006
 def read_spline_box_hdf5( filename ):
     if not pt.isHDF5File( filename ):
-        raise ValueError, 'not a HDF5 file! (%s)' % filename
+        raise ValueError('not a HDF5 file! (%s)' % filename)
 
     fd = pt.openFile( filename, mode = 'r' )
     boxes = fd.listNodes( '/box' )
@@ -38,14 +41,14 @@ def read_spline_box_hdf5( filename ):
             spb.ax.append( nm.asarray( axi.bsc.read() ) )
 
         sp_boxes.n_vertex = max( sp_boxes.n_vertex, nm.amax( spb.gpi ) + 1 )
-        print nm.amin( spb.gpi ), nm.amax( spb.gpi )
+        print(nm.amin( spb.gpi ), nm.amax( spb.gpi ))
 
         ##
         # Fix cpi by rebuilding :).
         off = 0
         n0, n1, n2 = spb.cpi.shape
         aux = nm.arange( n0 * n1 ).reshape( n1, n0 ).transpose()
-        for ii in xrange( n2 ):
+        for ii in range( n2 ):
             spb.cpi[:,:,ii] = aux + off
             off += n0 * n1
 
@@ -66,7 +69,7 @@ def read_spline_box_hdf5( filename ):
 # 13.04.2006
 def read_dsg_vars_hdf5( filename ):
     if not pt.isHDF5File( filename ):
-        raise ValueError, 'not a HDF5 file! (%s)' % filename
+        raise ValueError('not a HDF5 file! (%s)' % filename)
 
     fd = pt.openFile( filename, mode = 'r' )
     aux1 = fd.getNode( '/dsgvar/inx' ).read()
@@ -98,10 +101,10 @@ def interp_box_coordinates( spb, cxyz = None ):
         
     dim = len( spb.ax )
     pp = nm.zeros( (spb.ax[0].shape[0], dim), dtype = nm.float64 )
-    for ii in xrange( spb.cpi.shape[0] ):
-        for ij in xrange( spb.cpi.shape[1] ):
+    for ii in range( spb.cpi.shape[0] ):
+        for ij in range( spb.cpi.shape[1] ):
             aux = spb.ax[0][:,ii] * spb.ax[1][:,ij]
-            for ik in xrange( spb.cpi.shape[2] ):
+            for ik in range( spb.cpi.shape[2] ):
                 aux2 = aux * spb.ax[2][:,ik]
                 ip = spb.cpi[ii,ij,ik]
                 pp += aux2[:,nm.newaxis] * cxyz[ip,:]
@@ -118,13 +121,13 @@ class DesignVariables( Struct ):
                          dtype = nm.int32 )
         bpos = nm.zeros( (nm.amax( bmap[:,1] ) + 1,), dtype = nm.int32 )
         bpos[bmap[:,1]] = bmap[:,0]
-        print bmap, bpos
+        print(bmap, bpos)
         self.indx[:,0] = bpos[self.indx[:,0]]
 
     ##
     # 24.04.2006, c
     def normalize_null_space_base( self, magnitude = 1.0 ):
-        for ic in xrange( self.n_dsg ):
+        for ic in range( self.n_dsg ):
             col_norm = nla.norm( self.null_space_b[:,ic] )
             self.null_space_b[:,ic] /= magnitude * col_norm
 
@@ -204,18 +207,18 @@ class SplineBoxes( Struct ):
             descs.append( '3_2' )
 
             conn = []
-            for ij in xrange( spb.cpi.shape[1] ):
-                for ik in xrange( spb.cpi.shape[2] ):
+            for ij in range( spb.cpi.shape[1] ):
+                for ik in range( spb.cpi.shape[2] ):
                     inx = spb.cpi[:,ij,ik]
                     row = [[p1, p2] for p1, p2 in zip( inx[:-1], inx[1:] )]
                     conn.extend( row )
-            for ij in xrange( spb.cpi.shape[0] ):
-                for ik in xrange( spb.cpi.shape[2] ):
+            for ij in range( spb.cpi.shape[0] ):
+                for ik in range( spb.cpi.shape[2] ):
                     inx = spb.cpi[ij,:,ik]
                     row = [[p1, p2] for p1, p2 in zip( inx[:-1], inx[1:] )]
                     conn.extend( row )
-            for ij in xrange( spb.cpi.shape[0] ):
-                for ik in xrange( spb.cpi.shape[1] ):
+            for ij in range( spb.cpi.shape[0] ):
+                for ik in range( spb.cpi.shape[1] ):
                     inx = spb.cpi[ij,ik,:]
                     row = [[p1, p2] for p1, p2 in zip( inx[:-1], inx[1:] )]
                     conn.extend( row )

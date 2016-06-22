@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import sys
 from copy import copy
 
@@ -8,8 +10,10 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils \
-     import skip_read_line, read_token, read_array, read_list, pt
+     import skip_read_line, read_token, read_array, read_list, pt, enc, dec
 import os.path as op
+import six
+from six.moves import range
 
 supported_formats = {
     '.mesh' : 'medit',
@@ -99,7 +103,7 @@ def convert_complex_output(out_in):
     real and imaginary parts.
     """
     out = {}
-    for key, val in out_in.iteritems():
+    for key, val in six.iteritems(out_in):
 
         if val.data.dtype in  complex_types:
             rval = copy(val)
@@ -183,10 +187,10 @@ class MeshIO(Struct):
         self.set_float_format()
 
     def get_filename_trunk(self):
-        if isinstance(self.filename, file):
-            trunk = 'from_descriptor'
-        else:
+        if isinstance(self.filename, basestr):
             trunk = op.splitext(self.filename)[0]
+        else:
+            trunk = 'from_descriptor'
 
         return trunk
 
@@ -448,7 +452,7 @@ class MeditMeshIO(MeshIO):
         fd.close()
 
         if out is not None:
-            for key, val in out.iteritems():
+            for key, val in six.iteritems(out):
                 raise NotImplementedError
 
 
@@ -464,7 +468,7 @@ vtk_inverse_cell_types = {3 : '1_2', 5 : '2_3', 8 : '2_4', 9 : '2_4',
                           10 : '3_4', 11 : '3_8', 12 : '3_8'}
 vtk_remap = {8 : nm.array([0, 1, 3, 2], dtype=nm.int32),
              11 : nm.array([0, 1, 3, 2, 4, 5, 7, 6], dtype=nm.int32)}
-vtk_remap_keys = vtk_remap.keys()
+vtk_remap_keys = list(vtk_remap.keys())
 
 class VTKMeshIO(MeshIO):
     format = 'vtk'
@@ -629,7 +633,7 @@ class VTKMeshIO(MeshIO):
         descs = []
         conns = []
         mat_ids = []
-        for ct, conn in dconns.iteritems():
+        for ct, conn in six.iteritems(dconns):
             sct = vtk_inverse_cell_types[ct]
             descs.append(sct)
 
@@ -686,7 +690,7 @@ class VTKMeshIO(MeshIO):
         fd.write(vtk_header % (step, time, nt, op.basename(sys.argv[0])))
 
         n_nod, dim = coors.shape
-        sym = dim * (dim + 1) / 2
+        sym = (dim + 1) * dim // 2
 
         fd.write('\nPOINTS %d float\n' % n_nod)
 
@@ -724,7 +728,7 @@ class VTKMeshIO(MeshIO):
         fd.write(''.join(['%d\n' % ii for ii in ngroups]))
 
         if out is not None:
-            point_keys = [key for key, val in out.iteritems()
+            point_keys = [key for key, val in six.iteritems(out)
                           if val.mode == 'vertex']
         else:
             point_keys = {}
@@ -759,10 +763,10 @@ class VTKMeshIO(MeshIO):
                 _write_tensors(aux)
 
             else:
-                raise NotImplementedError, nc
+                raise NotImplementedError(nc)
 
         if out is not None:
-            cell_keys = [key for key, val in out.iteritems()
+            cell_keys = [key for key, val in six.iteritems(out)
                          if val.mode == 'cell']
         else:
             cell_keys = {}
@@ -809,7 +813,7 @@ class VTKMeshIO(MeshIO):
                 _write_tensors(aux)
 
             else:
-                raise NotImplementedError, (nr, nc)
+                raise NotImplementedError(nr, nc)
 
         fd.close()
 
@@ -886,7 +890,7 @@ class TetgenMeshIO(MeshIO):
         conns = []
         mat_ids = []
         elements = nm.array(elements, dtype=nm.int32) - 1
-        for key, value in regions.iteritems():
+        for key, value in six.iteritems(regions):
             descs.append(etype)
             mat_ids.append(nm.ones_like(value) * key)
             conns.append(elements[nm.array(value)-1].copy())
@@ -948,7 +952,7 @@ class TetgenMeshIO(MeshIO):
         ...}
 
         """
-        f = file(fele)
+        f = open(fele)
         l = [int(x) for x in f.readline().split()]
         ntetra,nnod,nattrib = l
         #we have either linear or quadratic tetrahedra:
@@ -984,7 +988,7 @@ class TetgenMeshIO(MeshIO):
                 msg += "there are elements not belonging to any physical entity"
                 raise ValueError(msg)
 
-            if regions.has_key(regionnum):
+            if regionnum in regions:
                 regions[regionnum].append(l[0])
             else:
                 regions[regionnum]=[l[0]]
@@ -1023,10 +1027,10 @@ class ComsolMeshIO(MeshIO):
                 line = skip_read_line(fd)
 
                 n_tags = self._read_commented_int()
-                for ii in xrange(n_tags):
+                for ii in range(n_tags):
                     skip_read_line(fd)
                 n_types = self._read_commented_int()
-                for ii in xrange(n_types):
+                for ii in range(n_types):
                     skip_read_line(fd)
 
                 skip_read_line(fd)
@@ -1049,7 +1053,7 @@ class ComsolMeshIO(MeshIO):
                 conns = []
                 descs = []
                 mat_ids = []
-                for it in xrange(n_types):
+                for it in range(n_types):
                     t_name = skip_read_line(fd).split()[1]
                     n_ep = self._read_commented_int()
                     n_el = self._read_commented_int()
@@ -1082,7 +1086,7 @@ class ComsolMeshIO(MeshIO):
                     # Skip parameters.
                     n_pv = self._read_commented_int()
                     n_par = self._read_commented_int()
-                    for ii in xrange(n_par):
+                    for ii in range(n_par):
                         skip_read_line(fd)
 
                     n_domain = self._read_commented_int()
@@ -1092,12 +1096,12 @@ class ComsolMeshIO(MeshIO):
                         mat_id = read_array(fd, n_domain, 1, nm.int32)
                         mat_ids.append(mat_id)
                     else:
-                        for ii in xrange(n_domain):
+                        for ii in range(n_domain):
                             skip_read_line(fd)
 
                     # Skip up/down pairs.
                     n_ud = self._read_commented_int()
-                    for ii in xrange(n_ud):
+                    for ii in range(n_ud):
                         skip_read_line(fd)
                 break
 
@@ -1198,17 +1202,20 @@ class ComsolMeshIO(MeshIO):
         fd.close()
 
         if out is not None:
-            for key, val in out.iteritems():
+            for key, val in six.iteritems(out):
                 raise NotImplementedError
 
 class HDF5MeshIO(MeshIO):
     format = "hdf5"
 
     import string
-    _all = ''.join(map(chr, range(256)))
-    _letters = string.letters + string.digits + '_'
+    _all = ''.join(map(chr, list(range(256))))
+    _letters = string.ascii_letters + string.digits + '_'
     _rubbish = ''.join([ch for ch in set(_all) - set(_letters)])
-    _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
+    if sys.version_info[0] >= 3:
+        _tr = str.maketrans(_rubbish, '_' * len(_rubbish))
+    else:
+        _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
 
     def read_dimension(self, ret_fd=False):
         fd = pt.openFile(self.filename, mode="r")
@@ -1254,7 +1261,7 @@ class HDF5MeshIO(MeshIO):
 
         mesh_group = fd.root.mesh
 
-        mesh.name = mesh_group.name.read()
+        mesh.name = dec(mesh_group.name.read())
         coors = mesh_group.coors.read()
         ngroups = mesh_group.ngroups.read()
 
@@ -1263,12 +1270,12 @@ class HDF5MeshIO(MeshIO):
         conns = []
         descs = []
         mat_ids = []
-        for ig in xrange(n_gr):
+        for ig in range(n_gr):
             gr_name = 'group%d' % ig
             group = mesh_group._f_getChild(gr_name)
             conns.append(group.conn.read())
             mat_ids.append(group.mat_id.read())
-            descs.append(group.desc.read())
+            descs.append(dec(group.desc.read()))
 
         nodal_bcs = {}
         try:
@@ -1279,7 +1286,7 @@ class HDF5MeshIO(MeshIO):
 
         else:
             for group in node_sets_groups:
-                key = group.key.read()
+                key = dec(group.key.read())
                 nods = group.nods.read()
                 nodal_bcs[key] = nods
 
@@ -1305,7 +1312,7 @@ class HDF5MeshIO(MeshIO):
 
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
 
-            fd.createArray(mesh_group, 'name', mesh.name, 'name')
+            fd.createArray(mesh_group, 'name', enc(mesh.name), 'name')
             fd.createArray(mesh_group, 'coors', coors, 'coors')
             fd.createArray(mesh_group, 'ngroups', ngroups, 'ngroups')
             fd.createArray(mesh_group, 'n_gr', len(conns), 'n_gr')
@@ -1315,16 +1322,16 @@ class HDF5MeshIO(MeshIO):
                 fd.createArray(conn_group, 'conn', conn, 'connectivity')
                 fd.createArray(conn_group, 'mat_id', mat_ids[ig],
                                'material id')
-                fd.createArray(conn_group, 'desc', descs[ig],
+                fd.createArray(conn_group, 'desc', enc(descs[ig]),
                                'element Type')
 
             node_sets_groups = fd.createGroup(mesh_group, 'node_sets',
                                              'node sets groups')
             ii = 0
-            for key, nods in mesh.nodal_bcs.iteritems():
+            for key, nods in six.iteritems(mesh.nodal_bcs):
                 group = fd.createGroup(node_sets_groups, 'group%d' % ii,
                                        'node sets group')
-                fd.createArray(group, 'key', key, 'key')
+                fd.createArray(group, 'key', enc(key), 'key')
                 fd.createArray(group, 'nods', nods, 'nods')
                 ii += 1
 
@@ -1336,9 +1343,9 @@ class HDF5MeshIO(MeshIO):
                 fd.createArray(ts_group, 'n_step', ts.n_step, 'n_step')
 
             tstat_group = fd.createGroup('/', 'tstat', 'global time statistics')
-            fd.createArray(tstat_group, 'created', asctime(),
+            fd.createArray(tstat_group, 'created', enc(asctime()),
                            'file creation time')
-            fd.createArray(tstat_group, 'finished', '.' * 24,
+            fd.createArray(tstat_group, 'finished', enc('.' * 24),
                            'file closing time')
 
             fd.createArray(fd.root, 'last_step', nm.array([0], dtype=nm.int32),
@@ -1363,7 +1370,7 @@ class HDF5MeshIO(MeshIO):
             fd.createArray(ts_group, 'nt', nt, 'normalized time')
 
             name_dict = {}
-            for key, val in out.iteritems():
+            for key, val in six.iteritems(out):
                 shape = val.get('shape', val.data.shape)
                 dofs = val.get('dofs', None)
                 if dofs is None:
@@ -1375,16 +1382,17 @@ class HDF5MeshIO(MeshIO):
                 data_group = fd.createGroup(step_group, group_name,
                                             '%s data' % key)
                 fd.createArray(data_group, 'data', val.data, 'data')
-                fd.createArray(data_group, 'mode', val.mode, 'mode')
-                fd.createArray(data_group, 'dofs', dofs, 'dofs')
+                fd.createArray(data_group, 'mode', enc(val.mode), 'mode')
+                fd.createArray(data_group, 'dofs', [enc(ic) for ic in dofs],
+                               'dofs')
                 fd.createArray(data_group, 'shape', shape, 'shape')
-                fd.createArray(data_group, 'name', name, 'object name')
+                fd.createArray(data_group, 'name', enc(name), 'object name')
                 fd.createArray(data_group, 'var_name',
-                               var_name, 'object parent name')
-                fd.createArray(data_group, 'dname', key, 'data name')
+                               enc(var_name), 'object parent name')
+                fd.createArray(data_group, 'dname', enc(key), 'data name')
                 if val.mode == 'full':
-                    fd.createArray(data_group, 'field_name', val.field_name,
-                                   'field name')
+                    fd.createArray(data_group, 'field_name',
+                                   enc(val.field_name), 'field name')
 
                 name_dict[key] = group_name
 
@@ -1392,7 +1400,7 @@ class HDF5MeshIO(MeshIO):
             fd.root.last_step[0] = step
 
             fd.removeNode(fd.root.tstat.finished)
-            fd.createArray(fd.root.tstat, 'finished', asctime(),
+            fd.createArray(fd.root.tstat, 'finished', enc(asctime()),
                            'file closing time')
             fd.close()
 
@@ -1474,15 +1482,15 @@ class HDF5MeshIO(MeshIO):
         out = {}
         for data_group in step_group:
             try:
-                key = data_group.dname.read()
+                key = dec(data_group.dname.read())
 
             except pt.exceptions.NoSuchNodeError:
                 continue
 
-            name = data_group.name.read()
-            mode = data_group.mode.read()
+            name = dec(data_group.name.read())
+            mode = dec(data_group.mode.read())
             data = data_group.data.read()
-            dofs = tuple(data_group.dofs.read())
+            dofs = tuple([dec(ic) for ic in data_group.dofs.read()])
             try:
                 shape = tuple(data_group.shape.read())
 
@@ -1490,7 +1498,7 @@ class HDF5MeshIO(MeshIO):
                 shape = data.shape
 
             if mode == 'full':
-                field_name = data_group.field_name.read()
+                field_name = dec(data_group.field_name.read())
 
             else:
                 field_name = None
@@ -1510,15 +1518,15 @@ class HDF5MeshIO(MeshIO):
         if fd is None: return None
 
         groups = step_group._v_groups
-        for name, data_group in groups.iteritems():
+        for name, data_group in six.iteritems(groups):
             try:
-                key = data_group.dname.read()
+                key = dec(data_group.dname.read())
 
             except pt.exceptions.NoSuchNodeError:
                 continue
 
             if key == dname:
-                mode = data_group.mode.read()
+                mode = dec(data_group.mode.read())
                 fd.close()
                 return mode, name
 
@@ -1530,7 +1538,7 @@ class HDF5MeshIO(MeshIO):
         fd = pt.openFile(filename, mode="r")
 
         th = dict_from_keys_init(indx, list)
-        for step in xrange(fd.root.last_step[0] + 1):
+        for step in range(fd.root.last_step[0] + 1):
             gr_name = 'step%d' % step
 
             step_group = fd.getNode(fd.root, gr_name)
@@ -1541,7 +1549,7 @@ class HDF5MeshIO(MeshIO):
 
         fd.close()
 
-        for key, val in th.iteritems():
+        for key, val in six.iteritems(th):
             aux = nm.array(val)
             if aux.ndim == 4: # cell data.
                 aux = aux[:,0,:,0]
@@ -1558,7 +1566,7 @@ class HDF5MeshIO(MeshIO):
         ths = dict_from_keys_init(var_names, list)
 
         arr = nm.asarray
-        for step in xrange(ts.n_step):
+        for step in range(ts.n_step):
             gr_name = 'step%d' % step
             step_group = fd.getNode(fd.root, gr_name)
             name_dict = step_group._v_attrs.name_dict
@@ -1579,10 +1587,10 @@ class MEDMeshIO(MeshIO):
         mesh_root = fd.root.ENS_MAA
 
         #TODO: Loop through multiple meshes?
-        mesh_group = mesh_root._f_getChild(mesh_root._v_groups.keys()[0])
+        mesh_group = mesh_root._f_getChild(list(mesh_root._v_groups.keys())[0])
 
-        if not ('NOE' in mesh_group._v_groups.keys()):
-            mesh_group = mesh_group._f_getChild(mesh_group._v_groups.keys()[0])
+        if not ('NOE' in list(mesh_group._v_groups.keys())):
+            mesh_group = mesh_group._f_getChild(list(mesh_group._v_groups.keys())[0])
 
         mesh.name = mesh_group._v_name
 
@@ -1590,7 +1598,7 @@ class MEDMeshIO(MeshIO):
         n_nodes = mesh_group.NOE.COO.getAttr('NBR')
 
         # Unflatten the node coordinate array
-        dim = aux_coors.shape[0] / n_nodes
+        dim = aux_coors.shape[0] // n_nodes
         coors = nm.zeros((n_nodes,dim), dtype=nm.float64)
         for ii in range(dim):
             coors[:,ii] = aux_coors[n_nodes*ii:n_nodes*(ii+1)]
@@ -1624,7 +1632,7 @@ class MEDMeshIO(MeshIO):
         descs = []
         mat_ids = []
 
-        for md, desc in med_descs.iteritems():
+        for md, desc in six.iteritems(med_descs):
             if int(desc[0]) != dim: continue
 
             try:
@@ -1634,7 +1642,7 @@ class MEDMeshIO(MeshIO):
                 n_conns = group.NOD.getAttr('NBR')
 
                 # (0 based indexing in numpy vs. 1 based in MED)
-                nne = aux_conn.shape[0] / n_conns
+                nne = aux_conn.shape[0] // n_conns
                 conn = nm.zeros((n_conns,nne), dtype=nm.int32)
                 for ii in range(nne):
                     conn[:,ii] = aux_conn[n_conns*ii:n_conns*(ii+1)] - 1
@@ -1759,7 +1767,7 @@ def mesh_from_groups(mesh, ids, coors, ngroups,
 
     # Remove empty groups.
     conns, mat_ids, descs = zip(*[(conns[ig], mat_ids[ig], descs[ig])
-                                  for ig in xrange(4)
+                                  for ig in range(4)
                                   if conns[ig].shape[0] > 0])
 
     mesh._set_io_data(coors, ngroups, conns, mat_ids, descs)
@@ -1787,7 +1795,7 @@ class AVSUCDMeshIO(MeshIO):
         ids = nm.zeros((n_nod,), dtype=nm.int32)
         dim = 3
         coors = nm.zeros((n_nod, dim), dtype=nm.float64)
-        for ii in xrange(n_nod):
+        for ii in range(n_nod):
             line = fd.readline().split()
             ids[ii] = int(line[0])
             coors[ii] = [float(coor) for coor in line[1:]]
@@ -1796,7 +1804,7 @@ class AVSUCDMeshIO(MeshIO):
         tetras = []
         mat_hexas = []
         hexas = []
-        for ii in xrange(n_el):
+        for ii in range(n_el):
             line = fd.readline().split()
             if line[2] == 'tet':
                 mat_tetras.append(int(line[1]))
@@ -1885,7 +1893,7 @@ class AbaqusMeshIO(MeshIO):
     def guess(filename):
         ok = False
         fd = open(filename, 'r')
-        for ii in xrange(100):
+        for ii in range(100):
             try:
                 line = fd.readline().strip().split(',')
             except:
@@ -1985,7 +1993,7 @@ class AbaqusMeshIO(MeshIO):
         fd.close()
 
         ngroups = nm.zeros((len(coors),), dtype=nm.int32)
-        for ing, ii in nsets.iteritems():
+        for ing, ii in six.iteritems(nsets):
             ngroups[nm.array(ii)-1] = ing
 
         mesh = mesh_from_groups(mesh, ids, coors, ngroups,
@@ -2114,7 +2122,7 @@ class BDFMeshIO(MeshIO):
             elif cmd == 'CHEXAX':
                 cmd = ''
                 aux4 = row[0]
-                aux5 = string.find(aux4, aux3)
+                aux5 = aux4.find(aux3)
                 aux.append(int(aux4[(aux5+len(aux3)):])-1)
                 aux.extend([int(ii)-1 for ii in row[1:]])
                 aux.append(aux2)
@@ -2216,7 +2224,7 @@ class BDFMeshIO(MeshIO):
         fd.write("*           0.000000E+00    0.000000E+00\n*       \n")
 
         fd.write("$\n$ MATERIALS\n$\n")
-        matkeys = mats.keys()
+        matkeys = list(mats.keys())
         matkeys.sort()
         for ii, imat in enumerate(matkeys):
             fd.write("$ material%d : Isotropic\n" % imat)
@@ -2344,8 +2352,8 @@ class NEUMeshIO(MeshIO):
         fd.close()
 
         if int(n_el) != sum(group_n_els):
-            print 'wrong total number of group elements! (%d == %d)'\
-                  % (int(n_el), len(group_n_els))
+            print('wrong total number of group elements! (%d == %d)'\
+                  % (int(n_el), len(group_n_els)))
 
         mat_ids = nm.zeros(n_el, dtype=nm.int32)
         for ii, els in enumerate(groups):
@@ -2381,7 +2389,7 @@ class ANSYSCDBMeshIO(MeshIO):
     def guess(filename):
         fd = open(filename, 'r')
 
-        for ii in xrange(1000):
+        for ii in range(1000):
             row = fd.readline()
             if not row: break
             if len(row) == 0: continue
@@ -2573,7 +2581,7 @@ class ANSYSCDBMeshIO(MeshIO):
                                 hexas, mat_ids_hexas, remap=remap)
 
         mesh.nodal_bcs = {}
-        for key, nods in nodal_bcs.iteritems():
+        for key, nods in six.iteritems(nodal_bcs):
             mesh.nodal_bcs[key] = remap[nods]
 
         return mesh
@@ -2740,7 +2748,7 @@ def guess_format(filename, ext, formats, io_table):
 
     return format
 
-var_dict = vars().items()
+var_dict = list(vars().items())
 io_table = {}
 
 for key, var in var_dict:

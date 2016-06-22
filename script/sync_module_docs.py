@@ -9,6 +9,7 @@ Notes
 -----
 The developer guide needs to be edited manually to reflect the changes.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 import os

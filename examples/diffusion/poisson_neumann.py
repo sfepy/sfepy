@@ -11,6 +11,7 @@ Find :math:`t` such that:
 where :math:`g` is the given flux, :math:`g = \nabla T \cdot \ul{n}`. See the
 tutorial section :ref:`poisson-weak-form-tutorial` for a detailed explanation.
 """
+from __future__ import absolute_import
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'

@@ -1,11 +1,13 @@
 """
 IGA domain generators.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, output, Struct
 import sfepy.discrete.iga as iga
 from sfepy.discrete.iga.domain import NurbsPatch
+from six.moves import range
 
 def create_from_igakit(inurbs, verbose=False):
     """
@@ -112,10 +114,10 @@ def gen_patch_block_domain(dims, shape, centre, degrees, continuity=None,
     dd = centre - 0.5 * dims
     block = cad.grid(shape - 1, degree=degrees, continuity=continuity)
 
-    for ia in xrange(dim):
+    for ia in range(dim):
         block.scale(dims[ia], ia)
 
-    for ia in xrange(dim):
+    for ia in range(dim):
         block.translate(dd[ia], ia)
 
     if cp_mode == 'uniform':

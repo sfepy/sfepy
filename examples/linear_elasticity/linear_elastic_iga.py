@@ -25,6 +25,7 @@ View the results using::
   $ ./postproc.py block3d.vtk --wireframe -b
   $ ./postproc.py block3d.vtk --wireframe -b -d 'u,plot_displacements,rel_scaling=1e0'
 """
+from __future__ import absolute_import
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy import data_dir
 

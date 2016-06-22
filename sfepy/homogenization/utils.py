@@ -1,7 +1,9 @@
+from __future__ import absolute_import
 import numpy as nm
+from six.moves import range
 
 def build_op_pi(var, ir, ic):
-    """\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""
+    r"""\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""
     coor = var.field.get_coor()
 
     pi = nm.zeros_like( coor )
@@ -11,7 +13,7 @@ def build_op_pi(var, ir, ic):
     return pi
 
 def create_pis(problem, var_name):
-    """\Pi_i^{rs} = y_s \delta_{ir}, \ul{y} \in Y coordinates."""
+    r"""\Pi_i^{rs} = y_s \delta_{ir}, \ul{y} \in Y coordinates."""
     var = problem.get_variables(auto_create=True)[var_name]
 
     dim = problem.domain.mesh.dim
@@ -25,7 +27,7 @@ def create_pis(problem, var_name):
     return names, pis
 
 def create_scalar_pis( problem, var_name ):
-    """\Pi^k = y_k, \ul{y} \in Y coordinates."""
+    r"""\Pi^k = y_k, \ul{y} \in Y coordinates."""
     var = problem.get_variables(auto_create=True)[var_name]
     coor = var.field.get_coor()
 
@@ -38,10 +40,10 @@ def create_scalar_pis( problem, var_name ):
     return names, pis
 
 def iter_sym( dim ):
-    for ii in xrange( dim ):
+    for ii in range( dim ):
         yield ii, ii
-    for ir in xrange( 0, dim ):
-        for ic in xrange( ir + 1, dim ):
+    for ir in range( 0, dim ):
+        for ic in range( ir + 1, dim ):
             yield ir, ic
 c2s = {
     2 : [0, 2, 2, 1],
@@ -56,14 +58,14 @@ def interp_conv_mat( mat, ts, tdiff ):
     n_t = mat.shape[0]
     out = []
     tn = ts.time
-    for ii, step in enumerate( xrange( ts.step, 0, -1 ) ):
+    for ii, step in enumerate( range( ts.step, 0, -1 ) ):
         if ii == 0:
             out.append( mat[0] )
             continue
-        
+
         td = tn - ts.times[step]
         if (td - 1e-12) > tdiff[-1]: break
-        
+
         i1 = (tdiff >= td).argmax()
         i0 = i1 - 1
 
@@ -93,14 +95,14 @@ def integrate_in_time( coef, ts, scheme = 'forward' ):
     'times' attribute."""
     dt = nm.diff(ts.times)
     dt = dt.reshape((dt.shape[0],) + (1,) * (coef.ndim-1))
-    
+
     if scheme == 'trapezoid':
         icoef = nm.sum(0.5 * (coef[1:,...] + coef[:-1,...]) * dt, axis=0)
     elif scheme == 'forward':
         icoef = nm.sum(coef[:-1,...] * dt, axis=0)
     else:
         raise ValueError( 'unsupported scheme: %s' % scheme )
-    
+
     return icoef
 
 def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, kind='facet'):
@@ -209,7 +211,7 @@ def get_box_volume(dim, lbn, rtf=None):
     """
     if rtf is None:
         lbn, rtf = -nm.array(lbn), lbn
-    
+
     if dim == 3:
         lbnx, lbny, lbnz = lbn
         rtfx, rtfy, rtfz = rtf

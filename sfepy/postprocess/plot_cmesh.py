@@ -1,7 +1,9 @@
 """
 Functions to visualize the CMesh geometry and topology.
 """
+from __future__ import absolute_import
 from sfepy.postprocess.plot_dofs import _get_axes, _to2d
+from six.moves import range
 
 def plot_wireframe(ax, cmesh, color='k'):
     """
@@ -65,7 +67,7 @@ def label_local_entities(ax, cmesh, edim, color='b', fontsize=10):
 
     eps = 0.1
     oeps = 1.0 - eps
-    for ii in xrange(conn.num):
+    for ii in range(conn.num):
         for ic, ie in enumerate(conn.indices[off[ii]:off[ii+1]]):
             # Shift labels towards the cell centre.
             cc = oeps * coors[ie] + eps * centres[ii]

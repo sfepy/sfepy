@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 from sfepy.terms.terms import terms
 from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
+import six
 
 class HyperElasticTLBase(HyperElasticBase):
     """
@@ -26,7 +28,7 @@ class HyperElasticTLBase(HyperElasticBase):
         vec = self.get_vector(state)
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
+        sym = (dim + 1) * dim // 2
 
         shapes = {
             'mtx_f' : (n_el, n_qp, dim, dim),
@@ -38,7 +40,7 @@ class HyperElasticTLBase(HyperElasticBase):
             'green_strain' : (n_el, n_qp, sym, 1),
         }
         data = Struct(name='tl_family_data')
-        for key, shape in shapes.iteritems():
+        for key, shape in six.iteritems(shapes):
             setattr(data, key, nm.zeros(shape, dtype=nm.float64))
 
         self.family_function(data.mtx_f,
@@ -242,7 +244,7 @@ class BulkPressureTLTerm(HyperElasticTLBase):
     def get_eval_shape(self, virtual, state, state_p,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
+        sym = (dim + 1) * dim // 2
 
         return (n_el, 1, sym, 1), state.dtype
 
@@ -396,7 +398,7 @@ class HyperElasticSurfaceTLBase(HyperElasticBase):
             'inv_f' : (n_el, n_qp, dim, dim),
         }
         data = Struct(name='tl_surface_family_data')
-        for key, shape in shapes.iteritems():
+        for key, shape in six.iteritems(shapes):
             setattr(data, key, nm.zeros(shape, dtype=nm.float64))
 
         self.family_function(data.mtx_f,

@@ -17,6 +17,7 @@ sources or sinks which represent the external flow into the i-th
 compartment and :math:`p^{i}` is the pressure in the i-th compartment.
 """
 
+from __future__ import absolute_import
 from sfepy.base.base import Struct
 import numpy as nm
 from sfepy import data_dir

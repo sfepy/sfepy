@@ -11,6 +11,8 @@ Both normal and parametric study runs are supported. A parametric study allows
 repeated runs for varying some of the simulation parameters - see
 ``examples/diffusion/poisson_parametric_study.py`` file.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 from optparse import OptionParser
 
 import sfepy
@@ -21,13 +23,13 @@ from sfepy.applications import PDESolverApp
 def print_terms():
     import sfepy.terms as t
     tt = t.term_table
-    print 'Terms: %d available:' % len(tt)
-    print sorted(tt.keys())
+    print('Terms: %d available:' % len(tt))
+    print(sorted(tt.keys()))
 
 def print_solvers():
     from sfepy.solvers import solver_table
-    print 'Solvers: %d available:' % len(solver_table)
-    print sorted(solver_table.keys())
+    print('Solvers: %d available:' % len(solver_table))
+    print(sorted(solver_table.keys()))
 
 usage = """%prog [options] filename_in\n""" + __doc__.rstrip()
 

@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import os.path as op
 import shutil
 
@@ -8,6 +10,7 @@ from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import MiniAppBase
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import PDESolverApp
+import six
 
 class Volume(MiniAppBase):
 
@@ -23,7 +26,7 @@ def get_volume_from_options(options, problem):
     volume = {}
 
     if hasattr(options, 'volumes') and (options.volumes is not None):
-        for vk, vv in options.volumes.iteritems():
+        for vk, vv in six.iteritems(options.volumes):
             if 'value' in vv:
                 volume[vk] = nm.float64(vv['value'])
             else:
@@ -108,7 +111,7 @@ class HomogenizationApp( HomogenizationEngine ):
 
         volume = get_volume_from_options(opts, self.problem)
 
-        for vk, vv in volume.iteritems():
+        for vk, vv in six.iteritems(volume):
             output('volume: %s = %.2f' % (vk, vv))
 
         he = HomogenizationEngine( self.problem, self.options, volume = volume )
@@ -126,7 +129,7 @@ class HomogenizationApp( HomogenizationEngine ):
             prec = nm.get_printoptions()[ 'precision']
             if hasattr(opts, 'print_digits'):
                 nm.set_printoptions(precision=opts.print_digits)
-            print coefs
+            print(coefs)
             nm.set_printoptions(precision=prec)
 
         coef_save_name = op.join( opts.output_dir, opts.coefs_filename )

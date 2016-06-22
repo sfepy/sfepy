@@ -7,6 +7,7 @@
 #$ \centerline{Example input file, \today}
 
 #! Homogenization of heterogeneous linear elastic material - mixed formulation
+from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.discrete.fem.periodic as per

@@ -9,6 +9,7 @@ Notes
 -----
 History: pre-git versions already from from 13.06.2006.
 """
+from __future__ import print_function
 from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
      Group, Optional, ZeroOrMore, nums, alphas, alphanums,\
      Combine, StringStart, StringEnd, Forward, oneOf, ParseException
@@ -71,15 +72,15 @@ def visit_stack(stack, op_visitor, leaf_visitor):
             return leaf_visitor(level, op)
 
         else:
-            raise ValueError, token
+            raise ValueError(token)
 
     return visit(stack, 0)
 
 def print_op(level, op, item1, item2):
-    print level * '  ' + (': %s' % op)
+    print(level * '  ' + (': %s' % op))
 
 def print_leaf(level, op):
-    print level * '  ' + ('< %s' % op)
+    print(level * '  ' + ('< %s' % op))
 
 def print_stack(stack):
     visit_stack(stack, print_op, print_leaf)

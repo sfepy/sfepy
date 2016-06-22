@@ -1,6 +1,7 @@
 """
 Classes for constructing potentials of atoms and molecules.
 """
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import as_float_or_complex, Container, Struct

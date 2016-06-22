@@ -40,7 +40,10 @@ Examples
 
   See :mod:`sfepy.solvers.eigen` for available solvers.
 """
+from __future__ import absolute_import
 import sys
+import six
+from six.moves import range
 sys.path.append('.')
 from optparse import OptionParser
 
@@ -146,7 +149,7 @@ def main():
     output('requested %d eigenvalues' % options.n_eigs)
     output('using eigenvalue problem solver:', eig_conf.kind)
     output.level += 1
-    for key, val in kwargs.iteritems():
+    for key, val in six.iteritems(kwargs):
         output('%s: %r' % (key, val))
     output.level -= 1
 
@@ -275,13 +278,13 @@ def main():
 
     vecs = nm.empty((variables.di.ptr[-1], svecs.shape[1]),
                     dtype=nm.float64)
-    for ii in xrange(svecs.shape[1]):
+    for ii in range(svecs.shape[1]):
         vecs[:, ii] = variables.make_full_vec(svecs[:, ii])
 
     # Save the eigenvectors.
     out = {}
     state = pb.create_state()
-    for ii in xrange(eigs.shape[0]):
+    for ii in range(eigs.shape[0]):
         state.set_full(vecs[:, ii])
         aux = state.create_output_dict()
         strain = pb.evaluate('ev_cauchy_strain.i.Omega(u)',
@@ -302,7 +305,7 @@ def main():
         scaling = 0.05 * dims.max() / nm.abs(vecs).max()
 
         ds = {}
-        for ii in xrange(eigs.shape[0]):
+        for ii in range(eigs.shape[0]):
             pd = DomainSpecificPlot('plot_displacements',
                                     ['rel_scaling=%s' % scaling,
                                      'color_kind="tensors"',

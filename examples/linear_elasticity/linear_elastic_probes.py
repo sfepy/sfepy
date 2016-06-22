@@ -1,4 +1,4 @@
-"""
+r"""
 This example shows how to use the post_process_hook to probe the output data.
 
 Find :math:`\ul{u}` such that:
@@ -15,7 +15,8 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from linear_elastic import *
+from __future__ import absolute_import
+from examples.linear_elasticity.linear_elastic import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os
@@ -23,6 +24,7 @@ import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.postprocess.probes_vtk import Probe
+from six.moves import range
 
 # Define options.
 options = {

@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 from sfepy.discrete.fem import Mesh, FEDomain
 import scipy.sparse as sps
 import numpy as nm
 from sfepy.base.compat import factorial
 from sfepy.base.base import output
+from six.moves import range
 
 def elems_q2t(el):
 
@@ -150,7 +152,7 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
                                dtype=nm.double)
 
         # generate weights matrix
-        idxs = range(n_nod)
+        idxs = list(range(n_nod))
         aux = sps.coo_matrix((1.0 / nm.asarray(costs.sum(1)).squeeze(),
                               (idxs, idxs)),
                              shape=(n_nod, n_nod),

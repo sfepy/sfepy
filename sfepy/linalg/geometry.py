@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import numpy as nm
 import numpy.linalg as nla
 
@@ -6,6 +7,7 @@ from scipy.misc import factorial
 from sfepy.base.base import assert_, output
 from sfepy.linalg.utils import norm_l2_along_axis as norm
 from sfepy.linalg.utils import mini_newton, dets_fast
+from six.moves import range
 
 def transform_bar_to_space_coors(bar_coors, coors):
     """
@@ -171,7 +173,7 @@ def points_in_simplex(coors, s_coors, eps=1e-8):
     n_c, dim = coors.shape
     bc = barycentric_coors(coors, s_coors)
     flag = nm.ones((n_c,), dtype=nm.bool)
-    for idim in xrange(dim + 1):
+    for idim in range(dim + 1):
         flag &= nm.where((bc[idim,:] > -eps)
                          & (bc[idim,:] < (1.0 + eps)), True, False)
     return flag
@@ -201,7 +203,7 @@ def flag_points_in_polygon2d(polygon, coors):
     flag = nm.zeros(coors.shape[0], dtype=nm.bool)
     nv = polygon.shape[0]
     px, py = coors[:, 0], coors[:, 1]
-    for ii in xrange(nv):
+    for ii in range(nv):
         vix, viy = polygon[ii, 0], polygon[ii, 1]
         vjx, vjy = polygon[ii-1, 0], polygon[ii-1, 1]
         aux = nm.where((viy > py) != (vjy > py))

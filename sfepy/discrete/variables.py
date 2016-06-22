@@ -1,6 +1,8 @@
 """
 Classes of variables for equations/terms.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 import time
 from collections import deque
 
@@ -19,6 +21,8 @@ from sfepy.discrete.common.dof_info import (DofInfo, EquationMap,
 from sfepy.discrete.fem.lcbc_operators import LCBCOperators
 from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.evaluate_variable import eval_real, eval_complex
+import six
+from six.moves import range
 
 is_state = 0
 is_virtual = 1
@@ -127,7 +131,7 @@ def create_adof_conn(eq, conn, dpn, offset):
         n_el, n_ep = conn.shape
         adc = nm.empty((n_el, n_ep * dpn), dtype=conn.dtype)
         ii = 0
-        for idof in xrange(dpn):
+        for idof in range(dpn):
             aux = nm.take(eq, dpn * conn + idof)
             adc[:, ii : ii + n_ep] = aux + nm.asarray(offset * (aux >= 0),
                                                       dtype=nm.int32)
@@ -148,7 +152,7 @@ class Variables(Container):
         Variable.reset()
 
         obj = Variables()
-        for key, val in conf.iteritems():
+        for key, val in six.iteritems(conf):
             var = Variable.from_conf(key, val, fields)
 
             obj[var.name] = var
@@ -321,8 +325,8 @@ class Variables(Container):
                         regs.append(bc.regions[1])
                         var_names.append(vns[1])
 
-            for i0 in xrange(len(regs) - 1):
-                for i1 in xrange(i0 + 1, len(regs)):
+            for i0 in range(len(regs) - 1):
+                for i1 in range(i0 + 1, len(regs)):
                     if ((var_names[i0] == var_names[i1])
                         and not are_disjoint(regs[i0], regs[i1])):
                         raise ValueError('regions %s and %s are not disjoint!'
@@ -460,7 +464,7 @@ class Variables(Container):
         for var in self:
             var.adof_conns = {}
 
-        for key, val in adof_conns.iteritems():
+        for key, val in six.iteritems(adof_conns):
             if key[0] in self.names:
                 var = self[key[0]]
                 var.adof_conns[key] = val
@@ -672,7 +676,7 @@ class Variables(Container):
 
         if isinstance(data, dict):
 
-            for key, val in data.iteritems():
+            for key, val in six.iteritems(data):
                 try:
                     var = self[key]
 
@@ -735,10 +739,10 @@ class Variables(Container):
                 var_info[name] = (False, name)
 
         out = {}
-        for key, indx in di.indx.iteritems():
+        for key, indx in six.iteritems(di.indx):
             var = self[key]
 
-            if key not in var_info.keys(): continue
+            if key not in list(var_info.keys()): continue
             is_part, name = var_info[key]
 
             if is_part:
@@ -1040,13 +1044,13 @@ class Variable(Struct):
 
         if self.history > 0:
             # Advance evaluate cache.
-            for step_cache in self.evaluate_cache.itervalues():
+            for step_cache in six.itervalues(self.evaluate_cache):
                 steps = sorted(step_cache.keys())
                 for step in steps:
                     if step is None:
                         # Special caches with possible custom advance()
                         # function.
-                        for key, val in step_cache[step].iteritems():
+                        for key, val in six.iteritems(step_cache[step]):
                             if hasattr(val, '__advance__'):
                                 val.__advance__(ts, val)
 
@@ -1257,13 +1261,13 @@ class CloseNodesIterator(Struct):
         c1 = self.mesh.coors
         d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
         d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
-        print d1.min(), d1.mean(), d1.max(), d1.std(), d1.var()
-        print d2.min(), d2.mean(), d2.max(), d2.std(), d2.var()
+        print(d1.min(), d1.mean(), d1.max(), d1.std(), d1.var())
+        print(d2.min(), d2.mean(), d2.max(), d2.std(), d2.var())
         ds = []
         for g_perm in g_perms:
             d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
             ds.append(d3)
-            print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
+            print(d3.min(), d3.mean(), d3.max(), d3.std(), d3.var())
 
         permute_in_place(graph, perm)
         save_sparse_txt('graph_rcm', graph, fmt='%d %d %d\n')
@@ -1545,8 +1549,8 @@ class FieldVariable(Variable):
         This should be done, for example, prior to every nonlinear
         solver iteration.
         """
-        for step_cache in self.evaluate_cache.itervalues():
-            for key in step_cache.keys():
+        for step_cache in six.itervalues(self.evaluate_cache):
+            for key in list(step_cache.keys()):
                 if key == step: # Given time step to clear.
                     step_cache.pop(key)
 

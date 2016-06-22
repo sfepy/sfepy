@@ -1,9 +1,12 @@
+from __future__ import absolute_import
 import re
 from copy import copy
 
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
+import six
+from six.moves import range
 
 _depends = re.compile('r\.([a-zA-Z_0-9.]+)').findall
 
@@ -22,14 +25,14 @@ def get_dependency_graph(region_defs):
     """
     graph = {}
     name_to_sort_name = {}
-    for sort_name, rdef in region_defs.iteritems():
+    for sort_name, rdef in six.iteritems(region_defs):
         name, sel = rdef.name, rdef.select
-        if name_to_sort_name.has_key(name):
+        if name in name_to_sort_name:
             msg = 'region %s/%s already defined!' % (sort_name, name)
             raise ValueError(msg)
         name_to_sort_name[name] = sort_name
 
-        if not graph.has_key(name):
+        if name not in graph:
             graph[name] = [0]
 
         for parent in get_parents(sel):
@@ -49,7 +52,7 @@ def sort_by_dependency(graph):
     while idone < n_nod:
 
         dep_removed = 0
-        for node, deps in graph.iteritems():
+        for node, deps in six.iteritems(graph):
 
             if (len(deps) == 1) and not deps[0]:
                 out.append(node)
@@ -69,7 +72,7 @@ def sort_by_dependency(graph):
                         dep_removed += 1
 
         if (idone <= idone0) and not dep_removed:
-            raise ValueError, 'circular dependency'
+            raise ValueError('circular dependency')
         idone0 = idone
 
     return out
@@ -479,7 +482,7 @@ class Region(Struct):
                     self.setup_from_highest(idim, allow_lower=False,
                                             allow_empty=allow_empty)
 
-                except ValueError, exc:
+                except ValueError as exc:
                     msg = '\n'.join((exc.message,
                                      'fix region kind? (region: %s, kind: %s)'
                                      % (self.name, self.kind)))

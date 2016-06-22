@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # 06.04.2005, c
 # 16.06.2005
+from __future__ import print_function
+from __future__ import absolute_import
 from optparse import OptionParser
 
 import numpy as nm
@@ -13,6 +15,8 @@ import sfepy.base.ioutils as io
 import sfepy.optimize.shape_optim as so
 from sfepy.discrete.problem import Problem
 from sfepy.solvers import Solver
+import six
+from six.moves import range
 
 def solve_stokes(dpb, equations_stokes, nls_conf):
     dpb.set_equations(equations_stokes)
@@ -48,7 +52,7 @@ def solve_navier_stokes(conf, options):
 
         # Plug in mass term.
         mequations = {}
-        for key, eq in equations.iteritems():
+        for key, eq in six.iteritems(equations):
             if 'dw_div_grad' in eq:
                 eq = '+'.join( (ts_conf.mass_term, eq) ).replace( '++', '+')
             mequations[key] = eq
@@ -74,7 +78,7 @@ def solve_navier_stokes(conf, options):
         n_step = ts_conf.n_step
         step = 0
         while 1:
-            for ii in xrange( n_step ):
+            for ii in range( n_step ):
                 output( step )
 
                 vec_u = state_dp0('w')
@@ -147,7 +151,7 @@ def solve_direct( conf, options ):
         fd = pt.openFile( options.dump_filename, mode = 'w',
                           title = "Dump file" )
         out = state_dp.create_output_dict()
-        for key, val in out.iteritems():
+        for key, val in six.iteritems(out):
             fd.createArray( fd.root, key, nar.asarray( val.data ),
                             '%s data' % val.mode )
         fd.close()
@@ -207,12 +211,12 @@ def solve_adjoint(conf, options, dpb, state_dp, data):
     ##
     # Compute objective function.
     val = shape_opt.obj_fun(state_dp)
-    print 'actual obj_fun:', val
+    print('actual obj_fun:', val)
 
     ##
     # Compute shape sensitivity.
     vec_sa = shape_opt.sensitivity(var_data, state_ap)
-    print 'actual sensitivity:', vec_sa
+    print('actual sensitivity:', vec_sa)
 
 ##
 # c: 22.11.2006, r: 15.04.2008
@@ -270,14 +274,14 @@ def solve_optimize( conf, options ):
     ##
     # Optimize.
     des = optimizer( design0 )
-    print opt_status
+    print(opt_status)
 
     ##
     # Save final state (for "optimal" design).
     dpb.domain.mesh.write( trunk + '_opt.mesh', io = 'auto' )
     dpb.save_state(trunk + '_direct_current.vtk', shape_opt.cache.state)
 
-    print des
+    print(des)
 
 usage = """%prog [options] filename_in"""
 

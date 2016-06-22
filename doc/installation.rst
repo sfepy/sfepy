@@ -13,7 +13,9 @@ Platforms
 ---------
 
 *SfePy* is known to work on various flavors of Linux, on Intel Macs and
-Windows.
+Windows. It can work with both Python 2.7 and Python 3. Depending on Python
+installation and OS used, replacing ``python`` by ``python3`` might be required
+in all the commands below (e.g. in :ref:`compilation`) in order to use Python 3.
 
 Requirements
 ------------
@@ -21,7 +23,7 @@ Requirements
 Installation prerequisites, required to build *SfePy*:
 
 - a C compiler suite (for example gcc)
-- `Python`_ 2.6 or 2.7
+- `Python`_ 2.7 or 3
 - `NumPy`_
 - `Cython`_
 

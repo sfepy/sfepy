@@ -8,6 +8,7 @@ Display using::
 
 or use the --show option.
 """
+from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from optparse import OptionParser

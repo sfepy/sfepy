@@ -1,9 +1,11 @@
+from __future__ import absolute_import
 import time
 
 import numpy as nm
 
 from sfepy.base.base import output, get_default, try_imports, Struct
 from sfepy.solvers.solvers import SolverMeta, Solver, EigenvalueSolver
+from six.moves import range
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
         return_time=None, method='eig.scipy', **ckwargs):
@@ -252,7 +254,7 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     def _convert_mat(mtx):
         from pysparse import spmatrix
         A = spmatrix.ll_mat(*mtx.shape)
-        for i in xrange(mtx.indptr.shape[0] - 1):
+        for i in range(mtx.indptr.shape[0] - 1):
             ii = slice(mtx.indptr[i], mtx.indptr[i+1])
             n_in_row = ii.stop - ii.start
             A.update_add_at(mtx.data[ii], [i] * n_in_row, mtx.indices[ii])

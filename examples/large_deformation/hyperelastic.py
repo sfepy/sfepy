@@ -40,6 +40,8 @@ The effective stress :math:`\ull{S}\eff(\ul{u})` is given by:
     - \frac{2}{6}((\tr{\ull{C}})^2 - \tr{(\ull{C}^2)})\ull{C}^{-1})
     \;.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 import numpy as nm
 
 from sfepy import data_dir
@@ -98,7 +100,7 @@ def rotate_yz(ts, coor, **kwargs):
     vec = coor[:,1:3] - centre
 
     angle = 10.0 * ts.step
-    print 'angle:', angle
+    print('angle:', angle)
 
     mtx = rotation_matrix2d( angle )
     vec_rotated = nm.dot( vec, mtx )
