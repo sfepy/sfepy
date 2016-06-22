@@ -109,6 +109,43 @@ def report2(out, name, items, return_item=False):
     else:
         return ok
 
+def report_tests(out, return_item=False):
+    """
+    Check that all tests in the output string `out` passed.
+    If not, print the output.
+    """
+    import re
+
+    search = re.compile('([0-9]+) test file\(s\) executed in ([0-9.]+) s, ([0-9]+) failure\(s\) of ([0-9]+) test\(s\)').search
+
+    try:
+        stats = search(out).groups()
+
+    except AttributeError:
+        stats = '0', '0', '-1', '0'
+        ok = False
+
+    ok = stats[2] == '0'
+
+    if ok:
+        print('  %s test file(s) executed in %s s, %s failure(s) of %s test(s)'
+              % (stats[0], stats[1], stats[2], stats[3]))
+
+    else:
+        print('  %s test file(s) executed in %s s, %s failure(s) of %s test(s)'
+              % (stats[0], stats[1], stats[2], stats[3]))
+
+        fd = open('test_install.log', 'a')
+        fd.write('*' * 55)
+        fd.write(out)
+        fd.write('*' * 55)
+
+    if return_item:
+        return ok, stats[2]
+
+    else:
+        return ok
+
 usage = '%prog' + '\n' + __doc__
 
 def main():
@@ -221,7 +258,7 @@ def main():
     t1 = time.time()
 
     out, err = check_output('%s ./run_tests.py' % cmd)
-    tok, failed = report(out, 'tests', -2, 7, '0', return_item=True)
+    tok, failed = report_tests(out, return_item=True)
     tok = {True : 'ok', False : 'fail'}[tok]
 
     t2 = time.time()
