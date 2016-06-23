@@ -7,7 +7,7 @@ import subprocess
 def main():
     args = shlex.split('git log --pretty=format:"%an <%ae>"')
     p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    out = p.communicate()[0].split('\n')
+    out = p.communicate()[0].decode().split('\n')
 
     done = set()
     unique = []
