@@ -1,0 +1,48 @@
+# After changing this file, check it on: http://lint.travis-ci.org/
+language: python
+
+matrix:
+  include:
+    - python: 2.7
+
+addons:
+  apt:
+    packages:
+    - libsuitesparse-dev
+    - swig
+    - gfortran
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_install:
+  - sudo apt-get update
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+install:
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib sympy cython mayavi=4.3 pytables pyparsing
+  - source activate test-environment
+  - python -V
+  - pip install scikit-umfpack
+  - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
+
+script:
+  - python setup.py build_ext --inplace
+  - python run_tests.py
+
+notifications:
+  email: false
