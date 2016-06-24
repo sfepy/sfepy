@@ -17,8 +17,6 @@ where
 """
 from __future__ import absolute_import
 from examples.linear_elasticity.linear_elastic import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import os
 import numpy as nm
 
@@ -61,6 +59,10 @@ def post_process(out, problem, state, extend=False):
     out : dict
         The updated output dictionary.
     """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.font_manager as fm
 
     # Cauchy strain averaged in elements.
     strain = problem.evaluate('ev_cauchy_strain.i.Omega( u )',
