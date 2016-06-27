@@ -42,11 +42,19 @@ def post_process( out, pb, state, extend = False ):
 def get_elements(coors, domain=None):
     return nm.arange(50, domain.shape.n_el, 100)
 
+regenerate = True
+def get_homog(ts, coors, mode=None, **kwargs):
+    global regenerate
+
+    out = get_homog_coefs_linear(ts, coors, mode, regenerate=regenerate,
+                                 micro_filename=options['micro_filename'])
+    regenerate = False
+
+    return out
+
 functions = {
     'get_elements' : (get_elements,),
-    'get_homog' : (lambda ts, coors, mode=None, **kwargs:
-                   get_homog_coefs_linear(ts, coors, mode,
-                                          micro_filename=options['micro_filename']),)
+    'get_homog' : (get_homog,),
 }
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
