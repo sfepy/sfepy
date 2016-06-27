@@ -17,13 +17,16 @@ where
 """
 from __future__ import absolute_import
 from examples.linear_elasticity.linear_elastic import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import os
 import numpy as nm
 
 from sfepy.base.base import Struct
-from sfepy.postprocess.probes_vtk import Probe
+try:
+    from sfepy.postprocess.probes_vtk import Probe
+
+except ImportError:
+    Probe = None
+
 from six.moves import range
 
 # Define options.
@@ -61,6 +64,10 @@ def post_process(out, problem, state, extend=False):
     out : dict
         The updated output dictionary.
     """
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import matplotlib.font_manager as fm
 
     # Cauchy strain averaged in elements.
     strain = problem.evaluate('ev_cauchy_strain.i.Omega( u )',
@@ -75,8 +82,11 @@ def post_process(out, problem, state, extend=False):
                                   mode='cell', data=stress,
                                   dofs=None)
 
-    # Define three line probes in axial directions.
+    if Probe is None:
+        # Do not probe if vtk cannot be imported.
+        return out
 
+    # Define three line probes in axial directions.
     mesh = problem.domain.mesh
 
     bbox = mesh.get_bounding_box()
