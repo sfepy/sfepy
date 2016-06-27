@@ -4,6 +4,9 @@ language: python
 matrix:
   include:
     - python: 2.7
+      env: MAYAVI="mayavi=4.3"
+    - python: 3.4
+      env: MAYAVI=
 
 addons:
   apt:
@@ -34,7 +37,7 @@ before_install:
   - conda info -a
 
 install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib sympy cython mayavi=4.3 pytables pyparsing
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib sympy cython $MAYAVI pytables pyparsing
   - source activate test-environment
   - python -V
   - pip install scikit-umfpack
@@ -42,7 +45,11 @@ install:
 
 script:
   - python setup.py build_ext --inplace
-  - python run_tests.py
+  - python run_tests.py; export SFEPY_TEST_RESULTS=$?; (exit $SFEPY_TEST_RESULTS)
+  - |
+    if [ $SFEPY_TEST_RESULTS -ne 0 ]; then
+      python run_tests.py --debug
+    fi
 
 notifications:
   email: false
