@@ -938,8 +938,7 @@ class Term(Struct):
         the corresponding geometry (actual or saved, according to
         `get_saved`).
         """
-        geo, _, key = self.get_mapping(variable, get_saved=get_saved,
-                                       return_key=True)
+        geo, _ = self.get_mapping(variable, get_saved=get_saved)
         ap = variable.get_approximation()
 
         return ap, geo
