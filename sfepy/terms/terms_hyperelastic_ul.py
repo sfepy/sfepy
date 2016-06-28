@@ -3,10 +3,18 @@ import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.terms.terms import terms
-from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
-import six
+from sfepy.terms.terms_hyperelastic_base import\
+    HyperElasticBase, HyperElasticFamilyData
 
 _msg_missing_data = 'missing family data!'
+
+class HyperElasticULFamilyData(HyperElasticFamilyData):
+    """
+    Family data for UL formulation.
+    """
+    family_function = staticmethod(terms.dq_finite_strain_ul)
+    cache_name = 'ul_common'
+    data_names = ('mtx_f', 'det_f', 'sym_b', 'tr_b', 'in2_b', 'green_strain')
 
 class HyperElasticULBase(HyperElasticBase):
     """
@@ -15,44 +23,10 @@ class HyperElasticULBase(HyperElasticBase):
     The subclasses should have the following static method attributes:
     - `stress_function()` (the stress)
     - `tan_mod_function()` (the tangent modulus)
-
-    The common (family) data are cached in the evaluate cache of state
-    variable.
     """
-    family_function = staticmethod(terms.dq_finite_strain_ul)
     weak_function = staticmethod(terms.dw_he_rtm)
-    fd_cache_name = 'ul_common'
     hyperelastic_mode = 1
-
-    def compute_family_data(self, state):
-        ap, vg = self.get_approximation(state, get_saved=True)
-
-        vec = self.get_vector(state)
-
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = (dim + 1) * dim // 2
-
-        shapes = {
-            'mtx_f' : (n_el, n_qp, dim, dim),
-            'det_f' : (n_el, n_qp, 1, 1),
-            'sym_b' : (n_el, n_qp, sym, 1),
-            'tr_b' : (n_el, n_qp, 1, 1),
-            'in2_b' : (n_el, n_qp, 1, 1),
-            'green_strain' : (n_el, n_qp, sym, 1),
-        }
-        data = Struct(name='ul_family_data')
-        for key, shape in six.iteritems(shapes):
-            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
-
-        self.family_function(data.mtx_f,
-                             data.det_f,
-                             data.sym_b,
-                             data.tr_b,
-                             data.in2_b,
-                             data.green_strain,
-                             vec, vg, ap.econn)
-
-        return data
+    get_family_data = HyperElasticULFamilyData()
 
 class NeoHookeanULTerm(HyperElasticULBase):
     r"""
@@ -168,7 +142,11 @@ class BulkPressureULTerm(HyperElasticULBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vgv, _ = self.get_mapping(state)
 
-        fd = self.get_family_data(state, 'ul_common', self.family_data_names)
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
         fd.p_qp = self.get(state_p, 'val')
 
         if mode == 'weak':
@@ -252,7 +230,11 @@ class VolumeULTerm(HyperElasticULBase):
         vgs, _ = self.get_mapping(virtual)
         vgv, _ = self.get_mapping(state)
 
-        fd = self.get_family_data(state, 'ul_common', self.family_data_names)
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
 
         if mode == 'weak':
             if diff_var is None:
@@ -313,7 +295,11 @@ class CompressibilityULTerm(HyperElasticULBase):
         vgs, _ = self.get_mapping(state)
         vgu, _ = self.get_mapping(parameter_u)
 
-        fd = self.get_family_data(parameter_u, 'ul_common', self.family_data_names)
+        name = parameter_u.name
+        fd = self.get_family_data(parameter_u, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
 
         coef = nm.divide(bulk, fd.det_f)
 
