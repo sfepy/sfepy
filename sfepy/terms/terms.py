@@ -1099,6 +1099,9 @@ class Term(Struct):
                 elif sh == 'N': # General number.
                     return nm.inf
 
+                elif sh == 'str':
+                    return 'str'
+
                 else:
                     return int(sh)
 
@@ -1173,6 +1176,10 @@ class Term(Struct):
                         aux = sh.split(':')
                         if len(aux) == 2:
                             prefix, sh = aux
+
+                    if sh == 'str':
+                        n_ok += isinstance(arg, basestr)
+                        continue
 
                     shape = _parse_tuple_shape(sh)
                     ls = len(shape)
