@@ -486,6 +486,10 @@ cdef extern from 'terms.h':
          'actBfT'(FMField *out,
                   FMField *bf, FMField *A)
 
+    cdef int32 _sym2nonsym \
+         'sym2nonsym'(FMField *out,
+                      FMField *A)
+
 def errclear():
     _errclear()
 
@@ -1883,6 +1887,17 @@ def actBfT(np.ndarray out not None,
     array2fmfield4(_A, A)
 
     ret = _actBfT(_out, _bf, _A)
+    return ret
+
+def sym2nonsym(np.ndarray out not None,
+               np.ndarray A not None):
+    cdef int32 ret
+    cdef FMField _out[1], _A[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_A, A)
+
+    ret = _sym2nonsym(_out, _A)
     return ret
 
 def dw_adj_convect1(np.ndarray out not None,
