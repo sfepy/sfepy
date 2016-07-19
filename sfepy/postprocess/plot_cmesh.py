@@ -15,6 +15,7 @@ def plot_wireframe(ax, cmesh, color='k'):
 
     ax = _get_axes(ax, dim)
 
+    cmesh.setup_connectivity(1, 0)
     edges = cmesh.get_conn(1, 0)
     for edge_vertices in edges.indices.reshape((edges.num, 2)):
         cc = coors[edge_vertices]
