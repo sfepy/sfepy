@@ -38,23 +38,17 @@ def main():
     domain.cmesh.cprint(1)
     dim = domain.cmesh.dim
 
-    ax = pc.plot_wireframe(None, domain.cmesh)
+    entities_opts = [
+        {'color' : 'k', 'label_global' : 12, 'label_local' : 8},
+        {'color' : 'b', 'label_global' : 12, 'label_local' : 8},
+        {'color' : 'g', 'label_global' : 12, 'label_local' : 8},
+        {'color' : 'r', 'label_global' : 12},
+    ]
+    if dim == 2: entities_opts.pop(2)
 
-    ax = pc.plot_entities(ax, domain.cmesh, 0, 'k')
-    ax = pc.label_global_entities(ax, domain.cmesh, 0, 'k', 12)
-    ax = pc.label_local_entities(ax, domain.cmesh, 0, 'k', 8)
-
-    ax = pc.plot_entities(ax, domain.cmesh, 1, 'b')
-    ax = pc.label_global_entities(ax, domain.cmesh, 1, 'b', 12)
-    ax = pc.label_local_entities(ax, domain.cmesh, 1, 'b', 8)
-
-    if dim == 3:
-        ax = pc.plot_entities(ax, domain.cmesh, 2, 'g')
-        ax = pc.label_global_entities(ax, domain.cmesh, 2, 'g', 12)
-        ax = pc.label_local_entities(ax, domain.cmesh, 2, 'g', 8)
-
-    ax = pc.plot_entities(ax, domain.cmesh, dim, 'r')
-    ax = pc.label_global_entities(ax, domain.cmesh, dim, 'r', 12)
+    pc.plot_cmesh(None, domain.cmesh,
+                  wireframe_opts = {'color' : 'k'},
+                  entities_opts=entities_opts)
 
     plt.show()
 
