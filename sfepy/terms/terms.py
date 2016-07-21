@@ -938,8 +938,7 @@ class Term(Struct):
         the corresponding geometry (actual or saved, according to
         `get_saved`).
         """
-        geo, _, key = self.get_mapping(variable, get_saved=get_saved,
-                                       return_key=True)
+        geo, _ = self.get_mapping(variable, get_saved=get_saved)
         ap = variable.get_approximation()
 
         return ap, geo
@@ -1096,6 +1095,9 @@ class Term(Struct):
             if isinstance(sh, basestr):
                 if sh == 'D':
                     return dim
+
+                elif sh == 'D2':
+                    return dim**2
 
                 elif sh == 'S':
                     return sym

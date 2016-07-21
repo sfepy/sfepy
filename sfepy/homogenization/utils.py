@@ -45,6 +45,12 @@ def iter_sym( dim ):
     for ir in range( 0, dim ):
         for ic in range( ir + 1, dim ):
             yield ir, ic
+
+def iter_nonsym(dim):
+    for ir in range(dim):
+        for ic in range(dim):
+            yield ir, ic
+
 c2s = {
     2 : [0, 2, 2, 1],
     3 : [0, 3, 4, 3, 1, 5, 4, 5, 2],

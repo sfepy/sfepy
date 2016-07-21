@@ -3,8 +3,17 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 from sfepy.terms.terms import terms
-from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
-import six
+from sfepy.terms.terms_hyperelastic_base import\
+    HyperElasticBase, HyperElasticFamilyData
+
+class HyperElasticTLFamilyData(HyperElasticFamilyData):
+    """
+    Family data for TL formulation.
+    """
+    family_function = staticmethod(terms.dq_finite_strain_tl)
+    cache_name = 'tl_common'
+    data_names = ('mtx_f', 'det_f', 'sym_c', 'tr_c', 'in2_c', 'sym_inv_c',
+                  'green_strain')
 
 class HyperElasticTLBase(HyperElasticBase):
     """
@@ -17,41 +26,9 @@ class HyperElasticTLBase(HyperElasticBase):
     The common (family) data are cached in the evaluate cache of state
     variable.
     """
-    family_function = staticmethod(terms.dq_finite_strain_tl)
     weak_function = staticmethod(terms.dw_he_rtm)
-    fd_cache_name = 'tl_common'
     hyperelastic_mode = 0
-
-    def compute_family_data(self, state):
-        ap, vg = self.get_approximation(state)
-
-        vec = self.get_vector(state)
-
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = (dim + 1) * dim // 2
-
-        shapes = {
-            'mtx_f' : (n_el, n_qp, dim, dim),
-            'det_f' : (n_el, n_qp, 1, 1),
-            'sym_c' : (n_el, n_qp, sym, 1),
-            'tr_c' : (n_el, n_qp, 1, 1),
-            'in2_c' : (n_el, n_qp, 1, 1),
-            'sym_inv_c' : (n_el, n_qp, sym, 1),
-            'green_strain' : (n_el, n_qp, sym, 1),
-        }
-        data = Struct(name='tl_family_data')
-        for key, shape in six.iteritems(shapes):
-            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
-
-        self.family_function(data.mtx_f,
-                             data.det_f,
-                             data.sym_c,
-                             data.tr_c,
-                             data.in2_c,
-                             data.sym_inv_c,
-                             data.green_strain,
-                             vec, vg, ap.econn)
-        return data
+    get_family_data = HyperElasticTLFamilyData()
 
 class NeoHookeanTLTerm(HyperElasticTLBase):
     r"""
@@ -161,7 +138,6 @@ class BulkPressureTLTerm(HyperElasticTLBase):
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D', 'state_p' : 1}
     family_data_names = ['det_f', 'sym_inv_c']
 
-    family_function = staticmethod(terms.dq_finite_strain_tl)
     weak_function = staticmethod(terms.dw_he_rtm)
     weak_dp_function = staticmethod(terms.dw_tl_volume)
 
@@ -193,7 +169,11 @@ class BulkPressureTLTerm(HyperElasticTLBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vgv, _ = self.get_mapping(state)
 
-        fd = self.get_family_data(state, 'tl_common', self.family_data_names)
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
         fd.p_qp = self.get(state_p, 'val')
 
         if mode == 'weak':
@@ -279,7 +259,11 @@ class VolumeTLTerm(HyperElasticTLBase):
         vgs, _ = self.get_mapping(virtual)
         vgv, _ = self.get_mapping(state)
 
-        fd = self.get_family_data(state, 'tl_common', self.family_data_names)
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
 
         if mode == 'weak':
             if diff_var is None:
@@ -346,8 +330,11 @@ class DiffusionTLTerm(HyperElasticTLBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vgv, _ = self.get_mapping(parameter)
 
-        fd = self.get_family_data(parameter, 'tl_common',
-                                  self.family_data_names)
+        name = parameter.name
+        fd = self.get_family_data(parameter, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
         grad = self.get(state, 'grad')
 
         if mode == 'weak':
@@ -377,35 +364,38 @@ class DiffusionTLTerm(HyperElasticTLBase):
 
         return (n_el, 1, dim, 1), state.dtype
 
-class HyperElasticSurfaceTLBase(HyperElasticBase):
+class HyperElasticSurfaceTLFamilyData(HyperElasticFamilyData):
+    """
+    Family data for TL formulation applicable for surface terms.
+    """
+    family_function = staticmethod(terms.dq_tl_finite_strain_surface)
+    cache_name = 'tl_surface_common'
+    data_names = ('mtx_f', 'det_f', 'inv_f')
+
+    def __call__(self, state, region, integral, integration,
+                 step=0, derivative=None):
+        sg, _ = state.field.get_mapping(region,
+                                        integral, integration,
+                                        get_saved=True)
+        ap = state.get_approximation()
+        sd = ap.surface_data[region.name]
+
+        vec = state(step=step, derivative=derivative)
+
+        st_shape = state.get_data_shape(integral, integration, region.name)
+        data = self.init_data_struct(st_shape, name='surface_family_data')
+
+        fargs = tuple([getattr(data, k) for k in self.data_names])
+        fargs = fargs + (vec, sg, sd.fis, ap.econn)
+        self.family_function(*fargs)
+
+        return data
+
+class HyperElasticSurfaceTLBase(HyperElasticTLBase):
     """
     Base class for all hyperelastic surface terms in TL formulation family.
     """
-    family_function = staticmethod(terms.dq_tl_finite_strain_surface)
-    fd_cache_name = 'tl_surface_common'
-
-    def compute_family_data(self, state):
-        ap, sg = self.get_approximation(state)
-        sd = ap.surface_data[self.region.name]
-
-        vec = self.get_vector(state)
-
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        shapes = {
-            'mtx_f' : (n_el, n_qp, dim, dim),
-            'det_f' : (n_el, n_qp, 1, 1),
-            'inv_f' : (n_el, n_qp, dim, dim),
-        }
-        data = Struct(name='tl_surface_family_data')
-        for key, shape in six.iteritems(shapes):
-            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
-
-        self.family_function(data.mtx_f,
-                             data.det_f,
-                             data.inv_f,
-                             vec, sg, sd.fis, ap.econn)
-        return data
+    get_family_data = HyperElasticSurfaceTLFamilyData()
 
 class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
     r"""
@@ -435,8 +425,11 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
     def get_fargs(self, perm, ref_porosity, pressure, displacement,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         ap, sg = self.get_approximation(displacement)
-        fd = self.get_family_data(displacement, 'tl_surface_common',
-                                  self.family_data_names)
+        name = displacement.name
+        fd = self.get_family_data(displacement, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
         grad = self.get(pressure, 'grad')
 
         fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 0)
@@ -485,8 +478,11 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base(sd.bkey, 0, self.integral)
 
-        fd = self.get_family_data(state, 'tl_surface_common',
-                                  self.family_data_names)
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
 
         if mat is None:
             eye = nm.eye(sg.dim, dtype=nm.float64)
@@ -531,8 +527,11 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base(sd.bkey, 0, self.integral)
 
-        fd = self.get_family_data(parameter, 'tl_surface_common',
-                                  self.family_data_names)
+        name = parameter.name
+        fd = self.get_family_data(parameter, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
 
         asc = nm.ascontiguousarray
 

@@ -87,3 +87,79 @@ int32 actBfT(FMField *out, FMField *bf, FMField *A)
   } // for (iel)
   return(RET_OK);
 }
+
+#undef __FUNC__
+#define __FUNC__ "sym2nonsym"
+int32 sym2nonsym(FMField *out, FMField *A)
+{
+  int32 iqp, iel, ir, ic, sym, nonsym, dim, ii;
+  float64 *pout, *pA, *pA0;
+  int32 *map, *pmap;
+  int32 nonsym_tab_2d[4] = {0, 2, 2, 1};
+  int32 nonsym_tab_3d[9] = {0, 3, 4, 3, 1, 5, 4, 5, 2};
+
+  sym = A->nRow;
+  switch (sym) {
+  case 3:
+    dim = 2;
+    nonsym = 4;
+    map = nonsym_tab_2d;
+    break;
+  case 6:
+    dim = 3;
+    nonsym = 9;
+    map = nonsym_tab_3d;
+    break;
+  default:
+    errput( ErrHead "ERR_Switch\n" );
+    return( RET_Fail );
+  }
+
+#ifdef DEBUG_FMF
+  if ((out->nCell != A->nCell) || (out->nLev != A->nLev)
+      || (out->nCol != nonsym) || (out->nRow != nonsym)) {
+    errput(ErrHead "ERR_BadMatch: (%d, %d %d %d), (%d %d %d %d)\n",
+           out->nCell, out->nLev, out->nRow, out->nCol,
+           A->nCell, A->nLev, A->nRow, A->nCol);
+  }
+#endif
+
+  if (A->nCol == 1) { /* stress mode */
+    for (iel = 0; iel < out->nCell; iel++) {
+      FMF_SetCell(out, iel);
+      FMF_SetCell(A, iel);
+      for (iqp = 0; iqp < out->nLev; iqp++) {
+        pout = FMF_PtrLevel(out, iqp);
+        pA = FMF_PtrLevel(A, iqp);
+        for (ii = 0; ii < dim; ii++) {
+          pmap = map;
+          for (ir = 0; ir < dim; ir++) {
+            for (ic = 0; ic < dim; ic++)
+              pout[ic] = pA[pmap[ic]];
+            pmap += dim;
+            pout += dim * dim;
+          } // for (ir)
+          pout += dim;
+        } // for (ii)
+      } // for (iqp)
+    } // for (iel)
+  }
+  else { /* tan mode */
+    for (iel = 0; iel < out->nCell; iel++) {
+      FMF_SetCell(out, iel);
+      FMF_SetCell(A, iel);
+      for (iqp = 0; iqp < out->nLev; iqp++) {
+        pout = FMF_PtrLevel(out, iqp);
+        pA0 = FMF_PtrLevel(A, iqp);
+        for (ir = 0; ir < nonsym; ir++) {
+          pA = pA0 + map[ir] * sym;
+          for (ic = 0; ic < nonsym; ic++)
+              pout[ic] = pA[map[ic]];
+          pout += nonsym;
+        } // for (ir)
+      } // for (iqp)
+    } // for (iel)
+  }
+
+  return(RET_OK);
+}

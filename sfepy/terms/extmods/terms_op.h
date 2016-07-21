@@ -10,6 +10,7 @@ BEGIN_C_DECLS
 int32 mulAB_integrate(FMField *out, FMField *A, FMField *B,
                       Mapping *vg, int32 mode);
 int32 actBfT(FMField *out, FMField *bf, FMField *A);
+int32 sym2nonsym(FMField *out, FMField *A);
 
 END_C_DECLS
 

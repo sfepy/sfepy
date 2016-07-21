@@ -35,6 +35,8 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP );
 
+int32 dw_nonsym_elastic(FMField *out, FMField *grad, FMField *mtxD,
+                        Mapping *vg, int32 isDiff);
 
 END_C_DECLS
 

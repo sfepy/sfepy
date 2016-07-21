@@ -1,7 +1,78 @@
 import numpy as nm
 from sfepy.terms.terms import Term, terms
+from sfepy.base.base import Struct
+import six
 
 _msg_missing_data = 'missing family data!'
+
+class HyperElasticFamilyData(Struct):
+    """
+    Base class for hyperelastic family data.
+
+    The common (family) data are cached in the evaluate cache of state
+    variable.
+    """
+    data_shapes = {
+            'mtx_f': ('n_el', 'n_qp', 'dim', 'dim'),
+            'det_f': ('n_el', 'n_qp', 1, 1),
+            'sym_b': ('n_el', 'n_qp', 'sym', 1),
+            'tr_b': ('n_el', 'n_qp', 1, 1),
+            'in2_b': ('n_el', 'n_qp', 1, 1),
+            'sym_c' : ('n_el', 'n_qp', 'sym', 1),
+            'tr_c' : ('n_el', 'n_qp', 1, 1),
+            'in2_c' : ('n_el', 'n_qp', 1, 1),
+            'sym_inv_c' : ('n_el', 'n_qp', 'sym', 1),
+            'green_strain': ('n_el', 'n_qp', 'sym', 1),
+            'inv_f': ('n_el', 'n_qp', 'dim', 'dim'),
+    }
+
+    def init_data_struct(self, state_shape, name='family_data'):
+        from sfepy.mechanics.tensors import dim2sym
+
+        n_el, n_qp, dim, n_en, n_c = state_shape
+        sym = dim2sym(dim); sym
+
+        shdict = dict(( (k, v) for k, v in six.iteritems(locals())\
+            if k in ['n_el', 'n_qp', 'dim', 'n_en', 'n_c', 'sym']))
+
+        data = Struct(name=name)
+        setattr(data, 'names', self.data_names)
+        for key in self.data_names:
+            shape = [shdict[sh] if type(sh) is str else sh\
+                 for sh in self.data_shapes[key]]
+            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
+
+        return data
+
+    def __call__(self, state, region, integral, integration,
+                 step=0, derivative=None):
+        step_cache = state.evaluate_cache.setdefault(self.cache_name, {})
+        cache = step_cache.setdefault(step, {})
+
+        key = (region.name, integral.order, integration)
+        data_key = key + (derivative,)
+
+        if data_key in cache:
+            data = cache[data_key]
+
+        else:
+            vg, _ = state.field.get_mapping(region,
+                                            integral, integration,
+                                            get_saved=True)
+            ap = state.get_approximation()
+
+            vec = state(step=step, derivative=derivative)
+
+            st_shape = state.get_data_shape(integral, integration, region.name)
+            data = self.init_data_struct(st_shape)
+
+            fargs = tuple([getattr(data, k) for k in self.data_names])
+            fargs = fargs + (vec, vg, ap.econn)
+
+            self.family_function(*fargs)
+            cache[data_key] = data
+
+        return data
 
 class HyperElasticBase(Term):
     """
@@ -46,30 +117,6 @@ class HyperElasticBase(Term):
 
         self.stress_cache = None
 
-    def get_family_data(self, state, cache_name, data_names):
-        """
-        Notes
-        -----
-        `data_names` argument is ignored for now.
-        """
-        name = state.name
-
-        step_cache = state.evaluate_cache.setdefault(cache_name, {})
-        cache = step_cache.setdefault(self.arg_steps[name], {})
-
-        vg, _, key = self.get_mapping(state, return_key=True)
-
-        data_key = key + (self.arg_derivatives[name],)
-
-        if data_key in cache:
-            out = cache[data_key]
-
-        else:
-            out = self.compute_family_data(state)
-            cache[data_key] = out
-
-        return out
-
     def compute_stress(self, mat, family_data, **kwargs):
         out = nm.empty_like(family_data.green_strain)
 
@@ -98,8 +145,11 @@ class HyperElasticBase(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
 
-        fd = self.get_family_data(state, self.fd_cache_name,
-                                  self.family_data_names)
+        name = state.name
+        fd = self.get_family_data(state, self.region, self.integral,
+                                  self.geometry_types[name],
+                                  self.arg_steps[name],
+                                  self.arg_derivatives[name])
 
         if mode == 'weak':
             if diff_var is None:
@@ -142,8 +192,10 @@ class HyperElasticBase(Term):
 
     def get_eval_shape(self, mat, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.mechanics.tensors import dim2sym
+
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = (dim + 1) * dim // 2
+        sym = dim2sym(dim)
 
         if mode != 'qp':
             n_qp = 1

@@ -370,10 +370,7 @@ class IntegrateMatTerm(Term):
     """
     name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
-    arg_shapes = [{'material' : '1, 1', 'parameter' : 'N'},
-                  {'material' : 'D, D'},
-                  {'material' : 'S, S'},
-                  {'material' : 'D, S'}]
+    arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
 
     @staticmethod
     def function(out, mat, geo, fmode):
