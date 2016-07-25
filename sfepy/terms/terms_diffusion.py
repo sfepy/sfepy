@@ -92,27 +92,29 @@ class SDDiffusionTerm(Term):
         - material:    :math:`K_{ij}`
         - parameter_q: :math:`q`
         - parameter_p: :math:`p`
-        - parameter_v: :math:`\ul{\Vcal}`
+        - parameter_mesh_velocity: :math:`\ul{\Vcal}`
     """
     name = 'd_sd_diffusion'
-    arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_v')
+    arg_types = ('material', 'parameter_q', 'parameter_p',
+                 'parameter_mesh_velocity')
     arg_shapes = {'material' : 'D, D',
-                  'parameter_q' : 1, 'parameter_p' : 1, 'parameter_v' : 'D'}
+                  'parameter_q' : 1, 'parameter_p' : 1,
+                  'parameter_mesh_velocity' : 'D'}
 
     function = staticmethod(terms.d_sd_diffusion)
 
-    def get_fargs(self, mat, parameter_q, parameter_p, parameter_v,
+    def get_fargs(self, mat, parameter_q, parameter_p, parameter_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter_p)
 
         grad_q = self.get(parameter_q, 'grad')
         grad_p = self.get(parameter_p, 'grad')
-        grad_v = self.get(parameter_v, 'grad')
-        div_v = self.get(parameter_v, 'div')
+        grad_mv = self.get(parameter_mv, 'grad')
+        div_mv = self.get(parameter_mv, 'div')
 
-        return grad_q, grad_p, grad_v, div_v, mat, vg
+        return grad_q, grad_p, grad_mv, div_mv, mat, vg
 
-    def get_eval_shape(self, mat, parameter_q, parameter_p, parameter_v,
+    def get_eval_shape(self, mat, parameter_q, parameter_p, parameter_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter_q)
 

@@ -221,8 +221,8 @@ class SDDotVolumeTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega_D} p q (\nabla \cdot \ul{\Vcal}) \mbox{ , }
-        \int_{\Omega_D} (\ul{u} \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
+        \int_{\Omega} p q (\nabla \cdot \ul{\Vcal}) \mbox{ , }
+        \int_{\Omega} (\ul{u} \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
 
     :Arguments:
         - parameter_1 : :math:`p` or :math:`\ul{u}`
@@ -262,7 +262,7 @@ class SDDivTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega_D} p [ (\nabla \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
+        \int_{\Omega} p [ (\nabla \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
         - \pdiff{\Vcal_k}{x_i} \pdiff{w_i}{x_k} ]
 
     :Arguments:
@@ -305,7 +305,7 @@ class SDDivGradTerm(Term):
     :Definition:
 
     .. math::
-        w \nu \int_{\Omega_D} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
+        w \nu \int_{\Omega} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
         (\nabla \cdot \ul{\Vcal})
         - \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} \pdiff{w_i}{x_k}
         - \pdiff{u_i}{x_k} \pdiff{\Vcal_l}{x_k} \pdiff{w_i}{x_k} ]
@@ -353,7 +353,7 @@ class SDConvectTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega_D} [ u_k \pdiff{u_i}{x_k} w_i (\nabla \cdot \Vcal)
+        \int_{\Omega} [ u_k \pdiff{u_i}{x_k} w_i (\nabla \cdot \Vcal)
         - u_k \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} w_i ]
 
     :Arguments:
@@ -474,7 +474,7 @@ class SDGradDivStabilizationTerm(Term):
     :Definition:
 
     .. math::
-        \gamma \int_{\Omega_D} [ (\nabla \cdot \ul{u}) (\nabla \cdot \ul{w})
+        \gamma \int_{\Omega} [ (\nabla \cdot \ul{u}) (\nabla \cdot \ul{w})
         (\nabla \cdot \ul{\Vcal})
         - \pdiff{u_i}{x_k} \pdiff{\Vcal_k}{x_i} (\nabla \cdot \ul{w})
         - (\nabla \cdot \ul{u}) \pdiff{w_i}{x_k} \pdiff{\Vcal_k}{x_i} ]
