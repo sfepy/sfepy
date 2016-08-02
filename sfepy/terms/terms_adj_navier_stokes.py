@@ -134,11 +134,11 @@ class SUPGCAdjStabilizationTerm(Term):
 
     def get_fargs(self, mat, virtual, state, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, vg = self.get_approximation(state)
+        vg, _ = self.get_mapping(state)
 
         val_u = self.get(parameter, 'val')
         grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
-        conn = ap.get_connectivity(self.region, self.integration)
+        conn = state.field.get_connectivity(self.region, self.integration)
 
         fmode = diff_var is not None
 
@@ -169,10 +169,10 @@ class SUPGPAdj1StabilizationTerm(Term):
 
     def get_fargs(self, mat, virtual, state, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap_w, vg_w = self.get_approximation(state)
+        vg_w, _ = self.get_mapping(state)
 
         grad_p = self.get(parameter, 'grad')
-        conn_w = ap_w.get_connectivity(self.region, self.integration)
+        conn_w = state.field.get_connectivity(self.region, self.integration)
 
         fmode = diff_var is not None
 
@@ -204,11 +204,11 @@ class SUPGPAdj2StabilizationTerm(Term):
 
     def get_fargs(self, mat, virtual, parameter, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap_r, vg_r = self.get_approximation(state)
+        vg_r, _ = self.get_mapping(state)
         vg_u, _ = self.get_mapping(parameter)
 
         grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
-        conn_r = ap_r.get_connectivity(self.region, self.integration)
+        conn_r = state.field.get_connectivity(self.region, self.integration)
 
         fmode = diff_var is not None
 

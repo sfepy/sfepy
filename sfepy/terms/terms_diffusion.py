@@ -234,12 +234,11 @@ class DiffusionCoupling(Term):
 
     def get_fargs( self, mat, virtual, state,
                    mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, vg = self.get_approximation(virtual)
+        vg, _ = self.get_mapping(virtual)
 
         if mode == 'weak':
 
-            aps, vgs = self.get_approximation(state)
-            bf = aps.get_base('v', 0, self.integral)
+            vgs, _ = self.get_mapping(state)
 
             if diff_var is None:
                 if self.mode == 'weak0':
@@ -258,7 +257,7 @@ class DiffusionCoupling(Term):
                 else:
                     fmode = 3
 
-            return val, mat, bf, vg, fmode
+            return val, mat, vgs.bf, vg, fmode
 
         elif mode == 'eval':
 
@@ -412,9 +411,9 @@ class SurfaceFluxOperatorTerm(Term):
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, sg = self.get_approximation(state)
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.bkey, 0, self.integral)
+        sg, _ = self.get_mapping(state)
+        sd = state.field.surface_data[self.region.name]
+        bf = state.field.get_base(sd.bkey, 0, self.integral)
 
         if mat is None:
             _, n_qp, dim, _, _ = self.get_data_shape(state)

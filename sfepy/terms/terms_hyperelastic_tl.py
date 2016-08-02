@@ -377,8 +377,7 @@ class HyperElasticSurfaceTLFamilyData(HyperElasticFamilyData):
         sg, _ = state.field.get_mapping(region,
                                         integral, integration,
                                         get_saved=True)
-        ap = state.get_approximation()
-        sd = ap.surface_data[region.name]
+        sd = state.field.surface_data[region.name]
 
         vec = state(step=step, derivative=derivative)
 
@@ -386,7 +385,7 @@ class HyperElasticSurfaceTLFamilyData(HyperElasticFamilyData):
         data = self.init_data_struct(st_shape, name='surface_family_data')
 
         fargs = tuple([getattr(data, k) for k in self.data_names])
-        fargs = fargs + (vec, sg, sd.fis, ap.econn)
+        fargs = fargs + (vec, sg, sd.fis, state.field.econn)
         self.family_function(*fargs)
 
         return data
@@ -424,7 +423,7 @@ class SurfaceFluxTLTerm(HyperElasticSurfaceTLBase):
 
     def get_fargs(self, perm, ref_porosity, pressure, displacement,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, sg = self.get_approximation(displacement)
+        sg, _ = self.get_mapping(displacement)
         name = displacement.name
         fd = self.get_family_data(displacement, self.region, self.integral,
                                   self.geometry_types[name],
@@ -474,9 +473,9 @@ class SurfaceTractionTLTerm(HyperElasticSurfaceTLBase):
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, sg = self.get_approximation(virtual)
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.bkey, 0, self.integral)
+        sg, _ = self.get_mapping(virtual)
+        sd = virtual.field.surface_data[self.region.name]
+        bf = virtual.field.get_base(sd.bkey, 0, self.integral)
 
         name = state.name
         fd = self.get_family_data(state, self.region, self.integral,
@@ -523,9 +522,9 @@ class VolumeSurfaceTLTerm(HyperElasticSurfaceTLBase):
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, sg = self.get_approximation(parameter)
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.bkey, 0, self.integral)
+        sg, _ = self.get_mapping(parameter)
+        sd = parameter.field.surface_data[self.region.name]
+        bf = parameter.field.get_base(sd.bkey, 0, self.integral)
 
         name = parameter.name
         fd = self.get_family_data(parameter, self.region, self.integral,
