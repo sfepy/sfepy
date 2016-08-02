@@ -548,10 +548,12 @@ cdef class CMesh:
                       np.ndarray[uint32, mode='c', ndim=1] offsets not None,
                       int32 dim):
         """
-        Get local ids of non-unique entities `incident` of dimension `dim`
-        (with given `offsets` per `entities`) incident to `entities` of
-        dimension `dent`, see `mesh_get_incident()`, with respect to
-        `entities`.
+        Get local ids of `entities` of dimension `dent` in non-unique entities
+        `incident` of dimension `dim` (with given `offsets` per `entities`)
+        incident to `entities`, see `mesh_get_incident()`.
+
+        The function searches `entities` in `incident` -> `entities`
+        connectivity for each non-unique entity in `incident`.
         """
         cdef Indices _entities[1], _local_ids[1]
         cdef MeshConnectivity _incident[1]
