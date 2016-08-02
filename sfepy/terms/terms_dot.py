@@ -441,7 +441,7 @@ class VectorDotScalarTerm(Term):
     def dw_dot(out, mat, val_qp, bfve, bfsc, geo, fmode):
 
         nel, nqp, dim, nc = mat.shape
-        nen = bfve.shape[2]
+        nen = bfve.shape[3]
 
         status1 = 0
         if fmode in [0, 1, 3]:
@@ -481,11 +481,11 @@ class VectorDotScalarTerm(Term):
         coef = coef.reshape(coef.shape[:2] + (dim, 1))
 
         if mode == 'weak':
-            apv, vgv = self.get_approximation(vvar)
-            aps, vgs = self.get_approximation(svar)
+            vgv, _ = self.get_mapping(vvar)
+            vgs, _ = self.get_mapping(svar)
 
-            bfve = apv.get_base('v', 0, self.integral)
-            bfsc = aps.get_base('v', 0, self.integral)
+            bfve = vgv.bf
+            bfsc = vgs.bf
 
             if self.mode == 'v_weak':
                 qp_var, geo, fmode = svar, vgv, 0
@@ -575,13 +575,12 @@ class ScalarDotGradIScalarTerm(Term):
                 grad = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            ap, vg = self.get_approximation(virtual)
-            aps, vgs = self.get_approximation(state)
+            vg, _ = self.get_mapping(virtual)
+            vgs, _ = self.get_mapping(state)
 
-            bf = aps.get_base('v', 0, self.integral)
             idx = int(material)
 
-            return bf, vg, grad, idx, fmode
+            return vgs.bf, vg, grad, idx, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'

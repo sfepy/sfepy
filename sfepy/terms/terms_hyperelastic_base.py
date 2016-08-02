@@ -59,7 +59,6 @@ class HyperElasticFamilyData(Struct):
             vg, _ = state.field.get_mapping(region,
                                             integral, integration,
                                             get_saved=True)
-            ap = state.get_approximation()
 
             vec = state(step=step, derivative=derivative)
 
@@ -67,7 +66,7 @@ class HyperElasticFamilyData(Struct):
             data = self.init_data_struct(st_shape)
 
             fargs = tuple([getattr(data, k) for k in self.data_names])
-            fargs = fargs + (vec, vg, ap.econn)
+            fargs = fargs + (vec, vg, state.field.econn)
 
             self.family_function(*fargs)
             cache[data_key] = data
@@ -243,13 +242,13 @@ class DeformationGradientTerm(Term):
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, vg = self.get_approximation(parameter)
+        vg, _ = self.get_mapping(parameter)
 
         vec = self.get_vector(parameter)
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-        return vec, vg, ap.econn, term_mode, fmode
+        return vec, vg, parameter.field.econn, term_mode, fmode
 
     def get_eval_shape(self, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):

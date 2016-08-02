@@ -292,9 +292,9 @@ class VolumeSurfaceTerm(Term):
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, sg = self.get_approximation(parameter)
+        sg, _ = self.get_mapping(parameter)
 
-        sd = ap.surface_data[self.region.name]
+        sd = parameter.field.surface_data[self.region.name]
         coor = parameter.field.get_coor()
 
         return coor, sg, sd.econn.copy()
@@ -327,9 +327,9 @@ class SurfaceMomentTerm(Term):
 
     def get_fargs(self, parameter, shift,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, sg = self.get_approximation(parameter)
+        sg, _ = self.get_mapping(parameter)
 
-        sd = ap.surface_data[self.region.name]
+        sd = parameter.field.surface_data[self.region.name]
         coor = parameter.field.get_coor() \
                - nm.asarray(shift, dtype=nm.float64)[None,:]
 

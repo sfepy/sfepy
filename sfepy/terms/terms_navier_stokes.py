@@ -506,11 +506,11 @@ class PSPGCStabilizationTerm(Term):
 
     def get_fargs(self, tau, virtual, parameter, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        sap, svg = self.get_approximation(virtual)
-        vap, vvg = self.get_approximation(state)
+        svg, _ = self.get_mapping(virtual)
+        vvg, _ = self.get_mapping(state)
 
         val_qp = self.get(parameter, 'val')
-        conn = vap.get_connectivity(self.region, self.integration)
+        conn = state.field.get_connectivity(self.region, self.integration)
 
         if diff_var is None:
             fmode = 0
@@ -587,10 +587,10 @@ class SUPGCStabilizationTerm(Term):
 
     def get_fargs(self, delta, virtual, parameter, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        ap, vg = self.get_approximation(virtual)
+        vg, _ = self.get_mapping(virtual)
 
         val_qp = self.get(parameter, 'val')
-        conn = ap.get_connectivity(self.region, self.integration)
+        conn = virtual.field.get_connectivity(self.region, self.integration)
 
         if diff_var is None:
             fmode = 0

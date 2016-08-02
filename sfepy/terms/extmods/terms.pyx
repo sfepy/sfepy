@@ -1883,7 +1883,7 @@ def actBfT(np.ndarray out not None,
     cdef FMField _out[1], _bf[1], _A[1]
 
     array2fmfield4(_out, out)
-    array2fmfield3(_bf, bf)
+    array2fmfield4(_bf, bf)
     array2fmfield4(_A, A)
 
     ret = _actBfT(_out, _bf, _A)
