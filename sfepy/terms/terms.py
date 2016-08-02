@@ -932,17 +932,6 @@ class Term(Struct):
         return variable(step=self.arg_steps[name],
                         derivative=self.arg_derivatives[name])
 
-    def get_approximation(self, variable, get_saved=False):
-        """
-        Return approximation corresponding to `variable`. Also return
-        the corresponding geometry (actual or saved, according to
-        `get_saved`).
-        """
-        geo, _ = self.get_mapping(variable, get_saved=get_saved)
-        ap = variable.get_approximation()
-
-        return ap, geo
-
     def get_variables(self, as_list=True):
 
         if as_list:
