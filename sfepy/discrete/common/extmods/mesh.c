@@ -450,6 +450,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   n_incident = cDd->offsets[cDd->num];
   debprintf("build n_incident (%d -> %d): %d\n", D, dim, n_incident);
 
+  // Cell-local orientations w.r.t. D -> d.
   oris = alloc_mem(uint32, n_incident);
   if (dim == 2) {
     free_mem(mesh->topology->face_oris);
@@ -542,6 +543,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
         }
         ic--;
       }
+      // printf("%d << %d, %d\n", ic, ii, loc_oris[ii]);
       oris[ic] = loc_oris[ii];
     }
   }
