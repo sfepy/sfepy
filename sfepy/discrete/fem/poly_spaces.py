@@ -23,6 +23,18 @@ vertex_maps = {3 : [[0, 0, 0],
                1 : [[0],
                     [1]]}
 
+def transform_basis(transform, bf):
+    """
+    Transform a basis `bf` using `transform` array of matrices.
+    """
+    if bf.ndim == 3:
+        nbf = nm.einsum('cij,qdj->cqdi', transform, bf)
+
+    else:
+        nbf = nm.einsum('cij,oqdj->cqdi', transform, bf)
+
+    return nbf
+
 class LagrangeNodes(Struct):
     """Helper class for defining nodes of Lagrange elements."""
 
@@ -279,7 +291,7 @@ class PolySpace(Struct):
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
     def eval_base(self, coors, diff=False, ori=None, force_axis=False,
-                  suppress_errors=False, eps=1e-15):
+                  transform=None, suppress_errors=False, eps=1e-15):
         """
         Evaluate the basis in points given by coordinates. The real work is
         done in _eval_base() implemented in subclasses.
@@ -295,6 +307,8 @@ class PolySpace(Struct):
         force_axis : bool
             If True, force the resulting array shape to have one more axis even
             when `ori` is None.
+        transform : array_like, optional
+            The basis transform array.
         suppress_errors : bool
             If True, do not report points outside the reference domain.
         eps : float
@@ -345,6 +359,9 @@ class PolySpace(Struct):
                 base[ii] = self._eval_base(_coors, diff=diff, ori=ori,
                                            suppress_errors=suppress_errors,
                                            eps=eps)
+
+        if transform is not None:
+            base = transform_basis(transform, base)
 
         return base
 

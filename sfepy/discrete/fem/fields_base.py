@@ -254,6 +254,7 @@ class FEField(Field):
         self.setup_coors()
         self.clear_mappings(clear_all=True)
         self.clear_qp_base()
+        self.basis_transform = None
 
     def _set_approx_order(self, approx_order):
         """
@@ -512,6 +513,21 @@ class FEField(Field):
 
         return self.qp_coors[qpkey]
 
+    def set_basis_transform(self, transform):
+        """
+        Set local element basis transform.
+
+        The basis transform is applied in :func:`FEField.get_base()` and
+        :func:`FEField.create_mapping()`.
+
+        Parameters
+        ----------
+        transform : array, shape `(n_cell, n_ep, n_ep)`
+            The array with `(n_ep, n_ep)` transformation matrices for each cell
+            in the field's region, where `n_ep` is the number of element DOFs.
+        """
+        self.basis_transform = transform
+
     def get_base(self, key, derivative, integral, iels=None,
                  from_geometry=False, base_only=True):
         qp = self.get_qp(key, integral)
@@ -532,7 +548,8 @@ class FEField(Field):
             else:
                 ori = self.ori
 
-            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori)
+            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori,
+                                           transform=self.basis_transform)
 
         if base_only:
             return self.bf[bf_key]
@@ -903,7 +920,8 @@ class FEField(Field):
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
-                                     ori=self.ori)
+                                     ori=self.ori,
+                                     transform=self.basis_transform)
 
             out = vg
 
@@ -928,7 +946,7 @@ class FEField(Field):
                 self.create_bqp(region.name, integral)
                 qp = self.qp_coors[(integral.order, esd.bkey)]
 
-                abf = ps.eval_base(qp.vals[0])
+                abf = ps.eval_base(qp.vals[0], transform=self.basis_transform)
                 bf = abf[..., self.efaces[0]]
 
                 indx = self.gel.get_surface_entities()[0]
@@ -951,7 +969,7 @@ class FEField(Field):
             else:
                 # Do not use BQP for surface fields.
                 qp = self.get_qp(sd.face_type, integral)
-                bf = ps.eval_base(qp.vals)
+                bf = ps.eval_base(qp.vals, transform=self.basis_transform)
 
                 sg = mapping.get_mapping(qp.vals, qp.weights,
                                          poly_space=Struct(n_nod=bf.shape[-1]),

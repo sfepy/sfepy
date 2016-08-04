@@ -75,7 +75,8 @@ class VolumeMapping(FEMapping):
     dimension.
     """
 
-    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None):
+    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None,
+                    transform=None):
         """
         Get the mapping for given quadrature points, weights, and
         polynomial space.
@@ -90,8 +91,8 @@ class VolumeMapping(FEMapping):
         bf_g = self.get_base(qp_coors, diff=True)
 
         ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
-                                     force_axis=True)
-        flag = ori is not None
+                                     force_axis=True, transform=transform)
+        flag = (ori is not None) or (ebf_g.shape[0] > 1)
 
         cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
                         poly_space.n_nod, mode='volume', flag=flag)
