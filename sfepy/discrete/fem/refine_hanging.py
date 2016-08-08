@@ -174,22 +174,6 @@ def refine(domain0, refine, gsubs=None):
 
     return domain, gsubs
 
-def do_connectivity_substitutions(field, gsubs):
-    """
-    """
-    field.econn0 = field.econn.copy()
-
-    ef = field.efaces
-    for ii, sub in enumerate(gsubs):
-        # 2_4 edges always in opposite orientation.
-        ee = ef[sub[1]].copy()
-        ee[0], ee[1] = ee[1], ee[0] # Swap vertex DOFs.
-        ee[2:] = ee[-1:1:-1] # Swap eddge DOFs.
-
-        master = field.econn[sub[0], ee]
-        field.econn[sub[2], ef[sub[3]]] = master
-        field.econn[sub[4], ef[sub[5]]] = master
-
 def eval_basis_transform(field, gsubs):
     """
     """

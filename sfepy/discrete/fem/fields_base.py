@@ -255,6 +255,8 @@ class FEField(Field):
         self.clear_mappings(clear_all=True)
         self.clear_qp_base()
         self.basis_transform = None
+        self.econn0 = None
+        self.unused_dofs = None
 
     def _set_approx_order(self, approx_order):
         """
@@ -513,6 +515,39 @@ class FEField(Field):
 
         return self.qp_coors[qpkey]
 
+    def substitute_dofs(self, gsubs):
+        """
+        Perform facet DOF substitutions according to `gsubs`.
+
+        Modifies `self.econn` in-place and sets `self.econn0` and
+        `self.unused_dofs`.
+        """
+        self.econn0 = self.econn.copy()
+
+        ef = self.efaces
+        for ii, sub in enumerate(gsubs):
+            # 2_4 edges always in opposite orientation.
+            ee = ef[sub[1]].copy()
+            ee[0], ee[1] = ee[1], ee[0] # Swap vertex DOFs.
+            ee[2:] = ee[-1:1:-1] # Swap eddge DOFs.
+
+            master = self.econn[sub[0], ee]
+            self.econn[sub[2], ef[sub[3]]] = master
+            self.econn[sub[4], ef[sub[5]]] = master
+
+        self.unused_dofs = nm.setdiff1d(self.econn0, self.econn)
+
+    def restore_dofs(self):
+        """
+        Undoes the effect of :func:`FEField.substitute_dofs()`.
+        """
+        if self.econn0 is None:
+            raise ValueError('no original DOFs to restore!')
+
+        self.econn = self.econn0
+        self.econn0 = None
+        self.unused_dofs = None
+
     def set_basis_transform(self, transform):
         """
         Set local element basis transformation.
@@ -527,6 +562,21 @@ class FEField(Field):
             in the field's region, where `n_ep` is the number of element DOFs.
         """
         self.basis_transform = transform
+
+    def restore_substituted(self, vec):
+        """
+        Restore values of the unused DOFs using the transpose of the applied
+        basis transformation.
+        """
+        if (self.econn0 is None) or (self.basis_transform is None):
+            raise ValueError('no original DOF values to restore!!')
+
+        vec = vec.reshape((self.n_nod, self.n_components)).copy()
+        evec = vec[self.econn]
+
+        vec[self.econn0] = nm.einsum('cji,cjk->cik', self.basis_transform, evec)
+
+        return vec.ravel()
 
     def get_base(self, key, derivative, integral, iels=None,
                  from_geometry=False, base_only=True):
