@@ -515,9 +515,9 @@ class FEField(Field):
 
     def set_basis_transform(self, transform):
         """
-        Set local element basis transform.
+        Set local element basis transformation.
 
-        The basis transform is applied in :func:`FEField.get_base()` and
+        The basis transformation is applied in :func:`FEField.get_base()` and
         :func:`FEField.create_mapping()`.
 
         Parameters
