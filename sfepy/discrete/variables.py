@@ -1774,6 +1774,10 @@ class FieldVariable(Variable):
         # EPBC.
         vec[eq_map.master] = vec[eq_map.slave]
 
+        unused_dofs = self.field.get('unused_dofs')
+        if unused_dofs is not None:
+            vec[:] = self.field.restore_substituted(vec)
+
         return vec
 
     def create_output(self, vec=None, key=None, extend=True, fill_value=None,
