@@ -444,6 +444,13 @@ class EquationMap(Struct):
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
         self.eq[self.eq_ebc] = -2
         self.eq[self.master] = -1
+
+        unused_dofs = field.get('unused_dofs')
+        if unused_dofs is not None:
+            unused = expand_nodes_to_equations(field.unused_dofs,
+                                               self.dof_names, self.dof_names)
+            self.eq[unused] = -3
+
         self.eqi = nm.compress(self.eq >= 0, self.eq)
         self.eq[self.eqi] = nm.arange(self.eqi.shape[0], dtype=nm.int32)
         self.eq[self.master] = self.eq[self.slave]
