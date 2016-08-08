@@ -54,7 +54,7 @@ def find_level_interface(domain, refine_flag):
                                      ret_offsets=True)
     assert_((nm.diff(offs) == 2).all())
 
-    ii = cmesh.get_local_ids(facets, 1, cells, offs, 2)
+    ii = cmesh.get_local_ids(facets, dim - 1, cells, offs, dim)
 
     ii = ii.reshape((-1, 2))
     cells = cells.reshape((-1, 2))
@@ -93,7 +93,7 @@ def refine_region(domain0, region0, region1):
 
     coors, vgs, _conns, _mat_ids, descs = mesh1r._get_io_data()
 
-    conn0 = mesh0.get_conn('2_4')
+    conn0 = mesh0.get_conn(domain0.mesh.descs[0])
     conns = [nm.r_[conn0[region0.cells], _conns[0]]]
     mat_ids = [nm.r_[mat_ids0[0][region0.cells], _mat_ids[0]]]
     mesh = Mesh.from_data('a', coors, vgs, conns, mat_ids, descs)
@@ -141,8 +141,9 @@ def refine(domain0, refine, gsubs=None):
     #_plot(domain.mesh.cmesh)
 
     if facets.shape[0] > 0:
-        conn0 = domain0.mesh.get_conn('2_4')
-        conn1 = domain.mesh.get_conn('2_4')
+        desc = domain0.mesh.descs[0]
+        conn0 = domain0.mesh.get_conn(desc)
+        conn1 = domain.mesh.get_conn(desc)
 
         print conn1
 
