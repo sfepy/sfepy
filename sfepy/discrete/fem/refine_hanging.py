@@ -41,7 +41,8 @@ def find_level_interface(domain, refine_flag):
     get_coarse = Function('get_coarse', _get_coarse)
     functions = Functions([get_refine, get_coarse])
     region0 = domain.create_region('coarse', 'cells by get_coarse',
-                                   functions=functions, add_to_regions=False)
+                                   functions=functions, add_to_regions=False,
+                                   allow_empty=True)
     region1 = domain.create_region('refine', 'cells by get_refine',
                                    functions=functions, add_to_regions=False)
 
