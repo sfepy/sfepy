@@ -156,12 +156,10 @@ def refine(domain0, refine, gsubs=None):
         print conn1[cells[:, 2]]
         assert_((conn0[cells[:, 1]] == conn1[cells[:, 2]]).all())
 
-    else:
-        domain = domain0
 
     gsubs1 = find_facet_substitutions(facets, cells, sub_cells)
     if gsubs is None:
-        gsubs = gsubs1
+        gsubs = gsubs1 if len(gsubs1) else None
 
     elif len(gsubs1):
         mods = nm.zeros(domain.shape.n_el + 1, dtype=nm.int32)
@@ -215,6 +213,9 @@ def eval_basis_transform(field, gsubs):
 
     transform = nm.tile(nm.eye(field.econn.shape[1]),
                         (field.econn.shape[0], 1, 1))
+    if gsubs is None:
+        return transform
+
     for ii, sub in enumerate(gsubs):
         print ii, sub
         mtx = transform[sub[2]]
