@@ -7,10 +7,27 @@ from sfepy.base.base import assert_
 from sfepy.discrete import Integral, Functions, Function
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 
-refine_facets_2_4 = nm.array([[[0, 0], [1, 3]],
-                              [[1, 0], [2, 3]],
-                              [[2, 0], [3, 3]],
-                              [[3, 0], [0, 3]]])
+# Rows = facets of reference cell, columns = [sub_cell_i, local facet_i]
+refine_edges_2_4 = nm.array([[[0, 0], [1, 3]],
+                             [[1, 0], [2, 3]],
+                             [[2, 0], [3, 3]],
+                             [[3, 0], [0, 3]]])
+
+refine_faces_3_8 = nm.array([[[0, 0], [1, 0], [2, 0], [3, 0]],
+                             [[0, 1], [3, 2], [4, 2], [7, 1]],
+                             [[0, 2], [1, 1], [4, 1], [5, 2]],
+                             [[4, 0], [5, 0], [6, 0], [7, 0]],
+                             [[1, 2], [2, 1], [5, 1], [6, 2]],
+                             [[2, 2], [3, 1], [6, 1], [7, 2]]])
+
+refine_edges_3_8 = nm.array([[[0, 0], [1, 3]],
+                             [[1, 0], [2, 3]],
+                             [[2, 0], [3, 3]],
+                             [[3, 0], [0, 3]],
+                             [[4, 3], [5, 0]],
+                             [[5, 3], [6, 0]],
+                             [[6, 3], [7, 0]],
+                             [[7, 3], [4, 0]]])
 
 def find_level_interface(domain, refine_flag):
     """
@@ -102,7 +119,7 @@ def refine_region(domain0, region0, region1):
 
     return domain, sub_cells
 
-def find_facet_substitutions(facets, cells, sub_cells):
+def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
     """
     Find facet substitutions in connectivity.
 
@@ -116,14 +133,13 @@ def find_facet_substitutions(facets, cells, sub_cells):
 
         isub = nm.searchsorted(sub_cells[:, 0], fine)
         refined = sub_cells[isub, 1:]
-
-        rf = refine_facets_2_4[fac[1]]
+        rf = refine_facets[fac[1]]
         used = refined[rf[:, 0]]
         fused = rf[:, 1]
 
         master = [coarse, fac[2]]
         slave = zip(used, fused)
-        sub = nm.r_[master, slave[0], slave[1]]
+        sub = nm.r_[[master], slave].ravel()
 
         # !!!!!
         print ii, fac, fine, coarse, isub, refined, used
@@ -156,6 +172,10 @@ def refine(domain0, refine, gsubs=None):
         print conn1[cells[:, 2]]
         assert_((conn0[cells[:, 1]] == conn1[cells[:, 2]]).all())
 
+    desc = domain0.mesh.descs[0]
+    if desc == '2_4':
+        gsubs1 = find_facet_substitutions(facets, cells, sub_cells,
+                                          refine_edges_2_4)
 
     gsubs1 = find_facet_substitutions(facets, cells, sub_cells)
     if gsubs is None:
