@@ -102,9 +102,12 @@ def refine_region(domain0, region0, region1):
     domain1r = domain1.refine()
     mesh1r = domain1r.mesh
 
-    sub_cells = nm.empty((region1.shape.n_cell, 5), dtype=nm.uint32)
+    n_cell = region1.shape.n_cell
+    n_sub = 4 if mesh0.cmesh.tdim == 2 else 8
+
+    sub_cells = nm.empty((n_cell, n_sub + 1), dtype=nm.uint32)
     sub_cells[:, 0] = region1.cells
-    aux = nm.arange(4 * region1.shape.n_cell, dtype=nm.uint32).reshape((-1, 4))
+    aux = nm.arange(n_sub * n_cell, dtype=nm.uint32).reshape((-1, n_sub))
     sub_cells[:, 1:] = region0.shape.n_cell + aux
 
     coors0, vgs0, conns0, mat_ids0, descs0 = mesh0._get_io_data()
