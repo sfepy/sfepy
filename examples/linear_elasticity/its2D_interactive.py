@@ -30,7 +30,7 @@ from __future__ import absolute_import
 import sys
 from six.moves import range
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 import matplotlib.pyplot as plt
@@ -119,15 +119,13 @@ def probe_results(u, strain, stress, probe, label):
 
     return fig, results
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 helps = {
-    'young' : "the Young's modulus [default: %default]",
-    'poisson' : "the Poisson's ratio [default: %default]",
+    'young' : "the Young's modulus [default: %(default)s]",
+    'poisson' : "the Poisson's ratio [default: %(default)s]",
     'load' : "the vertical load value (negative means compression)"
-    " [default: %default]",
-    'order' : 'displacement field approximation order [default: %default]',
-    'refine' : 'uniform mesh refinement level [default: %default]',
+    " [default: %(default)s]",
+    'order' : 'displacement field approximation order [default: %(default)s]',
+    'refine' : 'uniform mesh refinement level [default: %(default)s]',
     'probe' : 'probe the results',
     'show' : 'show the results figure',
 }
@@ -135,29 +133,31 @@ helps = {
 def main():
     from sfepy import data_dir
 
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('--young', metavar='float', type=float,
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('--young', metavar='float', type=float,
                       action='store', dest='young',
                       default=2000.0, help=helps['young'])
-    parser.add_option('--poisson', metavar='float', type=float,
+    parser.add_argument('--poisson', metavar='float', type=float,
                       action='store', dest='poisson',
                       default=0.4, help=helps['poisson'])
-    parser.add_option('--load', metavar='float', type=float,
+    parser.add_argument('--load', metavar='float', type=float,
                       action='store', dest='load',
                       default=-1000.0, help=helps['load'])
-    parser.add_option('--order', metavar='int', type=int,
+    parser.add_argument('--order', metavar='int', type=int,
                       action='store', dest='order',
                       default=1, help=helps['order'])
-    parser.add_option('-r', '--refine', metavar='int', type=int,
+    parser.add_argument('-r', '--refine', metavar='int', type=int,
                       action='store', dest='refine',
                       default=0, help=helps['refine'])
-    parser.add_option('-s', '--show',
+    parser.add_argument('-s', '--show',
                       action="store_true", dest='show',
                       default=False, help=helps['show'])
-    parser.add_option('-p', '--probe',
+    parser.add_argument('-p', '--probe',
                       action="store_true", dest='probe',
                       default=False, help=helps['probe'])
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     assert_((0.0 < options.poisson < 0.5),
             "Poisson's ratio must be in ]0, 0.5[!")
