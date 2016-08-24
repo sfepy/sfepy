@@ -74,6 +74,9 @@ fading memory kernel is cut off before it goes close enough to zero.
 from __future__ import absolute_import
 import numpy as nm
 
+import sys
+sys.path.append('.')
+
 from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy.homogenization.utils import interp_conv_mat
