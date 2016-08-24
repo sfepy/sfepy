@@ -13,7 +13,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import time
 import sys
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import shlex
 import subprocess
 
@@ -146,14 +146,11 @@ def report_tests(out, return_item=False):
     else:
         return ok
 
-usage = '%prog' + '\n' + __doc__
-
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    options, args = parser.parse_args()
-    if len(args) > 0:
-        parser.print_help()
-        return
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    options = parser.parse_args()
 
     fd = open('test_install.log', 'w')
     fd.close()
