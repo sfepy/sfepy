@@ -5,7 +5,7 @@ Compare various elastic materials w.r.t. uniaxial tension/compression test.
 Requires Matplotlib.
 """
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 import six
 sys.path.append('.')
@@ -155,7 +155,6 @@ def solve_branch(problem, branch_function):
 
     return displacements
 
-usage = '%prog [options]\n' + __doc__.rstrip()
 helps = {
     'no_plot' : 'do not show plot window',
 }
@@ -166,11 +165,13 @@ def main():
     from sfepy.discrete import Problem
     from sfepy.base.plotutils import plt
 
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-n', '--no-plot',
-                      action="store_true", dest='no_plot',
-                      default=False, help=helps['no_plot'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-n', '--no-plot',
+                        action="store_true", dest='no_plot',
+                        default=False, help=helps['no_plot'])
+    options = parser.parse_args()
 
     required, other = get_standard_keywords()
     # Use this file as the input file.
