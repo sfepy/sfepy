@@ -10,7 +10,7 @@ $ ./script/gen_mesh_prev.py meshes/2d/
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sys
 sys.path.append('.')
 import os
@@ -101,17 +101,13 @@ def gen_shot(vtk_filename, png_filename):
     writer.SetInput(image.GetOutput())
     writer.Write()
 
-usage = '%prog [options] mesh_dir\n' + __doc__.rstrip()
-
 def main():
-    parser = OptionParser(usage=usage)
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('mesh_dir')
+    options = parser.parse_args()
 
-    if len(args) != 1:
-        parser.print_help()
-        sys.exit(1)
-
-    mesh_dir = args[0]
+    mesh_dir = options.mesh_dir
 
     mesh_files = []
     for (dirpath, dirnames, filenames) in os.walk(mesh_dir):
