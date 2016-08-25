@@ -5,14 +5,12 @@ Plot time steps, times of time steps and time deltas in a HDF5 results file.
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 import numpy as nm
 import matplotlib.pyplot as plt
 
 from sfepy.postprocess.time_history import extract_times
-
-usage = '%prog [options] filename\n' + __doc__.rstrip()
 
 helps = {
     'logarithmic' :
@@ -20,17 +18,15 @@ helps = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-l', '--logarithmic',
-                      action='store_true', dest='logarithmic',
-                      default=False, help=helps['logarithmic'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-l', '--logarithmic',
+                        action='store_true', dest='logarithmic',
+                        default=False, help=helps['logarithmic'])
+    parser.add_argument('filename')
+    options = parser.parse_args()
 
-    if (len(args) == 1):
-        filename = args[0]
-    else:
-        parser.print_help()
-        return
+    filename = options.filename
 
     plt.rcParams['lines.linewidth'] = 3
     plt.rcParams['lines.markersize'] = 9
