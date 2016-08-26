@@ -8,7 +8,7 @@ import sys
 from six.moves import range
 sys.path.append('.')
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser
 import numpy as nm
 
 from sfepy.base.base import output, Struct
@@ -20,31 +20,30 @@ from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.linearizer import create_output
 from sfepy.discrete.fem.fields_base import create_expression_output
 
-usage = '%prog [options] output_dir\n' + __doc__.rstrip()
-
 help = {
     'basis' :
-    'name of the FE basis [default: %default]',
+    'name of the FE basis [default: %(default)s]',
     'derivative' :
-    'save d-th derivative of FE basis, can be 0 or 1 [default: %default]',
+    'save d-th derivative of FE basis, can be 0 or 1 [default: %(default)s]',
     'max_order' :
-    'maximum order of polynomials [default: %default]',
+    'maximum order of polynomials [default: %(default)s]',
     'geometry' :
     'reference element geometry, one of "2_3", "2_4", "3_4", "3_8"'
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'mesh' :
-    'name of the mesh file - alternative to --geometry [default: %default]',
+    ('name of the mesh file - alternative to --geometry '
+     '[default: %(default)s]'),
     'permutations' :
     'list of geometry element permutations for each element, e.g. 0,1 is a'
     ' single permutation for two elements, 0,1,0,2,1,0 are three permutations'
     ' for two elements. Special value "all" can be used to save all possible'
     ' permutations for given reference element. Works only with --mesh option'
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'dofs' :
     'if given, save only the DOFs specified as a comma-separated list'
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'lin_options' :
-    'linearizer options [default: %default]',
+    'linearizer options [default: %(default)s]',
     'plot_dofs' :
     'plot local and global DOF numberings, with --mesh option',
 }
@@ -123,42 +122,40 @@ def save_basis_on_mesh(mesh, options, output_dir, lin,
         output('...done (%s)' % name)
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-b', '--basis', metavar='name',
-                      action='store', dest='basis',
-                      default='lagrange', help=help['basis'])
-    parser.add_option('-d', '--derivative', metavar='d', type=int,
-                      action='store', dest='derivative',
-                      default=0, help=help['derivative'])
-    parser.add_option('-n', '--max-order', metavar='order', type=int,
-                      action='store', dest='max_order',
-                      default=2, help=help['max_order'])
-    parser.add_option('-g', '--geometry', metavar='name',
-                      action='store', dest='geometry',
-                      default='2_4', help=help['geometry'])
-    parser.add_option('-m', '--mesh', metavar='mesh',
-                      action='store', dest='mesh',
-                      default=None, help=help['mesh'])
-    parser.add_option('', '--permutations', metavar='permutations',
-                      action='store', dest='permutations',
-                      default=None, help=help['permutations'])
-    parser.add_option('', '--dofs', metavar='dofs',
-                      action='store', dest='dofs',
-                      default=None, help=help['dofs'])
-    parser.add_option('-l', '--lin-options', metavar='options',
-                      action='store', dest='lin_options',
-                      default='min_level=2,max_level=5,eps=1e-3',
-                      help=help['lin_options'])
-    parser.add_option('', '--plot-dofs',
-                      action='store_true', dest='plot_dofs',
-                      default=False, help=help['plot_dofs'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-b', '--basis', metavar='name',
+                        action='store', dest='basis',
+                        default='lagrange', help=help['basis'])
+    parser.add_argument('-d', '--derivative', metavar='d', type=int,
+                        action='store', dest='derivative',
+                        default=0, help=help['derivative'])
+    parser.add_argument('-n', '--max-order', metavar='order', type=int,
+                        action='store', dest='max_order',
+                        default=2, help=help['max_order'])
+    parser.add_argument('-g', '--geometry', metavar='name',
+                        action='store', dest='geometry',
+                        default='2_4', help=help['geometry'])
+    parser.add_argument('-m', '--mesh', metavar='mesh',
+                        action='store', dest='mesh',
+                        default=None, help=help['mesh'])
+    parser.add_argument('--permutations', metavar='permutations',
+                        action='store', dest='permutations',
+                        default=None, help=help['permutations'])
+    parser.add_argument('--dofs', metavar='dofs',
+                        action='store', dest='dofs',
+                        default=None, help=help['dofs'])
+    parser.add_argument('-l', '--lin-options', metavar='options',
+                        action='store', dest='lin_options',
+                        default='min_level=2,max_level=5,eps=1e-3',
+                        help=help['lin_options'])
+    parser.add_argument('--plot-dofs',
+                        action='store_true', dest='plot_dofs',
+                        default=False, help=help['plot_dofs'])
+    parser.add_argument('output_dir')
+    options = parser.parse_args()
 
-    if len(args) == 1:
-        output_dir = args[0]
-    else:
-        parser.print_help(),
-        return
+    output_dir = options.output_dir
 
     output('polynomial space:', options.basis)
     output('max. order:', options.max_order)
