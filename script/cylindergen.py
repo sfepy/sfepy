@@ -1,36 +1,35 @@
 #!/usr/bin/env python
+"""
+Cylinder mesh generator.
+"""
 from __future__ import print_function
 from __future__ import absolute_import
 import sys
-sys.path.append( '.' )
-from optparse import OptionParser
+sys.path.append('.')
+from argparse import ArgumentParser
 from sfepy.mesh.mesh_generators import gen_cylinder_mesh
 from sfepy.discrete.fem.meshio import MeshIO
 
-usage = """%prog [options]
-
-Cylinder mesh generator.
-"""
 help = {
     'filename' :
-    'output file name [default: %default]',
+    'output file name [default: %(default)s]',
     'format' : 'output mesh format (overrides output file name extension)',
     'axis' :
-    'axis of the cylinder, one of x, y, z [default: %default]',
+    'axis of the cylinder, one of x, y, z [default: %(default)s]',
     'dims' :
     'dimensions of the cylinder: inner surface semi-axes a1, b1, outer'\
-    ' surface semi-axes a2, b2, length [default: %default]',
+    ' surface semi-axes a2, b2, length [default: %(default)s]',
     'shape' :
     'shape (counts of nodes in radial, circumferential and longitudinal'\
-    ' directions) of the cylinder mesh [default: %default]',
+    ' directions) of the cylinder mesh [default: %(default)s]',
     'centre' :
-    'centre of the cylinder [default: %default]',
+    'centre of the cylinder [default: %(default)s]',
     'force_hollow' :
     'force hollow mesh even if inner radii a1 = b1 = 0',
     'is_open' :
     'generate an open cylinder segment',
     'open_angle' :
-    'opening angle in radians [default: %default]',
+    'opening angle in radians [default: %(default)s]',
     'non_uniform' :
     'space the mesh nodes in radial direction so that the element'\
     ' volumes are (approximately) the same, making thus the elements towards'\
@@ -38,44 +37,45 @@ help = {
 }
 
 def main():
-    parser = OptionParser( usage = usage, version = "%prog" )
-    parser.add_option( "-o", "", metavar = 'filename',
-                       action = "store", dest = "output_filename",
-                       default = 'out.vtk', help = help['filename'] )
-    parser.add_option('-f', '--format', metavar='format',
-                      action='store', type='string', dest='format',
-                      default=None, help=help['format'])
-    parser.add_option( "-a", "--axis", metavar = 'axis',
-                       action = "store", dest = "axis",
-                       default = 'x', help = help['axis'] )
-    parser.add_option( "-d", "--dims", metavar = 'dims',
-                       action = "store", dest = "dims",
-                       default = '[1.0, 1.0, 2.0, 2.0, 3.0]',
-                       help = help['dims'] )
-    parser.add_option( "-s", "--shape", metavar = 'shape',
-                       action = "store", dest = "shape",
-                       default = '[11, 11, 11]', help = help['shape'] )
-    parser.add_option( "-c", "--centre", metavar = 'centre',
-                       action = "store", dest = "centre",
-                       default = '[0.0, 0.0, 0.0]', help = help['centre'] )
-    parser.add_option( "", "--force-hollow",
-                       action = "store_true", dest = "force_hollow",
-                       default = False, help = help['force_hollow'] )
-    parser.add_option( "", "--is-open",
-                       action = "store_true", dest = "is_open",
-                       default = False, help = help['is_open'] )
-    parser.add_option( "", "--open-angle", metavar = 'angle', type='float',
-                       action = "store", dest = "open_angle",
-                       default = '0.0', help = help['open_angle'] )
-    parser.add_option( "", "--non-uniform",
-                       action = "store_true", dest = "non_uniform",
-                       default = False, help = help['non_uniform'] )
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version = "%(prog)s")
+    parser.add_argument('-o', metavar = 'filename',
+                        action = "store", dest = "output_filename",
+                        default = 'out.vtk', help = help['filename'])
+    parser.add_argument('-f', '--format', metavar='format',
+                        action='store', type=str, dest='format',
+                        default=None, help=help['format'])
+    parser.add_argument("-a", "--axis", metavar = 'axis',
+                        action = "store", dest = "axis",
+                        default = 'x', help = help['axis'])
+    parser.add_argument("-d", "--dims", metavar = 'dims',
+                        action = "store", dest = "dims",
+                        default = '[1.0, 1.0, 2.0, 2.0, 3.0]',
+                        help = help['dims'])
+    parser.add_argument("-s", "--shape", metavar = 'shape',
+                        action = "store", dest = "shape",
+                        default = '[11, 11, 11]', help = help['shape'])
+    parser.add_argument("-c", "--centre", metavar = 'centre',
+                        action = "store", dest = "centre",
+                        default = '[0.0, 0.0, 0.0]', help = help['centre'])
+    parser.add_argument("--force-hollow",
+                        action = "store_true", dest = "force_hollow",
+                        default = False, help = help['force_hollow'])
+    parser.add_argument("--is-open",
+                        action = "store_true", dest = "is_open",
+                        default = False, help = help['is_open'])
+    parser.add_argument("--open-angle", metavar = 'angle', type=float,
+                        action = "store", dest = "open_angle",
+                        default = '0.0', help = help['open_angle'])
+    parser.add_argument("--non-uniform",
+                        action = "store_true", dest = "non_uniform",
+                        default = False, help = help['non_uniform'])
+    options = parser.parse_args()
 
     import numpy as nm
-    dims = eval( "nm.array( %s, dtype = nm.float64 )" % options.dims )
-    shape = eval( "nm.array( %s, dtype = nm.int32 )" % options.shape )
-    centre = eval( "nm.array( %s, dtype = nm.float64 )" % options.centre )
+    dims = eval("nm.array(%s, dtype = nm.float64)" % options.dims)
+    shape = eval("nm.array(%s, dtype = nm.int32)" % options.shape)
+    centre = eval("nm.array(%s, dtype = nm.float64)" % options.centre)
 
     print(dims)
     print(shape)
