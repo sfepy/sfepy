@@ -8,7 +8,7 @@ The grid has equally-spaced knot vectors.
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import numpy as nm
 
 from sfepy.base.base import output
@@ -16,19 +16,17 @@ from sfepy.discrete.iga.domain_generators import gen_patch_block_domain
 import sfepy.discrete.iga.plot_nurbs as pn
 import sfepy.discrete.iga.io as io
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 helps = {
     'filename' :
-    'output file name [default: block%dd.iga]',
+    'output file name [default: block%%dd.iga]',
     'dims' :
-    'dimensions of the block [default: %default]',
+    'dimensions of the block [default: %(default)s]',
     'centre' :
-    'centre of the block [default: %default]',
+    'centre of the block [default: %(default)s]',
     'shape' :
-    'numbers of unique knot values along each axis [default: %default]',
+    'numbers of unique knot values along each axis [default: %(default)s]',
     'degrees' :
-    'NURBS degrees along each axis [default: %default]',
+    'NURBS degrees along each axis [default: %(default)s]',
     'continuity' :
     'NURBS continuity along each axis [default: degrees-1]',
     'cp_mode' :
@@ -46,39 +44,41 @@ helps = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-o', '', metavar='filename',
-                      action='store', dest='filename',
-                      default=None, help=helps['filename'])
-    parser.add_option('-d', '--dims', metavar='dims',
-                      action='store', dest='dims',
-                      default='[1.0, 1.0, 1.0]', help=helps['dims'])
-    parser.add_option('-c', '--centre', metavar='centre',
-                      action='store', dest='centre',
-                      default='[0.0, 0.0, 0.0]', help=helps['centre'])
-    parser.add_option('-s', '--shape', metavar='shape',
-                      action='store', dest='shape',
-                      default='[5, 5, 5]', help=helps['shape'])
-    parser.add_option('', '--degrees', metavar='degrees',
-                      action='store', dest='degrees',
-                      default='[2, 2, 2]', help=helps['degrees'])
-    parser.add_option('', '--continuity', metavar='continuity',
-                      action='store', dest='continuity',
-                      default=None, help=helps['continuity'])
-    parser.add_option('', '--cp-mode', metavar="'greville' or 'uniform'",
-                      action='store', dest='cp_mode',
-                      choices=['greville', 'uniform'],
-                      default='greville', help=helps['cp_mode'])
-    parser.add_option('-2', '--2d',
-                      action='store_true', dest='is_2d',
-                      default=False, help=helps['2d'])
-    parser.add_option('-p', '--plot',
-                      action='store_true', dest='plot',
-                      default=False, help=helps['plot'])
-    parser.add_option('-l', '--label',
-                      action='store_true', dest='label',
-                      default=False, help=helps['label'])
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='filename',
+                        default=None, help=helps['filename'])
+    parser.add_argument('-d', '--dims', metavar='dims',
+                        action='store', dest='dims',
+                        default='[1.0, 1.0, 1.0]', help=helps['dims'])
+    parser.add_argument('-c', '--centre', metavar='centre',
+                        action='store', dest='centre',
+                        default='[0.0, 0.0, 0.0]', help=helps['centre'])
+    parser.add_argument('-s', '--shape', metavar='shape',
+                        action='store', dest='shape',
+                        default='[5, 5, 5]', help=helps['shape'])
+    parser.add_argument('--degrees', metavar='degrees',
+                        action='store', dest='degrees',
+                        default='[2, 2, 2]', help=helps['degrees'])
+    parser.add_argument('--continuity', metavar='continuity',
+                        action='store', dest='continuity',
+                        default=None, help=helps['continuity'])
+    parser.add_argument('--cp-mode', metavar="'greville' or 'uniform'",
+                        action='store', dest='cp_mode',
+                        choices=['greville', 'uniform'],
+                        default='greville', help=helps['cp_mode'])
+    parser.add_argument('-2', '--2d',
+                        action='store_true', dest='is_2d',
+                        default=False, help=helps['2d'])
+    parser.add_argument('-p', '--plot',
+                        action='store_true', dest='plot',
+                        default=False, help=helps['plot'])
+    parser.add_argument('-l', '--label',
+                        action='store_true', dest='label',
+                        default=False, help=helps['label'])
+    options = parser.parse_args()
 
     dim = 2 if options.is_2d else 3
 
