@@ -14,12 +14,10 @@ import sys
 sys.path.append('.')
 import os
 import fnmatch
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 from sfepy.base.base import output
 from sfepy.base.ioutils import locate_files, edit_filename, ensure_path
-
-usage = '%prog [options] doc_dir top_dir\n' + __doc__.rstrip()
 
 omits = [
     '__init__.py',
@@ -48,17 +46,19 @@ help = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-n', '--dry-run',
-                      action='store_true', dest='dry_run',
-                      default=False, help=help['dry_run'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-n', '--dry-run',
+                        action='store_true', dest='dry_run',
+                        default=False, help=help['dry_run'])
+    parser.add_argument('doc_dir')
+    parser.add_argument('top_dir')
+    options = parser.parse_args()
 
-    if len(args) == 2:
-        doc_dir, top_dir = [os.path.realpath(ii) for ii in args]
-    else:
-        parser.print_help(),
-        return
+    doc_dir, top_dir = [os.path.realpath(ii)
+                        for ii in [options.doc_dir, options.top_dir]]
+
 
     docs = set(ii for ii in locate_files('*.rst', root_dir=doc_dir))
 
