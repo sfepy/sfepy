@@ -6,7 +6,7 @@ element matrices for various FE polynomial spaces (bases).
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser
 import time
 import numpy as nm
 import matplotlib.pyplot as plt
@@ -19,35 +19,34 @@ from sfepy.terms import Term
 from sfepy.solvers import eig
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 help = {
     'basis' :
-    'name of the FE basis [default: %default]',
+    'name of the FE basis [default: %(default)s]',
     'max_order' :
-    'maximum order of polynomials [default: %default]',
+    'maximum order of polynomials [default: %(default)s]',
     'matrix_type' :
-    'matrix type, one of "elasticity", "laplace" [default: %default]',
+    'matrix type, one of "elasticity", "laplace" [default: %(default)s]',
     'geometry' :
     'reference element geometry, one of "2_3", "2_4", "3_4", "3_8"'
-    ' [default: %default]',
+    ' [default: %(default)s]',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-b', '--basis', metavar='name',
-                      action='store', dest='basis',
-                      default='lagrange', help=help['basis'])
-    parser.add_option('-n', '--max-order', metavar='order', type=int,
-                      action='store', dest='max_order',
-                      default=10, help=help['max_order'])
-    parser.add_option('-m', '--matrix', metavar='type',
-                      action='store', dest='matrix_type',
-                      default='laplace', help=help['matrix_type'])
-    parser.add_option('-g', '--geometry', metavar='name',
-                      action='store', dest='geometry',
-                      default='2_4', help=help['geometry'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-b', '--basis', metavar='name',
+                        action='store', dest='basis',
+                        default='lagrange', help=help['basis'])
+    parser.add_argument('-n', '--max-order', metavar='order', type=int,
+                        action='store', dest='max_order',
+                        default=10, help=help['max_order'])
+    parser.add_argument('-m', '--matrix', metavar='type',
+                        action='store', dest='matrix_type',
+                        default='laplace', help=help['matrix_type'])
+    parser.add_argument('-g', '--geometry', metavar='name',
+                        action='store', dest='geometry',
+                        default='2_4', help=help['geometry'])
+    options = parser.parse_args()
 
     dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
     output('reference element geometry:')
@@ -109,7 +108,7 @@ def main():
         tt = time.clock()
         mtx, iels = term.evaluate(mode='weak', diff_var='u')
         output('...done in %.2f s' % (time.clock() - tt))
-        mtx = mtx[0][0, 0]
+        mtx = mtx[0, 0]
 
         try:
             assert_(nm.max(nm.abs(mtx - mtx.T)) < 1e-10)
