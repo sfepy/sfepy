@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 import sfepy
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.homogen_app import HomogenizationApp
-
-usage = """%prog [options] filename_in"""
 
 help = {
     'filename' :
@@ -14,18 +12,16 @@ help = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option("-o", "", metavar='filename', action="store",
-                      dest="output_filename_trunk",
-                      default=None, help=help['filename'])
+    parser = ArgumentParser()
+    parser.add_argument("--version", action="version",
+                        version="%(prog)s " + sfepy.__version__)
+    parser.add_argument("-o", metavar='filename', action="store",
+                        dest="output_filename_trunk",
+                        default=None, help=help['filename'])
+    parser.add_argument('filename_in')
+    options = parser.parse_args()
 
-    (options, args) = parser.parse_args()
-
-    if (len(args) == 1):
-        filename_in = args[0]
-    else:
-        parser.print_help(),
-        return
+    filename_in = options.filename_in
 
     required, other = get_standard_keywords()
     required.remove('equations')
