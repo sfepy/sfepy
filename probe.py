@@ -5,6 +5,8 @@ Probe finite element solutions in points defined by various geometrical probes.
 
 Generation mode
 ---------------
+python probe.py [generation options] <input file> <results file>
+
 Probe the data in the results file corresponding to the problem defined in the
 input file. The input file options must contain 'gen_probes' and 'probe_hook'
 keys, pointing to proper functions accessible from the input file scope.
@@ -18,6 +20,8 @@ Generation options
 
 Postprocessing mode
 -------------------
+python probe.py [postprocessing options] <probe file> <figure file>
+
 Read a previously probed data from the probe text file, re-plot them,
 and integrate them along the probe.
 
@@ -34,7 +38,7 @@ of the element. To obtain some values even in this case, try increasing the
 """
 from __future__ import absolute_import
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 
@@ -47,16 +51,12 @@ from sfepy.discrete.fem import MeshIO
 from sfepy.discrete.probes import write_results, read_results
 import six
 
-usage = """%prog [generation options] <input file> <results file>
-%prog [postprocessing options] <probe file> <figure file>
-""" + __doc__.rstrip()
-
 help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
     'output figure file format (supported by the matplotlib backend used) '\
-    '[default: %default]',
+    '[default: %(default)s]',
     'auto_dir' :
     'the directory of the results file is determined automatically using the '\
     '"output_dir" option in input file options',
@@ -68,7 +68,7 @@ help = {
     'probe the given time step',
     'close_limit' :
     'maximum limit distance of a point from the closest element allowed'
-    ' for extrapolation. [default: %default]',
+    ' for extrapolation. [default: %(default)s]',
     'postprocess' :
     'postprocessing mode',
     'radial' :
@@ -222,41 +222,43 @@ def postprocess(filename_input, filename_results, options):
     fig.savefig(filename_results)
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
-    parser.add_option('-o', '', metavar='filename',
-                      action='store', dest='output_filename_trunk',
-                      default=None, help=help['filename'])
-    parser.add_option('', '--auto-dir',
-                      action='store_true', dest='auto_dir',
-                      default=False, help=help['auto_dir'])
-    parser.add_option('', '--same-dir',
-                      action='store_true', dest='same_dir',
-                      default=False, help=help['same_dir'])
-    parser.add_option('-f', '--format', metavar='format',
-                      action='store', dest='output_format',
-                      default='png', help=help['output_format'])
-    parser.add_option('--only-names', metavar='list of names',
-                      action='store', dest='only_names',
-                      default=None, help=help['only_names'])
-    parser.add_option('-s', '--step', type='int', metavar='step',
-                      action='store', dest='step',
-                      default=0, help=help['step'])
-    parser.add_option('-c', '--close-limit', type='float', metavar='distance',
-                      action='store', dest='close_limit',
-                      default=0.1, help=help['close_limit'])
-    parser.add_option('-p', '--postprocess',
-                      action='store_true', dest='postprocess',
-                      default=False, help=help['postprocess'])
-    parser.add_option('--radial',
-                      action='store_true', dest='radial',
-                      default=False, help=help['radial'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='output_filename_trunk',
+                        default=None, help=help['filename'])
+    parser.add_argument('--auto-dir',
+                        action='store_true', dest='auto_dir',
+                        default=False, help=help['auto_dir'])
+    parser.add_argument('--same-dir',
+                        action='store_true', dest='same_dir',
+                        default=False, help=help['same_dir'])
+    parser.add_argument('-f', '--format', metavar='format',
+                        action='store', dest='output_format',
+                        default='png', help=help['output_format'])
+    parser.add_argument('--only-names', metavar='list of names',
+                        action='store', dest='only_names',
+                        default=None, help=help['only_names'])
+    parser.add_argument('-s', '--step', type=int, metavar='step',
+                        action='store', dest='step',
+                        default=0, help=help['step'])
+    parser.add_argument('-c', '--close-limit', type=float, metavar='distance',
+                        action='store', dest='close_limit',
+                        default=0.1, help=help['close_limit'])
+    parser.add_argument('-p', '--postprocess',
+                        action='store_true', dest='postprocess',
+                        default=False, help=help['postprocess'])
+    parser.add_argument('--radial',
+                        action='store_true', dest='radial',
+                        default=False, help=help['radial'])
+    parser.add_argument('filename_in')
+    parser.add_argument('filename_out')
+    options = parser.parse_args()
 
-    if (len(args) == 2):
-        filename_input, filename_results = args
-    else:
-        parser.print_help(),
-        return
+    filename_input = options.filename_in
+    filename_results = options.filename_out
 
     if options.only_names is not None:
         options.only_names = options.only_names.split(',')
