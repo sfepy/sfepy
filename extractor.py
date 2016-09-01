@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 """
+Extract information from a SfePy multi-time-step results file (HDF5
+format) and/or linearize results with stored higher order DOFs.
+
+For the linearization, the original input (problem description) file must
+be specified as the first argument. Use the option --linearization below
+to override linearization parameters defined in the input file. The
+linearization forces --dump option, i.e., output to VTK files.
+
 Examples
 --------
 
@@ -11,7 +19,7 @@ $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
 from __future__ import print_function
 from __future__ import absolute_import
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
 from sfepy.base.base import nm, dict_to_struct, get_default, Struct
@@ -42,17 +50,6 @@ def parse_linearization(linearization):
 
     return dict_to_struct(out)
 
-usage = """%prog [options] [<input file>] <results file>
-
-Extract information from a SfePy multi-time-step results file (HDF5
-format) and/or linearize results with stored higher order DOFs.
-
-For the linearization, the original input (problem description) file must
-be specified as the first argument. Use the option --linearization below
-to override linearization parameters defined in the input file. The
-linearization forces --dump option, i.e., output to VTK files.
-"""
-
 help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
@@ -67,11 +64,11 @@ help = {
     'times' :
     'extract and print times of individual time steps',
     'from' :
-    'start dumping from time step ii [default: %default]',
+    'start dumping from time step ii [default: %(default)s]',
     'to' :
     'stop dumping at time step ii [default: <last step>]',
     'step' :
-    'use every ii-th step for dumping [default: %default]',
+    'use every ii-th step for dumping [default: %(default)s]',
     'extract' :
     'extract variables according to extraction list.'
     " Example: 'u n 10 15, p e 0' means variable 'u' in nodes 10, 15"
@@ -81,49 +78,48 @@ help = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option('-o', '', metavar='filename',
-                      action='store', dest='output_filename_trunk',
-                      default=None, help=help['filename'])
-    parser.add_option('-d', '--dump', action='store_true', dest='dump',
-                       default=False, help=help['dump'])
-    parser.add_option('', '--same-dir', action='store_true', dest='same_dir',
-                      default=False, help=help['same_dir'])
-    parser.add_option('-l', '--linearization', metavar='options',
-                      action='store', dest='linearization',
-                      default=None, help=help['linearization'])
-    parser.add_option('', '--times', action='store_true', dest='times',
-                      default=False, help=help['times'])
-    parser.add_option('-f', '--from', type=int, metavar='ii',
-                      action='store', dest='step_from',
-                      default=0, help=help['from'])
-    parser.add_option('-t', '--to', type=int, metavar='ii',
-                      action='store', dest='step_to',
-                      default=None, help=help['to'])
-    parser.add_option('-s', '--step', type=int, metavar='ii',
-                      action='store', dest='step_by',
-                      default=1, help=help['step'])
-    parser.add_option('-e', '--extract', metavar='list',
-                      action='store', dest='extract',
-                      default=None, help=help['extract'])
-    parser.add_option('-a', '--average', action='store_true', dest='average',
-                      default=False, help=help['average'])
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='output_filename_trunk',
+                        default=None, help=help['filename'])
+    parser.add_argument('-d', '--dump', action='store_true', dest='dump',
+                        default=False, help=help['dump'])
+    parser.add_argument('--same-dir', action='store_true', dest='same_dir',
+                        default=False, help=help['same_dir'])
+    parser.add_argument('-l', '--linearization', metavar='options',
+                        action='store', dest='linearization',
+                        default=None, help=help['linearization'])
+    parser.add_argument('--times', action='store_true', dest='times',
+                        default=False, help=help['times'])
+    parser.add_argument('-f', '--from', type=int, metavar='ii',
+                        action='store', dest='step_from',
+                        default=0, help=help['from'])
+    parser.add_argument('-t', '--to', type=int, metavar='ii',
+                        action='store', dest='step_to',
+                        default=None, help=help['to'])
+    parser.add_argument('-s', '--step', type=int, metavar='ii',
+                        action='store', dest='step_by',
+                        default=1, help=help['step'])
+    parser.add_argument('-e', '--extract', metavar='list',
+                        action='store', dest='extract',
+                        default=None, help=help['extract'])
+    parser.add_argument('-a', '--average', action='store_true',
+                        dest='average', default=False, help=help['average'])
+    parser.add_argument('input_file', nargs='?', default=None)
+    parser.add_argument('results_file')
+    options = parser.parse_args()
 
-    (options, args) = parser.parse_args()
-
-    nargs = len(args)
-    if nargs == 1:
-        filename_results = args[0]
+    filename_in = options.input_file
+    filename_results = options.results_file
+    
+    if filename_in is None:
         linearize = False
-
-    elif nargs == 2:
-        filename_in, filename_results = args
+    else:
         linearize = True
         options.dump = True
-
-    else:
-        parser.print_help()
-        return
 
     if options.times:
         steps, times, nts, dts = th.extract_times(filename_results)
