@@ -42,20 +42,26 @@ def ensure_path(filename):
         if not os.path.isdir(dirname):
             raise IOError('cannot ensure path for "%s"!' % filename)
 
-def locate_files(pattern, root_dir=os.curdir):
+def locate_files(pattern, root_dir=os.curdir, **kwargs):
     """
     Locate all files matching fiven filename pattern in and below
     supplied root directory.
+
+    The `**kwargs` arguments are passed to ``os.walk()``.
     """
-    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir)):
+    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir),
+                                                **kwargs):
         for filename in fnmatch.filter(filenames, pattern):
             yield os.path.join(dirpath, filename)
 
-def remove_files(root_dir):
+def remove_files(root_dir, **kwargs):
     """
     Remove all files and directories in supplied root directory.
+
+    The `**kwargs` arguments are passed to ``os.walk()``.
     """
-    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir)):
+    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir),
+                                                **kwargs):
         for filename in filenames:
             os.remove(os.path.join(root_dir, filename))
 
