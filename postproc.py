@@ -44,7 +44,7 @@ Examples
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from optparse import OptionParser, OptionGroup
+from argparse import ArgumentParser, Action, RawDescriptionHelpFormatter
 import os
 import glob
 
@@ -54,8 +54,6 @@ from sfepy.postprocess.viewer import (Viewer, get_data_ranges,
                                       create_file_source)
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
 import six
-
-usage = '%prog [options] filename\n' + __doc__.rstrip()
 
 help = {
     'filename' :
@@ -73,7 +71,8 @@ help = {
     ' installed and results of multiple time steps are given, an animation is' \
     ' created in the same directory as the view images',
     'ffmpeg_options' :
-    'ffmpeg animation encoding options (enclose in "") [default: "%default"]',
+    'ffmpeg animation encoding options (enclose in "")' \
+    '[default: "%(default)s"]',
 
     'step' :
     'set the time step. Negative indices are allowed, -1 means the last step.'
@@ -97,8 +96,9 @@ help = {
     'image resolution in NxN format [default: shorter axis: 600;'\
     ' depends on layout: for rowcol it is 800x600]',
     'layout' :
-    'layout for multi-field plots, one of: rowcol, colrow, row, col, row#n, col#n,' \
-    ' where #n is the number of plots in the specified direction [default: %default]',
+    'layout for multi-field plots, one of: rowcol, colrow, row, col, row#n,' \
+    'col#n, where #n is the number of plots in the specified direction ' \
+    '[default: %(default)s]',
     'is_3d' :
     '3d plot mode',
     'view' :
@@ -106,16 +106,16 @@ help = {
     'distance and focal point coordinates (without []) as in `mlab.view()` '
     '[default: if --3d is True: "45,45", else: "0,0"]',
     'roll' :
-    'camera roll angle [default: %default]',
+    'camera roll angle [default: %(default)s]',
     'parallel_projection' :
     'use parallel projection',
     'fgcolor' :
     'foreground color, that is the color of all text annotation labels'
-    ' (axes, orientation axes, scalar bar labels) [default: %default]',
+    ' (axes, orientation axes, scalar bar labels) [default: %(default)s]',
     'bgcolor' :
-    'background color [default: %default]',
+    'background color [default: %(default)s]',
     'colormap' :
-    'mayavi2 colormap name [default: %default]',
+    'mayavi2 colormap name [default: %(default)s]',
     'anti_aliasing' :
     'value of anti-aliasing [default: mayavi2 default]',
 
@@ -133,13 +133,13 @@ help = {
 
     'scalar_mode' :
     'mode for plotting scalars with --3d, one of: cut_plane, iso_surface,'\
-    ' both [default: %default]',
+    ' both [default: %(default)s]',
     'vector_mode' :
     'mode for plotting vectors, one of: arrows, norm, arrows_norm, warp_norm'\
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'rel_scaling' :
     'relative scaling of glyphs (vector field visualization)' \
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'clamping' :
     'glyph clamping mode',
     'opacity' :
@@ -149,90 +149,97 @@ help = {
     ' scalar_cut_plane, vector_cut_plane, surface, iso_surface,'
     ' arrows_surface, glyphs. [default: 1.0]',
     'rel_text_width' :
-    'relative text annotation width [default: %default]',
+    'relative text annotation width [default: %(default)s]',
 }
 
-def parse_view(option, opt, value, parser):
-    vals = value.split(',')
-    assert_(len(vals) in [2, 3, 6])
-    val = tuple(float(ii) for ii in vals)
-    if len(vals) == 6:
-        val = val[:3] + (list(val[3:]),)
-    setattr(parser.values, option.dest, val)
+class ParseView(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        vals = value.split(',')
+        assert_(len(vals) in [2, 3, 6])
+        val = tuple(float(ii) for ii in vals)
+        if len(vals) == 6:
+            val = val[:3] + (list(val[3:]),)
+        setattr(namespace, self.dest, val)
 
-def parse_resolution(option, opt, value, parser):
-    if value is not None:
-        print(value)
-        setattr(parser.values, option.dest,
-                tuple([int(r) for r in value.split('x')]))
+class ParseResolution(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        if value is not None:
+            print(value)
+            setattr(namespace, self.dest,
+                    tuple([int(r) for r in value.split('x')]))
 
-def parse_ranges(option, opt, value, parser):
-    if value is not None:
-        print(value)
-        ranges = {}
-        for rng in value.split(':'):
-            aux = rng.split(',')
-            ranges[aux[0]] = (float(aux[1]), float(aux[2]))
-        setattr(parser.values, option.dest, ranges)
+class ParseRanges(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        if value is not None:
+            print(value)
+            ranges = {}
+            for rng in value.split(':'):
+                aux = rng.split(',')
+                ranges[aux[0]] = (float(aux[1]), float(aux[2]))
+            setattr(namespace, self.dest, ranges)
 
-def parse_opacity(option, opt, value, parser):
-    try:
-        opacity = float(value)
-        assert_(0.0 <= opacity <= 1.0)
-
-    except:
-        opacity = {}
-
-        for vals in value.split(','):
-            key, val = vals.split('=')
-            val = float(val)
-            assert_(0.0 <= val <= 1.0)
-
-            opacity[key] = val
-
-    setattr(parser.values, option.dest, opacity)
-
-def parse_group_names(option, opt, value, parser):
-    if value is not None:
-        print(value)
-        group_names = [tuple(group.split(',')) for group in value.split(':')]
-        setattr(parser.values, option.dest, group_names)
-
-def parse_subdomains(option, opt, value, parser):
-    if value is not None:
-        print(value)
-        aux = value.split(',')
-
+class ParseOpacity(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
         try:
-            tmin = int(aux[1])
+            opacity = float(value)
+            assert_(0.0 <= opacity <= 1.0)
 
-        except ValueError:
-            tmin = None
+        except:
+            opacity = {}
 
-        try:
-            tmax = int(aux[2])
+            for vals in value.split(','):
+                key, val = vals.split('=')
+                val = float(val)
+                assert_(0.0 <= val <= 1.0)
 
-        except ValueError:
-            tmax = None
+                opacity[key] = val
 
-        subdomains_args = {'mat_id_name' : aux[0],
-                           'threshold_limits' : (tmin, tmax),
-                           'single_color' : aux[3] == 'True'}
-        setattr(parser.values, option.dest, subdomains_args)
+        setattr(namespace, self.dest, opacity)
 
-def parse_domain_specific(option, opt, value, parser):
-    if value is not None:
-        print(value)
-        out = {}
-        confs = value.split(':')
-        for conf in confs:
-            aux = conf.split(',')
-            var_name, fun_name = aux[:2]
-            args = aux[2:]
+class ParseGroupNames(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        if value is not None:
+            print(value)
+            group_names = [tuple(group.split(','))
+                           for group in value.split(':')]
+            setattr(namespace, self.dest, group_names)
 
-            out[var_name] = DomainSpecificPlot(fun_name, args)
+class ParseSubdomains(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        if value is not None:
+            print(value)
+            aux = value.split(',')
 
-        setattr(parser.values, option.dest, out)
+            try:
+                tmin = int(aux[1])
+
+            except ValueError:
+                tmin = None
+
+            try:
+                tmax = int(aux[2])
+
+            except ValueError:
+                tmax = None
+
+            subdomains_args = {'mat_id_name' : aux[0],
+                               'threshold_limits' : (tmin, tmax),
+                               'single_color' : aux[3] == 'True'}
+            setattr(namespace, self.dest, subdomains_args)
+
+class ParseDomainSpecific(Action):
+    def __call__(self, parser, namespace, value, option_string=None):
+        if value is not None:
+            print(value)
+            out = {}
+            confs = value.split(':')
+            for conf in confs:
+                aux = conf.split(',')
+                var_name, fun_name = aux[:2]
+                args = aux[2:]
+
+                out[var_name] = DomainSpecificPlot(fun_name, args)
+            setattr(namespace, self.dest, out)
 
 def view_file(filename, filter_names, options, view=None):
     if view is None:
@@ -278,144 +285,136 @@ def view_file(filename, filter_names, options, view=None):
     return view
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + sfepy.__version__)
 
-    group = OptionGroup(parser, 'Output Options')
-    group.add_option('-o', '--output', metavar='filename',
-                     action='store', dest='filename',
-                     default=None, help=help['filename'])
-    group.add_option('--output-dir', metavar='directory',
-                     action='store', dest='output_dir',
-                     default=None, help=help['output_dir'])
-    group.add_option('-n', '--no-show',
-                     action='store_false', dest='show',
-                     default=True, help=help['no_show'])
-    group.add_option('', '--no-offscreen',
-                     action='store_false', dest='offscreen',
-                     default=None, help=help['no_offscreen'])
-    group.add_option('-a', '--animation', metavar='<ffmpeg-supported format>',
-                     action='store', dest='anim_format',
-                     default=None, help=help['anim_format'])
-    group.add_option('', '--ffmpeg-options', metavar='<ffmpeg options>',
-                     action='store', dest='ffmpeg_options',
-                     default='-r 10 -sameq',
-                     help=help['ffmpeg_options'])
-    parser.add_option_group(group)
+    group = parser.add_argument_group('Output Options')
+    group.add_argument('-o', '--output', metavar='filename',
+                       action='store', dest='filename',
+                       default=None, help=help['filename'])
+    group.add_argument('--output-dir', metavar='directory',
+                       action='store', dest='output_dir',
+                       default=None, help=help['output_dir'])
+    group.add_argument('-n', '--no-show',
+                       action='store_false', dest='show',
+                       default=True, help=help['no_show'])
+    group.add_argument('--no-offscreen',
+                       action='store_false', dest='offscreen',
+                       default=None, help=help['no_offscreen'])
+    group.add_argument('-a', '--animation',
+                       metavar='<ffmpeg-supported format>', action='store',
+                       dest='anim_format', default=None,
+                       help=help['anim_format'])
+    group.add_argument('--ffmpeg-options', metavar='<ffmpeg options>',
+                       action='store', dest='ffmpeg_options',
+                       default='-r 10 -sameq',
+                       help=help['ffmpeg_options'])
 
-    group = OptionGroup(parser, 'Data Options')
-    group.add_option('--step', type='int', metavar='step',
-                     action='store', dest='step',
-                     default=None, help=help['step'])
-    group.add_option('--time', type='float', metavar='time',
-                     action='store', dest='time',
-                     default=None, help=help['time'])
-    group.add_option('-w', '--watch',
-                     action='store_true', dest='watch',
-                     default=False, help=help['watch'])
-    group.add_option('--all',
-                     action='store_true', dest='all',
-                     default=False, help=help['all'])
-    group.add_option('--only-names', metavar='list of names',
-                     action='store', dest='only_names',
-                     default=None, help=help['only_names'])
-    group.add_option('-l', '--list-ranges',
-                     action='store_true', dest='list_ranges',
-                     default=False, help=help['list_ranges'])
-    group.add_option('--ranges', type='str',
-                     metavar='name1,min1,max1:name2,min2,max2:...',
-                     action='callback', dest='ranges',
-                     callback=parse_ranges, help=help['ranges'])
-    parser.add_option_group(group)
+    group = parser.add_argument_group('Data Options')
+    group.add_argument('--step', type=int, metavar='step',
+                       action='store', dest='step',
+                       default=None, help=help['step'])
+    group.add_argument('--time', type=float, metavar='time',
+                       action='store', dest='time',
+                       default=None, help=help['time'])
+    group.add_argument('-w', '--watch',
+                       action='store_true', dest='watch',
+                       default=False, help=help['watch'])
+    group.add_argument('--all',
+                       action='store_true', dest='all',
+                       default=False, help=help['all'])
+    group.add_argument('--only-names', metavar='list of names',
+                       action='store', dest='only_names',
+                       default=None, help=help['only_names'])
+    group.add_argument('-l', '--list-ranges',
+                       action='store_true', dest='list_ranges',
+                       default=False, help=help['list_ranges'])
+    group.add_argument('--ranges', type=str,
+                       metavar='name1,min1,max1:name2,min2,max2:...',
+                       action=ParseRanges, dest='ranges',
+                       help=help['ranges'])
 
-    group = OptionGroup(parser, 'View Options')
-    group.add_option('-r', '--resolution', type='str', metavar='resolution',
-                     action='callback', dest='resolution',
-                     callback=parse_resolution, help=help['resolution'])
-    group.add_option('--layout', metavar='layout',
-                     action='store', dest='layout',
-                     default='rowcol', help=help['layout'])
-    group.add_option('--3d',
-                     action='store_true', dest='is_3d',
-                     default=False, help=help['is_3d'])
-    group.add_option('--view', type='str',
-                     metavar='angle,angle[,distance[,focal_point]]',
-                     action='callback', dest='view',
-                     callback=parse_view, help=help['view'])
-    group.add_option('--roll', type='float', metavar='angle',
-                     action='store', dest='roll',
-                     default=0.0, help=help['roll'])
-    group.add_option('--parallel-projection', metavar='parallel_projection',
-                     action='store_true', dest='parallel_projection',
-                     default=False, help=help['parallel_projection'])
-    group.add_option('--fgcolor', metavar='R,G,B',
-                     action='store', dest='fgcolor',
-                     default='0.0,0.0,0.0', help=help['fgcolor'])
-    group.add_option('--bgcolor', metavar='R,G,B',
-                     action='store', dest='bgcolor',
-                     default='1.0,1.0,1.0', help=help['bgcolor'])
-    group.add_option('--colormap', metavar='colormap',
-                     action='store', dest='colormap',
-                     default='blue-red', help=help['colormap'])
-    group.add_option('--anti-aliasing', type='int', metavar='value',
-                     action='store', dest='anti_aliasing',
-                     default=None, help=help['anti_aliasing'])
-    parser.add_option_group(group)
+    group = parser.add_argument_group('View Options')
+    group.add_argument('-r', '--resolution', type=str, metavar='resolution',
+                       action=ParseResolution, dest='resolution',
+                       help=help['resolution'])
+    group.add_argument('--layout', metavar='layout',
+                       action='store', dest='layout',
+                       default='rowcol', help=help['layout'])
+    group.add_argument('--3d',
+                       action='store_true', dest='is_3d',
+                       default=False, help=help['is_3d'])
+    group.add_argument('--view', type=str,
+                       metavar='angle,angle[,distance[,focal_point]]',
+                       action=ParseView, dest='view',
+                       help=help['view'])
+    group.add_argument('--roll', type=float, metavar='angle',
+                       action='store', dest='roll',
+                       default=0.0, help=help['roll'])
+    group.add_argument('--parallel-projection',
+                       action='store_true', dest='parallel_projection',
+                       default=False, help=help['parallel_projection'])
+    group.add_argument('--fgcolor', metavar='R,G,B',
+                       action='store', dest='fgcolor',
+                       default='0.0,0.0,0.0', help=help['fgcolor'])
+    group.add_argument('--bgcolor', metavar='R,G,B',
+                       action='store', dest='bgcolor',
+                       default='1.0,1.0,1.0', help=help['bgcolor'])
+    group.add_argument('--colormap', metavar='colormap',
+                       action='store', dest='colormap',
+                       default='blue-red', help=help['colormap'])
+    group.add_argument('--anti-aliasing', type=int, metavar='value',
+                       action='store', dest='anti_aliasing',
+                       default=None, help=help['anti_aliasing'])
 
-    group = OptionGroup(parser, 'Custom Plots Options')
-    group.add_option('-b', '--scalar-bar',
-                     action='store_true', dest='is_scalar_bar',
-                     default=False, help=help['is_scalar_bar'])
-    group.add_option('', '--wireframe',
-                     action='store_true', dest='is_wireframe',
-                     default=False, help=help['is_wireframe'])
-    group.add_option('--group-names', type='str', metavar='name1,...,nameN:...',
-                     action='callback', dest='group_names',
-                     callback=parse_group_names, help=help['group_names'])
-    group.add_option('--subdomains', type='str',
-                     metavar='mat_id_name,threshold_limits,single_color',
-                     action='callback', dest='subdomains_args',
-                     callback=parse_subdomains, default=None,
-                     help=help['subdomains'])
-    group.add_option('-d', '--domain-specific', type='str',
-                     metavar='"var_name0,function_name0,' \
-                             'par0=val0,par1=val1,...:var_name1,..."',
-                     action='callback', dest='domain_specific',
-                     callback=parse_domain_specific, default=None,
-                     help=help['domain_specific'])
-    parser.add_option_group(group)
+    group = parser.add_argument_group('Custom Plots Options')
+    group.add_argument('-b', '--scalar-bar',
+                       action='store_true', dest='is_scalar_bar',
+                       default=False, help=help['is_scalar_bar'])
+    group.add_argument('--wireframe',
+                       action='store_true', dest='is_wireframe',
+                       default=False, help=help['is_wireframe'])
+    group.add_argument('--group-names', type=str,
+                       metavar='name1,...,nameN:...', action=ParseGroupNames,
+                       dest='group_names', help=help['group_names'])
+    group.add_argument('--subdomains', type=str,
+                       metavar='mat_id_name,threshold_limits,single_color',
+                       action=ParseSubdomains, dest='subdomains_args',
+                       default=None,
+                       help=help['subdomains'])
+    group.add_argument('-d', '--domain-specific', type=str,
+                       metavar='"var_name0,function_name0,' \
+                       'par0=val0,par1=val1,...:var_name1,..."',
+                       action=ParseDomainSpecific, dest='domain_specific',
+                       default=None,
+                       help=help['domain_specific'])
 
-    group = OptionGroup(parser, 'Mayavi Options')
-    group.add_option('--scalar-mode', metavar='mode',
-                     action='store', dest='scalar_mode',
-                     default='iso_surface', help=help['scalar_mode'])
-    group.add_option('--vector-mode', metavar='mode',
-                     action='store', dest='vector_mode',
-                     default='arrows_norm', help=help['vector_mode'])
-    group.add_option('-s', '--scale-glyphs', type='float', metavar='scale',
-                     action='store', dest='rel_scaling',
-                     default=0.05, help=help['rel_scaling'])
-    group.add_option('--clamping',
-                     action='store_true', dest='clamping',
-                     default=False, help=help['clamping'])
-    group.add_option('--opacity', type='str', metavar='opacity',
-                     action='callback', dest='opacity',
-                     callback=parse_opacity, help=help['opacity'])
-    group.add_option('--rel-text-width', type='float', metavar='width',
-                     action='store', dest='rel_text_width',
-                     default=0.02, help=help['rel_text_width'])
-    parser.add_option_group(group)
+    group = parser.add_argument_group('Mayavi Options')
+    group.add_argument('--scalar-mode', metavar='mode',
+                       action='store', dest='scalar_mode',
+                       default='iso_surface', help=help['scalar_mode'])
+    group.add_argument('--vector-mode', metavar='mode',
+                       action='store', dest='vector_mode',
+                       default='arrows_norm', help=help['vector_mode'])
+    group.add_argument('-s', '--scale-glyphs', type=float, metavar='scale',
+                       action='store', dest='rel_scaling',
+                       default=0.05, help=help['rel_scaling'])
+    group.add_argument('--clamping',
+                       action='store_true', dest='clamping',
+                       default=False, help=help['clamping'])
+    group.add_argument('--opacity', type=str, metavar='opacity',
+                       action=ParseOpacity, dest='opacity',
+                       help=help['opacity'])
+    group.add_argument('--rel-text-width', type=float, metavar='width',
+                       action='store', dest='rel_text_width',
+                       default=0.02, help=help['rel_text_width'])
 
-    options, args = parser.parse_args()
+    parser.add_argument('filenames', nargs='+')
+    options = parser.parse_args()
 
-    if len(args) >= 1:
-        if len(args) == 1:
-            filenames = glob.glob(args[0])
-            filenames.sort()
-        else:
-            filenames = args
-    else:
-        parser.print_help(),
-        return
+    filenames = options.filenames
 
     options.fgcolor = tuple([float(ii) for ii in
                              options.fgcolor.split(',')])
