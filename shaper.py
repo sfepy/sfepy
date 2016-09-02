@@ -3,7 +3,7 @@
 # 16.06.2005
 from __future__ import print_function
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 import numpy as nm
 
@@ -283,15 +283,13 @@ def solve_optimize( conf, options ):
 
     print(des)
 
-usage = """%prog [options] filename_in"""
-
 help = {
     'server_mode' :
-    "run in server mode [default: %default], N/A",
+    "run in server mode [default: %(default)s], N/A",
     'adjoint' :
-    "solve adjoint problem [default: %default]",
+    "solve adjoint problem [default: %(default)s]",
     'direct' :
-    "solve direct problem [default: %default]",
+    "solve direct problem [default: %(default)s]",
     'test' :
     "test sensitivity by finite difference,"
     " using design variable idsg; switches on -a, -d",
@@ -307,30 +305,33 @@ help = {
 # created:       13.06.2005
 # last revision: 15.04.2008
 def main():
-    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
-    parser.add_option( "-s", "--server",
-                       action = "store_true", dest = "server_mode",
-                       default = False, help = help['server_mode'] )
-    parser.add_option( "-a", "--adjoint",
-                       action = "store_true", dest = "adjoint",
-                       default = False, help = help['adjoint'] )
-    parser.add_option( "-d", "--direct",
-                       action = "store_true", dest = "direct",
-                       default = False, help = help['direct'] )
-    parser.add_option( "-t", "--test", type = int, metavar = 'idsg',
-                       action = "store", dest = "test",
-                       default = None, help = help['test'] )
-    parser.add_option( "", "--dump", metavar = 'filename',
-                       action = "store", dest = "dump_filename",
-                       default = None, help = help['dump'] )
-    parser.add_option( "", "--pert-mesh", metavar = 'filename',
-                       action = "store", dest = "pert_mesh_filename",
-                       default = None, help = help['pert'] )
-    parser.add_option( "-f", "--full",
-                       action = "store_true", dest = "optimize",
-                       default = False, help = help['optimize'] )
-
-    options, args = parser.parse_args()
+    parser = ArgumentParser()
+    parser.add_argument("--version", action="version",
+                        version = "%(prog)s " + sfepy.__version__)
+    parser.add_argument("-s", "--server",
+                        action = "store_true", dest = "server_mode",
+                        default = False, help = help['server_mode'])
+    parser.add_argument("-a", "--adjoint",
+                        action = "store_true", dest = "adjoint",
+                        default = False, help = help['adjoint'])
+    parser.add_argument("-d", "--direct",
+                        action = "store_true", dest = "direct",
+                        default = False, help = help['direct'])
+    parser.add_argument("-t", "--test", type = int, metavar = 'idsg',
+                        action = "store", dest = "test",
+                        default = None, help = help['test'])
+    parser.add_argument("--dump", metavar = 'filename',
+                        action = "store", dest = "dump_filename",
+                        default = None, help = help['dump'])
+    parser.add_argument("--pert-mesh", metavar = 'filename',
+                        action = "store", dest = "pert_mesh_filename",
+                        default = None, help = help['pert'])
+    parser.add_argument("-f", "--full",
+                        action = "store_true", dest = "optimize",
+                        default = False, help = help['optimize'])
+    parser.add_argument('filename_in')
+    
+    options = parser.parse_args()
 
     if options.test is not None:
         options.adjoint = options.direct = True
@@ -338,9 +339,8 @@ def main():
     if options.optimize:
         options.adjoint = options.direct = False
 
-    if ((len( args ) == 1)
-        and (options.direct or options.adjoint or options.optimize)):
-        filename_in = args[0];
+    if (options.direct or options.adjoint or options.optimize):
+        filename_in = options.filename_in
     else:
         parser.print_help(),
         return
