@@ -352,6 +352,16 @@ class FEField(Field):
                 efs = efs[:,nm.newaxis]
             self.efaces = nm.hstack((self.efaces, efs))
 
+        if gel.dim == 3:
+            self.eedges = gel.edges.copy()
+            efs = node_desc.edge
+            if efs is not None:
+                efs = nm.array(efs).squeeze()
+
+                if efs.ndim < 2:
+                    efs = efs[:,nm.newaxis]
+                self.eedges = nm.hstack((self.eedges, efs))
+
     def setup_coors(self, coors=None):
         """
         Setup coordinates of field nodes.
