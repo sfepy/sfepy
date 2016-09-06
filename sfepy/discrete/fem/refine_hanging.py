@@ -137,19 +137,24 @@ def refine_region(domain0, region0, region1):
 
     return domain, sub_cells
 
-def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
+def find_facet_substitutions(facets, cells, sub_cells, oris, refine_facets):
     """
-    Find facet substitutions in connectivity.
+    Find facet substitutions in connectivity as well as coarse cell facets
+    orientations.
 
     sub = [coarse cell, coarse facet, fine1 cell, fine1 facet, fine2 cell,
            fine2 facet]
     """
     subs = []
+    coris = nm.zeros(facets.shape[0], dtype=nm.uint32)
     for ii, fac in enumerate(facets):
         fine = cells[ii, 0]
-        coarse = cells[ii, 2]
+        coarse = cells[ii, 3]
 
         isub = nm.searchsorted(sub_cells[:, 0], fine)
+
+        coris[ii] = oris[isub, fac[1]]
+
         refined = sub_cells[isub, 1:]
         rf = refine_facets[fac[1]]
         used = refined[rf[:, 0]]
@@ -164,7 +169,22 @@ def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
         subs.append(sub)
 
     subs = nm.array(subs)
-    return subs
+    return subs, coris
+
+def force_facet_orientations(domain, gsubs, coris, dim):
+    """
+    Force coarse cell facets orientations to fine cell facets.
+    """
+    if gsubs is None: return
+
+    cmesh = domain.mesh.cmesh
+    foris = cmesh.get_orientations(dim)
+    num = foris.shape[0] / cmesh.n_el
+
+    for ii, subs in enumerate(gsubs):
+        ic = subs[2::2] * num + subs[3::2]
+
+        foris[ic] = coris[ii]
 
 def refine(domain0, refine, gsubs=None):
     facets, cells, region0, region1 = find_level_interface(domain0, refine)
