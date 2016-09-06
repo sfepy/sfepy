@@ -120,6 +120,21 @@ def refine_region(domain0, region0, region1):
     mesh = Mesh.from_data('a', coors, vgs, conns, mat_ids, descs)
     domain = FEDomain('d', mesh)
 
+    # Preserve orientations of coarse cell edges and faces.
+    if domain0.cmesh.edge_oris is not None:
+        n_cell = domain0.shape.n_el
+        oris0 = domain0.cmesh.edge_oris.reshape((n_cell, -1))[region0.cells]
+
+        n_cell = domain.shape.n_el
+        domain.cmesh.edge_oris.reshape((n_cell, -1))[:oris0.shape[0]] = oris0
+
+    if domain0.cmesh.face_oris is not None:
+        n_cell = domain0.shape.n_el
+        oris0 = domain0.cmesh.face_oris.reshape((n_cell, -1))[region0.cells]
+
+        n_cell = domain.shape.n_el
+        domain.cmesh.face_oris.reshape((n_cell, -1))[:oris0.shape[0]] = oris0
+
     return domain, sub_cells
 
 def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
