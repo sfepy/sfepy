@@ -30,15 +30,15 @@ from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,
 import six
 
 def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
-                   clear_all=True):
+                   clear_all=True, extra_dofs=False):
     if actual:
-        domain.mesh.coors_act = coors.copy()
+        domain.mesh.coors_act[:] = coors[:domain.mesh.n_nod]
     else:
-        domain.cmesh.coors[:] = coors
+        domain.cmesh.coors[:] = coors[:domain.mesh.n_nod]
 
     if update_fields:
         for field in six.itervalues(fields):
-            field.setup_coors(coors)
+            field.set_coors(coors, extra_dofs=extra_dofs)
             field.clear_mappings(clear_all=clear_all)
 
 def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
@@ -349,16 +349,10 @@ class FEField(Field):
                 efs = efs[:,nm.newaxis]
             self.efaces = nm.hstack((self.efaces, efs))
 
-    def setup_coors(self, coors=None):
+    def set_coors(self, coors, extra_dofs=False):
         """
-        Setup coordinates of field nodes.
+        Set coordinates of field nodes.
         """
-        mesh = self.domain.mesh
-        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
-
-        if coors is None:
-            coors = mesh.coors
-
         # Mesh vertex nodes.
         if self.n_vertex_dof:
             indx = self.vertex_remap_i
@@ -366,10 +360,27 @@ class FEField(Field):
                                                      indx.astype(nm.int32),
                                                      axis=0)
 
-        gps = self.gel.poly_space
-        ps = self.poly_space
+        n_ex_dof = self.n_bubble_dof + self.n_edge_dof + self.n_face_dof
 
-        eval_nodal_coors(self.coors, coors, self.region, ps, gps, self.econn)
+        # extra nodes
+        if n_ex_dof:
+            if extra_dofs:
+                if self.n_nod != coors.shape[0]:
+                    raise NotImplementedError
+                self.coors[:] = coors
+            else:
+                gps = self.gel.poly_space
+                ps = self.poly_space
+                eval_nodal_coors(self.coors, coors, self.region,
+                                 ps, gps, self.econn)
+
+    def setup_coors(self):
+        """
+        Setup coordinates of field nodes.
+        """
+        mesh = self.domain.mesh
+        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
+        self.set_coors(mesh.coors)
 
     def get_vertices(self):
         """
