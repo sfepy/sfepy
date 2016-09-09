@@ -7,12 +7,16 @@ from sfepy.terms.terms_elastic import CauchyStressTerm
 
 class BiotTerm(Term):
     r"""
-    Biot coupling term with :math:`\alpha_{ij}`
-    given in vector form exploiting symmetry: in 3D it has the
-    indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
-    the indices ordered as :math:`[11, 22, 12]`. Corresponds to weak
-    forms of Biot gradient and divergence terms. Can be evaluated. Can
-    use derivatives.
+    Biot coupling term with :math:`\alpha_{ij}` given in:
+
+    * vector form exploiting symmetry - in 3D it has the
+      indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
+      the indices ordered as :math:`[11, 22, 12]`,
+
+    * matrix form - non-symmetric coupling parameter.
+
+    Corresponds to weak forms of Biot gradient and divergence terms.
+    Can be evaluated. Can use derivatives.
 
     :Definition:
 
@@ -39,20 +43,32 @@ class BiotTerm(Term):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
-    arg_shapes = {'material' : 'S, 1',
+    arg_shapes = [{'material' : 'S, 1',
                   'virtual/grad' : ('D', None), 'state/grad' : 1,
                   'virtual/div' : (1, None), 'state/div' : 'D',
-                  'parameter_v' : 'D', 'parameter_s' : 1}
+                  'parameter_v' : 'D', 'parameter_s' : 1},
+                  {'material' : 'D, D'}]
 
     modes = ('grad', 'div', 'eval')
 
     def get_fargs(self, mat, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        sym_mode = False if mat.shape[-2] == mat.shape[-1] > 1 else True
+        if not sym_mode:
+            sh = mat.shape
+            # the gradient given by 'self.get' is transposed
+            mat = nm.swapaxes(mat, 2, 3)
+            mat = mat.reshape(sh[:2] + (sh[2]**2, 1))
+
         if self.mode == 'grad':
             qp_var, qp_name = svar, 'val'
 
         else:
-            qp_var, qp_name = vvar, 'cauchy_strain'
+            if sym_mode:
+                qp_var, qp_name = vvar, 'cauchy_strain'
+            else:
+                qp_var, qp_name = vvar, 'grad'
 
         if mode == 'weak':
             vvg, _ = self.get_mapping(vvar)
@@ -60,6 +76,10 @@ class BiotTerm(Term):
 
             if diff_var is None:
                 val_qp = self.get(qp_var, qp_name)
+                if qp_name == 'grad':
+                    sh = val_qp.shape
+                    val_qp = val_qp.reshape(sh[:2] + (sh[2]**2, 1))
+
                 fmode = 0
 
             else:
@@ -71,7 +91,13 @@ class BiotTerm(Term):
         elif mode == 'eval':
             vvg, _ = self.get_mapping(vvar)
 
-            strain = self.get(vvar, 'cauchy_strain')
+            if sym_mode:
+                strain = self.get(vvar, 'cauchy_strain')
+            else:
+                strain = self.get(vvar, 'grad')
+                sh = strain.shape
+                strain = strain.reshape(sh[:2] + (sh[2]**2, 1))
+
             pval = self.get(svar, 'val')
 
             return 1.0, pval, strain, mat, vvg

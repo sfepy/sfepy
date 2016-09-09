@@ -3,6 +3,67 @@
 #include "form_sdcc.h"
 
 #undef __FUNC__
+#define __FUNC__ "op_nonsym_biot"
+int32 op_nonsym_biot(FMField *diff, FMField *mtx, FMField *gc)
+{
+  int32 iqp, iep, nEP, nQP, nRow;
+  float64 *pdiff1, *pdiff2, *pdiff3, *pvec, *pg1, *pg2, *pg3;
+
+  nEP = gc->nCol;
+  nQP = gc->nLev;
+  nRow = mtx->nRow;
+
+  switch (gc->nRow) {
+  case 3:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pg1 = FMF_PtrLevel(gc, iqp);
+      pg2 = pg1 + nEP;
+      pg3 = pg2 + nEP;
+      pvec = FMF_PtrLevel(mtx, iqp);
+      pdiff1 = FMF_PtrLevel(diff, iqp);
+      pdiff2 = pdiff1 + nEP;
+      pdiff3 = pdiff2 + nEP;
+      for (iep = 0; iep < nEP; iep++) {
+        pdiff1[iep]
+          = pg1[iep] * pvec[0];
+          + pg2[iep] * pvec[3];
+          + pg3[iep] * pvec[6];
+        pdiff2[iep]
+          = pg1[iep] * pvec[1];
+          + pg2[iep] * pvec[4];
+          + pg3[iep] * pvec[7];
+        pdiff3[iep]
+          = pg1[iep] * pvec[2];
+          + pg2[iep] * pvec[5];
+          + pg3[iep] * pvec[8];
+      }
+    }
+    break;
+  case 2:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pg1 = FMF_PtrLevel(gc, iqp);
+      pg2 = pg1 + nEP;
+      pvec = FMF_PtrLevel(mtx, iqp);
+      pdiff1 = FMF_PtrLevel(diff, iqp);
+      pdiff2 = pdiff1 + nEP;
+      for (iep = 0; iep < nEP; iep++) {
+        pdiff1[iep]
+          = pg1[iep] * pvec[0]
+          + pg2[iep] * pvec[2];
+        pdiff2[iep]
+          = pg1[iep] * pvec[1]
+          + pg2[iep] * pvec[3];
+      }
+    }
+    break;
+  default:
+    errput( ErrHead "ERR_Switch\n" );
+  }
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_biot_grad"
 /*!
   @par Revision history:
@@ -22,13 +83,17 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
   nEP = svg->bf->nCol;
 
 /*   fmf_print( mtxD, stdout, 0 ); */
+  int32 sym = (dim + 1) * dim / 2;
 
   if (isDiff == 1) {
     fmf_createAlloc( &gtd, 1, nQP, dim * nEPU, 1 );
     fmf_createAlloc( &gtdf, 1, nQP, dim * nEPU, nEP );
   } else {
-    int32 sym = (dim + 1) * dim / 2;
-    fmf_createAlloc( &dfp, 1, nQP, sym, 1 );
+    if (mtxD->nRow == sym) {
+      fmf_createAlloc( &dfp, 1, nQP, sym, 1 );
+    } else {
+      fmf_createAlloc( &dfp, 1, nQP, dim * dim, 1 );
+    }
     fmf_createAlloc( &gtdfp, 1, nQP, dim * nEPU, 1 );
   }
 
@@ -40,13 +105,21 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 
     if (isDiff == 1) {
       FMF_SetCellX1( svg->bf, ii );
-      form_sdcc_actOpGT_M3( gtd, vvg->bfGM, mtxD );
+      if (mtxD->nRow == sym) {
+      	form_sdcc_actOpGT_M3( gtd, vvg->bfGM, mtxD );
+      } else {
+        op_nonsym_biot(gtd, mtxD, vvg->bfGM);
+      }
       fmf_mulAB_nn( gtdf, gtd, svg->bf );
       fmf_sumLevelsMulF( out, gtdf, vvg->det->val );
     } else {
       FMF_SetCell( pressure_qp, ii );
       fmf_mulAB_nn( dfp, mtxD, pressure_qp );
-      form_sdcc_actOpGT_VS3( gtdfp, vvg->bfGM, dfp );
+      if (mtxD->nRow == sym) {
+        form_sdcc_actOpGT_VS3( gtdfp, vvg->bfGM, dfp );
+      } else {
+        op_nonsym_biot(gtdfp, dfp, vvg->bfGM);
+      }
       fmf_sumLevelsMulF( out, gtdfp, vvg->det->val );
     }
     ERR_CheckGo( ret );
@@ -94,8 +167,11 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
     fmf_createAlloc( &dtg, 1, nQP, 1, dim * nEP );
     fmf_createAlloc( &ftdtg, 1, nQP, nEPP, dim * nEP );
 
-    drow->nAlloc = -1;
-    fmf_pretend( drow, 1, nQP, 1, sym, mtxD->val );
+    if (mtxD->nRow == sym) {
+      drow->nAlloc = -1;
+      fmf_pretend( drow, 1, nQP, 1, sym, mtxD->val );
+    }
+
   } else {
     fmf_createAlloc( &dtgu, 1, nQP, 1, 1 );
     fmf_createAlloc( &ftdtgu, 1, nQP, nEPP, 1 );
@@ -109,8 +185,12 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
     FMF_SetCellX1( svg->bf, ii );
 
     if (isDiff == 1) {
-      drow->val = mtxD->val;
-      form_sdcc_actOpG_RM3( dtg, drow, vvg->bfGM );
+      if (mtxD->nRow == sym) {
+        drow->val = mtxD->val;
+        form_sdcc_actOpG_RM3( dtg, drow, vvg->bfGM );
+      } else {
+        op_nonsym_biot(dtg, mtxD, vvg->bfGM);
+      }
       fmf_mulATB_nn( ftdtg, svg->bf, dtg );
       fmf_sumLevelsMulF( out, ftdtg, vvg->det->val );
     } else {
