@@ -24,7 +24,7 @@ import sys
 import time
 import os
 import os.path as op
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
 from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -148,12 +148,10 @@ def get_dir(default):
         out = op.normpath(op.join(sfepy.data_dir, default))
     return out
 
-usage = """%prog [options] [test_filename[ test_filename ...]]"""
-
 help = {
-    'dir' : 'directory with tests [default: %default]',
+    'dir' : 'directory with tests [default: %(default)s]',
     'out_dir' : 'directory for storing test results and temporary files'
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'debug' : 'raise silenced exceptions to see what was wrong',
     'filter-none' : 'do not filter any messages',
     'filter-less' : 'filter output (suppress all except test messages)',
@@ -162,31 +160,37 @@ help = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option("", "--print-doc",
-                      action="store_true", dest="print_doc",
-                      default=False, help=help['print-doc'])
-    parser.add_option("-d", "--dir", metavar='directory',
-                      action="store", dest="test_dir",
-                      default=get_dir('tests'),
-                      help=help['dir'])
-    parser.add_option("-o", "--output", metavar='directory',
-                      action="store", dest="out_dir",
-                      default=get_dir('output-tests'),
-                      help=help['out_dir'])
-    parser.add_option("", "--debug",
-                      action="store_true", dest="debug",
-                      default=False, help=help['debug'])
-    parser.add_option("", "--filter-none",
-                      action="store_true", dest="filter_none",
-                      default=False, help=help['filter-none'])
-    parser.add_option("", "--filter-less",
-                      action="store_true", dest="filter_less",
-                      default=False, help=help['filter-less'])
-    parser.add_option("", "--filter-more",
-                      action="store_true", dest="filter_more",
-                      default=False, help=help['filter-more'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter
+    )
+    parser.add_argument("-v", "--version", action="version",
+                        version="%(prog)s " + sfepy.__version__)
+    parser.add_argument("--print-doc",
+                        action="store_true", dest="print_doc",
+                        default=False, help=help['print-doc'])
+    parser.add_argument("-d", "--dir", metavar='directory',
+                        action="store", dest="test_dir",
+                        default=get_dir('tests'),
+                        help=help['dir'])
+    parser.add_argument("-o", "--output", metavar='directory',
+                        action="store", dest="out_dir",
+                        default=get_dir('output-tests'),
+                        help=help['out_dir'])
+    parser.add_argument("--debug",
+                        action="store_true", dest="debug",
+                        default=False, help=help['debug'])
+    parser.add_argument("--filter-none",
+                        action="store_true", dest="filter_none",
+                        default=False, help=help['filter-none'])
+    parser.add_argument("--filter-less",
+                        action="store_true", dest="filter_less",
+                        default=False, help=help['filter-less'])
+    parser.add_argument("--filter-more",
+                        action="store_true", dest="filter_more",
+                        default=False, help=help['filter-more'])
+    parser.add_argument("test_filename", nargs="*", default=[])
+
+    options = parser.parse_args()
 
     if options.print_doc:
         print(__doc__)
@@ -195,11 +199,10 @@ def main():
     run_tests = wrap_run_tests(options)
     stats = [0, 0, 0, 0.0]
 
-    if len(args) >= 1:
-        for test_filename in args:
+    if len(options.test_filename) > 0:
+        for test_filename in options.test_filename:
             dirname, filename = op.split(test_filename)
             run_tests(stats, dirname, [filename])
-
     else:
         for dirpath, dirnames, filenames in os.walk(options.test_dir):
             run_tests(stats, dirpath, filenames)

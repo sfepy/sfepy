@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""
+The program scales a periodic input mesh (a rectangle or box) in
+filename_in by a scale factor and generates a new mesh by repeating the
+scaled original mesh in a regular grid (scale x scale [x scale]) if
+repeat option is None, or in a grid nx x ny x nz for repeat 'nx,ny,nz',
+producing again a periodic rectangle or box mesh.
+"""
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
@@ -6,47 +13,37 @@ sys.path.append('.')
 from sfepy.base.base import Output
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.mesh.mesh_generators import gen_tiled_mesh
-from optparse import OptionParser
-
-usage = """%prog [options] filename_in filename_out
-
-The program scales a periodic input mesh (a rectangle or box) in
-filename_in by a scale factor and generates a new mesh by repeating the
-scaled original mesh in a regular grid (scale x scale [x scale]) if
-repeat option is None, or in a grid nx x ny x nz for repeat 'nx,ny,nz',
-producing again a periodic rectangle or box mesh.
-"""
+from argparse import ArgumentParser, Action
 
 help = {
-    'scale' : 'scale factor [default: %default]',
+    'scale' : 'scale factor [default: %(default)s]',
     'repeat' : 'repetition counts in each axial direction'
-               ' [default: %default]',
-    'eps'   : 'coordinate precision [default: %default]',
+               ' [default: %(default)s]',
+    'eps'   : 'coordinate precision [default: %(default)s]',
 }
 
-def parse_repeat(option, opt, value, parser):
-    if value is not None:
-        setattr(parser.values, option.dest, [int(r) for r in value.split(',')])
+class ParseRepeat(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, [int(r) for r in values.split(',')])
 
 def main():
-    parser = OptionParser(usage=usage, version="%prog 42")
-    parser.add_option("-s", "--scale", type=int, metavar='scale',
-                      action="store", dest="scale",
-                      default=2, help=help['scale'])
-    parser.add_option("-r", "--repeat", type='str', metavar='nx,ny[,nz]',
-                      action="callback", dest="repeat",
-                      callback=parse_repeat, default=None, help=help['repeat'])
-    parser.add_option("-e", "--eps", type=float, metavar='eps',
-                      action="store", dest="eps",
-                      default=1e-8, help=help['eps'])
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version="%(prog)s 42")
+    parser.add_argument("-s", "--scale", type=int, metavar='scale',
+                        action="store", dest="scale",
+                        default=2, help=help['scale'])
+    parser.add_argument("-r", "--repeat", type=str, metavar='nx,ny[,nz]',
+                        action=ParseRepeat, dest="repeat",
+                        default=None, help=help['repeat'])
+    parser.add_argument("-e", "--eps", type=float, metavar='eps',
+                        action="store", dest="eps",
+                        default=1e-8, help=help['eps'])
+    parser.add_argument('filename_in')
+    parser.add_argument('filename_out')
+    options = parser.parse_args()
 
-    if (len( args ) == 2):
-        filename_in = args[0]
-        filename_out = args[1]
-    else:
-        parser.print_help()
-        return
+    filename_in = options.filename_in
+    filename_out = options.filename_out
 
     output = Output('tpm:')
     output('scale:', options.scale)

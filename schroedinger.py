@@ -17,7 +17,7 @@ corresponding to the above examples.
 """
 from __future__ import absolute_import
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
 from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -25,8 +25,6 @@ from sfepy.physics.schroedinger_app import SchroedingerApp
 
 def fix_path(filename):
     return os.path.join(sfepy.data_dir, filename)
-
-usage = """%prog [options] [filename_in]\n""" + __doc__.rstrip()
 
 help = {
     'conf' :
@@ -53,41 +51,44 @@ help = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
-    parser.add_option('-c', '--conf', metavar='"key : value, ..."',
-                      action='store', dest='conf', type='string',
-                      default=None, help= help['conf'])
-    parser.add_option('-O', '--options', metavar='"key : value, ..."',
-                      action='store', dest='app_options', type='string',
-                      default=None, help=help['options'])
-    parser.add_option('-o', '', metavar='filename',
-                      action='store', dest='output_filename_trunk',
-                      default=None, help=help['filename'])
-    parser.add_option('--oscillator',
-                      action='store_true', dest='oscillator',
-                      default=False, help=help['oscillator'])
-    parser.add_option('--well',
-                      action='store_true', dest='well',
-                      default=False, help=help['well'])
-    parser.add_option('--hydrogen',
-                      action='store_true', dest='hydrogen',
-                      default=False, help=help['hydrogen'])
-    parser.add_option('--boron',
-                      action='store_true', dest='boron',
-                      default=False, help=help['boron'])
-    parser.add_option('-n', '--n-eigs', type='int', metavar='int',
-                      action='store', dest='n_eigs',
-                      default=None, help=help['n_eigs'])
-    parser.add_option('-t', '--tau', type='float', metavar='float',
-                      action='store', dest='tau',
-                      default=None, help=help['tau'])
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('-c', '--conf', metavar='"key : value, ..."',
+                        action='store', dest='conf', type=str,
+                        default=None, help= help['conf'])
+    parser.add_argument('-O', '--options', metavar='"key : value, ..."',
+                        action='store', dest='app_options', type=str,
+                        default=None, help=help['options'])
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='output_filename_trunk',
+                        default=None, help=help['filename'])
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--oscillator',
+                       action='store_true', dest='oscillator',
+                       default=False, help=help['oscillator'])
+    group.add_argument('--well',
+                       action='store_true', dest='well',
+                       default=False, help=help['well'])
+    group.add_argument('--hydrogen',
+                       action='store_true', dest='hydrogen',
+                       default=False, help=help['hydrogen'])
+    group.add_argument('--boron',
+                       action='store_true', dest='boron',
+                       default=False, help=help['boron'])
+    parser.add_argument('-n', '--n-eigs', type=int, metavar='int',
+                        action='store', dest='n_eigs',
+                        default=None, help=help['n_eigs'])
+    parser.add_argument('-t', '--tau', type=float, metavar='float',
+                        action='store', dest='tau',
+                        default=None, help=help['tau'])
+    parser.add_argument('filename_in', nargs='?')
+    options = parser.parse_args()
 
-    options, args = parser.parse_args()
+    filename_in = options.filename_in
 
-    if len(args) == 1:
-        filename_in = args[0];
-
-    elif len(args) == 0:
+    if not filename_in:
         if options.oscillator:
             filename_in = fix_path("examples/quantum/oscillator.py")
 
@@ -103,10 +104,6 @@ def main():
         else:
             parser.print_help()
             return
-
-    else:
-        parser.print_help()
-        return
 
     define_args = {}
 

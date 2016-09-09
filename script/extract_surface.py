@@ -14,7 +14,7 @@ from __future__ import absolute_import
 import sys
 from six.moves import range
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 import scipy.sparse as sp
@@ -81,29 +81,25 @@ def surface_components(gr_s, surf_faces):
 
     return n_comp, comps
 
-usage = """%prog [options] filename_in|- filename_out|-
-
-'-' is for stdin, stdout
-""" + __doc__.rstrip()
-
 def main():
-    parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option("-m", "--mesh",
-                      action="store_true", dest="save_mesh",
-                      default=False,
-                      help="save surface mesh")
-    parser.add_option("-n", "--no-surface",
-                      action="store_true", dest="no_surface",
-                      default=False,
-                      help="do not output surface [default: %default]")
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument("--version", action="version",
+                        version="%(prog)s " + sfepy.__version__)
+    parser.add_argument("-m", "--mesh",
+                        action="store_true", dest="save_mesh",
+                        default=False,
+                        help="save surface mesh")
+    parser.add_argument("-n", "--no-surface",
+                        action="store_true", dest="no_surface",
+                        default=False,
+                        help="do not output surface [default: %(default)s]")
+    parser.add_argument('filename_in', help="'-' is for stdin")
+    parser.add_argument('filename_out', help="'-' is for  stdout")
+    options = parser.parse_args()
 
-    if (len(args) == 2):
-        filename_in = args[0];
-        filename_out = args[1];
-    else:
-        parser.print_help(),
-        return
+    filename_in = options.filename_in
+    filename_out = options.filename_out
 
     if (filename_in == '-'):
         file_in = sys.stdin

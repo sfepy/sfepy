@@ -5,7 +5,7 @@ Plot mesh connectivities, facet orientations, global and local DOF ids etc.
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 import matplotlib.pyplot as plt
 
@@ -13,20 +13,16 @@ from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, FEDomain
 import sfepy.postprocess.plot_cmesh as pc
 
-usage = '%prog [options] filename\n' + __doc__.rstrip()
-
 helps = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('filename')
+    options = parser.parse_args()
 
-    if len(args) == 1:
-        filename = args[0]
-    else:
-        parser.print_help(),
-        return
+    filename = options.filename
 
     mesh = Mesh.from_file(filename)
     output('Mesh:')

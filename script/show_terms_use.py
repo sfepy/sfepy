@@ -7,7 +7,7 @@ import sys
 import six
 sys.path.append('.')
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 from sfepy.base.base import output, dict_from_keys_init, ordered_iteritems
 from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -15,29 +15,24 @@ from sfepy.base.ioutils import locate_files
 from sfepy.discrete.equations import parse_definition
 from sfepy.terms import term_table
 
-usage = '%prog [options] <directory>\n' + __doc__.rstrip()
-
 helps = {
     'counts' : 'show terms use counts only',
     'unused' : 'show unused terms only',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-c', '--counts',
-                      action='store_true', dest='counts',
-                      default=False, help=helps['counts'])
-    parser.add_option('-u', '--unused',
-                      action='store_true', dest='unused',
-                      default=False, help=helps['unused'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-c', '--counts',
+                        action='store_true', dest='counts',
+                        default=False, help=helps['counts'])
+    parser.add_argument('-u', '--unused',
+                        action='store_true', dest='unused',
+                        default=False, help=helps['unused'])
+    parser.add_argument('directory')
+    options = parser.parse_args()
 
-    if len(args) > 0:
-        pdf_dir = os.path.realpath(args[0])
-
-    else:
-        parser.print_help(),
-        return
+    pdf_dir = os.path.realpath(options.directory)
 
     required, other = get_standard_keywords()
 

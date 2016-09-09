@@ -8,21 +8,19 @@ Log directly.
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, Action, RawDescriptionHelpFormatter
 
 import matplotlib.pyplot as plt
 
 from sfepy.base.log import read_log, plot_log
 
-usage = '%prog [options] filename\n' + __doc__.rstrip()
-
-def parse_rc(option, opt, value, parser):
-    pars = {}
-    for pair in value.split(','):
-        key, val = pair.split('=')
-        pars[key] = eval(val)
-
-    setattr(parser.values, option.dest, pars)
+class ParseRc(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        pars = {}
+        for pair in values.split(','):
+            key, val = pair.split('=')
+            pars[key] = eval(val)
+        setattr(namespace, self.dest, pars)
 
 helps = {
     'output_filename' :
@@ -33,24 +31,21 @@ helps = {
 }
 
 def main():
-    parser = OptionParser(usage=usage)
-    parser.add_option('-o', '--output', metavar='filename',
-                      action='store', dest='output_filename',
-                      default=None, help=helps['output_filename'])
-    parser.add_option('--rc', type='str', metavar='key=val,...',
-                      action='callback', dest='rc',
-                      callback=parse_rc, default={}, help=helps['rc'])
-    parser.add_option('-n', '--no-show',
-                      action='store_true', dest='no_show',
-                      default=False, help=helps['no_show'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('-o', '--output', metavar='filename',
+                        action='store', dest='output_filename',
+                        default=None, help=helps['output_filename'])
+    parser.add_argument('--rc', type=str, metavar='key=val,...',
+                        action=ParseRc, dest='rc',
+                        default={}, help=helps['rc'])
+    parser.add_argument('-n', '--no-show',
+                        action='store_true', dest='no_show',
+                        default=False, help=helps['no_show'])
+    parser.add_argument('filename')
+    options = parser.parse_args()
 
-    if len(args) == 1:
-        filename = args[0]
-
-    else:
-        parser.print_help()
-        return
+    filename = options.filename
 
     log, info = read_log(filename)
 

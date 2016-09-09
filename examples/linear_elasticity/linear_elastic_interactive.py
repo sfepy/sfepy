@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser
 import numpy as nm
 
 import sys
@@ -26,7 +26,6 @@ def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
 
     return val
 
-usage = """%prog [options]"""
 help = {
     'show' : 'show the results figure',
 }
@@ -34,11 +33,12 @@ help = {
 def main():
     from sfepy import data_dir
 
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-s', '--show',
+    parser = ArgumentParser()
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-s', '--show',
                       action="store_true", dest='show',
                       default=False, help=help['show'])
-    options, args = parser.parse_args()
+    options = parser.parse_args()
 
     mesh = Mesh.from_file(data_dir + '/meshes/2d/rectangle_tri.mesh')
     domain = FEDomain('domain', mesh)

@@ -14,21 +14,19 @@ import sys
 from six.moves import range
 sys.path.append('.')
 
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from sfepy.base.base import nm, output
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
                                        supported_cell_types)
 
-usage = '%prog [options] filename_in filename_out\n' + __doc__.rstrip()
-
 help = {
     'scale' : 'scale factor (float or comma-separated list for each axis)'
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'center' : 'center of the output mesh (0 for origin or'
     ' comma-separated list for each axis) applied after scaling'
-    ' [default: %default]',
-    'refine' : 'uniform refinement level [default: %default]',
+    ' [default: %(default)s]',
+    'refine' : 'uniform refinement level [default: %(default)s]',
     'format' : 'output mesh format (overrides filename_out extension)',
     'list' : 'list supported readable/writable output mesh formats',
 }
@@ -49,22 +47,25 @@ def _parse_val_or_vec(option, name, parser):
     return option
 
 def main():
-    parser = OptionParser(usage=usage)
-    parser.add_option('-s', '--scale', metavar='scale',
-                      action='store', dest='scale',
-                      default=None, help=help['scale'])
-    parser.add_option('-c', '--center', metavar='center',
-                      action='store', dest='center',
-                      default=None, help=help['center'])
-    parser.add_option('-r', '--refine', metavar='level',
-                      action='store', type=int, dest='refine',
-                      default=0, help=help['refine'])
-    parser.add_option('-f', '--format', metavar='format',
-                      action='store', type='string', dest='format',
-                      default=None, help=help['format'])
-    parser.add_option('-l', '--list', action='store_true',
-                      dest='list', help=help['list'])
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('-s', '--scale', metavar='scale',
+                        action='store', dest='scale',
+                        default=None, help=help['scale'])
+    parser.add_argument('-c', '--center', metavar='center',
+                        action='store', dest='center',
+                        default=None, help=help['center'])
+    parser.add_argument('-r', '--refine', metavar='level',
+                        action='store', type=int, dest='refine',
+                        default=0, help=help['refine'])
+    parser.add_argument('-f', '--format', metavar='format',
+                        action='store', type=str, dest='format',
+                        default=None, help=help['format'])
+    parser.add_argument('-l', '--list', action='store_true',
+                        dest='list', help=help['list'])
+    parser.add_argument('filename_in')
+    parser.add_argument('filename_out')
+    options = parser.parse_args()
 
     if options.list:
         output('Supported readable mesh formats:')
@@ -76,14 +77,11 @@ def main():
         output_mesh_formats('w')
         sys.exit(0)
 
-    if len(args) != 2:
-        parser.print_help()
-        sys.exit(1)
-
     scale = _parse_val_or_vec(options.scale, 'scale', parser)
     center = _parse_val_or_vec(options.center, 'center', parser)
 
-    filename_in, filename_out = args
+    filename_in = options.filename_in
+    filename_out = options.filename_out
 
     mesh = Mesh.from_file(filename_in)
 

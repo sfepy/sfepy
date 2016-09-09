@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""
 Linear viscoelasticity with pressure traction load on a surface and constrained
 to one-dimensional motion.
@@ -73,6 +74,9 @@ fading memory kernel is cut off before it goes close enough to zero.
 """
 from __future__ import absolute_import
 import numpy as nm
+
+import sys
+sys.path.append('.')
 
 from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_lame
@@ -253,31 +257,29 @@ def main():
     """
     Plot the load, displacement, strain and stresses w.r.t. time.
     """
-    from optparse import OptionParser
+    from argparse import ArgumentParser, RawDescriptionHelpFormatter
     import matplotlib.pyplot as plt
 
     import sfepy.postprocess.time_history as th
 
-    usage = """%prog <output file in HDF5 format>"""
+    msgs = {
+        'node': 'plot displacements in given node [default: %(default)s]',
+        'element': 'plot tensors in given element [default: %(default)s]',
+    }
 
-    msgs = {'node' : 'plot displacements in given node [default: %default]',
-            'element' : 'plot tensors in given element [default: %default]',}
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument(metavar='OUTPUT_FILE', dest='output_file',
+                        help='output file in HDF5 format')
+    parser.add_argument('-n', '--node', type=int, metavar='ii',
+                        action='store', dest='node',
+                        default=512, help=msgs['node'])
+    parser.add_argument('-e', '--element', type=int, metavar='ii',
+                        action='store', dest='element',
+                        default=299, help=msgs['element'])
+    options = parser.parse_args()
 
-    parser = OptionParser(usage=usage)
-    parser.add_option('-n', '--node', type=int, metavar='ii',
-                      action='store', dest='node',
-                      default=512, help=msgs['node'])
-    parser.add_option('-e', '--element', type=int, metavar='ii',
-                      action='store', dest='element',
-                      default=299, help=msgs['element'])
-    options, args = parser.parse_args()
-
-    if len(args) == 1:
-        filename = args[0]
-
-    else:
-        parser.print_help()
-        return
+    filename = options.output_file
 
     tensor_names = ['cauchy_strain',
                     'cauchy_stress', 'viscous_stress', 'total_stress']

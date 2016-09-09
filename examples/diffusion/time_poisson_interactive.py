@@ -21,7 +21,7 @@ from __future__ import absolute_import
 import sys
 from six.moves import range
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 import matplotlib.pyplot as plt
@@ -100,13 +100,11 @@ def probe_results(ax_num, T, dvel, probe, label):
 
     return fig, results
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 helps = {
-    'diffusivity' : 'the diffusivity coefficient [default: %default]',
-    'ic_max' : 'the max. initial condition value [default: %default]',
-    'order' : 'temperature field approximation order [default: %default]',
-    'refine' : 'uniform mesh refinement level [default: %default]',
+    'diffusivity' : 'the diffusivity coefficient [default: %(default)s]',
+    'ic_max' : 'the max. initial condition value [default: %(default)s]',
+    'order' : 'temperature field approximation order [default: %(default)s]',
+    'refine' : 'uniform mesh refinement level [default: %(default)s]',
     'probe' : 'probe the results',
     'show' : 'show the probing results figure, if --probe is used',
 }
@@ -114,26 +112,28 @@ helps = {
 def main():
     from sfepy import data_dir
 
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('--diffusivity', metavar='float', type=float,
-                      action='store', dest='diffusivity',
-                      default=1e-5, help=helps['diffusivity'])
-    parser.add_option('--ic-max', metavar='float', type=float,
-                      action='store', dest='ic_max',
-                      default=2.0, help=helps['ic_max'])
-    parser.add_option('--order', metavar='int', type=int,
-                      action='store', dest='order',
-                      default=2, help=helps['order'])
-    parser.add_option('-r', '--refine', metavar='int', type=int,
-                      action='store', dest='refine',
-                      default=0, help=helps['refine'])
-    parser.add_option('-p', '--probe',
-                      action="store_true", dest='probe',
-                      default=False, help=helps['probe'])
-    parser.add_option('-s', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('--diffusivity', metavar='float', type=float,
+                        action='store', dest='diffusivity',
+                        default=1e-5, help=helps['diffusivity'])
+    parser.add_argument('--ic-max', metavar='float', type=float,
+                        action='store', dest='ic_max',
+                        default=2.0, help=helps['ic_max'])
+    parser.add_argument('--order', metavar='int', type=int,
+                        action='store', dest='order',
+                        default=2, help=helps['order'])
+    parser.add_argument('-r', '--refine', metavar='int', type=int,
+                        action='store', dest='refine',
+                        default=0, help=helps['refine'])
+    parser.add_argument('-p', '--probe',
+                        action="store_true", dest='probe',
+                        default=False, help=helps['probe'])
+    parser.add_argument('-s', '--show',
+                        action="store_true", dest='show',
+                        default=False, help=helps['show'])
+    options = parser.parse_args()
 
     assert_((0 < options.order),
             'temperature approximation order must be at least 1!')

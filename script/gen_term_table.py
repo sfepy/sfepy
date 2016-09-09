@@ -5,7 +5,7 @@ Generate the table of all terms for the sphinx documentation.
 from __future__ import absolute_import
 import os
 import sys
-from optparse import OptionParser
+from argparse import ArgumentParser
 import pyparsing as pp
 
 import numpy as nm
@@ -198,8 +198,6 @@ def gen_term_table(app):
 def setup(app):
     app.connect('builder-inited', gen_term_table)
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 helps = {
     'output_filename' :
     'output file name',
@@ -207,11 +205,13 @@ helps = {
 
 def main():
 
-    parser = OptionParser(usage=usage, version="%prog")
-    parser.add_option("-o", "--output", metavar='output_filename',
-                      action="store", dest="output_filename",
-                      default="term_table.rst", help=helps['output_filename'])
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--version", action="version", version="%(prog)s")
+    parser.add_argument("-o", "--output", metavar='output_filename',
+                        action="store", dest="output_filename",
+                        default="term_table.rst",
+                        help=helps['output_filename'])
+    options = parser.parse_args()
 
     typeset(options.output_filename)
 

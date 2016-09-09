@@ -200,7 +200,6 @@ def get_analytical_displacement(dims, young, force, transform=None):
 
     return u
 
-usage = """%prog [options]"""
 helps = {
     'output_dir' : 'output directory',
     'dims' :

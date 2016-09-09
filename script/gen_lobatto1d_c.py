@@ -8,7 +8,7 @@ import sys
 from six.moves import range
 sys.path.append('.')
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 import sympy as sm
 import numpy as nm
@@ -168,24 +168,23 @@ def append_lists(out, names, length):
     _list = fun_list % (name, length, args)
     out.append(_list)
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 help = {
     'max_order' :
-    'maximum order of polynomials [default: %default]',
+    'maximum order of polynomials [default: %(default)s]',
     'plot' :
     'plot polynomials',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-m', '--max-order', metavar='order', type=int,
-                      action='store', dest='max_order',
-                      default=10, help=help['max_order'])
-    parser.add_option('', '--plot',
-                      action='store_true', dest='plot',
-                      default=False, help=help['plot'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-m', '--max-order', metavar='order', type=int,
+                        action='store', dest='max_order',
+                        default=10, help=help['max_order'])
+    parser.add_argument('--plot',
+                        action='store_true', dest='plot',
+                        default=False, help=help['plot'])
+    options = parser.parse_args()
 
     max_order = options.max_order
 

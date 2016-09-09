@@ -13,7 +13,7 @@ repeated runs for varying some of the simulation parameters - see
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
 from sfepy.base.base import output
@@ -30,8 +30,6 @@ def print_solvers():
     from sfepy.solvers import solver_table
     print('Solvers: %d available:' % len(solver_table))
     print(sorted(solver_table.keys()))
-
-usage = """%prog [options] filename_in\n""" + __doc__.rstrip()
 
 help = {
     'conf' :
@@ -75,71 +73,72 @@ help = {
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
-    parser.add_option('-c', '--conf', metavar='"key : value, ..."',
-                      action='store', dest='conf', type='string',
-                      default=None, help= help['conf'])
-    parser.add_option('-O', '--options', metavar='"key : value, ..."',
-                      action='store', dest='app_options', type='string',
-                      default=None, help=help['options'])
-    parser.add_option('-d', '--define', metavar='"key : value, ..."',
-                      action='store', dest='define_args', type='string',
-                      default=None, help=help['define'])
-    parser.add_option('-o', '', metavar='filename',
-                      action='store', dest='output_filename_trunk',
-                      default=None, help=help['filename'])
-    parser.add_option('', '--format', metavar='format',
-                      action='store', dest='output_format',
-                      default=None, help=help['output_format'])
-    parser.add_option('', '--save-restart', metavar='mode', type='int',
-                      action='store', dest='save_restart',
-                      default=None, help=help['save_restart'])
-    parser.add_option('', '--load-restart', metavar='filename',
-                      action='store', dest='load_restart',
-                      default=None, help=help['load_restart'])
-    parser.add_option('', '--log', metavar='file',
-                      action='store', dest='log',
-                      default=None, help=help['log'])
-    parser.add_option('-q', '--quiet',
-                      action='store_true', dest='quiet',
-                      default=False, help=help['quiet'])
-    parser.add_option('', '--save-ebc',
-                      action='store_true', dest='save_ebc',
-                      default=False, help=help['save_ebc'])
-    parser.add_option('', '--save-ebc-nodes',
-                      action='store_true', dest='save_ebc_nodes',
-                      default=False, help=help['save_ebc_nodes'])
-    parser.add_option('', '--save-regions',
-                      action='store_true', dest='save_regions',
-                      default=False, help=help['save_regions'])
-    parser.add_option('', '--save-regions-as-groups',
-                      action='store_true', dest='save_regions_as_groups',
-                      default=False, help=help['save_regions_as_groups'])
-    parser.add_option('', '--save-field-meshes',
-                      action='store_true', dest='save_field_meshes',
-                      default=False, help=help['save_field_meshes'])
-    parser.add_option('', '--solve-not',
-                      action='store_true', dest='solve_not',
-                      default=False, help=help['solve_not'])
-    parser.add_option('', '--list', metavar='what',
-                      action='store', dest='_list',
-                      default=None, help=help['list'])
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('-c', '--conf', metavar='"key : value, ..."',
+                        action='store', dest='conf', type=str,
+                        default=None, help= help['conf'])
+    parser.add_argument('-O', '--options', metavar='"key : value, ..."',
+                        action='store', dest='app_options', type=str,
+                        default=None, help=help['options'])
+    parser.add_argument('-d', '--define', metavar='"key : value, ..."',
+                        action='store', dest='define_args', type=str,
+                        default=None, help=help['define'])
+    parser.add_argument('-o', metavar='filename',
+                        action='store', dest='output_filename_trunk',
+                        default=None, help=help['filename'])
+    parser.add_argument('--format', metavar='format',
+                        action='store', dest='output_format',
+                        default=None, help=help['output_format'])
+    parser.add_argument('--save-restart', metavar='mode', type=int,
+                        action='store', dest='save_restart',
+                        default=None, help=help['save_restart'])
+    parser.add_argument('--load-restart', metavar='filename',
+                        action='store', dest='load_restart',
+                        default=None, help=help['load_restart'])
+    parser.add_argument('--log', metavar='file',
+                        action='store', dest='log',
+                        default=None, help=help['log'])
+    parser.add_argument('-q', '--quiet',
+                        action='store_true', dest='quiet',
+                        default=False, help=help['quiet'])
+    parser.add_argument('--save-ebc',
+                        action='store_true', dest='save_ebc',
+                        default=False, help=help['save_ebc'])
+    parser.add_argument('--save-ebc-nodes',
+                        action='store_true', dest='save_ebc_nodes',
+                        default=False, help=help['save_ebc_nodes'])
+    parser.add_argument('--save-regions',
+                        action='store_true', dest='save_regions',
+                        default=False, help=help['save_regions'])
+    parser.add_argument('--save-regions-as-groups',
+                        action='store_true', dest='save_regions_as_groups',
+                        default=False, help=help['save_regions_as_groups'])
+    parser.add_argument('--save-field-meshes',
+                        action='store_true', dest='save_field_meshes',
+                        default=False, help=help['save_field_meshes'])
+    parser.add_argument('--solve-not',
+                        action='store_true', dest='solve_not',
+                        default=False, help=help['solve_not'])
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--list', metavar='what',
+                        action='store', dest='_list',
+                        default=None, help=help['list'])
+    group.add_argument('filename_in', nargs='?')
+    options = parser.parse_args()
 
-    options, args = parser.parse_args()
-
-    if (len(args) == 1):
-        filename_in = args[0];
-    else:
+    if options._list is not None:
         if options._list == 'terms':
             print_terms()
 
         elif options._list == 'solvers':
             print_solvers()
 
-        else:
-            parser.print_help(),
         return
 
+    filename_in = options.filename_in
     output.set_output(filename=options.log,
                       quiet=options.quiet,
                       combined=options.log is not None)

@@ -45,7 +45,7 @@ import sys
 import six
 from six.moves import range
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 import scipy.sparse.linalg as sla
@@ -60,79 +60,81 @@ from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.solvers import Solver
 
-usage = '%prog [options] [filename]\n' + __doc__.rstrip()
-
 helps = {
     'dims' :
-    'dimensions of the block [default: %default]',
+    'dimensions of the block [default: %(default)s]',
     'centre' :
-    'centre of the block [default: %default]',
+    'centre of the block [default: %(default)s]',
     'shape' :
-    'numbers of vertices along each axis [default: %default]',
+    'numbers of vertices along each axis [default: %(default)s]',
     'bc_kind' :
     'kind of Dirichlet boundary conditions on the bottom and top surfaces,'
-    ' one of: free, cantilever, fixed [default: %default]',
+    ' one of: free, cantilever, fixed [default: %(default)s]',
     'axis' :
     'the axis index of the block that the bottom and top surfaces are related'
-    ' to [default: %default]',
-    'young' : "the Young's modulus [default: %default]",
-    'poisson' : "the Poisson's ratio [default: %default]",
-    'density' : "the material density [default: %default]",
-    'order' : 'displacement field approximation order [default: %default]',
-    'n_eigs' : 'the number of eigenvalues to compute [default: %default]',
+    ' to [default: %(default)s]',
+    'young' : "the Young's modulus [default: %(default)s]",
+    'poisson' : "the Poisson's ratio [default: %(default)s]",
+    'density' : "the material density [default: %(default)s]",
+    'order' : 'displacement field approximation order [default: %(default)s]',
+    'n_eigs' : 'the number of eigenvalues to compute [default: %(default)s]',
     'ignore' : 'if given, the number of eigenvalues to ignore (e.g. rigid'
     ' body modes); has precedence over the default setting determined by'
-    ' --bc-kind [default: %default]',
+    ' --bc-kind [default: %(default)s]',
     'solver' : 'the eigenvalue problem solver to use. It should be given'
     ' as a comma-separated list: solver_kind,option0:value0,option1:value1,...'
-    ' [default: %default]',
+    ' [default: %(default)s]',
     'show' : 'show the results figure',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-d', '--dims', metavar='dims',
-                      action='store', dest='dims',
-                      default='[1.0, 1.0]', help=helps['dims'])
-    parser.add_option('-c', '--centre', metavar='centre',
-                      action='store', dest='centre',
-                      default='[0.0, 0.0]', help=helps['centre'])
-    parser.add_option('-s', '--shape', metavar='shape',
-                      action='store', dest='shape',
-                      default='[11, 11]', help=helps['shape'])
-    parser.add_option('-b', '--bc-kind', metavar='kind',
-                      action='store', dest='bc_kind',
-                      choices=['free', 'cantilever', 'fixed'],
-                      default='free', help=helps['bc_kind'])
-    parser.add_option('-a', '--axis', metavar='0, ..., dim, or -1', type=int,
-                      action='store', dest='axis',
-                      default=-1, help=helps['axis'])
-    parser.add_option('--young', metavar='float', type=float,
-                      action='store', dest='young',
-                      default=6.80e+10, help=helps['young'])
-    parser.add_option('--poisson', metavar='float', type=float,
-                      action='store', dest='poisson',
-                      default=0.36, help=helps['poisson'])
-    parser.add_option('--density', metavar='float', type=float,
-                      action='store', dest='density',
-                      default=2700.0, help=helps['density'])
-    parser.add_option('--order', metavar='int', type=int,
-                      action='store', dest='order',
-                      default=1, help=helps['order'])
-    parser.add_option('-n', '--n-eigs', metavar='int', type=int,
-                      action='store', dest='n_eigs',
-                      default=6, help=helps['n_eigs'])
-    parser.add_option('-i', '--ignore', metavar='int', type=int,
-                      action='store', dest='ignore',
-                      default=None, help=helps['ignore'])
-    parser.add_option('', '--solver', metavar='solver',
-                      action='store', dest='solver',
-                      default="eig.scipy,method:'eigh',tol:1e-5,maxiter:1000",
-                      help=helps['solver'])
-    parser.add_option('', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-d', '--dims', metavar='dims',
+                        action='store', dest='dims',
+                        default='[1.0, 1.0]', help=helps['dims'])
+    parser.add_argument('-c', '--centre', metavar='centre',
+                        action='store', dest='centre',
+                        default='[0.0, 0.0]', help=helps['centre'])
+    parser.add_argument('-s', '--shape', metavar='shape',
+                        action='store', dest='shape',
+                        default='[11, 11]', help=helps['shape'])
+    parser.add_argument('-b', '--bc-kind', metavar='kind',
+                        action='store', dest='bc_kind',
+                        choices=['free', 'cantilever', 'fixed'],
+                        default='free', help=helps['bc_kind'])
+    parser.add_argument('-a', '--axis', metavar='0, ..., dim, or -1',
+                        type=int, action='store', dest='axis',
+                        default=-1, help=helps['axis'])
+    parser.add_argument('--young', metavar='float', type=float,
+                        action='store', dest='young',
+                        default=6.80e+10, help=helps['young'])
+    parser.add_argument('--poisson', metavar='float', type=float,
+                        action='store', dest='poisson',
+                        default=0.36, help=helps['poisson'])
+    parser.add_argument('--density', metavar='float', type=float,
+                        action='store', dest='density',
+                        default=2700.0, help=helps['density'])
+    parser.add_argument('--order', metavar='int', type=int,
+                        action='store', dest='order',
+                        default=1, help=helps['order'])
+    parser.add_argument('-n', '--n-eigs', metavar='int', type=int,
+                        action='store', dest='n_eigs',
+                        default=6, help=helps['n_eigs'])
+    parser.add_argument('-i', '--ignore', metavar='int', type=int,
+                        action='store', dest='ignore',
+                        default=None, help=helps['ignore'])
+    parser.add_argument('--solver', metavar='solver', action='store',
+                        dest='solver',
+                        default= \
+                        "eig.scipy,method:'eigh',tol:1e-5,maxiter:1000",
+                        help=helps['solver'])
+    parser.add_argument('--show',
+                        action="store_true", dest='show',
+                        default=False, help=helps['show'])
+    parser.add_argument('filename', nargs='?', default=None)
+    options = parser.parse_args()
 
     aux = options.solver.split(',')
     kwargs = {}
@@ -158,9 +160,8 @@ def main():
     assert_((0 < options.order),
             'displacement approximation order must be at least 1!')
 
-    if len(args) == 1:
-        filename = args[0]
-
+    filename = options.filename
+    if filename is not None:
         mesh = Mesh.from_file(filename)
         dim = mesh.dim
         dims = nm.diff(mesh.get_bounding_box(), axis=0)

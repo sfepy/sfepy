@@ -11,7 +11,7 @@ or use the --show option.
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import numpy as nm
 
 from sfepy.base.base import output
@@ -86,33 +86,33 @@ def run(domain, order):
 
     return pb, state
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 helps = {
     'dims' :
-    'dimensions of the block [default: %default]',
+    'dimensions of the block [default: %(default)s]',
     'centre' :
-    'centre of the block [default: %default]',
+    'centre of the block [default: %(default)s]',
     'shape' :
-    'numbers of vertices along each axis [default: %default]',
+    'numbers of vertices along each axis [default: %(default)s]',
     'show' : 'show the results figure',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-d', '--dims', metavar='dims',
-                      action='store', dest='dims',
-                      default='[1.0, 1.0]', help=helps['dims'])
-    parser.add_option('-c', '--centre', metavar='centre',
-                      action='store', dest='centre',
-                      default='[0.0, 0.0]', help=helps['centre'])
-    parser.add_option('-s', '--shape', metavar='shape',
-                      action='store', dest='shape',
-                      default='[11, 11]', help=helps['shape'])
-    parser.add_option('', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-d', '--dims', metavar='dims',
+                        action='store', dest='dims',
+                        default='[1.0, 1.0]', help=helps['dims'])
+    parser.add_argument('-c', '--centre', metavar='centre',
+                        action='store', dest='centre',
+                        default='[0.0, 0.0]', help=helps['centre'])
+    parser.add_argument('-s', '--shape', metavar='shape',
+                        action='store', dest='shape',
+                        default='[11, 11]', help=helps['shape'])
+    parser.add_argument('--show',
+                        action="store_true", dest='show',
+                        default=False, help=helps['show'])
+    options = parser.parse_args()
 
     dims = nm.array(eval(options.dims), dtype=nm.float64)
     centre = nm.array(eval(options.centre), dtype=nm.float64)

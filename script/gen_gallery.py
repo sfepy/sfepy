@@ -35,12 +35,12 @@ Additional steps for sfepy.org deployment:
 from __future__ import absolute_import
 import sys
 import six
-sys.path.append( '.' )
+sys.path.append('.')
 import os
 import tempfile
 import glob
 import re
-from optparse import OptionParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import matplotlib.image as image
 
@@ -590,42 +590,42 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
 
     output('...done')
 
-usage = '%prog [options]\n' + __doc__.rstrip()
-
 help = {
     'examples_dir' :
-    'directory containing examples [default: %default]',
+    'directory containing examples [default: %(default)s]',
     'images_dir' :
     'directory where to store gallery images [default: gallery/images]',
     'no_images' :
     'do not (re)generate images and thumbnails',
     'output_filename' :
-    'output file name [default: %default]',
+    'output file name [default: %(default)s]',
     'link_prefix' :
     'prefix to be prepended to links to examples pages in gallery '
-    '[default: %default]',
+    '[default: %(default)s]',
 }
 
 def main():
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-e', '--examples-dir', metavar='directory',
-                      action='store', dest='examples_dir',
-                      default='examples', help=help['examples_dir'])
-    parser.add_option('-i', '--images-dir', metavar='directory',
-                      action='store', dest='images_dir',
-                      default=None, help=help['images_dir'])
-    parser.add_option('-n', '--no-images',
-                      action='store_true', dest='no_images',
-                      default=False, help=help['no_images'])
-    parser.add_option('-o', '--output', metavar='output_filename',
-                      action='store', dest='output_filename',
-                      default='gallery/gallery.html',
-                      help=help['output_filename'])
-    parser.add_option('-l', '--link-prefix', metavar='prefix',
-                      action='store', dest='link_prefix',
-                      default='http://sfepy.org/doc-devel',
-                      help=help['link_prefix'])
-    (options, args) = parser.parse_args()
+    parser = ArgumentParser(description=__doc__,
+                            formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-e', '--examples-dir', metavar='directory',
+                        action='store', dest='examples_dir',
+                        default='examples', help=help['examples_dir'])
+    parser.add_argument('-i', '--images-dir', metavar='directory',
+                        action='store', dest='images_dir',
+                        default=None, help=help['images_dir'])
+    parser.add_argument('-n', '--no-images',
+                        action='store_true', dest='no_images',
+                        default=False, help=help['no_images'])
+    parser.add_argument('-o', '--output', metavar='output_filename',
+                        action='store', dest='output_filename',
+                        default='gallery/gallery.html',
+                        help=help['output_filename'])
+    parser.add_argument('-l', '--link-prefix', metavar='prefix',
+                        action='store', dest='link_prefix',
+                        default='http://sfepy.org/doc-devel',
+                        help=help['link_prefix'])
+    options = parser.parse_args()
 
     examples_dir = os.path.realpath(options.examples_dir)
 

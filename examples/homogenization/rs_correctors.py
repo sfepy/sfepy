@@ -4,7 +4,7 @@ Compute homogenized elastic coefficients for a given microstructure.
 """
 from __future__ import print_function
 from __future__ import absolute_import
-from optparse import OptionParser
+from argparse import ArgumentParser
 import sys
 import six
 sys.path.append('.')
@@ -189,7 +189,6 @@ solvers = {
 
 ############################################
 # Mini-application below, computing the homogenized elastic coefficients.
-usage = '%prog [options]\n' + __doc__.rstrip()
 help = {
     'no_pauses' : 'do not make pauses',
 }
@@ -201,11 +200,12 @@ def main():
     from sfepy.discrete import Problem
     import sfepy.homogenization.coefs_base as cb
 
-    parser = OptionParser(usage=usage, version='%prog')
-    parser.add_option('-n', '--no-pauses',
-                      action="store_true", dest='no_pauses',
-                      default=False, help=help['no_pauses'])
-    options, args = parser.parse_args()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('-n', '--no-pauses',
+                        action="store_true", dest='no_pauses',
+                        default=False, help=help['no_pauses'])
+    options = parser.parse_args()
 
     if options.no_pauses:
         def spause(*args):
