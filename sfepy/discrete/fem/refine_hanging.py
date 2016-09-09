@@ -122,11 +122,15 @@ def find_level_interface(domain, refine_flag):
 
         nnn = []
         oe = 0
+        ov = 0
         for ii in range(vc.shape[0]):
             aux = set(vc[ii]).intersection(vf[ii])
             nc = len(aux)
-            if nc == 1: continue # Skip vertex-only neighbours.
-            if nc == 4:
+            if nc == 1:
+                nnn.append((0, 0, 2))
+                ov += 1
+
+            elif nc == 4:
                 nnn.append((nn[ii, 0], nn[ii, 1], 0))
                 oe += 1
 
@@ -140,10 +144,11 @@ def find_level_interface(domain, refine_flag):
 
             return facets, cells, 0, region0, region1
 
+        # Sort by neighbour kind, skip vertex-only neighbours.
         ii = nm.argsort(nnn[:, 2])
-        nnn = nnn[ii]
-        cf = cf[ii]
-        cc = cc[ii]
+        nnn = nnn[ii][:-ov]
+        cf = cf[ii][:-ov]
+        cc = cc[ii][:-ov]
 
         ec, eco = cmesh.get_incident(1, cc, dim, ret_offsets=True)
         ef, efo = cmesh.get_incident(1, cf, dim, ret_offsets=True)
