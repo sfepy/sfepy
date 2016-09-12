@@ -407,65 +407,49 @@ def eval_basis_transform(field, gsubs):
     fomega = fdomain.create_region('Omega', 'all')
     rffield = Field.from_args('rf', field.dtype, 1, fomega, approx_order=ao)
 
-    def eval_bf(fcoors, econn, subs, ef):
-        cc = [fcoors[econn[subs[ii], ef[subs[ii + 1]]]]
-              for ii in range(2, len(subs), 2)]
-        coors = nm.concatenate(cc)
+    def assign_transform(transform, bf, gsubs, ef):
+        if not len(gsubs): return
 
-        integral = Integral('i', coors=coors, weights=nm.ones_like(coors[:, 0]))
+        n_sub = (gsubs.shape[1] - 2) // 2
 
-        rcfield.clear_qp_base()
-        bf = rcfield.get_base('v', False, integral)
-
-        n_fdof = ef.shape[1]
-        n_sub = (len(subs) - 2) // 2
-        bf = bf.reshape((n_sub, n_fdof, 1, -1))
-
-        for ii in range(n_sub):
-            print bf[ii, :, 0, ef[subs[1]]], ef[subs[2 * ii + 1]]
-
-        return bf
-
-    def assign_transform(transform, bf, gsubs, subs, ef):
-        n_sub = (len(subs) - 2) // 2
-
-        cface = ef[subs[1]]
-        cbf = bf[..., 0, cface]
         for ii, sub in enumerate(gsubs):
             print ii, sub
             for ij in range(n_sub):
                 ik = 2 * (ij + 1)
                 print ij, ik
+
+                fface = ef[sub[ik+1]]
+
                 mtx = transform[sub[ik]]
                 print sub[ik], mtx
-                ix, iy = nm.meshgrid(ef[sub[ik+1]], ef[sub[ik+1]])
-                mtx[ix, iy] = cbf[ij]
+                ix, iy = nm.meshgrid(fface, fface)
+
+                cbf = bf[iy, 0, ix]
+
+                mtx[ix, iy] = cbf
                 print mtx
-
-    if gel.name == '2_4':
-        fsubs = [0, 0, 0, 0, 1, 3]
-        esubs = None
-
-        fgsubs = gsubs
-        egsubs = None
-
-    else:
-        fsubs = [0, 0, 0, 0, 1, 0, 2, 0, 3, 0]
-        esubs = [0, 0, 0, 0, 1, 3]
-
-        fgsubs = gsubs[0]
-        egsubs = gsubs[1]
 
     fcoors = rffield.get_coor()
 
-    ef = rffield.efaces
-    bf = eval_bf(fcoors, rffield.econn, fsubs, ef)
-    assign_transform(transform, bf, fgsubs, fsubs, ef)
+    coors = fcoors[rffield.econn[0]]
+    integral = Integral('i', coors=coors, weights=nm.ones_like(coors[:, 0]))
 
-    if esubs is not None:
-        ef = rffield.eedges
-        bf = eval_bf(fcoors, rffield.econn, esubs, ef)
-        assign_transform(transform, bf, egsubs, esubs, ef)
+    rcfield.clear_qp_base()
+    bf = rcfield.get_base('v', False, integral)
+
+    if gel.name == '2_4':
+        fgsubs = gsubs
+        egsubs = None
+
+        assign_transform(transform, bf, fgsubs, rffield.efaces)
+
+    else:
+        fgsubs = gsubs[0]
+        egsubs = gsubs[1]
+
+        assign_transform(transform, bf, fgsubs, rffield.efaces)
+        if egsubs is not None:
+            assign_transform(transform, bf, egsubs, rffield.eedges)
 
     assert_((nm.abs(transform.sum(1) - 1.0) < 1e-15).all())
 
