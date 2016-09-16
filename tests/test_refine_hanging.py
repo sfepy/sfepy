@@ -37,12 +37,13 @@ def _gen_grid_3_8(bbox, eps):
 
     PointsProbe.__base__.cache = Struct(name='probe_shared_evaluate_cache')
 
-    n_point = 10
+    n_point = 100
 
     px = nm.linspace(bbox[0, 0], bbox[1, 0], n_point)
     py = nm.linspace(bbox[0, 1], bbox[1, 1], n_point)
     pz = nm.linspace(bbox[0, 2], bbox[1, 2], n_point)
 
+    # Test face substitutions.
     pps = nm.meshgrid(px, py, -eps)
     points0 = nm.array([ii.ravel() for ii in pps]).T
     pps = nm.meshgrid(px, py, eps)
@@ -66,6 +67,37 @@ def _gen_grid_3_8(bbox, eps):
     pps = nm.meshgrid(-eps, py, pz)
     points0 = nm.array([ii.ravel() for ii in pps]).T
     pps = nm.meshgrid(eps, py, pz)
+    points1 = nm.array([ii.ravel() for ii in pps]).T
+
+    grid0 = PointsProbe(points0)
+    grid1 = PointsProbe(points1)
+
+    yield grid0, grid1
+
+    # Test edge substitutions.
+    pps = nm.meshgrid(px, -eps, -eps)
+    points0 = nm.array([ii.ravel() for ii in pps]).T
+    pps = nm.meshgrid(px, eps, eps)
+    points1 = nm.array([ii.ravel() for ii in pps]).T
+
+    grid0 = PointsProbe(points0)
+    grid1 = PointsProbe(points1)
+
+    yield grid0, grid1
+
+    pps = nm.meshgrid(-eps, py, -eps)
+    points0 = nm.array([ii.ravel() for ii in pps]).T
+    pps = nm.meshgrid(eps, py, eps)
+    points1 = nm.array([ii.ravel() for ii in pps]).T
+
+    grid0 = PointsProbe(points0)
+    grid1 = PointsProbe(points1)
+
+    yield grid0, grid1
+
+    pps = nm.meshgrid(-eps, -eps, pz)
+    points0 = nm.array([ii.ravel() for ii in pps]).T
+    pps = nm.meshgrid(eps, eps, pz)
     points1 = nm.array([ii.ravel() for ii in pps]).T
 
     grid0 = PointsProbe(points0)
