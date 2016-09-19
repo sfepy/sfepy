@@ -155,8 +155,9 @@ class Test(TestCommon):
                     self.report('geometry: %s, order: %d, permutation: %d: %s'
                                 % (key, order, ip, perm))
                     mesh0 = mesh00.copy()
-                    conn = mesh0.get_conn(gel.name)
-                    conn[-1, :] = conn[0, perm]
+                    conn = mesh0.cmesh.get_conn(dim, 0).indices
+                    conn = conn.reshape((mesh0.n_el, -1))
+                    conn[-1, :] = conn[-1, perm]
 
                     domain0 = FEDomain('d', mesh0)
 
