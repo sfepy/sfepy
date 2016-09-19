@@ -78,9 +78,13 @@ def _gen_common_data(orders, gels, report):
                 report('pr: %s, pc: %s' % (pr, pc))
 
                 mesh = mesh0.copy()
-                conn = mesh.get_conn(gel.name)
+                conn = mesh.cmesh.get_conn(mesh0.cmesh.tdim, 0).indices
+                conn = conn.reshape((mesh0.n_el, -1))
                 conn[0, :] = conn[0, pr]
                 conn[1, :] = conn[1, pc]
+
+                conn2 = mesh.get_conn(gel.name)
+                assert_((conn == conn2).all())
 
                 cache = Struct(mesh=mesh)
 
