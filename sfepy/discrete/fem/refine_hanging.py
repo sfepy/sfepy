@@ -304,6 +304,9 @@ def refine(domain0, refine, gsubs=None):
 
     facets, cells, oe, region0, region1 = find_level_interface(domain0, refine)
 
+    if region1 is None:
+        return domain0, None
+
     print nm.c_[facets, cells]
 
     domain, sub_cells = refine_region(domain0, region0, region1)
