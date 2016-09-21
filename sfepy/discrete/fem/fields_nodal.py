@@ -145,13 +145,8 @@ class H1NodalMixin(H1Mixin):
         if self.gel.name == '2_4':
             ef = self.efaces
 
-            oris = self.domain.cmesh.edge_oris.reshape((-1, 4))
             for ii, sub in enumerate(gsubs):
                 # 2_4 edges always in opposite orientation.
-                mori = oris[sub[0], sub[1]]
-                assert_(oris[sub[2], sub[3]] == 1 - mori)
-                assert_(oris[sub[4], sub[5]] == 1 - mori)
-
                 ee = ef[sub[1]].copy()
                 ee[0], ee[1] = ee[1], ee[0] # Swap vertex DOFs.
                 ee[2:] = ee[-1:1:-1] # Swap edge DOFs.

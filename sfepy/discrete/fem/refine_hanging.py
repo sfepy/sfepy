@@ -232,40 +232,21 @@ def refine_region(domain0, region0, region1):
     mesh = Mesh.from_data('a', coors, vgs, conns, mat_ids, descs)
     domain = FEDomain('d', mesh)
 
-    # Preserve orientations of coarse cell edges and faces.
-    if domain0.cmesh.edge_oris is not None:
-        n_cell = domain0.shape.n_el
-        oris0 = domain0.cmesh.edge_oris.reshape((n_cell, -1))[region0.cells]
-
-        n_cell = domain.shape.n_el
-        domain.cmesh.edge_oris.reshape((n_cell, -1))[:oris0.shape[0]] = oris0
-
-    if domain0.cmesh.face_oris is not None:
-        n_cell = domain0.shape.n_el
-        oris0 = domain0.cmesh.face_oris.reshape((n_cell, -1))[region0.cells]
-
-        n_cell = domain.shape.n_el
-        domain.cmesh.face_oris.reshape((n_cell, -1))[:oris0.shape[0]] = oris0
-
     return domain, sub_cells
 
-def find_facet_substitutions(facets, cells, sub_cells, oris, refine_facets):
+def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
     """
-    Find facet substitutions in connectivity as well as coarse cell facets
-    orientations.
+    Find facet substitutions in connectivity.
 
     sub = [coarse cell, coarse facet, fine1 cell, fine1 facet, fine2 cell,
            fine2 facet]
     """
     subs = []
-    coris = nm.zeros(facets.shape[0], dtype=nm.uint32)
     for ii, fac in enumerate(facets):
         fine = cells[ii, 0]
         coarse = cells[ii, 3]
 
         isub = nm.searchsorted(sub_cells[:, 0], fine)
-
-        coris[ii] = oris[isub, fac[1]]
 
         refined = sub_cells[isub, 1:]
         rf = refine_facets[fac[1]]
@@ -281,22 +262,7 @@ def find_facet_substitutions(facets, cells, sub_cells, oris, refine_facets):
         subs.append(sub)
 
     subs = nm.array(subs)
-    return subs, coris
-
-def force_facet_orientations(domain, gsubs, coris, dim):
-    """
-    Force coarse cell facets orientations to fine cell facets.
-    """
-    if gsubs is None: return
-
-    cmesh = domain.mesh.cmesh
-    foris = cmesh.get_orientations(dim)
-    num = foris.shape[0] / cmesh.n_el
-
-    for ii, subs in enumerate(gsubs):
-        ic = subs[2::2] * num + subs[3::2]
-
-        foris[ic] = coris[ii]
+    return subs
 
 def refine(domain0, refine, gsubs=None):
     desc = domain0.mesh.descs[0]
@@ -330,14 +296,8 @@ def refine(domain0, refine, gsubs=None):
 
     desc = domain0.mesh.descs[0]
     if desc == '2_4':
-        cmesh0 = domain0.mesh.cmesh
-        oris = cmesh0.edge_oris.reshape((-1, 4))[region1.cells]
-
-        gsubs1, coris = find_facet_substitutions(facets, cells,
-                                                 sub_cells, oris,
-                                                 refine_edges_2_4)
-        force_facet_orientations(domain, gsubs1, coris, 1)
-
+        gsubs1 = find_facet_substitutions(facets, cells,
+                                          sub_cells, refine_edges_2_4)
         if gsubs is None:
             gsubs = gsubs1 if len(gsubs1) else None
 
@@ -351,19 +311,11 @@ def refine(domain0, refine, gsubs=None):
             gsubs = nm.r_[gsubs, gsubs1]
 
     else:
-        cmesh0 = domain0.mesh.cmesh
-        foris = cmesh0.face_oris.reshape((-1, 6))[region1.cells]
-        eoris = cmesh0.edge_oris.reshape((-1, 12))[region1.cells]
+        gsubs1f = find_facet_substitutions(facets[:oe], cells[:oe],
+                                           sub_cells, refine_faces_3_8)
 
-        gsubs1f, fcoris = find_facet_substitutions(facets[:oe], cells[:oe],
-                                                   sub_cells, foris,
-                                                   refine_faces_3_8)
-        force_facet_orientations(domain, gsubs1f, fcoris, 2)
-
-        gsubs1e, ecoris = find_facet_substitutions(facets[oe:], cells[oe:],
-                                                   sub_cells, eoris,
-                                                   refine_edges_3_8)
-        force_facet_orientations(domain, gsubs1e, ecoris, 1)
+        gsubs1e = find_facet_substitutions(facets[oe:], cells[oe:],
+                                           sub_cells, refine_edges_3_8)
 
         if gsubs is None:
             gsubs = (gsubs1f if len(gsubs1f) else None,
