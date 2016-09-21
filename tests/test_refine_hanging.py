@@ -182,25 +182,10 @@ class Test(TestCommon):
 
                     field.restore_dofs()
 
-                    out = uvar.create_output()
-                    filenames = _build_filenames(self.options.out_dir,
-                                                 key, order, ip)
-
-                    domain.mesh.write(filenames[0], out=out)
-
-                    linearization = Struct(kind='adaptive',
-                                           min_level=0,
-                                           max_level=4,
-                                           eps=1e-2)
-
-                    out = uvar.create_output(linearization=linearization)
-                    val = out['u']
-                    mesh = val.get('mesh', domain.mesh)
-                    mesh.write(filenames[1], out=out)
-
                     bbox = domain.get_mesh_bounding_box()
                     eps = 1e-7
 
+                    save = False
                     for ii, (probe0, probe1) in enumerate(probe_gen(bbox, eps)):
                         probe0.set_options(close_limit=0.0)
                         probe1.set_options(close_limit=0.0)
@@ -213,9 +198,27 @@ class Test(TestCommon):
                         _ok = nm.allclose(vals0, vals1, atol=20.0 * eps,
                                           rtol=0.0)
                         if not _ok:
+                            save = True
                             self.report('probe %d failed! (max. error: %e)'
                                         % (ii, nm.abs(vals0 - vals1).max()))
 
                         ok = ok and _ok
+
+                    if (ip == 0) or save:
+                        out = uvar.create_output()
+                        filenames = _build_filenames(self.options.out_dir,
+                                                     key, order, ip)
+
+                        domain.mesh.write(filenames[0], out=out)
+
+                        linearization = Struct(kind='adaptive',
+                                               min_level=0,
+                                               max_level=4,
+                                               eps=1e-2)
+
+                        out = uvar.create_output(linearization=linearization)
+                        val = out['u']
+                        mesh = val.get('mesh', domain.mesh)
+                        mesh.write(filenames[1], out=out)
 
         return ok
