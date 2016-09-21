@@ -369,7 +369,7 @@ def refine(domain0, refine, gsubs=None):
             gsubs = (gsubs1f if len(gsubs1f) else None,
                      gsubs1e if len(gsubs1f) else None) # !!!
 
-        elif len(gsubs1):
+        elif len(gsubs1f):
             gsubsf, gsubse = gsubs
 
             mods = nm.zeros(domain.shape.n_el + 1, dtype=nm.int32)
@@ -379,10 +379,12 @@ def refine(domain0, refine, gsubs=None):
             gsubsf[:, [0, 2, 4, 6, 8]] += mods[gsubsf[:, [0, 2, 4, 6, 8]]]
             gsubsf = nm.r_[gsubsf, gsubs1f]
 
-            gsubse[:, [0, 2, 4]] += mods[gsubse[:, [0, 2, 4]]]
-            gsubse = nm.r_[gsubse, gsubs1e]
+            if len(gsubse):
+                gsubse[:, [0, 2, 4]] += mods[gsubse[:, [0, 2, 4]]]
+                if len(gsubs1e):
+                    gsubse = nm.r_[gsubse, gsubs1e]
 
-            gsubs = (gsubs1f, gsubs1e)
+            gsubs = (gsubsf, gsubse)
 
         if gsubs == (None, None): gsubs = None
 
