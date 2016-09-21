@@ -257,8 +257,6 @@ def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
         slave = zip(used, fused)
         sub = nm.r_[[master], slave].ravel()
 
-        # !!!!!
-        print ii, fac, fine, coarse, isub, refined, used
         subs.append(sub)
 
     subs = nm.array(subs)
@@ -273,25 +271,13 @@ def refine(domain0, refine, gsubs=None):
     if region1 is None:
         return domain0, None
 
-    print nm.c_[facets, cells]
-
     domain, sub_cells = refine_region(domain0, region0, region1)
-
-    #_plot(domain.mesh.cmesh)
 
     if facets.shape[0] > 0:
         desc = domain0.mesh.descs[0]
         conn0 = domain0.mesh.get_conn(desc)
         conn1 = domain.mesh.get_conn(desc)
 
-        print conn1
-
-        print conn1[sub_cells[:, 1:]]
-        print conn0[sub_cells[:, 0]]
-
-        print cells[:, 2]
-        print conn0[cells[:, 1]]
-        print conn1[cells[:, 3]]
         assert_((conn0[cells[:, 1]] == conn1[cells[:, 3]]).all())
 
     desc = domain0.mesh.descs[0]
@@ -370,21 +356,17 @@ def eval_basis_transform(field, gsubs):
         n_sub = (gsubs.shape[1] - 2) // 2
 
         for ii, sub in enumerate(gsubs):
-            print ii, sub
             for ij in range(n_sub):
                 ik = 2 * (ij + 1)
-                print ij, ik
 
                 fface = ef[sub[ik+1]]
 
                 mtx = transform[sub[ik]]
-                print sub[ik], mtx
                 ix, iy = nm.meshgrid(fface, fface)
 
                 cbf = bf[iy, 0, ix]
 
                 mtx[ix, iy] = cbf
-                print mtx
 
     fcoors = rffield.get_coor()
 
