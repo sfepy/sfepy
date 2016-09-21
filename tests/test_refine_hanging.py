@@ -210,7 +210,7 @@ class Test(TestCommon):
 
                         assert_(nm.allclose(pars0, pars1, atol=1e-14, rtol=0.0))
 
-                        _ok = nm.allclose(vals0, vals1, atol=10.0 * eps,
+                        _ok = nm.allclose(vals0, vals1, atol=20.0 * eps,
                                           rtol=0.0)
                         if not _ok:
                             self.report('probe %d failed! (max. error: %e)'
