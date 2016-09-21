@@ -161,7 +161,85 @@ class H1NodalMixin(H1Mixin):
                 self.econn[sub[4], ef[sub[5]]] = master
 
         elif self.gel.name == '3_8':
-            pass
+            def _sort4(p):
+                key = 0
+
+                if (p[0] < p[1]): key += 1
+                if (p[0] < p[2]): key += 2
+                if (p[1] < p[2]): key += 4
+                if (p[0] < p[3]): key += 8
+                if (p[1] < p[3]): key += 16
+                if (p[2] < p[3]): key += 32
+
+                return key
+
+            if gsubs[0] is not None:
+                ef = self.efaces
+                epf = self.gel.get_edges_per_face()
+                nde = self.node_desc.edge
+                ndf = self.node_desc.face
+                gedges = self.gel.edges
+                gfaces = self.gel.faces
+
+                for ii, sub in enumerate(gsubs[0]):
+                    master = self.econn[sub[0]]
+                    fmaster = master[ef[sub[1]]]
+                    lmaster = fmaster.tolist()
+
+                    for ic in range(4):
+                        ia, ib = 2 + 2 * ic, 2 + 2 * ic + 1
+                        cell = self.econn[sub[ia]]
+
+                        # Corner vertex is always the first for faces 0, 1, 2.
+                        iv = cell[ef[sub[ib]][0]]
+                        i0 = lmaster.index(iv)
+                        for ik in range(4):
+                            cell[ef[sub[ib]][ik]] = fmaster[:4][i0 - ik]
+
+                        # Treat edge DOFs.
+                        if nde is not None:
+                            sedges = epf[sub[ib]]
+                            medges = epf[sub[1]]
+                            for ie, sedge in enumerate(sedges):
+                                iim =  i0 - 1 - ie
+                                ies = nde[sedge]
+                                medge = medges[iim]
+                                iem = nde[medge]
+
+                                vm = master[gedges[medge]][0]
+                                vs = cell[gedges[sedge]][0]
+                                if vm == vs:
+                                    cell[ies] = self.econn[sub[0], iem]
+
+                                else:
+                                    cell[ies] = self.econn[sub[0], iem[::-1]]
+
+                        # Treat face DOFs.
+                        if ndf is not None:
+                            new_ori = _sort4(cell[gfaces[sub[ib]]])
+                            smaster = nm.sort(master[ndf[sub[1]]])
+                            aux = self.face_dof_perms[new_ori]
+                            cell[ndf[sub[ib]]] = smaster[aux]
+
+            if gsubs[1] is not None:
+                ef = self.eedges
+                for ii, sub in enumerate(gsubs[1]):
+                    master = self.econn[sub[0]]
+
+                    me = master[gedges[sub[1]]]
+                    for ic in range(2):
+                        ia, ib = 2 + 2 * ic, 2 + 2 * ic + 1
+                        cell = self.econn[sub[ia]]
+                        ce = cell[gedges[sub[ib]]]
+
+                        if (me[0] == ce[0]) or (me[1] == ce[1]):
+                            cell[ef[sub[ib]]] = master[ef[sub[1]]]
+
+                        else:
+                            ee = ef[sub[1]].copy()
+                            ee[0], ee[1] = ee[1], ee[0] # Swap vertex DOFs.
+                            ee[2:] = ee[-1:1:-1] # Swap edge DOFs.
+                            cell[ef[sub[ib]]] = master[ee]
 
         else:
             raise ValueError('unsupported reference element type! (%s)'
