@@ -525,7 +525,7 @@ class FEField(Field):
 
         return self.qp_coors[qpkey]
 
-    def substitute_dofs(self, gsubs):
+    def substitute_dofs(self, gsubs, econn=None):
         """
         Perform facet DOF substitutions according to `gsubs`.
 
@@ -534,9 +534,13 @@ class FEField(Field):
         """
         self.econn0 = self.econn.copy()
 
-        if gsubs is None: return
+        if econn is not None:
+            self.econn = econn
 
-        self._substitute_dofs(gsubs)
+        else:
+            if gsubs is None: return
+
+            self._substitute_dofs(gsubs)
 
         self.unused_dofs = nm.setdiff1d(self.econn0, self.econn)
 
