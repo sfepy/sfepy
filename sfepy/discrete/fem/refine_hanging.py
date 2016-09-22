@@ -5,7 +5,8 @@ Notes
 -----
 Using LCBCs with hanging nodes is not supported.
 """
-from six.moves import range
+from __future__ import absolute_import
+from six.moves import range, zip
 
 import numpy as nm
 
@@ -254,7 +255,7 @@ def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
         fused = rf[:, 1]
 
         master = [coarse, fac[2]]
-        slave = zip(used, fused)
+        slave = list(zip(used, fused))
         sub = nm.r_[[master], slave].ravel()
 
         subs.append(sub)
