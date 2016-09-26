@@ -164,15 +164,15 @@ class Test(TestCommon):
                     refine = nm.zeros(mesh0.n_el, dtype=nm.uint8)
                     refine[:-1] = 1
 
-                    gsubs = None
-                    domain, gsubs = rh.refine(domain0, refine, gsubs=gsubs)
+                    subs = None
+                    domain, subs = rh.refine(domain0, refine, subs=subs)
 
                     omega = domain.create_region('Omega', 'all')
                     field = Field.from_args('fu', nm.float64, 1, omega,
                                             approx_order=order)
 
-                    basis_transform = rh.eval_basis_transform(field, gsubs)
-                    field.substitute_dofs(gsubs)
+                    basis_transform = rh.eval_basis_transform(field, subs)
+                    field.substitute_dofs(subs)
                     field.set_basis_transform(basis_transform)
 
                     uvar = FieldVariable('u', 'parameter', field,

@@ -136,16 +136,16 @@ class H1NodalMixin(H1Mixin):
 
         return n_dof, all_dofs, remap
 
-    def _substitute_dofs(self, gsubs):
+    def _substitute_dofs(self, subs):
         """
-        Perform facet DOF substitutions according to `gsubs`.
+        Perform facet DOF substitutions according to `subs`.
 
         Modifies `self.econn` in-place.
         """
         if self.gel.name == '2_4':
             ef = self.efaces
 
-            for ii, sub in enumerate(gsubs):
+            for ii, sub in enumerate(subs):
                 # 2_4 edges always in opposite orientation.
                 ee = ef[sub[1]].copy()
                 ee[0], ee[1] = ee[1], ee[0] # Swap vertex DOFs.
@@ -168,7 +168,7 @@ class H1NodalMixin(H1Mixin):
 
                 return key
 
-            if gsubs[0] is not None:
+            if subs[0] is not None:
                 ef = self.efaces
                 epf = self.gel.get_edges_per_face()
                 nde = self.node_desc.edge
@@ -176,7 +176,7 @@ class H1NodalMixin(H1Mixin):
                 gedges = self.gel.edges
                 gfaces = self.gel.faces
 
-                for ii, sub in enumerate(gsubs[0]):
+                for ii, sub in enumerate(subs[0]):
                     master = self.econn[sub[0]]
                     fmaster = master[ef[sub[1]]]
                     lmaster = fmaster.tolist()
@@ -216,9 +216,9 @@ class H1NodalMixin(H1Mixin):
                             aux = self.face_dof_perms[new_ori]
                             cell[ndf[sub[ib]]] = smaster[aux]
 
-            if gsubs[1] is not None:
+            if subs[1] is not None:
                 ef = self.eedges
-                for ii, sub in enumerate(gsubs[1]):
+                for ii, sub in enumerate(subs[1]):
                     master = self.econn[sub[0]]
 
                     me = master[gedges[sub[1]]]

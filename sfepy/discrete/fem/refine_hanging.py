@@ -263,7 +263,7 @@ def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
     subs = nm.array(subs)
     return subs
 
-def refine(domain0, refine, gsubs=None):
+def refine(domain0, refine, subs=None):
     desc = domain0.mesh.descs[0]
     assert_(desc in ['2_4', '3_8'])
 
@@ -283,58 +283,58 @@ def refine(domain0, refine, gsubs=None):
 
     desc = domain0.mesh.descs[0]
     if desc == '2_4':
-        gsubs1 = find_facet_substitutions(facets, cells,
-                                          sub_cells, refine_edges_2_4)
-        if gsubs is None:
-            gsubs = gsubs1 if len(gsubs1) else None
+        subs1 = find_facet_substitutions(facets, cells,
+                                         sub_cells, refine_edges_2_4)
+        if subs is None:
+            subs = subs1 if len(subs1) else None
 
-        elif len(gsubs1):
+        elif len(subs1):
             mods = nm.zeros(domain.shape.n_el + 1, dtype=nm.int32)
             mods[refine > 0] = -1
             mods = nm.cumsum(mods)
 
-            gsubs[:, [0, 2, 4]] += mods[gsubs[:, [0, 2, 4]]]
+            subs[:, [0, 2, 4]] += mods[subs[:, [0, 2, 4]]]
 
-            gsubs = nm.r_[gsubs, gsubs1]
+            subs = nm.r_[subs, subs1]
 
     else:
-        gsubs1f = find_facet_substitutions(facets[:oe], cells[:oe],
-                                           sub_cells, refine_faces_3_8)
+        subs1f = find_facet_substitutions(facets[:oe], cells[:oe],
+                                          sub_cells, refine_faces_3_8)
 
-        gsubs1e = find_facet_substitutions(facets[oe:], cells[oe:],
-                                           sub_cells, refine_edges_3_8)
+        subs1e = find_facet_substitutions(facets[oe:], cells[oe:],
+                                          sub_cells, refine_edges_3_8)
 
-        if gsubs is None:
-            gsubs = (gsubs1f if len(gsubs1f) else None,
-                     gsubs1e if len(gsubs1f) else None) # !!!
+        if subs is None:
+            subs = (subs1f if len(subs1f) else None,
+                    subs1e if len(subs1f) else None) # !!!
 
-        elif len(gsubs1f):
-            gsubsf, gsubse = gsubs
+        elif len(subs1f):
+            subsf, subse = subs
 
             mods = nm.zeros(domain.shape.n_el + 1, dtype=nm.int32)
             mods[refine > 0] = -1
             mods = nm.cumsum(mods)
 
-            gsubsf[:, [0, 2, 4, 6, 8]] += mods[gsubsf[:, [0, 2, 4, 6, 8]]]
-            gsubsf = nm.r_[gsubsf, gsubs1f]
+            subsf[:, [0, 2, 4, 6, 8]] += mods[subsf[:, [0, 2, 4, 6, 8]]]
+            subsf = nm.r_[subsf, subs1f]
 
-            if len(gsubse):
-                gsubse[:, [0, 2, 4]] += mods[gsubse[:, [0, 2, 4]]]
-                if len(gsubs1e):
-                    gsubse = nm.r_[gsubse, gsubs1e]
+            if len(subse):
+                subse[:, [0, 2, 4]] += mods[subse[:, [0, 2, 4]]]
+                if len(subs1e):
+                    subse = nm.r_[subse, subs1e]
 
-            gsubs = (gsubsf, gsubse)
+            subs = (subsf, subse)
 
-        if gsubs == (None, None): gsubs = None
+        if subs == (None, None): subs = None
 
-    return domain, gsubs
+    return domain, subs
 
-def eval_basis_transform(field, gsubs):
+def eval_basis_transform(field, subs):
     """
     """
     transform = nm.tile(nm.eye(field.econn.shape[1]),
                         (field.econn.shape[0], 1, 1))
-    if gsubs is None:
+    if subs is None:
         return transform
 
     gel = field.gel
@@ -351,12 +351,12 @@ def eval_basis_transform(field, gsubs):
     fomega = fdomain.create_region('Omega', 'all')
     rffield = Field.from_args('rf', field.dtype, 1, fomega, approx_order=ao)
 
-    def assign_transform(transform, bf, gsubs, ef):
-        if not len(gsubs): return
+    def assign_transform(transform, bf, subs, ef):
+        if not len(subs): return
 
-        n_sub = (gsubs.shape[1] - 2) // 2
+        n_sub = (subs.shape[1] - 2) // 2
 
-        for ii, sub in enumerate(gsubs):
+        for ii, sub in enumerate(subs):
             for ij in range(n_sub):
                 ik = 2 * (ij + 1)
 
@@ -378,18 +378,18 @@ def eval_basis_transform(field, gsubs):
     bf = rcfield.get_base('v', False, integral)
 
     if gel.name == '2_4':
-        fgsubs = gsubs
-        egsubs = None
+        fsubs = subs
+        esubs = None
 
-        assign_transform(transform, bf, fgsubs, rffield.efaces)
+        assign_transform(transform, bf, fsubs, rffield.efaces)
 
     else:
-        fgsubs = gsubs[0]
-        egsubs = gsubs[1]
+        fsubs = subs[0]
+        esubs = subs[1]
 
-        assign_transform(transform, bf, fgsubs, rffield.efaces)
-        if egsubs is not None:
-            assign_transform(transform, bf, egsubs, rffield.eedges)
+        assign_transform(transform, bf, fsubs, rffield.efaces)
+        if esubs is not None:
+            assign_transform(transform, bf, esubs, rffield.eedges)
 
     assert_((nm.abs(transform.sum(1) - 1.0) < 1e-15).all())
 
