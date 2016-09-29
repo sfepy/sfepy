@@ -11,8 +11,8 @@ from six.moves import range, zip
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.discrete import Integral, Functions, Function
-from sfepy.discrete.fem import Mesh, FEDomain, Field
+from sfepy.discrete import Functions, Function
+from sfepy.discrete.fem import Mesh, FEDomain
 
 # Rows = facets of reference cell, columns = [sub_cell_i, local facet_i]
 refine_edges_2_4 = nm.array([[[0, 0], [1, 3]],
@@ -328,69 +328,3 @@ def refine(domain0, refine, subs=None):
         if subs == (None, None): subs = None
 
     return domain, subs
-
-def eval_basis_transform(field, subs):
-    """
-    """
-    transform = nm.tile(nm.eye(field.econn.shape[1]),
-                        (field.econn.shape[0], 1, 1))
-    if subs is None:
-        return transform
-
-    gel = field.gel
-    ao = field.approx_order
-
-    conn = [gel.conn]
-    mesh = Mesh.from_data('a', gel.coors, None, [conn], [nm.array([0])],
-                          [gel.name])
-    cdomain = FEDomain('d', mesh)
-    comega = cdomain.create_region('Omega', 'all')
-    rcfield = Field.from_args('rc', field.dtype, 1, comega, approx_order=ao)
-
-    fdomain = cdomain.refine()
-    fomega = fdomain.create_region('Omega', 'all')
-    rffield = Field.from_args('rf', field.dtype, 1, fomega, approx_order=ao)
-
-    def assign_transform(transform, bf, subs, ef):
-        if not len(subs): return
-
-        n_sub = (subs.shape[1] - 2) // 2
-
-        for ii, sub in enumerate(subs):
-            for ij in range(n_sub):
-                ik = 2 * (ij + 1)
-
-                fface = ef[sub[ik+1]]
-
-                mtx = transform[sub[ik]]
-                ix, iy = nm.meshgrid(fface, fface)
-
-                cbf = bf[iy, 0, ix]
-
-                mtx[ix, iy] = cbf
-
-    fcoors = rffield.get_coor()
-
-    coors = fcoors[rffield.econn[0]]
-    integral = Integral('i', coors=coors, weights=nm.ones_like(coors[:, 0]))
-
-    rcfield.clear_qp_base()
-    bf = rcfield.get_base('v', False, integral)
-
-    if gel.name == '2_4':
-        fsubs = subs
-        esubs = None
-
-        assign_transform(transform, bf, fsubs, rffield.efaces)
-
-    else:
-        fsubs = subs[0]
-        esubs = subs[1]
-
-        assign_transform(transform, bf, fsubs, rffield.efaces)
-        if esubs is not None:
-            assign_transform(transform, bf, esubs, rffield.eedges)
-
-    assert_((nm.abs(transform.sum(1) - 1.0) < 1e-15).all())
-
-    return transform
