@@ -257,6 +257,7 @@ class FEField(Field):
         self.basis_transform = None
         self.econn0 = None
         self.unused_dofs = None
+        self.stored_subs = None
 
     def _set_approx_order(self, approx_order):
         """
@@ -525,35 +526,52 @@ class FEField(Field):
 
         return self.qp_coors[qpkey]
 
-    def substitute_dofs(self, subs, econn=None):
+    def substitute_dofs(self, subs, restore=False):
         """
         Perform facet DOF substitutions according to `subs`.
 
-        Modifies `self.econn` in-place and sets `self.econn0` and
-        `self.unused_dofs`.
+        Modifies `self.econn` in-place and sets `self.econn0`,
+        `self.unused_dofs` and `self.basis_transform`.
         """
-        self.econn0 = self.econn.copy()
-
-        if econn is not None:
-            self.econn = econn
+        if restore and (self.stored_subs is not None):
+            self.econn0 = self.econn
+            self.econn, self.unused_dofs, basis_transform = self.stored_subs
 
         else:
-            if subs is None: return
+            if subs is None:
+                self.econn0 = self.econn
+                return
+
+            else:
+                self.econn0 = self.econn.copy()
 
             self._substitute_dofs(subs)
 
-        self.unused_dofs = nm.setdiff1d(self.econn0, self.econn)
+            self.unused_dofs = nm.setdiff1d(self.econn0, self.econn)
 
-    def restore_dofs(self):
+            basis_transform = self._eval_basis_transform(subs)
+
+        self.set_basis_transform(basis_transform)
+
+    def restore_dofs(self, store=False):
         """
         Undoes the effect of :func:`FEField.substitute_dofs()`.
         """
         if self.econn0 is None:
             raise ValueError('no original DOFs to restore!')
 
+        if store:
+            self.stored_subs = (self.econn,
+                                self.unused_dofs,
+                                self.basis_transform)
+
+        else:
+            self.stored_subs = None
+
         self.econn = self.econn0
         self.econn0 = None
         self.unused_dofs = None
+        self.basis_transform = None
 
     def set_basis_transform(self, transform):
         """
