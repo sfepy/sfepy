@@ -171,12 +171,13 @@ class Test(TestCommon):
                     field = Field.from_args('fu', nm.float64, 1, omega,
                                             approx_order=order)
 
-                    basis_transform = rh.eval_basis_transform(field, subs)
                     field.substitute_dofs(subs)
-                    field.set_basis_transform(basis_transform)
 
                     uvar = FieldVariable('u', 'parameter', field,
                                          primary_var_name='(set-to-None)')
+
+                    field.restore_dofs(store=True)
+                    field.substitute_dofs(subs=None, restore=True)
 
                     make_l2_projection_data(uvar, eval_fun)
 
