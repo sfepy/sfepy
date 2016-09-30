@@ -1,6 +1,10 @@
 News
 ====
 
+* **30.09.2016** Version 2016.3 released (Python 3 support, testing with Travis
+  CI, new classes for homogenized coefficients, using argparse instead of
+  optparse, etc.), see :ref:`release notes <2016.2-2016.3>`.
+
 * **12.05.2016** Version 2016.2 released (partial shell10x element
   implementation, parallel computation of homogenized coefficients, clean up of
   elastic terms, read support for msh mesh file format of gmsh, etc.), see
@@ -20,11 +24,5 @@ News
   fields can be evaluated in arbitrary points), (mostly) fixed finding of
   reference element coordinates of physical points, several new or improved
   examples, etc.), see :ref:`release notes <2015.2-2015.3>`.
-
-* **29.05.2015** Version 2015.2 released (major code simplification (removed
-  element groups), time stepping solvers updated for interactive use, improved
-  finding of reference element coordinates of physical points, reorganized
-  examples, reorganized installation on POSIX systems (sfepy-run script),
-  etc.), see :ref:`release notes <2015.1-2015.2>`.
 
 For historians: see :ref:`archived_news`.

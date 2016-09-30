@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **29.05.2015** Version 2015.2 released (major code simplification (removed
+  element groups), time stepping solvers updated for interactive use, improved
+  finding of reference element coordinates of physical points, reorganized
+  examples, reorganized installation on POSIX systems (sfepy-run script),
+  etc.), see :ref:`release notes <2015.1-2015.2>`.
+
 * **26.02.2015** Version 2015.1 released (support for multiple fields in
   isogeometric analysis, redesigned handling of solver parameters, new modal
   analysis example, etc.), see :ref:`release notes <2014.4-2015.1>`.
