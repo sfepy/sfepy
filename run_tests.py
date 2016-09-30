@@ -27,6 +27,8 @@ import os.path as op
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
+if sfepy.top_dir not in sys.path: sys.path.append(sfepy.top_dir)
+
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 
 class OutputFilter(object):
