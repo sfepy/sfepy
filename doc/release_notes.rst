@@ -1,5 +1,155 @@
 # created: 20.07.2007 (-1)
 
+.. _2016.2-2016.3:
+
+from 2016.2 to 2016.3
+=====================
+
+- merge pull request #330 from 'vlukes/fixdoc'
+
+  - fix docstrings in DotProductVolumeTerm, VectorDotGradScalarTerm
+
+- merge pull request #331 from 'takluyver/py3' and 'rc/py3', closes #164
+
+  - Python 2.7 and 3.4 support with the same code
+  - manually fix syntax in some support files
+  - run python-modernize relative import fixer
+  - run python-modernize print syntax fixer
+  - run 2to3 exec syntax fixer
+  - run python-modernize raise and except syntax fixers
+  - fix dynamic creation of new methods
+  - run python-modernize dict iteration fixers
+  - fix Python version comparison
+  - switch from deprecated os.path.walk to os.walk
+  - import reload() on Python 3
+  - run python-modernize dict.has_key fixer
+  - fix StringIO import for test on Python 3
+  - run 2to3 tuple parameters fixer
+  - run python-modernize xrange fixer
+  - update use of string functions
+  - reverse type check of filename - 'file' is not a reliable type
+  - run python-modernize reduce fixer
+  - use six.integer_types to check for integers
+  - misc fixes in sfepy.discrete
+  - misc fixes in sfepy.discrete.fem.meshio
+  - run python-modernize print syntax fixer on scripts and examples
+  - run python-modernize relative import fixer on scripts, examples and tests
+  - run python-modernize dict iteration fixers on scripts and examples
+  - run python-modernize xrange fixer on scripts and examples
+  - do not use six.iteritems() with Container subclasses
+  - do not use relative imports in examples - fixes SystemError: Parent module
+    '' not loaded, cannot perform relative import
+  - change cmp= to key= when sorting lists
+  - fix VariableTimeStepper.set_step()
+  - fix exception instance not defined outside except block
+  - implement point.__truediv__()
+  - new enc(), dec() encoding utility functions
+  - fix string IO in HDF5MeshIO
+  - fix string IO in HDF5 (pytables) related functions
+  - update test_install.py for Python 3
+  - fix integer division
+  - fix comparison of strings containing floats in test_units()
+  - fix reporting of failed tests in test_install.py with Python 3 - new
+    report_tests()
+  - docs: update installation instructions for Python 3
+
+- merge pull request #332 from 'rc/travis-ci', closes #321
+
+  - automatic testing on Python 2.7 and 3.4 using Travis CI
+  - new .travis.yml
+  - update run_tests.py to return status
+  - do not require DISPLAY in linear_elastic_probes.py example
+  - allow failing of evp0 in tests/test_eigenvalue_solvers.py
+    - update linear_elastic_probes.py example to run without vtk probes
+  - update linear_elastic_mM.py example to regenerate coefficients - fixes race
+    condition with several travis runs
+
+- merge branch 'readme-rst'
+
+  - show travis build status on github
+  - rename README -> README.rst
+  - update setup.py, sfepy/version.py for README.rst
+  - README.rst: show travis status, update and fix text and links
+
+- merge branch 'plot-cmesh'
+
+  - fix plot_wireframe()
+  - new plot_cmesh(), support **kwargs in plotting functions
+  - script/plot_mesh.py: use plot_cmesh()
+
+- merge pull request #333 from 'vlukes/hyperelast'
+
+  - new term: NonsymElasticTerm - non-symmetric gradient
+  - fix Term.get_approximation()
+  - update hyperelastic terms - new "family data" implementation
+  - new sym2nonsym() function in terms_op.c
+  - new classes for homogenized coefficients: CoefNonSymNonSym and CoefNonSym
+  - update "ev_integrate_mat" term - allow arbitrary shaped material
+
+- merge branch 'remove-get-approximation'
+
+  - remove FieldVariable.get_approximation(), Term.get_approximation()
+  - update terms for no Term.get_approximation()
+
+- merge pull request #334 from 'vlukes/fixdocs'
+
+  - fix docstring of SDDotVolumeTerm, SDDivTerm, SDDivGradTerm, SDConvectTerm,
+    SDGradDivStabilizationTerm, SDDiffusionTerm
+
+- merge pull request #336 from 'heczis/issue_281_argparse', closes #281
+
+  - use argparse instead of optparse in:
+
+    - examples/linear_elasticity/its2D_interactive.py
+    - examples/linear_elasticity/linear_elastic_interactive.py
+    - examples/linear_elasticity/linear_viscoelastic.py
+    - examples/linear_elasticity/modal_analysis.py
+    - examples/homogenization/rs_correctors.py
+    - examples/diffusion/laplace_shifted_periodic.py
+    - examples/diffusion/time_poisson_interactive.py
+    - examples/large_deformation/compare_elastic_materials.py
+    - test_install.py
+    - script/blockgen.py
+    - script/gen_term_table.py
+    - script/gen_mesh_prev.py
+    - script/plot_mesh.py
+    - script/plot_quadratures.py
+    - script/plot_times.py
+    - script/tile_periodic_mesh.py
+    - script/save_basis.py
+    - script/convert_mesh.py
+    - script/cylindergen.py
+    - script/extract_surface.py
+    - script/plot_logs.py
+    - script/gen_iga_patch.py
+    - script/show_terms_use.py
+    - script/gen_lobatto1d_c.py
+    - script/sync_module_docs.py
+    - script/gen_gallery.py
+    - script/plot_condition_numbers.py
+    - run_tests.py
+    - extractor.py
+    - probe.py
+    - simple.py
+    - schroedinger.py
+    - homogen.py
+    - postproc.py
+    - phonon.py
+    - shaper.py
+
+  - fix import path
+  - fix usage in examples/linear_elasticity/shell10x_cantilever_interactive.py
+
+- miscellaneous updates:
+
+  - support numeric prefixes in Quantity, Unit.get_prefix(), update prefixes
+  - update script/show_authors.py for Python 3
+  - fix docstring of get_local_ids(), add comments in mesh_build()
+  - fix regression in FieldVariable.get_element_diameters()
+  - add support for os.walk() keyword arguments to locate_files(),
+    remove_files()
+  - fix _gen_common_data() in tests/test_poly_spaces.py to permute connectivity
+
 .. _2016.1-2016.2:
 
 from 2016.1 to 2016.2
