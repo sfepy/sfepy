@@ -83,6 +83,26 @@ class Equations(Container):
 
         self.collect_conn_info()
 
+    def add_equation(self, equation):
+        """
+        Add a new equation.
+
+        Parameters
+        ----------
+        equation : Equation instance
+                    The new equation.
+        """
+        self.append(equation)
+        self.variables.extend(
+             set(equation.collect_variables() ) - set(self.variables)
+        )
+        self.materials.extend(
+             set(equation.collect_materials() ) - set(self.materials)
+        )
+        equation.collect_conn_info(self.conn_info)
+        if not self.domain:
+           self.domain = self.get_domain()
+
     def create_subequations(self, var_names, known_var_names=None):
         """
         Create sub-equations containing only terms with the given virtual
