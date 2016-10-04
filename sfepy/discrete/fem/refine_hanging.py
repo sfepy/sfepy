@@ -50,14 +50,12 @@ def find_level_interface(domain, refine_flag):
 
     - interface cells:
       - cells[:, 0] - cells to refine
-      - cells[:, 1] - their facet sharing neighbors
+      - cells[:, 1] - their facet sharing neighbors (w.r.t. both meshes)
       - cells[:, 2] - facet kind: 0 = face, 1 = edge
-      - cells[:, 3] - their facet sharing neighbors w.r.t. the locally refined
-        mesh.
     """
     if not refine_flag.any():
         facets = nm.zeros((0, 3), dtype=nm.uint32)
-        cells = nm.zeros((0, 4), dtype=nm.uint32)
+        cells = nm.zeros((0, 3), dtype=nm.uint32)
         return facets, cells, 0, None, None
 
     def _get_refine(coors, domain=None):
@@ -98,9 +96,7 @@ def find_level_interface(domain, refine_flag):
 
         facets = nm.c_[facets, ii]
 
-        # Indices of non-refined cells in the level-1 mesh.
-        ii = nm.searchsorted(region0.cells, cells[:, 1])
-        cells = nm.c_[cells, nm.zeros_like(ii), ii]
+        cells = nm.c_[cells, nm.zeros_like(cells[:, 1])]
 
     else: # if dim == 3:
         gel = domain.geom_els['3_8']
@@ -195,16 +191,15 @@ def find_level_interface(domain, refine_flag):
         cells = nnn[valid]
         facets = ffs[valid]
 
-        # Indices of non-refined cells in the level-1 mesh.
-        ii = nm.searchsorted(region0.cells, cells[:, 1])
-        cells = nm.c_[cells, ii]
-
     return facets, cells, oe, region0, region1
 
 def refine_region(domain0, region0, region1):
     """
     Coarse cell sub_cells[ii, 0] in mesh0 is split into sub_cells[ii, 1:] in
     mesh1.
+
+    The new fine cells are interleaved among the original coarse cells so that
+    the indices of the coarse cells do not change.
     """
     if region1 is None:
         return domain0, None
@@ -220,17 +215,33 @@ def refine_region(domain0, region0, region1):
 
     sub_cells = nm.empty((n_cell, n_sub + 1), dtype=nm.uint32)
     sub_cells[:, 0] = region1.cells
-    aux = nm.arange(n_sub * n_cell, dtype=nm.uint32).reshape((-1, n_sub))
-    sub_cells[:, 1:] = region0.shape.n_cell + aux
+    sub_cells[:, 1] = region1.cells
+    aux = nm.arange((n_sub - 1) * n_cell, dtype=nm.uint32)
+    sub_cells[:, 2:] = mesh0.n_el + aux.reshape((n_cell, -1))
 
     coors0, vgs0, conns0, mat_ids0, descs0 = mesh0._get_io_data()
-
     coors, vgs, _conns, _mat_ids, descs = mesh1r._get_io_data()
 
-    conn0 = mesh0.get_conn(domain0.mesh.descs[0])
-    conns = [nm.r_[conn0[region0.cells], _conns[0]]]
-    mat_ids = [nm.r_[mat_ids0[0][region0.cells], _mat_ids[0]]]
-    mesh = Mesh.from_data('a', coors, vgs, conns, mat_ids, descs)
+    def _interleave_refined(c0, c1):
+        if c1.ndim == 1:
+            c0 = c0[:, None]
+            c1 = c1[:, None]
+
+        n_row, n_col = c1.shape
+        n_new = region0.shape.n_cell + n_row
+
+        out = nm.empty((n_new, n_col), dtype=c0.dtype)
+        out[region0.cells] = c0[region0.cells]
+        out[region1.cells] = c1[::n_sub]
+        aux = c1.reshape((-1, n_col * n_sub))
+        out[mesh0.n_el:] = aux[:, n_col:].reshape((-1, n_col))
+
+        return out
+
+    conn = _interleave_refined(conns0[0], _conns[0])
+    mat_id = _interleave_refined(mat_ids0[0], _mat_ids[0]).squeeze()
+
+    mesh = Mesh.from_data('a', coors, vgs, [conn], [mat_id], descs)
     domain = FEDomain('d', mesh)
 
     return domain, sub_cells
@@ -245,7 +256,7 @@ def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
     subs = []
     for ii, fac in enumerate(facets):
         fine = cells[ii, 0]
-        coarse = cells[ii, 3]
+        coarse = cells[ii, 1]
 
         isub = nm.searchsorted(sub_cells[:, 0], fine)
 
@@ -279,7 +290,7 @@ def refine(domain0, refine, subs=None):
         conn0 = domain0.mesh.get_conn(desc)
         conn1 = domain.mesh.get_conn(desc)
 
-        assert_((conn0[cells[:, 1]] == conn1[cells[:, 3]]).all())
+        assert_((conn0[cells[:, 1]] == conn1[cells[:, 1]]).all())
 
     desc = domain0.mesh.descs[0]
     if desc == '2_4':
@@ -289,12 +300,6 @@ def refine(domain0, refine, subs=None):
             subs = subs1 if len(subs1) else None
 
         elif len(subs1):
-            mods = nm.zeros(domain.shape.n_el + 1, dtype=nm.int32)
-            mods[refine > 0] = -1
-            mods = nm.cumsum(mods)
-
-            subs[:, [0, 2, 4]] += mods[subs[:, [0, 2, 4]]]
-
             subs = nm.r_[subs, subs1]
 
     else:
@@ -311,15 +316,9 @@ def refine(domain0, refine, subs=None):
         elif len(subs1f):
             subsf, subse = subs
 
-            mods = nm.zeros(domain.shape.n_el + 1, dtype=nm.int32)
-            mods[refine > 0] = -1
-            mods = nm.cumsum(mods)
-
-            subsf[:, [0, 2, 4, 6, 8]] += mods[subsf[:, [0, 2, 4, 6, 8]]]
             subsf = nm.r_[subsf, subs1f]
 
             if len(subse):
-                subse[:, [0, 2, 4]] += mods[subse[:, [0, 2, 4]]]
                 if len(subs1e):
                     subse = nm.r_[subse, subs1e]
 
