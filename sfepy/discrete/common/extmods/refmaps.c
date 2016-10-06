@@ -1,3 +1,5 @@
+
+
 #include "refmaps.h"
 
 #undef __FUNC__
@@ -168,6 +170,7 @@ int32 _s_describe( Mapping *obj,
 {
   int32 ii, pos, inod, idim, iqp, nQP, ret = RET_OK;
   float64 c1, c2, c3, det;
+  float64 eps = 1e-15;
   float64 *jmat;
   FMField *faceCoor = 0, *mtxRMS = 0;
 
@@ -202,6 +205,7 @@ int32 _s_describe( Mapping *obj,
         det = sqrt( c1*c1 + c2*c2 );
         obj->det->val[iqp] = det * weight->val[iqp];
         /* Unit outward normal. */
+        if (fabs(det) < eps) det = 1.0;
         obj->normal->val[2*(iqp)+0] = c2 / det;
         obj->normal->val[2*(iqp)+1] = -c1 / det;
       }
@@ -217,6 +221,7 @@ int32 _s_describe( Mapping *obj,
         /*        printf( "s: %f %f %f %f\n", c1, -c2, c3, det ); */
         obj->det->val[iqp] = det * weight->val[iqp];
         /* Unit outward normal. */
+        if (fabs(det) < eps) det = 1.0;
         obj->normal->val[3*(iqp)+0] = c1 / det;
         obj->normal->val[3*(iqp)+1] = -c2 / det;
         obj->normal->val[3*(iqp)+2] = c3 / det;
