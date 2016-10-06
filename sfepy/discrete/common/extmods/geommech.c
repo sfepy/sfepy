@@ -15,8 +15,9 @@ int32 geme_invert3x3( FMField *mtxI, FMField *mtx )
 {
   int32 il, dim;
   int32 tmp1;
-  float64 det, *jI, *j;
-  
+  float64 eps = 1e-15;
+  float64 idet, det, *jI, *j;
+
   dim = mtx->nRow;
   for (il = 0; il < mtx->nLev; il++) {
     tmp1 = dim*dim*il;
@@ -24,13 +25,21 @@ int32 geme_invert3x3( FMField *mtxI, FMField *mtx )
     j = mtx->val + tmp1;
     switch (dim) {
     case 1:
-      det = 1.0 / j[0];
-/*        if (fabs(det) <= MachEps) errput( ErrHead "ERR_Numeric" ); */
+      idet = j[0];
+      if (fabs(idet) < eps) {
+        det = 0.0;
+      } else {
+        det = 1.0 / idet;
+      }
       jI[0] = 1.0 * det;
       break;
     case 2:
-      det = 1.0 / (j[0] * j[3] - j[1] * j[2]);
-/*        if (fabs(det) <= MachEps) errput( ErrHead "ERR_Numeric" ); */
+      idet = j[0] * j[3] - j[1] * j[2];
+      if (fabs(idet) < eps) {
+        det = 0.0;
+      } else {
+        det = 1.0 / idet;
+      }
       jI[0] = j[3] * det;
       jI[1] = -j[1] * det;
       jI[2] = -j[2] * det;
@@ -46,8 +55,12 @@ int32 geme_invert3x3( FMField *mtxI, FMField *mtx )
       jI[6] = (j[3]*j[7] - j[4]*j[6]);
       jI[7] = -(j[0]*j[7] - j[1]*j[6]);
       jI[8] = (j[0]*j[4] - j[1]*j[3]);
-      det = 1.0 / (j[0] * jI[0] + j[1] * jI[3] + j[2] * jI[6]);
-/*        if (fabs(det) <= MachEps) errput( ErrHead "ERR_Numeric" ); */
+      idet = j[0] * jI[0] + j[1] * jI[3] + j[2] * jI[6];
+      if (fabs(idet) < eps) {
+        det = 0.0;
+      } else {
+        det = 1.0 / idet;
+      }
       jI[0] *= det; jI[1] *= det; jI[2] *= det;
       jI[3] *= det; jI[4] *= det; jI[5] *= det;
       jI[6] *= det; jI[7] *= det; jI[8] *= det;
@@ -106,7 +119,7 @@ int32 geme_invert4x4( FMField *mtxI, FMField *mtx )
       + pm[4]*pm[2]*pm[9] + pm[8]*pm[1]*pm[6] - pm[8]*pm[2]*pm[5];
 
     det = pm[0]*buf[0] + pm[1]*buf[4] + pm[2]*buf[8] + pm[3]*buf[12];
-    if (fabs(det) == 1e-16) {
+    if (fabs(det) < 1e-15) {
       errput("singular matrix!\n");
     }
     det = 1.0 / det;
@@ -130,7 +143,7 @@ int32 geme_tensor2vectorS3( FMField *vec, FMField *mtx )
 {
   int32 il, dim;
   float64 *pmtx, *pvec;
-  
+
   dim = mtx->nRow;
   for (il = 0; il < mtx->nLev; il++) {
     pvec = FMF_PtrLevel( vec, il );
@@ -348,7 +361,7 @@ int32 geme_eig3x3( float64 *out, FMField *mtx )
 
       a = -(j[0] + j[4] + j[8]);
       b = j[0] * j[4] + j[0] * j[8] + j[4] * j[8]
-	- j[3] * j[1] - j[6] * j[2] - j[7] * j[5]; 
+	- j[3] * j[1] - j[6] * j[2] - j[7] * j[5];
       c = j[0] * j[5] * j[7] + j[4] * j[6] * j[2] + j[8] * j[1] * j[3]
 	- j[6] * j[1] * j[5] - j[0] * j[4] * j[8] - j[3] * j[2] * j[7];
 
