@@ -68,7 +68,7 @@ def run_test(conf_name, options):
         if e.errno != 17: # [Errno 17] File exists
             raise
 
-    if options.filter_none or options.debug:
+    if options.filter_none or options.raise_on_error:
         of = None
     elif options.filter_less:
         of = OutputFilter(['<<<', '>>>', '...', '!!!', '+++', '---'])
@@ -95,21 +95,21 @@ def run_test(conf_name, options):
         sys.exit(0)
     except:
         print('--- test instance creation failed')
-        if options.debug:
+        if options.raise_on_error:
             raise
         ok, n_fail, n_total = False, num, num
 
     if ok:
         try:
             tt = time.clock()
-            ok, n_fail, n_total = test.run(options.debug)
+            ok, n_fail, n_total = test.run(options.raise_on_error)
             test_time = time.clock() - tt
         except KeyboardInterrupt:
             print('>>> interrupted')
             sys.exit(0)
         except Exception as e:
             print('>>> %s' % e.__class__)
-            if options.debug:
+            if options.raise_on_error:
                 raise
             ok, n_fail, n_total = False, num, num
 
@@ -154,7 +154,7 @@ help = {
     'dir' : 'directory with tests [default: %(default)s]',
     'out_dir' : 'directory for storing test results and temporary files'
     ' [default: %(default)s]',
-    'debug' : 'raise silenced exceptions to see what was wrong',
+    'raise_on_error' : 'raise silenced exceptions to see what was wrong',
     'filter-none' : 'do not filter any messages',
     'filter-less' : 'filter output (suppress all except test messages)',
     'filter-more' : 'filter output (suppress all except test result messages)',
@@ -178,9 +178,9 @@ def main():
                         action="store", dest="out_dir",
                         default=get_dir('output-tests'),
                         help=help['out_dir'])
-    parser.add_argument("--debug",
-                        action="store_true", dest="debug",
-                        default=False, help=help['debug'])
+    parser.add_argument("--raise",
+                        action="store_true", dest="raise_on_error",
+                        default=False, help=help['raise_on_error'])
     parser.add_argument("--filter-none",
                         action="store_true", dest="filter_none",
                         default=False, help=help['filter-none'])
