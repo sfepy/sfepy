@@ -147,11 +147,15 @@ In the source directory type::
 
     python run_tests.py
 
-If a particular test fails, please run it in debug mode::
+If a particular test fails, please run it in the raise mode::
+
+    python run_tests.py --raise tests/failing_test_name.py
+
+and report the output to the `SfePy mailing list`_. It is also possible to
+automatically start a debugger when/if an exception is raised by running a
+test in the debug mode::
 
     python run_tests.py --debug tests/failing_test_name.py
-
-and report the output to the `SfePy mailing list`_.
 
 On a Linux-based system, the script can be executed directly by::
 
