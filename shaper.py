@@ -284,6 +284,8 @@ def solve_optimize( conf, options ):
     print(des)
 
 help = {
+    'debug':
+    'automatically start debugger when an exception is raised',
     'server_mode' :
     "run in server mode [default: %(default)s], N/A",
     'adjoint' :
@@ -308,6 +310,9 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--version", action="version",
                         version = "%(prog)s " + sfepy.__version__)
+    parser.add_argument('--debug',
+                        action='store_true', dest='debug',
+                        default=False, help=help['debug'])
     parser.add_argument("-s", "--server",
                         action = "store_true", dest = "server_mode",
                         default = False, help = help['server_mode'])
@@ -330,8 +335,10 @@ def main():
                         action = "store_true", dest = "optimize",
                         default = False, help = help['optimize'])
     parser.add_argument('filename_in')
-    
     options = parser.parse_args()
+
+    if options.debug:
+        from sfepy.base.base import debug_on_error; debug_on_error()
 
     if options.test is not None:
         options.adjoint = options.direct = True

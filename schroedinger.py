@@ -27,6 +27,8 @@ def fix_path(filename):
     return os.path.join(sfepy.data_dir, filename)
 
 help = {
+    'debug':
+    'automatically start debugger when an exception is raised',
     'conf' :
     'override problem description file items, written as python'
     ' dictionary without surrounding braces',
@@ -55,6 +57,9 @@ def main():
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('--debug',
+                        action='store_true', dest='debug',
+                        default=False, help=help['debug'])
     parser.add_argument('-c', '--conf', metavar='"key : value, ..."',
                         action='store', dest='conf', type=str,
                         default=None, help= help['conf'])
@@ -85,6 +90,9 @@ def main():
                         default=None, help=help['tau'])
     parser.add_argument('filename_in', nargs='?')
     options = parser.parse_args()
+
+    if options.debug:
+        from sfepy.base.base import debug_on_error; debug_on_error()
 
     filename_in = options.filename_in
 

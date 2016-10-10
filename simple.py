@@ -32,6 +32,8 @@ def print_solvers():
     print(sorted(solver_table.keys()))
 
 help = {
+    'debug':
+    'automatically start debugger when an exception is raised',
     'conf' :
     'override problem description file items, written as python'
     ' dictionary without surrounding braces',
@@ -77,6 +79,9 @@ def main():
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('--debug',
+                        action='store_true', dest='debug',
+                        default=False, help=help['debug'])
     parser.add_argument('-c', '--conf', metavar='"key : value, ..."',
                         action='store', dest='conf', type=str,
                         default=None, help= help['conf'])
@@ -137,6 +142,9 @@ def main():
             print_solvers()
 
         return
+
+    if options.debug:
+        from sfepy.base.base import debug_on_error; debug_on_error()
 
     filename_in = options.filename_in
     output.set_output(filename=options.log,

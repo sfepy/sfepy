@@ -10,6 +10,8 @@ from sfepy.homogenization.band_gaps_app import AcousticBandGapsApp
 from sfepy.base.plotutils import plt
 
 help = {
+    'debug':
+    'automatically start debugger when an exception is raised',
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'detect_band_gaps' :
@@ -26,6 +28,9 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--version", action="version",
                         version="%(prog)s " + sfepy.__version__)
+    parser.add_argument('--debug',
+                        action='store_true', dest='debug',
+                        default=False, help=help['debug'])
     parser.add_argument("-o", metavar='filename',
                         action="store", dest="output_filename_trunk",
                         default=None, help=help['filename'])
@@ -42,8 +47,11 @@ def main():
                         action="store_true", dest="phase_velocity",
                         default=False, help=help['phase_velocity'])
     parser.add_argument("filename_in")
-    
     options = parser.parse_args()
+
+    if options.debug:
+        from sfepy.base.base import debug_on_error; debug_on_error()
+
     if options.plot:
         if plt is None:
             output('matplotlib.pyplot cannot be imported, ignoring option -p!')

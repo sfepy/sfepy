@@ -56,6 +56,8 @@ from sfepy.postprocess.domain_specific import DomainSpecificPlot
 import six
 
 help = {
+    'debug':
+    'automatically start debugger when an exception is raised',
     'filename' :
     'view image file name [default: "view.png"]',
     'output_dir' :
@@ -289,6 +291,9 @@ def main():
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('--debug',
+                        action='store_true', dest='debug',
+                        default=False, help=help['debug'])
 
     group = parser.add_argument_group('Output Options')
     group.add_argument('-o', '--output', metavar='filename',
@@ -413,6 +418,9 @@ def main():
 
     parser.add_argument('filenames', nargs='+')
     options = parser.parse_args()
+
+    if options.debug:
+        from sfepy.base.base import debug_on_error; debug_on_error()
 
     filenames = options.filenames
 

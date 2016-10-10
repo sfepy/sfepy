@@ -51,6 +51,8 @@ def parse_linearization(linearization):
     return dict_to_struct(out)
 
 help = {
+    'debug':
+    'automatically start debugger when an exception is raised',
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'dump' :
@@ -82,6 +84,9 @@ def main():
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + sfepy.__version__)
+    parser.add_argument('--debug',
+                        action='store_true', dest='debug',
+                        default=False, help=help['debug'])
     parser.add_argument('-o', metavar='filename',
                         action='store', dest='output_filename_trunk',
                         default=None, help=help['filename'])
@@ -111,6 +116,9 @@ def main():
     parser.add_argument('input_file', nargs='?', default=None)
     parser.add_argument('results_file')
     options = parser.parse_args()
+
+    if options.debug:
+        from sfepy.base.base import debug_on_error; debug_on_error()
 
     filename_in = options.input_file
     filename_results = options.results_file
