@@ -615,7 +615,8 @@ class LCBCOperators(Container):
 
         def _dict_to_di(name, dd):
             di = DofInfo(name)
-            for key, val in six.iteritems(dd):
+            for key in keys:
+                val = dd[key]
                 di.append_raw(key, val)
             return di
 
