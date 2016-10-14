@@ -15,7 +15,7 @@ class FESurface(Struct):
         face_indices = region.get_facet_indices()
 
         faces = efaces[face_indices[:,1]]
-        if faces.size == 0:
+        if faces.size == 0 and not region.is_empty:
             raise ValueError('region with no faces! (%s)' % region.name)
 
         if volume_region is None:
@@ -36,8 +36,12 @@ class FESurface(Struct):
             econn[ir] = ee[ir,face]
 
         nodes = nm.unique(econn)
-        remap = prepare_remap(nodes, nodes.max() + 1)
-        leconn = remap[econn].copy()
+        if len(nodes):
+            remap = prepare_remap(nodes, nodes.max() + 1)
+            leconn = remap[econn].copy()
+
+        else:
+            leconn = econn.copy()
 
         n_fa, n_fp = face_indices.shape[0], faces.shape[1]
         face_type = 's%d' % n_fp

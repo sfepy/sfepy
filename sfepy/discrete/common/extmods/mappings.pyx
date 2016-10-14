@@ -82,12 +82,15 @@ cdef class CMapping:
         cdef float64 *_coors = &coors[0, 0]
         cdef int32 n_nod = coors.shape[0]
         cdef int32 dim = coors.shape[1]
-        cdef int32 *_conn = &conn[0, 0]
+        cdef int32 *_conn = <int32 *> 0
         cdef int32 n_el = conn.shape[0]
         cdef int32 n_ep = conn.shape[1]
 
         if ebfgr is None:
             ebfgr = np.array([0], ndmin=4, dtype=np.float64)
+
+        if n_el > 0:
+            _conn = &conn[0, 0]
 
         array2fmfield3(_bfgr, bfgr)
         array2fmfield4(_ebfgr, ebfgr)
