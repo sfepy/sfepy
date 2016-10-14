@@ -1611,7 +1611,7 @@ class FieldVariable(Variable):
         if is_trace:
             region = region.get_mirror_region()
 
-        if region is not field.region:
+        if (region is not field.region) and not region.is_empty:
             assert_(field.region.contains(region))
 
         if integral is None:
