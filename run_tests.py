@@ -62,13 +62,11 @@ class OutputFilter(object):
         self.stdout = None
 
 def run_test(conf_name, options):
-    try:
-        os.makedirs(options.out_dir)
-    except OSError as e:
-        if e.errno != 17: # [Errno 17] File exists
-            raise
+    from sfepy.base.ioutils import ensure_path
 
-    if options.filter_none or options.debug:
+    ensure_path(op.join(options.out_dir, 'any'))
+
+    if options.filter_none or options.raise_on_error:
         of = None
     elif options.filter_less:
         of = OutputFilter(['<<<', '>>>', '...', '!!!', '+++', '---'])
@@ -95,21 +93,21 @@ def run_test(conf_name, options):
         sys.exit(0)
     except:
         print('--- test instance creation failed')
-        if options.debug:
+        if options.raise_on_error:
             raise
         ok, n_fail, n_total = False, num, num
 
     if ok:
         try:
             tt = time.clock()
-            ok, n_fail, n_total = test.run(options.debug)
+            ok, n_fail, n_total = test.run(options.raise_on_error)
             test_time = time.clock() - tt
         except KeyboardInterrupt:
             print('>>> interrupted')
             sys.exit(0)
         except Exception as e:
             print('>>> %s' % e.__class__)
-            if options.debug:
+            if options.raise_on_error:
                 raise
             ok, n_fail, n_total = False, num, num
 
@@ -154,7 +152,9 @@ help = {
     'dir' : 'directory with tests [default: %(default)s]',
     'out_dir' : 'directory for storing test results and temporary files'
     ' [default: %(default)s]',
-    'debug' : 'raise silenced exceptions to see what was wrong',
+    'raise_on_error' : 'raise silenced exceptions to see what was wrong',
+    'debug':
+    'automatically start debugger when an exception is raised',
     'filter-none' : 'do not filter any messages',
     'filter-less' : 'filter output (suppress all except test messages)',
     'filter-more' : 'filter output (suppress all except test result messages)',
@@ -178,6 +178,9 @@ def main():
                         action="store", dest="out_dir",
                         default=get_dir('output-tests'),
                         help=help['out_dir'])
+    parser.add_argument("--raise",
+                        action="store_true", dest="raise_on_error",
+                        default=False, help=help['raise_on_error'])
     parser.add_argument("--debug",
                         action="store_true", dest="debug",
                         default=False, help=help['debug'])
@@ -197,6 +200,10 @@ def main():
     if options.print_doc:
         print(__doc__)
         return
+
+    if options.debug:
+        options.raise_on_error = True
+        from sfepy.base.base import debug_on_error; debug_on_error()
 
     run_tests = wrap_run_tests(options)
     stats = [0, 0, 0, 0.0]

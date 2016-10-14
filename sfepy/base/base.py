@@ -96,6 +96,33 @@ def get_debug():
 
 debug = get_debug()
 
+def debug_on_error():
+    """
+    Start debugger at the line where an exception was raised.
+    """
+    try:
+        from IPython.core import ultratb
+
+        except_hook = ultratb.FormattedTB(mode='Verbose',
+                                          color_scheme='Linux', call_pdb=1)
+
+    except ImportError:
+        def except_hook(etype, value, tb):
+            if hasattr(sys, 'ps1') or not sys.stderr.isatty():
+                # We are in interactive mode or we don't have a tty-like
+                # device, so we call the default hook.
+                sys.__excepthook__(etype, value, tb)
+
+            else:
+                import traceback, pdb
+                # We are NOT in interactive mode, print the exception...
+                traceback.print_exception(etype, value, tb)
+                print()
+                # ...then start the debugger in post-mortem mode.
+                pdb.post_mortem(tb)
+
+    sys.excepthook = except_hook
+
 def mark_time(times, msg=None):
     """
     Time measurement utility.

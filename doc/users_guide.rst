@@ -113,26 +113,11 @@ Stand-Alone Examples
 Running Tests
 ^^^^^^^^^^^^^
 
-The tests are run by the ``run_tests.py`` script::
+The tests are run by the ``run_tests.py`` script. Run
 
     $ ./run_tests.py -h
-    Usage: run_tests.py [options] [test_filename[ test_filename ...]]
 
-    Options:
-      --version             show program's version number and exit
-      -h, --help            show this help message and exit
-      --print-doc           print the docstring of this file (howto write new
-                            tests)
-      -d directory, --dir=directory
-                            directory with tests [default: tests]
-      -o directory, --output=directory
-                            directory for storing test results and temporary files
-                            [default: output-tests]
-      --debug               raise silenced exceptions to see what was wrong
-      --filter-none         do not filter any messages
-      --filter-less         filter output (suppress all except test messages)
-      --filter-more         filter output (suppress all except test result
-                            messages)
+to get help.
 
 Common Tasks
 """"""""""""
@@ -149,9 +134,14 @@ Common Tasks
     # Test if linear elasticity input file works.
     ./run_tests.py tests/test_input_le.py
 
-* Debug a failing test::
+* Debug a failing test by automatically starting a debugger when/if an
+  exception is raised ::
 
     ./run_tests.py tests/test_input_le.py --debug
+
+* Raise silenced exceptions that could have occurred in a failing test::
+
+    ./run_tests.py tests/test_input_le.py --raise
 
 Computations and Examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^
