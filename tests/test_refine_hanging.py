@@ -223,3 +223,69 @@ class Test(TestCommon):
                         mesh.write(filenames[1], out=out)
 
         return ok
+
+    def test_preserve_coarse_entities(self):
+        from sfepy.mesh.mesh_generators import gen_block_mesh
+        from sfepy.discrete.fem import FEDomain
+        import sfepy.discrete.fem.refine_hanging as rh
+
+        dims = [1.5, 2.0]
+        shape = [11, 11]
+        centre = [0.0, 0.0]
+
+        mesh0 = gen_block_mesh(dims, shape, centre, name='block')
+        domain0 = FEDomain('d', mesh0)
+        reg = domain0.create_region('surface', 'vertices of surface', 'facet',
+                                    add_to_regions=False)
+        cmesh0 = mesh0.cmesh
+
+        cmesh0.vertex_groups[5::11] = 2
+        cmesh0.vertex_groups[reg.vertices] = 1
+        cmesh0.cell_groups[0] = 1
+        cmesh0.cell_groups[50:60] = 2
+        mesh0.write(op.join(self.options.out_dir,
+                            'test_refine_hanging_ids0.vtk'), io='auto')
+
+        refine = nm.zeros(mesh0.n_el, dtype=nm.uint8)
+        refine[0:10] = 1
+        refine[5::10] = 1
+
+        domain, _, sub_cells = rh.refine(domain0, refine, subs=None,
+                                         ret_sub_cells=True)
+        domain.mesh.write(op.join(self.options.out_dir,
+                                  'test_refine_hanging_ids1.vtk'), io='auto')
+        cmesh1 = domain.mesh.cmesh
+
+        ii = nm.where(refine == 0)[0]
+        conn0 = mesh0.get_conn('2_4')
+        v0 = conn0[ii]
+
+        conn1 = domain.mesh.get_conn('2_4')
+        v1 = conn1[ii]
+
+        ok = (v0 == v1).all()
+        self.report('coarse cells positions preserved:', ok)
+
+        cgs0 = cmesh0.cell_groups[ii]
+        cgs1 = cmesh1.cell_groups[ii]
+
+        _ok = (cgs0 == cgs1).all()
+        self.report('coarse cells cell groups preserved:', _ok)
+        ok = ok and _ok
+
+        vgs0 = cmesh0.vertex_groups[v0]
+        vgs1 = cmesh1.vertex_groups[v1]
+
+        _ok = (vgs0 == vgs1).all()
+        self.report('coarse cells vertex groups preserved:', _ok)
+        ok = ok and _ok
+
+        ii = nm.where(refine == 1)[0]
+        cgs0 = cmesh0.cell_groups[ii]
+        cgs1 = cmesh1.cell_groups[sub_cells[:, 1:]]
+
+        _ok = (cgs0[:, None] == cgs1).all()
+        self.report('refined cells cell groups preserved:', _ok)
+        ok = ok and _ok
+
+        return ok
