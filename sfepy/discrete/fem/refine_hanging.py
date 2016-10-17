@@ -200,6 +200,9 @@ def refine_region(domain0, region0, region1):
 
     The new fine cells are interleaved among the original coarse cells so that
     the indices of the coarse cells do not change.
+
+    The cell groups are preserved. The vertex groups are preserved only in the
+    coarse (non-refined) cells.
     """
     if region1 is None:
         return domain0, None
@@ -221,6 +224,9 @@ def refine_region(domain0, region0, region1):
 
     coors0, vgs0, conns0, mat_ids0, descs0 = mesh0._get_io_data()
     coors, vgs, _conns, _mat_ids, descs = mesh1r._get_io_data()
+
+    # Preserve vertex groups of non-refined cells.
+    vgs[:len(vgs0)] = vgs0
 
     def _interleave_refined(c0, c1):
         if c1.ndim == 1:
