@@ -280,7 +280,7 @@ def find_facet_substitutions(facets, cells, sub_cells, refine_facets):
     subs = nm.array(subs)
     return subs
 
-def refine(domain0, refine, subs=None):
+def refine(domain0, refine, subs=None, ret_sub_cells=False):
     desc = domain0.mesh.descs[0]
     assert_(desc in ['2_4', '3_8'])
 
@@ -332,4 +332,8 @@ def refine(domain0, refine, subs=None):
 
         if subs == (None, None): subs = None
 
-    return domain, subs
+    out = (domain, subs)
+    if ret_sub_cells:
+        out += (sub_cells,)
+
+    return out
