@@ -36,6 +36,8 @@ conditions can be applied on the inlet, see the code below.
 The mesh is created by ``gen_block_mesh()`` function - try different mesh
 dimensions and resolutions below. For large meshes use the ``'ls_i'`` linear
 solver - PETSc + petsc4py is needed in that case.
+
+See also :ref:`navier_stokes-stokes_slip_bc_penalty`.
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -105,7 +107,7 @@ variables = {
     'q' : ('test field',    'pressure', 'p'),
 }
 
-# Try setting the inlet velocity by un-commenting the ebcs.
+# Try setting the inlet velocity by un-commenting the 'inlet' ebcs.
 ebcs = {
     ## 'inlet' : ('Inlet_f', {'u.0' : 1.0, 'u.[1, 2]' : 0.0}),
 }
@@ -140,14 +142,15 @@ equations = {
 
 solvers = {
     'ls_d' : ('ls.scipy_direct', {}),
-    ## 'ls_i' : ('ls.petsc', {
-    ##     'method' : 'bcgsl', # ksp_type
-    ##     'precond' : 'ilu', # pc_type
-    ##     'eps_a' : 0.0, # abstol
-    ##     'eps_r' : 1e-12, # rtol
-    ##     'eps_d' : 1e10, # Divergence tolerance.
-    ##     'i_max' : 2500, # maxits
-    ## }),
+    'ls_i' : ('ls.petsc', {
+        'method' : 'bcgsl', # ksp_type
+        'precond' : 'bjacobi', # pc_type
+        'sub_precond' : 'ilu', # sub_pc_type
+        'eps_a' : 0.0, # abstol
+        'eps_r' : 1e-12, # rtol
+        'eps_d' : 1e10, # Divergence tolerance.
+        'i_max' : 2500, # maxits
+    }),
     'newton' : ('nls.newton', {
         'i_max' : 1,
         'eps_a'      : 1e-10,
