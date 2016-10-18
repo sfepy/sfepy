@@ -2,9 +2,8 @@ r"""
 Incompressible Stokes flow with Navier (slip) boundary conditions, flow driven
 by a moving wall and a small diffusion for stabilization.
 
-This example demonstrates the use of `no-penetration` boundary conditions as
-well as `edge direction` boundary conditions together with Navier or slip
-boundary conditions.
+This example demonstrates a weak application of `no-penetration` boundary
+conditions using the penalty term ``dw_non_penetration_p``.
 
 Find :math:`\ul{u}`, :math:`p` such that:
 
@@ -13,6 +12,8 @@ Find :math:`\ul{u}`, :math:`p` such that:
     - \int_{\Omega} p\ \nabla \cdot \ul{v}
     + \int_{\Gamma_1} \beta \ul{v} \cdot (\ul{u} - \ul{u}_d)
     + \int_{\Gamma_2} \beta \ul{v} \cdot \ul{u}
+    + \int_{\Gamma_1 \cup \Gamma_2} \epsilon (\ul{n} \cdot \ul{v})
+      (\ul{n} \cdot \ul{u})
     = 0
     \;, \quad \forall \ul{v} \;,
 
@@ -23,21 +24,21 @@ Find :math:`\ul{u}`, :math:`p` such that:
 
 where :math:`\nu` is the fluid viscosity, :math:`\beta` is the slip
 coefficient, :math:`\mu` is the (small) numerical diffusion coefficient,
+:math:`\epsilon` is the penalty coefficient (sufficiently large),
 :math:`\Gamma_1` is the top wall that moves with the given driving velocity
 :math:`\ul{u}_d` and :math:`\Gamma_2` are the remaining walls. The Navier
 conditions are in effect on both :math:`\Gamma_1`, :math:`\Gamma_2` and are
 expressed by the corresponding integrals in the equations above.
 
 The `no-penetration` boundary conditions are applied on :math:`\Gamma_1`,
-:math:`\Gamma_2`, except the vertices of the block edges, where the `edge
-direction` boundary conditions are applied. Optionally, Dirichlet boundary
-conditions can be applied on the inlet, see the code below.
+:math:`\Gamma_2`. Optionally, Dirichlet boundary conditions can be applied on
+the inlet, see the code below.
 
 The mesh is created by ``gen_block_mesh()`` function - try different mesh
 dimensions and resolutions below. For large meshes use the ``'ls_i'`` linear
 solver - PETSc + petsc4py is needed in that case.
 
-See also :ref:`navier_stokes-stokes_slip_bc_penalty`.
+See also :ref:`navier_stokes-stokes_slip_bc`.
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -69,14 +70,9 @@ filename_mesh = UserMeshIO(mesh_hook)
 regions = define_box_regions(3, 0.5 * dims)
 regions.update({
     'Omega' : 'all',
-    'Edges_v' : ("""(r.Near *v r.Bottom) +v
-                    (r.Bottom *v r.Far) +v
-                    (r.Far *v r.Top) +v
-                    (r.Top *v r.Near)""", 'edge'),
     'Gamma1_f' : ('copy r.Top', 'face'),
     'Gamma2_f' : ('r.Near +v r.Bottom +v r.Far', 'face'),
     'Gamma_f' : ('r.Gamma1_f +v r.Gamma2_f', 'face'),
-    'Gamma_v' : ('r.Gamma_f -v r.Edges_v', 'face'),
     'Inlet_f' : ('r.Left -v r.Gamma_f', 'face'),
 })
 
@@ -112,18 +108,12 @@ ebcs = {
     ## 'inlet' : ('Inlet_f', {'u.0' : 1.0, 'u.[1, 2]' : 0.0}),
 }
 
-lcbcs = {
-    'walls' : ('Gamma_v', {'u.all' : None}, None, 'no_penetration',
-               'normals_Gamma.vtk'),
-    'edges' : ('Edges_v', [(-0.5, 1.5)], {'u.all' : None}, None,
-               'edge_direction', 'edges_Edges.vtk'),
-}
-
 materials = {
     'm' : ({
         'nu' : 1e-3,
         'beta' : 1e-2,
         'mu' : 1e-10,
+        'np_eps' : 1e3,
     },),
 }
 
@@ -133,6 +123,8 @@ equations = {
      - dw_stokes.5.Omega(v, p)
      + dw_surface_dot.5.Gamma1_f(m.beta, v, u)
      + dw_surface_dot.5.Gamma2_f(m.beta, v, u)
+     + dw_non_penetration_p.5.Gamma1_f(m.np_eps, v, u)
+     + dw_non_penetration_p.5.Gamma2_f(m.np_eps, v, u)
      =
      + dw_surface_dot.5.Gamma1_f(m.beta, v, u_d)""",
     'incompressibility' :
@@ -149,7 +141,7 @@ solvers = {
         'eps_a' : 0.0, # abstol
         'eps_r' : 1e-12, # rtol
         'eps_d' : 1e10, # Divergence tolerance.
-        'i_max' : 2500, # maxits
+        'i_max' : 1000, # maxits
     }),
     'newton' : ('nls.newton', {
         'i_max' : 1,

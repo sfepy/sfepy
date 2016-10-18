@@ -101,3 +101,62 @@ class NonPenetrationTerm(Term):
             ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
 
         return val_qp, ebf, ssg.bf, mat, vsg, diff_var, self.mode
+
+class NonPenetrationPenaltyTerm(Term):
+    r"""
+    Non-penetration condition in the weak sense using a penalty.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} c (\ul{n} \cdot \ul{v}) (\ul{n} \cdot \ul{u})
+
+    :Arguments:
+        - material : :math:`c`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_non_penetration_p'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    integration = 'surface'
+
+    @staticmethod
+    def function(out, val_qp, ebf, mat, sg, diff_var):
+        normals = sg.normal
+        n_fa = out.shape[0]
+
+        ebf_t = nm.tile(ebf.transpose((0, 1, 3, 2)), (n_fa, 1, 1, 1))
+
+        if diff_var is None:
+            nu = dot_sequences(normals, val_qp, 'ATB')
+            nt = dot_sequences(ebf_t, normals)
+            entnu = mat * nt * nu
+            status = sg.integrate(out, entnu, 0)
+
+        else:
+            nt = dot_sequences(ebf_t, normals)
+            entn = mat * dot_sequences(nt, nt, 'ABT')
+            status = sg.integrate(out, entn, 0)
+
+        return status
+
+    def get_fargs(self, mat, vvar, svar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if diff_var is None:
+            val_qp = self.get(svar, 'val')
+
+        else:
+            val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
+
+        sg, _ = self.get_mapping(vvar)
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(vvar)
+
+        # Expand basis for all dofs.
+        bf = sg.bf
+        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
+        for ir in range(dim):
+            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+
+        return val_qp, ebf, mat, sg, diff_var
