@@ -26,4 +26,4 @@ web access (fork the repository there if you wish to help):
 
 latest snapshot:
 
-   http://github.com/sfepy/sfepy/archives/master
+   https://github.com/sfepy/sfepy/archive/master.zip
