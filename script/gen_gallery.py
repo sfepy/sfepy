@@ -219,6 +219,15 @@ custom = {
             'rel_scaling' : 0.1,
         },
     },
+    'navier_stokes/stokes_slip_bc_penalty.py' : {
+        '' : {
+            'view' : (-63, 52, 5.2, [-1.5, -0.65, 0.12]),
+            'roll' : -32,
+            'resolution' : (800, 600),
+            'layout' : 'col',
+            'rel_scaling' : 0.1,
+        },
+    },
     'multi_physics/thermo_elasticity_ess.py' : {
         '' : {
             'is_wireframe' : True,
