@@ -210,7 +210,7 @@ class Domain(Struct):
 
         return region
 
-    def create_regions(self, region_defs, functions=None):
+    def create_regions(self, region_defs, functions=None, allow_empty=False):
         output('creating regions...')
         tt = time.clock()
 
@@ -231,7 +231,8 @@ class Domain(Struct):
                                         kind=rdef.get('kind', 'cell'),
                                         parent=rdef.get('parent', None),
                                         check_parents=False,
-                                        functions=functions)
+                                        functions=functions,
+                                        allow_empty=allow_empty)
             output(' ', region.name)
 
         output('...done in %.2f s' % (time.clock() - tt))
