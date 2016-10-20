@@ -5,6 +5,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import Struct, invert_dict, get_default, output, assert_
 from .meshio import MeshIO, supported_cell_types
+import six
 from six.moves import range
 
 def find_map(x1, x2, eps=1e-8, allow_double=False, join=True):
@@ -253,6 +254,19 @@ class Mesh(Struct):
                                         localize=localize)
 
         mesh = Mesh(mesh_in.name + "_reg", cmesh=cmesh)
+
+        if localize:
+            remap = nm.empty(mesh_in.cmesh.n_coor, dtype=nm.int32)
+            remap[:] = -1
+            remap[region.vertices] = nm.arange(region.vertices.shape[0])
+
+            mesh.nodal_bcs = {}
+            for key, val in six.iteritems(mesh_in.nodal_bcs):
+                new_val = remap[val]
+                mesh.nodal_bcs[key] = new_val[new_val >= 0]
+
+        else:
+            mesh.nodal_bcs = mesh_in.nodal_bcs.copy()
 
         return mesh
 
