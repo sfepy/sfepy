@@ -243,7 +243,7 @@ def read_list(fd, n_item, dtype):
 def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
 
     if level == 0:
-        fd = pt.openFile(filename, mode='w', title='Recursive dict dump')
+        fd = pt.open_file(filename, mode='w', title='Recursive dict dump')
         group = '/'
 
     for key, val in six.iteritems(adict):
@@ -264,7 +264,7 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
     out = {}
 
     if level == 0:
-        fd = pt.openFile(filename, mode='r')
+        fd = pt.open_file(filename, mode='r')
         group = fd.root
 
     for name, gr in six.iteritems(group._v_groups):
@@ -288,7 +288,7 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
 # 02.07.2007, c
 def write_sparse_matrix_hdf5(filename, mtx, name='a sparse matrix'):
     """Assume CSR/CSC."""
-    fd = pt.openFile(filename, mode='w', title=name)
+    fd = pt.open_file(filename, mode='w', title=name)
     try:
         info = fd.createGroup('/', 'info')
         fd.createArray(info, 'dtype', enc(mtx.dtype.str))
@@ -314,7 +314,7 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
     import scipy.sparse as sp
     constructors = {'csr' : sp.csr_matrix, 'csc' : sp.csc_matrix}
 
-    fd = pt.openFile(filename, mode='r')
+    fd = pt.open_file(filename, mode='r')
     info = fd.root.info
     data = fd.root.data
 
