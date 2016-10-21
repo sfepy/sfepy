@@ -443,13 +443,20 @@ class Region(Struct):
 
         cmesh = self.domain.cmesh
         if idim <= dim:
-            if not allow_lower:
+            if not (allow_lower or allow_empty):
                 msg = 'setup_from_highest() can be used only with dim < %d'
                 raise ValueError(msg % idim)
 
-            cmesh.setup_connectivity(dim, idim)
-            ents = self.get_entities(idim)
-            self.entities[dim] = cmesh.get_complete(dim, ents, idim)
+            if allow_lower:
+                cmesh.setup_connectivity(dim, idim)
+                ents = self.get_entities(idim)
+                self.entities[dim] = cmesh.get_complete(dim, ents, idim)
+
+            else:
+                for idim in range(self.kind_tdim - 1, -1, -1):
+                    self.entities[idim] = nm.empty(0, dtype=nm.uint32)
+
+                self.is_empty = True
 
         else:
             cmesh.setup_connectivity(idim, dim)
