@@ -15,7 +15,7 @@ def write_iga_data(filename, knots, degrees, control_points, weights, cs, conn,
     if isinstance(degrees, int): degrees = [degrees]
     degrees = nm.asarray(degrees)
 
-    fd = pt.openFile(filename, mode='w', title='SfePy IGA data file')
+    fd = pt.open_file(filename, mode='w', title='SfePy IGA data file')
 
     nurbs = fd.createGroup('/', 'nurbs', 'nurbs')
 
@@ -50,7 +50,7 @@ def read_iga_data(filename):
     """
     Read IGA-related data from a HDF5 file using pytables.
     """
-    fd = pt.openFile(filename, mode='r')
+    fd = pt.open_file(filename, mode='r')
 
     nurbs = fd.root.nurbs
 
