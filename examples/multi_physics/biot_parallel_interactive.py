@@ -45,6 +45,7 @@ Notes
   problem - just replace the equations in :func:`create_local_problem()`.
 - The material parameter :math:`\alpha_{ij}` is artificially high to be able to
   see the pressure influence on displacements.
+- The command line options are saved into <output_dir>/options.txt file.
 
 Usage Examples
 --------------
@@ -89,13 +90,11 @@ from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import time
-import glob
-from itertools import chain
 
 import numpy as nm
 
 from sfepy.base.base import output, Struct
-from sfepy.base.ioutils import ensure_path
+from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
@@ -224,10 +223,13 @@ def solve_problem(mesh_filename, options, comm):
     output('distributing fields...')
     tt = time.clock()
 
-    lfds, gfds = pl.distribute_fields_dofs(fields, cell_tasks,
-                                           is_overlap=True,
-                                           use_expand_dofs=True,
-                                           comm=comm, verbose=True)
+    distribute = pl.distribute_fields_dofs
+    lfds, gfds = distribute(fields, cell_tasks,
+                            is_overlap=True,
+                            use_expand_dofs=True,
+                            save_inter_regions=options.save_inter_regions,
+                            output_dir=options.output_dir,
+                            comm=comm, verbose=True)
 
     output('...done in', time.clock() - tt)
 
@@ -380,6 +382,8 @@ helps = {
     ' [default: %(default)s]',
     'metis' :
     'use metis for domain partitioning',
+    'save_inter_regions' :
+    'save inter-task regions for debugging partitioning problems',
     'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory'
@@ -414,6 +418,9 @@ def main():
     parser.add_argument('--metis',
                         action='store_true', dest='metis',
                         default=False, help=helps['metis'])
+    parser.add_argument('--save-inter-regions',
+                        action='store_true', dest='save_inter_regions',
+                        default=False, help=helps['save_inter_regions'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -442,11 +449,14 @@ def main():
         from sfepy.mesh.mesh_generators import gen_block_mesh
 
         if options.clear:
-            for _f in chain(*[glob.glob(os.path.join(output_dir, clean_pattern))
-                              for clean_pattern
-                              in ['*.h5', '*.txt', '*.png']]):
-                output('removing "%s"' % _f)
-                os.remove(_f)
+            remove_files_patterns(output_dir,
+                                  ['*.h5', '*.mesh', '*.txt'],
+                                  ignores=['output_log_%02d.txt' % ii
+                                           for ii in range(comm.size)],
+                                  verbose=True)
+
+        save_options(os.path.join(output_dir, 'options.txt'),
+                     [('options', vars(options))])
 
         dim = 2 if options.is_2d else 3
         dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]

@@ -1,11 +1,13 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import numpy as nm
+import sys
 import os
 import os.path as op
 import fnmatch
 import shutil
-from .base import output, Struct, basestr
+import glob
+from .base import output, ordered_iteritems, Struct, basestr
 import six
 try:
     import tables as pt
@@ -67,6 +69,47 @@ def remove_files(root_dir, **kwargs):
 
         for dirname in dirnames:
             shutil.rmtree(os.path.join(root_dir, dirname))
+
+def remove_files_patterns(root_dir, patterns, ignores=None,
+                          verbose=False):
+    """
+    Remove files with names satisfying the given glob patterns in a supplied
+    root directory. Files with patterns in `ignores` are omitted.
+    """
+    from itertools import chain
+
+    if ignores is None: ignores = []
+    for _f in chain(*[glob.glob(os.path.join(root_dir, pattern))
+                      for pattern in patterns]):
+        can_remove = True
+        for ignore in ignores:
+            if fnmatch.fnmatch(_f, os.path.join(root_dir, ignore)):
+                can_remove = False
+                break
+
+        if can_remove:
+            output('removing "%s"' % _f, verbose=verbose)
+            os.remove(_f)
+
+def save_options(filename, options_groups, save_command_line=True):
+    """
+    Save groups of options/parameters into a file.
+
+    Each option group has to be a sequence with two items: the group name and
+    the options in ``{key : value}`` form.
+    """
+    with open(filename, 'w') as fd:
+        if save_command_line:
+            fd.write('command line\n')
+            fd.write('------------\n\n')
+            fd.write(' '.join(sys.argv) + '\n')
+
+        for options_group in options_groups:
+            name, options = options_group
+            fd.write('\n%s\n' % name)
+            fd.write(('-' * len(name)) + '\n\n')
+            for key, val in ordered_iteritems(options):
+                fd.write('%s: %s\n' % (key, val))
 
 def enc(string, encoding='utf-8'):
     """
