@@ -5,6 +5,7 @@ import os
 import os.path as op
 import fnmatch
 import shutil
+import glob
 from .base import output, Struct, basestr
 import six
 try:
@@ -67,6 +68,27 @@ def remove_files(root_dir, **kwargs):
 
         for dirname in dirnames:
             shutil.rmtree(os.path.join(root_dir, dirname))
+
+def remove_files_patterns(root_dir, patterns, ignores=None,
+                          verbose=False):
+    """
+    Remove files with names satisfying the given glob patterns in a supplied
+    root directory. Files with patterns in `ignores` are omitted.
+    """
+    from itertools import chain
+
+    if ignores is None: ignores = []
+    for _f in chain(*[glob.glob(os.path.join(root_dir, pattern))
+                      for pattern in patterns]):
+        can_remove = True
+        for ignore in ignores:
+            if fnmatch.fnmatch(_f, os.path.join(root_dir, ignore)):
+                can_remove = False
+                break
+
+        if can_remove:
+            output('removing "%s"' % _f, verbose=verbose)
+            os.remove(_f)
 
 def enc(string, encoding='utf-8'):
     """
