@@ -3,6 +3,7 @@ Functions for a high-level PETSc-based parallelization.
 """
 from __future__ import absolute_import
 import time
+import os
 
 import numpy as nm
 
@@ -101,7 +102,8 @@ def get_inter_facets(domain, cell_tasks):
     return inter_facets
 
 def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
-                         use_expand_dofs=False):
+                         use_expand_dofs=False, save_inter_regions=False,
+                         output_dir=None):
     """
     For each task list its inner and interface DOFs of the given field and
     create PETSc numbering that is consecutive in each subdomain.
@@ -117,6 +119,11 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
     to each task can be assembled independently, see [1]. TODO: Some "corner"
     cells may be added even if not needed - filter them out by using the PETSc
     DOFs range.
+
+    When debugging domain partitioning problems, it is advisable to set
+    `save_inter_regions` to True to save the task interfaces as meshes as well
+    as vertex-based markers - to be used only with moderate problems and small
+    numbers of tasks.
 
     [1] J. Sistek and F. Cirak. Parallel iterative solution of the
     incompressible Navier-Stokes equations with application to rotating
@@ -167,6 +174,20 @@ def create_task_dof_maps(field, cell_tasks, inter_facets, is_overlap=True,
             region = Region.from_facets(facets, domain, name,
                                         parent=cregion.name)
             region.update_shape()
+
+            if save_inter_regions:
+                output_dir = output_dir if output_dir is not None else '.'
+                filename = os.path.join(output_dir, '%s.mesh' % name)
+
+                aux = domain.mesh.from_region(region, domain.mesh,
+                                              is_surface=True)
+                aux.write(filename, io='auto')
+
+                mask = nm.zeros((domain.mesh.n_nod, 1), dtype=nm.float64)
+                mask[region.vertices] = 1
+                out = {name : Struct(name=name, mode='vertex', data=mask)}
+                filename = os.path.join(output_dir, '%s.h5' % name)
+                domain.mesh.write(filename, out=out, io='auto')
 
             inter_dofs.append(_get_dofs_region(field, region))
 
@@ -409,7 +430,8 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
     return cells, petsc_dofs_range, petsc_dofs_conn, dof_maps, id_map
 
 def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
-                           use_expand_dofs=False, comm=None, verbose=False):
+                           use_expand_dofs=False, save_inter_regions=False,
+                           output_dir=None, comm=None, verbose=False):
     """
     Distribute the owned cells and DOFs of the given field to all tasks.
 
@@ -430,7 +452,9 @@ def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
         for field in fields:
             aux = create_task_dof_maps(field, cell_tasks, inter_facets,
                                        is_overlap=is_overlap,
-                                       use_expand_dofs=use_expand_dofs)
+                                       use_expand_dofs=use_expand_dofs,
+                                       save_inter_regions=save_inter_regions,
+                                       output_dir=output_dir)
             cell_parts = aux[2]
             n_cell_parts = [len(ii) for ii in cell_parts]
             output('numbers of cells in tasks (without overlaps):',
