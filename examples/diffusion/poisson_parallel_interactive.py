@@ -30,6 +30,7 @@ Notes
 - This example does not use a nonlinear solver.
 - This example can serve as a template for solving a linear single-field scalar
   problem - just replace the equations in :func:`create_local_problem()`.
+- The command line options are saved into <output_dir>/options.txt file.
 
 Usage Examples
 --------------
@@ -70,7 +71,7 @@ import numpy as nm
 import matplotlib.pyplot as plt
 
 from sfepy.base.base import output, Struct
-from sfepy.base.ioutils import ensure_path
+from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
@@ -202,9 +203,12 @@ def solve_problem(mesh_filename, options, comm):
     output('distributing field %s...' % field.name)
     tt = time.clock()
 
-    lfds, gfds = pl.distribute_fields_dofs([field], cell_tasks,
-                                             is_overlap=True, comm=comm,
-                                             verbose=True)
+    distribute = pl.distribute_fields_dofs
+    lfds, gfds = distribute([field], cell_tasks,
+                            is_overlap=True,
+                            save_inter_regions=options.save_inter_regions,
+                            output_dir=options.output_dir,
+                            comm=comm, verbose=True)
     lfd = lfds[0]
 
     output('...done in', time.clock() - tt)
@@ -371,6 +375,8 @@ helps = {
     ' for visualization',
     'plot' :
     'make partitioning plots',
+    'save_inter_regions' :
+    'save inter-task regions for debugging partitioning problems',
     'show' :
     'show partitioning plots (implies --plot)',
     'silent' : 'do not print messages to screen',
@@ -413,6 +419,9 @@ def main():
     parser.add_argument('--show',
                         action='store_true', dest='show',
                         default=False, help=helps['show'])
+    parser.add_argument('--save-inter-regions',
+                        action='store_true', dest='save_inter_regions',
+                        default=False, help=helps['save_inter_regions'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -444,11 +453,14 @@ def main():
         from sfepy.mesh.mesh_generators import gen_block_mesh
 
         if options.clear:
-            for _f in chain(*[glob.glob(os.path.join(output_dir, clean_pattern))
-                              for clean_pattern
-                              in ['*.h5', '*.txt', '*.png']]):
-                output('removing "%s"' % _f)
-                os.remove(_f)
+            remove_files_patterns(output_dir,
+                                  ['*.h5', '*.mesh', '*.txt', '*.png'],
+                                  ignores=['output_log_%02d.txt' % ii
+                                           for ii in range(comm.size)],
+                                  verbose=True)
+
+        save_options(os.path.join(output_dir, 'options.txt'),
+                     [('options', vars(options))])
 
         dim = 2 if options.is_2d else 3
         dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
