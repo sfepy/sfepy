@@ -214,6 +214,7 @@ def plot_velocity(source, ctp, bbox, position, family, kind, name,
                    seed_resolution=seed_resolution)
     streamline.update_streamlines = True
     streamline.seed.widget.enabled = widget_enabled
+    streamline.actor.actor.position = position
 
     for key, val in six.iteritems(kwargs):
         setattr(streamline.seed.widget, key, val)
