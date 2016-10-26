@@ -47,8 +47,14 @@ def main():
 
     parser = argparse.ArgumentParser(
         description='Simple wrapper for main SfePy commands.',
-        version='%(prog)s' + sfepy.__version__,
         usage='%(prog)s [command] [options]'
+    )
+
+    parser.add_argument(
+        '-v',
+        '--version',
+        action='version',
+        version='%(prog)s ' + sfepy.__version__
     )
 
     parser.add_argument(
