@@ -316,26 +316,27 @@ class SurfaceMomentTerm(Term):
         \int_{\Gamma} \ul{n} (\ul{x} - \ul{x}_0)
 
     :Arguments:
+        - material  : :math:`\ul{x}_0` (special)
         - parameter : any variable
-        - shift     : :math:`\ul{x}_0`
     """
     name = 'd_surface_moment'
-    arg_types = ('parameter', 'shift')
+    arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : '.: D', 'parameter' : 'N'}
     integration = 'surface'
 
     function = staticmethod(terms.di_surface_moment)
 
-    def get_fargs(self, parameter, shift,
+    def get_fargs(self, material, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(parameter)
 
         sd = parameter.field.surface_data[self.region.name]
         coor = parameter.field.get_coor() \
-               - nm.asarray(shift, dtype=nm.float64)[None,:]
+               - nm.asarray(material, dtype=nm.float64)[None,:]
 
         return coor, sg, sd.econn.copy()
 
-    def get_eval_shape(self, parameter, shift,
+    def get_eval_shape(self, material, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
 
