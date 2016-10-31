@@ -1218,7 +1218,7 @@ class HDF5MeshIO(MeshIO):
         _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
 
     def read_dimension(self, ret_fd=False):
-        fd = pt.openFile(self.filename, mode="r")
+        fd = pt.open_file(self.filename, mode="r")
 
         dim = fd.root.mesh.coors.shape[1]
 
@@ -1230,7 +1230,7 @@ class HDF5MeshIO(MeshIO):
             return dim
 
     def read_bounding_box(self, ret_fd=False, ret_dim=False):
-        fd = pt.openFile(self.filename, mode="r")
+        fd = pt.open_file(self.filename, mode="r")
 
         mesh_group = fd.root.mesh
 
@@ -1257,7 +1257,7 @@ class HDF5MeshIO(MeshIO):
                 return bbox
 
     def read(self, mesh, **kwargs):
-        fd = pt.openFile(self.filename, mode="r")
+        fd = pt.open_file(self.filename, mode="r")
 
         mesh_group = fd.root.mesh
 
@@ -1305,7 +1305,7 @@ class HDF5MeshIO(MeshIO):
         step = get_default_attr(ts, 'step', 0)
         if step == 0:
             # A new file.
-            fd = pt.openFile(filename, mode="w",
+            fd = pt.open_file(filename, mode="w",
                              title="SfePy output file")
 
             mesh_group = fd.createGroup('/', 'mesh', 'mesh')
@@ -1360,7 +1360,7 @@ class HDF5MeshIO(MeshIO):
                 step, time, nt = ts.step, ts.time, ts.nt
 
             # Existing file.
-            fd = pt.openFile(filename, mode="r+")
+            fd = pt.open_file(filename, mode="r+")
 
             step_group = fd.createGroup('/', 'step%d' % step, 'time step data')
 
@@ -1406,14 +1406,14 @@ class HDF5MeshIO(MeshIO):
 
     def read_last_step(self, filename=None):
         filename = get_default(filename, self.filename)
-        fd = pt.openFile(filename, mode="r")
+        fd = pt.open_file(filename, mode="r")
         last_step = fd.root.last_step[0]
         fd.close()
         return last_step
 
     def read_time_stepper(self, filename=None):
         filename = get_default(filename, self.filename)
-        fd = pt.openFile(filename, mode="r")
+        fd = pt.open_file(filename, mode="r")
 
         try:
             ts_group = fd.root.ts
@@ -1442,7 +1442,7 @@ class HDF5MeshIO(MeshIO):
             The normalized times of the time steps, in [0, 1].
         """
         filename = get_default(filename, self.filename)
-        fd = pt.openFile(filename, mode='r')
+        fd = pt.open_file(filename, mode='r')
 
         steps = sorted(int(name[4:]) for name in fd.root._v_groups.keys()
                        if name.startswith('step'))
@@ -1463,7 +1463,7 @@ class HDF5MeshIO(MeshIO):
 
     def _get_step_group(self, step, filename=None):
         filename = get_default(filename, self.filename)
-        fd = pt.openFile(filename, mode="r")
+        fd = pt.open_file(filename, mode="r")
 
         gr_name = 'step%d' % step
         try:
@@ -1535,7 +1535,7 @@ class HDF5MeshIO(MeshIO):
 
     def read_time_history(self, node_name, indx, filename=None):
         filename = get_default(filename, self.filename)
-        fd = pt.openFile(filename, mode="r")
+        fd = pt.open_file(filename, mode="r")
 
         th = dict_from_keys_init(indx, list)
         for step in range(fd.root.last_step[0] + 1):
@@ -1559,7 +1559,7 @@ class HDF5MeshIO(MeshIO):
 
     def read_variables_time_history(self, var_names, ts, filename=None):
         filename = get_default(filename, self.filename)
-        fd = pt.openFile(filename, mode="r")
+        fd = pt.open_file(filename, mode="r")
 
         assert_((fd.root.last_step[0] + 1) == ts.n_step)
 
@@ -1582,7 +1582,7 @@ class MEDMeshIO(MeshIO):
     format = "med"
 
     def read(self, mesh, **kwargs):
-        fd = pt.openFile(self.filename, mode="r")
+        fd = pt.open_file(self.filename, mode="r")
 
         mesh_root = fd.root.ENS_MAA
 

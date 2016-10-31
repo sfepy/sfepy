@@ -17,10 +17,10 @@ from six.moves import range
 # 24.01.2006
 # 12.04.2006
 def read_spline_box_hdf5( filename ):
-    if not pt.isHDF5File( filename ):
+    if not pt.is_hdf5_file( filename ):
         raise ValueError('not a HDF5 file! (%s)' % filename)
 
-    fd = pt.openFile( filename, mode = 'r' )
+    fd = pt.open_file( filename, mode = 'r' )
     boxes = fd.listNodes( '/box' )
     n_box = len( boxes )
     dim = len( fd.listNodes( boxes[0].ax ) )
@@ -68,10 +68,10 @@ def read_spline_box_hdf5( filename ):
 # 12.04.2006
 # 13.04.2006
 def read_dsg_vars_hdf5( filename ):
-    if not pt.isHDF5File( filename ):
+    if not pt.is_hdf5_file( filename ):
         raise ValueError('not a HDF5 file! (%s)' % filename)
 
-    fd = pt.openFile( filename, mode = 'r' )
+    fd = pt.open_file( filename, mode = 'r' )
     aux1 = fd.getNode( '/dsgvar/inx' ).read()
     aux2 = fd.getNode( '/dsgvar/val' ).read()
     aux3 = fd.getNode( '/dsgvar/nsbdsg' ).read()
