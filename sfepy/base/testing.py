@@ -4,7 +4,7 @@ import inspect
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import Struct
+from sfepy.base.base import Struct, output
 
 class TestCommon(Struct):
 
@@ -35,7 +35,7 @@ class TestCommon(Struct):
                  if (len(ii[0]) > 5) and ii[0][:5] == 'test_']
         return len(tests)
 
-    def run(self, debug=False):
+    def run(self, debug=False, ifile=None):
         self.debug = debug
 
         ok = True
@@ -52,7 +52,14 @@ class TestCommon(Struct):
             tests = [ii for ii in methods
                      if (len(ii[0]) > 5) and ii[0][:5] == 'test_']
 
-        for test_name, test_method in tests:
+        orig_prefix = output.get_output_prefix()
+        for itest, (test_name, test_method) in enumerate(tests):
+            if len(tests) > 1 and ifile is not None:
+                output.set_output_prefix('[%d/%d] %s'\
+                    % (ifile, itest + 1, orig_prefix))
+            else:
+                output.set_output_prefix('[%d] %s' % (ifile, orig_prefix))
+
             aux = ' %s: ' % test_name
 
             try:
@@ -70,6 +77,8 @@ class TestCommon(Struct):
                 aux = '+++' + aux + 'ok'
 
             print(aux)
+
+        output.set_output_prefix(orig_prefix)
 
         return ok, n_fail, len(tests)
 
