@@ -28,7 +28,7 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     if not regenerate:
         if op.exists( coefs_filename ):
-            if not pt.isHDF5File( coefs_filename ):
+            if not pt.is_hdf5_file( coefs_filename ):
                 regenerate = True
         else:
             regenerate = True

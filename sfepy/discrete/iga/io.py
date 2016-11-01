@@ -15,34 +15,34 @@ def write_iga_data(filename, knots, degrees, control_points, weights, cs, conn,
     if isinstance(degrees, int): degrees = [degrees]
     degrees = nm.asarray(degrees)
 
-    fd = pt.openFile(filename, mode='w', title='SfePy IGA data file')
+    fd = pt.open_file(filename, mode='w', title='SfePy IGA data file')
 
-    nurbs = fd.createGroup('/', 'nurbs', 'nurbs')
+    nurbs = fd.create_group('/', 'nurbs', 'nurbs')
 
-    fd.createArray(nurbs, 'dim', control_points.shape[1], 'dim')
-    fd.createArray(nurbs, 'tdim', len(degrees), 'tdim')
+    fd.create_array(nurbs, 'dim', control_points.shape[1], 'dim')
+    fd.create_array(nurbs, 'tdim', len(degrees), 'tdim')
     for ii, kv in enumerate(knots):
         name = 'knots_%d' % ii
-        fd.createArray(nurbs, name, kv, name)
-    fd.createArray(nurbs, 'degrees', degrees, 'degrees')
-    fd.createArray(nurbs, 'control_points', control_points, 'control_points')
-    fd.createArray(nurbs, 'weights', weights, 'weights')
+        fd.create_array(nurbs, name, kv, name)
+    fd.create_array(nurbs, 'degrees', degrees, 'degrees')
+    fd.create_array(nurbs, 'control_points', control_points, 'control_points')
+    fd.create_array(nurbs, 'weights', weights, 'weights')
 
-    bezier = fd.createGroup('/', 'bezier', 'bezier')
+    bezier = fd.create_group('/', 'bezier', 'bezier')
 
-    fd.createArray(bezier, 'bezier_control_points', bezier_control_points,
+    fd.create_array(bezier, 'bezier_control_points', bezier_control_points,
                    'bezier_control_points')
-    fd.createArray(bezier, 'bezier_weights', bezier_weights, 'bezier_weights')
+    fd.create_array(bezier, 'bezier_weights', bezier_weights, 'bezier_weights')
     for ii, op in enumerate(cs):
         name = 'extraction_%d' % ii
-        fd.createArray(bezier, name, op, name)
-    fd.createArray(bezier, 'global_connectivity', conn, 'global_connectivity')
-    fd.createArray(bezier, 'bezier_connectivity', bezier_conn,
+        fd.create_array(bezier, name, op, name)
+    fd.create_array(bezier, 'global_connectivity', conn, 'global_connectivity')
+    fd.create_array(bezier, 'bezier_connectivity', bezier_conn,
                    'bezier_connectivity')
 
-    regs = fd.createGroup('/', 'regions', 'regions')
+    regs = fd.create_group('/', 'regions', 'regions')
     for key, val in six.iteritems(regions):
-        fd.createArray(regs, key, val, key)
+        fd.create_array(regs, key, val, key)
 
     fd.close()
 
@@ -50,7 +50,7 @@ def read_iga_data(filename):
     """
     Read IGA-related data from a HDF5 file using pytables.
     """
-    fd = pt.openFile(filename, mode='r')
+    fd = pt.open_file(filename, mode='r')
 
     nurbs = fd.root.nurbs
 
@@ -59,7 +59,7 @@ def read_iga_data(filename):
     knots = []
     for ii in range(tdim):
         name = 'knots_%d' % ii
-        knots.append(nurbs._f_getChild(name).read())
+        knots.append(nurbs._f_get_child(name).read())
     knots = tuple(knots)
 
     degrees = nurbs.degrees.read()
@@ -71,7 +71,7 @@ def read_iga_data(filename):
     cs = []
     for ii in range(tdim):
         name = 'extraction_%d' % ii
-        cs.append(bezier._f_getChild(name).read())
+        cs.append(bezier._f_get_child(name).read())
 
     conn = bezier.global_connectivity.read()
     bezier_control_points = bezier.bezier_control_points.read()
