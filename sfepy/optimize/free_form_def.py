@@ -17,13 +17,13 @@ from six.moves import range
 # 24.01.2006
 # 12.04.2006
 def read_spline_box_hdf5( filename ):
-    if not pt.isHDF5File( filename ):
+    if not pt.is_hdf5_file( filename ):
         raise ValueError('not a HDF5 file! (%s)' % filename)
 
-    fd = pt.openFile( filename, mode = 'r' )
-    boxes = fd.listNodes( '/box' )
+    fd = pt.open_file( filename, mode = 'r' )
+    boxes = fd.list_nodes( '/box' )
     n_box = len( boxes )
-    dim = len( fd.listNodes( boxes[0].ax ) )
+    dim = len( fd.list_nodes( boxes[0].ax ) )
 
     sp_boxes = SplineBoxes( dim = dim, n_box = n_box, n_vertex = 0,
                            spbs = OneTypeList( SplineBox ) )
@@ -37,7 +37,7 @@ def read_spline_box_hdf5( filename ):
         spb.cxyz = nm.asarray( box.cxyz.read() ).transpose()
         spb.cxyz0 = spb.cxyz.copy()
         spb.ax = []
-        for axi in fd.listNodes( box.ax ):
+        for axi in fd.list_nodes( box.ax ):
             spb.ax.append( nm.asarray( axi.bsc.read() ) )
 
         sp_boxes.n_vertex = max( sp_boxes.n_vertex, nm.amax( spb.gpi ) + 1 )
@@ -59,7 +59,7 @@ def read_spline_box_hdf5( filename ):
         gpi1 = sp_boxes.spbs[perm[0]].gpi
         gpi2 = sp_boxes.spbs[perm[1]].gpi
         assert_( len( nm.intersect1d( gpi1, gpi2 ) ) == 0 )
-    
+
     return sp_boxes
 
 ##
@@ -68,13 +68,13 @@ def read_spline_box_hdf5( filename ):
 # 12.04.2006
 # 13.04.2006
 def read_dsg_vars_hdf5( filename ):
-    if not pt.isHDF5File( filename ):
+    if not pt.is_hdf5_file( filename ):
         raise ValueError('not a HDF5 file! (%s)' % filename)
 
-    fd = pt.openFile( filename, mode = 'r' )
-    aux1 = fd.getNode( '/dsgvar/inx' ).read()
-    aux2 = fd.getNode( '/dsgvar/val' ).read()
-    aux3 = fd.getNode( '/dsgvar/nsbdsg' ).read()
+    fd = pt.open_file( filename, mode = 'r' )
+    aux1 = fd.get_node( '/dsgvar/inx' ).read()
+    aux2 = fd.get_node( '/dsgvar/val' ).read()
+    aux3 = fd.get_node( '/dsgvar/nsbdsg' ).read()
     dsg_vars = DesignVariables( indx = nm.asarray( aux1, dtype = nm.int32 ),
                                cxyz =  nm.asarray( aux2 ),
                                null_space_b = nm.asarray( aux3 ) )
@@ -85,10 +85,10 @@ def read_dsg_vars_hdf5( filename ):
     dsg_vars.n_dsg = dsg_vars.null_space_b.shape[1]
     # No. of control points.
     dsg_vars.n_cp = dsg_vars.indx.shape[0]
-    # Design vector and initial design vector. 
+    # Design vector and initial design vector.
     dsg_vars.val0 = nm.zeros( (dsg_vars.n_dsg,), dtype = nm.float64 )
     dsg_vars.val = dsg_vars.val0.copy()
-    
+
     fd.close()
 
     return dsg_vars
@@ -98,7 +98,7 @@ def read_dsg_vars_hdf5( filename ):
 def interp_box_coordinates( spb, cxyz = None ):
     if cxyz is None:
         cxyz = spb.cxyz
-        
+
     dim = len( spb.ax )
     pp = nm.zeros( (spb.ax[0].shape[0], dim), dtype = nm.float64 )
     for ii in range( spb.cpi.shape[0] ):

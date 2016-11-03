@@ -148,11 +148,11 @@ def solve_direct( conf, options ):
         import tables as pt
         import numarray as nar
 
-        fd = pt.openFile( options.dump_filename, mode = 'w',
+        fd = pt.open_file( options.dump_filename, mode = 'w',
                           title = "Dump file" )
         out = state_dp.create_output_dict()
         for key, val in six.iteritems(out):
-            fd.createArray( fd.root, key, nar.asarray( val.data ),
+            fd.create_array( fd.root, key, nar.asarray( val.data ),
                             '%s data' % val.mode )
         fd.close()
 
