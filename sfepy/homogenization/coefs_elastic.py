@@ -2,53 +2,11 @@ from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import output, assert_, get_default, Struct
-from sfepy.homogenization.coefs_base import CoefOne, CorrDim, \
-     TCorrectorsViaPressureEVP, \
-     CoefFMSymSym, CoefFMSym, CoefFMOne, \
-     CorrMiniApp, CorrSolution
+from sfepy.homogenization.coefs_base import CoefOne, \
+     TCorrectorsViaPressureEVP, CoefFMSym, CoefFMOne, CorrMiniApp
 from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
-import six
 from six.moves import range
-
-class CorrectorsPermeability( CorrDim ):
-
-    def __call__( self, problem = None, data = None, save_hook = None ):
-        problem = get_default( problem, self.problem )
-
-        equations = {}
-        for key, eq in six.iteritems(self.equations):
-            equations[key] = eq % tuple( self.regions )
-
-        index = [0]
-        problem.set_equations( equations, user={self.index_name : index} )
-
-        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
-        problem.update_materials(problem.ts)
-
-        self.init_solvers(problem)
-
-        variables = problem.get_variables()
-
-        dim = problem.get_dim()
-        states = nm.zeros( (dim,), dtype = nm.object )
-        clist = []
-        for ir in range( dim ):
-            index[0] = ir # Set the index - this is visible in the term.
-
-            state = problem.solve()
-            assert_(state.has_ebc())
-            states[ir] = variables.get_state_parts()
-
-            clist.append( (ir,) )
-
-        corr_sol = CorrSolution(name = self.name,
-                                states = states,
-                                components = clist)
-
-        self.save(corr_sol, problem)
-
-        return corr_sol
 
 class PressureRHSVector( CorrMiniApp ):
     
