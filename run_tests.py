@@ -30,6 +30,7 @@ import sfepy
 if sfepy.top_dir not in sys.path: sys.path.append(sfepy.top_dir)
 
 from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.base.base import output
 
 class OutputFilter(object):
 
@@ -61,7 +62,7 @@ class OutputFilter(object):
         sys.stdout = self.stdout
         self.stdout = None
 
-def run_test(conf_name, options):
+def run_test(conf_name, options, ifile):
     from sfepy.base.ioutils import ensure_path
 
     ensure_path(op.join(options.out_dir, 'any'))
@@ -75,7 +76,9 @@ def run_test(conf_name, options):
     else:
         of = OutputFilter(['<<<', '+++', '---'])
 
-    print('<<< %s' % conf_name)
+    print('<<< [%d] %s' % (ifile, conf_name))
+    orig_prefix = output.get_output_prefix()
+    output.set_output_prefix('[%d] %s' % (ifile, orig_prefix))
 
     _required, other = get_standard_keywords()
     required = ['Test']
@@ -100,7 +103,10 @@ def run_test(conf_name, options):
     if ok:
         try:
             tt = time.clock()
-            ok, n_fail, n_total = test.run(options.raise_on_error)
+            output.set_output_prefix(orig_prefix)
+            ok, n_fail, n_total = test.run(debug=options.raise_on_error,
+                                           ifile=ifile)
+            output.set_output_prefix('[%d] %s' % (ifile, orig_prefix))
             test_time = time.clock() - tt
         except KeyboardInterrupt:
             print('>>> interrupted')
@@ -119,6 +125,8 @@ def run_test(conf_name, options):
     if of is not None:
         of.stop()
 
+    output.set_output_prefix(orig_prefix)
+
     return n_fail, n_total, test_time
 
 def wrap_run_tests(options):
@@ -132,7 +140,8 @@ def wrap_run_tests(options):
         for filename in filenames:
             conf_name = op.join(dir_name, filename)
 
-            n_fail, n_total, test_time = run_test(conf_name, options)
+            n_fail, n_total, test_time = run_test(conf_name, options,
+                                                  stats[0] + 1)
 
             stats[0] += 1
             stats[1] += n_fail
@@ -223,4 +232,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
