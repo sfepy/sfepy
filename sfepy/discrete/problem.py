@@ -680,7 +680,7 @@ class Problem(Struct):
         return self.domain.get_mesh_coors()
 
     def set_mesh_coors(self, coors, update_fields=False, actual=False,
-                       clear_all=True):
+                       clear_all=True, extra_dofs=False):
         """
         Set mesh coordinates.
 
@@ -696,7 +696,7 @@ class Problem(Struct):
         """
         set_mesh_coors(self.domain, self.fields, coors,
                        update_fields=update_fields, actual=actual,
-                       clear_all=clear_all)
+                       clear_all=clear_all, extra_dofs=extra_dofs)
 
     def refine_uniformly(self, level):
         """
