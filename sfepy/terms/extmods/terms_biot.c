@@ -74,7 +74,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 		    FMField *mtxD, Mapping *svg, Mapping *vvg,
 		    int32 isDiff )
 {
-  int32 ii, nEPU, nEP, dim, nQP, ret = RET_OK;
+  int32 ii, nEPU, nEP, dim, sym, nQP, ret = RET_OK;
   FMField *dfp = 0, *gtdfp = 0, *gtd = 0, *gtdf = 0;
 
   nQP = vvg->bfGM->nLev;
@@ -83,7 +83,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
   nEP = svg->bf->nCol;
 
 /*   fmf_print( mtxD, stdout, 0 ); */
-  int32 sym = (dim + 1) * dim / 2;
+  sym = (dim + 1) * dim / 2;
 
   if (isDiff == 1) {
     fmf_createAlloc( &gtd, 1, nQP, dim * nEPU, 1 );
