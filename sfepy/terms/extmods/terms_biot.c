@@ -25,16 +25,16 @@ int32 op_nonsym_biot(FMField *diff, FMField *mtx, FMField *gc)
       pdiff3 = pdiff2 + nEP;
       for (iep = 0; iep < nEP; iep++) {
         pdiff1[iep]
-          = pg1[iep] * pvec[0];
-          + pg2[iep] * pvec[3];
+          = pg1[iep] * pvec[0]
+          + pg2[iep] * pvec[3]
           + pg3[iep] * pvec[6];
         pdiff2[iep]
-          = pg1[iep] * pvec[1];
-          + pg2[iep] * pvec[4];
+          = pg1[iep] * pvec[1]
+          + pg2[iep] * pvec[4]
           + pg3[iep] * pvec[7];
         pdiff3[iep]
-          = pg1[iep] * pvec[2];
-          + pg2[iep] * pvec[5];
+          = pg1[iep] * pvec[2]
+          + pg2[iep] * pvec[5]
           + pg3[iep] * pvec[8];
       }
     }
@@ -74,7 +74,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 		    FMField *mtxD, Mapping *svg, Mapping *vvg,
 		    int32 isDiff )
 {
-  int32 ii, nEPU, nEP, dim, nQP, ret = RET_OK;
+  int32 ii, nEPU, nEP, dim, sym, nQP, ret = RET_OK;
   FMField *dfp = 0, *gtdfp = 0, *gtd = 0, *gtdf = 0;
 
   nQP = vvg->bfGM->nLev;
@@ -83,7 +83,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
   nEP = svg->bf->nCol;
 
 /*   fmf_print( mtxD, stdout, 0 ); */
-  int32 sym = (dim + 1) * dim / 2;
+  sym = (dim + 1) * dim / 2;
 
   if (isDiff == 1) {
     fmf_createAlloc( &gtd, 1, nQP, dim * nEPU, 1 );
