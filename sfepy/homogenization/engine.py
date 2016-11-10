@@ -36,9 +36,7 @@ def insert_sub_reqs(reqs, levels, req_info):
             all_reqs += [ii for ii in sreqs if ii not in all_reqs]
             levels.pop()
 
-        if req in all_reqs:
-            raise ValueError('circular requirement "%s"!' % (req))
-        else:
+        if req not in all_reqs:
             all_reqs.append(req)
 
     return all_reqs
