@@ -21,7 +21,9 @@ class Test(TestCommon):
                         'd' : {'requires' : ['b', 'a']}}
 
         deps = get_deps(requirements, coefs, None)
-        ok = deps == ['c', 'b', 'a', 'd', 'c.B', 'c.A']
+        ok = ((deps == ['c', 'b', 'a', 'd', 'c.B', 'c.A'])
+              or (deps == ['c', 'b', 'c.B', 'a', 'd', 'c.A'])
+              or (deps == ['c', 'b', 'a', 'c.B', 'd', 'c.A']))
         self.report(deps, ':', ok)
 
         coefs['B']['requires'] = ['b', 'c.A']
@@ -30,7 +32,8 @@ class Test(TestCommon):
             deps = get_deps(requirements, coefs, None)
 
         except ValueError as err:
-            _ok = str(err) == 'circular requirement "c.B"!'
+            self.report('detected:', str(err))
+            _ok = 'circular requirement "c.' in str(err)
 
         else:
             _ok = False
@@ -45,7 +48,8 @@ class Test(TestCommon):
             deps = get_deps(requirements, coefs, None)
 
         except ValueError as err:
-            _ok = str(err) == 'circular requirement "b"!'
+            self.report('detected:', str(err))
+            _ok = 'circular requirement' in str(err)
 
         else:
             _ok = False
