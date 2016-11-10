@@ -30,7 +30,7 @@ class Test(TestCommon):
             deps = get_deps(requirements, coefs, None)
 
         except ValueError as err:
-            _ok = err.message == 'circular requirement "c.B"!'
+            _ok = str(err) == 'circular requirement "c.B"!'
 
         else:
             _ok = False
@@ -45,7 +45,7 @@ class Test(TestCommon):
             deps = get_deps(requirements, coefs, None)
 
         except ValueError as err:
-            _ok = err.message == 'circular requirement "b"!'
+            _ok = str(err) == 'circular requirement "b"!'
 
         else:
             _ok = False
