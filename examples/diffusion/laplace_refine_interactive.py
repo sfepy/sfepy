@@ -33,23 +33,23 @@ has to be applied explicitly by the user:
 Usage Examples
 --------------
 
-Default options, 2D, storing results in 'output' directory:
+Default options, 2D, storing results in 'output' directory::
 
   $ python examples/diffusion/laplace_refine_interactive.py output
   $ python postproc.py output/hanging.vtk --wireframe -b -d'u,plot_warp_scalar'
 
-Default options, 3D, storing results in 'output' directory:
+Default options, 3D, storing results in 'output' directory::
 
   $ python examples/diffusion/laplace_refine_interactive.py -3 output
   $ python postproc.py output/hanging.vtk --wireframe -b --3d
 
 
-Finer initial domain, 2D, storing results in 'output' directory:
+Finer initial domain, 2D, storing results in 'output' directory::
 
   $ python examples/diffusion/laplace_refine_interactive.py --shape=11,11 output
   $ python postproc.py output/hanging.vtk --wireframe -b -d'u,plot_warp_scalar'
 
-Bi-quadratic approximation, 2D, storing results in 'output' directory:
+Bi-quadratic approximation, 2D, storing results in 'output' directory::
 
   $ python examples/diffusion/laplace_refine_interactive.py --order=2 output
 
