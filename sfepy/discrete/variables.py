@@ -907,7 +907,10 @@ class Variable(Struct):
             self.primary_var_name = get_default(primary_var_name, None, msg)
             if self.primary_var_name == '(set-to-None)':
                 self.primary_var_name = None
-            self.dof_name = self.primary_var_name
+                self.dof_name = self.name
+
+            else:
+                self.dof_name = self.primary_var_name
 
             if special is not None:
                 self.special = special
@@ -927,11 +930,8 @@ class Variable(Struct):
 
         self.n_dof = self.n_nod * self.n_components
 
-        if self.dof_name is None:
-            dof_name = 'aux'
-        else:
-            dof_name = self.dof_name
-        self.dofs = [dof_name + ('.%d' % ii) for ii in range(self.n_components)]
+        self.dofs = [self.dof_name + ('.%d' % ii)
+                     for ii in range(self.n_components)]
 
     def get_primary(self):
         """
@@ -1773,6 +1773,10 @@ class FieldVariable(Variable):
 
         # EPBC.
         vec[eq_map.master] = vec[eq_map.slave]
+
+        unused_dofs = self.field.get('unused_dofs')
+        if unused_dofs is not None:
+            vec[:] = self.field.restore_substituted(vec)
 
         return vec
 

@@ -367,7 +367,7 @@ class PointsProbe(Probe):
         points : array_like
             The coordinates of the points.
         """
-        points = nm.array(points, dtype=nm.float64)
+        points = nm.array(points, dtype=nm.float64, order='C')
         if points.ndim == 1:
             points.shape = points.shape + (1,)
         n_point = points.shape[0]

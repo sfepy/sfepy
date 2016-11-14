@@ -529,11 +529,16 @@ cdef class CMesh:
 
         indices = np.empty(num, dtype=np.uint32)
         offsets = np.empty(_entities.num + 1, dtype=np.uint32)
-        _incident.num = _entities.num
-        _incident.n_incident = num
-        _incident.indices = &indices[0]
-        _incident.offsets = &offsets[0]
-        mesh_get_incident(self.mesh, _incident, dim, _entities, dent)
+
+        if num > 0:
+            _incident.num = _entities.num
+            _incident.n_incident = num
+            _incident.indices = &indices[0]
+            _incident.offsets = &offsets[0]
+            mesh_get_incident(self.mesh, _incident, dim, _entities, dent)
+
+        else:
+            offsets[:] = 0
 
         if ret_offsets:
             return indices, offsets

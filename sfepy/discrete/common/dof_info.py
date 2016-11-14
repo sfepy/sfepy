@@ -264,8 +264,17 @@ class EquationMap(Struct):
         self.dpn = len(self.dof_names)
         self.eq = nm.arange(var_di.n_dof, dtype=nm.int32)
 
-    def _init_empty(self):
-        self.eqi = nm.arange(self.var_di.n_dof, dtype=nm.int32)
+    def _init_empty(self, field):
+        self.val_ebc = nm.empty((0,), dtype=field.dtype)
+
+        if field.get('unused_dofs') is None:
+            self.eqi = nm.arange(self.var_di.n_dof, dtype=nm.int32)
+
+        else:
+            self._mark_unused(field)
+            self.eqi = nm.compress(self.eq >= 0, self.eq)
+            self.eq[self.eqi] = nm.arange(self.eqi.shape[0], dtype=nm.int32)
+
         self.eq_ebc = nm.empty((0,), dtype=nm.int32)
 
         self.master = nm.empty((0,), dtype=nm.int32)
@@ -274,6 +283,13 @@ class EquationMap(Struct):
         self.n_eq = self.eqi.shape[0]
         self.n_ebc = self.eq_ebc.shape[0]
         self.n_epbc = self.master.shape[0]
+
+    def _mark_unused(self, field):
+        unused_dofs = field.get('unused_dofs')
+        if unused_dofs is not None:
+            unused = expand_nodes_to_equations(field.unused_dofs,
+                                               self.dof_names, self.dof_names)
+            self.eq[unused] = -3
 
     def map_equations(self, bcs, field, ts, functions, problem=None,
                       warn=False):
@@ -308,8 +324,7 @@ class EquationMap(Struct):
           field (variables can differ, though).
         """
         if bcs is None:
-            self.val_ebc = nm.empty((0,), dtype=field.dtype)
-            self._init_empty()
+            self._init_empty(field)
             return set()
 
         eq_ebc = nm.zeros((self.var_di.n_dof,), dtype=nm.int32)
@@ -444,6 +459,9 @@ class EquationMap(Struct):
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
         self.eq[self.eq_ebc] = -2
         self.eq[self.master] = -1
+
+        self._mark_unused(field)
+
         self.eqi = nm.compress(self.eq >= 0, self.eq)
         self.eq[self.eqi] = nm.arange(self.eqi.shape[0], dtype=nm.int32)
         self.eq[self.master] = self.eq[self.slave]
