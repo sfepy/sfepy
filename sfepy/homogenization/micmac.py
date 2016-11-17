@@ -7,6 +7,7 @@ from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
 import tables as pt
 from sfepy.discrete.fem.meshio import HDF5MeshIO
+import sfepy.linalg as la
 import os.path as op
 import six
 
@@ -62,6 +63,64 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     else:
         out = None
+
+    output.prefix = oprefix
+
+    return out
+
+def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
+                              term=None, problem=None,
+                              iteration=None, **kwargs):
+    if not (mode == 'qp'):
+        return
+
+    oprefix = output.prefix
+    output.prefix = 'micro:'
+
+    if not hasattr(problem, 'homogen_app'):
+        required, other = get_standard_keywords()
+        required.remove( 'equations' )
+        micro_file = problem.conf.options.micro_filename
+        conf = ProblemConf.from_file(micro_file, required, other,
+                                     verbose=False)
+        options = Struct(output_filename_trunk = None)
+        problem.homogen_app = HomogenizationApp(conf, options, 'micro:',
+                                                n_micro=coor.shape[0],
+                                                update_micro_coors=True)
+
+    app = problem.homogen_app
+    def_grad = mtx_f(problem, term) if callable(mtx_f) else mtx_f
+    if hasattr(problem, 'def_grad_prev'):
+        rel_def_grad = la.dot_sequences(def_grad,
+                                        nm.linalg.inv(problem.def_grad_prev),
+                                        'AB')
+    else:
+        rel_def_grad = def_grad.copy()
+
+    problem.def_grad_prev = def_grad.copy()
+    app.setup_macro_deformation(rel_def_grad)
+
+    time_tag = '_t%03d' % ts.step if iteration is None\
+        else '_t%03d_i%03d' % (ts.step, iteration)
+    coefs, deps = app(ret_all=True, time_tag=time_tag)
+
+    if type(coefs) is tuple:
+        coefs = coefs[0]
+
+    out = {}
+    for key, val in six.iteritems(coefs.__dict__):
+        if isinstance(val, list):
+            out[key] = nm.array(val)
+        elif isinstance(val, dict):
+            for key2, val2 in six.iteritems(val):
+                out[key+'_'+key2] = nm.array(val2)
+
+    for key in six.iterkeys(out):
+        shape = out[key].shape
+        if len(shape) == 1:
+            out[key] = out[key].reshape(shape + (1, 1))
+        elif len(shape) == 2:
+            out[key] = out[key].reshape(shape + (1,))
 
     output.prefix = oprefix
 

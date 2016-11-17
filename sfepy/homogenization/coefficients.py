@@ -7,6 +7,16 @@ from sfepy.homogenization.utils import iter_sym
 import six
 from six.moves import range
 
+def coef_arrays_to_dicts(idict, format='%s/%d'):
+    out = {}
+    for k, v in six.iteritems(idict):
+        if isinstance(v, list):
+            out.update({format %(k, ii): vv for ii, vv in enumerate(v)})
+        else:
+            out[k] = v
+
+    return out
+
 class Coefficients(Struct):
     """
     Class for storing (homogenized) material coefficients.
@@ -72,7 +82,7 @@ class Coefficients(Struct):
         fd.write( r'  \end{equation}' )
         fd.write( '\n' )
 
-    def _save_dict_latex(self, adict, fd, names):
+    def _save_dict_latex(self, adict, fd, names, idx=None):
         fd.write( r'\begin{itemize}' )
         fd.write( '\n' )
         for key, val in ordered_iteritems(adict):
@@ -84,6 +94,14 @@ class Coefficients(Struct):
                 lname = self._escape_latex(key)
             fd.write( '\item %s:' % lname )
             fd.write( '\n' )
+
+            if isinstance(val, list):
+                if idx is not None:
+                    val = val[idx]
+                else:
+                    print("'idx' must be set in the case "\
+                        + "of multi-coefficients!")
+                    raise NotImplementedError
 
             if isinstance(val, dict):
                 self._save_dict_latex(val, fd, names)
@@ -105,7 +123,7 @@ class Coefficients(Struct):
 
 
     def to_file_latex(self, filename, names, format='%.2e',
-                      cdot=False, filter=None):
+                      cdot=False, filter=None, idx=None):
         r"""
         Save the coefficients to a file in LaTeX format.
 
@@ -123,13 +141,15 @@ class Coefficients(Struct):
         filter : int
             For '%.e' formats only. Typeset as 0, if exponent is less than
             `filter`.
+        idx : int
+            For multi-coefficients, set the coefficient index.
         """
         self._a_format = format
         self._a_cdot = cdot
         self._a_filter = filter
 
         fd = open(filename, 'w')
-        self._save_dict_latex(self.__dict__, fd, names)
+        self._save_dict_latex(self.__dict__, fd, names, idx)
         fd.close()
 
     def _save_dict(self, adict, fd, names, format):
@@ -150,6 +170,10 @@ class Coefficients(Struct):
             elif isinstance(val, dict):
                 self._save_dict(val, fd, names, format)
                 fd.write('\n')
+
+            elif isinstance(val, list):
+                if isinstance(val[0], basestr):
+                    fd.write('\n'.join(val) + '\n')
 
             elif isinstance(val, basestr):
                 fd.write(val + '\n')
@@ -201,7 +225,7 @@ class Coefficients(Struct):
     def to_file_txt( self, filename, names, format ):
 
         fd = open( filename, 'w' )
-        self._save_dict( self.__dict__, fd, names, format )
+        self._save_dict(coef_arrays_to_dicts(self.__dict__), fd, names, format)
         fd.close()
 
     _table_vector = r"""

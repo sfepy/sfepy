@@ -118,15 +118,17 @@ class CorrMiniApp(MiniAppBase):
     def __init__(self, name, problem, kwargs):
         MiniAppBase.__init__(self, name, problem, kwargs)
         self.output_dir = self.problem.output_dir
-        self.set_default('save_name', '(not_set)')
+        self.set_default('save_name', None)
         self.set_default('dump_name', self.save_name)
         self.set_default('dump_variables', [])
         self.set_default('save_variables', self.dump_variables)
 
-        self.save_name = os.path.normpath(os.path.join(self.output_dir,
-                                                         self.save_name))
-        self.dump_name = os.path.normpath(os.path.join(self.output_dir,
-                                                         self.dump_name))
+        if self.save_name is not None:
+            self.save_name = os.path.normpath(os.path.join(self.output_dir,
+                                                           self.save_name))
+        if self.dump_name is not None:
+            self.dump_name = os.path.normpath(os.path.join(self.output_dir,
+                                                           self.dump_name))
 
     def setup_output(self, save_format=None, dump_format=None,
                       post_process_hook=None, file_per_var=None):
@@ -143,13 +145,14 @@ class CorrMiniApp(MiniAppBase):
         return self.get_save_name_base()
 
     def get_save_name(self):
-        return '.'.join((self.get_save_name_base(), self.save_format))
+        save_name_base = self.get_save_name_base()
+        if save_name_base is not None:
+            return '.'.join((self.get_save_name_base(), self.save_format))
 
     def get_dump_name(self):
-        if self.dump_format is not None:
-            return '.'.join((self.get_dump_name_base(), self.dump_format))
-        else:
-            return None
+        dump_name_base = self.get_dump_name_base()
+        if self.dump_format is not None and dump_name_base is not None:
+            return '.'.join((dump_name_base, self.dump_format))
 
     def get_output(self, corr_sol, is_dump=False, extend=True, variables=None):
         if variables is None:
@@ -349,7 +352,7 @@ class CorrNN(CorrMiniApp):
                 else:
                     self.set_variables(variables, ir, ic, **data)
 
-                state = problem.solve()
+                state = problem.solve(update_materials=False)
                 assert_(state.has_ebc())
                 states[ir,ic] = state.get_parts()
 
