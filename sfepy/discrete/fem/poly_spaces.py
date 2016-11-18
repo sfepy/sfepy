@@ -290,18 +290,22 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(self, coors, diff=False, ori=None, force_axis=False,
+    def eval_base(self, coors, diff=0, ori=None, force_axis=False,
                   transform=None, suppress_errors=False, eps=1e-15):
         """
-        Evaluate the basis in points given by coordinates. The real work is
-        done in _eval_base() implemented in subclasses.
+        Evaluate the basis or its first or second derivatives in points given
+        by coordinates. The real work is done in _eval_base() implemented in
+        subclasses.
+
+        Note that the second derivative code is a work-in-progress and only
+        `coors` and `transform` arguments are used.
 
         Parameters
         ----------
         coors : array_like
             The coordinates of points where the basis is evaluated. See Notes.
-        diff : bool
-            If True, return the first derivative.
+        diff : 0, 1 or 2
+            If nonzero, return the given derivative.
         ori : array_like, optional
             Optional orientation of element facets for per element basis.
         force_axis : bool
@@ -317,10 +321,11 @@ class PolySpace(Struct):
         Returns
         -------
         base : array
-            The basis (shape (n_coor, 1, n_base)) or its derivative (shape
-            (n_coor, dim, n_base)) evaluated in the given points. An additional
-            axis is pre-pended of length n_cell, if `ori` is given, or of
-            length 1, if `force_axis` is True.
+            The basis (shape (n_coor, 1, n_base)) or its first derivative
+            (shape (n_coor, dim, n_base)) or its second derivative (shape
+            (n_coor, dim, dim, n_base)) evaluated in the given points. An
+            additional axis is pre-pended of length n_cell, if `ori` is given,
+            or of length 1, if `force_axis` is True.
 
         Notes
         -----
@@ -408,14 +413,18 @@ class LagrangePolySpace(PolySpace):
 
         return ctx
 
-    def _eval_base(self, coors, diff=False, ori=None,
+    def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
         """
         See :func:`PolySpace.eval_base()`.
         """
-        base = self.eval_ctx.evaluate(coors, diff=diff,
-                                      eps=eps,
-                                      check_errors=not suppress_errors)
+        if diff == 2:
+            base = self._eval_hessian(coors)
+
+        else:
+            base = self.eval_ctx.evaluate(coors, diff=diff,
+                                          eps=eps,
+                                          check_errors=not suppress_errors)
         return base
 
 class LagrangeSimplexPolySpace(LagrangePolySpace):
@@ -767,7 +776,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
         """
         Evaluate the second derivatives of the basis.
         """
-        evh = self.ps1d.eval_hessian
+        evh = self.ps1d.eval_base
 
         dim = self.geometry.dim
         bfgg = nm.zeros((coors.shape[0], dim, dim, self.n_nod),
@@ -783,8 +792,8 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
                                           tdim=1).evaluate
 
             v0s.append(ev(coors[:, ii:ii+1].copy())[:, 0, :])
-            v1s.append(ev(coors[:, ii:ii+1].copy(), diff=True)[:, 0, :])
-            v2s.append(evh(coors[:, ii:ii+1])[:, 0, 0, :])
+            v1s.append(ev(coors[:, ii:ii+1].copy(), diff=1)[:, 0, :])
+            v2s.append(evh(coors[:, ii:ii+1], diff=2)[:, 0, 0, :])
 
         for ir in range(dim):
             vv = v2s[ir] # Destroys v2s!
