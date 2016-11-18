@@ -506,6 +506,72 @@ class LagrangeSimplexPolySpace(LagrangePolySpace):
 
         return nodes, nts, node_coors
 
+    def _eval_hessian(self, coors):
+        """
+        Evaluate the second derivatives of the basis.
+        """
+        def get_bc(coor):
+            rhs = nm.concatenate((coor, [1]))
+            bc = nm.dot(self.mtx_i, rhs)
+
+            return bc
+
+        def get_val(bc, node, omit=[]):
+            val = nm.ones(1, nm.float64)
+            for i1 in range(bc.shape[0]):
+                if i1 in omit: continue
+
+                for i2 in range(node[i1]):
+                    val *= (self.order * bc[i1] - i2) / (i2 + 1.0)
+
+            return val
+
+        def get_der(bc1, node1, omit=[]):
+            val = nm.zeros(1, nm.float64)
+            for i1 in range(node1):
+                if i1 in omit: continue
+
+                aux = nm.ones(1, nm.float64)
+                for i2 in range(node1):
+                    if (i1 == i2) or (i2 in omit): continue
+                    aux *= (self.order * bc1 - i2) / (i2 + 1.0)
+
+                val += aux * self.order / (i1 + 1.0)
+
+            return val
+
+        n_v = self.mtx_i.shape[0]
+        dim = n_v - 1
+
+        mi = self.mtx_i[:, :dim]
+        bfgg = nm.zeros((coors.shape[0], dim, dim, self.n_nod),
+                        dtype=nm.float64)
+
+        for ic, coor in enumerate(coors):
+            bc = get_bc(coor)
+
+            for ii, node in enumerate(self.nodes):
+                for ig1, bc1 in enumerate(bc): # 1. derivative w.r.t. bc1.
+                    for ig2, bc2 in enumerate(bc): # 2. derivative w.r.t. bc2.
+                        if ig1 == ig2:
+                            val = get_val(bc, node, omit=[ig1])
+
+                            vv = 0.0
+                            for i1 in range(node[ig1]):
+                                aux = get_der(bc2, node[ig2], omit=[i1])
+                                vv += aux * self.order / (i1 + 1.0)
+
+                            val *= vv
+
+                        else:
+                            val = get_val(bc, node, omit=[ig1, ig2])
+                            val *= get_der(bc1, node[ig1])
+                            val *= get_der(bc2, node[ig2])
+
+                        bfgg[ic, :, :, ii] += val * mi[ig1] * mi[ig2][:, None]
+
+        return bfgg
+
 class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
     """Lagrange polynomial space with forced bubble function on a simplex
     domain."""
