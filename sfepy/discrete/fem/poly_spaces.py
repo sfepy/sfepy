@@ -627,7 +627,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
         g1d = Struct(n_vertex = 2,
                      dim = 1,
-                     coors = self.bbox[:,0:1])
+                     coors = self.bbox[:,0:1].copy())
         self.ps1d = LagrangeSimplexPolySpace('P_aux', g1d, order,
                                              init_context=False)
 
@@ -762,6 +762,48 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
                            eps=eps)
 
         return base
+
+    def _eval_hessian(self, coors):
+        """
+        Evaluate the second derivatives of the basis.
+        """
+        evh = self.ps1d.eval_hessian
+
+        dim = self.geometry.dim
+        bfgg = nm.zeros((coors.shape[0], dim, dim, self.n_nod),
+                        dtype=nm.float64)
+
+        v0s = []
+        v1s = []
+        v2s = []
+        for ii in range(dim):
+            self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
+            self.ps1d.n_nod = self.n_nod
+            ev = self.ps1d.create_context(None, 0, 1e-15, 100, 1e-8,
+                                          tdim=1).evaluate
+
+            v0s.append(ev(coors[:, ii:ii+1].copy())[:, 0, :])
+            v1s.append(ev(coors[:, ii:ii+1].copy(), diff=True)[:, 0, :])
+            v2s.append(evh(coors[:, ii:ii+1])[:, 0, 0, :])
+
+        for ir in range(dim):
+            vv = v2s[ir] # Destroys v2s!
+            for ik in range(dim):
+                if ik == ir: continue
+                vv *= v0s[ik]
+
+            bfgg[:, ir, ir, :] = vv
+
+            for ic in range(dim):
+                if ic == ir: continue
+                val = v1s[ir] * v1s[ic]
+                for ik in range(dim):
+                    if (ik == ir) or (ik == ic): continue
+                    val *= v0s[ik]
+
+                bfgg[:, ir, ic, :] += val
+
+        return bfgg
 
     def get_mtx_i(self):
         return self.ps1d.mtx_i
