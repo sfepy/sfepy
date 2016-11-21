@@ -32,6 +32,8 @@ import six
 def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False,
                    clear_all=True, extra_dofs=False):
     if actual:
+        if not hasattr(domain.mesh, 'coors_act'):
+            domain.mesh.coors_act = nm.zeros_like(domain.mesh.coors)
         domain.mesh.coors_act[:] = coors[:domain.mesh.n_nod]
     else:
         domain.cmesh.coors[:] = coors[:domain.mesh.n_nod]
