@@ -290,18 +290,22 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(self, coors, diff=False, ori=None, force_axis=False,
+    def eval_base(self, coors, diff=0, ori=None, force_axis=False,
                   transform=None, suppress_errors=False, eps=1e-15):
         """
-        Evaluate the basis in points given by coordinates. The real work is
-        done in _eval_base() implemented in subclasses.
+        Evaluate the basis or its first or second derivatives in points given
+        by coordinates. The real work is done in _eval_base() implemented in
+        subclasses.
+
+        Note that the second derivative code is a work-in-progress and only
+        `coors` and `transform` arguments are used.
 
         Parameters
         ----------
         coors : array_like
             The coordinates of points where the basis is evaluated. See Notes.
-        diff : bool
-            If True, return the first derivative.
+        diff : 0, 1 or 2
+            If nonzero, return the given derivative.
         ori : array_like, optional
             Optional orientation of element facets for per element basis.
         force_axis : bool
@@ -317,10 +321,11 @@ class PolySpace(Struct):
         Returns
         -------
         base : array
-            The basis (shape (n_coor, 1, n_base)) or its derivative (shape
-            (n_coor, dim, n_base)) evaluated in the given points. An additional
-            axis is pre-pended of length n_cell, if `ori` is given, or of
-            length 1, if `force_axis` is True.
+            The basis (shape (n_coor, 1, n_base)) or its first derivative
+            (shape (n_coor, dim, n_base)) or its second derivative (shape
+            (n_coor, dim, dim, n_base)) evaluated in the given points. An
+            additional axis is pre-pended of length n_cell, if `ori` is given,
+            or of length 1, if `force_axis` is True.
 
         Notes
         -----
@@ -408,14 +413,18 @@ class LagrangePolySpace(PolySpace):
 
         return ctx
 
-    def _eval_base(self, coors, diff=False, ori=None,
+    def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
         """
         See :func:`PolySpace.eval_base()`.
         """
-        base = self.eval_ctx.evaluate(coors, diff=diff,
-                                      eps=eps,
-                                      check_errors=not suppress_errors)
+        if diff == 2:
+            base = self._eval_hessian(coors)
+
+        else:
+            base = self.eval_ctx.evaluate(coors, diff=diff,
+                                          eps=eps,
+                                          check_errors=not suppress_errors)
         return base
 
 class LagrangeSimplexPolySpace(LagrangePolySpace):
@@ -506,6 +515,72 @@ class LagrangeSimplexPolySpace(LagrangePolySpace):
 
         return nodes, nts, node_coors
 
+    def _eval_hessian(self, coors):
+        """
+        Evaluate the second derivatives of the basis.
+        """
+        def get_bc(coor):
+            rhs = nm.concatenate((coor, [1]))
+            bc = nm.dot(self.mtx_i, rhs)
+
+            return bc
+
+        def get_val(bc, node, omit=[]):
+            val = nm.ones(1, nm.float64)
+            for i1 in range(bc.shape[0]):
+                if i1 in omit: continue
+
+                for i2 in range(node[i1]):
+                    val *= (self.order * bc[i1] - i2) / (i2 + 1.0)
+
+            return val
+
+        def get_der(bc1, node1, omit=[]):
+            val = nm.zeros(1, nm.float64)
+            for i1 in range(node1):
+                if i1 in omit: continue
+
+                aux = nm.ones(1, nm.float64)
+                for i2 in range(node1):
+                    if (i1 == i2) or (i2 in omit): continue
+                    aux *= (self.order * bc1 - i2) / (i2 + 1.0)
+
+                val += aux * self.order / (i1 + 1.0)
+
+            return val
+
+        n_v = self.mtx_i.shape[0]
+        dim = n_v - 1
+
+        mi = self.mtx_i[:, :dim]
+        bfgg = nm.zeros((coors.shape[0], dim, dim, self.n_nod),
+                        dtype=nm.float64)
+
+        for ic, coor in enumerate(coors):
+            bc = get_bc(coor)
+
+            for ii, node in enumerate(self.nodes):
+                for ig1, bc1 in enumerate(bc): # 1. derivative w.r.t. bc1.
+                    for ig2, bc2 in enumerate(bc): # 2. derivative w.r.t. bc2.
+                        if ig1 == ig2:
+                            val = get_val(bc, node, omit=[ig1])
+
+                            vv = 0.0
+                            for i1 in range(node[ig1]):
+                                aux = get_der(bc2, node[ig2], omit=[i1])
+                                vv += aux * self.order / (i1 + 1.0)
+
+                            val *= vv
+
+                        else:
+                            val = get_val(bc, node, omit=[ig1, ig2])
+                            val *= get_der(bc1, node[ig1])
+                            val *= get_der(bc2, node[ig2])
+
+                        bfgg[ic, :, :, ii] += val * mi[ig1] * mi[ig2][:, None]
+
+        return bfgg
+
 class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
     """Lagrange polynomial space with forced bubble function on a simplex
     domain."""
@@ -561,7 +636,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
         g1d = Struct(n_vertex = 2,
                      dim = 1,
-                     coors = self.bbox[:,0:1])
+                     coors = self.bbox[:,0:1].copy())
         self.ps1d = LagrangeSimplexPolySpace('P_aux', g1d, order,
                                              init_context=False)
 
@@ -696,6 +771,48 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
                            eps=eps)
 
         return base
+
+    def _eval_hessian(self, coors):
+        """
+        Evaluate the second derivatives of the basis.
+        """
+        evh = self.ps1d.eval_base
+
+        dim = self.geometry.dim
+        bfgg = nm.zeros((coors.shape[0], dim, dim, self.n_nod),
+                        dtype=nm.float64)
+
+        v0s = []
+        v1s = []
+        v2s = []
+        for ii in range(dim):
+            self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
+            self.ps1d.n_nod = self.n_nod
+            ev = self.ps1d.create_context(None, 0, 1e-15, 100, 1e-8,
+                                          tdim=1).evaluate
+
+            v0s.append(ev(coors[:, ii:ii+1].copy())[:, 0, :])
+            v1s.append(ev(coors[:, ii:ii+1].copy(), diff=1)[:, 0, :])
+            v2s.append(evh(coors[:, ii:ii+1], diff=2)[:, 0, 0, :])
+
+        for ir in range(dim):
+            vv = v2s[ir] # Destroys v2s!
+            for ik in range(dim):
+                if ik == ir: continue
+                vv *= v0s[ik]
+
+            bfgg[:, ir, ir, :] = vv
+
+            for ic in range(dim):
+                if ic == ir: continue
+                val = v1s[ir] * v1s[ic]
+                for ik in range(dim):
+                    if (ik == ir) or (ik == ic): continue
+                    val *= v0s[ik]
+
+                bfgg[:, ir, ic, :] += val
+
+        return bfgg
 
     def get_mtx_i(self):
         return self.ps1d.mtx_i

@@ -249,3 +249,50 @@ class Test(TestCommon):
                         ' spaces:\n', bad_families)
 
         return ok
+
+    def test_hessians(self):
+        """
+        Test the second partial derivatives of basis functions using finite
+        differences.
+        """
+        from sfepy.linalg import combine
+        from sfepy.discrete import Integral
+        from sfepy.discrete.fem.poly_spaces import PolySpace
+
+        ok = True
+        orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
+        bases = ([ii for ii in combine([['2_3', '2_4', '3_4', '3_8'],
+                                        ['lagrange']])])
+
+        for geom, poly_space_base in bases:
+            self.report('geometry: %s, base: %s' % (geom, poly_space_base))
+            order = orders[geom]
+
+            integral = Integral('i', order=order)
+            coors, _ = integral.get_qp(geom)
+
+            ps = PolySpace.any_from_args('ps', self.gels[geom], order,
+                                         base=poly_space_base)
+
+            dim = coors.shape[1]
+            h1 = nm.zeros((coors.shape[0], dim, dim, ps.n_nod), nm.float64)
+            eps = 1e-8
+            for ir in range(dim):
+                cc = coors.copy()
+
+                cc[:, ir] -= eps
+                aux0 = ps.eval_base(cc, diff=1)
+
+                cc[:, ir] += 2 * eps
+                aux1 = ps.eval_base(cc, diff=1)
+
+                h1[:, :, ir, :] = 0.5 * (aux1 - aux0) / eps
+
+            h2 = ps.eval_base(coors, diff=2)
+
+            _ok = nm.allclose(h1, h2, rtol=0, atol=50*eps)
+            self.report('hessians: error: %.2e ok: %s'
+                        % (nm.abs(h1 - h2).max(), _ok))
+            ok = ok and _ok
+
+        return ok
