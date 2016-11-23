@@ -1005,7 +1005,7 @@ class Problem(Struct):
 
     def solve(self, state0=None, nls_status=None,
               ls_conf=None, nls_conf=None, force_values=None,
-              var_data=None):
+              var_data=None, update_materials=True):
         """Solve self.equations in current time step.
 
         Parameters
@@ -1028,7 +1028,8 @@ class Problem(Struct):
 
         self.equations.set_data(var_data, ignore_unknown=True)
 
-        self.update_materials()
+        if update_materials:
+            self.update_materials()
         state0.apply_ebc(force_values=force_values)
 
         vec0 = state0.get_reduced()
