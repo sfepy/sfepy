@@ -76,7 +76,7 @@ band_gaps_options = {
     'fixed_freq_range' : (0., 35.), # overrides eig_range!
 
     'freq_eps' : 1e-12, # frequency
-    'zezo_eps' : 1e-12, # zero finding
+    'zero_eps' : 1e-12, # zero finding
     'freq_step' : 0.01, # % of freq_range
 
     'log_save_name' : 'band_gaps.log',

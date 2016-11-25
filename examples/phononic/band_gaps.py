@@ -97,7 +97,7 @@ band_gaps_options = {
                            # = sqrt(eigs[slice(*eig_range)][[0, -1]])
     'freq_margins' : (10, 10), # % of freq_range
     'freq_eps' : 1e-12, # frequency
-    'zezo_eps' : 1e-12, # zero finding
+    'zero_eps' : 1e-12, # zero finding
     'freq_step' : 0.0001, # % of freq_range
 
     'log_save_name' : 'band_gaps.log',
