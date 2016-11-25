@@ -54,7 +54,7 @@ def get_volume_from_options(options, problem, ncoors=None):
 
     return volume
 
-class HomogenizationApp( HomogenizationEngine ):
+class HomogenizationApp(HomogenizationEngine):
 
     @staticmethod
     def process_options(options):
@@ -113,10 +113,10 @@ class HomogenizationApp( HomogenizationEngine ):
             shutil.copyfile(conf._filename,
                             op.join(output_dir, op.basename(conf._filename)))
 
-    def setup_options( self ):
+    def setup_options(self):
         PDESolverApp.setup_options(self)
         po = HomogenizationApp.process_options
-        self.app_options += po( self.conf.options )
+        self.app_options += po(self.conf.options)
 
     def setup_macro_deformation(self, mtx_F):
         """
@@ -198,7 +198,7 @@ class HomogenizationApp( HomogenizationEngine ):
         else:
             coefs = aux
 
-        coefs = Coefficients( **coefs.to_dict() )
+        coefs = Coefficients(**coefs.to_dict())
         coefs.volume = volume
 
         if verbose:
@@ -208,7 +208,7 @@ class HomogenizationApp( HomogenizationEngine ):
             print(coefs)
             nm.set_printoptions(precision=prec)
 
-        coef_save_name = op.join( opts.output_dir, opts.coefs_filename )
+        coef_save_name = op.join(opts.output_dir, opts.coefs_filename)
         coefs.to_file_hdf5(coef_save_name + '%s.h5' % time_tag)
         coefs.to_file_txt(coef_save_name + '%s.txt' % time_tag,
                           opts.tex_names,

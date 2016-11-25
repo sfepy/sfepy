@@ -629,20 +629,13 @@ class PressureEigenvalueProblem(CorrMiniApp):
                 ii0 = get_slice(n_eigs[0], nn)
                 ii1 = get_slice(-n_eigs[1], nn)
                 eigs = nm.concatenate((eigs[ii0], eigs[ii1]))
-                mtx_q = nm.concatenate((mtx_q[:,ii0], mtx_q[:,ii1]), 1) 
+                mtx_q = nm.concatenate((mtx_q[:,ii0], mtx_q[:,ii1]), 1)
         else:
             output('required number of eigenvalues: %d' % n_eigs)
             if (n_eigs != 0) and (abs(n_eigs) < nn):
                 ii = get_slice(n_eigs, nn)
                 eigs = eigs[ii]
                 mtx_q = mtx_q[:,ii]
-
-##         from sfepy.base.plotutils import pylab, iplot
-##         pylab.semilogy(eigs)
-##         pylab.figure(2)
-##         iplot(eigs)
-##         pylab.show()
-##         debug()
 
         out = Struct(eigs=eigs, mtx_q=mtx_q)
         return out
