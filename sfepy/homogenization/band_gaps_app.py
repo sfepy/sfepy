@@ -354,9 +354,10 @@ class AcousticBandGapsApp(HomogenizationApp):
 
         self.setup_options()
 
-        output_dir = self.problem.output_dir
-        shutil.copyfile(conf._filename,
-                        op.join(output_dir, op.basename(conf._filename)))
+        if conf._filename:
+            output_dir = self.problem.output_dir
+            shutil.copyfile(conf._filename,
+                            op.join(output_dir, op.basename(conf._filename)))
 
     def setup_options(self):
         HomogenizationApp.setup_options(self)
