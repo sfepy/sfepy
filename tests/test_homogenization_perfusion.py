@@ -58,12 +58,12 @@ class Test(TestCommon):
                                          'G^A', 'G^B', aerr)
 
         # F^{A+} + F^{B+} = -1/h \int_{\partial_+Y_m} ?
-        aux = 1.0 / test_conf.param_h * coefs.volume['bYMp']
+        aux = 1.0 / test_conf.param_h * coefs.Volume_bYMp
         ok = ok and self.compare_scalars(coefs.FpA + coefs.FpB, -aux,
                                          'F^{A+} + F^{B+}', '-bYM^+', aerr)
 
         # F^{A-} + F^{B-} = -1/h \int_{\partial_-Y_m} ?
-        aux = 1.0 / test_conf.param_h * coefs.volume['bYMm']
+        aux = 1.0 / test_conf.param_h * coefs.Volume_bYMm
         ok = ok and self.compare_scalars(coefs.FmA + coefs.FmB, -aux,
                                          'F^{A-} + F^{B-}', '-bYM^-', aerr)
 
