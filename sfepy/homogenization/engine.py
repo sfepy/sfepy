@@ -3,7 +3,8 @@ from copy import copy
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
-from .coefs_base import MiniAppBase
+from .coefs_base import MiniAppBase, CoefEval
+from sfepy.discrete.evaluate import eval_equations
 import sfepy.base.multiproc as multiproc
 import numpy as nm
 import six
@@ -48,6 +49,15 @@ def rm_multi(s):
     idx = s.rfind('|multiprocessing_')
     return s[:idx] if idx > 0 else s
 
+class CoefVolume(MiniAppBase):
+    def __call__(self, volume, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
+        return eval_equations(equations, variables, term_mode=term_mode)
+
 class HomogenizationEngine(PDESolverApp):
 
     @staticmethod
@@ -65,14 +75,14 @@ class HomogenizationEngine(PDESolverApp):
                       coefs_info=get('coefs_info', None))
 
     def __init__(self, problem, options, app_options=None,
-                 volume=None, output_prefix='he:', **kwargs):
+                 volumes=None, output_prefix='he:', **kwargs):
         """Bypasses PDESolverApp.__init__()!"""
         Application.__init__(self, problem.conf, options, output_prefix,
                              **kwargs)
         self.problem = problem
         self.setup_options(app_options=app_options)
         self.setup_output_info(self.problem, self.options)
-        self.volume = volume
+        self.volumes = volumes
         self.micro_coors = None
 
     def setup_options(self, app_options=None):
@@ -84,9 +94,6 @@ class HomogenizationEngine(PDESolverApp):
 
     def set_micro_coors(self, ncoors):
         self.micro_coors = ncoors
-
-    def set_volume(self, volume):
-        self.volume = volume
 
     @staticmethod
     def get_sorted_dependencies(req_info, coef_info, compute_only):
@@ -109,13 +116,19 @@ class HomogenizationEngine(PDESolverApp):
         return dep_names
 
     @staticmethod
-    def calculate_req(problem, opts, volume, post_process_hook,
+    def calculate_req(problem, opts, post_process_hook,
                       name, req_info, coef_info, sd_names, dependencies,
                       micro_coors, time_tag='', chunk_tab=None, proc_id='0'):
-        def calculate(mini_app, problem, dependencies, dep_requires, volume,
+        def calculate(mini_app, problem, dependencies, dep_requires,
                       sd_names, micro_coors, chunk_tab, mode, proc_id):
             if micro_coors is None:
-                data = {key: dependencies[key] for key in dep_requires}
+                data = {key: dependencies[key] for key in dep_requires\
+                    if 'VOLUME_' not in key}
+                volume = {key[9:]: dependencies[key]\
+                    for key in dep_requires if 'VOLUME_' in key}
+                mini_app.requires = [ii for ii in mini_app.requires\
+                    if 'c.VOLUME_' not in ii]
+
                 if mode == 'coefs':
                     val = mini_app(volume, data=data)
                 else:
@@ -128,7 +141,12 @@ class HomogenizationEngine(PDESolverApp):
                     val = mini_app(data=data)
             else:
                 data = {rm_multi(key): dependencies[key]\
-                    for key in dep_requires}
+                    for key in dep_requires if 'VOLUME_' not in key}
+                volume = {rm_multi(key[9:]): dependencies[key]\
+                    for key in dep_requires if 'VOLUME_' in key}
+                mini_app.requires = [ii for ii in mini_app.requires\
+                    if 'c.VOLUME_' not in ii]
+
                 if '|multiprocessing_' in mini_app.name\
                     and chunk_tab is not None:
                     chunk_id = int(mini_app.name[-3:])
@@ -149,7 +167,7 @@ class HomogenizationEngine(PDESolverApp):
                                            clear_all=False, actual=True)
 
                     if mode=='coefs':
-                        val.append(mini_app(get_dict_idxval(volume, idx0 + im),
+                        val.append(mini_app(get_dict_idxval(volume, im),
                                             data=get_dict_idxval(data, im)))
                     else:
                         if hasattr(mini_app, 'store_idxs') and\
@@ -196,7 +214,7 @@ class HomogenizationEngine(PDESolverApp):
             dep_requires = cargs.get('requires', [])
 
             val = calculate(mini_app, problem, dependencies, dep_requires,
-                volume, sd_names, micro_coors, chunk_tab, 'coefs', proc_id)
+                sd_names, micro_coors, chunk_tab, 'coefs', proc_id)
 
             output('...done')
 
@@ -221,7 +239,7 @@ class HomogenizationEngine(PDESolverApp):
             dep_requires = rargs.get('requires', [])
 
             val = calculate(mini_app, problem, dependencies, dep_requires,
-                volume, sd_names, micro_coors, chunk_tab, 'reqs', proc_id)
+                sd_names, micro_coors, chunk_tab, 'reqs', proc_id)
 
             output('...done')
 
@@ -229,7 +247,7 @@ class HomogenizationEngine(PDESolverApp):
 
     @staticmethod
     def calculate_req_multi(tasks, lock, remaining, numdeps, inverse_deps,
-                            problem, opts, volume, post_process_hook,
+                            problem, opts, post_process_hook,
                             req_info, coef_info, sd_names, dependencies,
                             micro_coors, time_tag, chunk_tab, proc_id):
         while remaining.value > 0:
@@ -239,7 +257,7 @@ class HomogenizationEngine(PDESolverApp):
                 break
 
             sd_names_loc = {}
-            val = HomogenizationEngine.calculate_req(problem, opts, volume,
+            val = HomogenizationEngine.calculate_req(problem, opts,
                 post_process_hook, name, req_info, coef_info, sd_names_loc,
                 dependencies, micro_coors, time_tag, chunk_tab, proc_id)
 
@@ -358,6 +376,44 @@ class HomogenizationEngine(PDESolverApp):
 
         return new_deps
 
+    def define_volume_coef(self, coef_info, volumes):
+        """
+        Define volume coefficients and make all other dependent on them.
+
+        Parameters
+        ----------
+        coef_info : dict
+            The coefficient definitions.
+        volumes : dict
+            The definitions of volumes.
+
+        Returns
+        -------
+        coef_info : dict
+            The coefficient definitions extended by the volume coefficients.
+        """
+        vcfkeys = []
+        cf_vols = {}
+        for vk, vv in six.iteritems(volumes):
+            cfkey = 'VOLUME_%s' % vk
+            vcfkeys.append('c.' + cfkey)
+            if 'value' in vv:
+                cf_vols[cfkey] = {'expression': '%e' % float(vv['value']),
+                                  'class': CoefEval}
+            else:
+                cf_vols[cfkey] = {'expression': vv['expression'],
+                                  'class': CoefVolume}
+
+        for cf in six.itervalues(coef_info):
+            if 'requires' in cf:
+                cf['requires'] += vcfkeys
+            else:
+                cf['requires'] = vcfkeys
+
+        coef_info.update(cf_vols)
+
+        return coef_info
+
     def call(self, ret_all=False, time_tag=''):
         problem = self.problem
         opts = self.app_options
@@ -366,12 +422,13 @@ class HomogenizationEngine(PDESolverApp):
         # order here.
         req_info = getattr(self.conf, opts.requirements, {})
         coef_info = getattr(self.conf, opts.coefs, {})
+        coef_info = self.define_volume_coef(coef_info, self.volumes)
 
         is_store_filenames = coef_info.pop('filenames', None) is not None
         is_micro_coors = self.micro_coors is not None
 
         use_multiprocessing = multiproc.use_multiprocessing\
-            and getattr(self.conf.options, 'multiprocessing', True)\
+            and getattr(self.conf.options, 'multiprocessing', True)
 
         if use_multiprocessing:
             num_workers = multiproc.cpu_count()
@@ -416,10 +473,9 @@ class HomogenizationEngine(PDESolverApp):
             workers = []
             for ii in range(num_workers):
                 args = (tasks, lock, remaining, numdeps, inverse_deps,
-                        problem, opts, self.volume, self.post_process_hook,
-                        req_info, coef_info, sd_names, dependencies,
-                        self.micro_coors, time_tag, micro_chunk_tab,
-                        str(ii + 1))
+                        problem, opts, self.post_process_hook, req_info,
+                        coef_info, sd_names, dependencies, self.micro_coors,
+                        time_tag, micro_chunk_tab, str(ii + 1))
                 w = multiproc.Process(target=self.calculate_req_multi,
                                       args=args)
                 w.start()
@@ -446,9 +502,10 @@ class HomogenizationEngine(PDESolverApp):
                         req_info[name]['store_idxs'] = ([jj\
                             for jj in self.app_options.store_corrs_idxs], 0)
 
-                val = self.calculate_req(problem, opts, self.volume,
-                    self.post_process_hook, name, req_info, coef_info,
-                    sd_names, dependencies, self.micro_coors, time_tag)
+                val = self.calculate_req(problem, opts, self.post_process_hook,
+                                         name, req_info, coef_info, sd_names,
+                                         dependencies, self.micro_coors,
+                                         time_tag)
 
                 dependencies[name] = val
 

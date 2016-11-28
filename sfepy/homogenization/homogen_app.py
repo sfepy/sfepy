@@ -14,46 +14,6 @@ import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
 from six.moves import range
 
-class Volume(MiniAppBase):
-
-    def __call__(self, problem=None):
-        problem = get_default(problem, self.problem)
-        problem.select_variables(self.variables)
-
-        volume = problem.evaluate(self.expression)
-
-        return volume
-
-def get_volume_from_options(options, problem, ncoors=None):
-    def get_vol(opt_vol, problem):
-        if ncoors is None:
-            if 'value' in opt_vol:
-                out = nm.float64(opt_vol['value'])
-            else:
-                out = Volume('volume', problem, opt_vol)()
-        else:
-            n = ncoors.shape[0]
-            out = nm.empty((n,), dtype=nm.float64)
-            for im in range(n):
-                if 'value' in opt_vol:
-                    out[im] = nm.float64(opt_vol['value'])
-                else:
-                    problem.set_mesh_coors(ncoors[im], update_fields=True,
-                                           clear_all=False, actual=True)
-                    out[im] = Volume('volume', problem, opt_vol)()
-
-        return out
-
-    volume = {}
-    if hasattr(options, 'volumes') and (options.volumes is not None):
-        for vk, vv in six.iteritems(options.volumes):
-            volume[vk] = get_vol(vv, problem)
-
-    elif hasattr(options, 'volume') and (options.volume is not None):
-        volume['total'] = get_vol(options.volume, problem)
-
-    return volume
-
 class HomogenizationApp(HomogenizationEngine):
 
     @staticmethod
@@ -171,15 +131,19 @@ class HomogenizationApp(HomogenizationEngine):
         ret_all = get_default(ret_all, opts.return_all)
 
         if not hasattr(self, 'he'):
-            self.he = HomogenizationEngine(self.problem, self.options)
+            volumes = {}
+            if hasattr(opts, 'volumes') and (opts.volumes is not None):
+                volumes.update(opts.volumes)
+            elif hasattr(opts, 'volume') and (opts.volume is not None):
+                volumes['total'] = opts.volume
+            else:
+                volumes['total'] = 1.0
+
+            self.he = HomogenizationEngine(self.problem, self.options,
+                                           volumes=volumes)
 
         if self.micro_coors is not None:
             self.he.set_micro_coors(self.update_micro_coors(ret_val=True))
-
-        volume = get_volume_from_options(opts, self.problem, self.micro_coors)
-        self.he.set_volume(volume)
-        for vk, vv in six.iteritems(volume):
-            output('volume: %s = ' % vk, vv)
 
         if multiproc.use_multiprocessing:
             upd_var = self.app_options.mesh_update_variable
@@ -199,7 +163,6 @@ class HomogenizationApp(HomogenizationEngine):
             coefs = aux
 
         coefs = Coefficients(**coefs.to_dict())
-        coefs.volume = volume
 
         if verbose:
             prec = nm.get_printoptions()[ 'precision']
