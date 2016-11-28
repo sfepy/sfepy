@@ -114,8 +114,7 @@ options = {
     'coefs' : 'coefs',
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
-    'volume' : { 'variables' : ['u'],
-                 'expression' : 'd_volume.i.Y( u )' },
+    'volume' : {'expression' : 'd_volume.i.Y(u)'},
     'output_dir' : 'output',
     'coefs_filename' : 'coefs_le',
     'recovery_hook' : 'recovery_le',
@@ -125,26 +124,20 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """dw_lin_elastic.i.Y(mat.D, v, u ) =
-     - dw_lin_elastic.i.Y(mat.D, v, Pi )"""
+    """dw_lin_elastic.i.Y(mat.D, v, u) =
+     - dw_lin_elastic.i.Y(mat.D, v, Pi)"""
 }
 #! Expressions for homogenized linear elastic coefficients.
-expr_coefs = """dw_lin_elastic.i.Y(mat.D, Pi1, Pi2 )"""
+expr_coefs = """dw_lin_elastic.i.Y(mat.D, Pi1, Pi2)"""
 #! Coefficients
 #! ------------
 #! Definition of homogenized acoustic coefficients.
-def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
-    mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
-
-    val = pis.states[ir, ic]['u'] + corrs_rs.states[ir, ic]['u']
-
-    variables[mode2var[mode]].set_data(val)
-
 coefs = {
     'D' : {
         'requires' : ['pis', 'corrs_rs'],
         'expression' : expr_coefs,
-        'set_variables' : set_elastic,
+        'set_variables' : [('Pi1', ('pis', 'corrs_rs'), 'u'),
+                           ('Pi2', ('pis', 'corrs_rs'), 'u')],
         'class' : cb.CoefSymSym,
     },
     'filenames' : {},

@@ -20,7 +20,6 @@ from sfepy.base.base import Struct
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
 
 def recovery_le( pb, corrs, macro ):
-
     out = {}
     dim = corrs['corrs_le']['u_00'].shape[1]
     mic_u = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'u', dim )
@@ -130,10 +129,7 @@ options = {
     'coefs' : 'coefs',
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
-    'volume' : { #'variables' : ['u'],
-                 #'expression' : 'd_volume.i.Y( u )',
-                 'value' : get_box_volume( dim, region_lbn, region_rtf ),
-                 },
+    'volume' : {'value' : get_box_volume(dim, region_lbn, region_rtf),},
     'output_dir' : 'output',
     'coefs_filename' : 'coefs_le_up',
     'recovery_hook' : 'recovery_le',
@@ -151,32 +147,23 @@ equation_corrs = {
        - dw_volume_dot.i.Y( mat.gamma, q, p ) =
        + dw_stokes.i.Y( Pi, q )""",
 }
-#! Expressions for homogenized linear elastic coefficients.
-expr_coefs = {
-    'Q1' : """dw_lin_elastic.i.Y( mat.D, Pi1u, Pi2u )""",
-    'Q2' : """dw_volume_dot.i.Y( mat.gamma, Pi1p, Pi2p )""",
-}
+
 #! Coefficients
 #! ------------
 #! Definition of homogenized acoustic coefficients.
-def set_elastic_u(variables, ir, ic, mode, pis, corrs_rs):
-    mode2var = {'row' : 'Pi1u', 'col' : 'Pi2u'}
-
-    val = pis.states[ir, ic]['u'] + corrs_rs.states[ir, ic]['u']
-
-    variables[mode2var[mode]].set_data(val)
-
 coefs = {
     'elastic_u' : {
         'requires' : ['pis', 'corrs_rs'],
-        'expression' : expr_coefs['Q1'],
-        'set_variables' : set_elastic_u,
+        'expression' : 'dw_lin_elastic.i.Y(mat.D, Pi1u, Pi2u)',
+        'set_variables' : [('Pi1u', ('pis', 'corrs_rs'), 'u'),
+                           ('Pi2u', ('pis', 'corrs_rs'), 'u')],
         'class' : cb.CoefSymSym,
     },
     'elastic_p' : {
         'requires' : ['corrs_rs'],
-        'expression' : expr_coefs['Q2'],
-        'set_variables' : [('Pi1p', 'corrs_rs', 'p'), ('Pi2p', 'corrs_rs', 'p')],
+        'expression' : 'dw_volume_dot.i.Y(mat.gamma, Pi1p, Pi2p)',
+        'set_variables' : [('Pi1p', 'corrs_rs', 'p'),
+                           ('Pi2p', 'corrs_rs', 'p')],
         'class' : cb.CoefSymSym,
     },
     'D' : {
@@ -207,9 +194,11 @@ requirements = {
 #! -------
 #! Define linear and nonlinear solver.
 solvers = {
-    'ls' : ('ls.scipy_direct', {}),
+    'ls': ('ls.scipy_iterative', {
+        'method': 'cg',
+    }),
     'newton' : ('nls.newton', {
         'i_max' : 1,
-        'eps_a' : 1e-4,
+        'eps_a' : 1e2,
     })
 }
