@@ -11,40 +11,44 @@ from __future__ import absolute_import
 import numpy as nm
 
 import sfepy.discrete.fem.periodic as per
-from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson_mixed, bulk_from_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson_mixed,\
+    bulk_from_youngpoisson
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_base as cb
 
 from sfepy import data_dir
 from sfepy.base.base import Struct
-from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
+from sfepy.homogenization.recovery import compute_micro_u,\
+    compute_stress_strain_u, compute_mac_stress_part, add_stress_p
 
-def recovery_le( pb, corrs, macro ):
+def recovery_le(pb, corrs, macro):
     out = {}
     dim = corrs['corrs_le']['u_00'].shape[1]
-    mic_u = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'u', dim )
-    mic_p = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'p', dim )
+    mic_u = - compute_micro_u(corrs['corrs_le'], macro['strain'], 'u', dim)
+    mic_p = - compute_micro_u(corrs['corrs_le'], macro['strain'], 'p', dim)
 
-    out['u_mic'] = Struct( name = 'output_data',
+    out['u_mic'] = Struct(name = 'output_data',
                            mode = 'vertex', data = mic_u,
-                           var_name = 'u', dofs = None )
-    out['p_mic'] = Struct( name = 'output_data',
+                           var_name = 'u', dofs = None)
+    out['p_mic'] = Struct(name = 'output_data',
                            mode = 'cell', data = mic_p[:,nm.newaxis,
                                                        :,nm.newaxis],
-                           var_name = 'p', dofs = None )
+                           var_name = 'p', dofs = None)
 
-    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i', 'Y', 'mat.D', 'u', mic_u )
-    stress_Y += compute_mac_stress_part( pb, 'i', 'Y', 'mat.D', 'u', macro['strain'] )
-    add_stress_p( stress_Y, pb, 'i', 'Y', 'p', mic_p )
+    stress_Y, strain_Y = \
+        compute_stress_strain_u(pb, 'i', 'Y', 'mat.D', 'u', mic_u)
+    stress_Y += \
+        compute_mac_stress_part(pb, 'i', 'Y', 'mat.D', 'u', macro['strain'])
+    add_stress_p(stress_Y, pb, 'i', 'Y', 'p', mic_p)
 
     strain = macro['strain'] + strain_Y
 
-    out['cauchy_strain'] = Struct( name = 'output_data',
-                                   mode = 'cell', data = strain,
-                                   dofs = None )
-    out['cauchy_stress'] = Struct( name = 'output_data',
-                                   mode = 'cell', data = stress_Y,
-                                   dofs = None )
+    out['cauchy_strain'] = Struct(name='output_data',
+                                  mode='cell', data=strain,
+                                  dofs=None)
+    out['cauchy_stress'] = Struct(name='output_data',
+                                  mode='cell', data=stress_Y,
+                                  dofs=None)
     return out
 
 #! Mesh
@@ -61,7 +65,7 @@ regions = {
     'Ym' : 'cells of group 1',
     'Yc' : 'cells of group 2',
 }
-regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
+regions.update(define_box_regions(dim, region_lbn, region_rtf))
 #! Materials
 #! ---------
 materials = {
@@ -106,14 +110,19 @@ ebcs = {
 }
 if dim == 3:
     epbcs = {
-        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'}, 'match_x_plane'),
-        'periodic_y' : (['Near', 'Far'], {'u.all' : 'u.all'}, 'match_y_plane'),
-        'periodic_z' : (['Top', 'Bottom'], {'u.all' : 'u.all'}, 'match_z_plane'),
+        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'},
+                        'match_x_plane'),
+        'periodic_y' : (['Near', 'Far'], {'u.all' : 'u.all'},
+                        'match_y_plane'),
+        'periodic_z' : (['Top', 'Bottom'], {'u.all' : 'u.all'},
+                        'match_z_plane'),
     }
 else:
     epbcs = {
-        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'}, 'match_x_plane'),
-        'periodic_y' : (['Bottom', 'Top'], {'u.all' : 'u.all'}, 'match_y_plane'),
+        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'},
+                        'match_x_plane'),
+        'periodic_y' : (['Bottom', 'Top'], {'u.all' : 'u.all'},
+                        'match_y_plane'),
     }
 all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 #! Integrals
@@ -139,13 +148,13 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """  dw_lin_elastic.i.Y( mat.D, v, u )
-       - dw_stokes.i.Y( v, p ) =
-       - dw_lin_elastic.i.Y( mat.D, v, Pi )""",
+    """  dw_lin_elastic.i.Y(mat.D, v, u)
+       - dw_stokes.i.Y(v, p) =
+       - dw_lin_elastic.i.Y(mat.D, v, Pi)""",
     'pressure constraint' :
-    """- dw_stokes.i.Y( u, q )
-       - dw_volume_dot.i.Y( mat.gamma, q, p ) =
-       + dw_stokes.i.Y( Pi, q )""",
+    """- dw_stokes.i.Y(u, q)
+       - dw_volume_dot.i.Y(mat.gamma, q, p) =
+       + dw_stokes.i.Y(Pi, q)""",
 }
 
 #! Coefficients

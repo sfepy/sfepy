@@ -3,27 +3,27 @@ import os
 from sfepy import data_dir
 from sfepy.base.base import nm
 from sfepy.homogenization.micmac import get_homog_coefs_linear
-from sfepy.homogenization.recovery import save_recovery_region, recover_micro_hook
+from sfepy.homogenization.recovery import save_recovery_region,\
+    recover_micro_hook
 
-def post_process( out, pb, state, extend = False ):
+def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    if isinstance( state, dict ):
+    if isinstance(state, dict):
         pass
     else:
-        stress = pb.evaluate('ev_cauchy_stress.i.Omega( solid.D, u )',
+        stress = pb.evaluate('ev_cauchy_stress.i.Omega(solid.D, u)',
                              mode='el_avg')
-        strain = pb.evaluate('ev_cauchy_strain.i.Omega( u )',
+        strain = pb.evaluate('ev_cauchy_strain.i.Omega(u)',
                              mode='el_avg')
-        out['cauchy_strain'] = Struct( name = 'output_data',
-                                       mode = 'cell', data = strain,
-                                       dofs = None )
-        out['cauchy_stress'] = Struct( name = 'output_data',
-                                       mode = 'cell', data = stress,
-                                       dofs = None )
+        out['cauchy_strain'] = Struct(name='output_data',
+                                      mode='cell', data=strain,
+                                      dofs=None)
+        out['cauchy_stress'] = Struct(name='output_data',
+                                      mode='cell', data=stress,
+                                      dofs=None)
 
         if pb.conf.options.get('recover_micro', False):
-
             rname = pb.conf.options.recovery_region
             region = pb.domain.regions[rname]
 
@@ -31,11 +31,11 @@ def post_process( out, pb, state, extend = False ):
                                     'recovery_region.vtk')
             save_recovery_region(pb, rname, filename=filename);
 
-            rstrain = pb.evaluate('ev_cauchy_strain.i.%s( u )' % rname,
+            rstrain = pb.evaluate('ev_cauchy_strain.i.%s(u)' % rname,
                                   mode='el_avg')
 
-            recover_micro_hook( pb.conf.options.micro_filename,
-                                region, {'strain' : rstrain} )
+            recover_micro_hook(pb.conf.options.micro_filename,
+                               region, {'strain' : rstrain})
 
     return out
 
@@ -43,6 +43,7 @@ def get_elements(coors, domain=None):
     return nm.arange(50, domain.shape.n_el, 100)
 
 regenerate = True
+
 def get_homog(ts, coors, mode=None, **kwargs):
     global regenerate
 
@@ -71,7 +72,7 @@ materials = {
 }
 
 fields = {
-    '3_displacement': ('real', 3, 'Omega', 1),
+    '3_displacement' : ('real', 3, 'Omega', 1),
 }
 
 integrals = {
@@ -90,7 +91,7 @@ ebcs = {
 
 equations = {
     'balance_of_forces' :
-    """dw_lin_elastic.i.Omega( solid.D, v, u ) = 0""",
+    """dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
 }
 
 solvers = {
@@ -103,6 +104,7 @@ solvers = {
 
 micro_filename = data_dir \
                  + '/examples/homogenization/linear_homogenization_up.py'
+
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
