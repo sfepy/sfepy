@@ -40,7 +40,8 @@ class HomogenizationApp(HomogenizationEngine):
                       macro_deformation=get('macro_deformation', None),
                       mesh_update_variable=get('mesh_update_variable', None),
                       mesh_update_corrector=get('mesh_update_corrector', None),
-                      time_tag=get('time_tag', ''),
+                      multiprocessing=get('multiprocessing', True),
+                      store_micro_idxs = get('store_micro_idxs', []),
                       volume=volume,
                       volumes=volumes)
 
@@ -54,6 +55,7 @@ class HomogenizationApp(HomogenizationEngine):
         self.macro_deformation = None
         self.micro_coors = None
         self.updating_corrs = None
+        self.micro_state_cache = {}
 
         mac_def = self.app_options.macro_deformation
         if mac_def is not None and isinstance(mac_def, nm.ndarray):
@@ -84,6 +86,10 @@ class HomogenizationApp(HomogenizationEngine):
         """
         self.macro_deformation = mtx_F
 
+    def get_micro_cache_key(self, key, icoor, itime):
+        tt = '' if itime is None else '_t%03d' % itime
+        return '%s_%d%s' % (key, icoor, tt)
+
     def update_micro_coors(self, ret_val=False):
         """
         Update microstructures coordinates according to the deformation
@@ -104,7 +110,7 @@ class HomogenizationApp(HomogenizationEngine):
         if ret_val:
             return ncoors
 
-    def call(self, verbose=False, ret_all=None, time_tag=''):
+    def call(self, verbose=False, ret_all=None, itime=None, iiter=None):
         """
         Call the homogenization engine and compute the homogenized
         coefficients.
@@ -145,12 +151,16 @@ class HomogenizationApp(HomogenizationEngine):
         if self.micro_coors is not None:
             self.he.set_micro_coors(self.update_micro_coors(ret_val=True))
 
-        if multiproc.use_multiprocessing:
+        if multiproc.use_multiprocessing and self.app_options.multiprocessing:
             upd_var = self.app_options.mesh_update_variable
             if upd_var is not None:
                 uvar = self.problem.create_variables([upd_var])[upd_var]
                 uvar.field.mappings0 = multiproc.get_dict('mappings0')
             per.periodic_cache = multiproc.get_dict('periodic_cache')
+
+
+        time_tag = ('' if itime is None else '_t%03d' % itime)\
+            + ('' if iiter is None else '_i%03d' % iiter)
 
         aux = self.he(ret_all=ret_all, time_tag=time_tag)
         if ret_all:
@@ -170,6 +180,11 @@ class HomogenizationApp(HomogenizationEngine):
                 nm.set_printoptions(precision=opts.print_digits)
             print(coefs)
             nm.set_printoptions(precision=prec)
+
+        ms_cache = self.micro_state_cache
+        for ii in self.app_options.store_micro_idxs:
+            key = self.get_micro_cache_key('coors', ii, itime)
+            ms_cache[key] = self.micro_coors[ii,...]
 
         coef_save_name = op.join(opts.output_dir, opts.coefs_filename)
         coefs.to_file_hdf5(coef_save_name + '%s.h5' % time_tag)

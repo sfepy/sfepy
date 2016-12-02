@@ -69,7 +69,9 @@ class HomogenizationEngine(PDESolverApp):
                       requirements=get('requirements', None,
                                        'missing "requirements" in options!'),
                       compute_only=get('compute_only', None),
-                      store_corrs_idxs=get('store_corrs_idxs', []),
+                      multiprocessing=get('multiprocessing', True),
+                      store_micro_idxs=get('store_micro_idxs', []),
+                      chunk_size=get('chunk_size', 5),
                       save_format=get('save_format', 'vtk'),
                       dump_format=get('dump_format', 'h5'),
                       coefs_info=get('coefs_info', None))
@@ -119,15 +121,52 @@ class HomogenizationEngine(PDESolverApp):
     def calculate_req(problem, opts, post_process_hook,
                       name, req_info, coef_info, sd_names, dependencies,
                       micro_coors, time_tag='', chunk_tab=None, proc_id='0'):
+        """Calculate a requirement, i.e. correctors or coefficients.
+
+        Parameters
+        ----------
+        problem : problem
+            The problem definition related to the microstructure.
+        opts : struct
+            The options of the homogenization application.
+        post_process_hook : function
+            The postprocessing hook.
+        name : str
+            The name of the requirement.
+        req_info : dict
+            The definition of correctors.
+        coef_info : dict
+            The definition of homogenized coefficients.
+        sd_names : dict
+            The dictionary containing names of saved/dumped correctors.
+        dependencies : dict
+            The dependencies required by the correctors/coefficients.
+        micro_coors : array
+            The configurations of multiple microstructures.
+        time_tag : str
+            The label corresponding to the actual time step and iteration,
+            used in the corrector file names.
+        chunk_tab : list
+            In the case of multiprocessing the requirements are divided into
+            several chunks that are solved in parallel.
+        proc_id : int
+            The id number of the processor (core) which is solving the actual
+            chunk.
+
+        Returns
+        -------
+        val : coefficient/corrector or list of coefficients/correctors
+            The resulting homogenized coefficients or correctors.
+        """
         def calculate(mini_app, problem, dependencies, dep_requires,
                       sd_names, micro_coors, chunk_tab, mode, proc_id):
             if micro_coors is None:
                 data = {key: dependencies[key] for key in dep_requires\
-                    if 'VOLUME_' not in key}
+                    if 'Volume_' not in key}
                 volume = {key[9:]: dependencies[key]\
-                    for key in dep_requires if 'VOLUME_' in key}
+                    for key in dep_requires if 'Volume_' in key}
                 mini_app.requires = [ii for ii in mini_app.requires\
-                    if 'c.VOLUME_' not in ii]
+                    if 'c.Volume_' not in ii]
 
                 if mode == 'coefs':
                     val = mini_app(volume, data=data)
@@ -141,11 +180,11 @@ class HomogenizationEngine(PDESolverApp):
                     val = mini_app(data=data)
             else:
                 data = {rm_multi(key): dependencies[key]\
-                    for key in dep_requires if 'VOLUME_' not in key}
+                    for key in dep_requires if 'Volume_' not in key}
                 volume = {rm_multi(key[9:]): dependencies[key]\
-                    for key in dep_requires if 'VOLUME_' in key}
+                    for key in dep_requires if 'Volume_' in key}
                 mini_app.requires = [ii for ii in mini_app.requires\
-                    if 'c.VOLUME_' not in ii]
+                    if 'c.Volume_' not in ii]
 
                 if '|multiprocessing_' in mini_app.name\
                     and chunk_tab is not None:
@@ -250,6 +289,24 @@ class HomogenizationEngine(PDESolverApp):
                             problem, opts, post_process_hook,
                             req_info, coef_info, sd_names, dependencies,
                             micro_coors, time_tag, chunk_tab, proc_id):
+        """Calculate a requirement in parallel.
+
+        Parameters
+        ----------
+        tasks : queue
+            The queue of requirements to be solved.
+        lock : lock
+            The multiprocessing lock used to ensure save access to the global
+            variables.
+        remaining : int
+            The number of remaining requirements.
+        numdeps : list
+            The number of dependencies for the each requirement.
+        inverse_deps : dict
+            The inverse dependencies - which requirements depend on a given one.
+
+        For the definition of other parameters see 'calculate_req'.
+        """
         while remaining.value > 0:
             try:
                 name = tasks.get(False, 0.01) # get (or wait for) a task
@@ -273,7 +330,9 @@ class HomogenizationEngine(PDESolverApp):
             sd_names.update(sd_names_loc)
             lock.release()
 
-    def chunk_micro_coors(self, num_workers, reqs, coefs, chunk_size=5):
+    @staticmethod
+    def chunk_micro_coors(num_workers, num_micro, reqs, coefs,
+                          chunk_size=5, store_micro_idxs=[]):
         """
         Split multiple microproblems into several chunks
         that can be processed in parallel.
@@ -282,12 +341,16 @@ class HomogenizationEngine(PDESolverApp):
         ----------
         num_workers : int
             The number of available CPUs.
+        num_micro : int
+            The number of microstructures.
         reqs : dict
             The requirement definitions.
         coefs : dict
             The coefficient definitions.
         chunk_size : int
             The desired number of microproblems in one chunk.
+        store_micro_idxs : list of int
+            The indicies of microstructures which results are to be stored.
 
         Returns
         -------
@@ -321,28 +384,27 @@ class HomogenizationEngine(PDESolverApp):
 
             return new
 
-        num_micro = self.micro_coors.shape[0]
         chpw = nm.max([nm.floor(num_micro / (chunk_size * num_workers)), 1.])
         chsize = int(nm.ceil(num_micro / (num_workers * chpw)))
 
         micro_tab = []
-        store_corrs_idxs = []
+        store_idxs = []
         for ii in range(0, num_micro, chsize):
             jj = chsize + ii
             chunk_end = num_micro if jj > num_micro else jj
             micro_tab.append(slice(ii, chunk_end))
-            if len(self.app_options.store_corrs_idxs) > 0:
-                store_corrs_idxs.append(([k - ii\
-                    for k in self.app_options.store_corrs_idxs\
+            if len(store_micro_idxs) > 0:
+                store_idxs.append(([k - ii for k in store_micro_idxs\
                     if k >= ii and k < jj], ii))
 
         nw = len(micro_tab)
-        new_reqs = process_reqs_coefs(reqs, nw, store_corrs_idxs)
+        new_reqs = process_reqs_coefs(reqs, nw, store_idxs)
         new_coefs = process_reqs_coefs(coefs, nw)
 
         return micro_tab, new_reqs, new_coefs
 
-    def dechunk_reqs_coefs(self, deps, num_chunks):
+    @staticmethod
+    def dechunk_reqs_coefs(deps, num_chunks):
         """
         Merge the results related to the multiple microproblems.
 
@@ -376,7 +438,8 @@ class HomogenizationEngine(PDESolverApp):
 
         return new_deps
 
-    def define_volume_coef(self, coef_info, volumes):
+    @staticmethod
+    def define_volume_coef(coef_info, volumes):
         """
         Define volume coefficients and make all other dependent on them.
 
@@ -395,7 +458,7 @@ class HomogenizationEngine(PDESolverApp):
         vcfkeys = []
         cf_vols = {}
         for vk, vv in six.iteritems(volumes):
-            cfkey = 'VOLUME_%s' % vk
+            cfkey = 'Volume_%s' % vk
             vcfkeys.append('c.' + cfkey)
             if 'value' in vv:
                 cf_vols[cfkey] = {'expression': '%e' % float(vv['value']),
@@ -427,8 +490,8 @@ class HomogenizationEngine(PDESolverApp):
         is_store_filenames = coef_info.pop('filenames', None) is not None
         is_micro_coors = self.micro_coors is not None
 
-        use_multiprocessing = multiproc.use_multiprocessing\
-            and getattr(self.conf.options, 'multiprocessing', True)
+        use_multiprocessing = \
+            multiproc.use_multiprocessing and self.app_options.multiprocessing
 
         if use_multiprocessing:
             num_workers = multiproc.cpu_count()
@@ -436,8 +499,11 @@ class HomogenizationEngine(PDESolverApp):
             if is_micro_coors:
                 coef_info_orig = coef_info.copy()
                 micro_chunk_tab, req_info, coef_info = \
-                    self.chunk_micro_coors(num_workers, req_info, coef_info,
-                        getattr(self.conf.options, 'chunk_size', 5))
+                    self.chunk_micro_coors(num_workers,
+                                           self.micro_coors.shape[0],
+                                           req_info, coef_info,
+                                           self.app_options.chunk_size,
+                                           self.app_options.store_micro_idxs)
             else:
                 micro_chunk_tab = None
 
@@ -500,7 +566,7 @@ class HomogenizationEngine(PDESolverApp):
                 if not name.startswith('c.'):
                     if is_micro_coors:
                         req_info[name]['store_idxs'] = ([jj\
-                            for jj in self.app_options.store_corrs_idxs], 0)
+                            for jj in self.app_options.store_micro_idxs], 0)
 
                 val = self.calculate_req(problem, opts, self.post_process_hook,
                                          name, req_info, coef_info, sd_names,

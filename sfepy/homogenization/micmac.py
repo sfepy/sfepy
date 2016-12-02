@@ -100,9 +100,7 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
     problem.def_grad_prev = def_grad.copy()
     app.setup_macro_deformation(rel_def_grad)
 
-    time_tag = '_t%03d' % ts.step if iteration is None\
-        else '_t%03d_i%03d' % (ts.step, iteration)
-    coefs, deps = app(ret_all=True, time_tag=time_tag)
+    coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
 
     if type(coefs) is tuple:
         coefs = coefs[0]
