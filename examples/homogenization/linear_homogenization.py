@@ -13,30 +13,33 @@ from sfepy.homogenization.utils import define_box_regions
 import sfepy.homogenization.coefs_base as cb
 from sfepy import data_dir
 from sfepy.base.base import Struct
-from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part
+from sfepy.homogenization.recovery import compute_micro_u,\
+    compute_stress_strain_u, compute_mac_stress_part
 
-def recovery_le( pb, corrs, macro ):
+def recovery_le(pb, corrs, macro):
 
     out = {}
 
     dim = corrs['corrs_le']['u_00'].shape[1]
-    mic_u = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'u', dim )
+    mic_u = - compute_micro_u(corrs['corrs_le'], macro['strain'], 'u', dim)
 
-    out['u_mic'] = Struct( name = 'output_data',
-                           mode = 'vertex', data = mic_u,
-                           var_name = 'u', dofs = None )
+    out['u_mic'] = Struct(name='output_data',
+                          mode='vertex', data=mic_u,
+                          var_name='u', dofs=None)
 
-    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i', 'Y', 'mat.D', 'u', mic_u )
-    stress_Y += compute_mac_stress_part( pb, 'i', 'Y', 'mat.D', 'u', macro['strain'] )
+    stress_Y, strain_Y = \
+        compute_stress_strain_u(pb, 'i', 'Y', 'mat.D', 'u', mic_u)
+    stress_Y += \
+        compute_mac_stress_part(pb, 'i', 'Y', 'mat.D', 'u', macro['strain'])
 
     strain = macro['strain'] + strain_Y
 
-    out['cauchy_strain'] = Struct( name = 'output_data',
-                                   mode = 'cell', data = strain,
-                                   dofs = None )
-    out['cauchy_stress'] = Struct( name = 'output_data',
-                                   mode = 'cell', data = stress_Y,
-                                   dofs = None )
+    out['cauchy_strain'] = Struct(name='output_data',
+                                  mode='cell', data=strain,
+                                  dofs=None)
+    out['cauchy_stress'] = Struct(name='output_data',
+                                  mode='cell', data=stress_Y,
+                                  dofs=None)
     return out
 
 #! Mesh
@@ -53,7 +56,7 @@ regions = {
     'Ym' : 'cells of group 1',
     'Yc' : 'cells of group 2',
 }
-regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
+regions.update(define_box_regions(dim, region_lbn, region_rtf))
 #! Materials
 #! ---------
 materials = {
@@ -91,14 +94,19 @@ ebcs = {
 }
 if dim == 3:
     epbcs = {
-        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'}, 'match_x_plane'),
-        'periodic_y' : (['Near', 'Far'], {'u.all' : 'u.all'}, 'match_y_plane'),
-        'periodic_z' : (['Top', 'Bottom'], {'u.all' : 'u.all'}, 'match_z_plane'),
+        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'},
+                        'match_x_plane'),
+        'periodic_y' : (['Near', 'Far'], {'u.all' : 'u.all'},
+                        'match_y_plane'),
+        'periodic_z' : (['Top', 'Bottom'], {'u.all' : 'u.all'},
+                        'match_z_plane'),
 }
 else:
     epbcs = {
-        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'}, 'match_x_plane'),
-        'periodic_y' : (['Bottom', 'Top'], {'u.all' : 'u.all'}, 'match_y_plane'),
+        'periodic_x' : (['Left', 'Right'], {'u.all' : 'u.all'},
+                        'match_x_plane'),
+        'periodic_y' : (['Bottom', 'Top'], {'u.all' : 'u.all'},
+                        'match_y_plane'),
     }
 all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 #! Integrals
@@ -114,8 +122,7 @@ options = {
     'coefs' : 'coefs',
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
-    'volume' : { 'variables' : ['u'],
-                 'expression' : 'd_volume.i.Y( u )' },
+    'volume' : {'expression' : 'd_volume.i.Y(u)'},
     'output_dir' : 'output',
     'coefs_filename' : 'coefs_le',
     'recovery_hook' : 'recovery_le',
@@ -125,26 +132,20 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """dw_lin_elastic.i.Y(mat.D, v, u ) =
-     - dw_lin_elastic.i.Y(mat.D, v, Pi )"""
+    """dw_lin_elastic.i.Y(mat.D, v, u) =
+     - dw_lin_elastic.i.Y(mat.D, v, Pi)"""
 }
 #! Expressions for homogenized linear elastic coefficients.
-expr_coefs = """dw_lin_elastic.i.Y(mat.D, Pi1, Pi2 )"""
+expr_coefs = """dw_lin_elastic.i.Y(mat.D, Pi1, Pi2)"""
 #! Coefficients
 #! ------------
 #! Definition of homogenized acoustic coefficients.
-def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
-    mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
-
-    val = pis.states[ir, ic]['u'] + corrs_rs.states[ir, ic]['u']
-
-    variables[mode2var[mode]].set_data(val)
-
 coefs = {
     'D' : {
         'requires' : ['pis', 'corrs_rs'],
         'expression' : expr_coefs,
-        'set_variables' : set_elastic,
+        'set_variables' : [('Pi1', ('pis', 'corrs_rs'), 'u'),
+                           ('Pi2', ('pis', 'corrs_rs'), 'u')],
         'class' : cb.CoefSymSym,
     },
     'filenames' : {},
