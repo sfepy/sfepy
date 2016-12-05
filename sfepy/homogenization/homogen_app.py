@@ -5,43 +5,16 @@ import shutil
 
 import numpy as nm
 
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import get_default, Struct
 from sfepy.homogenization.coefficients import Coefficients
-from sfepy.homogenization.coefs_base import MiniAppBase
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import PDESolverApp
-import six
+import sfepy.base.multiproc as multiproc
+import sfepy.discrete.fem.periodic as per
+import sfepy.linalg as la
+from six.moves import range
 
-class Volume(MiniAppBase):
-
-    def __call__(self, problem=None):
-        problem = get_default(problem, self.problem)
-        problem.select_variables(self.variables)
-
-        volume = problem.evaluate(self.expression)
-
-        return volume
-
-def get_volume_from_options(options, problem):
-    volume = {}
-
-    if hasattr(options, 'volumes') and (options.volumes is not None):
-        for vk, vv in six.iteritems(options.volumes):
-            if 'value' in vv:
-                volume[vk] = nm.float64(vv['value'])
-            else:
-                volume[vk] = Volume('volume', problem, vv)()
-
-    elif hasattr(options, 'volume') and (options.volume is not None):
-            if 'value' in options.volume:
-                vol = nm.float64(options.volume['value'])
-            else:
-                vol = Volume('volume', problem, options.volume)()
-            volume['total'] = vol
-
-    return volume
-
-class HomogenizationApp( HomogenizationEngine ):
+class HomogenizationApp(HomogenizationEngine):
 
     @staticmethod
     def process_options(options):
@@ -64,6 +37,11 @@ class HomogenizationApp( HomogenizationEngine ):
                       requirements=get('requirements', None,
                                        'missing "requirements" in options!'),
                       return_all=get('return_all', False),
+                      macro_deformation=get('macro_deformation', None),
+                      mesh_update_variable=get('mesh_update_variable', None),
+                      mesh_update_corrector=get('mesh_update_corrector', None),
+                      multiprocessing=get('multiprocessing', True),
+                      store_micro_idxs = get('store_micro_idxs', []),
                       volume=volume,
                       volumes=volumes)
 
@@ -73,6 +51,23 @@ class HomogenizationApp( HomogenizationEngine ):
 
         self.setup_options()
         self.cached_coefs = None
+        self.n_micro = kwargs.get('n_micro', None)
+        self.macro_deformation = None
+        self.micro_coors = None
+        self.updating_corrs = None
+        self.micro_state_cache = {}
+
+        mac_def = self.app_options.macro_deformation
+        if mac_def is not None and isinstance(mac_def, nm.ndarray):
+            self.n_micro = mac_def.shape[0]
+            self.setup_macro_deformation(mac_def)
+
+        if self.n_micro is not None:
+            coors = self.problem.domain.get_mesh_coors()
+            self.micro_coors = nm.empty((self.n_micro,) + coors.shape,
+                                        dtype=nm.float64)
+            for im in range(self.n_micro):
+                self.micro_coors[im,...] = coors
 
         output_dir = self.problem.output_dir
 
@@ -80,12 +75,42 @@ class HomogenizationApp( HomogenizationEngine ):
             shutil.copyfile(conf._filename,
                             op.join(output_dir, op.basename(conf._filename)))
 
-    def setup_options( self ):
+    def setup_options(self):
         PDESolverApp.setup_options(self)
         po = HomogenizationApp.process_options
-        self.app_options += po( self.conf.options )
+        self.app_options += po(self.conf.options)
 
-    def call(self, verbose=False, ret_all=None):
+    def setup_macro_deformation(self, mtx_F):
+        """
+        Setup macroscopic deformation gradient.
+        """
+        self.macro_deformation = mtx_F
+
+    def get_micro_cache_key(self, key, icoor, itime):
+        tt = '' if itime is None else '_t%03d' % itime
+        return '%s_%d%s' % (key, icoor, tt)
+
+    def update_micro_coors(self, ret_val=False):
+        """
+        Update microstructures coordinates according to the deformation
+        gradient and corrector functions.
+        """
+        dim = self.macro_deformation.shape[1]
+        mtx_e = self.macro_deformation - nm.eye(dim)
+        ncoors = self.micro_coors
+        ncoors += la.dot_sequences(ncoors, mtx_e, 'ABT')
+        if self.updating_corrs is not None:
+            upd_var = self.app_options.mesh_update_variable
+            for ii, corr in enumerate(self.updating_corrs):
+                update_corr = nm.array(\
+                    [corr.states[jj][upd_var] for jj in corr.components]).T
+                gg = mtx_e[ii,...].reshape((dim**2, 1))
+                ncoors[ii] += nm.dot(update_corr, gg).reshape(ncoors[ii].shape)
+
+        if ret_val:
+            return ncoors
+
+    def call(self, verbose=False, ret_all=None, itime=None, iiter=None):
         """
         Call the homogenization engine and compute the homogenized
         coefficients.
@@ -97,6 +122,8 @@ class HomogenizationApp( HomogenizationEngine ):
         ret_all : bool or None
             If not None, it can be used to override the 'return_all' option.
             If True, also the dependencies are returned.
+        time_tag: str
+            The time tag used in file names.
 
         Returns
         -------
@@ -109,21 +136,43 @@ class HomogenizationApp( HomogenizationEngine ):
 
         ret_all = get_default(ret_all, opts.return_all)
 
-        volume = get_volume_from_options(opts, self.problem)
+        if not hasattr(self, 'he'):
+            volumes = {}
+            if hasattr(opts, 'volumes') and (opts.volumes is not None):
+                volumes.update(opts.volumes)
+            elif hasattr(opts, 'volume') and (opts.volume is not None):
+                volumes['total'] = opts.volume
+            else:
+                volumes['total'] = 1.0
 
-        for vk, vv in six.iteritems(volume):
-            output('volume: %s = %.2f' % (vk, vv))
+            self.he = HomogenizationEngine(self.problem, self.options,
+                                           volumes=volumes)
 
-        he = HomogenizationEngine( self.problem, self.options, volume = volume )
+        if self.micro_coors is not None:
+            self.he.set_micro_coors(self.update_micro_coors(ret_val=True))
 
-        aux = he( ret_all = ret_all)
+        if multiproc.use_multiprocessing and self.app_options.multiprocessing:
+            upd_var = self.app_options.mesh_update_variable
+            if upd_var is not None:
+                uvar = self.problem.create_variables([upd_var])[upd_var]
+                uvar.field.mappings0 = multiproc.get_dict('mappings0')
+            per.periodic_cache = multiproc.get_dict('periodic_cache')
+
+
+        time_tag = ('' if itime is None else '_t%03d' % itime)\
+            + ('' if iiter is None else '_i%03d' % iiter)
+
+        aux = self.he(ret_all=ret_all, time_tag=time_tag)
         if ret_all:
             coefs, dependencies = aux
+            # store correctors for coors update
+            if opts.mesh_update_corrector is not None:
+                self.updating_corrs =\
+                    dependencies[opts.mesh_update_corrector]
         else:
             coefs = aux
 
-        coefs = Coefficients( **coefs.to_dict() )
-        coefs.volume = volume
+        coefs = Coefficients(**coefs.to_dict())
 
         if verbose:
             prec = nm.get_printoptions()[ 'precision']
@@ -132,11 +181,16 @@ class HomogenizationApp( HomogenizationEngine ):
             print(coefs)
             nm.set_printoptions(precision=prec)
 
-        coef_save_name = op.join( opts.output_dir, opts.coefs_filename )
-        coefs.to_file_hdf5( coef_save_name + '.h5' )
-        coefs.to_file_txt( coef_save_name + '.txt',
-                           opts.tex_names,
-                           opts.float_format )
+        ms_cache = self.micro_state_cache
+        for ii in self.app_options.store_micro_idxs:
+            key = self.get_micro_cache_key('coors', ii, itime)
+            ms_cache[key] = self.micro_coors[ii,...]
+
+        coef_save_name = op.join(opts.output_dir, opts.coefs_filename)
+        coefs.to_file_hdf5(coef_save_name + '%s.h5' % time_tag)
+        coefs.to_file_txt(coef_save_name + '%s.txt' % time_tag,
+                          opts.tex_names,
+                          opts.float_format)
 
         if ret_all:
             return coefs, dependencies

@@ -7,7 +7,6 @@ import numpy as nm
 from sfepy.base.base import output, set_defaults, assert_
 from sfepy.base.base import Struct
 from sfepy.homogenization.engine import HomogenizationEngine
-from sfepy.homogenization.homogen_app import get_volume_from_options
 from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import CoefDummy
@@ -419,16 +418,23 @@ class AcousticBandGapsApp(HomogenizationApp):
 
         he_options = Struct(coefs=coefs_name, requirements=opts.requirements,
                             compute_only=keys,
-                            post_process_hook=self.post_process_hook)
-        volume = get_volume_from_options(opts, self.problem)
+                            post_process_hook=self.post_process_hook,
+                            multiprocessing=False)
+
+        volumes = {}
+        if hasattr(opts, 'volumes') and (opts.volumes is not None):
+            volumes.update(opts.volumes)
+        elif hasattr(opts, 'volume') and (opts.volume is not None):
+            volumes['total'] = opts.volume
+        else:
+            volumes['total'] = 1.0
 
         he = HomogenizationEngine(self.problem, options,
                                   app_options=he_options,
-                                  volume=volume)
+                                  volumes=volumes)
         coefs = he()
 
         coefs = Coefficients(**coefs.to_dict())
-        coefs.volume = volume
 
         coefs_filename = op.join(opts.output_dir, opts.coefs_filename)
         coefs.to_file_txt(coefs_filename + '.txt',
