@@ -918,6 +918,7 @@ sfepy.base package
    src/sfepy/base/log
    src/sfepy/base/log_plotter
    src/sfepy/base/mem_usage
+   src/sfepy/base/multiproc
    src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
    src/sfepy/base/reader
@@ -994,6 +995,7 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/periodic
    src/sfepy/discrete/fem/poly_spaces
    src/sfepy/discrete/fem/refine
+   src/sfepy/discrete/fem/refine_hanging
    src/sfepy/discrete/fem/utils
 
 sfepy.discrete.iga sub-package
