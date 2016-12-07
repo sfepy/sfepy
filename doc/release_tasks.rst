@@ -70,12 +70,16 @@ Things to check before a release
 
      $ python setup.py sdist
 
+#. tag the release using::
+
+     $ git tag release_XXXX.X
+
 Useful Git commands
 -------------------
 
 * log ::
 
-    git log --pretty=format:"%s%n%b%n" release_2009.1..HEAD
+    git log --pretty=format:"%s%n%b%n" --topo-order --reverse release_2016.4..HEAD
 
 * who has contributed since <date>::
 
