@@ -53,7 +53,6 @@ from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
 omits = [
     'vibro_acoustic3d_mid.py',
-    'linear_elastic_mM.py',
     'its2D_5.py',
     'linear_elastic_probes.py',
     '__init__.py',
