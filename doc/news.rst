@@ -1,6 +1,12 @@
 News
 ====
 
+* **07.12.2016** Version 2016.4 released (support tensor product element meshes
+  with one-level hanging nodes, improve homogenization support for large
+  deformations, parallel calculation of homogenized coefficients and related
+  sub-problems, evaluation of second derivatives of Lagrange basis functions,
+  etc.), see :ref:`release notes <2016.3-2016.4>`.
+
 * **30.09.2016** Version 2016.3 released (Python 3 support, testing with Travis
   CI, new classes for homogenized coefficients, using argparse instead of
   optparse, etc.), see :ref:`release notes <2016.2-2016.3>`.
@@ -18,11 +24,5 @@ News
 * **01.12.2015** Version 2015.4 released (basic support for restart files,
   new type of linear combination boundary conditions, balloon inflation
   example, etc.), see :ref:`release notes <2015.3-2015.4>`.
-
-* **23.09.2015** Version 2015.3 released (preliminary support for parallel
-  computing, unified evaluation of basis functions (= isogeometric analysis
-  fields can be evaluated in arbitrary points), (mostly) fixed finding of
-  reference element coordinates of physical points, several new or improved
-  examples, etc.), see :ref:`release notes <2015.2-2015.3>`.
 
 For historians: see :ref:`archived_news`.

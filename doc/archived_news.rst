@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **23.09.2015** Version 2015.3 released (preliminary support for parallel
+  computing, unified evaluation of basis functions (= isogeometric analysis
+  fields can be evaluated in arbitrary points), (mostly) fixed finding of
+  reference element coordinates of physical points, several new or improved
+  examples, etc.), see :ref:`release notes <2015.2-2015.3>`.
+
 * **29.05.2015** Version 2015.2 released (major code simplification (removed
   element groups), time stepping solvers updated for interactive use, improved
   finding of reference element coordinates of physical points, reorganized
