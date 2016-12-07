@@ -1,5 +1,202 @@
 # created: 20.07.2007 (-1)
 
+.. _2016.3-2016.4:
+
+from 2016.3 to 2016.4
+=====================
+
+- merge branch 'fix-lcbc-several-fields'
+
+  - fix _s_describe() for zero area facets
+  - fix/improve geme_invert3x3(), geme_invert4x4() for singular matrices
+  - fix LCBCOperators.finalize() to keep correct ordering of variables - update
+    _dict_to_di()
+  - new test_stokes_slip_bc() in tests/test_lcbcs.py
+
+- merge pull request #343 from 'rc/debug-on-error'
+
+  - new debug_on_error()
+  - run_tests.py: rename --debug option to --raise
+  - run_tests.py: new --debug option - run debugger on exception
+  - docs: update for updated options of run_tests.py
+  - update .travis.yml for --raise
+  - new --debug option in top level scripts - update extractor.py, homogen.py,
+    phonon.py, postproc.py, probe.py, schroedinger.py, shaper.py, simple.py
+
+- merge branch 'empty-fe-surface'
+
+  - update FESurface.__init__() for empty region
+  - update CMapping.describe() for empty region
+  - update FieldVariable.evaluate() for empty region
+
+- merge branch 'non-penetration-penalty-term'
+
+  - new NonPenetrationPenaltyTerm (dw_non_penetration_p)
+  - new examples/navier_stokes/stokes_slip_bc_penalty.py + test
+  - small tweaks in stokes_slip_bc.py example, reference
+    stokes_slip_bc_penalty.py
+
+- parallel support:
+
+  - update Domain.create_regions() for empty regions - new allow_empty argument
+  - update Mesh.from_region() to preserve nodal BCs
+  - update Region.setup_from_highest() to always succeed when allowed empty
+  - update create_task_dof_maps() for easier debugging of partitioning problems
+
+    - new save_inter_regions, output_dir arguments
+    - update distribute_fields_dofs()
+
+- merge branch 'parallel-examples-update'
+
+  - new remove_files_patterns()
+  - new save_options()
+  - poisson_parallel_interactive.py: new --save-inter-regions options, save
+    options
+  - biot_parallel_interactive.py: new --save-inter-regions options, save
+    options
+
+- merge pull request #340 from 'lokik/master'
+
+  - equations.add_equation method
+
+- merge pull request #348 from vlukes/fix_pt_open, closes #342
+
+  - fix pytables compatibility issue: openFile -> open_file, createGroup ->
+    create_group, ...
+
+- merge pull request #346 from vlukes/fix_set_coors
+
+  - fix setting field coordinates for higher order elements
+
+- merge pull request #337 from vlukes/update_tests
+
+  - display the test file numbers and test numbers to get a better view in a
+    debug mode
+
+- merge pull request #347 from vlukes/nonsym_biot
+
+  - new nonsymmetric mode of BiotTerm
+
+- merge pull request #349 from rc/fix-biot-ccode
+
+  - fix op_nonsym_biot()
+  - fix dw_biot_grad() for compiling on windows
+
+- merge pull request #351 from rc/he-clean-up
+
+  - remove obsolete CorrectorsPermeability
+  - fix insert_sub_reqs() for arbitrary order of leaf requirements
+  - simplify insert_sub_reqs() - remove too strict circular dependency check
+  - new tests/test_homogenization_engine.py: new test_dependencies()
+
+- merge branch 'hanging-nodes'
+
+  - conflicts: sfepy/discrete/fem/fields_base.py
+  - support basis transforms in FEField, VolumeMapping, PolySpace
+
+    - new FEField.basis_transform attribute, FEField.set_basis_transform()
+    - update FEField.get_base(), .create_mapping()
+    - update VolumeMapping.get_mapping()
+    - new transform_basis()
+    - update PolySpace.eval_base()
+
+  - new sfepy/discrete/fem/refine_hanging.py - initial 2D version, WIP
+
+    - new find_level_interface(), refine_region(), find_facet_substitutions(),
+      refine(), do_connectivity_substitutions(), eval_basis_transform()
+
+  - manage connectivity substitutions and unused DOFs in FEField
+
+    - move do_connectivity_substitutions() into new FEField.substitute_dofs()
+    - new FEField.econn0, .unused_dofs attributes
+    - new FEField.restore_dofs(), .restore_substituted()
+
+  - update EquationMap.map_equations() to omit unused field DOFs from active
+    DOFs
+  - update FieldVariable.get_full() to restore unused field DOFs
+  - fix Region.cells setter for empty cell regions
+  - fix CMesh.get_incident() for no incident entities
+  - update FEField._setup_esurface() to setup .eedges in 3D
+  - fix refine_edges_3_8
+  - update Variable._set_kind() to always initialize .dof_name
+
+    - use the variable name as the DOF name for parameter variables without a
+      primary
+    - update ._setup_dofs()
+
+  - update EquationMap.map_equations() to obey unused DOFs in no EBC case
+
+    - update ._init_empty()
+    - new ._mark_unused()
+
+  - fix PointsProbe.__init__() to force C-contiguous order
+  - new tests/test_refine_hanging.py: new test_continuity() test
+
+    - new eval_fun(), _gen_lines_2_4(), _gen_grid_3_8(), _build_filenames()
+
+  - move body of FEField.substitute_dofs() into new
+    H1NodalMixin._substitute_dofs()
+  - move eval_basis_transform() -> H1NodalMixin._eval_basis_transform()
+  - update FEField.substitute_dofs(), .restore_dofs() for storing substitutions
+
+    - new .stored_subs
+    - evaluate and set basis transform in FEField.substitute_dofs()
+
+  - preserve indices of non-refined cells
+
+    - update refine_region() - new _interleave_refined()
+    - update find_level_interface(), find_facet_substitutions(), refine()
+
+  - update refine_region() to preserve vertex groups of non-refined cells
+  - new test_preserve_coarse_entities() in tests/test_refine_hanging.py
+  - new examples/diffusion/laplace_refine_interactive.py
+  - update test_install.py to test laplace_refine_interactive.py example
+
+- merge branch 'hessian-lagrange-basis'
+
+  - new LagrangeSimplexPolySpace._eval_hessian()
+  - new LagrangeTensorProductPolySpace._eval_hessian(), update .__init__()
+  - update PolySpace.eval_base(), LagrangePolySpace._eval_base() for 2.
+    derivatives
+  - new test_hessians() in tests/test_poly_spaces.py
+
+- merge pull request #352 from vlukes/ulf_homog
+
+  - fix set_mesh_coors() - initiate coors_act array
+  - update Problem.solve() to allow disabling materials update in a given time
+    step
+  - update periodic.match_() for caching matching coordinates
+  - clean-up: periodic.py
+  - new multiproc module - global multiprocessing management
+  - update saving of field mappings, allow sharing data among processes
+  - update homog. engine - compute coefficients for multiple micro
+    configurations at once
+  - clean up in homogenization modules
+  - update homogenization engine: volumes are calculated as the coefficients
+  - fix the test of homogenization_perfusion.py
+  - new non-linear homogenization example
+  - update homogenization engine test: check splitting/merging chunks
+  - fix band_gaps_app.py and the related test
+
+- merge pull request #353 from vlukes/update_homog_example
+
+  - update linear homogenization examples
+
+- miscellaneous updates:
+
+  - docs: update latest snapshot link, closes #344
+  - add custom view for stokes_slip_bc_penalty.py example to
+    script/gen_gallery.py
+  - fix streamline position in plot_velocity() - regression by 63171ad
+  - sfepy-run: fix --version option for Python 3
+  - fix SurfaceMomentTerm - add .arg_shapes, make shift special material
+    parameter
+  - fix AcousticBandGapsApp.__init__() for non-file problem configuration
+  - fix typo in phononic examples
+  - docs: sync module index of developer guide with current sources
+  - do not omit linear_elastic_mM.py in script/gen_gallery.py
+  - docs: update release tasks
+
 .. _2016.2-2016.3:
 
 from 2016.2 to 2016.3
