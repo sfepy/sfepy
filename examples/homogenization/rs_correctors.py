@@ -189,7 +189,7 @@ solvers = {
 
 ############################################
 # Mini-application below, computing the homogenized elastic coefficients.
-help = {
+helps = {
     'no_pauses' : 'do not make pauses',
 }
 
@@ -204,7 +204,7 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-n', '--no-pauses',
                         action="store_true", dest='no_pauses',
-                        default=False, help=help['no_pauses'])
+                        default=False, help=helps['no_pauses'])
     options = parser.parse_args()
 
     if options.no_pauses:

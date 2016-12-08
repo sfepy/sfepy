@@ -50,7 +50,7 @@ def parse_linearization(linearization):
 
     return dict_to_struct(out)
 
-help = {
+helps = {
     'debug':
     'automatically start debugger when an exception is raised',
     'filename' :
@@ -86,33 +86,33 @@ def main():
                         version='%(prog)s ' + sfepy.__version__)
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument('-o', metavar='filename',
                         action='store', dest='output_filename_trunk',
-                        default=None, help=help['filename'])
+                        default=None, help=helps['filename'])
     parser.add_argument('-d', '--dump', action='store_true', dest='dump',
-                        default=False, help=help['dump'])
+                        default=False, help=helps['dump'])
     parser.add_argument('--same-dir', action='store_true', dest='same_dir',
-                        default=False, help=help['same_dir'])
+                        default=False, help=helps['same_dir'])
     parser.add_argument('-l', '--linearization', metavar='options',
                         action='store', dest='linearization',
-                        default=None, help=help['linearization'])
+                        default=None, help=helps['linearization'])
     parser.add_argument('--times', action='store_true', dest='times',
-                        default=False, help=help['times'])
+                        default=False, help=helps['times'])
     parser.add_argument('-f', '--from', type=int, metavar='ii',
                         action='store', dest='step_from',
-                        default=0, help=help['from'])
+                        default=0, help=helps['from'])
     parser.add_argument('-t', '--to', type=int, metavar='ii',
                         action='store', dest='step_to',
-                        default=None, help=help['to'])
+                        default=None, help=helps['to'])
     parser.add_argument('-s', '--step', type=int, metavar='ii',
                         action='store', dest='step_by',
-                        default=1, help=help['step'])
+                        default=1, help=helps['step'])
     parser.add_argument('-e', '--extract', metavar='list',
                         action='store', dest='extract',
-                        default=None, help=help['extract'])
+                        default=None, help=helps['extract'])
     parser.add_argument('-a', '--average', action='store_true',
-                        dest='average', default=False, help=help['average'])
+                        dest='average', default=False, help=helps['average'])
     parser.add_argument('input_file', nargs='?', default=None)
     parser.add_argument('results_file')
     options = parser.parse_args()

@@ -13,7 +13,7 @@ from sfepy.base.base import output
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem.meshio import MeshIO
 
-help = {
+helps = {
     'filename' :
     'output file name [default: %(default)s]',
     'format' : 'output mesh format (overrides output file name extension)',
@@ -33,22 +33,22 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-o', metavar='filename',
                         action='store', dest='output_filename',
-                        default='out.vtk', help=help['filename'])
+                        default='out.vtk', help=helps['filename'])
     parser.add_argument('-f', '--format', metavar='format',
                         action='store', type=str, dest='format',
-                        default=None, help=help['format'])
+                        default=None, help=helps['format'])
     parser.add_argument('-d', '--dims', metavar='dims',
                         action='store', dest='dims',
-                        default='[1.0, 1.0, 1.0]', help=help['dims'])
+                        default='[1.0, 1.0, 1.0]', help=helps['dims'])
     parser.add_argument('-s', '--shape', metavar='shape',
                         action='store', dest='shape',
-                        default='[11, 11, 11]', help=help['shape'])
+                        default='[11, 11, 11]', help=helps['shape'])
     parser.add_argument('-c', '--centre', metavar='centre',
                         action='store', dest='centre',
-                        default='[0.0, 0.0, 0.0]', help=help['centre'])
+                        default='[0.0, 0.0, 0.0]', help=helps['centre'])
     parser.add_argument('-2', '--2d',
                         action='store_true', dest='is_2d',
-                        default=False, help=help['2d'])
+                        default=False, help=helps['2d'])
     options = parser.parse_args()
 
     dim = 2 if options.is_2d else 3

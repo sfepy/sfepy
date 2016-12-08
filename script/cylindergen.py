@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from sfepy.mesh.mesh_generators import gen_cylinder_mesh
 from sfepy.discrete.fem.meshio import MeshIO
 
-help = {
+helps = {
     'filename' :
     'output file name [default: %(default)s]',
     'format' : 'output mesh format (overrides output file name extension)',
@@ -41,35 +41,35 @@ def main():
     parser.add_argument('--version', action='version', version = "%(prog)s")
     parser.add_argument('-o', metavar = 'filename',
                         action = "store", dest = "output_filename",
-                        default = 'out.vtk', help = help['filename'])
+                        default = 'out.vtk', help = helps['filename'])
     parser.add_argument('-f', '--format', metavar='format',
                         action='store', type=str, dest='format',
-                        default=None, help=help['format'])
+                        default=None, help=helps['format'])
     parser.add_argument("-a", "--axis", metavar = 'axis',
                         action = "store", dest = "axis",
-                        default = 'x', help = help['axis'])
+                        default = 'x', help = helps['axis'])
     parser.add_argument("-d", "--dims", metavar = 'dims',
                         action = "store", dest = "dims",
                         default = '[1.0, 1.0, 2.0, 2.0, 3.0]',
-                        help = help['dims'])
+                        help = helps['dims'])
     parser.add_argument("-s", "--shape", metavar = 'shape',
                         action = "store", dest = "shape",
-                        default = '[11, 11, 11]', help = help['shape'])
+                        default = '[11, 11, 11]', help = helps['shape'])
     parser.add_argument("-c", "--centre", metavar = 'centre',
                         action = "store", dest = "centre",
-                        default = '[0.0, 0.0, 0.0]', help = help['centre'])
+                        default = '[0.0, 0.0, 0.0]', help = helps['centre'])
     parser.add_argument("--force-hollow",
                         action = "store_true", dest = "force_hollow",
-                        default = False, help = help['force_hollow'])
+                        default = False, help = helps['force_hollow'])
     parser.add_argument("--is-open",
                         action = "store_true", dest = "is_open",
-                        default = False, help = help['is_open'])
+                        default = False, help = helps['is_open'])
     parser.add_argument("--open-angle", metavar = 'angle', type=float,
                         action = "store", dest = "open_angle",
-                        default = '0.0', help = help['open_angle'])
+                        default = '0.0', help = helps['open_angle'])
     parser.add_argument("--non-uniform",
                         action = "store_true", dest = "non_uniform",
-                        default = False, help = help['non_uniform'])
+                        default = False, help = helps['non_uniform'])
     options = parser.parse_args()
 
     import numpy as nm

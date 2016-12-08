@@ -20,7 +20,7 @@ from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.linearizer import create_output
 from sfepy.discrete.fem.fields_base import create_expression_output
 
-help = {
+helps = {
     'basis' :
     'name of the FE basis [default: %(default)s]',
     'derivative' :
@@ -126,32 +126,32 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-b', '--basis', metavar='name',
                         action='store', dest='basis',
-                        default='lagrange', help=help['basis'])
+                        default='lagrange', help=helps['basis'])
     parser.add_argument('-d', '--derivative', metavar='d', type=int,
                         action='store', dest='derivative',
-                        default=0, help=help['derivative'])
+                        default=0, help=helps['derivative'])
     parser.add_argument('-n', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
-                        default=2, help=help['max_order'])
+                        default=2, help=helps['max_order'])
     parser.add_argument('-g', '--geometry', metavar='name',
                         action='store', dest='geometry',
-                        default='2_4', help=help['geometry'])
+                        default='2_4', help=helps['geometry'])
     parser.add_argument('-m', '--mesh', metavar='mesh',
                         action='store', dest='mesh',
-                        default=None, help=help['mesh'])
+                        default=None, help=helps['mesh'])
     parser.add_argument('--permutations', metavar='permutations',
                         action='store', dest='permutations',
-                        default=None, help=help['permutations'])
+                        default=None, help=helps['permutations'])
     parser.add_argument('--dofs', metavar='dofs',
                         action='store', dest='dofs',
-                        default=None, help=help['dofs'])
+                        default=None, help=helps['dofs'])
     parser.add_argument('-l', '--lin-options', metavar='options',
                         action='store', dest='lin_options',
                         default='min_level=2,max_level=5,eps=1e-3',
-                        help=help['lin_options'])
+                        help=helps['lin_options'])
     parser.add_argument('--plot-dofs',
                         action='store_true', dest='plot_dofs',
-                        default=False, help=help['plot_dofs'])
+                        default=False, help=helps['plot_dofs'])
     parser.add_argument('output_dir')
     options = parser.parse_args()
 

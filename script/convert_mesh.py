@@ -20,7 +20,7 @@ from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
                                        supported_cell_types)
 
-help = {
+helps = {
     'scale' : 'scale factor (float or comma-separated list for each axis)'
     ' [default: %(default)s]',
     'center' : 'center of the output mesh (0 for origin or'
@@ -51,18 +51,18 @@ def main():
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('-s', '--scale', metavar='scale',
                         action='store', dest='scale',
-                        default=None, help=help['scale'])
+                        default=None, help=helps['scale'])
     parser.add_argument('-c', '--center', metavar='center',
                         action='store', dest='center',
-                        default=None, help=help['center'])
+                        default=None, help=helps['center'])
     parser.add_argument('-r', '--refine', metavar='level',
                         action='store', type=int, dest='refine',
-                        default=0, help=help['refine'])
+                        default=0, help=helps['refine'])
     parser.add_argument('-f', '--format', metavar='format',
                         action='store', type=str, dest='format',
-                        default=None, help=help['format'])
+                        default=None, help=helps['format'])
     parser.add_argument('-l', '--list', action='store_true',
-                        dest='list', help=help['list'])
+                        dest='list', help=helps['list'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()

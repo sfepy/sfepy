@@ -283,7 +283,7 @@ def solve_optimize( conf, options ):
 
     print(des)
 
-help = {
+helps = {
     'debug':
     'automatically start debugger when an exception is raised',
     'server_mode' :
@@ -312,28 +312,28 @@ def main():
                         version = "%(prog)s " + sfepy.__version__)
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument("-s", "--server",
                         action = "store_true", dest = "server_mode",
-                        default = False, help = help['server_mode'])
+                        default = False, help = helps['server_mode'])
     parser.add_argument("-a", "--adjoint",
                         action = "store_true", dest = "adjoint",
-                        default = False, help = help['adjoint'])
+                        default = False, help = helps['adjoint'])
     parser.add_argument("-d", "--direct",
                         action = "store_true", dest = "direct",
-                        default = False, help = help['direct'])
+                        default = False, help = helps['direct'])
     parser.add_argument("-t", "--test", type = int, metavar = 'idsg',
                         action = "store", dest = "test",
-                        default = None, help = help['test'])
+                        default = None, help = helps['test'])
     parser.add_argument("--dump", metavar = 'filename',
                         action = "store", dest = "dump_filename",
-                        default = None, help = help['dump'])
+                        default = None, help = helps['dump'])
     parser.add_argument("--pert-mesh", metavar = 'filename',
                         action = "store", dest = "pert_mesh_filename",
-                        default = None, help = help['pert'])
+                        default = None, help = helps['pert'])
     parser.add_argument("-f", "--full",
                         action = "store_true", dest = "optimize",
-                        default = False, help = help['optimize'])
+                        default = False, help = helps['optimize'])
     parser.add_argument('filename_in')
     options = parser.parse_args()
 

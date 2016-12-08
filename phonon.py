@@ -9,7 +9,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.band_gaps_app import AcousticBandGapsApp
 from sfepy.base.plotutils import plt
 
-help = {
+helps = {
     'debug':
     'automatically start debugger when an exception is raised',
     'filename' :
@@ -30,22 +30,22 @@ def main():
                         version="%(prog)s " + sfepy.__version__)
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument("-o", metavar='filename',
                         action="store", dest="output_filename_trunk",
-                        default=None, help=help['filename'])
+                        default=None, help=helps['filename'])
     parser.add_argument("-b", "--band-gaps",
                         action="store_true", dest="detect_band_gaps",
-                        default=False, help=help['detect_band_gaps'])
+                        default=False, help=helps['detect_band_gaps'])
     parser.add_argument("-d", "--dispersion",
                         action="store_true", dest="analyze_dispersion",
-                        default=False, help=help['analyze_dispersion'])
+                        default=False, help=helps['analyze_dispersion'])
     parser.add_argument("-p", "--plot",
                         action="store_true", dest="plot",
-                        default=False, help=help['plot'])
+                        default=False, help=helps['plot'])
     parser.add_argument("--phase-velocity",
                         action="store_true", dest="phase_velocity",
-                        default=False, help=help['phase_velocity'])
+                        default=False, help=helps['phase_velocity'])
     parser.add_argument("filename_in")
     options = parser.parse_args()
 
