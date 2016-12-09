@@ -168,7 +168,7 @@ def append_lists(out, names, length):
     _list = fun_list % (name, length, args)
     out.append(_list)
 
-help = {
+helps = {
     'max_order' :
     'maximum order of polynomials [default: %(default)s]',
     'plot' :
@@ -180,10 +180,10 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-m', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
-                        default=10, help=help['max_order'])
+                        default=10, help=helps['max_order'])
     parser.add_argument('--plot',
                         action='store_true', dest='plot',
-                        default=False, help=help['plot'])
+                        default=False, help=helps['plot'])
     options = parser.parse_args()
 
     max_order = options.max_order

@@ -26,7 +26,7 @@ def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
 
     return val
 
-help = {
+helps = {
     'show' : 'show the results figure',
 }
 
@@ -37,7 +37,7 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-s', '--show',
                       action="store_true", dest='show',
-                      default=False, help=help['show'])
+                      default=False, help=helps['show'])
     options = parser.parse_args()
 
     mesh = Mesh.from_file(data_dir + '/meshes/2d/rectangle_tri.mesh')

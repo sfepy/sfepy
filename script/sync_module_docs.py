@@ -40,7 +40,7 @@ doc_template = """%s
    :undoc-members:
 """
 
-help = {
+helps = {
     'dry_run' :
     'only show what changes would be made',
 }
@@ -51,7 +51,7 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-n', '--dry-run',
                         action='store_true', dest='dry_run',
-                        default=False, help=help['dry_run'])
+                        default=False, help=helps['dry_run'])
     parser.add_argument('doc_dir')
     parser.add_argument('top_dir')
     options = parser.parse_args()

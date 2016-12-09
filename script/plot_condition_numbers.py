@@ -19,7 +19,7 @@ from sfepy.terms import Term
 from sfepy.solvers import eig
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
-help = {
+helps = {
     'basis' :
     'name of the FE basis [default: %(default)s]',
     'max_order' :
@@ -36,16 +36,16 @@ def main():
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-b', '--basis', metavar='name',
                         action='store', dest='basis',
-                        default='lagrange', help=help['basis'])
+                        default='lagrange', help=helps['basis'])
     parser.add_argument('-n', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
-                        default=10, help=help['max_order'])
+                        default=10, help=helps['max_order'])
     parser.add_argument('-m', '--matrix', metavar='type',
                         action='store', dest='matrix_type',
-                        default='laplace', help=help['matrix_type'])
+                        default='laplace', help=helps['matrix_type'])
     parser.add_argument('-g', '--geometry', metavar='name',
                         action='store', dest='geometry',
-                        default='2_4', help=help['geometry'])
+                        default='2_4', help=helps['geometry'])
     options = parser.parse_args()
 
     dim, n_ep = int(options.geometry[0]), int(options.geometry[2])

@@ -26,7 +26,7 @@ from sfepy.physics.schroedinger_app import SchroedingerApp
 def fix_path(filename):
     return os.path.join(sfepy.data_dir, filename)
 
-help = {
+helps = {
     'debug':
     'automatically start debugger when an exception is raised',
     'conf' :
@@ -59,35 +59,35 @@ def main():
                         version='%(prog)s ' + sfepy.__version__)
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument('-c', '--conf', metavar='"key : value, ..."',
                         action='store', dest='conf', type=str,
-                        default=None, help= help['conf'])
+                        default=None, help= helps['conf'])
     parser.add_argument('-O', '--options', metavar='"key : value, ..."',
                         action='store', dest='app_options', type=str,
-                        default=None, help=help['options'])
+                        default=None, help=helps['options'])
     parser.add_argument('-o', metavar='filename',
                         action='store', dest='output_filename_trunk',
-                        default=None, help=help['filename'])
+                        default=None, help=helps['filename'])
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--oscillator',
                        action='store_true', dest='oscillator',
-                       default=False, help=help['oscillator'])
+                       default=False, help=helps['oscillator'])
     group.add_argument('--well',
                        action='store_true', dest='well',
-                       default=False, help=help['well'])
+                       default=False, help=helps['well'])
     group.add_argument('--hydrogen',
                        action='store_true', dest='hydrogen',
-                       default=False, help=help['hydrogen'])
+                       default=False, help=helps['hydrogen'])
     group.add_argument('--boron',
                        action='store_true', dest='boron',
-                       default=False, help=help['boron'])
+                       default=False, help=helps['boron'])
     parser.add_argument('-n', '--n-eigs', type=int, metavar='int',
                         action='store', dest='n_eigs',
-                        default=None, help=help['n_eigs'])
+                        default=None, help=helps['n_eigs'])
     parser.add_argument('-t', '--tau', type=float, metavar='float',
                         action='store', dest='tau',
-                        default=None, help=help['tau'])
+                        default=None, help=helps['tau'])
     parser.add_argument('filename_in', nargs='?')
     options = parser.parse_args()
 

@@ -51,7 +51,7 @@ from sfepy.discrete.fem import MeshIO
 from sfepy.discrete.probes import write_results, read_results
 import six
 
-help = {
+helps = {
     'debug':
     'automatically start debugger when an exception is raised',
     'filename' :
@@ -230,34 +230,34 @@ def main():
                         version='%(prog)s ' + sfepy.__version__)
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument('-o', metavar='filename',
                         action='store', dest='output_filename_trunk',
-                        default=None, help=help['filename'])
+                        default=None, help=helps['filename'])
     parser.add_argument('--auto-dir',
                         action='store_true', dest='auto_dir',
-                        default=False, help=help['auto_dir'])
+                        default=False, help=helps['auto_dir'])
     parser.add_argument('--same-dir',
                         action='store_true', dest='same_dir',
-                        default=False, help=help['same_dir'])
+                        default=False, help=helps['same_dir'])
     parser.add_argument('-f', '--format', metavar='format',
                         action='store', dest='output_format',
-                        default='png', help=help['output_format'])
+                        default='png', help=helps['output_format'])
     parser.add_argument('--only-names', metavar='list of names',
                         action='store', dest='only_names',
-                        default=None, help=help['only_names'])
+                        default=None, help=helps['only_names'])
     parser.add_argument('-s', '--step', type=int, metavar='step',
                         action='store', dest='step',
-                        default=0, help=help['step'])
+                        default=0, help=helps['step'])
     parser.add_argument('-c', '--close-limit', type=float, metavar='distance',
                         action='store', dest='close_limit',
-                        default=0.1, help=help['close_limit'])
+                        default=0.1, help=helps['close_limit'])
     parser.add_argument('-p', '--postprocess',
                         action='store_true', dest='postprocess',
-                        default=False, help=help['postprocess'])
+                        default=False, help=helps['postprocess'])
     parser.add_argument('--radial',
                         action='store_true', dest='radial',
-                        default=False, help=help['radial'])
+                        default=False, help=helps['radial'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()

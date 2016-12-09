@@ -157,7 +157,7 @@ def get_dir(default):
         out = op.normpath(op.join(sfepy.data_dir, default))
     return out
 
-help = {
+helps = {
     'dir' : 'directory with tests [default: %(default)s]',
     'out_dir' : 'directory for storing test results and temporary files'
     ' [default: %(default)s]',
@@ -178,30 +178,30 @@ def main():
                         version="%(prog)s " + sfepy.__version__)
     parser.add_argument("--print-doc",
                         action="store_true", dest="print_doc",
-                        default=False, help=help['print-doc'])
+                        default=False, help=helps['print-doc'])
     parser.add_argument("-d", "--dir", metavar='directory',
                         action="store", dest="test_dir",
                         default=get_dir('tests'),
-                        help=help['dir'])
+                        help=helps['dir'])
     parser.add_argument("-o", "--output", metavar='directory',
                         action="store", dest="out_dir",
                         default=get_dir('output-tests'),
-                        help=help['out_dir'])
+                        help=helps['out_dir'])
     parser.add_argument("--raise",
                         action="store_true", dest="raise_on_error",
-                        default=False, help=help['raise_on_error'])
+                        default=False, help=helps['raise_on_error'])
     parser.add_argument("--debug",
                         action="store_true", dest="debug",
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument("--filter-none",
                         action="store_true", dest="filter_none",
-                        default=False, help=help['filter-none'])
+                        default=False, help=helps['filter-none'])
     parser.add_argument("--filter-less",
                         action="store_true", dest="filter_less",
-                        default=False, help=help['filter-less'])
+                        default=False, help=helps['filter-less'])
     parser.add_argument("--filter-more",
                         action="store_true", dest="filter_more",
-                        default=False, help=help['filter-more'])
+                        default=False, help=helps['filter-more'])
     parser.add_argument("test_filename", nargs="*", default=[])
 
     options = parser.parse_args()

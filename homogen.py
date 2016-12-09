@@ -6,7 +6,7 @@ import sfepy
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.homogen_app import HomogenizationApp
 
-help = {
+helps = {
     'debug':
     'automatically start debugger when an exception is raised',
     'filename' :
@@ -19,10 +19,10 @@ def main():
                         version="%(prog)s " + sfepy.__version__)
     parser.add_argument('--debug',
                         action='store_true', dest='debug',
-                        default=False, help=help['debug'])
+                        default=False, help=helps['debug'])
     parser.add_argument("-o", metavar='filename', action="store",
                         dest="output_filename_trunk",
-                        default=None, help=help['filename'])
+                        default=None, help=helps['filename'])
     parser.add_argument('filename_in')
     options = parser.parse_args()
 
