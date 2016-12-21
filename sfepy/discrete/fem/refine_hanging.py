@@ -330,7 +330,8 @@ def refine(domain0, refine, subs=None, ret_sub_cells=False):
 
             subs = (subsf, subse)
 
-        if isinstance(subs, tuple) and subs[0] is None and subs[1] is None: subs = None
+        if (isinstance(subs, tuple)
+            and (subs[0] is None) and (subs[1] is None)): subs = None
 
     out = (domain, subs)
     if ret_sub_cells:
