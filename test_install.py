@@ -156,8 +156,7 @@ def main():
     fd.close()
 
     if sys.version_info[0] < 3:
-        cmd = 'python'
-
+        cmd = 'python2'
     else:
         cmd = 'python3'
 
