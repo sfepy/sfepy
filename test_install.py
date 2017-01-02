@@ -16,6 +16,29 @@ import sys
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import shlex
 import subprocess
+import logging
+
+DEBUG_FMT = '*' * 55 + '\n%s\n' + '*' * 55
+
+def _get_logger(filename='test_install.log'):
+    """
+    Convenience function to set-up output and logging.
+    """
+    logger = logging.getLogger('test_install.py')
+    logger.setLevel(logging.DEBUG)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    file_handler = logging.FileHandler(filename)
+    file_handler.setLevel(logging.DEBUG)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger
+
+logger = _get_logger()
 
 def check_output(cmd):
     """
@@ -26,7 +49,7 @@ def check_output(cmd):
     out : tuple
         The (stdout, stderr) output tuple.
     """
-    print(cmd)
+    logger.info(cmd)
     args = shlex.split(cmd)
 
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -43,12 +66,12 @@ def report(out, name, line, item, value, eps=None, return_item=False):
         status = out.split('\n')[line].split()
 
     except IndexError:
-        print('  not enough output from command!')
+        logger.error('  not enough output from command!')
         ok = False
 
     else:
         try:
-            print('  comparing:', status[item], value)
+            logger.info('  comparing: %s %s', status[item], value)
 
             if eps is None:
                 ok = (status[item] == value)
@@ -63,16 +86,10 @@ def report(out, name, line, item, value, eps=None, return_item=False):
         except IndexError:
             ok = False
 
-    if ok:
-        print('  %s:' % name, ok)
+    logger.info('  %s: %s', name, ok)
 
-    else:
-        print('! %s:' % name, ok)
-
-        fd = open('test_install.log', 'a')
-        fd.write('*' * 55)
-        fd.write(out)
-        fd.write('*' * 55)
+    if not ok:
+        logger.debug(DEBUG_FMT, out)
 
     if return_item:
         return ok, status[item]
@@ -87,21 +104,15 @@ def report2(out, name, items, return_item=False):
     """
     ok = True
     for s in items:
-        print('  checking:', s)
+        logger.info('  checking: %s', s)
         if s not in out:
             ok = False
             break
 
-    if ok:
-        print('  %s:' % name, ok)
+    logger.info('  %s: %s', name, ok)
 
-    else:
-        print('! %s:' % name, ok)
-
-        fd = open('test_install.log', 'a')
-        fd.write('*' * 55)
-        fd.write(out)
-        fd.write('*' * 55)
+    if not ok:
+        logger.debug(DEBUG_FMT, out)
 
     if return_item:
         return ok, s
@@ -127,18 +138,11 @@ def report_tests(out, return_item=False):
 
     ok = stats[2] == '0'
 
-    if ok:
-        print('  %s test file(s) executed in %s s, %s failure(s) of %s test(s)'
-              % (stats[0], stats[1], stats[2], stats[3]))
+    logger.info('  %s test file(s) executed in %s s, %s failure(s) of %s test(s)'
+                % (stats[0], stats[1], stats[2], stats[3]))
 
-    else:
-        print('  %s test file(s) executed in %s s, %s failure(s) of %s test(s)'
-              % (stats[0], stats[1], stats[2], stats[3]))
-
-        fd = open('test_install.log', 'a')
-        fd.write('*' * 55)
-        fd.write(out)
-        fd.write('*' * 55)
+    if not ok:
+        logger.debug(DEBUG_FMT, out)
 
     if return_item:
         return ok, stats[2]
