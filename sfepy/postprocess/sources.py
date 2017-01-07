@@ -315,66 +315,62 @@ class GenericFileSource(FileSource):
 
     def add_data_to_dataset(self, dataset, data):
         """Add point and cell data to the dataset."""
-        dim = self.dim
-        sym = (dim + 1) * dim // 2
-
         dm = DatasetManager(dataset=dataset)
         for key, val in six.iteritems(data):
-            vd = val.data
-##             print vd.shape
             if val.mode == 'vertex':
-                if vd.shape[1] == 1:
-                    aux = vd.reshape((vd.shape[0],))
-
-                elif vd.shape[1] == 2:
-                    zz = nm.zeros((vd.shape[0], 1), dtype=vd.dtype)
-                    aux = nm.c_[vd, zz]
-
-                elif vd.shape[1] == 3:
-                    aux = vd
-
-                else:
-                    raise ValueError('unknown vertex data format! (%s)'\
-                                     % vd.shape)
-
+                aux = self._reshape(val.data, self.dim)
                 dm.add_array(aux, key, 'point')
 
             elif val.mode == 'cell':
-                ne, aux, nr, nc = vd.shape
-                if (nr == 1) and (nc == 1):
-                    aux = vd.reshape((ne,))
-
-                elif (nr == dim) and (nc == 1):
-                    if dim == 3:
-                        aux = vd.reshape((ne, dim))
-                    else:
-                        zz = nm.zeros((vd.shape[0], 1), dtype=vd.dtype);
-                        aux = nm.c_[vd.squeeze(), zz]
-
-                elif (((nr == sym) or (nr == (dim * dim))) and (nc == 1)) \
-                         or ((nr == dim) and (nc == dim)):
-                    vd = vd.squeeze()
-
-                    if dim == 3:
-                        if nr == sym:
-                            aux = vd[:,[0,3,4,3,1,5,4,5,2]]
-                        elif nr == (dim * dim):
-                            aux = vd[:,[0,3,4,6,1,5,7,8,2]]
-                        else:
-                            aux = vd.reshape((vd.shape[0], dim*dim))
-                    else:
-                        zz = nm.zeros((vd.shape[0], 1), dtype=vd.dtype);
-                        if nr == sym:
-                            aux = nm.c_[vd[:,[0,2]], zz, vd[:,[2,1]],
-                                        zz, zz, zz, zz]
-                        elif nr == (dim * dim):
-                            aux = nm.c_[vd[:,[0,2]], zz, vd[:,[3,1]],
-                                        zz, zz, zz, zz]
-                        else:
-                            aux = nm.c_[vd[:,0,[0,1]], zz, vd[:,1,[0,1]],
-                                        zz, zz, zz, zz]
-
+                aux = self._reshape(val.data, self.dim)
                 dm.add_array(aux, key, 'cell')
+
+    @staticmethod
+    def _reshape(data, dim):
+        sym = (dim + 1) * dim // 2
+
+        if len(data.shape) == 2:
+            num, nr, nc = data.shape[0], data.shape[1], 1
+
+        else:
+            num, _, nr, nc = data.shape
+
+        if (nr == 1) and (nc == 1):
+            aux = data.reshape((num,))
+
+        elif (nr == dim) and (nc == 1):
+            if dim == 3:
+                aux = data.reshape((num, dim))
+            else:
+                zz = nm.zeros((num, 1), dtype=data.dtype);
+                aux = nm.c_[data.squeeze(), zz]
+
+        elif ((((nr == sym) or (nr == (dim * dim))) and (nc == 1))
+              or ((nr == dim) and (nc == dim))):
+            data = data.squeeze()
+
+            if dim == 3:
+                if nr == sym:
+                    aux = data[:,[0,3,4,3,1,5,4,5,2]]
+                elif nr == (dim * dim):
+                    aux = data[:,[0,3,4,6,1,5,7,8,2]]
+                else:
+                    aux = data.reshape((num, dim*dim))
+            else:
+                zz = nm.zeros((num, 1), dtype=data.dtype);
+                if nr == sym:
+                    aux = nm.c_[data[:,[0,2]], zz, data[:,[2,1]],
+                                zz, zz, zz, zz]
+                elif nr == (dim * dim):
+                    aux = nm.c_[data[:,[0,2]], zz, data[:,[3,1]],
+                                zz, zz, zz, zz]
+                else:
+                    aux = nm.c_[data[:,0,[0,1]], zz, data[:,1,[0,1]],
+                                zz, zz, zz, zz]
+        else:
+            raise ValueError('unknown data shape! (%s)' % list(data.shape))
+
+        return aux
 
 class GenericSequenceFileSource(GenericFileSource):
     """File source usable with any format supported by MeshIO classes, with
