@@ -1436,7 +1436,7 @@ class FieldVariable(Variable):
 
         # Field nodes values.
         data = self.field.interp_v_vals_to_n_vals(data_vertex)
-        data = data.squeeze()
+        data = data.ravel()
         self.indx = slice(0, len(data))
 
         self.data[step] = data
