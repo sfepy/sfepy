@@ -59,8 +59,8 @@ def nodal_stress(out, pb, state, extend=False, integrals=None):
     print('Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.)))
     print('\nFEM solution')
     print('============')
-    print('Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0]))
-    print('Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1]))
+    print('Horizontal tensile stress = %.5e MPa/mm' % (svar()[0]))
+    print('Vertical compressive stress = %.5e MPa/mm' % (-svar()[1]))
     print('==================================================================')
     return out
 
