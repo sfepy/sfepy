@@ -94,7 +94,7 @@ Example
 * Write the deformed mesh and the spline control net (the net of control points)
   into vtk files::
 
-    spb.write_vtk('square_tri1_spbox.vtk')
+    spb.write_control_net('square_tri1_spbox.vtk')
     mesh.write('square_tri1_deform.vtk')
 
 The following figures show the undeformed (left) and deformed (right) mesh and
