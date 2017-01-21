@@ -34,18 +34,18 @@ class SplineBox(Struct):
 
     @staticmethod
     def create_spb(bbox, coors, degree=3, nsg=None):
-        nc, dim = coors.shape
+        nc, cdim = coors.shape
         inside = nm.ones((nc,), dtype=nm.bool)
-        nsg = nm.ones((dim,), dtype=nm.int) if nsg is None else nm.array(nsg)
+        nsg = nm.ones((cdim,), dtype=nm.int) if nsg is None else nm.array(nsg)
 
-        for idim in range(dim):
+        for idim in range(cdim):
             inrange = nm.logical_and(coors[:,idim] >= bbox[idim][0],
                                      coors[:,idim] <= bbox[idim][1])
             inside = nm.logical_and(inside, inrange)
 
-        ncpoints = 1
+        ncp_tot = 1
         base, uidx, ncp, cp = [], [], [], []
-        for idim in range(dim):
+        for idim in range(cdim):
             ucoors, ucoors_idx = nm.unique(coors[inside,idim],
                                            return_inverse=True)
             ncp0 = degree + nsg[idim]
@@ -60,22 +60,22 @@ class SplineBox(Struct):
             uidx.append(ucoors_idx)
             ncp.append(ncp0)
             cp.append(cp0)
-            ncpoints *= ncp0
+            ncp_tot *= ncp0
 
-        cpoints = nm.zeros((ncpoints, dim), dtype=nm.double)
+        cp_coors = nm.zeros((ncp_tot, cdim), dtype=nm.double)
         cp_idx, mul_cp_idx = SplineBox.gen_cp_idxs(ncp)
-        for ii in range(dim):
-            cpoints[:,ii] = cp[ii][cp_idx[ii]]
+        for ii in range(cdim):
+            cp_coors[:, ii] = cp[ii][cp_idx[ii]]
 
         return {'base': base,
                 'uidx': uidx,
                 'ncp': ncp,
                 'cp_idx': cp_idx,
                 'mul_cp_idx': mul_cp_idx,
-                'control_points': cpoints,
-                'idxs_inside' : inside}
+                'cp_coors': cp_coors,
+                'idxs_inside': inside}
 
-    def __init__(self, bbox, coors, nsg=None):
+    def __init__(self, bbox, coors, nsg=None, field=None):
         """
         Create a SplineBox.
 
@@ -88,18 +88,41 @@ class SplineBox(Struct):
         nsg : array
             The number of segments.
         """
-        bbox = nm.array(bbox)
-        coors = nm.array(coors)
-        self.__dict__.update(self.create_spb(bbox, coors, nsg=nsg))
-        self.ncoors, self.dim = coors.shape
+        bbox = nm.asarray(bbox)
+        coors = nm.asarray(coors)
+
         self.coors = coors.copy()
-        self.control_points0 = self.control_points.copy()
+        self.cdim = coors.shape[1]
+
+        if field is not None:
+            field = nm.asarray(field)
+            if len(field.shape) <= 1:
+                field = field[..., nm.newaxis]
+            self.field = field.copy()
+        else:
+            self.field = self.coors
+
+        self.__dict__.update(self.create_spb(bbox, coors, nsg=nsg))
+
+        if field is not None:
+            if hasattr(self, 'idxs_inside'):
+                b = field[self.idxs_inside, ...]
+            else:
+                b = field
+
+            a = self.get_box_matrix()
+            self.cp_values = nm.linalg.lstsq(a, b)[0]
+
+        else:
+            self.cp_values = self.cp_coors
+
+        self.cp_values0 = self.cp_values.copy()
 
     def get_coors_shape(self):
         """
         Get the shape of the coordinates.
         """
-        return (self.ncoors, self.dim)
+        return self.coors.shape
 
     def get_control_points(self, init=False):
         """
@@ -113,10 +136,10 @@ class SplineBox(Struct):
             If True, return the initial state.
         """
         if init:
-            return self.control_points0
+            return self.cp_values0
 
         else:
-            return self.control_points
+            return self.cp_values
 
     def set_control_points(self, cpt_coors, add=False):
         """
@@ -130,9 +153,9 @@ class SplineBox(Struct):
             If True, coors += cpt_coors
         """
         if add:
-            self.control_points += cpt_coors
+            self.cp_values += cpt_coors
         else:
-            self.control_points = cpt_coors
+            self.cp_values = cpt_coors
 
     def move_control_point(self, cpoint, val):
         """
@@ -149,19 +172,30 @@ class SplineBox(Struct):
             idx = nm.dot(nm.array(cpoint), self.mul_cp_idx)
         else:
             idx = cpoint
-        self.control_points[idx,:] += val
+        self.cp_values[idx,:] += val
 
-    def evaluate(self, cp_coors=None, outside=True):
+    def get_box_matrix(self):
+        """
+        Returns:
+            mtx : 2D array
+                The matrix containing the coefficients of b-spline
+                basis functions.
+        """
+        ncp, cdim = self.cp_coors.shape
+        mtx = nm.ones((self.uidx[0].shape[0], ncp), dtype=nm.double)
+        for ii in range(cdim):
+            mtx *= self.base[ii][self.uidx[ii],:][:,self.cp_idx[ii]]
+
+        return mtx
+
+    def evaluate(self, cp_values=None, outside=True):
         """
         Evaluate the new position of the mesh coordinates.
 
         Parameters
         ----------
-        coors : array
-            The coordinates corresponding to the actual spline control point
-            positions.
-        cp_coors : array
-            If is not None, use as control point coordinates.
+        cp_values : array
+            The actual control point values. If None, use self.control_values.
         outside : bool
             If True, return also the coordinates outside the spline box.
 
@@ -170,20 +204,17 @@ class SplineBox(Struct):
         new_coors : array
             The new position of the mesh coordinates.
         """
-        if cp_coors is None:
-            cp_coors = self.control_points
+        if cp_values is None:
+            cp_values = self.cp_values
 
-        ncp, dim = cp_coors.shape
-        aux = nm.ones((self.uidx[0].shape[0], ncp), dtype=nm.double)
-        for ii in range(self.dim):
-            aux *= self.base[ii][self.uidx[ii],:][:,self.cp_idx[ii]]
+        mtx = self.get_box_matrix()
 
         if outside and hasattr(self, 'idxs_inside'):
-            coors = self.coors.copy()
-            coors[self.idxs_inside,:] = nm.dot(aux, cp_coors)
-            return coors
+            field = self.field.copy()
+            field[self.idxs_inside, ...] = nm.dot(mtx, cp_values)
+            return field
         else:
-            return nm.dot(aux, cp_coors)
+            return nm.dot(mtx, cp_values)
 
     def evaluate_derivative(self, cpoint, dirvec):
         """
@@ -207,16 +238,18 @@ class SplineBox(Struct):
         else:
             idxs = []
             aux = cpoint
-            for ii in range(self.dim):
-                idxs.append(aux / self.mul_cp_idx[-ii])
-                aux = aux % self.mul_cp_idx[-ii]
+            for ii in range(self.cdim):
+                idxs.append(aux // self.mul_cp_idx[-(ii + 1)])
+                aux = aux % self.mul_cp_idx[-(ii + 1)]
             idxs = idxs[::-1]
 
         aux = nm.ones((self.uidx[0].shape[0],), dtype=nm.double)
-        for ii in range(self.dim):
-            aux *= self.base[ii][self.uidx[ii],cpoint[ii]]
+        for ii in range(self.cdim):
+            aux *= self.base[ii][self.uidx[ii], idxs[ii]]
 
-        return nm.dot(aux[:,nm.newaxis], nm.reshape(dirvec, (1, self.dim)))
+        dirvec = nm.asarray(dirvec)
+        return nm.dot(aux[:,nm.newaxis],
+                      nm.reshape(dirvec, (1, self.cp_values.shape[1])))
 
     def write_control_net(self, filename):
         """
@@ -235,19 +268,19 @@ class SplineBox(Struct):
                 "ASCII\nDATASET UNSTRUCTURED_GRID\n\n")
         f.write("POINTS %d float\n" % npt)
 
-        if self.dim == 2:
+        if self.cdim == 2:
             ptformat = "%e %e 0.0\n"
 
-        elif self.dim == 3:
+        elif self.cdim == 3:
             ptformat = "%e %e %e\n"
 
-        for cpt in self.control_points:
+        for cpt in self.cp_coors:
             f.write(ptformat % tuple(cpt))
 
         cells = nm.array([nm.arange(0, ncp[0] - 1), nm.arange(1, ncp[0])]).T
         cp = ncp[0]
         nc = cp - 1
-        for ii in range(1, self.dim):
+        for ii in range(1, self.cdim):
             cells1 = []
             ncpi = ncp[ii]
             for jj in range(ncpi):
@@ -268,6 +301,13 @@ class SplineBox(Struct):
             f.write("2 %d %d\n" % tuple(ii))
         f.write("\nCELL_TYPES %d\n" % nc)
         f.write("3\n" * nc)
+
+        f.write("\nPOINT_DATA %d\n" % npt)
+        for ival in range(self.cp_values.shape[1]):
+            f.write("\nSCALARS cp_value_%d float 1\n" % (ival + 1))
+            f.write("LOOKUP_TABLE default\n")
+            f.write('\n'.join(self.cp_values[:, ival].astype('|S10')) + '\n')
+
         f.close()
 
 class SplineRegion2D(SplineBox):
@@ -368,7 +408,7 @@ class SplineRegion2D(SplineBox):
             ncpoints *= s.ncp
 
         cp_idx, mul_cp_idx = SplineBox.gen_cp_idxs(ncp)
-        cpoints = SplineRegion2D.define_control_points(nm.vstack(bnd_cp), ncp)
+        cp_coors = SplineRegion2D.define_control_points(nm.vstack(bnd_cp), ncp)
         idxs_inside = SplineRegion2D.points_in_poly(coors, nm.vstack(bnd_poly))
 
         return {'base': base,
@@ -377,7 +417,7 @@ class SplineRegion2D(SplineBox):
                 'ncp': ncp,
                 'cp_idx': cp_idx,
                 'mul_cp_idx': mul_cp_idx,
-                'control_points': cpoints,
+                'cp_coors': cpoints,
                 'idxs_inside': idxs_inside}
 
     def find_ts(self, coors):
@@ -387,7 +427,7 @@ class SplineRegion2D(SplineBox):
         from scipy.optimize import minimize
 
         def ptdist(x, coors, spb):
-            for ii in range(spb.dim):
+            for ii in range(spb.cdim):
                 spb.base[ii] = spb.bspl[ii].eval_basis(t=x[ii], return_val=True)
 
             coors_approx = spb.evaluate(outside=False)
@@ -396,8 +436,8 @@ class SplineRegion2D(SplineBox):
         def gen_grid(spb, rho):
             grid = nm.mgrid[0:rho,0:rho]
             t = nm.linspace(0, 1, rho)
-            for ii in range(spb.dim):
-                spb.uidx[ii] = grid[ii,:].reshape(rho**self.dim, order='F')
+            for ii in range(spb.cdim):
+                spb.uidx[ii] = grid[ii,:].reshape(rho**self.cdim, order='F')
                 spb.base[ii] = spb.bspl[ii].eval_basis(t=t, return_val=True)
 
             return spb.evaluate(outside=False)
@@ -405,10 +445,10 @@ class SplineRegion2D(SplineBox):
         rho = 100
         grid = gen_grid(self, rho)
 
-        for ii in range(self.dim):
+        for ii in range(self.cdim):
             self.uidx[ii] = nm.array([0])
 
-        ts = nm.zeros((coors.shape[0], self.dim), dtype=nm.float64)
+        ts = nm.zeros((coors.shape[0], self.cdim), dtype=nm.float64)
         for ii, ic in enumerate(coors):
             idx = nm.argmin(nm.linalg.norm(grid - ic, axis=1))
             x0 = nm.array([idx % rho, idx // rho]) / (rho - 1.)
@@ -432,15 +472,16 @@ class SplineRegion2D(SplineBox):
         rho : float
             The density of points defining the boundary polygon.
         """
-        coors = nm.array(coors)
+        coors = nm.asarray(coors)
         self.__dict__.update(self.create_spb(spl_bnd, coors, rho))
-        self.ncoors, self.dim = coors.shape
+        self.cdim = coors.shape[1]
         self.coors = coors.copy()
+        self.field = self.coors
+        self.cp_values = self.cp_coors
 
         self.ts = self.find_ts(coors[self.idxs_inside,:])
-        self.control_points0 = self.control_points.copy()
 
-        for idim in range(self.dim):
+        for idim in range(self.cdim):
             ucoors, ucoors_idx = nm.unique(self.ts[:,idim], return_inverse=True)
             self.base[idim] = self.bspl[idim].eval_basis(t=ucoors,
                                                          return_val=True)
