@@ -5,6 +5,7 @@ from .bspline import BSpline
 from sfepy.base.base import Struct
 from six.moves import range
 
+
 class SplineBox(Struct):
     """
     B-spline geometry parametrization. The geometry can be modified
@@ -15,9 +16,9 @@ class SplineBox(Struct):
         dim = len(ncp)
 
         if dim == 2:
-            idxs = nm.mgrid[0:ncp[0],0:ncp[1]]
+            idxs = nm.mgrid[0:ncp[0], 0:ncp[1]]
         elif dim == 3:
-            idxs = nm.mgrid[0:ncp[0],0:ncp[1],0:ncp[2]]
+            idxs = nm.mgrid[0:ncp[0], 0:ncp[1], 0:ncp[2]]
         else:
             raise(ValueError)
 
@@ -39,14 +40,14 @@ class SplineBox(Struct):
         nsg = nm.ones((cdim,), dtype=nm.int) if nsg is None else nm.array(nsg)
 
         for idim in range(cdim):
-            inrange = nm.logical_and(coors[:,idim] >= bbox[idim][0],
-                                     coors[:,idim] <= bbox[idim][1])
+            inrange = nm.logical_and(coors[:, idim] >= bbox[idim][0],
+                                     coors[:, idim] <= bbox[idim][1])
             inside = nm.logical_and(inside, inrange)
 
         ncp_tot = 1
         base, uidx, ncp, cp = [], [], [], []
         for idim in range(cdim):
-            ucoors, ucoors_idx = nm.unique(coors[inside,idim],
+            ucoors, ucoors_idx = nm.unique(coors[inside, idim],
                                            return_inverse=True)
             ncp0 = degree + nsg[idim]
             bspl = BSpline(degree, ncp=ncp0)
@@ -61,12 +62,15 @@ class SplineBox(Struct):
             ncp.append(ncp0)
             cp.append(cp0)
             ncp_tot *= ncp0
+            print(knots)
+            print(cp0)
 
         cp_coors = nm.zeros((ncp_tot, cdim), dtype=nm.double)
         cp_idx, mul_cp_idx = SplineBox.gen_cp_idxs(ncp)
         for ii in range(cdim):
             cp_coors[:, ii] = cp[ii][cp_idx[ii]]
 
+        print(cp_coors)
         return {'base': base,
                 'uidx': uidx,
                 'ncp': ncp,
@@ -172,7 +176,7 @@ class SplineBox(Struct):
             idx = nm.dot(nm.array(cpoint), self.mul_cp_idx)
         else:
             idx = cpoint
-        self.cp_values[idx,:] += val
+        self.cp_values[idx, :] += val
 
     def get_box_matrix(self):
         """
@@ -184,7 +188,7 @@ class SplineBox(Struct):
         ncp, cdim = self.cp_coors.shape
         mtx = nm.ones((self.uidx[0].shape[0], ncp), dtype=nm.double)
         for ii in range(cdim):
-            mtx *= self.base[ii][self.uidx[ii],:][:,self.cp_idx[ii]]
+            mtx *= self.base[ii][self.uidx[ii], :][:, self.cp_idx[ii]]
 
         return mtx
 
@@ -248,7 +252,7 @@ class SplineBox(Struct):
             aux *= self.base[ii][self.uidx[ii], idxs[ii]]
 
         dirvec = nm.asarray(dirvec)
-        return nm.dot(aux[:,nm.newaxis],
+        return nm.dot(aux[:, nm.newaxis],
                       nm.reshape(dirvec, (1, self.cp_values.shape[1])))
 
     def write_control_net(self, filename):
@@ -310,6 +314,7 @@ class SplineBox(Struct):
 
         f.close()
 
+
 class SplineRegion2D(SplineBox):
     """
     B-spline geometry parametrization. The boundary of the SplineRegion2D
@@ -326,20 +331,21 @@ class SplineRegion2D(SplineBox):
 
         p1 = poly[:-1]
         p2 = poly[1:]
-        a1 = (p2[:,1] - p1[:,1])
+        a1 = (p2[:, 1] - p1[:, 1])
         a1nz = nm.where(nm.fabs(a1) > 1e-16)[0]
-        a2 = (p2[a1nz,0] - p1[a1nz,0]) / a1[a1nz]
+        a2 = (p2[a1nz, 0] - p1[a1nz, 0]) / a1[a1nz]
         for jj, pt in enumerate(points):
             # on edges?
-            if nm.any(nm.linalg.norm(p1 - pt, axis=1)
-                      + nm.linalg.norm(p2 - pt, axis=1)
-                      - nm.linalg.norm(p1 - p2, axis=1) < tol):
+            if nm.any(nm.linalg.norm(p1 - pt, axis=1) +
+                      nm.linalg.norm(p2 - pt, axis=1) -
+                      nm.linalg.norm(p1 - p2, axis=1) < tol):
                 inside[jj] = True
                 continue
 
             # inside?
-            val = nm.logical_and((p1[a1nz,1] > pt[1]) != (p2[a1nz,1] > pt[1]),
-                                 pt[0] < (a2*(pt[1] - p1[a1nz,1]) + p1[a1nz,0]))
+            val = nm.logical_and(
+                (p1[a1nz, 1] > pt[1]) != (p2[a1nz, 1] > pt[1]),
+                pt[0] < (a2*(pt[1] - p1[a1nz, 1]) + p1[a1nz, 0]))
 
             if (nm.where(val)[0].shape[0] % 2) > 0:
                 inside[jj] = True
@@ -360,19 +366,19 @@ class SplineRegion2D(SplineBox):
         idxs2 = nm.arange(1, ny - 1) * nx
         bcnd = nm.hstack([idxs1, idxs2 + nx - 1,
                           idxs1[::-1] + nx * (ny - 1), idxs2[::-1]])
-        coors[bcnd,:] = cp_bnd_coors
+        coors[bcnd, :] = cp_bnd_coors
 
         for ii in range(1, nx - 1):
             for jj, t in enumerate(nm.linspace(0, 1, ny)[1:-1]):
-                c = (1 - t) * coors[ii,:] + t * coors[ii + (ny - 1)*nx,:]
-                coors[ii + nx*(jj + 1),:] = c
+                c = (1 - t) * coors[ii, :] + t * coors[ii + (ny - 1)*nx, :]
+                coors[ii + nx*(jj + 1), :] = c
 
-        inside = grid[1:-1,1:-1].flatten()
+        inside = grid[1:-1, 1:-1].flatten()
         for iiter in range(5):
             for ii in inside:
                 dx = nm.array([0., 0.])
                 for jj in [-1, +1, -nx, + nx]:
-                    dx -= 0.25 * (coors[ii,:] - coors[ii + jj,:])
+                    dx -= 0.25 * (coors[ii, :] - coors[ii + jj, :])
                 coors[ii] += 0.1 * dx
 
         return coors
@@ -392,11 +398,11 @@ class SplineRegion2D(SplineBox):
         for s in spl_bnd:
             s.set_param_n(rho)
             bnd_poly.append(s.eval()[:-1])
-            bnd_cp.append(s.get_control_points()[:-1,:])
+            bnd_cp.append(s.get_control_points()[:-1, :])
 
-        bnd_poly.append(bnd_poly[0][0,:])
+        bnd_poly.append(bnd_poly[0][0, :])
         ncpoints = 1
-        base, bspl, uidx, ncp =  [], [], [], []
+        base, bspl, uidx, ncp = [], [], [], []
         for idim, si in enumerate([0, 1]):
             s = spl_bnd[si]
             bspl0 = BSpline(s.degree, ncp=s.ncp)
@@ -417,7 +423,7 @@ class SplineRegion2D(SplineBox):
                 'ncp': ncp,
                 'cp_idx': cp_idx,
                 'mul_cp_idx': mul_cp_idx,
-                'cp_coors': cpoints,
+                'cp_coors': cp_coors,
                 'idxs_inside': idxs_inside}
 
     def find_ts(self, coors):
@@ -428,16 +434,17 @@ class SplineRegion2D(SplineBox):
 
         def ptdist(x, coors, spb):
             for ii in range(spb.cdim):
-                spb.base[ii] = spb.bspl[ii].eval_basis(t=x[ii], return_val=True)
+                spb.base[ii] = spb.bspl[ii].eval_basis(t=x[ii],
+                                                       return_val=True)
 
             coors_approx = spb.evaluate(outside=False)
             return nm.linalg.norm(coors - coors_approx)
 
         def gen_grid(spb, rho):
-            grid = nm.mgrid[0:rho,0:rho]
+            grid = nm.mgrid[0:rho, 0:rho]
             t = nm.linspace(0, 1, rho)
             for ii in range(spb.cdim):
-                spb.uidx[ii] = grid[ii,:].reshape(rho**self.cdim, order='F')
+                spb.uidx[ii] = grid[ii, :].reshape(rho**self.cdim, order='F')
                 spb.base[ii] = spb.bspl[ii].eval_basis(t=t, return_val=True)
 
             return spb.evaluate(outside=False)
@@ -452,8 +459,8 @@ class SplineRegion2D(SplineBox):
         for ii, ic in enumerate(coors):
             idx = nm.argmin(nm.linalg.norm(grid - ic, axis=1))
             x0 = nm.array([idx % rho, idx // rho]) / (rho - 1.)
-            fce = lambda x: ptdist(x, ic, self)
-            ts[ii] = minimize(fce, x0, method='nelder-mead',
+            ts[ii] = minimize(lambda x: ptdist(x, ic, self), x0,
+                              method='nelder-mead',
                               options={'xtol': 1e-5, 'disp': False}).x
 
         return ts
@@ -479,10 +486,11 @@ class SplineRegion2D(SplineBox):
         self.field = self.coors
         self.cp_values = self.cp_coors
 
-        self.ts = self.find_ts(coors[self.idxs_inside,:])
+        self.ts = self.find_ts(coors[self.idxs_inside, :])
 
         for idim in range(self.cdim):
-            ucoors, ucoors_idx = nm.unique(self.ts[:,idim], return_inverse=True)
+            ucoors, ucoors_idx = nm.unique(self.ts[:, idim],
+                                           return_inverse=True)
             self.base[idim] = self.bspl[idim].eval_basis(t=ucoors,
                                                          return_val=True)
             self.uidx[idim] = ucoors_idx
