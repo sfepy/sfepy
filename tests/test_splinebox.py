@@ -95,6 +95,50 @@ class Test(TestCommon):
 
         return ok
 
+    def test_spbox_field(self):
+        """
+        'Field' vs. 'coors'.
+        """
+        mesh = Mesh.from_file(data_dir + '/meshes/2d/its2D.mesh')
+        coors = mesh.coors.copy()
+        bbox = nm.vstack((nm.amin(coors, 0), nm.amax(coors, 0))).T
+
+        coors_1 = coors.copy()
+
+        alpha = coors[:, 0]
+        spbox = SplineBox(bbox, coors, nsg=[1, 2], field=alpha)
+        dv1 = spbox.evaluate_derivative(6, 1)
+        spbox.move_control_point(6, -0.2)
+        c1 = spbox.evaluate()
+        coors_1[:, 0] = c1[:, 0]
+
+        alpha = coors[:, 1]
+        spbox = SplineBox(bbox, coors, nsg=[1, 2], field=alpha)
+        dv2 = spbox.evaluate_derivative(6, 1)
+        spbox.move_control_point(6, 0.2)
+        c2 = spbox.evaluate()
+        coors_1[:, 1] = c2[:, 0]
+
+        spbox = SplineBox(bbox, coors, nsg=[1, 2])
+        dv = spbox.evaluate_derivative(6, [1, 1])
+        spbox.move_control_point(6, [-0.2, 0.2])
+        coors_2 = spbox.evaluate()
+
+        rel_coor_dist = nm.linalg.norm(coors_2 - coors_1)\
+            / nm.linalg.norm(coors_2)
+        ok = rel_coor_dist < tolerance
+        rel_dvel_dist = nm.linalg.norm(dv - nm.hstack([dv1, dv2]))\
+            / nm.linalg.norm(dv)
+        ok = ok and rel_dvel_dist < tolerance
+
+        if not ok:
+            self.report('modified coordinates do not match, relative error:')
+            self.report(rel_coor_dist)
+            self.report('derivatives do not match, relative error:')
+            self.report(rel_dvel_dist)
+
+        return ok
+
     def test_spregion2d(self):
         """
         Check position of a given vertex in the deformed mesh.
