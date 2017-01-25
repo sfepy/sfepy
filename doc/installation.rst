@@ -17,6 +17,9 @@ Windows. It can work with both Python 2.7 and Python 3. Depending on Python
 installation and OS used, replacing ``python`` by ``python3`` might be required
 in all the commands below (e.g. in :ref:`compilation`) in order to use Python 3.
 
+The easiest way to install SfePy is to use `Anaconda`_, see `Multi-platform
+Distributions Notes`_.
+
 Requirements
 ------------
 
@@ -75,13 +78,17 @@ top-level directory of the distribution, or can be installed locally or
 system-wide.
 
 *SfePy* should work both with bleeding edge (Git) and last released versions of
-`NumPy` and `SciPy`. Submit an issue at `Issues`_ page in case this does not hold.
+`NumPy` and `SciPy`. Submit an issue at `Issues`_ page in case this does not
+hold.
+
+.. _generic_install:
 
 Generic Installation Instructions
 ---------------------------------
 
-Download the latest development version of the code from
-`SfePy git repository`_::
+The latest release can be obtained from the `download`_ page. Otherwise,
+download the latest development version of the code from `SfePy git
+repository`_::
 
     git clone git://github.com/sfepy/sfepy.git
 
@@ -234,24 +241,48 @@ Anaconda
 
 (tested Python 2.7 64-Bit on Ubuntu 14.04 LTS, Windows 8.1 and Mac OS X 10.10)
 
-Download appropriate `Anaconda`_ Python 2.7 installer package (valid
+Download appropriate `Anaconda`_ Python 2.7 or 3.x installer package (valid
 e-mail address is required, but no further Ads) and follow install
 instructions. We recommend to choose *user-level* install option (no
 admin privileges required).
 
-Install missing/required packages using built-in `conda` package
-manager::
-  
-   conda install mayavi wxpython
+Anaconda can be used for
+
+#. installing the latest release of sfepy directly from the `conda-forge`_
+   channel, see `sfepy-feedstock`_. In this case, simply do::
+
+     conda install -c conda-forge sfepy
+
+   Installing sfepy from the conda-forge channel can also be achieved by adding
+   conda-forge to your channels with::
+
+     conda config --add channels conda-forge
+
+   Once the conda-forge channel has been enabled, sfepy can be installed with::
+
+     conda install sfepy
+
+   It is possible to list all of the versions of sfepy available on your
+   platform with::
+
+     conda search sfepy --channel conda-forge
+
+#. installing the sfepy dependencies only - then proceed with the
+   :ref:`generic_install` instructions;
+
+   In this case, install the missing/required packages using built-in `conda`
+   package manager::
+
+     conda install mayavi wxpython
+
+   See `conda help` for further information.
 
 Occasionally, you should check for distribution and/or installed packages
 updates (there is no built-in automatic update mechanism available)::
-  
+
   conda update conda
   conda update anaconda
   conda update <package>
-
-See `conda help` for further information.  
 
 Platform-specific Notes
 -----------------------

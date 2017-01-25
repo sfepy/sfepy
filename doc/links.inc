@@ -34,6 +34,8 @@
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 .. _continuum analytics: http://www.continuum.io/
+.. _conda-forge: https://conda-forge.github.io/
+.. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
 .. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
 .. _python(x,y): http://code.google.com/p/pythonxy
