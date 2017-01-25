@@ -249,10 +249,23 @@ admin privileges required).
 Anaconda can be used for
 
 #. installing the latest release of sfepy directly from the `conda-forge`_
-   channel. In this case, simply do::
+   channel, see `sfepy-feedstock`_. In this case, simply do::
+
+     conda install -c conda-forge sfepy
+
+   Installing sfepy from the conda-forge channel can also be achieved by adding
+   conda-forge to your channels with::
 
      conda config --add channels conda-forge
+
+   Once the conda-forge channel has been enabled, sfepy can be installed with::
+
      conda install sfepy
+
+   It is possible to list all of the versions of sfepy available on your
+   platform with::
+
+     conda search sfepy --channel conda-forge
 
 #. installing the sfepy dependencies only - then proceed with the
    :ref:`generic_install` instructions;
