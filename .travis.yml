@@ -7,6 +7,8 @@ matrix:
       env: MAYAVI="mayavi=4.3"
     - python: 3.4
       env: MAYAVI=
+    - python: 3.5
+    - python: 3.6
 
 addons:
   apt:
