@@ -230,25 +230,25 @@ def refine_reference(geometry, level):
     n_el = conn.shape[0]
 
     if geometry.name == '2_3':
-        aux_conn = conn.reshape((n_el / 4, 4, 3))
+        aux_conn = conn.reshape((n_el // 4, 4, 3))
 
         ir = [[0, 1, 2], [2, 2, 3], [3, 3, 0]]
         ic = [[0, 0, 0], [0, 1, 0], [0, 1, 0]]
 
     elif geometry.name == '2_4':
-        aux_conn = conn.reshape((n_el / 4, 4, 4))
+        aux_conn = conn.reshape((n_el // 4, 4, 4))
 
         ir = [[0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 3, 0], [0, 0, 2], [3, 3, 1]]
         ic = [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [1, 2, 1], [1, 2, 1]]
 
     elif geometry.name == '3_4':
-        aux_conn = conn.reshape((n_el / 8, 8, 4))
+        aux_conn = conn.reshape((n_el // 8, 8, 4))
 
         ir = [[0, 0, 1], [1, 1, 2], [2, 0, 0], [3, 1, 1], [3, 2, 2], [3, 0, 0]]
         ic = [[0, 1, 1], [1, 2, 2], [2, 2, 0], [3, 3, 1], [3, 3, 2], [3, 3, 0]]
 
     elif geometry.name == '3_8':
-        aux_conn = conn.reshape((n_el / 8, 8, 8))
+        aux_conn = conn.reshape((n_el // 8, 8, 8))
 
         ir = [[0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 0, 0], [0, 0, 2], [0, 0, 1],
               [0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 0, 0], [0, 0, 2], [0, 0, 1],

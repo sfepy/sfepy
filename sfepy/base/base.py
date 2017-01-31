@@ -286,7 +286,7 @@ class Struct(object):
             self.__dict__.update(kwargs)
 
     def _format_sequence(self, seq, threshold):
-        threshold_half = threshold / 2
+        threshold_half = threshold // 2
 
         if len(seq) > threshold:
             out = ', '.join(str(ii) for ii in seq[:threshold_half]) \

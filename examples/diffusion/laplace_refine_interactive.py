@@ -145,7 +145,7 @@ def main():
     min_x, max_x = bbox[:, 0]
     eps = 1e-8 * (max_x - min_x)
 
-    cnt = (shape[0] - 1) / 2
+    cnt = (shape[0] - 1) // 2
     g0 = 0.5 * dims[0]
     grading = nm.array([g0 / 2**ii for ii in range(cnt)]) + eps + centre[0] - g0
 
