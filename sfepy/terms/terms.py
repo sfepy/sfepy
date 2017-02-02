@@ -1223,9 +1223,9 @@ class Term(Struct):
         try:
             fargs = self.get_fargs(*args, **kwargs)
 
-        except RuntimeError:
+        except (RuntimeError, ValueError):
             terms.errclear()
-            raise ValueError
+            raise
 
         return fargs
 
@@ -1233,9 +1233,9 @@ class Term(Struct):
         try:
             status = self.function(out, *fargs)
 
-        except RuntimeError:
+        except (RuntimeError, ValueError):
             terms.errclear()
-            raise ValueError
+            raise
 
         if status:
             terms.errclear()
