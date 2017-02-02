@@ -727,7 +727,7 @@ class Problem(Struct):
         """
         dim = self.domain.mesh.dim
         if get_sym:
-            return dim, (dim + 1) * dim / 2
+            return dim, (dim + 1) * dim // 2
         else:
             return dim
 

@@ -131,7 +131,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
 
             nc = cc.shape[0]
             np = rc0.shape[1]
-            conn = nm.arange(nc, dtype=nm.int32).reshape((nc / np, np))
+            conn = nm.arange(nc, dtype=nm.int32).reshape((nc // np, np))
 
             coors.append(cc)
             conns.append(conn + inod)
