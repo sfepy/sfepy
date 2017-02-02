@@ -4,8 +4,6 @@
 
 int32 g_error = 0;
 
-static char buf[1024]; /* !!! */
-
 #undef __FUNC__
 #define __FUNC__ "output"
 /*!
@@ -33,7 +31,6 @@ void errput(const char *what, ...)
 {
   va_list ap;
 
-  snprintf(buf, 1020, "**ERROR** -> %s", what);
   va_start(ap, what);
   vprintf(what, ap);
   va_end(ap);
@@ -55,6 +52,7 @@ void errset(const char *msg)
 */
 void errclear()
 {
+  PyErr_Clear();
   g_error = 0;
 }
 
