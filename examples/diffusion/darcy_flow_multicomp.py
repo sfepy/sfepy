@@ -80,8 +80,8 @@ def mat_fun(ts, coors, mode=None, **kwargs):
     if mode == 'qp':
         nqp, dim = coors.shape
         alpha = nm.zeros((nqp,1,1), dtype=nm.float64)
-        alpha[0:nqp / 2,...] = alpha1
-        alpha[nqp / 2:,...] = alpha2
+        alpha[0:nqp // 2,...] = alpha1
+        alpha[nqp // 2:,...] = alpha2
         K = nm.eye(dim, dtype=nm.float64)
         K2 = nm.tile(K, (nqp,1,1))
         out = {

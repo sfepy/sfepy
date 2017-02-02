@@ -460,7 +460,7 @@ class LagrangeSimplexPolySpace(LagrangePolySpace):
         n_v, dim = geometry.n_vertex, geometry.dim
         order = self.order
 
-        n_nod = fac(order + dim) / (fac(order) * fac(dim))
+        n_nod = fac(order + dim) // (fac(order) * fac(dim))
         ## print n_nod, gd
         nodes = nm.zeros((n_nod, n_v), nm.int32)
         nts = nm.zeros((n_nod, 2), nm.int32)

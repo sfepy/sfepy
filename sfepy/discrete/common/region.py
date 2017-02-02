@@ -761,7 +761,7 @@ class Region(Struct):
         cmesh = self.domain.cmesh
 
         e_verts = cmesh.get_incident(0, self.edges, 1)
-        e_verts.shape = (e_verts.shape[0] / 2, 2)
+        e_verts.shape = (e_verts.shape[0] // 2, 2)
 
         ii = nm.where(e_verts[:, 0] != e_verts[:, 1])[0]
         edges = self.edges[ii]

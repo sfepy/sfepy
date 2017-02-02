@@ -224,7 +224,7 @@ def main():
 
     if options.bc_kind == 'free':
         pb.time_update()
-        n_rbm = dim * (dim + 1) / 2
+        n_rbm = dim * (dim + 1) // 2
 
     elif options.bc_kind == 'cantilever':
         fixed = EssentialBC('Fixed', bottom, {'u.all' : 0.0})

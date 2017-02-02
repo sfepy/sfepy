@@ -433,7 +433,7 @@ class CauchyStrainTerm(Term):
         if mode != 'qp':
             n_qp = 1
 
-        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
+        return (n_el, n_qp, dim * (dim + 1) // 2, 1), parameter.dtype
 
 class CauchyStrainSTerm(CauchyStrainTerm):
     r"""
@@ -523,7 +523,7 @@ class CauchyStressTerm(Term):
         if mode != 'qp':
             n_qp = 1
 
-        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
+        return (n_el, n_qp, dim * (dim + 1) // 2, 1), parameter.dtype
 
 class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     r"""

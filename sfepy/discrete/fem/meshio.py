@@ -1492,7 +1492,7 @@ class HDF5MeshIO(MeshIO):
             data = data_group.data.read()
             dofs = tuple([dec(ic) for ic in data_group.dofs.read()])
             try:
-                shape = tuple(data_group.shape.read())
+                shape = tuple(int(ii) for ii in data_group.shape.read())
 
             except pt.exceptions.NoSuchNodeError:
                 shape = data.shape

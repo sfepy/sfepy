@@ -143,4 +143,4 @@ class PiezoStressTerm(Term):
         if mode != 'qp':
             n_qp = 1
 
-        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
+        return (n_el, n_qp, dim * (dim + 1) // 2, 1), parameter.dtype

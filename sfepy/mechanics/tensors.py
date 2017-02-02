@@ -12,7 +12,7 @@ def dim2sym(dim):
     """
     Given the space dimension, return the symmetric storage size.
     """
-    return (dim + 1) * dim / 2
+    return (dim + 1) * dim // 2
 
 def sym2dim(sym):
     """

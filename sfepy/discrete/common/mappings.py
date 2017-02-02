@@ -25,7 +25,7 @@ class PhysicalQPs(Struct):
                 raise ValueError('incompatible shapes! (n_qp: %d, %s)'
                                  % (n_qp, rshape))
 
-            shape = (rshape[0] / n_qp, n_qp) + rshape[1:]
+            shape = (rshape[0] // n_qp, n_qp) + rshape[1:]
 
         else:
             shape = (rshape[0], 0, 0, 0)
