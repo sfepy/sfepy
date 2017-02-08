@@ -310,7 +310,7 @@ class PETScKrylovSolver(LinearSolver):
          'The actual solver to use.'),
         ('precond', 'str', 'icc', False,
          'The preconditioner.'),
-        ('sub_precond', 'str', None, False,
+        ('sub_precond', 'str', 'none', False,
          'The preconditioner for matrix blocks (in parallel runs).'),
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
@@ -435,9 +435,10 @@ class PETScKrylovSolver(LinearSolver):
             ksp.setInitialGuessNonzero(True)
 
         ksp.solve(prhs, psol)
-        output('%s(%s, %s/proc) convergence: %s (%s)'
+        output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
                % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
-                  ksp.reason, self.converged_reasons[ksp.reason]),
+                  ksp.reason, self.converged_reasons[ksp.reason],
+                  ksp.getIterationNumber()),
                verbose=conf.verbose)
 
         if isinstance(rhs, self.petsc.Vec):
@@ -560,9 +561,11 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         output('...done in %.2f s' % (time.clock() - tt))
 
         sol = psol[...].copy()
-        output('%s(%s, %s/proc) convergence: %s (%s)'
-               % (self.conf.method, self.conf.precond, self.conf.sub_precond,
-                  reason, self.converged_reasons[reason]))
+        output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
+               % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
+                  ksp.reason, self.converged_reasons[ksp.reason],
+                  ksp.getIterationNumber()),
+               verbose=conf.verbose)
         output('elapsed: %.2f [s]' % elapsed)
 
         shutil.rmtree(output_dir)

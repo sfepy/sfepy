@@ -267,7 +267,7 @@ def solve_problem(mesh_filename, options, comm):
     output('creating solver...')
     tt = time.clock()
 
-    conf = Struct(method='bcgsl', precond='jacobi', sub_precond=None,
+    conf = Struct(method='bcgsl', precond='jacobi', sub_precond='none',
                   i_max=10000, eps_a=1e-50, eps_r=1e-6, eps_d=1e4,
                   verbose=True)
     status = {}
