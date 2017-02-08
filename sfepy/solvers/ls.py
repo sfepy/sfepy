@@ -310,7 +310,7 @@ class PETScKrylovSolver(LinearSolver):
          'The actual solver to use.'),
         ('precond', 'str', 'icc', False,
          'The preconditioner.'),
-        ('sub_precond', 'str', None, False,
+        ('sub_precond', 'str', 'none', False,
          'The preconditioner for matrix blocks (in parallel runs).'),
         ('precond_side', "{'left', 'right', 'symmetric', None}", None, False,
          'The preconditioner side.'),
