@@ -290,7 +290,7 @@ def solve_problem(mesh_filename, options, comm):
     output('creating solver...')
     tt = time.clock()
 
-    conf = Struct(method='cg', precond='gamg', sub_precond=None,
+    conf = Struct(method='cg', precond='gamg', sub_precond='none',
                   i_max=10000, eps_a=1e-50, eps_r=1e-5, eps_d=1e4, verbose=True)
     status = {}
     ls = PETScKrylovSolver(conf, comm=comm, mtx=pmtx, status=status)
