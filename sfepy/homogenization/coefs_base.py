@@ -179,7 +179,7 @@ class CorrMiniApp(MiniAppBase):
 
                 if is_dump:
                         var = variables[var_name]
-                        shape = (var.n_dof / var.n_components,
+                        shape = (var.n_dof // var.n_components,
                                  var.n_components)
                         out[skey] = Struct(name = 'dump', mode = 'nodes',
                                            data = dof_vector,

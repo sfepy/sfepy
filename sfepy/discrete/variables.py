@@ -1809,7 +1809,7 @@ class FieldVariable(Variable):
         key = get_default(key, self.name)
 
         aux = nm.reshape(vec,
-                         (self.n_dof / self.n_components, self.n_components))
+                         (self.n_dof // self.n_components, self.n_components))
 
         out = self.field.create_output(aux, self.name, dof_names=self.dofs,
                                        key=key, extend=extend,
@@ -1844,7 +1844,7 @@ class FieldVariable(Variable):
         vec = self()
 
         n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
-        aux = nm.reshape(vec, (n_dof / dpn, dpn))
+        aux = nm.reshape(vec, (n_dof // dpn, dpn))
 
         ext = self.field.extend_dofs(aux, 0.0)
 

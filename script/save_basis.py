@@ -235,7 +235,7 @@ def main():
                                     for ii in options.permutations.split(',')]
                 all_permutations = nm.array(all_permutations)
                 np = len(all_permutations)
-                all_permutations.shape = (np / mesh.n_el, mesh.n_el)
+                all_permutations.shape = (np // mesh.n_el, mesh.n_el)
 
             output('using connectivity permutations:\n', all_permutations)
 
