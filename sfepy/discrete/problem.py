@@ -49,9 +49,30 @@ class Problem(Struct):
     The Problem is by default created with `active_only` set to True. Then the
     (tangent) matrices and residual vectors (right-hand sides) have reduced
     sizes and contain only the active DOFs, i.e., DOFs not constrained by EBCs
-    or EPBCs. Setting `active_only` to False results in full-size vectors and
+    or EPBCs.
+
+    Setting `active_only` to False results in full-size vectors and
     matrices. Then the matrix size non-zeros structure does not depend on the
     actual E(P)BCs applied. It must be False when using parallel PETSc solvers.
+
+    The active DOF connectivities contain all DOFs, with the E(P)BC-constrained
+    ones stored as `-1 - <DOF number>`, so that the full connectivities can be
+    reconstructed for the matrix graph creation. However, the negative entries
+    mean that the assembled matrices/residuals have zero values at positions
+    corresponding to constrained DOFs.
+
+    The resulting linear system then provides a solution increment, that has to
+    be added to the initial guess used to compute the residual, just like in
+    the Newton iterations. The increment of the constrained DOFs is
+    automatically zero.
+
+    When solving with a direct solver, the diagonal entries of a matrix at
+    positions corresponding to constrained DOFs has to be set to ones, so that
+    the matrix is not singular, see
+    :func:`sfepy.parallel.parallel.apply_ebc_to_matrix()`. This should not be
+    necessary with iterative solvers, as the zero matrix rows match the zero
+    residual rows, i.e. if the reduced matrix would be regular, then the
+    right-hand side (the residual) is orthogonal to the kernel of the matrix.
     """
 
     @staticmethod
