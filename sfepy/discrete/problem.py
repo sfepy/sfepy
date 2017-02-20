@@ -37,12 +37,44 @@ class Problem(Struct):
     Problem definition, the top-level class holding all data necessary to solve
     a problem.
 
-    It can be constructed from a :class:`ProblemConf` instance using
-    `Problem.from_conf()` or directly from a problem description file using
-    `Problem.from_conf_file()`
+    It can be constructed from a :class:`ProblemConf
+    <sfepy.base.conf.ProblemConf>` instance using `Problem.from_conf()` or
+    directly from a problem description file using `Problem.from_conf_file()`
 
     For interactive use, the constructor requires only the `equations`,
-    `nls` and `ls` keyword arguments.
+    `nls` and `ls` keyword arguments, see below.
+
+    Parameters
+    ----------
+    name : str
+        The problem name.
+    conf : ProblemConf instance, optional
+        The :class:`ProblemConf <sfepy.base.conf.ProblemConf>` describing the
+        problem.
+    functions : Functions instance, optional
+        The user functions for boundary conditions, materials, etc.
+    domain : Domain instance, optional
+        The solution :class:`Domain <sfepy.discrete.common.domain.Domain>`.
+    fields : dict, optional
+        The dictionary of :class:`Field <sfepy.discrete.common.fields.Field>`
+        instances.
+    equations : Equations instance, optional
+        The :class:`Equations <sfepy.discrete.equations.Equations>` to solve.
+        This argument is required when `auto_conf` is True.
+    auto_conf : bool
+        If True, fields and domain are determined by `equations`.
+    nls : NonlinearSolver instance, optional
+        The nonlinear solver to use.
+    ls : LinearSolver instance, optional
+        The linear solver to use in the nonlinear solver iterations.
+    ts : TimeSteppingSolver instance, optional
+        The time-stepping solver for evolutionary problems.
+    auto_solvers : bool
+        If True, setup default nonlinear and linear solvers in case those are
+        not given.
+    active_only : bool
+        If True, the (tangent) matrices and residual vectors (right-hand sides)
+        contain only active DOFs, see below.
 
     Notes
     -----
