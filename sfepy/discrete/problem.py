@@ -37,21 +37,74 @@ class Problem(Struct):
     Problem definition, the top-level class holding all data necessary to solve
     a problem.
 
-    It can be constructed from a :class:`ProblemConf` instance using
-    `Problem.from_conf()` or directly from a problem description file using
-    `Problem.from_conf_file()`
+    It can be constructed from a :class:`ProblemConf
+    <sfepy.base.conf.ProblemConf>` instance using `Problem.from_conf()` or
+    directly from a problem description file using `Problem.from_conf_file()`
 
     For interactive use, the constructor requires only the `equations`,
-    `nls` and `ls` keyword arguments.
+    `nls` and `ls` keyword arguments, see below.
+
+    Parameters
+    ----------
+    name : str
+        The problem name.
+    conf : ProblemConf instance, optional
+        The :class:`ProblemConf <sfepy.base.conf.ProblemConf>` describing the
+        problem.
+    functions : Functions instance, optional
+        The user functions for boundary conditions, materials, etc.
+    domain : Domain instance, optional
+        The solution :class:`Domain <sfepy.discrete.common.domain.Domain>`.
+    fields : dict, optional
+        The dictionary of :class:`Field <sfepy.discrete.common.fields.Field>`
+        instances.
+    equations : Equations instance, optional
+        The :class:`Equations <sfepy.discrete.equations.Equations>` to solve.
+        This argument is required when `auto_conf` is True.
+    auto_conf : bool
+        If True, fields and domain are determined by `equations`.
+    nls : NonlinearSolver instance, optional
+        The nonlinear solver to use.
+    ls : LinearSolver instance, optional
+        The linear solver to use in the nonlinear solver iterations.
+    ts : TimeSteppingSolver instance, optional
+        The time-stepping solver for evolutionary problems.
+    auto_solvers : bool
+        If True, setup default nonlinear and linear solvers in case those are
+        not given.
+    active_only : bool
+        If True, the (tangent) matrices and residual vectors (right-hand sides)
+        contain only active DOFs, see below.
 
     Notes
     -----
     The Problem is by default created with `active_only` set to True. Then the
     (tangent) matrices and residual vectors (right-hand sides) have reduced
     sizes and contain only the active DOFs, i.e., DOFs not constrained by EBCs
-    or EPBCs. Setting `active_only` to False results in full-size vectors and
+    or EPBCs.
+
+    Setting `active_only` to False results in full-size vectors and
     matrices. Then the matrix size non-zeros structure does not depend on the
     actual E(P)BCs applied. It must be False when using parallel PETSc solvers.
+
+    The active DOF connectivities contain all DOFs, with the E(P)BC-constrained
+    ones stored as `-1 - <DOF number>`, so that the full connectivities can be
+    reconstructed for the matrix graph creation. However, the negative entries
+    mean that the assembled matrices/residuals have zero values at positions
+    corresponding to constrained DOFs.
+
+    The resulting linear system then provides a solution increment, that has to
+    be added to the initial guess used to compute the residual, just like in
+    the Newton iterations. The increment of the constrained DOFs is
+    automatically zero.
+
+    When solving with a direct solver, the diagonal entries of a matrix at
+    positions corresponding to constrained DOFs has to be set to ones, so that
+    the matrix is not singular, see
+    :func:`sfepy.parallel.parallel.apply_ebc_to_matrix()`. This should not be
+    necessary with iterative solvers, as the zero matrix rows match the zero
+    residual rows, i.e. if the reduced matrix would be regular, then the
+    right-hand side (the residual) is orthogonal to the kernel of the matrix.
     """
 
     @staticmethod
