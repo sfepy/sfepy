@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import sysconfig
 
 msg_unknown_os = """could not determine operating system!
 try setting it in site_cfg.py manually, see site_cfg_template.py"""
@@ -40,14 +41,7 @@ class Config(object):
             return site_cfg.python_include
 
         else:
-            system = self.system()
-
-            if system == 'posix':
-                version = self.python_version()
-                return os.path.join(sys.prefix, 'include', 'python' + version)
-
-            else:
-                return os.path.join(sys.prefix, 'include')
+            return sysconfig.get_config_var('INCLUDEPY')
 
 
     def system(self):
