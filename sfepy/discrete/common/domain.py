@@ -261,7 +261,9 @@ class Domain(Struct):
         for name in region_names:
             region = self.regions[name]
             output(name)
-            aux = self.mesh.from_region(region, self.mesh)
+            dim = region.tdim
+            is_surf = not region.can[dim] and region.can[dim - 1]
+            aux = self.mesh.from_region(region, self.mesh, is_surface=is_surf)
             aux.write('%s_%s%s' % (trunk, region.name, suffix),
                       io='auto')
         output('...done')
