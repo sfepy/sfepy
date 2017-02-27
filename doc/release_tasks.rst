@@ -100,6 +100,11 @@ Web update and file uploading
 
 * upload the tarball to http://sfepy.org/doc-devel/downloads.html
 
+* make a pull request with the updated version in
+  ``sfepy-feedstock/recipe/meta.yaml`` from a fork
+  (e.g. https://github.com/rc/sfepy-feedstock) of
+  https://github.com/conda-forge/sfepy-feedstock.
+
 * publish development docs also as new release docs
 
 * send announcement to
