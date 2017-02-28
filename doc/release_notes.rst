@@ -1,5 +1,86 @@
 # created: 20.07.2007 (-1)
 
+.. _2016.4-2017.1:
+
+from 2016.4 to 2017.1
+=====================
+
+- merge pull request #355 from heczis/dont_redefine_help
+
+  - fix redefining help
+
+- merge pull request #354 from lokik/master
+
+  - new numpy version compatibility
+
+- merge pull request #359 from heczis/python_cmd_in_test_install
+
+  - python -> python2 in test_install.py
+
+- merge pull request #360 from heczis/logging_in_test_install
+
+  - use the logging module for output in test_install.py
+
+- merge branch 'fix-data-from-qp-shape'
+
+  - fix caching in Integrals.get()
+  - fix vertex data reshaping in GenericFileSource.add_data_to_dataset() - new
+    GenericFileSource._reshape()
+  - fix data shape in FieldVariable.set_data_from_qp()
+  - update nodal_stress() in its2D_3.py example
+
+- merge pull request #361 from vlukes/fix_doc_splinebox
+
+  - fix splinebox example - "Mesh parametrization"
+
+- merge pull request #362 from vlukes/update_splinebox
+
+  - update splinebox - parameterization of an arbitrary field
+  - update splinebox.py to pass the pep8 check
+  - new splinebox test - check field parametrization
+
+- merge pull request #356 from rc/docs-conda-forge-install
+
+  - docs: update installation instructions for conda-forge releases
+
+- merge branch 'python-3.6-fixes'
+
+  - update .travis.yml to test with Python 3.5, 3.6
+  - fix integer division errors in shapes/indices
+  - fix errclear() for Python 3.6, remove useless line from errput()
+  - catch ValueError in Term.call_get_fargs(), .call_function()
+  - fix more integer division errors
+
+- merge branch 'fix-petsc-sub-precond-type'
+
+  - fix default sub_precond value in PETScKrylovSolver
+  - fix sub_precond argument in parallel examples
+  - report number of iterations in PETScKrylovSolver, PETScParallelKrylovSolver
+
+- merge branch 'fix-integer-divisions'
+
+  - fix integer division errors
+
+- merge branch 'problem-docstring'
+
+  - improve active_only description in Problem docstring
+  - describe arguments of Problem.__init__() in class docstring
+
+-  merge pull request #364 from vc12345679/master
+
+   - fix bug: "Python.h" Include Path Error - use
+     `sysconfig.get_config_var('INCLUDEPY')`, instead of
+     `sys.prefix+'include'+'python'+version`, to obtain include path of
+     'Python.h'
+
+- merge pull request #365 from vlukes/fix_save_regions
+
+  - fix saving surface regions
+
+- miscellaneous updates:
+
+  - docs: update release tasks
+
 .. _2016.3-2016.4:
 
 from 2016.3 to 2016.4
