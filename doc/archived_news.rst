@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **01.12.2015** Version 2015.4 released (basic support for restart files,
+  new type of linear combination boundary conditions, balloon inflation
+  example, etc.), see :ref:`release notes <2015.3-2015.4>`.
+
 * **23.09.2015** Version 2015.3 released (preliminary support for parallel
   computing, unified evaluation of basis functions (= isogeometric analysis
   fields can be evaluated in arbitrary points), (mostly) fixed finding of

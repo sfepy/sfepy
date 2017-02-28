@@ -1,6 +1,10 @@
 News
 ====
 
+* **28.02.2017** Version 2017.1 released (spline-box parametrization of an
+  arbitrary field, conda-forge recipe, fixes for Python 3.6,
+  etc.), see :ref:`release notes <2016.4-2017.1>`.
+
 * **07.12.2016** Version 2016.4 released (support tensor product element meshes
   with one-level hanging nodes, improve homogenization support for large
   deformations, parallel calculation of homogenized coefficients and related
@@ -20,9 +24,5 @@ News
   element field code, automatic checking of shapes of term arguments, improved
   mesh parametrization code and documentation, support for fieldsplit
   preconditioners of PETSc, etc.), see :ref:`release notes <2015.4-2016.1>`.
-
-* **01.12.2015** Version 2015.4 released (basic support for restart files,
-  new type of linear combination boundary conditions, balloon inflation
-  example, etc.), see :ref:`release notes <2015.3-2015.4>`.
 
 For historians: see :ref:`archived_news`.
