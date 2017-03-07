@@ -179,7 +179,7 @@ class Material(Struct):
         qps : Struct
             Information about the quadrature points.
         data : dict
-            The material data. Changes the shape of data!
+            The material data.
         """
         # Restore shape to (n_el, n_qp, ...) until the C
         # core is rewritten to work with a bunch of physical
@@ -191,8 +191,7 @@ class Material(Struct):
                     raise ValueError('material parameter array must have'
                                      " three dimensions! ('%s' has %d)"
                                      % (dkey, val.ndim))
-                val.shape = qps.get_shape(val.shape)
-                new_data[dkey] = val
+                new_data[dkey] = val.reshape(qps.get_shape(val.shape))
 
         self.datas[key] = new_data
 
