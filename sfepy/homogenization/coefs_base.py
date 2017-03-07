@@ -852,20 +852,28 @@ class VolumeFractions(MiniAppBase):
 
         return vf
 
-class CoefSymSym(MiniAppBase):
 
+class CoefNN(MiniAppBase):
+    @staticmethod
     def set_variables_default(variables, ir, ic, mode, set_var, data):
         def get_corr_state(corr, ir, ic):
             if hasattr(corr, 'states'):
-                return corr.states[ir,ic]
-
+                if ir is None:
+                    return corr.states[ic]
+                elif ic is None:
+                    return corr.states[ir]
+                else:
+                    return corr.states[ir, ic]
             else:
                 return corr.state
 
-        mode2var = {'row' : 0, 'col' : 1}
-        idx = mode2var[mode]
+        if mode == 'row_only':
+            act_set_var = set_var
+        else:
+            mode2var = {'row': 0, 'col': 1}
+            act_set_var = [set_var[mode2var[mode]]] + set_var[2:]
 
-        for (var, req, comp) in [set_var[idx]] + set_var[2:]:
+        for (var, req, comp) in act_set_var:
             if type(req) is tuple:
                 val = get_corr_state(data[req[0]], ir, ic)[comp].copy()
                 for ii in req[1:]:
@@ -876,48 +884,66 @@ class CoefSymSym(MiniAppBase):
 
             variables[var].set_data(val)
 
-    set_variables_default = staticmethod(set_variables_default)
+    def __init__(self, name, problem, kwargs):
+        """When dim is not in kwargs, problem dimension is used."""
+        MiniAppBase.__init__(self, name, problem, kwargs)
+        self.set_default('dim', problem.get_dim())
 
-    iter_sym = staticmethod(iter_sym)
-    is_sym = True
-
-    def __call__(self, volume, problem=None, data=None):
+    def get_coef(self, row, col, volume, problem, data):
         problem = get_default(problem, self.problem)
-
-        dim, sym = problem.get_dim(get_sym=True)
-        nc = sym if self.is_sym else dim**2
-        coef = nm.zeros((nc, nc), dtype=self.dtype)
-
         term_mode = self.term_mode
         equations, variables = problem.create_evaluable(self.expression,
                                                         term_mode=term_mode)
 
-        for ir, (irr, icr) in enumerate(self.iter_sym(dim)):
+        coef = nm.zeros((len(row), len(col)), dtype=self.dtype)
+
+        for ir, (irr, icr) in enumerate(row):
             if isinstance(self.set_variables, list):
                 self.set_variables_default(variables, irr, icr, 'row',
                                            self.set_variables, data)
             else:
                 self.set_variables(variables, irr, icr, 'row', **data)
 
-            for ic, (irc, icc) in enumerate(self.iter_sym(dim)):
+            for ic, (irc, icc) in enumerate(col):
                 if isinstance(self.set_variables, list):
                     self.set_variables_default(variables, irc, icc, 'col',
                                                self.set_variables, data)
                 else:
                     self.set_variables(variables, irc, icc, 'col', **data)
 
-                val = eval_equations(equations, variables,
-                                     term_mode=term_mode)
-
-                coef[ir,ic] = val
+                val = eval_equations(equations, variables, term_mode=term_mode)
+                coef[ir, ic] = val
 
         coef /= self._get_volume(volume)
 
         return coef
 
+    def __call__(self, volume, problem=None, data=None):
+        row = [(ii, None) for ii in range(self.dim)]
+        col = [(None, ii) for ii in range(self.dim)]
+
+        return self.get_coef(row, col, volume, problem, data)
+
+
+class CoefDimDim(CoefNN):
+    pass
+
+
+class CoefSymSym(CoefNN):
+    iter_sym = staticmethod(iter_sym)
+    is_sym = True
+
+    def __call__(self, volume, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        isym = [ii for ii in self.iter_sym(problem.get_dim())]
+
+        return self.get_coef(isym, isym, volume, problem, data)
+
+
 class CoefNonSymNonSym(CoefSymSym):
     iter_sym = staticmethod(iter_nonsym)
     is_sym = False
+
 
 class CoefFMSymSym(MiniAppBase):
     """
@@ -961,220 +987,70 @@ class CoefFMSymSym(MiniAppBase):
 
         return coef
 
-class CoefDimSym(MiniAppBase):
 
+class CoefDimSym(CoefNN):
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)
+        dim = problem.get_dim()
+        row = [(ii, None) for ii in range(dim)]
+        col = [ii for ii in iter_sym(dim)]
 
-        dim, sym = problem.get_dim(get_sym=True)
-        coef = nm.zeros((dim, sym), dtype=self.dtype)
+        return self.get_coef(row, col, volume, problem, data)
 
-        term_mode = self.term_mode
-        equations, variables = problem.create_evaluable(self.expression,
-                                                        term_mode=term_mode)
 
-        for ir in range(dim):
-            self.set_variables(variables, ir, None, 'row', **data)
-
-            for ic, (irc, icc) in enumerate(iter_sym(dim)):
-                self.set_variables(variables, irc, icc, 'col', **data)
-
-                val = eval_equations(equations, variables,
-                                     term_mode=term_mode)
-
-                coef[ir,ic] = val
-
-        coef /= self._get_volume(volume)
-
-        return coef
-
-class CoefNN(MiniAppBase):
-
+class CoefN(CoefNN):
+    @staticmethod
     def set_variables_default(variables, ir, ic, mode, set_var, data):
-        def get_corr_state(corr, ii):
-            if hasattr(corr, 'states'):
-                return corr.states[ii]
+        mode = mode + '_only'
+        CoefNN.set_variables_default(variables, ir, ic, mode, set_var, data)
 
-            else:
-                return corr.state
-
-        mode2var = {'row' : 0, 'col' : 1}
-
-        if mode == 'col':
-            ir = ic
-        idx = mode2var[mode]
-
-        for (var, req, comp) in [set_var[idx]] + set_var[2:]:
-            if type(req) is tuple:
-                val = get_corr_state(data[req[0]], ir)[comp].copy()
-                for ii in req[1:]:
-                    val += get_corr_state(data[ii], ir)[comp]
-
-            else:
-                val = get_corr_state(data[req], ir)[comp]
-
-            variables[var].set_data(val)
-
-    set_variables_default = staticmethod(set_variables_default)
-
-    def __init__(self, name, problem, kwargs):
-        """When dim is not in kwargs, problem dimension is used."""
-        MiniAppBase.__init__(self, name, problem, kwargs)
-        self.set_default('dim', problem.get_dim())
-
-    def __call__(self, volume, problem=None, data=None):
+    def get_coef(self, row, volume, problem, data):
         problem = get_default(problem, self.problem)
-
-        coef = nm.zeros((self.dim, self.dim), dtype=self.dtype)
-
         term_mode = self.term_mode
         equations, variables = problem.create_evaluable(self.expression,
                                                         term_mode=term_mode)
 
-        if isinstance(self.set_variables, list):
-            for ir in range(self.dim):
-                self.set_variables_default(variables, ir, None, 'row',
-                                           self.set_variables, data)
-                for ic in range(self.dim):
-                    self.set_variables_default(variables, None, ic, 'col',
-                                               self.set_variables, data)
-                    val = eval_equations(equations, variables,
-                                         term_mode=term_mode)
-                    coef[ir,ic] = val
-        else:
-            for ir in range(self.dim):
-                self.set_variables(variables, ir, None, 'row', **data)
-                for ic in range(self.dim):
-                    self.set_variables(variables, None, ic, 'col', **data)
-                    val = eval_equations(equations, variables,
-                                         term_mode=term_mode)
-                    coef[ir,ic] = val
+        coef = nm.zeros((len(row),), dtype=self.dtype)
 
-        coef /= self._get_volume(volume)
-
-        return coef
-
-class CoefN(MiniAppBase):
-
-    def set_variables_default(variables, ir, set_var, data):
-        def get_corr_state(corr, ii):
-            if hasattr(corr, 'states'):
-                return corr.states[ii]
-
-            else:
-                return corr.state
-
-        for (var, req, comp) in set_var:
-            if type(req) is tuple:
-                val = get_corr_state(data[req[0]], ir)[comp].copy()
-                for ii in req[1:]:
-                    val += get_corr_state(data[ii], ir)[comp]
-
-            else:
-                val = get_corr_state(data[req], ir)[comp]
-
-            variables[var].set_data(val)
-
-    set_variables_default = staticmethod(set_variables_default)
-
-    def __init__(self, name, problem, kwargs):
-        """When dim is not in kwargs, problem dimension is used."""
-        MiniAppBase.__init__(self, name, problem, kwargs)
-        self.set_default('dim', problem.get_dim())
-
-    def __call__(self, volume, problem=None, data=None):
-        problem = get_default(problem, self.problem)
-
-        coef = nm.zeros((self.dim,), dtype=self.dtype)
-        term_mode = self.term_mode
-        equations, variables = problem.create_evaluable(self.expression,
-                                                        term_mode=term_mode)
-
-        for ir in range(self.dim):
-            if isinstance(self.set_variables, list):
-                self.set_variables_default(variables, ir, self.set_variables,
-                                           data)
-            else:
-                self.set_variables(variables, ir, **data)
-
-            val = eval_equations(equations, variables,
-                                 term_mode=term_mode)
-            coef[ir] = val
-
-        coef /= self._get_volume(volume)
-
-        return coef
-
-class CoefDimDim(CoefNN):
-    pass
-
-class CoefDim(CoefN):
-    pass
-
-class CoefSym(MiniAppBase):
-    def set_variables_default(variables, ir, ic, mode, set_var, data):
-        def get_corr_state(corr, ir, ic):
-            if hasattr(corr, 'states'):
-                return corr.states[ir,ic]
-
-            else:
-                return corr.state
-
-        if mode == 'row':
-
-            for (var, req, comp) in set_var:
-                if type(req) is tuple:
-                    val = get_corr_state(data[req[0]], ir, ic)[comp].copy()
-                    for ii in req[1:]:
-                        val += get_corr_state(data[ii], ir, ic)[comp]
-
-                else:
-                    val = get_corr_state(data[req], ir, ic)[comp]
-
-                variables[var].set_data(val)
-
-    set_variables_default = staticmethod(set_variables_default)
-
-    iter_sym = staticmethod(iter_sym)
-    is_sym = True
-
-    def __call__(self, volume, problem=None, data=None):
-        problem = get_default(problem, self.problem)
-
-        dim, sym = problem.get_dim(get_sym=True)
-        nc = sym if self.is_sym else dim**2
-        coef = nm.zeros((nc,), dtype=self.dtype)
-
-        term_mode = self.term_mode
-        equations, variables = problem.create_evaluable(self.expression,
-                                                        term_mode=term_mode)
-
-        if isinstance(self.set_variables, list):
-            self.set_variables_default(variables, None, None, 'col',
-                                       self.set_variables, data)
-
-        else:
-            self.set_variables(variables, None, None, 'col', **data)
-
-        for ii, (ir, ic) in enumerate(self.iter_sym(dim)):
+        for ii, (ir, ic) in enumerate(row):
             if isinstance(self.set_variables, list):
                 self.set_variables_default(variables, ir, ic, 'row',
                                            self.set_variables, data)
-
             else:
                 self.set_variables(variables, ir, ic, 'row', **data)
 
-            val = eval_equations(equations, variables,
-                                 term_mode=term_mode)
+            val = eval_equations(equations, variables, term_mode=term_mode)
             coef[ii] = val
 
         coef /= self._get_volume(volume)
 
         return coef
 
+    def __call__(self, volume, problem=None, data=None):
+        row = [(ii, None) for ii in range(self.dim)]
+
+        return self.get_coef(row, volume, problem, data)
+
+
+class CoefDim(CoefN):
+    pass
+
+
+class CoefSym(CoefN):
+    iter_sym = staticmethod(iter_sym)
+    is_sym = True
+
+    def __call__(self, volume, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        isym = [ii for ii in self.iter_sym(problem.get_dim())]
+
+        return self.get_coef(isym, volume, problem, data)
+
+
 class CoefNonSym(CoefSym):
     iter_sym = staticmethod(iter_nonsym)
     is_sym = False
+
 
 class CoefFMSym(MiniAppBase):
     """
