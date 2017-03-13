@@ -1043,6 +1043,12 @@ class Variable(Struct):
         self.data.rotate()
 
         if self.history > 0:
+            # Copy the previous step data to the current step data.
+            if self.data[0] is None:
+                self.data[0] = nm.empty_like(self.data[1])
+
+            self.data[0][:] = self.data[1]
+
             # Advance evaluate cache.
             for step_cache in six.itervalues(self.evaluate_cache):
                 steps = sorted(step_cache.keys())
