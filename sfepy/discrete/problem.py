@@ -1409,10 +1409,6 @@ class Problem(Struct):
 
         return materials
 
-    def init_variables(self, state):
-        """Initialize variables with history."""
-        self.equations.variables.init_state(state)
-
     def get_variables(self, auto_create=False):
         if self.equations is not None:
             variables = self.equations.variables
