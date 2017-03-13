@@ -135,6 +135,9 @@ def get_initial_state(problem):
     problem.setup_ics()
     state.apply_ic()
 
+    # Initialize variables with history.
+    state.init_history()
+
     return state
 
 def prepare_save_data(ts, conf):
@@ -194,8 +197,6 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
             mtx = prepare_matrix(problem, state)
             problem.try_presolve(mtx)
 
-        # Initialize variables with history.
-        state0.init_history()
         if ts.is_quasistatic:
             # Ordinary solve.
             state = problem.solve(state0=state0, nls_status=nls_status)
@@ -325,7 +326,6 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
         restart_filename = problem.conf.options.get('load_restart', None)
         if restart_filename is not None:
-            state0.init_history()
             state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
             problem.advance(ts)
             ts.advance()
@@ -445,7 +445,6 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
 
         restart_filename = problem.conf.options.get('load_restart', None)
         if restart_filename is not None:
-            state0.init_history()
             state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
             problem.advance(ts)
             ts.advance()
