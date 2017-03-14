@@ -492,7 +492,7 @@ def set_corrpis(variables, ir, ic, mode, **kwargs):
         val = pis.states[ic]['p' + ch] + corrs_pi.states[ic]['p' + ch]
         variables['corr2_' + ch].set_data(val)
 
-def set_corr_S(variables, ir, **kwargs):
+def set_corr_S(variables, ir, *args, **kwargs):
     ch = get_channel(list(kwargs.keys()), 'pis_')
     io = get_channel(list(kwargs.keys()), 'corrs_gamma_')
 
@@ -504,7 +504,7 @@ def set_corr_S(variables, ir, **kwargs):
     variables['corr1_' + ch].set_data(pi)
     variables['corr2_' + ch].set_data(val)
 
-def set_corr_cc(variables, ir, **kwargs):
+def set_corr_cc(variables, ir, *args, **kwargs):
     ch = get_channel(list(kwargs.keys()), 'pis_')
     pis = kwargs['pis_' + ch]
     corrs_pi = kwargs['corrs_pi' + ch]
@@ -680,4 +680,3 @@ fe = {
 
 
 # [Rohan1] Rohan E.: HOMOGENIZATION OF THE DARCY FLOW IN A DOUBLE-POROUS LAYER
-
