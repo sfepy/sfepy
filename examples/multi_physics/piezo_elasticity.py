@@ -47,12 +47,17 @@ def post_process(out, pb, state, extend=False):
                 mode='el_avg')
     piezo = extend_cell_data(piezo, pb.domain, 'Y2', val=0.0)
 
+    piezo_strain = ev('ev_piezo_strain.i.Y(inclusion.coupling, u)',
+                      mode='el_avg')
+
     out['cauchy_strain'] = Struct(name='output_data', mode='cell',
                                   data=strain, dofs=None)
     out['elastic_stress'] = Struct(name='output_data', mode='cell',
                                    data=stress, dofs=None)
     out['piezo_stress'] = Struct(name='output_data', mode='cell',
                                  data=piezo, dofs=None)
+    out['piezo_strain'] = Struct(name='output_data', mode='cell',
+                                 data=piezo_strain, dofs=None)
     out['total_stress'] = Struct(name='output_data', mode='cell',
                                  data=stress + piezo, dofs=None)
 
