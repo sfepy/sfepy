@@ -9,8 +9,9 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              assert_, is_derived_class, ordered_iteritems,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
-from sfepy.base.ioutils \
-     import skip_read_line, read_token, read_array, read_list, pt, enc, dec, read_from_pt, save_to_pt
+from sfepy.base.ioutils import skip_read_line, read_token, read_array, \
+                              read_list, pt, enc, dec, read_from_hdf5, \
+                              write_to_hdf5
 import os.path as op
 import six
 from six.moves import range
@@ -1380,7 +1381,7 @@ class HDF5MeshIO(MeshIO):
                 fd.create_array(data_group, 'name', enc(name), 'object name')
                 if val.mode == 'custom':
                    dgroup = fd.create_group(data_group, 'data')
-                   save_to_pt(fd, dgroup, val.data)
+                   write_to_hdf5(fd, dgroup, val.data)
                    continue
 
                 shape = val.get('shape', val.data.shape)
@@ -1492,11 +1493,11 @@ class HDF5MeshIO(MeshIO):
             except pt.exceptions.NoSuchNodeError:
                 continue
 
-            name = dec(data_group.name.read())
             mode = dec(data_group.mode.read())
             if mode == 'custom':
-               out[name] = read_from_pt( fd, data_group.data )
+               out[key] = read_from_hdf5( fd, data_group.data )
                continue
+            name = dec(data_group.name.read())
             data = data_group.data.read()
             dofs = tuple([dec(ic) for ic in data_group.dofs.read()])
             try:

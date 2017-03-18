@@ -1,3 +1,4 @@
+# coding=utf8
 from __future__ import absolute_import
 from sfepy import data_dir
 import six
@@ -51,7 +52,9 @@ from sfepy.base.testing import TestCommon
 class Test(TestCommon):
     """Write test names explicitely to impose a given order of evaluation."""
     tests = ['test_read_meshes', 'test_compare_same_meshes',
-             'test_read_dimension', 'test_write_read_meshes']
+             'test_read_dimension', 'test_write_read_meshes',
+             'test_hdf5_meshio'
+            ]
 
     @staticmethod
     def from_conf(conf, options):
@@ -119,10 +122,10 @@ class Test(TestCommon):
             self.report('material ids failed!')
         oks.append(ok0)
 
-        ok0 = (nm.all(mesh0.cmesh.get_cell_conn().indices
-                      == mesh1.cmesh.get_cell_conn().indices) and
-               nm.all(mesh0.cmesh.get_cell_conn().offsets
-                      == mesh1.cmesh.get_cell_conn().offsets))
+        ok0 = (nm.all(mesh0.cmesh.get_cell_conn().indices ==
+                      mesh1.cmesh.get_cell_conn().indices) and
+               nm.all(mesh0.cmesh.get_cell_conn().offsets ==
+                      mesh1.cmesh.get_cell_conn().offsets))
         if not ok0:
             self.report('connectivities failed!')
         oks.append(ok0)
@@ -166,6 +169,62 @@ class Test(TestCommon):
 
         return ok
 
+    def test_hdf5_meshio(self):
+        from sfepy.discrete.fem import Mesh
+        conf_dir = op.dirname(__file__)
+        mesh0 = Mesh.from_file(data_dir +
+                               '/meshes/various_formats/small3d.mesh',
+                               prefix_dir=conf_dir)
+
+        import numpy as np
+        import scipy.sparse as ss
+        import tempfile
+        from sfepy.discrete.fem.meshio import HDF5MeshIO
+        from sfepy.base.base import Struct
+
+        data = {
+            'list': range(4),
+            'tuple': ('first string', 'druhý UTF8 řetězec'),
+            'struct': Struct(
+                         double = np.arange(4, dtype = float),
+                         int = np.array([2,3,4,7]),
+                         sparse = ss.csr_matrix(np.array([1,0,0,5]).reshape((2,2)))
+                    )
+        }
+
+        with tempfile.NamedTemporaryFile(suffix = '.h5') as fil:
+            io = HDF5MeshIO(fil.name)
+            io.write(fil.name, mesh0, {
+                'cdata' : Struct(mode = 'custom', data = data)
+            })
+            fout = io.read_data(0)
+            out = fout['cdata']
+            np.testing.assert_array_equal(
+                    out['struct'].double,
+                    data['struct'].double)
+            out['struct'].double = 1
+            data['struct'].double = 1
+
+            np.testing.assert_array_equal(
+                    out['struct'].int,
+                    data['struct'].int)
+            out['struct'].int = 1
+            data['struct'].int = 1
+
+
+            if not (out['struct'].sparse ==
+                 data['struct'].sparse).todense().all():
+                    self.report('Sparse matrix restore failed')
+                    return False
+
+            out['struct'].sparse = 1
+            data['struct'].sparse = 1
+            out['struct'] = out['struct'].to_dict()
+            data['struct'] = data['struct'].to_dict()
+
+        return out == data
+
+
     def test_write_read_meshes(self):
         """
         Try to write and then read all supported formats.
@@ -175,8 +234,8 @@ class Test(TestCommon):
                                                supported_capabilities)
 
         conf_dir = op.dirname(__file__)
-        mesh0 = Mesh.from_file(data_dir
-                               + '/meshes/various_formats/small3d.mesh',
+        mesh0 = Mesh.from_file(data_dir +
+                               '/meshes/various_formats/small3d.mesh',
                                prefix_dir=conf_dir)
 
         oks = []
