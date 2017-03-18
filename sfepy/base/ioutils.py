@@ -9,6 +9,9 @@ import shutil
 import glob
 from .base import output, ordered_iteritems, Struct, basestr
 import six
+import pickle
+import numpy as np
+
 try:
     import tables as pt
 except:
@@ -386,3 +389,89 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
         mtx.sort_indices()
 
     return mtx
+
+def save_to_pt(pt_file, group, data):
+    """ Save custom data to h5 file group to be restored by read_from_pt
+        allow saving lists, dicts, numpy arrays, scalars and all pickleable
+        objects
+    """
+
+    def save_value(type, data):
+        pt_file.create_array(group, 'type', np.array(type))
+        pt_file.create_array(group, 'data', data)
+
+    def save_dict(type, data):
+        pt_file.create_array(group, 'type', np.array(type))
+        data_group = pt_file.create_group(group, 'data')
+        for d in data:
+            g = pt_file.create_group(data_group, d)
+            save_to_pt(pt_file, g, data[d])
+
+    def save_list(type, data):
+        pt_file.create_array(group, 'type', np.array(type))
+        pt_file.create_array(group, 'len', len(data))
+        data_group = pt_file.create_group(group, 'data')
+        for i, d in enumerate(data):
+            g = pt_file.create_group(data_group, str(i))
+            save_to_pt(pt_file, g, d)
+
+    if isinstance(data, Struct):
+        save_dict('Struct', data.to_dict())
+
+    elif isinstance(data, dict):
+        save_dict('dict', data)
+
+    elif isinstance(data, list):
+        save_list('list', data)
+
+    elif isinstance(data, tuple):
+        save_list('tuple', data)
+
+    elif isinstance(data, (int, float, complex, nm.ndarray)):
+        save_value('raw', data)
+
+    elif isinstance(data, str):
+        save_value('str', np.array(data))
+
+    else:
+        save_value('pickle', np.array(pickle.dumps(data)))
+
+def read_from_pt(pt_file, group):
+    """ Read data from h5 file group saved by save_from_pt """
+    def load_list():
+        out = [None] * group.len.read()
+        dgroup = group.data
+        for i in dgroup:
+            out[int(i._v_name)] = read_from_pt(pt_file, i)
+        return out
+
+    def load_dict():
+        out = {}
+        dgroup = group.data
+        for i in pt_file.iter_nodes(dgroup):
+            out[i._v_name] = read_from_pt(pt_file, i)
+        return out
+
+    type = group.type.read().item()
+    if type == b'raw':
+        return group.data.read()
+
+    if type == b'str':
+        return str(group.data.read().item(), 'utf8')
+
+    if type == b'pickle':
+        return pickle.loads(group.data.read().item())
+
+    if type == b'dict':
+        return load_dict()
+
+    if type == b'Struct':
+        return Struct(*load_dict())
+
+    if type == b'list':
+        return load_list()
+
+    if type == b'tuple':
+        return tuple(load_list())
+
+    raise Exception('Unknown h5 group type {}'.format(str(type, 'utf8')))

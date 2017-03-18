@@ -10,7 +10,7 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils \
-     import skip_read_line, read_token, read_array, read_list, pt, enc, dec
+     import skip_read_line, read_token, read_array, read_list, pt, enc, dec, read_from_pt, save_to_pt
 import os.path as op
 import six
 from six.moves import range
@@ -1371,25 +1371,30 @@ class HDF5MeshIO(MeshIO):
 
             name_dict = {}
             for key, val in six.iteritems(out):
+                group_name = '__' + key.translate(self._tr)
+                data_group = fd.create_group(step_group, group_name,
+                                             '%s data' % key)
+                fd.create_array(data_group, 'dname', enc(key), 'data name')
+                fd.create_array(data_group, 'mode', enc(val.mode), 'mode')
+                name = val.get('name', 'output_data')
+                fd.create_array(data_group, 'name', enc(name), 'object name')
+                if val.mode == 'custom':
+                   dgroup = fd.create_group(data_group, 'data')
+                   save_to_pt(fd, dgroup, val.data)
+                   continue
+
                 shape = val.get('shape', val.data.shape)
                 dofs = val.get('dofs', None)
                 if dofs is None:
                     dofs = [''] * nm.squeeze(shape)[-1]
                 var_name = val.get('var_name', '')
-                name = val.get('name', 'output_data')
 
-                group_name = '__' + key.translate(self._tr)
-                data_group = fd.create_group(step_group, group_name,
-                                             '%s data' % key)
                 fd.create_array(data_group, 'data', val.data, 'data')
-                fd.create_array(data_group, 'mode', enc(val.mode), 'mode')
                 fd.create_array(data_group, 'dofs', [enc(ic) for ic in dofs],
                                'dofs')
                 fd.create_array(data_group, 'shape', shape, 'shape')
-                fd.create_array(data_group, 'name', enc(name), 'object name')
                 fd.create_array(data_group, 'var_name',
                                enc(var_name), 'object parent name')
-                fd.create_array(data_group, 'dname', enc(key), 'data name')
                 if val.mode == 'full':
                     fd.create_array(data_group, 'field_name',
                                    enc(val.field_name), 'field name')
@@ -1489,6 +1494,9 @@ class HDF5MeshIO(MeshIO):
 
             name = dec(data_group.name.read())
             mode = dec(data_group.mode.read())
+            if mode == 'custom':
+               out[name] = read_from_pt( fd, data_group.data )
+               continue
             data = data_group.data.read()
             dofs = tuple([dec(ic) for ic in data_group.dofs.read()])
             try:
