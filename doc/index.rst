@@ -1,3 +1,5 @@
+.. include:: links.inc
+
 .. SfePy documentation master file, created by
    sphinx-quickstart on Wed Oct 14 00:02:22 2009.
    You can adapt this file completely to your liking, but it should at least
@@ -21,9 +23,12 @@
 
    SfePy can be used in parallel (work in progress), see
    :ref:`solving_problems_in_parallel`.
-
    There is also a preliminary support for the isogeometric analysis,
    outlined in :ref:`isogeometric_analysis`.
+
+   The easiest way to install SfePy is to use `Anaconda`_, see
+   :ref:`multi_platform_distributions_notes` in
+   :ref:`introduction_installation`.
 
    **License:** :doc:`BSD <license>`
 

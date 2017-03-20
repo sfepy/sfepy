@@ -233,6 +233,8 @@ customize it as follows:
 
      ipython --profile=sfepy
 
+.. _multi_platform_distributions_notes:
+
 Multi-platform Distributions Notes
 ----------------------------------
 
