@@ -329,7 +329,10 @@ class GenericFileSource(FileSource):
     def _reshape(data, dim):
         sym = (dim + 1) * dim // 2
 
-        if len(data.shape) == 2:
+        if len(data.shape) == 1:
+            num, nr, nc = data.shape[0], 1, 1
+
+        elif len(data.shape) == 2:
             num, nr, nc = data.shape[0], data.shape[1], 1
 
         else:
