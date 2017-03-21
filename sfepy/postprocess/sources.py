@@ -197,6 +197,7 @@ class GenericFileSource(FileSource):
     def __init__(self, *args, **kwargs):
         FileSource.__init__(self, *args, **kwargs)
 
+        self.io = None
         self.read_common(self.filename)
 
     def read_common(self, filename):
@@ -380,20 +381,16 @@ class GenericSequenceFileSource(GenericFileSource):
     exception of HDF5 (.h5), for file sequences."""
 
     def read_common(self, filename):
+        GenericFileSource.read_common(self, filename[self.step])
+
         self.steps = nm.arange(len(self.filename), dtype=nm.int32)
-
-    def create_source(self):
-        """Create a VTK source from data in a SfePy-supported file."""
-        if self.io is None:
-            self.read_common(self.filename[self.step])
-
-        dataset = self.create_dataset()
-
-        src = VTKDataSource(data=dataset)
-        return src
+        self.times = nm.zeros(len(self.filename), dtype=nm.float64)
 
     def set_filename(self, filename, vis_source):
         self.filename = filename
         self.io = None
         self.source = self.create_source()
         vis_source.data = self.source.data
+
+    def file_changed(self):
+        pass
