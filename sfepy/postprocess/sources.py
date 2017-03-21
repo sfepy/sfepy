@@ -28,6 +28,17 @@ def create_file_source(filename, watch=False, offscreen=True):
     if isinstance(filename, FileSource):
         return filename
 
+    from distutils.version import LooseVersion
+
+    try:
+        from enthought.mayavi import version
+
+    except:
+        from mayavi import version
+
+    # Work around a Mayavi 4.4.x issue.
+    can_vtk_source = LooseVersion(version.version) < LooseVersion('4.4')
+
     kwargs = {'watch' : watch, 'offscreen' : offscreen}
 
     if isinstance(filename, basestr):
@@ -40,7 +51,7 @@ def create_file_source(filename, watch=False, offscreen=True):
 
     fmt = fmt.lower()
 
-    if fmt == '.vtk':
+    if can_vtk_source and (fmt == '.vtk'):
         # VTK is supported directly by Mayavi, no need to use MeshIO.
         if is_sequence:
             return VTKSequenceFileSource(filename, **kwargs)
