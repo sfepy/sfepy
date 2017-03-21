@@ -823,18 +823,19 @@ class VTKMeshIO(MeshIO):
         fd.close()
 
     def read_data(self, step, filename=None):
-        """Point data only!"""
         filename = get_default(filename, self.filename)
 
         out = {}
 
-        fd = open(self.filename, 'r')
+        dim, fd = self.read_dimension(ret_fd=True)
+
         while 1:
             line = skip_read_line(fd, no_eof=True).split()
             if line[0] == 'POINT_DATA':
                 break
 
-        n_nod = int(line[1])
+        num = int(line[1])
+        mode = 'vertex'
 
         while 1:
             line = skip_read_line(fd)
@@ -848,31 +849,46 @@ class VTKMeshIO(MeshIO):
                 assert_(int(nc) == 1)
                 fd.readline() # skip lookup table line
 
-                data = nm.zeros((n_nod,), dtype=nm.float64)
-                ii = 0
-                while ii < n_nod:
+                data = nm.empty((num,), dtype=nm.float64)
+                for ii in range(num):
                     data[ii] = float(fd.readline())
-                    ii += 1
 
-                out[name] = Struct(name=name, mode='vertex', data=data,
+                out[name] = Struct(name=name, mode=mode, data=data,
                                    dofs=None)
 
             elif line[0] == 'VECTORS':
                 name, dtype = line[1:]
-                data = []
+
+                data = nm.empty((num, dim), dtype=nm.float64)
+                for ii in range(num):
+                    data[ii] = [float(val)
+                                for val in fd.readline().split()][:dim]
+
+                out[name] = Struct(name=name, mode=mode, data=data,
+                                   dofs=None)
+
+            elif line[0] == 'TENSORS':
+                name, dtype = line[1:]
+
+                data3 = nm.empty((3 * num, 3), dtype=nm.float64)
                 ii = 0
-                while ii < n_nod:
-                    data.append([float(val) for val in fd.readline().split()])
+                while ii < 3 * num:
+                    aux = [float(val) for val in fd.readline().split()]
+                    if not len(aux): continue
+
+                    data3[ii] = aux
                     ii += 1
 
-                out[name] = Struct(name=name, mode='vertex',
-                                   data=nm.array(data, dtype=nm.float64),
+                data = data3.reshape((-1, 1, 3, 3))[..., :dim, :dim]
+                out[name] = Struct(name=name, mode=mode, data=data,
                                    dofs=None)
 
             elif line[0] == 'CELL_DATA':
-                break
+                num = int(line[1])
+                mode = 'cell'
 
-            line = fd.readline()
+            else:
+                line = fd.readline()
 
         fd.close()
 
