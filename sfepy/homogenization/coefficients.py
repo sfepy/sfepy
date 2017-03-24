@@ -99,9 +99,8 @@ class Coefficients(Struct):
                 if idx is not None:
                     val = val[idx]
                 else:
-                    print("'idx' must be set in the case "\
-                        + "of multi-coefficients!")
-                    raise NotImplementedError
+                    raise NotImplementedError("'idx' must be set in the case "
+                                              "of multi-coefficients!")
 
             if isinstance(val, dict):
                 self._save_dict_latex(val, fd, names)
