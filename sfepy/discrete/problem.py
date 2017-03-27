@@ -1637,3 +1637,14 @@ class Problem(Struct):
         output('...done')
 
         return new_state
+
+    def add_functions(self, functions):
+        """ Add functions to problem
+
+        Parameters
+        ----------
+        functions: sfepy.discrete.Functions or dict
+            Functions can be given as Functions object or as
+            ProblemConf dictionary describing functions
+        """
+        self.functions.add_functions(functions)

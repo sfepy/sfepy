@@ -20,6 +20,20 @@ class Functions(Container):
         return obj
     from_conf = staticmethod(from_conf)
 
+    def add_functions(self, functions):
+        """ Add functions
+
+        Parameters
+        ----------
+        functions: Functions or dict
+            Functions can be given as Functions object or as
+            ProblemConf dictionary describing functions
+        """
+        if not isinstance(functions, Functions):
+            functions = Functions.from_conf(functions)
+        self.extend(functions)
+        self.update()
+
 class Function(Struct):
     """Base class for user-defined functions."""
 
