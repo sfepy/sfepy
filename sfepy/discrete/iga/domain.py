@@ -8,8 +8,8 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 from sfepy.discrete.common.domain import Domain
-import sfepy.discrete.iga as iga
-import sfepy.discrete.iga.io as io
+from sfepy.discrete.iga import iga
+from sfepy.discrete.iga import io
 from sfepy.discrete.iga.extmods.igac import eval_in_tp_coors
 import six
 from six.moves import range
@@ -124,13 +124,47 @@ class IGDomain(Domain):
         filename : str
             The name of the IGA domain file.
         """
-        (knots, degrees, cps, weights, cs, conn,
-         bcps, bweights, bconn, regions) = io.read_iga_data(filename)
+        data = io.read_iga_data(filename)
+        name = op.splitext(filename)[0]
+        return IGDomain.from_data( *(data + (name, )) )
+
+    @staticmethod
+    def read_domain_from_hdf5(fd, group):
+        """
+        Create domain from given hdf5 data group
+
+        fd: tables.File
+          HDF5 file handle to read the mesh from
+        group: tables.group.Group
+          HDF5 data group (of file fd) to read the mesh from
+
+        Returns
+        -------
+        IGDomain
+        """
+        data = io.read_iga_data(fd, group)
+        return IGDomain.from_data( *data )
+
+    def write_domain_to_hdf5(self, fd, group):
+        """
+        Save domain to hdf5 file
+
+        fd: tables.File
+            HDF5 file handle to write the mesh to
+        group: tables.group.Group
+            HDF5 data group (of file fd) to write the mesh to
+        """
+        io.write_iga_data( fd, group, *self.iga_data(), self.name )
+
+    def from_data(knots, degrees, cps, weights, cs, conn,
+         bcps, bweights, bconn, regions, name = 'iga_domain_from_data'):
+        """
+        Create iga domain from given data
+        """
 
         nurbs = NurbsPatch(knots, degrees, cps, weights, cs, conn)
         bmesh = Struct(name='bmesh', cps=bcps, weights=bweights, conn=bconn)
 
-        name = op.splitext(filename)[0]
         domain = IGDomain(name, nurbs=nurbs, bmesh=bmesh, regions=regions)
         return domain
 
@@ -187,3 +221,27 @@ class IGDomain(Domain):
                 self.vertex_set_bcs[key] = remap[val]
 
         self.reset_regions()
+
+    def iga_data(self):
+        """
+        Return data describing the domain for storing the domain to hdf5 file.
+
+        returns
+        -------
+        tuple
+
+        #TODO - data for regions recreating
+        """
+
+        knots = self.nurbs.knots
+        degrees = self.nurbs.degrees
+        cps = self.nurbs.cps
+        weights = self.nurbs.weights
+        cs = self.nurbs.cs
+        conn = self.nurbs.conn
+        bcps = self.bmesh.cps
+        bweights = self.bmesh.weights
+        bconn = self.bmesh.conn
+
+        return knots, degrees, cps, weights, cs, conn, \
+               bcps, bweights, bconn, self.vertex_set_bcs
