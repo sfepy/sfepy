@@ -565,3 +565,22 @@ def bytes_from_str(string):
     if sys.version_info > (3, 0):
         return string.encode('utf8')
     return string
+
+class HDF5ContextManager:
+    def __init__(self, filename, *args, **kwargs):
+        self.filename = filename
+        self.file = None
+        self.args = args
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        if isinstance(self.filename, pt.File):
+           return self.filename
+        else:
+           self.file = pt.open_file(self.filename, *self.args, **self.kwargs)
+           return self.file
+
+    def __exit__(self, type, value, traceback):
+        if self.file:
+           self.file.close()
+           self.file = None
