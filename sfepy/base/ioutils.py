@@ -119,18 +119,17 @@ def enc(string, encoding='utf-8'):
     """
     Encode given string or bytes using the specified encoding.
     """
-    val = string.encode(encoding)
-    return val
+    if sys.version_info > (3, 0):
+        string = string.encode(encoding)
+    return string
 
 def dec(val, encoding='utf-8'):
     """
     Decode given bytes using the specified encoding.
     """
-    if isinstance(val, bytes):
-        return val.decode(encoding)
-
-    else:
-        return val
+    if isinstance(val, bytes) and sys.version_info > (3, 0):
+        val = val.decode(encoding)
+    return val
 
 ##
 # 27.04.2006, c
