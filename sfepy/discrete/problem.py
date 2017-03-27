@@ -278,7 +278,7 @@ class Problem(Struct):
         """
         if name is None:
             name = self.name + '_copy'
-        obj = Problem(name, conf=self.conf, functions=self.functions,
+        obj = self.__class__(name, conf=self.conf, functions=self.functions,
                       domain=self.domain, fields=self.fields,
                       equations=self.equations, auto_conf=False,
                       auto_solvers=False)
