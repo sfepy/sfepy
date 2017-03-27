@@ -28,6 +28,17 @@ def create_file_source(filename, watch=False, offscreen=True):
     if isinstance(filename, FileSource):
         return filename
 
+    from distutils.version import LooseVersion
+
+    try:
+        from enthought.mayavi import version
+
+    except:
+        from mayavi import version
+
+    # Work around a Mayavi 4.4.x issue.
+    can_vtk_source = LooseVersion(version.version) < LooseVersion('4.4')
+
     kwargs = {'watch' : watch, 'offscreen' : offscreen}
 
     if isinstance(filename, basestr):
@@ -40,7 +51,7 @@ def create_file_source(filename, watch=False, offscreen=True):
 
     fmt = fmt.lower()
 
-    if fmt == '.vtk':
+    if can_vtk_source and (fmt == '.vtk'):
         # VTK is supported directly by Mayavi, no need to use MeshIO.
         if is_sequence:
             return VTKSequenceFileSource(filename, **kwargs)
@@ -197,6 +208,7 @@ class GenericFileSource(FileSource):
     def __init__(self, *args, **kwargs):
         FileSource.__init__(self, *args, **kwargs)
 
+        self.io = None
         self.read_common(self.filename)
 
     def read_common(self, filename):
@@ -329,7 +341,10 @@ class GenericFileSource(FileSource):
     def _reshape(data, dim):
         sym = (dim + 1) * dim // 2
 
-        if len(data.shape) == 2:
+        if len(data.shape) == 1:
+            num, nr, nc = data.shape[0], 1, 1
+
+        elif len(data.shape) == 2:
             num, nr, nc = data.shape[0], data.shape[1], 1
 
         else:
@@ -377,20 +392,16 @@ class GenericSequenceFileSource(GenericFileSource):
     exception of HDF5 (.h5), for file sequences."""
 
     def read_common(self, filename):
+        GenericFileSource.read_common(self, filename[self.step])
+
         self.steps = nm.arange(len(self.filename), dtype=nm.int32)
-
-    def create_source(self):
-        """Create a VTK source from data in a SfePy-supported file."""
-        if self.io is None:
-            self.read_common(self.filename[self.step])
-
-        dataset = self.create_dataset()
-
-        src = VTKDataSource(data=dataset)
-        return src
+        self.times = nm.zeros(len(self.filename), dtype=nm.float64)
 
     def set_filename(self, filename, vis_source):
         self.filename = filename
         self.io = None
         self.source = self.create_source()
         vis_source.data = self.source.data
+
+    def file_changed(self):
+        pass

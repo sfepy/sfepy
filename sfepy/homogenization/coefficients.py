@@ -99,9 +99,8 @@ class Coefficients(Struct):
                 if idx is not None:
                     val = val[idx]
                 else:
-                    print("'idx' must be set in the case "\
-                        + "of multi-coefficients!")
-                    raise NotImplementedError
+                    raise NotImplementedError("'idx' must be set in the case "
+                                              "of multi-coefficients!")
 
             if isinstance(val, dict):
                 self._save_dict_latex(val, fd, names)
@@ -109,14 +108,21 @@ class Coefficients(Struct):
             elif isinstance(val, basestr):
                 fd.write(self._escape_latex(val) + '\n')
 
-            elif val.ndim == 0:
+            elif isinstance(val, float):
                 fd.write('$' + self._format(val) + '$\n')
 
-            elif val.ndim == 1:
-                self._write1d(fd, val)
+            elif isinstance(val, nm.ndarray):
+                if val.ndim == 0:
+                    fd.write('$' + self._format(val) + '$\n')
 
-            elif val.ndim == 2:
-                self._write2d(fd, val)
+                elif val.ndim == 1:
+                    self._write1d(fd, val)
+
+                elif val.ndim == 2:
+                    self._write2d(fd, val)
+
+            else:
+                fd.write('%s' % val)
 
         fd.write( r'\end{itemize}' )
         fd.write( '\n\n' )

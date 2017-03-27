@@ -144,3 +144,46 @@ class PiezoStressTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, dim * (dim + 1) // 2, 1), parameter.dtype
+
+
+class PiezoStrainTerm(PiezoStressTerm):
+    r"""
+    Evaluate piezoelectric strain tensor.
+
+    It is given in the usual vector form exploiting symmetry: in 3D it has 6
+    components with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in
+    2D it has 3 components with the indices ordered as :math:`[11, 22, 12]`.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} g_{kij} e_{ij}(\ul{u})
+
+    :Arguments:
+        - material  : :math:`g_{kij}`
+        - parameter : :math:`\ul{u}`
+    """
+    name = 'ev_piezo_strain'
+    arg_shapes = {'material' : 'D, S', 'parameter' : 'D'}
+
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
+
+        strain = self.get(parameter, 'cauchy_strain')
+        val_qp = dot_sequences(mat, strain, mode='AB')
+
+        fmode = {'eval': 0, 'el_avg': 1, 'qp': 2}.get(mode, 1)
+
+        return val_qp, vg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, dim, 1), parameter.dtype

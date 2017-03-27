@@ -148,21 +148,21 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, kind='facet'):
         lbnx, lbny, lbnz = (lbnx+dx*eps, lbny+dy*eps, lbnz+dz*eps)
         rtfx, rtfy, rtfz = (rtfx-dx*eps, rtfy-dy*eps, rtfz-dz*eps)
         regions = {
-            'Near' : ('vertices in (y < %f)' % lbny, kind),
-            'Far' : ('vertices in (y > %f)' % rtfy, kind),
-            'Bottom' : ('vertices in (z < %f)' % lbnz, kind),
-            'Top' : ('vertices in (z > %f)' % rtfz, kind),
-            'Left' : ('vertices in (x < %f)' % lbnx, kind),
-            'Right' : ('vertices in (x > %f)' % rtfx, kind),
+            'Near' : ('vertices in (y < %.16e)' % lbny, kind),
+            'Far' : ('vertices in (y > %.16e)' % rtfy, kind),
+            'Bottom' : ('vertices in (z < %.16e)' % lbnz, kind),
+            'Top' : ('vertices in (z > %.16e)' % rtfz, kind),
+            'Left' : ('vertices in (x < %.16e)' % lbnx, kind),
+            'Right' : ('vertices in (x > %.16e)' % rtfx, kind),
             'Corners' : ("""vertices in
-                            ((x < %f) & (y < %f) & (z < %f))
-                          | ((x > %f) & (y < %f) & (z < %f))
-                          | ((x > %f) & (y > %f) & (z < %f))
-                          | ((x < %f) & (y > %f) & (z < %f))
-                          | ((x < %f) & (y < %f) & (z > %f))
-                          | ((x > %f) & (y < %f) & (z > %f))
-                          | ((x > %f) & (y > %f) & (z > %f))
-                          | ((x < %f) & (y > %f) & (z > %f))
+                            ((x < %.16e) & (y < %.16e) & (z < %.16e))
+                          | ((x > %.16e) & (y < %.16e) & (z < %.16e))
+                          | ((x > %.16e) & (y > %.16e) & (z < %.16e))
+                          | ((x < %.16e) & (y > %.16e) & (z < %.16e))
+                          | ((x < %.16e) & (y < %.16e) & (z > %.16e))
+                          | ((x > %.16e) & (y < %.16e) & (z > %.16e))
+                          | ((x > %.16e) & (y > %.16e) & (z > %.16e))
+                          | ((x < %.16e) & (y > %.16e) & (z > %.16e))
                           """ % ( lbnx, lbny, lbnz,
                                   rtfx, lbny, lbnz,
                                   rtfx, rtfy, lbnz,
@@ -180,15 +180,15 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, kind='facet'):
         lbnx, lbny = (lbnx+dx*eps, lbny+dy*eps,)
         rtfx, rtfy = (rtfx-dx*eps, rtfy-dy*eps,)
         regions = {
-            'Bottom' : ('vertices in (y < %f)' % lbny, kind),
-            'Top' : ('vertices in (y > %f)' % rtfy, kind),
-            'Left' : ('vertices in (x < %f)' % lbnx, kind),
-            'Right' : ('vertices in (x > %f)' % rtfx, kind),
+            'Bottom' : ('vertices in (y < %.16e)' % lbny, kind),
+            'Top' : ('vertices in (y > %.16e)' % rtfy, kind),
+            'Left' : ('vertices in (x < %.16e)' % lbnx, kind),
+            'Right' : ('vertices in (x > %.16e)' % rtfx, kind),
             'Corners' : ("""vertices in
-                              ((x < %f) & (y < %f))
-                            | ((x > %f) & (y < %f))
-                            | ((x > %f) & (y > %f))
-                            | ((x < %f) & (y > %f))
+                              ((x < %.16e) & (y < %.16e))
+                            | ((x > %.16e) & (y < %.16e))
+                            | ((x > %.16e) & (y > %.16e))
+                            | ((x < %.16e) & (y > %.16e))
                             """ % ( lbnx, lbny,
                                     rtfx, lbny,
                                     rtfx, rtfy,
