@@ -404,6 +404,11 @@ class Term(Struct):
         out = -1.0 * self
         return out
 
+    def get_str(self):
+        return ('%+.2e * %s.%d.%s(%s)'
+                % (self.sign, self.name, self.integral.order,
+                   self.region.name, self.arg_str))
+
     def set_integral(self, integral):
         """
         Set the term integral.
@@ -1198,8 +1203,7 @@ class Term(Struct):
                 break
 
         else:
-            term_str = '%s.%d.%s(%s)' % (self.name, self.integral.order,
-                                         self.region.name, self.arg_str)
+            term_str = self.get_str()
             output('allowed argument shapes for term "%s":' % term_str)
             output(allowed_shapes)
             raise ValueError('wrong arguments shapes for "%s" term! (see above)'
@@ -1349,6 +1353,10 @@ class Term(Struct):
 
         elif mode == 'weak':
             varr = self.get_virtual_variable()
+            if varr is None:
+                raise ValueError('no virtual variable in weak mode! (in "%s")'
+                                 % self.get_str())
+
             if diff_var is not None:
                 varc = self.get_variables(as_list=False)[diff_var]
 
@@ -1388,9 +1396,7 @@ class Term(Struct):
 
         if goptions['check_term_finiteness']:
             assert_(nm.isfinite(out[0]).all(),
-                    msg='%+.2e * %s.%d.%s(%s) term values not finite!'
-                    % (self.sign, self.name, self.integral.order,
-                       self.region.name, self.arg_str))
+                    msg='"%s" term values not finite!' % self.get_str())
 
         if ret_status:
             out = out + (status,)

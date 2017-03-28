@@ -257,9 +257,7 @@ class Equations(Container):
         for eq in self:
             output('  %s:' % eq.name)
             for term in eq.terms:
-                output('    %+.2e * %s.%d.%s(%s)'
-                       % (term.sign, term.name, term.integral.order,
-                          term.region.name, term.arg_str))
+                output('    %s' % term.get_str())
 
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, problem=None, active_only=True,
