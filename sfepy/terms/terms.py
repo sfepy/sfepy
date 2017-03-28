@@ -1203,8 +1203,7 @@ class Term(Struct):
                 break
 
         else:
-            term_str = '%s.%d.%s(%s)' % (self.name, self.integral.order,
-                                         self.region.name, self.arg_str)
+            term_str = self.get_str()
             output('allowed argument shapes for term "%s":' % term_str)
             output(allowed_shapes)
             raise ValueError('wrong arguments shapes for "%s" term! (see above)'
@@ -1393,9 +1392,7 @@ class Term(Struct):
 
         if goptions['check_term_finiteness']:
             assert_(nm.isfinite(out[0]).all(),
-                    msg='%+.2e * %s.%d.%s(%s) term values not finite!'
-                    % (self.sign, self.name, self.integral.order,
-                       self.region.name, self.arg_str))
+                    msg='"%s" term values not finite!' % self.get_str())
 
         if ret_status:
             out = out + (status,)
