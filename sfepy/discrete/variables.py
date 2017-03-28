@@ -1040,14 +1040,17 @@ class Variable(Struct):
         if self.history is None: return
 
         self.step = ts.step + 1
-        self.data.rotate()
 
         if self.history > 0:
-            # Copy the previous step data to the current step data.
-            if self.data[0] is None:
-                self.data[0] = nm.empty_like(self.data[1])
+            # Copy the current step data to the history data, shift history,
+            # initialize if needed. The current step data are left intact.
+            # Note: cannot use self.data.rotate() due to data sharing with
+            # State.
+            for ii in range(self.history, 0, -1):
+                if self.data[ii] is None:
+                    self.data[ii] = nm.empty_like(self.data[0])
 
-            self.data[0][:] = self.data[1]
+                self.data[ii][:] = self.data[ii - 1]
 
             # Advance evaluate cache.
             for step_cache in six.itervalues(self.evaluate_cache):
