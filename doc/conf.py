@@ -267,10 +267,14 @@ def process_terms(app, what_, name, obj, options, lines):
     """
     Prepend term call signature(s) into term docstrings.
     """
-    from types import TypeType
+    if sys.version_info > (3,):
+        type_type = type
+    else:
+        from types import TypeType as type_type
+
     from sfepy.terms import Term
 
-    if isinstance(obj, TypeType):
+    if isinstance(obj, type_type):
         if issubclass(obj, Term) and len(obj.name):
             arg_types = obj.arg_types
             if ((len(arg_types) > 1) and not isinstance(arg_types[0], str)):
