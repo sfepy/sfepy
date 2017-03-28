@@ -1353,6 +1353,10 @@ class Term(Struct):
 
         elif mode == 'weak':
             varr = self.get_virtual_variable()
+            if varr is None:
+                raise ValueError('no virtual variable in weak mode! (in "%s")'
+                                 % self.get_str())
+
             if diff_var is not None:
                 varc = self.get_variables(as_list=False)[diff_var]
 
