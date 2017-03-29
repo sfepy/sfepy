@@ -109,5 +109,6 @@ Web update and file uploading
 
 * send announcement to
 
-  * sfepy-devel@googlegroups.com, scipy-dev@scipy.org,
-    scipy-user@scipy.org, python-announce-list@python.org
+  * sfepy-devel@googlegroups.com, scipy-dev@python.org,
+    scipy-user@python.org, numpy-discussion@python.org,
+    python-announce-list@python.org
