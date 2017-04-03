@@ -260,7 +260,7 @@ class Test(TestCommon):
             term = Term.new('ev_grad(u)', integral, omega, u=u)
             term.setup()
             val1 = term.evaluate(mode='qp')
-            val1 = val1.ravel()
+            val1 = val1.transpose((0, 1, 3, 2)).ravel()
 
             val2 = u.evaluate_at(coors, mode='grad').ravel()
 

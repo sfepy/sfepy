@@ -316,7 +316,6 @@ class GradTerm(Term):
         vg, _ = self.get_mapping(parameter)
 
         grad = self.get(parameter, 'grad')
-        grad = nm.ascontiguousarray(grad.transpose((0, 1, 3, 2)))
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
@@ -329,7 +328,7 @@ class GradTerm(Term):
         if mode != 'qp':
             n_qp = 1
 
-        return (n_el, n_qp, n_c, dim), parameter.dtype
+        return (n_el, n_qp, dim, n_c), parameter.dtype
 
 class DivTerm(Term):
     r"""
