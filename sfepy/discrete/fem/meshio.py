@@ -2718,6 +2718,13 @@ class Msh2MeshIO(MeshIO):
         fd.close()
 
         dim = nm.max(dims)
+
+        if '2_2' in descs:
+            idx2 = descs.index('2_2')
+            descs.pop(idx2)
+            del(conns[idx2])
+            del(mat_ids[idx2])
+
         if '3_6' in descs:
             idx6 = descs.index('3_6')
             c3_6as8 = nm.asarray(conns[idx6],
