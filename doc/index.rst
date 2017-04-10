@@ -44,7 +44,8 @@
          * - Automatically generated gallery
            - http://sfepy.org/gallery/gallery
          * - Mailing list (both user and developer)
-           - http://groups.google.com/group/sfepy-devel
+           - `sfepy(at)python.org
+             <https://mail.python.org/mm3/mailman3/lists/sfepy.python.org>`_
          * - Github organization
            - http://github.com/sfepy
          * - Source code (main git repository)
