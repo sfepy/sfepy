@@ -44,7 +44,7 @@ def project_by_component(tensor, tensor_qp, component, order,
     Wrapper around make_l2_projection_data() for non-scalar fields.
     """
     aux = []
-    for ic in range(3):
+    for ic in range(tensor_qp.shape[-2]):
         make_l2_projection_data(component, tensor_qp[..., ic, :].copy(),
                                 order=order, ls=ls, nls_options=nls_options)
         aux.append(component())
