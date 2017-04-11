@@ -278,7 +278,7 @@ class Problem(Struct):
         """
         if name is None:
             name = self.name + '_copy'
-        obj = Problem(name, conf=self.conf, functions=self.functions,
+        obj = self.__class__(name, conf=self.conf, functions=self.functions,
                       domain=self.domain, fields=self.fields,
                       equations=self.equations, auto_conf=False,
                       auto_solvers=False)
@@ -1637,3 +1637,14 @@ class Problem(Struct):
         output('...done')
 
         return new_state
+
+    def add_functions(self, functions):
+        """ Add functions to problem
+
+        Parameters
+        ----------
+        functions: sfepy.discrete.Functions or dict
+            Functions can be given as Functions object or as
+            ProblemConf dictionary describing functions
+        """
+        self.functions.add_functions(functions)

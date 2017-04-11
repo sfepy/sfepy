@@ -1,3 +1,4 @@
+# coding=utf8
 from __future__ import absolute_import
 from sfepy import data_dir
 import six
@@ -38,6 +39,7 @@ def mesh_hook(mesh, mode):
     elif mode == 'write':
         pass
 
+
 from sfepy.discrete.fem.meshio import UserMeshIO
 
 filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
@@ -45,13 +47,15 @@ filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
 same = [(0, 1), (2, 3)]
 
 import os.path as op
-from sfepy.base.base import assert_
+from sfepy.base.base import assert_, assert_equals
 from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
     """Write test names explicitely to impose a given order of evaluation."""
     tests = ['test_read_meshes', 'test_compare_same_meshes',
-             'test_read_dimension', 'test_write_read_meshes']
+             'test_read_dimension', 'test_write_read_meshes',
+             'test_hdf5_meshio'
+            ]
 
     @staticmethod
     def from_conf(conf, options):
@@ -119,10 +123,10 @@ class Test(TestCommon):
             self.report('material ids failed!')
         oks.append(ok0)
 
-        ok0 = (nm.all(mesh0.cmesh.get_cell_conn().indices
-                      == mesh1.cmesh.get_cell_conn().indices) and
-               nm.all(mesh0.cmesh.get_cell_conn().offsets
-                      == mesh1.cmesh.get_cell_conn().offsets))
+        ok0 = (nm.all(mesh0.cmesh.get_cell_conn().indices ==
+                      mesh1.cmesh.get_cell_conn().indices) and
+               nm.all(mesh0.cmesh.get_cell_conn().offsets ==
+                      mesh1.cmesh.get_cell_conn().offsets))
         if not ok0:
             self.report('connectivities failed!')
         oks.append(ok0)
@@ -166,6 +170,94 @@ class Test(TestCommon):
 
         return ok
 
+    def test_hdf5_meshio(self):
+        from sfepy.discrete.fem import Mesh
+        conf_dir = op.dirname(__file__)
+        mesh0 = Mesh.from_file(data_dir +
+                               '/meshes/various_formats/small3d.mesh',
+                               prefix_dir=conf_dir)
+
+        import numpy as np
+        import scipy.sparse as ss
+        import tempfile
+        #import pickle
+        from sfepy.discrete.fem.meshio import HDF5MeshIO
+        from sfepy.base.base import Struct
+        from sfepy.base.ioutils import Cached, Uncached
+        from sfepy.discrete.iga.domain import IGDomain
+        from sfepy.discrete.iga.domain_generators import gen_patch_block_domain
+
+        shape = [4, 4, 4]
+        dims = [5, 5, 5]
+        centre = [0, 0, 0]
+        degrees = [2, 2, 2]
+
+        nurbs, bmesh, regions = gen_patch_block_domain(dims, shape, centre,
+                                                       degrees,
+                                                       cp_mode='greville',
+                                                       name='iga')
+        ig_domain = IGDomain('iga', nurbs, bmesh, regions=regions)
+
+        data = {
+            'list': range(4),
+            'mesh1': mesh0,
+            'mesh2': mesh0,
+            'iga' : ig_domain,
+            'mesh3': Uncached(mesh0),
+            'cached1': Cached(1),
+            'cached2': Cached(2),
+            'types': ( True, False, None ),
+            'tuple': ('first string', 'druhý UTF8 řetězec'),
+            'struct': Struct(
+                         double = np.arange(4, dtype = float),
+                         int = np.array([2,3,4,7]),
+                         sparse = ss.csr_matrix(np.array([1,0,0,5]).
+                             reshape((2,2)))
+                    )
+        }
+
+        with tempfile.NamedTemporaryFile(suffix = '.h5') as fil:
+            io = HDF5MeshIO(fil.name)
+            io.write(fil.name, mesh0, {
+                'cdata' : Struct(
+                    mode = 'custom',
+                    data = data,
+                    unpack_markers = True
+                )
+            })
+            fout = io.read_data(0)
+            out = fout['cdata']
+
+            assert_(out['mesh1'] is out['mesh2'],
+                'Two meshes should be in fact the same object')
+
+            assert_(out['mesh3'] is not out['mesh2'],
+                'Two meshes should be different object')
+
+            assert_(self._compare_meshes(out['mesh1'], mesh0),
+                'Failed to restore mesh')
+
+            assert_(self._compare_meshes(out['mesh3'], mesh0),
+                'Failed to restore mesh')
+
+            assert_((out['struct'].sparse == data['struct'].sparse).todense()
+                    .all(),'Sparse matrix restore failed')
+
+        #this property is not restored
+        del data['iga'].nurbs.nurbs
+
+        #not supporting comparison
+        del data['iga']._bnf
+        del out['iga']._bnf
+
+        #restoration of this property failed
+        #del data['iga'].vertex_set_bcs
+        #del out['iga'].vertex_set_bcs
+
+        assert_equals( out, data )
+        return True
+
+
     def test_write_read_meshes(self):
         """
         Try to write and then read all supported formats.
@@ -175,8 +267,8 @@ class Test(TestCommon):
                                                supported_capabilities)
 
         conf_dir = op.dirname(__file__)
-        mesh0 = Mesh.from_file(data_dir
-                               + '/meshes/various_formats/small3d.mesh',
+        mesh0 = Mesh.from_file(data_dir +
+                               '/meshes/various_formats/small3d.mesh',
                                prefix_dir=conf_dir)
 
         oks = []
