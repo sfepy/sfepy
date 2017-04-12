@@ -138,3 +138,42 @@ class Test(TestCommon):
             self.report(nm.c_[ig_vals, fe_vals, nm.abs(ig_vals - fe_vals)])
 
         return ok
+
+    def test_project_tensors(self):
+        from sfepy.discrete import FieldVariable
+        from sfepy.discrete.projections import project_by_component
+
+        ok = True
+
+        u = FieldVariable('u', 'parameter', self.field,
+                          primary_var_name='(set-to-None)')
+        u.set_constant(1.0)
+
+        component = FieldVariable('component', 'parameter', self.field,
+                                  primary_var_name='(set-to-None)')
+
+        nls_options = {'eps_a' : 1e-16, 'i_max' : 1}
+
+        u_qp = u.evaluate()
+        u2 = FieldVariable('u2', 'parameter', self.field,
+                           primary_var_name='(set-to-None)')
+        project_by_component(u2, u_qp, component, self.field.approx_order,
+                             nls_options=nls_options)
+
+        _ok = self.compare_vectors(u(), u2())
+        ok = ok and _ok
+
+        gu_qp = u.evaluate(mode='grad')
+
+        gfield = Field.from_args('gu', nm.float64, 2, self.field.region,
+                                 approx_order=self.field.approx_order)
+        gu = FieldVariable('gu', 'parameter', gfield,
+                           primary_var_name='(set-to-None)')
+
+        project_by_component(gu, gu_qp, component, gfield.approx_order,
+                             nls_options=nls_options)
+
+        _ok = self.compare_vectors(gu(), nm.zeros_like(gu()))
+        ok = ok and _ok
+
+        return ok
