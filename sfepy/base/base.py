@@ -242,6 +242,8 @@ if sys.version_info < (3,0):
 
 def assert_equals(a, b, msg='assertion of equality failed'):
 
+    if a is b: return
+
     def assert_dict(a,b):
         assert_(set(a.keys()) == set(b.keys()), msg)
         for i in a:
