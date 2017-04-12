@@ -2475,34 +2475,44 @@ class ANSYSCDBMeshIO(MeshIO):
 
             if (kw == 'nblock'):
                 # Solid keyword -> 3, otherwise 1 is the starting coors index.
-                ic = 3 if  len(row) == 3 else 1
+                ic = 3 if len(row) == 3 else 1
+                n_c = int(row[1])
                 fmt = fd.readline()
                 fmt = fmt.strip()[1:-1].split(',')
                 idx, dtype = self.make_format(fmt)
+                idx = idx[:n_c]
+                nchar = idx[-1][1] + 1
                 ii0, ii1 = idx[0]
                 while True:
                     row = fd.readline()
-                    if (row[0] == '!') or (row[:2] == '-1'):
+                    if ((row[0] == '!') or (row[:2] == '-1')
+                        or len(row) != nchar):
                         break
+
                     line = [float(row[i0:i1]) for i0, i1 in idx[ic:]]
+
                     ids.append(int(row[ii0:ii1]))
                     coors.append(line)
 
             elif (kw == 'eblock'):
-                if (len(row) <= 2) or row[2] != 'solid': # no solid keyword
+                if (len(row) <= 2) or row[2].strip().lower() != 'solid':
                     continue
 
+                n_c = int(row[1])
                 fmt = fd.readline()
                 fmt = [fmt.strip()[1:-1]]
                 idx, dtype = self.make_format(fmt)
+                idx = idx[:n_c]
 
                 imi0, imi1 = idx[0] # Material id.
                 inn0, inn1 = idx[8] # Number of nodes in line.
                 ien0, ien1 = idx[10] # Element number.
+                nchar = idx[-1][1] + 1
                 ic0 = 11
                 while True:
                     row = fd.readline()
-                    if (row[0] == '!') or (row[:2] == '-1'):
+                    if ((row[0] == '!') or (row[:2] == '-1')
+                        or (len(row) != nchar)):
                         break
 
                     line = [int(row[imi0:imi1])]
@@ -2536,7 +2546,7 @@ class ANSYSCDBMeshIO(MeshIO):
                 if row[2].lower() != 'node': # Only node sets support.
                     continue
 
-                n_nod = int(row[3])
+                n_nod = int(row[3].split('!')[0])
                 fd.readline() # Format line not needed.
 
                 nods = read_array(fd, n_nod, 1, nm.int32)
@@ -2552,6 +2562,7 @@ class ANSYSCDBMeshIO(MeshIO):
             tetras = tetras[:, 1:]
 
         else:
+            tetras.shape = (0, 4)
             mat_ids_tetras = nm.array([])
 
         hexas = nm.array(hexas, dtype=nm.int32)
@@ -2560,6 +2571,7 @@ class ANSYSCDBMeshIO(MeshIO):
             hexas = hexas[:, 1:]
 
         else:
+            hexas.shape = (0, 8)
             mat_ids_hexas = nm.array([])
 
         if len(qtetras):
@@ -2588,6 +2600,18 @@ class ANSYSCDBMeshIO(MeshIO):
             n_nod = coors.shape[0]
             remap = nm.zeros((nm.array(ids).max() + 1,), dtype=nm.int32)
             remap[ids] = nm.arange(n_nod, dtype=nm.int32)
+
+        # Convert tetras as degenerate hexas to true tetras.
+        ii = nm.where((hexas[:, 2] == hexas[:, 3])
+                      & (hexas[:, 4] == hexas[:, 5])
+                      & (hexas[:, 4] == hexas[:, 6])
+                      & (hexas[:, 4] == hexas[:, 7]))[0]
+
+        tetras = nm.r_[tetras, hexas[ii[:, None], [0, 1, 2, 4]]]
+        mat_ids_tetras = nm.r_[mat_ids_tetras, mat_ids_hexas[ii]]
+
+        hexas = nm.delete(hexas, ii, axis=0)
+        mat_ids_hexas = nm.delete(mat_ids_hexas, ii)
 
         ngroups = nm.zeros(len(coors), dtype=nm.int32)
 
