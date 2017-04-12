@@ -1274,7 +1274,7 @@ class HDF5MeshIO(MeshIO):
                 fd.close()
                 return bbox
 
-    def read(self, mesh, **kwargs):
+    def read(self, mesh = None, **kwargs):
         return self.read_mesh_from_hdf5(self.filename, '/mesh', mesh = mesh)
 
     @staticmethod
