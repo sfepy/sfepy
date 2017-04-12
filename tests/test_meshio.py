@@ -183,9 +183,11 @@ class Test(TestCommon):
         #import pickle
         from sfepy.discrete.fem.meshio import HDF5MeshIO
         from sfepy.base.base import Struct
-        from sfepy.base.ioutils import Cached, Uncached
+        from sfepy.base.ioutils import Cached, Uncached, SoftLink, \
+                                       DataSoftLink
         from sfepy.discrete.iga.domain import IGDomain
         from sfepy.discrete.iga.domain_generators import gen_patch_block_domain
+        from sfepy.solvers.ts import TimeStepper
 
         shape = [4, 4, 4]
         dims = [5, 5, 5]
@@ -198,14 +200,23 @@ class Test(TestCommon):
                                                        name='iga')
         ig_domain = IGDomain('iga', nurbs, bmesh, regions=regions)
 
+        int_ar = np.arange(4)
+
         data = {
             'list': range(4),
             'mesh1': mesh0,
             'mesh2': mesh0,
-            'iga' : ig_domain,
             'mesh3': Uncached(mesh0),
+            'mesh4': SoftLink('/step0/__cdata/data/data/mesh2'),
+            'mesh5': DataSoftLink('Mesh','/step0/__cdata/data/data/mesh1/data'),
+            'mesh6': DataSoftLink('Mesh','/step0/__cdata/data/data/mesh2/data',
+                mesh0),
+            'mesh7': DataSoftLink('Mesh','/step0/__cdata/data/data/mesh1/data',
+                True),
+            'iga' : ig_domain,
             'cached1': Cached(1),
-            'cached2': Cached(2),
+            'cached2': Cached(int_ar),
+            'cached3': Cached(int_ar),
             'types': ( True, False, None ),
             'tuple': ('first string', 'druhý UTF8 řetězec'),
             'struct': Struct(
@@ -218,21 +229,69 @@ class Test(TestCommon):
 
         with tempfile.NamedTemporaryFile(suffix = '.h5') as fil:
             io = HDF5MeshIO(fil.name)
+            ts = TimeStepper(0,1.,0.1, 10)
+
+            io.write(fil.name, mesh0, {
+                'cdata' : Struct(
+                    mode = 'custom',
+                    data = data,
+                    unpack_markers = False
+                )
+            }, ts = ts)
+            ts.advance()
+
+            mesh = io.read()
+            data['problem_mesh'] = DataSoftLink('Mesh', '/mesh', mesh)
+
             io.write(fil.name, mesh0, {
                 'cdata' : Struct(
                     mode = 'custom',
                     data = data,
                     unpack_markers = True
                 )
-            })
-            fout = io.read_data(0)
+            }, ts = ts)
+
+            cache = {'/mesh': mesh }
+            fout = io.read_data(0, cache = cache)
+            fout2 = io.read_data(1, cache = cache )
             out = fout['cdata']
+            out2 = fout2['cdata']
+
+            assert_(out['mesh7'] is out2['mesh7'],
+                'These two meshes should be in fact the same object')
+
+            assert_(out['mesh6'] is out2['mesh6'],
+                'These two meshes should be in fact the same object')
+
+            assert_(out['mesh5'] is not out2['mesh5'],
+                'These two meshes shouldn''t be in fact the same object')
 
             assert_(out['mesh1'] is out['mesh2'],
-                'Two meshes should be in fact the same object')
+                'These two meshes should be in fact the same object')
+
+            assert_(out['mesh1'] is out['mesh2'],
+                'These two meshes should be in fact the same object')
+
+            assert_(out['mesh4'] is out['mesh2'],
+                'These two meshes should be in fact the same object')
+
+            assert_(out['mesh5'] is not out['mesh2'],
+                'These two meshes shouldn''t be in fact the same object')
+
+            assert_(out['mesh6'] is out['mesh2'],
+                'These two meshes should be in fact the same object')
+
+            assert_(out['mesh7'] is not out['mesh2'],
+                'These two meshes shouldn''t be in fact the same object')
 
             assert_(out['mesh3'] is not out['mesh2'],
-                'Two meshes should be different object')
+                'These two meshes should be different objects')
+
+            assert_(out['cached2'] is out['cached3'],
+                'These two array should be the same object')
+
+            assert_(out2['problem_mesh'] is mesh,
+                'These two meshes should be the same objects')
 
             assert_(self._compare_meshes(out['mesh1'], mesh0),
                 'Failed to restore mesh')
@@ -243,18 +302,39 @@ class Test(TestCommon):
             assert_((out['struct'].sparse == data['struct'].sparse).todense()
                     .all(),'Sparse matrix restore failed')
 
+            ts.advance()
+            io.write(fil.name, mesh0, {
+                'cdata' : Struct(
+                    mode = 'custom',
+                    data = [
+                       DataSoftLink('Mesh','/step0/__cdata/data/data/mesh1/data'
+                                    , mesh0),
+                       mesh0
+                       ]
+                )
+            }, ts = ts)
+            out3 = io.read_data(2)['cdata']
+            assert_(out3[0] is out3[1])
+
+
         #this property is not restored
         del data['iga'].nurbs.nurbs
 
         #not supporting comparison
         del data['iga']._bnf
-        del out['iga']._bnf
+        del out2['iga']._bnf
 
         #restoration of this property failed
         #del data['iga'].vertex_set_bcs
-        #del out['iga'].vertex_set_bcs
+        #del out2['iga'].vertex_set_bcs
 
-        assert_equals( out, data )
+        #these soflink has no information how to unpack, so it must be
+        #done manually
+        data['mesh4'] = mesh0
+        data['mesh5'] = mesh0
+        data['mesh7'] = mesh0
+
+        assert_equals( out2, data )
         return True
 
 
