@@ -2622,6 +2622,7 @@ class ANSYSCDBMeshIO(MeshIO):
 
         mesh.nodal_bcs = {}
         for key, nods in six.iteritems(nodal_bcs):
+            nods = nods[nods < len(remap)]
             mesh.nodal_bcs[key] = remap[nods]
 
         return mesh
