@@ -220,6 +220,18 @@ def skip_read_line(fd, no_eof=False):
 
     return ls
 
+def look_ahead_line(fd):
+    """
+    Read and return a line from the given file object. Saves the current
+    position in the file before the reading occurs and then, after the reading,
+    restores the saved (original) position.
+    """
+    lastpos = fd.tell()
+    line = fd.readline()
+    fd.seek(lastpos)
+
+    return line
+
 def read_token(fd):
     """
     Read a single token (sequence of non-whitespace characters) from the
