@@ -9,8 +9,8 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              assert_, is_derived_class, ordered_iteritems,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
-from sfepy.base.ioutils \
-     import skip_read_line, read_token, read_array, read_list, pt, enc, dec
+from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
+                                read_array, read_list, pt, enc, dec)
 import os.path as op
 import six
 from six.moves import range
@@ -2425,7 +2425,7 @@ class ANSYSCDBMeshIO(MeshIO):
         return ok
 
     @staticmethod
-    def make_format(format):
+    def make_format(format, nchar=1000):
         idx = [];
         dtype = [];
         start = 0;
@@ -2439,6 +2439,8 @@ class ANSYSCDBMeshIO(MeshIO):
             aux = ret[2].partition('.')
             step = int(aux[0])
             for j in range(int(ret[0])):
+                if (start + step) > nchar:
+                    break
                 idx.append((start, start+step))
                 start += step
                 dtype.append(ret[1])
@@ -2475,26 +2477,33 @@ class ANSYSCDBMeshIO(MeshIO):
 
             if (kw == 'nblock'):
                 # Solid keyword -> 3, otherwise 1 is the starting coors index.
-                ic = 3 if  len(row) == 3 else 1
+                ic = 3 if len(row) == 3 else 1
                 fmt = fd.readline()
                 fmt = fmt.strip()[1:-1].split(',')
-                idx, dtype = self.make_format(fmt)
+                row = look_ahead_line(fd)
+                nchar = len(row)
+                idx, dtype = self.make_format(fmt, nchar)
                 ii0, ii1 = idx[0]
                 while True:
                     row = fd.readline()
-                    if (row[0] == '!') or (row[:2] == '-1'):
+                    if ((row[0] == '!') or (row[:2] == '-1')
+                        or len(row) != nchar):
                         break
+
                     line = [float(row[i0:i1]) for i0, i1 in idx[ic:]]
+
                     ids.append(int(row[ii0:ii1]))
                     coors.append(line)
 
             elif (kw == 'eblock'):
-                if (len(row) <= 2) or row[2] != 'solid': # no solid keyword
+                if (len(row) <= 2) or row[2].strip().lower() != 'solid':
                     continue
 
                 fmt = fd.readline()
                 fmt = [fmt.strip()[1:-1]]
-                idx, dtype = self.make_format(fmt)
+                row = look_ahead_line(fd)
+                nchar = len(row)
+                idx, dtype = self.make_format(fmt, nchar)
 
                 imi0, imi1 = idx[0] # Material id.
                 inn0, inn1 = idx[8] # Number of nodes in line.
@@ -2502,7 +2511,8 @@ class ANSYSCDBMeshIO(MeshIO):
                 ic0 = 11
                 while True:
                     row = fd.readline()
-                    if (row[0] == '!') or (row[:2] == '-1'):
+                    if ((row[0] == '!') or (row[:2] == '-1')
+                        or (len(row) != nchar)):
                         break
 
                     line = [int(row[imi0:imi1])]
@@ -2536,7 +2546,7 @@ class ANSYSCDBMeshIO(MeshIO):
                 if row[2].lower() != 'node': # Only node sets support.
                     continue
 
-                n_nod = int(row[3])
+                n_nod = int(row[3].split('!')[0])
                 fd.readline() # Format line not needed.
 
                 nods = read_array(fd, n_nod, 1, nm.int32)
@@ -2552,6 +2562,7 @@ class ANSYSCDBMeshIO(MeshIO):
             tetras = tetras[:, 1:]
 
         else:
+            tetras.shape = (0, 4)
             mat_ids_tetras = nm.array([])
 
         hexas = nm.array(hexas, dtype=nm.int32)
@@ -2560,6 +2571,7 @@ class ANSYSCDBMeshIO(MeshIO):
             hexas = hexas[:, 1:]
 
         else:
+            hexas.shape = (0, 8)
             mat_ids_hexas = nm.array([])
 
         if len(qtetras):
@@ -2589,6 +2601,18 @@ class ANSYSCDBMeshIO(MeshIO):
             remap = nm.zeros((nm.array(ids).max() + 1,), dtype=nm.int32)
             remap[ids] = nm.arange(n_nod, dtype=nm.int32)
 
+        # Convert tetras as degenerate hexas to true tetras.
+        ii = nm.where((hexas[:, 2] == hexas[:, 3])
+                      & (hexas[:, 4] == hexas[:, 5])
+                      & (hexas[:, 4] == hexas[:, 6])
+                      & (hexas[:, 4] == hexas[:, 7]))[0]
+
+        tetras = nm.r_[tetras, hexas[ii[:, None], [0, 1, 2, 4]]]
+        mat_ids_tetras = nm.r_[mat_ids_tetras, mat_ids_hexas[ii]]
+
+        hexas = nm.delete(hexas, ii, axis=0)
+        mat_ids_hexas = nm.delete(mat_ids_hexas, ii)
+
         ngroups = nm.zeros(len(coors), dtype=nm.int32)
 
         mesh = mesh_from_groups(mesh, ids, coors, ngroups,
@@ -2598,6 +2622,7 @@ class ANSYSCDBMeshIO(MeshIO):
 
         mesh.nodal_bcs = {}
         for key, nods in six.iteritems(nodal_bcs):
+            nods = nods[nods < len(remap)]
             mesh.nodal_bcs[key] = remap[nods]
 
         return mesh
