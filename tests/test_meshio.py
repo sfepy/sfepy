@@ -39,7 +39,6 @@ def mesh_hook(mesh, mode):
     elif mode == 'write':
         pass
 
-
 from sfepy.discrete.fem.meshio import UserMeshIO
 
 filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
@@ -47,15 +46,14 @@ filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
 same = [(0, 1), (2, 3)]
 
 import os.path as op
-from sfepy.base.base import assert_, assert_equals
+from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
     """Write test names explicitely to impose a given order of evaluation."""
     tests = ['test_read_meshes', 'test_compare_same_meshes',
              'test_read_dimension', 'test_write_read_meshes',
-             'test_hdf5_meshio'
-            ]
+             'test_hdf5_meshio']
 
     @staticmethod
     def from_conf(conf, options):
@@ -170,17 +168,39 @@ class Test(TestCommon):
 
         return ok
 
-    def test_hdf5_meshio(self):
+    def test_write_read_meshes(self):
+        """
+        Try to write and then read all supported formats.
+        """
         from sfepy.discrete.fem import Mesh
+        from sfepy.discrete.fem.meshio import (supported_formats,
+                                               supported_capabilities)
+
         conf_dir = op.dirname(__file__)
-        mesh0 = Mesh.from_file(data_dir +
-                               '/meshes/various_formats/small3d.mesh',
+        mesh0 = Mesh.from_file(data_dir
+                               + '/meshes/various_formats/small3d.mesh',
                                prefix_dir=conf_dir)
 
-        import numpy as np
-        import scipy.sparse as ss
+        oks = []
+        for suffix, format_ in six.iteritems(supported_formats):
+            if isinstance(format_, tuple):
+                continue
+            if 'w' not in supported_capabilities[format_]: continue
+
+            filename = op.join(self.options.out_dir, 'test_mesh_wr' + suffix)
+            self.report('%s format: %s' % (suffix, filename))
+
+            mesh0.write(filename, io='auto')
+            mesh1 = Mesh.from_file(filename)
+
+            oks.extend(self._compare_meshes(mesh0, mesh1))
+
+        return sum(oks) == len(oks)
+
+    def test_hdf5_meshio(self):
         import tempfile
-        #import pickle
+        import numpy as nm
+        import scipy.sparse as sps
         from sfepy.discrete.fem.meshio import HDF5MeshIO
         from sfepy.base.base import Struct
         from sfepy.base.ioutils import Cached, Uncached, SoftLink, \
@@ -188,6 +208,12 @@ class Test(TestCommon):
         from sfepy.discrete.iga.domain import IGDomain
         from sfepy.discrete.iga.domain_generators import gen_patch_block_domain
         from sfepy.solvers.ts import TimeStepper
+        from sfepy.discrete.fem import Mesh
+
+        conf_dir = op.dirname(__file__)
+        mesh0 = Mesh.from_file(data_dir +
+                               '/meshes/various_formats/small3d.mesh',
+                               prefix_dir=conf_dir)
 
         shape = [4, 4, 4]
         dims = [5, 5, 5]
@@ -200,7 +226,7 @@ class Test(TestCommon):
                                                        name='iga')
         ig_domain = IGDomain('iga', nurbs, bmesh, regions=regions)
 
-        int_ar = np.arange(4)
+        int_ar = nm.arange(4)
 
         data = {
             'list': range(4),
@@ -220,24 +246,24 @@ class Test(TestCommon):
             'types': ( True, False, None ),
             'tuple': ('first string', 'druhý UTF8 řetězec'),
             'struct': Struct(
-                         double = np.arange(4, dtype = float),
-                         int = np.array([2,3,4,7]),
-                         sparse = ss.csr_matrix(np.array([1,0,0,5]).
-                             reshape((2,2)))
-                    )
+                double=nm.arange(4, dtype=float),
+                int=nm.array([2,3,4,7]),
+                sparse=sps.csr_matrix(nm.array([1,0,0,5]).
+                                      reshape((2,2)))
+             )
         }
 
-        with tempfile.NamedTemporaryFile(suffix = '.h5') as fil:
+        with tempfile.NamedTemporaryFile(suffix='.h5') as fil:
             io = HDF5MeshIO(fil.name)
             ts = TimeStepper(0,1.,0.1, 10)
 
             io.write(fil.name, mesh0, {
                 'cdata' : Struct(
-                    mode = 'custom',
-                    data = data,
-                    unpack_markers = False
+                    mode='custom',
+                    data=data,
+                    unpack_markers=False
                 )
-            }, ts = ts)
+            }, ts=ts)
             ts.advance()
 
             mesh = io.read()
@@ -245,15 +271,15 @@ class Test(TestCommon):
 
             io.write(fil.name, mesh0, {
                 'cdata' : Struct(
-                    mode = 'custom',
-                    data = data,
-                    unpack_markers = True
+                    mode='custom',
+                    data=data,
+                    unpack_markers=True
                 )
-            }, ts = ts)
+            }, ts=ts)
 
             cache = {'/mesh': mesh }
-            fout = io.read_data(0, cache = cache)
-            fout2 = io.read_data(1, cache = cache )
+            fout = io.read_data(0, cache=cache)
+            fout2 = io.read_data(1, cache=cache )
             out = fout['cdata']
             out2 = fout2['cdata']
 
@@ -300,22 +326,22 @@ class Test(TestCommon):
                 'Failed to restore mesh')
 
             assert_((out['struct'].sparse == data['struct'].sparse).todense()
-                    .all(),'Sparse matrix restore failed')
+                    .all(), 'Sparse matrix restore failed')
 
             ts.advance()
             io.write(fil.name, mesh0, {
-                'cdata' : Struct(
-                    mode = 'custom',
-                    data = [
-                       DataSoftLink('Mesh','/step0/__cdata/data/data/mesh1/data'
-                                    , mesh0),
-                       mesh0
-                       ]
-                )
-            }, ts = ts)
+                    'cdata' : Struct(
+                        mode='custom',
+                        data=[
+                            DataSoftLink('Mesh',
+                                         '/step0/__cdata/data/data/mesh1/data',
+                                         mesh0),
+                            mesh0
+                        ]
+                    )
+            }, ts=ts)
             out3 = io.read_data(2)['cdata']
             assert_(out3[0] is out3[1])
-
 
         #this property is not restored
         del data['iga'].nurbs.nurbs
@@ -324,9 +350,9 @@ class Test(TestCommon):
         del data['iga']._bnf
         del out2['iga']._bnf
 
-        #restoration of this property failed
-        #del data['iga'].vertex_set_bcs
-        #del out2['iga'].vertex_set_bcs
+        #restoration of this property fails
+        del data['iga'].vertex_set_bcs
+        del out2['iga'].vertex_set_bcs
 
         #these soflink has no information how to unpack, so it must be
         #done manually
@@ -334,35 +360,8 @@ class Test(TestCommon):
         data['mesh5'] = mesh0
         data['mesh7'] = mesh0
 
-        assert_equals( out2, data )
+        for key, val in six.iteritems(out2):
+            self.report('comparing:', key)
+            self.assert_equal(val, data[key])
+
         return True
-
-
-    def test_write_read_meshes(self):
-        """
-        Try to write and then read all supported formats.
-        """
-        from sfepy.discrete.fem import Mesh
-        from sfepy.discrete.fem.meshio import (supported_formats,
-                                               supported_capabilities)
-
-        conf_dir = op.dirname(__file__)
-        mesh0 = Mesh.from_file(data_dir +
-                               '/meshes/various_formats/small3d.mesh',
-                               prefix_dir=conf_dir)
-
-        oks = []
-        for suffix, format_ in six.iteritems(supported_formats):
-            if isinstance(format_, tuple):
-                continue
-            if 'w' not in supported_capabilities[format_]: continue
-
-            filename = op.join(self.options.out_dir, 'test_mesh_wr' + suffix)
-            self.report('%s format: %s' % (suffix, filename))
-
-            mesh0.write(filename, io='auto')
-            mesh1 = Mesh.from_file(filename)
-
-            oks.extend(self._compare_meshes(mesh0, mesh1))
-
-        return sum(oks) == len(oks)
