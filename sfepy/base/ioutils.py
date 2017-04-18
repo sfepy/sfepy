@@ -314,7 +314,7 @@ def write_dict_hdf5(filename, adict, level=0, group=None, fd=None):
 
             else:
                 fd.create_array(group, '_' + str(key), enc(val),
-                        '%s data' % key)
+                                '%s data' % key)
 
     if level == 0:
         fd.close()
@@ -348,7 +348,7 @@ def read_dict_hdf5(filename, level=0, group=None, fd=None):
 def write_sparse_matrix_hdf5(filename, mtx, name='a sparse matrix'):
     """Assume CSR/CSC."""
     with pt.open_file(filename, mode='w', title=name) as fd:
-       write_sparse_matrix_to_hdf5(fd, fd.root, mtx)
+        write_sparse_matrix_to_hdf5(fd, fd.root, mtx)
 
 def write_sparse_matrix_to_hdf5(fd, group, mtx):
     """
@@ -358,11 +358,9 @@ def write_sparse_matrix_to_hdf5(fd, group, mtx):
     ----------
     group: tables.group.group
         The hdf5 file group the matrix will be read from.
-
     mtx: scipy.sparse.base.spmatrix
         The writed matrix
     """
-
     try:
         info = fd.create_group(group, 'info')
         fd.create_array(info, 'dtype', enc(mtx.dtype.str))
@@ -379,7 +377,6 @@ def write_sparse_matrix_to_hdf5(fd, group, mtx):
         print(mtx.__repr__())
         raise
 
-
 ##
 # 02.07.2007, c
 # 08.10.2007
@@ -389,7 +386,7 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
         out = read_sparse_matrix_from_hdf5(fd, fd.root, output_format)
     return out
 
-def read_sparse_matrix_from_hdf5(pt_file, group, output_format=None):
+def read_sparse_matrix_from_hdf5(fd, group, output_format=None):
     """
     Read sparse matrix from given data group of hdf5 file
 
@@ -397,22 +394,19 @@ def read_sparse_matrix_from_hdf5(pt_file, group, output_format=None):
     ----------
     fd: tables.File
         The hdf5 file handle the matrix will be read from.
-
     group: tables.group.group
         The hdf5 file group of the file the matrix will be read from.
-
     output_format: {'csr', 'csc', None}, optional
         The resulting matrix will be in CSR or CSC format
         if this parameter is not None (which is default),
         otherwise it will be in the format the matrix was
-        stored
+        stored.
 
     Returns
     -------
     scipy.sparse.base.spmatrix
         Readed matrix
     """
-
     info = group.info
     data = group.data
 
@@ -443,38 +437,208 @@ def read_sparse_matrix_from_hdf5(pt_file, group, output_format=None):
 
     return mtx
 
-def write_to_hdf5(pt_file, group, name, data, cache=None,
-                  unpack_markers = False):
+def path_of_hdf5_group(group):
+    return group._v_pathname
+
+class HDF5BaseData(object):
     """
-    Save custom data to h5 file group to be restored by read_from_hdf5().
+    When storing values to HDF5, special classes can be used that wrap the
+    stored data and modify the way the storing is done. This class is the base
+    of those.
+    """
+
+    def unpack_data(self):
+        """
+        One can request unpacking of the wrappers during saving.
+
+        Returns
+        -------
+        object
+            The original object, if possible, or self.
+        """
+        return self
+
+class DataMarker(HDF5BaseData):
+    """
+    The Base class for classes for marking data to be handled in a special way
+    during saving to a HDF5 file by write_to_hdf5(). The usage is simple: just
+    "decorate" the desired data element, e.g.::
+
+        data = [data1, Cached(data2)]
+        write_to_hdf5(... , ... , data)
+    """
+
+    def __init__(self, data):
+        self.data = data
+
+    def unpack_data(self):
+        return self.data
+
+class Cached(DataMarker):
+    """
+    The wrapper class that marks data, that should be checked
+    during saving, whether it has been stored to the hdf5 file already
+    and if so, a softlink to the already created instance is created
+    instead of saving.
+    """
+
+class Uncached(DataMarker):
+    """
+    The wrapper class that marks data, that should be always stored
+    to the hdf5 file, even if the object has been already stored at a
+    different path in the file and so it would have been stored
+    by a softlink otherwise (IGDomain, Mesh and sparse matrices behave
+    so).
+    """
+
+class HDF5Data(HDF5BaseData):
+    """
+    Some data written to the HDF5 file can have a custom format.
+    Descendants of this class should have the method `.write_data()`
+    or redefine the `.write()` method.
+    """
+
+    def write(self, fd, group, name, cache=None):
+        """
+        Write a data structure to the HDF5 file.
+
+        Create the following structure in the HDF5 file:
+        {type: self.get_type(), anything writed by self.write_data()}
+
+        Parameters
+        ----------
+        fd: tables.File
+            The hdf5 file handle the data should be writed in.
+        group: tables.group.Group
+            The group the data will be stored to
+        name: str
+            Name of node that will be appended to group and will contain
+            the data
+        cache: dict or None, optional
+            Store for already cached objects with structs id(obj) : /path/to
+            Can be used for not storing the one object twice.
+        """
+        dgroup = fd.create_group(group, name)
+        fd.create_array(dgroup, 'type', nm.array(self.get_type()))
+        self.write_data(fd, dgroup, cache)
+        return dgroup
+
+    def write_data(self, fd, group):
+        """
+        Write data to the HDF5 file. Redefine this function in sub-classes.
+
+        Parameters
+        ----------
+        fd: tables.File
+            The hdf5 file handle the data should be writed to.
+        group: tables.group.Group
+            The group the data should be stored to.
+        """
+        raise Exception('Unimplemented')
+
+class SoftLink(HDF5Data):
+    """
+    This object is written to the HDF5 file as a softlink to the given path.
+    """
+    def __init__(self, destination):
+        """
+        Parameters
+        ----------
+        destination: str
+            The link destination.
+        """
+        self.destination = destination
+
+    def write(self, fd, group, name, cache=None):
+        """Create the softlink to the destination."""
+        return fd.create_soft_link(group, name, self.destination)
+
+class DataSoftLink(HDF5Data):
+    """
+    This object is written to the HDF5 file as a softlink to the given path.
+    The destination of the softlink should contain only data, so
+    the structure {type: type, data: softlink_to(destination)}
+    is created in the place where the softlink is written.
+    """
+
+    def __init__(self, type, destination, cache=None):
+        """
+        Parameters
+        ----------
+        type: str
+            Type of the object that should be written.
+            See `read_from_hdf5()` for the possibilities.
+        destination: str
+            The Destination of the soft link where the data are stored.
+        cache: object, True or None, default None
+            - If None, do nothing special.
+            - If True or an object cache with destination as key, storing
+              such a softlink to several places does not lead to several copies
+              of the object.
+            - If an object is given, just identify the softlink with the
+              object.
+        """
+        self.type = type
+        self.destination = destination
+        self.cache = cache
+
+    def unpack_data(self):
+        if self.cache is not None and self.cache is not True:
+            return self.cache
+        return self
+
+    def get_type(self):
+        return self.type
+
+    def write_data(self, fd, group, cache=None):
+        """Create the softlink to the destination and handle the caching."""
+
+        if self.cache:
+            keys = self.destination
+            if self.cache is not True:
+                if cache is not None:
+                    cache_id = id(self.cache)
+                    if cache_id in cache:
+                        keys = (keys, cache[cache_id])
+                    else:
+                        cache[cache_id] = path_of_hdf5_group(group)
+
+            fd.create_array(group, 'cache', nm.array(keys))
+        return fd.create_soft_link(group, "data", self.destination)
+
+def write_to_hdf5(fd, group, name, data, cache=None,
+                  unpack_markers=False):
+    """
+    Save custom data to a HDF5 file group to be restored by read_from_hdf5().
 
     Allows saving lists, dicts, numpy arrays, scalars, sparse matrices,
     meshes and iga domains and all pickleable objects.
 
     Parameters
     ----------
-    pt_file: tables.File
-        The hdf5 file handle the data should be writed in.
+    fd: tables.File
+        The hdf5 file handle the data should be written in.
     group: tables.group.Group
-        The group the data will be stored to
+        The group the data will be stored to.
     name: str
-        Name of node that will be appended to group and will contain the data
+        The name of the node that will be appended to the group and will
+        contain the data.
     data: object
-        Data to be stored in hdf5 mesh
+        Data to be stored in the HDF5 file.
     cache: dict or None
-        Cache where the paths to stored objects (currently meshes and iga
-        domains) are stored, so second attempt to store such objects creates
-        only softlink to the previously stored object.
-        Keys of cache are id() of objects.
-        Mark with Cached() or Uncached() the object for (no) softlinking.
+        The cache where the paths to stored objects (currently meshes and iga
+        domains) are stored, so subsequent attempts to store such objects create
+        only softlinks to the initially stored object.
+        The id() of objects serve as the keys into the cache.
+        Mark the object with Cached() or Uncached() for (no) softlinking.
     unpack_markers:
-        If set, input data is modified so the Cached and Uncached are removed
-        from all subelement of data
+        If True, the input data is modified so that Cached and Uncached markers
+        are removed from all sub-elements of the data.
 
     Returns
     -------
     tables.group.Group
-        HDF5 group the data was stored to.
+        The HDF5 group the data was stored to.
     """
 
     #imports must be done here due to circular references
@@ -487,30 +651,30 @@ def write_to_hdf5(pt_file, group, name, data, cache=None,
     def _write_to_hdf5(group, name, data):
 
         def save_value(type, data):
-            dgroup = pt_file.create_group(group, name)
-            pt_file.create_array(dgroup, 'type', nm.array(type))
-            pt_file.create_array(dgroup, 'data', data)
+            dgroup = fd.create_group(group, name)
+            fd.create_array(dgroup, 'type', nm.array(type))
+            fd.create_array(dgroup, 'data', data)
             return dgroup
 
         def save_dict(type, data):
-            dgroup = pt_file.create_group(group, name)
-            pt_file.create_array(dgroup, 'type', nm.array(type))
-            data_group = pt_file.create_group(dgroup, 'data')
+            dgroup = fd.create_group(group, name)
+            fd.create_array(dgroup, 'type', nm.array(type))
+            data_group = fd.create_group(dgroup, 'data')
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 for d in data:
                     _write_to_hdf5(data_group, d, data[d])
             if unpack_markers:
-               for d in data:
-                   if isinstance(data[d], HDF5BaseData):
-                      data[d] = data[d].unpack_data()
+                for d in data:
+                    if isinstance(data[d], HDF5BaseData):
+                        data[d] = data[d].unpack_data()
             return dgroup
 
         def save_list(type, data):
-            dgroup = pt_file.create_group(group, name)
-            pt_file.create_array(dgroup, 'type', nm.array(type))
-            pt_file.create_array(dgroup, 'len', len(data))
-            data_group = pt_file.create_group(dgroup, 'data')
+            dgroup = fd.create_group(group, name)
+            fd.create_array(dgroup, 'type', nm.array(type))
+            fd.create_array(dgroup, 'len', len(data))
+            data_group = fd.create_group(dgroup, 'data')
 
             #suppress warning that nodes with numeric ids isn't accessible as
             #python attribute
@@ -519,42 +683,43 @@ def write_to_hdf5(pt_file, group, name, data, cache=None,
                 for i, d in enumerate(data):
                     _write_to_hdf5(data_group, str(i), d)
             if unpack_markers:
-               for i,d in enumerate(data):
-                   if isinstance(d, DataMarker):
-                      data[i] = d.data
+                for i,d in enumerate(data):
+                    if isinstance(d, DataMarker):
+                        data[i] = d.data
             return dgroup
 
-        def save_by_function(type, fn = None, data_arg = None, cached = False):
-            """ If type is None (cached must be true), just try to cache
-            data_arg, otherwise save just save data arg.
-            Otherwise save the data using given function or just save raw
-            data to array."""
+        def save_by_function(type, fn=None, data_arg=None, cached=False):
+            """
+            If type is None (cached must be true), try to cache data_arg,
+            otherwise save just save the data_arg. Otherwise save the data
+            using the given function or just save the raw data to an array.
+            """
             if cached:
-               obj = data if type is not None else data_arg
-               if id(obj) in cache:
-                    return pt_file.create_soft_link(group, name,cache[id(obj)])
-               if type is None:
+                obj = data if type is not None else data_arg
+                if id(obj) in cache:
+                    return fd.create_soft_link(group, name,cache[id(obj)])
+                if type is None:
                     #store the argument into the group
                     out = _write_to_hdf5(group, name, data_arg)
                     cache[id(data_arg)] = path_of_hdf5_group(out)
                     return out
 
-            dgroup = pt_file.create_group(group, name)
+            dgroup = fd.create_group(group, name)
             cache[id(data)] = path_of_hdf5_group(dgroup)
-            pt_file.create_array(dgroup, 'type', nm.array(type))
+            fd.create_array(dgroup, 'type', nm.array(type))
             if fn is None:
-                pt_file.create_array(dgroup, 'data', data)
+                fd.create_array(dgroup, 'data', data)
             else:
-                data_group = pt_file.create_group(dgroup, 'data')
+                data_group = fd.create_group(dgroup, 'data')
                 if data_arg is None:
-                    fn( pt_file, data_group )
+                    fn(fd, data_group)
                 else:
-                    fn( pt_file, data_group, data_arg )
+                    fn(fd, data_group, data_arg)
             return dgroup
 
         def save_type(type):
-            dgroup = pt_file.create_group(group, name)
-            pt_file.create_array(dgroup, 'type', nm.array(type))
+            dgroup = fd.create_group(group, name)
+            fd.create_array(dgroup, 'type', nm.array(type))
             return dgroup
 
         for t in (True, False, None):
@@ -577,25 +742,26 @@ def write_to_hdf5(pt_file, group, name, data, cache=None,
             return save_value('str', nm.array(enc(data)))
 
         if isinstance(data, (sp.csr_matrix, sp.csc_matrix)):
-            return save_by_function('sparse_matrix', write_sparse_matrix_to_hdf5
-                                    ,data, cached = True)
+            return save_by_function('sparse_matrix',
+                                    write_sparse_matrix_to_hdf5,
+                                    data, cached=True)
 
         if isinstance(data, IGDomain):
             return save_by_function('IGDomain', data.write_domain_to_hdf5,
-                               cached = True)
+                                    cached=True)
 
         if isinstance(data, Mesh):
             return save_by_function('Mesh', HDF5MeshIO.write_mesh_to_hdf5,
-                               data_arg = data, cached = True)
+                                    data_arg=data, cached=True)
 
         if isinstance(data, Uncached):
-            return write_to_hdf5(pt_file, group, name, data.data)
+            return write_to_hdf5(fd, group, name, data.data)
 
         if isinstance(data, Cached):
-            return save_by_function(None, None, data.data, cached = True)
+            return save_by_function(None, None, data.data, cached=True)
 
         if isinstance(data, HDF5Data):
-            return data.write(pt_file, group, name, cache)
+            return data.write(fd, group, name, cache)
 
         if isinstance(data, Struct):
             return save_dict('Struct', data.to_dict())
@@ -604,217 +770,48 @@ def write_to_hdf5(pt_file, group, name, data, cache=None,
 
     return _write_to_hdf5(group, name, data)
 
-def path_of_hdf5_group(group):
-    return group._v_pathname
-
-class HDF5BaseData(object):
-    """ When storing values to hdf5, there can be used
-    special classes that wraps the stored data and modify
-    the way the storing is done.
-    This class is base of them.
+def read_from_hdf5(fd, group, cache=None):
     """
+    Read custom data from a HDF5 file group saved by write_to_hdf5().
 
-    def unpack_data(self):
-        """ One can request unpacking of the wrappers during saving
-        Returns
-        -------
-        object
-            The original object, if it's possible, or self.
-        """
-        return self
-
-
-class DataMarker(HDF5BaseData):
-    """ Base class for classes for marking data to be handled in special
-    way during saving to HDF5 file by write_to_hdf5. Using is simple:
-    just "decorate" desired data element by this class e.g.:
-    data = [ data1, Cached(data2) ]
-    write_to_hdf5( ... , ... , data ) """
-
-    def __init__(self, data):
-        self.data = data
-
-    def unpack_data(self):
-        return self.data
-
-class Cached(DataMarker):
-    """
-    Just wrapper class that mark data, that should be checked
-    during saving, whether it has been stored to the hdf5 file yet
-    and if so, softlink to already created instance is created
-    instead of saving.
-    """
-
-class Uncached(DataMarker):
-    """
-    Just wrapper class that mark data, that should be always stored
-    to hdf5 file, even if the object have been already stored at
-    different place of the file and it so it would have been stored
-    by softlink otherwise (IGDomain, Mesh and sparse matrices behave
-    so).
-    """
-
-class HDF5Data(HDF5BaseData):
-    """
-    Some datas writed to hdf5 file can have it's own format.
-    Descendants of this class should have method write_data
-    or redefine write method
-    """
-
-    def write(self, pt_file, group, name, cache = None):
-        """
-        Write data structure to HDF5 file.
-
-        Create following structure in HDF5 file
-        { type: self.get_type(), anything writed by self.write_data() }
-
-        Parameters
-        ----------
-        pt_file: tables.File
-            The hdf5 file handle the data should be writed in.
-        group: tables.group.Group
-            The group the data will be stored to
-        name: str
-            Name of node that will be appended to group and will contain
-            the data
-        cache: dict or None, optional
-            Store for already cached objects with structs id(obj) : /path/to
-            Can be used for not storing the one object twice.
-        """
-        dgroup = pt_file.create_group(group, name)
-        pt_file.create_array(dgroup, 'type', nm.array(self.get_type()))
-        self.write_data(pt_file, dgroup, cache)
-        return dgroup
-
-    def write_data(self, pt_file, group):
-        """
-        Write data to HDF5 file. Please redefine the function in descendants.
-
-        Parameters
-        ----------
-        pt_file: tables.File
-            The hdf5 file handle the data should be writed in.
-        group: tables.group.Group
-            The group the data should be stored to
-        """
-        raise Exception('Unimplemented')
-
-class SoftLink(HDF5Data):
-    """
-    This object is writed_to_hdf5 file as softlink to given path.
-    """
-    def __init__(self, destination):
-        """
-        Parameters
-        ----------
-        destination: str
-        """
-        self.destination = destination
-
-    def write(self, pt_file, group, name, cache=None):
-        """ Just create the softlink to destination """
-        return pt_file.create_soft_link(group, name, self.destination)
-
-
-class DataSoftLink(HDF5Data):
-    """
-    This object is writed_to_hdf5 file as softlink to given path.
-    The destination of softlink should contain only data, so
-    the structure { type: type, data: softlink_to(destination) }
-    is created on the place where the softlink is written.
-    """
-
-    def __init__(self, type, destination, cache=None):
-        """
-        Parameters
-        ----------
-        type: str
-            Type of writed object that should be writen to hdf5
-            See load_from_hdf5 for the possibilities
-        destination: str
-            Destination of soft_link where the data are stored
-        cache: object, True or None, default None
-            - If it's None, do nothing special
-            - If it's Truei or object cache with destination as key, so storing
-                such softlink on more places does not lead to duplicating
-                the object
-            - If object is given, moreover just identify the softlink with the
-                object.
-        """
-        self.type = type
-        self.destination = destination
-        self.cache = cache
-
-    def unpack_data(self):
-        if self.cache is not None and self.cache is not True:
-            return self.cache
-        return self
-
-    def get_type(self):
-        return self.type
-
-    def write_data(self, pt_file, group, cache=None):
-        """ Just create the softlink to destination
-            ...and handle caching.
-        """
-        if self.cache:
-            keys = self.destination
-            #from sfepy.base.base import debug
-            #debug()
-            if self.cache is not True:
-                if cache is not None:
-                    cache_id = id(self.cache)
-                    if cache_id in cache:
-                        keys = ( keys, cache[cache_id] )
-                    else:
-                        cache[cache_id] = path_of_hdf5_group(group)
-
-            pt_file.create_array(group, 'cache', nm.array(keys))
-        return pt_file.create_soft_link(group, "data", self.destination)
-
-
-def read_from_hdf5(pt_file, group, cache=None):
-    """
-    Read data from h5 file group saved by write_to_hdf5().
-
-    Data are stored in general (possibly nested) structure:
-    { 'type' : string type identificator
+    The data are stored in a general (possibly nested) structure:
+    {
+      'type' : string type identificator
       'data' : stored data
       'cache': string, optional - another posible location of object
     }
 
     Parameters
     ----------
-    pt_file: tables.File
-         The hdf5 file handle the data should be restored from.
+    fd: tables.File
+        The hdf5 file handle the data should be restored from.
     group: tables.group.Group
-         The group in the hdf5 file the data will be restored from.
+        The group in the hdf5 file the data will be restored from.
     cache: dict or None
-         Some objects (e.g. Meshes) can be stored on more places in
-         the hdf5 file tree using softlink, so when the data are
-         restored, the restored objects are stored and searched in
-         cache so they are created only once.
-         Keys of cache are the (real) paths of created objects.
+        Some objects (e.g. Mesh instances) can be stored on more places in the
+        HDF5 file tree using softlinks, so when the data are restored, the
+        restored objects are stored and searched in cache so that they are
+        created only once. The keys to cache are the (real) paths of the
+        created objects.
+        Moreover, if some stored object has a 'cache' key (see e.g.
+        DataSoftLink class), and the object with a given 'path' has been
+        already created, it is returned instead of creating a new object.
+        Otherwise, the newly created object is associated both with its real
+        path and with the cache key path.
 
-         Moreover, if some stored object has key cache (see e.g. DataSoftLink
-         class), and the object with given 'path' have been already created,
-         it's returned instead of creating new object.
-         If it's not, the newly created object is associated both
-         with it's real path and with cache key path.
-
-         Caching is not done for scalar data types.
+        The caching is not active for scalar data types.
 
     Returns
     -------
-    mixed
-         restored structured data
+    data : object
+        The restored custom data.
     """
     if cache is None:
        cache = {}
 
     from sfepy.discrete.iga.domain import IGDomain
     from sfepy.discrete.fem.meshio import HDF5MeshIO
-    types = { b'True' : True, b'False' : False, b'None' : None }
+    types = {b'True' : True, b'False' : False, b'None' : None}
 
     def _read_from_hdf5(group):
         while isinstance(group, pt.link.SoftLink):
@@ -861,17 +858,16 @@ def read_from_hdf5(pt_file, group, cache=None):
 
         def load_dict():
             out = {}
-            for i in pt_file.iter_nodes(data):
+            for i in fd.iter_nodes(data):
                 out[i._v_name] = _read_from_hdf5(i)
             return out
 
-        def load_object(fn = None):
+        def load_object(fn=None):
             if fn:
-                out = fn(pt_file, data)
+                out = fn(fd, data)
             else:
                 out = data.read()
             return out
-
 
         if type == b'raw':
             return data.read()
@@ -910,7 +906,6 @@ def read_from_hdf5(pt_file, group, cache=None):
 
     return _read_from_hdf5(group)
 
-
 class HDF5ContextManager:
     def __init__(self, filename, *args, **kwargs):
         self.filename = filename
@@ -930,7 +925,7 @@ class HDF5ContextManager:
            self.file.close()
            self.file = None
 
-def get_or_create_hdf5_group(fd, path, from_group = None):
+def get_or_create_hdf5_group(fd, path, from_group=None):
     if from_group is None:
        from_group = fd.root
     if path == '':
