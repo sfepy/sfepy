@@ -172,6 +172,7 @@ class IGDomain(Domain):
         return (knots, degrees, cps, weights, cs, conn,
                 bcps, bweights, bconn, self.vertex_set_bcs)
 
+    @staticmethod
     def from_data(knots, degrees, cps, weights, cs, conn,
                   bcps, bweights, bconn, regions, name='iga_domain_from_data'):
         """
