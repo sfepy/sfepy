@@ -154,7 +154,27 @@ class IGDomain(Domain):
         group: tables.group.Group
             HDF5 data group (of file fd) to write the mesh to
         """
-        io.write_iga_data( fd, group, *self.iga_data(), self.name )
+        io.write_iga_data(fd, group, *(self._get_io_data() + (self.name,)))
+
+    def _get_io_data(self):
+        """
+        Return the data describing the domain for storing the domain in a hdf5
+        file.
+
+        TODO - data for regions recreating
+        """
+        knots = self.nurbs.knots
+        degrees = self.nurbs.degrees
+        cps = self.nurbs.cps
+        weights = self.nurbs.weights
+        cs = self.nurbs.cs
+        conn = self.nurbs.conn
+        bcps = self.bmesh.cps
+        bweights = self.bmesh.weights
+        bconn = self.bmesh.conn
+
+        return (knots, degrees, cps, weights, cs, conn,
+                bcps, bweights, bconn, self.vertex_set_bcs)
 
     def from_data(knots, degrees, cps, weights, cs, conn,
          bcps, bweights, bconn, regions, name = 'iga_domain_from_data'):
@@ -221,27 +241,3 @@ class IGDomain(Domain):
                 self.vertex_set_bcs[key] = remap[val]
 
         self.reset_regions()
-
-    def iga_data(self):
-        """
-        Return data describing the domain for storing the domain to hdf5 file.
-
-        returns
-        -------
-        tuple
-
-        #TODO - data for regions recreating
-        """
-
-        knots = self.nurbs.knots
-        degrees = self.nurbs.degrees
-        cps = self.nurbs.cps
-        weights = self.nurbs.weights
-        cs = self.nurbs.cs
-        conn = self.nurbs.conn
-        bcps = self.bmesh.cps
-        bweights = self.bmesh.weights
-        bconn = self.bmesh.conn
-
-        return knots, degrees, cps, weights, cs, conn, \
-               bcps, bweights, bconn, self.vertex_set_bcs
