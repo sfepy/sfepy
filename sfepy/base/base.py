@@ -10,7 +10,6 @@ from .getch import getch
 import numpy as nm
 import scipy.sparse as sp
 import six
-import inspect
 
 real_types = [nm.float64]
 complex_types = [nm.complex128]
@@ -18,7 +17,6 @@ complex_types = [nm.complex128]
 nm.set_printoptions(threshold=100)
 
 from sfepy.base.goptions import goptions
-import scipy.sparse
 
 sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
@@ -234,67 +232,6 @@ def python_shell():
 def assert_(condition, msg='assertion failed!'):
     if not condition:
         raise ValueError(msg)
-
-
-assert_base_types = (int, float, str, bytes, complex, None.__class__, type)
-if sys.version_info < (3,0):
-    assert_base_types = assert_base_types + ( unicode, ) # NOQA
-
-def assert_equals(a, b, msg='assertion of equality failed'):
-
-    if a is b: return
-
-    def assert_dict(a,b):
-        assert_(set(a.keys()) == set(b.keys()), msg)
-        for i in a:
-            assert_equals(a[i], b[i], msg)
-
-    def assert_list(a,b):
-        assert_(len(a) == len(b), msg)
-        for i,j in zip(a,b):
-            assert_equals(i,j)
-
-    assert_(a.__class__ is b.__class__, msg)
-    if isinstance(a, (int, float, str, assert_base_types, bytes, complex)):
-       assert_( a == b, msg)
-
-    elif isinstance(a, dict):
-       assert_dict(a, b)
-
-    elif isinstance(a, (list, tuple)):
-       assert_list(a, b)
-
-    elif isinstance(a, nm.ndarray):
-       nm.testing.assert_array_equal(a,b)
-
-    elif isinstance(a, (scipy.sparse.csr_matrix, scipy.sparse.csc_matrix)):
-        nm.testing.assert_array_equal(a.data,b.data)
-        nm.testing.assert_array_equal(a.indices,b.indices)
-        nm.testing.assert_array_equal(a.indptr,b.indptr)
-
-    elif isinstance(a, object):
-        cls = a.__class__
-        if hasattr(cls, '__eq__') and getattr(object, '__eq__', None) != \
-                                      cls.__eq__:
-           assert_(a == b, msg)
-        else:
-            if hasattr(cls, '__slots__'):
-               ad = dict((i,getattr(a,i)) for i in cls.__slots__)
-               bd = dict((i,getattr(b,i)) for i in cls.__slots__)
-            elif hasattr(a, '__dict__'):
-               ad = a.__dict__
-               bd = b.__dict__
-            else:
-               def members(obj):
-                   out = inspect.getmembers(obj, lambda x: not
-                       inspect.isroutine(x) )
-                   out = dict( (k,v) for k,v in out if not k.startswith('__'))
-                   return out
-               ad = members(a)
-               bd = members(b)
-
-            assert_dict(ad, bd)
-
 
 ##
 # c: 06.04.2005, r: 05.05.2008
