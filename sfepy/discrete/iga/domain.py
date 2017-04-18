@@ -101,7 +101,7 @@ class NurbsPatch(Struct):
         Returns
         -------
         nurbs : NurbsPatch instance
-           Either `self` if `times` is zero, or a new instance.
+            Either `self` if `times` is zero, or a new instance.
         """
         if times is 0: return self
 
@@ -126,33 +126,29 @@ class IGDomain(Domain):
         """
         data = io.read_iga_data(filename)
         name = op.splitext(filename)[0]
-        return IGDomain.from_data( *(data + (name, )) )
+        return IGDomain.from_data(*(data + (name,)))
 
     @staticmethod
     def read_domain_from_hdf5(fd, group):
         """
-        Create domain from given hdf5 data group
+        Create a domain from the given hdf5 data group.
 
         fd: tables.File
-          HDF5 file handle to read the mesh from
+            HDF5 file handle to read the mesh from.
         group: tables.group.Group
-          HDF5 data group (of file fd) to read the mesh from
-
-        Returns
-        -------
-        IGDomain
+            HDF5 data group (of file fd) to read the mesh from.
         """
         data = io.read_iga_data(fd, group)
-        return IGDomain.from_data( *data )
+        return IGDomain.from_data(*data)
 
     def write_domain_to_hdf5(self, fd, group):
         """
-        Save domain to hdf5 file
+        Save the domain to a hdf5 file.
 
         fd: tables.File
-            HDF5 file handle to write the mesh to
+            HDF5 file handle to write the mesh to.
         group: tables.group.Group
-            HDF5 data group (of file fd) to write the mesh to
+            HDF5 data group (of file fd) to write the mesh to.
         """
         io.write_iga_data(fd, group, *(self._get_io_data() + (self.name,)))
 
@@ -177,9 +173,9 @@ class IGDomain(Domain):
                 bcps, bweights, bconn, self.vertex_set_bcs)
 
     def from_data(knots, degrees, cps, weights, cs, conn,
-         bcps, bweights, bconn, regions, name = 'iga_domain_from_data'):
+                  bcps, bweights, bconn, regions, name='iga_domain_from_data'):
         """
-        Create iga domain from given data
+        Create the IGA domain from the given data.
         """
 
         nurbs = NurbsPatch(knots, degrees, cps, weights, cs, conn)

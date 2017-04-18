@@ -5,32 +5,31 @@ from __future__ import absolute_import
 import numpy as nm
 import six
 from six.moves import range
-from sfepy.base.ioutils import HDF5ContextManager as HDF5ConMgr, enc, dec
-
+from sfepy.base.ioutils import HDF5ContextManager, enc, dec
 
 def write_iga_data(filename, group, knots, degrees, control_points, weights,
-        cs, conn, bezier_control_points, bezier_weights, bezier_conn,
-        regions, name=None):
+                   cs, conn, bezier_control_points, bezier_weights, bezier_conn,
+                   regions, name=None):
     """
-    Read data  from a hdf5 file.
+    Write IGA-related data into a HDF5 file using pytables.
 
     filename: str or tables.File
         File to read the hdf5 mesh to.
-    group: tables.group.Group or None
-        HDF5 file group to read the mesh from.
-        If it's None, the root of file is used.
-    ...
-        Data of mesh, see code for details
+    group: tables.group.Group, optional
+        HDF5 file group to read the data from.
+        If None, the root of file is used.
 
     Returns
     -------
     tuple
-     Data for restoring IGA domain.
+        Data for restoring IGA domain.
     """
 
-    with HDF5ConMgr(filename, mode = 'w', title = 'SfePy IGA data file') as fd:
+    with HDF5ContextManager(filename, mode = 'w',
+                            title='SfePy IGA data file') as fd:
         if group is None:
             group = fd.root
+
         if isinstance(degrees, int): degrees = [degrees]
         degrees = nm.asarray(degrees)
 
@@ -67,10 +66,9 @@ def write_iga_data(filename, group, knots, degrees, control_points, weights,
         if name is not None:
             fd.create_array( group, 'name', nm.array( enc(name)) )
 
-
 def read_iga_data(filename, group=None):
     """
-    Read data  from a hdf5 file.
+    Read IGA-related data from a HDF5 file using pytables.
 
     filename: str or tables.File
         File to read the hdf5 mesh to.
@@ -84,7 +82,7 @@ def read_iga_data(filename, group=None):
        Data for restoring IGA domain.
     """
 
-    with HDF5ConMgr(filename, 'r') as fd:
+    with HDF5ContextManager(filename, 'r') as fd:
         if group is None:
             group = fd.root
 
