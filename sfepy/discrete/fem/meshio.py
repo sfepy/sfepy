@@ -10,7 +10,9 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
-                                read_array, read_list, pt, enc, dec)
+                                read_array, read_list, pt, enc, dec,
+                                read_from_hdf5, write_to_hdf5,
+                                HDF5ContextManager, get_or_create_hdf5_group)
 import os.path as op
 import six
 from six.moves import range
@@ -230,7 +232,7 @@ class MeshIO(Struct):
     def write(self, filename, mesh, **kwargs):
         raise ValueError(MeshIO.call_msg)
 
-    def read_data(self, step, filename=None):
+    def read_data(self, step, filename=None, cache=None):
         raise ValueError(MeshIO.call_msg)
 
     def set_float_format(self, format=None):
@@ -822,7 +824,7 @@ class VTKMeshIO(MeshIO):
         fd.write('#')
         fd.close()
 
-    def read_data(self, step, filename=None):
+    def read_data(self, step, filename=None, cache=None):
         filename = get_default(filename, self.filename)
 
         out = {}
@@ -1233,6 +1235,117 @@ class HDF5MeshIO(MeshIO):
     else:
         _tr = string.maketrans(_rubbish, '_' * len(_rubbish))
 
+    @staticmethod
+    def read_mesh_from_hdf5(filename, group=None, mesh=None):
+        """
+        Read the mesh from a HDF5 file.
+
+        filename: str or tables.File
+            The HDF5 file to read the mesh from.
+        group: tables.group.Group or str, optional
+            The HDF5 file group to read the mesh from.
+            If None, the root group is used.
+        mesh: sfepy.dicrete.fem.Mesh or None
+            If None, the new mesh is created and returned, otherwise
+            content of this argument is replaced by the read mesh.
+
+        Returns
+        -------
+        sfepy.dicrete.fem.Mesh
+            readed mesh
+        """
+        with HDF5ContextManager(filename, mode='r') as fd:
+            if group is None:
+                group = fd.root
+            elif not isinstance(group, pt.group.Group):
+                group = fd.get_node(group)
+
+            set_shape_info = mesh is None
+            if mesh is None:
+                from .mesh import Mesh
+                mesh = Mesh('mesh')
+
+            mesh.name = dec(group.name.read())
+            coors = group.coors.read()
+            ngroups = group.ngroups.read()
+
+            n_gr = group.n_gr.read()
+
+            conns = []
+            descs = []
+            mat_ids = []
+            for ig in range(n_gr):
+                gr_name = 'group%d' % ig
+                group = group._f_get_child(gr_name)
+                conns.append(group.conn.read())
+                mat_ids.append(group.mat_id.read())
+                descs.append(dec(group.desc.read()))
+
+            nodal_bcs = {}
+            try:
+                node_sets_groups = group.node_sets
+
+            except:
+                pass
+
+            else:
+                for group in node_sets_groups:
+                    key = dec(group.key.read())
+                    nods = group.nods.read()
+                    nodal_bcs[key] = nods
+
+            mesh._set_io_data(coors, ngroups, conns, mat_ids, descs,
+                              nodal_bcs=nodal_bcs)
+
+            if set_shape_info:
+                mesh._set_shape_info()
+        return mesh
+
+    @staticmethod
+    def write_mesh_to_hdf5(filename, group, mesh):
+        """
+        Write mesh to a hdf5 file.
+
+        filename: str or tables.File
+            The HDF5 file to write the mesh to.
+        group: tables.group.Group or None or str
+            The HDF5 file group to write the mesh to.
+            If None, the root group is used.
+            The group can be given as a path from root, e.g. /path/to/mesh
+        mesh: sfepy.dicrete.fem.Mesh
+            The mesh to write.
+        """
+        with HDF5ContextManager(filename, mode='w') as fd:
+            if group is None:
+                group = fd.root
+            elif not isinstance(group, pt.group.Group):
+                group = get_or_create_hdf5_group(fd, group)
+
+            coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+
+            fd.create_array(group, 'name', enc(mesh.name), 'name')
+            fd.create_array(group, 'coors', coors, 'coors')
+            fd.create_array(group, 'ngroups', ngroups, 'ngroups')
+            fd.create_array(group, 'n_gr', len(conns), 'n_gr')
+            for ig, conn in enumerate(conns):
+                conn_group = fd.create_group(group, 'group%d' % ig,
+                                             'connectivity group')
+                fd.create_array(conn_group, 'conn', conn, 'connectivity')
+                fd.create_array(conn_group, 'mat_id', mat_ids[ig],
+                                'material id')
+                fd.create_array(conn_group, 'desc', enc(descs[ig]),
+                                'element Type')
+
+            node_sets_groups = fd.create_group(group, 'node_sets',
+                                               'node sets groups')
+            ii = 0
+            for key, nods in six.iteritems(mesh.nodal_bcs):
+                group = fd.create_group(node_sets_groups, 'group%d' % ii,
+                                        'node sets group')
+                fd.create_array(group, 'key', enc(key), 'key')
+                fd.create_array(group, 'nods', nods, 'nods')
+                ii += 1
+
     def read_dimension(self, ret_fd=False):
         fd = pt.open_file(self.filename, mode="r")
 
@@ -1272,47 +1385,10 @@ class HDF5MeshIO(MeshIO):
                 fd.close()
                 return bbox
 
-    def read(self, mesh, **kwargs):
-        fd = pt.open_file(self.filename, mode="r")
+    def read(self, mesh=None, **kwargs):
+        return self.read_mesh_from_hdf5(self.filename, '/mesh', mesh=mesh)
 
-        mesh_group = fd.root.mesh
-
-        mesh.name = dec(mesh_group.name.read())
-        coors = mesh_group.coors.read()
-        ngroups = mesh_group.ngroups.read()
-
-        n_gr = mesh_group.n_gr.read()
-
-        conns = []
-        descs = []
-        mat_ids = []
-        for ig in range(n_gr):
-            gr_name = 'group%d' % ig
-            group = mesh_group._f_get_child(gr_name)
-            conns.append(group.conn.read())
-            mat_ids.append(group.mat_id.read())
-            descs.append(dec(group.desc.read()))
-
-        nodal_bcs = {}
-        try:
-            node_sets_groups = mesh_group.node_sets
-
-        except:
-            pass
-
-        else:
-            for group in node_sets_groups:
-                key = dec(group.key.read())
-                nods = group.nods.read()
-                nodal_bcs[key] = nods
-
-        fd.close()
-        mesh._set_io_data(coors, ngroups, conns, mat_ids, descs,
-                          nodal_bcs=nodal_bcs)
-
-        return mesh
-
-    def write(self, filename, mesh, out=None, ts=None, **kwargs):
+    def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
         from time import asctime
 
         if pt is None:
@@ -1321,53 +1397,28 @@ class HDF5MeshIO(MeshIO):
         step = get_default_attr(ts, 'step', 0)
         if step == 0:
             # A new file.
-            fd = pt.open_file(filename, mode="w",
-                             title="SfePy output file")
+            with pt.open_file(filename, mode="w",
+                              title="SfePy output file") as fd:
+                mesh_group = fd.create_group('/', 'mesh', 'mesh')
+                self.write_mesh_to_hdf5(fd, mesh_group, mesh)
 
-            mesh_group = fd.create_group('/', 'mesh', 'mesh')
+                if ts is not None:
+                    ts_group = fd.create_group('/', 'ts', 'time stepper')
+                    fd.create_array(ts_group, 't0', ts.t0, 'initial time')
+                    fd.create_array(ts_group, 't1', ts.t1, 'final time' )
+                    fd.create_array(ts_group, 'dt', ts.dt, 'time step')
+                    fd.create_array(ts_group, 'n_step', ts.n_step, 'n_step')
 
-            coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+                tstat_group = fd.create_group('/', 'tstat',
+                                              'global time statistics')
+                fd.create_array(tstat_group, 'created', enc(asctime()),
+                                'file creation time')
+                fd.create_array(tstat_group, 'finished', enc('.' * 24),
+                                'file closing time')
 
-            fd.create_array(mesh_group, 'name', enc(mesh.name), 'name')
-            fd.create_array(mesh_group, 'coors', coors, 'coors')
-            fd.create_array(mesh_group, 'ngroups', ngroups, 'ngroups')
-            fd.create_array(mesh_group, 'n_gr', len(conns), 'n_gr')
-            for ig, conn in enumerate(conns):
-                conn_group = fd.create_group(mesh_group, 'group%d' % ig,
-                                             'connectivity group')
-                fd.create_array(conn_group, 'conn', conn, 'connectivity')
-                fd.create_array(conn_group, 'mat_id', mat_ids[ig],
-                               'material id')
-                fd.create_array(conn_group, 'desc', enc(descs[ig]),
-                               'element Type')
-
-            node_sets_groups = fd.create_group(mesh_group, 'node_sets',
-                                               'node sets groups')
-            ii = 0
-            for key, nods in six.iteritems(mesh.nodal_bcs):
-                group = fd.create_group(node_sets_groups, 'group%d' % ii,
-                                        'node sets group')
-                fd.create_array(group, 'key', enc(key), 'key')
-                fd.create_array(group, 'nods', nods, 'nods')
-                ii += 1
-
-            if ts is not None:
-                ts_group = fd.create_group('/', 'ts', 'time stepper')
-                fd.create_array(ts_group, 't0', ts.t0, 'initial time')
-                fd.create_array(ts_group, 't1', ts.t1, 'final time' )
-                fd.create_array(ts_group, 'dt', ts.dt, 'time step')
-                fd.create_array(ts_group, 'n_step', ts.n_step, 'n_step')
-
-            tstat_group = fd.create_group('/', 'tstat', 'global time statistics')
-            fd.create_array(tstat_group, 'created', enc(asctime()),
-                           'file creation time')
-            fd.create_array(tstat_group, 'finished', enc('.' * 24),
-                           'file closing time')
-
-            fd.create_array(fd.root, 'last_step', nm.array([0], dtype=nm.int32),
-                           'last saved step')
-
-            fd.close()
+                fd.create_array(fd.root, 'last_step',
+                                nm.array([0], dtype=nm.int32),
+                                'last saved step')
 
         if out is not None:
             if ts is None:
@@ -1387,28 +1438,35 @@ class HDF5MeshIO(MeshIO):
 
             name_dict = {}
             for key, val in six.iteritems(out):
+                group_name = '__' + key.translate(self._tr)
+                data_group = fd.create_group(step_group, group_name,
+                                             '%s data' % key)
+                fd.create_array(data_group, 'dname', enc(key), 'data name')
+                fd.create_array(data_group, 'mode', enc(val.mode), 'mode')
+                name = val.get('name', 'output_data')
+                fd.create_array(data_group, 'name', enc(name), 'object name')
+                if val.mode == 'custom':
+                    write_to_hdf5(fd, data_group, 'data', val.data,
+                                  cache=cache,
+                                  unpack_markers=getattr(val, 'unpack_markers',
+                                                         False))
+                    continue
+
                 shape = val.get('shape', val.data.shape)
                 dofs = val.get('dofs', None)
                 if dofs is None:
                     dofs = [''] * nm.squeeze(shape)[-1]
                 var_name = val.get('var_name', '')
-                name = val.get('name', 'output_data')
 
-                group_name = '__' + key.translate(self._tr)
-                data_group = fd.create_group(step_group, group_name,
-                                             '%s data' % key)
                 fd.create_array(data_group, 'data', val.data, 'data')
-                fd.create_array(data_group, 'mode', enc(val.mode), 'mode')
                 fd.create_array(data_group, 'dofs', [enc(ic) for ic in dofs],
-                               'dofs')
+                                'dofs')
                 fd.create_array(data_group, 'shape', shape, 'shape')
-                fd.create_array(data_group, 'name', enc(name), 'object name')
                 fd.create_array(data_group, 'var_name',
-                               enc(var_name), 'object parent name')
-                fd.create_array(data_group, 'dname', enc(key), 'data name')
+                                enc(var_name), 'object parent name')
                 if val.mode == 'full':
                     fd.create_array(data_group, 'field_name',
-                                   enc(val.field_name), 'field name')
+                                    enc(val.field_name), 'field name')
 
                 name_dict[key] = group_name
 
@@ -1417,7 +1475,7 @@ class HDF5MeshIO(MeshIO):
 
             fd.remove_node(fd.root.tstat.finished)
             fd.create_array(fd.root.tstat, 'finished', enc(asctime()),
-                           'file closing time')
+                            'file closing time')
             fd.close()
 
     def read_last_step(self, filename=None):
@@ -1491,7 +1549,7 @@ class HDF5MeshIO(MeshIO):
 
         return fd, step_group
 
-    def read_data(self, step, filename=None):
+    def read_data(self, step, filename=None, cache=None):
         fd, step_group = self._get_step_group(step, filename=filename)
         if fd is None: return None
 
@@ -1503,8 +1561,12 @@ class HDF5MeshIO(MeshIO):
             except pt.exceptions.NoSuchNodeError:
                 continue
 
-            name = dec(data_group.name.read())
             mode = dec(data_group.mode.read())
+            if mode == 'custom':
+               out[key] = read_from_hdf5(fd, data_group.data, cache=cache)
+               continue
+
+            name = dec(data_group.name.read())
             data = data_group.data.read()
             dofs = tuple([dec(ic) for ic in data_group.dofs.read()])
             try:
