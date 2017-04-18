@@ -406,6 +406,8 @@ class Viewer(Struct):
 
         else:
             is_subdomains = False
+            if 'mat_id' not in filter_names:
+                file_source.setup_mat_id()
 
         self.source = source = self.file_source()
         data_ranges = get_data_ranges(source, return_only=True)

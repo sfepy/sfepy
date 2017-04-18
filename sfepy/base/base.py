@@ -576,6 +576,25 @@ class Container(Struct):
     def __iter__(self):
         return self._objs.__iter__()
 
+    def __add__(self, other):
+        """
+        Add items of `other` to `self`.
+        """
+        new = Container()
+        objs = self._objs + other._objs
+        new.update(objs)
+
+        return new
+
+    def __iadd__(self, other):
+        """
+        Add items of `other` to `self` in place.
+        """
+        self.extend(copy(other._objs))
+        self.update()
+
+        return self
+
     ##
     # 18.07.2006, c
     def __len__(self):

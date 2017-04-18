@@ -460,7 +460,7 @@ def distribute_fields_dofs(fields, cell_tasks, is_overlap=True,
             output('numbers of cells in tasks (without overlaps):',
                    n_cell_parts, verbose=verbose)
             assert_(sum(n_cell_parts) == field.domain.mesh.n_el)
-            assert_(nm.all(n_cell_parts > 0))
+            assert_(nm.all(nm.array(n_cell_parts) > 0))
 
             gfd = Struct(name='global field %s distribution' % field.name,
                          dof_maps=aux[0], id_map=aux[1],

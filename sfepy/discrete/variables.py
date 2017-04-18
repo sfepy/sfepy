@@ -515,7 +515,7 @@ class Variables(Container):
                                           follow_epbc)
         return svec
 
-    def make_full_vec(self, svec, force_value=None):
+    def make_full_vec(self, svec, force_value=None, vec=None):
         """
         Make a full DOF vector satisfying E(P)BCs from a reduced DOF
         vector.
@@ -526,6 +526,8 @@ class Variables(Container):
             The reduced DOF vector.
         force_value : float, optional
             Passing a `force_value` overrides the EBC values.
+        vec : array, optional
+            If given, the buffer for storing the result (zeroed).
 
         Returns
         -------
@@ -541,7 +543,8 @@ class Variables(Container):
             else:
                 svec = self.mtx_lcbc * svec
 
-        vec = self.create_state_vector()
+        if vec is None:
+            vec = self.create_state_vector()
         for var in self.iter_state():
             indx = self.di.indx[var.name]
             aindx = self.adi.indx[var.name]
