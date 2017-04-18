@@ -65,6 +65,28 @@ class Test( TestCommon ):
 
         return True
 
+    def test_container_add(self):
+        from sfepy.base.base import Struct, Container
+
+        a = Struct(name='a')
+        b = Struct(name='b')
+
+        c1 = Container()
+
+        c1 = c1 + c1
+        assert_(c1.names == [])
+
+        c1 += Container([a, b])
+        assert_(c1.names == ['a', 'b'])
+
+        c2 = c1 + c1
+        assert_(c2.names == 2 * ['a', 'b'])
+
+        c2 += c2
+        assert_(c2.names == 4 * ['a', 'b'])
+
+        return True
+
     def test_verbose_output(self):
         try:
             from StringIO import StringIO  # Python 2
