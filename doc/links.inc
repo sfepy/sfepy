@@ -57,8 +57,11 @@
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _igakit: https://bitbucket.org/dalcinl/igakit
 .. _petsc4py: https://bitbucket.org/petsc/petsc4py
+.. _PETSc: https://www.mcs.anl.gov/petsc
+.. _SLEPc: http://slepc.upv.es
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
 .. _pymetis: http://mathema.tician.de/software/pymetis
+.. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
