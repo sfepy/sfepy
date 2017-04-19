@@ -9,6 +9,7 @@
 .. sfepy links
 .. _sfepy: http://sfepy.org
 .. _sfepy web site: http://sfepy.org
+.. _mailing list: https://mail.python.org/mm3/mailman3/lists/sfepy.python.org/
 .. _sfepy mailing list: https://mail.python.org/mm3/mailman3/lists/sfepy.python.org/
 .. _our mailing list: https://mail.python.org/mm3/mailman3/lists/sfepy.python.org/
 .. _sfepy issues: https://github.com/sfepy/sfepy/issues
@@ -16,6 +17,7 @@
 .. _sfepy download: http://sfepy.org/doc-devel/downloads.html
 .. _download: http://sfepy.org/doc-devel/downloads.html
 .. _sfepy git repository: https://github.com/sfepy/sfepy
+.. _sfepy/sfepy: https://github.com/sfepy/sfepy
 .. _sfepy tarball: http://github.com/sfepy/sfepy/tarball/master
 .. _our wiki: https://github.com/sfepy/sfepy/wiki
 
@@ -55,8 +57,11 @@
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _igakit: https://bitbucket.org/dalcinl/igakit
 .. _petsc4py: https://bitbucket.org/petsc/petsc4py
+.. _PETSc: https://www.mcs.anl.gov/petsc
+.. _SLEPc: http://slepc.upv.es
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
 .. _pymetis: http://mathema.tician.de/software/pymetis
+.. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
