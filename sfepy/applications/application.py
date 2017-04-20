@@ -52,7 +52,7 @@ class Application(Struct):
             if mode == 'coroutine':
                 # Pass application output to the generator.
                 container.append(out)
-                generator.next()
+                next(generator)
 
     def restore(self):
         """
