@@ -81,11 +81,11 @@ def read_log(filename):
             if ls[0] == '# groups':
                 n_gr = int(ls[1])
                 for ig in range(n_gr):
-                    fd.next()
-                    line_info = fd.next()
+                    next(fd)
+                    line_info = next(fd)
                     xlabel, ylabel, yscales = line_info.split(',')
 
-                    line_names = fd.next()
+                    line_names = next(fd)
                     names = line_names.split(':')[1]
 
                     info[ig] = (xlabel.split(':')[1].strip().strip('"'),

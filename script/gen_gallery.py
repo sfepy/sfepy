@@ -477,7 +477,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
             ifd.write('    %s\n' % rst_filename_ns)
             fig_include = ''
-            fig_base = _get_fig_filenames(ebase, images_dir).next()
+            fig_base = next(_get_fig_filenames(ebase, images_dir))
             for fig_filename in _get_fig_filenames(ebase, images_dir):
                 rst_fig_filename = _make_sphinx_path(fig_filename)
 
@@ -568,7 +568,7 @@ def generate_gallery_html(examples_dir, output_filename, gallery_dir,
             link = os.path.join(link_prefix,
                                 os.path.splitext(link_base)[0] + '.html')
 
-            _get_fig_filenames(ebase, thumbnails_dir).next()
+            next(_get_fig_filenames(ebase, thumbnails_dir))
             for thumbnail_filename in _get_fig_filenames(ebase,
                                                          thumbnails_dir):
                 if not os.path.isfile(thumbnail_filename):
