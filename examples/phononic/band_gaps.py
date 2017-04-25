@@ -68,9 +68,9 @@ options = {
     },
     'plot_rsc' : {
         'params' : {'axes.labelsize': 'x-large',
-                    'text.fontsize': 'large',
+                    'font.size': 14,
                     'legend.fontsize': 'large',
-                    'legend.loc': 1,
+                    'legend.loc': 'upper right',
                     'xtick.labelsize': 'large',
                     'ytick.labelsize': 'large',
                     'text.usetex': True},
