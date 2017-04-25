@@ -146,9 +146,9 @@ def plot_logs(fig_num, plot_rsc, plot_labels,
         plt.show()
     return fig
 
-def plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax, plot_range, plot_rsc):
+def plot_gap(ax, ranges, kind, kind_desc, plot_range, plot_rsc):
     """
-    Plot a single band gap as a rectangle.
+    Plot single band gap frequency ranges as rectangles.
     """
     def draw_rect(ax, x, y, rsc):
         ax.fill(nm.asarray(x)[[0,1,1,0]],
@@ -161,42 +161,29 @@ def plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax, plot_range, plot_rsc):
     propagation = plot_rsc['propagation']
 
     if kind == 'p':
-        draw_rect(ax, (f0, f1), plot_range, propagation)
-        info = [(f0, f1)]
+        draw_rect(ax, ranges[0], plot_range, propagation)
     elif kind == 'w':
-        draw_rect(ax, (f0, f1), plot_range, weak)
-        info = [(f0, f1)]
+        draw_rect(ax, ranges[0], plot_range, weak)
     elif kind == 'wp':
-        draw_rect(ax, (f0, gmin[1]), plot_range, weak)
-        draw_rect(ax, (gmin[1], f1), plot_range, propagation)
-        info = [(f0, gmin[1]), (gmin[1], f1)]
+        draw_rect(ax, ranges[0], plot_range, weak)
+        draw_rect(ax, ranges[1], plot_range, propagation)
     elif kind == 's':
-        draw_rect(ax, (f0, f1), plot_range, strong)
-        info = [(f0, f1)]
+        draw_rect(ax, ranges[0], plot_range, strong)
     elif kind == 'sw':
-        draw_rect(ax, (f0, gmax[1]), plot_range, strong)
-        draw_rect(ax, (gmax[1], f1), plot_range, weak)
-        info = [(f0, gmax[1]), (gmax[1], f1)]
+        draw_rect(ax, ranges[0], plot_range, strong)
+        draw_rect(ax, ranges[1], plot_range, weak)
     elif kind == 'swp':
-        draw_rect(ax, (f0, gmax[1]), plot_range, strong)
-        draw_rect(ax, (gmax[1], gmin[1]), plot_range, weak)
-        draw_rect(ax, (gmin[1], f1), plot_range, propagation)
-        info = [(f0, gmax[1]), (gmax[1], gmin[1]), (gmin[1], f1)]
+        draw_rect(ax, ranges[0], plot_range, strong)
+        draw_rect(ax, ranges[1], plot_range, weak)
+        draw_rect(ax, ranges[2], plot_range, propagation)
     elif kind == 'is':
-        draw_rect(ax, (gmin[1], gmax[1]), plot_range, strong)
-        info = [(gmin[1], gmax[1])]
+        draw_rect(ax, ranges[0], plot_range, strong)
     elif kind == 'iw':
-        draw_rect(ax, (gmin[1], gmax[1]), plot_range, weak)
-        info = [(gmin[1], gmax[1])]
+        draw_rect(ax, ranges[0], plot_range, weak)
     else:
-        output('impossible band gap combination:')
-        output(gmin, gmax)
-        raise ValueError
+        raise ValueError('unknown band gap kind! (%s)' % kind)
 
-    output(ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1)
-    output(' -> %s\n    %s' %(kind_desc, info))
-
-def plot_gaps(fig_num, plot_rsc, gaps, kinds, freq_range,
+def plot_gaps(fig_num, plot_rsc, gaps, kinds, gap_ranges, freq_range,
               plot_range, show=False, clear=False, new_axes=False):
     """
     Plot band gaps as rectangles.
@@ -214,17 +201,21 @@ def plot_gaps(fig_num, plot_rsc, gaps, kinds, freq_range,
     for ii in range(len(freq_range) - 1):
         f0, f1 = freq_range[[ii, ii+1]]
         gap = gaps[ii]
+        ranges = gap_ranges[ii]
 
         if isinstance(gap, list):
             for ig, (gmin, gmax) in enumerate(gap):
                 kind, kind_desc = kinds[ii][ig]
-                plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax,
-                         plot_range, plot_rsc)
+                plot_gap(ax, ranges[ig], kind, kind_desc, plot_range, plot_rsc)
+
+                output(ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1)
+                output(' -> %s\n    %s' %(kind_desc, ranges[ig]))
         else:
             gmin, gmax = gap
             kind, kind_desc = kinds[ii]
-            plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax,
-                     plot_range, plot_rsc)
+            plot_gap(ax, ranges, kind, kind_desc, plot_range, plot_rsc)
+            output(ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1)
+            output(' -> %s\n    %s' %(kind_desc, ranges))
 
     if new_axes:
         ax.set_xlim([freq_range[0], freq_range[-1]])
@@ -485,7 +476,7 @@ class AcousticBandGapsApp(HomogenizationApp):
             plot_range, teigs = transform_plot_data(bg.logs.eigs,
                                                     opts.plot_transform,
                                                     self.conf)
-            fig = plot_gaps(ii, plot_rsc, bg.gaps, bg.kinds,
+            fig = plot_gaps(ii, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
                             bg.freq_range_margins, plot_range,
                             clear=True)
             fig = plot_logs(ii, plot_rsc, plot_labels, bg.logs.freqs, teigs,
@@ -494,6 +485,7 @@ class AcousticBandGapsApp(HomogenizationApp):
                             plot_range,
                             show_legend=plot_opts['legend'],
                             new_axes=True)
+            plt.tight_layout()
 
             if opts.fig_name is not None:
                 fig_name = _get_fig_name(self.problem.output_dir, opts.fig_name,
@@ -527,7 +519,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             bg = coefs.get(key)
 
-            fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds,
+            fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
                             bg.freq_range_margins, plot_range,
                             clear=True)
             fig = plot_logs(1, plot_rsc, plot_labels, bg.logs.freqs, pas,
@@ -536,6 +528,7 @@ class AcousticBandGapsApp(HomogenizationApp):
                             plot_range,
                             show_legend=plot_opts['legend'],
                             new_axes=True)
+            plt.tight_layout()
 
             fig_name = opts.fig_name_angle
             if fig_name is not None:
@@ -550,7 +543,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             plot_labels =  opts.plot_labels_wave
 
-            fig = plot_gaps(2, plot_rsc, bg.gaps, bg.kinds,
+            fig = plot_gaps(2, plot_rsc, bg.gaps, bg.kinds, bg.gap_ranges,
                             bg.freq_range_margins, plot_range,
                             clear=True)
             fig = plot_logs(2, plot_rsc, plot_labels, bg.logs.freqs, teigs,
@@ -559,6 +552,7 @@ class AcousticBandGapsApp(HomogenizationApp):
                             plot_range,
                             show_legend=plot_opts['legend'],
                             new_axes=True)
+            plt.tight_layout()
 
             fig_name = opts.fig_name_wave
             if fig_name is not None:
