@@ -426,6 +426,56 @@ def describe_gaps(gaps):
 
     return kinds
 
+def get_gap_ranges(freq_range, gaps, kinds):
+    """
+    For each (potential) band gap in `gaps`, return the frequency ranges of its
+    parts according to `kinds`.
+    """
+
+    def get_ranges(ii, f0, f1, kind, kind_desc, gmin, gmax):
+        if kind == 'p':
+            ranges = [(f0, f1)]
+        elif kind == 'w':
+            ranges = [(f0, f1)]
+        elif kind == 'wp':
+            ranges = [(f0, gmin[1]), (gmin[1], f1)]
+        elif kind == 's':
+            ranges = [(f0, f1)]
+        elif kind == 'sw':
+            ranges = [(f0, gmax[1]), (gmax[1], f1)]
+        elif kind == 'swp':
+            ranges = [(f0, gmax[1]), (gmax[1], gmin[1]), (gmin[1], f1)]
+        elif kind == 'is':
+            ranges = [(gmin[1], gmax[1])]
+        elif kind == 'iw':
+            ranges = [(gmin[1], gmax[1])]
+        else:
+            msg = 'impossible band gap combination! (%f %d)' % (gmin, gmax)
+            raise ValueError(msg)
+
+        return ranges
+
+    gap_ranges = []
+    for ii in range(len(freq_range) - 1):
+        f0, f1 = freq_range[[ii, ii+1]]
+        gap = gaps[ii]
+
+        if isinstance(gap, list):
+            ranges = []
+            for ig, (gmin, gmax) in enumerate(gap):
+                kind, kind_desc = kinds[ii][ig]
+                aux = get_ranges(ii, f0, f1, kind, kind_desc, gmin, gmax)
+                ranges.append(aux)
+
+        else:
+            gmin, gmax = gap
+            kind, kind_desc = kinds[ii]
+            ranges = get_ranges(ii, f0, f1, kind, kind_desc, gmin, gmax)
+
+        gap_ranges.append(ranges)
+
+    return gap_ranges
+
 def compute_cat_sym_sym(coef, iw_dir):
     """
     Christoffel acoustic tensor (part) of elasticity tensor dimension.
@@ -979,8 +1029,10 @@ class BandGaps(MiniAppBase):
                            freq_range_margins=freq_range_margins)
 
         logs, gaps, kinds = opts.detect_fun(mass, freq_info, opts, mtx_b=mtx_b)
+        gap_ranges = get_gap_ranges(freq_range_margins, gaps, kinds)
 
         bg = Struct(name='band_gaps', logs=logs, gaps=gaps, kinds=kinds,
+                    gap_ranges=gap_ranges,
                     valid=ema.valid, eig_range=opts.eig_range,
                     n_eigs=eigs.shape[0], n_zeroed=ema.n_zeroed,
                     freq_range_initial=freq_info.freq_range_initial,
