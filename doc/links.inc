@@ -28,7 +28,7 @@
 
 .. _SciPy: http://www.scipy.org
 .. _NumPy: http://www.numpy.org
-.. _scikit-umfpack: http://rc.github.io/scikit-umfpack
+.. _scikit-umfpack: https://github.com/scikit-umfpack/scikit-umfpack
 .. _sparse matrix: http://docs.scipy.org/doc/scipy/reference/sparse.html
 .. _numpy documentation guide: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
@@ -40,7 +40,7 @@
 .. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
 .. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
-.. _python(x,y): http://code.google.com/p/pythonxy
+.. _python(x,y): http://python-xy.github.io/
 .. _WinPython: http://http://winpython.sourceforge.net/
 
 .. _cython: http://cython.org
@@ -62,6 +62,10 @@
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
 .. _pymetis: http://mathema.tician.de/software/pymetis
 .. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
+.. _wxPython: https://wxpython.org/
+
+.. _Python virtualenv: https://pypi.python.org/pypi/virtualenv
+.. _Conda Environments: https://conda.io/docs/using/envs.html
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
@@ -70,7 +74,7 @@
 .. _gitwash: http://github.com/matthew-brett/gitwash
 .. _numpy gitwash: http://docs.scipy.org/doc/numpy/dev/gitwash
 .. _tbaggery.com: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-.. _msysgit: http://code.google.com/p/msysgit
+.. _msysgit: https://git-for-windows.github.io/
 
 .. _sphinx: http://sphinx.pocoo.org
 .. _restructuredtext primer: http://sphinx.pocoo.org/rest.html
@@ -78,6 +82,10 @@
 .. _docutils restructuredtext: http://docutils.sourceforge.net/rst.html
 
 .. _tex live: http://www.tug.org/texlive
+
+.. _Visual C++ Build Tools: http://landinghub.visualstudio.com/visual-cpp-build-tools
+.. _Anaconda FAQ: https://docs.continuum.io/anaconda/faq#how-is-cpython-compiled
+.. _mingw-w32/64: https://mingw-w64.org/doku.php
 
 .. _new bsd license: http://www.opensource.org/licenses/bsd-license.php
 
