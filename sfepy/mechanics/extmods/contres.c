@@ -518,22 +518,13 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
       g++;
     }
 
-    // element edge length / diagonal:
-    if (nsd == 2) {
-      const float64 lengthOfEdge = sqrt(pow(Xs[0] - Xs[1], 2) + pow(Xs[2] - Xs[3], 2));
-      *longestEdge = Max(*longestEdge, lengthOfEdge);
-    }
-    else if (nsd == 3) {
-      if (nsn == 6) {
-	const float64 lengthOfEdge1 = sqrt(pow(Xs[0] - Xs[1], 2) + pow(Xs[3] - Xs[4], 2) + pow(Xs[6] - Xs[7], 2));
-	const float64 lengthOfEdge2 = sqrt(pow(Xs[2] - Xs[1], 2) + pow(Xs[5] - Xs[4], 2) + pow(Xs[8] - Xs[7], 2));
-	const float64 lengthOfEdge3 = sqrt(pow(Xs[0] - Xs[2], 2) + pow(Xs[3] - Xs[5], 2) + pow(Xs[6] - Xs[8], 2));
-	*longestEdge = Max(Max(Max(lengthOfEdge1, lengthOfEdge2), lengthOfEdge3), *longestEdge);
-      }
-      if (nsn == 8) {
-	const float64 diagonal1 = sqrt(pow(Xs[2] - Xs[0], 2) + pow(Xs[10] - Xs[8], 2) + pow(Xs[18] - Xs[16], 2));
-	const float64 diagonal2 = sqrt(pow(Xs[3] - Xs[1], 2) + pow(Xs[11] - Xs[9], 2) + pow(Xs[19] - Xs[17], 2));
-	*longestEdge = Max(Max(diagonal1, diagonal2), *longestEdge);
+    for (i = 0; i < nsn; ++i) {
+      for (j = i+1; j < nsn; ++j) {
+	double lengthOfEdge = 0.0;
+	for (sdf = 0; sdf < nsd; ++sdf) {
+	  lengthOfEdge += pow(Xs[sdf*nsd + i] - Xs[sdf*nsd + j ], 2);
+	}
+	*longestEdge = Max(*longestEdge, sqrt(lengthOfEdge) );
       }
     }
 
@@ -548,7 +539,7 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
 #undef __FUNC__
 #define __FUNC__ "getAABB"
 void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, float64 longestEdge, int32* IEN, int32* ISN, uint32* elementID, uint32* segmentID, int n, int nsn, int nes, int nen, int neq) {
-  int e, i, sdf, sdf2;
+  int e, i, sdf;
   int* segmentNodesID = alloc_mem(int, nsn);
 
   for (sdf = 0; sdf < nsd; ++sdf) {
@@ -556,26 +547,22 @@ void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, 
     AABBmax[sdf] = -FLT_MAX;
 
     for (e = 0; e < n; ++e) {
-      int el = elementID[e] - 1;
-      int sg = segmentID[e] - 1;
+      int el = elementID[e] - 1; // Matlab numbering starts with 1
+      int sg = segmentID[e] - 1; // Matlab numbering starts with 1
 
       // segment coords Xs:
       for (i = 0; i < nsn; ++i) {
 	const int IENrow = ISN[nes*i + sg] - 1; // Matlab numbering starts with 1
 	segmentNodesID[i] = IEN[nen*el + IENrow] - 1; // Matlab numbering starts with 1
-	for (sdf2 = 0; sdf2 < nsd; ++sdf2) {
-	  const float64 x = X[sdf2*(int)(neq / nsd) + segmentNodesID[i]];
-	  AABBmin[sdf2] = Min(AABBmin[sdf2], x);
-	  AABBmax[sdf2] = Max(AABBmax[sdf2], x);
-	}
+	const double x = X[sdf*(int)(neq / nsd) + segmentNodesID[i]];
+	AABBmin[sdf] = Min(AABBmin[sdf], x);
+	AABBmax[sdf] = Max(AABBmax[sdf], x);
       }
     }
 
-    for (sdf2 = 0; sdf2 < nsd; ++sdf2) {
-      if ((AABBmax[sdf2] - AABBmin[sdf2]) < longestEdge) {
-	AABBmax[sdf2] += 0.5*longestEdge;
-	AABBmin[sdf2] -= 0.5*longestEdge;
-      }
+    if ((AABBmax[sdf] - AABBmin[sdf]) < longestEdge) {
+      AABBmax[sdf] += 0.5*longestEdge;
+      AABBmin[sdf] -= 0.5*longestEdge;
     }
   }
   free_mem(segmentNodesID);
