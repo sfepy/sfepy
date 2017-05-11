@@ -47,7 +47,8 @@
 .. _ipython: http://ipython.org
 .. _pyparsing: http://sourceforge.net/projects/pyparsing
 .. _umfpackpy: http://code.google.com/p/umfpackpy
-.. _gmsh: http://geuz.org/gmsh
+.. _gmsh: http://gmsh.info
+.. _gmsh reference manual: http://gmsh.info/doc/texinfo/gmsh.html
 .. _medit: http://www.ann.jussieu.fr/~frey/software.html
 .. _python mesh viewer: http://labs.freehackers.org/projects/pythonmeshviewer
 .. _mayavi: http://code.enthought.com/projects/mayavi
@@ -79,5 +80,9 @@
 .. _finite element method: http://en.wikipedia.org/wiki/Finite_element_method
 .. _isogeometric analysis: http://en.wikipedia.org/wiki/Isogeometric_analysis
 .. _salome download: http://www.salome-platform.org/downloads/current-version
-.. _salome web site: http://www.salome-platform.org
+.. _salome: http://www.salome-platform.org
 .. _salome tutorial site: http://www.salome-platform.org/user-section/salome-tutorials
+.. _freecad: https://www.freecadweb.org
+.. _openscad: http://www.openscad.org
+.. _python scripting in freecad: https://www.freecadweb.org/wiki/Python_scripting_tutorial
+.. _netgen: https://ngsolve.org
