@@ -153,6 +153,8 @@ requirements = {
     'pis': {
         'variables': ['u'],
         'class': cb.ShapeDimDim,
+        'save_name': 'corrs_pis',
+        'dump_variables': ['u'],
     },
     'corrs_rs': {
         'requires': ['pis'],
