@@ -19,6 +19,7 @@ from sfepy.base.base import nm, output
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
                                        supported_cell_types)
+from sfepy.discrete.fem.mesh import fix_double_nodes
 
 helps = {
     'scale' : 'scale factor (float or comma-separated list for each axis)'
@@ -29,6 +30,7 @@ helps = {
     'refine' : 'uniform refinement level [default: %(default)s]',
     'format' : 'output mesh format (overrides filename_out extension)',
     'list' : 'list supported readable/writable output mesh formats',
+    'merge' : 'remove duplicate vertices',
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -63,6 +65,8 @@ def main():
                         default=None, help=helps['format'])
     parser.add_argument('-l', '--list', action='store_true',
                         dest='list', help=helps['list'])
+    parser.add_argument('-m', '--merge', action='store_true',
+                        dest='merge', help=helps['merge'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
@@ -112,6 +116,15 @@ def main():
                    % (domain.shape.n_nod, domain.shape.n_el))
 
         mesh = domain.mesh
+
+    if options.merge:
+        desc = mesh.descs[0]
+        coor, ngroups, conns = fix_double_nodes(mesh.coors,
+                                                mesh.cmesh.vertex_groups,
+                                                mesh.get_conn(desc), 1e-9)
+        mesh = Mesh.from_data(mesh.name + '_merged',
+                              coor, ngroups,
+                              [conns], [mesh.cmesh.cell_groups], [desc])
 
     io = MeshIO.for_format(filename_out, format=options.format,
                            writable=True)
