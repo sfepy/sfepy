@@ -19,6 +19,16 @@ cdef extern from 'contres.h':
                     uint32* elementID, uint32* segmentID,
                     int n, int nsn, int nes, int nen, int neq)
 
+     cdef void _evaluateContactConstraints \
+          'evaluateContactConstraints'(float64* GPs, int32* ISN, int32* IEN,
+                                       int32* N, float64* AABBmin,
+                                       float64* AABBmax, int32* head,
+                                       int32* next, float64* X,
+                                       uint32* elementID, uint32* segmentID,
+                                       int n, int nsn, int nsd, int npd,
+                                       int ngp, int nen, int nes, int neq,
+                                       float64 longestEdge)
+
 def get_longest_edge_and_gps(
     np.ndarray[float64, mode='fortran', ndim=2] GPs not None,
     int neq,
@@ -126,3 +136,37 @@ def init_global_search(
         head[Ic] = i
 
     return head, next
+
+def evaluate_contact_constraints(
+    np.ndarray[float64, mode='fortran', ndim=2] GPs not None,
+    np.ndarray[int32, mode='c', ndim=2] ISN not None,
+    np.ndarray[int32, mode='c', ndim=2] IEN not None,
+    np.ndarray[int32, mode='c', ndim=1] N not None,
+    np.ndarray[float64, mode='c', ndim=1] AABBmin not None,
+    np.ndarray[float64, mode='c', ndim=1] AABBmax not None,
+    np.ndarray[int32, mode='c', ndim=1] head not None,
+    np.ndarray[int32, mode='c', ndim=1] next not None,
+    np.ndarray[float64, mode='fortran', ndim=2] X not None,
+    np.ndarray[uint32, mode='c', ndim=1] elementID not None,
+    np.ndarray[uint32, mode='c', ndim=1] segmentID not None,
+    int npd,
+    int neq,
+    float64 longestEdge,
+    ):
+
+    cdef int n, nsd, ngp, nsn, nes, nen
+
+    n = elementID.shape[0]
+    nsd = X.shape[1]
+    ngp = GPs.shape[0] / n
+    nsn = ISN.shape[0]
+    nes = ISN.shape[1]
+    nen = IEN.shape[1]
+
+    _evaluateContactConstraints(&GPs[0, 0], &ISN[0, 0], &IEN[0, 0], &N[0],
+                                &AABBmin[0], &AABBmax[0], &head[0], &next[0],
+                                &X[0, 0], &elementID[0], &segmentID[0],
+                                n, nsn, nsd, npd, ngp, nen, nes, neq,
+                                longestEdge)
+
+    return GPs

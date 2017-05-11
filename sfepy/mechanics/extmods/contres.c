@@ -570,7 +570,7 @@ void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, 
 
 #undef __FUNC__
 #define __FUNC__ "evaluateContactConstraints"
-void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, float64* AABBmin, float64* AABBmax, int* head, int* next, float64* X, uint32* elementID, uint32* segmentID, int n, int nsn, int nsd, int npd, int ngp, int nen, int nes, int neq, float64 longestEdge) {
+void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, float64* AABBmin, float64* AABBmax, int32* head, int32* next, float64* X, uint32* elementID, uint32* segmentID, int n, int nsn, int nsd, int npd, int ngp, int nen, int nes, int neq, float64 longestEdge) {
   int i, e, k, j, it, sdf, i2, i1, i0;
   int* segmentNodesID = alloc_mem(int, nsn);
   float64* Xm = alloc_mem(float64, nsn*nsd);
