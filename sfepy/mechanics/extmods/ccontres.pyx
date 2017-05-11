@@ -13,6 +13,11 @@ cdef extern from 'contres.h':
                             int nes, int nen,
                             uint32* elementID, uint32* segmentID,
                             int32* ISN, int32* IEN, float64* H, float64* X)
+     cdef void _getAABB \
+     'getAABB'(float64* AABBmin, float64* AABBmax, int nsd, int nnod,
+               float64* X, float64 longestEdge, int32* IEN, int32* ISN,
+               uint32* elementID, uint32* segmentID,
+               int n, int nsn, int nes, int nen, int neq)
 
 def get_longest_edge_and_gps(
     np.ndarray[float64, mode='fortran', ndim=2] GPS not None,
@@ -42,3 +47,34 @@ def get_longest_edge_and_gps(
     longestEdge = tmp[0]
 
     return longestEdge, GPS
+
+def get_AABB(
+    np.ndarray[float64, mode='fortran', ndim=2] X not None,
+    int longestEdge,
+    np.ndarray[int32, mode='c', ndim=2] IEN not None,
+    np.ndarray[int32, mode='c', ndim=2] ISN not None,
+    np.ndarray[uint32, mode='c', ndim=1] elementID not None,
+    np.ndarray[uint32, mode='c', ndim=1] segmentID not None,
+    int neq,
+    ):
+
+    cdef np.ndarray[float64, mode='c', ndim=1] AABBmin
+    cdef np.ndarray[float64, mode='c', ndim=1] AABBmax
+    cdef int n, nnod, nsd, nsn, nes, nen
+
+    n = elementID.shape[0]
+    nnod = X.shape[0]
+    nsd = X.shape[1]
+    nsn = ISN.shape[0]
+    nes = ISN.shape[1]
+    nen = IEN.shape[1]
+
+    AABBmin = np.empty((nsd,), dtype=np.float64)
+    AABBmax = np.empty((nsd,), dtype=np.float64)
+
+    _getAABB(&AABBmin[0], &AABBmax[0], nsd, nnod,
+             &X[0, 0], longestEdge, &IEN[0, 0], &ISN[0, 0],
+             &elementID[0], &segmentID[0],
+             n, nsn, nes, nen, neq)
+
+    return AABBmin, AABBmax
