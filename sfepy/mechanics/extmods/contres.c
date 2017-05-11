@@ -490,8 +490,8 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
 
     // segment coords Xs:
     for (i = 0; i < nsn; ++i) {
-      const int IENrow = ISN[nes*i + sg] - 1; // Matlab numbering starts with 1
-      segmentNodesID[i] = IEN[nen*el + IENrow] - 1; // Matlab numbering starts with 1
+      const int IENrow = ISN[nes*i + sg]; // Python numbering starts with 0
+      segmentNodesID[i] = IEN[nen*el + IENrow]; // Python numbering starts with 0
       for (j = 0; j < nsd; ++j) {
 	Xs[j*nsn + i] = X[j*(int)(neq / nsd) + segmentNodesID[i]];
       }
@@ -547,13 +547,13 @@ void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, 
     AABBmax[sdf] = -FLT_MAX;
 
     for (e = 0; e < n; ++e) {
-      int el = elementID[e] - 1; // Matlab numbering starts with 1
-      int sg = segmentID[e] - 1; // Matlab numbering starts with 1
+      int el = elementID[e]; // Python numbering starts with 0
+      int sg = segmentID[e]; // Python numbering starts with 0
 
       // segment coords Xs:
       for (i = 0; i < nsn; ++i) {
-	const int IENrow = ISN[nes*i + sg] - 1; // Matlab numbering starts with 1
-	segmentNodesID[i] = IEN[nen*el + IENrow] - 1; // Matlab numbering starts with 1
+	const int IENrow = ISN[nes*i + sg]; // Python numbering starts with 0
+	segmentNodesID[i] = IEN[nen*el + IENrow]; // Python numbering starts with 0
 	const double x = X[sdf*(int)(neq / nsd) + segmentNodesID[i]];
 	AABBmin[sdf] = Min(AABBmin[sdf], x);
 	AABBmax[sdf] = Max(AABBmax[sdf], x);
