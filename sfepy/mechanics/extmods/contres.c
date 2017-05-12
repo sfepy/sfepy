@@ -231,18 +231,18 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, flo
 
     // slave element index:
     col = nsd*GPs_len;
-    const int els = (int)GPs[col + i] - 1; // Matlab numbering starts with 1
+    const int els = (int)GPs[col + i]; // Python numbering starts with 0
 
     // slave segment index:
     col = (nsd + 1)*GPs_len;
-    const int sgs = (int)GPs[col + i] - 1; // Matlab numbering starts with 1
+    const int sgs = (int)GPs[col + i]; // Python numbering starts with 0
 
     // slave segment coords Xs and displacements Us:
     for (j = 0; j < nsn; ++j) {
       col = nes*j;
-      int IENrows = ISN[col + sgs] - 1; // Matlab numbering starts with 1
+      int IENrows = ISN[col + sgs]; // Python numbering starts with 0
       col = nen*els;
-      segmentNodesIDs[j] = IEN[col + IENrows] - 1; // Matlab numbering starts with 1
+      segmentNodesIDs[j] = IEN[col + IENrows]; // Python numbering starts with 0
       for (k = 0; k < nsd; ++k) {
 	col = k*(int)(neq / nsd);
 	Xs[k*nsn + j] = X[col + segmentNodesIDs[j]];
@@ -261,17 +261,17 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, flo
 
       // master element index:
       col = (2 * nsd + 4)*GPs_len;
-      const int elm = (int)GPs[col + i + g] - 1; // Matlab numbering starts with 1
+      const int elm = (int)GPs[col + i + g]; // Python numbering starts with 0
       // master segment index:
       col = (2 * nsd + 5)*GPs_len;
-      const int sgm = (int)GPs[col + i + g] - 1; // Matlab numbering starts with 1
+      const int sgm = (int)GPs[col + i + g]; // Python numbering starts with 0
 
       // master segment coords Xm and displacements Um:
       for (j = 0; j < nsn; ++j) {
 	col = nes*j;
-	int IENrowm = ISN[col + sgm] - 1; // Matlab numbering starts with 1
+	int IENrowm = ISN[col + sgm]; // Python numbering starts with 0
 	col = nen*elm;
-	segmentNodesIDm[j] = IEN[col + IENrowm] - 1; // Matlab numbering starts with 1
+	segmentNodesIDm[j] = IEN[col + IENrowm]; // Python numbering starts with 0
 	for (k = 0; k < nsd; ++k) {
 	  col = k*(int)(neq / nsd);
 	  Xm[k*nsn + j] = X[col + segmentNodesIDm[j]];
@@ -486,8 +486,8 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
 	GPs[sdf*n*ngp + g] = Xg[i*nsd + sdf]; // slave gausspoint coords
 	GPs[(nsd + 3 + sdf)*n*ngp + g] = 0.0; // init baricentric coords
       }
-      GPs[nsd*n*ngp + g] = el + 1;            // slave element
-      GPs[(nsd + 1)*n*ngp + g] = sg + 1;      // slave segment
+      GPs[nsd*n*ngp + g] = el;                // slave element
+      GPs[(nsd + 1)*n*ngp + g] = sg;          // slave segment
       GPs[(nsd + 2)*n*ngp + g] = FLT_MAX;     // init gap
       GPs[(2 * nsd + 3)*n*ngp + g] = 0;       // init is NO active
       GPs[(2 * nsd + 4)*n*ngp + g] = 0;       // master element
@@ -570,8 +570,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
   }
 
   for (e = 0; e < n; ++e) {
-    int el = elementID[e] - 1;
-    int sg = segmentID[e] - 1;
+    int el = elementID[e];
+    int sg = segmentID[e];
 
     // segment coords Xm:
     for (k = 0; k < nsd; ++k) {
@@ -581,8 +581,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
       Xc[k] = 0;
 
       for (j = 0; j < nsn; ++j) {
-	const int IENrow = ISN[nes*j + sg] - 1; // Matlab numbering starts with 1
-	segmentNodesID[j] = IEN[nen*el + IENrow] - 1; // Matlab numbering starts with 1
+	const int IENrow = ISN[nes*j + sg]; // Python numbering starts with 0
+	segmentNodesID[j] = IEN[nen*el + IENrow]; // Python numbering starts with 0
 	Xm[k*nsn + j] = X[k*(int)(neq / nsd) + segmentNodesID[j]];
 	Xmin[k] = Min(Xmin[k], Xm[k*nsn + j]);
 	Xmax[k] = Max(Xmax[k], Xm[k*nsn + j]);
@@ -943,8 +943,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		  GPs[(nsd       + 2)*n*ngp + v] = d;      // store penetration
 		  if(d < 0) {
 		    GPs[(2 * nsd + 3)*n*ngp + v] = 1.0;    // set gausspoint to active state
-		    GPs[(2 * nsd + 4)*n*ngp + v] = el + 1; // set master element
-		    GPs[(2 * nsd + 5)*n*ngp + v] = sg + 1; // set master segment
+		    GPs[(2 * nsd + 4)*n*ngp + v] = el; // set master element
+		    GPs[(2 * nsd + 5)*n*ngp + v] = sg; // set master segment
 		    GPs[(    nsd + 3)*n*ngp + v] = r;
 		    if (npd == 2) {
 		      GPs[(  nsd + 4)*n*ngp + v] = s;
