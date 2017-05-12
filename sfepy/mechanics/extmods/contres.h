@@ -18,7 +18,7 @@ typedef unsigned int bool;
 
         void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, float64 longestEdge, int32* IEN, int32* ISN, uint32* elementID, uint32* segmentID, int n, int nsn, int nes, int nen, int neq);
 
-        void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, bool keyContactDetection, bool keyAssembleKc);
+        void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, int keyContactDetection, int keyAssembleKc);
 
 	void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, int ngp, int neq, int nsn, int nes, int nen, uint32* elementID, uint32* segmentID, int32* ISN, int32* IEN, float64* H, float64* X);
 
@@ -30,7 +30,7 @@ typedef unsigned int bool;
 	void __declspec(dllexport) sfd6(float64* H, float64* dH, float64 r, float64 s);
 	void __declspec(dllexport) getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, float64 longestEdge, int32* IEN, int32* ISN, uint32* elementID, uint32* segmentID, int n, int nsn, int nes, int nen, int neq);
 
-	void __declspec(dllexport) assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, bool keyContactDetection, bool keyAssembleKc);
+	void __declspec(dllexport) assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, int keyContactDetection, int keyAssembleKc);
 
 	void __declspec(dllexport) getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, int ngp, int neq, int nsn, int nes, int nen, uint32* elementID, uint32* segmentID, int32* ISN, int32* IEN, float64* H, float64* X);
 

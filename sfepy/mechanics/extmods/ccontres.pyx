@@ -28,6 +28,13 @@ cdef extern from 'contres.h':
                                        int n, int nsn, int nsd, int npd,
                                        int ngp, int nen, int nes, int neq,
                                        float64 longestEdge)
+     cdef void _assembleContactResidualAndStiffness \
+          'assembleContactResidualAndStiffness'(
+          float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN,
+          int32* IEN, float64* X, float64* U, float64* H, float64* dH,
+          float64* gw, float64* activeGPsOld, int neq, int nsd, int npd,
+          int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss,
+          int keyContactDetection, int keyAssembleKc)
 
 def get_longest_edge_and_gps(
     np.ndarray[float64, mode='fortran', ndim=2] GPs not None,
@@ -170,3 +177,42 @@ def evaluate_contact_constraints(
                                 longestEdge)
 
     return GPs
+
+def assemble_contact_residual_and_stiffness(
+    np.ndarray[float64, mode='fortran', ndim=2] Gc not None,
+    np.ndarray[float64, mode='fortran', ndim=3] Kc not None,
+    np.ndarray[float64, mode='fortran', ndim=2] GPs not None,
+    np.ndarray[int32, mode='c', ndim=2] ISN not None,
+    np.ndarray[int32, mode='c', ndim=2] IEN not None,
+    np.ndarray[float64, mode='fortran', ndim=2] X not None,
+    np.ndarray[float64, mode='fortran', ndim=2] Um not None,
+    np.ndarray[float64, mode='fortran', ndim=2] H not None,
+    np.ndarray[float64, mode='fortran', ndim=2] dH not None,
+    np.ndarray[float64, mode='c', ndim=1] gw not None,
+    np.ndarray[float64, mode='fortran', ndim=1] activeGPsOld not None,
+    int neq,
+    int npd,
+    float64 epss,
+    int keyContactDetection,
+    int keyAssembleKc,
+    ):
+    cdef int tmp
+    cdef int nsd, ngp, nsn, nes, nen, GPs_len
+
+    GPs_len = GPs.shape[0]
+    nsd = X.shape[1]
+    ngp = H.shape[0]
+    nsn = ISN.shape[0]
+    nes = ISN.shape[1]
+    nen = IEN.shape[1]
+
+    _assembleContactResidualAndStiffness(&Gc[0, 0], &Kc[0, 0, 0], &tmp,
+                                         &GPs[0, 0],
+                                         &ISN[0, 0], &IEN[0, 0], &X[0, 0],
+                                         &Um[0, 0], &H[0, 0], &dH[0, 0],
+                                         &gw[0], &activeGPsOld[0],
+                                         neq, nsd, npd, ngp, nes, nsn, nen,
+                                         GPs_len, epss,
+                                         keyContactDetection, keyAssembleKc)
+
+    return Gc, Kc, GPs
