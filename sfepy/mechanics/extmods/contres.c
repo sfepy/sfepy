@@ -522,7 +522,7 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
       for (j = i+1; j < nsn; ++j) {
 	double lengthOfEdge = 0.0;
 	for (sdf = 0; sdf < nsd; ++sdf) {
-	  lengthOfEdge += pow(Xs[sdf*nsd + i] - Xs[sdf*nsd + j ], 2);
+	  lengthOfEdge += pow(Xs[sdf*nsn + i] - Xs[sdf*nsn + j ], 2);
 	}
 	*longestEdge = Max(*longestEdge, sqrt(lengthOfEdge) );
       }
