@@ -39,7 +39,7 @@ Step 1: Using *Salome*
 ----------------------
 
 *Salome* has its own set of tutorials and community resources. It is
-suggested you look around on `Salome web site`_ to familiarize
+suggested you look around on `Salome`_ web site to familiarize
 yourself with the available resources.
 
 This tutorial follows the EDF Exercise 1 available from the `Salome
