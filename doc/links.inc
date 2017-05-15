@@ -40,7 +40,6 @@
 .. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
 .. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
-.. _python(x,y): http://python-xy.github.io/
 .. _WinPython: http://http://winpython.sourceforge.net/
 
 .. _cython: http://cython.org
@@ -48,6 +47,7 @@
 .. _sympy: http://sympy.org
 .. _ipython: http://ipython.org
 .. _pyparsing: http://sourceforge.net/projects/pyparsing
+.. _umfpack: http://faculty.cse.tamu.edu/davis/suitesparse.html
 .. _umfpackpy: http://code.google.com/p/umfpackpy
 .. _gmsh: http://geuz.org/gmsh
 .. _medit: http://www.ann.jussieu.fr/~frey/software.html
@@ -60,12 +60,10 @@
 .. _PETSc: https://www.mcs.anl.gov/petsc
 .. _SLEPc: http://slepc.upv.es
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
+.. _Metis: http://glaros.dtc.umn.edu/gkhome/views/metis
 .. _pymetis: http://mathema.tician.de/software/pymetis
 .. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
 .. _wxPython: https://wxpython.org/
-
-.. _Python virtualenv: https://pypi.python.org/pypi/virtualenv
-.. _Conda Environments: https://conda.io/docs/using/envs.html
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
@@ -82,6 +80,7 @@
 .. _docutils restructuredtext: http://docutils.sourceforge.net/rst.html
 
 .. _tex live: http://www.tug.org/texlive
+.. _LaTeX: http://www.latex-project.org/
 
 .. _Visual C++ Build Tools: http://landinghub.visualstudio.com/visual-cpp-build-tools
 .. _Anaconda FAQ: https://docs.continuum.io/anaconda/faq#how-is-cpython-compiled
