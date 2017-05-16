@@ -74,7 +74,7 @@ Notes on selecting Python Distribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 *SfePy* should work with any recent Python 2.7 or 3.x (in long-term view
-Python 3.6+ is recommended). It's only matter of taste to use either native OS
+Python 3.6+ is recommended). It is only matter of taste to use either native OS
 Python installation or any other suitable distribution. We could recommend
 the following distributions to use:
 
@@ -91,12 +91,12 @@ the following distributions to use:
   distribution `WinPython`_ can be used.
 
 On any supported platform we could recommend `Anaconda`_ distribution as
-easy-to-use, stable and up-to-date Python distribution with all
+easy-to-use, stable and up-to-date Python distribution with all the
 required dependencies (including pre-build `sfepy` package).
 
 Note: all *SfePy* releases are regularly tested on recent Linux distributions
-(Debian and (K)Ununtu) using OS Python and Anaconda, macOS 10.12+ using
-Anaconda and Windows 8.1+ using Anaconda.
+(Debian and (K)Ubuntu) using OS Python installation and Anaconda, macOS 10.12+
+using Anaconda and Windows 8.1+ using Anaconda.
 
 .. _installing_sfepy:
 
@@ -112,7 +112,7 @@ pre-build *SfePy* packages are available. You may directly install them with:
 
 - Debian/(K)Ubuntu: install `python-sfepy`::
 
-   sudo aptitude install python-sfepy
+   sudo apt-get install python-sfepy
 
 There are no further steps required to install/configure *SfePy*
 (see `Notes on Multi-platform Python Distributions`_ for additional notes).
@@ -222,7 +222,7 @@ If a particular test fails, run it in the raise mode ::
 
     python sfepy-run run_tests --raise tests/<failing_test_name.py>
 
-and please, report the output to the `SfePy mailing list`_.
+and, please, report the output to the `SfePy mailing list`_.
 
 It is also possible to automatically start a debugger when/if an exception
 is raised by running a test in the debug mode::
@@ -294,7 +294,7 @@ Anaconda
 We highly recommend this scientific-oriented Python distribution.
 
 (Currently regularly tested by developers on *SfePy* releases
-with Python 2.7/3.6 64-bit on Ubuntu 14.04 LTS, Windows 8.1+ and macOS 10.12+.)
+with Python 2.7/3.6 64-bit on Ubuntu 16.04 LTS, Windows 8.1+ and macOS 10.12+.)
 
 Download appropriate `Anaconda`_ Python 2.7 or 3.x installer package and follow
 install instructions. We recommend to choose *user-level* install option (no
@@ -322,7 +322,7 @@ Anaconda can be used for:
      conda search sfepy --channel conda-forge
 
 #. installing the *SfePy* dependencies only - then proceed with the
-   :ref:`_install_from_sources` instructions.
+   :ref:`installing_from_sources` instructions.
 
    In this case, install the missing/required packages using built-in `conda`
    package manager::
@@ -384,26 +384,25 @@ Debian
 
 (Old instructions, check also `(K)Ubuntu`_ below.)
 
-First, you have to install the dependencies packages (if `aptitude` is not
-installed, install it or try `apt-get install` instead)::
+First, you have to install the dependencies packages::
 
-    aptitude install python-tables python-pyparsing python-matplotlib python-scipy
+    apt-get install python-tables python-pyparsing python-matplotlib python-scipy
 
 Than *SfePy* can be installed with::
 
-   aptitude install python-sfepy
+   apt-get install python-sfepy
 
 (K)Ubuntu
 ^^^^^^^^^
 
-(Tested on Ubuntu 14.04 LTS, 14.10 abd Kubuntu 14.10.)
+(Tested on Kubuntu 16.04 LTS.)
 
-First, you have to install the dependencies packages (if `aptitude` is not
+First, you have to install the dependencies packages (if `apt-get` is not
 installed, install it or try `apt-get install` instead)::
 
-    sudo aptitude install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools mayavi2 python-dev ipython python-sympy cython python-sparse
+    sudo apt-get install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools mayavi2 python-dev ipython python-sympy cython python-sparse
 
 Than *SfePy* can be installed with::
 
-   aptitude install python-sfepy
+   apt-get install python-sfepy
 

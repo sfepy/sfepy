@@ -40,7 +40,7 @@
 .. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
 .. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
-.. _WinPython: http://http://winpython.sourceforge.net/
+.. _WinPython: https://winpython.github.io/
 
 .. _cython: http://cython.org
 .. _pytables: http://www.pytables.org
