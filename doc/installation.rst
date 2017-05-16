@@ -343,8 +343,8 @@ or try::
   conda update --all
 
 
-Compilation of C Extension Modules
-""""""""""""""""""""""""""""""""""
+Compilation of C Extension Modules on Windows
+"""""""""""""""""""""""""""""""""""""""""""""
 
 To build *SfePy* extension modules, included `mingw-w32/64`_ compiler tools
 should work fine. If you encounter any problems, we recommend to install and
