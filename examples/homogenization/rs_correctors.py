@@ -245,6 +245,8 @@ coordinates of the mesh nodes.
 ['q'/other key to quit/continue...]""")
     req = conf.requirements['pis']
     mini_app = cb.ShapeDimDim('pis', problem, req)
+    mini_app.setup_output(save_format='vtk',
+                          file_per_var=False)
     pis = mini_app()
     print(pis)
     spause(r""">>>

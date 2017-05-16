@@ -233,6 +233,9 @@ class ShapeDimDim(CorrMiniApp):
         corr_sol = CorrSolution(name=self.name,
                                 states=pis,
                                 components=clist)
+        self.save(corr_sol, problem,
+                  variables=problem.create_variables([self.variables[0]]))
+
         return corr_sol
 
 class ShapeDim(CorrMiniApp):
