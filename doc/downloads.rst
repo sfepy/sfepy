@@ -1,12 +1,21 @@
+.. include:: links.inc
+
 Downloads
 =========
 
 See :ref:`introduction_installation` for additional information.
 
+Pre-build  packages:
+--------------------
+
+Pre-build *SfePy* packages for `Anaconda`_ Python distribution are available
+from `conda-forge`_ channel for all supported platforms.
+
+
 Sources:
 --------
 
-`latest and previous releases <_static/downloads.php>`_
+`Latest and previous releases <_static/downloads.php>`_.
 
 
 Git repository:
