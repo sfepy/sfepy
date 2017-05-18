@@ -28,7 +28,7 @@
 
 .. _SciPy: http://www.scipy.org
 .. _NumPy: http://www.numpy.org
-.. _scikit-umfpack: http://rc.github.io/scikit-umfpack
+.. _scikit-umfpack: https://github.com/scikit-umfpack/scikit-umfpack
 .. _sparse matrix: http://docs.scipy.org/doc/scipy/reference/sparse.html
 .. _numpy documentation guide: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
@@ -37,17 +37,18 @@
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 .. _continuum analytics: http://www.continuum.io/
 .. _conda-forge: https://conda-forge.github.io/
+.. _Pre-built *SfePy* packages: https://anaconda.org/conda-forge/sfepy
 .. _sfepy-feedstock: https://github.com/conda-forge/sfepy-feedstock
 .. _enthought canopy: https://www.enthought.com/products/canopy/
 .. _epd: http://www.enthought.com/products/epd.php
-.. _python(x,y): http://code.google.com/p/pythonxy
-.. _WinPython: http://http://winpython.sourceforge.net/
+.. _WinPython: https://winpython.github.io/
 
 .. _cython: http://cython.org
 .. _pytables: http://www.pytables.org
 .. _sympy: http://sympy.org
 .. _ipython: http://ipython.org
 .. _pyparsing: http://sourceforge.net/projects/pyparsing
+.. _umfpack: http://faculty.cse.tamu.edu/davis/suitesparse.html
 .. _umfpackpy: http://code.google.com/p/umfpackpy
 .. _gmsh: http://gmsh.info
 .. _gmsh reference manual: http://gmsh.info/doc/texinfo/gmsh.html
@@ -61,8 +62,10 @@
 .. _PETSc: https://www.mcs.anl.gov/petsc
 .. _SLEPc: http://slepc.upv.es
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
+.. _Metis: http://glaros.dtc.umn.edu/gkhome/views/metis
 .. _pymetis: http://mathema.tician.de/software/pymetis
 .. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
+.. _wxPython: https://wxpython.org/
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
@@ -71,7 +74,7 @@
 .. _gitwash: http://github.com/matthew-brett/gitwash
 .. _numpy gitwash: http://docs.scipy.org/doc/numpy/dev/gitwash
 .. _tbaggery.com: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
-.. _msysgit: http://code.google.com/p/msysgit
+.. _msysgit: https://git-for-windows.github.io/
 
 .. _sphinx: http://sphinx.pocoo.org
 .. _restructuredtext primer: http://sphinx.pocoo.org/rest.html
@@ -79,6 +82,11 @@
 .. _docutils restructuredtext: http://docutils.sourceforge.net/rst.html
 
 .. _tex live: http://www.tug.org/texlive
+.. _LaTeX: http://www.latex-project.org/
+
+.. _Visual C++ Build Tools: http://landinghub.visualstudio.com/visual-cpp-build-tools
+.. _Anaconda FAQ: https://docs.continuum.io/anaconda/faq#how-is-cpython-compiled
+.. _mingw-w32/64: https://mingw-w64.org/doku.php
 
 .. _new bsd license: http://www.opensource.org/licenses/bsd-license.php
 
