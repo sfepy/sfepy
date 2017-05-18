@@ -5,10 +5,10 @@ Downloads
 
 See :ref:`introduction_installation` for additional information.
 
-Pre-build  packages:
+Pre-built  packages:
 --------------------
 
-Pre-build *SfePy* packages for `Anaconda`_ Python distribution are available
+Pre-built *SfePy* packages for `Anaconda`_ Python distribution are available
 from `conda-forge`_ channel for all supported platforms. (See
 :ref:`multi_platform_distributions_notes` for further details.)
 

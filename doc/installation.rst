@@ -92,7 +92,7 @@ the following distributions to use:
 
 On any supported platform we could recommend `Anaconda`_ distribution as
 easy-to-use, stable and up-to-date Python distribution with all the
-required dependencies (including pre-build `sfepy` package).
+required dependencies (including pre-built `sfepy` package).
 
 Note: all *SfePy* releases are regularly tested on recent Linux distributions
 (Debian and (K)Ubuntu) using OS Python installation and Anaconda, macOS 10.12+
@@ -104,7 +104,7 @@ Installing SfePy
 ----------------
 
 For `Anaconda`_ and `.deb` based Linux distributions (Debian, (K)Ubuntu),
-pre-build *SfePy* packages are available. You may directly install them with:
+pre-built *SfePy* packages are available. You may directly install them with:
 
 - `Anaconda`_ distribution: install `sfepy` from `conda-forge`_ channel::
 
