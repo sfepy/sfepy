@@ -1,5 +1,186 @@
 # created: 20.07.2007 (-1)
 
+.. _2017.1-2017.2:
+
+from 2017.1 to 2017.2
+=====================
+
+- merge pull request #369 from rc/fix-variable-history-advance
+
+  - initialize history of variables in get_initial_state()
+
+    - update make_implicit_step()
+    - update SimpleTimeSteppingSolver, AdaptiveTimeSteppingSolver
+
+  - fix Variable.advance() to initialize current step data
+
+- merge pull request #370 from heczis/master
+
+  - remove the unused method Problem.init_variables
+
+- merge pull request #368 from vlukes/update_homogen
+
+  - update: simplified and unified implementation of some homogenized
+    coefficients
+  - fix the homogenization example: perfusion_micro.py
+
+- merge pull request #372 from vlukes/fix_material_shape_change
+
+  - fix changing of the material shape
+
+- merge pull request #373 from vlukes/piezo_strain
+
+  - new PiezoStrainTerm
+  - update piezo-elasticity example
+
+- merge pull request #376 from vlukes/fix_truncation
+
+  - fix: avoid number truncation in region definitions
+
+- merge branch 'docs-main-page'
+
+  - update support section
+  - remove link to obsolete wiki pages
+  - add link to anaconda installation instructions to main page
+
+- merge branch 'fix-vtk-source-mayavi-4.4', closes #292
+
+  - update VTKMeshIO.read_data() to read cell data, small tweaks
+  - fix GenericFileSource._reshape() for single-axis data
+  - fix GenericSequenceFileSource
+
+    - update .read_common()
+    - remove .create_source()
+    - new .file_changed()
+    - initialize .io in GenericFileSource.__init__()
+
+  - update create_file_source() to work around a Mayavi 4.4.x issue
+
+- merge branch 'fix-coefs-to-latex'
+
+  - fix Coefficients._save_dict_latex() for scalars and general data
+  - clean up: raise exception with message
+
+- merge pull request #377 from rc/fix-variable-state-data-sharing
+
+  - fix data copying in Variable.advance() - bad interaction with State
+
+- merge pull request #380 from heczis/fix_doc_python3
+
+  - fix things to be compatible with both python 2 and 3
+
+- merge branch 'term-report-missing-virtual'
+
+  - new Term.get_str()
+  - use Term.get_str() in Term, Equations
+  - update Term.evaluate() to report missing virtual variable in 'weak' mode
+
+- merge pull request #383 from vlukes/update_homog_doc
+
+  - update homogenization examples, add references
+
+- merge pull request #385 from vlukes/change_shape_ev_grad
+
+  - change the shape of the gradient array provided by 'ev_grad', now: (n_el,
+    n_qp, dim, n_c)
+
+- merge pull request #386 from vlukes/replace_copydata_corr
+
+  - replace corrector CopyData by the more general one with name CorrEval
+
+- merge pull request #388 from vlukes/fix_meshio_msh
+
+  - fix Msh2MeshIO.read() to discard '2_2' elements
+
+- merge pull request #390 from rc/docs-sfepy-at-python-org
+
+  - docs: update for sfepy(at)python.org
+
+- merge pull request #391 from rc/fix-project-by-component
+
+  - fix project_by_component() for general tensor shape
+  - new test_project_tensors()
+
+- merge branch 'fix-ansys-cdb'
+
+  - fix ANSYSCDBMeshIO.read(), convert tetras as degenerate hexas to tetras
+  - new look_ahead_line()
+  - update ANSYSCDBMeshIO.read() to determine true number of fields
+
+    - fixes reading files with wrong nblock/eblock information
+    - update make_format()
+
+  - fix remapping of nodal bcs in ANSYSCDBMeshIO.read() for qtetras, qhexas
+
+- merge branch 'misc-updates'
+
+  - copying subclasses of problem
+  - numpy compatibility
+  - problem.make_full_vec accept vec argument.
+  - new Container.__add__(), .__iadd__(), test_container_add()
+  - update Viewer.build_mlab_pipeline() to add mat_id to source if not filtered
+
+- merge pull request #375 from {lokik,rc}/save-custom-data-to-hdf5
+
+  - saving custom structured data to h5 file in problem.save_state
+  - ioutils.enc and ioutils.dec utf strings compatibility
+  - HDF5ContextManager
+  - IGDomain reading and writing from HDF5 file
+  - asserting equality of complex structures
+  - HDF5 reading and writing
+  - faster assert_equals.
+  - default mesh argument for HDF5MeshIo.read()
+  - storing data to hd5 using softlinks.
+  - clean up iga/domain.py, iga/io.py
+  - clean up and reorganize HDF5MeshIO
+  - clean up ioutils.py, reorganize new functions/classes
+  - move assert_equals() into TestCommon.assert_equal(), update
+  - clean up and update test_hdf5_meshio()
+
+- merge branch 'docs-devel-page'
+
+  - update development tab, new topics section
+  - update copyright info
+  - add more topics to development tab
+
+- merge pull request #393 from heczis/fix_generators_next
+
+  - fix generators' next method calls in script/gen_gallery.py
+  - fix generators' next method calls in sfepy/base/log.py
+  - fix generators' next method calls in sfepy/application/application.py
+
+- merge branch 'band-gaps-ranges'
+
+  - new get_gap_ranges(), use in BandGaps.__call__()
+  - simplify plot_gap() by using gap_ranges, move text output to plot_gaps() -
+    update AcousticBandGapsApp.plot_band_gaps(), .plot_dispersion(), use tight
+    layout
+  - fix plot resources for matplotlib >= 1.5.1
+
+- merge pull request #398 from vlukes/tutorial_preproc
+
+  - new tutorial: preparing meshes using FreeCAD/OpenSCAD and Gmsh
+  - new "merge" option in `convert_mesh.py` - remove duplicate vertices
+
+- merge pull request #400 from vlukes/update_homog
+
+  - update homogenization to allow saving "pi" correctors
+
+- merge pull request #397 from BubuLK/doc-install, closes #366, #382
+
+  - updated Install doc: - issue #382 - issue #366 (?) - other misc doc cleanup
+  - doc cleanup - bugfixes - updates according to PR comments - updated
+    sections structure
+  - updated and re-structured install doc
+  - updated Anaconda instructions
+  - add link to conda-forge on downloads page
+  - add link to install doc
+  - add direct link conda-forge SfePy packages
+
+- miscellaneous updates:
+
+  - update mailing lists addresses in release tasks
+
 .. _2016.4-2017.1:
 
 from 2016.4 to 2017.1
