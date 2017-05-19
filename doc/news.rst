@@ -1,6 +1,11 @@
 News
 ====
 
+* **19.05.2017** Version 2017.2 released (simplified and unified implementation
+  of some homogenized coefficients, support for saving custom structured data to
+  HDF5 files, new tutorial on preparing meshes using FreeCAD/OpenSCAD and Gmsh,
+  etc.), see :ref:`release notes <2017.1-2017.2>`.
+
 * **28.02.2017** Version 2017.1 released (spline-box parametrization of an
   arbitrary field, conda-forge recipe, fixes for Python 3.6,
   etc.), see :ref:`release notes <2016.4-2017.1>`.
@@ -19,10 +24,5 @@ News
   implementation, parallel computation of homogenized coefficients, clean up of
   elastic terms, read support for msh mesh file format of gmsh, etc.), see
   :ref:`release notes <2016.1-2016.2>`.
-
-* **24.02.2016** Version 2016.1 released (major simplification of finite
-  element field code, automatic checking of shapes of term arguments, improved
-  mesh parametrization code and documentation, support for fieldsplit
-  preconditioners of PETSc, etc.), see :ref:`release notes <2015.4-2016.1>`.
 
 For historians: see :ref:`archived_news`.

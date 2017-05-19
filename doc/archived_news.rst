@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **24.02.2016** Version 2016.1 released (major simplification of finite
+  element field code, automatic checking of shapes of term arguments, improved
+  mesh parametrization code and documentation, support for fieldsplit
+  preconditioners of PETSc, etc.), see :ref:`release notes <2015.4-2016.1>`.
+
 * **01.12.2015** Version 2015.4 released (basic support for restart files,
   new type of linear combination boundary conditions, balloon inflation
   example, etc.), see :ref:`release notes <2015.3-2015.4>`.
