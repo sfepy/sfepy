@@ -69,7 +69,7 @@ Sneak peek: what is going on under the hood
 #. The solution is then obtained by calling ``problem.solve()``
    function.
 
-#. Finally, the solution can be stored using ``problem.save_state()``
+#. Finally, the solution can be stored using ``problem.save_state()``.
 
 The above last three steps are essentially repeated for each time
 step. So that is it - using the code a black-box PDE solver shields the
@@ -104,10 +104,10 @@ This section introduces the basics of running *SfePy* on the command line. The
 
   * ``examples/diffusion/poisson_short_syntax.py`` is the *SfePy*
     *problem description* file, which defines the problem to be solved
-    in terms *SfePy* can understand
+    in terms *SfePy* can understand.
 
   * Running the above command creates the output file ``cylinder.vtk`` in the
-    *SfePy* top-level directory
+    *SfePy* top-level directory.
 
 * *SfePy* can also be invoked interactively using `IPython`_ with custom
   imports, as described in :ref:`using-ipython`. In the SfePy top-level
@@ -136,13 +136,14 @@ Postprocessing the results
    :width: 70 %
    :align: center
 
-* The left mouse button by itself orbits the 3D view
+* The left mouse button by itself orbits the 3D view.
 
-* Holding shift and the left mouse button pans the view
+* Holding shift and the left mouse button pans the view.
 
-* Holding control and the left mouse button rotates about the screen normal axis
+* Holding control and the left mouse button rotates about the screen normal
+    axis.
 
-* The right mouse button controls the zoom
+* The right mouse button controls the zoom.
 
 .. _poisson-example-tutorial:
 
@@ -393,7 +394,7 @@ insight about the object internals.
 The whole example summarized in a script is below in
 :ref:`tutorial_interactive_source`.
 
-In the SfePy top-level directory, run::
+In the *SfePy* top-level directory, run::
 
     $ ipython --profile=sfepy
 
