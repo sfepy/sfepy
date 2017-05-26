@@ -189,7 +189,7 @@ void sfd2(float64* H, float64* dH, float64 r) {
 */
 #undef __FUNC__
 #define __FUNC__ "assembleContactResidualAndStiffness"
-void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, int keyContactDetection, int keyAssembleKc)
+void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows, int32* cols, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, int keyContactDetection, int keyAssembleKc)
 {
   int i, j, k, g, sdf, pdf;
   int col;
@@ -210,8 +210,6 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, flo
 
   int len_guess = *len;
   *len = 0;
-
-  int n_seg = GPs_len / ngp;
 
   float64 Xp[3];
   float64 Xg[3];
@@ -400,37 +398,61 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* Kc, int* len, flo
 
 	  C_s[j*nsd + sdf] += hs*normal[sdf];
 	  C_m[j*nsd + sdf] -= hm*normal[sdf];
-	  //Gc[segmentNodesIDs[j] * nsd + sdf] -= epss*GAPs[g] * hs*normal[sdf] * gw[g] * jacobian;
-	  Gc[ (i+g)*(j*nsd + sdf) + i/ngp] -= epss*GAPs[g] * hs*normal[sdf] * gw[g] * jacobian;
-
+	  Gc[segmentNodesIDs[j] * nsd + sdf] -= epss*GAPs[g] * hs*normal[sdf] * gw[g] * jacobian;
 	}
       }
 
       if(keyAssembleKc) {
+	//if (i < 0.5*GPs_len) {
 	for (j = 0; j < nsn*nsd; ++j) { // loop over cols
 	  for (k = 0; k < nsn*nsd; ++k) { // loop over rows
-	    // Kc structure:
-	    // Kc_e = [C_m*C_m'  C_m*C_s'
-	    //         C_s*C_m'  C_s*C_s'];
-	    // dimeze: [(nsn*nsd)*(nsn*nsd)  (nsn*nsd)*(nsn*nsd)
-	    //          (nsn*nsd)*(nsn*nsd)  (nsn*nsd)*(nsn*nsd)];
 
-	    //[sgs,els]
-	    //[sgm,elm]
-	    Kc[(i+g)*2*nsn*nsd*k           + (i+g)*j           + i/ngp] = 0.5 * C_m[j] * C_m[k] * gw[g] * jacobian;
-	    Kc[(i+g)*2*nsn*nsd*k           + (i+g)*(nsn*nsd+j) + i/ngp] = 0.5 * C_s[j] * C_m[k] * gw[g] * jacobian;
-	    Kc[(i+g)*2*nsn*nsd*(nsn*nsd+k) + (i+g)*j           + i/ngp] = 0.5 * C_m[j] * C_s[k] * gw[g] * jacobian;
-	    Kc[(i+g)*2*nsn*nsd*(nsn*nsd+k) + (i+g)*(nsn*nsd+j) + i/ngp] = 0.5 * C_s[j] * C_s[k] * gw[g] * jacobian;
+	    const int jdof = j%nsd;
+	    const int jnode = (j - jdof) / nsd; // row node
+
+	    const int kdof = k%nsd;
+	    const int knode = (k - kdof) / nsd; // col node
+
+	    if(fabs(C_m[j] * C_m[k]) > 1e-50) {
+	      cols[*len] = segmentNodesIDm[jnode] * nsd + jdof + 1;
+	      rows[*len] = segmentNodesIDm[knode] * nsd + kdof + 1;
+	      vals[*len] = 0.5 * C_m[j] * C_m[k] * gw[g] * jacobian;
+	      (*len)++;
+	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
+	    }
+
+	    if(fabs(C_s[j] * C_m[k]) > 1e-50) {
+	      cols[*len] = segmentNodesIDs[jnode] * nsd + jdof + 1;
+	      rows[*len] = segmentNodesIDm[knode] * nsd + kdof + 1;
+	      vals[*len] = 0.5 * C_s[j] * C_m[k] * gw[g] * jacobian;
+	      (*len)++;
+	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
+	    }
+
+	    if(fabs(C_m[j] * C_s[k]) > 1e-50) {
+	      cols[*len] = segmentNodesIDm[jnode] * nsd + jdof + 1;
+	      rows[*len] = segmentNodesIDs[knode] * nsd + kdof + 1;
+	      vals[*len] = 0.5 * C_m[j] * C_s[k] * gw[g] * jacobian;
+	      (*len)++;
+	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
+	    }
+
+	    if(fabs(C_s[j] * C_s[k]) > 1e-50) {
+	      cols[*len] = segmentNodesIDs[jnode] * nsd + jdof + 1;
+	      rows[*len] = segmentNodesIDs[knode] * nsd + kdof + 1;
+	      vals[*len] = 0.5 * C_s[j] * C_s[k] * gw[g] * jacobian;
+	      (*len)++;
+	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
+	    }
 	  }
 	}
       }
-
       // Fill C_m array by zeros:
       for (j = 0; j < nsn*nsd; ++j) {
 	C_s[j] = 0.0;
 	C_m[j] = 0.0;
       }
-
+      //}
     } // loop over gausspoints
   } // loop over GPs rows
 
