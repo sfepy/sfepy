@@ -30,7 +30,8 @@ cdef extern from 'contres.h':
                                        float64 longestEdge)
      cdef void _assembleContactResidualAndStiffness \
           'assembleContactResidualAndStiffness'(
-          float64* Gc, float64* Kc, int* len, float64* GPs, int32* ISN,
+          float64* Gc, float64* vals, int32* rows, int32* cols,
+          int* len, float64* GPs, int32* ISN,
           int32* IEN, float64* X, float64* U, float64* H, float64* dH,
           float64* gw, float64* activeGPsOld, int neq, int nsd, int npd,
           int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss,
@@ -180,7 +181,9 @@ def evaluate_contact_constraints(
 
 def assemble_contact_residual_and_stiffness(
     np.ndarray[float64, mode='fortran', ndim=2] Gc not None,
-    np.ndarray[float64, mode='fortran', ndim=3] Kc not None,
+    np.ndarray[float64, mode='c', ndim=1] vals not None,
+    np.ndarray[int32, mode='c', ndim=1] rows not None,
+    np.ndarray[int32, mode='c', ndim=1] cols not None,
     np.ndarray[float64, mode='fortran', ndim=2] GPs not None,
     np.ndarray[int32, mode='c', ndim=2] ISN not None,
     np.ndarray[int32, mode='c', ndim=2] IEN not None,
@@ -196,7 +199,7 @@ def assemble_contact_residual_and_stiffness(
     int keyContactDetection,
     int keyAssembleKc,
     ):
-    cdef int tmp
+    cdef int num
     cdef int nsd, ngp, nsn, nes, nen, GPs_len
 
     GPs_len = GPs.shape[0]
@@ -206,7 +209,8 @@ def assemble_contact_residual_and_stiffness(
     nes = ISN.shape[1]
     nen = IEN.shape[1]
 
-    _assembleContactResidualAndStiffness(&Gc[0, 0], &Kc[0, 0, 0], &tmp,
+    _assembleContactResidualAndStiffness(&Gc[0, 0],
+                                         &vals[0], &rows[0], &cols[0], &num,
                                          &GPs[0, 0],
                                          &ISN[0, 0], &IEN[0, 0], &X[0, 0],
                                          &Um[0, 0], &H[0, 0], &dH[0, 0],
@@ -215,4 +219,4 @@ def assemble_contact_residual_and_stiffness(
                                          GPs_len, epss,
                                          keyContactDetection, keyAssembleKc)
 
-    return Gc, Kc, GPs
+    return Gc, vals, rows, cols, num
