@@ -180,7 +180,7 @@ def evaluate_contact_constraints(
     return GPs
 
 def assemble_contact_residual_and_stiffness(
-    np.ndarray[float64, mode='fortran', ndim=2] Gc not None,
+    np.ndarray[float64, mode='c', ndim=1] Gc not None,
     np.ndarray[float64, mode='c', ndim=1] vals not None,
     np.ndarray[int32, mode='c', ndim=1] rows not None,
     np.ndarray[int32, mode='c', ndim=1] cols not None,
@@ -209,7 +209,7 @@ def assemble_contact_residual_and_stiffness(
     nes = ISN.shape[1]
     nen = IEN.shape[1]
 
-    _assembleContactResidualAndStiffness(&Gc[0, 0],
+    _assembleContactResidualAndStiffness(&Gc[0],
                                          &vals[0], &rows[0], &cols[0], &num,
                                          &GPs[0, 0],
                                          &ISN[0, 0], &IEN[0, 0], &X[0, 0],
