@@ -73,6 +73,7 @@ class Test(TestCommon):
                      'cells of group 6 +c vertices by fn2_3c',
                      """r.Y_1 *v (r.Y_2 +c (vertices in (y > 0) *v r.Y_32))
                         -v vertices of surface -c r.Y_5""",
+                     'copy r.ab2-b-c +v r.d12-23',
                      'vertices by afun',
                      'vertex in r.Gamma_3',
                      'vertex 10',

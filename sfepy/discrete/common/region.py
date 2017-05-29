@@ -8,7 +8,7 @@ from sfepy.base.base import assert_, Struct
 import six
 from six.moves import range
 
-_depends = re.compile('r\.([a-zA-Z_0-9.]+)').findall
+_depends = re.compile('r\.([a-zA-Z_\-0-9.]+)').findall
 
 def get_parents(selector):
     """
