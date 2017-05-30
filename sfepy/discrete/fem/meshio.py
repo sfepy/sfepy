@@ -1276,10 +1276,10 @@ class HDF5MeshIO(MeshIO):
             mat_ids = []
             for ig in range(n_gr):
                 gr_name = 'group%d' % ig
-                group = group._f_get_child(gr_name)
-                conns.append(group.conn.read())
-                mat_ids.append(group.mat_id.read())
-                descs.append(dec(group.desc.read()))
+                conn_group = group._f_get_child(gr_name)
+                conns.append(conn_group.conn.read())
+                mat_ids.append(conn_group.mat_id.read())
+                descs.append(dec(conn_group.desc.read()))
 
             nodal_bcs = {}
             try:
