@@ -420,12 +420,13 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
         dof_maps = id_map = None
 
     if verbose:
+        output('field %s:' % field.name)
         output('n_cell:', n_cell)
         output('cells:', cells)
         output('owned petsc DOF range:', petsc_dofs_range,
                petsc_dofs_range[1] - petsc_dofs_range[0])
         aux = nm.unique(petsc_dofs_conn)
-        output('local petsc DOFs (owned + shared):', aux, len(aux))
+        output('%d local petsc DOFs (owned + shared):' % len(aux), aux)
 
     return cells, petsc_dofs_range, petsc_dofs_conn, dof_maps, id_map
 
@@ -565,14 +566,15 @@ def setup_composite_dofs(lfds, fields, local_variables, verbose=False):
         lfd.petsc_dofs = get_local_ordering(variable.field,
                                             lfd.petsc_dofs_conn,
                                             use_expand_dofs=True)
-        output('petsc dofs:', lfd.petsc_dofs, verbose=verbose)
+        output('%d petsc dofs:' % len(lfd.petsc_dofs), lfd.petsc_dofs,
+               verbose=verbose)
 
     sizes, drange = get_composite_sizes(lfds)
     output('composite sizes:', sizes, verbose=verbose)
     output('composite drange:', drange, verbose=verbose)
 
     pdofs = nm.concatenate([ii.petsc_dofs for ii in lfds])
-    output('composite pdofs:', pdofs, verbose=verbose)
+    output('%d composite pdofs:' % len(pdofs), pdofs, verbose=verbose)
 
     return sizes, drange, pdofs
 
@@ -674,7 +676,8 @@ def create_prealloc_data(mtx, pdofs, drange, verbose=False):
     """
     owned_dofs = nm.where((pdofs >= drange[0]) & (pdofs < drange[1]))[0]
     owned_dofs = owned_dofs.astype(nm.int32)
-    output('owned local DOFs:', owned_dofs, verbose=verbose)
+    output('%d owned local DOFs:' % len(owned_dofs), owned_dofs,
+           verbose=verbose)
 
     ii = nm.argsort(pdofs[owned_dofs])
     aux = mtx[owned_dofs[ii]]
