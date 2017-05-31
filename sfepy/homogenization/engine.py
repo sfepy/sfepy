@@ -301,28 +301,28 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
 
         dependencies = multiproc.get_dict('dependecies', clear=True)
         sd_names = multiproc.get_dict('sd_names', clear=True)
-        numdeps = multiproc.get_list('numdeps', clear=True)
+        numdeps = multiproc.get_dict('numdeps', clear=True)
         remaining = multiproc.get_int_value('remaining', len(sorted_names))
         tasks = multiproc.get_queue('tasts')
         lock = multiproc.get_lock('lock')
 
         # calculate number of dependencies and inverse map
         inverse_deps = {}
-        for ii, name in enumerate(sorted_names):
+        for name in sorted_names:
             if name.startswith('c.'):
                 reqs = coef_info[name[2:]].get('requires', [])
             else:
                 reqs = req_info[name].get('requires', [])
-            numdeps.append(len(reqs))
+            numdeps[name] = len(reqs)
             if len(reqs) > 0:
                 for req in reqs:
                     if req in inverse_deps:
-                        inverse_deps[req].append((ii, name))
+                        inverse_deps[req].append(name)
                     else:
-                        inverse_deps[req] = [(ii, name)]
+                        inverse_deps[req] = [name]
 
-        for ii, name in enumerate(sorted_names):
-            if numdeps[ii] == 0:
+        for name in sorted_names:
+            if numdeps[name] == 0:
                 tasks.put(name)
 
         workers = []
@@ -362,7 +362,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             variables.
         remaining : int
             The number of remaining requirements.
-        numdeps : list
+        numdeps : dict
             The number of dependencies for the each requirement.
         inverse_deps : dict
             The inverse dependencies - which requirements depend
@@ -385,9 +385,9 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             dependencies[name] = val
             remaining.value -= 1
             if name in inverse_deps:
-                for ii, iname in inverse_deps[name]:
-                    numdeps[ii] -= 1  # iname depends on name
-                    if numdeps[ii] == 0:  # computed all direct dependecies?
+                for iname in inverse_deps[name]:
+                    numdeps[iname] -= 1  # iname depends on name
+                    if numdeps[iname] == 0:  # computed all direct dependecies?
                         tasks.put(iname)  # yes, put iname to queue
 
             sd_names.update(sd_names_loc)
