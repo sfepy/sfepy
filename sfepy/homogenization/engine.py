@@ -14,6 +14,7 @@ try:
 except ImportError:
     import Queue as queue
 
+
 def insert_sub_reqs(reqs, levels, req_info):
     """Recursively build all requirements in correct order."""
     all_reqs = []
@@ -42,12 +43,15 @@ def insert_sub_reqs(reqs, levels, req_info):
 
     return all_reqs
 
+
 def get_dict_idxval(dict_array, idx):
     return {k: v[idx] for k, v in six.iteritems(dict_array)}
+
 
 def rm_multi(s):
     idx = s.rfind('|multiprocessing_')
     return s[:idx] if idx > 0 else s
+
 
 class CoefVolume(MiniAppBase):
     def __call__(self, volume, problem=None, data=None):
@@ -107,12 +111,12 @@ class HomogenizationWorker(object):
     def calculate(mini_app, problem, dependencies, dep_requires,
                   sd_names, micro_coors, chunk_tab, mode, proc_id):
         if micro_coors is None:
-            data = {key: dependencies[key] for key in dep_requires\
-                if 'Volume_' not in key}
-            volume = {key[9:]: dependencies[key]\
-                for key in dep_requires if 'Volume_' in key}
-            mini_app.requires = [ii for ii in mini_app.requires\
-                if 'c.Volume_' not in ii]
+            data = {key: dependencies[key] for key in dep_requires
+                    if 'Volume_' not in key}
+            volume = {key[9:]: dependencies[key]
+                      for key in dep_requires if 'Volume_' in key}
+            mini_app.requires = [ii for ii in mini_app.requires
+                                 if 'c.Volume_' not in ii]
 
             if mode == 'coefs':
                 val = mini_app(volume, data=data)
@@ -125,15 +129,15 @@ class HomogenizationWorker(object):
                         mini_app.get_dump_name_base()
                 val = mini_app(data=data)
         else:
-            data = {rm_multi(key): dependencies[key]\
-                for key in dep_requires if 'Volume_' not in key}
-            volume = {rm_multi(key[9:]): dependencies[key]\
-                for key in dep_requires if 'Volume_' in key}
-            mini_app.requires = [ii for ii in mini_app.requires\
-                if 'c.Volume_' not in ii]
+            data = {rm_multi(key): dependencies[key]
+                    for key in dep_requires if 'Volume_' not in key}
+            volume = {rm_multi(key[9:]): dependencies[key]
+                      for key in dep_requires if 'Volume_' in key}
+            mini_app.requires = [ii for ii in mini_app.requires
+                                 if 'c.Volume_' not in ii]
 
             if '|multiprocessing_' in mini_app.name\
-                and chunk_tab is not None:
+                    and chunk_tab is not None:
                 chunk_id = int(mini_app.name[-3:])
                 chunk_tag = '-%d' % (chunk_id + 1)
                 micro_coors = micro_coors[chunk_tab[chunk_id]]
@@ -141,29 +145,29 @@ class HomogenizationWorker(object):
                 chunk_tag = ''
 
             val = []
-            if hasattr(mini_app, 'store_idxs') and mode=='reqs':
+            if hasattr(mini_app, 'store_idxs') and mode == 'reqs':
                 save_name = mini_app.save_name
                 dump_name = mini_app.dump_name
 
             for im in range(micro_coors.shape[0]):
-                output('== micro %s%s-%d =='\
-                    % (proc_id, chunk_tag, im + 1))
+                output('== micro %s%s-%d =='
+                       % (proc_id, chunk_tag, im + 1))
                 problem.set_mesh_coors(micro_coors[im], update_fields=True,
                                        clear_all=False, actual=True)
 
-                if mode=='coefs':
+                if mode == 'coefs':
                     val.append(mini_app(get_dict_idxval(volume, im),
                                         data=get_dict_idxval(data, im)))
                 else:
-                    if hasattr(mini_app, 'store_idxs') and\
-                        im in mini_app.store_idxs[0]:
+                    if hasattr(mini_app, 'store_idxs')\
+                            and im in mini_app.store_idxs[0]:
                         store_id = '_%04d'\
                             % (mini_app.store_idxs[1] + im)
                         if save_name is not None:
                             mini_app.save_name = save_name + store_id
                             key = 's.' + mini_app.name
                             if key in sd_names:
-                                sd_names[key].append(\
+                                sd_names[key].append(
                                     mini_app.get_save_name_base())
                             else:
                                 sd_names[key] =\
@@ -172,7 +176,7 @@ class HomogenizationWorker(object):
                             mini_app.dump_name = dump_name + store_id
                             key = 'd.' + mini_app.name
                             if key in sd_names:
-                                sd_names[key].append(\
+                                sd_names[key].append(
                                     mini_app.get_dump_name_base())
                             else:
                                 sd_names[key] =\
@@ -361,13 +365,14 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         numdeps : list
             The number of dependencies for the each requirement.
         inverse_deps : dict
-            The inverse dependencies - which requirements depend on a given one.
+            The inverse dependencies - which requirements depend
+            on a given one.
 
         For the definition of other parameters see 'calculate_req'.
         """
         while remaining.value > 0:
             try:
-                name = tasks.get(False, 0.01) # get (or wait for) a task
+                name = tasks.get(False, 0.01)  # get (or wait for) a task
             except queue.Empty:
                 break
 
@@ -381,8 +386,8 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             remaining.value -= 1
             if name in inverse_deps:
                 for ii, iname in inverse_deps[name]:
-                    numdeps[ii] -= 1 # iname depends on name
-                    if numdeps[ii] == 0: # computed all direct dependecies?
+                    numdeps[ii] -= 1  # iname depends on name
+                    if numdeps[ii] == 0:  # computed all direct dependecies?
                         tasks.put(iname)  # yes, put iname to queue
 
             sd_names.update(sd_names_loc)
@@ -453,8 +458,8 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             chunk_end = num_micro if jj > num_micro else jj
             micro_tab.append(slice(ii, chunk_end))
             if len(store_micro_idxs) > 0:
-                store_idxs.append(([k - ii for k in store_micro_idxs\
-                    if k >= ii and k < jj], ii))
+                store_idxs.append(([k - ii for k in store_micro_idxs
+                                    if k >= ii and k < jj], ii))
 
         nw = len(micro_tab)
         self = HomogenizationWorkerMulti
