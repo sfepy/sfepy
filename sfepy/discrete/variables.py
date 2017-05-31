@@ -497,7 +497,7 @@ class Variables(Container):
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
-    def strip_state_vector(self, vec, follow_epbc=False, svec = None):
+    def strip_state_vector(self, vec, follow_epbc=False, svec=None):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
