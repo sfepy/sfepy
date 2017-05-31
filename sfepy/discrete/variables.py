@@ -497,7 +497,7 @@ class Variables(Container):
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
-    def strip_state_vector(self, vec, follow_epbc=False):
+    def strip_state_vector(self, vec, follow_epbc=False, svec=None):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
@@ -508,7 +508,8 @@ class Variables(Container):
         assembling. For vectors with state (unknown) variables it should be set
         to False, for assembled vectors it should be set to True.
         """
-        svec = nm.empty((self.adi.ptr[-1],), dtype=self.dtype)
+        if svec is None:
+            svec = nm.empty((self.adi.ptr[-1],), dtype=self.dtype)
         for var in self.iter_state():
             aindx = self.adi.indx[var.name]
             svec[aindx] = var.get_reduced(vec, self.di.indx[var.name].start,
