@@ -196,9 +196,12 @@ def solve_problem(mesh_filename, options, comm):
     else:
         cell_tasks = None
 
+    output('creating global domain and field...')
+    tt = time.clock()
     domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('fu', nm.float64, 1, omega, approx_order=order)
+    output('...done in', time.clock() - tt)
 
     output('distributing field %s...' % field.name)
     tt = time.clock()
