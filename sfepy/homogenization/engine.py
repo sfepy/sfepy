@@ -303,7 +303,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         sd_names = multiproc.get_dict('sd_names', clear=True)
         numdeps = multiproc.get_dict('numdeps', clear=True)
         remaining = multiproc.get_int_value('remaining', len(sorted_names))
-        tasks = multiproc.get_queue('tasts')
+        tasks = multiproc.get_queue('tasks')
         lock = multiproc.get_lock('lock')
 
         # calculate number of dependencies and inverse map
