@@ -162,9 +162,6 @@ class ScipyIterative(LinearSolver):
 
     The `eps_r` tolerance is both absolute and relative - the solvers
     stop when either the relative or the absolute residual is below it.
-
-    A preconditioner can be anything that the SciPy solvers accept (sparse
-    matrix, dense matrix, LinearOperator).
     """
     name = 'ls.scipy_iterative'
 
@@ -173,9 +170,12 @@ class ScipyIterative(LinearSolver):
     _parameters = [
         ('method', 'str', 'cg', False,
          'The actual solver to use.'),
-        ('precond', '{sparse matrix, dense matrix, LinearOperator}',
-         None, False,
-         'The preconditioner.'),
+        ('setup_precond', 'callable', lambda mtx, problem: None, False,
+         """User-supplied function for the preconditioner initialization/setup.
+            It is called as setup_precond(mtx, problem), where mtx is the
+            matrix, and should return one of {sparse matrix, dense matrix,
+            LinearOperator}.
+         """),
         ('callback', 'function', None, False,
          """User-supplied function to call after each iteration. It is called
             as callback(xk), where xk is the current solution vector."""),
@@ -210,8 +210,11 @@ class ScipyIterative(LinearSolver):
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
 
-        precond = get_default(kwargs.get('precond', None), self.conf.precond)
+        setup_precond = get_default(kwargs.get('setup_precond', None),
+                                    self.conf.setup_precond)
         callback = get_default(kwargs.get('callback', None), self.conf.callback)
+
+        precond = setup_precond(mtx, self.problem)
 
         if conf.method == 'qmr':
             prec_args = {'M1' : precond, 'M2' : precond}
