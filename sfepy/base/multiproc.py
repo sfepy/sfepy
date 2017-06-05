@@ -1,7 +1,6 @@
 """
 Multiprocessing functions.
 """
-
 try:
     from multiprocessing import cpu_count, Manager, Queue, Lock,\
         managers, Process
@@ -11,7 +10,28 @@ except:
     use_multiprocessing = False
     managers = None
 
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+
 global_multiproc_dict = {}
+
+
+class MyQueue(object):
+    def __init__(self):
+        self.queue = Queue()
+
+    def get(self):
+        try:
+            name = self.queue.get(False, 0.01)  # get (or wait for) a task
+            return name
+        except queue.Empty:
+            return None
+
+    def put(self, value):
+        self.queue.put(value)
+
 
 def get_manager():
     """
@@ -60,7 +80,7 @@ def get_mpdict_value(mode, key, clear=False):
         elif mode == 'ivalue':
             global_multiproc_dict[key] = m.Value('i', 0)
         elif mode == 'queue':
-            global_multiproc_dict[key] = Queue()
+            global_multiproc_dict[key] = MyQueue()
         elif mode == 'lock':
             global_multiproc_dict[key] = Lock()
 
