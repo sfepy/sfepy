@@ -176,14 +176,20 @@ class ScipyIterative(LinearSolver):
             matrix, and should return one of {sparse matrix, dense matrix,
             LinearOperator}.
          """),
-        ('callback', 'function', None, False,
+        ('callback', 'callable', None, False,
          """User-supplied function to call after each iteration. It is called
-            as callback(xk), where xk is the current solution vector."""),
+            as callback(xk), where xk is the current solution vector, except
+            the gmres method, where the argument is the residual.
+         """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative or absolute tolerance for the residual.'),
     ]
+
+    # All iterative solvers in scipy.sparse.linalg pass a solution vector into
+    # a callback except those below, that take a residual vector.
+    _callbacks_res = ['gmres']
 
     def __init__(self, conf, **kwargs):
         import scipy.sparse.linalg.isolve as la
@@ -212,7 +218,26 @@ class ScipyIterative(LinearSolver):
 
         setup_precond = get_default(kwargs.get('setup_precond', None),
                                     self.conf.setup_precond)
-        callback = get_default(kwargs.get('callback', None), self.conf.callback)
+        callback = get_default(kwargs.get('callback', lambda sol: None),
+                               self.conf.callback)
+
+        self.iter = 0
+        def iter_callback(sol):
+            self.iter += 1
+            msg = 'iteration %d' % self.iter
+            if conf.verbose > 1:
+                if conf.method not in self._callbacks_res:
+                    res = mtx * sol - rhs
+
+                else:
+                    res = sol
+
+                rnorm = nm.linalg.norm(res)
+                msg += ': |Ax-b| = %e' % rnorm
+            output(msg, verbose=conf.verbose)
+
+            # Call an optional user-defined callback.
+            callback(sol)
 
         precond = setup_precond(mtx, self.problem)
 
@@ -223,7 +248,7 @@ class ScipyIterative(LinearSolver):
             prec_args = {'M' : precond}
 
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                callback=callback, **prec_args)
+                                callback=iter_callback, **prec_args)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]))
