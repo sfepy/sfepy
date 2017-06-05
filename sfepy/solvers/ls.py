@@ -462,6 +462,9 @@ class PETScKrylovSolver(LinearSolver):
 
             ksp.setInitialGuessNonzero(True)
 
+        else:
+            psol = pmtx.getVecRight()
+
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
                % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
