@@ -13,8 +13,8 @@ import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
 from six.moves import range
 
-class HomogenizationApp(HomogenizationEngine):
 
+class HomogenizationApp(HomogenizationEngine):
     @staticmethod
     def process_options(options):
         """
@@ -41,7 +41,7 @@ class HomogenizationApp(HomogenizationEngine):
                       mesh_update_corrector=get('mesh_update_corrector', None),
                       multiprocessing=get('multiprocessing', True),
                       use_mpi=get('use_mpi', False),
-                      store_micro_idxs = get('store_micro_idxs', []),
+                      store_micro_idxs=get('store_micro_idxs', []),
                       volume=volume,
                       volumes=volumes)
 
@@ -68,7 +68,7 @@ class HomogenizationApp(HomogenizationEngine):
             self.micro_coors = nm.empty((self.n_micro,) + coors.shape,
                                         dtype=nm.float64)
             for im in range(self.n_micro):
-                self.micro_coors[im,...] = coors
+                self.micro_coors[im, ...] = coors
 
         output_dir = self.problem.output_dir
 
@@ -103,9 +103,9 @@ class HomogenizationApp(HomogenizationEngine):
         if self.updating_corrs is not None:
             upd_var = self.app_options.mesh_update_variable
             for ii, corr in enumerate(self.updating_corrs):
-                update_corr = nm.array(\
+                update_corr = nm.array(
                     [corr.states[jj][upd_var] for jj in corr.components]).T
-                gg = mtx_e[ii,...].reshape((dim**2, 1))
+                gg = mtx_e[ii, ...].reshape((dim**2, 1))
                 ncoors[ii] += nm.dot(update_corr, gg).reshape(ncoors[ii].shape)
 
         if ret_val:
@@ -169,7 +169,6 @@ class HomogenizationApp(HomogenizationEngine):
                     uvar.field.mappings0 = multiproc.get_dict('mappings0')
                 per.periodic_cache = multiproc.get_dict('periodic_cache')
 
-        # ^^^^^^^^^^^^^ dat do __init__
         time_tag = ('' if itime is None else '_t%03d' % itime)\
             + ('' if iiter is None else '_i%03d' % iiter)
 
@@ -187,7 +186,7 @@ class HomogenizationApp(HomogenizationEngine):
             coefs = Coefficients(**coefs.to_dict())
 
             if verbose:
-                prec = nm.get_printoptions()[ 'precision']
+                prec = nm.get_printoptions()['precision']
                 if hasattr(opts, 'print_digits'):
                     nm.set_printoptions(precision=opts.print_digits)
                 print(coefs)
@@ -196,7 +195,7 @@ class HomogenizationApp(HomogenizationEngine):
             ms_cache = self.micro_state_cache
             for ii in self.app_options.store_micro_idxs:
                 key = self.get_micro_cache_key('coors', ii, itime)
-                ms_cache[key] = self.micro_coors[ii,...]
+                ms_cache[key] = self.micro_coors[ii, ...]
 
             coef_save_name = op.join(opts.output_dir, opts.coefs_filename)
             coefs.to_file_hdf5(coef_save_name + '%s.h5' % time_tag)

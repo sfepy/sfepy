@@ -35,7 +35,8 @@ class MyQueue(object):
 
 def get_manager():
     """
-    Get the multiprocessing manager. If not in the global cache, create the one.
+    Get the multiprocessing manager. If not in the global cache,
+    create the one.
 
     Returns
     -------
@@ -46,6 +47,7 @@ def get_manager():
         global_multiproc_dict['manager'] = Manager()
 
     return global_multiproc_dict['manager']
+
 
 def get_mpdict_value(mode, key, clear=False):
     """
@@ -86,13 +88,16 @@ def get_mpdict_value(mode, key, clear=False):
 
     return global_multiproc_dict[key]
 
+
 def get_dict(name, clear=False):
     """Get the remote dictionary."""
     return get_mpdict_value('dict', 'd_' + name, clear=clear)
 
+
 def get_list(name, clear=False):
     """Get the remote list."""
     return get_mpdict_value('list', 'l_' + name, clear=clear)
+
 
 def get_int_value(name, val0=0):
     """Get the remote integer value."""
@@ -100,9 +105,11 @@ def get_int_value(name, val0=0):
     out.value = val0
     return out
 
+
 def get_queue(name):
     """Get the global queue."""
     return get_mpdict_value('queue', 'queue_' + name)
+
 
 def get_lock(name):
     """Get the global lock."""
