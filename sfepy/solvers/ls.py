@@ -251,7 +251,8 @@ class ScipyIterative(LinearSolver):
                                 callback=iter_callback, **prec_args)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
-                  info, self.converged_reasons[nm.sign(info)]))
+                  info, self.converged_reasons[nm.sign(info)]),
+               verbose=conf.verbose)
 
         return sol
 
