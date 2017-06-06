@@ -198,6 +198,9 @@ class Solver(Struct):
     def __call__(self, **kwargs):
         raise ValueError('called an abstract Solver instance!')
 
+    def set_field_split(self, field_ranges, **kwargs):
+        pass
+
 class LinearSolver(Solver):
     """
     Abstract linear solver class.
