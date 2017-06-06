@@ -1,7 +1,6 @@
 """
 Multiprocessing functions.
 """
-
 try:
     from multiprocessing import cpu_count, Manager, Queue, Lock,\
         managers, Process
@@ -11,11 +10,33 @@ except:
     use_multiprocessing = False
     managers = None
 
+try:
+    import queue
+except ImportError:
+    import Queue as queue
+
 global_multiproc_dict = {}
+
+
+class MyQueue(object):
+    def __init__(self):
+        self.queue = Queue()
+
+    def get(self):
+        try:
+            name = self.queue.get(False, 0.01)  # get (or wait for) a task
+            return name
+        except queue.Empty:
+            return None
+
+    def put(self, value):
+        self.queue.put(value)
+
 
 def get_manager():
     """
-    Get the multiprocessing manager. If not in the global cache, create the one.
+    Get the multiprocessing manager. If not in the global cache,
+    create the one.
 
     Returns
     -------
@@ -26,6 +47,7 @@ def get_manager():
         global_multiproc_dict['manager'] = Manager()
 
     return global_multiproc_dict['manager']
+
 
 def get_mpdict_value(mode, key, clear=False):
     """
@@ -60,19 +82,22 @@ def get_mpdict_value(mode, key, clear=False):
         elif mode == 'ivalue':
             global_multiproc_dict[key] = m.Value('i', 0)
         elif mode == 'queue':
-            global_multiproc_dict[key] = Queue()
+            global_multiproc_dict[key] = MyQueue()
         elif mode == 'lock':
             global_multiproc_dict[key] = Lock()
 
     return global_multiproc_dict[key]
 
+
 def get_dict(name, clear=False):
     """Get the remote dictionary."""
     return get_mpdict_value('dict', 'd_' + name, clear=clear)
 
+
 def get_list(name, clear=False):
     """Get the remote list."""
     return get_mpdict_value('list', 'l_' + name, clear=clear)
+
 
 def get_int_value(name, val0=0):
     """Get the remote integer value."""
@@ -80,9 +105,11 @@ def get_int_value(name, val0=0):
     out.value = val0
     return out
 
+
 def get_queue(name):
     """Get the global queue."""
     return get_mpdict_value('queue', 'queue_' + name)
+
 
 def get_lock(name):
     """Get the global lock."""
