@@ -1087,6 +1087,8 @@ class Problem(Struct):
 
         vec0 = state0.get_reduced()
 
+        nls.lin_solver.set_field_split(state0.variables.adi.indx)
+
         self.nls_status = get_default(nls_status, self.nls_status)
         vec = nls(vec0, status=self.nls_status)
 
