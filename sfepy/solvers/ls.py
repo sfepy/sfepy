@@ -380,6 +380,9 @@ class PETScKrylovSolver(LinearSolver):
 
         self.fields = []
         for key, rng in six.iteritems(field_ranges):
+            if isinstance(rng, slice):
+                rng = rng.start, rng.stop
+
             size = rng[1] - rng[0]
             field_is = self.petsc.IS().createStride(size, first=rng[0], step=1,
                                                     comm=comm)
