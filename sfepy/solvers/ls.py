@@ -356,12 +356,7 @@ class PETScKrylovSolver(LinearSolver):
 
     def __init__(self, conf, comm=None, **kwargs):
         if comm is None:
-            try:
-                import petsc4py
-                petsc4py.init([])
-            except ImportError:
-                msg = 'cannot import petsc4py!'
-                raise ImportError(msg)
+            from sfepy.parallel.parallel import init_petsc_args; init_petsc_args
 
         from petsc4py import PETSc as petsc
 

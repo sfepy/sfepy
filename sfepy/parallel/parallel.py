@@ -6,11 +6,19 @@ import time
 import os
 
 import numpy as nm
-
-import sys, petsc4py
 from six.moves import range
-argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
-petsc4py.init(argv)
+
+def init_petsc_args():
+    try:
+        import sys, petsc4py
+
+    except ImportError:
+        return
+
+    argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
+    petsc4py.init(argv)
+
+init_petsc_args()
 
 from petsc4py import PETSc
 from mpi4py import MPI
