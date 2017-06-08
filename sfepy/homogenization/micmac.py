@@ -77,16 +77,27 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
     oprefix = output.prefix
     output.prefix = 'micro:'
 
+    if hasattr(problem.conf.options, 'n_mpi_homog_slaves'):
+        import sfepy.base.multiproc_mpi as multi_mpi
+        use_mpi = True and multi_mpi.use_multiprocessing
+    else:
+        use_mpi = False
+
     if not hasattr(problem, 'homogen_app'):
         required, other = get_standard_keywords()
-        required.remove( 'equations' )
+        required.remove('equations')
         micro_file = problem.conf.options.micro_filename
         conf = ProblemConf.from_file(micro_file, required, other,
                                      verbose=False)
-        options = Struct(output_filename_trunk = None)
+        options = Struct(output_filename_trunk=None)
         problem.homogen_app = HomogenizationApp(conf, options, 'micro:',
                                                 n_micro=coor.shape[0],
                                                 update_micro_coors=True)
+
+        if use_mpi:
+            multi_mpi.master_send_task('init', (micro_file, coor.shape[0]),
+                                       wait=True)
+            multi_mpi.master_send_continue()
 
     app = problem.homogen_app
     def_grad = mtx_f(problem, term) if callable(mtx_f) else mtx_f
@@ -100,7 +111,14 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
     problem.def_grad_prev = def_grad.copy()
     app.setup_macro_deformation(rel_def_grad)
 
+    if use_mpi:
+        multi_mpi.master_send_task('calculate', (rel_def_grad, ts, iteration))
+
     coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
+
+    if use_mpi:
+        multi_mpi.master_wait_for_done()
+        multi_mpi.master_send_continue()
 
     if type(coefs) is tuple:
         coefs = coefs[0]
