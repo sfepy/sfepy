@@ -555,9 +555,9 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
         """
         import sfepy.base.multiproc_mpi as multiproc_mpi
 
-        dependencies = multiproc_mpi.get_dict('dependecies')
-        sd_names = multiproc_mpi.get_dict('sd_names')
-        numdeps = multiproc_mpi.get_dict('numdeps', mutable=True)
+        dependencies = multiproc_mpi.get_dict('dependecies', clear=True)
+        sd_names = multiproc_mpi.get_dict('sd_names', clear=True)
+        numdeps = multiproc_mpi.get_dict('numdeps', mutable=True, clear=True)
         remaining = multiproc_mpi.get_int_value('remaining', 0)
         tasks = multiproc_mpi.get_queue('tasks')
 
@@ -599,18 +599,20 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                 if numdeps[name] == 0:
                     tasks.put(name)
 
-            multiproc_mpi.master_loop(multiproc_mpi.cpu_count() - 1)
+            multiproc_mpi.master_loop()
 
             if micro_coors is not None:
                 dependencies = self.dechunk_reqs_coefs(dependencies,
                                                        len(micro_chunk_tab))
 
+            multiproc_mpi.master_send_task('deps', dependencies, wait=True)
+            multiproc_mpi.master_send_continue()
+
             return dependencies, sd_names
 
         else:  # slave node
             lock = multiproc_mpi.RemoteLock()
-
-            multiproc_mpi.start_slave()
+            multiproc_mpi.start_slave('engine')
 
             self.calculate_req_multi(tasks, lock, remaining, numdeps,
                                      inverse_deps, problem, options,
@@ -620,9 +622,14 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                                      time_tag, micro_chunk_tab,
                                      str(multiproc_mpi.mpi_rank + 1))
 
-            multiproc_mpi.stop_slave()
+            multiproc_mpi.stop_slave('engine', wait=True)
+            data = multiproc_mpi.start_slave('get deps')
+            task, data = data[0], data[1]
+            if task == 'deps':
+                deps = data
+                multiproc_mpi.stop_slave('get deps', wait=True)
 
-            return None, None
+            return deps, None
 
 
 class HomogenizationEngine(PDESolverApp):
@@ -751,8 +758,12 @@ class HomogenizationEngine(PDESolverApp):
 
         deps = {}
 
-        if dependencies is None:  # slave mode
+        if sd_names is None and dependencies is not None:  # slave mode
             coefs = None
+            for name in dependencies.keys():
+                data = dependencies[name]
+                if not name.startswith('c.'):
+                    deps[name] = data
         else:
             coefs = Struct()
             for name in dependencies.keys():
