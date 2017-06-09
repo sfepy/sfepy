@@ -938,7 +938,7 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		      invA11 = 1 / A11;
 		      dr = invA11*b1;
 		      r += dr;
-		      dr_norm = dr;
+		      dr_norm = fabs(dr);
 		    }
 
 		    if (npd == 2) {
