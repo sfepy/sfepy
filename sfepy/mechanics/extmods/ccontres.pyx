@@ -202,6 +202,7 @@ def assemble_contact_residual_and_stiffness(
     cdef int num
     cdef int nsd, ngp, nsn, nes, nen, GPs_len
 
+    num = len(vals)
     GPs_len = GPs.shape[0]
     nsd = X.shape[1]
     ngp = H.shape[0]
