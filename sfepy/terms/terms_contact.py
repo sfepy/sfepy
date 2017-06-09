@@ -78,6 +78,108 @@ class ContactTerm(Term):
 
         print(coors)
 
+        ISN = state.field.efaces.T.copy()
+        nsd = region0.dim
+        ngp = geo.n_qp
+        neq = state.n_dof
+        nsn = ISN.shape[0]
+        nes = ISN.shape[1]
+        nen = state.field.gel.n_vertex
+
+        fis0 = region0.get_facet_indices()
+        fis1 = region1.get_facet_indices()
+        fis = nm.r_[fis0, fis1]
+        elementID = fis[:, 0].copy()
+        segmentID = fis[:, 1].copy()
+
+        n = len(elementID)
+        IEN = state.field.econn
+        # Need surface bf, bfg corresponding to field approximation here, not
+        # geo...
+        H = nm.asfortranarray(geo.bf[0, :, 0, :])
+        ps = state.field.gel.surface_facet.poly_space
+        gps, gw = self.integral.get_qp(state.field.gel.surface_facet.name)
+        bfg = ps.eval_base(gps, diff=True)
+        # ?? shape - try in 3D
+        dH = nm.asfortranarray(bfg[0, ...])
+
+        X = nm.asfortranarray(state.field.coors)
+        Um = nm.asfortranarray(state().reshape((-1, nsd)))
+        xx = nm.asfortranarray(X + Um)
+
+        import sfepy.mechanics.extmods.ccontres as cc
+
+        GPs = nm.empty((n*ngp, 2*nsd+6), dtype=nm.float64, order='F')
+
+        # [longestEdge, GPs]=getLongestEdgeAndGPs(n,nsd,ngp,neq,nsn,nes,nen,elementID,segmentID,ISN,IEN,H,xx);
+        longestEdge, GPs = cc.get_longest_edge_and_gps(GPs, neq,
+                                                       elementID, segmentID,
+                                                       ISN, IEN, H, xx)
+
+        print longestEdge
+        print X[IEN[elementID[0]]][ISN]
+
+        # gg = state.field.mappings[('Omega', 2, 'volume')]
+        # Implement Region.get_diameters(dim).
+
+        #print nm.sqrt(region0.domain.get_element_diameters(state.field.region.cells, gg[0], 0)).max()
+        #print (GPs[:, :2] == qp_coors).all()
+
+        #GPs2 = nm.zeros((n*ngp, 2*nsd+6), dtype=nm.float64, order='F')
+        #GPs2[:, :2] = qp_coors
+        #GPs2[:, 2:4] = nm.repeat(fis, ngp, axis=0)
+        #GPs2[:, 4] = nm.finfo(nm.float32).max
+
+        #print (GPs == GPs2).all()
+        #print nm.abs(GPs - GPs2).max()
+
+        AABBmin, AABBmax = cc.get_AABB(xx, longestEdge, IEN, ISN,
+                                       elementID, segmentID, neq);
+
+        AABBmin = AABBmin - (0.5*longestEdge);
+        AABBmax = AABBmax + (0.5*longestEdge);
+        N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
+
+        print AABBmin, AABBmax, N
+        head, next = cc.init_global_search(N, AABBmin, AABBmax, GPs[:,:nsd])
+
+        print head, next
+
+        npd = region0.tdim - 1
+        GPs = cc.evaluate_contact_constraints(GPs, ISN, IEN, N,
+                                              AABBmin, AABBmax,
+                                              head, next, xx,
+                                              elementID, segmentID,
+                                              npd, neq, longestEdge)
+        print GPs[:, 4]
+
+        #
+        Gc = nm.zeros(neq, dtype=nm.float64)
+
+        activeGPs = GPs[:, 2*nsd+3]
+        epss = 1e9
+        keyContactDetection = 1
+        keyAssembleKc = 1
+
+        max_num = 4 * nsd * nsn * ngp * GPs.shape[0]
+        print 'max_num:', max_num
+        vals = nm.empty(max_num, dtype=nm.float64)
+        rows = nm.empty(max_num, dtype=nm.int32)
+        cols = nm.empty(max_num, dtype=nm.int32)
+
+        aux = cc.assemble_contact_residual_and_stiffness(Gc, vals, rows, cols,
+                                                         GPs, ISN, IEN,
+                                                         X, Um, H, dH, gw,
+                                                         activeGPs, neq, npd,
+                                                         epss,
+                                                         keyContactDetection,
+                                                         keyAssembleKc)
+        Gc, vals, rows, cols, num = aux
+        print Gc.mean(), num
+        print GPs
+        print 'true num:', num
+        from sfepy.base.base import debug; debug()
+
         if diff_var is None:
             fmode = 0
 
