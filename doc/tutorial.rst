@@ -11,8 +11,8 @@ Tutorial
 
 *SfePy* can be used in two basic ways:
   #. a black-box partial differential equation (PDE) solver,
-  #. a Python package to build custom applications involving solving PDEs by the
-     finite element (FE) method.
+  #. a Python package to build custom applications involving solving PDEs by
+     the finite element (FE) method.
 
 This tutorial focuses on the first way and introduces the basic concepts
 and nomenclature used in the following parts of the documentation. Check
@@ -33,7 +33,7 @@ approximations, solvers, solution domain and subdomains etc., see
 
 The syntax of the problem description file is very simple yet powerful,
 as the file itself is just a regular Python module that can be normally
-imported - no special parsing is necessary. The keywords mentioned above
+imported -- no special parsing is necessary. The keywords mentioned above
 are regular Python variables (usually of the `dict` type) with special
 names.
 
@@ -47,37 +47,37 @@ But let us begin with a slight detour...
 Sneak peek: what is going on under the hood
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#. A top-level script (usually ``simple.py``, as in this tutorial) reads
+#. A top-level script (usually ``simple.py`` as in this tutorial) reads
    in an input file.
 
 #. Following the contents of the input file, a :class:`Problem
-   <sfepy.discrete.problem.Problem>` instance is created - this
+   <sfepy.discrete.problem.Problem>` instance is created -- this
    is the input file coming to life. Let us call the instance
-   ``problem``.
+   :class:`Problem <sfepy.discrete.problem.Problem>`.
 
-   * The ``problem`` sets up its domain, regions (various sub-domains),
-     fields (the FE approximations), the equations and the solvers. The
-     equations determine the materials and variables in use - only those
-     are fully instantiated, so the input file can safely contain
-     definitions of items that are not used actually.
+   * The :class:`Problem <sfepy.discrete.problem.Problem>` sets up its domain,
+     regions (various sub-domains), fields (the FE approximations), the
+     equations and the solvers. The equations determine the materials and
+     variables in use -- only those are fully instantiated, so the input
+     file can safely contain definitions of items that are not used actually.
 
-#. Prior to solution, ``problem.time_update()`` function has to be
+#. Prior to solution, `problem.time_update()` function has to be
    called to setup boundary conditions, material parameters and other
    potentially time-dependent data. This holds also for stationary
    problems with a single "time step".
 
-#. The solution is then obtained by calling ``problem.solve()``
+#. The solution is then obtained by calling `problem.solve()`
    function.
 
-#. Finally, the solution can be stored using ``problem.save_state()``.
+#. Finally, the solution can be stored using `problem.save_state()`.
 
-The above last three steps are essentially repeated for each time
-step. So that is it - using the code a black-box PDE solver shields the
-user from having to create the :class:`Problem
-<sfepy.discrete.problem.Problem>` instance by hand. But note
-that this is possible, and often necessary when the flexibility of the
+The above last three steps are essentially repeated for each time step. So that
+is it -- using the code a black-box PDE solver shields the user from having to
+create the :class:`Problem <sfepy.discrete.problem.Problem>` instance by hand.
+But note that this is possible, and often necessary when the flexibility of the
 default solvers is not enough. At the end of the tutorial an example
-demonstrating the interactive creation of the ``problem`` is shown, see
+demonstrating the interactive creation of the
+:class:`Problem <sfepy.discrete.problem.Problem>`  is shown, see
 :ref:`sec-interactive-example-linear-elasticity`.
 
 Now let us continue with running a simulation.
@@ -102,18 +102,21 @@ This section introduces the basics of running *SfePy* on the command line. The
 
     $ ./simple.py examples/diffusion/poisson_short_syntax.py
 
-  * ``examples/diffusion/poisson_short_syntax.py`` is the *SfePy*
-    *problem description* file, which defines the problem to be solved
-    in terms *SfePy* can understand.
+  or ::
 
-  * Running the above command creates the output file ``cylinder.vtk`` in the
-    *SfePy* top-level directory.
+    $ ./sfepy-run simple examples/diffusion/poisson_short_syntax.py
 
-* *SfePy* can also be invoked interactively using `IPython`_ with custom
-  imports, as described in :ref:`using-ipython`. In the SfePy top-level
-  directory, run::
+* ``examples/diffusion/poisson_short_syntax.py`` is the *SfePy*
+  :ref:`sec-problem-description-file`, which defines the problem to be
+  solved in terms *SfePy* can understand.
 
-    $ ipython --profile=sfepy
+* Running the above command creates the output file ``cylinder.vtk`` in the
+  *SfePy* top-level directory.
+
+* *SfePy* can also be invoked using `IPython`_ interactive shell from the
+  *SfePy* top-level directory::
+
+    $ ipython
 
   See :ref:`sec-interactive-example-linear-elasticity` for more information.
 
@@ -123,27 +126,26 @@ Postprocessing the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The ``postproc.py`` script can be used for quick postprocessing and
-  visualization of the *SfePy* output files. It requires mayavi2 installed on
-  your system.
+  visualization of the *SfePy* output files. It requires `mayavi`_ installed
+  on your system.
 
-  * As a simple example, try::
+* As a simple example, try::
 
-    $ ./postproc.py cylinder.vtk
+  $ ./postproc.py cylinder.vtk
 
-  * The following interactive 3D window should display:
+* The following interactive 3D window should display:
 
 .. image:: images/postproc_simple.png
    :width: 70 %
    :align: center
 
-* The left mouse button by itself orbits the 3D view.
+* You can manipulate displayed image using:
 
-* Holding shift and the left mouse button pans the view.
-
-* Holding control and the left mouse button rotates about the screen normal
-    axis.
-
-* The right mouse button controls the zoom.
+  * the left mouse button by itself orbits the 3D view,
+  * holding shift and the left mouse button pans the view,
+  * holding control and the left mouse button rotates about the screen normal
+    axis,
+  * the right mouse button controls the zoom.
 
 .. _poisson-example-tutorial:
 
@@ -190,7 +192,7 @@ actual problem definition.
 
 Open the :download:`examples/diffusion/poisson_short_syntax.py
 <../examples/diffusion/poisson_short_syntax.py>` file in your favorite text
-editor. Note that the file is a regular python source code.
+editor. Note that the file is a regular Python source code.
 
 ::
 
@@ -198,7 +200,7 @@ editor. Note that the file is a regular python source code.
 
     filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
-The ``filename_mesh`` variable points to the file containing the mesh for the
+The `filename_mesh` variable points to the file containing the mesh for the
 particular problem. *SfePy* supports a variety of mesh formats.
 
 ::
@@ -208,8 +210,8 @@ particular problem. *SfePy* supports a variety of mesh formats.
     }
 
 Here we define just a constant coefficient :math:`c` of the Poisson
-equation, using the ``'values'`` attribute. Other possible attribute is
-``'function'``, for material coefficients computed/obtained at runtime.
+equation, using the `'values'` attribute. Other possible attribute is
+`'function'` for material coefficients computed/obtained at runtime.
 
 Many finite element problems require the definition of material parameters.
 These can be handled in *SfePy* with material variables which associate the
@@ -224,11 +226,11 @@ material parameters with the corresponding region of the mesh.
    }
 
 Regions assign names to various parts of the finite element mesh. The region
-names can later be referred to, for example when specifying portions of the mesh
-to apply boundary conditions to. Regions can be specified in a variety of ways,
-including by element or by node. Here, Omega is the elemental domain over which
-the PDE is solved and Gamma_Left and Gamma_Right define surfaces upon which the
-boundary conditions will be applied.
+names can later be referred to, for example when specifying portions of the
+mesh to apply boundary conditions to. Regions can be specified in a variety of
+ways, including by element or by node. Here, `'Omega'` is the elemental
+domain over which the PDE is solved and `'Gamma_Left'` and `'Gamma_Right'`
+define surfaces upon which the boundary conditions will be applied.
 
 ::
 
@@ -240,7 +242,7 @@ A field is used mainly to define the approximation on a (sub)domain, i.e. to
 define the discrete spaces :math:`V_h`, where we seek the solution.
 
 The Poisson equation can be used to compute e.g. a temperature distribution,
-so let us call our field ``'temperature'``. On the region ``'Omega'``
+so let us call our field `'temperature'`. On the region `'Omega'`
 it will be approximated using linear finite elements.
 
 A field in a given region defines the finite element approximation.
@@ -255,10 +257,10 @@ Several variables can use the same field, see below.
 
 One field can be used to generate discrete degrees of freedom (DOFs) of
 several variables. Here the unknown variable (the temperature) is called
-``'t'``, it's associated DOF name is ``'t.0'`` --- this will be referred
-to in the Dirichlet boundary section (``ebc``). The corresponding test
-variable of the weak formulation is called ``'s'``. Notice that the
-``'dual'`` item of a test variable must specify the unknown it
+`'t'`, it's associated DOF name is `'t.0'` -- this will be referred
+to in the Dirichlet boundary section (`ebc`). The corresponding test
+variable of the weak formulation is called `'s'`. Notice that the
+`'dual'` item of a test variable must specify the unknown it
 corresponds to.
 
 For each unknown (or state) variable there has to be a test (or virtual)
@@ -275,8 +277,8 @@ Essential (Dirichlet) boundary conditions can be specified as above.
 
 Boundary conditions place restrictions on the finite element formulation and
 create a unique solution to the problem. Here, we specify that a temperature of
-+2 is applied to the left surface of the mesh and a temperature of -2 is applied
-to the right surface.
++2 is applied to the left surface of the mesh and a temperature of -2 is
+applied to the right surface.
 
 ::
 
@@ -304,9 +306,9 @@ where :math:`\nabla u \approx \bm{G} \bm{u}`.
 
 The equations block is the heart of the *SfePy* problem definition file. Here,
 we are specifying that the Laplacian of the temperature (in the weak
-formulation) is 0, where ``coef.val`` is a material constant. We are using the
-``i`` integral defined previously, over the domain specified by the region
-Omega.
+formulation) is 0, where `coef.val` is a material constant. We are using the
+`'i'` integral defined previously, over the domain specified by the region
+`'Omega'`.
 
 The above syntax is useful for defining *custom integrals* with
 user-defined quadrature points and weights, see :ref:`ug_integrals`. The
@@ -329,11 +331,12 @@ name. The integral definition is superfluous in this case.
        }),
    }
 
-Here, we specify the linear and nonlinear solver kind and options. The convergence
-parameters can be adjusted if necessary, otherwise leave the default.
+Here, we specify the linear and nonlinear solver kind and options. The
+convergence parameters can be adjusted if necessary, otherwise leave the
+default.
 
-Even linear problems are solved by a nonlinear solver (KISS rule) - only one
-iteration is needed and the final rezidual is obtained for free.
+Even linear problems are solved by a nonlinear solver (KISS rule) -- only one
+iteration is needed and the final residual is obtained for free.
 
 ::
 
@@ -354,9 +357,9 @@ Interactive Example: Linear Elasticity
 --------------------------------------
 
 This example shows how to use *SfePy* interactively, but also how to make a
-custom simulation script. We will use `IPython`_ with custom imports, as
-described in :ref:`using-ipython`, for the explanation, but regular Python
-shell would do as well, provided the proper modules are imported.
+custom simulation script. We will use `IPython`_ interactive shell which
+allows more flexible and intuitive work (but you cau use standard Python
+shell as well).
 
 We wish to solve the following linear elasticity problem:
 
@@ -388,42 +391,58 @@ where :math:`\ul{v}` is the test function, and both :math:`\ul{u}`,
 :math:`\ul{v}` belong to a suitable function space.
 
 **Hint:** Whenever you create a new object (e.g. a Mesh instance, see
-below), try to print it using the `print` statement - it will give you
+below), try to print it using the `print` statement -- it will give you
 insight about the object internals.
 
-The whole example summarized in a script is below in
+The whole example summarized in a script is available below in
 :ref:`tutorial_interactive_source`.
 
-In the *SfePy* top-level directory, run::
+In the *SfePy* top-level directory, run ::
 
-    $ ipython --profile=sfepy
+    $ ipython
+
+and load custom *SfePy* imports:
+
+.. sourcecode:: ipython
+
+    In [1]:  import numpy as nm
+    In [2]:  from sfepy.base.base import IndexedStruct
+    In [3]:  from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+       ...:                              Equation, Equations, Problem)
+    In [4]:  from sfepy.discrete.fem import Mesh, FEDomain, Field
+    In [5]:  from sfepy.terms import Term
+    In [6]:  from sfepy.discrete.conditions import Conditions, EssentialBC
+    In [7]:  from sfepy.solvers.ls import ScipyDirect
+    In [8]:  from sfepy.solvers.nls import Newton
+    In [9]:  from sfepy.postprocess.viewer import Viewer
+    In [10]: from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 Read a finite element mesh, that defines the domain :math:`\Omega`.
 
 .. sourcecode:: ipython
 
-    In [1]: mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
+    In [11]: mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
 
 Create a domain. The domain allows defining regions or subdomains.
 
 .. sourcecode:: ipython
 
-    In [2]: domain = FEDomain('domain', mesh)
+    In [12]: domain = FEDomain('domain', mesh)
 
-Define the regions - the whole domain :math:`\Omega`, where the solution
+Define the regions -- the whole domain :math:`\Omega`, where the solution
 is sought, and :math:`\Gamma_1`, :math:`\Gamma_2`, where the boundary
 conditions will be applied. As the domain is rectangular, we first get a
 bounding box to get correct bounds for selecting the boundary edges.
 
 .. sourcecode:: ipython
 
-    In [3]: min_x, max_x = domain.get_mesh_bounding_box()[:, 0]
-    In [4]: eps = 1e-8 * (max_x - min_x)
-    In [5]: omega = domain.create_region('Omega', 'all')
-    In [6]: gamma1 = domain.create_region('Gamma1',
+    In [13]: min_x, max_x = domain.get_mesh_bounding_box()[:, 0]
+    In [14]: eps = 1e-8 * (max_x - min_x)
+    In [15]: omega = domain.create_region('Omega', 'all')
+    In [16]: gamma1 = domain.create_region('Gamma1',
        ...:                               'vertices in x < %.10f' % (min_x + eps),
        ...:                               'facet')
-    In [7]: gamma2 = domain.create_region('Gamma2',
+    In [17]: gamma2 = domain.create_region('Gamma2',
        ...:                               'vertices in x > %.10f' % (max_x - eps),
        ...:                               'facet')
 
@@ -432,7 +451,7 @@ Next we define the actual finite element approximation using the
 
 .. sourcecode:: ipython
 
-    In [8]: field = Field.from_args('fu', nm.float64, 'vector', omega,
+    In [18]: field = Field.from_args('fu', nm.float64, 'vector', omega,
        ...:                         space='H1', poly_space_base='lagrange',
        ...:                         approx_order=2)
 
@@ -441,38 +460,37 @@ the test variable :math:`\vb`.
 
 .. sourcecode:: ipython
 
-    In [9]: u = FieldVariable('u', 'unknown', field)
-    In [10]: v = FieldVariable('v', 'test', field, primary_var_name='u')
+    In [19]: u = FieldVariable('u', 'unknown', field)
+    In [20]: v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 Before we can define the terms to build the equation of linear
 elasticity, we have to create also the materials, i.e. define the
 (constitutive) parameters. The linear elastic material `m` will be
 defined using the two Lamé constants :math:`\lambda = 1`, :math:`\mu =
-1`. The volume forces will be defined also as a material, as a constant
+1`. The volume forces will be defined also as a material as a constant
 (column) vector :math:`[0.02, 0.01]^T`.
 
 .. sourcecode:: ipython
 
-    In [11]: m = Material('m', lam=1.0, mu=1.0)
-    In [12]: f = Material('f', val=[[0.02], [0.01]])
+    In [21]: m = Material('m', lam=1.0, mu=1.0)
+    In [22]: f = Material('f', val=[[0.02], [0.01]])
 
-One more thing needs to be defined - the numerical quadrature that will
+One more thing needs to be defined -- the numerical quadrature that will
 be used to integrate each term over its domain.
 
 .. sourcecode:: ipython
 
-    In [14]: integral = Integral('i', order=3)
+    In [23]: integral = Integral('i', order=3)
 
 Now we are ready to define the two terms and build the equations.
 
 .. sourcecode:: ipython
 
-    In [15]: from sfepy.terms import Term
-    In [16]: t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+    In [24]: t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
                   integral, omega, m=m, v=v, u=u)
-    In [17]: t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
-    In [18]: eq = Equation('balance', t1 + t2)
-    In [19]: eqs = Equations([eq])
+    In [25]: t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
+    In [26]: eq = Equation('balance', t1 + t2)
+    In [27]: eqs = Equations([eq])
 
 The equations have to be completed by boundary conditions. Let us clamp
 the left edge :math:`\Gamma_1`, and shift the right edge
@@ -481,50 +499,47 @@ the left edge :math:`\Gamma_1`, and shift the right edge
 
 .. sourcecode:: ipython
 
-   In [20]: from sfepy.discrete.conditions import Conditions, EssentialBC
-   In [21]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
-   In [22]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
+   In [28]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
+   In [29]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
       ....:     val = shift * coors[:,1]**2
       ....:     return val
-   In [23]: bc_fun = Function('shift_u_fun', shift_u_fun,
+   In [30]: bc_fun = Function('shift_u_fun', shift_u_fun,
       ....:                   extra_args={'shift' : 0.01})
-   In [24]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
+   In [31]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
 
 The last thing to define before building the problem are the
-solvers. Here we just use a sparse direct SciPy solver and the SfePy
-Newton solver with default parameters. We also wish to store the
-convergence statistics of the Newton solver. As the problem is linear,
+solvers. Here we just use a sparse direct *SciPy solver* and the *SfePy
+Newton solver* with default parameters. We also wish to store the
+convergence statistics of the Newton solver. As the problem is linear
 it should converge in one iteration.
 
 .. sourcecode:: ipython
 
-    In [25]: from sfepy.solvers.ls import ScipyDirect
-    In [26]: from sfepy.solvers.nls import Newton
-    In [27]: ls = ScipyDirect({})
-    In [28]: nls_status = IndexedStruct()
-    In [29]: nls = Newton({}, lin_solver=ls, status=nls_status)
+    In [32]: ls = ScipyDirect({})
+    In [33]: nls_status = IndexedStruct()
+    In [34]: nls = Newton({}, lin_solver=ls, status=nls_status)
 
-Now we are ready to create a :class:`Problem` instance. Note
-that the step above is not really necessary - the above solvers are
-constructed by default. We did them to get the `nls_status`.
+Now we are ready to create a :class:`Problem <sfepy.discrete.problem.Problem>`
+instance. Note that the step above is not really necessary -- the above solvers
+are constructed by default. We did them to get the `nls_status`.
 
 .. sourcecode:: ipython
 
-    In [30]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+    In [35]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
 
-The :class:`Problem` has several handy methods for
-debugging. Let us try saving the regions into a VTK file.
+The :class:`Problem <sfepy.discrete.problem.Problem>` has several handy methods
+for debugging. Let us try saving the regions into a VTK file.
 
 .. sourcecode:: ipython
 
-    In [31]: pb.save_regions_as_groups('regions')
+    In [36]: pb.save_regions_as_groups('regions')
 
 And view them.
 
 .. sourcecode:: ipython
 
-    In [32]: view = Viewer('regions.vtk')
-    In [33]: view()
+    In [37]: view = Viewer('regions.vtk')
+    In [38]: view()
 
 You should see this:
 
@@ -537,12 +552,12 @@ view the results.
 
 .. sourcecode:: ipython
 
-    In [34]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
-    In [35]: vec = pb.solve()
-    In [36]: print nls_status
-    In [37]: pb.save_state('linear_elasticity.vtk', vec)
-    In [38]: view = Viewer('linear_elasticity.vtk')
-    In [39]: view()
+    In [39]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+    In [40]: vec = pb.solve()
+    In [41]: print nls_status
+    In [42]: pb.save_state('linear_elasticity.vtk', vec)
+    In [43]: view = Viewer('linear_elasticity.vtk')
+    In [44]: view()
 
 This is the resulting image:
 
@@ -555,7 +570,7 @@ shifting the mesh. Close the previous window and do:
 
 .. sourcecode:: ipython
 
-    In [56]: view(vector_mode='warp_norm', rel_scaling=2,
+    In [45]: view(vector_mode='warp_norm', rel_scaling=2,
        ....:      is_scalar_bar=True, is_wireframe=True)
 
 And the result is:
@@ -572,8 +587,11 @@ Complete Example as a Script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The source code: :download:`linear_elasticity.py
-<../examples/linear_elasticity/linear_elastic_interactive.py>`. It should be
-run from the *SfePy* source directory so that it finds the mesh file.
+<../examples/linear_elasticity/linear_elastic_interactive.py>`.
+
+This file should be run from the top-level *SfePy* source directory so it can
+find the mesh file correctly. Please note that the provided example script may
+differ from above tutorial in some minor details.
 
 .. literalinclude:: ../examples/linear_elasticity/linear_elastic_interactive.py
    :linenos:

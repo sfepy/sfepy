@@ -245,8 +245,8 @@ Then re-run your code and report the output to the `SfePy mailing list`_.
 
 .. _using-ipython:
 
-Using IPython
--------------
+Using IPython (TBD)
+-------------------
 
 It is preferable to use (a customized) `IPython`_ over the regular Python shell
 when following :doc:`tutorial` or :doc:`primer`. Install `IPython`_ and then
@@ -277,6 +277,30 @@ customize it as follows:
       c.TerminalIPythonApp.gui = 'wx'
 
       c.TerminalInteractiveShell.colors = 'Linux' # NoColor, Linux, or LightBG
+
+
+.. _sfepy-custom-imports:
+
+*SfePy* custom imports
+^^^^^^^^^^^^^^^^^^^^^^
+
+TBD: and load custom *SfePy* imports:
+
+.. sourcecode:: ipython
+
+    In [1]:  import numpy as nm
+    In [2]:  from sfepy.base.base import IndexedStruct
+    In [3]:  from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+       ...:                              Equation, Equations, Problem)
+    In [4]:  from sfepy.discrete.fem import Mesh, FEDomain, Field
+    In [5]:  from sfepy.terms import Term
+    In [6]:  from sfepy.discrete.conditions import Conditions, EssentialBC
+    In [7]:  from sfepy.solvers.ls import ScipyDirect
+    In [8]:  from sfepy.solvers.nls import Newton
+    In [9]:  from sfepy.postprocess.viewer import Viewer
+    In [10]: from sfepy.mechanics.matcoefs import stiffness_from_lame
+
+
 
 #. Run the customized IPython shell::
 

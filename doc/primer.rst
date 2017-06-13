@@ -151,14 +151,14 @@ tutorial follows:
 
 .. literalinclude:: /../examples/linear_elasticity/its2D_1.py
 
-:download:`Download </../examples/linear_elasticity/its2D_1.py>` and open
-the file in your favourite python editor. Note that you may wish to
-change the location of the output directory to somewhere on your
-drive. You may also need to edit the mesh file name. For the analysis we
-will assume that the material of the test specimen is linear elastic and
-isotropic. We define two material constants i.e. Young's modulus and
-Poisson's ratio. The material is assumed to be asphalt concrete having a
-Young's modulus of 2,000 MPa and a Poisson's ration of 0.4.
+Download the :download:`Problem description file
+</../examples/linear_elasticity/its2D_1.py>` and open it in your favourite
+Python editor. Note that you may wish to change the location of the output
+directory to somewhere on your drive. You may also need to edit the mesh file
+name. For the analysis we will assume that the material of the test specimen is
+linear elastic and isotropic. We define two material constants i.e. Young's
+modulus and Poisson's ratio. The material is assumed to be asphalt concrete
+having a Young's modulus of 2,000 MPa and a Poisson's ration of 0.4.
 
 **Note:** Be consistent in your choice and use of units. In the tutorial
 we are using Newton (N), millimeters (mm) and megaPascal (MPa). The
@@ -179,10 +179,10 @@ The following block of code defines regions on your mesh:
 
 Four regions are defined:
 
-    1. Omega: all the elements in the mesh
-    2. Left: the y-axis
-    3. Bottom: the x-axis
-    4. Top: the topmost node. This is where the load is applied.
+    1. `'Omega'`: all the elements in the mesh,
+    2. `'Left'`: the y-axis,
+    3. `'Bottom'`: the x-axis,
+    4. `'Top'`: the topmost node. This is where the load is applied.
 
 Having defined the regions these can be used in other parts of your
 code. For example, in the definition of the boundary conditions:
@@ -200,7 +200,7 @@ Bottom region are prevented or set to zero. Similarly, for symmetry
 about the y-axis, any horizontal or displacement in the x-direction of
 the nodes in the Left region or y-axis is prevented.
 
-The load is specified in terms of the 'Load' material as
+The load is specified in terms of the `'Load'` material as
 follows::
 
     materials = {
@@ -211,14 +211,14 @@ follows::
         'Load' : ({'.val' : [0.0, -1000.0]},),
     }
 
-Note the dot in '.val' - this denotes a special material value, i.e.,
+Note the dot in `'.val'` -- this denotes a special material value, i.e.,
 a value that is not to be evaluated in quadrature points. The load is
 then applied in equations using the `'dw_point_load.0.Top(Load.val, v)'`
 term in the topmost node (region Top).
 
 We provided the material constants in terms of Young's modulus and
 Poisson's ratio, but the linear elastic isotropic equation used requires
-as input Lamé's parameters. The lame_from_youngpoisson() function is thus
+as input Lamé's parameters. The `lame_from_youngpoisson()` function is thus
 used for conversion. Note that to use this function it was necessary to
 import the function into the code, which was done up front:
 
@@ -230,41 +230,41 @@ import the function into the code, which was done up front:
 <src/sfepy/mechanics/matcoefs>` module for other useful material related
 functions.
 
-That's it - we are now ready to solve the problem.
+That's it -- we are now ready to solve the problem.
 
-Running SfePy
--------------
+Running *SfePy*
+---------------
 
-One option to solve the problem is to run the SfePy simple.py script
-from the command shell::
+One option to solve the problem is to run the *SfePy* `simple.py` script
+from the command line::
 
     $ ./simple.py its2D_1.py
 
 **Note:** For the purpose of this tutorial it is assumed that the
-problem definition file (its2D_1.py) is in the same directory as the
-*simple.py* script. If you have the its2D_1.py file in another directory
+`problem description file` (``its2D_1.py``) is in the same directory as
+the *simple.py* script. If you have the ``its2D_1.py`` file in another directory
 then make sure you include the path to this file as well.
 
-SfePy solves the problem and outputs the solution to the output path
-(output_dir) provided in the script. The output file will be in the vtk
+*SfePy* solves the problem and outputs the solution to the output path
+(`output_dir`) provided in the script. The output file will be in the VTK
 format by default if this is not explicitly specified and the name of
 the output file will be the same as that used for the mesh file except
-with the vtk extension i.e. its2D.vtk.
+with the '.vtk' extension i.e. ``its2D.vtk``.
 
-The vtk format is an ascii format. Open the file using a text
+The VTK format is an ASCII format. Open the file using a text
 editor. You'll notice that the output file includes separate sections:
 
     * POINTS (these are the model nodes)
     * CELLS (the model element connectivity)
     * VECTORS (the node displacements in the x-, y- and z- directions.
 
-SfePy includes a script (postproc.py) to quickly view the solution. To run this
-script you need to have `Mayavi`_ installed. From the command line issue the
-following (with the correct paths)::
+*SfePy* includes a script (`postproc.py`) to quickly view the solution. To run
+this script you need to have `Mayavi`_ installed. From the command line issue
+the following (assuming the correct paths)::
 
     $ ./postproc.py its2D.vtk
 
-The *postproc.py* script generates the image shown below, which shows by
+The `postproc.py` script generates the image shown below, which shows by
 default the displacements in the model as arrows and their magnitude as
 color scale. Cool, but we are more interested in the stresses. To get
 these we need to modify the problem description file and do some
@@ -279,46 +279,50 @@ Post-processing
 *SfePy* provides functions to calculate stresses and strains. We'll
 include a function to calculate these and update the problem material
 definition and options to call this function as a
-post_process_hook. Save this file as :download:`its2D_2.py
+`post_process_hook()`. Save this file as :download:`its2D_2.py
 </../examples/linear_elasticity/its2D_2.py>`.
 
 .. literalinclude:: /../examples/linear_elasticity/its2D_2.py
 
 The updated file imports all of the previous definitions in
-its2D_1.py. The stress function (de_cauchy_stress) requires as input the
-stiffness tensor - thus it was necessary to update the materials
+``its2D_1.py``. The stress function (`de_cauchy_stress()`) requires as input
+the stiffness tensor -- thus it was necessary to update the materials
 accordingly. The problem options were also updated to call the
-stress_strain function as a post_process_hook.
+`stress_strain()` function as a `post_process_hook()`.
 
-Run SfePy to solve the updated problem and view the solution (assuring
+Run *SfePy* to solve the updated problem and view the solution (assuming
 the correct paths)::
 
     $ ./simple.py its2D_2.py
     $ ./postproc.py its2D.vtk -b
 
-In addition to the node displacements, the vtk output shown below now
+In addition to the node displacements, the VTK output shown below now
 also includes the stresses and strains averaged in the elements:
 
 .. image:: images/primer/its2D_2.png
    :width: 40 %
 
+TBD (wrong math):
 Remember the objective was to determine the stresses at the centre of
-the specimen under a load P. The solution as currently derived is
-expressed in terms of a global displacement vector (u). The global
-(residual) force vector (f) is a function of the global displacement
-vector and the global stiffness matrix (K) as: **f = Ku**. Let's
-determine the force vector interactively.
+the specimen under a load :math:`P`. The solution as currently derived is
+expressed in terms of a global displacement vector :math:`u`. The global
+(residual) force vector :math:`f` is a function of the global displacement
+vector and the global stiffness matrix  :math:`K` as: :math:`f = Ku`.
+Let's determine the force vector interactively.
 
 Running SfePy in interactive mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In addition to solving problems using the simple.py script you can also run
-SfePy interactively. We will use `IPython`_ with custom imports, as described
-in :ref:`using-ipython`. In the SfePy top-level directory::
+In addition to solving problems using the `simple.py` script you can also run
+*SfePy* interactively (we will use `IPython`_ interactive shell in following
+examples).
 
-    $ ipython --profile=sfepy
+In the *SfePy* top-level directory run ::
 
-Once the customized ipython shell loads up, issue the following command::
+    $ ipython
+
+and import :ref:`sfepy-custom-imports`. Once the *SfePy* customized IPython
+shell is ready, issue the following command::
 
     In [1]: pb, state = solve_pde('its2D_2.py')
 
