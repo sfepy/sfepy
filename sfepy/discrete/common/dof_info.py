@@ -374,7 +374,7 @@ class EquationMap(Struct):
                 eq = expand_nodes_to_equations(nods, dofs, self.dof_names)
                 # Duplicates removed here...
                 eq_ebc[eq] = 1
-                if vv is not None: val_ebc[eq] = vv
+                if vv is not None: val_ebc[eq] = nm.ravel(vv)
 
             else: # EPBC.
                 region = bc.regions[1]
