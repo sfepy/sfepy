@@ -162,9 +162,6 @@ class ScipyIterative(LinearSolver):
 
     The `eps_r` tolerance is both absolute and relative - the solvers
     stop when either the relative or the absolute residual is below it.
-
-    A preconditioner can be anything that the SciPy solvers accept (sparse
-    matrix, dense matrix, LinearOperator).
     """
     name = 'ls.scipy_iterative'
 
@@ -173,17 +170,26 @@ class ScipyIterative(LinearSolver):
     _parameters = [
         ('method', 'str', 'cg', False,
          'The actual solver to use.'),
-        ('precond', '{sparse matrix, dense matrix, LinearOperator}',
-         None, False,
-         'The preconditioner.'),
-        ('callback', 'function', None, False,
+        ('setup_precond', 'callable', lambda mtx, problem: None, False,
+         """User-supplied function for the preconditioner initialization/setup.
+            It is called as setup_precond(mtx, problem), where mtx is the
+            matrix, and should return one of {sparse matrix, dense matrix,
+            LinearOperator}.
+         """),
+        ('callback', 'callable', None, False,
          """User-supplied function to call after each iteration. It is called
-            as callback(xk), where xk is the current solution vector."""),
+            as callback(xk), where xk is the current solution vector, except
+            the gmres method, where the argument is the residual.
+         """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative or absolute tolerance for the residual.'),
     ]
+
+    # All iterative solvers in scipy.sparse.linalg pass a solution vector into
+    # a callback except those below, that take a residual vector.
+    _callbacks_res = ['gmres']
 
     def __init__(self, conf, **kwargs):
         import scipy.sparse.linalg.isolve as la
@@ -210,8 +216,30 @@ class ScipyIterative(LinearSolver):
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
 
-        precond = get_default(kwargs.get('precond', None), self.conf.precond)
-        callback = get_default(kwargs.get('callback', None), self.conf.callback)
+        setup_precond = get_default(kwargs.get('setup_precond', None),
+                                    self.conf.setup_precond)
+        callback = get_default(kwargs.get('callback', lambda sol: None),
+                               self.conf.callback)
+
+        self.iter = 0
+        def iter_callback(sol):
+            self.iter += 1
+            msg = 'iteration %d' % self.iter
+            if conf.verbose > 1:
+                if conf.method not in self._callbacks_res:
+                    res = mtx * sol - rhs
+
+                else:
+                    res = sol
+
+                rnorm = nm.linalg.norm(res)
+                msg += ': |Ax-b| = %e' % rnorm
+            output(msg, verbose=conf.verbose)
+
+            # Call an optional user-defined callback.
+            callback(sol)
+
+        precond = setup_precond(mtx, self.problem)
 
         if conf.method == 'qmr':
             prec_args = {'M1' : precond, 'M2' : precond}
@@ -220,10 +248,11 @@ class ScipyIterative(LinearSolver):
             prec_args = {'M' : precond}
 
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                callback=callback, **prec_args)
+                                callback=iter_callback, **prec_args)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
-                  info, self.converged_reasons[nm.sign(info)]))
+                  info, self.converged_reasons[nm.sign(info)]),
+               verbose=conf.verbose)
 
         return sol
 
@@ -328,12 +357,7 @@ class PETScKrylovSolver(LinearSolver):
 
     def __init__(self, conf, comm=None, **kwargs):
         if comm is None:
-            try:
-                import petsc4py
-                petsc4py.init([])
-            except ImportError:
-                msg = 'cannot import petsc4py!'
-                raise ImportError(msg)
+            from sfepy.parallel.parallel import init_petsc_args; init_petsc_args
 
         from petsc4py import PETSc as petsc
 
@@ -357,6 +381,9 @@ class PETScKrylovSolver(LinearSolver):
 
         self.fields = []
         for key, rng in six.iteritems(field_ranges):
+            if isinstance(rng, slice):
+                rng = rng.start, rng.stop
+
             size = rng[1] - rng[0]
             field_is = self.petsc.IS().createStride(size, first=rng[0], step=1,
                                                     comm=comm)
@@ -433,6 +460,9 @@ class PETScKrylovSolver(LinearSolver):
                 psol[...] = x0
 
             ksp.setInitialGuessNonzero(True)
+
+        else:
+            psol = pmtx.getVecRight()
 
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
