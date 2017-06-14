@@ -336,6 +336,8 @@ class H1NodalMixin(H1Mixin):
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
 
+        vals.shape = (len(nods), -1)
+
         return nods, vals
 
     def create_basis_context(self):

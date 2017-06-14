@@ -217,6 +217,8 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
               + nm.tile(nm.arange(dpn, dtype=nm.int32), indx.shape[0]))
         vals = vals[ii]
 
+        vals.shape = (len(nods), -1)
+
         return nods, vals
 
     def create_basis_context(self):
