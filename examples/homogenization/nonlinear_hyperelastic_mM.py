@@ -183,7 +183,7 @@ def move_bottom(ts, coor, **kwargs):
     mtx = rotation_matrix2d(angle)
     out = nm.dot(vec, mtx)  - vec
 
-    return out.T.flat
+    return out
 
 functions = {
     'move_bottom': (move_bottom,),

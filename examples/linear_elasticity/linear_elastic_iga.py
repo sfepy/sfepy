@@ -68,7 +68,7 @@ def get_ebcs(ts, coors, **kwargs):
     aux[:, 0] = 0.1 * coors[:, 1]
     aux[:, 1] = -0.05 + 0.03 * nm.sin(coors[:, 1] * 5 * nm.pi)
 
-    return aux.T.flat
+    return aux
 
 functions = {
     'get_ebcs' : (get_ebcs,),
