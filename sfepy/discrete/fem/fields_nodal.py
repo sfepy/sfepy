@@ -324,7 +324,7 @@ class H1NodalMixin(H1Mixin):
         nods = nm.unique(nm.hstack(aux))
 
         if callable(fun):
-            vals = fun(self.get_coor(nods))
+            vals = nm.asarray(fun(self.get_coor(nods)))
 
         elif nm.isscalar(fun):
             vals = nm.repeat([fun], nods.shape[0] * dpn)
@@ -335,6 +335,8 @@ class H1NodalMixin(H1Mixin):
 
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
+
+        vals.shape = (len(nods), -1)
 
         return nods, vals
 

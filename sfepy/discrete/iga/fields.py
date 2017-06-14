@@ -336,15 +336,17 @@ class IGField(Field):
             mvals = nm.concatenate(mvals)
             mtx = sps.coo_matrix((mvals, (rows, cols)), shape=(n_dof, n_dof))
 
-            vals = nm.zeros((dpn, n_dof), dtype=nm.float64)
+            vals = nm.zeros((n_dof, dpn), dtype=nm.float64)
 
             # Solve l2 projection system.
             for idof in range(dpn):
                 dofs = solve(mtx, rhs[idof, :])
-                vals[idof, remap[nods]] = dofs
+                vals[remap[nods], idof] = dofs
 
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
+
+        vals.shape = (len(nods), -1)
 
         return nods, vals
 

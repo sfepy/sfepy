@@ -22,6 +22,11 @@ def get_p_edge(ts, coors, bc=None, **kwargs):
     else:
         return nm.cos(nm.pi * coors[:,1])
 
+def get_u_edge(ts, coors, bc=None, **kwargs):
+    out = nm.zeros_like(coors)
+    out[:, 1] = nm.arange(out.shape[0]) + 1.0
+    return out
+
 def get_circle(coors, domain=None):
     r = nm.sqrt(coors[:,0]**2.0 + coors[:,1]**2.0)
     return nm.where(r < 0.2)[0]
@@ -30,6 +35,7 @@ functions = {
     'get_pars1' : (lambda ts, coors, mode=None, **kwargs:
                    get_pars(ts, coors, mode, extra_arg='hello!', **kwargs),),
     'get_p_edge' : (get_p_edge,),
+    'get_u_edge' : (get_u_edge,),
     'get_circle' : (get_circle,),
 }
 
@@ -49,11 +55,14 @@ materials = {
 
 fields = {
     'pressure' : (nm.float64, 1, 'Omega', 2),
+    'displacement' : (nm.float64, 2, 'Omega', 2),
 }
 
 variables = {
     'p'   : ('unknown field', 'pressure', 0),
     'q'   : ('test field',    'pressure', 'p'),
+    'u'   : ('unknown field', 'displacement', 1),
+    'v'   : ('test field',    'displacement', 'u'),
 }
 
 wx = 0.499
@@ -67,10 +76,12 @@ regions = {
 ebcs = {
     'p_left' : ('Left', {'p.all' : 'get_p_edge'}),
     'p_right' : ('Right', {'p.all' : 'get_p_edge'}),
+    'u_right' : ('Right', {'u.all' : 'get_u_edge'}),
 }
 
 equations = {
     'e1' : """dw_laplace.2.Omega( mf3.a, q, p ) = 0""",
+    'e2' : """dw_div_grad.2.Omega( mf3.b, v, u ) = 0""",
 }
 
 solver_0 = {
@@ -134,7 +145,7 @@ class Test( TestCommon ):
         import os.path as op
         problem = self.problem
 
-        problem.set_equations(self.conf.equations) 
+        problem.set_equations(self.conf.equations)
 
         problem.time_update()
         state = problem.solve()
@@ -145,17 +156,34 @@ class Test( TestCommon ):
         ok = True
         domain = problem.domain
 
-        vec = state()
+        vecs = state.get_parts()
+        vec = vecs['p']
 
         iv = domain.regions['Left'].vertices
         coors = domain.get_mesh_coors()[iv]
-        ok = ok and self.compare_vectors(vec[iv], nm.sin(nm.pi * coors[:,1]),
-                                         label1='state_left', label2='bc_left')
+        _ok = self.compare_vectors(vec[iv], nm.sin(nm.pi * coors[:,1]),
+                                   label1='p_state_left',
+                                   label2='p_bc_left')
+        ok = _ok and ok
 
         iv = domain.regions['Right'].vertices
         coors = domain.get_mesh_coors()[iv]
-        ok = ok and self.compare_vectors(vec[iv], nm.cos(nm.pi * coors[:,1]),
-                                         label1='state_right', label2='bc_right')
+        _ok = self.compare_vectors(vec[iv], nm.cos(nm.pi * coors[:,1]),
+                                   label1='p_state_right',
+                                   label2='p_bc_right')
+        ok = _ok and ok
+
+        vec = vecs['u']
+        vec.shape = (-1, 2)
+        ok = self.compare_vectors(vec[iv, 0], nm.zeros(len(iv)),
+                                  label1='u_0_state_right',
+                                  label2='u_0_bc_right')
+        ok = _ok and ok
+
+        ok = self.compare_vectors(vec[iv, 1], nm.arange(len(iv)) + 1.0,
+                                  label1='u_1_state_right',
+                                  label2='u_1_bc_right')
+        ok = _ok and ok
 
         return ok
 

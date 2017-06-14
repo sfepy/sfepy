@@ -204,7 +204,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
 
         elif callable(fun):
-            vv = fun(self.get_coor(gnods[0]))
+            vv = nm.asarray(fun(self.get_coor(gnods[0])))
 
             vals = nm.zeros(n_dof, dtype=vv.dtype)
             vals[:gnods[0].shape[0] * dpn] = vv
@@ -216,6 +216,8 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
         ii = (nm.tile(dpn * indx, dpn)
               + nm.tile(nm.arange(dpn, dtype=nm.int32), indx.shape[0]))
         vals = vals[ii]
+
+        vals.shape = (len(nods), -1)
 
         return nods, vals
 

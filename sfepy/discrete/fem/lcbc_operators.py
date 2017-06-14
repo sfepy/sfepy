@@ -68,15 +68,12 @@ class MRLCBCOperator(LCBCOperator):
     def setup(self):
         eq = self.eq_map.eq
         meq = expand_nodes_to_equations(self.mdofs, self.dof_names,
-                                         self.all_dof_names)
-        ameq = eq[meq]
-        assert_(nm.all(ameq >= 0))
+                                        self.all_dof_names)
+        self.ameq = eq[meq]
+        assert_(nm.all(self.ameq >= 0))
 
         if self.eq_map.n_epbc:
             self.treat_pbcs(meq, self.eq_map.master)
-
-        # Node-by-node order compatible with MRLCBCOperator matrices.
-        self.ameq = ameq.reshape((len(self.dof_names), -1)).T.ravel()
 
     def treat_pbcs(self, dofs, master):
         """

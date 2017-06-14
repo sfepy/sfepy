@@ -82,7 +82,7 @@ def get_shift(ts, coors, region=None):
     val = nm.zeros_like(coors, dtype=nm.float64)
 
     val[:, 1] = 0.1 * coors[:, 0]
-    return val.T
+    return val
 
 functions = {
     'get_shift' : (get_shift,),
