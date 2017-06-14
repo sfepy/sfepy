@@ -204,7 +204,7 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
 
         elif callable(fun):
-            vv = fun(self.get_coor(gnods[0]))
+            vv = nm.asarray(fun(self.get_coor(gnods[0])))
 
             vals = nm.zeros(n_dof, dtype=vv.dtype)
             vals[:gnods[0].shape[0] * dpn] = vv
