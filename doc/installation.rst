@@ -286,6 +286,7 @@ TBD: and load custom *SfePy* imports:
 .. sourcecode:: ipython
 
     In [1]:  import numpy as nm
+
     In [2]:  from sfepy.base.base import IndexedStruct
     In [3]:  from sfepy.discrete import (FieldVariable, Material, Integral, Function,
        ...:                              Equation, Equations, Problem)
@@ -296,8 +297,6 @@ TBD: and load custom *SfePy* imports:
     In [8]:  from sfepy.solvers.nls import Newton
     In [9]:  from sfepy.postprocess.viewer import Viewer
     In [10]: from sfepy.mechanics.matcoefs import stiffness_from_lame
-
-
 
 #. Run the customized IPython shell::
 

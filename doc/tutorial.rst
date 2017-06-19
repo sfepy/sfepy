@@ -9,10 +9,11 @@ Tutorial
    :local:
    :backlinks: top
 
-*SfePy* can be used in two basic ways:
-  #. a black-box partial differential equation (PDE) solver,
-  #. a Python package to build custom applications involving solving PDEs by
-     the finite element (FE) method.
+
+*SfePy* package can be used in two basic ways as a: (TBD)
+
+#. Black-box Partial Differential Equation (PDE) solver,
+#. Python package to build custom applications involving solving PDEs by the Finite Element Method (FEM).
 
 This tutorial focuses on the first way and introduces the basic concepts
 and nomenclature used in the following parts of the documentation. Check
@@ -25,13 +26,13 @@ Basic notions
 -------------
 
 The simplest way of using *SfePy* is to solve a system of PDEs defined
-in a **problem description file**, also referred to as **input
-file**. In such a file, the problem is described using several keywords
+in a `problem description file`, also referred to as `input
+file`. In such a file, the problem is described using several keywords
 that allow one to define the equations, variables, finite element
-approximations, solvers, solution domain and subdomains etc., see
-:ref:`sec-problem-description-file` for a full list of those keywords.
+approximations, solvers and solution domain and subdomains (see
+:ref:`sec-problem-description-file` for a full list of those keywords).
 
-The syntax of the problem description file is very simple yet powerful,
+The syntax of the `problem description file` is very simple yet powerful,
 as the file itself is just a regular Python module that can be normally
 imported -- no special parsing is necessary. The keywords mentioned above
 are regular Python variables (usually of the `dict` type) with special
@@ -47,7 +48,7 @@ But let us begin with a slight detour...
 Sneak peek: what is going on under the hood
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#. A top-level script (usually ``simple.py`` as in this tutorial) reads
+#. A top-level script (usually `simple.py` as in this tutorial) reads
    in an input file.
 
 #. Following the contents of the input file, a :class:`Problem
@@ -98,15 +99,16 @@ This section introduces the basics of running *SfePy* on the command line. The
 ``$`` indicates the command prompt of your terminal.
 
 * The script ``simple.py`` is the most basic starting point in *SfePy*. It is
-  invoked as follows::
+  invoked as follows (depending on type of your setup)::
 
     $ ./simple.py examples/diffusion/poisson_short_syntax.py
 
-  or ::
+  or use the main wrap-on *SfePy* startup script::
 
     $ ./sfepy-run simple examples/diffusion/poisson_short_syntax.py
 
-* ``examples/diffusion/poisson_short_syntax.py`` is the *SfePy*
+* :download:`examples/diffusion/poisson_short_syntax.py
+  <../examples/diffusion/poisson_short_syntax.py>` is the *SfePy*
   :ref:`sec-problem-description-file`, which defines the problem to be
   solved in terms *SfePy* can understand.
 
@@ -125,7 +127,7 @@ This section introduces the basics of running *SfePy* on the command line. The
 Postprocessing the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* The ``postproc.py`` script can be used for quick postprocessing and
+* The `postproc.py` script can be used for quick postprocessing and
   visualization of the *SfePy* output files. It requires `mayavi`_ installed
   on your system.
 
@@ -401,11 +403,12 @@ In the *SfePy* top-level directory, run ::
 
     $ ipython
 
-and load custom *SfePy* imports:
+and load :ref:`SfePy custom imports <sfepy-custom-imports>`:
 
 .. sourcecode:: ipython
 
     In [1]:  import numpy as nm
+
     In [2]:  from sfepy.base.base import IndexedStruct
     In [3]:  from sfepy.discrete import (FieldVariable, Material, Integral, Function,
        ...:                              Equation, Equations, Problem)
