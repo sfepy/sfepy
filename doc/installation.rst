@@ -281,9 +281,6 @@ customize it as follows:
 
 .. _sfepy-custom-imports:
 
-*SfePy* custom imports
-^^^^^^^^^^^^^^^^^^^^^^
-
 TBD: and load custom *SfePy* imports:
 
 .. sourcecode:: ipython

@@ -68,9 +68,9 @@ Meshing
 -------
 
 Assuming plane strain conditions, the indirect tensile test may be modelled
-using a 2-D finite element mesh. Furthermore, the geometry of the model is
+using a 2D finite element mesh. Furthermore, the geometry of the model is
 symmetrical about the x- and y-axes passing through the centre of the
-circle. To take advantage of this symmetry only one quarter of the 2-D model
+circle. To take advantage of this symmetry only one quarter of the 2D model
 will be meshed and boundary conditions will be established to indicate this
 symmetry. The meshing program `Gmsh`_ is used here to very quickly mesh the
 model. Follow these steps to model the ITS:
@@ -97,14 +97,14 @@ The figures that follow show the various stages in the model process.
    :width: 20 %
 
 That's the meshing done. Save the mesh in a format that *SfePy*
-recognizes. For now use the **medit** .mesh format e.g. its2D.mesh.
+recognizes. For now use the **medit** `.mesh` format e.g. `its2D.mesh`.
 
 **Hint:** Check the drop down in the *Save As* dialog for the different
-formats that Gmsh can save to.
+formats that *Gmsh* can save to.
 
-If you open the its2D.mesh file using a text editor you'll notice that
-*Gmsh* saves the mesh in a 3-D format and includes some extra geometry
-items that should be deleted. Reformatted the mesh file to a 2-D format
+If you open the `its2D.mesh` file using a text editor you'll notice that
+*Gmsh* saves the mesh in a 3D format and includes some extra geometry
+items that should be deleted. Reformatted the mesh file to a 2D format
 and delete the *Edges* block. Note that when you do this the file cannot
 be reopened by *Gmsh* so it is always a good idea to also save your
 meshes in *Gmsh's* native format as well (Shift-Ctrl-S). Click
@@ -121,21 +121,21 @@ element connectivity. It is important to note that node and element
 numbering in *SfePy* start at 0 and not 1 as is the case in *Gmsh* and
 some other meshing programs.
 
-To view *.mesh* files you can use a demo of `medit`_. After loading your
+To view `.mesh` files you can use a demo of `medit`_. After loading your
 mesh file with medit you can see the node and element numbering by
 pressing **P** and **F** respectively. The numbering in medit starts at
 1 as shown. Thus the node at the center of the model in *SfePy*
 numbering is 0, and elements 76 and 77 are connected to this node. Node
-and element numbers can also be viewed in *Gmsh* - under the mesh option
-under the Visibility tab enable the node and surface labels. Note that
+and element numbers can also be viewed in *Gmsh* -- under the `mesh` option
+under the `Visibility` tab enable the `node` and `surface` labels. Note that
 the surface labels as numbered in *Gmsh* follow on from the line
-numbering. So to get the corresponding element number in SfePy you'll
+numbering. So to get the corresponding element number in *SfePy* you'll
 need to subtract the number of lines in the *Gmsh* file + 1. Confused
 yet? Luckily, *SfePy* provides some useful mesh functions to indicate
 which elements are connected to which nodes. Nodes and elements can also
 be identified by defining regions, which is addressed later.
 
-Another open source python option to view *.mesh* files is the
+Another open source python option to view `.mesh` files is the
 appropriately named `Python Mesh Viewer`_.
 
 The next step in the process is coding the *SfePy* problem definition file.
@@ -196,9 +196,9 @@ code. For example, in the definition of the boundary conditions:
 
 Now the power of the regions entity becomes apparent. To ensure symmetry
 about the x-axis, the vertical or y-displacement of the nodes in the
-Bottom region are prevented or set to zero. Similarly, for symmetry
+`'Bottom'` region are prevented or set to zero. Similarly, for symmetry
 about the y-axis, any horizontal or displacement in the x-direction of
-the nodes in the Left region or y-axis is prevented.
+the nodes in the `'Left'` region or y-axis is prevented.
 
 The load is specified in terms of the `'Load'` material as
 follows::
@@ -214,7 +214,7 @@ follows::
 Note the dot in `'.val'` -- this denotes a special material value, i.e.,
 a value that is not to be evaluated in quadrature points. The load is
 then applied in equations using the `'dw_point_load.0.Top(Load.val, v)'`
-term in the topmost node (region Top).
+term in the topmost node (region `'Top'`).
 
 We provided the material constants in terms of Young's modulus and
 Poisson's ratio, but the linear elastic isotropic equation used requires
@@ -249,16 +249,16 @@ then make sure you include the path to this file as well.
 (`output_dir`) provided in the script. The output file will be in the VTK
 format by default if this is not explicitly specified and the name of
 the output file will be the same as that used for the mesh file except
-with the '.vtk' extension i.e. ``its2D.vtk``.
+with the `'.vtk'` extension i.e. ``its2D.vtk``.
 
 The VTK format is an ASCII format. Open the file using a text
 editor. You'll notice that the output file includes separate sections:
 
-    * POINTS (these are the model nodes)
-    * CELLS (the model element connectivity)
-    * VECTORS (the node displacements in the x-, y- and z- directions.
+    * POINTS (these are the model nodes),
+    * CELLS (the model element connectivity),
+    * VECTORS (the node displacements in the x-, y- and z- directions).
 
-*SfePy* includes a script (`postproc.py`) to quickly view the solution. To run
+*SfePy* pprovides a script (`postproc.py`) to quickly view the solution. To run
 this script you need to have `Mayavi`_ installed. From the command line issue
 the following (assuming the correct paths)::
 
@@ -302,7 +302,6 @@ also includes the stresses and strains averaged in the elements:
 .. image:: images/primer/its2D_2.png
    :width: 40 %
 
-TBD (wrong math):
 Remember the objective was to determine the stresses at the centre of
 the specimen under a load :math:`P`. The solution as currently derived is
 expressed in terms of a global displacement vector :math:`u`. The global
@@ -321,15 +320,19 @@ In the *SfePy* top-level directory run ::
 
     $ ipython
 
-and import :ref:`sfepy-custom-imports`. Once the *SfePy* customized IPython
-shell is ready, issue the following command::
+and import :ref:`*SfePy* custom imports <sfepy-custom-imports>`. Once the
+*SfePy* customized IPython shell is ready, issue the following command:
+
+.. sourcecode:: ipython
 
     In [1]: pb, state = solve_pde('its2D_2.py')
 
 The problem is solved and the problem definition and solution are
-provided in the *pb* and *state* variables, respectively. The solution,
-or in this case, the global displacement vector (u), contains the x- and
-y-displacements at the nodes in the 2D model::
+provided in the `pb` and `state` variables respectively. The solution,
+or in this case, the global displacement vector :math:`u`, contains the x- and
+y-displacements at the nodes in the 2D model:
+
+.. sourcecode:: ipython
 
     In [2]: u = state()
 
@@ -354,7 +357,9 @@ y-displacements at the nodes in the 2D model::
            [ 0.08820237, -0.11201528]])
 
 **Note:** We have used the fact, that the state vector contains only one
-variable (*u*). In general, the following can be used::
+variable (`u`). In general, the following can be used:
+
+.. sourcecode:: ipython
 
     In [7]: u = state.get_parts()['u']
 
@@ -373,8 +378,10 @@ that is why in Out[8] the vector is reshaped according to Out[6].
 
 From the above it can be seen that *u* holds the displacements at the 55
 nodes in the model and that the displacement at node 2 (on which the
-load is applied) is (0, -1.65318152). The global stiffness
-matrix is saved in pb as a `sparse matrix`_::
+load is applied) is :math:`(0, -1.65318152)`. The global stiffness
+matrix is saved in `pb` as a `sparse matrix`_:
+
+.. sourcecode:: ipython
 
     In [9]: K = pb.mtx_a
 
@@ -439,15 +446,19 @@ matrix is saved in pb as a `sparse matrix`_::
     In [12]: K.shape
     Out[12]: (94, 94)
 
-One would expect the shape of the global stiffness matrix (K) to be
-(110,110) i.e. to have the same number of rows and columns as *u*. This
+One would expect the shape of the global stiffness matrix :math:`K` to be
+:math:`(110,110)` i.e. to have the same number of rows and columns as `u`. This
 matrix has been reduced by the fixed degrees of freedom imposed by the
 boundary conditions set at the nodes on symmetry axes. To restore the
-matrix, temporarily remove the imposed boundary conditions::
+matrix, temporarily remove the imposed boundary conditions:
+
+.. sourcecode:: ipython
 
     In [13]: pb.remove_bcs()
 
-Now we can calculate the force vector (f)::
+Now we can calculate the force vector :math:`f`:
+
+.. sourcecode:: ipython
 
     In [14]: f = pb.evaluator.eval_residual(u)
 
@@ -460,28 +471,31 @@ Now we can calculate the force vector (f)::
             -2.06057393e-13,   2.13162821e-14,  -2.84217094e-14])
 
 Remember to restore the original boundary conditions previously removed
-in step [13]::
+in step [13]:
+
+.. sourcecode:: ipython
 
     In [17]: pb.time_update()
 
-To view the residual force vector, we can save it to a vtk file. This
-requires creating a state and set its DOF vector to *f* as follows::
+To view the residual force vector, we can save it to a VTK file. This
+requires creating a state and set its DOF vector to `f` as follows:
+
+.. sourcecode:: ipython
 
     In [18]: state = pb.create_state()
-
     In [19]: state.set_full(f)
-
     In [20]: out = state.create_output_dict()
-
     In [21]: pb.save_state('file.vtk', out=out)
 
-Running the *postproc.py* script on file.vtk displays the average nodal
-forces as shown below.
+Running the `postproc.py` script on ``file.vtk`` displays the average nodal
+forces as shown below:
 
 .. image:: images/primer/its2D_3.png
    :width: 40 %
 
-The forces in the x- and y-directions at node 2 are::
+The forces in the x- and y-directions at node 2 are:
+
+.. sourcecode:: ipython
 
     In [22]: f.shape = (55, 2)
 
@@ -546,7 +560,9 @@ file, namely lines 25, 26::
     refinement_level = 0
     filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
-The above computation could also be done in the customized ipython shell::
+The above computation could also be done in the customized ipython shell:
+
+.. sourcecode:: ipython
 
     In [23]: from sfepy.discrete.fem.geometry_element import geometry_data
 
@@ -585,7 +601,7 @@ Probing
 -------
 
 As a bonus for sticking to the end of this tutorial see the following
-:download:`problem definition file
+:download:`Problem description file
 </../examples/linear_elasticity/its2D_5.py>` that provides *SfePy*
 functions to quickly and neatly probe the solution.
 
@@ -595,7 +611,7 @@ Probing applies interpolation to output the solution along specified
 paths. For the tutorial, line probing is done along the x- and y-axes of
 the model.
 
-Run SfePy to solve the problem and apply the probes::
+Run *SfePy* to solve the problem and apply the probes::
 
     $ ./simple.py its2D_5.py
 
@@ -623,15 +639,15 @@ The probing function also generates previews of the mesh with the probe paths.
 Interactive Example
 -------------------
 
-SfePy can be used also interactively by constructing directly the classes that
+*SfePy* can be used also interactively by constructing directly the classes that
 corresponds to the keywords in the problem description files. The following
 listing shows a script with the same (and more) functionality as the above
 examples:
 
 .. literalinclude:: /../examples/linear_elasticity/its2D_interactive.py
 
-The script can be run from the SfePy top-level directory, assuming the in-place
-build, as follows::
+The script can be run from the *SfePy* top-level directory, assuming the
+in-place build, as follows::
 
     python examples/linear_elasticity/its2D_interactive.py
 
