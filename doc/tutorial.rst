@@ -9,10 +9,12 @@ Tutorial
    :local:
    :backlinks: top
 
-*SfePy* can be used in two basic ways:
-  #. a black-box partial differential equation (PDE) solver,
-  #. a Python package to build custom applications involving solving PDEs by
-     the finite element (FE) method.
+
+*SfePy* package can be used in two basic ways as a: (TBD)
+
+#. Black-box Partial Differential Equation (PDE) solver,
+#. Python package to build custom applications involving solving PDEs by the
+ Finite Element Method (FEM).
 
 This tutorial focuses on the first way and introduces the basic concepts
 and nomenclature used in the following parts of the documentation. Check
@@ -25,13 +27,13 @@ Basic notions
 -------------
 
 The simplest way of using *SfePy* is to solve a system of PDEs defined
-in a **problem description file**, also referred to as **input
-file**. In such a file, the problem is described using several keywords
+in a `problem description file`, also referred to as `input
+file`. In such a file, the problem is described using several keywords
 that allow one to define the equations, variables, finite element
-approximations, solvers, solution domain and subdomains etc., see
-:ref:`sec-problem-description-file` for a full list of those keywords.
+approximations, solvers and solution domain and subdomains (see
+:ref:`sec-problem-description-file` for a full list of those keywords).
 
-The syntax of the problem description file is very simple yet powerful,
+The syntax of the `problem description file` is very simple yet powerful,
 as the file itself is just a regular Python module that can be normally
 imported -- no special parsing is necessary. The keywords mentioned above
 are regular Python variables (usually of the `dict` type) with special
