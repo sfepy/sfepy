@@ -45,10 +45,10 @@ the schematic.
    :align: right
 
 The tensile and compressive stresses that develop in the specimen as a
-result of the point loads P are a function of the diameter (D) and
-thickness (t) of the cylindrical specimen. At the centre of the
+result of the point loads P are a function of the diameter :math:`D` and
+thickness :math:`t` of the cylindrical specimen. At the centre of the
 specimen, the compressive stress is 3 times the tensile stress and the
-analytical formulation for these are, respectively:
+analytical formulation for these are respectively:
 
 .. math::
    :label: eq_tensile_stress
@@ -77,11 +77,11 @@ model. Follow these steps to model the ITS:
 
 #. The ITS specimen has a diameter of 150 mm. Using *Gmsh* add three new
    points (geometry elementary entities) at the following coordinates:
-   (0.0 0.0), (75.0,0.0) and (0.0,75.0).
+   :math:`(0.0 0.0), (75.0,0.0) \,\textrm{and}\, (0.0,75.0)`.
 #. Next add two straight lines connecting the points.
 #. Next add a Circle arc connecting two of the points to form the
    quarter circle segment.
-#. Still under *Geometry* add a ruled surface.
+#. Still under `Geometry` add a ruled surface.
 #. With the geometry of the model defined, add a mesh by clicking on the
    2D button under the Mesh functions.
 
@@ -97,7 +97,7 @@ The figures that follow show the various stages in the model process.
    :width: 20 %
 
 That's the meshing done. Save the mesh in a format that *SfePy*
-recognizes. For now use the **medit** `.mesh` format e.g. `its2D.mesh`.
+recognizes. For now use the `medit` `.mesh` format e.g. `its2D.mesh`.
 
 **Hint:** Check the drop down in the *Save As* dialog for the different
 formats that *Gmsh* can save to.
