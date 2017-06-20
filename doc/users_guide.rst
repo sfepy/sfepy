@@ -66,6 +66,8 @@ Applications
 
         $ ./postproc.py mesh.vtk
 
+.. _SfePy-command-wrapper:
+
 Using Command Wrapper
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -93,7 +95,7 @@ Notes
 
 * This is a "new" supported method. Any *SfePy* script can be still
   run as stand-alone (as mentioned above).
-* Both "--inplace" and "system-wide" installations are supported.
+* Both "inplace" and "system-wide" installations are supported.
 
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^
