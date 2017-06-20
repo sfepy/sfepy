@@ -16,7 +16,7 @@ from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.postprocess.viewer import Viewer
-from sfepy.mechanics.matcoefs import stiffness_from_lame
+
 
 def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
     """
@@ -36,8 +36,8 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-s', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
+                        action="store_true", dest='show',
+                        default=False, help=helps['show'])
     options = parser.parse_args()
 
     mesh = Mesh.from_file(data_dir + '/meshes/2d/rectangle_tri.mesh')
@@ -53,25 +53,28 @@ def main():
                                   'vertices in x > %.10f' % (max_x - eps),
                                   'facet')
 
-    field = Field.from_args('fu', nm.float64, 'vector', omega, approx_order=2)
+    field = Field.from_args('fu', nm.float64, 'vector', omega,
+                            space='H1', poly_space_base='lagrange',
+                            approx_order=2)
 
     u = FieldVariable('u', 'unknown', field)
     v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-    m = Material('m', D=stiffness_from_lame(dim=2, lam=1.0, mu=1.0))
+    m = Material('m', lam=1.0, mu=1.0)
     f = Material('f', val=[[0.02], [0.01]])
 
     integral = Integral('i', order=3)
 
-    t1 = Term.new('dw_lin_elastic(m.D, v, u)',
-         integral, omega, m=m, v=v, u=u)
+    t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+                  integral, omega, m=m, v=v, u=u)
     t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
     eq = Equation('balance', t1 + t2)
     eqs = Equations([eq])
 
     fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
 
-    bc_fun = Function('shift_u_fun', shift_u_fun, extra_args={'shift' : 0.01})
+    bc_fun = Function('shift_u_fun', shift_u_fun,
+                      extra_args={'shift' : 0.01})
     shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
 
     ls = ScipyDirect({})
