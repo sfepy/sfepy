@@ -1,6 +1,3 @@
-.. highlight:: python
-   :linenothreshold: 3
-
 .. include:: links.inc
 
 .. _sec-primer:
@@ -145,7 +142,7 @@ The next step in the process is coding the *SfePy* problem definition file.
 Problem description
 -------------------
 
-The programming of the problem description file is well documented in
+The programming of the `problem description file` is well documented in
 the *SfePy* :doc:`users_guide`. The problem description file used in the
 tutorial follows:
 
@@ -166,9 +163,7 @@ we are using Newton (N), millimeters (mm) and megaPascal (MPa). The
 help you in determining which derived units correspond to given basic
 units.
 
-The following block of code defines regions on your mesh:
-
-::
+The following block of code defines regions on your mesh::
 
     regions = {
         'Omega' : 'all',
@@ -185,9 +180,7 @@ Four regions are defined:
     4. `'Top'`: the topmost node. This is where the load is applied.
 
 Having defined the regions these can be used in other parts of your
-code. For example, in the definition of the boundary conditions:
-
-::
+code. For example, in the definition of the boundary conditions::
 
     ebcs = {
         'XSym' : ('Bottom', {'u.1' : 0.0}),
@@ -258,7 +251,7 @@ editor. You'll notice that the output file includes separate sections:
     * CELLS (the model element connectivity),
     * VECTORS (the node displacements in the x-, y- and z- directions).
 
-*SfePy* pprovides a script (`postproc.py`) to quickly view the solution. To run
+*SfePy* provides a script (`postproc.py`) to quickly view the solution. To run
 this script you need to have `Mayavi`_ installed. From the command line issue
 the following (assuming the correct paths)::
 
@@ -320,12 +313,13 @@ In the *SfePy* top-level directory run ::
 
     $ ipython
 
-and import :ref:`*SfePy* custom imports <sfepy-custom-imports>`. Once the
-*SfePy* customized IPython shell is ready, issue the following command:
+issue the following commands:
 
 .. sourcecode:: ipython
 
-    In [1]: pb, state = solve_pde('its2D_2.py')
+    In [1]: from sfepy.applications import solve_pde
+
+    In [2]: pb, state = solve_pde('its2D_2.py')
 
 The problem is solved and the problem definition and solution are
 provided in the `pb` and `state` variables respectively. The solution,
@@ -334,20 +328,20 @@ y-displacements at the nodes in the 2D model:
 
 .. sourcecode:: ipython
 
-    In [2]: u = state()
+    In [3]: u = state()
 
-    In [3]: u
-    Out[3]:
+    In [4]: u
+    Out[4]:
     array([ 0.        ,  0.        ,  0.37376671, ..., -0.19923848,
             0.08820237, -0.11201528])
 
-    In [4]: u.shape
-    Out[4]: (110,)
+    In [5]: u.shape
+    Out[5]: (110,)
 
-    In [5]: u.shape = (55, 2)
+    In [6]: u.shape = (55, 2)
 
-    In [6]: u
-    Out[6]:
+    In [7]: u
+    Out[7]:
     array([[ 0.        ,  0.        ],
            [ 0.37376671,  0.        ],
            [ 0.        , -1.65318152],
@@ -361,10 +355,10 @@ variable (`u`). In general, the following can be used:
 
 .. sourcecode:: ipython
 
-    In [7]: u = state.get_parts()['u']
+    In [8]: u = state.get_parts()['u']
 
-    In [8]: u
-    Out[8]:
+    In [9]: u
+    Out[9]:
     array([[ 0.        ,  0.        ],
            [ 0.37376671,  0.        ],
            [ 0.        , -1.65318152],
@@ -383,14 +377,14 @@ matrix is saved in `pb` as a `sparse matrix`_:
 
 .. sourcecode:: ipython
 
-    In [9]: K = pb.mtx_a
+    In [10]: K = pb.mtx_a
 
-    In [10]: K
-    Out[10]:
+    In [11]: K
+    Out[11]:
     <94x94 sparse matrix of type '<type 'numpy.float64'>'
             with 1070 stored elements in Compressed Sparse Row format>
 
-    In [11]: print K
+    In [12]: print K
       (0, 0)        2443.95959851
       (0, 7)        -2110.99917491
       (0, 14)       -332.960423597
@@ -443,8 +437,8 @@ matrix is saved in `pb` as a `sparse matrix`_:
       (93, 92)      -2607.52659081
       (93, 93)      9821.16012014
 
-    In [12]: K.shape
-    Out[12]: (94, 94)
+    In [13]: K.shape
+    Out[13]: (94, 94)
 
 One would expect the shape of the global stiffness matrix :math:`K` to be
 :math:`(110,110)` i.e. to have the same number of rows and columns as `u`. This
@@ -454,38 +448,38 @@ matrix, temporarily remove the imposed boundary conditions:
 
 .. sourcecode:: ipython
 
-    In [13]: pb.remove_bcs()
+    In [14]: pb.remove_bcs()
 
 Now we can calculate the force vector :math:`f`:
 
 .. sourcecode:: ipython
 
-    In [14]: f = pb.evaluator.eval_residual(u)
+    In [15]: f = pb.evaluator.eval_residual(u)
 
-    In [15]: f.shape
-    Out[15]: (110,)
+    In [16]: f.shape
+    Out[16]: (110,)
 
-    In [16]: f
-    Out[16]:
+    In [17]: f
+    Out[17]:
     array([ -4.73618436e+01,   1.42752386e+02,   1.56921124e-13, ...,
             -2.06057393e-13,   2.13162821e-14,  -2.84217094e-14])
 
 Remember to restore the original boundary conditions previously removed
-in step [13]:
+in step [14]:
 
 .. sourcecode:: ipython
 
-    In [17]: pb.time_update()
+    In [18]: pb.time_update()
 
 To view the residual force vector, we can save it to a VTK file. This
 requires creating a state and set its DOF vector to `f` as follows:
 
 .. sourcecode:: ipython
 
-    In [18]: state = pb.create_state()
-    In [19]: state.set_full(f)
-    In [20]: out = state.create_output_dict()
-    In [21]: pb.save_state('file.vtk', out=out)
+    In [19]: state = pb.create_state()
+    In [20]: state.set_full(f)
+    In [21]: out = state.create_output_dict()
+    In [22]: pb.save_state('file.vtk', out=out)
 
 Running the `postproc.py` script on ``file.vtk`` displays the average nodal
 forces as shown below:
@@ -497,10 +491,8 @@ The forces in the x- and y-directions at node 2 are:
 
 .. sourcecode:: ipython
 
-    In [22]: f.shape = (55, 2)
-
-    In [23]: f[2]
-    Out[23]: array([  6.20373272e+02,  -1.13686838e-13])
+    In [23]: f.shape = (55, 2)
+    In [24]: array([  6.20373272e+02,  -1.13686838e-13])
 
 Great, we have an almost zero residual vertical load or force apparent
 at node 2 i.e. -1.13686838e-13 Newton. Let us now check the stress at
@@ -520,7 +512,9 @@ achieve this.
 
 .. literalinclude:: /../examples/linear_elasticity/its2D_3.py
 
-The output::
+The output:
+
+.. code-block:: none
 
     ==================================================================
     Given load = 2000.00 N
@@ -538,7 +532,9 @@ The output::
 
 Not bad for such a coarse mesh! Re-running the problem using a
 :download:`finer mesh <../meshes/2d/big.mesh>` provides a more accurate
-solution::
+solution:
+
+.. code-block:: none
 
     ==================================================================
     Given load = 2000.00 N
@@ -564,35 +560,35 @@ The above computation could also be done in the customized ipython shell:
 
 .. sourcecode:: ipython
 
-    In [23]: from sfepy.discrete.fem.geometry_element import geometry_data
+    In [25]: from sfepy.discrete.fem.geometry_element import geometry_data
 
-    In [24]: gdata = geometry_data['2_3']
-    In [25]: nc = len(gdata.coors)
-    In [26]: ivn = Integral('ivn', order=-1,
+    In [26]: gdata = geometry_data['2_3']
+    In [27]: nc = len(gdata.coors)
+    In [28]: ivn = Integral('ivn', order=-1,
        ....:                coors=gdata.coors, weights=[gdata.volume / nc] * nc)
 
-    In [27]: pb, state = solve_pde('examples/linear_elasticity/its2D_2.py')
+    In [29]: pb, state = solve_pde('examples/linear_elasticity/its2D_2.py')
 
-    In [28]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
+    In [30]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
        ....:                      mode='qp', integrals=Integrals([ivn]))
-    In [29]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
-    In [30]: svar = FieldVariable('sigma', 'parameter', sfield,
+    In [31]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
+    In [32]: svar = FieldVariable('sigma', 'parameter', sfield,
        ....:                      primary_var_name='(set-to-None)')
-    In [31]: svar.set_data_from_qp(stress, ivn)
+    In [33]: svar.set_data_from_qp(stress, ivn)
 
-    In [32]: print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
+    In [34]: print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
     Horizontal tensile stress = 7.57220e+00 MPa/mm
-    In [33]: print 'Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1])
+    In [35]: print 'Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1])
     Vertical compressive stress = 2.58660e+01 MPa/mm
 
-    In [34]: mat = pb.get_materials()['Load']
-    In [35]: P = 2.0 * mat.get_data('special', None, 'val')[1]
-    In [36]: P
-    Out[36]: -2000.0
+    In [36]: mat = pb.get_materials()['Load']
+    In [37]: P = 2.0 * mat.get_data('special', None, 'val')[1]
+    In [38]: P
+    Out[38]: -2000.0
 
-    In [37]: print 'Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.))
+    In [39]: print 'Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.))
     Horizontal tensile stress = 8.48826e+00 MPa/mm
-    In [38]: print 'Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.))
+    In [40]: print 'Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.))
     Vertical compressive stress = 2.54648e+01 MPa/mm
 
 To wrap this tutorial up let's explore *SfePy*'s probing functions.
