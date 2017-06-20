@@ -9,11 +9,14 @@ Tutorial
    :local:
    :backlinks: top
 
+Basic *SfePy* Usage
+-------------------
 
-*SfePy* package can be used in two basic ways as a: (TBD)
+*SfePy* package can be used in two basic ways as a:
 
 #. Black-box Partial Differential Equation (PDE) solver,
-#. Python package to build custom applications involving solving PDEs by the Finite Element Method (FEM).
+#. Python package to build custom applications
+   involving solving PDEs by the Finite Element Method (FEM).
 
 This tutorial focuses on the first way and introduces the basic concepts
 and nomenclature used in the following parts of the documentation. Check
@@ -22,7 +25,52 @@ also the :doc:`primer` which focuses on a particular problem in detail.
 Users not familiar with the finite element method should start with the
 :ref:`sec-solving-pdes-fem`.
 
-Basic notions
+.. _invoking_from_command_line:
+
+Invoking *SfePy* from the Command Line
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section introduces the basics of running *SfePy* from the command line.
+The ``$`` indicates the command prompt of your terminal.
+
+* The script `simple.py` is the most basic starting point in *SfePy*. It
+  can be invoked either directly::
+
+    $ ./simple.py <problem_description_file.py>
+
+  resp. ::
+
+    $ python ./simple.py <problem_description_file.py>
+
+  or use can use a main :ref:`command wrapper <SfePy-command-wrapper>`::
+
+    $ ./sfepy-run simple <problem_description_file.py>
+
+  resp. ::
+
+    $ sfepy-run simple <problem_description_file.py>
+
+  or even ::
+
+    $ python sfepy-run simple <problem_description_file.py>
+
+Please note, that concrete command line usage may vary and highly depends on
+installed Python distribution and used OS (see :ref:`installing_sfepy` for
+further info). All (working) alternatives described above are interchangeable,
+so feel free to pick your choice.
+
+
+Using *SfePy* Interactively
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All functions of *SfePy* package can be also used interactively (see
+:ref:`sec-interactive-example-linear-elasticity` for instance).
+
+We recommend to use `IPython`_ interactive shell for best fluent user
+experiences. You can customize your `IPython` startup profile as described in
+:ref:`using-ipython`.
+
+Basic Notions
 -------------
 
 The simplest way of using *SfePy* is to solve a system of PDEs defined
@@ -40,12 +88,12 @@ names.
 
 Below we show:
 
-#. how to solve a problem given by a problem description file, and
-#. explain the elements of the file on several examples.
+* how to solve a problem given by a problem description file, and
+* explain the elements of the file on several examples.
 
 But let us begin with a slight detour...
 
-Sneak peek: what is going on under the hood
+Sneak Peek: What is Going on Under the Hood
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #. A top-level script (usually `simple.py` as in this tutorial) reads
@@ -83,48 +131,26 @@ demonstrating the interactive creation of the
 
 Now let us continue with running a simulation.
 
-Running a simulation
+Running a Simulation
 --------------------
 
 The following commands should be run in the top-level directory of the *SfePy*
 source tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions.
 
-.. _invoking_command_line:
-
-Invoking *SfePy* from the command line
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This section introduces the basics of running *SfePy* on the command line. The
-``$`` indicates the command prompt of your terminal.
-
-* The script ``simple.py`` is the most basic starting point in *SfePy*. It is
-  invoked as follows (depending on type of your setup)::
-
-    $ ./simple.py examples/diffusion/poisson_short_syntax.py
-
-  or use the main wrap-on *SfePy* startup script::
-
-    $ ./sfepy-run simple examples/diffusion/poisson_short_syntax.py
-
-* :download:`examples/diffusion/poisson_short_syntax.py
-  <../examples/diffusion/poisson_short_syntax.py>` is the *SfePy*
-  :ref:`sec-problem-description-file`, which defines the problem to be
+* Download :download:`examples/diffusion/poisson_short_syntax.py
+  <../examples/diffusion/poisson_short_syntax.py>`. It represents our sample
+  *SfePy* :ref:`sec-problem-description-file`, which defines the problem to be
   solved in terms *SfePy* can understand.
 
-* Running the above command creates the output file ``cylinder.vtk`` in the
-  *SfePy* top-level directory.
-
-* *SfePy* can also be invoked using `IPython`_ interactive shell from the
-  *SfePy* top-level directory::
-
-    $ ipython
-
-  See :ref:`sec-interactive-example-linear-elasticity` for more information.
+* Use downloaded file as `<problem_description_file.py>` and run `simple.py`
+  as :ref:`described above <invoking_from_command_line>`. Successful
+  execution of the command creates output
+  file ``cylinder.vtk`` in the *SfePy* top-level directory.
 
 .. _postprocessing:
 
-Postprocessing the results
+Postprocessing the Results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The `postproc.py` script can be used for quick postprocessing and
@@ -151,7 +177,7 @@ Postprocessing the results
 
 .. _poisson-example-tutorial:
 
-Example problem description file
+Example Problem Description File
 --------------------------------
 
 Here we discuss the contents of the
@@ -351,7 +377,7 @@ The solvers to use are specified in the options block. We can define multiple
 solvers with different convergence parameters if necessary.
 
 That's it! Now it is possible to proceed as described in
-:ref:`invoking_command_line`.
+:ref:`invoking_from_command_line`.
 
 .. _sec-interactive-example-linear-elasticity:
 
@@ -408,29 +434,19 @@ and load :ref:`SfePy custom imports <sfepy-custom-imports>`:
 .. sourcecode:: ipython
 
     In [1]:  import numpy as nm
-
-    In [2]:  from sfepy.base.base import IndexedStruct
-    In [3]:  from sfepy.discrete import (FieldVariable, Material, Integral, Function,
-       ...:                              Equation, Equations, Problem)
-    In [4]:  from sfepy.discrete.fem import Mesh, FEDomain, Field
-    In [5]:  from sfepy.terms import Term
-    In [6]:  from sfepy.discrete.conditions import Conditions, EssentialBC
-    In [7]:  from sfepy.solvers.ls import ScipyDirect
-    In [8]:  from sfepy.solvers.nls import Newton
-    In [9]:  from sfepy.postprocess.viewer import Viewer
-    In [10]: from sfepy.mechanics.matcoefs import stiffness_from_lame
+    In [2]:  from sfepy.discrete.fem import Mesh, FEDomain, Field
 
 Read a finite element mesh, that defines the domain :math:`\Omega`.
 
 .. sourcecode:: ipython
 
-    In [11]: mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
+    In [3]: mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
 
 Create a domain. The domain allows defining regions or subdomains.
 
 .. sourcecode:: ipython
 
-    In [12]: domain = FEDomain('domain', mesh)
+    In [4]: domain = FEDomain('domain', mesh)
 
 Define the regions -- the whole domain :math:`\Omega`, where the solution
 is sought, and :math:`\Gamma_1`, :math:`\Gamma_2`, where the boundary
@@ -439,13 +455,13 @@ bounding box to get correct bounds for selecting the boundary edges.
 
 .. sourcecode:: ipython
 
-    In [13]: min_x, max_x = domain.get_mesh_bounding_box()[:, 0]
-    In [14]: eps = 1e-8 * (max_x - min_x)
-    In [15]: omega = domain.create_region('Omega', 'all')
-    In [16]: gamma1 = domain.create_region('Gamma1',
+    In [5]: min_x, max_x = domain.get_mesh_bounding_box()[:, 0]
+    In [6]: eps = 1e-8 * (max_x - min_x)
+    In [7]: omega = domain.create_region('Omega', 'all')
+    In [8]: gamma1 = domain.create_region('Gamma1',
        ...:                               'vertices in x < %.10f' % (min_x + eps),
        ...:                               'facet')
-    In [17]: gamma2 = domain.create_region('Gamma2',
+    In [9]: gamma2 = domain.create_region('Gamma2',
        ...:                               'vertices in x > %.10f' % (max_x - eps),
        ...:                               'facet')
 
@@ -454,17 +470,20 @@ Next we define the actual finite element approximation using the
 
 .. sourcecode:: ipython
 
-    In [18]: field = Field.from_args('fu', nm.float64, 'vector', omega,
-       ...:                         space='H1', poly_space_base='lagrange',
-       ...:                         approx_order=2)
+    In [10]: field = Field.from_args('fu', nm.float64, 'vector', omega,
+       ...:                          space='H1', poly_space_base='lagrange',
+       ...:                          approx_order=2)
 
 Using the field `fu`, we can define both the unknown variable :math:`\ub` and
 the test variable :math:`\vb`.
 
 .. sourcecode:: ipython
 
-    In [19]: u = FieldVariable('u', 'unknown', field)
-    In [20]: v = FieldVariable('v', 'test', field, primary_var_name='u')
+    In [11]: from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+        ...:                             Equation, Equations, Problem)
+
+    In [12]: u = FieldVariable('u', 'unknown', field)
+    In [13]: v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 Before we can define the terms to build the equation of linear
 elasticity, we have to create also the materials, i.e. define the
@@ -475,25 +494,28 @@ defined using the two Lamé constants :math:`\lambda = 1`, :math:`\mu =
 
 .. sourcecode:: ipython
 
-    In [21]: m = Material('m', lam=1.0, mu=1.0)
-    In [22]: f = Material('f', val=[[0.02], [0.01]])
+    In [14]: m = Material('m', lam=1.0, mu=1.0)
+    In [15]: f = Material('f', val=[[0.02], [0.01]])
 
 One more thing needs to be defined -- the numerical quadrature that will
 be used to integrate each term over its domain.
 
 .. sourcecode:: ipython
 
-    In [23]: integral = Integral('i', order=3)
+    In [16]: integral = Integral('i', order=3)
 
 Now we are ready to define the two terms and build the equations.
 
 .. sourcecode:: ipython
 
-    In [24]: t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
-                  integral, omega, m=m, v=v, u=u)
-    In [25]: t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
-    In [26]: eq = Equation('balance', t1 + t2)
-    In [27]: eqs = Equations([eq])
+    In [17]: from sfepy.terms import Term
+
+    In [18]: Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+        ...:          integral, omega, m=m, v=v, u=u)
+    In [19]: t2 = Term.new('dw_volume_lvf(f.val, v)',
+        ...:               integral, omega, f=f, v=v)
+    In [20]: eq = Equation('balance', t1 + t2)
+    In [21]: eqs = Equations([eq])
 
 The equations have to be completed by boundary conditions. Let us clamp
 the left edge :math:`\Gamma_1`, and shift the right edge
@@ -502,13 +524,15 @@ the left edge :math:`\Gamma_1`, and shift the right edge
 
 .. sourcecode:: ipython
 
-   In [28]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
-   In [29]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
-      ....:     val = shift * coors[:,1]**2
-      ....:     return val
-   In [30]: bc_fun = Function('shift_u_fun', shift_u_fun,
-      ....:                   extra_args={'shift' : 0.01})
-   In [31]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
+   In [22]: from sfepy.discrete.conditions import Conditions, EssentialBC
+
+   In [23]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
+   In [24]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
+       ...:                 val = shift * coors[:,1]**2
+       ...:                 return val
+   In [25]: bc_fun = Function('shift_u_fun', shift_u_fun,
+       ...:                   extra_args={'shift' : 0.01})
+   In [26]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
 
 The last thing to define before building the problem are the
 solvers. Here we just use a sparse direct *SciPy solver* and the *SfePy
@@ -518,9 +542,13 @@ it should converge in one iteration.
 
 .. sourcecode:: ipython
 
-    In [32]: ls = ScipyDirect({})
-    In [33]: nls_status = IndexedStruct()
-    In [34]: nls = Newton({}, lin_solver=ls, status=nls_status)
+    In [27]: from sfepy.base.base import IndexedStruct
+    In [28]: from sfepy.solvers.ls import ScipyDirect
+    In [29]: from sfepy.solvers.nls import Newton
+
+    In [30]: ls = ScipyDirect({})
+    In [31]: nls_status = IndexedStruct()
+    In [32]: nls = Newton({}, lin_solver=ls, status=nls_status)
 
 Now we are ready to create a :class:`Problem <sfepy.discrete.problem.Problem>`
 instance. Note that the step above is not really necessary -- the above solvers
@@ -528,21 +556,23 @@ are constructed by default. We did them to get the `nls_status`.
 
 .. sourcecode:: ipython
 
-    In [35]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+    In [33]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
 
 The :class:`Problem <sfepy.discrete.problem.Problem>` has several handy methods
 for debugging. Let us try saving the regions into a VTK file.
 
 .. sourcecode:: ipython
 
-    In [36]: pb.save_regions_as_groups('regions')
+    In [34]: pb.save_regions_as_groups('regions')
 
 And view them.
 
 .. sourcecode:: ipython
 
-    In [37]: view = Viewer('regions.vtk')
-    In [38]: view()
+    In [35]: from sfepy.postprocess.viewer import Viewer
+
+    In [36]: view = Viewer('regions.vtk')
+    In [37]: view()
 
 You should see this:
 
@@ -555,12 +585,14 @@ view the results.
 
 .. sourcecode:: ipython
 
-    In [39]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
-    In [40]: vec = pb.solve()
-    In [41]: print nls_status
-    In [42]: pb.save_state('linear_elasticity.vtk', vec)
-    In [43]: view = Viewer('linear_elasticity.vtk')
-    In [44]: view()
+    In [38]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+    In [39]: vec = pb.solve()
+
+    In [40]: print(nls_status)
+
+    In [41]: pb.save_state('linear_elasticity.vtk', vec)
+    In [42]: view = Viewer('linear_elasticity.vtk')
+    In [43]: view()
 
 This is the resulting image:
 
@@ -573,8 +605,8 @@ shifting the mesh. Close the previous window and do:
 
 .. sourcecode:: ipython
 
-    In [45]: view(vector_mode='warp_norm', rel_scaling=2,
-       ....:      is_scalar_bar=True, is_wireframe=True)
+    In [44]: view(vector_mode='warp_norm', rel_scaling=2,
+        ...:      is_scalar_bar=True, is_wireframe=True)
 
 And the result is:
 
