@@ -425,11 +425,9 @@ insight about the object internals.
 The whole example summarized in a script is available below in
 :ref:`tutorial_interactive_source`.
 
-In the *SfePy* top-level directory, run ::
+In the *SfePy* top-level directory run ::
 
     $ ipython
-
-and load :ref:`SfePy custom imports <sfepy-custom-imports>`:
 
 .. sourcecode:: ipython
 
@@ -494,28 +492,30 @@ defined using the two Lamé constants :math:`\lambda = 1`, :math:`\mu =
 
 .. sourcecode:: ipython
 
-    In [14]: m = Material('m', lam=1.0, mu=1.0)
-    In [15]: f = Material('f', val=[[0.02], [0.01]])
+    In [14]: from sfepy.mechanics.matcoefs import stiffness_from_lame
+
+    In [15]: m = Material('m', D=stiffness_from_lame(dim=2, lam=1.0, mu=1.0))
+    In [16]: f = Material('f', val=[[0.02], [0.01]])
 
 One more thing needs to be defined -- the numerical quadrature that will
 be used to integrate each term over its domain.
 
 .. sourcecode:: ipython
 
-    In [16]: integral = Integral('i', order=3)
+    In [17]: integral = Integral('i', order=3)
 
 Now we are ready to define the two terms and build the equations.
 
 .. sourcecode:: ipython
 
-    In [17]: from sfepy.terms import Term
+    In [18]: from sfepy.terms import Term
 
-    In [18]: Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
-        ...:          integral, omega, m=m, v=v, u=u)
-    In [19]: t2 = Term.new('dw_volume_lvf(f.val, v)',
+    In [19]: t1 = Term.new('dw_lin_elastic(m.D, v, u)',
+        ...:               integral, omega, m=m, v=v, u=u)
+    In [20]: t2 = Term.new('dw_volume_lvf(f.val, v)',
         ...:               integral, omega, f=f, v=v)
-    In [20]: eq = Equation('balance', t1 + t2)
-    In [21]: eqs = Equations([eq])
+    In [21]: eq = Equation('balance', t1 + t2)
+    In [22]: eqs = Equations([eq])
 
 The equations have to be completed by boundary conditions. Let us clamp
 the left edge :math:`\Gamma_1`, and shift the right edge
@@ -524,15 +524,15 @@ the left edge :math:`\Gamma_1`, and shift the right edge
 
 .. sourcecode:: ipython
 
-   In [22]: from sfepy.discrete.conditions import Conditions, EssentialBC
+   In [23]: from sfepy.discrete.conditions import Conditions, EssentialBC
 
-   In [23]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
-   In [24]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
+   In [24]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
+   In [25]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
        ...:                 val = shift * coors[:,1]**2
        ...:                 return val
-   In [25]: bc_fun = Function('shift_u_fun', shift_u_fun,
+   In [26]: bc_fun = Function('shift_u_fun', shift_u_fun,
        ...:                   extra_args={'shift' : 0.01})
-   In [26]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
+   In [27]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
 
 The last thing to define before building the problem are the
 solvers. Here we just use a sparse direct *SciPy solver* and the *SfePy
@@ -542,13 +542,13 @@ it should converge in one iteration.
 
 .. sourcecode:: ipython
 
-    In [27]: from sfepy.base.base import IndexedStruct
-    In [28]: from sfepy.solvers.ls import ScipyDirect
-    In [29]: from sfepy.solvers.nls import Newton
+    In [28]: from sfepy.base.base import IndexedStruct
+    In [29]: from sfepy.solvers.ls import ScipyDirect
+    In [30]: from sfepy.solvers.nls import Newton
 
-    In [30]: ls = ScipyDirect({})
-    In [31]: nls_status = IndexedStruct()
-    In [32]: nls = Newton({}, lin_solver=ls, status=nls_status)
+    In [31]: ls = ScipyDirect({})
+    In [32]: nls_status = IndexedStruct()
+    In [33]: nls = Newton({}, lin_solver=ls, status=nls_status)
 
 Now we are ready to create a :class:`Problem <sfepy.discrete.problem.Problem>`
 instance. Note that the step above is not really necessary -- the above solvers
@@ -556,23 +556,23 @@ are constructed by default. We did them to get the `nls_status`.
 
 .. sourcecode:: ipython
 
-    In [33]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+    In [34]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
 
 The :class:`Problem <sfepy.discrete.problem.Problem>` has several handy methods
 for debugging. Let us try saving the regions into a VTK file.
 
 .. sourcecode:: ipython
 
-    In [34]: pb.save_regions_as_groups('regions')
+    In [35]: pb.save_regions_as_groups('regions')
 
 And view them.
 
 .. sourcecode:: ipython
 
-    In [35]: from sfepy.postprocess.viewer import Viewer
+    In [36]: from sfepy.postprocess.viewer import Viewer
 
-    In [36]: view = Viewer('regions.vtk')
-    In [37]: view()
+    In [37]: view = Viewer('regions.vtk')
+    In [38]: view()
 
 You should see this:
 
@@ -585,14 +585,14 @@ view the results.
 
 .. sourcecode:: ipython
 
-    In [38]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
-    In [39]: vec = pb.solve()
+    In [39]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+    In [40]: vec = pb.solve()
 
-    In [40]: print(nls_status)
+    In [41]: print(nls_status)
 
-    In [41]: pb.save_state('linear_elasticity.vtk', vec)
-    In [42]: view = Viewer('linear_elasticity.vtk')
-    In [43]: view()
+    In [42]: pb.save_state('linear_elasticity.vtk', vec)
+    In [43]: view = Viewer('linear_elasticity.vtk')
+    In [44]: view()
 
 This is the resulting image:
 
@@ -605,7 +605,7 @@ shifting the mesh. Close the previous window and do:
 
 .. sourcecode:: ipython
 
-    In [44]: view(vector_mode='warp_norm', rel_scaling=2,
+    In [45]: view(vector_mode='warp_norm', rel_scaling=2,
         ...:      is_scalar_bar=True, is_wireframe=True)
 
 And the result is:
@@ -621,7 +621,7 @@ See the docstring of `view()` and play with its options.
 Complete Example as a Script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The source code: :download:`linear_elasticity.py
+The source code: :download:`linear_elastic_interactive.py
 <../examples/linear_elasticity/linear_elastic_interactive.py>`.
 
 This file should be run from the top-level *SfePy* source directory so it can
