@@ -42,7 +42,7 @@ The ``$`` indicates the command prompt of your terminal.
 
     $ python ./simple.py <problem_description_file.py>
 
-  or use can use a main :ref:`command wrapper <SfePy-command-wrapper>`::
+  or use can use the main :ref:`command wrapper <SfePy-command-wrapper>`::
 
     $ ./sfepy-run simple <problem_description_file.py>
 
@@ -66,8 +66,8 @@ Using *SfePy* Interactively
 All functions of *SfePy* package can be also used interactively (see
 :ref:`sec-interactive-example-linear-elasticity` for instance).
 
-We recommend to use `IPython`_ interactive shell for best fluent user
-experiences. You can customize your `IPython` startup profile as described in
+We recommend to use the `IPython`_ interactive shell for the best fluent user
+experience. You can customize your `IPython` startup profile as described in
 :ref:`using-ipython`.
 
 Basic Notions
@@ -99,12 +99,11 @@ Sneak Peek: What is Going on Under the Hood
 #. A top-level script (usually `simple.py` as in this tutorial) reads
    in an input file.
 
-#. Following the contents of the input file, a :class:`Problem
-   <sfepy.discrete.problem.Problem>` instance is created -- this
-   is the input file coming to life. Let us call the instance
-   :class:`Problem <sfepy.discrete.problem.Problem>`.
+#. Following the contents of the input file, a `Problem` instance is created
+   -- this is the input file coming to life. Let us call the instance
+   `Problem`.
 
-   * The :class:`Problem <sfepy.discrete.problem.Problem>` sets up its domain,
+   * The `Problem` sets up its domain,
      regions (various sub-domains), fields (the FE approximations), the
      equations and the solvers. The equations determine the materials and
      variables in use -- only those are fully instantiated, so the input
@@ -122,12 +121,10 @@ Sneak Peek: What is Going on Under the Hood
 
 The above last three steps are essentially repeated for each time step. So that
 is it -- using the code a black-box PDE solver shields the user from having to
-create the :class:`Problem <sfepy.discrete.problem.Problem>` instance by hand.
-But note that this is possible, and often necessary when the flexibility of the
-default solvers is not enough. At the end of the tutorial an example
-demonstrating the interactive creation of the
-:class:`Problem <sfepy.discrete.problem.Problem>`  is shown, see
-:ref:`sec-interactive-example-linear-elasticity`.
+create the `Problem` instance by hand. But note that this is possible, and
+often necessary when the flexibility of the default solvers is not enough. At
+the end of the tutorial an example demonstrating the interactive creation of
+the `Problem`  is shown, see :ref:`sec-interactive-example-linear-elasticity`.
 
 Now let us continue with running a simulation.
 
@@ -143,9 +140,9 @@ source tree after compiling the C extension files. See
   *SfePy* :ref:`sec-problem-description-file`, which defines the problem to be
   solved in terms *SfePy* can understand.
 
-* Use downloaded file as `<problem_description_file.py>` and run `simple.py`
-  as :ref:`described above <invoking_from_command_line>`. Successful
-  execution of the command creates output
+* Use the downloaded file in place of `<problem_description_file.py>` and
+  run `simple.py` as :ref:`described above <invoking_from_command_line>`.
+  The successful execution of the command creates output
   file ``cylinder.vtk`` in the *SfePy* top-level directory.
 
 .. _postprocessing:
@@ -332,7 +329,7 @@ The equation above directly corresponds to the discrete version of
 
 where :math:`\nabla u \approx \bm{G} \bm{u}`.
 
-The equations block is the heart of the *SfePy* problem definition file. Here,
+The equations block is the heart of the *SfePy* problem description file. Here,
 we are specifying that the Laplacian of the temperature (in the weak
 formulation) is 0, where `coef.val` is a material constant. We are using the
 `'i'` integral defined previously, over the domain specified by the region
@@ -386,7 +383,7 @@ Interactive Example: Linear Elasticity
 
 This example shows how to use *SfePy* interactively, but also how to make a
 custom simulation script. We will use `IPython`_ interactive shell which
-allows more flexible and intuitive work (but you cau use standard Python
+allows more flexible and intuitive work (but you can use standard Python
 shell as well).
 
 We wish to solve the following linear elasticity problem:
@@ -431,8 +428,8 @@ In the *SfePy* top-level directory run ::
 
 .. sourcecode:: ipython
 
-    In [1]:  import numpy as nm
-    In [2]:  from sfepy.discrete.fem import Mesh, FEDomain, Field
+    In [1]: import numpy as nm
+    In [2]: from sfepy.discrete.fem import Mesh, FEDomain, Field
 
 Read a finite element mesh, that defines the domain :math:`\Omega`.
 
@@ -469,7 +466,6 @@ Next we define the actual finite element approximation using the
 .. sourcecode:: ipython
 
     In [10]: field = Field.from_args('fu', nm.float64, 'vector', omega,
-       ...:                          space='H1', poly_space_base='lagrange',
        ...:                          approx_order=2)
 
 Using the field `fu`, we can define both the unknown variable :math:`\ub` and
@@ -550,9 +546,9 @@ it should converge in one iteration.
     In [32]: nls_status = IndexedStruct()
     In [33]: nls = Newton({}, lin_solver=ls, status=nls_status)
 
-Now we are ready to create a :class:`Problem <sfepy.discrete.problem.Problem>`
-instance. Note that the step above is not really necessary -- the above solvers
-are constructed by default. We did them to get the `nls_status`.
+Now we are ready to create a `Problem` instance. Note that the step above is
+not really necessary -- the above solvers are constructed by default. We did
+them to get the `nls_status`.
 
 .. sourcecode:: ipython
 

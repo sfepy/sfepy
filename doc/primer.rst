@@ -45,7 +45,7 @@ The tensile and compressive stresses that develop in the specimen as a
 result of the point loads P are a function of the diameter :math:`D` and
 thickness :math:`t` of the cylindrical specimen. At the centre of the
 specimen, the compressive stress is 3 times the tensile stress and the
-analytical formulation for these are respectively:
+analytical formulation for these are, respectively:
 
 .. math::
    :label: eq_tensile_stress

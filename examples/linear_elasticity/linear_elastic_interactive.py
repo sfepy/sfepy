@@ -55,7 +55,6 @@ def main():
                                   'facet')
 
     field = Field.from_args('fu', nm.float64, 'vector', omega,
-                            space='H1', poly_space_base='lagrange',
                             approx_order=2)
 
     u = FieldVariable('u', 'unknown', field)
