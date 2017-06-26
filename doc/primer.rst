@@ -231,7 +231,7 @@ Running *SfePy*
 One option to solve the problem is to run the *SfePy* `simple.py` script
 from the command line::
 
-    $ ./simple.py its2D_1.py
+    ./simple.py its2D_1.py
 
 **Note:** For the purpose of this tutorial it is assumed that the
 `problem description file` (``its2D_1.py``) is in the same directory as
@@ -255,7 +255,7 @@ editor. You'll notice that the output file includes separate sections:
 this script you need to have `Mayavi`_ installed. From the command line issue
 the following (assuming the correct paths)::
 
-    $ ./postproc.py its2D.vtk
+    ./postproc.py its2D.vtk
 
 The `postproc.py` script generates the image shown below, which shows by
 default the displacements in the model as arrows and their magnitude as
@@ -286,8 +286,8 @@ accordingly. The problem options were also updated to call the
 Run *SfePy* to solve the updated problem and view the solution (assuming
 the correct paths)::
 
-    $ ./simple.py its2D_2.py
-    $ ./postproc.py its2D.vtk -b
+    ./simple.py its2D_2.py
+    ./postproc.py its2D.vtk -b
 
 In addition to the node displacements, the VTK output shown below now
 also includes the stresses and strains averaged in the elements:
@@ -311,7 +311,7 @@ examples).
 
 In the *SfePy* top-level directory run ::
 
-    $ ipython
+    ipython
 
 issue the following commands:
 
@@ -609,7 +609,7 @@ the model.
 
 Run *SfePy* to solve the problem and apply the probes::
 
-    $ ./simple.py its2D_5.py
+    ./simple.py its2D_5.py
 
 The probing function will generate the following figures that show the
 displacements, normal stresses and strains as well as shear stresses

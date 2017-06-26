@@ -39,7 +39,7 @@ and *SfePy* build method (see :ref:`installing_sfepy` for further info). All
 feel free to pick your preferred choice (see :ref:`basic-usage` for further
 explanation and more usage examples).
 
-Depending on selected build method and OS used we recommend:
+Depending on selected build method and OS used we recommend for:
 
 * In-place build
 
@@ -167,7 +167,7 @@ Postprocessing the Results
 
 * As a simple example, try::
 
-  $ ./postproc.py cylinder.vtk
+  ./postproc.py cylinder.vtk
 
 * The following interactive 3D window should display:
 
@@ -435,7 +435,7 @@ The whole example summarized in a script is available below in
 
 In the *SfePy* top-level directory run ::
 
-    $ ipython
+    ipython
 
 .. sourcecode:: ipython
 
