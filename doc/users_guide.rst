@@ -18,6 +18,8 @@ tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions info. The
 ``$`` indicates the command prompt of your terminal.
 
+.. _basic-usage:
+
 Basic Usage
 ^^^^^^^^^^^
 
@@ -66,6 +68,8 @@ Applications
 
         $ ./postproc.py mesh.vtk
 
+.. _SfePy-command-wrapper:
+
 Using Command Wrapper
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -93,7 +97,7 @@ Notes
 
 * This is a "new" supported method. Any *SfePy* script can be still
   run as stand-alone (as mentioned above).
-* Both "--inplace" and "system-wide" installations are supported.
+* Both "inplace" and "system-wide" installations are supported.
 
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^

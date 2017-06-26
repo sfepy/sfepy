@@ -39,7 +39,7 @@ Python packages required for using *SfePy*:
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
 - `Mayavi`_ for postproc.py,
-- `Pysparse`_ for schroedinger.py,
+- `Pysparse`_ for schroedinger.py (currently available for Python 2.7.x only),
 - `igakit`_ for script/gen_iga_patch.py - simple IGA domain generator,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
@@ -68,7 +68,7 @@ Other dependencies/suggestions:
   some parts of primer/tutorial (see :ref:`using-ipython`).
 
 
-.. _Python_distribution
+.. _Python_distribution:
 
 Notes on selecting Python Distribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -202,7 +202,7 @@ Depending on type of your build run following tests:
     ./sfepy-run run_tests
 
 
-- installed (localy or system-wide) build::
+- installed (local or system-wide) build::
 
     sfepy-run run_tests
 
@@ -248,42 +248,47 @@ Then re-run your code and report the output to the `SfePy mailing list`_.
 Using IPython
 -------------
 
-It is preferable to use (a customized) `IPython`_ over the regular Python shell
-when following :doc:`tutorial` or :doc:`primer`. Install `IPython`_ and then
-customize it as follows:
+We generally recommend to use (a customized) `IPython`_ interactive shell over
+the regular Python interpreter when following :doc:`tutorial` or
+:doc:`primer` (or even for any regular interactive work with *SfePy*).
 
-#. Create a new profile::
+Install `IPython`_ (as a generic part of your selected distribution) and then
+customize it to your choice.
+
+Depending on your IPython usage, you can customize your `default` profile or
+create a *SfePy* specific new one as follows:
+
+#. Create a new *SfePy* profile::
 
      ipython profile create sfepy
 
 #. Open the ``~/.ipython/profile_sfepy/ipython_config.py`` file in a text
-   editor and add/edit after the ``c = get_config()`` line the following:
+   editor and add/edit after the ``c = get_config()`` line:
 
    .. sourcecode:: python
 
       exec_lines = [
-          'from sfepy.base.base import *',
-          'from sfepy.discrete import *',
-          'from sfepy.discrete.fem import *',
-          'from sfepy.applications import solve_pde',
+          'import numpy as nm',
           'import matplotlib as mpl',
           'mpl.use("WXAgg")',
-          'from matplotlib.pyplot import *',
-          'from sfepy.postprocess.viewer import Viewer',
+      #
+      # Add your preferred SfePy customization here...
+      #
       ]
 
       c.InteractiveShellApp.exec_lines = exec_lines
-
       c.TerminalIPythonApp.gui = 'wx'
-
       c.TerminalInteractiveShell.colors = 'Linux' # NoColor, Linux, or LightBG
+
+   Please note, that generally it is not recommended to use `star` (*)
+   imports here.
 
 #. Run the customized IPython shell::
 
      ipython --profile=sfepy
 
-.. _multi_platform_distributions_notes:
 
+.. _multi_platform_distributions_notes:
 
 Notes on Multi-platform Python Distributions
 --------------------------------------------

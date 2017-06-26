@@ -18,6 +18,7 @@ from sfepy.solvers.nls import Newton
 from sfepy.postprocess.viewer import Viewer
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
+
 def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
     """
     Define a displacement depending on the y coordinate.
@@ -36,8 +37,8 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-s', '--show',
-                      action="store_true", dest='show',
-                      default=False, help=helps['show'])
+                        action="store_true", dest='show',
+                        default=False, help=helps['show'])
     options = parser.parse_args()
 
     mesh = Mesh.from_file(data_dir + '/meshes/2d/rectangle_tri.mesh')
@@ -53,7 +54,8 @@ def main():
                                   'vertices in x > %.10f' % (max_x - eps),
                                   'facet')
 
-    field = Field.from_args('fu', nm.float64, 'vector', omega, approx_order=2)
+    field = Field.from_args('fu', nm.float64, 'vector', omega,
+                            approx_order=2)
 
     u = FieldVariable('u', 'unknown', field)
     v = FieldVariable('v', 'test', field, primary_var_name='u')
@@ -64,14 +66,15 @@ def main():
     integral = Integral('i', order=3)
 
     t1 = Term.new('dw_lin_elastic(m.D, v, u)',
-         integral, omega, m=m, v=v, u=u)
+                  integral, omega, m=m, v=v, u=u)
     t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
     eq = Equation('balance', t1 + t2)
     eqs = Equations([eq])
 
     fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
 
-    bc_fun = Function('shift_u_fun', shift_u_fun, extra_args={'shift' : 0.01})
+    bc_fun = Function('shift_u_fun', shift_u_fun,
+                      extra_args={'shift' : 0.01})
     shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
 
     ls = ScipyDirect({})
