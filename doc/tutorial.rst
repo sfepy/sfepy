@@ -478,7 +478,7 @@ Next we define the actual finite element approximation using the
 .. sourcecode:: ipython
 
     In [10]: field = Field.from_args('fu', nm.float64, 'vector', omega,
-       ...:                          approx_order=2)
+       ....:                         approx_order=2)
 
 Using the field `fu`, we can define both the unknown variable :math:`\ub` and
 the test variable :math:`\vb`.
@@ -486,7 +486,7 @@ the test variable :math:`\vb`.
 .. sourcecode:: ipython
 
     In [11]: from sfepy.discrete import (FieldVariable, Material, Integral, Function,
-        ...:                             Equation, Equations, Problem)
+       ....:                             Equation, Equations, Problem)
 
     In [12]: u = FieldVariable('u', 'unknown', field)
     In [13]: v = FieldVariable('v', 'test', field, primary_var_name='u')
@@ -519,9 +519,10 @@ Now we are ready to define the two terms and build the equations.
     In [18]: from sfepy.terms import Term
 
     In [19]: t1 = Term.new('dw_lin_elastic(m.D, v, u)',
-        ...:               integral, omega, m=m, v=v, u=u)
+       ....:               integral, omega, m=m, v=v, u=u)
+
     In [20]: t2 = Term.new('dw_volume_lvf(f.val, v)',
-        ...:               integral, omega, f=f, v=v)
+       ....:               integral, omega, f=f, v=v)
     In [21]: eq = Equation('balance', t1 + t2)
     In [22]: eqs = Equations([eq])
 
@@ -536,10 +537,10 @@ the left edge :math:`\Gamma_1`, and shift the right edge
 
    In [24]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
    In [25]: def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
-       ...:                 val = shift * coors[:,1]**2
-       ...:                 return val
+      ....:                 val = shift * coors[:,1]**2
+      ....:                 return val
    In [26]: bc_fun = Function('shift_u_fun', shift_u_fun,
-       ...:                   extra_args={'shift' : 0.01})
+      ....:                   extra_args={'shift' : 0.01})
    In [27]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
 
 The last thing to define before building the problem are the
@@ -614,7 +615,7 @@ shifting the mesh. Close the previous window and do:
 .. sourcecode:: ipython
 
     In [45]: view(vector_mode='warp_norm', rel_scaling=2,
-        ...:      is_scalar_bar=True, is_wireframe=True)
+       ...:       is_scalar_bar=True, is_wireframe=True)
 
 And the result is:
 

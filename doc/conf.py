@@ -47,7 +47,9 @@ if numpydoc_path is not None:
 extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
               'sphinx.ext.doctest', 'sphinx.ext.pngmath',
               'sphinx.ext.viewcode', 'numpydoc',
-              'ipython_console_highlighting', 'gen_term_table']
+              'gen_term_table',
+              'IPython.sphinxext.ipython_console_highlighting',
+              'IPython.sphinxext.ipython_directive']
 #extensions = ['sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
