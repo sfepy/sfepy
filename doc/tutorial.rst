@@ -112,9 +112,9 @@ Sneak Peek: What is Going on Under the Hood
 
 #. Following the contents of the input file, a `Problem` instance is created
    -- this is the input file coming to life. Let us call the instance
-   `Problem`.
+   `problem`.
 
-   * The `Problem` sets up its domain,
+   * The `Problem` instance sets up its domain,
      regions (various sub-domains), fields (the FE approximations), the
      equations and the solvers. The equations determine the materials and
      variables in use -- only those are fully instantiated, so the input
@@ -135,7 +135,8 @@ is it -- using the code a black-box PDE solver shields the user from having to
 create the `Problem` instance by hand. But note that this is possible, and
 often necessary when the flexibility of the default solvers is not enough. At
 the end of the tutorial an example demonstrating the interactive creation of
-the `Problem`  is shown, see :ref:`sec-interactive-example-linear-elasticity`.
+the `Problem` instance is shown, see
+:ref:`sec-interactive-example-linear-elasticity`.
 
 Now let us continue with running a simulation.
 
@@ -472,7 +473,7 @@ bounding box to get correct bounds for selecting the boundary edges.
        ...:                               'facet')
 
 Next we define the actual finite element approximation using the
-:class:`Field` class.
+:class:`Field <sfepy.discrete.common.fields.Field>` class.
 
 .. sourcecode:: ipython
 

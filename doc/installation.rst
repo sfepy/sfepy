@@ -280,7 +280,7 @@ create a *SfePy* specific new one as follows:
       c.TerminalIPythonApp.gui = 'wx'
       c.TerminalInteractiveShell.colors = 'Linux' # NoColor, Linux, or LightBG
 
-   Please note, that generally it is not recommended to use `starred` (*)
+   Please note, that generally it is not recommended to use `star` (*)
    imports here.
 
 #. Run the customized IPython shell::
