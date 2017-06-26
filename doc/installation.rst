@@ -202,7 +202,7 @@ Depending on type of your build run following tests:
     ./sfepy-run run_tests
 
 
-- installed (localy or system-wide) build::
+- installed (local or system-wide) build::
 
     sfepy-run run_tests
 
@@ -280,7 +280,8 @@ create a *SfePy* specific new one as follows:
       c.TerminalIPythonApp.gui = 'wx'
       c.TerminalInteractiveShell.colors = 'Linux' # NoColor, Linux, or LightBG
 
-   Beware: generally it is NOT recommended to use `star (*)` imports here!
+   Please note, that generally it is not recommended to use `starred` (*)
+   imports here.
 
 #. Run the customized IPython shell::
 

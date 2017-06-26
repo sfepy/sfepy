@@ -18,6 +18,8 @@ tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions info. The
 ``$`` indicates the command prompt of your terminal.
 
+.. _basic-usage:
+
 Basic Usage
 ^^^^^^^^^^^
 

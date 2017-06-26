@@ -31,33 +31,44 @@ Invoking *SfePy* from the Command Line
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This section introduces the basics of running *SfePy* from the command line.
-The ``$`` indicates the command prompt of your terminal.
 
-* The script `simple.py` is the most basic starting point in *SfePy*. It
-  can be invoked either directly::
+The script `simple.py` is the **most basic starting point** in *SfePy*. It can
+be invoked in many (similar) ways which depends on used OS, Python distribution
+and *SfePy* build method (see :ref:`installing_sfepy` for further info). All
+(working) alternatives described below are interchangeable, so don't panic and
+feel free to pick your preferred choice (see :ref:`basic-usage` for further
+explanation and more usage examples).
 
-    $ ./simple.py <problem_description_file.py>
+Depending on selected build method and OS used we recommend:
 
-  resp. ::
+* In-place build
 
-    $ python ./simple.py <problem_description_file.py>
+  Use the top-level directory of *SfePy* source tree as your working directory
+  and use::
 
-  or use can use the main :ref:`command wrapper <SfePy-command-wrapper>`::
+    ./simple.py <problem_description_file>
 
-    $ ./sfepy-run simple <problem_description_file.py>
+  or (particularly on Windows based systems) ::
 
-  resp. ::
+    python ./simple.py <problem_description_file>
 
-    $ sfepy-run simple <problem_description_file.py>
+* Installed (local or system-wide) build
 
-  or even ::
+  Use any working directory including your `problem description file` and use::
 
-    $ python sfepy-run simple <problem_description_file.py>
+    python <path/to/installed/simple.py> <problem_description_file>
 
-Please note, that concrete command line usage may vary and highly depends on
-installed Python distribution and used OS (see :ref:`installing_sfepy` for
-further info). All (working) alternatives described above are interchangeable,
-so feel free to pick your choice.
+  or simply (on Unix based systems) ::
+
+    <path/to/installed/simple.py> <problem_description_file>
+
+  You can also use the simple *SfePy* `command-wrapper` (ensure that *SfePy*
+  installation `executable` directory is included in your PATH)::
+
+    sfepy-run simple <problem_description_file>
+
+Please note, that improper mixing of `in-place` and `install` builds on single
+command line may result in strange runtime errors.
 
 
 Using *SfePy* Interactively
