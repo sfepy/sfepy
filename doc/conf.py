@@ -216,7 +216,7 @@ latex_documents = [
 
 # Additional stuff for the LaTeX customization.
 #
-latex_engine = "xelatex"
+#latex_engine = "xelatex"
 latex_elements = {
     'preamble': r'''
 \usepackage{bm}
