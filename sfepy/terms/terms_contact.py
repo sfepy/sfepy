@@ -14,7 +14,8 @@ class ContactTerm(Term):
     """
     name = 'dw_contact'
     arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material' : 'str', 'virtual' : ('D', 'state'), 'state' : 'D'}
+    arg_shapes = {'material' : '.: 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
     integration = 'surface'
 
     def __init__(self, *args, **kwargs):
@@ -30,44 +31,34 @@ class ContactTerm(Term):
 
         return status
 
-    def get_fargs(self, material, virtual, state,
+    def get_fargs(self, epss, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         geo, _ = self.get_mapping(virtual)
 
-        region0 = self.region
-        region1 = self.region.domain.regions[material]
+        region = self.region
 
         if self.ci is None:
             self.ci = ContactInfo()
 
-        print(region0.name)
-        print(region0.shape)
-        print(region0.facets)
-        print(region0.get_facet_indices())
-        print(state.field.surface_data[region0.name].fis)
-
-        print(region1.name)
-        print(region1.shape)
-        print(region1.facets)
-        print(region1.get_facet_indices())
-        print(state.field.surface_data[region1.name].fis)
+        print(region.name)
+        print(region.shape)
+        print(region.facets)
+        print(region.get_facet_indices())
+        print(state.field.surface_data[region.name].fis)
 
         print(geo)
         print(geo.normal)
 
         mesh_coors = self.region.domain.mesh.coors
-        print(mesh_coors[region0.vertices])
+        print(mesh_coors[region.vertices])
 
         # Uses field connectivity (higher order nodes).
-        sd0 = state.field.surface_data[region0.name]
-        sd1 = state.field.surface_data[region1.name]
+        sd = state.field.surface_data[region.name]
 
         # Uses mesh connectivity.
-        sdg0 = self.region.domain.surface_groups[region0.name]
-        sdg1 = self.region.domain.surface_groups[region1.name]
+        sdg = self.region.domain.surface_groups[region.name]
 
-        print(mesh_coors[sdg0.econn])
-        print(mesh_coors[sdg1.econn])
+        print(mesh_coors[sdg.econn])
 
         qps = self.get_physical_qps()
         qp_coors = qps.values
@@ -79,16 +70,14 @@ class ContactTerm(Term):
         print(coors)
 
         ISN = state.field.efaces.T.copy()
-        nsd = region0.dim
+        nsd = region.dim
         ngp = geo.n_qp
         neq = state.n_dof
         nsn = ISN.shape[0]
         nes = ISN.shape[1]
         nen = state.field.gel.n_vertex
 
-        fis0 = region0.get_facet_indices()
-        fis1 = region1.get_facet_indices()
-        fis = nm.r_[fis0, fis1]
+        fis = region.get_facet_indices()
         elementID = fis[:, 0].copy()
         segmentID = fis[:, 1].copy()
 
@@ -111,7 +100,6 @@ class ContactTerm(Term):
 
         GPs = nm.empty((n*ngp, 2*nsd+6), dtype=nm.float64, order='F')
 
-        # [longestEdge, GPs]=getLongestEdgeAndGPs(n,nsd,ngp,neq,nsn,nes,nen,elementID,segmentID,ISN,IEN,H,xx);
         longestEdge, GPs = cc.get_longest_edge_and_gps(GPs, neq,
                                                        elementID, segmentID,
                                                        ISN, IEN, H, xx)
@@ -122,7 +110,7 @@ class ContactTerm(Term):
         # gg = state.field.mappings[('Omega', 2, 'volume')]
         # Implement Region.get_diameters(dim).
 
-        #print nm.sqrt(region0.domain.get_element_diameters(state.field.region.cells, gg[0], 0)).max()
+        #print nm.sqrt(region.domain.get_element_diameters(state.field.region.cells, gg[0], 0)).max()
         #print (GPs[:, :2] == qp_coors).all()
 
         #GPs2 = nm.zeros((n*ngp, 2*nsd+6), dtype=nm.float64, order='F')
@@ -145,7 +133,7 @@ class ContactTerm(Term):
 
         print head, next
 
-        npd = region0.tdim - 1
+        npd = region.tdim - 1
         GPs = cc.evaluate_contact_constraints(GPs, ISN, IEN, N,
                                               AABBmin, AABBmax,
                                               head, next, xx,
@@ -157,7 +145,6 @@ class ContactTerm(Term):
         Gc = nm.zeros(neq, dtype=nm.float64)
 
         activeGPs = GPs[:, 2*nsd+3]
-        epss = 1e9
         keyContactDetection = 1
         keyAssembleKc = 1
 

@@ -18,7 +18,7 @@ fields = {
 materials = {
     'solid' : ({'D': stiffness_from_lame(2, lam=5.769, mu=3.846)},),
     'load' : ({'val' : 1.0},),
-    'contact' : ({'.region0' : 'Contact0', '.region1' : 'Contact1'},),
+    'contact' : ({'.epss' : 1e9},),
 }
 
 variables = {
@@ -36,17 +36,21 @@ regions = {
                   'facet', 'Omega0'),
     'Contact1' : ('vertices in ((y > -0.0001) & (y < 0.0001))',
                   'facet', 'Omega1'),
+    'Contact' : ('r.Contact0 +s r.Contact1', 'facet')
 }
 
 ebcs = {
     'fixb' : ('Bottom', {'u.all' : 0.0}),
 }
 
+integrals = {
+    'i' : 1,
+}
+
 equations = {
     'elasticity' :
     """dw_lin_elastic.2.Omega(solid.D, v, u)
-     + dw_contact.10.Contact0(contact.region1, v, u)
-     - dw_contact.10.Contact1(contact.region0, v, u)
+     + dw_contact.i.Contact(contact.epss, v, u)
     = - dw_surface_ltr.2.Top(load.val, v)""",
 }
 
