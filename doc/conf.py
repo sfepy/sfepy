@@ -45,9 +45,11 @@ if numpydoc_path is not None:
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
-              'sphinx.ext.doctest', 'sphinx.ext.pngmath',
+              'sphinx.ext.doctest', 'sphinx.ext.imgmath',
               'sphinx.ext.viewcode', 'numpydoc',
-              'ipython_console_highlighting', 'gen_term_table']
+              'gen_term_table',
+              'IPython.sphinxext.ipython_console_highlighting',
+              'IPython.sphinxext.ipython_directive']
 #extensions = ['sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -212,9 +214,11 @@ latex_documents = [
 # not chapters.
 #latex_use_parts = False
 
-# Additional stuff for the LaTeX preamble.
-#latex_preamble = ''
-latex_preamble = r"""
+# Additional stuff for the LaTeX customization.
+#
+#latex_engine = "xelatex"
+latex_elements = {
+    'preamble': r'''
 \usepackage{bm}
 \usepackage{amsfonts}
 \def\dt{{\Delta t}}
@@ -244,7 +248,8 @@ latex_preamble = r"""
 \def\vb{\bm{v}}
 \def\Mb{\bm{M}}
 \def\vphib{\bm{\varphi}}
-"""
+''',
+}
 # LS: Are the following needed as well?
 #\def\Vcal{\mathcal{V}}
 #\def\Tcal{\mathcal{T}}
@@ -257,8 +262,11 @@ latex_preamble = r"""
 # If false, no module index is generated.
 #latex_use_modindex = True
 
-# Preamble for pngmath images
-pngmath_latex_preamble = latex_preamble
+# Preamble for imgmath images
+imgmath_latex_preamble = latex_elements['preamble']
+
+# Better math vertical alignment (need LaTeX preview package)
+imgmath_use_preview = True
 
 # Turn off numpydoc autosummary tables
 numpydoc_show_class_members = False

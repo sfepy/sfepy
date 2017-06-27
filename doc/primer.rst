@@ -556,7 +556,7 @@ file, namely lines 25, 26::
     refinement_level = 0
     filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
-The above computation could also be done in the customized ipython shell:
+The above computation could also be done in the customized IPython shell:
 
 .. sourcecode:: ipython
 
