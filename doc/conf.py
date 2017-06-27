@@ -214,9 +214,11 @@ latex_documents = [
 # not chapters.
 #latex_use_parts = False
 
-# Additional stuff for the LaTeX preamble.
-#latex_preamble = ''
-latex_preamble = r"""
+# Additional stuff for the LaTeX customization.
+#
+latex_engine = "xelatex"
+latex_elements = {
+    'preamble': r'''
 \usepackage{bm}
 \usepackage{amsfonts}
 \def\dt{{\Delta t}}
@@ -246,7 +248,8 @@ latex_preamble = r"""
 \def\vb{\bm{v}}
 \def\Mb{\bm{M}}
 \def\vphib{\bm{\varphi}}
-"""
+''',
+}
 # LS: Are the following needed as well?
 #\def\Vcal{\mathcal{V}}
 #\def\Tcal{\mathcal{T}}
@@ -260,7 +263,7 @@ latex_preamble = r"""
 #latex_use_modindex = True
 
 # Preamble for imgmath images
-imgmath_latex_preamble = latex_preamble
+imgmath_latex_preamble = latex_elements['preamble']
 
 # Better math vertical alignment (need LaTeX preview package)
 imgmath_use_preview = True
