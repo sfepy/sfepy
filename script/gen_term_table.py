@@ -55,6 +55,7 @@ header = """
 .. list-table:: %s terms
    :widths: 20 20 60
    :header-rows: 1
+   :class: longtable
 
    * - name/class
      - arguments
