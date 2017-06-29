@@ -1122,6 +1122,7 @@ class Term(Struct):
         # Loop allowed shapes until a match is found, else error.
         allowed_shapes = []
         prev_shapes = {}
+        actual_shapes = {}
         for _arg_shapes in arg_shapes_list:
             # Unset shapes are taken from the previous iteration.
             arg_shapes = copy(prev_shapes)
@@ -1137,6 +1138,7 @@ class Term(Struct):
                     continue
 
                 arg = args[ii]
+                key = '%s:%s' % (self.ats[ii], self.arg_names[ii])
 
                 if self.mode is not None:
                     extended_ats = self.ats[ii] + ('/%s' % self.mode)
@@ -1152,6 +1154,7 @@ class Term(Struct):
 
                 if arg_kind.endswith('variable'):
                     n_el, n_qp, _dim, n_en, n_c = self.get_data_shape(arg)
+                    actual_shapes[key] = (n_c,)
                     shape = _parse_scalar_shape(sh[0] if isinstance(sh, tuple)
                                                 else sh)
                     if nm.isinf(shape):
@@ -1178,6 +1181,7 @@ class Term(Struct):
                     ls = len(shape)
 
                     aarg = nm.array(arg, ndmin=1)
+                    actual_shapes[key] = aarg.shape
 
                     # Substiture general dimension 'N' with actual value.
                     iinfs = nm.where(nm.isinf(shape))[0]
@@ -1190,6 +1194,7 @@ class Term(Struct):
                     if (ls > 1) or (shape[0] > 1):
                         # Array.
                         n_ok += shape == aarg.shape[-ls:]
+                        actual_shapes[key] = aarg.shape[-ls:]
 
                     elif (ls == 1) and (shape[0] == 1):
                         # Scalar constant.
@@ -1206,6 +1211,8 @@ class Term(Struct):
             term_str = self.get_str()
             output('allowed argument shapes for term "%s":' % term_str)
             output(allowed_shapes)
+            output('actual argument shapes:')
+            output(actual_shapes)
             raise ValueError('wrong arguments shapes for "%s" term! (see above)'
                              % term_str)
 
