@@ -95,9 +95,7 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
                                                 update_micro_coors=True)
 
         if use_mpi:
-            multi_mpi.master_send_task('init', (micro_file, coor.shape[0]),
-                                       wait=True)
-            multi_mpi.master_send_continue()
+            multi_mpi.master_send_task('init', (micro_file, coor.shape[0]))
 
     app = problem.homogen_app
     def_grad = mtx_f(problem, term) if callable(mtx_f) else mtx_f
@@ -115,10 +113,6 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
         multi_mpi.master_send_task('calculate', (rel_def_grad, ts, iteration))
 
     coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
-
-    if use_mpi:
-        multi_mpi.master_wait_for_done()
-        multi_mpi.master_send_continue()
 
     if type(coefs) is tuple:
         coefs = coefs[0]

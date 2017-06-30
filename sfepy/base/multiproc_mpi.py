@@ -14,6 +14,7 @@ try:
 except:
     use_multiprocessing = False
 
+
 global_multiproc_dict = {}
 mpi_master = 0
 
@@ -66,7 +67,7 @@ def get_logger(log_filename='multiproc_mpi.log'):
 
     mh = MPIFileHandler(log_filename)
     formatter = logging.Formatter('%(asctime)s - %(levelname)s'
-                                  + '- %(name)s: %(message)s')
+                                  + ' - %(name)s: %(message)s')
     mh.setFormatter(formatter)
     logger.addHandler(mh)
 
@@ -84,10 +85,11 @@ def enum(*sequential):
 
 
 tags = enum('READY', 'DONE', 'START', 'CONTINUE',
-            'LOCK', 'UNLOCK', 'LOCK_STATUS',
+            'LOCK', 'UNLOCK',
             'SET_DICT', 'SET_DICT_IMMUTABLE', 'GET_DICT', 'DICT_VAL',
             'SET_DICT_STATUS', 'GET_DICT_KEYS', 'DICT_KEYS',
-            'GET_DICT_LEN', 'DICT_LEN', 'GET_DICT_IN', 'DICT_IN')
+            'GET_DICT_LEN', 'DICT_LEN', 'GET_DICT_IN', 'DICT_IN',
+            'GET_QUEUE', 'PUT_QUEUE', 'QUEUE_VAL')
 
 
 def cpu_count():
@@ -110,13 +112,17 @@ def get_int_value(name, init_value=0):
 def get_queue(name):
     """Get the queue."""
     key = '__queue_%s' % name
-    rdict = get_dict(key, mutable=True)
     if mpi_rank == mpi_master:
-        val = RemoteQueue(rdict, [])
+        if key not in global_multiproc_dict:
+            queue = RemoteQueueMaster(name)
+            global_multiproc_dict[key] = queue
+        else:
+            queue = global_multiproc_dict[key]
+            queue.clean()
     else:
-        val = RemoteQueue(rdict)
+        queue = RemoteQueue(name)
 
-    return val
+    return queue
 
 
 def get_dict(name, mutable=False, clear=False):
@@ -125,11 +131,15 @@ def get_dict(name, mutable=False, clear=False):
         if name in global_multiproc_dict:
             if clear:
                 global_multiproc_dict[name].clear()
+                logger.info("cleaning dict %s" % name)
+            else:
+                logger.info("using existing dict %s" % name)
             return global_multiproc_dict[name]
         else:
             rdict = RemoteDictMaster()
             rdict.set_name(name)
             global_multiproc_dict[name] = rdict
+            logger.info("new dict %s" % name)
             return rdict
     else:
         return RemoteDict(name, mutable=mutable)
@@ -152,32 +162,62 @@ class RemoteInt(object):
             self.value = value
 
 
-class RemoteQueue(object):
-    """Remote queue class, data saved in RemoteDict."""
-    def __init__(self, remote_dict, value=None, mode='fifo'):
-        self.remote_dict = remote_dict
+class RemoteQueueMaster(list):
+    """Remote queue class - master side."""
+    def __init__(self, name, mode='fifo', *args):
+        list.__init__(self, *args)
+        self.name = name
         self.mode = mode
-        if value is not None:
-            self.remote_dict['value'] = value
+
+    @staticmethod
+    def get_gdict_key(name):
+        return '__queue_%s' % name
 
     def get(self):
-        val = self.remote_dict['value']
-        if len(val) == 0:
+        if len(self) == 0:
             return None
         else:
             if self.mode == 'fifo':
-                out = val[0]
-                self.remote_dict['value'] = val[1:]
+                out = self.pop(0)
             elif self.mode == 'lifo':
-                out = val[-1]
-                self.remote_dict['value'] = val[:-1]
+                out = self.pop(-1)
 
             return out
 
     def put(self, value):
-        val = self.remote_dict['value']
-        val.append(value)
-        self.remote_dict['value'] = val
+        self.append(value)
+
+    def clean(self):
+        del self[:]
+
+    def remote_put(self, value, slave):
+        self.put(value)
+
+    def remote_get(self, slave):
+        mpi_comm.isend(self.get(), dest=slave, tag=tags.QUEUE_VAL)
+        logger.debug('sent %s to %d (%s)'
+                     % (tags.name[tags.QUEUE_VAL], slave, self.name))
+
+
+class RemoteQueue(object):
+    """Remote queue class - slave side."""
+    def __init__(self, name):
+        self.name = name
+
+    def get(self):
+        mpi_comm.isend(self.name, dest=mpi_master, tag=tags.GET_QUEUE)
+        logger.debug('sent %s to %d (%s)'
+                     % (tags.name[tags.GET_QUEUE], mpi_master, self.name))
+        value = mpi_comm.recv(source=mpi_master, tag=tags.QUEUE_VAL)
+        logger.debug('received %s from %d'
+                     % (tags.name[tags.QUEUE_VAL], mpi_master))
+
+        return value
+
+    def put(self, value):
+        mpi_comm.isend((self.name, value), dest=mpi_master, tag=tags.PUT_QUEUE)
+        logger.debug('sent %s to %d (%s)'
+                     % (tags.name[tags.PUT_QUEUE], mpi_master, self.name))
 
 
 class RemoteDictMaster(dict):
@@ -190,35 +230,36 @@ class RemoteDictMaster(dict):
         if not mutable and key in self:
             logger.error("imutable dict '%s'! key '%s' already in global dict"
                          % (self.name, key))
-            mpi_comm.send(False, dest=slave, tag=tags.SET_DICT_STATUS)
+            mpi_comm.isend(False, dest=slave, tag=tags.SET_DICT_STATUS)
             raise(KeyError)
         else:
             self.__setitem__(key, value)
             logger.debug('set master dict (%s[%s])' % (self.name, key))
-            mpi_comm.send(True, dest=slave, tag=tags.SET_DICT_STATUS)
+            mpi_comm.isend(True, dest=slave, tag=tags.SET_DICT_STATUS)
 
     def remote_get(self, key, slave):
         if key in self:
-            mpi_comm.send(self.__getitem__(key), dest=slave, tag=tags.DICT_VAL)
+            mpi_comm.isend(self.__getitem__(key), dest=slave,
+                           tag=tags.DICT_VAL)
             logger.debug('sent %s to %d (%s[%s])'
                          % (tags.name[tags.DICT_VAL], slave, self.name, key))
         else:
-            mpi_comm.send(None, dest=slave, tag=tags.DICT_VAL)
+            mpi_comm.isend(None, dest=slave, tag=tags.DICT_VAL)
             logger.error('RemoteDict KeyError (%s[%s])' % (self.name, key))
             raise(KeyError)
 
     def remote_get_keys(self, slave):
-        mpi_comm.send(self.keys(), dest=slave, tag=tags.DICT_KEYS)
+        mpi_comm.isend(self.keys(), dest=slave, tag=tags.DICT_KEYS)
         logger.debug('sent %s to %d (%s)'
                      % (tags.name[tags.DICT_KEYS], slave, self.name))
 
     def remote_get_len(self, slave):
-        mpi_comm.send(self.__len__(), dest=slave, tag=tags.DICT_LEN)
+        mpi_comm.isend(self.__len__(), dest=slave, tag=tags.DICT_LEN)
         logger.debug('sent %s to %d (%s)'
                      % (tags.name[tags.DICT_LEN], slave, self.name))
 
     def remote_get_in(self, key, slave):
-        mpi_comm.send(self.__contains__(key), dest=slave, tag=tags.DICT_IN)
+        mpi_comm.isend(self.__contains__(key), dest=slave, tag=tags.DICT_IN)
         logger.debug('sent %s to %d (%s)'
                      % (tags.name[tags.DICT_IN], slave, self.name))
 
@@ -231,7 +272,7 @@ class RemoteDict(object):
         self.name = name
 
     def _setitem(self, key, value, tag):
-        mpi_comm.send((self.name, key, value), dest=mpi_master, tag=tag)
+        mpi_comm.isend((self.name, key, value), dest=mpi_master, tag=tag)
         logger.debug('sent %s to %d (%s[%s])'
                      % (tags.name[tag], mpi_master, self.name, key))
         stat = mpi_comm.recv(source=mpi_master, tag=tags.SET_DICT_STATUS)
@@ -266,8 +307,8 @@ class RemoteDict(object):
             logger.debug('get value from local dict! (%s[%s])'
                          % (self.name, key))
         else:
-            mpi_comm.send((self.name, key), dest=mpi_master,
-                          tag=tags.GET_DICT)
+            mpi_comm.isend((self.name, key), dest=mpi_master,
+                           tag=tags.GET_DICT)
             logger.debug('sent %s to %d (%s)'
                          % (tags.name[tags.GET_DICT], mpi_master, key))
             data = mpi_comm.recv(source=mpi_master, tag=tags.DICT_VAL)
@@ -282,17 +323,22 @@ class RemoteDict(object):
         return self._dict[key]
 
     def __len__(self):
-        mpi_comm.send((self.name,), dest=mpi_master, tag=tags.GET_DICT_LEN)
+        mpi_comm.isend((self.name,), dest=mpi_master, tag=tags.GET_DICT_LEN)
         length = mpi_comm.recv(source=mpi_master, tag=tags.DICT_LEN)
         return length
 
     def __contains__(self, key):
-        mpi_comm.send((self.name, key), dest=mpi_master, tag=tags.GET_DICT_IN)
-        is_in = mpi_comm.recv(source=mpi_master, tag=tags.DICT_IN)
+        if key in self._dict and not self.mutable:
+            is_in = True
+        else:
+            mpi_comm.isend((self.name, key), dest=mpi_master,
+                           tag=tags.GET_DICT_IN)
+            is_in = mpi_comm.recv(source=mpi_master, tag=tags.DICT_IN)
+
         return is_in
 
     def keys(self):
-        mpi_comm.send((self.name,), dest=mpi_master, tag=tags.GET_DICT_KEYS)
+        mpi_comm.isend((self.name,), dest=mpi_master, tag=tags.GET_DICT_KEYS)
         keys = mpi_comm.recv(source=mpi_master, tag=tags.DICT_KEYS)
         return keys
 
@@ -313,28 +359,42 @@ class RemoteLock(object):
         self.locked = False
 
     def acquire(self):
-        mpi_comm.send(None, dest=mpi_master, tag=tags.LOCK)
-        data = mpi_comm.recv(source=mpi_master, tag=tags.LOCK_STATUS)
-        if not data:
-            logger.error('lock can not be aquired!')
-            raise(SystemError)
-        else:
-            self.locked = True
+        mpi_comm.isend(None, dest=mpi_master, tag=tags.LOCK)
+        self.locked = True
 
     def release(self):
-        mpi_comm.send(None, dest=mpi_master, tag=tags.UNLOCK)
+        mpi_comm.isend(None, dest=mpi_master, tag=tags.UNLOCK)
         self.locked = False
 
 
 def wait_for_tag(wtag, num=1):
     ndone = num
+    start = MPI.Wtime()
     while ndone > 0:
         mpi_comm.recv(source=MPI.ANY_SOURCE, tag=wtag, status=mpi_status)
         tag = mpi_status.Get_tag()
         source = mpi_status.Get_source()
-        logger.debug('received %s from %d' % (tags.name[tag], source))
+        logger.debug('received %s from %d (%.03fs)' % (tags.name[tag],
+                                                       source,
+                                                       MPI.Wtime() - start))
         if tag == wtag:
             ndone -= 1
+
+
+def slave_get_task(name=''):
+    """Start the slave nodes."""
+    mpi_comm.isend(mpi_rank, dest=mpi_master, tag=tags.READY)
+    logger.debug('%s ready' % name)
+    task, data = mpi_comm.bcast(None, root=mpi_master)
+    logger.info('%s receaved task %s' % (name, task))
+
+    return task, data
+
+
+def slave_task_done(task=''):
+    """Stop the slave nodes."""
+    mpi_comm.isend(mpi_rank, dest=mpi_master, tag=tags.DONE)
+    logger.info('%s stoped' % task)
 
 
 def get_slaves():
@@ -344,40 +404,27 @@ def get_slaves():
     return slaves
 
 
-def master_send_task(task, data, wait=False):
+def master_send_task(task, data):
     """Send task to all slaves."""
     slaves = get_slaves()
     wait_for_tag(tags.READY, len(slaves))
     logger.info('all nodes are ready for task "%s"' % task)
-
-    for ii in slaves:
-        mpi_comm.send((task, data), dest=ii, tag=tags.START)
-
-    if wait:
-        wait_for_tag(tags.DONE, len(slaves))
+    mpi_comm.bcast((task, data), root=mpi_master)
 
 
 def master_send_continue():
     """Send 'continue' to all slaves."""
     for ii in get_slaves():
         mpi_comm.send(None, dest=ii, tag=tags.CONTINUE)
-    logger.info('slave nodes: continue')
-
-
-def master_wait_for_done():
-    """Wait for slaves to be done."""
-    wait_for_tag(tags.DONE, len(get_slaves()))
+    logger.info('slave nodes - continue')
 
 
 def master_loop():
     """Run the master loop - wait for requests from slaves."""
-    slaves = get_slaves()
-    wait_for_tag(tags.READY, len(slaves))
-    logger.info('all nodes are ready')
-    for ii in slaves:
-        mpi_comm.send(None, dest=ii, tag=tags.START)
+    logger.info('main loop started')
+    master_send_task('calculate', None)
 
-    ndone = len(slaves)
+    ndone = len(get_slaves())
     source = MPI.ANY_SOURCE
     while ndone > 0:
         data = mpi_comm.recv(source=source, tag=MPI.ANY_TAG, status=mpi_status)
@@ -388,7 +435,6 @@ def master_loop():
             ndone -= 1
         elif tag == tags.LOCK:
             source = slave
-            mpi_comm.send(True, dest=slave, tag=tags.LOCK_STATUS)
         elif tag == tags.UNLOCK:
             source = MPI.ANY_SOURCE
         elif tag == tags.SET_DICT:
@@ -404,26 +450,11 @@ def master_loop():
             global_multiproc_dict[data[0]].remote_get_len(slave)
         elif tag == tags.GET_DICT_IN:
             global_multiproc_dict[data[0]].remote_get_in(data[1], slave)
+        elif tag == tags.GET_QUEUE:
+            qkey = RemoteQueueMaster.get_gdict_key(data)
+            global_multiproc_dict[qkey].remote_get(slave)
+        elif tag == tags.PUT_QUEUE:
+            qkey = RemoteQueueMaster.get_gdict_key(data[0])
+            global_multiproc_dict[qkey].remote_put(data[1], slave)
 
-    for ii in slaves:
-        mpi_comm.send(None, dest=ii, tag=tags.CONTINUE)
-    logger.info('slave nodes: continue')
-
-
-def start_slave(tag=''):
-    """Start the slave nodes."""
-    mpi_comm.send(mpi_rank, dest=mpi_master, tag=tags.READY)
-    logger.debug('%s ready' % tag)
-    data = mpi_comm.recv(source=mpi_master, tag=tags.START)
-    logger.info('%s started' % tag)
-
-    return data
-
-
-def stop_slave(tag='', wait=False):
-    """Stop the slave nodes."""
-    mpi_comm.send(mpi_rank, dest=mpi_master, tag=tags.DONE)
-    logger.info('%s stoped' % tag)
-
-    if wait:
-        mpi_comm.recv(source=mpi_master, tag=tags.CONTINUE)
+    logger.info('main loop finished')

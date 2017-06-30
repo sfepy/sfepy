@@ -408,9 +408,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         For the definition of other parameters see 'calculate_req'.
         """
         while remaining.value > 0:
-            lock.acquire()
             name = tasks.get()
-            lock.release()
 
             if name is None:
                 continue
@@ -600,19 +598,20 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                     tasks.put(name)
 
             multiproc_mpi.master_loop()
+            multiproc_mpi.master_send_continue()
 
             if micro_coors is not None:
                 dependencies = self.dechunk_reqs_coefs(dependencies,
                                                        len(micro_chunk_tab))
 
-            multiproc_mpi.master_send_task('deps', dependencies, wait=True)
+            multiproc_mpi.master_send_task('deps', dependencies)
             multiproc_mpi.master_send_continue()
 
             return dependencies, sd_names
 
         else:  # slave node
             lock = multiproc_mpi.RemoteLock()
-            multiproc_mpi.start_slave('engine')
+            multiproc_mpi.slave_get_task('engine')
 
             self.calculate_req_multi(tasks, lock, remaining, numdeps,
                                      inverse_deps, problem, options,
@@ -622,12 +621,10 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                                      time_tag, micro_chunk_tab,
                                      str(multiproc_mpi.mpi_rank + 1))
 
-            multiproc_mpi.stop_slave('engine', wait=True)
-            data = multiproc_mpi.start_slave('get deps')
-            task, data = data[0], data[1]
-            if task == 'deps':
-                deps = data
-                multiproc_mpi.stop_slave('get deps', wait=True)
+            multiproc_mpi.slave_task_done('engine')
+            multiproc_mpi.wait_for_tag(multiproc_mpi.tags.CONTINUE)
+            task, deps = multiproc_mpi.slave_get_task('get_deps')
+            multiproc_mpi.wait_for_tag(multiproc_mpi.tags.CONTINUE)
 
             return deps, None
 
