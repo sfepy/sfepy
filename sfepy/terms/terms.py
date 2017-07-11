@@ -1397,8 +1397,14 @@ class Term(Struct):
                 raise ValueError('unsupported term dtype! (%s)'
                                  % varr.dtype)
 
-            vals *= self.sign
-            iels = self.get_assembling_cells(vals.shape)
+            if not isinstance(vals, tuple):
+                vals *= self.sign
+                iels = self.get_assembling_cells(vals.shape)
+
+            else:
+                vals = (self.sign * vals[0],) + vals[1:]
+                iels = None
+
             out = (vals, iels)
 
         if goptions['check_term_finiteness']:
@@ -1430,10 +1436,14 @@ class Term(Struct):
                     if not(val[ii].dtype == nm.complex128):
                         val[ii] = nm.complex128(val[ii])
 
-            dc = vvar.get_dof_conn(dc_type)
-            assert_(val.shape[2] == dc.shape[1])
+            if not isinstance(val, tuple):
+                dc = vvar.get_dof_conn(dc_type)
+                assert_(val.shape[2] == dc.shape[1])
 
-            assemble(asm_obj, val, iels, 1.0, dc)
+                assemble(asm_obj, val, iels, 1.0, dc)
+
+            else:
+                asm_obj[val[1]] = val[0]
 
         elif mode == 'matrix':
             if asm_obj.dtype == nm.float64:
@@ -1450,12 +1460,6 @@ class Term(Struct):
                 and (val.dtype == nm.float64)):
                 val = val.astype(nm.complex128)
 
-            rdc = vvar.get_dof_conn(dc_type)
-
-            is_trace = self.arg_traces[svar.name]
-            cdc = svar.get_dof_conn(dc_type, is_trace=is_trace)
-            assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
-
             sign = 1.0
             if self.arg_derivatives[svar.name]:
                 if not self.is_quasistatic or (self.step > 0):
@@ -1464,7 +1468,21 @@ class Term(Struct):
                 else:
                     sign = 0.0
 
-            assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
+            if not isinstance(val, tuple):
+                rdc = vvar.get_dof_conn(dc_type)
+
+                is_trace = self.arg_traces[svar.name]
+                cdc = svar.get_dof_conn(dc_type, is_trace=is_trace)
+                assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
+
+                assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
+
+            else:
+                from scipy.sparse import coo_matrix
+
+                aux = coo_matrix((sign * val[0], (val[1], val[2])),
+                                 shape=asm_obj.shape)
+                asm_obj += aux
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
