@@ -41,6 +41,7 @@ regions = {
 
 ebcs = {
     'fixb' : ('Bottom', {'u.all' : 0.0}),
+    'fixt' : ('Top', {'u.all' : 0.0}),
 }
 
 integrals = {
