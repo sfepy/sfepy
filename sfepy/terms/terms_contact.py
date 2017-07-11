@@ -2,6 +2,7 @@ import numpy as nm
 
 from sfepy.base.base import Struct
 from sfepy.terms.terms import Term
+from sfepy.terms.extmods import terms
 
 class ContactInfo(Struct):
     """
@@ -23,13 +24,31 @@ class ContactTerm(Term):
 
         self.ci = None
 
-    @staticmethod
-    def function(out, geo, fmode):
-        out_qp = nm.zeros((out.shape[0], geo.n_qp) + out.shape[2:],
-                          dtype=out.dtype)
-        status = geo.integrate(out, nm.ascontiguousarray(out_qp))
+    def call_function(self, fargs):
+        try:
+            out, status = self.function(*fargs)
 
-        return status
+        except (RuntimeError, ValueError):
+            terms.errclear()
+            raise
+
+        if status:
+            terms.errclear()
+            raise ValueError('term evaluation failed! (%s)' % self.name)
+
+        return out, status
+
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None,
+                  diff_var=None, **kwargs):
+        out, status = self.call_function(fargs)
+        if mode != 'weak':
+            raise ValueError('unsupported evaluation mode! (%s)' % mode)
+
+        return out, status
+
+    @staticmethod
+    def function(out_cc):
+        return out_cc, 0
 
     def get_fargs(self, epss, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -145,10 +164,17 @@ class ContactTerm(Term):
         Gc = nm.zeros(neq, dtype=nm.float64)
 
         activeGPs = GPs[:, 2*nsd+3]
-        keyContactDetection = 1
-        keyAssembleKc = 1
 
-        max_num = 4 * nsd * nsn * ngp * GPs.shape[0]
+        if diff_var is None:
+            max_num = 1
+            keyContactDetection = 1
+            keyAssembleKc = 0
+
+        else:
+            max_num = 4 * (nsd * nsn)**2 * ngp * GPs.shape[0]
+            keyContactDetection = 0
+            keyAssembleKc = 1
+
         print 'max_num:', max_num
         vals = nm.empty(max_num, dtype=nm.float64)
         rows = nm.empty(max_num, dtype=nm.int32)
@@ -165,12 +191,24 @@ class ContactTerm(Term):
         print Gc.mean(), num
         print GPs
         print 'true num:', num
-        from sfepy.base.base import debug; debug()
 
         if diff_var is None:
-            fmode = 0
+            from sfepy.discrete.variables import create_adof_conn
+            rows = nm.unique(create_adof_conn(nm.arange(len(Gc)), sd.econn,
+                                              nsd, 0))
+            Gc = Gc[rows]
+
+            eq = state.eq_map.eq
+            erows = eq[rows]
+            active = (erows >= 0)
+            out_cc = (Gc[active], erows[active])
 
         else:
-            fmode = 1
+            vals, rows, cols = vals[:num], rows[:num], cols[:num]
+            eq = state.eq_map.eq
 
-        return geo, fmode
+            erows, ecols = eq[rows], eq[cols]
+            active = (erows >= 0) & (ecols >= 0)
+            out_cc = (vals[active], erows[active], ecols[active])
+
+        return out_cc,
