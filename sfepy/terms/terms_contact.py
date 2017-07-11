@@ -109,7 +109,7 @@ class ContactTerm(Term):
         gps, gw = self.integral.get_qp(state.field.gel.surface_facet.name)
         bfg = ps.eval_base(gps, diff=True)
         # ?? shape - try in 3D
-        dH = nm.asfortranarray(bfg[0, ...])
+        dH = nm.asfortranarray(bfg[:, 0 , :])
 
         X = nm.asfortranarray(state.field.coors)
         Um = nm.asfortranarray(state().reshape((-1, nsd)))
