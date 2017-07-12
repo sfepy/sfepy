@@ -1443,7 +1443,7 @@ class Term(Struct):
                 assemble(asm_obj, val, iels, 1.0, dc)
 
             else:
-                asm_obj[val[1]] = val[0]
+                asm_obj[val[1]] += val[0]
 
         elif mode == 'matrix':
             if asm_obj.dtype == nm.float64:
