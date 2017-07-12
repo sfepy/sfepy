@@ -417,7 +417,7 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
 	      cols[*len] = segmentNodesIDm[jnode] * nsd + jdof;
 	      rows[*len] = segmentNodesIDm[knode] * nsd + kdof;
-	      vals[*len] = 0.5 * C_m[j] * C_m[k] * gw[g] * jacobian;
+	      vals[*len] = 0.5 * epss * C_m[j] * C_m[k] * gw[g] * jacobian;
 	      (*len)++;
 	    }
 
@@ -425,7 +425,7 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
 	      cols[*len] = segmentNodesIDs[jnode] * nsd + jdof;
 	      rows[*len] = segmentNodesIDm[knode] * nsd + kdof;
-	      vals[*len] = 0.5 * C_s[j] * C_m[k] * gw[g] * jacobian;
+	      vals[*len] = 0.5 * epss * C_s[j] * C_m[k] * gw[g] * jacobian;
 	      (*len)++;
 	    }
 
@@ -433,7 +433,7 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
 	      cols[*len] = segmentNodesIDm[jnode] * nsd + jdof;
 	      rows[*len] = segmentNodesIDs[knode] * nsd + kdof;
-	      vals[*len] = 0.5 * C_m[j] * C_s[k] * gw[g] * jacobian;
+	      vals[*len] = 0.5 * epss * C_m[j] * C_s[k] * gw[g] * jacobian;
 	      (*len)++;
 	    }
 
@@ -441,7 +441,7 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
 	      cols[*len] = segmentNodesIDs[jnode] * nsd + jdof;
 	      rows[*len] = segmentNodesIDs[knode] * nsd + kdof;
-	      vals[*len] = 0.5 * C_s[j] * C_s[k] * gw[g] * jacobian;
+	      vals[*len] = 0.5 * epss * C_s[j] * C_s[k] * gw[g] * jacobian;
 	      (*len)++;
 	    }
 	  }
