@@ -224,7 +224,7 @@ class ScipyIterative(LinearSolver):
         self.iter = 0
         def iter_callback(sol):
             self.iter += 1
-            msg = 'iteration %d' % self.iter
+            msg = '%s: iteration %d' % (self.conf.name, self.iter)
             if conf.verbose > 1:
                 if conf.method not in self._callbacks_res:
                     res = mtx * sol - rhs
@@ -249,8 +249,8 @@ class ScipyIterative(LinearSolver):
 
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
                                 callback=iter_callback, **prec_args)
-        output('%s convergence: %s (%s)'
-               % (self.conf.method,
+        output('%s: %s convergence: %s (%s)'
+               % (self.conf.name, self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]),
                verbose=conf.verbose)
 
