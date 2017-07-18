@@ -368,7 +368,8 @@ class PETScKrylovSolver(LinearSolver):
 
         LinearSolver.__init__(self, conf, petsc=petsc, comm=comm,
                               converged_reasons=converged_reasons,
-                              fields=None, **kwargs)
+                              fields=None, mtx_id=0, ksp=None, pmtx=None,
+                              **kwargs)
 
     def set_field_split(self, field_ranges, comm=None):
         """
@@ -437,12 +438,22 @@ class PETScKrylovSolver(LinearSolver):
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
-        pmtx = self.create_petsc_matrix(mtx, comm=comm)
+        if self.mtx_id == id(mtx):
+            ksp = self.ksp
+            pmtx = self.pmtx
 
-        ksp = self.create_ksp(comm=comm)
-        ksp.setOperators(pmtx)
-        ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
-        ksp.setFromOptions()
+        else:
+            pmtx = self.create_petsc_matrix(mtx, comm=comm)
+
+            ksp = self.create_ksp(comm=comm)
+            ksp.setOperators(pmtx)
+            ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
+                              max_it=i_max)
+            ksp.setFromOptions()
+
+            self.mtx_id = id(mtx)
+            self.ksp = ksp
+            self.pmtx = pmtx
 
         if isinstance(rhs, self.petsc.Vec):
             prhs = rhs
@@ -463,6 +474,8 @@ class PETScKrylovSolver(LinearSolver):
 
         else:
             psol = pmtx.getVecRight()
+
+            ksp.setInitialGuessNonzero(False)
 
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
