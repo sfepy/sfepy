@@ -185,6 +185,8 @@ class ScipyIterative(LinearSolver):
          'The maximum number of iterations.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative or absolute tolerance for the residual.'),
+        ('*', '*', None, False,
+         'Additional parameters supported by the method.'),
     ]
 
     # All iterative solvers in scipy.sparse.linalg pass a solution vector into
@@ -212,6 +214,7 @@ class ScipyIterative(LinearSolver):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+        solver_kwargs = self.build_solver_kwargs(conf)
 
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
@@ -247,8 +250,10 @@ class ScipyIterative(LinearSolver):
         else:
             prec_args = {'M' : precond}
 
+        solver_kwargs.update(prec_args)
+
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                callback=iter_callback, **prec_args)
+                                callback=iter_callback, **solver_kwargs)
         output('%s: %s convergence: %s (%s)'
                % (self.conf.name, self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]),
