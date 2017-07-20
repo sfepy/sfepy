@@ -230,7 +230,7 @@ class ScipyIterative(LinearSolver):
         def iter_callback(sol):
             self.iter += 1
             msg = '%s: iteration %d' % (self.conf.name, self.iter)
-            if conf.verbose > 1:
+            if conf.verbose > 2:
                 if conf.method not in self._callbacks_res:
                     res = mtx * sol - rhs
 
@@ -239,7 +239,7 @@ class ScipyIterative(LinearSolver):
 
                 rnorm = nm.linalg.norm(res)
                 msg += ': |Ax-b| = %e' % rnorm
-            output(msg, verbose=conf.verbose)
+            output(msg, verbose=conf.verbose > 1)
 
             # Call an optional user-defined callback.
             callback(sol)
@@ -263,9 +263,9 @@ class ScipyIterative(LinearSolver):
                                     maxiter=i_max, callback=iter_callback,
                                     **solver_kwargs)
 
-        output('%s: %s convergence: %s (%s)'
+        output('%s: %s convergence: %s (%s, %d iterations)'
                % (self.conf.name, self.conf.method,
-                  info, self.converged_reasons[nm.sign(info)]),
+                  info, self.converged_reasons[nm.sign(info)], self.iter),
                verbose=conf.verbose)
 
         return sol
