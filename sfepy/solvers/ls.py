@@ -183,8 +183,10 @@ class ScipyIterative(LinearSolver):
          """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
+        ('eps_a', 'float', 1e0, False,
+         'The absolute tolerance for the residual.'),
         ('eps_r', 'float', 1e-8, False,
-         'The relative or absolute tolerance for the residual.'),
+         'The relative tolerance for the residual.'),
         ('*', '*', None, False,
          'Additional parameters supported by the method.'),
     ]
@@ -252,8 +254,15 @@ class ScipyIterative(LinearSolver):
 
         solver_kwargs.update(prec_args)
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                callback=iter_callback, **solver_kwargs)
+        try:
+            sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, rtol=eps_r,
+                                    maxiter=i_max, callback=iter_callback,
+                                    **solver_kwargs)
+        except TypeError:
+            sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r,
+                                    maxiter=i_max, callback=iter_callback,
+                                    **solver_kwargs)
+
         output('%s: %s convergence: %s (%s)'
                % (self.conf.name, self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]),
