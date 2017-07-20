@@ -106,7 +106,7 @@ class ScipyDirect(LinearSolver):
     ]
 
     def __init__(self, conf, **kwargs):
-        LinearSolver.__init__(self, conf, **kwargs)
+        LinearSolver.__init__(self, conf, mtx_id=None, solve=None, **kwargs)
         um = self.sls = None
 
         aux = try_imports(['import scipy.linsolve as sls',
@@ -139,11 +139,12 @@ class ScipyDirect(LinearSolver):
             self.sls.use_solver(useUmfpack=True,
                                 assumeSortedIndices=True)
 
-        self.solve = None
-
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+
+        if conf.presolve:
+            self.presolve(mtx)
 
         if self.solve is not None:
             # Matrix is already prefactorized.
@@ -152,9 +153,10 @@ class ScipyDirect(LinearSolver):
             return self.sls.spsolve(mtx, rhs)
 
     def presolve(self, mtx):
-        self.mtx = mtx
-        if self.mtx is not None:
+        if self.mtx_id != id(mtx):
+            self.mtx = mtx
             self.solve = self.sls.factorized(self.mtx)
+            self.mtx_id = id(mtx)
 
 class ScipyIterative(LinearSolver):
     """
