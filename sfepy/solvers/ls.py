@@ -297,7 +297,7 @@ class PyAMGSolver(LinearSolver):
             msg =  'cannot import pyamg!'
             raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, mg=None, **kwargs)
+        LinearSolver.__init__(self, conf, mtx_id=None, mg=None, **kwargs)
 
         try:
             solver = getattr(pyamg, self.conf.method)
@@ -307,10 +307,6 @@ class PyAMGSolver(LinearSolver):
             solver = pyamg.smoothed_aggregation_solver
         self.solver = solver
 
-        if hasattr(self, 'mtx'):
-            if self.mtx is not None:
-                self.mg = self.solver(self.mtx)
-
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
@@ -318,9 +314,9 @@ class PyAMGSolver(LinearSolver):
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
 
-        if (self.mg is None) or (mtx is not self.mtx):
+        if self.mtx_id != id(mtx):
             self.mg = self.solver(mtx)
-            self.mtx = mtx
+            self.mtx_id = id(mtx)
 
         sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r,
                             maxiter=i_max)
