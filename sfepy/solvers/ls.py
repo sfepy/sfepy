@@ -46,10 +46,16 @@ def standard_call(call):
 
         result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
                       **kwargs)
+        if isinstance(result, tuple):
+            result, n_iter = result
+
+        else:
+            n_iter = -1 # Number of iterations is undefined/unavailable.
 
         ttt = time.clock() - tt
         if status is not None:
             status['time'] = ttt
+            status['n_iter'] = n_iter
 
         return result
 
@@ -83,6 +89,7 @@ def petsc_call(call):
         ttt = time.clock() - tt
         if status is not None:
             status['time'] = ttt
+            status['n_iter'] = self.ksp.getIterationNumber()
 
         return result
 
@@ -106,7 +113,7 @@ class ScipyDirect(LinearSolver):
     ]
 
     def __init__(self, conf, **kwargs):
-        LinearSolver.__init__(self, conf, **kwargs)
+        LinearSolver.__init__(self, conf, mtx_id=None, solve=None, **kwargs)
         um = self.sls = None
 
         aux = try_imports(['import scipy.linsolve as sls',
@@ -139,11 +146,12 @@ class ScipyDirect(LinearSolver):
             self.sls.use_solver(useUmfpack=True,
                                 assumeSortedIndices=True)
 
-        self.solve = None
-
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+
+        if conf.presolve:
+            self.presolve(mtx)
 
         if self.solve is not None:
             # Matrix is already prefactorized.
@@ -152,9 +160,9 @@ class ScipyDirect(LinearSolver):
             return self.sls.spsolve(mtx, rhs)
 
     def presolve(self, mtx):
-        self.mtx = mtx
-        if self.mtx is not None:
-            self.solve = self.sls.factorized(self.mtx)
+        if self.mtx_id != id(mtx):
+            self.solve = self.sls.factorized(mtx)
+            self.mtx_id = id(mtx)
 
 class ScipyIterative(LinearSolver):
     """
@@ -183,8 +191,12 @@ class ScipyIterative(LinearSolver):
          """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
+        ('eps_a', 'float', 1e0, False,
+         'The absolute tolerance for the residual.'),
         ('eps_r', 'float', 1e-8, False,
-         'The relative or absolute tolerance for the residual.'),
+         'The relative tolerance for the residual.'),
+        ('*', '*', None, False,
+         'Additional parameters supported by the method.'),
     ]
 
     # All iterative solvers in scipy.sparse.linalg pass a solution vector into
@@ -212,6 +224,7 @@ class ScipyIterative(LinearSolver):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+        solver_kwargs = self.build_solver_kwargs(conf)
 
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
@@ -224,8 +237,8 @@ class ScipyIterative(LinearSolver):
         self.iter = 0
         def iter_callback(sol):
             self.iter += 1
-            msg = 'iteration %d' % self.iter
-            if conf.verbose > 1:
+            msg = '%s: iteration %d' % (self.conf.name, self.iter)
+            if conf.verbose > 2:
                 if conf.method not in self._callbacks_res:
                     res = mtx * sol - rhs
 
@@ -234,7 +247,7 @@ class ScipyIterative(LinearSolver):
 
                 rnorm = nm.linalg.norm(res)
                 msg += ': |Ax-b| = %e' % rnorm
-            output(msg, verbose=conf.verbose)
+            output(msg, verbose=conf.verbose > 1)
 
             # Call an optional user-defined callback.
             callback(sol)
@@ -247,14 +260,23 @@ class ScipyIterative(LinearSolver):
         else:
             prec_args = {'M' : precond}
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                callback=iter_callback, **prec_args)
-        output('%s convergence: %s (%s)'
-               % (self.conf.method,
-                  info, self.converged_reasons[nm.sign(info)]),
+        solver_kwargs.update(prec_args)
+
+        try:
+            sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, rtol=eps_r,
+                                    maxiter=i_max, callback=iter_callback,
+                                    **solver_kwargs)
+        except TypeError:
+            sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r,
+                                    maxiter=i_max, callback=iter_callback,
+                                    **solver_kwargs)
+
+        output('%s: %s convergence: %s (%s, %d iterations)'
+               % (self.conf.name, self.conf.method,
+                  info, self.converged_reasons[nm.sign(info)], self.iter),
                verbose=conf.verbose)
 
-        return sol
+        return sol, self.iter
 
 class PyAMGSolver(LinearSolver):
     """
@@ -282,7 +304,7 @@ class PyAMGSolver(LinearSolver):
             msg =  'cannot import pyamg!'
             raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, mg=None, **kwargs)
+        LinearSolver.__init__(self, conf, mtx_id=None, mg=None, **kwargs)
 
         try:
             solver = getattr(pyamg, self.conf.method)
@@ -292,10 +314,6 @@ class PyAMGSolver(LinearSolver):
             solver = pyamg.smoothed_aggregation_solver
         self.solver = solver
 
-        if hasattr(self, 'mtx'):
-            if self.mtx is not None:
-                self.mg = self.solver(self.mtx)
-
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
@@ -303,9 +321,9 @@ class PyAMGSolver(LinearSolver):
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
 
-        if (self.mg is None) or (mtx is not self.mtx):
+        if self.mtx_id != id(mtx):
             self.mg = self.solver(mtx)
-            self.mtx = mtx
+            self.mtx_id = id(mtx)
 
         sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r,
                             maxiter=i_max)
@@ -368,7 +386,8 @@ class PETScKrylovSolver(LinearSolver):
 
         LinearSolver.__init__(self, conf, petsc=petsc, comm=comm,
                               converged_reasons=converged_reasons,
-                              fields=None, **kwargs)
+                              fields=None, mtx_id=0, ksp=None, pmtx=None,
+                              **kwargs)
 
     def set_field_split(self, field_ranges, comm=None):
         """
@@ -437,12 +456,22 @@ class PETScKrylovSolver(LinearSolver):
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
-        pmtx = self.create_petsc_matrix(mtx, comm=comm)
+        if self.mtx_id == id(mtx):
+            ksp = self.ksp
+            pmtx = self.pmtx
 
-        ksp = self.create_ksp(comm=comm)
-        ksp.setOperators(pmtx)
-        ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
-        ksp.setFromOptions()
+        else:
+            pmtx = self.create_petsc_matrix(mtx, comm=comm)
+
+            ksp = self.create_ksp(comm=comm)
+            ksp.setOperators(pmtx)
+            ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
+                              max_it=i_max)
+            ksp.setFromOptions()
+
+            self.mtx_id = id(mtx)
+            self.ksp = ksp
+            self.pmtx = pmtx
 
         if isinstance(rhs, self.petsc.Vec):
             prhs = rhs
@@ -464,6 +493,8 @@ class PETScKrylovSolver(LinearSolver):
         else:
             psol = pmtx.getVecRight()
 
+            ksp.setInitialGuessNonzero(False)
+
         ksp.solve(prhs, psol)
         output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
                % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
@@ -476,129 +507,6 @@ class PETScKrylovSolver(LinearSolver):
 
         else:
             sol = psol[...].copy()
-
-        return sol
-
-class PETScParallelKrylovSolver(PETScKrylovSolver):
-    """
-    PETSc Krylov subspace solver able to run in parallel by storing the
-    system to disk and running a separate script via `mpiexec`.
-
-    The solver and preconditioner types are set upon the solver object
-    creation. Tolerances can be overriden when called by passing a `conf`
-    object.
-
-    Convergence is reached when `rnorm < max(eps_r * rnorm_0, eps_a)`,
-    where, in PETSc, `rnorm` is by default the norm of *preconditioned*
-    residual.
-    """
-    name = 'ls.petsc_parallel'
-
-    __metaclass__ = SolverMeta
-
-    _parameters = PETScKrylovSolver._parameters + [
-        ('log_dir', 'str', '.', False,
-         'The directory for storing logs.'),
-        ('n_proc', 'int', 1, False,
-         'The number of processes.'),
-        ('sub_precond', 'str', 'icc', False,
-         'The preconditioner for matrix blocks.'),
-    ]
-
-    @standard_call
-    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
-        import os, sys, shutil, tempfile
-        from sfepy import base_dir
-        from sfepy.base.ioutils import ensure_path
-
-        eps_a = get_default(eps_a, self.conf.eps_a)
-        eps_r = get_default(eps_r, self.conf.eps_r)
-        i_max = get_default(i_max, self.conf.i_max)
-        eps_d = self.conf.eps_d
-
-        petsc = self.petsc
-
-        ksp, pmtx, psol, prhs = self.set_matrix(mtx)
-
-        ksp.setFromOptions() # PETSc.Options() not used yet...
-        ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d, max_it=i_max)
-
-        output_dir = tempfile.mkdtemp()
-
-        # Set PETSc rhs, solve, get solution from PETSc solution.
-        if x0 is not None:
-            psol[...] = x0
-            sol0_filename = os.path.join(output_dir, 'sol0.dat')
-
-        else:
-            sol0_filename = ''
-
-        prhs[...] = rhs
-
-        script_filename = os.path.join(base_dir, 'solvers/petsc_worker.py')
-
-        mtx_filename = os.path.join(output_dir, 'mtx.dat')
-        rhs_filename = os.path.join(output_dir, 'rhs.dat')
-        sol_filename = os.path.join(output_dir, 'sol.dat')
-        status_filename = os.path.join(output_dir, 'status.txt')
-
-        log_filename = os.path.join(self.conf.log_dir, 'sol.log')
-        ensure_path(log_filename)
-
-        output('storing system to %s...' % output_dir)
-        tt = time.clock()
-        view_mtx = petsc.Viewer().createBinary(mtx_filename, mode='w')
-        view_rhs = petsc.Viewer().createBinary(rhs_filename, mode='w')
-        pmtx.view(view_mtx)
-        prhs.view(view_rhs)
-        if sol0_filename:
-            view_sol0 = petsc.Viewer().createBinary(sol0_filename, mode='w')
-            psol.view(view_sol0)
-        output('...done in %.2f s' % (time.clock() - tt))
-
-        command = [
-            'mpiexec -n %d' % self.conf.n_proc,
-            sys.executable, script_filename,
-            '-mtx %s' % mtx_filename, '-rhs %s' % rhs_filename,
-            '-sol0 %s' % sol0_filename, '-sol %s' % sol_filename,
-            '-status %s' % status_filename,
-            '-ksp_type %s' % self.conf.method,
-            '-pc_type %s' % self.conf.precond,
-            '-sub_pc_type %s' % self.conf.sub_precond,
-            '-ksp_atol %.3e' % self.conf.eps_a,
-            '-ksp_rtol %.3e' % self.conf.eps_r,
-            '-ksp_max_it %d' % self.conf.i_max,
-            '-ksp_monitor %s' % log_filename,
-            '-ksp_view %s' % log_filename,
-        ]
-        if self.conf.precond_side is not None:
-            command.append('-ksp_pc_side %s' % self.conf.precond_side)
-
-        out = os.system(" ".join(command))
-        assert_(out == 0)
-
-        output('reading solution...')
-        tt = time.clock()
-        view_sol = self.petsc.Viewer().createBinary(sol_filename, mode='r')
-        psol = petsc.Vec().load(view_sol)
-
-        fd = open(status_filename, 'r')
-        line = fd.readline().split()
-        reason = int(line[0])
-        elapsed = float(line[1])
-        fd.close()
-        output('...done in %.2f s' % (time.clock() - tt))
-
-        sol = psol[...].copy()
-        output('%s(%s, %s/proc) convergence: %s (%s, %d iterations)'
-               % (ksp.getType(), ksp.getPC().getType(), self.conf.sub_precond,
-                  ksp.reason, self.converged_reasons[ksp.reason],
-                  ksp.getIterationNumber()),
-               verbose=conf.verbose)
-        output('elapsed: %.2f [s]' % elapsed)
-
-        shutil.rmtree(output_dir)
 
         return sol
 

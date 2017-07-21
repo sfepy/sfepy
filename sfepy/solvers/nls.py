@@ -241,6 +241,8 @@ class Newton(NonlinearSolver):
         err = err0 = -1.0
         err_last = -1.0
         it = 0
+        ls_status = {}
+        ls_n_iter = 0
         while 1:
             if iter_hook is not None:
                 iter_hook(self, vec_x, it, err, err0)
@@ -344,7 +346,9 @@ class Newton(NonlinearSolver):
 
             tt = time.clock()
             vec_dx = lin_solver(vec_r, x0=vec_x,
-                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a)
+                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
+                                status=ls_status)
+            ls_n_iter += ls_status['n_iter']
             time_stats['solve'] = time.clock() - tt
 
             if conf.verbose:
@@ -368,6 +372,7 @@ class Newton(NonlinearSolver):
             status['err0'] = err0
             status['err'] = err
             status['n_iter'] = it
+            status['ls_n_iter'] = ls_n_iter if ls_n_iter >= 0 else -1
             status['condition'] = condition
 
         if conf.log.plot is not None:
@@ -585,6 +590,7 @@ class PETScNonlinearSolver(NonlinearSolver):
             status['err0'] = err0
             status['err'] = err
             status['n_iter'] = snes.getIterationNumber()
+            status['ls_n_iter'] = snes.getLinearSolveIterations()
             status['condition'] = 0 if converged else -1
 
         if isinstance(vec_x0, self.petsc.Vec):
