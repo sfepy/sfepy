@@ -46,10 +46,16 @@ def standard_call(call):
 
         result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
                       **kwargs)
+        if isinstance(result, tuple):
+            result, n_iter = result
+
+        else:
+            n_iter = -1 # Number of iterations is undefined/unavailable.
 
         ttt = time.clock() - tt
         if status is not None:
             status['time'] = ttt
+            status['n_iter'] = n_iter
 
         return result
 
@@ -83,6 +89,7 @@ def petsc_call(call):
         ttt = time.clock() - tt
         if status is not None:
             status['time'] = ttt
+            status['n_iter'] = self.ksp.getIterationNumber()
 
         return result
 
@@ -269,7 +276,7 @@ class ScipyIterative(LinearSolver):
                   info, self.converged_reasons[nm.sign(info)], self.iter),
                verbose=conf.verbose)
 
-        return sol
+        return sol, self.iter
 
 class PyAMGSolver(LinearSolver):
     """
