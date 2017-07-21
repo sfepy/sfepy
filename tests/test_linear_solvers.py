@@ -160,7 +160,10 @@ class Test(TestCommon):
                     self.report('%10s: %7.2f [s]' % kv)
                 self.report('condition: %d, err0: %.3e, err: %.3e'
                             % (status.condition, status.err0, status.err))
-                tt.append([name, status.time_stats['solve'], status.err])
+                tt.append([name,
+                           status.time_stats['solve'],
+                           status.ls_n_iter,
+                           status.err])
 
                 aux = name.replace(' ', '_')
                 fname = op.join(self.options.out_dir,
@@ -169,11 +172,12 @@ class Test(TestCommon):
             else:
                 self.report('solver failed:')
                 self.report(exc)
-                tt.append([name, 1e10, 1e10])
+                tt.append([name, -1, 1e10, 1e10])
 
         tt.sort(key=lambda a: a[1])
-        self.report('solution times (rezidual norms):')
+        self.report('solution times / numbers of iterations (rezidual norms):')
         for row in tt:
-            self.report('%.2f [s]' % row[1], '(%.3e)' % row[2], ':', row[0])
+            self.report('%.2f [s] / % 4d' % (row[1], row[2]),
+                        '(%.3e)' % row[3], ':', row[0])
 
         return ok
