@@ -154,8 +154,7 @@ class ScipyDirect(LinearSolver):
 
     def presolve(self, mtx):
         if self.mtx_id != id(mtx):
-            self.mtx = mtx
-            self.solve = self.sls.factorized(self.mtx)
+            self.solve = self.sls.factorized(mtx)
             self.mtx_id = id(mtx)
 
 class ScipyIterative(LinearSolver):
