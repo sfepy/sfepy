@@ -195,7 +195,7 @@ class Quantity(Struct):
         unit_expr = sm.sympify(self.unit_name)
         unit_expr = unit_expr.subs(derived_units)
 
-        self.symbolic_value = sm.sympify(unit_expr)
+        self.symbolic_value = sm.sympify(str(unit_expr))
         atoms = self.symbolic_value.atoms(sm.Symbol)
         self.def_units = [Unit(atom.name) for atom in atoms]
 
