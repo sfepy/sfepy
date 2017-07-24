@@ -11,6 +11,7 @@ from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import PDESolverApp
 import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
+import sfepy.base.multiproc as multi
 from six.moves import range
 
 
@@ -152,17 +153,11 @@ class HomogenizationApp(HomogenizationEngine):
         if self.micro_coors is not None:
             self.he.set_micro_coors(self.update_micro_coors(ret_val=True))
 
-        if self.app_options.multiprocessing:
-            if self.app_options.use_mpi:
-                import sfepy.base.multiproc_mpi as multiproc
-                if multiproc.use_multiprocessing:
-                    self.multiproc_mode = 'mpi'
-            else:
-                import sfepy.base.multiproc as multiproc
-                if multiproc.use_multiprocessing:
-                    self.multiproc_mode = 'multi'
+        multiproc_mode = None
+        if opts.multiprocessing and multi.use_multiprocessing:
+            multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
 
-            if self.multiproc_mode is not None:
+            if multiproc_mode is not None:
                 upd_var = self.app_options.mesh_update_variable
                 if upd_var is not None:
                     uvar = self.problem.create_variables([upd_var])[upd_var]
