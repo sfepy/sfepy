@@ -1,5 +1,5 @@
 """
-MPI multiprocessing.
+Multiprocessing functions.
 """
 import logging
 import os
@@ -9,8 +9,7 @@ try:
     mpi_comm = MPI.COMM_WORLD
     mpi_rank = mpi_comm.Get_rank()
     mpi_status = MPI.Status()
-
-    use_multiprocessing = mpi_comm.Get_size() >= 2
+    use_multiprocessing = mpi_comm.Get_size() > 1
 except:
     use_multiprocessing = False
 
@@ -357,6 +356,11 @@ class RemoteDict(object):
     def update(self, other):
         for k in other.keys():
             self.__setitem__(k, other[k])
+
+
+def is_remote_dict(d):
+    """Return True if 'd' is RemoteDict or RemoteDictMaster instance."""
+    return isinstance(d, RemoteDict) or isinstance(d, RemoteDictMaster)
 
 
 class RemoteLock(object):
