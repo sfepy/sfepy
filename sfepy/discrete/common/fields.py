@@ -4,8 +4,8 @@ import time
 import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
-from sfepy.base.multiproc import use_multiprocessing, managers
 import six
+
 
 def parse_approx_order(approx_order):
     """
@@ -190,8 +190,9 @@ class Field(Struct):
         """
         Save current reference mappings to `mappings0` attribute.
         """
-        if use_multiprocessing and\
-            isinstance(self.mappings0, managers.DictProxy):
+        import sfepy.base.multiproc as multi
+
+        if multi.is_remote_dict(self.mappings0):
             for k, v in six.iteritems(self.mappings):
                 m, _ = self.mappings[k]
                 nv = (m.bf, m.bfg, m.det, m.volume, m.normal)
@@ -223,12 +224,13 @@ class Field(Struct):
         key : tuple
             The key of the mapping in `mappings` or `mappings0`.
         """
+        import sfepy.base.multiproc as multi
+
         key = (region.name, integral.order, integration)
 
         if get_saved:
             out = self.mappings0.get(key, None)
-            if isinstance(self.mappings0, managers.DictProxy)\
-                and out is not None:
+            if multi.is_remote_dict(self.mappings0) and out is not None:
                 m, i = self.create_mapping(region, integral, integration)
                 m.bf[:], m.bfg[:], m.det[:], m.volume[:] = out[0:4]
                 if m.normal is not None:
