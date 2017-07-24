@@ -89,7 +89,7 @@ def get_mpdict_value(mode, key, clear=False):
     return global_multiproc_dict[key]
 
 
-def get_dict(name, clear=False):
+def get_dict(name, clear=False, **kwargs):
     """Get the remote dictionary."""
     return get_mpdict_value('dict', 'd_' + name, clear=clear)
 

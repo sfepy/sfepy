@@ -125,7 +125,7 @@ def get_queue(name):
     return queue
 
 
-def get_dict(name, mutable=False, clear=False):
+def get_dict(name, mutable=False, clear=False, soft_set=False):
     """Get the remote dictionary."""
     if mpi_rank == mpi_master:
         if name in global_multiproc_dict:
@@ -136,8 +136,7 @@ def get_dict(name, mutable=False, clear=False):
                 logger.info("using existing dict %s" % name)
             return global_multiproc_dict[name]
         else:
-            rdict = RemoteDictMaster()
-            rdict.set_name(name)
+            rdict = RemoteDictMaster(name, mutable=mutable, soft_set=soft_set)
             global_multiproc_dict[name] = rdict
             logger.info("new dict %s" % name)
             return rdict
@@ -222,16 +221,23 @@ class RemoteQueue(object):
 
 class RemoteDictMaster(dict):
     """Remote dictionary class - master side."""
-    def set_name(self, name):
+    def __init__(self, name, mutable=False, soft_set=False, *args):
+        dict.__init__(self, *args)
         self.name = name
+        self.mutable = mutable
+        self.immutable_soft_set = soft_set
 
     def remote_set(self, data, slave, mutable=False):
         key, value = data
-        if not mutable and key in self:
-            logger.error("imutable dict '%s'! key '%s' already in global dict"
-                         % (self.name, key))
-            mpi_comm.isend(False, dest=slave, tag=tags.SET_DICT_STATUS)
-            raise(KeyError)
+        if not self.mutable and key in self:
+            if self.immutable_soft_set:
+                mpi_comm.isend(False, dest=slave, tag=tags.SET_DICT_STATUS)
+            else:
+                msg = "imutable dict '%s'! key '%s' already in global dict"\
+                    % (self.name, key)
+                logger.error(msg)
+                mpi_comm.isend(False, dest=slave, tag=tags.SET_DICT_STATUS)
+                raise(KeyError)
         else:
             self.__setitem__(key, value)
             logger.debug('set master dict (%s[%s])' % (self.name, key))
@@ -386,7 +392,7 @@ def slave_get_task(name=''):
     mpi_comm.isend(mpi_rank, dest=mpi_master, tag=tags.READY)
     logger.debug('%s ready' % name)
     task, data = mpi_comm.bcast(None, root=mpi_master)
-    logger.info('%s receaved task %s' % (name, task))
+    logger.info('%s received task %s' % (name, task))
 
     return task, data
 
@@ -394,7 +400,7 @@ def slave_get_task(name=''):
 def slave_task_done(task=''):
     """Stop the slave nodes."""
     mpi_comm.isend(mpi_rank, dest=mpi_master, tag=tags.DONE)
-    logger.info('%s stoped' % task)
+    logger.info('%s stopped' % task)
 
 
 def get_slaves():
@@ -408,7 +414,7 @@ def master_send_task(task, data):
     """Send task to all slaves."""
     slaves = get_slaves()
     wait_for_tag(tags.READY, len(slaves))
-    logger.info('all nodes are ready for task "%s"' % task)
+    logger.info('all nodes are ready for task %s' % task)
     mpi_comm.bcast((task, data), root=mpi_master)
 
 

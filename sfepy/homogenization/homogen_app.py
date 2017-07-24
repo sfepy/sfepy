@@ -166,8 +166,10 @@ class HomogenizationApp(HomogenizationEngine):
                 upd_var = self.app_options.mesh_update_variable
                 if upd_var is not None:
                     uvar = self.problem.create_variables([upd_var])[upd_var]
-                    uvar.field.mappings0 = multiproc.get_dict('mappings0')
-                per.periodic_cache = multiproc.get_dict('periodic_cache')
+                    uvar.field.mappings0 = multiproc.get_dict('mappings0',
+                                                              soft_set=True)
+                per.periodic_cache = multiproc.get_dict('periodic_cache',
+                                                        soft_set=True)
 
         time_tag = ('' if itime is None else '_t%03d' % itime)\
             + ('' if iiter is None else '_i%03d' % iiter)
