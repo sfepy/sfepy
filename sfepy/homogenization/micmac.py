@@ -8,6 +8,7 @@ from sfepy.homogenization.coefficients import Coefficients
 import tables as pt
 from sfepy.discrete.fem.meshio import HDF5MeshIO
 import sfepy.linalg as la
+import sfepy.base.multiproc as multi
 import os.path as op
 import six
 
@@ -79,16 +80,26 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
 
     if not hasattr(problem, 'homogen_app'):
         required, other = get_standard_keywords()
-        required.remove( 'equations' )
+        required.remove('equations')
         micro_file = problem.conf.options.micro_filename
         conf = ProblemConf.from_file(micro_file, required, other,
                                      verbose=False)
-        options = Struct(output_filename_trunk = None)
-        problem.homogen_app = HomogenizationApp(conf, options, 'micro:',
-                                                n_micro=coor.shape[0],
-                                                update_micro_coors=True)
+        options = Struct(output_filename_trunk=None)
+        app = HomogenizationApp(conf, options, 'micro:',
+                                n_micro=coor.shape[0], update_micro_coors=True)
+        problem.homogen_app = app
 
-    app = problem.homogen_app
+        if hasattr(app.app_options, 'use_mpi') and app.app_options.use_mpi:
+            multiproc, multiproc_mode = multi.get_multiproc(mpi=True)
+            multi_mpi = multiproc if multiproc_mode == 'mpi' else None
+            app.multi_mpi = multi_mpi
+
+        if multi_mpi is not None:
+            multi_mpi.master_send_task('init', (micro_file, coor.shape[0]))
+    else:
+        app = problem.homogen_app
+        multi_mpi = app.multi_mpi
+
     def_grad = mtx_f(problem, term) if callable(mtx_f) else mtx_f
     if hasattr(problem, 'def_grad_prev'):
         rel_def_grad = la.dot_sequences(def_grad,
@@ -99,6 +110,9 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
 
     problem.def_grad_prev = def_grad.copy()
     app.setup_macro_deformation(rel_def_grad)
+
+    if multi_mpi is not None:
+        multi_mpi.master_send_task('calculate', (rel_def_grad, ts, iteration))
 
     coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
 

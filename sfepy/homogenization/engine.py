@@ -5,6 +5,7 @@ from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
 from .coefs_base import MiniAppBase, CoefEval
 from sfepy.discrete.evaluate import eval_equations
+import sfepy.base.multiproc as multi
 import numpy as nm
 import six
 from six.moves import range
@@ -321,7 +322,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         -------
         The same returns as :class:`HomogenizationWorker`.
         """
-        import sfepy.base.multiproc as multiproc
+        multiproc = multi.multiproc_threads
 
         dependencies = multiproc.get_dict('dependecies', clear=True)
         sd_names = multiproc.get_dict('sd_names', clear=True)
@@ -408,9 +409,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         For the definition of other parameters see 'calculate_req'.
         """
         while remaining.value > 0:
-            lock.acquire()
             name = tasks.get()
-            lock.release()
 
             if name is None:
                 continue
@@ -553,13 +552,13 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
         ----------------------
         The same parameters and returns as :class:`HomogenizationWorkerMulti`.
         """
-        import sfepy.base.multiproc_mpi as multiproc_mpi
+        multiproc = multi.multiproc_mpi
 
-        dependencies = multiproc_mpi.get_dict('dependecies')
-        sd_names = multiproc_mpi.get_dict('sd_names')
-        numdeps = multiproc_mpi.get_dict('numdeps', mutable=True)
-        remaining = multiproc_mpi.get_int_value('remaining', 0)
-        tasks = multiproc_mpi.get_queue('tasks')
+        dependencies = multiproc.get_dict('dependecies', clear=True)
+        sd_names = multiproc.get_dict('sd_names', clear=True)
+        numdeps = multiproc.get_dict('numdeps', mutable=True, clear=True)
+        remaining = multiproc.get_int_value('remaining', 0)
+        tasks = multiproc.get_queue('tasks')
 
         if micro_coors is not None:
             micro_chunk_tab, req_info, coef_info = \
@@ -589,7 +588,7 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                     else:
                         inverse_deps[req] = [name]
 
-        if multiproc_mpi.mpi_rank == multiproc_mpi.mpi_master:  # master node
+        if multiproc.mpi_rank == multiproc.mpi_master:  # master node
             for k, v in six.iteritems(loc_numdeps):
                 numdeps[k] = v
 
@@ -599,18 +598,21 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                 if numdeps[name] == 0:
                     tasks.put(name)
 
-            multiproc_mpi.master_loop(multiproc_mpi.cpu_count() - 1)
+            multiproc.master_loop()
+            multiproc.master_send_continue()
 
             if micro_coors is not None:
                 dependencies = self.dechunk_reqs_coefs(dependencies,
                                                        len(micro_chunk_tab))
 
+            multiproc.master_send_task('deps', dependencies)
+            multiproc.master_send_continue()
+
             return dependencies, sd_names
 
         else:  # slave node
-            lock = multiproc_mpi.RemoteLock()
-
-            multiproc_mpi.start_slave()
+            lock = multiproc.RemoteLock()
+            multiproc.slave_get_task('engine')
 
             self.calculate_req_multi(tasks, lock, remaining, numdeps,
                                      inverse_deps, problem, options,
@@ -618,11 +620,14 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                                      coef_info, sd_names, dependencies,
                                      micro_coors,
                                      time_tag, micro_chunk_tab,
-                                     str(multiproc_mpi.mpi_rank + 1))
+                                     str(multiproc.mpi_rank + 1))
 
-            multiproc_mpi.stop_slave()
+            multiproc.slave_task_done('engine')
+            multiproc.wait_for_tag(multiproc.tags.CONTINUE)
+            task, deps = multiproc.slave_get_task('get_deps')
+            multiproc.wait_for_tag(multiproc.tags.CONTINUE)
 
-            return None, None
+            return deps, None
 
 
 class HomogenizationEngine(PDESolverApp):
@@ -716,21 +721,17 @@ class HomogenizationEngine(PDESolverApp):
         is_store_filenames = coef_info.pop('filenames', None) is not None
 
         multiproc_mode = None
-        if self.app_options.multiprocessing:
-            if self.app_options.use_mpi:
-                import sfepy.base.multiproc_mpi as multiproc
-                if multiproc.use_multiprocessing:
-                    multiproc_mode = 'mpi'
-                    num_workers = multiproc.cpu_count() - 1
-                    HomogWorkerMulti = HomogenizationWorkerMultiMPI
+        if opts.multiprocessing and multi.use_multiprocessing:
+            multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
+            if multiproc_mode == 'mpi':
+                HomogWorkerMulti = HomogenizationWorkerMultiMPI
+            elif multiproc_mode == 'threads':
+                HomogWorkerMulti = HomogenizationWorkerMulti
             else:
-                import sfepy.base.multiproc as multiproc
-                if multiproc.use_multiprocessing:
-                    multiproc_mode = 'multi'
-                    num_workers = multiproc.cpu_count()
-                    HomogWorkerMulti = HomogenizationWorkerMulti
+                multiproc_mode = None
 
         if multiproc_mode is not None:
+            num_workers = multi.get_num_workers()
             worker = HomogWorkerMulti(num_workers)
             dependencies, sd_names = worker(problem, opts,
                                             self.post_process_hook,
@@ -751,8 +752,12 @@ class HomogenizationEngine(PDESolverApp):
 
         deps = {}
 
-        if dependencies is None:  # slave mode
+        if sd_names is None and dependencies is not None:  # slave mode
             coefs = None
+            for name in dependencies.keys():
+                data = dependencies[name]
+                if not name.startswith('c.'):
+                    deps[name] = data
         else:
             coefs = Struct()
             for name in dependencies.keys():
