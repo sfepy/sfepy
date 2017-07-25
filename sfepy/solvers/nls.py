@@ -584,7 +584,12 @@ class PETScNonlinearSolver(NonlinearSolver):
             err = prhs.norm()
 
         else:
-            err = snes.getFunctionNorm()
+            try:
+                err = snes.getFunctionNorm()
+
+            except AttributeError:
+                fun(snes, psol, prhs)
+                err = prhs.norm()
 
         if status is not None:
             status['err0'] = err0
