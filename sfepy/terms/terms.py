@@ -1480,9 +1480,13 @@ class Term(Struct):
             else:
                 from scipy.sparse import coo_matrix
 
-                aux = coo_matrix((sign * val[0], (val[1], val[2])),
-                                 shape=asm_obj.shape)
-                asm_obj += aux
+                # aux = coo_matrix((sign * val[0], (val[1], val[2])),
+                #                  shape=asm_obj.shape)
+                # asm_obj += aux
+
+                for ii, ir in enumerate(val[1]):
+                    ic = val[2][ii]
+                    asm_obj[ir, ic] += sign * val[0][ii]
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
