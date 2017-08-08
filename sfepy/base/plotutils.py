@@ -29,12 +29,12 @@ def spy(mtx, eps=None, color='b', **kwargs):
 
     output('n_item:', n_item)
     if n_item:
-        args = {'marker' : '.', 'markersize' : 0.5, 'markeredgewidth' : 0.5}
+        args = {'marker' : '.'}
         args.update(kwargs)
-        plt.plot(ij[:,1] + 0.5, ij[:,0] + 0.5, color, linestyle='None',
-                 **args)
-    plt.axis([-0.5, n_row+0.5, -0.5, n_col+0.5])
+        plt.plot(ij[:,1], ij[:,0], color, linestyle='None', **args)
+
     plt.axis('image')
+    plt.axis([-0.5, n_row+0.5, -0.5, n_col+0.5])
     plt.xlabel(r'%d x %d: %d nnz, %.2f%% fill'
                % (n_row, n_col, n_item, 100. * n_item /
                   (float(n_row) * float(n_col))))
