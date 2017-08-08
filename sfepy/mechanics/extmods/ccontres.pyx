@@ -138,7 +138,7 @@ def init_global_search(
         j = I == N
         I[j] = N[j] - 1
 
-        Ic = np.ravel_multi_index(I, N)
+        Ic = np.ravel_multi_index(I, N, order='F')
 
         next[i] = head[Ic]
         head[Ic] = i
