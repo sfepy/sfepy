@@ -1425,6 +1425,8 @@ class Term(Struct):
         vvar = self.get_virtual_variable()
         dc_type = self.get_dof_conn_type()
 
+        extra = None
+
         if mode == 'vector':
             if asm_obj.dtype == nm.float64:
                 assemble = asm.assemble_vector
@@ -1443,6 +1445,7 @@ class Term(Struct):
                 assemble(asm_obj, val, iels, 1.0, dc)
 
             else:
+                # Assumes no repeated indices in val[1]!
                 asm_obj[val[1]] += val[0]
 
         elif mode == 'matrix':
@@ -1480,13 +1483,11 @@ class Term(Struct):
             else:
                 from scipy.sparse import coo_matrix
 
-                # aux = coo_matrix((sign * val[0], (val[1], val[2])),
-                #                  shape=asm_obj.shape)
-                # asm_obj += aux
+                extra = coo_matrix((sign * val[0], (val[1], val[2])),
+                                 shape=asm_obj.shape)
 
-                for ii, ir in enumerate(val[1]):
-                    ic = val[2][ii]
-                    asm_obj[ir, ic] += sign * val[0][ii]
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
+
+        return extra
