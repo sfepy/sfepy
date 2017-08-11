@@ -184,6 +184,9 @@ int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
 // `ccoors` must be preallocated.
 int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim);
 
+// Return the volumes of mesh entities with dimension `dim` > 0.
+int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim);
+
 // Return the normals of facets for each mesh cell. The normals can be accessed
 // using the cell-facet connectivity.
 // If `which` is -1, two normals of each quadrilateral face are averaged. If it

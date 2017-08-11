@@ -908,6 +908,154 @@ int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
   return(RET_OK);
 }
 
+inline float64 _det3x3(float64 j[9])
+{
+  return (j[0]*j[4]*j[8] + j[3]*j[7]*j[2] + j[1]*j[5]*j[6]
+          - j[2]*j[4]*j[6] - j[5]*j[7]*j[0] - j[1]*j[3]*j[8]);
+}
+
+inline float64 _tri_area(float64 *coors, uint32 *indices, int32 nc)
+{
+#define VS(ic, id) (coors[nc*indices[ic] + id])
+
+  int32 id;
+  float64 vv0;
+  float64 v0[3], v1[3], ndir[3];
+
+  if (nc == 2) { // 2D.
+    v0[2] = 0.0;
+    v1[2] = 0.0;
+  }
+
+  for (id = 0; id < nc; id++) {
+    vv0 = VS(0, id);
+    v0[id] = VS(1, id) - vv0;
+    v1[id] = VS(2, id) - vv0;
+  }
+  gtr_cross_product(ndir, v0, v1);
+  if (nc == 2) {
+    return 0.5 * fabs(ndir[2]);
+  } else {
+    return 0.5 * sqrt(ndir[0] * ndir[0] + ndir[1] * ndir[1]
+                      + ndir[2] * ndir[2]);
+  }
+
+#undef VS
+}
+
+inline float64 _aux_hex(float64 *coors, uint32 *indices, int32 nc,
+                        int32 h, int32 i, int32 j, int32 k)
+{
+#define VS(ic, id) (coors[nc*indices[ic] + id])
+
+  float64 mtx[9];
+
+  mtx[0] = VS(i, 0) + VS(h, 0);
+  mtx[1] = VS(i, 1) + VS(h, 1);
+  mtx[2] = VS(i, 2) + VS(h, 2);
+  mtx[3] = VS(j, 0) - VS(i, 0);
+  mtx[4] = VS(j, 1) - VS(i, 1);
+  mtx[5] = VS(j, 2) - VS(i, 2);
+  mtx[6] = VS(k, 0) - VS(h, 0);
+  mtx[7] = VS(k, 1) - VS(h, 1);
+  mtx[8] = VS(k, 2) - VS(h, 2);
+
+  return _det3x3(mtx);
+
+#undef VS
+}
+
+// `volumes` must be preallocated.
+int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
+{
+#define VS(ic, id) (coors[nc*entity_vertices->indices[ic] + id])
+
+  int32 ret = RET_OK;
+  int32 D = mesh->topology->max_dim;
+  int32 nc = mesh->geometry->dim;
+  uint32 id;
+  uint32 indx2[3];
+  float64 vol, aux, vv0, vv1, vv2, vv3;
+  float64 *ptr = volumes;
+  float64 *coors = mesh->geometry->coors;
+  float64 v0[3], v1[3], v2[3], ndir[3];
+  Indices entity_vertices[1];
+  MeshEntityIterator it0[1];
+  MeshConnectivity *cd0 = 0; // d -> 0
+
+  if (!dim) {
+    errput("vertices have no volume!\n");
+    ERR_CheckGo(ret);
+  }
+
+  cd0 = mesh->topology->conn[IJ(D, dim, 0)];
+
+  for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
+    me_get_incident2(it0->entity, entity_vertices, cd0);
+    /* mei_print(it0, stdout); */
+    /* ind_print(entity_vertices, stdout); */
+    vol = 0;
+
+    if (dim == 1) { // Edges.
+      for (id = 0; id < nc; id++) {
+        aux = VS(1, id) - VS(0, id);
+        vol += aux * aux;
+      }
+      ptr[0] = sqrt(vol);
+
+    } else if (entity_vertices->num == 3) { // Triangles.
+      ptr[0] = _tri_area(coors, entity_vertices->indices, nc);
+
+    } else if (nc == 2) { // Quadrilateral cells.
+      ptr[0] = _tri_area(coors, entity_vertices->indices, nc);
+      indx2[0] = entity_vertices->indices[2];
+      indx2[1] = entity_vertices->indices[3];
+      indx2[2] = entity_vertices->indices[0];
+      ptr[0] += _tri_area(coors, indx2, nc);
+
+    } else if (nc == 3) { // 3D.
+      if (entity_vertices->num == 4) {
+        if (dim == 2) { // Quadrilateral faces.
+
+        } else { // Tetrahedral cells.
+          for (id = 0; id < nc; id++) {
+            vv0 = VS(0, id);
+            vv1 = VS(1, id);
+            vv2 = VS(2, id);
+            vv3 = VS(3, id);
+
+            v0[id] = vv1 - vv0;
+            v1[id] = vv2 - vv0;
+            v2[id] = vv3 - vv2;
+          }
+          gtr_cross_product(ndir, v0, v1);
+          gtr_dot_v3(ptr, v2, ndir, 3);
+          ptr[0] /= 6.0;
+        }
+
+      } else { // Hexahedral cells with trilinear interpolation.
+        // See https://math.stackexchange.com/questions/1628540/what-is-the-enclosed-volume-of-an-irregular-cube-given-the-x-y-z-coordinates-of
+        // Uses 0 1 3 2 4 5 7 6 ordering w.r.t. sfepy.
+        aux = _aux_hex(coors, entity_vertices->indices, nc, 0, 1, 3, 2);
+        aux -= _aux_hex(coors, entity_vertices->indices, nc, 4, 5, 7, 6);
+        aux -= _aux_hex(coors, entity_vertices->indices, nc, 0, 1, 4, 5);
+        aux += _aux_hex(coors, entity_vertices->indices, nc, 3, 2, 7, 6);
+        aux += _aux_hex(coors, entity_vertices->indices, nc, 0, 3, 4, 7);
+        aux -= _aux_hex(coors, entity_vertices->indices, nc, 1, 2, 5, 6);
+        ptr[0] = aux / 12.0;
+
+      }
+    }
+
+    ptr += 1;
+  }
+
+ end_label:
+  return(ret);
+
+#undef VS
+}
+
 // `normals` must be preallocated.
 int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
 {
