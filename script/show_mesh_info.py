@@ -11,12 +11,17 @@ from sfepy.discrete.fem import Mesh
 helps = {
     'filename' :
     'mesh file name',
+    'detailed' :
+    'show additional information (entity volume statistics)',
 }
 
 def main():
     parser = ArgumentParser(description=__doc__.rstrip(),
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('filename', help=helps['filename'])
+    parser.add_argument('-d', '--detailed',
+                        action='store_true', dest='detailed',
+                        default=False, help=helps['detailed'])
     options = parser.parse_args()
 
     mesh = Mesh.from_file(options.filename)
@@ -31,6 +36,19 @@ def main():
                        for ii, name in enumerate('xyz'[:mesh.dim])))
 
     output('centre:', mesh.coors.mean(0))
+
+    if not options.detailed: return
+
+    from sfepy.discrete.fem.geometry_element import create_geometry_elements
+    gels = create_geometry_elements()
+    mesh.cmesh.set_local_entities(gels)
+    mesh.cmesh.setup_entities()
+
+    for dim in range(1, mesh.cmesh.tdim + 1):
+        volumes = mesh.cmesh.get_volumes(dim)
+        output('volumes of %d %dD entities: min: %s mean: %s max: %s'
+               % (mesh.cmesh.num[dim],
+                  dim, volumes.min(), volumes.mean(), volumes.max()))
 
 if __name__ == '__main__':
     main()
