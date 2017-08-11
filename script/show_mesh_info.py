@@ -23,7 +23,7 @@ def main():
 
     output(mesh.cmesh)
     output('element types:', mesh.descs)
-    output('nodal BCs:', mesh.nodal_bcs)
+    output('nodal BCs:', sorted(mesh.nodal_bcs.keys()))
 
     bbox = mesh.get_bounding_box()
     output('bounding box: %s'
