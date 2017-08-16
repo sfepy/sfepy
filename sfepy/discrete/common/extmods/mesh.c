@@ -974,7 +974,7 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
   int32 D = mesh->topology->max_dim;
   int32 nc = mesh->geometry->dim;
   uint32 id;
-  uint32 indx2[3];
+  uint32 indx2[6];
   float64 vol, aux, vv0, vv1, vv2, vv3;
   float64 *ptr = volumes;
   float64 *coors = mesh->geometry->coors;
@@ -1015,7 +1015,19 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
 
     } else if (nc == 3) { // 3D.
       if (entity_vertices->num == 4) {
-        if (dim == 2) { // Quadrilateral faces.
+        if (dim == 2) { // Quadrilateral faces (approximate).
+          indx2[0] = entity_vertices->indices[0];
+          indx2[1] = entity_vertices->indices[1];
+          indx2[2] = entity_vertices->indices[2];
+          indx2[3] = entity_vertices->indices[3];
+          indx2[4] = entity_vertices->indices[0];
+          indx2[5] = entity_vertices->indices[1];
+
+          aux = _tri_area(coors, indx2, nc);
+          aux += _tri_area(coors, indx2 + 1, nc);
+          aux += _tri_area(coors, indx2 + 2, nc);
+          aux += _tri_area(coors, indx2 + 3, nc);
+          ptr[0] = 0.5 * aux;
 
         } else { // Tetrahedral cells.
           for (id = 0; id < nc; id++) {
