@@ -92,7 +92,10 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
         if hasattr(app.app_options, 'use_mpi') and app.app_options.use_mpi:
             multiproc, multiproc_mode = multi.get_multiproc(mpi=True)
             multi_mpi = multiproc if multiproc_mode == 'mpi' else None
-            app.multi_mpi = multi_mpi
+        else:
+            multi_mpi = None
+
+        app.multi_mpi = multi_mpi
 
         if multi_mpi is not None:
             multi_mpi.master_send_task('init', (micro_file, coor.shape[0]))
