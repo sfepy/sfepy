@@ -164,3 +164,63 @@ class Test(TestCommon):
                     ok = ok and (_ok1 and _ok2)
 
         return ok
+
+    def test_entity_volumes(self):
+        import sfepy
+        from sfepy.discrete.fem import Mesh, FEDomain
+        from sfepy.discrete.common import Field
+        from sfepy.discrete import Integral
+
+        mesh = Mesh.from_file('meshes/3d/special/cross3d.mesh',
+                              prefix_dir=sfepy.data_dir)
+        domain = FEDomain('domain', mesh)
+
+        omega = domain.create_region('Omega', 'all')
+        gamma = domain.create_region('Gamma', 'vertices of surface', 'facet')
+        top = domain.create_region('Top', 'cell 2')
+
+        vfield = Field.from_args('v', nm.float64, 'scalar', omega,
+                                 approx_order=1)
+        sfield = Field.from_args('s', nm.float64, 'scalar', gamma,
+                                 approx_order=1)
+
+        integral = Integral('i', order=3)
+        vgeo, _ = vfield.get_mapping(omega, integral, 'volume')
+        domain.create_surface_group(gamma)
+        sgeo, _ = sfield.get_mapping(gamma, integral, 'surface')
+
+        evols = mesh.cmesh.get_volumes(1)
+        fvols = mesh.cmesh.get_volumes(2) # Approximate for non-planar faces.
+        cvols = mesh.cmesh.get_volumes(3)
+
+        ok = True
+        _ok = abs(cvols.sum() - vgeo.volume.sum()) < 1e-15
+        self.report('total cell volume: %s (ok: %s)' % (cvols.sum(), _ok))
+        ok = _ok and ok
+
+        top_evols = nm.array([ 1.                ,  1.                ,
+                               1.                ,  1.                ,
+                               0.7211102550927979,  0.7211102550927979,
+                               0.7211102550927979,  0.7211102550927979,
+                               1.16619037896906  ,  1.16619037896906  ,
+                               1.16619037896906  ,  1.16619037896906  ])
+
+        _ok = nm.allclose(top_evols, evols[top.edges], rtol=0.0, atol=1e-15)
+        self.report('total top cell edge length: %s (ok: %s)'
+                    % (evols[top.edges].sum(), _ok))
+        ok = _ok and ok
+
+        i1 = [5, 6, 8, 9]
+        i2 = nm.setdiff1d(nm.arange(len(gamma.faces)), i1)
+        aux = fvols[gamma.faces] - sgeo.volume.ravel()
+
+        _ok = nm.allclose(aux[i1], 0.10560208437556773, rtol=0.0, atol=1e-15)
+        ok = _ok and ok
+        self.report('non-planar faces diff: %s (ok: %s)' % (aux[i1], _ok))
+
+        _ok = (nm.abs(aux[i2]) < 1e-15).all()
+        self.report('max. planar faces diff: %s (ok: %s)'
+                    % (nm.abs(aux[i2]).max(), _ok))
+        ok = _ok and ok
+
+        return ok
