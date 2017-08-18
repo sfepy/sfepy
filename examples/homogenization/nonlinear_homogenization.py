@@ -11,6 +11,7 @@ from sfepy.discrete.functions import ConstantFunctionByRegion
 from sfepy import data_dir
 import sfepy.linalg as la
 
+
 def recovery_hook(pb, ncoors, region, ts,
                   naming_scheme='step_iel', recovery_file_tag=''):
     from sfepy.base.ioutils import get_print_info
@@ -47,11 +48,12 @@ def recovery_hook(pb, ncoors, region, ts,
         suffix = get_output_suffix(icell, ts, naming_scheme, format,
                                    pb.output_format)
 
-        micro_name = pb.get_output_name(extra='recovered_'\
-            + recovery_file_tag + suffix)
+        micro_name = pb.get_output_name(extra='recovered_'
+                                        + recovery_file_tag + suffix)
         filename = op.join(output_dir, op.basename(micro_name))
         fpv = pb.conf.options.get('file_per_var', False)
         pb.save_state(filename, out=out, file_per_var=fpv)
+
 
 def def_mat(ts, mode, coors, term, pb):
     if not (mode == 'qp'):
@@ -69,7 +71,7 @@ def def_mat(ts, mode, coors, term, pb):
     if state_u.data[0] is None:
         state_u.init_data()
 
-    state_u.set_data(\
+    state_u.set_data(
         pb.domain.get_mesh_coors(actual=True) - pb.domain.get_mesh_coors())
     state_u.field.clear_mappings()
     family_data = pb.family_data(state_u, term.region,
@@ -79,7 +81,8 @@ def def_mat(ts, mode, coors, term, pb):
         state_u.field.save_mappings()
 
     n_el, n_qp, dim, n_en, n_c = state_u.get_data_shape(term.integral,
-        term.integration, term.region.name)
+                                                        term.integration,
+                                                        term.region.name)
 
     conf_mat = pb.conf.materials
     solid_key = [key for key in conf_mat.keys() if 'solid' in key][0]
@@ -97,36 +100,37 @@ def def_mat(ts, mode, coors, term, pb):
     sym = family_data.green_strain.shape[-2]
     dim2 = dim**2
 
-    fargs = [family_data.get(name)\
-        for name in NeoHookeanULTerm.family_data_names]
-    stress = nm.empty(shape + (sym,1), dtype=nm.float64)
-    tanmod = nm.empty(shape + (sym,sym), dtype=nm.float64)
+    fargs = [family_data.get(name)
+             for name in NeoHookeanULTerm.family_data_names]
+    stress = nm.empty(shape + (sym, 1), dtype=nm.float64)
+    tanmod = nm.empty(shape + (sym, sym), dtype=nm.float64)
     NeoHookeanULTerm.stress_function(stress, mat['mu'], *fargs)
     NeoHookeanULTerm.tan_mod_function(tanmod, mat['mu'], *fargs)
 
-    fargs = [family_data.get(name)\
-        for name in BulkPenaltyULTerm.family_data_names]
-    stress_p = nm.empty(shape + (sym,1), dtype=nm.float64)
-    tanmod_p = nm.empty(shape + (sym,sym), dtype=nm.float64)
+    fargs = [family_data.get(name)
+             for name in BulkPenaltyULTerm.family_data_names]
+    stress_p = nm.empty(shape + (sym, 1), dtype=nm.float64)
+    tanmod_p = nm.empty(shape + (sym, sym), dtype=nm.float64)
     BulkPenaltyULTerm.stress_function(stress_p, mat['K'], *fargs)
     BulkPenaltyULTerm.tan_mod_function(tanmod_p, mat['K'], *fargs)
 
-    stress_ns = nm.zeros(shape + (dim2,dim2), dtype=nm.float64)
-    tanmod_ns = nm.zeros(shape + (dim2,dim2), dtype=nm.float64)
+    stress_ns = nm.zeros(shape + (dim2, dim2), dtype=nm.float64)
+    tanmod_ns = nm.zeros(shape + (dim2, dim2), dtype=nm.float64)
     sym2nonsym(stress_ns, stress + stress_p)
     sym2nonsym(tanmod_ns, tanmod + tanmod_p)
 
     npts = nm.prod(shape)
     J = family_data.det_f
-    mtx_f = family_data.mtx_f.reshape((npts,dim,dim))
+    mtx_f = family_data.mtx_f.reshape((npts, dim, dim))
 
     out = {
         'E': 0.5 * (la.dot_sequences(mtx_f, mtx_f, 'ATB') - nm.eye(dim)),
-        'A': ((tanmod_ns + stress_ns) / J).reshape((npts,dim2,dim2)),
-        'S': ((stress + stress_p) / J).reshape((npts,sym,1)),
+        'A': ((tanmod_ns + stress_ns) / J).reshape((npts, dim2, dim2)),
+        'S': ((stress + stress_p) / J).reshape((npts, sym, 1)),
     }
 
     return out
+
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square_small.mesh'
 dim = 2
@@ -153,7 +157,7 @@ functions = {
     'match_x_plane': (per.match_x_plane,),
     'match_y_plane': (per.match_y_plane,),
     'mat_fce': (lambda ts, coors, mode=None, term=None, problem=None, **kwargs:
-        def_mat(ts, mode, coors, term, problem),),
+                def_mat(ts, mode, coors, term, problem),),
 }
 
 materials = {
@@ -177,7 +181,7 @@ regions = {
     'Yc': 'cells of group 2',
 }
 
-regions.update(define_box_regions(dim, (0.,0.), (1.,1.)))
+regions.update(define_box_regions(dim, (0., 0.), (1., 1.)))
 
 ebcs = {
     'fixed_u': ('Corners', {'u.all': 0.0}),
