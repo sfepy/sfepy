@@ -73,15 +73,15 @@ class Test(TestCommon):
         coefs = he.define_volume_coef(coefs, volumes)
         orig_deps_num = len(requirements) + len(coefs)
 
-        num_workers, num_micro, chunk_size = 5, 61, 10
+        num_workers, num_micro, chunks_per_worker = 5, 61, 2
         store_micro_idxs = [0, 1, 18, 20, 21]
         micro_chunk_tab, requirements, coefs = \
             hwm.chunk_micro_coors(num_workers, num_micro, requirements, coefs,
-                                  chunk_size, store_micro_idxs)
+                                  chunks_per_worker, store_micro_idxs)
 
         dep_names = hwm.get_sorted_dependencies(requirements, coefs, None)
 
-        ok = (orig_deps_num * num_workers) == len(dep_names)
+        ok = (orig_deps_num * len(micro_chunk_tab)) == len(dep_names)
         self.report('splitting into chunks:', ok)
 
         deps = {}

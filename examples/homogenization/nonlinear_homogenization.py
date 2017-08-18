@@ -138,7 +138,7 @@ options = {
     'output_dir': './output',
     'coefs_filename': 'coefs_hyper_homog',
     'multiprocessing': True,
-    'chunk_size': 10,
+    'chunks_per_worker': 2,
     'mesh_update_variable': 'u',
     'mesh_update_corrector': 'corrs_rs',
     'recovery_hook': 'recovery_hook',

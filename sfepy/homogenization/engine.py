@@ -309,14 +309,15 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
 
     def __call__(self, problem, options, post_process_hook,
                  req_info, coef_info,
-                 micro_coors, store_micro_idxs, chunk_size, time_tag=''):
+                 micro_coors, store_micro_idxs, chunks_per_worker,
+                 time_tag=''):
         """Calculate homogenized correctors and coefficients.
 
         Parameters
         ----------
         The same parameters as :class:`HomogenizationWorker`, extended by:
-        chunk_size : int
-            The desired number of microproblems in one chunk.
+        chunks_per_worker : int
+            The number of chunks per one worker.
 
         Returns
         -------
@@ -335,7 +336,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             micro_chunk_tab, req_info, coef_info = \
                 self.chunk_micro_coors(self.num_workers, micro_coors.shape[0],
                                        req_info, coef_info,
-                                       chunk_size, store_micro_idxs)
+                                       chunks_per_worker, store_micro_idxs)
         else:
             micro_chunk_tab = None
 
@@ -457,7 +458,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
 
     @staticmethod
     def chunk_micro_coors(num_workers, num_micro, reqs, coefs,
-                          chunk_size=5, store_micro_idxs=[]):
+                          chunks_per_worker=1, store_micro_idxs=[]):
         """
         Split multiple microproblems into several chunks
         that can be processed in parallel.
@@ -472,8 +473,8 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
             The requirement definitions.
         coefs : dict
             The coefficient definitions.
-        chunk_size : int
-            The desired number of microproblems in one chunk.
+        chunks_per_worker : int
+            The number of chunks per one worker.
         store_micro_idxs : list of int
             The indices of microstructures whose results are to be stored.
 
@@ -486,8 +487,8 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         new_coefs : dict
             The new coefficient definitions.
         """
-        chpw = nm.max([nm.floor(num_micro / (chunk_size * num_workers)), 1.])
-        chsize = int(nm.ceil(num_micro / (num_workers * chpw)))
+        chsize = int(nm.ceil(float(num_micro)
+                     / (num_workers * chunks_per_worker)))
 
         micro_tab = []
         store_idxs = []
@@ -545,7 +546,8 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
 class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
     def __call__(self, problem, options, post_process_hook,
                  req_info, coef_info,
-                 micro_coors, store_micro_idxs, chunk_size, time_tag=''):
+                 micro_coors, store_micro_idxs, chunks_per_worker,
+                 time_tag=''):
         """Calculate homogenized correctors and coefficients.
 
         Parameters and Returns
@@ -565,7 +567,7 @@ class HomogenizationWorkerMultiMPI(HomogenizationWorkerMulti):
                 self.chunk_micro_coors(self.num_workers,
                                        micro_coors.shape[0],
                                        req_info, coef_info,
-                                       chunk_size, store_micro_idxs)
+                                       chunks_per_worker, store_micro_idxs)
         else:
             micro_chunk_tab = None
 
@@ -643,7 +645,7 @@ class HomogenizationEngine(PDESolverApp):
                       multiprocessing=get('multiprocessing', True),
                       use_mpi=get('use_mpi', False),
                       store_micro_idxs=get('store_micro_idxs', []),
-                      chunk_size=get('chunk_size', 5),
+                      chunks_per_worker=get('chunks_per_worker', 1),
                       save_format=get('save_format', 'vtk'),
                       dump_format=get('dump_format', 'h5'),
                       coefs_info=get('coefs_info', None))
@@ -738,7 +740,7 @@ class HomogenizationEngine(PDESolverApp):
                                             req_info, coef_info,
                                             self.micro_coors,
                                             self.app_options.store_micro_idxs,
-                                            self.app_options.chunk_size,
+                                            self.app_options.chunks_per_worker,
                                             time_tag)
 
         else:  # no multiprocessing
