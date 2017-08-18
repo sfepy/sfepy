@@ -1,5 +1,5 @@
 """
-Multiprocessing functions - using multiprocessing (threading based) module.
+Multiprocessing functions - using multiprocessing (process based) module.
 """
 try:
     from multiprocessing import cpu_count, Manager, Queue, Lock,\
