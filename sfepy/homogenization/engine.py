@@ -323,7 +323,7 @@ class HomogenizationWorkerMulti(HomogenizationWorker):
         -------
         The same returns as :class:`HomogenizationWorker`.
         """
-        multiproc = multi.multiproc_threads
+        multiproc = multi.multiproc_proc
 
         dependencies = multiproc.get_dict('dependecies', clear=True)
         sd_names = multiproc.get_dict('sd_names', clear=True)
@@ -727,7 +727,7 @@ class HomogenizationEngine(PDESolverApp):
             multiproc, multiproc_mode = multi.get_multiproc(mpi=opts.use_mpi)
             if multiproc_mode == 'mpi':
                 HomogWorkerMulti = HomogenizationWorkerMultiMPI
-            elif multiproc_mode == 'threads':
+            elif multiproc_mode == 'proc':
                 HomogWorkerMulti = HomogenizationWorkerMulti
             else:
                 multiproc_mode = None

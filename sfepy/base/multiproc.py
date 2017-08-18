@@ -9,16 +9,16 @@ except:
 
 try:
     from multiprocessing import cpu_count
-    use_multiprocessing_threads = cpu_count() > 1
+    use_multiprocessing_proc = cpu_count() > 1
 except:
-    use_multiprocessing_threads = False
+    use_multiprocessing_proc = False
 
 if use_multiprocessing_mpi:
     import sfepy.base.multiproc_mpi as multiproc_mpi
-if use_multiprocessing_threads:
-    import sfepy.base.multiproc_threads as multiproc_threads
+if use_multiprocessing_proc:
+    import sfepy.base.multiproc_proc as multiproc_proc
 
-use_multiprocessing = use_multiprocessing_mpi or use_multiprocessing_threads
+use_multiprocessing = use_multiprocessing_mpi or use_multiprocessing_proc
 
 multiprocessing_mode = None
 multiprocessing_module = None
@@ -26,14 +26,14 @@ multiprocessing_module = None
 
 def get_multiproc(mpi=False):
     global multiprocessing_mode, multiprocessing_module
-    try_threads = True
+    try_proc = True
     multiproc, mode = None, None
     if mpi and use_multiprocessing_mpi:
         multiproc, mode = multiproc_mpi, 'mpi'
-        try_threads = False
+        try_proc = False
 
-    if try_threads and use_multiprocessing_threads:
-        multiproc, mode = multiproc_threads, 'threads'
+    if try_proc and use_multiprocessing_proc:
+        multiproc, mode = multiproc_proc, 'proc'
 
     multiprocessing_mode = mode
     multiprocessing_module = multiproc
@@ -45,7 +45,7 @@ def get_num_workers():
     """Get the number of slave nodes."""
     mpi = multiprocessing_mode == 'mpi'
     return multiproc_mpi.cpu_count() - 1 if mpi else\
-        multiproc_threads.cpu_count()
+        multiproc_proc.cpu_count()
 
 
 def is_remote_dict(d):
