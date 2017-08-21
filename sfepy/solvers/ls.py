@@ -281,6 +281,10 @@ class ScipyIterative(LinearSolver):
 class PyAMGSolver(LinearSolver):
     """
     Interface to PyAMG solvers.
+
+    The `method` parameter can be one of: 'smoothed_aggregation_solver',
+    'ruge_stuben_solver'. The `accel` parameter specifies the Krylov
+    solver name, that is used as an accelerator for the multigrid solver.
     """
     name = 'ls.pyamg'
 
@@ -291,11 +295,25 @@ class PyAMGSolver(LinearSolver):
          'The actual solver to use.'),
         ('accel', 'str', None, False,
          'The accelerator.'),
+        ('callback', 'callable', None, False,
+         """User-supplied function to call after each iteration. It is called
+            as callback(xk), where xk is the current solution vector, except
+            the gmres accelerator, where the argument is the residual norm.
+         """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative tolerance for the residual.'),
+        ('*', '*', None, False,
+         """Additional parameters supported by the method. Use the 'method:'
+            prefix for arguments of the method construction function
+            (e.g. 'method:max_levels' : 5), and the 'solve:' prefix for
+            the subsequent solver call."""),
     ]
+
+    # All iterative solvers in pyamg.krylov pass a solution vector into
+    # a callback except those below, that take a residual vector norm.
+    _callbacks_res = ['gmres']
 
     def __init__(self, conf, **kwargs):
         try:
@@ -317,18 +335,147 @@ class PyAMGSolver(LinearSolver):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+        solver_kwargs = self.build_solver_kwargs(conf)
 
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
 
+        callback = get_default(kwargs.get('callback', lambda sol: None),
+                               self.conf.callback)
+
+        self.iter = 0
+        def iter_callback(sol):
+            self.iter += 1
+            msg = '%s: iteration %d' % (self.conf.name, self.iter)
+            if conf.verbose > 2:
+                if conf.accel not in self._callbacks_res:
+                    res = mtx * sol - rhs
+
+                else:
+                    res = sol
+
+                rnorm = nm.linalg.norm(res)
+                msg += ': |Ax-b| = %e' % rnorm
+            output(msg, verbose=conf.verbose > 1)
+
+            # Call an optional user-defined callback.
+            callback(sol)
+
         if self.mtx_id != id(mtx):
-            self.mg = self.solver(mtx)
+            _kwargs = {key[7:] : val
+                       for key, val in six.iteritems(solver_kwargs)
+                       if key.startswith('method:')}
+            self.mg = self.solver(mtx, **_kwargs)
             self.mtx_id = id(mtx)
 
+        _kwargs = {key[6:] : val
+                   for key, val in six.iteritems(solver_kwargs)
+                   if key.startswith('solve:')}
         sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r,
-                            maxiter=i_max)
+                            maxiter=i_max, callback=iter_callback,
+                            **_kwargs)
 
-        return sol
+        return sol, self.iter
+
+class PyAMGKrylovSolver(LinearSolver):
+    """
+    Interface to PyAMG Krylov solvers.
+    """
+    name = 'ls.pyamg_krylov'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('method', 'str', 'cg', False,
+         'The actual solver to use.'),
+        ('setup_precond', 'callable', lambda mtx, problem: None, False,
+         """User-supplied function for the preconditioner initialization/setup.
+            It is called as setup_precond(mtx, problem), where mtx is the
+            matrix, and should return one of {sparse matrix, dense matrix,
+            LinearOperator}.
+         """),
+        ('callback', 'callable', None, False,
+         """User-supplied function to call after each iteration. It is called
+            as callback(xk), where xk is the current solution vector, except
+            the gmres method, where the argument is the residual norm.
+         """),
+        ('i_max', 'int', 100, False,
+         'The maximum number of iterations.'),
+        ('eps_r', 'float', 1e-8, False,
+         'The relative tolerance for the residual.'),
+        ('*', '*', None, False,
+         'Additional parameters supported by the method.'),
+    ]
+
+    # All iterative solvers in pyamg.krylov pass a solution vector into
+    # a callback except those below, that take a residual vector norm.
+    _callbacks_res = ['gmres']
+
+    def __init__(self, conf, **kwargs):
+        try:
+            import pyamg.krylov as krylov
+        except ImportError:
+            msg =  'cannot import pyamg.krylov!'
+            raise ImportError(msg)
+
+        LinearSolver.__init__(self, conf, mtx_id=None, mg=None, **kwargs)
+
+        try:
+            solver = getattr(krylov, self.conf.method)
+        except AttributeError:
+            output('pyamg.krylov.%s does not exist!' % self.conf.method)
+            raise
+
+        self.solver = solver
+        self.converged_reasons = {
+            0 : 'successful exit',
+            1 : 'number of iterations',
+            -1 : 'illegal input or breakdown',
+        }
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        solver_kwargs = self.build_solver_kwargs(conf)
+
+        eps_r = get_default(eps_r, self.conf.eps_r)
+        i_max = get_default(i_max, self.conf.i_max)
+
+        setup_precond = get_default(kwargs.get('setup_precond', None),
+                                    self.conf.setup_precond)
+        callback = get_default(kwargs.get('callback', lambda sol: None),
+                               self.conf.callback)
+
+        self.iter = 0
+        def iter_callback(sol):
+            self.iter += 1
+            msg = '%s: iteration %d' % (self.conf.name, self.iter)
+            if conf.verbose > 2:
+                if conf.method not in self._callbacks_res:
+                    res = mtx * sol - rhs
+
+                else:
+                    res = sol
+
+                rnorm = nm.linalg.norm(res)
+                msg += ': |Ax-b| = %e' % rnorm
+            output(msg, verbose=conf.verbose > 1)
+
+            # Call an optional user-defined callback.
+            callback(sol)
+
+        precond = setup_precond(mtx, self.problem)
+
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
+                                M=precond, callback=iter_callback,
+                                **solver_kwargs)
+
+        output('%s: %s convergence: %s (%s, %d iterations)'
+               % (self.conf.name, self.conf.method,
+                  info, self.converged_reasons[nm.sign(info)], self.iter),
+               verbose=conf.verbose)
+
+        return sol, self.iter
 
 class PETScKrylovSolver(LinearSolver):
     """
