@@ -59,12 +59,19 @@ solvers = {
     'i00' : ('ls.pyamg',
              {'method' : 'ruge_stuben_solver',
               'accel' : 'cg',
-              'eps_r'   : 1e-12,}
+              'eps_r'   : 1e-12,
+              'method:max_levels' : 5,
+              'solve:cycle' : 'V',}
     ),
     'i01' : ('ls.pyamg',
              {'method' : 'smoothed_aggregation_solver',
               'accel' : 'cg',
               'eps_r'   : 1e-12,}
+    ),
+    'i02' : ('ls.pyamg_krylov',
+             {'method' : 'cg',
+              'eps_r'   : 1e-12,
+              'i_max' : 1000,}
     ),
     'i10' : ('ls.petsc',
              {'method' : 'cg', # ksp_type
@@ -104,7 +111,7 @@ from sfepy.base.testing import TestCommon
 output_name = 'test_linear_solvers_%s.vtk'
 
 class Test(TestCommon):
-    can_fail = ['ls.pyamg', 'ls.petsc']
+    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc']
 
     @staticmethod
     def from_conf(conf, options):
