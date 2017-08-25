@@ -904,6 +904,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		    A12 = 0.0;
 		    b1 = 0.0;
 		    b2 = 0.0;
+		    double d_tmp = 0.0;
+
 		    for (sdf = 0; sdf < nsd; ++sdf) {
 		      float64 x = 0.0;
 		      float64 dx_dr = 0.0;
@@ -925,7 +927,10 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 			A22 += dx_ds*dx_ds;
 			A12 += dx_dr*dx_ds;
 		      }
+		      d_tmp += (Xg[sdf] - x) * (Xg[sdf] - x);
 		    }
+
+		    d = (d<0) ? -sqrt(d_tmp) : sqrt(d_tmp);
 
 		    float64 recDetA;
 		    float64 invA11;
