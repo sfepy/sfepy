@@ -59,34 +59,34 @@ class ContactTerm(Term):
         if self.ci is None:
             self.ci = ContactInfo()
 
-        print(region.name)
-        print(region.shape)
-        print(region.facets)
-        print(region.get_facet_indices())
-        print(state.field.surface_data[region.name].fis)
+        # print(region.name)
+        # print(region.shape)
+        # print(region.facets)
+        # print(region.get_facet_indices())
+        # print(state.field.surface_data[region.name].fis)
 
-        print(geo)
-        print(geo.normal)
+        # print(geo)
+        # print(geo.normal)
 
-        mesh_coors = self.region.domain.mesh.coors
-        print(mesh_coors[region.vertices])
+        # mesh_coors = self.region.domain.mesh.coors
+        # print(mesh_coors[region.vertices])
 
         # Uses field connectivity (higher order nodes).
         sd = state.field.surface_data[region.name]
 
         # Uses mesh connectivity.
-        sdg = self.region.domain.surface_groups[region.name]
+        # sdg = self.region.domain.surface_groups[region.name]
 
-        print(mesh_coors[sdg.econn])
+        # print(mesh_coors[sdg.econn])
 
-        qps = self.get_physical_qps()
-        qp_coors = qps.values
-        u_qp = self.get(state, 'val').reshape(qp_coors.shape)
+        # qps = self.get_physical_qps()
+        # qp_coors = qps.values
+        # u_qp = self.get(state, 'val').reshape(qp_coors.shape)
 
         # Deformed QP coordinates.
-        coors = u_qp + qp_coors
+        # coors = u_qp + qp_coors
 
-        print(coors)
+        # print(coors)
 
         ISN = state.field.efaces.T.copy()
         nsd = region.dim
@@ -123,8 +123,8 @@ class ContactTerm(Term):
                                                        elementID, segmentID,
                                                        ISN, IEN, H, xx)
 
-        print longestEdge
-        print X[IEN[elementID[0]]][ISN]
+        # print longestEdge
+        # print X[IEN[elementID[0]]][ISN]
 
         # gg = state.field.mappings[('Omega', 2, 'volume')]
         # Implement Region.get_diameters(dim).
@@ -147,10 +147,10 @@ class ContactTerm(Term):
         AABBmax = AABBmax + (0.5*longestEdge);
         N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
 
-        print AABBmin, AABBmax, N
+        # print AABBmin, AABBmax, N
         head, next = cc.init_global_search(N, AABBmin, AABBmax, GPs[:,:nsd])
 
-        print head, next
+        # print head, next
 
         npd = region.tdim - 1
         GPs = cc.evaluate_contact_constraints(GPs, ISN, IEN, N,
@@ -158,12 +158,13 @@ class ContactTerm(Term):
                                               head, next, xx,
                                               elementID, segmentID,
                                               npd, neq, longestEdge)
-        print GPs[:, 4]
+        # print GPs[:, 4]
 
         #
         Gc = nm.zeros(neq, dtype=nm.float64)
 
         activeGPs = GPs[:, 2*nsd+3]
+        print 'active:', activeGPs.sum()
 
         if diff_var is None:
             max_num = 1
@@ -188,8 +189,8 @@ class ContactTerm(Term):
                                                          keyContactDetection,
                                                          keyAssembleKc)
         Gc, vals, rows, cols, num = aux
-        print Gc.mean(), num
-        print GPs
+        # print Gc.mean()
+        # print GPs
         print 'true num:', num
 
         if diff_var is None:
