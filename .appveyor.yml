@@ -94,7 +94,8 @@ build: false
 test_script:
 
   - "python setup.py build_ext --inplace"
-  - ps: python run_tests.py
+  - "python run_tests.py"
+
 #
 # Probably not needed here...
 #
