@@ -502,6 +502,14 @@ class PETScKrylovSolver(LinearSolver):
     _parameters = [
         ('method', 'str', 'cg', False,
          'The actual solver to use.'),
+        ('setup_precond', 'callable', None, False,
+         """User-supplied function for the preconditioner initialization/setup.
+            It is called as setup_precond(mtx, problem), where mtx is the
+            matrix, and should return an object with `setUp(self, pc)` and
+            `apply(self, pc, x, y)` methods.
+
+            Has precedence over the `precond`/`sub_precond` parameters.
+         """),
         ('precond', 'str', 'icc', False,
          'The preconditioner.'),
         ('sub_precond', 'str', 'none', False,
@@ -565,7 +573,11 @@ class PETScKrylovSolver(LinearSolver):
 
         ksp.setType(self.conf.method)
         pc = ksp.getPC()
-        pc.setType(self.conf.precond)
+        if self.conf.setup_precond is None:
+            pc.setType(self.conf.precond)
+
+        else:
+            pc.setType(pc.Type.PYTHON)
         ksp.setFromOptions()
 
         if (pc.type == 'fieldsplit'):
@@ -614,8 +626,12 @@ class PETScKrylovSolver(LinearSolver):
             ksp.setOperators(pmtx)
             ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                               max_it=i_max)
-            ksp.setFromOptions()
 
+            setup_precond = self.conf.setup_precond
+            if setup_precond is not None:
+                ksp.pc.setPythonContext(setup_precond(mtx, self.problem))
+
+            ksp.setFromOptions()
             self.mtx_id = id(mtx)
             self.ksp = ksp
             self.pmtx = pmtx
