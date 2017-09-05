@@ -47,6 +47,24 @@ equations = {
     'Temperature' : """dw_laplace.i.Omega(coef.val, s, t) = 0"""
 }
 
+class DiagPC(object):
+    """
+    Diagonal (Jacobi) preconditioner.
+
+    Equivalent to setting `'precond' : 'jacobi'`.
+    """
+
+    def setUp(self, pc):
+        A = pc.getOperators()[0]
+
+        self.idiag = 1.0 / A.getDiagonal()
+
+    def apply(self, pc, x, y):
+        y.pointwiseMult(x, self.idiag)
+
+def setup_petsc_precond(mtx, problem):
+    return DiagPC()
+
 solvers = {
     'd00' : ('ls.scipy_direct',
              {'method' : 'umfpack',
@@ -74,6 +92,28 @@ solvers = {
               'i_max' : 1000,}
     ),
     'i10' : ('ls.petsc',
+             {'method' : 'cg', # ksp_type
+              'precond' : 'none', # pc_type
+              'eps_a' : 1e-12, # abstol
+              'eps_r' : 1e-12, # rtol
+              'i_max' : 1000,} # maxits
+    ),
+    'i11' : ('ls.petsc',
+             {'method' : 'cg', # ksp_type
+              'precond' : 'python', # just for output (unused)
+              'setup_precond' : setup_petsc_precond, # user-defined pc
+              'eps_a' : 1e-12, # abstol
+              'eps_r' : 1e-12, # rtol
+              'i_max' : 1000,} # maxits
+    ),
+    'i12' : ('ls.petsc',
+             {'method' : 'cg', # ksp_type
+              'precond' : 'jacobi', # pc_type
+              'eps_a' : 1e-12, # abstol
+              'eps_r' : 1e-12, # rtol
+              'i_max' : 1000,} # maxits
+    ),
+    'i13' : ('ls.petsc',
              {'method' : 'cg', # ksp_type
               'precond' : 'icc', # pc_type
               'eps_a' : 1e-12, # abstol
