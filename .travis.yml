@@ -56,14 +56,10 @@ script:
 
   - python setup.py build_ext --inplace
   - python run_tests.py; export SFEPY_TEST_RESULTS=$?; (exit $SFEPY_TEST_RESULTS)
-
-#
-# Probably not needed here...
-#
-#  - |
-#    if [ $SFEPY_TEST_RESULTS -ne 0 ]; then
-#      python run_tests.py --raise
-#    fi
+  - |
+    if [ $SFEPY_TEST_RESULTS -ne 0 ]; then
+      python run_tests.py --raise
+    fi
 
 notifications:
   email: false

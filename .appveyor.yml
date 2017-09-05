@@ -94,14 +94,9 @@ build: false
 test_script:
 
   - "python setup.py build_ext --inplace"
-  - "python run_tests.py"
-
-#
-# Probably not needed here...
-#
-#  - ps: |
-#      python run_tests.py
-#      if ($LastExitCode -ne 0) { python run_tests.py --raise }
+  - ps: |
+      python run_tests.py
+      if ($LastExitCode -ne 0) { python run_tests.py --raise }
 
 #---------------------------------#
 #         notifications           #
