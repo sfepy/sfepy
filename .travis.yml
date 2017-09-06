@@ -1,13 +1,20 @@
-# After changing this file, check it on: http://lint.travis-ci.org/
+#
+# SfePy minimal travis.yml config file
+#
+# YAML Validator:   http://lint.travis-ci.org/
+#
+
 language: python
+
+#
+# Enable Container-based testing
+#
+sudo: false
+dist: trusty
 
 matrix:
   include:
     - python: 2.7
-      env: MAYAVI="mayavi=4.3"
-    - python: 3.4
-      env: MAYAVI=
-    - python: 3.5
     - python: 3.6
 
 addons:
@@ -22,9 +29,7 @@ cache:
     - $HOME/.cache/pip
 
 before_install:
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
+
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
     else
@@ -35,17 +40,20 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
 
 install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION atlas numpy scipy matplotlib sympy cython $MAYAVI pytables pyparsing
-  - source activate test-environment
+
+  - conda create -q -n sfepy-test python=$TRAVIS_PYTHON_VERSION numpy scipy cython matplotlib pytables pyparsing sympy atlas
+  - source activate sfepy-test
+
+  - conda info -a
   - python -V
+
   - pip install scikit-umfpack
   - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
 
 script:
+
   - python setup.py build_ext --inplace
   - python run_tests.py; export SFEPY_TEST_RESULTS=$?; (exit $SFEPY_TEST_RESULTS)
   - |
