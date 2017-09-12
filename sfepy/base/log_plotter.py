@@ -13,8 +13,8 @@ class LogPlotter(Struct):
     output = Output('plotter:')
     output = staticmethod(output)
 
-    def __init__(self, aggregate=100):
-        Struct.__init__(self, aggregate=aggregate)
+    def __init__(self, aggregate=100, sleep=1.0):
+        Struct.__init__(self, aggregate=aggregate, sleep=sleep)
 
     def process_command(self, command):
         from matplotlib.ticker import LogLocator, AutoLocator
@@ -117,7 +117,7 @@ class LogPlotter(Struct):
             if self.ii:
                 self.fig.canvas.draw()
                 self.output('processed %d commands' % self.ii)
-            time.sleep(1.0)
+            time.sleep(self.sleep)
 
         return True
 
