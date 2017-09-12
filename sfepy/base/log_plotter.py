@@ -1,6 +1,7 @@
 """
 Plotting class to be used by Log.
 """
+import time
 import numpy as nm
 
 from sfepy.base.base import Output, Struct
@@ -86,7 +87,7 @@ class LogPlotter(Struct):
 
     def poll_draw(self):
 
-        def call_back():
+        while 1:
             self.ii = 0
 
             while 1:
@@ -112,10 +113,9 @@ class LogPlotter(Struct):
             if self.ii:
                 self.fig.canvas.draw()
                 self.output('processed %d commands' % self.ii)
+            time.sleep(1.0)
 
-            return True
-
-        return call_back
+        return True
 
     def make_axes(self):
         from sfepy.linalg import cycle
@@ -146,7 +146,7 @@ class LogPlotter(Struct):
         process.
         """
         import matplotlib.pyplot as plt
-        import gobject
+
         self.plt = plt
 
         self.output.set_output(filename=log_file)
@@ -162,7 +162,12 @@ class LogPlotter(Struct):
 
         self.fig = self.plt.figure()
         self.make_axes()
-        self.gid = gobject.timeout_add(1000, self.poll_draw())
+
+        import threading
+        draw_thread = threading.Thread(target=self.poll_draw)
+        draw_thread.start()
 
         self.output('...done')
         self.plt.show()
+
+        draw_thread.join()
