@@ -82,7 +82,7 @@ All top-level *SfePy* scripts (applications) can be run via single
   Simple wrapper for main SfePy commands.
 
   positional arguments:
-  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,shaper,simple}
+  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,simple}
                         Available SfePy command(s).
   options               Additional options passed directly to selected
                         [command].

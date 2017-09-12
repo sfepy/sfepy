@@ -13,7 +13,6 @@ def configuration(parent_package='',top_path=None):
         'homogenization',
         'linalg',
         'mechanics',
-        'optimize',
         'parallel',
         'physics',
         'postprocess',
