@@ -11,7 +11,7 @@ from sfepy.base.log import Log
 
 def main():
     cwd = os.path.split(os.path.join(os.getcwd(), __file__))[0]
-    
+
     log = Log((['sin(x)', 'cos(x)'], ['exp(x)']),
               yscales=['linear', 'log'],
               xlabels=['angle', None], ylabels=[None, 'a function'],
@@ -19,6 +19,7 @@ def main():
     log2 = Log([['x^3']],
                yscales=['linear'],
                xlabels=['x'], ylabels=['a cubic function'],
+               aggregate=50, sleep=0.5,
                log_filename=os.path.join(cwd, 'live_plot2.log'))
 
     added = 0
@@ -42,7 +43,7 @@ def main():
             log.plot_vlines([2], color='g', linewidth=2)
 
         log2(x*x*x, x=[x])
-            
+
     print(log)
     print(log2)
     pause()
