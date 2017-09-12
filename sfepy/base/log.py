@@ -17,8 +17,8 @@ from sfepy.base.base import sfepy_config_dir, ordered_iteritems
 from sfepy.base.base import output, get_default, set_defaults, Output, Struct
 from sfepy.base.log_plotter import LogPlotter
 
-_msg_no_live = """warning: log plot is disabled, install matplotlib
-         (use GTKAgg backend) and multiprocessing"""
+_msg_no_live = 'warning: log plot is disabled, install matplotlib and' \
+    ' multiprocessing'
 
 def get_logging_conf(conf, log_name='log'):
     """
@@ -242,11 +242,6 @@ class Log(Struct):
         except:
             mpl = None
 
-        if (mpl is not None) and mpl.rcParams['backend'] == 'GTKAgg':
-            can_live_plot = True
-        else:
-            can_live_plot = False
-
         Struct.__init__(self, data_names = {},
                         n_arg = 0, n_gr = 0,
                         data = {}, x_values = {}, n_calls = 0,
@@ -273,8 +268,7 @@ class Log(Struct):
         self.is_plot = get_default(is_plot, True)
         self.aggregate = get_default(aggregate, 100)
 
-        self.can_plot = (can_live_plot and (mpl is not None)
-                         and (Process is not None))
+        self.can_plot = (mpl is not None) and (Process is not None)
 
         if log_filename is not None:
             self.output = Output('', filename=log_filename)
