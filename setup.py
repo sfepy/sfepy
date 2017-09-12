@@ -60,7 +60,6 @@ def configuration(parent_package='', top_path=None):
         'probe.py',
         'run_tests.py',
         'schroedinger.py',
-        'shaper.py',
         'simple.py',
         'test_install.py',
     ]
