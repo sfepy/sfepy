@@ -64,7 +64,11 @@ class LogPlotter(Struct):
                 for x, kwargs in self.vlines[ig]:
                     ax.axvline(x, **kwargs)
 
-            self.plt.tight_layout(pad=0.5)
+            try:
+                self.plt.tight_layout(pad=0.5)
+
+            except:
+                pass
 
         elif command[0] == 'add_axis':
             ig, names, yscale, xlabel, ylabel = command[1:]
