@@ -212,7 +212,7 @@ class Log(Struct):
         return obj
 
     def __init__(self, data_names=None, xlabels=None, ylabels=None,
-                 yscales=None, is_plot=True, aggregate=200,
+                 yscales=None, is_plot=True, aggregate=100, sleep=1.0,
                  log_filename=None, formats=None):
         """
         Parameters
@@ -231,6 +231,8 @@ class Log(Struct):
             If True, try to use LogPlotter for plotting.
         aggregate : int
             The number of plotting commands to process before a redraw.
+        sleep : float
+            The number of seconds to sleep between polling draw commands.
         log_filename : str, optional
             If given, save log data into a log file.
         formats : list of lists of number format strings
@@ -242,11 +244,12 @@ class Log(Struct):
         except:
             mpl = None
 
-        Struct.__init__(self, data_names = {},
-                        n_arg = 0, n_gr = 0,
-                        data = {}, x_values = {}, n_calls = 0,
-                        yscales = {}, xlabels = {}, ylabels = {},
-                        plot_pipe = None, formats = {}, output = None)
+        Struct.__init__(self,
+                        is_plot=is_plot, aggregate=aggregate, sleep=sleep,
+                        data_names={}, n_arg=0, n_gr=0,
+                        data={}, x_values={}, n_calls=0,
+                        yscales={}, xlabels={}, ylabels={},
+                        plot_pipe=None, formats={}, output=None)
 
         if data_names is not None:
             n_gr = len(data_names)
@@ -264,9 +267,6 @@ class Log(Struct):
         for ig, names in enumerate(data_names):
             self.add_group(names, yscales[ig], xlabels[ig], ylabels[ig],
                            formats[ig])
-
-        self.is_plot = get_default(is_plot, True)
-        self.aggregate = get_default(aggregate, 100)
 
         self.can_plot = (mpl is not None) and (Process is not None)
 
@@ -404,7 +404,7 @@ class Log(Struct):
                 self.__class__.count += 1
 
                 self.plot_pipe, plotter_pipe = Pipe()
-                self.plotter = LogPlotter(self.aggregate)
+                self.plotter = LogPlotter(self.aggregate, self.sleep)
                 self.plot_process = Process(target=self.plotter,
                                             args=(plotter_pipe,
                                                   self.get_log_name(),
