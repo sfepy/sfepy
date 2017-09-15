@@ -1464,16 +1464,11 @@ class FieldVariable(Variable):
             self.dt = ts.dt
 
         if hasattr(self, 'special') and ('setter' in self.special):
-            setter_name = self.special['setter']
-            setter = functions[setter_name]
+            setter, sargs, skwargs = self._get_setter('setter', functions,
+                                                      ts=ts)
 
-            region = self.field.region
-            nod_list = self.field.get_dofs_in_region(region)
-            nods = nm.unique(nm.hstack(nod_list))
-
-            coor = self.field.get_coor(nods)
-            self.set_data(setter(ts, coor, region=region))
-            output('data of %s set by %s()' % (self.name, setter_name))
+            self.set_data(setter(*sargs, **skwargs))
+            output('data of %s set by %s()' % (self.name, setter.name))
 
     def set_data_from_qp(self, data_qp, integral, step=0):
         """
