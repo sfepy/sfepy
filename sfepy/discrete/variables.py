@@ -454,6 +454,14 @@ class Variables(Container):
 
             var.setup_initial_conditions(ics, self.di, functions)
 
+        for var_name in self.parameter:
+            var = self[var_name]
+            if hasattr(var, 'special') and ('ic' in var.special):
+                setter, sargs, skwargs = var._get_setter('ic', functions)
+
+                var.set_data(setter(*sargs, **skwargs))
+                output('IC data of %s set by %s()' % (var.name, setter.name))
+
     def set_adof_conns(self, adof_conns):
         """
         Set all active DOF connectivities to `self` as well as relevant
@@ -1360,6 +1368,33 @@ class FieldVariable(Variable):
         self.dtype = field.dtype
 
         self.dim = field.domain.shape.dim
+
+    def _get_setter(self, kind, functions, **kwargs):
+        """
+        Get the setter function of the variable and its arguments depending in
+        the setter kind.
+        """
+        if not (hasattr(self, 'special') and (kind in self.special)):
+            return
+
+        setter_name = self.special[kind]
+        setter = functions[setter_name]
+
+        region = self.field.region
+        nod_list = self.field.get_dofs_in_region(region)
+        nods = nm.unique(nm.hstack(nod_list))
+
+        coors = self.field.get_coor(nods)
+
+        if kind == 'setter':
+            sargs = (kwargs.get('ts'), coors)
+
+        elif kind == 'ic':
+            sargs = (coors, )
+
+        skwargs = {'region' : region}
+
+        return setter, sargs, skwargs
 
     def get_field(self):
         return self.field
