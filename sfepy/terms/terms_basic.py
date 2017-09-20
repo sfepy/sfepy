@@ -4,6 +4,32 @@ from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 
+class ZeroTerm(Term):
+    r"""
+    A do-nothing term useful for introducing additional variables into the
+    equations.
+
+    :Definition:
+
+    .. math::
+        0
+
+    :Arguments:
+        - virtual  : :math:`q` or :math:`\ul{v}`
+        - state : :math:`p` or :math:`\ul{u}`
+    """
+    name = 'dw_zero'
+    arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual' : ('N', None), 'state' : 'N'}
+
+    @staticmethod
+    def function(out):
+        out.fill(0.0)
+
+    def get_fargs(self, vvar, svar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return ()
+
 class IntegrateVolumeTerm(Term):
     r"""
     Evaluate (weighted) variable in a volume region.
