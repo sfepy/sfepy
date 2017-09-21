@@ -183,7 +183,9 @@ class PDESolverApp(Application):
                              file_per_var=self.app_options.file_per_var,
                              linearization=self.app_options.linearization)
 
-    def call(self, nls_status=None):
+    def call(self, nls_status=None, tss_status=None):
+        import sfepy.solvers.ts_solvers as tsol
+
         problem = self.problem
         options = self.options
         opts = self.app_options
@@ -213,15 +215,33 @@ class PDESolverApp(Application):
         if options.solve_not:
             return None, None, None
 
-        time_solver = problem.get_time_solver()
-        time_solver.init_time(nls_status=nls_status)
-        for out in time_solver(save_results=opts.save_results,
-                               step_hook=self.step_hook,
-                               post_process_hook=self.post_process_hook):
-            step, time, state = out
+        state0 = tsol.get_initial_state(problem)
+        problem.init_solvers(nls_status=nls_status)
 
-        if self.post_process_hook_final is not None: # User postprocessing.
-            self.post_process_hook_final(problem, state)
+        def init_hook(ts):
+            problem.time_update(ts)
+            problem.update_materials()
+
+        def step_hook(ts, state, ic=False):
+            if self.step_hook is not None:
+                self.step_hook(problem, ts, state)
+
+            suffix, is_save = tsol.prepare_save_data(ts, problem.conf)
+            suffix = 'ic' if ic else suffix % ts.step
+            filename = problem.get_output_name(suffix=suffix)
+            problem.save_state(filename, state,
+                               post_process_hook=self.post_process_hook,
+                               file_per_var=None,
+                               ts=ts)
+
+        tss = problem.get_time_solver()
+        state = tss(state0, nls=problem.nls,
+                    save_results=opts.save_results,
+                    init_hook=init_hook,
+                    step_hook=step_hook,
+                    post_process_hook=self.post_process_hook,
+                    post_process_hook_final=self.post_process_hook_final,
+                    status=tss_status)
 
         return problem, state
 
