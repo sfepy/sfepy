@@ -523,7 +523,8 @@ class Problem(Struct):
 
         self.ts_conf = _get_solver_conf('ts')
         if self.ts_conf is None:
-            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
+            self.ts_conf = Struct(name='no ts', kind='ts.stationary',
+                                  quasistatic=True)
 
         self.nls_conf = _get_solver_conf('nls')
         self.ls_conf = _get_solver_conf('ls')
