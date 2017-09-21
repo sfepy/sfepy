@@ -4,10 +4,162 @@ Time stepping solvers.
 from __future__ import absolute_import
 import numpy as nm
 
-from sfepy.base.base import output, Struct, IndexedStruct, basestr
+from sfepy.base.base import get_default, output, Struct, IndexedStruct, basestr
 from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 import six
+
+class NewmarkState(Struct):
+
+    def __init__(self, uname, vname, aname):
+        Struct.__init__(self, uname=uname, vname=vname, aname=aname)
+
+    def unpack(self, state):
+        parts = state.get_parts()
+        vvs = state.variables
+        u = vvs[self.uname].get_reduced(parts[self.uname])
+        v = vvs[self.vname].get_reduced(parts[self.vname])
+        a = vvs[self.aname].get_reduced(parts[self.aname])
+
+        return u, v, a
+
+    def pack(self, state, u, v, a):
+        vec = nm.r_[u, v, a]
+
+        state.set_reduced(vec)
+
+class NewmarkTS(TimeSteppingSolver):
+    """
+    """
+    name = 'ts.newmark'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('quasistatic', 'bool', False, False,
+         'If True, the non-linear solver is invoked also for'
+         ' the initial time.'),
+        ('beta1', 'float', 0.5, False, 'The Newmark method parameter beta1.'),
+        ('beta2', 'float', 0.5, False, 'The Newmark method parameter beta2.'),
+        ('u', 'str', 'u', False, 'The displacement variable name.'),
+        ('v', 'str', 'v', False, 'The velocity variable name.'),
+        ('a', 'str', 'a', False, 'The acceleration variable name.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, **kwargs)
+
+        self.ts = TimeStepper.from_conf(self.conf)
+
+        nd = self.ts.n_digit
+        format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
+
+        self.format = format
+
+    def get_a0(self, nls, u0, v0):
+        vec = nm.r_[u0, v0, nm.zeros_like(u0)]
+
+        aux = nls.fun(vec)
+        i3 = len(u0)
+        r = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+
+        aux = nls.fun_grad(vec)
+        M = aux[2*i3:, 2*i3:]
+
+        a0 = nls.lin_solver(r, mtx=M)
+        return a0
+
+    def create_nlst(self, nls, dt, beta1, beta2, u0, v0, a0):
+        nlst = nls.copy()
+
+        dt2 = 0.5 * dt**2
+
+        def v(a):
+            return v0 + dt * ((1.0 - beta1) * a0 + beta1 * a)
+
+        def u(a):
+            return u0 + dt * v0 + dt2 * ((1.0 - beta2) * a0 + beta2 * a)
+
+        def fun(at):
+            vec = nm.r_[u(at), v(at), at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        def fun_grad(at):
+            vec = nm.r_[u(at), v(at), at]
+
+            aux = nls.fun_grad(vec)
+
+            i3 = len(at)
+            K = aux[:i3, :i3]
+            C = aux[i3:2*i3, i3:2*i3]
+            M = aux[2*i3:, 2*i3:]
+
+            Kt = M + beta1 * dt * C + beta2 * dt2 * K
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.u = u
+        nlst.v = v
+
+        return nlst
+
+    def __call__(self, state0=None, conf=None, nls=None,
+                 save_results=True, init_hook=None, step_hook=None,
+                 post_process_hook=None, post_process_hook_final=None,
+                 save_hook=None, status=None):
+        """
+        Solve elastodynamics problems by the Newmark method.
+        """
+        conf = get_default(conf, self.conf)
+        nls = get_default(nls, self.nls)
+
+        ts = self.ts
+
+        st = NewmarkState(conf.u, conf.v, conf.a)
+
+        beta1 = conf.beta1
+        beta2 = conf.beta2
+
+        init_hook(ts)
+
+        u0, v0, _ = st.unpack(state0)
+
+        ut = u0
+        vt = v0
+        at = self.get_a0(nls, u0, v0)
+        state = state0.copy()
+
+        st.pack(state, ut, vt, at)
+        step_hook(ts, state, ic=True)
+        for step, time in ts.iter_from(ts.step):
+            output(self.format % (time, step + 1, ts.n_step))
+            dt = ts.dt
+
+            nlst = self.create_nlst(nls, dt, beta1, beta2, ut, vt, at)
+            atp = nlst(at)
+            vtp = nlst.v(atp)
+            utp = nlst.u(atp)
+
+            st.pack(state, utp, vtp, atp)
+            step_hook(ts, state)
+
+            ut = utp
+            vt = vtp
+            at = atp
 
 class StationarySolver(TimeSteppingSolver):
     """
