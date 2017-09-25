@@ -22,6 +22,7 @@ class ContactTerm(Term):
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
 
+        self.detect = 2
         self.ci = None
 
     def call_function(self, fargs):
@@ -146,6 +147,7 @@ class ContactTerm(Term):
         AABBmin = AABBmin - (0.5*longestEdge);
         AABBmax = AABBmax + (0.5*longestEdge);
         N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
+        N = nm.ones(nsd, dtype=nm.int32) # BUG workaround.
 
         # print AABBmin, AABBmax, N
         head, next = cc.init_global_search(N, AABBmin, AABBmax, GPs[:,:nsd])
@@ -164,16 +166,19 @@ class ContactTerm(Term):
         Gc = nm.zeros(neq, dtype=nm.float64)
 
         activeGPs = GPs[:, 2*nsd+3]
+        gap = GPs[:, nsd + 2]
+        print activeGPs
+        print gap
         print 'active:', activeGPs.sum()
 
         if diff_var is None:
             max_num = 1
-            keyContactDetection = 1
+            keyContactDetection = self.detect
             keyAssembleKc = 0
 
         else:
             max_num = 4 * (nsd * nsn)**2 * ngp * GPs.shape[0]
-            keyContactDetection = 0
+            keyContactDetection = self.detect
             keyAssembleKc = 1
 
         print 'max_num:', max_num
@@ -181,6 +186,7 @@ class ContactTerm(Term):
         rows = nm.empty(max_num, dtype=nm.int32)
         cols = nm.empty(max_num, dtype=nm.int32)
 
+        print '!!!detect', keyContactDetection
         aux = cc.assemble_contact_residual_and_stiffness(Gc, vals, rows, cols,
                                                          GPs, ISN, IEN,
                                                          X, Um, H, dH, gw,
@@ -192,7 +198,12 @@ class ContactTerm(Term):
         # print Gc.mean()
         # print GPs
         print 'true num:', num
+        print GPs.shape
+        print activeGPs
+        print gap
 
+        # Uncomment this to detect only in the 1. iteration.
+        #self.detect = max(0, self.detect - 1)
         if diff_var is None:
             from sfepy.discrete.variables import create_adof_conn
             rows = nm.unique(create_adof_conn(nm.arange(len(Gc)), sd.econn,
