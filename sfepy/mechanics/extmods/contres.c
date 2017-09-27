@@ -11,6 +11,47 @@
 #include "contres.h"
 #include "common.h"
 
+/*! Evaluate shape functions and their 1st partial derivatives of 4-node bilinear element
+
+  \param r - 1st isoparametric (parent, reference) coordinate
+  \param s - 2nd isoparametric coordinate
+
+  \return H 1d array (4x1) of shape functions values
+  \return dH 2d array (4x2) of 1st partial derivatives of shape functions with respect to r (1st column) and s (2nd column)
+
+*/
+void sfd4(double* H, double* dH, double r, double s) {
+  const double h1 = 0.25*(1-r)*(1-s);
+  const double h2 = 0.25*(1+r)*(1-s);
+  const double h3 = 0.25*(1+r)*(1+s);
+  const double h4 = 0.25*(1-r)*(1+s);
+  /***********************************************/
+  const double h1r = -0.25*(1-s);
+  const double h2r =  0.25*(1-s);
+  const double h3r =  0.25*(s+1);
+  const double h4r = -0.25*(1+s);
+  /***********************************************/
+  const double h1s =  0.25*(r-1);
+  const double h2s = -0.25*(1+r);
+  const double h3s =  0.25*(r+1);
+  const double h4s =  0.25*(1-r);
+  /***********************************************/
+  H[0] = h1;
+  H[1] = h2;
+  H[2] = h3;
+  H[3] = h4;
+
+  dH[0] = h1r;
+  dH[1] = h2r;
+  dH[2] = h3r;
+  dH[3] = h4r;
+
+  dH[4] = h1s;
+  dH[5] = h2s;
+  dH[6] = h3s;
+  dH[7] = h4s;
+}
+
 /*! Evaluate shape functions and their 1st partial derivatives of 8-node (serendipity) quadrilateral element
 
   \param r - 1st isoparametric (parent, reference) coordinate
@@ -291,6 +332,9 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
       case 2:
 	sfd2(Hm, dHm, r);
 	break;
+      case 4:
+	sfd4(Hm, dHm, r, s);
+	break;
       case 6:
 	sfd6(Hm, dHm, r, s);
 	break;
@@ -363,9 +407,10 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	const float64 dxs_ds1 = dxs[1];
 	const float64 dxs_ds2 = dxs[npd + 1];
 	const float64 dxs_ds3 = dxs[2 * npd + 1];
-	normal[0] = dxs_dr2*dxs_ds3 - dxs_dr3*dxs_ds2;
-	normal[1] = dxs_dr3*dxs_ds1 - dxs_dr1*dxs_ds3;
-	normal[2] = dxs_dr1*dxs_ds2 - dxs_dr2*dxs_ds1;
+
+	normal[0] = (dxs_dr2*dxs_ds3 - dxs_dr3*dxs_ds2);
+	normal[1] = (dxs_dr3*dxs_ds1 - dxs_dr1*dxs_ds3);
+	normal[2] = (dxs_dr1*dxs_ds2 - dxs_dr2*dxs_ds1);
       }
 
       const float64 jacobian      = sqrt(Normal[0] * Normal[0] + Normal[1] * Normal[1] + Normal[2] * Normal[2]);
@@ -583,7 +628,7 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
   float64 Xc[3];
   // If segment element is quad then it is divided to 4 triangles:
   int ntr = 1;
-  if(nsn == 8) {
+  if(nsn == 4 || nsn == 8) {
     ntr = 4;
   }
 
@@ -635,15 +680,15 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 	}
 	else if(ntr == 4) {
 	  Xt[0] = Xm[it];
-	  Xt[1] = Xm[it+1];
+	  Xt[1] = Xm[(it+1)%ntr];
 	  Xt[2] = Xc[0];
 
 	  Xt[3] = Xm[nsn+it];
-	  Xt[4] = Xm[nsn+it+1];
+	  Xt[4] = Xm[nsn+(it+1)%ntr];
 	  Xt[5] = Xc[1];
 
 	  Xt[6] = Xm[2*nsn+it];
-	  Xt[7] = Xm[2*nsn+it+1];
+	  Xt[7] = Xm[2*nsn+(it+1)%ntr];
 	  Xt[8] = Xc[2];
 	}
 
@@ -743,6 +788,16 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 	    int v = head[Ic];
 
 	    while (v != -1) {
+
+
+	      // Jump if Gausspoit segment is equal to master segment
+	      int els = GPs[nsd*n*ngp + v];            // slave element
+	      int sgs = GPs[(nsd + 1)*n*ngp + v];      // slave segment
+	      if (el == els && sg == sgs) {
+		v = next[v];
+		continue;
+	      }
+
 	      float64 d;
 	      // Inside-outside algorithm:
 	      bool isInside = 0;
@@ -759,7 +814,7 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		d = sqrt(d);
 		t1_norm = sqrt(t1_norm);
 		// Check if inside edge1:
-		if (d > 0.0 && d < t1_norm) {
+		if (d >= 0.0 && d <= t1_norm) {
 		  isInside = 1;
 		  d = 0.0;
 		  float64 sign = 0.0;
@@ -807,8 +862,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		const float64 Q2n = Q2[0] * normal[0] + Q2[1] * normal[1] + Q2[2] * normal[2];
 		const float64 Q3n = Q3[0] * normal[0] + Q3[1] * normal[1] + Q3[2] * normal[2];
 
-		if (Q1n*Q2n > 0) {
-		  if (Q1n*Q3n > 0) {
+		if (Q1n*Q2n >= 0) {
+		  if (Q1n*Q3n >= 0) {
 		    isInside = 1;
 		    d = r[0] * normal[0] + r[3] * normal[1] + r[6] * normal[2];
 		    for (i = 0; i < nsd; ++i) {
@@ -890,6 +945,9 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		    switch (nsn) {
 		    case 2:
 		      sfd2(Hm, dHm, r);
+		      break;
+                    case 4:
+		      sfd4(Hm, dHm, r, s);
 		      break;
 		    case 6:
 		      sfd6(Hm, dHm, r, s);
