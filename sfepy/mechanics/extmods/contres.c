@@ -290,7 +290,6 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
     }
 
     for (g = 0; g < ngp; ++g) {
-
       // Gausspoint gap values and activeGPs:
       activeGPs[g] = (bool) activeGPsOld[i + g];
 
@@ -379,8 +378,8 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
       }
 
       // Evaluate normal vector:
-      float64 Normal[3];
-      float64 normal[3];
+      float64 Normal[3] = {0, 0, 0};
+      float64 normal[3] = {0, 0, 0};
       if (nsd == 2) {
 	Normal[0] = dXs[1];
 	Normal[1] = -dXs[0];
@@ -626,6 +625,7 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 
   float64 Xt[9];
   float64 Xc[3];
+
   // If segment element is quad then it is divided to 4 triangles:
   int ntr = 1;
   if(nsn == 4 || nsn == 8) {
@@ -637,8 +637,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
   }
 
   for (e = 0; e < n; ++e) {
-    int el = elementID[e];
-    int sg = segmentID[e];
+    const int el = elementID[e];
+    const int sg = segmentID[e];
 
     // segment coords Xm:
     for (k = 0; k < nsd; ++k) {
@@ -705,14 +705,14 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 	}
       }
 
-      int Imin[3];
-      int Imax[3];
-      float64 normal[3];
-      float64 t1[3];
-      float64 t2[3];
-      float64 t3[3];
-      float64 Xg[3];
-      float64 Xp[3];
+      int Imin[3] = {0, 0, 0};
+      int Imax[3] = {0, 0, 0};
+      float64 normal[3] = {0.0, 0.0, 0.0};
+      float64 t1[3] = {0.0, 0.0, 0.0};
+      float64 t2[3] = {0.0, 0.0, 0.0};
+      float64 t3[3] = {0.0, 0.0, 0.0};
+      float64 Xg[3] = {0.0, 0.0, 0.0};
+      float64 Xp[3] = {0.0, 0.0, 0.0};
 
       Imin[0] = (int)(N[0] * (Xmin[0] - AABBmin[0]) / (AABBmax[0] - AABBmin[0]));
       Imin[1] = (int)(N[1] * (Xmin[1] - AABBmin[1]) / (AABBmax[1] - AABBmin[1]));
@@ -788,7 +788,6 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 	    int v = head[Ic];
 
 	    while (v != -1) {
-
 
 	      // Jump if Gausspoit segment is equal to master segment
 	      int els = GPs[nsd*n*ngp + v];            // slave element
@@ -873,13 +872,17 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		}
 	      } // else if (nsd = 3)
 
+	      /* printf("Xg = (%f, %f, %f)\n", Xg[0], Xg[1], Xg[2]); */
+	      /* printf("Xp = (%f, %f, %f)\n", Xp[0], Xp[1], Xp[2]); */
+	      /* printf("normal = (%f, %f, %f)\n", normal[0], normal[1], normal[2]); */
+
 	      if (isInside) {
 		// If distance is less then current closest distance:
 		if (d < GPs[(nsd + 2)*n*ngp + v]) {
 
 		  // Initial guess of the parametric coordinates on the triangle:
-		  float64 r_len, r;
-		  float64 s_len, s;
+		  float64 r_len = 0, r = 0;
+		  float64 s_len = 0, s = 0;
 		  switch (nsn) {
 		  case 2:
 		    // Tangent vectors parallel with element edges 1 and 2:
@@ -933,12 +936,11 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 			 (Xp[2] - Xm[16]) * (Xm[19] - Xm[16])) / s_len;
 
 		    s = 2*s-1;
-		    //printf("r0 = %f, s0 = %f\n", r, s);
 		  }
 
 
 		  // Local contact search by Least-square projection method:
-		  float64 dr_norm;
+		  float64 dr_norm = FLT_MAX;
 		  int niter = 0;
 		  int max_niter = 1000;
 		  do {
@@ -1015,7 +1017,6 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		      r += dr;
 		      s += ds;
 		      dr_norm = sqrt(dr*dr + ds*ds);
-		      //printf("r = %f, s = %f, dr_norm = %f\n", r, s, dr_norm);
 		    }
 
 		    niter++;
@@ -1045,6 +1046,16 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
       }	// i2
     } // loop over triangles
   } // loop over elements
+
+  /*
+  printf("GPs = \n");
+  for(int row = 0; row<(n*ngp); ++row) {
+    for(int col = 0; col<(2*nsd+6); ++col) {
+      printf("%f\t", GPs[col*n*ngp + row]);
+    }
+    printf("\n");
+  }
+  */
 
   free_mem(segmentNodesID);
   free_mem(Xm);
