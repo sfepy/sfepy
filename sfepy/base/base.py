@@ -1164,8 +1164,9 @@ def update_dict_recursively(dst, src, tuples_too=False,
 
             if tuples_too and isinstance(dst[key], tuple) \
                    and isinstance(src[key], tuple):
-                dst[key] = tuple(map(tuplezip,
-                                     zip(src[key], dst[key]))[:len(dst[key])])
+                out = map(tuplezip, zip(src[key], dst[key]))
+                out = tuple(out)
+                dst[key] = out[:len(dst[key])]
                 continue
 
         if overwrite_by_none or not src[key] is None:
