@@ -1508,7 +1508,7 @@ class FieldVariable(Variable):
             nods, vv = self.field.set_dofs(fun, region, len(dofs), clean_msg)
             eq = expand_nodes_to_equations(nods, dofs, self.dofs)
 
-            self.initial_condition[eq] = vv
+            self.initial_condition[eq] = nm.ravel(vv)
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """

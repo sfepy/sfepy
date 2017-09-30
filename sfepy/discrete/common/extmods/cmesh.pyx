@@ -653,6 +653,22 @@ cdef class CMesh:
 
         return out
 
+    def get_volumes(self, dim):
+        """
+        Return the volumes of mesh entities with dimension `dim` > 0.
+        """
+        cdef np.ndarray[float64, mode='c', ndim=1] out
+
+        if dim == 0:
+            raise ValueError('vertices have no volume!')
+
+        else:
+            out = np.empty((self.mesh.topology.num[dim],),
+                           dtype=np.float64)
+            mesh_get_volumes(self.mesh, &out[0], dim)
+
+        return out
+
     def get_facet_normals(self, int32 which=-1):
         """
         Return the normals of facets for each mesh cell. The normals can be

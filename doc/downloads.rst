@@ -1,16 +1,27 @@
+.. include:: links.inc
+
 Downloads
 =========
 
 See :ref:`introduction_installation` for additional information.
 
-Sources:
---------
+Pre-built  packages
+-------------------
 
-`latest and previous releases <_static/downloads.php>`_
+`Pre-built *SfePy* packages`_ for `Anaconda`_
+Python distribution are available
+from `conda-forge`_ channel for all supported platforms. (See
+:ref:`multi_platform_distributions_notes` for further details.)
 
 
-Git repository:
----------------
+Sources
+-------
+
+`Latest and previous releases <_static/downloads.php>`_.
+
+
+Git repository
+--------------
 
 download the repository (read-only)::
 

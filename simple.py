@@ -132,7 +132,7 @@ def main():
                         action='store', dest='_list',
                         default=None, help=helps['list'])
     group.add_argument('filename_in', nargs='?')
-    options = parser.parse_args()
+    options, petsc_opts = parser.parse_known_args()
 
     if options._list is not None:
         if options._list == 'terms':

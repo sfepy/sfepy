@@ -6,11 +6,19 @@ import time
 import os
 
 import numpy as nm
-
-import sys, petsc4py
 from six.moves import range
-argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
-petsc4py.init(argv)
+
+def init_petsc_args():
+    try:
+        import sys, petsc4py
+
+    except ImportError:
+        return
+
+    argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
+    petsc4py.init(argv)
+
+init_petsc_args()
 
 from petsc4py import PETSc
 from mpi4py import MPI
@@ -420,12 +428,13 @@ def distribute_field_dofs(field, gfd, use_expand_dofs=False,
         dof_maps = id_map = None
 
     if verbose:
+        output('field %s:' % field.name)
         output('n_cell:', n_cell)
         output('cells:', cells)
         output('owned petsc DOF range:', petsc_dofs_range,
                petsc_dofs_range[1] - petsc_dofs_range[0])
         aux = nm.unique(petsc_dofs_conn)
-        output('local petsc DOFs (owned + shared):', aux, len(aux))
+        output('%d local petsc DOFs (owned + shared):' % len(aux), aux)
 
     return cells, petsc_dofs_range, petsc_dofs_conn, dof_maps, id_map
 
@@ -565,14 +574,15 @@ def setup_composite_dofs(lfds, fields, local_variables, verbose=False):
         lfd.petsc_dofs = get_local_ordering(variable.field,
                                             lfd.petsc_dofs_conn,
                                             use_expand_dofs=True)
-        output('petsc dofs:', lfd.petsc_dofs, verbose=verbose)
+        output('%d petsc dofs:' % len(lfd.petsc_dofs), lfd.petsc_dofs,
+               verbose=verbose)
 
     sizes, drange = get_composite_sizes(lfds)
     output('composite sizes:', sizes, verbose=verbose)
     output('composite drange:', drange, verbose=verbose)
 
     pdofs = nm.concatenate([ii.petsc_dofs for ii in lfds])
-    output('composite pdofs:', pdofs, verbose=verbose)
+    output('%d composite pdofs:' % len(pdofs), pdofs, verbose=verbose)
 
     return sizes, drange, pdofs
 
@@ -674,7 +684,8 @@ def create_prealloc_data(mtx, pdofs, drange, verbose=False):
     """
     owned_dofs = nm.where((pdofs >= drange[0]) & (pdofs < drange[1]))[0]
     owned_dofs = owned_dofs.astype(nm.int32)
-    output('owned local DOFs:', owned_dofs, verbose=verbose)
+    output('%d owned local DOFs:' % len(owned_dofs), owned_dofs,
+           verbose=verbose)
 
     ii = nm.argsort(pdofs[owned_dofs])
     aux = mtx[owned_dofs[ii]]
@@ -753,16 +764,12 @@ def assemble_rhs_to_petsc(prhs, rhs, pdofs, drange, is_overlap=True,
     if comm is None:
         comm = PETSc.COMM_WORLD
 
-    lgmap = PETSc.LGMap().create(pdofs, comm=comm)
-
     if is_overlap:
-        prhs.setLGMap(lgmap)
         output('setting rhs values...', verbose=verbose)
         tt = time.clock()
-        for ir, rdof in enumerate(pdofs):
-            if (rdof < drange[0]) or (rdof >= drange[1]): continue
-            prhs.setValueLocal(ir, rhs[ir],
-                               PETSc.InsertMode.INSERT_VALUES)
+        rdofs = nm.where((pdofs < drange[0]) | (pdofs >= drange[1]), -1, pdofs)
+        prhs.setOption(prhs.Option.IGNORE_NEGATIVE_INDICES, True)
+        prhs.setValues(rdofs, rhs, PETSc.InsertMode.INSERT_VALUES)
         output('...done in', time.clock() - tt, verbose=verbose)
 
         output('assembling rhs...', verbose=verbose)
@@ -771,11 +778,9 @@ def assemble_rhs_to_petsc(prhs, rhs, pdofs, drange, is_overlap=True,
         output('...done in', time.clock() - tt, verbose=verbose)
 
     else:
-        prhs.setLGMap(lgmap)
         output('setting rhs values...', verbose=verbose)
         tt = time.clock()
-        prhs.setValuesLocal(nm.arange(len(rhs), dtype=nm.int32), rhs,
-                            PETSc.InsertMode.ADD_VALUES)
+        prhs.setValues(pdofs, rhs, PETSc.InsertMode.ADD_VALUES)
         output('...done in', time.clock() - tt, verbose=verbose)
 
         output('assembling rhs...', verbose=verbose)
@@ -787,30 +792,22 @@ def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
                           comm=None, verbose=False):
     """
     Assemble a local CSR matrix to a global PETSc matrix.
-
-    WIP
-    ---
-    Try Mat.setValuesCSR() - no lgmap - filtering vectorized?
     """
     if comm is None:
         comm = PETSc.COMM_WORLD
 
     lgmap = PETSc.LGMap().create(pdofs, comm=comm)
-
+    pmtx.setLGMap(lgmap, lgmap)
     if is_overlap:
-        pmtx.setLGMap(lgmap, lgmap)
-
-        data, prows, cols = mtx.data, mtx.indptr, mtx.indices
-
         output('setting matrix values...', verbose=verbose)
         tt = time.clock()
-        for ir, rdof in enumerate(pdofs):
-            if (rdof < drange[0]) or (rdof >= drange[1]): continue
-
-            for ic in range(prows[ir], prows[ir + 1]):
-                # output(ir, rdof, cols[ic])
-                pmtx.setValueLocal(ir, cols[ic], data[ic],
-                                   PETSc.InsertMode.INSERT_VALUES)
+        mask = (pdofs < drange[0]) | (pdofs >= drange[1])
+        nnz_per_row = nm.diff(mtx.indptr)
+        mtx2 = mtx.copy()
+        mtx2.data[nm.repeat(mask, nnz_per_row)] = 0
+        mtx2.eliminate_zeros()
+        pmtx.setValuesLocalCSR(mtx2.indptr, mtx2.indices, mtx2.data,
+                               PETSc.InsertMode.INSERT_VALUES)
         output('...done in', time.clock() - tt, verbose=verbose)
 
         output('assembling matrix...', verbose=verbose)
@@ -818,8 +815,8 @@ def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
         pmtx.assemble()
         output('...done in', time.clock() - tt, verbose=verbose)
 
+
     else:
-        pmtx.setLGMap(lgmap, lgmap)
         output('setting matrix values...', verbose=verbose)
         tt = time.clock()
         pmtx.setValuesLocalCSR(mtx.indptr, mtx.indices, mtx.data,

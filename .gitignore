@@ -50,3 +50,9 @@ doc/term_table.rst
 PKG-INFO
 spkg-install
 MANIFEST
+#
+# JetBrains PyCharm IDE project files
+# LK
+#
+.idea
+#

@@ -9,7 +9,8 @@ import sfepy.linalg as la
 
 hyperelastic_data = {}
 
-def post_process(out, pb, state, extend = False):
+
+def post_process(out, pb, state, extend=False):
     if isinstance(state, dict):
         pass
     else:
@@ -56,6 +57,7 @@ def post_process(out, pb, state, extend = False):
 
     return out
 
+
 def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
     if problem.update_materials_flag == 2 and mode == 'qp':
         out = hyperelastic_data['homog_mat']
@@ -72,8 +74,8 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
     family_data = problem.family_data(state_u, term.region,
                                       term.integral, term.integration)
 
-    mtx_f = family_data.mtx_f.reshape((coors.shape[0],)\
-        + family_data.mtx_f.shape[-2:])
+    mtx_f = family_data.mtx_f.reshape((coors.shape[0],)
+                                      + family_data.mtx_f.shape[-2:])
     out = get_homog_coefs_nonlinear(ts, coors, mode, mtx_f,
                                     term=term, problem=problem,
                                     iteration=problem.iiter, **kwargs)
@@ -87,6 +89,7 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
 
     return out
 
+
 def ulf_iteration_hook(pb, nls, vec, it, err, err0):
     vec = pb.equations.make_full_vec(vec)
     pb.equations.set_variables_from_state(vec)
@@ -96,7 +99,7 @@ def ulf_iteration_hook(pb, nls, vec, it, err, err0):
 
     nods = state_u.field.get_dofs_in_region(state_u.field.region, merge=True)
     coors = pb.domain.get_mesh_coors().copy()
-    coors[nods,:] += state_u().reshape(len(nods), state_u.n_components)
+    coors[nods, :] += state_u().reshape(len(nods), state_u.n_components)
 
     if len(state_u.field.mappings0) == 0:
         state_u.field.save_mappings()
@@ -110,6 +113,7 @@ def ulf_iteration_hook(pb, nls, vec, it, err, err0):
     pb.update_materials()
     pb.update_materials_flag = False
 
+
 class MyEvalResidual(object):
     def __init__(self, problem, matrix_hook=None):
         self.problem = problem
@@ -122,6 +126,7 @@ class MyEvalResidual(object):
 
         return vec_r
 
+
 def ulf_init(pb):
     pb.family_data = HyperElasticULFamilyData()
     pb.init_solvers()
@@ -133,6 +138,7 @@ def ulf_init(pb):
 
     pb.update_materials_flag = True
     pb.iiter = 0
+
 
 options = {
     'output_dir': 'output',
@@ -172,18 +178,21 @@ ebcs = {
     'b': ('Bottom', {'u.all': 'move_bottom'}),
 }
 
-centre = nm.array( [0, 0], dtype = nm.float64 )
+
+centre = nm.array([0, 0], dtype=nm.float64)
+
 
 def move_bottom(ts, coor, **kwargs):
     from sfepy.linalg import rotation_matrix2d
 
-    vec = coor[:,0:2] - centre
+    vec = coor[:, 0:2] - centre
     angle = 3 * ts.step
     print('angle:', angle)
     mtx = rotation_matrix2d(angle)
-    out = nm.dot(vec, mtx)  - vec
+    out = nm.dot(vec, mtx) - vec
 
-    return out.T.flat
+    return out
+
 
 functions = {
     'move_bottom': (move_bottom,),

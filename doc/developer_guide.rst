@@ -851,8 +851,8 @@ Main scripts
    src/probe
    src/run_tests
    src/schroedinger
-   src/shaper
    src/simple
+   src/simple_homog_mpi
 
 Utility scripts
 ^^^^^^^^^^^^^^^
@@ -919,6 +919,8 @@ sfepy.base package
    src/sfepy/base/log_plotter
    src/sfepy/base/mem_usage
    src/sfepy/base/multiproc
+   src/sfepy/base/multiproc_mpi
+   src/sfepy/base/multiproc_proc
    src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
    src/sfepy/base/reader
@@ -1080,15 +1082,6 @@ sfepy.mesh package
    src/sfepy/mesh/mesh_generators
    src/sfepy/mesh/mesh_tools
    src/sfepy/mesh/splinebox
-
-sfepy.optimize package
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   src/sfepy/optimize/free_form_def
-   src/sfepy/optimize/shape_optim
 
 .. _sfepy_parallel_package:
 

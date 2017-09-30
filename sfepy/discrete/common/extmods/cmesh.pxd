@@ -86,6 +86,7 @@ cdef extern from 'mesh.h':
     cdef int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                                     Indices *entities, int32 dent)
     cdef int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
+    cdef int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
     cdef int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals,
                                       int32 which)
 

@@ -1,5 +1,401 @@
 # created: 20.07.2007 (-1)
 
+.. _2017.2-2017.3:
+
+from 2017.2 to 2017.3
+=====================
+
+- merge branch 'regions-update'
+
+  - allow '-' in region names - update parsing code + test
+  - fix reading of vertex sets (nodal bcs) in
+    HDF5MeshIO.read_mesh_from_hdf5() - group argument is no longer overwritten
+
+- merge pull request #395 from lokik/master
+
+  - svec (output buffer) argument for variables.strip_state_vector
+  - code lint in discrete/variables
+
+- merge branch 'improve-parallel'
+
+  - improve information outputs
+  - speed-up assemble_rhs_to_petsc(), assemble_mtx_to_petsc() by removing loops
+  - measure and report global domain/fields setup time in parallel examples
+
+- merge pull request #403 from vlukes/homog_mpi
+
+  - update homog. engine - rearrange functions, define new class
+    HomogenizationWorker
+  - update engine.py to comply pep8
+  - update homog. engine: define numdeps as dict instead of list
+  - new sfepy/base/multiproc_mpi.py - classes and functions for MPI
+    parallelization
+  - update sfepy/base/multiproc.py - unify multiproc. modules
+  - update homog. engine and application for MPI computation
+  - update sfepy/base/multiproc.py and sfepy/homogenization/homogen_app.py to
+    comply pep8
+  - fix test_homogenization_engine.py - new structure of homog. engine
+
+- merge branch 'iterative-ls-precond'
+
+  - make preconditioners for ScipyIterative solver actually usable - change
+    option precond (a matrix-like) to setup_precond (a callable)
+  - add iteration callback to ScipyIterative, calls user callback if provided
+  - fix PETScKrylovSolver.__call__() for no initial guess
+  - simple.py: allow additional options (to use with PETSc options)
+  - new init_petsc_args(), used in PETScKrylovSolver.__init__()
+  - new Solver.set_field_split()
+  - allow slices in PETScKrylovSolver.set_field_split()
+  - set field split data in Problem.solve()
+  - obey verbose option in ScipyIterative
+  - new examples/multi_physics/biot_short_syntax.py + test
+  - update PETScNonlinearSolver to return same status information as Newton
+
+    - set manually the solution from the update in case the KSP did not
+      converge
+
+- merge branch 'expand-nodes-node-by-node', closes #404
+
+  - arrayize function values in {H1HierarchicVolumeField,
+    H1NodalMixin}.set_dofs()
+  - fix shape for NumPy 1.13.0 in EquationMap.map_equations()
+  - fix shape for NumPy 1.13.0 in FieldVariable.setup_initial_conditions()
+  - update expand_nodes_to_equations() to use node-by-node ordering of DOFs
+  - unify shape of values returned by Field.set_dofs() implementations
+
+    - update H1HierarchicVolumeField, H1NodalMixin, IGField
+    - update for node-by-node ordering: use (n_nodes, n_components)
+
+  - update MRLCBCOperator.setup() for node-by-node ordering
+  - update EBC/LCBC functions in examples for node-by-node ordering
+  - update test_ebc_functions() for vector variables
+  - docs: update users guide for node-by-node ordering
+
+- merge pull request #407 from BubuLK/doc-tutorial, closes #379, #401
+
+  - updated tutorial.rst accordint to issue #379.
+  - updated primer.rst
+  - updated linear_elasticity_interactive.py according to tutorial.rst
+  - added sfepy-wrapper label to user_guide.rst.
+  - updated tutorial/installation.rst.
+  - updated tutorial/basic-usage.rst
+  - removed "$" from cli examples.
+
+- merge pull request #409 from BubuLK/Sphinx-conf
+
+  - replaced custom 'ipython_console_highlighting.py' with standard one.
+    Corrected IPython console outputs in tutorial.rst.
+  - replaced deprecated pngmath extension with imgmath.
+  - updated conf.py to new LaTeX customization scheme
+    (latex_preamble->latex_elements).
+
+- merge branch 'docs-fix-term-table', closes #399
+
+  - force longtable in script/gen_term_table.py
+  - add LaTeX page breaks around tables in script/gen_term_table.py
+
+- merge pull request #410 from vlukes/tri_tetra_elements
+
+  - new option to convert_mesh.py script: '-t' convert quad/hexa elements to
+    tri/tetra
+
+- merge branch 'improve-ls'
+
+  - add solver name to messages in ScipyIterative.__call__()
+  - reuse KSP instance in PETScKrylovSolver for multiple solves with one matrix
+
+    - speed-up, especially for direct solver preconditioning
+    - update .__init__(), .__call__()
+
+  - allow additional options in ScipyIterative
+  - prepare ScipyIterative for future scipy support of both rtol and atol
+  - tweak verbosity levels in ScipyIterative, print number of iterations
+  - fix ScipyDirect to obey presolve option
+  - do not store matrix in ScipyDirect
+  - update PyAMGSolver to use id of matrix for solver reuse check - do not
+    store matrix
+  - remove bit-rotten/obsolete PETScParallelKrylovSolver
+  - update standard_call(), petsc_call() to return number of iterations in
+    status
+
+    - update ScipyIterative.__call__()
+    - supported where possible, closes #216
+
+  - return total number of linear solver iterations in status - update Newton,
+    PETScNonlinearSolver
+  - update test_solvers() to report numbers of linear solver iterations
+  - update test_install.py for updated nls status
+
+- merge branch 'fix-for-sympy-1.1'
+
+  - fix Quantity.__init__() for sympy 1.1
+
+- merge pull request #412 from vlukes/homog_mpi
+
+  - update parallel MPI homogenization - add features for solution of
+    multiscale problems
+  - update get_homog_coefs_nonlinear() for MPI parallel computation
+  - update MPI homogenization - improve efficiency of MPI communication
+  - update multiproc_mpi.py: update classes RemoteDict and RemoteDictMaster,
+    fix typos in logs
+  - rearrange multiprocessing modules
+  - update homog. functions - reaaranged multiprocessing modules
+  - update save_mappings() and get_mappings() - rearranged multiprocessing
+    modules
+  - new `simple_homog_mpi` solver - allows to run parallel micro-macro coupled
+    simulation
+
+- merge branch 'misc-updates'
+
+  - improve error message in Term.check_shapes() to include actual shapes
+  - fix PETScNonlinearSolver.__call__() for no SNES.getFunctionNorm() - see
+    https://bitbucket.org/petsc/petsc4py/commits/1ffe3970457cf66c4354ca2d4601852ea06999b5
+
+- merge pull request #414 from vlukes/homog_mpi_fix
+
+  - fix get_homog_coefs_nonlinear() in homogenization/micmac.py - mpi switch
+
+- merge branch 'mesh-entity-volumes'
+
+  - new mesh_get_volumes() C function - new _det3x3(), _tri_area(), _aux_hex()
+  - new CMesh.get_volumes()
+  - script/show_mesh_info.py: show only names of nodal BCs
+  - script/show_mesh_info.py: new --detailed option, shows entity volumes
+  - update mesh_get_volumes() for approximate bilinear face area computation
+  - new test_entity_volumes() in tests/test_cmesh.py
+
+- merge pull request #415 from vlukes/homog_mpi_fix
+
+  - update homog. engine - replace 'chunk_size' option by 'chunks_per_worker'
+  - update nonlin. homog. example - pep8 code style
+  - update multiproc. code - 'thread' in names is obsolete, replaced by 'proc'
+
+- merge branch 'pyamg-krylov'
+
+  - allow additional method/solve options in PyAMGSolver, support callbacks -
+    add iteration callback to PyAMGSolver, calls user callback if provided
+  - new PyAMGKrylovSolver - interface to PyAMG Krylov solvers
+  - update tests/test_linear_solvers.py
+
+- merge branch 'petsc-user-precond'
+
+  - support user-defined preconditioners in PETScKrylovSolver - new
+    setup_precond option
+  - update tests/test_linear_solvers.py
+
+- merge pull request #417 from BubuLK/deployment-CI, closes #350
+
+  - add updated configs for Travis/AppVeyor testing.
+  - changed run_test.py call (ps->cmd).
+  - removed (obsolete) x86 arch to speedup test.
+
+- merge branch 'remove-shaper'
+
+  - remove obsolete shaper.py
+  - remove obsolete sfepy/optimize/ - remove __init__.py, free_form_def.py,
+    setup.py, shape_optim.py
+  - update setup.py, sfepy-run for no shaper.py
+  - update problem description file transforms
+  - docs: update users guide for no shaper.py
+  - update sfepy/setup.py for no sfepy/optimize/
+
+- merge branch 'update-log-live-plot', closes #131
+
+  - use threading in LogPlotter.__call__() to call .poll_draw() -
+    update.poll_draw() to sleep between canvas updates (replaces gobject
+    timeout)
+  - allow plt.tight_layout() failure in LogPlotter.process_command()
+  - update Log.__init__() for no fixed matplotlib backend dependence
+  - update LogPlotter for new sleep argument
+  - update Log for new sleep argument
+  - update live_plot.py example to use aggregate, sleep options, clean up
+
+- miscellaneous updates:
+
+  - docs: sync module index of developer guide with current sources
+  - update version string in get_basic_info() to conform with PEP 440
+
+.. _2017.1-2017.2:
+
+from 2017.1 to 2017.2
+=====================
+
+- merge pull request #369 from rc/fix-variable-history-advance
+
+  - initialize history of variables in get_initial_state()
+
+    - update make_implicit_step()
+    - update SimpleTimeSteppingSolver, AdaptiveTimeSteppingSolver
+
+  - fix Variable.advance() to initialize current step data
+
+- merge pull request #370 from heczis/master
+
+  - remove the unused method Problem.init_variables
+
+- merge pull request #368 from vlukes/update_homogen
+
+  - update: simplified and unified implementation of some homogenized
+    coefficients
+  - fix the homogenization example: perfusion_micro.py
+
+- merge pull request #372 from vlukes/fix_material_shape_change
+
+  - fix changing of the material shape
+
+- merge pull request #373 from vlukes/piezo_strain
+
+  - new PiezoStrainTerm
+  - update piezo-elasticity example
+
+- merge pull request #376 from vlukes/fix_truncation
+
+  - fix: avoid number truncation in region definitions
+
+- merge branch 'docs-main-page'
+
+  - update support section
+  - remove link to obsolete wiki pages
+  - add link to anaconda installation instructions to main page
+
+- merge branch 'fix-vtk-source-mayavi-4.4', closes #292
+
+  - update VTKMeshIO.read_data() to read cell data, small tweaks
+  - fix GenericFileSource._reshape() for single-axis data
+  - fix GenericSequenceFileSource
+
+    - update .read_common()
+    - remove .create_source()
+    - new .file_changed()
+    - initialize .io in GenericFileSource.__init__()
+
+  - update create_file_source() to work around a Mayavi 4.4.x issue
+
+- merge branch 'fix-coefs-to-latex'
+
+  - fix Coefficients._save_dict_latex() for scalars and general data
+  - clean up: raise exception with message
+
+- merge pull request #377 from rc/fix-variable-state-data-sharing
+
+  - fix data copying in Variable.advance() - bad interaction with State
+
+- merge pull request #380 from heczis/fix_doc_python3
+
+  - fix things to be compatible with both python 2 and 3
+
+- merge branch 'term-report-missing-virtual'
+
+  - new Term.get_str()
+  - use Term.get_str() in Term, Equations
+  - update Term.evaluate() to report missing virtual variable in 'weak' mode
+
+- merge pull request #383 from vlukes/update_homog_doc
+
+  - update homogenization examples, add references
+
+- merge pull request #385 from vlukes/change_shape_ev_grad
+
+  - change the shape of the gradient array provided by 'ev_grad', now: (n_el,
+    n_qp, dim, n_c)
+
+- merge pull request #386 from vlukes/replace_copydata_corr
+
+  - replace corrector CopyData by the more general one with name CorrEval
+
+- merge pull request #388 from vlukes/fix_meshio_msh
+
+  - fix Msh2MeshIO.read() to discard '2_2' elements
+
+- merge pull request #390 from rc/docs-sfepy-at-python-org
+
+  - docs: update for sfepy(at)python.org
+
+- merge pull request #391 from rc/fix-project-by-component
+
+  - fix project_by_component() for general tensor shape
+  - new test_project_tensors()
+
+- merge branch 'fix-ansys-cdb'
+
+  - fix ANSYSCDBMeshIO.read(), convert tetras as degenerate hexas to tetras
+  - new look_ahead_line()
+  - update ANSYSCDBMeshIO.read() to determine true number of fields
+
+    - fixes reading files with wrong nblock/eblock information
+    - update make_format()
+
+  - fix remapping of nodal bcs in ANSYSCDBMeshIO.read() for qtetras, qhexas
+
+- merge branch 'misc-updates'
+
+  - copying subclasses of problem
+  - numpy compatibility
+  - problem.make_full_vec accept vec argument.
+  - new Container.__add__(), .__iadd__(), test_container_add()
+  - update Viewer.build_mlab_pipeline() to add mat_id to source if not filtered
+
+- merge pull request #375 from {lokik,rc}/save-custom-data-to-hdf5
+
+  - saving custom structured data to h5 file in problem.save_state
+  - ioutils.enc and ioutils.dec utf strings compatibility
+  - HDF5ContextManager
+  - IGDomain reading and writing from HDF5 file
+  - asserting equality of complex structures
+  - HDF5 reading and writing
+  - faster assert_equals.
+  - default mesh argument for HDF5MeshIo.read()
+  - storing data to hd5 using softlinks.
+  - clean up iga/domain.py, iga/io.py
+  - clean up and reorganize HDF5MeshIO
+  - clean up ioutils.py, reorganize new functions/classes
+  - move assert_equals() into TestCommon.assert_equal(), update
+  - clean up and update test_hdf5_meshio()
+
+- merge branch 'docs-devel-page'
+
+  - update development tab, new topics section
+  - update copyright info
+  - add more topics to development tab
+
+- merge pull request #393 from heczis/fix_generators_next
+
+  - fix generators' next method calls in script/gen_gallery.py
+  - fix generators' next method calls in sfepy/base/log.py
+  - fix generators' next method calls in sfepy/application/application.py
+
+- merge branch 'band-gaps-ranges'
+
+  - new get_gap_ranges(), use in BandGaps.__call__()
+  - simplify plot_gap() by using gap_ranges, move text output to plot_gaps() -
+    update AcousticBandGapsApp.plot_band_gaps(), .plot_dispersion(), use tight
+    layout
+  - fix plot resources for matplotlib >= 1.5.1
+
+- merge pull request #398 from vlukes/tutorial_preproc
+
+  - new tutorial: preparing meshes using FreeCAD/OpenSCAD and Gmsh
+  - new "merge" option in `convert_mesh.py` - remove duplicate vertices
+
+- merge pull request #400 from vlukes/update_homog
+
+  - update homogenization to allow saving "pi" correctors
+
+- merge pull request #397 from BubuLK/doc-install, closes #366, #382
+
+  - updated Install doc: - issue #382 - issue #366 (?) - other misc doc cleanup
+  - doc cleanup - bugfixes - updates according to PR comments - updated
+    sections structure
+  - updated and re-structured install doc
+  - updated Anaconda instructions
+  - add link to conda-forge on downloads page
+  - add link to install doc
+  - add direct link conda-forge SfePy packages
+
+- miscellaneous updates:
+
+  - update mailing lists addresses in release tasks
+
 .. _2016.4-2017.1:
 
 from 2016.4 to 2017.1

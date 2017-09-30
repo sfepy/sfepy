@@ -241,6 +241,8 @@ class Newton(NonlinearSolver):
         err = err0 = -1.0
         err_last = -1.0
         it = 0
+        ls_status = {}
+        ls_n_iter = 0
         while 1:
             if iter_hook is not None:
                 iter_hook(self, vec_x, it, err, err0)
@@ -344,7 +346,9 @@ class Newton(NonlinearSolver):
 
             tt = time.clock()
             vec_dx = lin_solver(vec_r, x0=vec_x,
-                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a)
+                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
+                                status=ls_status)
+            ls_n_iter += ls_status['n_iter']
             time_stats['solve'] = time.clock() - tt
 
             if conf.verbose:
@@ -368,6 +372,7 @@ class Newton(NonlinearSolver):
             status['err0'] = err0
             status['err'] = err
             status['n_iter'] = it
+            status['ls_n_iter'] = ls_n_iter if ls_n_iter >= 0 else -1
             status['condition'] = condition
 
         if conf.log.plot is not None:
@@ -493,8 +498,21 @@ class PETScNonlinearSolver(NonlinearSolver):
 
         from petsc4py import PETSc as petsc
 
+        converged_reasons = {}
+        for key, val in six.iteritems(petsc.SNES.ConvergedReason.__dict__):
+            if isinstance(val, int):
+                converged_reasons[val] = key
+
+        ksp_converged_reasons = {}
+        for key, val in six.iteritems(petsc.KSP.ConvergedReason.__dict__):
+            if isinstance(val, int):
+                ksp_converged_reasons[val] = key
+
         NonlinearSolver.__init__(self, conf, petsc=petsc,
-                                 pmtx=pmtx, prhs=prhs, comm=comm, **kwargs)
+                                 pmtx=pmtx, prhs=prhs, comm=comm,
+                                 converged_reasons=converged_reasons,
+                                 ksp_converged_reasons=ksp_converged_reasons,
+                                 **kwargs)
 
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None,
@@ -536,10 +554,49 @@ class PETScNonlinearSolver(NonlinearSolver):
         snes.setMaxFunctionEvaluations(conf.if_max)
         snes.setFromOptions()
 
+        fun(snes, psol, prhs)
+        err0 = prhs.norm()
+
         snes.solve(prhs.duplicate(), psol)
 
         if status is not None:
             status['time_stats'] = time.clock() - tt
+
+        if snes.reason in self.converged_reasons:
+            reason = 'snes: %s' % self.converged_reasons[snes.reason]
+
+        else:
+            reason = 'ksp: %s' % self.ksp_converged_reasons[snes.reason]
+
+        output('%s convergence: %s (%s, %d iterations, %d function evaluations)'
+               % (snes.getType(), snes.reason, reason,
+                  snes.getIterationNumber(), snes.getFunctionEvaluations()),
+               verbose=conf.verbose)
+
+        converged = snes.reason >= 0
+
+        if not converged:
+            # PETSc does not update the solution if KSP have not converged.
+            dpsol = snes.getSolutionUpdate()
+            psol -= dpsol
+
+            fun(snes, psol, prhs)
+            err = prhs.norm()
+
+        else:
+            try:
+                err = snes.getFunctionNorm()
+
+            except AttributeError:
+                fun(snes, psol, prhs)
+                err = prhs.norm()
+
+        if status is not None:
+            status['err0'] = err0
+            status['err'] = err
+            status['n_iter'] = snes.getIterationNumber()
+            status['ls_n_iter'] = snes.getLinearSolveIterations()
+            status['condition'] = 0 if converged else -1
 
         if isinstance(vec_x0, self.petsc.Vec):
             sol = psol

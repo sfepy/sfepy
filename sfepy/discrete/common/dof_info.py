@@ -31,13 +31,19 @@ def expand_nodes_to_equations(nods, dof_names, all_dof_names):
     the DOF-per-node count.
 
     DOF names must be already canonized.
+
+    Returns
+    -------
+    eq : array
+        The equations/DOF indices in the node-by-node order.
     """
     dpn = len(all_dof_names)
+    nc = len(dof_names)
 
-    eq = nm.array([], dtype=nm.int32)
-    for dof in dof_names:
+    eq = nm.empty(len(nods) * nc, dtype=nm.int32)
+    for ii, dof in enumerate(dof_names):
         idof = all_dof_names.index(dof)
-        eq = nm.concatenate((eq, dpn * nods + idof))
+        eq[ii::nc] = dpn * nods + idof
     return eq
 
 def resolve_chains(master_slave, chains):
@@ -374,7 +380,7 @@ class EquationMap(Struct):
                 eq = expand_nodes_to_equations(nods, dofs, self.dof_names)
                 # Duplicates removed here...
                 eq_ebc[eq] = 1
-                if vv is not None: val_ebc[eq] = vv
+                if vv is not None: val_ebc[eq] = nm.ravel(vv)
 
             else: # EPBC.
                 region = bc.regions[1]

@@ -107,7 +107,7 @@ def rotate_yz(ts, coor, **kwargs):
 
     displacement = vec_rotated - vec
 
-    return displacement.T.flat
+    return displacement
 
 functions = {
     'rotate_yz' : (rotate_yz,),

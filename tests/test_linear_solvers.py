@@ -47,6 +47,24 @@ equations = {
     'Temperature' : """dw_laplace.i.Omega(coef.val, s, t) = 0"""
 }
 
+class DiagPC(object):
+    """
+    Diagonal (Jacobi) preconditioner.
+
+    Equivalent to setting `'precond' : 'jacobi'`.
+    """
+
+    def setUp(self, pc):
+        A = pc.getOperators()[0]
+
+        self.idiag = 1.0 / A.getDiagonal()
+
+    def apply(self, pc, x, y):
+        y.pointwiseMult(x, self.idiag)
+
+def setup_petsc_precond(mtx, problem):
+    return DiagPC()
+
 solvers = {
     'd00' : ('ls.scipy_direct',
              {'method' : 'umfpack',
@@ -59,14 +77,43 @@ solvers = {
     'i00' : ('ls.pyamg',
              {'method' : 'ruge_stuben_solver',
               'accel' : 'cg',
-              'eps_r'   : 1e-12,}
+              'eps_r'   : 1e-12,
+              'method:max_levels' : 5,
+              'solve:cycle' : 'V',}
     ),
     'i01' : ('ls.pyamg',
              {'method' : 'smoothed_aggregation_solver',
               'accel' : 'cg',
               'eps_r'   : 1e-12,}
     ),
+    'i02' : ('ls.pyamg_krylov',
+             {'method' : 'cg',
+              'eps_r'   : 1e-12,
+              'i_max' : 1000,}
+    ),
     'i10' : ('ls.petsc',
+             {'method' : 'cg', # ksp_type
+              'precond' : 'none', # pc_type
+              'eps_a' : 1e-12, # abstol
+              'eps_r' : 1e-12, # rtol
+              'i_max' : 1000,} # maxits
+    ),
+    'i11' : ('ls.petsc',
+             {'method' : 'cg', # ksp_type
+              'precond' : 'python', # just for output (unused)
+              'setup_precond' : setup_petsc_precond, # user-defined pc
+              'eps_a' : 1e-12, # abstol
+              'eps_r' : 1e-12, # rtol
+              'i_max' : 1000,} # maxits
+    ),
+    'i12' : ('ls.petsc',
+             {'method' : 'cg', # ksp_type
+              'precond' : 'jacobi', # pc_type
+              'eps_a' : 1e-12, # abstol
+              'eps_r' : 1e-12, # rtol
+              'i_max' : 1000,} # maxits
+    ),
+    'i13' : ('ls.petsc',
              {'method' : 'cg', # ksp_type
               'precond' : 'icc', # pc_type
               'eps_a' : 1e-12, # abstol
@@ -104,7 +151,7 @@ from sfepy.base.testing import TestCommon
 output_name = 'test_linear_solvers_%s.vtk'
 
 class Test(TestCommon):
-    can_fail = ['ls.pyamg', 'ls.petsc']
+    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc']
 
     @staticmethod
     def from_conf(conf, options):
@@ -160,7 +207,10 @@ class Test(TestCommon):
                     self.report('%10s: %7.2f [s]' % kv)
                 self.report('condition: %d, err0: %.3e, err: %.3e'
                             % (status.condition, status.err0, status.err))
-                tt.append([name, status.time_stats['solve'], status.err])
+                tt.append([name,
+                           status.time_stats['solve'],
+                           status.ls_n_iter,
+                           status.err])
 
                 aux = name.replace(' ', '_')
                 fname = op.join(self.options.out_dir,
@@ -169,11 +219,12 @@ class Test(TestCommon):
             else:
                 self.report('solver failed:')
                 self.report(exc)
-                tt.append([name, 1e10, 1e10])
+                tt.append([name, -1, 1e10, 1e10])
 
         tt.sort(key=lambda a: a[1])
-        self.report('solution times (rezidual norms):')
+        self.report('solution times / numbers of iterations (rezidual norms):')
         for row in tt:
-            self.report('%.2f [s]' % row[1], '(%.3e)' % row[2], ':', row[0])
+            self.report('%.2f [s] / % 4d' % (row[1], row[2]),
+                        '(%.3e)' % row[3], ':', row[0])
 
         return ok

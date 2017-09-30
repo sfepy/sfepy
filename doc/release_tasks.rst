@@ -47,7 +47,7 @@ Things to check before a release
 
 #. check installed build::
 
-     $ python setup.py install --root=<some path>
+     $ pip install . --user
      $ cd
      $ sfepy-run run_tests
      $ rm -r output/

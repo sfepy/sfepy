@@ -1,5 +1,5 @@
 # SfePy version
-__version__ = '2017.1'
+__version__ = '2017.3'
 
 # "Minimal" supported versions.
 NUMPY_MIN_VERSION = '1.3'
@@ -42,7 +42,7 @@ def get_basic_info(version=__version__):
         master = op.join(top_dir, '.git/refs/heads/master')
         if op.isfile(master):
             fd = open(master, 'r')
-            version += '-git-%s' % fd.readline().strip()
+            version += '+git.%s' % fd.readline().strip()
             fd.close()
 
     in_source_tree = up_dir == '..'

@@ -18,6 +18,8 @@ tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions info. The
 ``$`` indicates the command prompt of your terminal.
 
+.. _basic-usage:
+
 Basic Usage
 ^^^^^^^^^^^
 
@@ -66,6 +68,8 @@ Applications
 
         $ ./postproc.py mesh.vtk
 
+.. _SfePy-command-wrapper:
+
 Using Command Wrapper
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -78,7 +82,7 @@ All top-level *SfePy* scripts (applications) can be run via single
   Simple wrapper for main SfePy commands.
 
   positional arguments:
-  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,shaper,simple}
+  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,simple}
                         Available SfePy command(s).
   options               Additional options passed directly to selected
                         [command].
@@ -93,7 +97,7 @@ Notes
 
 * This is a "new" supported method. Any *SfePy* script can be still
   run as stand-alone (as mentioned above).
-* Both "--inplace" and "system-wide" installations are supported.
+* Both "inplace" and "system-wide" installations are supported.
 
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^
@@ -925,8 +929,7 @@ description file demonstrating how to use different kinds of functions.
         return val
 
     def get_ebc_all(ts, coors):
-        x, y, z = coors[:, 0], coors[:, 1], coors[:, 2]
-        val = ts.step * nm.r_[x, y, z]
+        val = ts.step * coors
         return val
 
     functions = {
@@ -937,9 +940,11 @@ description file demonstrating how to use different kinds of functions.
     }
 
   Note that when setting more than one component as in `get_ebc_all()`
-  above, the function should return a single one-dimensional vector with
-  all values of the first component, then of the second one
-  etc. concatenated together.
+  above, the function should return either an array of shape `(coors.shape[0],
+  n_components)`, or the same array flattened to 1D row-by-row (i.e.
+  node-by-node), where `n_components` corresponds to the number of components
+  in the boundary condition definition. For example, with `'u.[0, 1]'`,
+  `n_components` is 2.
 
 - function for defining usual material parameters::
 

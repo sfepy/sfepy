@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from sfepy.base.testing import TestCommon
 from sfepy.homogenization.engine import HomogenizationEngine as he
+from sfepy.homogenization.engine import HomogenizationWorkerMulti as hwm
 import six
 import numpy as nm
 
@@ -12,7 +13,7 @@ class Test(TestCommon):
         return test
 
     def test_dependencies(self):
-        get_deps = he.get_sorted_dependencies
+        get_deps = hwm.get_sorted_dependencies
 
         coefs = {'A' : {'requires' : ['a', 'd', 'c.B']},
                  'B' : {'requires' : ['b']}}
@@ -72,15 +73,15 @@ class Test(TestCommon):
         coefs = he.define_volume_coef(coefs, volumes)
         orig_deps_num = len(requirements) + len(coefs)
 
-        num_workers, num_micro, chunk_size = 5, 61, 10
+        num_workers, num_micro, chunks_per_worker = 5, 61, 2
         store_micro_idxs = [0, 1, 18, 20, 21]
         micro_chunk_tab, requirements, coefs = \
-            he.chunk_micro_coors(num_workers, num_micro, requirements, coefs,
-                                 chunk_size, store_micro_idxs)
+            hwm.chunk_micro_coors(num_workers, num_micro, requirements, coefs,
+                                  chunks_per_worker, store_micro_idxs)
 
-        dep_names = he.get_sorted_dependencies(requirements, coefs, None)
+        dep_names = hwm.get_sorted_dependencies(requirements, coefs, None)
 
-        ok = (orig_deps_num * num_workers) == len(dep_names)
+        ok = (orig_deps_num * len(micro_chunk_tab)) == len(dep_names)
         self.report('splitting into chunks:', ok)
 
         deps = {}
@@ -94,7 +95,7 @@ class Test(TestCommon):
 
         self.report('volume dependecy:', ok)
 
-        deps = he.dechunk_reqs_coefs(deps, len(micro_chunk_tab))
+        deps = hwm.dechunk_reqs_coefs(deps, len(micro_chunk_tab))
 
         ok = ok and\
             nm.all([(nm.sum(v) == num_micro) for v in six.itervalues(deps)])

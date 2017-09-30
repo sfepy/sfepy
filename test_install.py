@@ -241,7 +241,7 @@ def main():
     eok += report(out, '...', -2, 5, '1.068759e-14', eps=1e-13)
 
     out, err = check_output('%s examples/linear_elasticity/linear_elastic_interactive.py' % cmd)
-    eok += report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
+    eok += report(out, '...', -10, 0, '1.62128841139e-14', eps=1e-13)
 
     out, err = check_output('%s examples/linear_elasticity/modal_analysis.py' % cmd)
     eok += report(out, '...', -12, 5, '12142.11470773', eps=1e-13)

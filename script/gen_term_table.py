@@ -50,11 +50,18 @@ def create_parser(slist, current_section):
 
     return doc
 
+newpage = r"""
+.. raw:: latex
+
+   \newpage
+"""
+
 header = """
 .. tabularcolumns:: |p{0.2\linewidth}|p{0.2\linewidth}|p{0.6\linewidth}|
 .. list-table:: %s terms
    :widths: 20 20 60
    :header-rows: 1
+   :class: longtable
 
    * - name/class
      - arguments
@@ -127,7 +134,7 @@ def typeset_term_table(fd, keys, table, title):
 
     fd.write('.. _term_table_%s:\n' % title)
     label = 'Table of %s terms' % title
-    fd.write(''.join([label, '\n', '"' * len(label), '\n']))
+    fd.write(''.join([newpage, label, '\n', '"' * len(label), '\n']))
     fd.write(header % (title[0].upper() + title[1:]))
 
     sort_keys = [key[key.find('_'):] for key in keys]
@@ -185,6 +192,7 @@ def typeset_term_tables(fd, table):
     typeset_term_table(fd, new_tabs[0], table, 'sensitivity')
     typeset_term_table(fd, new_tabs[1], table, 'large deformation')
     typeset_term_table(fd, new_tabs[2], table, 'special')
+    fd.write(newpage)
 
 def typeset(filename):
     """Utility function called by sphinx. """
