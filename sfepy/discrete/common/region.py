@@ -493,7 +493,7 @@ class Region(Struct):
                                             allow_empty=allow_empty)
 
                 except ValueError as exc:
-                    msg = '\n'.join((exc.message,
+                    msg = '\n'.join((str(exc),
                                      'fix region kind? (region: %s, kind: %s)'
                                      % (self.name, self.kind)))
                     raise ValueError(msg)
