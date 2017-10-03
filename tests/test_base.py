@@ -138,3 +138,19 @@ class Test( TestCommon ):
         ok2 = order == [['a', 'b', 'c']]
 
         return ok1 and ok2
+
+    def test_parse_conf(self):
+        from sfepy.base.parse_conf import list_dict
+        ld = list_dict()
+
+        def parse(x):
+            out = ld.parseString(x, True)[0]
+            return out
+
+        assert_(parse("1,2") == ([1,2],{}))
+        assert_(parse("1,[2]") == ([1,[2]],{}))
+        assert_(parse("1,[2,4],c=3") == ([1,[2,4]],{'c':3}))
+        assert_(parse("1,(2),c:3,uu=7") == ([1,(2,)],{'c':3,'uu':7}))
+        assert_(parse("'long string ([\"',(2,5),c:3") ==
+                     (['long string (["',(2,5)],{'c':3}))
+        return True
