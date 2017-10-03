@@ -1420,6 +1420,19 @@ class Term(Struct):
         return out
 
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
+        """
+        Assemble the results of term evaluation.
+
+        For standard terms, assemble the values in `val` corresponding to
+        elements/cells `iels` into a vector or a CSR sparse matrix `asm_obj`,
+        depending on `mode`.
+
+        For terms with a dynamic connectivity (e.g. contact terms), in
+        `'matrix'` mode, return the extra COO sparse matrix instead. The extra
+        matrix has to be added to the global matrix by the caller. By default,
+        this is done in :func:`Equations.evaluate()
+        <sfepy.discrete.equations.Equations.evaluate()>`.
+        """
         import sfepy.discrete.common.extmods.assemble as asm
 
         vvar = self.get_virtual_variable()
@@ -1484,8 +1497,7 @@ class Term(Struct):
                 from scipy.sparse import coo_matrix
 
                 extra = coo_matrix((sign * val[0], (val[1], val[2])),
-                                 shape=asm_obj.shape)
-
+                                   shape=asm_obj.shape)
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
