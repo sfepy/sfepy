@@ -101,7 +101,7 @@ def get_standard_type_defs(word=word_free):
     tuple_str << (lparen + tuple_str.inner + rparen)
 
     list_str.inner = tuple_str.inner.copy()
-    list_str.inner.setParseAction(lambda toks: list(toks))
+    list_str.inner.setParseAction(lambda toks: [list(toks)])
     list_str << (lbrack + list_str.inner + rbrack)
 
     dict_entry = Group(list_item + (colon | equal_sign) + list_item2)
