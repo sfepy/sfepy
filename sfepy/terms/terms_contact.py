@@ -60,42 +60,14 @@ class ContactTerm(Term):
         if self.ci is None:
             self.ci = ContactInfo()
 
-        # print(region.name)
-        # print(region.shape)
-        # print(region.facets)
-        # print(region.get_facet_indices())
-        # print(state.field.surface_data[region.name].fis)
-
-        # print(geo)
-        # print(geo.normal)
-
-        # mesh_coors = self.region.domain.mesh.coors
-        # print(mesh_coors[region.vertices])
-
         # Uses field connectivity (higher order nodes).
         sd = state.field.surface_data[region.name]
-
-        # Uses mesh connectivity.
-        # sdg = self.region.domain.surface_groups[region.name]
-
-        # print(mesh_coors[sdg.econn])
-
-        # qps = self.get_physical_qps()
-        # qp_coors = qps.values
-        # u_qp = self.get(state, 'val').reshape(qp_coors.shape)
-
-        # Deformed QP coordinates.
-        # coors = u_qp + qp_coors
-
-        # print(coors)
 
         ISN = state.field.efaces.T.copy()
         nsd = region.dim
         ngp = geo.n_qp
         neq = state.n_dof
         nsn = ISN.shape[0]
-        nes = ISN.shape[1]
-        nen = state.field.gel.n_vertex
 
         fis = region.get_facet_indices()
         elementID = fis[:, 0].copy()
@@ -123,23 +95,6 @@ class ContactTerm(Term):
                                                        elementID, segmentID,
                                                        ISN, IEN, H, xx)
 
-        # print longestEdge
-        # print X[IEN[elementID[0]]][ISN]
-
-        # gg = state.field.mappings[('Omega', 2, 'volume')]
-        # Implement Region.get_diameters(dim).
-
-        #print nm.sqrt(region.domain.get_element_diameters(state.field.region.cells, gg[0], 0)).max()
-        #print (GPs[:, :2] == qp_coors).all()
-
-        #GPs2 = nm.zeros((n*ngp, 2*nsd+6), dtype=nm.float64, order='F')
-        #GPs2[:, :2] = qp_coors
-        #GPs2[:, 2:4] = nm.repeat(fis, ngp, axis=0)
-        #GPs2[:, 4] = nm.finfo(nm.float32).max
-
-        #print (GPs == GPs2).all()
-        #print nm.abs(GPs - GPs2).max()
-
         AABBmin, AABBmax = cc.get_AABB(xx, longestEdge, IEN, ISN,
                                        elementID, segmentID, neq);
 
@@ -148,10 +103,7 @@ class ContactTerm(Term):
         N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
         N = nm.ones(nsd, dtype=nm.int32) # BUG workaround.
 
-        # print AABBmin, AABBmax, N
         head, next = cc.init_global_search(N, AABBmin, AABBmax, GPs[:,:nsd])
-
-        # print head, next
 
         npd = region.tdim - 1
         GPs = cc.evaluate_contact_constraints(GPs, ISN, IEN, N,
@@ -159,16 +111,14 @@ class ContactTerm(Term):
                                               head, next, xx,
                                               elementID, segmentID,
                                               npd, neq, longestEdge)
-        # print GPs[:, 4]
 
-        #
         Gc = nm.zeros(neq, dtype=nm.float64)
 
         activeGPs = GPs[:, 2*nsd+3]
-        gap = GPs[:, nsd + 2]
-        print activeGPs
-        print gap
-        print 'active:', activeGPs.sum()
+        # gap = GPs[:, nsd + 2]
+        # print activeGPs
+        # print gap
+        # print 'active:', activeGPs.sum()
 
         if diff_var is None:
             max_num = 1
@@ -180,12 +130,11 @@ class ContactTerm(Term):
             keyContactDetection = self.detect
             keyAssembleKc = 1
 
-        print 'max_num:', max_num
+        # print 'max_num:', max_num
         vals = nm.empty(max_num, dtype=nm.float64)
         rows = nm.empty(max_num, dtype=nm.int32)
         cols = nm.empty(max_num, dtype=nm.int32)
 
-        print '!!!detect', keyContactDetection
         aux = cc.assemble_contact_residual_and_stiffness(Gc, vals, rows, cols,
                                                          GPs, ISN, IEN,
                                                          X, Um, H, dH, gw,
@@ -194,12 +143,7 @@ class ContactTerm(Term):
                                                          keyContactDetection,
                                                          keyAssembleKc)
         Gc, vals, rows, cols, num = aux
-        # print Gc.mean()
-        # print GPs
-        print 'true num:', num
-        print GPs.shape
-        print activeGPs
-        print gap
+        # print 'true num:', num
 
         # Uncomment this to detect only in the 1. iteration.
         #self.detect = max(0, self.detect - 1)
