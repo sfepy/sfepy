@@ -1,21 +1,40 @@
-"""
-Contact of two elastic bodies.
+r"""
+Contact of two elastic bodies with a penalty function for enforcing the contact
+constraints.
 
-./simple.py examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
+Find :math:`\ul{u}` such that:
 
-./postproc.py two_bodies.mesh.vtk -b --wire
-./postproc.py two_bodies.mesh.vtk -b --wire -d 'u,plot_displacements,rel_scaling=1.0'
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    + \int_{\Gamma_{c}} \varepsilon_N \langle g_N(\ul{u}) \rangle \ul{n} \ul{v}
+    = 0
+    \;, \quad \forall \ul{v} \;,
 
-./script/plot_logs.py log.txt
+where :math:`\varepsilon_N` is the normal penalty function, :math:`\langle
+g_N(\ul{u}) \rangle` are the Macaulay's brackets of the gap function
+:math:`g_N(\ul{u})` and
 
-./postproc.py --wire two_bodies.mesh_ebc_nodes.vtk
-./postproc.py --wire two_bodies.mesh_regions.vtk
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+
+Usage examples::
+
+  ./simple.py examples/linear_elasticity/two_bodies_contact.py --save-regions-as-groups --save-ebc-nodes
+
+  ./postproc.py two_bodies.mesh.vtk -b --wire
+  ./postproc.py two_bodies.mesh.vtk -b --wire -d 'u,plot_displacements,rel_scaling=1.0'
+
+  ./script/plot_logs.py log.txt
+
+  ./postproc.py --wire two_bodies.mesh_ebc_nodes.vtk
+  ./postproc.py --wire two_bodies.mesh_regions.vtk
 """
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.discrete.fem.meshio import UserMeshIO
 
 import numpy as nm
-nm.set_printoptions(threshold=10000, linewidth=200)
 
 dim = 2
 
@@ -98,7 +117,6 @@ fields = {
 materials = {
     'solid' : ({'D': stiffness_from_youngpoisson(dim,
                                                  young=1.0, poisson=0.3)},),
-    'load' : ({'val' : 1.0},),
     'contact' : ({'.epss' : 1e1},),
 }
 
@@ -149,16 +167,16 @@ integrals = {
 
 equations = {
     'elasticity' :
-    """1 * dw_lin_elastic.2.Omega(solid.D, v, u)
+    """dw_lin_elastic.2.Omega(solid.D, v, u)
      + dw_contact.i.Contact(contact.epss, v, u)
-    = - 1 * dw_surface_ltr.2.Top(load.val, v)""",
+     = 0""",
 }
 
 solvers = {
     'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton', {
             'i_max' : 5,
-            'eps_a' : -1e-10,
+            'eps_a' : 1e-6,
             'eps_r' : 1.0,
             'macheps' : 1e-16,
             # Linear system error < (eps_a * lin_red).
@@ -169,6 +187,6 @@ solvers = {
             'ls_min' : 1e-5,
             'check' : 0,
             'delta' : 1e-8,
-            'log' : {'text' : 'log.txt', 'plot' : 'log.pdf'},
+            'log' : {'text' : 'log.txt', 'plot' : None},
     })
 }
