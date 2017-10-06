@@ -294,6 +294,10 @@ class Test(TestCommon):
                 else:
                     vals, iels, status = out
 
+                if isinstance(vals, tuple):
+                    # Dynamic connectivity terms.
+                    vals = vals[0]
+
                 _ok = nm.isfinite(vals).all()
                 ok = ok and _ok
                 self.report('values shape: %s' % (vals.shape,))
@@ -315,6 +319,10 @@ class Test(TestCommon):
                         vals, iels, status = term.evaluate(mode=call_mode,
                                                            diff_var=svar.name,
                                                            ret_status=True)
+                        if isinstance(vals, tuple):
+                            # Dynamic connectivity terms.
+                            vals = vals[0]
+
                         _ok = status == 0
                         ok = ok and _ok
                         self.report('diff: %s' % svar.name)

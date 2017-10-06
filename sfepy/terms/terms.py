@@ -1099,6 +1099,9 @@ class Term(Struct):
                 elif sh == 'N': # General number.
                     return nm.inf
 
+                elif sh == 'str':
+                    return 'str'
+
                 else:
                     return int(sh)
 
@@ -1176,6 +1179,10 @@ class Term(Struct):
                         aux = sh.split(':')
                         if len(aux) == 2:
                             prefix, sh = aux
+
+                    if sh == 'str':
+                        n_ok += isinstance(arg, basestr)
+                        continue
 
                     shape = _parse_tuple_shape(sh)
                     ls = len(shape)
@@ -1397,8 +1404,14 @@ class Term(Struct):
                 raise ValueError('unsupported term dtype! (%s)'
                                  % varr.dtype)
 
-            vals *= self.sign
-            iels = self.get_assembling_cells(vals.shape)
+            if not isinstance(vals, tuple):
+                vals *= self.sign
+                iels = self.get_assembling_cells(vals.shape)
+
+            else:
+                vals = (self.sign * vals[0],) + vals[1:]
+                iels = None
+
             out = (vals, iels)
 
         if goptions['check_term_finiteness']:
@@ -1414,10 +1427,25 @@ class Term(Struct):
         return out
 
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
+        """
+        Assemble the results of term evaluation.
+
+        For standard terms, assemble the values in `val` corresponding to
+        elements/cells `iels` into a vector or a CSR sparse matrix `asm_obj`,
+        depending on `mode`.
+
+        For terms with a dynamic connectivity (e.g. contact terms), in
+        `'matrix'` mode, return the extra COO sparse matrix instead. The extra
+        matrix has to be added to the global matrix by the caller. By default,
+        this is done in :func:`Equations.evaluate()
+        <sfepy.discrete.equations.Equations.evaluate()>`.
+        """
         import sfepy.discrete.common.extmods.assemble as asm
 
         vvar = self.get_virtual_variable()
         dc_type = self.get_dof_conn_type()
+
+        extra = None
 
         if mode == 'vector':
             if asm_obj.dtype == nm.float64:
@@ -1430,10 +1458,23 @@ class Term(Struct):
                     if not(val[ii].dtype == nm.complex128):
                         val[ii] = nm.complex128(val[ii])
 
-            dc = vvar.get_dof_conn(dc_type)
-            assert_(val.shape[2] == dc.shape[1])
+            if not isinstance(val, tuple):
+                dc = vvar.get_dof_conn(dc_type)
+                assert_(val.shape[2] == dc.shape[1])
 
-            assemble(asm_obj, val, iels, 1.0, dc)
+                assemble(asm_obj, val, iels, 1.0, dc)
+
+            else:
+                vals, rows, var = val
+                if var.eq_map is not None:
+                    eq = var.eq_map.eq
+
+                    rows = eq[rows]
+                    active = (rows >= 0)
+                    vals, rows = vals[active], rows[active]
+
+                # Assumes no repeated indices in rows!
+                asm_obj[rows] += vals
 
         elif mode == 'matrix':
             if asm_obj.dtype == nm.float64:
@@ -1450,12 +1491,6 @@ class Term(Struct):
                 and (val.dtype == nm.float64)):
                 val = val.astype(nm.complex128)
 
-            rdc = vvar.get_dof_conn(dc_type)
-
-            is_trace = self.arg_traces[svar.name]
-            cdc = svar.get_dof_conn(dc_type, is_trace=is_trace)
-            assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
-
             sign = 1.0
             if self.arg_derivatives[svar.name]:
                 if not self.is_quasistatic or (self.step > 0):
@@ -1464,7 +1499,30 @@ class Term(Struct):
                 else:
                     sign = 0.0
 
-            assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
+            if not isinstance(val, tuple):
+                rdc = vvar.get_dof_conn(dc_type)
+
+                is_trace = self.arg_traces[svar.name]
+                cdc = svar.get_dof_conn(dc_type, is_trace=is_trace)
+                assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
+
+                assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)
+
+            else:
+                from scipy.sparse import coo_matrix
+
+                vals, rows, cols, rvar, cvar = val
+                if rvar.eq_map is not None:
+                    req, ceq = rvar.eq_map.eq, cvar.eq_map.eq
+
+                    rows, cols = req[rows], ceq[cols]
+                    active = (rows >= 0) & (cols >= 0)
+                    vals, rows, cols = vals[active], rows[active], cols[active]
+
+                extra = coo_matrix((sign * vals, (rows, cols)),
+                                   shape=asm_obj.shape)
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
+
+        return extra

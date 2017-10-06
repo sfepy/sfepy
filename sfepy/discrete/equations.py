@@ -628,11 +628,15 @@ class Equations(Container):
             eqs = [self[eq] for eq in names]
 
         if mode == 'weak':
+            extras = []
             for eq in eqs:
-                eq.evaluate(mode=mode, dw_mode=dw_mode,
-                            term_mode=term_mode, asm_obj=asm_obj)
+                out = eq.evaluate(mode=mode, dw_mode=dw_mode,
+                                  term_mode=term_mode, asm_obj=asm_obj)
+                if isinstance(out, tuple): extras.extend(out[1])
 
             out = asm_obj
+            for extra in extras:
+                out = out + extra
 
         else:
             out = {}
@@ -743,17 +747,16 @@ class Equations(Container):
                 ic = get_indx(cname, stripped=True, allow_dual=True)
 
                 tangent_matrix.data[:] = 0.0
-                eq.evaluate(mode='weak', dw_mode='matrix',
-                            asm_obj=tangent_matrix)
+                aux = eq.evaluate(mode='weak', dw_mode='matrix',
+                                  asm_obj=tangent_matrix)
 
-                out[key] = tangent_matrix[ir, ic]
+                out[key] = aux[ir, ic]
 
         else:
             tangent_matrix.data[:] = 0.0
 
-            self.evaluate(mode='weak', dw_mode='matrix', asm_obj=tangent_matrix)
-
-            out = tangent_matrix
+            out = self.evaluate(mode='weak', dw_mode='matrix',
+                                asm_obj=tangent_matrix)
 
         return out
 
@@ -850,8 +853,11 @@ class Equation(Struct):
                                                       ret_status=True)
                     term.assemble_to(asm_obj, val, iels, mode=dw_mode)
 
+                out = asm_obj
+
             elif dw_mode == 'matrix':
 
+                extras = []
                 for term in self.terms:
                     svars = term.get_state_variables(unknown_only=True)
 
@@ -861,13 +867,14 @@ class Equation(Struct):
                                                           diff_var=svar.name,
                                                           standalone=False,
                                                           ret_status=True)
-                        term.assemble_to(asm_obj, val, iels,
-                                         mode=dw_mode, diff_var=svar)
+                        extra = term.assemble_to(asm_obj, val, iels,
+                                                 mode=dw_mode, diff_var=svar)
+                        if extra is not None: extras.append(extra)
+
+                out = (asm_obj, extras) if len(extras) else asm_obj
 
             else:
                 raise ValueError('unknown assembling mode! (%s)' % dw_mode)
-
-            out = asm_obj
 
         else:
             raise ValueError('unknown evaluation mode! (%s)' % mode)
