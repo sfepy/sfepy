@@ -12,6 +12,25 @@ class ContactInfo(Struct):
 
 class ContactTerm(Term):
     r"""
+    Contact term with a penalty function.
+
+    The penalty function is defined as :math:`\varepsilon_N \langle g_N(\ul{u})
+    \rangle`, where :math:`\varepsilon_N` is the normal penalty parameter and
+    :math:`\langle g_N(\ul{u}) \rangle` are the Macaulay's brackets of the gap
+    function :math:`g_N(\ul{u})`.
+
+    This term has a dynamic connectivity of DOFs in its region.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma_{c}} \varepsilon_N \langle g_N(\ul{u}) \rangle \ul{n}
+        \ul{v}
+
+    :Arguments:
+        - material : :math:`\varepsilon_N`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_contact'
     arg_types = ('material', 'virtual', 'state')
