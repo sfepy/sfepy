@@ -151,19 +151,9 @@ class ContactTerm(Term):
             from sfepy.discrete.variables import create_adof_conn
             rows = nm.unique(create_adof_conn(nm.arange(len(Gc)), sd.econn,
                                               nsd, 0))
-            Gc = Gc[rows]
-
-            eq = state.eq_map.eq
-            erows = eq[rows]
-            active = (erows >= 0)
-            out_cc = (Gc[active], erows[active])
+            out_cc = (Gc[rows], rows, state)
 
         else:
-            vals, rows, cols = vals[:num], rows[:num], cols[:num]
-            eq = state.eq_map.eq
-
-            erows, ecols = eq[rows], eq[cols]
-            active = (erows >= 0) & (ecols >= 0)
-            out_cc = (vals[active], erows[active], ecols[active])
+            out_cc = (vals[:num], rows[:num], cols[:num], state, state)
 
         return out_cc,

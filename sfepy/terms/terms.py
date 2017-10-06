@@ -1458,8 +1458,16 @@ class Term(Struct):
                 assemble(asm_obj, val, iels, 1.0, dc)
 
             else:
-                # Assumes no repeated indices in val[1]!
-                asm_obj[val[1]] += val[0]
+                vals, rows, var = val
+                if var.eq_map is not None:
+                    eq = var.eq_map.eq
+
+                    rows = eq[rows]
+                    active = (rows >= 0)
+                    vals, rows = vals[active], rows[active]
+
+                # Assumes no repeated indices in rows!
+                asm_obj[rows] += vals
 
         elif mode == 'matrix':
             if asm_obj.dtype == nm.float64:
@@ -1496,7 +1504,15 @@ class Term(Struct):
             else:
                 from scipy.sparse import coo_matrix
 
-                extra = coo_matrix((sign * val[0], (val[1], val[2])),
+                vals, rows, cols, rvar, cvar = val
+                if rvar.eq_map is not None:
+                    req, ceq = rvar.eq_map.eq, cvar.eq_map.eq
+
+                    rows, cols = req[rows], ceq[cols]
+                    active = (rows >= 0) & (cols >= 0)
+                    vals, rows, cols = vals[active], rows[active], cols[active]
+
+                extra = coo_matrix((sign * vals, (rows, cols)),
                                    shape=asm_obj.shape)
 
         else:
