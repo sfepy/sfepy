@@ -1068,6 +1068,7 @@ sfepy.mechanics package
    src/sfepy/mechanics/shell10x
    src/sfepy/mechanics/tensors
    src/sfepy/mechanics/units
+   src/sfepy/mechanics/extmods/ccontres
 
 sfepy.mesh package
 ^^^^^^^^^^^^^^^^^^
@@ -1158,6 +1159,7 @@ sfepy.terms package
    src/sfepy/terms/terms_basic
    src/sfepy/terms/terms_biot
    src/sfepy/terms/terms_constraints
+   src/sfepy/terms/terms_contact
    src/sfepy/terms/terms_diffusion
    src/sfepy/terms/terms_dot
    src/sfepy/terms/terms_elastic
