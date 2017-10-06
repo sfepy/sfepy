@@ -10,7 +10,8 @@ Find :math:`\ul{u}` such that:
     = 0
     \;, \quad \forall \ul{v} \;,
 
-where :math:`\varepsilon_N` is the normal penalty function, :math:`\langle
+where :math:`\varepsilon_N \langle g_N(\ul{u}) \rangle` is the penalty
+function, :math:`\varepsilon_N` is the normal penalty parameter, :math:`\langle
 g_N(\ul{u}) \rangle` are the Macaulay's brackets of the gap function
 :math:`g_N(\ul{u})` and
 
