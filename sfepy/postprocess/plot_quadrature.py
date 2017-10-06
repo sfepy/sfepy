@@ -74,9 +74,21 @@ def plot_weighted_points(ax, coors, weights, min_radius=10, max_radius=50,
 
     return ax
 
+def label_points(ax, coors):
+    """
+    Label points with their indices.
+    """
+    dim = coors.shape[1]
+    ax = _get_axes(ax, dim)
+
+    shift = 0.02 * (coors.max(0) - coors.min(0))
+    ccs = coors + shift
+    for ic, cc in enumerate(ccs):
+        ax.text(*cc, s='%d' % ic, color='b')
+
 def plot_quadrature(ax, geometry, order, boundary=False,
                     min_radius=10, max_radius=50,
-                    show_colorbar=False):
+                    show_colorbar=False, show_labels=False):
     """
     Plot quadrature points for the given geometry and integration order.
 
@@ -97,5 +109,7 @@ def plot_quadrature(ax, geometry, order, boundary=False,
     plot_weighted_points(ax, coors, weights,
                          min_radius=min_radius, max_radius=max_radius,
                          show_colorbar=show_colorbar)
+    if show_labels:
+        label_points(ax, coors)
 
-    return ax
+    return ax, coors, weights
