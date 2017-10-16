@@ -80,10 +80,9 @@ def find_ref_coors_convex(
         _ctx
     ):
     cdef int32 n_cells, n_status, n_ics, n_nodes
-    cdef int32 *_cells, *_status, *_ics
+    cdef (int32 *) _cells, _status, _ics
     cdef CBasisContext ctx = <CBasisContext> _ctx
-    cdef FMField _ref_coors[1], _coors[1], _centroids[1], _normals0[1], \
-        _normals1[1]
+    cdef FMField[1] _ref_coors, _coors, _centroids, _normals1, _normals0
 
     _f.array2fmfield2(_ref_coors, ref_coors)
     _f.array2fmfield2(_coors, coors)
@@ -123,9 +122,9 @@ def find_ref_coors(
         _ctx
     ):
     cdef int32 n_cells, n_status, n_candidates, n_offsets, n_nodes
-    cdef int32 *_cells, *_status, *_candidates, *_offsets
+    cdef (int32 *) _cells, _status, _candidates, _offsets
     cdef CBasisContext ctx = <CBasisContext> _ctx
-    cdef FMField _ref_coors[1], _coors[1]
+    cdef FMField[1] _ref_coors, _coors
 
     _f.array2fmfield2(_ref_coors, ref_coors)
     _f.array2fmfield2(_coors, coors)
@@ -173,13 +172,13 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
     cdef int32 bdim = out.shape[2]
     cdef int32 *_cells = &cells[0]
     cdef int32 *_status = &status[0]
-    cdef int32 *_conn, *_mesh_conn
+    cdef (int32 *) _conn, _mesh_conn
     cdef float64 aux
     cdef CBasisContext __ctx = <CBasisContext> _ctx
     cdef BasisContext *ctx = <BasisContext *> __ctx.ctx
-    cdef FMField _ref_coors[1], _out[1], bf[1], src[1]
+    cdef FMField[1] _ref_coors, _out, bf, src
     cdef FMField _source_vals[1]
-    cdef float64 *buf, *buf_bf_max, *buf_src_max
+    cdef (float64 *) buf, buf_bf_max, buf_src_max
 
     # Prepare buffers.
     n_ep = conn.shape[1]

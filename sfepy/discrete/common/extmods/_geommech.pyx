@@ -15,7 +15,7 @@ import numpy as np
 def geme_mulAVSB3py(np.ndarray vs not None,
                    np.ndarray inp not None):
     cdef int32 ret
-    cdef FMField _out[1], _vs[1], _inp[1]
+    cdef FMField[1] _out, _vs, _inp
 
     out = np.zeros_like(inp)
     array2fmfield4(_out, out)

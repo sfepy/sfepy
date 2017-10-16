@@ -63,7 +63,7 @@ cdef extern from 'refmaps.h':
 cdef class CMapping:
     cdef Mapping geo[1]
 
-    cdef FMField _bf[1], _bfg[1], _det[1], _normal[1], _volume[1]
+    cdef FMField[1] _bf, _bfg, _det, _normal, _volume
 
     cdef public np.ndarray bf
     cdef public np.ndarray bfg

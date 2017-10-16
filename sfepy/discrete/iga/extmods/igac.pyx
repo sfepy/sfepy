@@ -231,7 +231,7 @@ cdef class CNURBSContext:
         cdef int32 n_efun = self.ctx.n_efun
         cdef int32 dim = coors.shape[1]
         cdef int32 bdim
-        cdef FMField _out[1], _coors[1]
+        cdef FMField[1] _out, _coors
 
         ctx = self.ctx
 
@@ -262,7 +262,7 @@ def eval_bernstein_basis(np.ndarray funs not None,
                          float64 x,
                          uint32 degree):
     cdef int32 ret
-    cdef FMField _funs[1], _ders[1]
+    cdef FMField[1] _funs, _ders
 
     array2fmfield1(_funs, funs)
     array2fmfield1(_ders, ders)
@@ -318,12 +318,12 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     cdef uint32 ii, ie, n_qp, n_efun, nf
     cdef int32 n_el, n_ep, dim, aux
     cdef uint32 *_cells
-    cdef int32 *_degrees, *_conn
-    cdef FMField _bf[1], _bfg[1], _det[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _control_points[1], _weights[1]
+    cdef (int32 *) _degrees, _conn
+    cdef FMField[1] _bf, _bfg, _det
+    cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
+    cdef FMField[1] _qp, _control_points, _weights
     cdef FMField _cs[3]
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
     cdef np.ndarray[float64, mode='c', ndim=4] bfs, bfgs, dets
 
     if cells is None:
@@ -510,13 +510,13 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     cdef uint32 ii, ie, n_qp, n_efun, nf, nc, ir, ic
     cdef int32 n_el, n_ep, dim, aux
     cdef uint32 *_cells
-    cdef int32 *_degrees, *_conn, *ec
+    cdef (int32 *) _degrees, _conn, ec
     cdef float64 val
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _coors[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _variable[1], _control_points[1], _weights[1]
+    cdef FMField[1] _bf, _bfg, _det, _vals, _coors
+    cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
+    cdef FMField[1] _qp, _variable, _control_points, _weights
     cdef FMField _cs[3]
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
     cdef np.ndarray[float64, mode='c', ndim=2] coors, vals, dets
 
     if cells is None:
@@ -735,15 +735,16 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     """
     cdef uint32 ii, ip, ie, n_efun, nc, ir, ic, n_vals, uaux
     cdef int32 n_el, n_ep, dim, aux
-    cdef int32 *_degrees, *_conn, *ec
-    cdef uint32 igrid[3], shape[3], iis[3], n_els[3]
-    cdef uint32 *_indices[3], **puaux
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _out[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _rc[1], _control_points[1], _weights[1]
-    cdef FMField _cs[3], _ref_coors[3]
+    cdef (int32 *) _degrees, _conn, ec
+    cdef uint32[3] igrid, shape, iis, n_els
+    cdef uint32 *_indices[3]
+    cdef uint32 **puaux
+    cdef FMField[1] _bf, _bfg, _det, _vals, _out
+    cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
+    cdef FMField[1] _rc, _control_points, _weights
+    cdef FMField[3] _cs, _ref_coors
     cdef np.ndarray[float64, mode='c', ndim=2] _evals, out
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
 
     dim = control_points.shape[1]
     n_efuns = degrees + 1

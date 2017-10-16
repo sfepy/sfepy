@@ -498,8 +498,9 @@ def dq_state_in_qp(np.ndarray out not None,
                    np.ndarray bf not None,
                    np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _state[1], _bf[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state, _bf
+    cdef (int32 *) _conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state, state)
@@ -514,8 +515,9 @@ def dq_grad(np.ndarray out not None,
             CMapping cmap not None,
             np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state
+    cdef (int32 *) _conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state, state)
@@ -529,8 +531,9 @@ def dq_div_vector(np.ndarray out not None,
                   CMapping cmap not None,
                   np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state
+    cdef (int32 *) _conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state, state)
@@ -544,8 +547,9 @@ def d_volume_surface(np.ndarray out not None,
                      CMapping cmap not None,
                      np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _in_[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _in_
+    cdef (int32 *) _conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield2(_in_, in_)
@@ -559,8 +563,9 @@ def di_surface_moment(np.ndarray out not None,
                       CMapping cmap not None,
                       np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _in_[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _in_
+    cdef (int32 *) _conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield2(_in_, in_)
@@ -580,9 +585,10 @@ def dq_finite_strain_tl(np.ndarray mtx_f not None,
                         CMapping cmap not None,
                         np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _mtx_f[1], _det_f[1], _vec_cs[1], _tr_c[1], _in_2c[1]
-    cdef FMField _vec_inv_cs[1], _vec_es[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _mtx_f, _det_f, _vec_cs, _tr_c, _in_2c
+    cdef FMField[1] _vec_inv_cs, _vec_es, _state
+    cdef (int32 *) _conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_mtx_f, mtx_f)
     array2fmfield4(_det_f, det_f)
@@ -612,9 +618,10 @@ def dq_finite_strain_ul(np.ndarray mtx_f not None,
                         CMapping cmap not None,
                         np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _mtx_f[1], _det_f[1], _vec_bs[1], _tr_b[1], _in_2b[1]
-    cdef FMField _vec_es[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _mtx_f, _det_f, _vec_bs, _tr_b, _in_2b
+    cdef FMField[1] _vec_es, _state
+    cdef int32 *_conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_mtx_f, mtx_f)
     array2fmfield4(_det_f, det_f)
@@ -641,8 +648,9 @@ def dq_tl_finite_strain_surface(np.ndarray mtx_f not None,
                                 np.ndarray fis not None,
                                 np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _mtx_f[1], _det_f[1], _mtx_fi[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep, *_fis, n_fa, n_fp
+    cdef FMField[1] _mtx_f, _det_f, _mtx_fi, _state
+    cdef (int32 *) _conn, _fis
+    cdef int32 n_el, n_ep, n_fa, n_fp
 
     array2fmfield4(_mtx_f, mtx_f)
     array2fmfield4(_det_f, det_f)
@@ -664,7 +672,7 @@ def dq_tl_he_stress_bulk(np.ndarray out not None,
                          np.ndarray det_f not None,
                          np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _mat, _det_f, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -678,7 +686,7 @@ def dq_ul_he_stress_bulk(np.ndarray out not None,
                          np.ndarray mat not None,
                          np.ndarray det_f not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1]
+    cdef FMField[1] _out, _mat, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -692,7 +700,7 @@ def dq_tl_he_stress_bulk_active(np.ndarray out not None,
                                 np.ndarray det_f not None,
                                 np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _mat, _det_f, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -708,7 +716,7 @@ def dq_tl_he_stress_neohook(np.ndarray out not None,
                             np.ndarray tr_c not None,
                             np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_c, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -725,7 +733,7 @@ def dq_ul_he_stress_neohook(np.ndarray out not None,
                             np.ndarray tr_b not None,
                             np.ndarray vec_bs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_b, _vec_bs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -744,8 +752,8 @@ def dq_tl_he_stress_mooney_rivlin(np.ndarray out not None,
                                   np.ndarray vec_cs not None,
                                   np.ndarray in_2c not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
-    cdef FMField _vec_cs[1], _in_2c[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_c, _vec_inv_cs
+    cdef FMField[1] _vec_cs, _in_2c
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -766,7 +774,7 @@ def dq_ul_he_stress_mooney_rivlin(np.ndarray out not None,
                                   np.ndarray vec_bs not None,
                                   np.ndarray in_2b not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1], _in_2b[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_b, _vec_bs, _in_2b
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -784,7 +792,7 @@ def dq_tl_he_tan_mod_bulk(np.ndarray out not None,
                           np.ndarray det_f not None,
                           np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _mat, _det_f, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -798,7 +806,7 @@ def dq_ul_he_tan_mod_bulk(np.ndarray out not None,
                           np.ndarray mat not None,
                           np.ndarray det_f not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1]
+    cdef FMField[1] _out, _mat, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -812,7 +820,7 @@ def dq_tl_he_tan_mod_bulk_active(np.ndarray out not None,
                                  np.ndarray det_f not None,
                                  np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _mat, _det_f, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -828,7 +836,7 @@ def dq_tl_he_tan_mod_neohook(np.ndarray out not None,
                              np.ndarray tr_c not None,
                              np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_c, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -845,7 +853,7 @@ def dq_ul_he_tan_mod_neohook(np.ndarray out not None,
                              np.ndarray tr_b not None,
                              np.ndarray vec_bs not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_b, _vec_bs
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -864,8 +872,8 @@ def dq_tl_he_tan_mod_mooney_rivlin(np.ndarray out not None,
                                    np.ndarray vec_cs not None,
                                    np.ndarray in_2c not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
-    cdef FMField _vec_cs[1], _in_2c[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_c, _vec_inv_cs
+    cdef FMField[1] _vec_cs, _in_2c
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -886,7 +894,7 @@ def dq_ul_he_tan_mod_mooney_rivlin(np.ndarray out not None,
                                    np.ndarray vec_bs not None,
                                    np.ndarray in_2b not None):
     cdef int32 ret
-    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1], _in_2b[1]
+    cdef FMField[1] _out, _mat, _det_f, _tr_b, _vec_bs, _in_2b
 
     array2fmfield4(_out, out)
     array2fmfield4(_mat, mat)
@@ -907,7 +915,7 @@ def dw_he_rtm(np.ndarray out not None,
               CMapping cmap not None,
               int32 is_diff, int32 mode_ul):
     cdef int32 ret
-    cdef FMField _out[1], _stress[1], _tan_mod[1], _mtx_f[1], _det_f[1]
+    cdef FMField[1] _out, _stress, _tan_mod, _mtx_f, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_stress, stress)
@@ -926,8 +934,9 @@ def de_he_rtm(np.ndarray out not None,
               np.ndarray el_list not None,
               int32 mode_ul):
     cdef int32 ret
-    cdef FMField _out[1], _stress[1], _det_f[1]
-    cdef int32 *_el_list, n_el
+    cdef FMField[1] _out, _stress, _det_f
+    cdef int32 *_el_list
+    cdef int32 n_el
 
     array2fmfield4(_out, out)
     array2fmfield4(_stress, stress)
@@ -943,7 +952,7 @@ def dq_tl_stress_bulk_pressure(np.ndarray out not None,
                                np.ndarray det_f not None,
                                np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_qp[1], _det_f[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _pressure_qp, _det_f, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_qp, pressure_qp)
@@ -957,7 +966,7 @@ def dq_ul_stress_bulk_pressure(np.ndarray out not None,
                                np.ndarray pressure_qp not None,
                                np.ndarray det_f not None):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_qp[1], _det_f[1]
+    cdef FMField[1] _out, _pressure_qp, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_qp, pressure_qp)
@@ -971,7 +980,7 @@ def dq_tl_tan_mod_bulk_pressure_u(np.ndarray out not None,
                                   np.ndarray det_f not None,
                                   np.ndarray vec_inv_cs not None):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_qp[1], _det_f[1], _vec_inv_cs[1]
+    cdef FMField[1] _out, _pressure_qp, _det_f, _vec_inv_cs
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_qp, pressure_qp)
@@ -986,7 +995,7 @@ def dq_ul_tan_mod_bulk_pressure_u(np.ndarray out not None,
                                   np.ndarray pressure_qp not None,
                                   np.ndarray det_f not None):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_qp[1], _det_f[1]
+    cdef FMField[1] _out, _pressure_qp, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_qp, pressure_qp)
@@ -1003,7 +1012,7 @@ def dw_tl_volume(np.ndarray out not None,
                  CMapping cmap_v not None,
                  int32 transpose, int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _mtx_f[1], _vec_inv_cs[1], _det_f[1]
+    cdef FMField[1] _out, _mtx_f, _vec_inv_cs, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_f, mtx_f)
@@ -1020,7 +1029,7 @@ def dw_ul_volume(np.ndarray out not None,
                  CMapping cmap_v not None,
                  int32 transpose, int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _det_f[1]
+    cdef FMField[1] _out, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_det_f, det_f)
@@ -1037,8 +1046,8 @@ def dw_tl_diffusion(np.ndarray out not None,
                     CMapping cmap not None,
                     int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_grad[1], _mtx_d[1], _ref_porosity[1]
-    cdef FMField _mtx_f[1], _det_f[1]
+    cdef FMField[1] _out, _pressure_grad, _mtx_d, _ref_porosity
+    cdef FMField[1] _mtx_f, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_grad, pressure_grad)
@@ -1060,8 +1069,8 @@ def d_tl_surface_flux(np.ndarray out not None,
                       CMapping cmap not None,
                       int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_grad[1], _mtx_d[1], _ref_porosity[1]
-    cdef FMField _mtx_fi[1], _det_f[1]
+    cdef FMField[1] _out, _pressure_grad, _mtx_d, _ref_porosity
+    cdef FMField[1] _mtx_fi, _det_f
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_grad, pressure_grad)
@@ -1083,8 +1092,9 @@ def dw_tl_surface_traction(np.ndarray out not None,
                            np.ndarray fis not None,
                            int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _traction[1], _det_f[1], _mtx_fi[1], _bf[1]
-    cdef int32 *_fis, n_fa, n_fp
+    cdef FMField[1] _out, _traction, _det_f, _mtx_fi, _bf
+    cdef int32 *_fis
+    cdef int32 n_fa, n_fp
 
     array2fmfield4(_out, out)
     array2fmfield4(_traction, traction)
@@ -1105,8 +1115,9 @@ def d_tl_volume_surface(np.ndarray out not None,
                         CMapping cmap not None,
                         np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _coors[1], _det_f[1], _mtx_fi[1], _bf[1]
-    cdef int32 *_conn, n_fa, n_fp
+    cdef FMField[1] _out, _coors, _det_f, _mtx_fi, _bf
+    cdef int32 *_conn
+    cdef int32 n_fa, n_fp
 
     array2fmfield4(_out, out)
     array2fmfield2(_coors, coors)
@@ -1125,8 +1136,9 @@ def dq_def_grad(np.ndarray out not None,
                 np.ndarray conn not None,
                 int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state
+    cdef int32 *_conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state, state)
@@ -1141,8 +1153,9 @@ def he_residuum_from_mtx(np.ndarray out not None,
                          np.ndarray conn not None,
                          np.ndarray el_list not None):
     cdef int32 ret
-    cdef FMField _out[1], _mtx_d[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+    cdef FMField[1] _out, _mtx_d, _state
+    cdef (int32 *) _conn, _el_list
+    cdef int32 n_el, n_ep, n_el2
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
@@ -1161,8 +1174,9 @@ def he_eval_from_mtx(np.ndarray out not None,
                      np.ndarray conn not None,
                      np.ndarray el_list not None):
     cdef int32 ret
-    cdef FMField _out[1], _mtx_d[1], _state_v[1], _state_u[1]
-    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+    cdef FMField[1] _out, _mtx_d, _state_v, _state_u
+    cdef (int32 *) _conn, _el_list
+    cdef int32 n_el, n_ep, n_el2
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
@@ -1181,7 +1195,7 @@ def dw_laplace(np.ndarray out not None,
                CMapping cmap not None,
                int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _coef[1]
+    cdef FMField[1] _out, _grad, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1196,7 +1210,7 @@ def d_laplace(np.ndarray out not None,
               np.ndarray coef not None,
               CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _grad_p1[1], _grad_p2[1], _coef[1]
+    cdef FMField[1] _out, _grad_p1, _grad_p2, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_p1, grad_p1)
@@ -1212,7 +1226,7 @@ def dw_diffusion(np.ndarray out not None,
                  CMapping cmap not None,
                  int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _mtx_d[1]
+    cdef FMField[1] _out, _grad, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1227,7 +1241,7 @@ def d_diffusion(np.ndarray out not None,
                 np.ndarray mtx_d not None,
                 CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _grad_p1[1], _grad_p2[1], _mtx_d[1]
+    cdef FMField[1] _out, _grad_p1, _grad_p2, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_p1, grad_p1)
@@ -1241,7 +1255,7 @@ def dw_diffusion_r(np.ndarray out not None,
                    np.ndarray mtx_d not None,
                    CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _mtx_d[1]
+    cdef FMField[1] _out, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
@@ -1255,7 +1269,7 @@ def d_surface_flux(np.ndarray out not None,
                    CMapping cmap not None,
                    int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _mtx_d[1]
+    cdef FMField[1] _out, _grad, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1272,8 +1286,9 @@ def dw_surface_flux(np.ndarray out not None,
                     np.ndarray fis not None,
                     int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _mat[1], _bf[1]
-    cdef int32 *_fis, n_fa, n_fp
+    cdef FMField[1] _out, _grad, _mat, _bf
+    cdef int32 *_fis
+    cdef int32 n_fa, n_fp
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1292,7 +1307,7 @@ def dw_convect_v_grad_s(np.ndarray out not None,
                         CMapping cmap_s not None,
                         int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _val_v[1], _grad_s[1]
+    cdef FMField[1] _out, _val_v, _grad_s
 
     array2fmfield4(_out, out)
     array2fmfield4(_val_v, val_v)
@@ -1309,7 +1324,7 @@ def dw_lin_elastic(np.ndarray out not None,
                    CMapping cmap not None,
                    int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _strain[1], _mtx_d[1]
+    cdef FMField[1] _out, _strain, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain, strain)
@@ -1325,7 +1340,7 @@ def d_lin_elastic(np.ndarray out not None,
                   np.ndarray mtx_d not None,
                   CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _strain_u[1], _strain_v[1], _mtx_d[1]
+    cdef FMField[1] _out, _strain_u, _strain_v, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain_u, strain_u)
@@ -1343,7 +1358,7 @@ def d_sd_lin_elastic(np.ndarray out not None,
                      np.ndarray mtx_d not None,
                      CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _grad_u[1], _grad_v[1], _grad_w[1], _mtx_d[1]
+    cdef FMField[1] _out, _grad_u, _grad_v, _grad_w, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_u, grad_u)
@@ -1359,7 +1374,7 @@ def dw_lin_prestress(np.ndarray out not None,
                      np.ndarray stress not None,
                      CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _stress[1]
+    cdef FMField[1] _out, _stress
 
     array2fmfield4(_out, out)
     array2fmfield4(_stress, stress)
@@ -1372,7 +1387,7 @@ def dw_lin_strain_fib(np.ndarray out not None,
                       np.ndarray mat not None,
                       CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _mtx_d[1], _mat[1]
+    cdef FMField[1] _out, _mtx_d, _mat
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
@@ -1386,7 +1401,7 @@ def de_cauchy_strain(np.ndarray out not None,
                      CMapping cmap not None,
                      int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _strain[1]
+    cdef FMField[1] _out, _strain
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain, strain)
@@ -1400,7 +1415,7 @@ def de_cauchy_stress(np.ndarray out not None,
                      CMapping cmap not None,
                      int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _strain[1], _mtx_d[1]
+    cdef FMField[1] _out, _strain, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain, strain)
@@ -1414,8 +1429,9 @@ def dq_cauchy_strain(np.ndarray out not None,
                      CMapping cmap not None,
                      np.ndarray conn not None):
     cdef int32 ret
-    cdef FMField _out[1], _state[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state
+    cdef int32 *_conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state, state)
@@ -1430,7 +1446,7 @@ def dw_nonsym_elastic(np.ndarray out not None,
                       CMapping cmap not None,
                       int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _mtx_d[1]
+    cdef FMField[1] _out, _grad, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1443,7 +1459,7 @@ def dw_surface_ltr(np.ndarray out not None,
                    np.ndarray traction not None,
                    CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _traction[1]
+    cdef FMField[1] _out, _traction
 
     array2fmfield4(_out, out)
     array2fmfield4(_traction, traction)
@@ -1455,7 +1471,7 @@ def dw_volume_lvf(np.ndarray out not None,
                   np.ndarray force_qp not None,
                   CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _force_qp[1]
+    cdef FMField[1] _out, _force_qp
 
     array2fmfield4(_out, out)
     array2fmfield4(_force_qp, force_qp)
@@ -1471,7 +1487,7 @@ def dw_surface_v_dot_n_s(np.ndarray out not None,
                          int32 is_diff):
 
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
+    cdef FMField[1] _out, _coef, _val_qp
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1489,7 +1505,7 @@ def dw_surface_s_v_dot_n(np.ndarray out not None,
                          int32 is_diff):
 
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
+    cdef FMField[1] _out, _coef, _val_qp
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1506,7 +1522,7 @@ def dw_volume_dot_vector(np.ndarray out not None,
                          CMapping ccmap not None,
                          int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
+    cdef FMField[1] _out, _coef, _val_qp
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1523,7 +1539,7 @@ def dw_volume_dot_scalar(np.ndarray out not None,
                          CMapping ccmap not None,
                          int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
+    cdef FMField[1] _out, _coef, _val_qp
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1540,7 +1556,7 @@ def dw_v_dot_grad_s_vw(np.ndarray out not None,
                        CMapping cmap_s not None,
                        int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _grad[1]
+    cdef FMField[1] _out, _coef, _grad
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1557,7 +1573,7 @@ def dw_v_dot_grad_s_sw(np.ndarray out not None,
                        CMapping cmap_s not None,
                        int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
+    cdef FMField[1] _out, _coef, _val_qp
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1573,7 +1589,7 @@ def term_ns_asm_div_grad(np.ndarray out not None,
                          CMapping cmap not None,
                          int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _viscosity[1]
+    cdef FMField[1] _out, _grad, _viscosity
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1588,7 +1604,7 @@ def term_ns_asm_convect(np.ndarray out not None,
                         CMapping cmap not None,
                         int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _state[1]
+    cdef FMField[1] _out, _grad, _state
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1603,7 +1619,7 @@ def dw_lin_convect(np.ndarray out not None,
                    CMapping cmap not None,
                    int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _state_b[1]
+    cdef FMField[1] _out, _grad, _state_b
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1619,7 +1635,7 @@ def dw_div(np.ndarray out not None,
            CMapping cmap_v not None,
            int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _div[1]
+    cdef FMField[1] _out, _coef, _div
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1635,7 +1651,7 @@ def dw_grad(np.ndarray out not None,
             CMapping cmap_v not None,
             int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _state[1]
+    cdef FMField[1] _out, _coef, _state
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
@@ -1653,8 +1669,9 @@ def dw_st_pspg_c(np.ndarray out not None,
                  np.ndarray conn not None,
                  int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_b[1], _state_u[1], _coef[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state_b, _state_u, _coef
+    cdef int32 *_conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_b, state_b)
@@ -1674,7 +1691,7 @@ def dw_st_supg_p(np.ndarray out not None,
                  CMapping cmap_p not None,
                  int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_b[1], _grad_p[1], _coef[1]
+    cdef FMField[1] _out, _state_b, _grad_p, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_b, state_b)
@@ -1693,8 +1710,9 @@ def dw_st_supg_c(np.ndarray out not None,
                  np.ndarray conn not None,
                  int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_b[1], _state_u[1], _coef[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state_b, _state_u, _coef
+    cdef int32 *_conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_b, state_b)
@@ -1712,7 +1730,7 @@ def dw_st_grad_div(np.ndarray out not None,
                    CMapping cmap not None,
                    int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _div[1], _coef[1]
+    cdef FMField[1] _out, _div, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_div, div)
@@ -1729,7 +1747,7 @@ def dw_biot_grad(np.ndarray out not None,
                  CMapping cmap_v not None,
                  int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _pressure_qp[1], _mtx_d[1]
+    cdef FMField[1] _out, _pressure_qp, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure_qp, pressure_qp)
@@ -1747,7 +1765,7 @@ def dw_biot_div(np.ndarray out not None,
                 CMapping cmap_v not None,
                 int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _strain[1], _mtx_d[1]
+    cdef FMField[1] _out, _strain, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain, strain)
@@ -1764,7 +1782,7 @@ def d_biot_div(np.ndarray out not None,
                np.ndarray mtx_d not None,
                CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _state[1], _strain[1], _mtx_d[1]
+    cdef FMField[1] _out, _state, _strain, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_state, state)
@@ -1781,7 +1799,7 @@ def dw_piezo_coupling(np.ndarray out not None,
                       CMapping cmap not None,
                       int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _strain[1], _charge_grad[1], _mtx_g[1]
+    cdef FMField[1] _out, _strain, _charge_grad, _mtx_g
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain, strain)
@@ -1798,7 +1816,7 @@ def d_piezo_coupling(np.ndarray out not None,
                      np.ndarray mtx_g not None,
                      CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _strain[1], _charge_grad[1], _mtx_g[1]
+    cdef FMField[1] _out, _strain, _charge_grad, _mtx_g
 
     array2fmfield4(_out, out)
     array2fmfield4(_strain, strain)
@@ -1813,7 +1831,7 @@ def dw_electric_source(np.ndarray out not None,
                        np.ndarray coef not None,
                        CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _coef[1]
+    cdef FMField[1] _out, _grad, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -1830,7 +1848,7 @@ def d_sd_diffusion(np.ndarray out not None,
                    np.ndarray mtx_d not None,
                    CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _grad_q[1], _grad_p[1], _grad_w[1], _div_w[1], _mtx_d[1]
+    cdef FMField[1] _out, _grad_q, _grad_p, _grad_w, _div_w, _mtx_d
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_q, grad_q)
@@ -1849,7 +1867,7 @@ def mulAB_integrate(np.ndarray out not None,
                     CMapping cmap not None,
                     mode):
     cdef int32 ret
-    cdef FMField _out[1], _A[1], _B[1]
+    cdef FMField[1] _out, _A, _B
 
     array2fmfield4(_out, out)
     if A.ndim == 4:
@@ -1880,7 +1898,7 @@ def actBfT(np.ndarray out not None,
            np.ndarray bf not None,
            np.ndarray A not None):
     cdef int32 ret
-    cdef FMField _out[1], _bf[1], _A[1]
+    cdef FMField[1] _out, _bf, _A
 
     array2fmfield4(_out, out)
     array2fmfield4(_bf, bf)
@@ -1892,7 +1910,7 @@ def actBfT(np.ndarray out not None,
 def sym2nonsym(np.ndarray out not None,
                np.ndarray A not None):
     cdef int32 ret
-    cdef FMField _out[1], _A[1]
+    cdef FMField[1] _out, _A
 
     array2fmfield4(_out, out)
     array2fmfield4(_A, A)
@@ -1906,7 +1924,7 @@ def dw_adj_convect1(np.ndarray out not None,
                     CMapping cmap not None,
                     int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_w[1], _grad_u[1]
+    cdef FMField[1] _out, _state_w, _grad_u
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_w, state_w)
@@ -1921,7 +1939,7 @@ def dw_adj_convect2(np.ndarray out not None,
                     CMapping cmap not None,
                     int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_w[1], _state_u[1]
+    cdef FMField[1] _out, _state_w, _state_u
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_w, state_w)
@@ -1939,8 +1957,9 @@ def dw_st_adj_supg_c(np.ndarray out not None,
                      np.ndarray conn not None,
                      int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_w[1], _state_u[1], _grad_u[1], _coef[1]
-    cdef int32 *_conn, n_el, n_ep
+    cdef FMField[1] _out, _state_w, _state_u, _grad_u, _coef
+    cdef int32 *_conn
+    cdef int32 n_el, n_ep
 
     array2fmfield4(_out, out)
     array2fmfield1(_state_w, state_w)
@@ -1961,8 +1980,9 @@ def dw_st_adj1_supg_p(np.ndarray out not None,
                       np.ndarray conn_w not None,
                       int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state_w[1], _grad_p[1], _coef[1]
-    cdef int32 *_conn_w, n_el_w, n_ep_w
+    cdef FMField[1] _out, _state_w, _grad_p, _coef
+    cdef int32 *_conn_w
+    cdef int32 n_el_w, n_ep_w
 
     array2fmfield4(_out, out)
     array2fmfield1(_state_w, state_w)
@@ -1983,8 +2003,9 @@ def dw_st_adj2_supg_p(np.ndarray out not None,
                       np.ndarray conn_r not None,
                       int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _grad_u[1], _state_r[1], _coef[1]
-    cdef int32 *_conn_r, n_el_r, n_ep_r
+    cdef FMField[1] _out, _grad_u, _state_r, _coef
+    cdef int32 *_conn_r
+    cdef int32 n_el_r, n_ep_r
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_u, grad_u)
@@ -2002,7 +2023,7 @@ def d_of_nsMinGrad(np.ndarray out not None,
                    np.ndarray viscosity not None,
                    CMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _grad[1], _viscosity[1]
+    cdef FMField[1] _out, _grad, _viscosity
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad, grad)
@@ -2018,7 +2039,7 @@ def d_of_nsSurfMinDPress(np.ndarray out not None,
                          CMapping cmap not None,
                          int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _pressure[1]
+    cdef FMField[1] _out, _pressure
 
     array2fmfield4(_out, out)
     array2fmfield4(_pressure, pressure)
@@ -2036,8 +2057,8 @@ def d_sd_div(np.ndarray out not None,
              CMapping cmap_u not None,
              int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _state_p[1], _div_u[1], _grad_u[1]
-    cdef FMField _div_mv[1], _grad_mv[1]
+    cdef FMField[1] _out, _state_p, _div_u, _grad_u
+    cdef FMField[1] _div_mv, _grad_mv
 
     array2fmfield4(_out, out)
     array2fmfield4(_div_u, div_u)
@@ -2059,8 +2080,8 @@ def d_sd_div_grad(np.ndarray out not None,
                   CMapping cmap_u not None,
                   int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _grad_u[1], _grad_w[1], _div_mv[1], _grad_mv[1]
-    cdef FMField _viscosity[1]
+    cdef FMField[1] _out, _grad_u, _grad_w, _div_mv, _grad_mv
+    cdef FMField[1] _viscosity
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_u, grad_u)
@@ -2082,8 +2103,8 @@ def d_sd_convect(np.ndarray out not None,
                  CMapping cmap_u not None,
                  int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _state_u[1], _grad_u[1], _state_w[1]
-    cdef FMField _div_mv[1], _grad_mv[1]
+    cdef FMField[1] _out, _state_u, _grad_u, _state_w
+    cdef FMField[1] _div_mv, _grad_mv
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_u, state_u)
@@ -2103,7 +2124,7 @@ def d_sd_volume_dot(np.ndarray out not None,
                     CMapping cmap not None,
                     int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _state_p[1], _state_q[1], _div_mv[1]
+    cdef FMField[1] _out, _state_p, _state_q, _div_mv
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_p, state_p)
@@ -2124,8 +2145,8 @@ def d_sd_st_grad_div(np.ndarray out not None,
                      CMapping cmap_u not None,
                      int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _div_u[1], _grad_u[1], _div_w[1], _grad_w[1]
-    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+    cdef FMField[1] _out, _div_u, _grad_u, _div_w, _grad_w
+    cdef FMField[1] _div_mv, _grad_mv, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_div_u, div_u)
@@ -2150,8 +2171,8 @@ def d_sd_st_supg_c(np.ndarray out not None,
                    CMapping cmap_u not None,
                    int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _state_b[1], _grad_u[1], _grad_w[1]
-    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+    cdef FMField[1] _out, _state_b, _grad_u, _grad_w
+    cdef FMField[1] _div_mv, _grad_mv, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_b, state_b)
@@ -2175,8 +2196,8 @@ def d_sd_st_pspg_c(np.ndarray out not None,
                    CMapping cmap_u not None,
                    int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _state_b[1], _grad_u[1], _grad_r[1]
-    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+    cdef FMField[1] _out, _state_b, _grad_u, _grad_r
+    cdef FMField[1] _div_mv, _grad_mv, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_b, state_b)
@@ -2199,8 +2220,8 @@ def d_sd_st_pspg_p(np.ndarray out not None,
                    CMapping cmap_p not None,
                    int32 mode):
     cdef int32 ret
-    cdef FMField _out[1], _grad_r[1], _grad_p[1]
-    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+    cdef FMField[1] _out, _grad_r, _grad_p
+    cdef FMField[1] _div_mv, _grad_mv, _coef
 
     array2fmfield4(_out, out)
     array2fmfield4(_grad_r, grad_r)
