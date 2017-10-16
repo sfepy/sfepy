@@ -1626,7 +1626,7 @@ int32 dw_ul_volume( FMField *out, FMField *detF,
 {
   int32 ii, iqp, nQP, nEPu, nEPp, dim, ret = RET_OK;
   FMField *aux = 0, aux2[1];
-  float64 *paux, *pgc;
+  //  float64 *paux, *pgc;
 
   nQP = vgv->bfGM->nLev;
   nEPu = vgv->bfGM->nCol;
@@ -2032,7 +2032,7 @@ int32 d_tl_volume_surface( FMField *out, FMField *coors,
 int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
                    int32 *conn, int32 nEl, int32 nEP, int32 mode )
 {
-  int32 ii, iel, id, iqp, nQP, dim, ret = RET_OK;
+  int32 ii, id, iqp, nQP, dim, ret = RET_OK;
   FMField *st = 0, *mtxF = 0;
 
   state->val = FMF_PtrFirst( state );
