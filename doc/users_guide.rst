@@ -1397,9 +1397,6 @@ available:
   use. See `PETSc Users Manual`_, Chapter 4, for more details about available
   Krylov methods and preconditioners. See also the main `PETSc Documentation`_
   page.
-- 'ls.petsc_parallel': Interface to Krylov subspace solvers of PETSc
-  able to run in parallel by storing the system to disk and running a
-  separate script via `mpiexec`.
 - 'ls.schur_complement': Schur complement problem solver.
 
 .. _solving_problems_in_parallel:
