@@ -99,3 +99,7 @@
 .. _openscad: http://www.openscad.org
 .. _python scripting in freecad: https://www.freecadweb.org/wiki/Python_scripting_tutorial
 .. _netgen: https://ngsolve.org
+
+.. _PyAMG Wiki: https://github.com/pyamg/pyamg/wiki
+.. _PETSc Users Manual: http://www.mcs.anl.gov/petsc/petsc-current/docs/manual.pdf
+.. _PETSc Documentation: http://www.mcs.anl.gov/petsc/petsc-current/docs
