@@ -310,7 +310,7 @@ int32 geme_norm3( float64 *out, FMField *mtx )
     j = mtx->val + dim*il;
     switch (dim) {
     case 1:
-      out[il] = abs(j[0]);
+      out[il] = fabs(j[0]);
       break;
     case 2:
       out[il] = sqrt( j[0] * j[0] + j[1] * j[1] );
