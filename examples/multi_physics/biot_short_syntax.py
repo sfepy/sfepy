@@ -196,8 +196,8 @@ def setup_precond(mtx, problem):
     # conf = problem.solver_confs['cg-s']
     # conf = problem.solver_confs['cg-p']
     # conf = problem.solver_confs['pyamg']
-    ls1 = Solver.any_from_conf(conf, mtx=K, problem=problem)
-    ls2 = Solver.any_from_conf(conf, mtx=M, problem=problem)
+    ls1 = Solver.any_from_conf(conf, mtx=K, context=problem)
+    ls2 = Solver.any_from_conf(conf, mtx=M, context=problem)
 
     def matvec_bj(vec):
         """
