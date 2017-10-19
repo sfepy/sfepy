@@ -77,7 +77,7 @@ int32 int32_sort_rows( int32 *array, int32 n_row, int32 n_col,
     perm[ii] = ii;
   }
 
-  int32_mtx_aquicksort( array, n_row, n_col, i_sort_col, n_sort_col, perm );
+  int32_mtx_aquicksort( array, n_row, n_col, i_sort_col, n_sort_col, (intp *) perm );
 
   for (ii = 0; ii < n_row; ii++) {
     perm_i[perm[ii]] = ii;
