@@ -22,7 +22,7 @@
 #define Facet  4 // D - 1, 1
 
 // Special uint32 values meaning "not set".
-#define UINT32_None -1
+#define UINT32_None (uint32)-1
 
 // Pointer to indices + number of items.
 typedef struct Indices {
