@@ -1018,7 +1018,7 @@ class Problem(Struct):
             nls_conf = get_default(nls_conf, self.nls_conf,
                                    'you must set nonlinear solver!')
 
-            ls = Solver.any_from_conf(ls_conf, problem=self)
+            ls = Solver.any_from_conf(ls_conf, context=self)
 
             ev = self.get_evaluator()
 
@@ -1029,7 +1029,7 @@ class Problem(Struct):
                                        fun_grad=ev.eval_tangent_matrix,
                                        lin_solver=ls,
                                        iter_hook=self.nls_iter_hook,
-                                       status=nls_status, problem=self)
+                                       status=nls_status, context=self)
 
             self.set_solver(nls)
 
