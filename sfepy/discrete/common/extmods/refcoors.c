@@ -245,7 +245,7 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
                        normals0->val + nc * noffs[cell]);
         fmf_pretend_nc(_normals1, noffs[cell+1] - noffs[cell], 1, 1, nc,
                        normals1->val + nc * noffs[cell]);
-        for (ii = 0; ii < (inr32)loc->num; ii++) {
+        for (ii = 0; ii < (int32)loc->num; ii++) {
           FMF_SetCell(_normals0, ii);
           _get_tri_coors(buf9, loc->indices, foffs[ii],
                          tri0, mesh_coors, cell_vertices->indices);
