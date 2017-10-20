@@ -224,9 +224,9 @@ def try_imports(imports, fail_msg=None):
 
     return locals()
 
-def python_shell():
+def python_shell(frame=0):
     import code
-    frame = sys._getframe(1)
+    frame = sys._getframe(frame+1)
     code.interact(local=frame.f_locals)
 
 def assert_(condition, msg='assertion failed!'):
