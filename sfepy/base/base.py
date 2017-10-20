@@ -224,10 +224,26 @@ def try_imports(imports, fail_msg=None):
 
     return locals()
 
-def python_shell():
+def python_shell(frame=0):
     import code
-    frame = sys._getframe(1)
+    frame = sys._getframe(frame+1)
     code.interact(local=frame.f_locals)
+
+def ipython_shell(frame=0):
+    from IPython.terminal.embed import InteractiveShellEmbed
+    ipshell = InteractiveShellEmbed()
+
+    ipshell(stack_depth=frame+1)
+
+def shell(frame=0):
+    """
+    Embed an IPython (if available) or regular Python shell in the given frame.
+    """
+    try:
+        ipython_shell(frame=frame+2)
+
+    except ImportError:
+        python_shell(frame=frame+1)
 
 def assert_(condition, msg='assertion failed!'):
     if not condition:
