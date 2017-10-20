@@ -1,6 +1,5 @@
 import numpy as nm
 
-from sfepy.base.base import use_method_with_name, assert_
 from sfepy.linalg import dot_sequences
 from sfepy.homogenization.utils import iter_sym
 from sfepy.terms.terms import Term, terms
@@ -710,3 +709,87 @@ class NonsymElasticTerm(Term):
 
         else:
             self.function = terms.d_lin_elastic
+
+def _create_g(vec, bf):
+    dim = len(vec)
+
+    if dim == 2:
+        n0, n1 = vec
+        nmat = nm.array([[n0, 0],
+                         [0, n1],
+                         [n1, n0]], dtype=nm.float64)
+
+    else:
+        n0, n1, n2 = vec
+        nmat = nm.array([[n0, 0, 0],
+                         [0, n1, 0],
+                         [0, 0, n2],
+                         [n1, n0, 0],
+                         [n2, 0, n0],
+                         [0, n2, n1]], dtype=nm.float64)
+
+    out = nm.einsum('ik,cqkj->cqij', nmat, bf)
+    return out
+
+class ElasticDispersionTerm(Term):
+    r"""
+    Elastic dispersion term, with :math:`D_{ijkl}` given in
+    the usual matrix form exploiting symmetry: in 3D it is :math:`6\times6`
+    with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
+    :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`, and
+    the incident wave direction :math:`\ul{n}`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{v}) g_{kl}(\ul{u}) \;,
+        g_{ij}(\ul{u}) = \frac{1}{2}(u_i n_j + n_i u_j)
+
+    :Arguments:
+        - material_1 : :math:`D_{ijkl}`
+        - material_2 : :math:`\ul{n}`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+    """
+    name = 'dw_elastic_dispersion'
+    arg_types = ('material_1', 'material_2', 'virtual', 'state')
+    arg_shapes = {'material_1' : 'S, S', 'material_2' : '.: D',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    @staticmethod
+    def function(out, out_qp, geo, fmode):
+        status = geo.integrate(out, out_qp)
+        return status
+
+    def get_fargs(self, mat, vec, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn
+
+        geo, _ = self.get_mapping(state)
+
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(virtual)
+
+        # Expand basis for all components.
+        bf = geo.bf
+        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
+        for ir in range(dim):
+            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+
+        gmat = _create_g(vec, ebf)
+
+        if diff_var is None:
+            econn = state.field.get_econn('volume', self.region)
+            adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+            vals = state()[adc]
+            # Same as nm.einsum('qij,cj->cqi', gmat[0], vals)[..., None]
+            aux = dot_sequences(gmat, vals[:, None, :, None])
+            out_qp = dot_sequences(gmat, aux, 'ATB')
+            fmode = 0
+
+        else:
+            out_qp = dot_sequences(gmat, dot_sequences(mat, gmat), 'ATB')
+            fmode = 1
+
+        return out_qp, geo, fmode
