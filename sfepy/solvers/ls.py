@@ -33,19 +33,21 @@ def standard_call(call):
     Decorator handling argument preparation and timing for linear solvers.
     """
     def _standard_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                       i_max=None, mtx=None, status=None, **kwargs):
+                       i_max=None, mtx=None, status=None, context=None,
+                       **kwargs):
         tt = time.clock()
 
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
+        context = get_default(context, self.context)
 
         assert_(mtx.shape[0] == mtx.shape[1] == rhs.shape[0])
         if x0 is not None:
             assert_(x0.shape[0] == rhs.shape[0])
 
         result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
-                      **kwargs)
+                      context=context, **kwargs)
         if isinstance(result, tuple):
             result, n_iter = result
 
@@ -67,12 +69,14 @@ def petsc_call(call):
     solvers.
     """
     def _petsc_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                    i_max=None, mtx=None, status=None, comm=None, **kwargs):
+                    i_max=None, mtx=None, status=None, comm=None,
+                    context=None, **kwargs):
         tt = time.clock()
 
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
+        context = get_default(context, self.context)
         comm = get_default(comm, self.comm)
 
         mshape = mtx.size if isinstance(mtx, self.petsc.Mat) else mtx.shape
@@ -84,7 +88,7 @@ def petsc_call(call):
             assert_(xshape[0] == rshape[0])
 
         result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
-                      comm, **kwargs)
+                      comm, context=context, **kwargs)
 
         ttt = time.clock() - tt
         if status is not None:
@@ -178,11 +182,11 @@ class ScipyIterative(LinearSolver):
     _parameters = [
         ('method', 'str', 'cg', False,
          'The actual solver to use.'),
-        ('setup_precond', 'callable', lambda mtx, problem: None, False,
+        ('setup_precond', 'callable', lambda mtx, context: None, False,
          """User-supplied function for the preconditioner initialization/setup.
-            It is called as setup_precond(mtx, problem), where mtx is the
-            matrix, and should return one of {sparse matrix, dense matrix,
-            LinearOperator}.
+            It is called as setup_precond(mtx, context), where mtx is the
+            matrix, context is a user-supplied context, and should return one
+            of {sparse matrix, dense matrix, LinearOperator}.
          """),
         ('callback', 'callable', None, False,
          """User-supplied function to call after each iteration. It is called
@@ -203,10 +207,10 @@ class ScipyIterative(LinearSolver):
     # a callback except those below, that take a residual vector.
     _callbacks_res = ['gmres']
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, context=None, **kwargs):
         import scipy.sparse.linalg.isolve as la
 
-        LinearSolver.__init__(self, conf, **kwargs)
+        LinearSolver.__init__(self, conf, context=context, **kwargs)
 
         try:
             solver = getattr(la, self.conf.method)
@@ -223,7 +227,7 @@ class ScipyIterative(LinearSolver):
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
+                 i_max=None, mtx=None, status=None, context=None, **kwargs):
         solver_kwargs = self.build_solver_kwargs(conf)
 
         eps_r = get_default(eps_r, self.conf.eps_r)
@@ -252,7 +256,7 @@ class ScipyIterative(LinearSolver):
             # Call an optional user-defined callback.
             callback(sol)
 
-        precond = setup_precond(mtx, self.problem)
+        precond = setup_precond(mtx, context)
 
         if conf.method == 'qmr':
             prec_args = {'M1' : precond, 'M2' : precond}
@@ -388,11 +392,11 @@ class PyAMGKrylovSolver(LinearSolver):
     _parameters = [
         ('method', 'str', 'cg', False,
          'The actual solver to use.'),
-        ('setup_precond', 'callable', lambda mtx, problem: None, False,
+        ('setup_precond', 'callable', lambda mtx, context: None, False,
          """User-supplied function for the preconditioner initialization/setup.
-            It is called as setup_precond(mtx, problem), where mtx is the
-            matrix, and should return one of {sparse matrix, dense matrix,
-            LinearOperator}.
+            It is called as setup_precond(mtx, context), where mtx is the
+            matrix, context is a user-supplied context, and should return one
+            of {sparse matrix, dense matrix, LinearOperator}.
          """),
         ('callback', 'callable', None, False,
          """User-supplied function to call after each iteration. It is called
@@ -411,14 +415,15 @@ class PyAMGKrylovSolver(LinearSolver):
     # a callback except those below, that take a residual vector norm.
     _callbacks_res = ['gmres']
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, context=None, **kwargs):
         try:
             import pyamg.krylov as krylov
         except ImportError:
             msg =  'cannot import pyamg.krylov!'
             raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, mtx_id=None, mg=None, **kwargs)
+        LinearSolver.__init__(self, conf, mtx_id=None, mg=None,
+                              context=context, **kwargs)
 
         try:
             solver = getattr(krylov, self.conf.method)
@@ -435,7 +440,7 @@ class PyAMGKrylovSolver(LinearSolver):
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
+                 i_max=None, mtx=None, status=None, context=None, **kwargs):
         solver_kwargs = self.build_solver_kwargs(conf)
 
         eps_r = get_default(eps_r, self.conf.eps_r)
@@ -464,7 +469,7 @@ class PyAMGKrylovSolver(LinearSolver):
             # Call an optional user-defined callback.
             callback(sol)
 
-        precond = setup_precond(mtx, self.problem)
+        precond = setup_precond(mtx, context)
 
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
                                 M=precond, callback=iter_callback,
@@ -504,9 +509,9 @@ class PETScKrylovSolver(LinearSolver):
          'The actual solver to use.'),
         ('setup_precond', 'callable', None, False,
          """User-supplied function for the preconditioner initialization/setup.
-            It is called as setup_precond(mtx, problem), where mtx is the
-            matrix, and should return an object with `setUp(self, pc)` and
-            `apply(self, pc, x, y)` methods.
+            It is called as setup_precond(mtx, context), where mtx is the
+            matrix, context is a user-supplied context, and should return an
+            object with `setUp(self, pc)` and `apply(self, pc, x, y)` methods.
 
             Has precedence over the `precond`/`sub_precond` parameters.
          """),
@@ -528,7 +533,7 @@ class PETScKrylovSolver(LinearSolver):
 
     _precond_sides = {None : None, 'left' : 0, 'right' : 1, 'symmetric' : 2}
 
-    def __init__(self, conf, comm=None, **kwargs):
+    def __init__(self, conf, comm=None, context=None, **kwargs):
         if comm is None:
             from sfepy.parallel.parallel import init_petsc_args; init_petsc_args
 
@@ -542,7 +547,7 @@ class PETScKrylovSolver(LinearSolver):
         LinearSolver.__init__(self, conf, petsc=petsc, comm=comm,
                               converged_reasons=converged_reasons,
                               fields=None, mtx_id=0, ksp=None, pmtx=None,
-                              **kwargs)
+                              context=context, **kwargs)
 
     def set_field_split(self, field_ranges, comm=None):
         """
@@ -609,7 +614,8 @@ class PETScKrylovSolver(LinearSolver):
 
     @petsc_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, comm=None, **kwargs):
+                 i_max=None, mtx=None, status=None, comm=None, context=None,
+                 **kwargs):
         eps_a = get_default(eps_a, self.conf.eps_a)
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
@@ -629,7 +635,7 @@ class PETScKrylovSolver(LinearSolver):
 
             setup_precond = self.conf.setup_precond
             if setup_precond is not None:
-                ksp.pc.setPythonContext(setup_precond(mtx, self.problem))
+                ksp.pc.setPythonContext(setup_precond(mtx, context))
 
             ksp.setFromOptions()
             self.mtx_id = id(mtx)
@@ -691,12 +697,12 @@ class SchurGeneralized(ScipyDirect):
          'The user defined function.'),
     ]
 
-    def __init__(self, conf, problem, **kwargs):
+    def __init__(self, conf, context=None, **kwargs):
         from sfepy.discrete.state import State
 
-        ScipyDirect.__init__(self, conf, **kwargs)
+        ScipyDirect.__init__(self, conf, context=context, **kwargs)
 
-        equations = problem.equations
+        equations = context.equations
         aux_state = State(equations.variables)
 
         conf.idxs = {}
@@ -844,15 +850,16 @@ class MultiProblem(ScipyDirect):
          'The list of coupling variables.'),
     ]
 
-    def __init__(self, conf, problem, **kwargs):
+    def __init__(self, conf, context=None, **kwargs):
         from sfepy.discrete.state import State
         from sfepy.discrete import Problem
         from sfepy.base.conf import ProblemConf, get_standard_keywords
         from scipy.spatial import cKDTree as KDTree
 
-        ScipyDirect.__init__(self, conf, **kwargs)
+        ScipyDirect.__init__(self, conf, context=context, **kwargs)
 
         # init subproblems
+        problem = self.context
         pb_vars = problem.get_variables()
         # get "master" DofInfo and last index
         pb_adi_indx = problem.equations.variables.adi.indx

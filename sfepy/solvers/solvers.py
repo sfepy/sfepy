@@ -154,7 +154,7 @@ class Solver(Struct):
 
         return opts
 
-    def __init__(self, conf=None, **kwargs):
+    def __init__(self, conf=None, context=None, **kwargs):
         if conf is None:
             conf = Struct()
 
@@ -172,7 +172,8 @@ class Solver(Struct):
                 raise ValueError('solver kind cannot be determined!')
 
         new_conf = self.process_conf(conf, kwargs)
-        Struct.__init__(self, conf=new_conf, orig_conf=conf, **kwargs)
+        Struct.__init__(self, conf=new_conf, orig_conf=conf, context=context,
+                        **kwargs)
 
     def build_solver_kwargs(self, conf):
         """
@@ -205,11 +206,12 @@ class LinearSolver(Solver):
     """
     Abstract linear solver class.
     """
-    def __init__(self, conf, mtx=None, status=None, **kwargs):
-        Solver.__init__(self, conf=conf, mtx=mtx, status=status, **kwargs)
+    def __init__(self, conf, mtx=None, status=None, context=None, **kwargs):
+        Solver.__init__(self, conf=conf, mtx=mtx, status=status,
+                        context=context, **kwargs)
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
+                 i_max=None, mtx=None, status=None, context=None, **kwargs):
         raise ValueError('called an abstract LinearSolver instance!')
 
     def get_tolerance(self):
@@ -229,10 +231,10 @@ class NonlinearSolver(Solver):
     """
 
     def __init__(self, conf, fun=None, fun_grad=None, lin_solver=None,
-                 iter_hook=None, status=None, **kwargs):
+                 iter_hook=None, status=None, context=None, **kwargs):
         Solver.__init__(self, conf=conf, fun=fun, fun_grad=fun_grad,
                         lin_solver=lin_solver, iter_hook=iter_hook,
-                        status=status, **kwargs)
+                        status=status, context=context, **kwargs)
 
     def __call__(self, state0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None):
@@ -243,8 +245,8 @@ class TimeSteppingSolver(Solver):
     Abstract time stepping solver class.
     """
 
-    def __init__(self, conf, **kwargs):
-        Solver.__init__(self, conf=conf, **kwargs)
+    def __init__(self, conf, context=None, **kwargs):
+        Solver.__init__(self, conf=conf, context=context, **kwargs)
 
     def __call__(self, state0=None, save_results=True, step_hook=None,
                  post_process_hook=None, nls_status=None):
@@ -259,10 +261,10 @@ class OptimizationSolver(Solver):
     """
 
     def __init__(self, conf, obj_fun=None, obj_fun_grad=None, status=None,
-                 obj_args=None,  **kwargs ):
+                 obj_args=None, context=None, **kwargs):
         Solver.__init__(self, conf=conf, obj_fun=obj_fun,
                         obj_fun_grad=obj_fun_grad, status=status,
-                        obj_args=obj_args, **kwargs)
+                        obj_args=obj_args, context=context, **kwargs)
 
     def __call__(self, state0, conf=None, obj_fun=None, obj_fun_grad=None,
                  status=None, obj_args=None):
@@ -274,10 +276,10 @@ class EigenvalueSolver(Solver):
     """
 
     def __init__(self, conf, mtx_a=None, mtx_b=None, n_eigs=None,
-                 eigenvectors=None, status=None):
+                 eigenvectors=None, status=None, context=None, **kwargs):
         Solver.__init__(self, conf=conf, mtx_a=mtx_a, mtx_b=mtx_b,
                         n_eigs=n_eigs, eigenvectors=eigenvectors,
-                        status=status)
+                        status=status, context=context)
 
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
