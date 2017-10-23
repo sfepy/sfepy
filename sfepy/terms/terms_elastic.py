@@ -710,7 +710,7 @@ class NonsymElasticTerm(Term):
         else:
             self.function = terms.d_lin_elastic
 
-def _create_g(vec, bf):
+def _build_wave_strain_op(vec, bf):
     dim = len(vec)
 
     if dim == 2:
@@ -731,19 +731,19 @@ def _create_g(vec, bf):
     out = nm.einsum('ik,cqkj->cqij', nmat, bf)
     return out
 
-class ElasticDispersionTerm(Term):
+class ElasticWaveTerm(Term):
     r"""
-    Elastic dispersion term, with :math:`D_{ijkl}` given in
-    the usual matrix form exploiting symmetry: in 3D it is :math:`6\times6`
-    with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
-    :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`, and
-    the incident wave direction :math:`\ul{n}`.
+    Elastic dispersion term involving the wave strain :math:`g_{ij}`,
+    :math:`g_{ij}(\ul{u}) = \frac{1}{2}(u_i n_j + n_i u_j)`, with the incident
+    wave direction :math:`\ul{n}`. :math:`D_{ijkl}` is given in the usual
+    matrix form exploiting symmetry: in 3D it is :math:`6\times6` with the
+    indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
+    :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`.
 
     :Definition:
 
     .. math::
-        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{v}) g_{kl}(\ul{u}) \;,
-        g_{ij}(\ul{u}) = \frac{1}{2}(u_i n_j + n_i u_j)
+        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{v}) g_{kl}(\ul{u})
 
     :Arguments:
         - material_1 : :math:`D_{ijkl}`
@@ -751,7 +751,7 @@ class ElasticDispersionTerm(Term):
         - virtual    : :math:`\ul{v}`
         - state      : :math:`\ul{u}`
     """
-    name = 'dw_elastic_dispersion'
+    name = 'dw_elastic_wave'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
     arg_shapes = {'material_1' : 'S, S', 'material_2' : '.: D',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
@@ -776,7 +776,7 @@ class ElasticDispersionTerm(Term):
         for ir in range(dim):
             ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
 
-        gmat = _create_g(vec, ebf)
+        gmat = _build_wave_strain_op(vec, ebf)
 
         if diff_var is None:
             econn = state.field.get_econn('volume', self.region)
@@ -785,7 +785,7 @@ class ElasticDispersionTerm(Term):
             vals = state()[adc]
             # Same as nm.einsum('qij,cj->cqi', gmat[0], vals)[..., None]
             aux = dot_sequences(gmat, vals[:, None, :, None])
-            out_qp = dot_sequences(gmat, aux, 'ATB')
+            out_qp = dot_sequences(gmat, dot_sequences(mat, aux), 'ATB')
             fmode = 0
 
         else:
