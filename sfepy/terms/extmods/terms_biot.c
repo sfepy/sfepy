@@ -6,12 +6,11 @@
 #define __FUNC__ "op_nonsym_biot"
 int32 op_nonsym_biot(FMField *diff, FMField *mtx, FMField *gc)
 {
-  int32 iqp, iep, nEP, nQP, nRow;
+  int32 iqp, iep, nEP, nQP;
   float64 *pdiff1, *pdiff2, *pdiff3, *pvec, *pg1, *pg2, *pg3;
 
   nEP = gc->nCol;
   nQP = gc->nLev;
-  nRow = mtx->nRow;
 
   switch (gc->nRow) {
   case 3:
