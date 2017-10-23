@@ -731,6 +731,27 @@ def _build_wave_strain_op(vec, bf):
     out = nm.einsum('ik,cqkj->cqij', nmat, bf)
     return out
 
+def _build_cauchy_strain_op(bfg):
+    dim = bfg.shape[2]
+    if dim == 2:
+        g1, g2 = bfg[..., 0:1, :], bfg[..., 1:2, :]
+        zz = nm.zeros_like(g1)
+        out = nm.block([[g1, zz],
+                        [zz, g2],
+                        [g2, g1]])
+
+    else:
+        g1, g2, g3 = bfg[..., 0:1, :], bfg[..., 1:2, :], bfg[..., 2:3, :]
+        zz = nm.zeros_like(g1)
+        out = nm.block([[g1, zz, zz],
+                        [zz, g2, zz],
+                        [zz, zz, g3],
+                        [g2, g1, zz],
+                        [g3, zz, g1],
+                        [zz, g3, g2]])
+
+    return out
+
 class ElasticWaveTerm(Term):
     r"""
     Elastic dispersion term involving the wave strain :math:`g_{ij}`,
@@ -790,6 +811,93 @@ class ElasticWaveTerm(Term):
 
         else:
             out_qp = dot_sequences(gmat, dot_sequences(mat, gmat), 'ATB')
+            fmode = 1
+
+        return out_qp, geo, fmode
+
+class ElasticWaveCauchyTerm(Term):
+    r"""
+    Elastic dispersion term involving the wave strain :math:`g_{ij}`,
+    :math:`g_{ij}(\ul{u}) = \frac{1}{2}(u_i n_j + n_i u_j)`, the incident wave
+    direction :math:`\ul{n}`. and the elastic strain :math:`e_{ij}`.
+    :math:`D_{ijkl}` is given in the usual matrix form exploiting symmetry: in
+    3D it is :math:`6\times6` with the indices ordered as :math:`[11, 22, 33,
+    12, 13, 23]`, in 2D it is :math:`3\times3` with the indices ordered as
+    :math:`[11, 22, 12]`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{v}) e_{kl}(\ul{u}) \;,
+        \int_{\Omega} D_{ijkl}\ g_{ij}(\ul{u}) e_{kl}(\ul{v})
+
+    :Arguments 1:
+        - material_1 : :math:`D_{ijkl}`
+        - material_2 : :math:`\ul{n}`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material_1 : :math:`D_{ijkl}`
+        - material_2 : :math:`\ul{n}`
+        - state      : :math:`\ul{u}`
+        - virtual    : :math:`\ul{v}`
+    """
+    name = 'dw_elastic_wave_cauchy'
+    arg_types = (('material_1', 'material_2', 'virtual', 'state'),
+                 ('material_1', 'material_2', 'state', 'virtual'))
+    arg_shapes = {'material_1' : 'S, S', 'material_2' : '.: D',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+    modes = ('ge', 'eg')
+
+    @staticmethod
+    def function(out, out_qp, geo, fmode):
+        status = geo.integrate(out, out_qp)
+        return status
+
+    def get_fargs(self, mat, vec, gvar, evar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn
+
+        geo, _ = self.get_mapping(evar)
+
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(gvar)
+
+        # Expand basis for all components.
+        bf = geo.bf
+        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
+        for ir in range(dim):
+            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+
+        gmat = _build_wave_strain_op(vec, ebf)
+        emat = _build_cauchy_strain_op(geo.bfg)
+
+        if diff_var is None:
+            avar = evar if self.mode == 'ge' else gvar
+            econn = avar.field.get_econn('volume', self.region)
+            adc = create_adof_conn(nm.arange(avar.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+            vals = avar()[adc]
+
+            if self.mode == 'ge':
+                # Same as aux = self.get(avar, 'cauchy_strain'),
+                aux = dot_sequences(emat, vals[:, None, :, None])
+                out_qp = dot_sequences(gmat, dot_sequences(mat, aux), 'ATB')
+
+            else:
+                aux = dot_sequences(gmat, vals[:, None, :, None])
+                out_qp = dot_sequences(emat, dot_sequences(mat, aux), 'ATB')
+
+            fmode = 0
+
+        else:
+            if self.mode == 'ge':
+                out_qp = dot_sequences(gmat, dot_sequences(mat, emat), 'ATB')
+
+            else:
+                out_qp = dot_sequences(emat, dot_sequences(mat, gmat), 'ATB')
+
             fmode = 1
 
         return out_qp, geo, fmode
