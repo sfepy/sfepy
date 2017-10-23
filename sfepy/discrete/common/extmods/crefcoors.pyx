@@ -79,10 +79,19 @@ def find_ref_coors_convex(
         float64 close_limit,
         _ctx
     ):
-    cdef int32 n_cells, n_status, n_ics, n_nodes
-    cdef int32 *_cells, *_status, *_ics
+    cdef int32 n_cells
+    cdef int32 n_status
+    cdef int32 n_ics
+    cdef int32 n_nodes
+    cdef int32 *_cells
+    cdef int32 *_status
+    cdef int32 *_ics
     cdef CBasisContext ctx = <CBasisContext> _ctx
-    cdef FMField _ref_coors[1], _coors[1], _centroids[1], _normals0[1], \
+    cdef FMField _ref_coors[1]
+    cdef FMField _coors[1]
+    cdef FMField _centroids[1]
+    cdef FMField _normals0[1]
+    cdef FMField \
         _normals1[1]
 
     _f.array2fmfield2(_ref_coors, ref_coors)
@@ -122,10 +131,18 @@ def find_ref_coors(
         float64 close_limit,
         _ctx
     ):
-    cdef int32 n_cells, n_status, n_candidates, n_offsets, n_nodes
-    cdef int32 *_cells, *_status, *_candidates, *_offsets
+    cdef int32 n_cells
+    cdef int32 n_status
+    cdef int32 n_candidates
+    cdef int32 n_offsets
+    cdef int32 n_nodes
+    cdef int32 *_cells
+    cdef int32 *_status
+    cdef int32 *_candidates
+    cdef int32 *_offsets
     cdef CBasisContext ctx = <CBasisContext> _ctx
-    cdef FMField _ref_coors[1], _coors[1]
+    cdef FMField _ref_coors[1]
+    cdef FMField _coors[1]
 
     _f.array2fmfield2(_ref_coors, ref_coors)
     _f.array2fmfield2(_coors, coors)
@@ -164,22 +181,34 @@ cpdef evaluate_in_rc(np.ndarray[float64, mode='c', ndim=3] out,
 
     Interpolation uses field approximation connectivity.
     """
-    cdef int32 ip, ib, ic, iel, n_v, n_ep
+    cdef int32 ip
+    cdef int32 ib
+    cdef int32 ic
+    cdef int32 iel
+    cdef int32 n_v
+    cdef int32 n_ep
     cdef int32 n_cp = 0
-    cdef int32 ii, ik
+    cdef int32 ii
+    cdef int32 ik
     cdef int32 n_point = ref_coors.shape[0]
     cdef int32 dim = ref_coors.shape[1]
     cdef int32 dpn = out.shape[1]
     cdef int32 bdim = out.shape[2]
     cdef int32 *_cells = &cells[0]
     cdef int32 *_status = &status[0]
-    cdef int32 *_conn, *_mesh_conn
+    cdef int32 *_conn
+    cdef int32 *_mesh_conn
     cdef float64 aux
     cdef CBasisContext __ctx = <CBasisContext> _ctx
     cdef BasisContext *ctx = <BasisContext *> __ctx.ctx
-    cdef FMField _ref_coors[1], _out[1], bf[1], src[1]
+    cdef FMField _ref_coors[1]
+    cdef FMField _out[1]
+    cdef FMField bf[1]
+    cdef FMField src[1]
     cdef FMField _source_vals[1]
-    cdef float64 *buf, *buf_bf_max, *buf_src_max
+    cdef float64 *buf
+    cdef float64 *buf_bf_max
+    cdef float64 *buf_src_max
 
     # Prepare buffers.
     n_ep = conn.shape[1]

@@ -215,7 +215,8 @@ cdef class CLagrangeContext:
         cdef int32 n_nod = self.ctx.n_nod
         cdef int32 dim = coors.shape[1]
         cdef int32 bdim
-        cdef FMField _out[1], _coors[1]
+        cdef FMField _out[1]
+        cdef FMField _coors[1]
 
         ctx = self.ctx
 

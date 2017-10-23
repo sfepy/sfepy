@@ -15,15 +15,20 @@ def assemble_vector(np.ndarray[float64, mode='c', ndim=1] vec not None,
                     np.ndarray[int32, mode='c', ndim=1] iels not None,
                     float64 sign,
                     np.ndarray[int32, mode='c', ndim=2] conn not None):
-    cdef int32 ii, iel, ir, irg
+    cdef int32 ii
+    cdef int32 iel
+    cdef int32 ir
+    cdef int32 irg
     cdef int32 num = iels.shape[0]
     cdef int32 n_ep = conn.shape[1]
     # Allow both row or column vectors.
     cdef int32 cell_size = vec_in_els.shape[2] * vec_in_els.shape[3]
-    cdef int32 *pconn0, *pconn
+    cdef int32 *pconn0
+    cdef int32 *pconn
     cdef int32 *piels = &iels[0]
     cdef float64 *val = &vec[0]
-    cdef float64 *vec_in_el0, *vec_in_el
+    cdef float64 *vec_in_el0
+    cdef float64 *vec_in_el
 
     assert num == vec_in_els.shape[0]
 
@@ -50,15 +55,20 @@ def assemble_vector_complex(np.ndarray[complex128, mode='c', ndim=1]
                             np.ndarray[int32, mode='c', ndim=1] iels not None,
                             complex128 sign,
                             np.ndarray[int32, mode='c', ndim=2] conn not None):
-    cdef int32 ii, iel, ir, irg
+    cdef int32 ii
+    cdef int32 iel
+    cdef int32 ir
+    cdef int32 irg
     cdef int32 num = iels.shape[0]
     cdef int32 n_ep = conn.shape[1]
     # Allow both row or column vectors.
     cdef int32 cell_size = vec_in_els.shape[2] * vec_in_els.shape[3]
-    cdef int32 *pconn0, *pconn
+    cdef int32 *pconn0
+    cdef int32 *pconn
     cdef int32 *piels = &iels[0]
     cdef complex128 *val = &vec[0]
-    cdef complex128 *vec_in_el0, *vec_in_el
+    cdef complex128 *vec_in_el0
+    cdef complex128 *vec_in_el
 
     assert num == vec_in_els.shape[0]
 
@@ -86,17 +96,28 @@ def assemble_matrix(np.ndarray[float64, mode='c', ndim=1] mtx not None,
                     float64 sign,
                     np.ndarray[int32, mode='c', ndim=2] row_conn not None,
                     np.ndarray[int32, mode='c', ndim=2] col_conn not None):
-    cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
+    cdef int32 ii
+    cdef int32 iel
+    cdef int32 ir
+    cdef int32 ic
+    cdef int32 irg
+    cdef int32 icg
+    cdef int32 ik
+    cdef int32 iloc
     cdef int32 num = iels.shape[0]
     cdef int32 n_epr = row_conn.shape[1]
     cdef int32 n_epc = col_conn.shape[1]
     cdef int32 cell_size = mtx_in_els.shape[2] * mtx_in_els.shape[3]
-    cdef int32 *prow_conn0, *pcol_conn0, *prow_conn, *pcol_conn
+    cdef int32 *prow_conn0
+    cdef int32 *pcol_conn0
+    cdef int32 *prow_conn
+    cdef int32 *pcol_conn
     cdef int32 *piels = &iels[0]
     cdef int32 *_prows = &prows[0]
     cdef int32 *_cols = &cols[0]
     cdef float64 *val = &mtx[0]
-    cdef float64 *mtx_in_el0, *mtx_in_el
+    cdef float64 *mtx_in_el0
+    cdef float64 *mtx_in_el
 
     assert num == mtx_in_els.shape[0]
 
@@ -143,17 +164,28 @@ def assemble_matrix_complex(np.ndarray[complex128, mode='c', ndim=1]
                             row_conn not None,
                             np.ndarray[int32, mode='c', ndim=2]
                             col_conn not None):
-    cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
+    cdef int32 ii
+    cdef int32 iel
+    cdef int32 ir
+    cdef int32 ic
+    cdef int32 irg
+    cdef int32 icg
+    cdef int32 ik
+    cdef int32 iloc
     cdef int32 num = iels.shape[0]
     cdef int32 n_epr = row_conn.shape[1]
     cdef int32 n_epc = col_conn.shape[1]
     cdef int32 cell_size = mtx_in_els.shape[2] * mtx_in_els.shape[3]
-    cdef int32 *prow_conn0, *pcol_conn0, *prow_conn, *pcol_conn
+    cdef int32 *prow_conn0
+    cdef int32 *pcol_conn0
+    cdef int32 *prow_conn
+    cdef int32 *pcol_conn
     cdef int32 *piels = &iels[0]
     cdef int32 *_prows = &prows[0]
     cdef int32 *_cols = &cols[0]
     cdef complex128 *val = &mtx[0]
-    cdef complex128 *mtx_in_el0, *mtx_in_el
+    cdef complex128 *mtx_in_el0
+    cdef complex128 *mtx_in_el
 
     assert num == mtx_in_els.shape[0]
 
