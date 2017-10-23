@@ -1275,7 +1275,7 @@ int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
                                       FMField *detF, FMField *trB,
                                       FMField *vecBS, FMField *in2B )
 {
-  int32 ii, nQP, ir, ic, iqp, sym, dim, ret = RET_OK;
+  int32 ii, nQP, ir, ic, iqp, sym, ret = RET_OK;
   float64 F1, F2, F3, F4, F5, F6, detF23, detF43;
   float64 *pd, *pkappa, *ptrace;
   float64 *ptrB, *pdetF, *pB, *pin2B, *pB_ikjl, *pB_iljk, *pd_ikjl, *pd_iljk, *pBB;
@@ -1284,7 +1284,6 @@ int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
 
   sym = out->nRow;
   nQP = out->nLev;
-  dim = sym2dim( sym );
   ptrace = get_trace( sym );
 
   fmf_createAlloc( &B_ikjl, 1, nQP, sym, sym );
@@ -1626,7 +1625,6 @@ int32 dw_ul_volume( FMField *out, FMField *detF,
 {
   int32 ii, iqp, nQP, nEPu, nEPp, dim, ret = RET_OK;
   FMField *aux = 0, aux2[1];
-  //  float64 *paux, *pgc;
 
   nQP = vgv->bfGM->nLev;
   nEPu = vgv->bfGM->nCol;
