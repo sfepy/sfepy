@@ -329,7 +329,7 @@ int32 map_getElementDiameters( Mapping *obj, FMField *out,
     return( RET_Fail );
   }
 
-  if ((mode < 0) && (mode > 2)) {
+  if ( ((0)) && (mode < 0) && (mode > 2)) { /* DISABLES CODE */
     errput( ErrHead "ERR_Switch\n" );
     return( RET_Fail );
   }
