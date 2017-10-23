@@ -261,7 +261,7 @@ cdef class CMesh:
                 _ct = cmesh.cell_types = np.empty(cmesh.n_el, dtype=np.uint32)
                 pct = cmesh.mesh.topology.cell_types = &_ct[0]
                 poffsets = &_incident.offsets[0]
-                for ii in range(cmesh.n_el):
+                for ii in range(<uint32>cmesh.n_el):
                     n_v = poffsets[ii + 1] - poffsets[ii]
                     if n_v == 2:
                         pct[ii] = 0
