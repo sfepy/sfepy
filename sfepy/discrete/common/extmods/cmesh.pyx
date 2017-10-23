@@ -180,7 +180,8 @@ cdef class CMesh:
         cdef np.ndarray[float64, mode='c', ndim=2] _coors
         cdef np.ndarray[uint32, mode='c', ndim=1] _ct
         cdef uint32 ii, tdim, n_v, num
-        cdef uint32 *pct, *poffsets
+        cdef uint32 *pct
+        cdef uint32 *poffsets
         cdef np.ndarray[uint32, mode='c', ndim=1] indices
         cdef np.ndarray[uint32, mode='c', ndim=1] offsets
         cdef Indices _entities[1]
@@ -311,7 +312,8 @@ cdef class CMesh:
         return cmesh
 
     def set_local_entities(self, gels):
-        cdef MeshConnectivity *pedges, *pfaces
+        cdef MeshConnectivity *pedges
+        cdef MeshConnectivity *pfaces
 
         self.mesh.entities.num = len(self.key_to_index)
 
@@ -560,7 +562,8 @@ cdef class CMesh:
         The function searches `entities` in `incident` -> `entities`
         connectivity for each non-unique entity in `incident`.
         """
-        cdef Indices _entities[1], _local_ids[1]
+        cdef Indices _entities[1]
+        cdef Indices _local_ids[1]
         cdef MeshConnectivity _incident[1]
         cdef np.ndarray[uint32, mode='c', ndim=1] out
 
@@ -779,7 +782,8 @@ def create_mesh_graph(int n_row, int n_col, int n_gr, rconns, cconns):
     """
     cdef int ii
     cdef int32 nnz
-    cdef int32 *pprow, *picol
+    cdef int32 *pprow
+    cdef int32 *picol
     cdef np.ndarray[int32, mode='c', ndim=1] prow
     cdef np.ndarray[int32, mode='c', ndim=1] icol
     cdef np.ndarray[int32, mode='c', ndim=2] rconn

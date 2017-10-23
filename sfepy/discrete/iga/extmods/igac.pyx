@@ -142,7 +142,8 @@ cdef class CNURBSContext:
                   int32 i_max=100,
                   float64 newton_eps=1e-8):
         cdef NURBSContext *ctx
-        cdef int32 ii, num
+        cdef int32 ii
+        cdef int32 num
         cdef float64 *buf
         cdef np.ndarray[float64, mode='c', ndim=2] _e_coors_max
         cdef np.ndarray[float64, mode='c', ndim=1] _bf
@@ -231,7 +232,8 @@ cdef class CNURBSContext:
         cdef int32 n_efun = self.ctx.n_efun
         cdef int32 dim = coors.shape[1]
         cdef int32 bdim
-        cdef FMField _out[1], _coors[1]
+        cdef FMField _out[1]
+        cdef FMField _coors[1]
 
         ctx = self.ctx
 
@@ -262,7 +264,8 @@ def eval_bernstein_basis(np.ndarray funs not None,
                          float64 x,
                          uint32 degree):
     cdef int32 ret
-    cdef FMField _funs[1], _ders[1]
+    cdef FMField _funs[1]
+    cdef FMField _ders[1]
 
     array2fmfield1(_funs, funs)
     array2fmfield1(_ders, ders)
@@ -315,15 +318,32 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
         The Jacobians of the mapping to the unit reference element in the
         physical quadrature points of all elements.
     """
-    cdef uint32 ii, ie, n_qp, n_efun, nf
-    cdef int32 n_el, n_ep, dim, aux
+    cdef uint32 ii
+    cdef uint32 ie
+    cdef uint32 n_qp
+    cdef uint32 n_efun
+    cdef uint32 nf
+    cdef int32 n_el
+    cdef int32 n_ep
+    cdef int32 dim
+    cdef int32 aux
     cdef uint32 *_cells
-    cdef int32 *_degrees, *_conn
-    cdef FMField _bf[1], _bfg[1], _det[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _control_points[1], _weights[1]
+    cdef int32 *_degrees
+    cdef int32 *_conn
+    cdef FMField _bf[1]
+    cdef FMField _bfg[1]
+    cdef FMField _det[1]
+    cdef FMField _bfg_dxi[1]
+    cdef FMField _dx_dxi[1]
+    cdef FMField _dxi_dx[1]
+    cdef FMField _qp[1]
+    cdef FMField _control_points[1]
+    cdef FMField _weights[1]
     cdef FMField _cs[3]
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField _B[3]
+    cdef FMField _dB_dxi[3]
+    cdef FMField _N[3]
+    cdef FMField _dN_dxi[3]
     cdef np.ndarray[float64, mode='c', ndim=4] bfs, bfgs, dets
 
     if cells is None:
@@ -507,16 +527,40 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
         The Jacobians of the mapping to the unit reference element in the
         physical quadrature points.
     """
-    cdef uint32 ii, ie, n_qp, n_efun, nf, nc, ir, ic
-    cdef int32 n_el, n_ep, dim, aux
+    cdef uint32 ii
+    cdef uint32 ie
+    cdef uint32 n_qp
+    cdef uint32 n_efun
+    cdef uint32 nf
+    cdef uint32 nc
+    cdef uint32 ir
+    cdef uint32 ic
+    cdef int32 n_el
+    cdef int32 n_ep
+    cdef int32 dim
+    cdef int32 aux
     cdef uint32 *_cells
-    cdef int32 *_degrees, *_conn, *ec
+    cdef int32 *_degrees
+    cdef int32 *_conn
+    cdef int32 *ec
     cdef float64 val
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _coors[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _variable[1], _control_points[1], _weights[1]
+    cdef FMField _bf[1]
+    cdef FMField _bfg[1]
+    cdef FMField _det[1]
+    cdef FMField _vals[1]
+    cdef FMField _coors[1]
+    cdef FMField _bfg_dxi[1]
+    cdef FMField _dx_dxi[1]
+    cdef FMField _dxi_dx[1]
+    cdef FMField _qp[1]
+    cdef FMField _variable[1]
+    cdef FMField _control_points[1]
+    cdef FMField _weights[1]
     cdef FMField _cs[3]
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField _B[3]
+    cdef FMField _dB_dxi[3]
+    cdef FMField _N[3]
+    cdef FMField _dN_dxi[3]
     cdef np.ndarray[float64, mode='c', ndim=2] coors, vals, dets
 
     if cells is None:
@@ -733,17 +777,46 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
         The field variable values or NURBS geometry coordinates for the given
         reference coordinates.
     """
-    cdef uint32 ii, ip, ie, n_efun, nc, ir, ic, n_vals, uaux
-    cdef int32 n_el, n_ep, dim, aux
-    cdef int32 *_degrees, *_conn, *ec
-    cdef uint32 igrid[3], shape[3], iis[3], n_els[3]
-    cdef uint32 *_indices[3], **puaux
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _out[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _rc[1], _control_points[1], _weights[1]
-    cdef FMField _cs[3], _ref_coors[3]
+    cdef uint32 ii
+    cdef uint32 ip
+    cdef uint32 ie
+    cdef uint32 n_efun
+    cdef uint32 nc
+    cdef uint32 ir
+    cdef uint32 ic
+    cdef uint32 n_vals
+    cdef uint32 uaux
+    cdef int32 n_el
+    cdef int32 n_ep
+    cdef int32 dim
+    cdef int32 aux
+    cdef int32 *_degrees
+    cdef int32 *_conn
+    cdef int32 *ec
+    cdef uint32 igrid[3]
+    cdef uint32 shape[3]
+    cdef uint32 iis[3]
+    cdef uint32 n_els[3]
+    cdef uint32 *_indices[3]
+    cdef uint32 **puaux
+    cdef FMField _bf[1]
+    cdef FMField _bfg[1]
+    cdef FMField _det[1]
+    cdef FMField _vals[1]
+    cdef FMField _out[1]
+    cdef FMField _bfg_dxi[1]
+    cdef FMField _dx_dxi[1]
+    cdef FMField _dxi_dx[1]
+    cdef FMField _rc[1]
+    cdef FMField _control_points[1]
+    cdef FMField _weights[1]
+    cdef FMField _cs[3]
+    cdef FMField _ref_coors[3]
     cdef np.ndarray[float64, mode='c', ndim=2] _evals, out
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField _B[3]
+    cdef FMField _dB_dxi[3]
+    cdef FMField _N[3]
+    cdef FMField _dN_dxi[3]
 
     dim = control_points.shape[1]
     n_efuns = degrees + 1

@@ -78,7 +78,9 @@ cdef class CMapping:
         mapping.
         """
         cdef int32 ret = 0
-        cdef FMField _bfgr[1], _ebfgr[1], _weights[1]
+        cdef FMField _bfgr[1]
+        cdef FMField _ebfgr[1]
+        cdef FMField _weights[1]
         cdef float64 *_coors = &coors[0, 0]
         cdef int32 n_nod = coors.shape[0]
         cdef int32 dim = coors.shape[1]
@@ -111,7 +113,8 @@ cdef class CMapping:
         Integrate `arr` over the domain of the mapping into `out`.
         """
         cdef int32 ret = 0
-        cdef FMField _out[1], _arr[1]
+        cdef FMField _out[1]
+        cdef FMField _arr[1]
 
         if self.mode == 'volume':
             n_row_ok = out.shape[2] == arr.shape[2]
@@ -200,7 +203,8 @@ cdef class CMapping:
         points.
         """
         cdef int32 ret = 0
-        cdef FMField _bfbgr[1], _ebfbgr[1]
+        cdef FMField _bfbgr[1]
+        cdef FMField _ebfbgr[1]
         cdef float64 *_coors = &coors[0, 0]
         cdef int32 n_nod = coors.shape[0]
         cdef int32 dim = coors.shape[1]

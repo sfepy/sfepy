@@ -32,7 +32,8 @@ def eval_lobatto1d(np.ndarray[float64, mode='c', ndim=1] coors not None,
     """
     cdef int32 n_coor = coors.shape[0]
     cdef np.ndarray[float64, ndim=1] out = np.zeros(n_coor, dtype=np.float64)
-    cdef FMField _coors[1], _out[1]
+    cdef FMField _coors[1]
+    cdef FMField _out[1]
 
     _f.array2fmfield1(_coors, coors)
     _f.array2fmfield1(_out, out)
@@ -57,7 +58,8 @@ def eval_lobatto_tensor_product(np.ndarray[float64, mode='c', ndim=2]
     when >= 1) into lobatto[] and d_lobatto[] lists for each axis.
     """
     cdef np.ndarray[float64, ndim=3] out
-    cdef FMField _coors[1], _out[1]
+    cdef FMField _coors[1]
+    cdef FMField _out[1]
     cdef int32 *_nodes = &nodes[0, 0]
     cdef int32 n_coor = coors.shape[0]
     cdef int32 dim = coors.shape[1]
