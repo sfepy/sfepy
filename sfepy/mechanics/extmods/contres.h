@@ -10,7 +10,7 @@ extern "C" {  // only need to export C interface if used by C++ source code
 
 typedef unsigned int bool;
 
-#ifdef __linux__
+#if defined (__linux__) || (__unix__) || (__APPLE__)
 
 	void sfd2(double* H, double* dH, double r);
 
@@ -27,7 +27,7 @@ typedef unsigned int bool;
 	void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, int ngp, int neq, int nsn, int nes, int nen, uint32* elementID, uint32* segmentID, int32* ISN, int32* IEN, float64* H, float64* X);
 
 	void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, float64* AABBmin, float64* AABBmax, int32* head, int32* next, float64* X, uint32* elementID, uint32* segmentID, int n, int nsn, int nsd, int npd, int ngp, int nen, int nes, int neq, float64 longestEdge);
-#elif _WIN32
+#elif defined (_WIN32)
 			  // windows code goes here
 
 	void __declspec(dllexport) sfd2(float64* H, float64* dH, float64 r);
@@ -41,8 +41,6 @@ typedef unsigned int bool;
 	void __declspec(dllexport) getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, int ngp, int neq, int nsn, int nes, int nen, uint32* elementID, uint32* segmentID, int32* ISN, int32* IEN, float64* H, float64* X);
 
 	void __declspec(dllexport) evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, float64* AABBmin, float64* AABBmax, int32* head, int32* next, float64* X, uint32* elementID, uint32* segmentID, int n, int nsn, int nsd, int npd, int ngp, int nen, int nes, int neq, float64 longestEdge);
-#else
-
 #endif
 
 #ifdef __cplusplus
