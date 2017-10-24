@@ -15,7 +15,7 @@ static void debprintf(const char *what, ...)
 
 int32 mesh_init(Mesh *mesh)
 {
-  int32 ii;
+  uint32 ii;
   MeshTopology *topology = 0;
   LocalEntities *entities = 0;
 
@@ -83,7 +83,7 @@ int32 mesh_free(Mesh *mesh)
 
 int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 {
-  int32 ii, id;
+  uint32 ii, id;
   uint32 *num;
   int32 D = mesh->topology->max_dim;
   MeshGeometry *geometry = mesh->geometry;
@@ -99,16 +99,16 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 
   if (header_only == 0) { // Full print.
     fprintf(file, "vertex coordinates:\n");
-    for (ii = 0; ii < (int32)geometry->num; ii++) {
-      for (id = 0; id < (int32)geometry->dim; id++) {
+    for (ii = 0; ii < geometry->num; ii++) {
+      for (id = 0; id < geometry->dim; id++) {
         fprintf(file, " %.8e", geometry->coors[geometry->dim * ii + id]);
       }
       fprintf(file, "\n");
     }
 
     fprintf(file, "topology connectivities:\n");
-    for (ii = 0; ii <= D; ii++) {
-      for (id = 0; id <= D; id++) {
+    for (ii = 0; ii <= (uint32)D; ii++) {
+      for (id = 0; id <= (uint32)D; id++) {
         fprintf(file, "incidence %d -> %d:\n", ii, id);
         conn = topology->conn[IJ(D, ii, id)];
         conn_print(conn, file);
@@ -191,11 +191,11 @@ inline int32 mei_next(MeshEntityIterator *iter)
 
 int32 ind_print(Indices *ind, FILE *file)
 {
-  int32 ii;
+  uint32 ii;
   if (!ind) return(RET_OK);
 
   fprintf(file, "indices: num: %d\n", ind->num);
-  for (ii = 0; ii < (int32)ind->num; ii++) {
+  for (ii = 0; ii < ind->num; ii++) {
     fprintf(file, "%d: %d\n", ii, ind->indices[ii]);
   }
 
@@ -271,14 +271,14 @@ int32 conn_free(MeshConnectivity *conn)
 
 int32 conn_print(MeshConnectivity *conn, FILE *file)
 {
-  int32 ii, ic;
+  uint32 ii, ic;
   if (!conn) return(RET_OK);
 
   fprintf(file, "conn: num: %d, n_incident: %d\n", conn->num, conn->n_incident);
 
-  for (ii = 0; ii < (int32)conn->num; ii++) {
+  for (ii = 0; ii < conn->num; ii++) {
     fprintf(file, "%d:", ii);
-    for (ic = conn->offsets[ii]; ic < (int32)conn->offsets[ii+1]; ic++) {
+    for (ic = conn->offsets[ii]; ic < conn->offsets[ii+1]; ic++) {
       fprintf(file, " %d", conn->indices[ic]);
     }
     fprintf(file, "\n");
@@ -891,15 +891,15 @@ int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
   MeshEntityIterator it0[1], it1[1];
 
   for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
-    for (id = 0; (int32)id < nc; id++) {
+    for (id = 0; id < (uint32)nc; id++) {
       ptr[id] = 0.0;
     }
     for (mei_init_conn(it1, it0->entity, 0); mei_go(it1); mei_next(it1)) {
-      for (id = 0; (int32)id < nc; id++) {
+      for (id = 0; id < (uint32)nc; id++) {
         ptr[id] += coors[nc * it1->entity->ii + id];
       }
     }
-    for (id = 0; (int32)id < nc; id++) {
+    for (id = 0; id < (uint32)nc; id++) {
       ptr[id] /= (float64) it1->it_end;
     }
     ptr += nc;
@@ -918,7 +918,7 @@ inline float64 _tri_area(float64 *coors, uint32 *indices, int32 nc)
 {
 #define VS(ic, id) (coors[nc*indices[ic] + id])
 
-  int32 id;
+  uint32 id;
   float64 vv0;
   float64 v0[3], v1[3], ndir[3];
 
@@ -927,7 +927,7 @@ inline float64 _tri_area(float64 *coors, uint32 *indices, int32 nc)
     v1[2] = 0.0;
   }
 
-  for (id = 0; id < nc; id++) {
+  for (id = 0; id < (uint32)nc; id++) {
     vv0 = VS(0, id);
     v0[id] = VS(1, id) - vv0;
     v1[id] = VS(2, id) - vv0;
@@ -997,7 +997,7 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
     vol = 0;
 
     if (dim == 1) { // Edges.
-      for (id = 0; id < nc; id++) {
+      for (id = 0; id < (uint32)nc; id++) {
         aux = VS(1, id) - VS(0, id);
         vol += aux * aux;
       }
@@ -1030,7 +1030,7 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
           ptr[0] = 0.5 * aux;
 
         } else { // Tetrahedral cells.
-          for (id = 0; id < nc; id++) {
+          for (id = 0; id < (uint32)nc; id++) {
             vv0 = VS(0, id);
             vv1 = VS(1, id);
             vv2 = VS(2, id);
@@ -1103,14 +1103,14 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
 
       n_loc = loc->offsets[ii+1] - loc->offsets[ii];
       if (n_loc == 2) { // Edge normals.
-        for (id = 0; (int32)id < nc; id++) {
+        for (id = 0; id < (uint32)nc; id++) {
           v0[id] = VS(1, id) - VS(0, id);
         }
         ndir[0] = v0[1];
         ndir[1] = -v0[0];
 
       } else if (n_loc == 3) { // Triangular face normals.
-        for (id = 0; (int32)id < nc; id++) {
+        for (id = 0; id < (uint32)nc; id++) {
           vv0 = VS(0, id);
           v0[id] = VS(1, id) - vv0;
           v1[id] = VS(2, id) - vv0;
@@ -1118,7 +1118,7 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
         gtr_cross_product(ndir, v0, v1);
 
       } else if (n_loc == 4) { // Quadrilateral face normals.
-        for (id = 0; (int32)id < nc; id++) {
+        for (id = 0; id < (uint32)nc; id++) {
           vv0 = VS(0, id);
           vv1 = VS(1, id);
           vv2 = VS(2, id);
@@ -1139,14 +1139,14 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
         } else {
           gtr_cross_product(ndir, v0, v1);
           gtr_cross_product(ndir1, v2, v3);
-          for (id = 0; (int32)id < nc; id++) {
+          for (id = 0; id < (uint32)nc; id++) {
             ndir[id] += ndir1[id];
           }
         }
       }
 
       gtr_normalize_v3(ndir, ndir, nc, 0);
-      for (id = 0; (int32)id < nc; id++) {
+      for (id = 0; id < (uint32)nc; id++) {
         normals[nc * (cDd->offsets[it0->it] + ii) + id] = ndir[id];
       }
     }
@@ -1278,10 +1278,10 @@ inline int32 sort_local_connectivity(MeshConnectivity *loc, uint32 *oris,
 
 inline void uint32_sort234_copy(uint32 *out, uint32 *p, uint32 num)
 {
-  int32 ii;
+  uint32 ii;
   uint32 work;
 
-  for (ii = 0; ii < (int32)num; ii++) {
+  for (ii = 0; ii < num; ii++) {
     out[ii] = p[ii];
   }
   switch (num) {
