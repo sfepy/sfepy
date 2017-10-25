@@ -469,11 +469,10 @@ int32 dw_he_rtm( FMField *out,
                  Mapping *vg,
                  int32 isDiff, int32 mode_ul )
 {
-  int32 ii, j, sym, nRow, nQP, nEP, ret = RET_OK, dim;
+  int32 ii, j, sym, nRow, nQP, ret = RET_OK, dim;
   FMField *aux = 0, *out_qp = 0, *btd = 0, *btdb = 0, *ktsc = 0, *iktsc = 0;
 
   nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
   sym = stress->nRow;
   nRow = out->nRow; // dim * nEP.
   dim = vg->dim;
