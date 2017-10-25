@@ -8,7 +8,7 @@ int32 mulAB_integrate(FMField *out, FMField *A, FMField *B,
 {
   int32 ii, ret = RET_OK;
   FMField *aux = 0;
-  int32 (*fmul)(FMField*, FMField*, FMField*);
+  int32 (*fmul)(FMField*, FMField*, FMField*) = 0;
 
   if (mode == 0) {
     fmul = &fmf_mulATB_nn;

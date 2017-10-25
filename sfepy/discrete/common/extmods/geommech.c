@@ -310,7 +310,7 @@ int32 geme_norm3( float64 *out, FMField *mtx )
     j = mtx->val + dim*il;
     switch (dim) {
     case 1:
-      out[il] = abs(j[0]);
+      out[il] = fabs(j[0]);
       break;
     case 2:
       out[il] = sqrt( j[0] * j[0] + j[1] * j[1] );
@@ -397,20 +397,19 @@ int32 geme_eig3x3( float64 *out, FMField *mtx )
 */
 int32 geme_mulAVSB3( FMField *out, FMField *vs, FMField *in )
 {
-  int32 iqp, ir, ic, ii, dim, sym, nQP, nc;
+  int32 iqp, ir, ic, ii, dim, nQP, nc;
   int32 _is[] = {0, 0, 0, 0, 0, 0, 0, 0, 0,
 		 0, 2, 2, 1, 0, 0, 0, 0, 0,
 		 0, 3, 4, 3, 1, 5, 4, 5, 2};
   int32 *is;
   float64 *pout, *pvs, *pin;
 
-  sym = vs->nRow;
   nQP = vs->nLev;
   dim = in->nRow;
   nc = out->nCol;
 
 #ifdef DEBUG_FMF
-  if ((sym != (dim * (dim + 1) / 2)) || (out->nLev != in->nLev)
+  if ((vs->nRow != (dim * (dim + 1) / 2)) || (out->nLev != in->nLev)
       || (vs->nCol != 1) || (out->nLev != vs->nLev) || (nc != in->nCol)
       || (dim != out->nRow)) {
     errput( ErrHead "ERR_BadMatch: (%d %d %d), (%d %d %d), (%d %d %d)\n",

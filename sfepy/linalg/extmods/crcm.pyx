@@ -26,7 +26,7 @@ def rcm(mtx not None):
     cdef np.ndarray[int32, mode='c', ndim=1] perm
     cdef np.ndarray[int32, mode='c', ndim=1] indices
     cdef np.ndarray[int32, mode='c', ndim=1] indptr
-    cdef int32 *_perm, *_indptr, *_indices
+    cdef (int32 *) _perm, _indptr, _indices
     cdef int32 n_row, n_ptr, n_indx
 
     n_row = mtx.shape[0]
@@ -57,7 +57,7 @@ def permute_in_place(mtx not None,
     cdef int32 ret = 0
     cdef np.ndarray[int32, mode='c', ndim=1] indices
     cdef np.ndarray[int32, mode='c', ndim=1] indptr
-    cdef int32 *_perm, *_perm_i, *_indptr, *_indices
+    cdef (int32 *) _perm, _perm_i, _indptr, _indices
     cdef int32 n_row, n_ptr, n_indx
 
     if perm_i is None:

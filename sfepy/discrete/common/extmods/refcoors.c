@@ -137,11 +137,12 @@ int32 refc_find_ref_coors_convex(FMField *ref_coors,
                                  void *_ctx)
 {
   BasisContext *ctx = (BasisContext *) _ctx;
-  int32 ip, ic, icell, icell_max = 0, ii, imin, ik, ok, ret = RET_OK;
+  int32 ip, ic, icell, icell_max = 0, imin, ik, ok, ret = RET_OK;
+  uint32 ii;
   int32 xi_ok, hexa_reverse;
   int32 D = mesh->topology->max_dim;
   int32 dim = D - 1;
-  int32 nc = mesh->geometry->dim;
+  uint32 nc = mesh->geometry->dim;
   uint32 tri0[] = {0, 1, 3};
   uint32 tri1[] = {2, 3, 1};
   uint32 cell, cell0, cell00, facet;

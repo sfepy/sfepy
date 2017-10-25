@@ -495,7 +495,7 @@ int32 mem_printSome(FILE *file, int32 mode, int32 num)
       errput("damaged allocation record (overrun)!\n");
       ERR_GotoEnd(1);
     }
-    if (cnt == num) break;
+    if (cnt == (size_t)num) break;
     head = head->next;
   }
 

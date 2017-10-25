@@ -31,7 +31,7 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
       FMF_SetCell( mu, iell );
       pstress = FMF_PtrCell( stress, iell );
       pstrain = FMF_PtrCell( strain, iell );
-      if (1) {
+      if ((1)) {
 	for (iqp = 0; iqp < nQP; iqp++) {
 	  _lam = lam->val[iqp];
 	  _mu = mu->val[iqp];
@@ -45,7 +45,7 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
 	  pstress += sym;
 	  pstrain += sym;
 	}
-      } else {
+      } else { /* DISABLES CODE */
 	for (iqp = 0; iqp < nQP; iqp++) {
 	  _lam = lam->val[iqp];
 	  _mu = mu->val[iqp];
@@ -68,7 +68,7 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
       FMF_SetCell( mu, iell );
       pstress = FMF_PtrCell( stress, iell );
       pstrain = FMF_PtrCell( strain, iell );
-      if (1) {
+      if ((1)) {
 	for (iqp = 0; iqp < nQP; iqp++) {
 	  _lam = lam->val[iqp];
 	  _mu = mu->val[iqp];
@@ -79,7 +79,7 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
 	  pstress += sym;
 	  pstrain += sym;
 	}
-      } else {
+      } else { /* DISABLES CODE */
 	for (iqp = 0; iqp < nQP; iqp++) {
 	  _lam = lam->val[iqp];
 	  _mu = mu->val[iqp];

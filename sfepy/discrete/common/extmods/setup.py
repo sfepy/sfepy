@@ -30,8 +30,7 @@ def configuration(parent_package='', top_path=None):
                        sources=common_src,
                        extra_compiler_args=site_config.compile_flags(),
                        extra_link_args=site_config.link_flags(),
-                       include_dirs=[auto_dir, site_config.python_include()],
-                       macros=defines)
+                       include_dirs=[auto_dir, site_config.python_include()])
 
     src = ['_fmfield.pyx']
     config.add_extension('_fmfield',

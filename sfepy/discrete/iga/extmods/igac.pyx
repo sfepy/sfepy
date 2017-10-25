@@ -231,7 +231,7 @@ cdef class CNURBSContext:
         cdef int32 n_efun = self.ctx.n_efun
         cdef int32 dim = coors.shape[1]
         cdef int32 bdim
-        cdef FMField _out[1], _coors[1]
+        cdef FMField[1] _out, _coors
 
         ctx = self.ctx
 
@@ -262,7 +262,7 @@ def eval_bernstein_basis(np.ndarray funs not None,
                          float64 x,
                          uint32 degree):
     cdef int32 ret
-    cdef FMField _funs[1], _ders[1]
+    cdef FMField[1] _funs, _ders
 
     array2fmfield1(_funs, funs)
     array2fmfield1(_ders, ders)
@@ -318,12 +318,12 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     cdef uint32 ii, ie, n_qp, n_efun, nf
     cdef int32 n_el, n_ep, dim, aux
     cdef uint32 *_cells
-    cdef int32 *_degrees, *_conn
-    cdef FMField _bf[1], _bfg[1], _det[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _control_points[1], _weights[1]
+    cdef (int32 *) _degrees, _conn
+    cdef FMField[1] _bf, _bfg, _det
+    cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
+    cdef FMField[1] _qp, _control_points, _weights
     cdef FMField _cs[3]
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
     cdef np.ndarray[float64, mode='c', ndim=4] bfs, bfgs, dets
 
     if cells is None:
@@ -351,7 +351,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     dx_dxi = np.empty((1, 1, dim, dim), dtype=np.float64)
     dxi_dx = np.empty((1, 1, dim, dim), dtype=np.float64)
 
-    for ii in range(0, dim):
+    for ii in range(0, <uint32>dim):
         fmf_alloc(_B + ii, n_qp, 1, n_efuns[ii], 1)
         fmf_alloc(_dB_dxi + ii, n_qp, 1, n_efuns[ii], 1)
         fmf_alloc(_N + ii, 1, 1, n_efuns[ii], 1)
@@ -363,7 +363,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
     array2fmfield4(_dxi_dx, dxi_dx)
     array2fmfield2(_control_points, control_points)
     array2fmfield1(_weights, weights)
-    for ii in range(dim):
+    for ii in range(<uint32>dim):
         array2fmfield4(_cs + ii, cs[ii])
 
     array2pint1(&_degrees, &dim, degrees)
@@ -386,7 +386,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
 
     # Pre-compute 1D Bernstein basis B, dB/dxi.
     for iqp in range(0, n_qp):
-        for ii in range(0, dim):
+        for ii in range(0, <uint32>dim):
             nf = n_efuns[ii]
             _eval_bernstein_basis(_B + ii, _dB_dxi + ii,
                                   _qp.val[ii], _degrees[ii])
@@ -401,7 +401,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
             ie = _cells[iseq]
 
             _qp.val = _qp.val0
-            for ii in range(0, dim):
+            for ii in range(0, <uint32>dim):
                 (_B + ii).val = (_B + ii).val0
                 (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
@@ -419,7 +419,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                 _bfg.val += dim * n_efun
                 _det.val += 1
                 _qp.val += dim
-                for ii in range(0, dim):
+                for ii in range(0, <uint32>dim):
                     nf = n_efuns[ii]
                     (_B + ii).val += nf
                     (_dB_dxi + ii).val += nf
@@ -431,7 +431,7 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
             ie = _cells[iseq]
 
             _qp.val = _qp.val0
-            for ii in range(0, dim):
+            for ii in range(0, <uint32>dim):
                 (_B + ii).val = (_B + ii).val0
                 (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
@@ -449,12 +449,12 @@ def eval_mapping_data_in_qp(np.ndarray[float64, mode='c', ndim=2] qps not None,
                 _bfg.val += dim * n_efun
                 _det.val += 1
                 _qp.val += dim
-                for ii in range(0, dim):
+                for ii in range(0, <uint32>dim):
                     nf = n_efuns[ii]
                     (_B + ii).val += nf
                     (_dB_dxi + ii).val += nf
 
-    for ii in range(0, dim):
+    for ii in range(0, <uint32>dim):
         fmf_free(_B + ii)
         fmf_free(_dB_dxi + ii)
         fmf_free(_N + ii)
@@ -510,13 +510,13 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     cdef uint32 ii, ie, n_qp, n_efun, nf, nc, ir, ic
     cdef int32 n_el, n_ep, dim, aux
     cdef uint32 *_cells
-    cdef int32 *_degrees, *_conn, *ec
+    cdef (int32 *) _degrees, _conn, ec
     cdef float64 val
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _coors[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _qp[1], _variable[1], _control_points[1], _weights[1]
+    cdef FMField[1] _bf, _bfg, _det, _vals, _coors
+    cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
+    cdef FMField[1] _qp, _variable, _control_points, _weights
     cdef FMField _cs[3]
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
     cdef np.ndarray[float64, mode='c', ndim=2] coors, vals, dets
 
     if cells is None:
@@ -545,7 +545,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     dx_dxi = np.empty((1, 1, dim, dim), dtype=np.float64)
     dxi_dx = np.empty((1, 1, dim, dim), dtype=np.float64)
 
-    for ii in range(0, dim):
+    for ii in range(0, <uint32>dim):
         fmf_alloc(_B + ii, n_qp, 1, n_efuns[ii], 1)
         fmf_alloc(_dB_dxi + ii, n_qp, 1, n_efuns[ii], 1)
         fmf_alloc(_N + ii, 1, 1, n_efuns[ii], 1)
@@ -560,7 +560,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
     array2fmfield2(_variable, variable)
     array2fmfield2(_control_points, control_points)
     array2fmfield1(_weights, weights)
-    for ii in range(dim):
+    for ii in range(<uint32>dim):
         array2fmfield4(_cs + ii, cs[ii])
 
     array2pint1(&_degrees, &dim, degrees)
@@ -583,7 +583,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
 
     # Pre-compute 1D Bernstein basis B, dB/dxi.
     for iqp in range(0, n_qp):
-        for ii in range(0, dim):
+        for ii in range(0, <uint32>dim):
             nf = n_efuns[ii]
             _eval_bernstein_basis(_B + ii, _dB_dxi + ii,
                                   _qp.val[ii], _degrees[ii])
@@ -600,7 +600,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
             ec = _conn + n_ep * ie
 
             _qp.val = _qp.val0
-            for ii in range(0, dim):
+            for ii in range(0, <uint32>dim):
                 (_B + ii).val = (_B + ii).val0
                 (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
@@ -624,7 +624,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                         _vals.val[ir] += _bf.val[ic] * val
 
                 # coors[ii, :] = np.dot(bf, control_points[ec])
-                for ir in range(0, dim):
+                for ir in range(0, <uint32>dim):
                     _coors.val[ir] = 0.0
 
                     for ic in range(0, n_efun):
@@ -635,7 +635,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                 _coors.val += dim
                 _det.val += 1
                 _qp.val += dim
-                for ii in range(0, dim):
+                for ii in range(0, <uint32>dim):
                     nf = n_efuns[ii]
                     (_B + ii).val += nf
                     (_dB_dxi + ii).val += nf
@@ -649,7 +649,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
             ec = _conn + n_ep * ie
 
             _qp.val = _qp.val0
-            for ii in range(0, dim):
+            for ii in range(0, <uint32>dim):
                 (_B + ii).val = (_B + ii).val0
                 (_dB_dxi + ii).val = (_dB_dxi + ii).val0
 
@@ -673,7 +673,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                         _vals.val[ir] += _bf.val[ic] * val
 
                 # coors[ii, :] = np.dot(bf, control_points[ec])
-                for ir in range(0, dim):
+                for ir in range(0, <uint32>dim):
                     _coors.val[ir] = 0.0
 
                     for ic in range(0, n_efun):
@@ -684,7 +684,7 @@ def eval_variable_in_qp(np.ndarray[float64, mode='c', ndim=2] variable not None,
                 _coors.val += dim
                 _det.val += 1
                 _qp.val += dim
-                for ii in range(0, dim):
+                for ii in range(0, <uint32>dim):
                     nf = n_efuns[ii]
                     (_B + ii).val += nf
                     (_dB_dxi + ii).val += nf
@@ -735,22 +735,23 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     """
     cdef uint32 ii, ip, ie, n_efun, nc, ir, ic, n_vals, uaux
     cdef int32 n_el, n_ep, dim, aux
-    cdef int32 *_degrees, *_conn, *ec
-    cdef uint32 igrid[3], shape[3], iis[3], n_els[3]
-    cdef uint32 *_indices[3], **puaux
-    cdef FMField _bf[1], _bfg[1], _det[1], _vals[1], _out[1]
-    cdef FMField _bfg_dxi[1], _dx_dxi[1], _dxi_dx[1]
-    cdef FMField _rc[1], _control_points[1], _weights[1]
-    cdef FMField _cs[3], _ref_coors[3]
+    cdef (int32 *) _degrees, _conn, ec
+    cdef uint32[3] igrid, shape, iis, n_els
+    cdef uint32 *_indices[3]
+    cdef uint32 **puaux
+    cdef FMField[1] _bf, _bfg, _det, _vals, _out
+    cdef FMField[1] _bfg_dxi, _dx_dxi, _dxi_dx
+    cdef FMField[1] _rc, _control_points, _weights
+    cdef FMField[3] _cs, _ref_coors
     cdef np.ndarray[float64, mode='c', ndim=2] _evals, out
-    cdef FMField _B[3], _dB_dxi[3], _N[3], _dN_dxi[3]
+    cdef FMField[3] _B, _dB_dxi, _N, _dN_dxi
 
     dim = control_points.shape[1]
     n_efuns = degrees + 1
     n_efun = np.prod(n_efuns)
 
     n_vals = 1
-    for ii in range(0, dim):
+    for ii in range(0, <uint32>dim):
         shape[ii] = len(ref_coors[ii])
         n_vals *= shape[ii]
 
@@ -774,7 +775,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     dx_dxi = np.empty((1, 1, dim, dim), dtype=np.float64)
     dxi_dx = np.empty((1, 1, dim, dim), dtype=np.float64)
 
-    for ii in range(0, dim):
+    for ii in range(0, <uint32>dim):
         fmf_alloc(_B + ii, 1, 1, n_efuns[ii], 1)
         fmf_alloc(_dB_dxi + ii, 1, 1, n_efuns[ii], 1)
         fmf_alloc(_N + ii, 1, 1, n_efuns[ii], 1)
@@ -791,7 +792,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
     array2fmfield2(_control_points, control_points)
     array2fmfield1(_weights, weights)
     array2fmfield2(_vals, _evals)
-    for ii in range(dim):
+    for ii in range(<uint32>dim):
         array2fmfield4(_cs + ii, cs[ii])
         n_els[ii] = (_cs + ii).nCell;
 
@@ -804,7 +805,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
 
     _out.val = _out.val0 = &out[0, 0]
 
-    for ii in range(0, dim):
+    for ii in range(0, <uint32>dim):
         puaux = _indices + ii
         array2puint1(puaux, &uaux, indices[ii])
         array2fmfield1(_ref_coors + ii, ref_coors[ii])
@@ -813,7 +814,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
         for ip in range(0, n_vals):
             _unravel_index(igrid, ip, shape, dim)
 
-            for ii in range(0, dim):
+            for ii in range(0, <uint32>dim):
                 iis[ii] = _indices[ii][igrid[ii]]
                 _rc.val[ii] = (_ref_coors + ii).val[igrid[ii]]
             _ravel_multi_index(&ie, iis, n_els, dim)
@@ -841,7 +842,7 @@ def eval_in_tp_coors(np.ndarray[float64, mode='c', ndim=2] variable,
         for ip in range(0, n_vals):
             _unravel_index(igrid, ip, shape, dim)
 
-            for ii in range(0, dim):
+            for ii in range(0, <uint32>dim):
                 iis[ii] = _indices[ii][igrid[ii]]
                 _rc.val[ii] = (_ref_coors + ii).val[igrid[ii]]
             _ravel_multi_index(&ie, iis, n_els, dim)

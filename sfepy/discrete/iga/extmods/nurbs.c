@@ -349,7 +349,7 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   }
 #endif
 
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     n_efuns[ii] = degrees[ii] + 1;
     n_efun *= n_efuns[ii];
   }
@@ -366,19 +366,19 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
 
   // 1D Bernstein basis B, dB/dxi.
   if (!has_bernstein) {
-    for (ii = 0; ii < dim; ii++) {
+    for (ii = 0; ii < (uint32)dim; ii++) {
       eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
     }
   }
 
   // 1D B-spline basis N = CB, dN/dxi = C dB/dxi.
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     n_els[ii] = (cs + ii)->nCell;
   }
 
   unravel_index(ic, ie, n_els, dim);
 
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     C = cs + ii;
     FMF_SetCell(C, ic[ii]);
 
@@ -444,10 +444,10 @@ int32 eval_bspline_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   if (is_dx) {
     // Mapping reference -> physical domain dxi/dx.
     // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
-    for (ii = 0; ii < dim; ii++) {
-      for (jj = 0; jj < dim; jj++) {
+    for (ii = 0; ii < (uint32)dim; ii++) {
+      for (jj = 0; jj < (uint32)dim; jj++) {
         dx_dxi->val[dim*ii+jj] = 0.0;
-        for (a = 0; a < dR_dxi->nCol; a++) {
+        for (a = 0; a < (uint32)dR_dxi->nCol; a++) {
           P = control_points->val[dim*ec[a]+ii];
 
           dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
@@ -500,7 +500,7 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   }
 #endif
 
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     n_efuns[ii] = degrees[ii] + 1;
     n_efun *= n_efuns[ii];
   }
@@ -517,19 +517,19 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
 
   // 1D Bernstein basis B, dB/dxi.
   if (!has_bernstein) {
-    for (ii = 0; ii < dim; ii++) {
+    for (ii = 0; ii < (uint32)dim; ii++) {
       eval_bernstein_basis(B + ii, dB_dxi + ii, qp->val[ii], degrees[ii]);
     }
   }
 
   // 1D B-spline basis N = CB, dN/dxi = C dB/dxi.
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     n_els[ii] = (cs + ii)->nCell;
   }
 
   unravel_index(ic, ie, n_els, dim);
 
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     C = cs + ii;
     FMF_SetCell(C, ic[ii]);
 
@@ -541,7 +541,7 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
 
   // Numerators and denominator for tensor-product NURBS basis R, dR/dxi.
   w = 0; // w_b
-  for (ii = 0; ii < dim; ii++) {
+  for (ii = 0; ii < (uint32)dim; ii++) {
     dw_dxi[ii] = 0.0; // dw_b/dxi
   }
   a = 0; // Basis function index.
@@ -614,8 +614,8 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   fmf_mulC(R, 1.0 / w);
 
   // Finish dR/dxi. D == W C dB/dxi, dR/dxi = (D - R dw_b/dxi) / w_b.
-  for (a = 0; a < dR_dxi->nCol; a++) {
-    for (ii = 0; ii < dim; ii++) {
+  for (a = 0; a < (uint32)dR_dxi->nCol; a++) {
+    for (ii = 0; ii < (uint32)dim; ii++) {
       dR_dxi->val[a+n_ep*ii] = (dR_dxi->val[a+n_ep*ii]
                                 - R->val[a] * dw_dxi[ii]) / w;
     }
@@ -624,10 +624,10 @@ int32 eval_nurbs_basis_tp(FMField *R, FMField *dR_dx, FMField *det,
   if (is_dx) {
     // Mapping reference -> physical domain dxi/dx.
     // x = sum P_a R_a, dx/dxi = sum P_a dR_a/dxi, invert.
-    for (ii = 0; ii < dim; ii++) {
-      for (jj = 0; jj < dim; jj++) {
+    for (ii = 0; ii < (uint32)dim; ii++) {
+      for (jj = 0; jj < (uint32)dim; jj++) {
         dx_dxi->val[dim*ii+jj] = 0.0;
-        for (a = 0; a < dR_dxi->nCol; a++) {
+        for (a = 0; a < (uint32)dR_dxi->nCol; a++) {
           P = control_points->val[dim*ec[a]+ii];
 
           dx_dxi->val[dim*ii+jj] += P * dR_dxi->val[a+n_ep*jj];
