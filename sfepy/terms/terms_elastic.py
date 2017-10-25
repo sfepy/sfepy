@@ -755,8 +755,8 @@ def _build_cauchy_strain_op(bfg):
 class ElasticWaveTerm(Term):
     r"""
     Elastic dispersion term involving the wave strain :math:`g_{ij}`,
-    :math:`g_{ij}(\ul{u}) = \frac{1}{2}(u_i n_j + n_i u_j)`, with the incident
-    wave direction :math:`\ul{n}`. :math:`D_{ijkl}` is given in the usual
+    :math:`g_{ij}(\ul{u}) = \frac{1}{2}(u_i \kappa_j + \kappa_i u_j)`, with the
+    wave vector :math:`\ul{\kappa}`. :math:`D_{ijkl}` is given in the usual
     matrix form exploiting symmetry: in 3D it is :math:`6\times6` with the
     indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
     :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`.
@@ -768,7 +768,7 @@ class ElasticWaveTerm(Term):
 
     :Arguments:
         - material_1 : :math:`D_{ijkl}`
-        - material_2 : :math:`\ul{n}`
+        - material_2 : :math:`\ul{\kappa}`
         - virtual    : :math:`\ul{v}`
         - state      : :math:`\ul{u}`
     """
@@ -783,7 +783,7 @@ class ElasticWaveTerm(Term):
         status = geo.integrate(out, out_qp)
         return status
 
-    def get_fargs(self, mat, vec, virtual, state,
+    def get_fargs(self, mat, kappa, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         from sfepy.discrete.variables import create_adof_conn
 
@@ -797,7 +797,7 @@ class ElasticWaveTerm(Term):
         for ir in range(dim):
             ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
 
-        gmat = _build_wave_strain_op(vec, ebf)
+        gmat = _build_wave_strain_op(kappa, ebf)
 
         if diff_var is None:
             econn = state.field.get_econn('volume', self.region)
@@ -818,8 +818,8 @@ class ElasticWaveTerm(Term):
 class ElasticWaveCauchyTerm(Term):
     r"""
     Elastic dispersion term involving the wave strain :math:`g_{ij}`,
-    :math:`g_{ij}(\ul{u}) = \frac{1}{2}(u_i n_j + n_i u_j)`, the incident wave
-    direction :math:`\ul{n}`. and the elastic strain :math:`e_{ij}`.
+    :math:`g_{ij}(\ul{u}) = \frac{1}{2}(u_i \kappa_j + \kappa_i u_j)`, with the
+    wave vector :math:`\ul{\kappa}` and the elastic strain :math:`e_{ij}`.
     :math:`D_{ijkl}` is given in the usual matrix form exploiting symmetry: in
     3D it is :math:`6\times6` with the indices ordered as :math:`[11, 22, 33,
     12, 13, 23]`, in 2D it is :math:`3\times3` with the indices ordered as
@@ -833,13 +833,13 @@ class ElasticWaveCauchyTerm(Term):
 
     :Arguments 1:
         - material_1 : :math:`D_{ijkl}`
-        - material_2 : :math:`\ul{n}`
+        - material_2 : :math:`\ul{\kappa}`
         - virtual    : :math:`\ul{v}`
         - state      : :math:`\ul{u}`
 
     :Arguments 2:
         - material_1 : :math:`D_{ijkl}`
-        - material_2 : :math:`\ul{n}`
+        - material_2 : :math:`\ul{\kappa}`
         - state      : :math:`\ul{u}`
         - virtual    : :math:`\ul{v}`
     """
@@ -856,7 +856,7 @@ class ElasticWaveCauchyTerm(Term):
         status = geo.integrate(out, out_qp)
         return status
 
-    def get_fargs(self, mat, vec, gvar, evar,
+    def get_fargs(self, mat, kappa, gvar, evar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         from sfepy.discrete.variables import create_adof_conn
 
@@ -870,7 +870,7 @@ class ElasticWaveCauchyTerm(Term):
         for ir in range(dim):
             ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
 
-        gmat = _build_wave_strain_op(vec, ebf)
+        gmat = _build_wave_strain_op(kappa, ebf)
         emat = _build_cauchy_strain_op(geo.bfg)
 
         if diff_var is None:
