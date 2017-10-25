@@ -85,7 +85,7 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
 {
   uint32 ii, id;
   uint32 *num;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshGeometry *geometry = mesh->geometry;
   MeshTopology *topology = mesh->topology;
   MeshConnectivity *conn = 0;
@@ -107,8 +107,8 @@ int32 mesh_print(Mesh *mesh, FILE *file, int32 header_only)
     }
 
     fprintf(file, "topology connectivities:\n");
-    for (ii = 0; ii <= (uint32)D; ii++) {
-      for (id = 0; id <= (uint32)D; id++) {
+    for (ii = 0; ii <= D; ii++) {
+      for (id = 0; id <= D; id++) {
         fprintf(file, "incidence %d -> %d:\n", ii, id);
         conn = topology->conn[IJ(D, ii, id)];
         conn_print(conn, file);
@@ -135,7 +135,7 @@ inline int32 mei_init_conn(MeshEntityIterator *iter, MeshEntity *entity,
                            uint32 dim)
 {
   Mesh *mesh = entity->mesh;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, entity->dim, dim)];
 
   iter->entity->mesh = mesh;
@@ -341,7 +341,7 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
   int32 ret = RET_OK;
   int32 d3 = 0;
   MeshTopology *topology = mesh->topology;
-  int32 D = topology->max_dim;
+  uint32 D = topology->max_dim;
 
   debprintf("request connectivity %d -> %d\n", d1, d2);
 
@@ -384,7 +384,7 @@ int32 mesh_setup_connectivity(Mesh *mesh, int32 d1, int32 d2)
 
 int32 mesh_free_connectivity(Mesh *mesh, int32 d1, int32 d2)
 {
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshConnectivity *conn = 0;
 
   debprintf("free connectivity %d -> %d\n", d1, d2);
@@ -400,7 +400,7 @@ int32 mesh_build(Mesh *mesh, int32 dim)
   int32 ret = RET_OK;
   uint32 n_incident, n_v_max, n_loc;
   uint32 ii, ic, id, found;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   uint32 facet[4]; // Max. space for single facet.
   uint32 *oris = 0;
   uint32 loc_oris[12];
@@ -571,7 +571,7 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
   uint32 n_incident;
   uint32 ii;
   uint32 *nd2 = 0;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshEntityIterator it2[1], it1[1];
   MeshConnectivity *c12 = 0; // d1 -> d2 - to compute
 
@@ -626,7 +626,7 @@ int32 mesh_transpose(Mesh *mesh, int32 d1, int32 d2)
 int32 mesh_intersect(Mesh *mesh, int32 d1, int32 d2, int32 d3)
 {
   int32 ret = RET_OK;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   uint32 n_incident, ii;
   uint32 *nd2 = 0;
   char *mask = 0;
@@ -742,7 +742,7 @@ uint32 mesh_count_incident(Mesh *mesh, int32 dim,
 {
   uint32 ii, num = 0;
   uint32 *ptr;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
 
   if (!conn->num) {
@@ -766,7 +766,7 @@ int32 mesh_get_incident(Mesh *mesh,
 {
   int32 ret = RET_OK;
   uint32 ii;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshEntityIterator it0[1], it1[1];
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dent, dim)];
 
@@ -795,7 +795,7 @@ int32 mesh_get_local_ids(Mesh *mesh, Indices *local_ids,
 {
   int32 ret = RET_OK;
   uint32 ii, iind, ic, found;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshEntity entity[1];
   MeshEntityIterator it1[1];
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, dim, dent)];
@@ -841,7 +841,7 @@ int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
                            Indices *entities, int32 dent)
 {
   int32 ret = RET_OK;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   uint32 ii, inum;
   char *ent_mask = 0;
   MeshEntityIterator it0[1], it1[1];
@@ -884,22 +884,22 @@ int32 mesh_select_complete(Mesh *mesh, Mask *mask, int32 dim,
 // `ccoors` must be preallocated.
 int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
 {
-  int32 nc = mesh->geometry->dim;
+  uint32 nc = mesh->geometry->dim;
   uint32 id;
   float64 *ptr = ccoors;
   float64 *coors = mesh->geometry->coors;
   MeshEntityIterator it0[1], it1[1];
 
   for (mei_init(it0, mesh, dim); mei_go(it0); mei_next(it0)) {
-    for (id = 0; id < (uint32)nc; id++) {
+    for (id = 0; id < nc; id++) {
       ptr[id] = 0.0;
     }
     for (mei_init_conn(it1, it0->entity, 0); mei_go(it1); mei_next(it1)) {
-      for (id = 0; id < (uint32)nc; id++) {
+      for (id = 0; id < nc; id++) {
         ptr[id] += coors[nc * it1->entity->ii + id];
       }
     }
-    for (id = 0; id < (uint32)nc; id++) {
+    for (id = 0; id < nc; id++) {
       ptr[id] /= (float64) it1->it_end;
     }
     ptr += nc;
@@ -914,7 +914,7 @@ inline float64 _det3x3(float64 j[9])
           - j[2]*j[4]*j[6] - j[5]*j[7]*j[0] - j[1]*j[3]*j[8]);
 }
 
-inline float64 _tri_area(float64 *coors, uint32 *indices, int32 nc)
+inline float64 _tri_area(float64 *coors, uint32 *indices, uint32 nc)
 {
 #define VS(ic, id) (coors[nc*indices[ic] + id])
 
@@ -927,7 +927,7 @@ inline float64 _tri_area(float64 *coors, uint32 *indices, int32 nc)
     v1[2] = 0.0;
   }
 
-  for (id = 0; id < (uint32)nc; id++) {
+  for (id = 0; id < nc; id++) {
     vv0 = VS(0, id);
     v0[id] = VS(1, id) - vv0;
     v1[id] = VS(2, id) - vv0;
@@ -943,7 +943,7 @@ inline float64 _tri_area(float64 *coors, uint32 *indices, int32 nc)
 #undef VS
 }
 
-inline float64 _aux_hex(float64 *coors, uint32 *indices, int32 nc,
+inline float64 _aux_hex(float64 *coors, uint32 *indices, uint32 nc,
                         int32 h, int32 i, int32 j, int32 k)
 {
 #define VS(ic, id) (coors[nc*indices[ic] + id])
@@ -971,8 +971,8 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
 #define VS(ic, id) (coors[nc*entity_vertices->indices[ic] + id])
 
   int32 ret = RET_OK;
-  int32 D = mesh->topology->max_dim;
-  int32 nc = mesh->geometry->dim;
+  uint32 D = mesh->topology->max_dim;
+  uint32 nc = mesh->geometry->dim;
   uint32 id;
   uint32 indx2[6];
   float64 vol, aux, vv0, vv1, vv2, vv3;
@@ -997,7 +997,7 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
     vol = 0;
 
     if (dim == 1) { // Edges.
-      for (id = 0; id < (uint32)nc; id++) {
+      for (id = 0; id < nc; id++) {
         aux = VS(1, id) - VS(0, id);
         vol += aux * aux;
       }
@@ -1030,7 +1030,7 @@ int32 mesh_get_volumes(Mesh *mesh, float64 *volumes, int32 dim)
           ptr[0] = 0.5 * aux;
 
         } else { // Tetrahedral cells.
-          for (id = 0; id < (uint32)nc; id++) {
+          for (id = 0; id < nc; id++) {
             vv0 = VS(0, id);
             vv1 = VS(1, id);
             vv2 = VS(2, id);
@@ -1073,8 +1073,8 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
 {
 #define VS(ic, id) (coors[nc*cell_vertices->indices[ik[ic]] + id])
 
-  int32 D = mesh->topology->max_dim;
-  int32 nc = mesh->geometry->dim;
+  uint32 D = mesh->topology->max_dim;
+  uint32 nc = mesh->geometry->dim;
   int32 dim = D - 1;
   uint32 ii, id, n_loc;
   uint32 *ik;
@@ -1103,14 +1103,14 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
 
       n_loc = loc->offsets[ii+1] - loc->offsets[ii];
       if (n_loc == 2) { // Edge normals.
-        for (id = 0; id < (uint32)nc; id++) {
+        for (id = 0; id < nc; id++) {
           v0[id] = VS(1, id) - VS(0, id);
         }
         ndir[0] = v0[1];
         ndir[1] = -v0[0];
 
       } else if (n_loc == 3) { // Triangular face normals.
-        for (id = 0; id < (uint32)nc; id++) {
+        for (id = 0; id < nc; id++) {
           vv0 = VS(0, id);
           v0[id] = VS(1, id) - vv0;
           v1[id] = VS(2, id) - vv0;
@@ -1118,7 +1118,7 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
         gtr_cross_product(ndir, v0, v1);
 
       } else if (n_loc == 4) { // Quadrilateral face normals.
-        for (id = 0; id < (uint32)nc; id++) {
+        for (id = 0; id < nc; id++) {
           vv0 = VS(0, id);
           vv1 = VS(1, id);
           vv2 = VS(2, id);
@@ -1139,14 +1139,14 @@ int32 mesh_get_facet_normals(Mesh *mesh, float64 *normals, int32 which)
         } else {
           gtr_cross_product(ndir, v0, v1);
           gtr_cross_product(ndir1, v2, v3);
-          for (id = 0; id < (uint32)nc; id++) {
+          for (id = 0; id < nc; id++) {
             ndir[id] += ndir1[id];
           }
         }
       }
 
       gtr_normalize_v3(ndir, ndir, nc, 0);
-      for (id = 0; id < (uint32)nc; id++) {
+      for (id = 0; id < nc; id++) {
         normals[nc * (cDd->offsets[it0->it] + ii) + id] = ndir[id];
       }
     }
@@ -1161,7 +1161,7 @@ inline int32 me_get_incident(MeshEntity *entity, Indices *out, int32 dim)
 {
   int32 ret = RET_OK;
   Mesh *mesh = entity->mesh;
-  int32 D = mesh->topology->max_dim;
+  uint32 D = mesh->topology->max_dim;
   MeshConnectivity *conn = mesh->topology->conn[IJ(D, entity->dim, dim)];
 
   if (!conn->num) {
