@@ -66,6 +66,10 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
             for dense problems :func:`eig()` or :func:`eigh()` are used, for
             sparse problems (if `n_eigs` is given) :func:`eigs()` or
             :func:`eigsh()` are used."""),
+        ('which', "'LM' | 'SM' | 'LR' | 'SR' | 'LI' | 'SI'", 'SM', False,
+         """Which eigenvectors and eigenvalues to find,
+            see :func:`scipy.sparse.linalg.eigs()`
+            or :func:`scipy.sparse.linalg.eigsh()`."""),
         ('*', '*', None, False,
          'Additional parameters supported by the method.'),
     ]
@@ -92,7 +96,7 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
 
         else:
             eig = self.ssla.eigs if conf.method == 'eig' else self.ssla.eigsh
-            out = eig(mtx_a, M=mtx_b, k=n_eigs, which='SM',
+            out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
                       return_eigenvectors=eigenvectors, **kwargs)
 
         if eigenvectors:
