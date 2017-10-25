@@ -129,7 +129,11 @@ def _pymetis_version(pkg_name):
 def _scikit_umfpack_version(pkg_name):
     try:
         import scikits.umfpack; scikits.umfpack
-        return '0.1'
+        try:
+            return scikits.umfpack.__version__
+
+        except AttributeError:
+            return '<0.3.1'
 
     except:
         return None
