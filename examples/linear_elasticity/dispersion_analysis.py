@@ -18,6 +18,7 @@ import numpy as nm
 from sfepy.base.base import output
 from sfepy.base.conf import ProblemConf
 from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
+from sfepy.base.log import Log
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
 import sfepy.discrete.fem.periodic as per
@@ -228,6 +229,10 @@ def main():
     eigenshapes_filename = os.path.join(output_dir,
                                         'eigenshapes-%s.vtk'
                                         % wmag_stepper.suffix)
+    log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)]],
+              yscales=['linear'],
+              xlabels=[r'$\kappa$'], ylabels=[r'eigenvalues $\lambda_i$'],
+              log_filename=os.path.join(output_dir, 'eigenvalues.txt'))
     for iv, wmag in wmag_stepper:
         wave_vec = wmag * wdir
         wave_mat.datas['special']['vec'] = wave_vec
@@ -248,6 +253,8 @@ def main():
             eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
                                      eigenvectors=True)
         omegas = nm.sqrt(eigs)
+
+        log(*eigs, x=[wmag])
         output('eigs, omegas:\n', nm.c_[eigs, omegas])
 
         if svecs is not None:
@@ -266,6 +273,9 @@ def main():
                 out['u%03d' % ii] = aux.popitem()[1]
 
             pb.save_state(eigenshapes_filename % iv, out=out)
+
+    log(save_figure=os.path.join(output_dir, 'eigenvalues.png'))
+    log(finished=True)
 
 if __name__ == '__main__':
     main()
