@@ -272,9 +272,11 @@ def main():
     eigenshapes_filename = os.path.join(output_dir,
                                         'eigenshapes-%s.vtk'
                                         % wmag_stepper.suffix)
-    log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)]],
-              yscales=['linear'],
-              xlabels=[r'$\kappa$'], ylabels=[r'eigenvalues $\lambda_i$'],
+    log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
+               [r'$\omega_{%d}$' % ii for ii in range(options.n_eigs)]],
+              yscales=['linear', 'linear'],
+              xlabels=[r'$\kappa$', r'$\kappa$'],
+              ylabels=[r'eigenvalues $\lambda_i$', r'frequencies $\omega_i$'],
               log_filename=os.path.join(output_dir, 'eigenvalues.txt'))
     for iv, wmag in wmag_stepper:
         wave_vec = wmag * wdir
@@ -297,8 +299,10 @@ def main():
                                      eigenvectors=True)
         omegas = nm.sqrt(eigs)
 
-        log(*eigs, x=[wmag])
         output('eigs, omegas:\n', nm.c_[eigs, omegas])
+
+        out = tuple(eigs) + tuple(omegas)
+        log(*out, x=[wmag, wmag])
 
         if svecs is not None:
             # Make full eigenvectors (add DOFs fixed by boundary conditions).
