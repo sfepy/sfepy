@@ -142,7 +142,7 @@ helps = {
 
 def main():
     # Aluminium and epoxy.
-    default_pars = '58.98e9,26.81e9,2.799e3, 1.798e9,1.48e9,1.142e3'
+    default_pars = '70e9,0.35,2.799e3, 3.8e9,0.27,1.142e3'
 
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
