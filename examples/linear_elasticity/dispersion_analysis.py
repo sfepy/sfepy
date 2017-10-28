@@ -11,6 +11,7 @@ import os
 import sys
 sys.path.append('.')
 import functools
+from copy import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
@@ -21,6 +22,7 @@ from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.base.log import Log
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
+from sfepy.mechanics.units import apply_unit_multipliers
 import sfepy.discrete.fem.periodic as per
 from sfepy.homogenization.utils import define_box_regions
 from sfepy.discrete import Problem
@@ -126,6 +128,12 @@ helps = {
     'pars' :
     'material parameters in Y1, Y2 subdomains in basic units'
     ' [default: %(default)s]',
+    'mesh_size' :
+    'desired mesh size (max. of bounding box dimensions) in basic units'
+    ' - the input periodic cell mesh is rescaled to this size'
+    ' [default: %(default)s]',
+    'unit_multipliers' :
+    'basic unit multipliers (time, length, mass) [default: %(default)s]',
     'wave_range' : 'the wave vector magnitude range (like numpy.linspace)'
     ' [default: %(default)s]',
     'wave_dir' : 'the wave vector direction (will be normalized)'
@@ -138,6 +146,8 @@ helps = {
     'clear old solution files from output directory',
     'output_dir' :
     'output directory [default: %(default)s]',
+    'mesh_filename' :
+    'input periodic cell mesh file name [default: %(default)s]',
 }
 
 def main():
@@ -150,6 +160,13 @@ def main():
                         ',young2,poisson2,density2',
                         action='store', dest='pars',
                         default=default_pars, help=helps['pars'])
+    parser.add_argument('--mesh-size', type=float, metavar='float',
+                        action='store', dest='mesh_size',
+                        default=None, help=helps['mesh_size'])
+    parser.add_argument('--unit-multipliers',
+                        metavar='c_time,c_length,c_mass',
+                        action='store', dest='unit_multipliers',
+                        default='1.0,1.0,1.0', help=helps['unit_multipliers'])
     parser.add_argument('--wave-range', metavar='start,stop,count',
                         action='store', dest='wave_range',
                         default='10,100,10', help=helps['wave_range'])
@@ -174,7 +191,8 @@ def main():
     parser.add_argument('-o', '--output-dir', metavar='path',
                         action='store', dest='output_dir',
                         default='output', help=helps['output_dir'])
-    parser.add_argument('mesh_filename', default='')
+    parser.add_argument('mesh_filename', default='',
+                        help=helps['mesh_filename'])
     options = parser.parse_args()
 
     output_dir = options.output_dir
@@ -183,8 +201,10 @@ def main():
                       combined=options.silent == False)
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
+    options.unit_multipliers = [float(ii)
+                                for ii in options.unit_multipliers.split(',')]
     aux = options.wave_range.split(',')
-    options.wave_range = (float(aux[0]), float(aux[1]), int(aux[2]))
+    options.wave_range = [float(aux[0]), float(aux[1]), int(aux[2])]
     options.wave_dir = [float(ii)
                         for ii in options.wave_dir.split(',')]
 
@@ -198,24 +218,47 @@ def main():
     ensure_path(filename)
     save_options(filename, [('options', vars(options))])
 
+    pars = apply_unit_multipliers(options.pars,
+                                  ['stress', 'one', 'density',
+                                   'stress', 'one' ,'density'],
+                                  options.unit_multipliers)
+    output('material parameters with applied unit multipliers:')
+    output(pars)
+
+    rng = copy(options.wave_range)
+    rng[:2] = apply_unit_multipliers(options.wave_range[:2],
+                                     ['wave_number', 'wave_number'],
+                                     options.unit_multipliers)
+    output('wave number range with applied unit multipliers:', rng)
+
     define_problem = functools.partial(define,
                                        filename_mesh=options.mesh_filename,
-                                       pars=options.pars,
+                                       pars=pars,
                                        approx_order=options.order)
 
     conf = ProblemConf.from_dict(define_problem(), sys.modules[__name__])
 
     pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
+
+    wmag_stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
+    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
+    wdir = wdir / nm.linalg.norm(wdir)
+
+    bbox = pb.domain.mesh.get_bounding_box()
+    size = (bbox[1] - bbox[0]).max()
+    scaling = options.unit_multipliers[1]
+    if options.mesh_size is not None:
+        scaling *= options.mesh_size / size
+    output('scaling factor of periodic cell mesh coordinates:', scaling)
+    output('new mesh size:', scaling * size)
+    pb.domain.mesh.coors[:] *= scaling
+    pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
+
     pb.time_update()
     pb.update_materials()
 
     wave_mat = pb.get_materials()['wave']
-
-    rng = options.wave_range
-    wmag_stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
-    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
-    wdir = wdir / nm.linalg.norm(wdir)
 
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
