@@ -254,3 +254,32 @@ def get_consistent_unit_set(length=None, time=None, mass=None, temperature=None)
         derived_units[quantity_name] = quantity()
 
     return derived_units
+
+def apply_unit_multipliers(values, unit_kinds, unit_multipliers):
+    """
+    Apply time, length and mass unit multipliers to given values with units
+    corresponding to unit kinds.
+
+    Returns
+    -------
+    new_values : list
+        The new values with applied unit multipliers
+    """
+    a, b, c = unit_multipliers
+
+    coefs = {
+        'one' : 1.0 / 1.0,
+        'time' : 1.0 / a,
+        'length' : 1.0 / b,
+        'mass' : 1.0 / c,
+        'frequency' : 1.0 / (1.0 / a),
+        'wave_number' : 1.0 / (1.0 / b),
+        'density' : 1.0 / (c / b**3),
+        'force' : 1.0 / ((c * b) / a**2),
+        'stress' : 1.0 / (c / (b * a**2)),
+        'energy' : 1.0 / (c * b**2 / a**2),
+    }
+
+    new_values = [coefs[unit_kind] * values[ii]
+                  for ii, unit_kind in enumerate(unit_kinds)]
+    return new_values
