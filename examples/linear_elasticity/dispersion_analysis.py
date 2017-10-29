@@ -42,7 +42,7 @@ def define(filename_mesh, pars, approx_order):
         'displacement': ('complex', dim, 'Omega', approx_order),
     }
 
-    young1, poisson1, young2, poisson2, density1, density2 = pars
+    young1, poisson1, density1, young2, poisson2, density2 = pars
     materials = {
         'm' : ({
             'D' : {'Y1' : stiffness(dim, young=young1, poisson=poisson1),
