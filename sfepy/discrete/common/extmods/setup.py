@@ -31,8 +31,8 @@ def configuration(parent_package='', top_path=None):
                        extra_compiler_args=site_config.compile_flags(),
                        extra_link_args=site_config.link_flags(),
                        include_dirs=[auto_dir, site_config.python_include()],
-                       define_macros=[('SFEPY_PLATFORM', os_flag),
-                                      ('inline', inline)])
+                       macros=[('SFEPY_PLATFORM', os_flag),
+                               ('inline', inline)])
 
     src = ['_fmfield.pyx']
     config.add_extension('_fmfield',
