@@ -122,6 +122,28 @@ class Test(TestCommon):
         self.report('stiffness_from_lame():', _ok)
         ok = ok and _ok
 
+        _lam, _mu = mc.lame_from_stiffness(d)
+        _ok = (_lam == 1) and (_mu == 4)
+        self.report('lame_from_stiffness():', _ok)
+        ok = ok and _ok
+
+        young = 1.0
+        poisson = 0.25
+
+        d = mc.stiffness_from_youngpoisson(3, young, poisson, plane='strain')
+        _young, _poisson = mc.youngpoisson_from_stiffness(d, plane='strain')
+        _ok = nm.allclose([young, poisson], [_young, _poisson],
+                          rtol=0.0, atol=1e-14)
+        self.report('youngpoisson_from_stiffness(plane="strain"):', _ok)
+        ok = ok and _ok
+
+        d = mc.stiffness_from_youngpoisson(2, young, poisson, plane='stress')
+        _young, _poisson = mc.youngpoisson_from_stiffness(d, plane='stress')
+        _ok = nm.allclose([young, poisson], [_young, _poisson],
+                          rtol=0.0, atol=1e-14)
+        self.report('youngpoisson_from_stiffness(plane="stress"):', _ok)
+        ok = ok and _ok
+
         d = 4.0 / 3.0 * nm.array([[ 4., -2., -2.,  0.,  0.,  0.],
                                   [-2.,  4., -2.,  0.,  0.,  0.],
                                   [-2., -2.,  4.,  0.,  0.,  0.],
