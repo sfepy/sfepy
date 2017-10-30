@@ -16,12 +16,13 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 
-from sfepy.base.base import output
+from sfepy.base.base import output, Struct
 from sfepy.base.conf import ProblemConf
 from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.base.log import Log
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
+from sfepy.mechanics.matcoefs import youngpoisson_from_stiffness
 from sfepy.mechanics.units import apply_unit_multipliers
 import sfepy.discrete.fem.periodic as per
 from sfepy.homogenization.utils import define_box_regions
@@ -257,6 +258,20 @@ def main():
 
     pb.time_update()
     pb.update_materials()
+
+    out = {}
+    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
+                        mode='el_avg', copy_materials=False, verbose=False)
+    young, poisson = youngpoisson_from_stiffness(stiffness)
+    out['young'] = Struct(name='young', mode='cell',
+                          data=young[..., None, None])
+    out['poisson'] = Struct(name='poisson', mode='cell',
+                            data=poisson[..., None, None])
+    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+                        mode='el_avg', copy_materials=False, verbose=False)
+    out['density'] = Struct(name='density', mode='cell', data=density)
+    materials_filename = os.path.join(output_dir, 'materials.vtk')
+    pb.save_state(materials_filename, out=out)
 
     wave_mat = pb.get_materials()['wave']
 
