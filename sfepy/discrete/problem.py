@@ -162,7 +162,9 @@ class Problem(Struct):
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
                       domain=domain, auto_conf=False, auto_solvers=False)
 
-        obj.set_regions(conf.regions, obj.functions)
+        allow_empty = conf.options.get('allow_empty_regions', False)
+        obj.set_regions(conf.regions, obj.functions,
+                        allow_empty=allow_empty)
 
         obj.clear_equations()
 
@@ -394,11 +396,12 @@ class Problem(Struct):
             os.makedirs(self.output_dir)
 
     def set_regions(self, conf_regions=None,
-                     conf_materials=None, functions=None):
+                     conf_materials=None, functions=None, allow_empty=False):
         conf_regions = get_default(conf_regions, self.conf.regions)
         functions = get_default(functions, self.functions)
 
-        self.domain.create_regions(conf_regions, functions)
+        self.domain.create_regions(conf_regions, functions,
+                                   allow_empty=allow_empty)
 
     def set_materials(self, conf_materials=None):
         """

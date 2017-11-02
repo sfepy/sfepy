@@ -1046,6 +1046,10 @@ Additional options (including solver selection)::
         # int >= 0, uniform mesh refinement level
         'refinement_level : 0',
 
+        # bool, default: False, if True, allow selecting empty regions with no
+        # entities
+        'allow_empty_regions' : True,
+
         # string, output directory
         'output_dir'        : 'output/<output_dir>',
 
