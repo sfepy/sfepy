@@ -4,7 +4,7 @@ Create pyparsing grammar for problem configuration and options.
 from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        Forward, Empty, quotedString, oneOf, removeQuotes,
                        delimitedList, nums, alphas, alphanums,
-                       Keyword)
+                       Keyword, CaselessLiteral)
 
 word_free = Word(alphas + '][@_-/.+**' + alphanums)
 word_strict = Word(alphas, alphas + alphanums + '_' )
@@ -28,12 +28,19 @@ none = Keyword('None', caseless=True)
 cvt_none = lambda toks: [None]
 none.setParseAction(cvt_none)
 
-real = Combine(Optional(oneOf('+ -')) + Word(nums)
+e = CaselessLiteral("e")
+real = (Combine(Optional(oneOf('+ -')) + Word(nums)
                + '.' + Optional(Word(nums))
-               + Optional('e' + Optional(oneOf('+ -'))
-                          + Word(nums))).setName('real')
+               + Optional(e + Optional(oneOf('+ -')) + Word(nums)))
+        | Combine(Optional(oneOf('+ -')) + Word(nums)
+               + Optional('.') + Optional(Word(nums))
+               + e + Optional(oneOf('+ -')) + Word(nums))).setName('real')
 cvt_real = lambda toks: float(toks[0])
 real.setParseAction(cvt_real)
+
+cmplx = real + CaselessLiteral('j')
+cvt_cmplx = lambda toks: complex(toks[0])
+cmplx.setParseAction(cvt_cmplx)
 
 array_index = integer + Optional(colon + integer
                                  + Optional(colon + integer))
@@ -90,7 +97,7 @@ def get_standard_type_defs(word=word_free):
     cvt_tuple = lambda toks : tuple(toks.asList())
     cvt_dict = lambda toks: dict(toks.asList())
 
-    list_item = (none | boolean | real | integer | list_str | tuple_str
+    list_item = (none | boolean | cmplx | real | integer | list_str | tuple_str
                  | dict_str
                  | quotedString.setParseAction(removeQuotes)
                  | word)
