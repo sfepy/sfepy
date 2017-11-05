@@ -229,7 +229,7 @@ class Newton(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         lin_red = conf.eps_a * conf.lin_red
 
-        time_stats = {key : 0.0 for key in ['rezidual', 'matrix', 'solve']}
+        time_stats = {key : 0.0 for key in ['residual', 'matrix', 'solve']}
 
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
@@ -266,7 +266,7 @@ class Newton(NonlinearSolver):
                 else:
                     ok = True
 
-                time_stats['rezidual'] = time.clock() - tt
+                time_stats['residual'] = time.clock() - tt
                 if ok:
                     try:
                         err = nla.norm(vec_r)
@@ -291,7 +291,7 @@ class Newton(NonlinearSolver):
                         break
 
                     red = conf.ls_red_warp;
-                    output('rezidual computation failed for iter %d'
+                    output('residual computation failed for iter %d'
                            ' (new ls: %e)!' % (it, red * ls))
 
                 if ls < conf.ls_min:

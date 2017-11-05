@@ -151,8 +151,8 @@ class Oseen(NonlinearSolver):
          'The name of stabilization material.'),
         ('adimensionalize', 'bool', False, False,
          'If True, adimensionalize the problem (not implemented!).'),
-        ('check_navier_stokes_rezidual', 'bool', False, False,
-         'If True, check the Navier-Stokes rezidual after the nonlinear loop.'),
+        ('check_navier_stokes_residual', 'bool', False, False,
+         'If True, check the Navier-Stokes residual after the nonlinear loop.'),
         ('i_max', 'int', 1, False,
          'The maximum number of iterations.'),
         ('eps_a', 'float', 1e-10, False,
@@ -266,7 +266,7 @@ class Oseen(NonlinearSolver):
                 ok = False
             else:
                 ok = True
-            time_stats['rezidual'] = time.clock() - tt
+            time_stats['residual'] = time.clock() - tt
             if ok:
                 err = nla.norm(vec_r)
                 if it == 0:
@@ -274,7 +274,7 @@ class Oseen(NonlinearSolver):
                 else:
                     err += nla.norm(vec_dx)
             else: # Failure.
-                output('rezidual computation failed for iter %d!' % it)
+                output('residual computation failed for iter %d!' % it)
                 raise RuntimeError('giving up...')
 
             if self.log is not None:
@@ -325,7 +325,7 @@ class Oseen(NonlinearSolver):
             vec_x -= vec_dx
             it += 1
 
-        if conf.check_navier_stokes_rezidual:
+        if conf.check_navier_stokes_residual:
 
             t1 = '+ dw_div_grad.%s.%s(%s.viscosity, %s, %s)' \
                  % (ns['i2'], ns['omega'], ns['fluid'], ns['v'], ns['u'])
@@ -350,13 +350,13 @@ class Oseen(NonlinearSolver):
             else:
                 ok = True
             if not ok:
-                output('Navier-Stokes rezidual computation failed!')
+                output('Navier-Stokes residual computation failed!')
                 err_ns = err_ns0 = None
             else:
                 err_ns0 = nla.norm(vec_rns0)
                 err_ns = nla.norm(vec_rns)
-            output('Navier-Stokes rezidual0: %.8e' % err_ns0)
-            output('Navier-Stokes rezidual : %.8e' % err_ns)
+            output('Navier-Stokes residual0: %.8e' % err_ns0)
+            output('Navier-Stokes residual : %.8e' % err_ns)
             output('b - u: %.8e' % nla.norm(vec_b - vec_u))
             output(condition)
 

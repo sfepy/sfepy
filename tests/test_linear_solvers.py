@@ -222,7 +222,7 @@ class Test(TestCommon):
                 tt.append([name, -1, 1e10, 1e10])
 
         tt.sort(key=lambda a: a[1])
-        self.report('solution times / numbers of iterations (rezidual norms):')
+        self.report('solution times / numbers of iterations (residual norms):')
         for row in tt:
             self.report('%.2f [s] / % 4d' % (row[1], row[2]),
                         '(%.3e)' % row[3], ':', row[0])

@@ -101,7 +101,7 @@ equations = {
 #! -------
 #! Define linear and nonlinear solver.
 #! Even linear problems are solved by a nonlinear solver - only one
-#! iteration is needed and the final rezidual is obtained for free.
+#! iteration is needed and the final residual is obtained for free.
 solvers = {
     'ls' : ('ls.schur_complement', {
         'keep': ['p'],

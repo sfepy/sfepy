@@ -107,7 +107,7 @@ solver_1 = {
     'stabil_mat' : 'stabil',
 
     'adimensionalize' : False,
-    'check_navier_stokes_rezidual' : False,
+    'check_navier_stokes_residual' : False,
 
     'i_max'      : 10,
     'eps_a'      : 1e-8,
