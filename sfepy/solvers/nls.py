@@ -229,7 +229,7 @@ class Newton(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         lin_red = conf.eps_a * conf.lin_red
 
-        time_stats = {}
+        time_stats = {key : 0.0 for key in ['rezidual', 'matrix', 'solve']}
 
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
