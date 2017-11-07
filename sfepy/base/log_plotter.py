@@ -141,9 +141,8 @@ class LogPlotter(Struct):
 
     def __call__(self, pipe, log_file, data_names, yscales, xlabels, ylabels):
         """
-        Sets-up the plotting window, sets GTK event loop timer callback to
-        callback() returned by self.poll_draw(). The callback does the actual
-        plotting, taking commands out of `pipe`, and is called every second.
+        Sets-up the plotting window, starts a thread calling self.poll_draw()
+        that does the actual plotting, taking commands out of `pipe`.
 
         Note that pyplot _must_ be imported here and not in this module so that
         the import occurs _after_ the plotting process is started in that
