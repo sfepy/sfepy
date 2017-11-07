@@ -142,6 +142,8 @@ helps = {
     'order' : 'displacement field approximation order [default: %(default)s]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %(default)s]',
     'eigs_only' : 'compute only eigenvalues, not eigenvectors',
+    'save_materials' : 'save material parameters into'
+    ' <output_directory>/materials.vtk',
     'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory',
@@ -183,6 +185,9 @@ def main():
     parser.add_argument('--eigs-only',
                         action='store_true', dest='eigs_only',
                         default=False, help=helps['eigs_only'])
+    parser.add_argument('--save-materials',
+                        action='store_true', dest='save_materials',
+                        default=False, help=helps['save_materials'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -259,19 +264,20 @@ def main():
     pb.time_update()
     pb.update_materials()
 
-    out = {}
-    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
-                        mode='el_avg', copy_materials=False, verbose=False)
-    young, poisson = youngpoisson_from_stiffness(stiffness)
-    out['young'] = Struct(name='young', mode='cell',
-                          data=young[..., None, None])
-    out['poisson'] = Struct(name='poisson', mode='cell',
-                            data=poisson[..., None, None])
-    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
-                        mode='el_avg', copy_materials=False, verbose=False)
-    out['density'] = Struct(name='density', mode='cell', data=density)
-    materials_filename = os.path.join(output_dir, 'materials.vtk')
-    pb.save_state(materials_filename, out=out)
+    if options.save_materials:
+        out = {}
+        stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
+                            mode='el_avg', copy_materials=False, verbose=False)
+        young, poisson = youngpoisson_from_stiffness(stiffness)
+        out['young'] = Struct(name='young', mode='cell',
+                              data=young[..., None, None])
+        out['poisson'] = Struct(name='poisson', mode='cell',
+                                data=poisson[..., None, None])
+        density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+                            mode='el_avg', copy_materials=False, verbose=False)
+        out['density'] = Struct(name='density', mode='cell', data=density)
+        materials_filename = os.path.join(output_dir, 'materials.vtk')
+        pb.save_state(materials_filename, out=out)
 
     wave_mat = pb.get_materials()['wave']
 
