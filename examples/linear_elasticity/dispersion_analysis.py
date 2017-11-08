@@ -22,7 +22,7 @@ from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.base.log import Log
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
-from sfepy.mechanics.matcoefs import youngpoisson_from_stiffness
+import sfepy.mechanics.matcoefs as mc
 from sfepy.mechanics.units import apply_unit_multipliers
 import sfepy.discrete.fem.periodic as per
 from sfepy.homogenization.utils import define_box_regions
@@ -144,6 +144,7 @@ helps = {
     'eigs_only' : 'compute only eigenvalues, not eigenvectors',
     'save_materials' : 'save material parameters into'
     ' <output_directory>/materials.vtk',
+    'log_std_waves' : 'log also standard pressure dilatation and shear waves',
     'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory',
@@ -188,6 +189,9 @@ def main():
     parser.add_argument('--save-materials',
                         action='store_true', dest='save_materials',
                         default=False, help=helps['save_materials'])
+    parser.add_argument('--log-std-waves',
+                        action='store_true', dest='log_std_waves',
+                        default=False, help=helps['log_std_waves'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -264,17 +268,19 @@ def main():
     pb.time_update()
     pb.update_materials()
 
-    if options.save_materials:
-        out = {}
+    if options.save_materials or options.log_std_waves:
         stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
-        young, poisson = youngpoisson_from_stiffness(stiffness)
+        young, poisson = mc.youngpoisson_from_stiffness(stiffness)
+        density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+                            mode='el_avg', copy_materials=False, verbose=False)
+
+    if options.save_materials:
+        out = {}
         out['young'] = Struct(name='young', mode='cell',
                               data=young[..., None, None])
         out['poisson'] = Struct(name='poisson', mode='cell',
                                 data=poisson[..., None, None])
-        density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
-                            mode='el_avg', copy_materials=False, verbose=False)
         out['density'] = Struct(name='density', mode='cell', data=density)
         materials_filename = os.path.join(output_dir, 'materials.vtk')
         pb.save_state(materials_filename, out=out)
@@ -288,13 +294,28 @@ def main():
 
     rhs = pb.equations['rhs']
     mtx_b = rhs.evaluate(mode='weak', dw_mode='matrix', asm_obj=pb.mtx_a)
-
     mtx_a = mtx_b.copy()
+
     eigenshapes_filename = os.path.join(output_dir,
                                         'eigenshapes-%s.vtk'
                                         % wmag_stepper.suffix)
+
+    extra = []
+    if options.log_std_waves:
+        lam, mu = mc.lame_from_youngpoisson(young, poisson)
+        alam = nm.average(lam)
+        amu = nm.average(mu)
+        adensity = nm.average(density)
+
+        cp = nm.sqrt((alam + 2.0 * amu) / adensity)
+        cs = nm.sqrt(amu / adensity)
+        output('average p-wave speed:', cp)
+        output('average shear wave speed:', cs)
+
+        extra = [r'$\omega_p$', r'$\omega_s$']
+
     log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
-               [r'$\omega_{%d}$' % ii for ii in range(options.n_eigs)]],
+               [r'$\omega_{%d}$' % ii for ii in range(options.n_eigs)] + extra],
               yscales=['linear', 'linear'],
               xlabels=[r'$\kappa$', r'$\kappa$'],
               ylabels=[r'eigenvalues $\lambda_i$', r'frequencies $\omega_i$'],
@@ -323,6 +344,8 @@ def main():
         output('eigs, omegas:\n', nm.c_[eigs, omegas])
 
         out = tuple(eigs) + tuple(omegas)
+        if options.log_std_waves:
+            out = out + (cp * wmag, cs * wmag)
         log(*out, x=[wmag, wmag])
 
         if svecs is not None:
