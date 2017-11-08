@@ -60,12 +60,25 @@ install:
   - powershell .\\deployment-CI\\miniconda-install.ps1
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
-  - "conda create -q --yes -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy"
+  - conda config --set always_yes yes --set changeps1 no
+  
+  - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy"
   - activate sfepy-test
   #
-  # TBD: (still looking for working version...)
-  #- pip install scikit-sparse "scikit-umfpack==0.2.3"
+  # Scikit UMFPACK (TBD)
   #
+  # IGA kit
+  # Install mingw/gfortran build tools
+  #
+  - conda install -q -c msys2 m2w64-toolchain
+  - conda install -q libpython
+  #
+  - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
+  #
+  # Revert back to native MSVC build tools
+  #
+  - conda remove -q libpython
+  #  
   - conda info -a
   - python -V
 
@@ -83,7 +96,7 @@ build: false
 # to run your custom scripts instead of automatic tests
 test_script:
 
-  - "python setup.py build_ext --inplace"
+  - python setup.py build_ext --inplace
   - ps: |
       python run_tests.py
       if ($LastExitCode -ne 0) { python run_tests.py --raise }
