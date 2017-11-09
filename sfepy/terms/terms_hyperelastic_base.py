@@ -78,7 +78,7 @@ class HyperElasticBase(Term):
     Base class for all hyperelastic terms in TL/UL formulation.
 
     `HyperElasticBase.__call__()` computes element contributions given either
-    stress (-> rezidual) or tangent modulus (-> tangent sitffnes matrix),
+    stress (-> residual) or tangent modulus (-> tangent sitffnes matrix),
     i.e. constitutive relation type (CRT) related data. The CRT data are
     computed in subclasses implementing particular CRT (e.g. neo-Hookean
     material), in self.compute_crt_data().

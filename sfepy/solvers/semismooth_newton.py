@@ -136,7 +136,7 @@ class SemismoothNewton(Newton):
 
                     ok = True
 
-                time_stats['rezidual'] = time.clock() - tt
+                time_stats['residual'] = time.clock() - tt
 
                 if ok:
                     vec_r = nm.r_[vec_smooth_r, vec_semismooth_r]
@@ -167,9 +167,9 @@ class SemismoothNewton(Newton):
                         output('iter %d, (%.5e < %.5e) (new ls: %e)'\
                                % (it, err, err_last * conf.ls_on, red * ls))
 
-                else: # Failed to compute rezidual.
+                else: # Failed to compute residual.
                     red = conf.ls_red_warp;
-                    output('rezidual computation failed for iter %d'
+                    output('residual computation failed for iter %d'
                            ' (new ls: %e)!' % (it, red * ls))
 
                 if ls < conf.ls_min:

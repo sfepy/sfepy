@@ -164,7 +164,7 @@ class GBarCoef( CoefOne ):
     where the rhs comes from E(P)BC.
     - it is preferable to computing directly by
     "\hat{p^{\infty}} = \hat{C^-1 \strip(\hat{C} \hat{\pi})}", as it checks
-    explicitly the rezidual.
+    explicitly the residual.
     """
 
     def __call__( self, volume, problem = None, data = None ):
