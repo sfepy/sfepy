@@ -264,7 +264,8 @@ def main():
 
     bbox = pb.domain.mesh.get_bounding_box()
     size = (bbox[1] - bbox[0]).max()
-    scaling = options.unit_multipliers[1]
+    scaling = apply_unit_multipliers([1.0], ['length'],
+                                     options.unit_multipliers)[0]
     if options.mesh_size is not None:
         scaling *= options.mesh_size / size
     output('scaling factor of periodic cell mesh coordinates:', scaling)
