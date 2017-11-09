@@ -34,6 +34,7 @@ def define(filename_mesh, pars, approx_order, refinement_level):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
+    size = (bbox[1] - bbox[0]).max()
 
     options = {
         'absolute_mesh_path' : True,
@@ -89,6 +90,7 @@ def define(filename_mesh, pars, approx_order, refinement_level):
                             'match_x_line'),
         }
 
+    per.set_accuracy(1e-8 * size)
     functions = {
         'match_x_plane' : (per.match_x_plane,),
         'match_y_plane' : (per.match_y_plane,),
@@ -99,7 +101,6 @@ def define(filename_mesh, pars, approx_order, refinement_level):
 
     integrals = {
         'i' : 2 * approx_order,
-        #'i' : 6,
     }
 
     equations = {
