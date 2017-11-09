@@ -118,7 +118,8 @@ def define(filename_mesh, pars, approx_order):
             'method' : 'eigh',
             'tol' : 1e-5,
             'maxiter' : 1000,
-            'which' : 'SM',
+            'which' : 'LM',
+            'sigma' : 0.0,
         }),
     }
 
