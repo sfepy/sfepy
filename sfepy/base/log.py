@@ -88,11 +88,14 @@ def read_log(filename):
                     line_names = next(fd)
                     names = line_names.split(':')[1]
 
+                    line_plot_kwargs = next(fd)
+
                     info[ig] = (xlabel.split(':')[1].strip().strip('"'),
                                 ylabel.split(':')[1].strip().strip('"'),
                                 yscales.split(':')[1].strip().strip('"'),
                                 [name.strip().strip('"')
-                                 for name in names.split(',')])
+                                 for name in names.split(',')],
+                                eval(line_plot_kwargs[19:].strip().strip('"')))
 
             continue
 
@@ -160,7 +163,7 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
     if yticks is None:
         yticks = [None] * n_gr
 
-    for ii, (xlabel, ylabel, yscale, names) in six.iteritems(info):
+    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
         ax = fig.add_subplot(n_row, n_col, ii + 1)
         ax.set_yscale(yscale)
 
@@ -170,9 +173,9 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
         if ylabel:
             ax.set_ylabel(ylabel)
 
-        for name in names:
+        for ip, name in enumerate(names):
             xs, ys, vlines = log[name]
-            ax.plot(xs, ys, label=name)
+            ax.plot(xs, ys, label=name, **plot_kwargs[ip])
 
             for x in vlines:
                 ax.axvline(x, color='k', alpha=0.3)
@@ -286,6 +289,9 @@ class Log(Struct):
                 self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
                             % (xlabels[ig], ylabels[ig], yscales[ig]))
                 self.output('#     names: "%s"' % ', '.join(names))
+                self.output('#     plot_kwargs: "%s"'
+                            % ', '.join('%s' % ii
+                                        for ii in self.plot_kwargs[ig]))
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
