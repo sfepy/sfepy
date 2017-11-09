@@ -309,6 +309,7 @@ def main():
                                         % wmag_stepper.suffix)
 
     extra = []
+    extra_plot_kwargs = []
     if options.log_std_waves:
         lam, mu = mc.lame_from_youngpoisson(young, poisson)
         alam = nm.average(lam)
@@ -321,9 +322,12 @@ def main():
         output('average shear wave speed:', cs)
 
         extra = [r'$\omega_p$', r'$\omega_s$']
+        extra_plot_kwargs = [{'ls' : '--', 'color' : 'k'},
+                             {'ls' : '--', 'color' : 'gray'}]
 
     log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
                [r'$\omega_{%d}$' % ii for ii in range(options.n_eigs)] + extra],
+              plot_kwargs=[{}, [{}] * options.n_eigs + extra_plot_kwargs],
               yscales=['linear', 'linear'],
               xlabels=[r'$\kappa$', r'$\kappa$'],
               ylabels=[r'eigenvalues $\lambda_i$', r'frequencies $\omega_i$'],
