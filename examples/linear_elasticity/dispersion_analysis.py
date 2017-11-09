@@ -30,13 +30,14 @@ from sfepy.discrete import Problem
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 
-def define(filename_mesh, pars, approx_order):
+def define(filename_mesh, pars, approx_order, refinement_level):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
 
     options = {
         'absolute_mesh_path' : True,
+        'refinement_level' : refinement_level,
     }
 
     fields = {
@@ -140,6 +141,7 @@ helps = {
     'wave_dir' : 'the wave vector direction (will be normalized)'
     ' [default: %(default)s]',
     'order' : 'displacement field approximation order [default: %(default)s]',
+    'refine' : 'number of uniform mesh refinements [default: %(default)s]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %(default)s]',
     'eigs_only' : 'compute only eigenvalues, not eigenvectors',
     'save_materials' : 'save material parameters into'
@@ -180,6 +182,9 @@ def main():
     parser.add_argument('--order', metavar='int', type=int,
                         action='store', dest='order',
                         default=1, help=helps['order'])
+    parser.add_argument('--refine', metavar='int', type=int,
+                        action='store', dest='refine',
+                        default=0, help=helps['refine'])
     parser.add_argument('-n', '--n-eigs', metavar='int', type=int,
                         action='store', dest='n_eigs',
                         default=6, help=helps['n_eigs'])
@@ -244,7 +249,8 @@ def main():
     define_problem = functools.partial(define,
                                        filename_mesh=options.mesh_filename,
                                        pars=pars,
-                                       approx_order=options.order)
+                                       approx_order=options.order,
+                                       refinement_level=options.refine)
 
     conf = ProblemConf.from_dict(define_problem(), sys.modules[__name__])
 
