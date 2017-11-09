@@ -69,7 +69,6 @@ def define(filename_mesh, pars, approx_order):
                                       bbox[0], bbox[1], 1e-8))
 
     ebcs = {
-        'fixed_corners' : ('Corners', {'u.all' : 0.0}),
     }
 
     if dim == 3:
