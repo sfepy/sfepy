@@ -25,13 +25,13 @@ class LogPlotter(Struct):
             self.ig = command[1]
 
         elif command[0] == 'plot':
-            xdata, ydata = command[1:]
+            xdata, ydata, plot_kwargs = command[1:]
 
             ig = self.ig
             ax = self.ax[ig]
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
-            ax.plot(xdata, ydata)
+            ax.plot(xdata, ydata, **plot_kwargs)
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()

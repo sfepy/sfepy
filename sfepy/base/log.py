@@ -211,8 +211,9 @@ class Log(Struct):
 
         return obj
 
-    def __init__(self, data_names=None, xlabels=None, ylabels=None,
-                 yscales=None, is_plot=True, aggregate=100, sleep=1.0,
+    def __init__(self, data_names=None, plot_kwargs=None,
+                 xlabels=None, ylabels=None, yscales=None,
+                 is_plot=True, aggregate=100, sleep=1.0,
                  log_filename=None, formats=None):
         """
         Parameters
@@ -221,6 +222,10 @@ class Log(Struct):
             The data names grouped by subplots: [[name1, name2, ...], [name3,
             name4, ...], ...], where name<n> are strings to display in
             (sub)plot legends.
+        plot_kwargs : list of (lists of dicts) or dicts
+            The keyword arguments dicts passed to plot(). For each group the
+            item can be either a dict that is applied to all lines in the
+            group, or a list of dicts for each line in the group.
         xlabels : list of str
             The x axis labels of subplots.
         ylabels : list of str
@@ -247,7 +252,7 @@ class Log(Struct):
         Struct.__init__(self,
                         is_plot=is_plot, aggregate=aggregate, sleep=sleep,
                         data_names={}, n_arg=0, n_gr=0,
-                        data={}, x_values={}, n_calls=0,
+                        data={}, x_values={}, n_calls=0, plot_kwargs={},
                         yscales={}, xlabels={}, ylabels={},
                         plot_pipe=None, formats={}, output=None)
 
@@ -257,6 +262,7 @@ class Log(Struct):
             n_gr = 0
             data_names = []
 
+        plot_kwargs = get_default(plot_kwargs, [{}] * n_gr)
         yscales = get_default(yscales, ['linear'] * n_gr)
         xlabels = get_default(xlabels, ['iteration'] * n_gr)
         ylabels = get_default(ylabels, [''] * n_gr)
@@ -265,7 +271,8 @@ class Log(Struct):
             formats = [None] * n_gr
 
         for ig, names in enumerate(data_names):
-            self.add_group(names, yscales[ig], xlabels[ig], ylabels[ig],
+            self.add_group(names, plot_kwargs[ig],
+                           yscales[ig], xlabels[ig], ylabels[ig],
                            formats[ig])
 
         self.can_plot = (mpl is not None) and (Process is not None)
@@ -283,8 +290,8 @@ class Log(Struct):
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
 
-    def add_group(self, names, yscale=None, xlabel=None, ylabel=None,
-                  formats=None):
+    def add_group(self, names, plot_kwargs=None,
+                  yscale=None, xlabel=None, ylabel=None, formats=None):
         """
         Add a new data group. Notify the plotting process if it is
         already running.
@@ -298,6 +305,12 @@ class Log(Struct):
         self.yscales[ig] = yscale
         self.xlabels[ig] = xlabel
         self.ylabels[ig] = ylabel
+
+        if isinstance(plot_kwargs, dict):
+            self.plot_kwargs[ig] = [plot_kwargs] * len(names)
+
+        else:
+            self.plot_kwargs[ig] = plot_kwargs
 
         ii = self.n_arg
         for iseq, name in enumerate(names):
@@ -438,12 +451,13 @@ class Log(Struct):
             if ig in igs:
                 send(['ig', ig])
                 send(['clear'])
-                for name in names:
+                for ip, name in enumerate(names):
                     key = name_to_key(name, ii)
                     try:
                         send(['plot',
                               nm.array(self.x_values[ig]),
-                              nm.array(self.data[key])])
+                              nm.array(self.data[key]),
+                              self.plot_kwargs[ig][ip]])
                     except:
                         msg = "send failed! (%s, %s, %s)!" \
                               % (ii, name, self.data[key])
