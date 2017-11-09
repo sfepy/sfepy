@@ -327,7 +327,8 @@ def main():
               yscales=['linear', 'linear'],
               xlabels=[r'$\kappa$', r'$\kappa$'],
               ylabels=[r'eigenvalues $\lambda_i$', r'frequencies $\omega_i$'],
-              log_filename=os.path.join(output_dir, 'eigenvalues.txt'))
+              log_filename=os.path.join(output_dir, 'eigenvalues.txt'),
+              aggregate=1000, sleep=0.1)
     for iv, wmag in wmag_stepper:
         wave_vec = wmag * wdir
         wave_mat.datas['special']['vec'] = wave_vec
