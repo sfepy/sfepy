@@ -17,7 +17,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import numpy as nm
 
 from sfepy.base.base import output, Struct
-from sfepy.base.conf import ProblemConf
+from sfepy.base.conf import dict_from_string, ProblemConf
 from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.base.log import Log
 from sfepy.discrete.fem import MeshIO
@@ -30,7 +30,7 @@ from sfepy.discrete import Problem
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 
-def define(filename_mesh, pars, approx_order, refinement_level):
+def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -115,15 +115,8 @@ def define(filename_mesh, pars, approx_order, refinement_level):
         """,
     }
 
-    solvers = {
-        'eig' : ('eig.scipy', {
-            'method' : 'eigh',
-            'tol' : 1e-5,
-            'maxiter' : 1000,
-            'which' : 'LM',
-            'sigma' : 0.0,
-        }),
-    }
+    solver_0 = solver_conf.copy()
+    solver_0['name'] = 'eig'
 
     return locals()
 
@@ -145,6 +138,8 @@ helps = {
     'refine' : 'number of uniform mesh refinements [default: %(default)s]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %(default)s]',
     'eigs_only' : 'compute only eigenvalues, not eigenvectors',
+    'solver_conf' : 'eigenvalue problem solver configuration options'
+    ' [default: %(default)s]',
     'save_materials' : 'save material parameters into'
     ' <output_directory>/materials.vtk',
     'log_std_waves' : 'log also standard pressure dilatation and shear waves',
@@ -160,6 +155,8 @@ helps = {
 def main():
     # Aluminium and epoxy.
     default_pars = '70e9,0.35,2.799e3, 3.8e9,0.27,1.142e3'
+    default_solver_conf = ("kind='eig.scipy',method='eigh',tol=1.0e-5,"
+                           "maxiter=1000,which='LM',sigma=0.0")
 
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
@@ -192,6 +189,9 @@ def main():
     parser.add_argument('--eigs-only',
                         action='store_true', dest='eigs_only',
                         default=False, help=helps['eigs_only'])
+    parser.add_argument('--solver-conf', metavar='dict-like',
+                        action='store', dest='solver_conf',
+                        default=default_solver_conf, help=helps['solver_conf'])
     parser.add_argument('--save-materials',
                         action='store_true', dest='save_materials',
                         default=False, help=helps['save_materials'])
@@ -223,6 +223,7 @@ def main():
     options.wave_range = [float(aux[0]), float(aux[1]), int(aux[2])]
     options.wave_dir = [float(ii)
                         for ii in options.wave_dir.split(',')]
+    options.solver_conf = dict_from_string(options.solver_conf)
 
     if options.clear:
         remove_files_patterns(output_dir,
@@ -251,7 +252,8 @@ def main():
                                        filename_mesh=options.mesh_filename,
                                        pars=pars,
                                        approx_order=options.order,
-                                       refinement_level=options.refine)
+                                       refinement_level=options.refine,
+                                       solver_conf=options.solver_conf)
 
     conf = ProblemConf.from_dict(define_problem(), sys.modules[__name__])
 
