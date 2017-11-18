@@ -84,6 +84,7 @@ def configuration(parent_package='', top_path=None):
         'plot_times.py',
         'save_basis.py',
         'show_authors.py',
+        'show_mesh_info.py',
         'show_terms_use.py',
         'sync_module_docs.py',
         'tile_periodic_mesh.py',
