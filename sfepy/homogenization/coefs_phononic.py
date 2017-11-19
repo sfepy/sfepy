@@ -961,6 +961,8 @@ class BandGaps(MiniAppBase):
         :func:`detect_band_gaps()`.
     log_save_name : str
         If not None, the band gaps log is to be saved under the given name.
+    raw_log_save_name : str
+        If not None, the raw band gaps log is to be saved under the given name.
     """
 
     def process_options(self):
@@ -982,7 +984,8 @@ class BandGaps(MiniAppBase):
                       freq_eps=get('freq_eps', 1e-8),
                       zero_eps=get('zero_eps', 1e-8),
                       detect_fun=get('detect_fun', detect_band_gaps),
-                      log_save_name=get('log_save_name', None))
+                      log_save_name=get('log_save_name', None),
+                      raw_log_save_name=get('raw_log_save_name', None))
 
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -1039,7 +1042,9 @@ class BandGaps(MiniAppBase):
                     freq_range=freq_info.freq_range,
                     freq_range_margins=freq_info.freq_range_margins,
                     opts=opts, to_file_txt=self.to_file_txt,
-                    log_save_name=opts.log_save_name, save_log=self.save_log)
+                    log_save_name=opts.log_save_name,
+                    raw_log_save_name=opts.raw_log_save_name,
+                    save_log=self.save_log)
 
         return bg
 
