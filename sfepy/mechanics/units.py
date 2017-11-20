@@ -28,7 +28,7 @@ derived_units = {
 }
 
 units_of_quantities = {
-    'density' : 'g / m**3',
+    'density' : 'kg / m**3',
     'force' : 'Newton',
     'stress' : 'Pa',
     'energy' : 'J',
@@ -51,7 +51,7 @@ prefixes = {
 
 inv_prefixes = invert_dict(prefixes)
 
-num_prefixes = [str(ii) for ii in range(-12, 13)]
+num_prefixes = [str(ii) for ii in range(-20, 21)]
 prefixes.update(dict(((key, 10**int(key)) for key in num_prefixes)))
 
 class Unit(Struct):
