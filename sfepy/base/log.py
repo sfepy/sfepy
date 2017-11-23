@@ -126,14 +126,14 @@ def read_log(filename):
 
     return log, info
 
-def plot_log(fig_num, log, info, xticks=None, yticks=None):
+def plot_log(axs, log, info, xticks=None, yticks=None):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
     Parameters
     ----------
-    fig_num : int
-        The figure number.
+    axs : sequence of matplotlib.axes.Axes
+        The list of axes for the log data plots.
     log : dict
         The log with data names as keys and ``(xs, ys, vlines)`` as values.
     info : dict
@@ -145,8 +145,11 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
     """
     import matplotlib.pyplot as plt
 
-    fig = plt.figure(fig_num)
-    fig.clf()
+    if axs is None:
+        fig = plt.figure()
+
+    else:
+        fig = None
 
     n_gr = len(info)
     n_col = min(5.0, nm.fix(nm.sqrt(n_gr)))
@@ -164,7 +167,12 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
         yticks = [None] * n_gr
 
     for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
-        ax = fig.add_subplot(n_row, n_col, ii + 1)
+        if axs is None:
+            ax = fig.add_subplot(n_row, n_col, ii + 1)
+
+        else:
+            ax = axs[ii]
+
         ax.set_yscale(yscale)
 
         if xlabel:
