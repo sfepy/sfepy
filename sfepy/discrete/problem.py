@@ -998,6 +998,19 @@ class Problem(Struct):
 
         return ev
 
+    def get_ebc_indices(self):
+        """
+        Get indices of E(P)BC-constrained DOFs in the full global state vector.
+        """
+        variables = self.get_variables()
+
+        ebc_indx = []
+        for ii, variable in enumerate(variables.iter_state(ordered=True)):
+            eq_map = variable.eq_map
+            ebc_indx.append(eq_map.eq_ebc + variables.di.ptr[ii])
+        ebc_indx = nm.concatenate(ebc_indx)
+        return ebc_indx
+
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
                      force=False):
         """
