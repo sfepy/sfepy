@@ -285,7 +285,7 @@ class Problem(Struct):
         obj = self.__class__(name, conf=self.conf, functions=self.functions,
                       domain=self.domain, fields=self.fields,
                       equations=self.equations, auto_conf=False,
-                      auto_solvers=False)
+                      auto_solvers=False, active_only=self.active_only)
 
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
@@ -322,7 +322,7 @@ class Problem(Struct):
         subpb = Problem(self.name + '_' + '_'.join(var_names), conf=self.conf,
                         functions=self.functions, domain=self.domain,
                         fields=self.fields, auto_conf=False,
-                        auto_solvers=False)
+                        auto_solvers=False, active_only=self.active_only)
         subpb.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
