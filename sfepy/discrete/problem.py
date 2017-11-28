@@ -159,8 +159,10 @@ class Problem(Struct):
         else:
             raise ValueError('missing filename_mesh or filename_domain!')
 
+        active_only = conf.options.get('active_only', True)
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
-                      domain=domain, auto_conf=False, auto_solvers=False)
+                      domain=domain, auto_conf=False, auto_solvers=False,
+                      active_only=active_only)
 
         allow_empty = conf.options.get('allow_empty_regions', False)
         obj.set_regions(conf.regions, obj.functions,
