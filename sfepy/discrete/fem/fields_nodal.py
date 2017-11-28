@@ -326,17 +326,37 @@ class H1NodalMixin(H1Mixin):
         if callable(fun):
             vals = nm.asarray(fun(self.get_coor(nods)))
 
+            try:
+                assert_(vals.size == nods.size * dpn)
+
+            except (TypeError, ValueError):
+                msg = ('wrong function return value shape for setting'
+                       ' DOFs of "%s" field!'
+                       ' (shape %s should be reshapable to %s)'
+                       % (self.name, vals.shape, (nods.size, dpn)))
+
+                raise ValueError(msg)
+
         elif nm.isscalar(fun):
             vals = nm.repeat([fun], nods.shape[0] * dpn)
 
         elif isinstance(fun, nm.ndarray):
-            assert_(len(fun) == dpn)
+            try:
+                assert_(len(fun) == dpn)
+
+            except (TypeError, ValueError):
+                msg = ('wrong array value shape for setting'
+                       ' DOFs of "%s" field!'
+                       ' (shape %s should be %s)'
+                       % (self.name, fun.shape, (dpn,)))
+                raise ValueError(msg)
+
             vals = nm.repeat(fun, nods.shape[0])
 
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
 
-        vals.shape = (len(nods), -1)
+        vals.shape = (nods.size, -1)
 
         return nods, vals
 

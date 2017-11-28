@@ -28,7 +28,7 @@ derived_units = {
 }
 
 units_of_quantities = {
-    'density' : 'g / m**3',
+    'density' : 'kg / m**3',
     'force' : 'Newton',
     'stress' : 'Pa',
     'energy' : 'J',
@@ -51,7 +51,7 @@ prefixes = {
 
 inv_prefixes = invert_dict(prefixes)
 
-num_prefixes = [str(ii) for ii in range(-12, 13)]
+num_prefixes = [str(ii) for ii in range(-20, 21)]
 prefixes.update(dict(((key, 10**int(key)) for key in num_prefixes)))
 
 class Unit(Struct):
@@ -98,7 +98,7 @@ class Unit(Struct):
     >>> Unit.get_prefix(100.0, omit=('d',))
     ('k', 0.10000000000000001)
     """
-    
+
     @staticmethod
     def get_prefix(coef, bias=0.1, omit=None):
         """
@@ -144,7 +144,7 @@ class Quantity(Struct):
     --------
 
     Construct the stress quantity:
-    
+
     >>> from sfepy.mechanics.units import Unit, Quantity
     >>> units = ['m', 's', 'kg', 'C']
     >>> unit_set = [Unit(key) for key in units]
@@ -153,7 +153,7 @@ class Quantity(Struct):
     '1.0 Pa'
 
     Show its unit using various prefixes:
-    
+
     >>> q1('m')
     '1000.0 mPa'
     >>> q1('')
@@ -186,7 +186,8 @@ class Quantity(Struct):
     def __init__(self, name, unit_set):
         """
         Create a quantity in the given unit set. The name must be listed in the
-        units_of_quantities dictionary."""
+        units_of_quantities dictionary.
+        """
         self.name = name
         self.unit_set = unit_set
 
@@ -208,7 +209,7 @@ class Quantity(Struct):
         for key, val in six.iteritems(self.def_units):
             coef_dict[val.name] = self.units[key].coef
         self.coef_dict = coef_dict
-        
+
         self.raw_coef = float(self.symbolic_value.subs(self.coef_dict))
         self.coef = self.raw_coef / self.def_coef
 
@@ -232,12 +233,15 @@ class Quantity(Struct):
         else:
             coef = prefixes[prefix]
             mul = self.coef / coef
-            
+
         return '%s %s%s' % (mul, prefix, self.unit_name)
 
-def get_consistent_unit_set(length=None, time=None, mass=None, temperature=None):
-    """Given a set of basic units, return a consistent set of derived units for
-    quantities listed in the units_of_quantities dictionary."""
+def get_consistent_unit_set(length=None, time=None, mass=None,
+                            temperature=None):
+    """
+    Given a set of basic units, return a consistent set of derived units for
+    quantities listed in the units_of_quantities dictionary.
+    """
     defaults = default_units_of_basic_quantities
     length = get_default(length, defaults['length'])
     time = get_default(time, defaults['time'])

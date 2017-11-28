@@ -35,7 +35,8 @@ def main():
            % ', '.join('%s: [%s, %s]' % (name, bbox[0, ii], bbox[1, ii])
                        for ii, name in enumerate('xyz'[:mesh.dim])))
 
-    output('centre:', mesh.coors.mean(0))
+    output('centre:', 0.5 * (bbox[0] + bbox[1]))
+    output('coordinates mean:', mesh.coors.mean(0))
 
     if not options.detailed: return
 
