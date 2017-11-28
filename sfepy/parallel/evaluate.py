@@ -26,14 +26,7 @@ class PETScParallelEvaluator(BasicEvaluator):
         Struct.__init__(self, pdofs=pdofs, drange=drange, is_overlap=is_overlap,
                         comm=comm, verbose=verbose)
 
-        variables = problem.get_variables()
-        di = variables.di
-
-        ebc_rows = []
-        for ii, variable in enumerate(variables.iter_state(ordered=True)):
-            eq_map = variable.eq_map
-            ebc_rows.append(eq_map.eq_ebc + di.ptr[ii])
-        self.ebc_rows = nm.concatenate(ebc_rows)
+        self.ebc_rows = problem.get_ebc_indices()
 
         self.psol_i = pp.create_local_petsc_vector(pdofs)
 
