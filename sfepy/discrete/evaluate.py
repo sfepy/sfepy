@@ -125,9 +125,10 @@ class LCBCEvaluator( BasicEvaluator ):
 
 def create_evaluable(expression, fields, materials, variables, integrals,
                      regions=None,
-                     ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
+                     ebcs=None, epbcs=None, lcbcs=None,
+                     ts=None, functions=None,
                      auto_init=False, mode='eval', extra_args=None,
-                     verbose=True, kwargs=None):
+                     active_only=True, verbose=True, kwargs=None):
     """
     Create evaluable object (equations and corresponding variables)
     from the `expression` string.
@@ -170,6 +171,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         each term region.
     extra_args : dict, optional
         Extra arguments to be passed to terms in the expression.
+    active_only : bool
+        If True, in 'weak' mode, the (tangent) matrices and residual
+        vectors (right-hand sides) contain only active DOFs.
     verbose : bool
         If False, reduce verbosity.
     kwargs : dict, optional
@@ -221,7 +225,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
     if mode == 'weak':
         equations.time_update(ts, ebcs, epbcs, lcbcs, functions,
-                              verbose=verbose)
+                              active_only=active_only, verbose=verbose)
 
     else:
         setup_extra_data(equations.conn_info)
@@ -231,7 +235,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
 def eval_equations(equations, variables, names=None, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None,
-                   verbose=True):
+                   active_only=True, verbose=True):
     """
     Evaluate the equations.
 
@@ -256,6 +260,9 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
         The term call mode - some terms support different call modes
         and depending on the call mode different values are
         returned.
+    active_only : bool
+        If True, in 'weak' mode, the (tangent) matrices and residual
+        vectors (right-hand sides) contain only active DOFs.
     verbose : bool
         If False, reduce verbosity.
 
@@ -273,7 +280,8 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
             asm_obj = equations.create_stripped_state_vector()
 
         else:
-            asm_obj = equations.create_matrix_graph(verbose=verbose)
+            asm_obj = equations.create_matrix_graph(active_only=active_only,
+                                                    verbose=verbose)
 
     if not preserve_caches:
         equations.invalidate_term_caches()
@@ -296,7 +304,8 @@ def eval_equations(equations, variables, names=None, preserve_caches=False,
 def eval_in_els_and_qp(expression, iels, coors,
                        fields, materials, variables,
                        functions=None, mode='eval', term_mode=None,
-                       extra_args=None, verbose=True, kwargs=None):
+                       extra_args=None, active_only=True, verbose=True,
+                       kwargs=None):
     """
     Evaluate an expression in given elements and points.
 
@@ -322,6 +331,9 @@ def eval_in_els_and_qp(expression, iels, coors,
         returned.
     extra_args : dict, optional
         Extra arguments to be passed to terms in the expression.
+    active_only : bool
+        If True, in 'weak' mode, the (tangent) matrices and residual
+        vectors (right-hand sides) contain only active DOFs.
     verbose : bool
         If False, reduce verbosity.
     kwargs : dict, optional
@@ -349,20 +361,21 @@ def eval_in_els_and_qp(expression, iels, coors,
 
     aux = create_evaluable(expression, fields, materials,
                            variables.itervalues(), Integrals([integral]),
-                           functions=functions,
-                           mode=mode, extra_args=extra_args, verbose=verbose,
-                           kwargs=kwargs)
+                           functions=functions, mode=mode,
+                           extra_args=extra_args, active_only=active_only,
+                           verbose=verbose, kwargs=kwargs)
     equations, variables = aux
 
     out = eval_equations(equations, variables,
                          preserve_caches=False,
-                         mode=mode, term_mode=term_mode)
+                         mode=mode, term_mode=term_mode,
+                         active_only=active_only)
     domain.regions.pop()
 
     return out
 
 def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
-                       dw_mode='matrix'):
+                       dw_mode='matrix', active_only=True):
     """Instead of a global matrix, return its building blocks as defined in
     `conf_equations`. The name and row/column variables of each block have to
     be encoded in the equation's name, as in::
@@ -405,7 +418,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         problem.update_materials()
         mtx = problem.evaluate(mtx_term, auto_init=True,
                                mode='weak', dw_mode='matrix',
-                               copy_materials=False)
+                               copy_materials=False, active_only=active_only)
         matrices[mtx_name] = mtx[ir,ic]
 
     return matrices

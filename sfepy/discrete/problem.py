@@ -1108,7 +1108,8 @@ class Problem(Struct):
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
                          mode='eval', var_dict=None, strip_variables=True,
-                         extra_args=None, verbose=True, **kwargs):
+                         extra_args=None, active_only=True, verbose=True,
+                         **kwargs):
         """
         Create evaluable object (equations and corresponding variables)
         from the `expression` string. Convenience function calling
@@ -1167,6 +1168,9 @@ class Problem(Struct):
             the expression are added to the actual variables as a context.
         extra_args : dict, optional
             Extra arguments to be passed to terms in the expression.
+        active_only : bool
+            If True, in 'weak' mode, the (tangent) matrices and residual
+            vectors (right-hand sides) contain only active DOFs.
         verbose : bool
             If False, reduce verbosity.
         **kwargs : keyword arguments
@@ -1260,7 +1264,9 @@ class Problem(Struct):
                                ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                ts=ts, functions=functions,
                                auto_init=auto_init,
-                               mode=mode, extra_args=extra_args, verbose=verbose,
+                               mode=mode, extra_args=extra_args,
+                               active_only=active_only,
+                               verbose=verbose,
                                kwargs=kwargs)
 
         if not strip_variables:
@@ -1277,11 +1283,10 @@ class Problem(Struct):
 
     def evaluate(self, expression, try_equations=True, auto_init=False,
                  preserve_caches=False, copy_materials=True, integrals=None,
-                 ebcs=None, epbcs=None, lcbcs=None,
-                 ts=None, functions=None,
+                 ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
                  var_dict=None, strip_variables=True, ret_variables=False,
-                 verbose=True, extra_args=None, **kwargs):
+                 active_only=True, verbose=True, extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         :func:`Problem.create_evaluable` and
@@ -1320,12 +1325,14 @@ class Problem(Struct):
                                     mode=mode, var_dict=var_dict,
                                     strip_variables=strip_variables,
                                     extra_args=extra_args,
+                                    active_only=active_only,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
 
         out = eval_equations(equations, variables,
                              preserve_caches=preserve_caches,
-                             mode=mode, dw_mode=dw_mode, term_mode=term_mode)
+                             mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                             active_only=active_only, verbose=verbose)
 
         if ret_variables:
             out = (out, variables)
@@ -1334,7 +1341,7 @@ class Problem(Struct):
 
     def eval_equations(self, names=None, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None,
-                   verbose=True):
+                   active_only=True, verbose=True):
         """
         Evaluate (some of) the problem's equations, convenience wrapper of
         :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations>`.
@@ -1370,7 +1377,7 @@ class Problem(Struct):
         return eval_equations(self.equations, self.equations.variables,
                               names=names, preserve_caches=preserve_caches,
                               mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                              verbose=verbose)
+                              active_only=active_only, verbose=verbose)
 
     def get_time_solver(self, ts_conf=None, **kwargs):
         """
