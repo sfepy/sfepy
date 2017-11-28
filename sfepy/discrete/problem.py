@@ -1103,7 +1103,11 @@ class Problem(Struct):
             self.update_materials()
         state0.apply_ebc(force_values=force_values)
 
-        vec0 = state0.get_reduced()
+        if self.active_only:
+            vec0 = state0.get_reduced()
+
+        else:
+            vec0 = state0()
 
         nls.lin_solver.set_field_split(state0.variables.adi.indx)
 
@@ -1111,7 +1115,11 @@ class Problem(Struct):
         vec = nls(vec0, status=self.nls_status)
 
         state = state0.copy(preserve_caches=True)
-        state.set_reduced(vec, preserve_caches=True)
+        if self.active_only:
+            state.set_reduced(vec, preserve_caches=True)
+
+        else:
+            state.set_full(vec)
 
         return state
 
