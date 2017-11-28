@@ -48,7 +48,7 @@ class BasicEvaluator( Evaluator ):
                           clear_all=False)
 
     def eval_residual( self, vec, is_full = False ):
-        if not is_full:
+        if not is_full and self.problem.active_only:
             vec = self.make_full_vec( vec )
 
         vec_r = self.problem.equations.eval_residuals(vec)
@@ -61,7 +61,7 @@ class BasicEvaluator( Evaluator ):
         if isinstance(vec, basestr) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
 
-        if not is_full:
+        if not is_full and self.problem.active_only:
             vec = self.make_full_vec( vec )
 
         pb = self.problem
