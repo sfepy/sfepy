@@ -126,7 +126,7 @@ def read_log(filename):
 
     return log, info
 
-def plot_log(axs, log, info, xticks=None, yticks=None):
+def plot_log(axs, log, info, xticks=None, yticks=None, groups=None):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
@@ -142,6 +142,8 @@ def plot_log(axs, log, info, xticks=None, yticks=None):
         The list of x-axis ticks (array or None) for each subplot.
     yticks : list of arrays, optional
         The list of y-axis ticks (array or None) for each subplot.
+    groups : list, optional
+        The list of data groups subplots. If not given, all groups are plotted.
     """
     import matplotlib.pyplot as plt
 
@@ -151,7 +153,7 @@ def plot_log(axs, log, info, xticks=None, yticks=None):
     else:
         fig = None
 
-    n_gr = len(info)
+    n_gr = len(info) if groups is None else len(groups)
     n_col = min(5.0, nm.fix(nm.sqrt(n_gr)))
     if int(n_col) == 0:
         n_row = 0
@@ -166,9 +168,12 @@ def plot_log(axs, log, info, xticks=None, yticks=None):
     if yticks is None:
         yticks = [None] * n_gr
 
+    isub = 0
     for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
+        if ii not in groups: continue
+
         if axs is None:
-            ax = fig.add_subplot(n_row, n_col, ii + 1)
+            ax = fig.add_subplot(n_row, n_col, isub + 1)
 
         else:
             ax = axs[ii]
@@ -188,16 +193,17 @@ def plot_log(axs, log, info, xticks=None, yticks=None):
             for x in vlines:
                 ax.axvline(x, color='k', alpha=0.3)
 
-        if xticks[ii] is not None:
-            ax.set_xticks(xticks[ii])
+        if xticks[isub] is not None:
+            ax.set_xticks(xticks[isub])
 
         else:
             ax.locator_params(axis='x', nbins=10)
 
-        if yticks[ii] is not None:
-            ax.set_yticks(yticks[ii])
+        if yticks[isub] is not None:
+            ax.set_yticks(yticks[isub])
 
         ax.legend(loc='best')
+        isub += 1
 
     plt.tight_layout(pad=0.5)
 
