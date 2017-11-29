@@ -71,7 +71,7 @@ class BasicEvaluator( Evaluator ):
 
         if not pb.active_only:
             from sfepy.parallel.parallel import apply_ebc_to_matrix
-            apply_ebc_to_matrix(mtx, pb.get_ebc_indices())
+            apply_ebc_to_matrix(mtx, *pb.get_ebc_indices())
 
         if self.matrix_hook is not None:
             mtx = self.matrix_hook(mtx, pb, call_mode='basic')

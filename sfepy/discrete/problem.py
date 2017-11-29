@@ -1005,11 +1005,15 @@ class Problem(Struct):
         variables = self.get_variables()
 
         ebc_indx = []
+        epbc_indx = []
         for ii, variable in enumerate(variables.iter_state(ordered=True)):
             eq_map = variable.eq_map
             ebc_indx.append(eq_map.eq_ebc + variables.di.ptr[ii])
+            epbc_indx.append((eq_map.master + variables.di.ptr[ii],
+                              eq_map.slave + variables.di.ptr[ii]))
         ebc_indx = nm.concatenate(ebc_indx)
-        return ebc_indx
+        epbc_indx = nm.concatenate(epbc_indx, axis=1)
+        return ebc_indx, epbc_indx
 
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
                      force=False):
