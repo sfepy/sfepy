@@ -101,10 +101,14 @@ class Problem(Struct):
     When solving with a direct solver, the diagonal entries of a matrix at
     positions corresponding to constrained DOFs has to be set to ones, so that
     the matrix is not singular, see
-    :func:`sfepy.parallel.parallel.apply_ebc_to_matrix()`. This should not be
-    necessary with iterative solvers, as the zero matrix rows match the zero
-    residual rows, i.e. if the reduced matrix would be regular, then the
-    right-hand side (the residual) is orthogonal to the kernel of the matrix.
+    :func:`sfepy.discrete.evaluate.apply_ebc_to_matrix()`, which is called
+    automatically in
+    :func:`sfepy.discrete.evaluate.BasicEvaluator.eval_tangent_matrix()`. It is
+    not called automatically in :func:`Problem.evaluate()`. Note that setting
+    the diagonal entries to one might not be necessary with iterative solvers,
+    as the zero matrix rows match the zero residual rows, i.e. if the reduced
+    matrix would be regular, then the right-hand side (the residual) is
+    orthogonal to the kernel of the matrix.
     """
 
     @staticmethod
