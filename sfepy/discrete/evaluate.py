@@ -8,6 +8,29 @@ from sfepy.discrete import Equations, Variables, Region, Integral, Integrals
 from sfepy.discrete.common.fields import setup_extra_data
 import six
 
+def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
+    """
+    Apply E(P)BC to matrix rows: put 1 to the diagonal for EBC DOFs, 1 to the
+    diagonal for master EPBC DOFs, -1 to the [master, slave] entries. It is
+    assumed, that the matrix contains zeros in EBC and master EPBC DOFs rows
+    and columns.
+    """
+    data, prows, cols = mtx.data, mtx.indptr, mtx.indices
+    # Does not change the sparsity pattern.
+    for ir in ebc_rows:
+        for ic in range(prows[ir], prows[ir + 1]):
+            if (cols[ic] == ir):
+                data[ic] = 1.0
+
+    if epbc_rows is not None:
+        master, slave = epbc_rows
+
+        # Changes sparsity pattern in-place - allocates new entries! The master
+        # DOFs are not allocated by Equations.create_matrix_graph(), see
+        # create_adof_conns().
+        mtx[master, master] = 1.0
+        mtx[master, slave] = -1.0
+
 ##
 # 02.10.2007, c
 class Evaluator( Struct ):
@@ -70,7 +93,6 @@ class BasicEvaluator( Evaluator ):
         mtx = pb.equations.eval_tangent_matrices(vec, mtx)
 
         if not pb.active_only:
-            from sfepy.parallel.parallel import apply_ebc_to_matrix
             apply_ebc_to_matrix(mtx, *pb.get_ebc_indices())
 
         if self.matrix_hook is not None:

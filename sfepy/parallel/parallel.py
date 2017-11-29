@@ -743,29 +743,6 @@ def create_petsc_system(mtx, sizes, pdofs, drange, is_overlap=True,
 
     return pmtx, psol, prhs
 
-def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
-    """
-    Apply E(P)BC to matrix rows: put 1 to the diagonal for EBC DOFs, 1 to the
-    diagonal for master EPBC DOFs, -1 to the [master, slave] entries. It is
-    assumed, that the matrix contains zeros in EBC and master EPBC DOFs rows
-    and columns.
-    """
-    data, prows, cols = mtx.data, mtx.indptr, mtx.indices
-    # Does not change the sparsity pattern.
-    for ir in ebc_rows:
-        for ic in range(prows[ir], prows[ir + 1]):
-            if (cols[ic] == ir):
-                data[ic] = 1.0
-
-    if epbc_rows is not None:
-        master, slave = epbc_rows
-
-        # Changes sparsity pattern in-place - allocates new entries! The master
-        # DOFs are not allocated by Equations.create_matrix_graph(), see
-        # create_adof_conns().
-        mtx[master, master] = 1.0
-        mtx[master, slave] = -1.0
-
 def assemble_rhs_to_petsc(prhs, rhs, pdofs, drange, is_overlap=True,
                           comm=None, verbose=False):
     """
