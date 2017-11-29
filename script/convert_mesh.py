@@ -33,6 +33,8 @@ helps = {
     'list' : 'list supported readable/writable output mesh formats',
     'merge' : 'remove duplicate vertices',
     'tri-tetra' : 'convert elements: quad->tri, hexa->tetra',
+    '2d' : 'force a 2D mesh by removing the z coordinates - assumes a 3D mesh'
+    ' in the xy plane',
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -71,6 +73,8 @@ def main():
                         dest='merge', help=helps['merge'])
     parser.add_argument('-t', '--tri-tetra', action='store_true',
                         dest='tri_tetra', help=helps['tri-tetra'])
+    parser.add_argument('-2', '--2d', action='store_true',
+                        dest='force_2d', help=helps['2d'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
@@ -92,6 +96,11 @@ def main():
     filename_out = options.filename_out
 
     mesh = Mesh.from_file(filename_in)
+
+    if options.force_2d:
+        data = list(mesh._get_io_data())
+        data[0] = data[0][:, :2]
+        mesh = Mesh.from_data(mesh.name, *data)
 
     if scale is not None:
         if len(scale) == 1:
