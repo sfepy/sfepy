@@ -146,4 +146,5 @@ options = {
     'ts' : 'ts',
     'output_dir' : 'output',
     'save_steps' : -1,
+    'active_only' : False,
 }
