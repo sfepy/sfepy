@@ -117,8 +117,8 @@ integrals = {
 
 equations = {
     'Temperature' :
-    """dw_volume_dot.i.cylinder( cylinder.capacity, ds/dt, dT/dt )
-        dw_volume_dot.i.fill( fill.capacity, ds/dt, dT/dt )
+    """dw_volume_dot.i.cylinder( cylinder.capacity, s, dT/dt )
+        dw_volume_dot.i.fill( fill.capacity, s, dT/dt )
         dw_laplace.i.cylinder( cylinder.conductivity, s, T )
         dw_laplace.i.fill( fill.conductivity, s, T )
         = dw_volume_integrate.i.cylinder( cylinder.power, s )"""
