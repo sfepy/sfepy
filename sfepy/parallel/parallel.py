@@ -743,19 +743,6 @@ def create_petsc_system(mtx, sizes, pdofs, drange, is_overlap=True,
 
     return pmtx, psol, prhs
 
-def apply_ebc_to_matrix(mtx, ebc_rows):
-    """
-    Apply to matrix rows: zeros to non-diagonal entries, one to the diagonal.
-    """
-    data, prows, cols = mtx.data, mtx.indptr, mtx.indices
-    for ir in ebc_rows:
-        for ic in range(prows[ir], prows[ir + 1]):
-            if (cols[ic] == ir):
-                data[ic] = 1.0
-
-            else:
-                data[ic] = 0.0
-
 def assemble_rhs_to_petsc(prhs, rhs, pdofs, drange, is_overlap=True,
                           comm=None, verbose=False):
     """

@@ -26,15 +26,6 @@ class PETScParallelEvaluator(BasicEvaluator):
         Struct.__init__(self, pdofs=pdofs, drange=drange, is_overlap=is_overlap,
                         comm=comm, verbose=verbose)
 
-        variables = problem.get_variables()
-        di = variables.di
-
-        ebc_rows = []
-        for ii, variable in enumerate(variables.iter_state(ordered=True)):
-            eq_map = variable.eq_map
-            ebc_rows.append(eq_map.eq_ebc + di.ptr[ii])
-        self.ebc_rows = nm.concatenate(ebc_rows)
-
         self.psol_i = pp.create_local_petsc_vector(pdofs)
 
         self.gather, self.scatter = pp.create_gather_scatter(pdofs, self.psol_i,
@@ -55,8 +46,6 @@ class PETScParallelEvaluator(BasicEvaluator):
 
         mtx_if = BasicEvaluator.eval_tangent_matrix(self, self.psol_i[...],
                                                     is_full=True)
-
-        pp.apply_ebc_to_matrix(mtx_if, self.ebc_rows)
         pp.assemble_mtx_to_petsc(pmtx, mtx_if, self.pdofs, self.drange,
                                  self.is_overlap,
                                  self.comm, verbose=self.verbose)

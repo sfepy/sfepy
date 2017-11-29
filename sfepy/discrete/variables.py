@@ -60,7 +60,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             else:
                 eq = nm.arange(var.n_dof, dtype=nm.int32)
                 eq[var.eq_map.eq_ebc] = -1 - (var.eq_map.eq_ebc + offset)
-                eq[var.eq_map.master] = -1 - (var.eq_map.master + offset)
+                eq[var.eq_map.master] = eq[var.eq_map.slave]
 
         adc = create_adof_conn(eq, econn, var.n_components, offset)
 

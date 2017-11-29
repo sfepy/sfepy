@@ -101,10 +101,14 @@ class Problem(Struct):
     When solving with a direct solver, the diagonal entries of a matrix at
     positions corresponding to constrained DOFs has to be set to ones, so that
     the matrix is not singular, see
-    :func:`sfepy.parallel.parallel.apply_ebc_to_matrix()`. This should not be
-    necessary with iterative solvers, as the zero matrix rows match the zero
-    residual rows, i.e. if the reduced matrix would be regular, then the
-    right-hand side (the residual) is orthogonal to the kernel of the matrix.
+    :func:`sfepy.discrete.evaluate.apply_ebc_to_matrix()`, which is called
+    automatically in
+    :func:`sfepy.discrete.evaluate.BasicEvaluator.eval_tangent_matrix()`. It is
+    not called automatically in :func:`Problem.evaluate()`. Note that setting
+    the diagonal entries to one might not be necessary with iterative solvers,
+    as the zero matrix rows match the zero residual rows, i.e. if the reduced
+    matrix would be regular, then the right-hand side (the residual) is
+    orthogonal to the kernel of the matrix.
     """
 
     @staticmethod
@@ -159,8 +163,10 @@ class Problem(Struct):
         else:
             raise ValueError('missing filename_mesh or filename_domain!')
 
+        active_only = conf.options.get('active_only', True)
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
-                      domain=domain, auto_conf=False, auto_solvers=False)
+                      domain=domain, auto_conf=False, auto_solvers=False,
+                      active_only=active_only)
 
         allow_empty = conf.options.get('allow_empty_regions', False)
         obj.set_regions(conf.regions, obj.functions,
@@ -283,7 +289,7 @@ class Problem(Struct):
         obj = self.__class__(name, conf=self.conf, functions=self.functions,
                       domain=self.domain, fields=self.fields,
                       equations=self.equations, auto_conf=False,
-                      auto_solvers=False)
+                      auto_solvers=False, active_only=self.active_only)
 
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
@@ -320,7 +326,7 @@ class Problem(Struct):
         subpb = Problem(self.name + '_' + '_'.join(var_names), conf=self.conf,
                         functions=self.functions, domain=self.domain,
                         fields=self.fields, auto_conf=False,
-                        auto_solvers=False)
+                        auto_solvers=False, active_only=self.active_only)
         subpb.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
@@ -996,6 +1002,23 @@ class Problem(Struct):
 
         return ev
 
+    def get_ebc_indices(self):
+        """
+        Get indices of E(P)BC-constrained DOFs in the full global state vector.
+        """
+        variables = self.get_variables()
+
+        ebc_indx = []
+        epbc_indx = []
+        for ii, variable in enumerate(variables.iter_state(ordered=True)):
+            eq_map = variable.eq_map
+            ebc_indx.append(eq_map.eq_ebc + variables.di.ptr[ii])
+            epbc_indx.append((eq_map.master + variables.di.ptr[ii],
+                              eq_map.slave + variables.di.ptr[ii]))
+        ebc_indx = nm.concatenate(ebc_indx)
+        epbc_indx = nm.concatenate(epbc_indx, axis=1)
+        return ebc_indx, epbc_indx
+
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
                      force=False):
         """
@@ -1088,7 +1111,11 @@ class Problem(Struct):
             self.update_materials()
         state0.apply_ebc(force_values=force_values)
 
-        vec0 = state0.get_reduced()
+        if self.active_only:
+            vec0 = state0.get_reduced()
+
+        else:
+            vec0 = state0()
 
         nls.lin_solver.set_field_split(state0.variables.adi.indx)
 
@@ -1096,7 +1123,11 @@ class Problem(Struct):
         vec = nls(vec0, status=self.nls_status)
 
         state = state0.copy(preserve_caches=True)
-        state.set_reduced(vec, preserve_caches=True)
+        if self.active_only:
+            state.set_reduced(vec, preserve_caches=True)
+
+        else:
+            state.set_full(vec)
 
         return state
 
@@ -1106,7 +1137,8 @@ class Problem(Struct):
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
                          mode='eval', var_dict=None, strip_variables=True,
-                         extra_args=None, verbose=True, **kwargs):
+                         extra_args=None, active_only=True, verbose=True,
+                         **kwargs):
         """
         Create evaluable object (equations and corresponding variables)
         from the `expression` string. Convenience function calling
@@ -1165,6 +1197,9 @@ class Problem(Struct):
             the expression are added to the actual variables as a context.
         extra_args : dict, optional
             Extra arguments to be passed to terms in the expression.
+        active_only : bool
+            If True, in 'weak' mode, the (tangent) matrices and residual
+            vectors (right-hand sides) contain only active DOFs.
         verbose : bool
             If False, reduce verbosity.
         **kwargs : keyword arguments
@@ -1258,7 +1293,9 @@ class Problem(Struct):
                                ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                ts=ts, functions=functions,
                                auto_init=auto_init,
-                               mode=mode, extra_args=extra_args, verbose=verbose,
+                               mode=mode, extra_args=extra_args,
+                               active_only=active_only,
+                               verbose=verbose,
                                kwargs=kwargs)
 
         if not strip_variables:
@@ -1275,11 +1312,10 @@ class Problem(Struct):
 
     def evaluate(self, expression, try_equations=True, auto_init=False,
                  preserve_caches=False, copy_materials=True, integrals=None,
-                 ebcs=None, epbcs=None, lcbcs=None,
-                 ts=None, functions=None,
+                 ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
                  var_dict=None, strip_variables=True, ret_variables=False,
-                 verbose=True, extra_args=None, **kwargs):
+                 active_only=True, verbose=True, extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         :func:`Problem.create_evaluable` and
@@ -1318,12 +1354,14 @@ class Problem(Struct):
                                     mode=mode, var_dict=var_dict,
                                     strip_variables=strip_variables,
                                     extra_args=extra_args,
+                                    active_only=active_only,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
 
         out = eval_equations(equations, variables,
                              preserve_caches=preserve_caches,
-                             mode=mode, dw_mode=dw_mode, term_mode=term_mode)
+                             mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                             active_only=active_only, verbose=verbose)
 
         if ret_variables:
             out = (out, variables)
@@ -1332,7 +1370,7 @@ class Problem(Struct):
 
     def eval_equations(self, names=None, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None,
-                   verbose=True):
+                   active_only=True, verbose=True):
         """
         Evaluate (some of) the problem's equations, convenience wrapper of
         :func:`eval_equations() <sfepy.discrete.evaluate.eval_equations>`.
@@ -1368,7 +1406,7 @@ class Problem(Struct):
         return eval_equations(self.equations, self.equations.variables,
                               names=names, preserve_caches=preserve_caches,
                               mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                              verbose=verbose)
+                              active_only=active_only, verbose=verbose)
 
     def get_time_solver(self, ts_conf=None, **kwargs):
         """
