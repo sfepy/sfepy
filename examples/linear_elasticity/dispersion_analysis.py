@@ -42,7 +42,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
     }
 
     fields = {
-        'displacement': ('complex', dim, 'Omega', approx_order),
+        'displacement': ('real', dim, 'Omega', approx_order),
     }
 
     young1, poisson1, density1, young2, poisson2, density2 = pars
@@ -104,15 +104,11 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
     }
 
     equations = {
-        'lhs' : """
-            dw_lin_elastic.i.Omega(m.D, v, u)
-          + dw_elastic_wave.i.Omega(m.D, wave.vec, v, u)
-          + 1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
-          - 1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)
-        """,
-        'rhs' : """
-            dw_volume_dot.i.Omega(m.density, v, u)
-        """,
+        'K' : 'dw_lin_elastic.i.Omega(m.D, v, u)',
+        'S' : 'dw_elastic_wave.i.Omega(m.D, wave.vec, v, u)',
+        'R' : """dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
+               - dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)""",
+        'M' : 'dw_volume_dot.i.Omega(m.density, v, u)',
     }
 
     solver_0 = solver_conf.copy()
@@ -296,15 +292,30 @@ def main():
         pb.save_state(materials_filename, out=out)
 
     wave_mat = pb.get_materials()['wave']
+    # Set the normalized wave vector direction to the wave term material.
+    wave_mat.datas['special']['vec'] = wdir
 
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
 
     variables = pb.get_variables()
 
-    rhs = pb.equations['rhs']
-    mtx_b = rhs.evaluate(mode='weak', dw_mode='matrix', asm_obj=pb.mtx_a)
-    mtx_a = mtx_b.copy()
+    # Assemble the matrices.
+    mtx_m = pb.mtx_a.copy()
+    eq_m = pb.equations['M']
+    mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
+
+    mtx_k = pb.mtx_a.copy()
+    eq_k = pb.equations['K']
+    mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
+
+    mtx_s = pb.mtx_a.copy()
+    eq_s = pb.equations['S']
+    mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
+
+    mtx_r = pb.mtx_a.copy()
+    eq_r = pb.equations['R']
+    mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
 
     eigenshapes_filename = os.path.join(output_dir,
                                         'eigenshapes-%s.vtk'
@@ -337,15 +348,10 @@ def main():
               aggregate=1000, sleep=0.1)
     for iv, wmag in wmag_stepper:
         wave_vec = wmag * wdir
-        wave_mat.datas['special']['vec'] = wave_vec
-
         output('step %d: wave vector %s' % (iv, wave_vec))
 
-        lhs = pb.equations['lhs']
-
-        mtx_a.data[:] = 0.0
-        mtx_a = lhs.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_a)
-
+        mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
+        mtx_b = mtx_m
         if options.eigs_only:
             eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
                               eigenvectors=False)
