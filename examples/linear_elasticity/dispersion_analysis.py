@@ -116,6 +116,10 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
 
     return locals()
 
+def _max_diff_csr(mtx1, mtx2):
+    aux = nm.abs((mtx1 - mtx2).data)
+    return aux.max() if len(aux) else 0.0
+
 helps = {
     'pars' :
     'material parameters in Y1, Y2 subdomains in basic units'
@@ -317,6 +321,12 @@ def main():
     eq_r = pb.equations['R']
     mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
 
+    output('symmetry checks of real blocks:')
+    output('M - M^T:', _max_diff_csr(mtx_m, mtx_m.T))
+    output('K - K^T:', _max_diff_csr(mtx_k, mtx_k.T))
+    output('S - S^T:', _max_diff_csr(mtx_s, mtx_s.T))
+    output('R + R^T:', _max_diff_csr(mtx_r, -mtx_r.T))
+
     eigenshapes_filename = os.path.join(output_dir,
                                         'eigenshapes-%s.vtk'
                                         % wmag_stepper.suffix)
@@ -352,6 +362,10 @@ def main():
 
         mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
         mtx_b = mtx_m
+
+        output('symmetry check of complex matrix A - A^H:',
+               _max_diff_csr(mtx_a, mtx_a.H))
+
         if options.eigs_only:
             eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
                               eigenvectors=False)
