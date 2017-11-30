@@ -150,9 +150,13 @@ helps = {
     ' [default: %(default)s]',
     'unit_multipliers' :
     'basic unit multipliers (time, length, mass) [default: %(default)s]',
-    'wave_range' : 'the wave vector magnitude range (like numpy.linspace)'
-    ' [default: %(default)s]',
     'wave_dir' : 'the wave vector direction (will be normalized)'
+    ' [default: %(default)s]',
+    'mode' : 'solution mode: omega = solve a generalized EVP for omega,'
+    ' kappa = solve a quadratic generalized EVP for kappa'
+    ' [default: %(default)s]',
+    'range' : 'the wave vector magnitude / frequency range'
+    ' (like numpy.linspace) depending on the mode option'
     ' [default: %(default)s]',
     'order' : 'displacement field approximation order [default: %(default)s]',
     'refine' : 'number of uniform mesh refinements [default: %(default)s]',
@@ -191,12 +195,15 @@ def main():
                         metavar='c_time,c_length,c_mass',
                         action='store', dest='unit_multipliers',
                         default='1.0,1.0,1.0', help=helps['unit_multipliers'])
-    parser.add_argument('--wave-range', metavar='start,stop,count',
-                        action='store', dest='wave_range',
-                        default='10,100,10', help=helps['wave_range'])
     parser.add_argument('--wave-dir', metavar='float,float[,float]',
                         action='store', dest='wave_dir',
                         default='1.0,0.0,0.0', help=helps['wave_dir'])
+    parser.add_argument('--mode', action='store', dest='mode',
+                        choices=['omega', 'kappa'],
+                        default='omega', help=helps['mode'])
+    parser.add_argument('--range', metavar='start,stop,count',
+                        action='store', dest='range',
+                        default='10,100,10', help=helps['range'])
     parser.add_argument('--order', metavar='int', type=int,
                         action='store', dest='order',
                         default=1, help=helps['order'])
@@ -239,10 +246,10 @@ def main():
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
                                 for ii in options.unit_multipliers.split(',')]
-    aux = options.wave_range.split(',')
-    options.wave_range = [float(aux[0]), float(aux[1]), int(aux[2])]
     options.wave_dir = [float(ii)
                         for ii in options.wave_dir.split(',')]
+    aux = options.range.split(',')
+    options.range = [float(aux[0]), float(aux[1]), int(aux[2])]
     options.solver_conf = dict_from_string(options.solver_conf)
 
     if options.clear:
@@ -262,11 +269,19 @@ def main():
     output('material parameters with applied unit multipliers:')
     output(pars)
 
-    rng = copy(options.wave_range)
-    rng[:2] = apply_unit_multipliers(options.wave_range[:2],
-                                     ['wave_number', 'wave_number'],
-                                     options.unit_multipliers)
-    output('wave number range with applied unit multipliers:', rng)
+    if options.mode == 'omega':
+        rng = copy(options.range)
+        rng[:2] = apply_unit_multipliers(options.range[:2],
+                                         ['wave_number', 'wave_number'],
+                                         options.unit_multipliers)
+        output('wave number range with applied unit multipliers:', rng)
+
+    else:
+        rng = copy(options.range)
+        rng[:2] = apply_unit_multipliers(options.range[:2],
+                                         ['frequency', 'frequency'],
+                                         options.unit_multipliers)
+        output('frequency range with applied unit multipliers:', rng)
 
     define_problem = functools.partial(define,
                                        filename_mesh=options.mesh_filename,
@@ -280,9 +295,10 @@ def main():
     pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
 
-    wmag_stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
     wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
     wdir = wdir / nm.linalg.norm(wdir)
+
+    stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
 
     bbox = pb.domain.mesh.get_bounding_box()
     size = (bbox[1] - bbox[0]).max()
@@ -345,66 +361,124 @@ def main():
     output('S - S^T:', _max_diff_csr(mtx_s, mtx_s.T))
     output('R + R^T:', _max_diff_csr(mtx_r, -mtx_r.T))
 
-    eigenshapes_filename = os.path.join(output_dir,
-                                        'eigenshapes-%s.vtk'
-                                        % wmag_stepper.suffix)
+    if options.mode == 'omega':
+        eigenshapes_filename = os.path.join(output_dir,
+                                            'frequency-eigenshapes-%s.vtk'
+                                            % stepper.suffix)
 
-    extra = []
-    extra_plot_kwargs = []
-    if options.log_std_waves:
-        lam, mu = mc.lame_from_youngpoisson(young, poisson)
-        alam = nm.average(lam)
-        amu = nm.average(mu)
-        adensity = nm.average(density)
-
-        cp = nm.sqrt((alam + 2.0 * amu) / adensity)
-        cs = nm.sqrt(amu / adensity)
-        output('average p-wave speed:', cp)
-        output('average shear wave speed:', cs)
-
-        extra = [r'$\omega_p$', r'$\omega_s$']
-        extra_plot_kwargs = [{'ls' : '--', 'color' : 'k'},
-                             {'ls' : '--', 'color' : 'gray'}]
-
-    log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
-               [r'$\omega_{%d}$' % ii for ii in range(options.n_eigs)] + extra],
-              plot_kwargs=[{}, [{}] * options.n_eigs + extra_plot_kwargs],
-              yscales=['linear', 'linear'],
-              xlabels=[r'$\kappa$', r'$\kappa$'],
-              ylabels=[r'eigenvalues $\lambda_i$', r'frequencies $\omega_i$'],
-              log_filename=os.path.join(output_dir, 'eigenvalues.txt'),
-              aggregate=1000, sleep=0.1)
-    for iv, wmag in wmag_stepper:
-        wave_vec = wmag * wdir
-        output('step %d: wave vector %s' % (iv, wave_vec))
-
-        mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
-        mtx_b = mtx_m
-
-        output('symmetry check of complex matrix A - A^H:',
-               _max_diff_csr(mtx_a, mtx_a.H))
-
-        if options.eigs_only:
-            eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
-                              eigenvectors=False)
-            svecs = None
-
-        else:
-            eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
-                                     eigenvectors=True)
-        omegas = nm.sqrt(eigs)
-
-        output('eigs, omegas:\n', nm.c_[eigs, omegas])
-
-        out = tuple(eigs) + tuple(omegas)
+        extra = []
+        extra_plot_kwargs = []
         if options.log_std_waves:
-            out = out + (cp * wmag, cs * wmag)
-        log(*out, x=[wmag, wmag])
+            lam, mu = mc.lame_from_youngpoisson(young, poisson)
+            alam = nm.average(lam)
+            amu = nm.average(mu)
+            adensity = nm.average(density)
 
-        save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
+            cp = nm.sqrt((alam + 2.0 * amu) / adensity)
+            cs = nm.sqrt(amu / adensity)
+            output('average p-wave speed:', cp)
+            output('average shear wave speed:', cs)
 
-    log(save_figure=os.path.join(output_dir, 'eigenvalues.png'))
-    log(finished=True)
+            extra = [r'$\omega_p$', r'$\omega_s$']
+            extra_plot_kwargs = [{'ls' : '--', 'color' : 'k'},
+                                 {'ls' : '--', 'color' : 'gray'}]
+
+        log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
+                   [r'$\omega_{%d}$'
+                    % ii for ii in range(options.n_eigs)] + extra],
+                  plot_kwargs=[{}, [{}] * options.n_eigs + extra_plot_kwargs],
+                  yscales=['linear', 'linear'],
+                  xlabels=[r'$\kappa$', r'$\kappa$'],
+                  ylabels=[r'eigenvalues $\lambda_i$',
+                           r'frequencies $\omega_i$'],
+                  log_filename=os.path.join(output_dir, 'frequencies.txt'),
+                  aggregate=1000, sleep=0.1)
+
+        for iv, wmag in stepper:
+            output('step %d: wave vector %s' % (iv, wmag * wdir))
+
+            mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
+            mtx_b = mtx_m
+
+            output('A - A^H:', _max_diff_csr(mtx_a, mtx_a.H))
+
+            if options.eigs_only:
+                eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                                  eigenvectors=False)
+                svecs = None
+
+            else:
+                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                                         eigenvectors=True)
+            omegas = nm.sqrt(eigs)
+
+            output('eigs, omegas:\n', nm.c_[eigs, omegas])
+
+            out = tuple(eigs) + tuple(omegas)
+            if options.log_std_waves:
+                out = out + (cp * wmag, cs * wmag)
+            log(*out, x=[wmag, wmag])
+
+            save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
+
+        log(save_figure=os.path.join(output_dir, 'frequencies.png'))
+        log(finished=True)
+
+    else:
+        import scipy.sparse as sps
+        from sksparse.cholmod import cholesky
+
+        eigenshapes_filename = os.path.join(output_dir,
+                                            'wave-number-eigenshapes-%s.vtk'
+                                            % stepper.suffix)
+
+        factor = cholesky(mtx_s)
+        perm = factor.P()
+        ir = nm.arange(len(perm))
+        mtx_p = sps.coo_matrix((nm.ones_like(perm), (ir, perm)))
+        mtx_l = mtx_p.T * factor.L()
+        mtx_eye = sps.eye(mtx_l.shape[0], dtype=nm.float64)
+
+        output('S - LL^T:', _max_diff_csr(mtx_s, mtx_l * mtx_l.T))
+
+        log = Log([[r'$\kappa_{%d}$' % ii for ii in range(options.n_eigs)]],
+                  plot_kwargs=[{'ls' : 'None', 'marker' : 'o'}],
+                  yscales=['linear'],
+                  xlabels=[r'$\omega$'],
+                  ylabels=[r'wave numbers $\kappa_i$'],
+                  log_filename=os.path.join(output_dir, 'wave-numbers.txt'),
+                  aggregate=1000, sleep=0.1)
+        for io, omega in stepper:
+            output('step %d: frequency %s' % (io, omega))
+
+            mtx_a = sps.bmat([[mtx_k - omega**2 * mtx_m, None],
+                              [None, mtx_eye]])
+            mtx_b = sps.bmat([[1j * mtx_r, mtx_l],
+                              [mtx_l.T, None]])
+
+            output('A - A^T:', _max_diff_csr(mtx_a, mtx_a.T))
+            output('A - A^H:', _max_diff_csr(mtx_a, mtx_a.T))
+            output('B - B^H:', _max_diff_csr(mtx_b, mtx_b.H))
+
+            if options.eigs_only:
+                eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                                  eigenvectors=False)
+                svecs = None
+
+            else:
+                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                                         eigenvectors=True)
+            kappas = eigs
+
+            output('kappas:\n', kappas[:, None])
+
+            out = tuple(kappas)
+            log(*out, x=[omega])
+
+            save_eigenvectors(eigenshapes_filename % io, svecs, pb)
+
+        log(save_figure=os.path.join(output_dir, 'wave-numbers.png'))
+        log(finished=True)
 
 if __name__ == '__main__':
     main()
