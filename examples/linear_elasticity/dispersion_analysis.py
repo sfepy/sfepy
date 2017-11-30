@@ -42,7 +42,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
     }
 
     fields = {
-        'displacement': ('real', dim, 'Omega', approx_order),
+        'displacement': ('complex', dim, 'Omega', approx_order),
     }
 
     young1, poisson1, density1, young2, poisson2, density2 = pars
@@ -119,6 +119,26 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
 def _max_diff_csr(mtx1, mtx2):
     aux = nm.abs((mtx1 - mtx2).data)
     return aux.max() if len(aux) else 0.0
+
+def save_eigenvectors(filename, svecs, pb):
+    if svecs is None: return
+
+    variables = pb.get_variables()
+    # Make full eigenvectors (add DOFs fixed by boundary conditions).
+    vecs = nm.empty((variables.di.ptr[-1], svecs.shape[1]),
+                    dtype=svecs.dtype)
+    for ii in range(svecs.shape[1]):
+        vecs[:, ii] = variables.make_full_vec(svecs[:, ii])
+
+    # Save the eigenvectors.
+    out = {}
+    state = pb.create_state()
+    for ii in range(svecs.shape[1]):
+        state.set_full(vecs[:, ii])
+        aux = state.create_output_dict()
+        out.update({key + '%03d' % ii : aux[key] for key in aux})
+
+    pb.save_state(filename, out=out)
 
 helps = {
     'pars' :
@@ -302,8 +322,6 @@ def main():
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
 
-    variables = pb.get_variables()
-
     # Assemble the matrices.
     mtx_m = pb.mtx_a.copy()
     eq_m = pb.equations['M']
@@ -383,22 +401,7 @@ def main():
             out = out + (cp * wmag, cs * wmag)
         log(*out, x=[wmag, wmag])
 
-        if svecs is not None:
-            # Make full eigenvectors (add DOFs fixed by boundary conditions).
-            vecs = nm.empty((variables.di.ptr[-1], svecs.shape[1]),
-                            dtype=nm.complex128)
-            for ii in range(svecs.shape[1]):
-                vecs[:, ii] = variables.make_full_vec(svecs[:, ii])
-
-            # Save the eigenvectors.
-            out = {}
-            state = pb.create_state()
-            for ii in range(eigs.shape[0]):
-                state.set_full(vecs[:, ii])
-                aux = state.create_output_dict()
-                out['u%03d' % ii] = aux.popitem()[1]
-
-            pb.save_state(eigenshapes_filename % iv, out=out)
+        save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
 
     log(save_figure=os.path.join(output_dir, 'eigenvalues.png'))
     log(finished=True)
