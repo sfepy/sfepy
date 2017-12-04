@@ -361,6 +361,11 @@ def main():
     output('S - S^T:', _max_diff_csr(mtx_s, mtx_s.T))
     output('R + R^T:', _max_diff_csr(mtx_r, -mtx_r.T))
 
+    n_eigs = options.n_eigs
+    if options.n_eigs > mtx_k.shape[0]:
+        options.n_eigs = mtx_k.shape[0]
+        n_eigs = None
+
     if options.mode == 'omega':
         eigenshapes_filename = os.path.join(output_dir,
                                             'frequency-eigenshapes-%s.vtk'
@@ -403,7 +408,7 @@ def main():
             output('A - A^H:', _max_diff_csr(mtx_a, mtx_a.H))
 
             if options.eigs_only:
-                eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                eigs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
@@ -461,7 +466,7 @@ def main():
             output('B - B^H:', _max_diff_csr(mtx_b, mtx_b.H))
 
             if options.eigs_only:
-                eigs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                eigs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
