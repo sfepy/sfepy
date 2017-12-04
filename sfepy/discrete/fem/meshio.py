@@ -2952,7 +2952,8 @@ def for_format(filename, format=None, writable=False, prefix_dir=None):
             raise ValueError('unknown output mesh format! (%s)' % format)
 
         if writable and ('w' not in supported_capabilities[format]):
-            output_writable_meshes()
+            output('writable mesh formats:')
+            output_mesh_formats('w')
             msg = 'write support not implemented for output mesh format "%s",' \
                   ' see above!' % format
             raise ValueError(msg)
