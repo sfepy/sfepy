@@ -77,6 +77,7 @@ from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem, State)
 from sfepy.discrete.conditions import Conditions, EssentialBC
+from sfepy.discrete.evaluate import apply_ebc_to_matrix
 from sfepy.terms import Term
 from sfepy.solvers.ls import PETScKrylovSolver
 
@@ -282,7 +283,7 @@ def solve_problem(mesh_filename, options, comm):
     output('assembling global system...')
     tt = time.clock()
 
-    pl.apply_ebc_to_matrix(mtx_i, u_i.eq_map.eq_ebc)
+    apply_ebc_to_matrix(mtx_i, u_i.eq_map.eq_ebc)
     pl.assemble_rhs_to_petsc(prhs, rhs_i, pdofs, drange, is_overlap=True,
                              comm=comm, verbose=True)
     pl.assemble_mtx_to_petsc(pmtx, mtx_i, pdofs, drange, is_overlap=True,
