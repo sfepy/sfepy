@@ -91,8 +91,12 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
 
         if n_eigs is None:
             mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
-            eig = self.sla.eig if conf.method == 'eig' else self.sla.eigh
-            out = eig(mtx_a, mtx_b, right=eigenvectors, **kwargs)
+            if conf.method == 'eig':
+                out = self.sla.eig(mtx_a, mtx_b, right=eigenvectors, **kwargs)
+
+            else:
+                out = self.sla.eigh(mtx_a, mtx_b,
+                                    eigvals_only=not eigenvectors, **kwargs)
 
         else:
             eig = self.ssla.eigs if conf.method == 'eig' else self.ssla.eigsh
