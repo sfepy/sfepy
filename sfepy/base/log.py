@@ -153,7 +153,13 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None):
     else:
         fig = None
 
-    n_gr = len(info) if groups is None else len(groups)
+    if groups is None:
+        n_gr = len(info)
+        groups = nm.arange(n_gr)
+
+    else:
+        n_gr = len(groups)
+
     n_col = min(5.0, nm.fix(nm.sqrt(n_gr)))
     if int(n_col) == 0:
         n_row = 0
