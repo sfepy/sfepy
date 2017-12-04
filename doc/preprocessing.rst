@@ -269,10 +269,19 @@ This, however is not enough to create a truly 2D mesh - the created mesh
 vertices still have the third, :math:`z`, component which is equal to zero. In
 order to remove the third component, use::
 
-  script/convert_mesh.py --2d circle_in_square.msh circle_in_square.vtk
+  script/convert_mesh.py --2d circle_in_square.msh circle_in_square.h5
 
-Now, in the resulting ``circle_in_square.vtk``, each vertex has only two
-coordinates.
+Now, in the resulting ``circle_in_square.h5``, each vertex has only two
+coordinates. Another way of generating the 2D mesh is to use the legacy VTK
+format as follows::
+
+  gmsh -2 -format vtk -o circle_in_square.vtk circle_in_square.geo
+  script/convert_mesh.py circle_in_square.vtk circle_in_square.h5
+
+This is due to the fact that the legacy VTK does not support 2D vertices and so
+the :class:`VTKMeshIO <sfepy.discrete.fem.meshio.VTKMeshIO>` reader tries to
+detect the planar geometry by comparing the :math:`z` components to zero - the
+``--2d`` option of ``script/convert_mesh.py`` is not needed in this case.
 
 Multipart models
 ----------------
