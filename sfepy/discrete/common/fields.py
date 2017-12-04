@@ -326,6 +326,7 @@ class Field(Struct):
         """
         from sfepy.discrete.common.global_interp import get_ref_coors
         from sfepy.discrete.common.extmods.crefcoors import evaluate_in_rc
+        from sfepy.base.base import complex_types
 
         output('evaluating in %d points...' % coors.shape[0], verbose=verbose)
 
@@ -339,21 +340,34 @@ class Field(Struct):
         tt = time.clock()
 
         # Interpolate to the reference coordinates.
+        source_dtype = nm.float64 if source_vals.dtype in complex_types\
+            else source_vals.dtype
         if mode == 'val':
             vals = nm.empty((coors.shape[0], source_vals.shape[1], 1),
-                            dtype=source_vals.dtype)
+                            dtype=source_dtype)
             cmode = 0
 
         elif mode == 'grad':
             vals = nm.empty((coors.shape[0], source_vals.shape[1],
                              coors.shape[1]),
-                            dtype=source_vals.dtype)
+                            dtype=source_dtype)
             cmode = 1
 
         ctx = self.create_basis_context()
 
-        evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                       self.get_econn('volume', self.region), cmode, ctx)
+        if source_vals.dtype in complex_types:
+            valsi = vals.copy()
+            evaluate_in_rc(vals, ref_coors, cells, status,
+                           nm.ascontiguousarray(source_vals.real),
+                           self.get_econn('volume', self.region), cmode, ctx)
+            evaluate_in_rc(valsi, ref_coors, cells, status,
+                           nm.ascontiguousarray(source_vals.imag),
+                           self.get_econn('volume', self.region), cmode, ctx)
+            vals = vals + valsi * 1j
+        else:
+            evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
+                           self.get_econn('volume', self.region), cmode, ctx)
+
         output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
 
         output('...done',verbose=verbose)
