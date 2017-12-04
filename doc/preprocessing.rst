@@ -251,6 +251,28 @@ the surface elements are discarded and only the volumetric mesh is preserved.
    :width: 40 %
    :align: center
 
+Note: planar 2D meshes
+^^^^^^^^^^^^^^^^^^^^^^
+
+To create a planar 2D mesh, such as
+
+.. image:: images/preprocessing/circle_in_square.png
+   :width: 40 %
+   :align: center
+
+that can be described by :download:`this <preprocessing/circle_in_square.geo>`
+*Gmsh* code, the mesh generator can be called as follows::
+
+  gmsh -2 -format msh -o circle_in_square.msh circle_in_square.geo
+
+This, however is not enough to create a truly 2D mesh - the created mesh
+vertices still have the third, :math:`z`, component which is equal to zero. In
+order to remove the third component, use::
+
+  script/convert_mesh.py --2d circle_in_square.msh circle_in_square.vtk
+
+Now, in the resulting ``circle_in_square.vtk``, each vertex has only two
+coordinates.
 
 Multipart models
 ----------------
