@@ -317,3 +317,55 @@ class Test(TestCommon):
                 ok = ok and _ok
 
         return ok
+
+    def test_evaluate_at(self):
+        from sfepy import data_dir
+        from sfepy.discrete.fem import Mesh
+        from sfepy.discrete import Variables
+        from sfepy.discrete.fem import FEDomain, Field
+
+        meshes = {
+            'tp' : Mesh.from_file(data_dir + '/meshes/3d/block.mesh'),
+        }
+        datas = gen_datas(meshes)
+
+        fields = {
+            'scalar_tp' : ((1,1), 'Omega', 1),
+            'vector_tp' : ((3,1), 'Omega', 1),
+        }
+
+        ok = True
+        for field_name in ['scalar_tp', 'vector_tp']:
+            d = FEDomain('d', meshes['tp'])
+            d.create_region('Omega', 'all')
+
+            f = fields[field_name]
+            field = Field.from_args('f', nm.complex128, f[0],
+                                    d.regions[f[1]],
+                                    approx_order=f[2])
+            ff = {field.name : field}
+
+            vv = Variables.from_conf(transform_variables(variables), ff)
+            u = vv['u']
+
+            bbox = d.get_mesh_bounding_box()
+            t = nm.expand_dims(nm.linspace(0, 1, 100), 1)
+            coors = nm.expand_dims(bbox[1] - bbox[0], 0) * t + bbox[0]
+
+            data_r = datas[field_name]
+            data_i = 2. / (1 + datas[field_name])
+
+            u.set_from_mesh_vertices(data_r)
+            vals_r = u.evaluate_at(coors)
+            u.set_from_mesh_vertices(data_i)
+            vals_i = u.evaluate_at(coors)
+            u.set_from_mesh_vertices(data_r + data_i * 1j)
+            vals = u.evaluate_at(coors)
+
+            _ok = nm.allclose(vals_r + vals_i * 1j, vals, rtol=0.0, atol=1e-12)
+            _ok = _ok and nm.abs(vals).sum() > 1
+            self.report('evaluating complex field %s: %s' % (field_name, _ok))
+
+            ok = ok and _ok
+
+        return ok
