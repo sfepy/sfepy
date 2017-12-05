@@ -315,7 +315,7 @@ class GradTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
-        grad = self.get(parameter, 'grad')
+        grad = self.get(parameter, 'grad', integration=self.integration)
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
@@ -329,6 +329,12 @@ class GradTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, dim, n_c), parameter.dtype
+
+class SurfaceGradTerm(GradTerm):
+    __doc__ = GradTerm.__doc__.replace('Omega', 'Gamma')
+
+    name = 'ev_surface_grad'
+    integration = 'surface_extra'
 
 class DivTerm(Term):
     r"""
@@ -370,7 +376,7 @@ class DivTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
-        div = self.get(parameter, 'div')
+        div = self.get(parameter, 'div', integration=self.integration)
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
@@ -384,6 +390,12 @@ class DivTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, 1, 1), parameter.dtype
+
+class SurfaceDivTerm(DivTerm):
+    __doc__ = DivTerm.__doc__.replace('Omega', 'Gamma')
+
+    name = 'ev_surface_div'
+    integration = 'surface_extra'
 
 class DivOperatorTerm(Term):
     r"""
