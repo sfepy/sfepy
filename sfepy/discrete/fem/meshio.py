@@ -2669,11 +2669,16 @@ class ANSYSCDBMeshIO(MeshIO):
                       & (hexas[:, 4] == hexas[:, 6])
                       & (hexas[:, 4] == hexas[:, 7]))[0]
 
-        tetras = nm.r_[tetras, hexas[ii[:, None], [0, 1, 2, 4]]]
-        mat_ids_tetras = nm.r_[mat_ids_tetras, mat_ids_hexas[ii]]
+        if len(ii) == len(hexas):
+            tetras = nm.r_[tetras, hexas[ii[:, None], [0, 1, 2, 4]]]
+            mat_ids_tetras = nm.r_[mat_ids_tetras, mat_ids_hexas[ii]]
 
-        hexas = nm.delete(hexas, ii, axis=0)
-        mat_ids_hexas = nm.delete(mat_ids_hexas, ii)
+            hexas = nm.delete(hexas, ii, axis=0)
+            mat_ids_hexas = nm.delete(mat_ids_hexas, ii)
+
+        else:
+            output('WARNING: mesh "%s" has both tetrahedra and hexahedra!'
+                   % mesh.name)
 
         ngroups = nm.zeros(len(coors), dtype=nm.int32)
 
