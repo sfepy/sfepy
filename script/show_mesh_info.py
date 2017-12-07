@@ -5,6 +5,8 @@ Print various information about a mesh.
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
+import numpy as nm
+
 from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh
 
@@ -50,6 +52,8 @@ def main():
         output('volumes of %d %dD entities: min: %s mean: %s max: %s'
                % (mesh.cmesh.num[dim],
                   dim, volumes.min(), volumes.mean(), volumes.max()))
+
+    output('Euler characteristic:', nm.dot(mesh.cmesh.num, [1, -1, 1, -1]))
 
 if __name__ == '__main__':
     main()
