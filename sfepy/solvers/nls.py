@@ -569,6 +569,11 @@ class PETScNonlinearSolver(NonlinearSolver):
         else:
             reason = 'ksp: %s' % self.ksp_converged_reasons[snes.reason]
 
+        output('%s(%s): %d iterations in the last step'
+               % (ksp.getType(), ksp.getPC().getType(),
+                  ksp.getIterationNumber()),
+               verbose=conf.verbose)
+
         output('%s convergence: %s (%s, %d iterations, %d function evaluations)'
                % (snes.getType(), snes.reason, reason,
                   snes.getIterationNumber(), snes.getFunctionEvaluations()),
