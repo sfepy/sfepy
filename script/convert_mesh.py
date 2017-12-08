@@ -11,6 +11,7 @@ Examples::
 """
 from __future__ import absolute_import
 import sys
+import os.path as op
 from six.moves import range
 sys.path.append('.')
 
@@ -35,6 +36,9 @@ helps = {
     'tri-tetra' : 'convert elements: quad->tri, hexa->tetra',
     '2d' : 'force a 2D mesh by removing the z coordinates - assumes a 3D mesh'
     ' in the xy plane',
+    'save-per-mat': 'extract cells by material id and save them into'
+    ' separate mesh files with a name based on filename_out and the id'
+    ' numbers (preserves original mesh vertices)'
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -75,6 +79,8 @@ def main():
                         dest='tri_tetra', help=helps['tri-tetra'])
     parser.add_argument('-2', '--2d', action='store_true',
                         dest='force_2d', help=helps['2d'])
+    parser.add_argument('--save-per-mat', action='store_true',
+                        dest='save_per_mat', help=helps['save-per-mat'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
@@ -158,6 +164,26 @@ def main():
         mesh = Mesh.from_data(mesh.name + '_merged',
                               coor, ngroups,
                               [conns], [mesh.cmesh.cell_groups], [desc])
+
+    if options.save_per_mat:
+        desc = mesh.descs[0]
+        conns, cgroups = mesh.get_conn(desc), mesh.cmesh.cell_groups
+        coors, ngroups = mesh.coors, mesh.cmesh.vertex_groups
+        mat_ids = nm.unique(cgroups)
+
+        for mat_id in mat_ids:
+            idxs = nm.where(cgroups == mat_id)[0]
+            imesh = Mesh.from_data(mesh.name + '_matid_%d' % mat_id,
+                                   coors, ngroups,
+                                   [conns[idxs]], [cgroups[idxs]], [desc])
+
+            fbase, fext = op.splitext(filename_out)
+            ifilename_out = '%s_matid_%d%s' % (fbase, mat_id, fext)
+            io = MeshIO.for_format(ifilename_out, format=options.format,
+                                   writable=True)
+            output('writing %s...' % ifilename_out)
+            imesh.write(ifilename_out, io=io)
+            output('...done')
 
     io = MeshIO.for_format(filename_out, format=options.format,
                            writable=True)
