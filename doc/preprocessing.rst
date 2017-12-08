@@ -370,6 +370,15 @@ argument to `convert_mesh.py` script::
 
   script/convert_mesh.py -m screwdriver_full.msh screwdriver_full.vtk
 
+In order to extract the cells by the physical groups use the conversion script
+with ``--save-per-mat`` argument::
+
+  script/convert_mesh.py --save-per-mat screwdriver_full.vtk screwdriver.vtk
+
+It produces `screwdriver.vtk` contaning the original mesh and
+`screwdriver_matid_1.vtk`, `screwdriver_matid_2.vtk` files containing only
+the cells of a given physical group and all vertices of the original mesh.
+
 .. image:: images/preprocessing/sdf_mesh.png
    :width: 60 %
    :align: center
