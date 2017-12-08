@@ -49,9 +49,10 @@ def main():
 
     for dim in range(1, mesh.cmesh.tdim + 1):
         volumes = mesh.cmesh.get_volumes(dim)
-        output('volumes of %d %dD entities: min: %s mean: %s max: %s'
-               % (mesh.cmesh.num[dim],
-                  dim, volumes.min(), volumes.mean(), volumes.max()))
+        output('volumes of %d %dD entities:\nmin: %.7e mean: %.7e median:'
+               ' %.7e max: %.7e'
+               % (mesh.cmesh.num[dim], dim, volumes.min(), volumes.mean(),
+                  nm.median(volumes), volumes.max()))
 
     output('Euler characteristic:', nm.dot(mesh.cmesh.num, [1, -1, 1, -1]))
 
