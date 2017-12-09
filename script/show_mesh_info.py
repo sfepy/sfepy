@@ -8,7 +8,7 @@ from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import numpy as nm
 
 from sfepy.base.base import output
-from sfepy.discrete.fem import Mesh
+from sfepy.discrete.fem import Mesh, FEDomain
 
 helps = {
     'filename' :
@@ -42,10 +42,7 @@ def main():
 
     if not options.detailed: return
 
-    from sfepy.discrete.fem.geometry_element import create_geometry_elements
-    gels = create_geometry_elements()
-    mesh.cmesh.set_local_entities(gels)
-    mesh.cmesh.setup_entities()
+    domain = FEDomain(mesh.name, mesh)
 
     for dim in range(1, mesh.cmesh.tdim + 1):
         volumes = mesh.cmesh.get_volumes(dim)
@@ -54,7 +51,20 @@ def main():
                % (mesh.cmesh.num[dim], dim, volumes.min(), volumes.mean(),
                   nm.median(volumes), volumes.max()))
 
-    output('Euler characteristic:', nm.dot(mesh.cmesh.num, [1, -1, 1, -1]))
+    euler = lambda mesh: nm.dot(mesh.cmesh.num, [1, -1, 1, -1])
+    ec = euler(mesh)
+    output('Euler characteristic:', ec)
+
+    if mesh.dim > 1:
+        region = domain.create_region('surf', 'vertices of surface', 'facet')
+        surf_mesh = Mesh.from_region(region, mesh,
+                                     localize=True, is_surface=True)
+        FEDomain(surf_mesh.name, surf_mesh) # Calls CMesh.setup_entities().
+
+        sec = euler(surf_mesh)
+        output('surface Euler characteristic:', sec)
+        if mesh.dim == 3:
+            output('surface genus:', (2.0 - sec) / 2.0)
 
 if __name__ == '__main__':
     main()
