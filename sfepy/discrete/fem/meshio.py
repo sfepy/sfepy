@@ -2033,7 +2033,11 @@ class AbaqusMeshIO(MeshIO):
                         mat_tetras.append(0)
                         tetras.append([int(ic) for ic in line[1:5]])
 
-                elif line[1].find('CPS') >= 0 or line[1].find('CPE') >= 0:
+                elif (
+                        line[1].find('CPS') >= 0
+                        or line[1].find('CPE') >= 0
+                        or line[1].find('CAX') >= 0
+                ):
                     if line[1].find('4') >= 0:
                         while 1:
                             line = fd.readline().split(',')
