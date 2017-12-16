@@ -1314,10 +1314,18 @@ class SurfaceField(FEField):
         ok : bool
             True if the region is usable for the field.
         """
-        ok = ((region.kind_tdim == (region.tdim - 1))
-              and (region.get_n_cells(True) > 0))
+        ok1 = ((region.kind_tdim == (region.tdim - 1))
+               and (region.get_n_cells(True) > 0))
+        if not ok1:
+            output('bad region topological dimension and kind! (%d, %s)'
+                   % (region.tdim, region.kind))
 
-        return ok
+        n_ns = region.get_facet_indices().shape[0] - region.get_n_cells(True)
+        ok2 = n_ns == 0
+        if not ok2:
+            output('%d region facets are not on the domain surface!' % n_ns)
+
+        return ok1 and ok2
 
     def _setup_geometry(self):
         """
