@@ -9,6 +9,7 @@ import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh, FEDomain
+from sfepy.discrete.common.extmods.cmesh import graph_components
 
 helps = {
     'filename' :
@@ -55,6 +56,10 @@ def main():
     ec = euler(mesh)
     output('Euler characteristic:', ec)
 
+    graph = mesh.create_conn_graph(verbose=False)
+    n_comp, _ = graph_components(graph.shape[0], graph.indptr, graph.indices)
+    output('number of connected components:', n_comp)
+
     if mesh.dim > 1:
         region = domain.create_region('surf', 'vertices of surface', 'facet')
         surf_mesh = Mesh.from_region(region, mesh,
@@ -65,6 +70,11 @@ def main():
         output('surface Euler characteristic:', sec)
         if mesh.dim == 3:
             output('surface genus:', (2.0 - sec) / 2.0)
+
+        surf_graph = surf_mesh.create_conn_graph(verbose=False)
+        n_comp, _ = graph_components(surf_graph.shape[0],
+                                     surf_graph.indptr, surf_graph.indices)
+        output('number of connected surface components:', n_comp)
 
 if __name__ == '__main__':
     main()
