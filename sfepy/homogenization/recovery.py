@@ -4,9 +4,9 @@ import os
 
 import numpy as nm
 
-from sfepy.base.base import get_default, Struct
+from sfepy.base.base import get_default, Struct, output
 from sfepy.base.ioutils import get_print_info
-from sfepy.discrete.fem import extend_cell_data
+from sfepy.discrete.fem import extend_cell_data, Mesh
 from sfepy.homogenization.utils import coor_to_sym
 from sfepy.base.conf import get_standard_keywords
 from sfepy.discrete import Problem
@@ -114,13 +114,13 @@ def combine_scalar_grad(corrs, grad, vn, ii, shift_coors=None):
       (y_k + \eta_k) \partial_k^x p
     """
     dim = grad.shape[2]
-    
+
     if shift_coors is None:
         out = corrs[0][vn].data * grad[ii,0,0,0]
         for ir in range(1, dim):
             out += corrs[ir][vn].data * grad[ii,0,ir,0]
 
-    else:        
+    else:
         out = (shift_coors[:,0] + corrs[0][vn].data) * grad[ii,0,0,0]
         for ir in range(1, dim):
             out += (shift_coors[:,ir] + corrs[ir][vn].data) * grad[ii,0,ir,0]
@@ -180,7 +180,7 @@ def compute_p_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
 def compute_u_from_macro(strain, coor, iel, centre=None):
     r"""
     Macro-induced displacements.
-    
+
     .. math::
       e_{ij}^x(\bm{u})\,(y_j - y_j^c)
     """
@@ -202,7 +202,7 @@ def compute_u_from_macro(strain, coor, iel, centre=None):
 def compute_p_from_macro(p_grad, coor, iel, centre=None, extdim=0):
     r"""
     Macro-induced pressure.
-    
+
     .. math::
       \partial_j^x p\,(y_j - y_j^c)
     """
@@ -221,7 +221,7 @@ def compute_p_from_macro(p_grad, coor, iel, centre=None, extdim=0):
 def compute_micro_u( corrs, strain, vu, dim, out = None ):
     r"""
     Micro displacements.
-    
+
     .. math::
       \bm{u}^1 = \bm{\chi}^{ij}\, e_{ij}^x(\bm{u}^0)
     """
@@ -259,7 +259,7 @@ def add_stress_p( out, pb, integral, region, vp, data ):
                          % (integral, region, vp), verbose=False,
                          mode='el_avg', **{vp : var})
     press = extend_cell_data( press0, pb.domain, region )
-    
+
     dim = pb.domain.mesh.dim
     nn = out.shape[0]
     for ii in range( nn ):
@@ -344,7 +344,7 @@ def recover_bones( problem, micro_problem, region, eps0,
         p_mic = compute_p_from_macro(p_grad, micro_coor, ii)[:,None] \
                 + p_hat_e / eps0
         p_mic[nodes_yc] = p1[:,None]
-        
+
 ##         print u_mic
 ##         print p_mic
 
@@ -364,7 +364,7 @@ def recover_bones( problem, micro_problem, region, eps0,
         dvel_m2 = meval('ev_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
                         verbose=False, mode='el_avg',
                         **{vpp1 : var_p}) * eps0
-        
+
         out = {}
         out.update( to_output( u_mic, var_info = {vu : (True, vu)},
                                extend = True ) )
@@ -446,7 +446,7 @@ def recover_paraflow( problem, micro_problem, region,
         p_mic = micro_p.field.extend_dofs(p_corr[:,nm.newaxis])
         p_mic[nodes_y1] = p1
         p_mic[nodes_y2] = p2
-        
+
         out = {}
         out.update( to_output( u_mic, var_info = {vu : (True, vu)},
                                extend = True ) )
@@ -498,7 +498,7 @@ def recover_micro_hook( micro_filename, region, macro,
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5( coefs_filename )
-    corrs = get_correctors_from_file( dump_names = coefs.dump_names ) 
+    corrs = get_correctors_from_file( dump_names = coefs.dump_names )
 
     recovery_hook = pb.conf.options.get('recovery_hook', None)
 
@@ -546,3 +546,109 @@ def recover_micro_hook( micro_filename, region, macro,
             out = macro[jj]
             for kk, ii in enumerate(new_idxs):
                 out[ii,0] = lout[kk]
+
+
+def recover_micro_hook_eps(micro_filename, region,
+                           eval_var, nodal_values, const_values, eps0,
+                           recovery_file_tag=''):
+    # Create a micro-problem instance.
+    required, other = get_standard_keywords()
+    required.remove('equations')
+    pb = Problem.from_conf_file(micro_filename, required=required, other=other,
+                                init_equations=False, init_solvers=False)
+
+    coefs_filename = pb.conf.options.get('coefs_filename', 'coefs')
+    output_dir = pb.conf.options.get('output_dir', '.')
+    coefs_filename = op.join(output_dir, coefs_filename) + '.h5'
+
+    # Coefficients and correctors
+    coefs = Coefficients.from_file_hdf5(coefs_filename)
+    corrs = get_correctors_from_file(dump_names=coefs.dump_names)
+
+    recovery_hook = pb.conf.options.get('recovery_hook', None)
+
+    if recovery_hook is not None:
+        recovery_hook = pb.conf.get_function(recovery_hook)
+
+        # Get tiling of a given region
+        rcoors = region.domain.mesh.coors[region.get_entities(0), :]
+        rcmin = nm.min(rcoors, axis=0)
+        rcmax = nm.max(rcoors, axis=0)
+        nn = nm.floor((rcmax - rcmin) / eps0)
+        cs = []
+        for ii, n in enumerate(nn):
+            cs.append(nm.arange(n) * eps0 + rcmin[ii])
+
+        x0 = nm.empty((int(nm.prod(nn)), nn.shape[0]), dtype=nm.float64)
+        for ii, icoor in enumerate(nm.meshgrid(*cs, indexing='ij')):
+            x0[:, ii] = icoor.flatten()
+
+        mesh = pb.domain.mesh
+        coors, conn, outs, ndoffset = [], [], [], 0
+        # Recover region
+        for ii, c0 in enumerate(x0):
+            local_macro = {'eps0': eps0}
+            local_coors = pb.domain.mesh.coors * eps0 + c0
+            # Inside recovery region?
+            v = nm.ones((eval_var.field.region.entities[0].shape[0], 1))
+            v[region.entities[0]] = 0
+            no = nm.sum(v)
+            aux = eval_var.field.evaluate_at(local_coors, v)
+            if (nm.sum(aux) / no) > 1e-3:
+                continue
+
+            output('ii: %d' % ii)
+
+            for k, v in six.iteritems(nodal_values):
+                local_macro[k] = eval_var.field.evaluate_at(local_coors, v)
+            for k, v in six.iteritems(const_values):
+                local_macro[k] = v
+
+            outs.append(recovery_hook(pb, corrs, local_macro))
+            coors.append(local_coors)
+            conn.append(mesh.get_conn(mesh.descs[0]) + ndoffset)
+            ndoffset += mesh.n_nod
+
+    # Collect output variables
+    outvars = {}
+    for k, v in six.iteritems(outs[0]):
+        if v.var_name in outvars:
+            outvars[v.var_name].append(k)
+        else:
+            outvars[v.var_name] = [k]
+
+    # Split output by variables/regions
+    pvs = pb.create_variables(outvars.keys())
+    outregs = {k: pvs[k].field.region.get_entities(-1) for k in outvars.keys()}
+    nrve = len(coors)
+    coors = nm.vstack(coors)
+    ngroups = nm.tile(mesh.cmesh.vertex_groups.squeeze(), (nrve,))
+    conn = nm.vstack(conn)
+    cgroups = nm.tile(mesh.cmesh.cell_groups.squeeze(), (nrve,))
+
+    # Get region mesh and data
+    for k, cidxs in six.iteritems(outregs):
+        gcidxs = nm.hstack([cidxs + mesh.n_el * ii for ii in range(nrve)])
+        rconn = conn[gcidxs]
+        remap = -nm.ones((coors.shape[0],), dtype=nm.int32)
+        remap[rconn] = 1
+        vidxs = nm.where(remap > 0)[0]
+        remap[vidxs] = nm.arange(len(vidxs))
+        rconn = remap[rconn]
+        rcoors = coors[vidxs, :]
+
+        out = {}
+        for ifield in outvars[k]:
+            data = [outs[ii][ifield].data for ii in range(nrve)]
+            out[ifield] = Struct(name='output_data',
+                                 mode=outs[0][ifield].mode,
+                                 dofs=None,
+                                 var_name=k,
+                                 data=nm.vstack(data))
+
+        micro_name = pb.get_output_name(extra='recovered%s_%s'
+                                        % (recovery_file_tag, k))
+        filename = op.join(output_dir, op.basename(micro_name))
+        mesh_out = Mesh.from_data('recovery_%s' % k, rcoors, ngroups[vidxs],
+                                  [rconn], [cgroups[gcidxs]], [mesh.descs[0]])
+        mesh_out.write(filename, io='auto', out=out)
