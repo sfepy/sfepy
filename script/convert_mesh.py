@@ -8,6 +8,7 @@ Examples::
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s2.5
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1 -c 0
+  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.mesh --remesh='q2/0 a1e-8'
 """
 from __future__ import absolute_import
 import sys
@@ -38,7 +39,10 @@ helps = {
     ' in the xy plane',
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
-    ' numbers (preserves original mesh vertices)'
+    ' numbers (preserves original mesh vertices)',
+    'remesh' : 'when given, extract the mesh surface and remesh its volume'
+    ' using tetgen. The option value define the required mesh quality, for'
+    ' example: --remesh="q2/0 a0.1" - consult tetgen documentation.',
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -81,6 +85,9 @@ def main():
                         dest='force_2d', help=helps['2d'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
+    parser.add_argument('--remesh', metavar=r'q<float>/<float>[a<float>]',
+                        action='store', dest='remesh',
+                        default=None, help=helps['remesh'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
@@ -184,6 +191,31 @@ def main():
             output('writing %s...' % ifilename_out)
             imesh.write(ifilename_out, io=io)
             output('...done')
+
+    if options.remesh:
+        import tempfile
+        import shlex
+        import subprocess
+        from sfepy.base.ioutils import remove_files
+
+        domain = FEDomain(mesh.name, mesh)
+        region = domain.create_region('surf', 'vertices of surface', 'facet')
+        surf_mesh = Mesh.from_region(region, mesh,
+                                     localize=True, is_surface=True)
+
+        dirname = tempfile.mkdtemp()
+
+        surf_filename = op.join(dirname, 'surf.mesh')
+        surf_mesh.write(surf_filename, io='auto')
+
+        qopts = ''.join(options.remesh.split()) # Remove spaces.
+        command = 'tetgen -BFENkACpO%s %s' % (qopts, surf_filename)
+        args = shlex.split(command)
+        subprocess.call(args)
+
+        mesh = Mesh.from_file(op.join(dirname, 'surf.1.vtk'))
+
+        remove_files(dirname)
 
     io = MeshIO.for_format(filename_out, format=options.format,
                            writable=True)
