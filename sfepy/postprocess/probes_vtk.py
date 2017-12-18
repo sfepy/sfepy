@@ -9,7 +9,7 @@ import os.path as osp
 
 from sfepy.base.base import Struct, output
 from sfepy.linalg import make_axis_rotation_matrix
-from sfepy.postprocess.utils_vtk import get_vtk_from_mesh
+from sfepy.postprocess.utils_vtk import get_vtk_from_mesh, get_vtk_from_file
 from six.moves import range
 
 vtk_version = vtk.vtkVersion().GetVTKMajorVersion()
@@ -333,3 +333,33 @@ class Probe(Struct):
 
         else:
             return params, values
+
+
+class ProbeFromFile(Probe):
+    """
+    Probe class - read a given VTK file.
+    """
+
+    def __init__(self, filename, **kwargs):
+        """
+        Parameters
+        ----------
+        filename : dict
+            The name of a VTK file.
+        """
+
+        bname = osp.splitext(osp.basename(filename))[0]
+        Struct.__init__(self, name=bname, **kwargs)
+
+        self.vtkdata = get_vtk_from_file(filename)
+        self.mesh_name = bname
+        self.dim = 3
+
+        self.vtkprobe = vtk.vtkProbeFilter()
+        if vtk_version < 6:
+            self.vtkprobe.SetSource(self.vtkdata)
+        else:
+            self.vtkprobe.SetSourceData(self.vtkdata)
+
+        self.probes = {}
+        self.probes_png = {}
