@@ -34,12 +34,14 @@ def main():
     output('nodal BCs:', sorted(mesh.nodal_bcs.keys()))
 
     bbox = mesh.get_bounding_box()
-    output('bounding box: %s'
-           % ', '.join('%s: [%s, %s]' % (name, bbox[0, ii], bbox[1, ii])
+    output('bounding box:\n%s'
+           % '\n'.join('%s: [%14.7e, %14.7e]' % (name, bbox[0, ii], bbox[1, ii])
                        for ii, name in enumerate('xyz'[:mesh.dim])))
 
-    output('centre:', 0.5 * (bbox[0] + bbox[1]))
-    output('coordinates mean:', mesh.coors.mean(0))
+    output('centre:           [%s]'
+           % ', '.join('%14.7e' % ii for ii in 0.5 * (bbox[0] + bbox[1])))
+    output('coordinates mean: [%s]'
+           % ', '.join('%14.7e' % ii for ii in mesh.coors.mean(0)))
 
     if not options.detailed: return
 
