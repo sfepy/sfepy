@@ -580,6 +580,10 @@ def recover_micro_hook_eps(micro_filename, region,
         rcmin = nm.min(rcoors, axis=0)
         rcmax = nm.max(rcoors, axis=0)
         nn = nm.floor((rcmax - rcmin) / eps0)
+        if nm.prod(nn) == 0:
+            output('inconsistency in recovery region and microstructure size!')
+            return
+
         cs = []
         for ii, n in enumerate(nn):
             cs.append(nm.arange(n) * eps0 + rcmin[ii])
