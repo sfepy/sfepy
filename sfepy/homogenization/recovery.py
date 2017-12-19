@@ -10,6 +10,7 @@ from sfepy.discrete.fem import extend_cell_data, Mesh
 from sfepy.homogenization.utils import coor_to_sym
 from sfepy.base.conf import get_standard_keywords
 from sfepy.discrete import Problem
+from sfepy.base.conf import ProblemConf
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file
 import os.path as op
@@ -484,26 +485,28 @@ def save_recovery_region(mac_pb, rname, filename=None):
 
 def recover_micro_hook( micro_filename, region, macro,
                         naming_scheme = 'step_iel',
-                        recovery_file_tag='' ):
+                        recovery_file_tag='',
+                        define_args=None ):
 
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove( 'equations' )
-    pb = Problem.from_conf_file(micro_filename, required=required, other=other,
-                                init_equations=False, init_solvers=False)
+    conf = ProblemConf.from_file(micro_filename, required, other,
+                                 verbose=False, define_args=define_args)
 
-    coefs_filename = pb.conf.options.get('coefs_filename', 'coefs')
-    output_dir = pb.conf.options.get('output_dir', '.')
+    coefs_filename = conf.options.get('coefs_filename', 'coefs')
+    output_dir = conf.options.get('output_dir', '.')
     coefs_filename = op.join(output_dir, coefs_filename) + '.h5'
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5( coefs_filename )
     corrs = get_correctors_from_file( dump_names = coefs.dump_names )
 
-    recovery_hook = pb.conf.options.get('recovery_hook', None)
+    recovery_hook = conf.options.get('recovery_hook', None)
 
     if recovery_hook is not None:
-        recovery_hook = pb.conf.get_function(recovery_hook)
+        recovery_hook = conf.get_function(recovery_hook)
+        pb = Problem.from_conf(conf, init_equations=False, init_solvers=False)
 
         format = get_print_info(pb.domain.mesh.n_el, fill='0')[1]
 
@@ -550,25 +553,27 @@ def recover_micro_hook( micro_filename, region, macro,
 
 def recover_micro_hook_eps(micro_filename, region,
                            eval_var, nodal_values, const_values, eps0,
-                           recovery_file_tag=''):
+                           recovery_file_tag='',
+                           define_args=None):
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove('equations')
-    pb = Problem.from_conf_file(micro_filename, required=required, other=other,
-                                init_equations=False, init_solvers=False)
+    conf = ProblemConf.from_file(micro_filename, required, other,
+                                 verbose=False, define_args=define_args)
 
-    coefs_filename = pb.conf.options.get('coefs_filename', 'coefs')
-    output_dir = pb.conf.options.get('output_dir', '.')
+    coefs_filename = conf.options.get('coefs_filename', 'coefs')
+    output_dir = conf.options.get('output_dir', '.')
     coefs_filename = op.join(output_dir, coefs_filename) + '.h5'
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5(coefs_filename)
     corrs = get_correctors_from_file(dump_names=coefs.dump_names)
 
-    recovery_hook = pb.conf.options.get('recovery_hook', None)
+    recovery_hook = conf.options.get('recovery_hook', None)
 
     if recovery_hook is not None:
-        recovery_hook = pb.conf.get_function(recovery_hook)
+        recovery_hook = conf.get_function(recovery_hook)
+        pb = Problem.from_conf(conf, init_equations=False, init_solvers=False)
 
         # Get tiling of a given region
         rcoors = region.domain.mesh.coors[region.get_entities(0), :]
