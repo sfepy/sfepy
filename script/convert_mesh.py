@@ -8,6 +8,8 @@ Examples::
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s2.5
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
   $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1 -c 0
+  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.mesh --remesh='q2/0 a1e-8 O9/7 V'
+  $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new2.mesh --remesh='rq2/0 a1e-8 O9/7 V'
 """
 from __future__ import absolute_import
 import sys
@@ -17,6 +19,7 @@ sys.path.append('.')
 
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from sfepy.base.base import nm, output
+from sfepy.base.ioutils import remove_files
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
                                        supported_cell_types)
@@ -38,7 +41,19 @@ helps = {
     ' in the xy plane',
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
-    ' numbers (preserves original mesh vertices)'
+    ' numbers (preserves original mesh vertices)',
+
+    'remesh' : """when given, remesh the given mesh using tetgen.
+      The options can be the following, separated by spaces, in this order: 1.
+      "r" causes remeshing of the mesh volume - if not present the mesh surface
+      is extracted and used for the volume mesh generation. 2.
+      "q[<float>/<float>]" (required) - the two numbers after "q" are a maximum
+      radius-edge ratio bound and a minimum dihedral angle bound. 3. "a<float>"
+      (optional) - the number imposes a maximum volume constraint on all
+      tetrahedra. 4. O[<0-9>/<0-7>] - the two numbers correspond to a mesh
+      optimization level and a choice of optimizing operations. 5. "V"
+      (optional) - if present, mesh statistics are printed. Consult the tetgen
+      documentation for details.""",
 }
 
 def _parse_val_or_vec(option, name, parser):
@@ -81,6 +96,9 @@ def main():
                         dest='force_2d', help=helps['2d'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
+    parser.add_argument('--remesh', metavar='options',
+                        action='store', dest='remesh',
+                        default=None, help=helps['remesh'])
     parser.add_argument('filename_in')
     parser.add_argument('filename_out')
     options = parser.parse_args()
@@ -101,7 +119,43 @@ def main():
     filename_in = options.filename_in
     filename_out = options.filename_out
 
-    mesh = Mesh.from_file(filename_in)
+    if options.remesh:
+        import tempfile
+        import shlex
+        import subprocess
+
+        dirname = tempfile.mkdtemp()
+
+        is_surface = options.remesh.startswith('q')
+        if is_surface:
+            mesh = Mesh.from_file(filename_in)
+            domain = FEDomain(mesh.name, mesh)
+            region = domain.create_region('surf', 'vertices of surface',
+                                          'facet')
+            surf_mesh = Mesh.from_region(region, mesh,
+                                         localize=True, is_surface=True)
+
+            filename = op.join(dirname, 'surf.mesh')
+            surf_mesh.write(filename, io='auto')
+
+        else:
+            import shutil
+
+            shutil.copy(filename_in, dirname)
+            filename = op.join(dirname, op.basename(filename_in))
+
+        qopts = ''.join(options.remesh.split()) # Remove spaces.
+        command = 'tetgen -BFENkACp%s %s' % (qopts, filename)
+        args = shlex.split(command)
+        subprocess.call(args)
+
+        root, ext = op.splitext(filename)
+        mesh = Mesh.from_file(root + '.1.vtk')
+
+        remove_files(dirname)
+
+    else:
+        mesh = Mesh.from_file(filename_in)
 
     if options.force_2d:
         data = list(mesh._get_io_data())
