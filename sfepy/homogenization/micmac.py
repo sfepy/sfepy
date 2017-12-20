@@ -14,7 +14,7 @@ import six
 
 def get_homog_coefs_linear(ts, coor, mode,
                            micro_filename=None, regenerate=False,
-                           coefs_filename=None):
+                           coefs_filename=None, define_args=None):
 
     oprefix = output.prefix
     output.prefix = 'micro:'
@@ -22,7 +22,8 @@ def get_homog_coefs_linear(ts, coor, mode,
     required, other = get_standard_keywords()
     required.remove( 'equations' )
 
-    conf = ProblemConf.from_file(micro_filename, required, other, verbose=False)
+    conf = ProblemConf.from_file(micro_filename, required, other,
+                                 verbose=False, define_args=define_args)
     if coefs_filename is None:
         coefs_filename = conf.options.get('coefs_filename', 'coefs')
         coefs_filename = op.join(conf.options.get('output_dir', '.'),
