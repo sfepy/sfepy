@@ -95,7 +95,8 @@ def remove_files_patterns(root_dir, patterns, ignores=None,
             output('removing "%s"' % _f, verbose=verbose)
             os.remove(_f)
 
-def save_options(filename, options_groups, save_command_line=True):
+def save_options(filename, options_groups, save_command_line=True,
+                 quote_command_line=False):
     """
     Save groups of options/parameters into a file.
 
@@ -106,7 +107,11 @@ def save_options(filename, options_groups, save_command_line=True):
         if save_command_line:
             fd.write('command line\n')
             fd.write('------------\n\n')
-            fd.write(' '.join(sys.argv) + '\n')
+            if quote_command_line:
+                fd.write(' '.join('"%s"' % ii for ii in sys.argv) + '\n')
+
+            else:
+                fd.write(' '.join(sys.argv) + '\n')
 
         for options_group in options_groups:
             name, options = options_group

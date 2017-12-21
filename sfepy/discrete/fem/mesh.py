@@ -511,7 +511,7 @@ class Mesh(Struct):
                                             1, [conn], [conn])
         output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
         output('graph nonzeros: %d (%.2e%% fill)' \
-               % (nnz, float(nnz) / nm.prod(shape)))
+               % (nnz, float(nnz) / nm.prod(shape)), verbose=verbose)
 
         data = nm.ones((nnz,), dtype=nm.bool)
         graph = sp.csr_matrix((data, icol, prow), shape)
