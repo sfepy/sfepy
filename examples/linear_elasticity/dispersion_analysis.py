@@ -302,14 +302,19 @@ def main():
 
     bbox = pb.domain.mesh.get_bounding_box()
     size = (bbox[1] - bbox[0]).max()
-    scaling = apply_unit_multipliers([1.0], ['length'],
-                                     options.unit_multipliers)[0]
+    scaling0 = apply_unit_multipliers([1.0], ['length'],
+                                      options.unit_multipliers)[0]
+    scaling = scaling0
     if options.mesh_size is not None:
         scaling *= options.mesh_size / size
     output('scaling factor of periodic cell mesh coordinates:', scaling)
-    output('new mesh size:', scaling * size)
+    output('new mesh size with applied unit multipliers:', scaling * size)
     pb.domain.mesh.coors[:] *= scaling
     pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
+
+    bzone = 2.0 * nm.pi / (scaling * size)
+    output('1. Brillouin zone size:', bzone * scaling0)
+    output('1. Brillouin zone size with applied unit multipliers:', bzone)
 
     pb.time_update()
     pb.update_materials()
