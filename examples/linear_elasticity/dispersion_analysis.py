@@ -2,7 +2,7 @@
 """
 Dispersion analysis of a heterogeneous finite scale periodic cell.
 
-The periodic cell mesh hs to contain two subdomains Y1, Y2, so that different
+The periodic cell mesh has to contain two subdomains Y1, Y2, so that different
 material properties can be defined in each of the subdomains (see `--pars`
 option).
 """
