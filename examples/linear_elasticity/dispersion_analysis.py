@@ -30,7 +30,8 @@ from sfepy.discrete import Problem
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 
-def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
+def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
+           plane='strain'):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -48,8 +49,10 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf):
     young1, poisson1, density1, young2, poisson2, density2 = pars
     materials = {
         'm' : ({
-            'D' : {'Y1' : stiffness(dim, young=young1, poisson=poisson1),
-                   'Y2' : stiffness(dim, young=young2, poisson=poisson2)},
+            'D' : {'Y1' : stiffness(dim, young=young1, poisson=poisson1,
+                                    plane=plane),
+                   'Y2' : stiffness(dim, young=young2, poisson=poisson2,
+                                    plane=plane)},
             'density' : {'Y1' : density1, 'Y2' : density2},
         },),
         'wave' : ({
@@ -150,6 +153,9 @@ helps = {
     ' [default: %(default)s]',
     'unit_multipliers' :
     'basic unit multipliers (time, length, mass) [default: %(default)s]',
+    'plane' :
+    'for 2D problems, plane strain or stress hypothesis selection'
+    ' [default: %(default)s]',
     'wave_dir' : 'the wave vector direction (will be normalized)'
     ' [default: %(default)s]',
     'mode' : 'solution mode: omega = solve a generalized EVP for omega,'
@@ -195,6 +201,9 @@ def main():
                         metavar='c_time,c_length,c_mass',
                         action='store', dest='unit_multipliers',
                         default='1.0,1.0,1.0', help=helps['unit_multipliers'])
+    parser.add_argument('--plane', action='store', dest='plane',
+                        choices=['strain', 'stress'],
+                        default='strain', help=helps['plane'])
     parser.add_argument('--wave-dir', metavar='float,float[,float]',
                         action='store', dest='wave_dir',
                         default='1.0,0.0,0.0', help=helps['wave_dir'])
@@ -288,12 +297,16 @@ def main():
                                        pars=pars,
                                        approx_order=options.order,
                                        refinement_level=options.refine,
-                                       solver_conf=options.solver_conf)
+                                       solver_conf=options.solver_conf,
+                                       plane=options.plane)
 
     conf = ProblemConf.from_dict(define_problem(), sys.modules[__name__])
 
     pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
+
+    if dim != 2:
+        options.plane = 'strain'
 
     wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
     wdir = wdir / nm.linalg.norm(wdir)
@@ -322,7 +335,8 @@ def main():
     if options.save_materials or options.log_std_waves:
         stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
-        young, poisson = mc.youngpoisson_from_stiffness(stiffness)
+        young, poisson = mc.youngpoisson_from_stiffness(stiffness,
+                                                        plane=options.plane)
         density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
 
@@ -379,7 +393,8 @@ def main():
         extra = []
         extra_plot_kwargs = []
         if options.log_std_waves:
-            lam, mu = mc.lame_from_youngpoisson(young, poisson)
+            lam, mu = mc.lame_from_youngpoisson(young, poisson,
+                                                plane=options.plane)
             alam = nm.average(lam)
             amu = nm.average(mu)
             adensity = nm.average(density)
