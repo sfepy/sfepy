@@ -12,9 +12,9 @@ from sfepy.base.ioutils import InDir
 from sfepy.homogenization.coefficients import Coefficients
 
 from examples.phononic.band_gaps_conf import (BandGapsConf, get_pars,
-                                              clip_sqrt, normalize)
+                                              clip, clip_sqrt)
 
-clip_sqrt, normalize # Make pyflakes happy...
+clip, clip_sqrt # Make pyflakes happy...
 
 incwd = InDir(__file__)
 
@@ -22,13 +22,13 @@ filename = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
 output_dir = incwd('output/band_gaps')
 
-# aluminium, in 1e+10 Pa
-D_m = get_pars(2, 5.898, 2.681)
-density_m = 0.2799 # in 1e4 kg/m3
+# aluminium, SI units
+D_m = get_pars(2, 5.898e10, 2.681e10)
+density_m = 2799.0
 
-# epoxy, in 1e+10 Pa
-D_c = get_pars(2, 0.1798, 0.148)
-density_c = 0.1142 # in 1e4 kg/m3
+# epoxy, SI units
+D_c = get_pars(2, 1.798e9, 1.48e9)
+density_c = 1142.0
 
 mat_pars = Coefficients(D_m=D_m, density_m=density_m,
                         D_c=D_c, density_c=density_c)
@@ -40,8 +40,8 @@ corrs_save_names = {'evp' : 'evp', 'corrs_rs' : 'corrs_rs'}
 
 options = {
     'plot_transform_angle' : None,
-    'plot_transform_wave' : ('clip_sqrt', (0, 30)),
-    'plot_transform' : ('normalize', (-2, 2)),
+    'plot_transform_wave' : ('clip_sqrt', (0, 7000)),
+    'plot_transform' : ('clip', (-7000, 7000)),
 
     'fig_name' : 'band_gaps',
     'fig_name_angle' : 'band_gaps_angle',
@@ -76,6 +76,7 @@ options = {
                     'text.usetex': True},
     },
     'multiprocessing' : False,
+    'float_format' : '%.16e',
 }
 
 evp_options = {
@@ -95,12 +96,14 @@ eigenmomenta_options = {
 band_gaps_options = {
     'eig_range' : (0, 30), # -> freq_range
                            # = sqrt(eigs[slice(*eig_range)][[0, -1]])
+    # 'fixed_freq_range' : (0.1, 3e7),
     'freq_margins' : (10, 10), # % of freq_range
-    'freq_eps' : 1e-12, # frequency
+    'freq_eps' : 1e-7, # frequency
     'zero_eps' : 1e-12, # zero finding
     'freq_step' : 0.0001, # % of freq_range
 
     'log_save_name' : 'band_gaps.log',
+    'raw_log_save_name' : 'raw_eigensolution.npz',
 }
 
 conf = BandGapsConf(filename, 1, region_selects, mat_pars, options,
