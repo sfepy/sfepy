@@ -125,6 +125,28 @@ def bulk_from_youngpoisson(young, poisson, plane='strain'):
 
     return bulk_from_lame(lam, mu)
 
+def lame_from_stiffness(stiffness, plane='strain'):
+    """
+    Compute Lamé parameters from an isotropic stiffness tensor.
+    """
+    lam = stiffness[..., 0, 1]
+    mu = stiffness[..., -1, -1]
+    if plane == 'stress':
+        lam = - 2.0 * mu * lam / (lam - 2.0 * mu)
+
+    return lam, mu
+
+def youngpoisson_from_stiffness(stiffness, plane='strain'):
+    """
+    Compute Young's modulus and Poisson's ratio from an isotropic stiffness
+    tensor.
+    """
+    lam, mu = lame_from_stiffness(stiffness, plane=plane)
+    young = (3*lam*mu + 2*mu**2) / (lam + mu)
+    poisson = lam / (2*lam + 2*mu)
+
+    return young, poisson
+
 elastic_constants_relations = {
 }
 

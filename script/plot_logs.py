@@ -16,13 +16,13 @@ from sfepy.base.log import read_log, plot_log
 
 class ParseRc(Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        pars = {}
-        for pair in values.split(','):
-            key, val = pair.split('=')
-            pars[key] = eval(val)
+        pars = eval('{' + values + '}')
         setattr(namespace, self.dest, pars)
 
 helps = {
+    'groups' :
+    'list of log data groups subplots (from 0) to plot - all groups are'
+    ' plotted if not given',
     'output_filename' :
     'save the figure using the given file name',
     'rc' : 'matplotlib resources',
@@ -33,10 +33,13 @@ helps = {
 def main():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
+    parser.add_argument('-g', '--groups', metavar='int[,int,...]',
+                        action='store', dest='groups',
+                        default=None, help=helps['groups'])
     parser.add_argument('-o', '--output', metavar='filename',
                         action='store', dest='output_filename',
                         default=None, help=helps['output_filename'])
-    parser.add_argument('--rc', type=str, metavar='key=val,...',
+    parser.add_argument('--rc', type=str, metavar='key:val,...',
                         action=ParseRc, dest='rc',
                         default={}, help=helps['rc'])
     parser.add_argument('-n', '--no-show',
@@ -47,11 +50,14 @@ def main():
 
     filename = options.filename
 
+    if options.groups is not None:
+        options.groups = [int(ii) for ii in options.groups.split(',')]
+
     log, info = read_log(filename)
 
     plt.rcParams.update(options.rc)
 
-    plot_log(1, log, info)
+    plot_log(None, log, info, groups=options.groups)
 
     if options.output_filename:
         plt.savefig(options.output_filename)

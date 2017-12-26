@@ -88,11 +88,14 @@ def read_log(filename):
                     line_names = next(fd)
                     names = line_names.split(':')[1]
 
+                    line_plot_kwargs = next(fd)
+
                     info[ig] = (xlabel.split(':')[1].strip().strip('"'),
                                 ylabel.split(':')[1].strip().strip('"'),
                                 yscales.split(':')[1].strip().strip('"'),
                                 [name.strip().strip('"')
-                                 for name in names.split(',')])
+                                 for name in names.split(',')],
+                                eval(line_plot_kwargs[19:].strip().strip('"')))
 
             continue
 
@@ -123,14 +126,14 @@ def read_log(filename):
 
     return log, info
 
-def plot_log(fig_num, log, info, xticks=None, yticks=None):
+def plot_log(axs, log, info, xticks=None, yticks=None, groups=None):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
     Parameters
     ----------
-    fig_num : int
-        The figure number.
+    axs : sequence of matplotlib.axes.Axes
+        The list of axes for the log data plots.
     log : dict
         The log with data names as keys and ``(xs, ys, vlines)`` as values.
     info : dict
@@ -139,13 +142,24 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
         The list of x-axis ticks (array or None) for each subplot.
     yticks : list of arrays, optional
         The list of y-axis ticks (array or None) for each subplot.
+    groups : list, optional
+        The list of data groups subplots. If not given, all groups are plotted.
     """
     import matplotlib.pyplot as plt
 
-    fig = plt.figure(fig_num)
-    fig.clf()
+    if axs is None:
+        fig = plt.figure()
 
-    n_gr = len(info)
+    else:
+        fig = None
+
+    if groups is None:
+        n_gr = len(info)
+        groups = nm.arange(n_gr)
+
+    else:
+        n_gr = len(groups)
+
     n_col = min(5.0, nm.fix(nm.sqrt(n_gr)))
     if int(n_col) == 0:
         n_row = 0
@@ -160,8 +174,16 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
     if yticks is None:
         yticks = [None] * n_gr
 
-    for ii, (xlabel, ylabel, yscale, names) in six.iteritems(info):
-        ax = fig.add_subplot(n_row, n_col, ii + 1)
+    isub = 0
+    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
+        if ii not in groups: continue
+
+        if axs is None:
+            ax = fig.add_subplot(n_row, n_col, isub + 1)
+
+        else:
+            ax = axs[ii]
+
         ax.set_yscale(yscale)
 
         if xlabel:
@@ -170,23 +192,24 @@ def plot_log(fig_num, log, info, xticks=None, yticks=None):
         if ylabel:
             ax.set_ylabel(ylabel)
 
-        for name in names:
+        for ip, name in enumerate(names):
             xs, ys, vlines = log[name]
-            ax.plot(xs, ys, label=name)
+            ax.plot(xs, ys, label=name, **plot_kwargs[ip])
 
             for x in vlines:
                 ax.axvline(x, color='k', alpha=0.3)
 
-        if xticks[ii] is not None:
-            ax.set_xticks(xticks[ii])
+        if xticks[isub] is not None:
+            ax.set_xticks(xticks[isub])
 
         else:
             ax.locator_params(axis='x', nbins=10)
 
-        if yticks[ii] is not None:
-            ax.set_yticks(yticks[ii])
+        if yticks[isub] is not None:
+            ax.set_yticks(yticks[isub])
 
         ax.legend(loc='best')
+        isub += 1
 
     plt.tight_layout(pad=0.5)
 
@@ -211,8 +234,9 @@ class Log(Struct):
 
         return obj
 
-    def __init__(self, data_names=None, xlabels=None, ylabels=None,
-                 yscales=None, is_plot=True, aggregate=100, sleep=1.0,
+    def __init__(self, data_names=None, plot_kwargs=None,
+                 xlabels=None, ylabels=None, yscales=None,
+                 is_plot=True, aggregate=100, sleep=1.0,
                  log_filename=None, formats=None):
         """
         Parameters
@@ -221,6 +245,10 @@ class Log(Struct):
             The data names grouped by subplots: [[name1, name2, ...], [name3,
             name4, ...], ...], where name<n> are strings to display in
             (sub)plot legends.
+        plot_kwargs : list of (lists of dicts) or dicts
+            The keyword arguments dicts passed to plot(). For each group the
+            item can be either a dict that is applied to all lines in the
+            group, or a list of dicts for each line in the group.
         xlabels : list of str
             The x axis labels of subplots.
         ylabels : list of str
@@ -247,7 +275,7 @@ class Log(Struct):
         Struct.__init__(self,
                         is_plot=is_plot, aggregate=aggregate, sleep=sleep,
                         data_names={}, n_arg=0, n_gr=0,
-                        data={}, x_values={}, n_calls=0,
+                        data={}, x_values={}, n_calls=0, plot_kwargs={},
                         yscales={}, xlabels={}, ylabels={},
                         plot_pipe=None, formats={}, output=None)
 
@@ -257,6 +285,7 @@ class Log(Struct):
             n_gr = 0
             data_names = []
 
+        plot_kwargs = get_default(plot_kwargs, [{}] * n_gr)
         yscales = get_default(yscales, ['linear'] * n_gr)
         xlabels = get_default(xlabels, ['iteration'] * n_gr)
         ylabels = get_default(ylabels, [''] * n_gr)
@@ -265,7 +294,8 @@ class Log(Struct):
             formats = [None] * n_gr
 
         for ig, names in enumerate(data_names):
-            self.add_group(names, yscales[ig], xlabels[ig], ylabels[ig],
+            self.add_group(names, plot_kwargs[ig],
+                           yscales[ig], xlabels[ig], ylabels[ig],
                            formats[ig])
 
         self.can_plot = (mpl is not None) and (Process is not None)
@@ -279,12 +309,15 @@ class Log(Struct):
                 self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
                             % (xlabels[ig], ylabels[ig], yscales[ig]))
                 self.output('#     names: "%s"' % ', '.join(names))
+                self.output('#     plot_kwargs: "%s"'
+                            % ', '.join('%s' % ii
+                                        for ii in self.plot_kwargs[ig]))
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
 
-    def add_group(self, names, yscale=None, xlabel=None, ylabel=None,
-                  formats=None):
+    def add_group(self, names, plot_kwargs=None,
+                  yscale=None, xlabel=None, ylabel=None, formats=None):
         """
         Add a new data group. Notify the plotting process if it is
         already running.
@@ -298,6 +331,12 @@ class Log(Struct):
         self.yscales[ig] = yscale
         self.xlabels[ig] = xlabel
         self.ylabels[ig] = ylabel
+
+        if isinstance(plot_kwargs, dict):
+            self.plot_kwargs[ig] = [plot_kwargs] * len(names)
+
+        else:
+            self.plot_kwargs[ig] = plot_kwargs
 
         ii = self.n_arg
         for iseq, name in enumerate(names):
@@ -438,12 +477,13 @@ class Log(Struct):
             if ig in igs:
                 send(['ig', ig])
                 send(['clear'])
-                for name in names:
+                for ip, name in enumerate(names):
                     key = name_to_key(name, ii)
                     try:
                         send(['plot',
                               nm.array(self.x_values[ig]),
-                              nm.array(self.data[key])])
+                              nm.array(self.data[key]),
+                              self.plot_kwargs[ig][ip]])
                     except:
                         msg = "send failed! (%s, %s, %s)!" \
                               % (ii, name, self.data[key])

@@ -961,6 +961,8 @@ class BandGaps(MiniAppBase):
         :func:`detect_band_gaps()`.
     log_save_name : str
         If not None, the band gaps log is to be saved under the given name.
+    raw_log_save_name : str
+        If not None, the raw band gaps log is to be saved under the given name.
     """
 
     def process_options(self):
@@ -982,7 +984,8 @@ class BandGaps(MiniAppBase):
                       freq_eps=get('freq_eps', 1e-8),
                       zero_eps=get('zero_eps', 1e-8),
                       detect_fun=get('detect_fun', detect_band_gaps),
-                      log_save_name=get('log_save_name', None))
+                      log_save_name=get('log_save_name', None),
+                      raw_log_save_name=get('raw_log_save_name', None))
 
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -1039,7 +1042,9 @@ class BandGaps(MiniAppBase):
                     freq_range=freq_info.freq_range,
                     freq_range_margins=freq_info.freq_range_margins,
                     opts=opts, to_file_txt=self.to_file_txt,
-                    log_save_name=opts.log_save_name, save_log=self.save_log)
+                    log_save_name=opts.log_save_name,
+                    raw_log_save_name=opts.raw_log_save_name,
+                    save_log=self.save_log)
 
         return bg
 
@@ -1069,24 +1074,32 @@ class BandGaps(MiniAppBase):
         freq_range = bg.freq_range_margins
         fd.write('n_zeroed: %d\n' % bg.n_zeroed)
         fd.write('n_eigs: %d\n' % bg.n_eigs)
+        n_row = len(freq_range) - 1
+        fd.write('n_ranges: %d\n' % n_row)
         fd.write('f0 f1 flag_min f_min v_min flag_max f_max v_max'
                   ' kind\ndesc\n')
 
         ff = float_format
         format = "%s %s %%d %s %s %%d %s %s %%s\n%%s\n" % (6 * (ff,))
-
-        n_row = len(freq_range) - 1
-        fd.write('%d\n' % n_row)
         for ir in range(n_row):
             f0, f1 = freq_range[[ir, ir+1]]
             gmin, gmax = bg.gaps[ir]
             fd.write(format % ((f0, f1) + tuple(gmin) + tuple(gmax)
                                 + bg.kinds[ir]))
 
-        fd.write('valid resonance\n')
-        freq_range = bg.freq_range_initial
+        fd.write('\nname kind f_from f_to index f0 f1\n')
+        format = '%%s %%s %s %s %%d %s %s\n' % (4 * (ff,))
+        for ii, f0 in enumerate(bg.freq_range_margins[:-1]):
+            f1 = bg.freq_range_margins[ii + 1]
+            kind = bg.kinds[ii][0]
+            for ir, rng in enumerate(bg.gap_ranges[ii]):
+                fd.write(format
+                         % (bg.name, kind[ir], rng[0], rng[1], ii, f0, f1))
+
         n_row = len(freq_range)
-        fd.write('%d\n' % n_row)
+        fd.write('\nn_resonance: %d\n' % n_row)
+        fd.write('valid f\n')
+        freq_range = bg.freq_range_initial
         valid_in_range = bg.valid[bg.eig_range]
         format = "%%d %s\n" % ff
         for ir in range(n_row):

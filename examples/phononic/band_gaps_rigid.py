@@ -37,17 +37,17 @@ output_dir = incwd('output/band_gaps_rigid')
 # Rigid inclusion diameter.
 yr_diameter = 0.125
 
-# aluminium, in 1e+10 Pa
-D_m = get_pars(dim, 5.898, 2.681)
-density_m = 0.2799 # in 1e4 kg/m3
+# aluminium, SI units
+D_m = get_pars(2, 5.898e10, 2.681e10)
+density_m = 2799.0
 
-# epoxy, in 1e+10 Pa
-D_c = get_pars(dim, 0.1798, 0.148)
-density_c = 0.1142 # in 1e4 kg/m3
+# epoxy, SI units
+D_c = get_pars(2, 1.798e9, 1.48e9)
+density_c = 1142.0
 
-# lead, in 1e+10 Pa, does not matter
-D_r = get_pars(dim, 4.074, 0.5556)
-density_r = 1.1340 # in 1e4 kg/m3
+# lead, SI units, does not matter
+D_r = get_pars(dim, 4.074e10, 5.556e9)
+density_r = 11340.0
 
 mat_pars = Coefficients(D_m=D_m, density_m=density_m,
                         D_c=D_c, density_c=density_c,
@@ -73,13 +73,14 @@ eigenmomenta_options = {
 }
 
 band_gaps_options = {
-    'fixed_freq_range' : (0., 35.), # overrides eig_range!
+    'fixed_freq_range' : (0., 35000.), # overrides eig_range!
 
-    'freq_eps' : 1e-12, # frequency
+    'freq_eps' : 1e-7, # frequency
     'zero_eps' : 1e-12, # zero finding
     'freq_step' : 0.01, # % of freq_range
 
     'log_save_name' : 'band_gaps.log',
+    'raw_log_save_name' : 'raw_eigensolution.npz',
 }
 
 options = {
@@ -96,6 +97,7 @@ options = {
         'show' : True, # Show figure.
         'legend' : True, # Show legend.
     },
+    'float_format' : '%.16e',
 }
 
 def select_yr_circ(coors, diameter=None):

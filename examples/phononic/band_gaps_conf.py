@@ -14,6 +14,8 @@ from sfepy.homogenization.utils import define_box_regions, get_lattice_volume
 import sfepy.homogenization.coefs_base as cb
 import sfepy.homogenization.coefs_phononic as cp
 
+per.set_accuracy(1e-8)
+
 def get_pars(dim, lam, mu):
     c = stiffness_from_lame(3, lam, mu)
     if dim == 2:
@@ -477,4 +479,3 @@ def clip_sqrt(data, plot_range):
 def normalize(data, plot_range):
     aux = nm.arctan(data)
     return clip(aux, plot_range)
-

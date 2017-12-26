@@ -4,7 +4,7 @@ import shutil
 
 import numpy as nm
 
-from sfepy.base.base import output, set_defaults, assert_
+from sfepy.base.base import ordered_iteritems, output, set_defaults, assert_
 from sfepy.base.base import Struct
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.homogenization.homogen_app import HomogenizationApp
@@ -31,6 +31,20 @@ def try_set_defaults(obj, attr, defaults, recur=False):
             set_defaults(values, defaults)
 
     return values
+
+def save_raw_bg_logs(filename, logs):
+    """
+    Save raw band gaps `logs` into the `filename` file.
+    """
+    out = {}
+
+    iranges = nm.cumsum([0] + [len(ii) for ii in logs.freqs])
+    out['iranges'] = iranges
+    for key, log in ordered_iteritems(logs.to_dict()):
+        out[key] = nm.concatenate(log, axis=0)
+
+    with open(filename, 'w') as fd:
+        nm.savez(fd, **out)
 
 def transform_plot_data(datas, plot_transform, conf):
     if plot_transform is not None:
@@ -441,6 +455,11 @@ class AcousticBandGapsApp(HomogenizationApp):
             if log_save_name is not None:
                 filename = op.join(self.problem.output_dir, log_save_name)
                 bg.save_log(filename, opts.float_format, bg)
+
+            raw_log_save_name = bg.get('raw_log_save_name', None)
+            if raw_log_save_name is not None:
+                filename = op.join(self.problem.output_dir, raw_log_save_name)
+                save_raw_bg_logs(filename, bg.logs)
 
         if options.plot:
             if options.detect_band_gaps:
