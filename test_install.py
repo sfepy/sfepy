@@ -212,19 +212,19 @@ def main():
     eok += report(out, '...', -3, 2, 'cylinder.png...')
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py' % cmd)
-    eok += report(out, '...', -9, 2, '208.54511594')
-    eok += report(out, '...', -8, 1, '116309.22337295]')
+    eok += report(out, '...', -9, 2, '2.08545116e+08')
+    eok += report(out, '...', -8, 1, '1.16309223e+11]')
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py --phase-velocity' % cmd)
-    eok += report(out, '...', -2, 3, '4.1894123')
-    eok += report(out, '...', -2, 4, '2.62055608]')
+    eok += report(out, '...', -2, 3, '4189.41229592')
+    eok += report(out, '...', -2, 4, '2620.55608256]')
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py -d' % cmd)
     eok += report(out, '...', -6, 1, '[0,')
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps_rigid.py' % cmd)
-    eok += report(out, '...', -9, 2, '4.58709531e+01')
-    eok += report(out, '...', -8, 1, '1.13929200e+05]')
+    eok += report(out, '...', -9, 2, '4.58709531e+07')
+    eok += report(out, '...', -8, 1, '1.13929200e+11]')
 
     out, err = check_output('%s ./schroedinger.py --hydrogen' % cmd)
     eok += report(out, '...', -4, -2, '-0.01913506', eps=1e-4)
