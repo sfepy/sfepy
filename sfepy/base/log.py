@@ -95,7 +95,8 @@ def read_log(filename):
                                 yscales.split(':')[1].strip().strip('"'),
                                 [name.strip().strip('"')
                                  for name in names.split(',')],
-                                eval(line_plot_kwargs[19:].strip().strip('"')))
+                                eval(line_plot_kwargs[19:].strip().strip('"')
+                                     + ','))
 
             continue
 
