@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **30.09.2016** Version 2016.3 released (Python 3 support, testing with Travis
+  CI, new classes for homogenized coefficients, using argparse instead of
+  optparse, etc.), see :ref:`release notes <2016.2-2016.3>`.
+
 * **12.05.2016** Version 2016.2 released (partial shell10x element
   implementation, parallel computation of homogenized coefficients, clean up of
   elastic terms, read support for msh mesh file format of gmsh, etc.), see

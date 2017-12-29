@@ -1,6 +1,11 @@
 News
 ====
 
+* **29.12.2017** Version 2017.4 released (basic support for penalty-based
+  contacts, support for user-defined contexts in all solvers and
+  preconditioners, new example: dispersion analysis of heterogeneous periodic
+  materials, etc.), see :ref:`release notes <2017.3-2017.4>`.
+
 * **19.09.2017** Version 2017.3 released (support preconditioning in SciPy and
   PyAMG based linear solvers, user-defined preconditioners for PETSc linear
   solvers, parallel multiscale (macro-micro) homogenization-based computations,
@@ -21,9 +26,5 @@ News
   deformations, parallel calculation of homogenized coefficients and related
   sub-problems, evaluation of second derivatives of Lagrange basis functions,
   etc.), see :ref:`release notes <2016.3-2016.4>`.
-
-* **30.09.2016** Version 2016.3 released (Python 3 support, testing with Travis
-  CI, new classes for homogenized coefficients, using argparse instead of
-  optparse, etc.), see :ref:`release notes <2016.2-2016.3>`.
 
 For historians: see :ref:`archived_news`.
