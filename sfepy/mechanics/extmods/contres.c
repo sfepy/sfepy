@@ -232,7 +232,7 @@ void sfd2(float64* H, float64* dH, float64 r) {
 #define __FUNC__ "assembleContactResidualAndStiffness"
 void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows, int32* cols, int* len, float64* GPs, int32* ISN, int32* IEN, float64* X, float64* U, float64* H, float64* dH, float64* gw, float64* activeGPsOld, int neq, int nsd, int npd, int ngp, int nes, int nsn, int nen, int GPs_len, float64 epss, int keyContactDetection, int keyAssembleKc)
 {
-  int i, j, k, g, sdf, pdf;
+  int ii, i, j, k, g, sdf, pdf;
   int col;
   int* segmentNodesIDs = alloc_mem(int, nsn);
   int* segmentNodesIDm = alloc_mem(int, nsn);
@@ -248,12 +248,19 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
   float64* C_m = alloc_mem(float64, nsn*nsd);
   float64* Hm = alloc_mem(float64, nsn);
   float64* dHm = alloc_mem(float64, nsn*npd);
-
-  int len_guess = *len;
-  *len = 0;
-
   float64 Xp[3];
   float64 Xg[3];
+  int els, elm, sgs, sgm, IENrows, IENrowm;
+  int len_guess = *len;
+  float64 r, s, dh;
+  float64 Normal[3];
+  float64 normal[3];
+  float64 dXs_dr1, dXs_dr2, dXs_dr3, dXs_ds1, dXs_ds2, dXs_ds3;
+  float64 dxs_dr1, dxs_dr2, dxs_dr3, dxs_ds1, dxs_ds2, dxs_ds3;
+  float64 jacobian, normal_length, signGAPs, hs, hm;
+  int jdof, jnode, kdof, knode;
+
+  *len = 0;
 
   // Fill Gc_s array by zeros:
   for (i = 0; i < neq; ++i) {
@@ -270,16 +277,16 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 
     // slave element index:
     col = nsd*GPs_len;
-    const int els = (int)GPs[col + i]; // Python numbering starts with 0
+    els = (int)GPs[col + i]; // Python numbering starts with 0
 
     // slave segment index:
     col = (nsd + 1)*GPs_len;
-    const int sgs = (int)GPs[col + i]; // Python numbering starts with 0
+    sgs = (int)GPs[col + i]; // Python numbering starts with 0
 
     // slave segment coords Xs and displacements Us:
     for (j = 0; j < nsn; ++j) {
       col = nes*j;
-      int IENrows = ISN[col + sgs]; // Python numbering starts with 0
+      IENrows = ISN[col + sgs]; // Python numbering starts with 0
       col = nen*els;
       segmentNodesIDs[j] = IEN[col + IENrows]; // Python numbering starts with 0
       for (k = 0; k < nsd; ++k) {
@@ -299,15 +306,15 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 
       // master element index:
       col = (2 * nsd + 4)*GPs_len;
-      const int elm = (int)GPs[col + i + g]; // Python numbering starts with 0
+      elm = (int)GPs[col + i + g]; // Python numbering starts with 0
       // master segment index:
       col = (2 * nsd + 5)*GPs_len;
-      const int sgm = (int)GPs[col + i + g]; // Python numbering starts with 0
+      sgm = (int)GPs[col + i + g]; // Python numbering starts with 0
 
       // master segment coords Xm and displacements Um:
       for (j = 0; j < nsn; ++j) {
 	col = nes*j;
-	int IENrowm = ISN[col + sgm]; // Python numbering starts with 0
+	IENrowm = ISN[col + sgm]; // Python numbering starts with 0
 	col = nen*elm;
 	segmentNodesIDm[j] = IEN[col + IENrowm]; // Python numbering starts with 0
 	for (k = 0; k < nsd; ++k) {
@@ -319,8 +326,8 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 
       // Shape function and its derivatives of gausspoint's master segment
 
-      float64 r = GPs[(nsd + 3)*GPs_len + i + g];
-      float64 s = 0.0;
+      r = GPs[(nsd + 3)*GPs_len + i + g];
+      s = 0.0;
 
       if (npd == 2) {
 	s = GPs[(nsd + 4)*GPs_len + i + g];
@@ -370,7 +377,7 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	for (sdf = 0; sdf < nsd; ++sdf) {
 	  for (j = 0; j < nsn; ++j) {
 	    col = j*npd*ngp;
-	    const float64 dh = dH[col + g*npd + pdf];
+	    dh = dH[col + g*npd + pdf];
 	    dXs[npd*sdf + pdf] += dh*Xs[sdf*nsn + j];
 	    dxs[npd*sdf + pdf] += dh*(Xs[sdf*nsn + j] + Us[sdf*nsn + j]);
 	  }
@@ -378,8 +385,10 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
       }
 
       // Evaluate normal vector:
-      float64 Normal[3] = {0, 0, 0};
-      float64 normal[3] = {0, 0, 0};
+      for (ii = 0; ii < 3; ii++) {
+        Normal[ii] = 0.0;
+        normal[ii] = 0.0;
+      }
       if (nsd == 2) {
 	Normal[0] = dXs[1];
 	Normal[1] = -dXs[0];
@@ -390,36 +399,36 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	normal[2] = 0.0;
       }
       else if (nsd == 3) {
-	const float64 dXs_dr1 = dXs[0];
-	const float64 dXs_dr2 = dXs[npd + 0];
-	const float64 dXs_dr3 = dXs[2 * npd + 0];
-	const float64 dXs_ds1 = dXs[1];
-	const float64 dXs_ds2 = dXs[npd + 1];
-	const float64 dXs_ds3 = dXs[2 * npd + 1];
+	dXs_dr1 = dXs[0];
+	dXs_dr2 = dXs[npd + 0];
+	dXs_dr3 = dXs[2 * npd + 0];
+	dXs_ds1 = dXs[1];
+	dXs_ds2 = dXs[npd + 1];
+	dXs_ds3 = dXs[2 * npd + 1];
 	Normal[0] = dXs_dr2*dXs_ds3 - dXs_dr3*dXs_ds2;
 	Normal[1] = dXs_dr3*dXs_ds1 - dXs_dr1*dXs_ds3;
 	Normal[2] = dXs_dr1*dXs_ds2 - dXs_dr2*dXs_ds1;
 
-	const float64 dxs_dr1 = dxs[0];
-	const float64 dxs_dr2 = dxs[npd + 0];
-	const float64 dxs_dr3 = dxs[2 * npd + 0];
-	const float64 dxs_ds1 = dxs[1];
-	const float64 dxs_ds2 = dxs[npd + 1];
-	const float64 dxs_ds3 = dxs[2 * npd + 1];
+	dxs_dr1 = dxs[0];
+	dxs_dr2 = dxs[npd + 0];
+	dxs_dr3 = dxs[2 * npd + 0];
+	dxs_ds1 = dxs[1];
+	dxs_ds2 = dxs[npd + 1];
+	dxs_ds3 = dxs[2 * npd + 1];
 
 	normal[0] = (dxs_dr2*dxs_ds3 - dxs_dr3*dxs_ds2);
 	normal[1] = (dxs_dr3*dxs_ds1 - dxs_dr1*dxs_ds3);
 	normal[2] = (dxs_dr1*dxs_ds2 - dxs_dr2*dxs_ds1);
       }
 
-      const float64 jacobian      = sqrt(Normal[0] * Normal[0] + Normal[1] * Normal[1] + Normal[2] * Normal[2]);
-      const float64 normal_length = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+      jacobian      = sqrt(Normal[0] * Normal[0] + Normal[1] * Normal[1] + Normal[2] * Normal[2]);
+      normal_length = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
       normal[0] /= normal_length;
       normal[1] /= normal_length;
       normal[2] /= normal_length;
 
       if (!keyContactDetection) {
-	const float64 signGAPs = (Xp[0] - Xg[0])*normal[0] + (Xp[1] - Xg[1])*normal[1] + (Xp[2] - Xg[2])*normal[2];
+	signGAPs = (Xp[0] - Xg[0])*normal[0] + (Xp[1] - Xg[1])*normal[1] + (Xp[2] - Xg[2])*normal[2];
 	if (signGAPs <= 0) {
 	  GAPs[g] = -GAPs[g];
 	}
@@ -435,8 +444,8 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 
       // evaluate shape functions and contact residual vectors:
       for (j = 0; j < nsn; ++j) {
-	const float64 hs = H[j*ngp + g];
-	const float64 hm = Hm[j];
+	hs = H[j*ngp + g];
+	hm = Hm[j];
 
 	for (sdf = 0; sdf < nsd; ++sdf) {
 
@@ -451,11 +460,11 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 	for (j = 0; j < nsn*nsd; ++j) { // loop over cols
 	  for (k = 0; k < nsn*nsd; ++k) { // loop over rows
 
-	    const int jdof = j%nsd;
-	    const int jnode = (j - jdof) / nsd; // row node
+	    jdof = j%nsd;
+	    jnode = (j - jdof) / nsd; // row node
 
-	    const int kdof = k%nsd;
-	    const int knode = (k - kdof) / nsd; // col node
+	    kdof = k%nsd;
+	    knode = (k - kdof) / nsd; // col node
 
 	    if(fabs(C_m[j] * C_m[k]) > 1e-50) {
 	      if (*len >= len_guess) printf("Error, len is too small: len = %i.\n", len_guess);
@@ -521,20 +530,21 @@ void assembleContactResidualAndStiffness(float64* Gc, float64* vals, int32* rows
 void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, int ngp, int neq, int nsn, int nes, int nen, uint32* elementID, uint32* segmentID, int32* ISN, int32* IEN, float64* H, float64* X) {
   // GPs legend:              Xg    els  sgs   gap  Xm    isActive elm sgm
   //float64* GPs = alloc_mem(float64, n*(nsd + 1 + 1  + 1  + nsd + 1       + 1 + 1));
-  int e, i, j, sdf;
+  int e, i, j, sdf, el, sg, IENrow;
   int* segmentNodesID = alloc_mem(int, nsn);
+  float64 lengthOfEdge;
   float64* Xs = alloc_mem(float64, nsn*nsd);
   float64* Xg = alloc_mem(float64, ngp*nsd);
   int g = 0;
   *longestEdge = 0.0;
 
   for (e = 0; e < n; ++e) {
-    int el = elementID[e];
-    int sg = segmentID[e];
+    el = elementID[e];
+    sg = segmentID[e];
 
     // segment coords Xs:
     for (i = 0; i < nsn; ++i) {
-      const int IENrow = ISN[nes*i + sg]; // Python numbering starts with 0
+      IENrow = ISN[nes*i + sg]; // Python numbering starts with 0
       segmentNodesID[i] = IEN[nen*el + IENrow]; // Python numbering starts with 0
       for (j = 0; j < nsd; ++j) {
 	Xs[j*nsn + i] = X[j*(int)(neq / nsd) + segmentNodesID[i]];
@@ -564,7 +574,7 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
 
     for (i = 0; i < nsn; ++i) {
       for (j = i+1; j < nsn; ++j) {
-	double lengthOfEdge = 0.0;
+	lengthOfEdge = 0.0;
 	for (sdf = 0; sdf < nsd; ++sdf) {
 	  lengthOfEdge += pow(Xs[sdf*nsn + i] - Xs[sdf*nsn + j ], 2);
 	}
@@ -583,22 +593,24 @@ void getLongestEdgeAndGPs(float64* longestEdge, float64* GPs, int n, int nsd, in
 #undef __FUNC__
 #define __FUNC__ "getAABB"
 void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, float64 longestEdge, int32* IEN, int32* ISN, uint32* elementID, uint32* segmentID, int n, int nsn, int nes, int nen, int neq) {
-  int e, i, sdf;
+  int e, i, sdf, el, sg;
   int* segmentNodesID = alloc_mem(int, nsn);
+  int IENrow;
+  float64 x;
 
   for (sdf = 0; sdf < nsd; ++sdf) {
     AABBmin[sdf] = FLT_MAX;
     AABBmax[sdf] = -FLT_MAX;
 
     for (e = 0; e < n; ++e) {
-      int el = elementID[e]; // Python numbering starts with 0
-      int sg = segmentID[e]; // Python numbering starts with 0
+      el = elementID[e]; // Python numbering starts with 0
+      sg = segmentID[e]; // Python numbering starts with 0
 
       // segment coords Xs:
       for (i = 0; i < nsn; ++i) {
-	const int IENrow = ISN[nes*i + sg]; // Python numbering starts with 0
+	IENrow = ISN[nes*i + sg]; // Python numbering starts with 0
 	segmentNodesID[i] = IEN[nen*el + IENrow]; // Python numbering starts with 0
-	const double x = X[sdf*(int)(neq / nsd) + segmentNodesID[i]];
+	x = X[sdf*(int)(neq / nsd) + segmentNodesID[i]];
 	AABBmin[sdf] = Min(AABBmin[sdf], x);
 	AABBmax[sdf] = Max(AABBmax[sdf], x);
       }
@@ -615,16 +627,33 @@ void getAABB(float64* AABBmin, float64* AABBmax, int nsd, int nnod, float64* X, 
 #undef __FUNC__
 #define __FUNC__ "evaluateContactConstraints"
 void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, float64* AABBmin, float64* AABBmax, int32* head, int32* next, float64* X, uint32* elementID, uint32* segmentID, int n, int nsn, int nsd, int npd, int ngp, int nen, int nes, int neq, float64 longestEdge) {
-  int i, e, k, j, it, sdf, i2, i1, i0;
+  int ii, i, e, k, j, it, sdf, i2, i1, i0;
   int* segmentNodesID = alloc_mem(int, nsn);
   float64* Xm = alloc_mem(float64, nsn*nsd);
   float64* Xmin = alloc_mem(float64, nsd);
   float64* Xmax = alloc_mem(float64, nsd);
   float64* Hm = alloc_mem(float64, nsn);
   float64* dHm = alloc_mem(float64, nsn*npd);
-
   float64 Xt[9];
   float64 Xc[3];
+  int el, sg, IENrow, Ic, v, els, sgs, niter, max_niter;
+  int Imin[3];
+  int Imax[3];
+  float64 normal[3];
+  float64 t1[3];
+  float64 t2[3];
+  float64 t3[3];
+  float64 Xg[3];
+  float64 Xp[3];
+  float64 ra[9];
+  float64 Q1[3];
+  float64 Q2[3];
+  float64 Q3[3];
+  float64 normalLength, d_tmp, d, t1_norm, sign, Q1n, Q2n, Q3n;
+  float64 b1, b2, A11, A22, A12;
+  float64 recDetA, invA11, invA22, invA12;
+  float64 r, s, r_len, s_len, dr, ds, x, dx_dr, dx_ds, dr_norm;
+  bool isInside;
 
   // If segment element is quad then it is divided to 4 triangles:
   int ntr = 1;
@@ -637,8 +666,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
   }
 
   for (e = 0; e < n; ++e) {
-    const int el = elementID[e];
-    const int sg = segmentID[e];
+    el = elementID[e];
+    sg = segmentID[e];
 
     // segment coords Xm:
     for (k = 0; k < nsd; ++k) {
@@ -648,7 +677,7 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
       Xc[k] = 0;
 
       for (j = 0; j < nsn; ++j) {
-	const int IENrow = ISN[nes*j + sg]; // Python numbering starts with 0
+	IENrow = ISN[nes*j + sg]; // Python numbering starts with 0
 	segmentNodesID[j] = IEN[nen*el + IENrow]; // Python numbering starts with 0
 	Xm[k*nsn + j] = X[k*(int)(neq / nsd) + segmentNodesID[j]];
 	Xmin[k] = Min(Xmin[k], Xm[k*nsn + j]);
@@ -705,14 +734,16 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 	}
       }
 
-      int Imin[3] = {0, 0, 0};
-      int Imax[3] = {0, 0, 0};
-      float64 normal[3] = {0.0, 0.0, 0.0};
-      float64 t1[3] = {0.0, 0.0, 0.0};
-      float64 t2[3] = {0.0, 0.0, 0.0};
-      float64 t3[3] = {0.0, 0.0, 0.0};
-      float64 Xg[3] = {0.0, 0.0, 0.0};
-      float64 Xp[3] = {0.0, 0.0, 0.0};
+      for (ii = 0; ii < 3; ii++) {
+        Imin[ii] = 0;
+        Imax[ii] = 0;
+        normal[ii] = 0.0;
+        t1[ii] = 0.0;
+        t2[ii] = 0.0;
+        t3[ii] = 0.0;
+        Xg[ii] = 0.0;
+        Xp[ii] = 0.0;
+      }
 
       Imin[0] = (int)(N[0] * (Xmin[0] - AABBmin[0]) / (AABBmax[0] - AABBmin[0]));
       Imin[1] = (int)(N[1] * (Xmin[1] - AABBmin[1]) / (AABBmax[1] - AABBmin[1]));
@@ -761,7 +792,7 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 	normal[2] = t1[0] * t2[1] - t1[1] * t2[0];
       }
 
-      const float64 normalLength = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+      normalLength = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
       normal[0] /= normalLength;
       normal[1] /= normalLength;
       normal[2] /= normalLength;
@@ -784,30 +815,28 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
       for (i2 = Imin[2]; i2 <= Imax[2]; ++i2) {
 	for (i1 = Imin[1]; i1 <= Imax[1]; ++i1) {
 	  for (i0 = Imin[0]; i0 <= Imax[0]; ++i0) {
-	    const int Ic = i2*N[0] * N[1] + i1*N[0] + i0;
-	    int v = head[Ic];
+	    Ic = i2*N[0] * N[1] + i1*N[0] + i0;
+	    v = head[Ic];
 
 	    while (v != -1) {
 
 	      // Jump if Gausspoit segment is equal to master segment
-	      int els = GPs[nsd*n*ngp + v];            // slave element
-	      int sgs = GPs[(nsd + 1)*n*ngp + v];      // slave segment
+	      els = GPs[nsd*n*ngp + v];            // slave element
+	      sgs = GPs[(nsd + 1)*n*ngp + v];      // slave segment
 	      if (el == els && sg == sgs) {
 		v = next[v];
 		continue;
 	      }
 
-	      float64 d;
 	      // Inside-outside algorithm:
-	      bool isInside = 0;
+	      isInside = 0;
 	      if (nsd == 2) {
-		float64 r[2];
 		d = 0.0;
-		float64 t1_norm = 0.0;
+		t1_norm = 0.0;
 		for (i = 0; i < nsd; ++i) {
 		  Xg[i] = GPs[i*n*ngp + v];
-		  r[i] = Xg[i] - Xm[i*nsn + 0];
-		  d += r[i] * t1[i];
+		  ra[i] = Xg[i] - Xm[i*nsn + 0];
+		  d += ra[i] * t1[i];
 		  t1_norm += t1[i] * t1[i];
 		}
 		d = sqrt(d);
@@ -816,9 +845,9 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		if (d >= 0.0 && d <= t1_norm) {
 		  isInside = 1;
 		  d = 0.0;
-		  float64 sign = 0.0;
+		  sign = 0.0;
 		  for (i = 0; i < nsd; ++i) {
-		    Xp[i] = Xm[i*nsn + 0] + t1[i] / t1_norm*r[i] * t1[i] / t1_norm;
+		    Xp[i] = Xm[i*nsn + 0] + t1[i] / t1_norm*ra[i] * t1[i] / t1_norm;
 		    sign += (Xg[i] - Xp[i])*normal[i];
 		    d += pow(Xg[i] - Xp[i], 2);
 		  }
@@ -829,42 +858,38 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		}
 	      }
 	      else if (nsd == 3) {
-		float64 r[9];
-		float64 Q1[3];
-		float64 Q2[3];
-		float64 Q3[3];
 		d = 0.0;
 		for (i = 0; i < nsd; ++i) {
 		  Xg[i] = GPs[i*n*ngp + v];
-		  r[i * 3 + 0] = Xg[i] - Xt[i*3 + 0];
-		  r[i * 3 + 1] = Xg[i] - Xt[i*3 + 1];
-		  r[i * 3 + 2] = Xg[i] - Xt[i*3 + 2];
+		  ra[i * 3 + 0] = Xg[i] - Xt[i*3 + 0];
+		  ra[i * 3 + 1] = Xg[i] - Xt[i*3 + 1];
+		  ra[i * 3 + 2] = Xg[i] - Xt[i*3 + 2];
 		}
 
 		// component:  X    Y    Z
-		// r1:       r[0] r[3] r[6]
-		// r2:       r[1] r[4] r[7]
-		// r3:       r[2] r[5] r[8]
-		Q1[0] = r[3] * t1[2] - r[6] * t1[1];
-		Q1[1] = r[6] * t1[0] - r[0] * t1[2];
-		Q1[2] = r[0] * t1[1] - r[3] * t1[0];
+		// r1:       ra[0] ra[3] ra[6]
+		// r2:       ra[1] ra[4] ra[7]
+		// r3:       ra[2] ra[5] ra[8]
+		Q1[0] = ra[3] * t1[2] - ra[6] * t1[1];
+		Q1[1] = ra[6] * t1[0] - ra[0] * t1[2];
+		Q1[2] = ra[0] * t1[1] - ra[3] * t1[0];
 
-		Q2[0] = r[4] * t2[2] - r[7] * t2[1];
-		Q2[1] = r[7] * t2[0] - r[1] * t2[2];
-		Q2[2] = r[1] * t2[1] - r[4] * t2[0];
+		Q2[0] = ra[4] * t2[2] - ra[7] * t2[1];
+		Q2[1] = ra[7] * t2[0] - ra[1] * t2[2];
+		Q2[2] = ra[1] * t2[1] - ra[4] * t2[0];
 
-		Q3[0] = r[5] * t3[2] - r[8] * t3[1];
-		Q3[1] = r[8] * t3[0] - r[2] * t3[2];
-		Q3[2] = r[2] * t3[1] - r[5] * t3[0];
+		Q3[0] = ra[5] * t3[2] - ra[8] * t3[1];
+		Q3[1] = ra[8] * t3[0] - ra[2] * t3[2];
+		Q3[2] = ra[2] * t3[1] - ra[5] * t3[0];
 
-		const float64 Q1n = Q1[0] * normal[0] + Q1[1] * normal[1] + Q1[2] * normal[2];
-		const float64 Q2n = Q2[0] * normal[0] + Q2[1] * normal[1] + Q2[2] * normal[2];
-		const float64 Q3n = Q3[0] * normal[0] + Q3[1] * normal[1] + Q3[2] * normal[2];
+		Q1n = Q1[0] * normal[0] + Q1[1] * normal[1] + Q1[2] * normal[2];
+                Q2n = Q2[0] * normal[0] + Q2[1] * normal[1] + Q2[2] * normal[2];
+                Q3n = Q3[0] * normal[0] + Q3[1] * normal[1] + Q3[2] * normal[2];
 
 		if (Q1n*Q2n >= 0) {
 		  if (Q1n*Q3n >= 0) {
 		    isInside = 1;
-		    d = r[0] * normal[0] + r[3] * normal[1] + r[6] * normal[2];
+		    d = ra[0] * normal[0] + ra[3] * normal[1] + ra[6] * normal[2];
 		    for (i = 0; i < nsd; ++i) {
 		      Xp[i] = Xg[i] - d*normal[i];
 		    }
@@ -881,8 +906,8 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		if (d < GPs[(nsd + 2)*n*ngp + v]) {
 
 		  // Initial guess of the parametric coordinates on the triangle:
-		  float64 r_len = 0, r = 0;
-		  float64 s_len = 0, s = 0;
+		  r_len = 0, r = 0;
+		  s_len = 0, s = 0;
 		  switch (nsn) {
 		  case 2:
 		    // Tangent vectors parallel with element edges 1 and 2:
@@ -940,9 +965,9 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 
 
 		  // Local contact search by Least-square projection method:
-		  float64 dr_norm = FLT_MAX;
-		  int niter = 0;
-		  int max_niter = 1000;
+		  dr_norm = FLT_MAX;
+		  niter = 0;
+		  max_niter = 1000;
 		  do {
 		    switch (nsn) {
 		    case 2:
@@ -958,18 +983,17 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		      sfd8(Hm, dHm, r, s);
 		    }
 
-		    float64 b1, b2, A11, A22, A12;
 		    A11 = 0.0;
 		    A22 = 0.0;
 		    A12 = 0.0;
 		    b1 = 0.0;
 		    b2 = 0.0;
-		    double d_tmp = 0.0;
+		    d_tmp = 0.0;
 
 		    for (sdf = 0; sdf < nsd; ++sdf) {
-		      float64 x = 0.0;
-		      float64 dx_dr = 0.0;
-		      float64 dx_ds = 0.0;
+		      x = 0.0;
+		      dx_dr = 0.0;
+		      dx_ds = 0.0;
 
 		      for (k = 0; k < nsn; ++k) {
 			x += Hm[k] * Xm[sdf*nsn + k];
@@ -991,13 +1015,6 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		    }
 
 		    d = (d<0) ? -sqrt(d_tmp) : sqrt(d_tmp);
-
-		    float64 recDetA;
-		    float64 invA11;
-		    float64 invA22;
-		    float64 invA12;
-		    float64 dr;
-		    float64 ds;
 
 		    if (npd == 1) {
 		      invA11 = 1 / A11;
