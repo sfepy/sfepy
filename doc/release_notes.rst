@@ -1,5 +1,277 @@
 # created: 20.07.2007 (-1)
 
+.. _2017.3-2017.4:
+
+from 2017.3 to 2017.4
+=====================
+
+- merge pull request #418 from lokik/python3-compatibility
+
+  - Python 3 compatibility: region.py
+  - Python 3 compatibility: update_dict_recursively
+
+- merge pull request #420 from lokik/master
+
+  - sfepy.base.parse_conf: fix and test
+
+- merge branch 'contacts'
+
+  - implements a penalty based contact term
+  - new examples/linear_elasticity/two_bodies_contact2d.py
+  - new sfepy/terms/terms_contact.py - new ContactTerm
+  - allow strings as special material arguments in Term.check_shapes()
+  - new sfepy/mechanics/extmods/__init__.py
+  - new sfepy/mechanics/extmods/contres.{c, h}
+  - new sfepy/mechanics/extmods/ccontres.pyx
+  - new sfepy/mechanics/extmods/setup.py
+  - new get_longest_edge_and_gps() cython function
+  - new get_AABB() cython function
+  - new init_global_search() cython function
+  - new evaluate_contact_constraints() cython function
+  - new assemble_contact_residual_and_stiffness() cython function
+  - update Term.evaluate(), .assemble_to() for sparse vector data
+  - clean up sfepy/base/plotutils.py
+  - fix print_matrix_diff() for matrices in CSC format
+  - update spy(): make dots visible, fix axes limits, do not shift points -
+    with matplotlib 1.5.1
+  - return extra matrix from Term.assemble_to(), do not assemble it there
+  - update Equations, Equation for extra matrices
+
+    - update Equations.evaluate(), .eval_tangent_matrices()
+    - update Equation.evaluate()
+
+  - rename two_bodies_contact2d.py -> two_bodies_contact.py
+  - update two_bodies_contact.py for 3D, generate bodies by new gen_two_bodies()
+  - update/fix contres.{c, h} for 3D
+  - update ContactTerm for 3D
+  - add docstring to Term.assemble_to(), clean up
+  - new test for two_bodies_contact.py example
+  - move active DOF treatment from ContactTerm.get_fargs() to
+    Term.assemble_to()
+  - update _test_single_term() for dynamic connectivity terms -
+    test_term_call_modes() tests pass for dw_contact
+  - docs: sync module index of developer guide with current sources
+
+- merge branch 'plot-boundary-quadratures'
+
+  - script/plot_quadratures.py: new --boundary option, update _get_bqp(),
+    plot_quadrature()
+  - script/plot_quadratures.py: new ---show-labels, --print-qp options, new
+    label_points(), update plot_quadrature()
+
+- merge pull request #422 from vlukes/update_doc
+
+  - update users_guide: add links to PyAMG and PETSc documentation
+  - update users_guide: remove 'ls.petsc_parallel' section
+
+- merge branch 'solver-context'
+
+  - update Solver.__init__() and subclasses: add context argument, update
+    LinearSolver.__call__() signature
+  - update Problem.init_solvers() to pass self as context
+  - update linear solvers for context argument
+
+    - update standard_call(), petsc_call() decorators
+    - update ScipyIterative, PyAMGKrylovSolver, PETScKrylovSolver,
+      SchurGeneralized, MultiProblem
+
+  - update Oseen for context argument
+  - update setup_precond() in biot_short_syntax.py example for context argument
+
+- merge branch 'embed-shell'
+
+  - add frame argument to python_shell()
+  - new shell(), ipython_shell()
+
+- merge pull request #424 from BubuLK/c-cython-warnings, closes #406
+
+  - Updated array/pointer cdef to follow new Cython parser conventions (removed
+    Cython warnings).
+  - Removed unused variables definitions.
+  - Replace abs()->fabs().
+  - Updated cmesh.{c,h} explicit casting.
+  - Updated explicit casting (discrete/common).
+  - Updated explicit casting (iga), fixed typo.
+  - Added cython explicit type casting (to remove warnings).
+  - Add "unreachable code" explicit marks () to disable warnings.
+  - Removed duplicated compiler options defines (sfepy_common).
+  - Fixed comparsion bug (from unreachable code).
+  - Cleanup mesh.c explicit type casting.
+  - Updated OS detection defs.
+  - Updated defs/casting according to issue comments.
+  - remove unused variables in C code - closes pull request #423 from
+    vlukes/c_clean_up
+  - resolve remaining warnings
+
+- merge branch 'scikit-umfpack-version'
+
+  - update _scikit_umfpack_version()
+
+- merge pull request #425 from BubuLK/c-compiler-flags
+
+  - Fixed typo in sfepy_common library macros.
+
+- merge branch 'allow-empty-regions-option'
+
+  - new allow_empty_regions Problem configuration option, update
+    Problem.from_conf(), .set_regions()
+  - docs: update users guide
+
+- merge pull request #428 from BubuLK/Appveyor-IGA
+
+  - Add IGAkit install/build to Appveyor config.
+
+- merge pull request #426 from rc/small-fixes
+
+  - fix real definition in parse_conf.py, new cmplx definition
+  - initialize time_stats in Newton.__call__()
+  - fix spelling: rezidual -> residual
+  - print time_stats in fixed order in Newton.__call__()
+  - fix LogPlotter.__call__() docstring
+
+- merge branch 'small-fixes-2'
+
+  - add show_mesh_info.py into scripts to install in setup.py
+  - script/show_mesh_info.py: fix misleading description, show real centre
+  - clean up sfepy/mechanics/units.py
+  - fix density definition in units_of_quantities, more num_prefixes
+  - improve value shape checking, error reporting in H1NodalMixin.set_dofs()
+
+- merge branch 'active-only-option'
+
+  - new active_only Problem configuration option - update Problem.from_conf()
+  - obey active_only in Problem.copy(), .create_subproblem()
+  - add active_only argument to  Problem.evaluate() and related functions
+
+    - update Problem.create_evaluable(), .eval_equations()
+    - update create_evaluable(), eval_equations(), eval_in_els_and_qp(),
+      assemble_by_blocks()
+
+  - new Problem.get_ebc_indices()
+  - update PETScParallelEvaluator() for Problem.get_ebc_indices()
+  - fix matrix diagonal in BasicEvaluator.eval_tangent_matrix() for no
+    active_only
+  - fix Problem.solve() for no active_only
+  - fix making full vector in BasicEvaluator for no active_only, fix
+    .eval_residual(), .eval_tangent_matrix()
+  - update PETScParallelEvaluator for apply_ebc_to_matrix() call in
+    BasicEvaluator
+  - fix create_adof_conns(), apply_ebc_to_matrix() for EPBCs
+
+    - update Problem.get_ebc_indices()
+    - update BasicEvaluator.eval_tangent_matrix()
+
+  - fix equations in poisson_periodic_boundary_condition.py example
+  - set active_only to False in poisson_periodic_boundary_condition.py example
+  - move apply_ebc_to_matrix() into sfepy/discrete/evaluate.py
+  - update Problem docstring
+
+- merge pull request #430 from rc/update-convert-mesh
+
+  - script/convert_mesh.py: new --2d option
+  - docs: document --2d option in preprocessing section
+  - docs: add data files
+  - docs: mention legacy VTK reader 2D detection feature
+  - fix printing writable mesh formats in for_format()
+
+- merge branch 'fix-poisson_parallel_interactive'
+
+  - poisson_parallel_interactive.py: fix for moved apply_ebc_to_matrix() - see
+    active-only-option branch
+
+- merge pull request #431 from vlukes/new_surface_grad_term
+
+  - new ev_surface_grad and ev_surface_div terms
+
+- merge pull request #432 from vlukes/update_complex_eval_at
+
+  - update fields.evaluate_at() for evaluating complex fields
+  - new test for fields.evaluate_at()
+
+- merge branch 'small-fixes-3'
+
+  - output last step KSP stats in PETScNonlinearSolver
+  - fix ANSYSCDBMeshIO for meshes with both tetrahedra and hexahedra
+
+- merge pull request #433 from vlukes/save_mesh_per_matid
+
+  - update mesh conversion: extract cells by material id
+  - update preprocessing tutorial - new "save-per-mat" arugment to conversion
+    script
+
+- merge pull request #434 from heczis/abaqus_ax_elm
+
+  - Add reading of axisymmetric elements to AbaqusMeshIO
+
+- merge branch 'show-mesh-info-euler-ncomp'
+
+  - script/show_mesh_info.py: show Euler characteristic
+  - script/show_mesh_info.py: show medians of volumes, update formatting
+  - script/show_mesh_info.py: show Euler characteristics of mesh volume and
+    surface
+  - script/show_mesh_info.py: show numbers of volume/surface components
+  - script/show_mesh_info.py: update output formatting
+
+- merge pull request #436 from vlukes/new_vtk_probe
+
+  - new ProbeFromFile class: init VTK probe using a given file
+
+- merge pull request #437 from vlukes/recovery_eps
+
+  - new recover_micro_hook_eps(): recover a real sized microstructure
+
+- merge pull request #435 from rc/tetgen-remesh-option
+
+  - script/convert_mesh.py: new --remesh option
+
+- merge pull request #438 from vlukes/update_recovery
+
+  - update calls of microproblems: pass arguments to define() at the microlevel
+  - fix recover_micro_hook_eps(): fix for incorrect microstructure size
+  - let the code be friedly to pep8
+
+- merge branch 'small-fixes-4'
+
+  - check that all facets are on surface in SurfaceField._check_region(),
+    improve messages
+  - allow quoting command line items in save_options() - new quote_command_line
+    argument
+  - fix Mesh.create_conn_graph() to obey verbose argument
+
+- merge branch 'dispersion-analysis'
+
+  - new ElasticWaveTerm (dw_elastic_wave), _build_wave_strain_op()
+  - new ElasticWaveCauchyTerm (dw_elastic_wave_cauchy),
+    _build_cauchy_strain_op()
+  - new which option instead of hard-coded value in ScipyEigenvalueSolver
+  - new examples/linear_elasticity/dispersion_analysis.py
+  - new apply_unit_multipliers()
+  - new lame_from_stiffness(), youngpoisson_from_stiffness()
+  - update test_stiffness_tensors()
+  - update Log, LogPlotter for plots with varying line properties
+
+    - update Log.__init__(), .add_group(), .plot_data()
+    - update LogPlotter.process_command()
+
+  - save plot properties header in Log.__init__(), update read_log(), plot_log()
+  - add raw_log_save_name option to BandGaps
+  - new save_raw_bg_logs(), update AcousticBandGapsApp.call() for saving raw
+    logs
+  - update plot_log() for plotting to given list of axes
+  - script/plot_logs.py: update --rc option, update ParseRc to use eval()
+
+    - values with commas work
+    - update for current plot_log()
+
+  - improve BandGaps.save_log()
+  - script/plot_logs.py: new --groups option, update plot_log()
+
+  - fix dense eigh() call in ScipyEigenvalueSolver.__call__()
+  - set accuracy for periodic vertex matching in band_gaps_conf.py
+  - use basic SI units in band_gaps.py example, small updates
+  - use basic SI units in band_gaps_rigid.py example, small updates
+  - update test_install.py for updated units in phononic examples
+
 .. _2017.2-2017.3:
 
 from 2017.2 to 2017.3
