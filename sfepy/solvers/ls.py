@@ -48,6 +48,9 @@ def _get_cs_matrix_hash(mtx, chunk_size=100000):
     return digest
 
 def _is_new_matrix(mtx, mtx_digest):
+    if not isinstance(mtx, sps.csr_matrix):
+        return True, mtx_digest
+
     id0, digest0 = mtx_digest
     id1 = id(mtx)
     digest1 = _get_cs_matrix_hash(mtx)
