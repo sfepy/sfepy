@@ -209,6 +209,7 @@ class LinearSolver(Solver):
     def __init__(self, conf, mtx=None, status=None, context=None, **kwargs):
         Solver.__init__(self, conf=conf, mtx=mtx, status=status,
                         context=context, **kwargs)
+        self.mtx_digest = (0, '')
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, context=None, **kwargs):

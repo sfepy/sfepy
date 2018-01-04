@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import time
+import hashlib
 
 import numpy as nm
 import warnings
@@ -27,6 +28,33 @@ def solve(mtx, rhs, solver_class=None, solver_conf=None):
     solution = solver(rhs)
 
     return solution
+
+def _get_cs_matrix_hash(mtx, chunk_size=100000):
+    def _gen_array_chunks(arr):
+        ii = 0
+        while len(arr[ii:]):
+            yield arr[ii:ii+chunk_size].tobytes()
+            ii += chunk_size
+
+    sha1 = hashlib.sha1()
+    for chunk in _gen_array_chunks(mtx.indptr):
+        sha1.update(chunk)
+    for chunk in _gen_array_chunks(mtx.indices):
+        sha1.update(chunk)
+    for chunk in _gen_array_chunks(mtx.data):
+        sha1.update(chunk)
+
+    digest = sha1.hexdigest()
+    return digest
+
+def _is_new_matrix(mtx, mtx_digest):
+    id0, digest0 = mtx_digest
+    id1 = id(mtx)
+    digest1 = _get_cs_matrix_hash(mtx)
+    if (id1 == id0) and (digest1 == digest0):
+        return False, (id1, digest1)
+
+    return True, (id1, digest1)
 
 def standard_call(call):
     """
@@ -117,7 +145,7 @@ class ScipyDirect(LinearSolver):
     ]
 
     def __init__(self, conf, **kwargs):
-        LinearSolver.__init__(self, conf, mtx_id=None, solve=None, **kwargs)
+        LinearSolver.__init__(self, conf, solve=None, **kwargs)
         um = self.sls = None
 
         aux = try_imports(['import scipy.linsolve as sls',
@@ -164,9 +192,10 @@ class ScipyDirect(LinearSolver):
             return self.sls.spsolve(mtx, rhs)
 
     def presolve(self, mtx):
-        if self.mtx_id != id(mtx):
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
+        if is_new:
             self.solve = self.sls.factorized(mtx)
-            self.mtx_id = id(mtx)
+            self.mtx_digest = mtx_digest
 
 class ScipyIterative(LinearSolver):
     """
@@ -326,7 +355,7 @@ class PyAMGSolver(LinearSolver):
             msg =  'cannot import pyamg!'
             raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, mtx_id=None, mg=None, **kwargs)
+        LinearSolver.__init__(self, conf, mg=None, **kwargs)
 
         try:
             solver = getattr(pyamg, self.conf.method)
@@ -365,12 +394,13 @@ class PyAMGSolver(LinearSolver):
             # Call an optional user-defined callback.
             callback(sol)
 
-        if self.mtx_id != id(mtx):
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
+        if is_new:
             _kwargs = {key[7:] : val
                        for key, val in six.iteritems(solver_kwargs)
                        if key.startswith('method:')}
             self.mg = self.solver(mtx, **_kwargs)
-            self.mtx_id = id(mtx)
+            self.mtx_digest = mtx_digest
 
         _kwargs = {key[6:] : val
                    for key, val in six.iteritems(solver_kwargs)
@@ -422,7 +452,7 @@ class PyAMGKrylovSolver(LinearSolver):
             msg =  'cannot import pyamg.krylov!'
             raise ImportError(msg)
 
-        LinearSolver.__init__(self, conf, mtx_id=None, mg=None,
+        LinearSolver.__init__(self, conf, mg=None,
                               context=context, **kwargs)
 
         try:
@@ -546,7 +576,7 @@ class PETScKrylovSolver(LinearSolver):
 
         LinearSolver.__init__(self, conf, petsc=petsc, comm=comm,
                               converged_reasons=converged_reasons,
-                              fields=None, mtx_id=0, ksp=None, pmtx=None,
+                              fields=None, ksp=None, pmtx=None,
                               context=context, **kwargs)
 
     def set_field_split(self, field_ranges, comm=None):
@@ -621,7 +651,8 @@ class PETScKrylovSolver(LinearSolver):
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
-        if self.mtx_id == id(mtx):
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
+        if not is_new:
             ksp = self.ksp
             pmtx = self.pmtx
 
@@ -638,7 +669,7 @@ class PETScKrylovSolver(LinearSolver):
                 ksp.pc.setPythonContext(setup_precond(mtx, context))
 
             ksp.setFromOptions()
-            self.mtx_id = id(mtx)
+            self.mtx_digest = mtx_digest
             self.ksp = ksp
             self.pmtx = pmtx
 
