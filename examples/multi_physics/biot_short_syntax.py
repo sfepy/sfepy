@@ -16,22 +16,27 @@ preconditioners (see `solvers` dict):
   iterations of CG from PETSc), `'pyamg'` (an algebraic multigrid solver)
   solvers can be used as preconditioners for the matrix blocks on the diagonal.
 
-See :func:`setup_precond()` and try to modify it. The PETSc solvers can be
-configured also using command line options. For example:
+See :func:`setup_precond()` and try to modify it.
 
-- set::
+The PETSc solvers can be configured also using command line options. For
+example, set ``'ls' : 'iterative-p'`` in `options`, and run::
 
-    'ls' : 'iterative-p',
+  python simple.py examples/multi_physics/biot_short_syntax.py -ksp_monitor
 
-  in `options`.
+or simply run::
 
-- and run::
+  python simple.py examples/multi_physics/biot_short_syntax.py -O "ls='iterative-p'"
 
-    python simple.py examples/multi_physics/biot_short_syntax.py -ksp_monitor
+to monitor the PETSc iterative solver convergence. It will diverge without
+preconditioning, see :func:`matvec_bj()`, :func:`matvec_j()` for further
+details.
 
-  to monitor the PETSc iterative solver convergence. It will diverge without
-  preconditioning, see :func:`matvec_bj()`, :func:`matvec_j()` for further
-  details.
+The PETSc options can also be set in the solver configuration - try
+uncommenting the ``'ksp_*'`` or ``'pc_*'`` parameters in ``'iterative-p'``.
+Uncommenting all the lines leads to, among other things, using the GMRES method
+with no preconditioning and the condition number estimate computation. Compare
+the condition number estimates with and without a preconditioning (try, for
+example, using ``'precond' : 'mg'`` or ``'pc_type' : 'mg'``).
 
 Find :math:`\ul{u}`, :math:`p` such that:
 
@@ -267,6 +272,14 @@ solvers = {
         'i_max' : i_max,
         'eps_r' : eps_r,
         'verbose' : 2,
+        # 'ksp_converged_reason' : None,
+        # 'ksp_monitor_true_residual' : None,
+        # 'ksp_monitor_singular_value' : None,
+        # 'ksp_final_residual' : None,
+        # 'ksp_type' : 'gmres', # Overrides `method`.
+        # 'ksp_max_it' : 500,
+        # 'ksp_gmres_restart' : 1000,
+        # 'pc_type' : 'none', # Overrides `precond`.
     }),
     'cg-p' : ('ls.petsc', {
         'method' : 'cg',
