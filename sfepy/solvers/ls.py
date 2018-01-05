@@ -562,6 +562,9 @@ class PETScKrylovSolver(LinearSolver):
          'The relative tolerance for the residual.'),
         ('eps_d', 'float', 1e5, False,
          'The divergence tolerance for the residual.'),
+        ('*', '*', None, False,
+         """Additional parameters supported by the method. Can be used to pass
+            all PETSc options supported by :func:`petsc.Options()`."""),
     ]
 
     _precond_sides = {None : None, 'left' : 0, 'right' : 1, 'symmetric' : 2}
@@ -601,10 +604,13 @@ class PETScKrylovSolver(LinearSolver):
                                                     comm=comm)
             self.fields.append((key, field_is))
 
-    def create_ksp(self, comm=None):
+    def create_ksp(self, options=None, comm=None):
         optDB = self.petsc.Options()
 
         optDB['sub_pc_type'] = self.conf.sub_precond
+        if options is not None:
+            for key, val in six.iteritems(options):
+                optDB[key] = val
 
         ksp = self.petsc.KSP()
         ksp.create(comm)
@@ -649,6 +655,8 @@ class PETScKrylovSolver(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, comm=None, context=None,
                  **kwargs):
+        solver_kwargs = self.build_solver_kwargs(conf)
+
         eps_a = get_default(eps_a, self.conf.eps_a)
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
@@ -662,7 +670,7 @@ class PETScKrylovSolver(LinearSolver):
         else:
             pmtx = self.create_petsc_matrix(mtx, comm=comm)
 
-            ksp = self.create_ksp(comm=comm)
+            ksp = self.create_ksp(options=solver_kwargs, comm=comm)
             ksp.setOperators(pmtx)
             ksp.setTolerances(atol=eps_a, rtol=eps_r, divtol=eps_d,
                               max_it=i_max)
