@@ -47,9 +47,12 @@ def _get_cs_matrix_hash(mtx, chunk_size=100000):
     digest = sha1.hexdigest()
     return digest
 
-def _is_new_matrix(mtx, mtx_digest):
+def _is_new_matrix(mtx, mtx_digest, force_reuse=False):
     if not isinstance(mtx, sps.csr_matrix):
         return True, mtx_digest
+
+    if force_reuse:
+        return False, mtx_digest
 
     id0, digest0 = mtx_digest
     id1 = id(mtx)
@@ -340,6 +343,9 @@ class PyAMGSolver(LinearSolver):
          'The maximum number of iterations.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative tolerance for the residual.'),
+        ('force_reuse', 'bool', False, False,
+         """If True, skip the check whether the MG solver object corresponds
+            to the `mtx` argument: it is always reused."""),
         ('*', '*', None, False,
          """Additional parameters supported by the method. Use the 'method:'
             prefix for arguments of the method construction function
@@ -397,8 +403,9 @@ class PyAMGSolver(LinearSolver):
             # Call an optional user-defined callback.
             callback(sol)
 
-        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
-        if is_new:
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
+                                            force_reuse=conf.force_reuse)
+        if is_new or (self.mg is None):
             _kwargs = {key[7:] : val
                        for key, val in six.iteritems(solver_kwargs)
                        if key.startswith('method:')}
@@ -562,6 +569,9 @@ class PETScKrylovSolver(LinearSolver):
          'The relative tolerance for the residual.'),
         ('eps_d', 'float', 1e5, False,
          'The divergence tolerance for the residual.'),
+        ('force_reuse', 'bool', False, False,
+         """If True, skip the check whether the KSP solver object corresponds
+            to the `mtx` argument: it is always reused."""),
         ('*', '*', None, False,
          """Additional parameters supported by the method. Can be used to pass
             all PETSc options supported by :func:`petsc.Options()`."""),
@@ -662,8 +672,9 @@ class PETScKrylovSolver(LinearSolver):
         i_max = get_default(i_max, self.conf.i_max)
         eps_d = self.conf.eps_d
 
-        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
-        if not is_new:
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest,
+                                            force_reuse=conf.force_reuse)
+        if (not is_new) and self.ksp is not None:
             ksp = self.ksp
             pmtx = self.pmtx
 
