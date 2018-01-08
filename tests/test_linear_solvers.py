@@ -228,3 +228,69 @@ class Test(TestCommon):
                         '(%.3e)' % row[3], ':', row[0])
 
         return ok
+
+    def test_ls_reuse(self):
+        import numpy as nm
+        from sfepy.solvers import Solver
+        from sfepy.discrete.state import State
+
+        self.problem.init_solvers()
+        nls = self.problem.get_solver()
+
+        state0 = State(self.problem.equations.variables)
+        state0.apply_ebc()
+        vec0 = state0.get_reduced()
+
+        self.problem.update_materials()
+
+        rhs = nls.fun(vec0)
+        mtx = nls.fun_grad(vec0)
+
+        ok = True
+        for name in ['i12', 'i01']:
+            solver_conf = self.problem.solver_confs[name]
+            method = solver_conf.get('method', '')
+            precond = solver_conf.get('precond', '')
+            name = ' '.join((solver_conf.name, solver_conf.kind,
+                             method, precond)).rstrip()
+            self.report(name)
+            try:
+                ls = Solver.any_from_conf(solver_conf)
+
+            except:
+                self.report('skipped!')
+                continue
+
+            conf = ls.conf.copy()
+            conf.force_reuse = True
+
+            sol00 = ls(rhs, mtx=mtx, conf=conf)
+            digest00 = ls.mtx_digest
+
+            sol0 = ls(rhs, mtx=mtx)
+            digest0 = ls.mtx_digest
+
+            sol1 = ls(rhs, mtx=2*mtx, conf=conf)
+            digest1 = ls.mtx_digest
+
+            sol2 = ls(rhs, mtx=2*mtx)
+            digest2 = ls.mtx_digest
+            ls(rhs, mtx=2*mtx)
+            digest3 = ls.mtx_digest
+
+            _ok = digest00 != digest0
+            self.report(digest00, '!=', digest0, ':', _ok); ok = ok and _ok
+            _ok = digest0 == digest1
+            self.report(digest0, '==', digest1, ':', _ok); ok = ok and _ok
+            _ok = digest1 != digest2
+            self.report(digest1, '!=', digest2, ':', _ok); ok = ok and _ok
+            _ok = digest2[1] == digest3[1]
+            self.report(digest2[1], '==', digest3[1], ':', _ok); ok = ok and _ok
+            _ok = nm.allclose(sol00, sol0, atol=1e-12, rtol=0.0)
+            self.report('sol00 == sol0:', _ok); ok = ok and _ok
+            _ok = nm.allclose(sol0, sol1, atol=1e-12, rtol=0.0)
+            self.report('sol0 == sol1:', _ok); ok = ok and _ok
+            _ok = nm.allclose(sol0, 2 * sol2, atol=1e-12, rtol=0.0)
+            self.report('sol0 == 2 * sol2:', _ok); ok = ok and _ok
+
+        return ok
