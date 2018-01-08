@@ -304,7 +304,7 @@ def solve_problem(mesh_filename, options, comm):
     output('solving...')
     tt = time.clock()
 
-    psol = ls(prhs, psol, conf)
+    psol = ls(prhs, psol)
 
     psol_i = pl.create_local_petsc_vector(pdofs)
     gather, scatter = pl.create_gather_scatter(pdofs, psol_i, psol, comm=comm)
