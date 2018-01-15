@@ -12,7 +12,7 @@ try:
 except:
     matrix_multiply = None
 
-from sfepy.base.base import assert_, insert_method, Struct
+from sfepy.base.base import assert_, insert_method, output, Struct
 
 def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
     """Compute l2 norm of rows (axis=1) or columns (axis=0) of a 2D array.
@@ -110,6 +110,12 @@ def print_array_info(ar):
     print(ar.shape, 'c_contiguous:', ar.flags.c_contiguous, \
           'f_contiguous:', ar.flags.f_contiguous)
     print('min:', ar.min(), 'mean:', ar.mean(), 'max:', ar.max())
+
+def output_array_stats(ar, name, verbose=True):
+    ar = nm.asarray(ar)
+    output('%s\nmin: %.7e mean: %.7e median: %.7e max: %.7e'
+           % (name, ar.min(), ar.mean(), nm.median(ar), ar.max()),
+           verbose=verbose)
 
 ##
 # 21.11.2005, c
