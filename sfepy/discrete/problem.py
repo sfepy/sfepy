@@ -1419,7 +1419,7 @@ class Problem(Struct):
         """
         ts_conf = get_default(ts_conf, self.ts_conf,
                               'you must set time-stepping solver!')
-        ts_solver = Solver.any_from_conf(ts_conf, problem=self, **kwargs)
+        ts_solver = Solver.any_from_conf(ts_conf, context=self, **kwargs)
         self.ts = ts_solver.ts
 
         return ts_solver

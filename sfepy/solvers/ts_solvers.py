@@ -54,8 +54,9 @@ class NewmarkTS(TimeSteppingSolver):
         ('a', 'str', 'a', False, 'The acceleration variable name.'),
     ]
 
-    def __init__(self, conf, **kwargs):
-        TimeSteppingSolver.__init__(self, conf, **kwargs)
+    def __init__(self, conf, nls=None, context=None, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
+                                    **kwargs)
 
         self.ts = TimeStepper.from_conf(self.conf)
 
