@@ -8,40 +8,54 @@ import sfepy.mechanics.matcoefs as mc
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 
+plane = 'strain'
+dim = 3
+
 # Material parameters.
 E = 200e9
 nu = 0.3
 rho = 7800.0
 
-lam, mu = mc.lame_from_youngpoisson(E, nu)
+lam, mu = mc.lame_from_youngpoisson(E, nu, plane=plane)
 cl = nm.sqrt((lam + 2.0 * mu) / rho)
 cs = nm.sqrt(mu / rho)
 
 # Initial velocity.
-v0 = 1
+v0 = 1.0
 
-# Mesh dimensions.
+# Mesh dimensions and discretization.
 d = 2.5e-3
-L = 4 * d
-dims = [L, 2 * d, 2 * d]
+if dim == 3:
+    L = 4 * d
+    dims = [L, d, d]
 
-# Mesh resolution: increase to improve accuracy.
-shape = [21, 6, 6]
+    shape = [21, 6, 6]
+
+else:
+    L = 2 * d
+    dims = [L, 2 * d]
+
+    shape = [61, 61]
 
 # Element size.
 H = L / (shape[0] - 1)
 
 # Time-stepping parameters.
 dt = H / cl
-t1 = 0.9 * L / cl
+
+if dim == 3:
+    t1 = 0.9 * L / cl
+
+else:
+    t1 = 1.5 * d / cl
 
 def mesh_hook(mesh, mode):
     """
     Generate the block mesh.
     """
     if mode == 'read':
-        mesh = gen_block_mesh(dims, shape, [0.5 * L, d, d], name='user_block',
-                              verbose=False)
+        mesh = gen_block_mesh(dims, shape, 0.5 * nm.array(dims),
+                              name='user_block', verbose=False)
         return mesh
 
     elif mode == 'write':
@@ -54,8 +68,8 @@ def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct
 
     ev = problem.evaluate
-    strain = ev('ev_cauchy_strain.2.Omega(u)', mode='el_avg', verbose=False)
-    stress = ev('ev_cauchy_stress.2.Omega(solid.D, u)', mode='el_avg',
+    strain = ev('ev_cauchy_strain.i.Omega(u)', mode='el_avg', verbose=False)
+    stress = ev('ev_cauchy_stress.i.Omega(solid.D, u)', mode='el_avg',
                 copy_materials=False, verbose=False)
 
     out['cauchy_strain'] = Struct(name='output_data', mode='cell',
@@ -70,14 +84,18 @@ filename_mesh = UserMeshIO(mesh_hook)
 regions = {
     'Omega' : 'all',
     'Impact' : ('vertices in (x < 1e-12)', 'facet'),
-    'Symmetry-y' : ('vertices in (y < 1e-12)', 'facet'),
-    'Symmetry-z' : ('vertices in (z < 1e-12)', 'facet'),
 }
+if dim == 3:
+    regions.update({
+        'Symmetry-y' : ('vertices in (y < 1e-12)', 'facet'),
+        'Symmetry-z' : ('vertices in (z < 1e-12)', 'facet'),
+    })
 
 # Iron.
 materials = {
     'solid' : ({
-            'D': mc.stiffness_from_youngpoisson(dim=3, young=E, poisson=nu),
+            'D': mc.stiffness_from_youngpoisson(dim=dim, young=E, poisson=nu,
+                                                plane=plane),
             'rho': rho,
      },),
 }
@@ -87,7 +105,7 @@ fields = {
 }
 
 integrals = {
-    'i' : 1,
+    'i' : 2,
 }
 
 variables = {
@@ -102,10 +120,15 @@ variables = {
 }
 
 ebcs = {
-    'Impact' : ('Impact', {'u.all' : 0.0, 'du.all' : 0.0, 'ddu.all' : 0.0}),
-    'Symmtery-y' : ('Symmetry-y', {'u.1' : 0.0, 'du.1' : 0.0, 'ddu.1' : 0.0}),
-    'Symmetry-z' : ('Symmetry-z', {'u.2' : 0.0, 'du.2' : 0.0, 'ddu.2' : 0.0}),
+    'Impact' : ('Impact', {'u.0' : 0.0, 'du.0' : 0.0, 'ddu.0' : 0.0}),
 }
+if dim == 3:
+    ebcs.update({
+        'Symmtery-y' : ('Symmetry-y',
+                        {'u.1' : 0.0, 'du.1' : 0.0, 'ddu.1' : 0.0}),
+        'Symmetry-z' : ('Symmetry-z',
+                        {'u.2' : 0.0, 'du.2' : 0.0, 'ddu.2' : 0.0}),
+    })
 
 def get_ic(coor, ic, mode='u'):
     val = nm.zeros_like(coor)
