@@ -4,7 +4,9 @@ Time stepping solvers.
 from __future__ import absolute_import
 import numpy as nm
 
-from sfepy.base.base import get_default, output, Struct, IndexedStruct, basestr
+from sfepy.base.base import (get_default, output, assert_,
+                             Struct, IndexedStruct, basestr)
+from sfepy.linalg.utils import output_array_stats
 from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 import six
@@ -64,6 +66,33 @@ class NewmarkTS(TimeSteppingSolver):
         format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
 
         self.format = format
+        self.verbose = self.conf.verbose
+        self.constant_matrices = None
+        self.matrix = None
+
+    def get_matrices(self, nls, vec):
+        if nls.conf.is_linear and self.constant_matrices is not None:
+            out = self.constant_matrices
+
+        else:
+            aux = nls.fun_grad(vec)
+
+            assert_((len(vec) % 3) == 0)
+            i3 = len(vec) // 3
+
+            K = aux[:i3, :i3]
+            C = aux[i3:2*i3, i3:2*i3]
+            M = aux[2*i3:, 2*i3:]
+
+            out = (M, C, K)
+
+            if nls.conf.is_linear:
+                M.eliminate_zeros()
+                C.eliminate_zeros()
+                K.eliminate_zeros()
+                self.constant_matrices = (M, C, K)
+
+        return out
 
     def get_a0(self, nls, u0, v0):
         vec = nm.r_[u0, v0, nm.zeros_like(u0)]
@@ -72,10 +101,9 @@ class NewmarkTS(TimeSteppingSolver):
         i3 = len(u0)
         r = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
 
-        aux = nls.fun_grad(vec)
-        M = aux[2*i3:, 2*i3:]
-
+        M = self.get_matrices(nls, vec)[0]
         a0 = nls.lin_solver(r, mtx=M)
+        output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
     def create_nlst(self, nls, dt, beta1, beta2, u0, v0, a0):
@@ -98,17 +126,29 @@ class NewmarkTS(TimeSteppingSolver):
             rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
             return rt
 
-        def fun_grad(at):
+        def compute_grad(at):
+            if isinstance(at, basestr) and at == 'linear':
+                at = nm.zeros_like(a0)
+
             vec = nm.r_[u(at), v(at), at]
 
-            aux = nls.fun_grad(vec)
-
-            i3 = len(at)
-            K = aux[:i3, :i3]
-            C = aux[i3:2*i3, i3:2*i3]
-            M = aux[2*i3:, 2*i3:]
+            M, C, K = self.get_matrices(nls, vec)
 
             Kt = M + beta1 * dt * C + beta2 * dt2 * K
+            return Kt
+
+        def fun_grad(at):
+            if self.constant_matrices is not None:
+                if self.matrix is None:
+                    Kt = compute_grad(at)
+                    self.matrix = Kt
+
+                else:
+                    Kt = self.matrix
+
+            else:
+                Kt = compute_grad(at)
+
             return Kt
 
         nlst.fun = fun
