@@ -47,6 +47,24 @@ def mesh_hook(mesh, mode):
     elif mode == 'write':
         pass
 
+def post_process(out, problem, state, extend=False):
+    """
+    Calculate and output strain and stress for given displacements.
+    """
+    from sfepy.base.base import Struct
+
+    ev = problem.evaluate
+    strain = ev('ev_cauchy_strain.2.Omega(u)', mode='el_avg', verbose=False)
+    stress = ev('ev_cauchy_stress.2.Omega(solid.D, u)', mode='el_avg',
+                copy_materials=False, verbose=False)
+
+    out['cauchy_strain'] = Struct(name='output_data', mode='cell',
+                                  data=strain, dofs=None)
+    out['cauchy_stress'] = Struct(name='output_data', mode='cell',
+                                  data=stress, dofs=None)
+
+    return out
+
 filename_mesh = UserMeshIO(mesh_hook)
 
 regions = {
@@ -131,6 +149,7 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max'      : 1,
         'eps_a'      : 1e-6,
+        'is_linear'  : True,
     }),
     # 'tss' : ('ts.simple', {
     #     't0' : 0.0,
@@ -172,4 +191,5 @@ options = {
 
     'output_format' : 'h5',
     'output_dir' : 'output/ed',
+    'post_process_hook' : 'post_process',
 }
