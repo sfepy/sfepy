@@ -30,6 +30,22 @@ class NewmarkState(Struct):
 
         state.set_reduced(vec)
 
+def _cache(obj, attr, dep):
+    def decorate(fun):
+        def new_fun(*args, **kwargs):
+            if dep:
+                val = getattr(obj, attr)
+                if val is None:
+                    val = fun(*args, **kwargs)
+                    setattr(obj, attr, val)
+
+            else:
+                val = fun(*args, **kwargs)
+
+            return val
+        return new_fun
+    return decorate
+
 class NewmarkTS(TimeSteppingSolver):
     """
     Assumes block-diagonal matrix in `u`, `v`, `a`.
@@ -62,6 +78,8 @@ class NewmarkTS(TimeSteppingSolver):
         ('quasistatic', 'bool', False, False,
          """If True, the non-linear solver is invoked also for
          the initial time."""),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
         ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
         ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
         ('u', 'str', 'u', False, 'The displacement variable name.'),
@@ -84,7 +102,7 @@ class NewmarkTS(TimeSteppingSolver):
         self.matrix = None
 
     def get_matrices(self, nls, vec):
-        if nls.conf.is_linear and self.constant_matrices is not None:
+        if self.conf.is_linear and self.constant_matrices is not None:
             out = self.constant_matrices
 
         else:
@@ -99,7 +117,7 @@ class NewmarkTS(TimeSteppingSolver):
 
             out = (M, C, K)
 
-            if nls.conf.is_linear:
+            if self.conf.is_linear:
                 M.eliminate_zeros()
                 C.eliminate_zeros()
                 K.eliminate_zeros()
@@ -139,29 +157,12 @@ class NewmarkTS(TimeSteppingSolver):
             rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
             return rt
 
-        def compute_grad(at):
-            if isinstance(at, basestr) and at == 'linear':
-                at = nm.zeros_like(a0)
-
-            vec = nm.r_[u(at), v(at), at]
-
+        @_cache(self, 'matrix', self.conf.is_linear)
+        def fun_grad(at):
+            vec = None if self.conf.is_linear else nm.r_[u(at), v(at), at]
             M, C, K = self.get_matrices(nls, vec)
 
             Kt = M + gamma * dt * C + beta * dt2 * K
-            return Kt
-
-        def fun_grad(at):
-            if self.constant_matrices is not None:
-                if self.matrix is None:
-                    Kt = compute_grad(at)
-                    self.matrix = Kt
-
-                else:
-                    Kt = self.matrix
-
-            else:
-                Kt = compute_grad(at)
-
             return Kt
 
         nlst.fun = fun
