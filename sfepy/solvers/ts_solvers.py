@@ -32,6 +32,19 @@ class NewmarkState(Struct):
 
 class NewmarkTS(TimeSteppingSolver):
     """
+    Assumes block-diagonal matrix in `u`, `v`, `a`.
+
+    Common settings [1]:
+
+                                 beta gamma Omega_crit
+    trapezoidal rule:    implicit 1/4  1/2  unconditional
+    linear acceleration: implicit 1/6  1/2  2\sqrt{3}
+    Fox-Goodwin:         implicit 1/12 1/2  \sqrt{6}
+    central difference:  explicit 0    1/2  2
+
+    All of these methods are 2-order of accuracy.
+
+    [1] Arnaud Delaplace, David Ryckelynck: Solvers for Computational Mechanics
     """
     name = 'ts.newmark'
 
@@ -47,10 +60,10 @@ class NewmarkTS(TimeSteppingSolver):
         ('n_step', 'int', 10, False,
          'The number of time steps. Has precedence over `dt`.'),
         ('quasistatic', 'bool', False, False,
-         'If True, the non-linear solver is invoked also for'
-         ' the initial time.'),
-        ('beta1', 'float', 0.5, False, 'The Newmark method parameter beta1.'),
-        ('beta2', 'float', 0.5, False, 'The Newmark method parameter beta2.'),
+         """If True, the non-linear solver is invoked also for
+         the initial time."""),
+        ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
+        ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
         ('u', 'str', 'u', False, 'The displacement variable name.'),
         ('v', 'str', 'v', False, 'The velocity variable name.'),
         ('a', 'str', 'a', False, 'The acceleration variable name.'),
@@ -106,16 +119,16 @@ class NewmarkTS(TimeSteppingSolver):
         output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
-    def create_nlst(self, nls, dt, beta1, beta2, u0, v0, a0):
+    def create_nlst(self, nls, dt, gamma, beta, u0, v0, a0):
         nlst = nls.copy()
 
-        dt2 = 0.5 * dt**2
+        dt2 = dt**2
 
         def v(a):
-            return v0 + dt * ((1.0 - beta1) * a0 + beta1 * a)
+            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
 
         def u(a):
-            return u0 + dt * v0 + dt2 * ((1.0 - beta2) * a0 + beta2 * a)
+            return u0 + dt * v0 + dt2 * ((0.5 - beta) * a0 + beta * a)
 
         def fun(at):
             vec = nm.r_[u(at), v(at), at]
@@ -134,7 +147,7 @@ class NewmarkTS(TimeSteppingSolver):
 
             M, C, K = self.get_matrices(nls, vec)
 
-            Kt = M + beta1 * dt * C + beta2 * dt2 * K
+            Kt = M + gamma * dt * C + beta * dt2 * K
             return Kt
 
         def fun_grad(at):
@@ -172,8 +185,8 @@ class NewmarkTS(TimeSteppingSolver):
 
         st = NewmarkState(conf.u, conf.v, conf.a)
 
-        beta1 = conf.beta1
-        beta2 = conf.beta2
+        gamma = conf.gamma
+        beta = conf.beta
 
         init_hook(ts)
 
@@ -190,7 +203,7 @@ class NewmarkTS(TimeSteppingSolver):
             output(self.format % (time, step + 1, ts.n_step))
             dt = ts.dt
 
-            nlst = self.create_nlst(nls, dt, beta1, beta2, ut, vt, at)
+            nlst = self.create_nlst(nls, dt, gamma, beta, ut, vt, at)
             atp = nlst(at)
             vtp = nlst.v(atp)
             utp = nlst.u(atp)
