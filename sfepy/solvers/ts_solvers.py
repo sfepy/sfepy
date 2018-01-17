@@ -30,6 +30,18 @@ class NewmarkState(Struct):
 
         state.set_reduced(vec)
 
+def gen_multi_vec_packing(size, num):
+    assert_((size % num) == 0)
+    ii = size // num
+
+    def unpack(vec):
+        return [vec[ir:ir+ii] for ir in range(0, size, ii)]
+
+    def pack(*args):
+        return nm.concatenate(args)
+
+    return unpack, pack
+
 def _cache(obj, attr, dep):
     def decorate(fun):
         def new_fun(*args, **kwargs):
@@ -82,9 +94,6 @@ class NewmarkTS(TimeSteppingSolver):
          'If True, the problem is considered to be linear.'),
         ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
         ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
-        ('u', 'str', 'u', False, 'The displacement variable name.'),
-        ('v', 'str', 'v', False, 'The velocity variable name.'),
-        ('a', 'str', 'a', False, 'The acceleration variable name.'),
     ]
 
     def __init__(self, conf, nls=None, context=None, **kwargs):
@@ -172,10 +181,9 @@ class NewmarkTS(TimeSteppingSolver):
 
         return nlst
 
-    def __call__(self, state0=None, conf=None, nls=None,
-                 save_results=True, init_hook=None, step_hook=None,
-                 post_process_hook=None, post_process_hook_final=None,
-                 save_hook=None, status=None):
+    def __call__(self, vec0=None, conf=None, nls=None, init_fun=None,
+                 prestep_fun=None, poststep_fun=None,
+                 status=None, **kwargs):
         """
         Solve elastodynamics problems by the Newmark method.
         """
@@ -184,37 +192,39 @@ class NewmarkTS(TimeSteppingSolver):
 
         ts = self.ts
 
-        st = NewmarkState(conf.u, conf.v, conf.a)
+        unpack, pack = gen_multi_vec_packing(len(vec0), 3)
 
         gamma = conf.gamma
         beta = conf.beta
 
-        init_hook(ts)
-
-        u0, v0, _ = st.unpack(state0)
+        init_fun(ts)
+        u0, v0, _ = unpack(vec0)
 
         ut = u0
         vt = v0
         at = self.get_a0(nls, u0, v0)
-        state = state0.copy()
 
-        st.pack(state, ut, vt, at)
-        step_hook(ts, state, ic=True)
+        vec = pack(ut, vt, at)
+        poststep_fun(ts, vec, ic=True)
         for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step))
+            output(self.format % (time, step + 1, ts.n_step),
+                   verbose=self.verbose)
             dt = ts.dt
+
+            prestep_fun(ts, vec)
+            ut, vt, at = unpack(vec)
 
             nlst = self.create_nlst(nls, dt, gamma, beta, ut, vt, at)
             atp = nlst(at)
             vtp = nlst.v(atp)
             utp = nlst.u(atp)
 
-            st.pack(state, utp, vtp, atp)
-            step_hook(ts, state)
+            vect = pack(utp, vtp, atp)
+            poststep_fun(ts, vect)
 
-            ut = utp
-            vt = vtp
-            at = atp
+            vec = vect
+
+        return vec
 
 class StationarySolver(TimeSteppingSolver):
     """
