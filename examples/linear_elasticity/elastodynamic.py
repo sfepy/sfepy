@@ -160,7 +160,9 @@ equations = {
 }
 
 solvers = {
-    'ls' : ('ls.scipy_direct', {}),
+    'ls' : ('ls.scipy_direct', {
+        'presolve' : True,
+    }),
     'ls-i' : ('ls.petsc', {
         'method' : 'cg',
         'precond' : 'icc',
@@ -172,7 +174,6 @@ solvers = {
     'newton' : ('nls.newton', {
         'i_max'      : 1,
         'eps_a'      : 1e-6,
-        'is_linear'  : True,
     }),
     # 'tss' : ('ts.simple', {
     #     't0' : 0.0,
@@ -192,9 +193,10 @@ solvers = {
         'dt' : dt,
         'n_step' : None,
 
-        'u' : 'u',
-        'v' : 'du',
-        'a' : 'ddu',
+        'is_linear'  : True,
+
+        'beta' : 0.25,
+        'gamma' : 0.5,
 
         'verbose' : 1,
     }),
@@ -211,6 +213,9 @@ options = {
     'ts' : 'ts',
     'nls' : 'newton',
     'ls' : 'ls-i',
+    #'ls' : 'ls',
+
+    'active_only' : False,
 
     'output_format' : 'h5',
     'output_dir' : 'output/ed',
