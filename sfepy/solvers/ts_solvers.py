@@ -181,13 +181,12 @@ class NewmarkTS(TimeSteppingSolver):
 
         return nlst
 
-    def __call__(self, vec0=None, conf=None, nls=None, init_fun=None,
-                 prestep_fun=None, poststep_fun=None,
-                 status=None, **kwargs):
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
         """
         Solve elastodynamics problems by the Newmark method.
         """
-        conf = get_default(conf, self.conf)
+        conf = self.conf
         nls = get_default(nls, self.nls)
 
         ts = self.ts
