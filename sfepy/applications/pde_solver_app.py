@@ -216,11 +216,30 @@ class PDESolverApp(Application):
             return None, None, None
 
         state0 = tsol.get_initial_state(problem)
+        tss = problem.get_time_solver()
+        problem.time_update(tss.ts) # Only having adi is required here(?)
+        # Init solvers after time_update() to have LCBC evaluator need known.
         problem.init_solvers(nls_status=nls_status)
 
         # Move this into problem - replace Problem.solve() with (?):
         # solve = problem.create_solver(opts)
         # state = solve(state0)
+        def get_vec(state, active_only):
+            if active_only:
+                vec = state.get_reduced()
+
+            else:
+                vec = state()
+
+            return vec
+
+        def set_state(state, vec, active_only):
+            if active_only:
+                state.set_reduced(vec)
+
+            else:
+                state.set_full(vec)
+
         def init_fun(ts):
             if not ts.is_quasistatic:
                 problem.init_time(ts)
@@ -233,15 +252,15 @@ class PDESolverApp(Application):
                 ts.advance()
 
         def prestep_fun(ts, vec):
-            state = state0.copy()
-            state.set_full(vec)
             problem.time_update(ts)
+            state = state0.copy()
+            set_state(state, vec, problem.active_only)
             state.apply_ebc()
             problem.update_materials()
 
         def poststep_fun(ts, vec):
             state = state0.copy()
-            state.set_full(vec)
+            set_state(state, vec, problem.active_only)
             if self.step_hook is not None:
                 self.step_hook(problem, ts, state)
 
@@ -259,14 +278,13 @@ class PDESolverApp(Application):
                                ts=ts)
             problem.advance(ts)
 
-        tss = problem.get_time_solver()
-        vec = tss(state0(), nls=problem.nls,
+        vec = tss(get_vec(state0, problem.active_only), nls=problem.nls,
                   init_fun=init_fun,
                   prestep_fun=prestep_fun,
                   poststep_fun=poststep_fun,
                   status=tss_status)
         state = state0.copy()
-        state.set_full(vec)
+        set_state(state, vec, problem.active_only)
 
         return problem, state
 
