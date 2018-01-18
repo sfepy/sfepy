@@ -218,30 +218,55 @@ class PDESolverApp(Application):
         state0 = tsol.get_initial_state(problem)
         problem.init_solvers(nls_status=nls_status)
 
-        def init_hook(ts):
+        # Move this into problem - replace Problem.solve() with (?):
+        # solve = problem.create_solver(opts)
+        # state = solve(state0)
+        def init_fun(ts):
+            if not ts.is_quasistatic:
+                problem.init_time(ts)
+
+            restart_filename = problem.conf.options.get('load_restart', None)
+            if restart_filename is not None:
+                problem.load_restart(restart_filename, state=state0,
+                                     ts=ts)
+                problem.advance(ts)
+                ts.advance()
+
+        def prestep_fun(ts, vec):
+            state = state0.copy()
+            state.set_full(vec)
             problem.time_update(ts)
+            state.apply_ebc()
             problem.update_materials()
 
-        def step_hook(ts, state, ic=False):
+        def poststep_fun(ts, vec):
+            state = state0.copy()
+            state.set_full(vec)
             if self.step_hook is not None:
                 self.step_hook(problem, ts, state)
 
+            restart_filename = problem.get_restart_filename(ts=ts)
+            if restart_filename is not None:
+                problem.save_restart(restart_filename, state, ts=ts)
+
             suffix, is_save = tsol.prepare_save_data(ts, problem.conf)
-            suffix = 'ic' if ic else suffix % ts.step
+            # base is_save on times, not on steps!
+            suffix = suffix % ts.step
             filename = problem.get_output_name(suffix=suffix)
             problem.save_state(filename, state,
                                post_process_hook=self.post_process_hook,
                                file_per_var=None,
                                ts=ts)
+            problem.advance(ts)
 
         tss = problem.get_time_solver()
-        state = tss(state0, nls=problem.nls,
-                    save_results=opts.save_results,
-                    init_hook=init_hook,
-                    step_hook=step_hook,
-                    post_process_hook=self.post_process_hook,
-                    post_process_hook_final=self.post_process_hook_final,
-                    status=tss_status)
+        vec = tss(state0(), nls=problem.nls,
+                  init_fun=init_fun,
+                  prestep_fun=prestep_fun,
+                  poststep_fun=poststep_fun,
+                  status=tss_status)
+        state = state0.copy()
+        state.set_full(vec)
 
         return problem, state
 
