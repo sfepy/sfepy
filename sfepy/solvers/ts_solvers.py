@@ -142,7 +142,7 @@ class NewmarkTS(TimeSteppingSolver):
         r = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
 
         M = self.get_matrices(nls, vec)[0]
-        a0 = nls.lin_solver(r, mtx=M)
+        a0 = nls.lin_solver(-r, mtx=M)
         output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
