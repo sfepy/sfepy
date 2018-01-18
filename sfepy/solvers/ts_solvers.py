@@ -198,6 +198,8 @@ class NewmarkTS(TimeSteppingSolver):
         beta = conf.beta
 
         init_fun(ts)
+
+        prestep_fun(ts, vec0)
         u0, v0, _ = unpack(vec0)
 
         ut = u0
@@ -205,7 +207,8 @@ class NewmarkTS(TimeSteppingSolver):
         at = self.get_a0(nls, u0, v0)
 
         vec = pack(ut, vt, at)
-        poststep_fun(ts, vec, ic=True)
+        poststep_fun(ts, vec)
+        ts.advance()
         for step, time in ts.iter_from(ts.step):
             output(self.format % (time, step + 1, ts.n_step),
                    verbose=self.verbose)
