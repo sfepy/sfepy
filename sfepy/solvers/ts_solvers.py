@@ -236,37 +236,26 @@ class StationarySolver(TimeSteppingSolver):
 
     __metaclass__ = SolverMeta
 
-    def __init__(self, conf, **kwargs):
-        TimeSteppingSolver.__init__(self, conf, ts=None, **kwargs)
+    def __init__(self, conf, nls=None, context=None, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
+                                    **kwargs)
 
-    def __call__(self, state0=None, save_results=True, step_hook=None,
-                 post_process_hook=None, nls_status=None):
-        problem = self.problem
+        self.ts = TimeStepper(0.0, 1.0, n_step=1)
 
-        restart_filename = problem.conf.options.get('load_restart', None)
-        if restart_filename is not None:
-            state = problem.load_restart(restart_filename, state=state0)
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        ts = self.ts
+        nls = get_default(nls, self.nls)
 
-        else:
-            state = problem.solve(state0=state0, nls_status=nls_status)
+        init_fun(ts)
 
-        if step_hook is not None:
-            step_hook(problem, None, state)
+        prestep_fun(ts, vec0)
 
-        restart_filename = problem.get_restart_filename()
-        if restart_filename is not None:
-            problem.save_restart(restart_filename, state)
+        vec = nls(vec0)
 
-        if save_results:
-            problem.save_state(problem.get_output_name(), state,
-                               post_process_hook=post_process_hook,
-                               file_per_var=None)
+        poststep_fun(ts, vec)
 
-        yield 0, 0.0, state
-
-    def init_time(self, nls_status=None):
-        self.problem.time_update()
-        self.problem.init_solvers(nls_status=nls_status)
+        return vec
 
 def replace_virtuals(deps, pairs):
     out = {}
