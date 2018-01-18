@@ -87,9 +87,6 @@ class NewmarkTS(TimeSteppingSolver):
          'The time step. Used if `n_step` is not given.'),
         ('n_step', 'int', 10, False,
          'The number of time steps. Has precedence over `dt`.'),
-        ('quasistatic', 'bool', False, False,
-         """If True, the non-linear solver is invoked also for
-         the initial time."""),
         ('is_linear', 'bool', False, False,
          'If True, the problem is considered to be linear.'),
         ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
@@ -99,7 +96,7 @@ class NewmarkTS(TimeSteppingSolver):
     def __init__(self, conf, nls=None, context=None, **kwargs):
         TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
                                     **kwargs)
-
+        self.conf.quasistatic = False
         self.ts = TimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
