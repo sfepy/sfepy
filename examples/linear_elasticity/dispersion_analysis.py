@@ -385,18 +385,22 @@ def main():
     mtx_m = pb.mtx_a.copy()
     eq_m = pb.equations['M']
     mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
+    mtx_m.eliminate_zeros()
 
     mtx_k = pb.mtx_a.copy()
     eq_k = pb.equations['K']
     mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
+    mtx_k.eliminate_zeros()
 
     mtx_s = pb.mtx_a.copy()
     eq_s = pb.equations['S']
     mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
+    mtx_s.eliminate_zeros()
 
     mtx_r = pb.mtx_a.copy()
     eq_r = pb.equations['R']
     mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
+    mtx_r.eliminate_zeros()
 
     output('symmetry checks of real blocks:')
     output('M - M^T:', _max_diff_csr(mtx_m, mtx_m.T))
