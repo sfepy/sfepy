@@ -221,6 +221,10 @@ class PDESolverApp(Application):
         # Init solvers after time_update() to have LCBC evaluator need known.
         problem.init_solvers(nls_status=nls_status)
 
+        if problem.is_linear():
+            mtx = tsol.prepare_matrix(problem, state0)
+            problem.try_presolve(mtx)
+
         # Move this into problem - replace Problem.solve() with (?):
         # solve = problem.create_solver(opts)
         # state = solve(state0)
@@ -240,7 +244,7 @@ class PDESolverApp(Application):
             else:
                 state.set_full(vec)
 
-        def init_fun(ts):
+        def init_fun(ts, vec0):
             if not ts.is_quasistatic:
                 problem.init_time(ts)
 
@@ -250,6 +254,9 @@ class PDESolverApp(Application):
                                      ts=ts)
                 problem.advance(ts)
                 ts.advance()
+                vec0 = get_vec(problem.create_state(), problem.active_only)
+
+            return vec0
 
         def prestep_fun(ts, vec):
             problem.time_update(ts)
