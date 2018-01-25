@@ -536,6 +536,13 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
         return vec
 
+    def solve_step(self, ts, nls, vec):
+        return nls(vec)
+
+    def output_step_info(self, ts):
+        output(self.format % (ts.time, ts.step + 1, ts.n_step),
+               verbose=self.verbose)
+
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
                  poststep_fun=None, status=None, **kwargs):
         """
@@ -546,8 +553,7 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
         vec0 = init_fun(ts, vec0)
 
-        output(self.format % (ts.time, ts.step + 1, ts.n_step),
-               verbose=self.verbose)
+        self.output_step_info(ts)
         if ts.step == 0:
             prestep_fun(ts, vec0)
 
@@ -560,12 +566,11 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
             vec = vec0
 
         for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step),
-                   verbose=self.verbose)
+            self.output_step_info(ts)
 
             prestep_fun(ts, vec)
 
-            vect = nls(vec)
+            vect = self.solve_step(ts, nls, vec)
 
             poststep_fun(ts, vect)
 
