@@ -193,18 +193,25 @@ class NewmarkTS(TimeSteppingSolver):
         gamma = conf.gamma
         beta = conf.beta
 
-        init_fun(ts)
+        vec0 = init_fun(ts, vec0)
 
-        prestep_fun(ts, vec0)
-        u0, v0, _ = unpack(vec0)
+        output(self.format % (ts.time, ts.step + 1, ts.n_step),
+               verbose=self.verbose)
+        if ts.step == 0:
+            prestep_fun(ts, vec0)
+            u0, v0, _ = unpack(vec0)
 
-        ut = u0
-        vt = v0
-        at = self.get_a0(nls, u0, v0)
+            ut = u0
+            vt = v0
+            at = self.get_a0(nls, u0, v0)
 
-        vec = pack(ut, vt, at)
-        poststep_fun(ts, vec)
-        ts.advance()
+            vec = pack(ut, vt, at)
+            poststep_fun(ts, vec)
+            ts.advance()
+
+        else:
+            vec = vec0
+
         for step, time in ts.iter_from(ts.step):
             output(self.format % (time, step + 1, ts.n_step),
                    verbose=self.verbose)
@@ -247,7 +254,7 @@ class StationarySolver(TimeSteppingSolver):
         ts = self.ts
         nls = get_default(nls, self.nls)
 
-        init_fun(ts)
+        vec0 = init_fun(ts, vec0)
 
         prestep_fun(ts, vec0)
 
