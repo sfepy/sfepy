@@ -513,79 +513,65 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
             solver is invoked also for the initial time."""),
     ]
 
-    def __init__(self, conf, **kwargs):
-        TimeSteppingSolver.__init__(self, conf, **kwargs)
-
+    def __init__(self, conf, nls=None, context=None, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
+                                    **kwargs)
         self.ts = TimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
         format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
 
         self.format = format
+        self.verbose = self.conf.verbose
 
-    def __call__(self, state0=None, save_results=True, step_hook=None,
-                 post_process_hook=None, nls_status=None):
+    def solve_step0(self, nls, vec0):
+        if self.conf.quasistatic:
+            vec = nls(vec0)
+
+        else:
+            res = nls.fun(vec0)
+            err = nm.linalg.norm(res)
+            output('initial residual: %e' % err, verbose=self.verbose)
+            vec = vec0.copy()
+
+        return vec
+
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
         """
         Solve the time-dependent problem.
         """
-        problem = self.problem
         ts = self.ts
+        nls = get_default(nls, self.nls)
 
-        suffix, is_save = prepare_save_data(ts, problem.conf)
+        vec0 = init_fun(ts, vec0)
 
-        if state0 is None:
-            state0 = get_initial_state(problem)
+        output(self.format % (ts.time, ts.step + 1, ts.n_step),
+               verbose=self.verbose)
+        if ts.step == 0:
+            prestep_fun(ts, vec0)
 
-        restart_filename = problem.conf.options.get('load_restart', None)
-        if restart_filename is not None:
-            state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
-            problem.advance(ts)
+            vec = self.solve_step0(nls, vec0)
+
+            poststep_fun(ts, vec)
             ts.advance()
 
-        ii = 0 # Broken with restart.
+        else:
+            vec = vec0
+
         for step, time in ts.iter_from(ts.step):
-            output(self.format % (time, step + 1, ts.n_step))
+            output(self.format % (time, step + 1, ts.n_step),
+                   verbose=self.verbose)
 
-            state = self.solve_step(ts, state0, nls_status=nls_status)
-            state0 = state.copy(deep=True)
+            prestep_fun(ts, vec)
 
-            if step_hook is not None:
-                step_hook(problem, ts, state)
+            vect = nls(vec)
 
-            restart_filename = problem.get_restart_filename(ts=ts)
-            if restart_filename is not None:
-                problem.save_restart(restart_filename, state, ts=ts)
+            poststep_fun(ts, vect)
 
-            if save_results and (is_save[ii] == ts.step):
-                filename = problem.get_output_name(suffix=suffix % ts.step)
-                problem.save_state(filename, state,
-                                   post_process_hook=post_process_hook,
-                                   file_per_var=None,
-                                   ts=ts)
-                ii += 1
+            vec = vect
 
-            yield step, time, state
-
-            problem.advance(ts)
-
-    def init_time(self, nls_status=None):
-        ts = self.ts
-        problem = self.problem
-
-        problem.time_update(ts)
-        problem.init_solvers(nls_status=nls_status)
-
-        if not ts.is_quasistatic:
-            problem.init_time(ts)
-
-    def solve_step(self, ts, state0, nls_status=None):
-        """
-        Solve a single time step.
-        """
-        state = make_implicit_step(ts, state0, self.problem,
-                                   nls_status=nls_status)
-
-        return state
+        return vec
 
 class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
     """
