@@ -428,7 +428,7 @@ def get_min_dt(adt):
 
     return dt
 
-def adapt_time_step(ts, status, adt, problem=None):
+def adapt_time_step(ts, status, adt, context=None, verbose=False):
     """
     Adapt the time step of `ts` according to the exit status of the
     nonlinear solver.
@@ -453,8 +453,9 @@ def adapt_time_step(ts, status, adt, problem=None):
         The nonlinear solver exit status.
     adt : Struct instance
         The adaptivity parameters of the time solver:
-    problem : Problem instance, optional
-        This canbe used in user-defined adaptivity functions. Not used here.
+    context : object, optional
+        The context can be used in user-defined adaptivity functions. Not used
+        here.
 
     Returns
     -------
@@ -471,7 +472,8 @@ def adapt_time_step(ts, status, adt, problem=None):
                 if adt.red < 1.0:
                     adt.red = adt.red * adt.inc_factor
                     ts.set_time_step(adt.dt0 * adt.red)
-                    output('+++++ new time step: %e +++++' % ts.dt)
+                    output('+++++ new time step: %e +++++' % ts.dt,
+                           verbose=verbose)
                 adt.wait = 0
 
         else:
@@ -486,7 +488,8 @@ def adapt_time_step(ts, status, adt, problem=None):
 
         else:
             ts.set_time_step(adt.dt0 * adt.red, update_time=True)
-            output('----- new time step: %e -----' % ts.dt)
+            output('----- new time step: %e -----' % ts.dt,
+                   verbose=verbose)
             adt.wait = 0
 
     return is_break
@@ -590,12 +593,16 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
     __metaclass__ = SolverMeta
 
     _parameters = SimpleTimeSteppingSolver._parameters + [
-        ('adapt_fun', 'callable(ts, status, adt, problem)', None, False,
+        ('adapt_fun', 'callable(ts, status, adt, context, verbose)',
+         None, False,
          """If given, use this function to set the time step in `ts`. The
             function return value is a bool - if True, the adaptivity loop
             should stop. The other parameters below are collected in `adt`,
-            `status` is the nonlinear solver status and `problem` is the
-            :class:`Problem <sfepy.discrete.problem.Problem>` instance."""),
+            `status` is the nonlinear solver status, `context` is
+            a user-defined context and `verbose` is a verbosity flag.
+            Solvers created by
+            :class:`Problem <sfepy.discrete.problem.Problem>` use the
+            Problem instance as the context."""),
         ('dt_red_factor', 'float', 0.2, False,
          'The time step reduction factor.'),
         ('dt_red_max', 'float', 1e-3, False,
@@ -610,8 +617,9 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
          'The number of consecutive time steps, see `dt_inc_on_iter`.'),
     ]
 
-    def __init__(self, conf, **kwargs):
-        TimeSteppingSolver.__init__(self, conf, **kwargs)
+    def __init__(self, conf, nls=None, context=None, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
+                                    **kwargs)
 
         self.ts = VariableTimeStepper.from_conf(self.conf)
 
@@ -628,69 +636,28 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
         self.ts.set_n_digit_from_min_dt(get_min_dt(adt))
 
         self.format = '====== time %e (dt %e, wait %d, step %d of %d) ====='
+        self.verbose = self.conf.verbose
 
-        if isinstance(self.conf.adapt_fun, basestr):
-            self.adapt_time_step = self.problem.functions[self.conf.adapt_fun]
+        self.adapt_time_step = self.conf.adapt_fun
+        if self.adapt_time_step is None:
+            self.adapt_time_step = adapt_time_step
 
-        else:
-            self.adapt_time_step = self.conf.adapt_fun
-
-    def __call__(self, state0=None, save_results=True, step_hook=None,
-                 post_process_hook=None, nls_status=None):
-        """
-        Solve the time-dependent problem.
-        """
-        problem = self.problem
-        ts = self.ts
-
-        if state0 is None:
-            state0 = get_initial_state(problem)
-
-        restart_filename = problem.conf.options.get('load_restart', None)
-        if restart_filename is not None:
-            state0 = problem.load_restart(restart_filename, state=state0, ts=ts)
-            problem.advance(ts)
-            ts.advance()
-
-        for step, time in ts.iter_from_current():
-            output(self.format % (time, ts.dt, self.adt.wait,
-                                  step + 1, ts.n_step))
-
-            state = self.solve_step(ts, state0, nls_status=nls_status)
-            state0 = state.copy(deep=True)
-
-            if step_hook is not None:
-                step_hook(problem, ts, state)
-
-            restart_filename = problem.get_restart_filename(ts=ts)
-            if restart_filename is not None:
-                problem.save_restart(restart_filename, state, ts=ts)
-
-            if save_results:
-                filename = problem.get_output_name(suffix=ts.suffix % ts.step)
-                problem.save_state(filename, state,
-                                   post_process_hook=post_process_hook,
-                                   file_per_var=None,
-                                   ts=ts)
-
-            yield step, time, state
-
-            problem.advance(ts)
-
-    def solve_step(self, ts, state0, nls_status=None):
+    def solve_step(self, ts, nls, vec):
         """
         Solve a single time step.
         """
         status = IndexedStruct(n_iter=0, condition=0)
         while 1:
-            state = make_implicit_step(ts, state0, self.problem,
-                                       nls_status=status)
+            vect = nls(vec, status=status)
 
-            is_break = self.adapt_time_step(ts, status, self.adt, self.problem)
+            is_break = self.adapt_time_step(ts, status, self.adt, self.context,
+                                            verbose=self.verbose)
             if is_break:
                 break
 
-        if nls_status is not None:
-            nls_status.update(status)
+        return vect
 
-        return state
+    def output_step_info(self, ts):
+        output(self.format % (ts.time, ts.dt, self.adt.wait,
+                              ts.step + 1, ts.n_step),
+               verbose=self.verbose)
