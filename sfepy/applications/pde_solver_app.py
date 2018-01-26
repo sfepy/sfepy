@@ -239,7 +239,7 @@ class PDESolverApp(Application):
 
         def set_state(state, vec, active_only):
             if active_only:
-                state.set_reduced(vec)
+                state.set_reduced(vec, preserve_caches=True)
 
             else:
                 state.set_full(vec)
@@ -266,7 +266,7 @@ class PDESolverApp(Application):
             problem.update_materials()
 
         def poststep_fun(ts, vec):
-            state = state0.copy()
+            state = state0.copy(preserve_caches=True)
             set_state(state, vec, problem.active_only)
             if self.step_hook is not None:
                 self.step_hook(problem, ts, state)
