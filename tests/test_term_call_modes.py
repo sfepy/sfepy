@@ -307,7 +307,7 @@ class Test(TestCommon):
 
                 _ok = status == 0
                 if not _ok:
-                    self.report('status is %d!' % status)
+                    self.report('status is %s!' % status)
 
                 ok = ok and _ok
 
@@ -327,7 +327,7 @@ class Test(TestCommon):
                         ok = ok and _ok
                         self.report('diff: %s' % svar.name)
                         if not _ok:
-                            self.report('status is %d!' % status)
+                            self.report('status is %s!' % status)
 
                         _ok = nm.isfinite(vals).all()
                         ok = ok and _ok
