@@ -293,6 +293,9 @@ class PDESolverApp(Application):
         state = state0.copy()
         set_state(state, vec, problem.active_only)
 
+        if self.post_process_hook_final is not None: # User postprocessing.
+            self.post_process_hook_final(problem, state)
+
         return problem, state
 
     def save_dict(self, filename, data):
