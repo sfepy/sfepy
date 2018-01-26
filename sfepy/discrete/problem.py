@@ -651,7 +651,8 @@ class Problem(Struct):
         self.graph_changed = graph_changed
 
         if (is_matrix
-            and (graph_changed or (self.mtx_a is None) or create_matrix)):
+            and ((self.active_only and graph_changed)
+                 or (self.mtx_a is None) or create_matrix)):
             self.mtx_a = self.equations.create_matrix_graph(active_only=ac)
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
