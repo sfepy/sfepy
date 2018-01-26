@@ -539,7 +539,7 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
         return vec
 
-    def solve_step(self, ts, nls, vec):
+    def solve_step(self, ts, nls, vec, prestep_fun=None):
         return nls(vec)
 
     def output_step_info(self, ts):
@@ -573,7 +573,7 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
 
             prestep_fun(ts, vec)
 
-            vect = self.solve_step(ts, nls, vec)
+            vect = self.solve_step(ts, nls, vec, prestep_fun)
 
             poststep_fun(ts, vect)
 
@@ -642,7 +642,7 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
         if self.adapt_time_step is None:
             self.adapt_time_step = adapt_time_step
 
-    def solve_step(self, ts, nls, vec):
+    def solve_step(self, ts, nls, vec, prestep_fun):
         """
         Solve a single time step.
         """
@@ -652,8 +652,11 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
 
             is_break = self.adapt_time_step(ts, status, self.adt, self.context,
                                             verbose=self.verbose)
+
             if is_break:
                 break
+
+            prestep_fun(ts, vec)
 
         return vect
 
