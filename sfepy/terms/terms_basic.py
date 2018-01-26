@@ -26,6 +26,8 @@ class ZeroTerm(Term):
     def function(out):
         out.fill(0.0)
 
+        return 0
+
     def get_fargs(self, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         return ()
