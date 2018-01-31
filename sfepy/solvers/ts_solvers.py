@@ -438,12 +438,12 @@ def adapt_time_step(ts, status, adt, context=None, verbose=False):
     steps, the time step is increased. This is governed by the following
     parameters:
 
-    - red_factor : time step reduction factor
-    - red_max : maximum time step reduction factor
-    - inc_factor : time step increase factor
-    - inc_on_iter : increase time step if the nonlinear solver converged in
+    - `red_factor` : time step reduction factor
+    - `red_max` : maximum time step reduction factor
+    - `inc_factor` : time step increase factor
+    - `inc_on_iter` : increase time step if the nonlinear solver converged in
       less than this amount of iterations...
-    - inc_wait : ...for this number of consecutive time steps
+    - `inc_wait` : ...for this number of consecutive time steps
 
     Parameters
     ----------
@@ -452,7 +452,8 @@ def adapt_time_step(ts, status, adt, context=None, verbose=False):
     status : IndexedStruct instance
         The nonlinear solver exit status.
     adt : Struct instance
-        The adaptivity parameters of the time solver:
+        The object with the adaptivity parameters of the time-stepping solver
+        such as `red_factor` (see above) as attributes.
     context : object, optional
         The context can be used in user-defined adaptivity functions. Not used
         here.
