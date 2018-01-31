@@ -81,6 +81,12 @@ The agreement should be very good, even though the mesh is coarse.
 View the results using::
 
   python postproc.py unit_ball.h5 --wireframe -b -d'u,plot_displacements,rel_scaling=1' --step=-1
+
+This example uses the adaptive time-stepping solver (``'ts.adaptive'``) with
+the default adaptivity function :func:`adapt_time_step()
+<sfepy.solvers.ts_solvers.adapt_time_step>`. Plot the used time steps by::
+
+  python script/plot_times.py unit_ball.h5
 """
 from __future__ import absolute_import
 import os
@@ -254,7 +260,7 @@ def define(plot=False):
     solvers = {
         'ls' : ('ls.scipy_direct', {}),
         'newton' : ('nls.newton', {
-            'i_max'      : 15,
+            'i_max'      : 6,
             'eps_a'      : 1e-4,
             'eps_r'      : 1e-8,
             'macheps'    : 1e-16,
@@ -268,11 +274,20 @@ def define(plot=False):
             'is_plot'    : False,
             'problem'    : 'nonlinear',
         }),
-        'ts' : ('ts.simple', {
-            't0'     : 0.0,
-            't1'     : 6.0,
-            'dt'     : None,
-            'n_step' : 31, # has precedence over dt!
+        'ts' : ('ts.adaptive', {
+            't0' : 0.0,
+            't1' : 5.0,
+            'dt' : None,
+            'n_step' : 11,
+
+            'dt_red_factor' : 0.8,
+            'dt_red_max' : 1e-3,
+            'dt_inc_factor' : 1.25,
+            'dt_inc_on_iter' : 4,
+            'dt_inc_wait' : 3,
+
+            'verbose' : 1,
+            'quasistatic' : True,
         }),
     }
 
