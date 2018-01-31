@@ -23,6 +23,8 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'ts' : 'ts',
+
+    'active_only' : False,
 }
 
 regions = {
