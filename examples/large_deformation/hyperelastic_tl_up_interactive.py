@@ -110,10 +110,6 @@ from sfepy.terms import Term
 
 DIMENSION = 3
 
-# Material parameters:
-C10 = 20.
-C01 = 10.
-
 def get_displacement(ts, coors, bc=None, problem=None):
     """
     Define time-dependent displacement
@@ -121,13 +117,17 @@ def get_displacement(ts, coors, bc=None, problem=None):
     out = 1. * ts.time * coors[:, 0]
     return out
 
-def plot_graphs(global_stress, global_displacement, undeformed_lenght=1.0):
+def plot_graphs(
+        material_parameters, global_stress, global_displacement,
+        undeformed_lenght=1.0):
+    c10, c01 = material_parameters
+
     stretch = 1 + np.array(global_displacement) / undeformed_lenght
 
     # axial stress values
     stress_fem_2pk = np.array([sig for sig in global_stress])
     stress_fem = stress_fem_2pk * stretch**2
-    stress_analytic = 2 * (C10 + C01/stretch) * (stretch**2 - 1./stretch)
+    stress_analytic = 2 * (c10 + c01/stretch) * (stretch**2 - 1./stretch)
 
     fig = plt.figure()
     ax_stress = fig.add_subplot(211)
@@ -176,7 +176,9 @@ def stress_strain(
 
     return out
 
-def main(dims=None, shape=None, centre=None, order=1, ts=None, do_plot=True):
+def main(
+        dims=None, shape=None, centre=None, material_parameters=None, order=1,
+        ts=None, do_plot=True):
     if dims is None: dims = [1.0, 1.0, 1.0]
     if shape is None: shape = [4, 4, 4]
     if centre is None: centre = [0.5*dim for dim in dims]
@@ -207,8 +209,9 @@ def main(dims=None, shape=None, centre=None, order=1, ts=None, do_plot=True):
     q = FieldVariable('q', 'test', scalar_field, primary_var_name='p')
 
     ### Material ###
+    c10, c01 = material_parameters
     m = Material(
-        'm', mu=2*C10, kappa=2*C01,
+        'm', mu=2*c10, kappa=2*c01,
     )
 
     ### Boundary conditions ###
@@ -274,13 +277,20 @@ def main(dims=None, shape=None, centre=None, order=1, ts=None, do_plot=True):
         pass
 
     if do_plot:
-        plot_graphs(axial_stress, axial_displacement, undeformed_lenght=dims[0])
+        plot_graphs(
+            material_parameters, axial_stress, axial_displacement,
+            undeformed_lenght=dims[0])
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--order', type=int, default=1,
         help='Approximation order of displacements [default: %(default)s]')
+    parser.add_argument(
+        '-m', '--material-parameters', metavar=('C10', 'C01'), type=float,
+        nargs=2, default=[1.0, 0.5],
+        help='Material parameters - C10, C01 - of the two-parametric '
+        'Mooney-Rivlin hyperelastic model. [default: %(default)s]')
     parser.add_argument(
         '--dims', metavar=('DIM_X', 'DIM_Y', 'DIM_Z'), action='store',
         dest='dims', type=float, nargs=DIMENSION, default=[1.0, 1.0, 1.0],
@@ -312,6 +322,7 @@ if __name__ == '__main__':
         't0' : float(ts_vals[0]), 't1' : float(ts_vals[1]),
         'n_step' : int(ts_vals[2])}
     main(
-        dims=args.dims, shape=args.shape, centre=args.centre, order=args.order,
+        dims=args.dims, shape=args.shape, centre=args.centre,
+        material_parameters=args.material_parameters, order=args.order,
         ts=ts_dict, do_plot=args.plot,
     )
