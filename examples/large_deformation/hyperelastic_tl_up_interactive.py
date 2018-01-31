@@ -9,7 +9,7 @@ given by
 
 where :math:`\overline I_1` and :math:`\overline I_2` are the first
 and second main invariants of the deviatoric part of the right
-Cauchy-Green deformation tensor :math:`\overline{\bf C}`. The coefficients
+Cauchy-Green deformation tensor :math:`\overline{\ull{C}}`. The coefficients
 :math:`C_{(10)}` and :math:`C_{(01)}` are material parameters.
 
 Components of the second Piola-Kirchhoff stress are in the case of an
@@ -20,8 +20,8 @@ incompressible material
 
 where :math:`p` is the hydrostatic pressure.
 
-Large deformation is described using the total Lagrangian formulation in this
-example. Incompressibility is treated by mixed displacement-pressure
+The large deformation is described using the total Lagrangian formulation in
+this example. The incompressibility is treated by mixed displacement-pressure
 formulation. The weak formulation is:
 Find the displacement field :math:`\ul{u}` and pressure field :math:`p`
 such that:
@@ -34,8 +34,8 @@ such that:
     \intl{\Omega\suz}{} q\, (J(\ul{u})-1) \difd{V} = 0
     \;, \quad \forall q \;.
 
-Following formula holds for axial true (Cauchy) stress in the case of uniaxial
-stress:
+The following formula holds for the axial true (Cauchy) stress in the case of
+uniaxial stress:
 
 .. math::
     \sigma(\lambda) =
@@ -47,16 +47,19 @@ where :math:`\lambda = l/l_0` is the prescribed stretch (:math:`l_0` and
 
 The boundary conditions are set so that a state of uniaxial stress is achieved,
 i.e. appropriate components of displacement are fixed on the "Left", "Bottom",
-and "Near" faces and monotonously increasing displacement is prescribed on the
-"Right" face. This prescribed displacement is then used to calculate
-:math:`\lambda` and to convert second Piola-Kirchhoff stress to true (Cauchy)
-stress.
+and "Near" faces and a monotonously increasing displacement is prescribed on
+the "Right" face. This prescribed displacement is then used to calculate
+:math:`\lambda` and to convert the second Piola-Kirchhoff stress to the true
+(Cauchy) stress.
 
-**Note**
+Note on material parameters
+---------------------------
 
 The relationship between material parameters used in the *SfePy* hyperelastic
-terms (:class:`NeoHookeanTLTerm <sfepy.terms.terms_hyperelastic_tl.NeoHookeanTLTerm>`,
-:class:`MooneyRivlinTLTerm <sfepy.terms.terms_hyperelastic_tl.MooneyRivlinTLTerm>`)
+terms (:class:`NeoHookeanTLTerm
+<sfepy.terms.terms_hyperelastic_tl.NeoHookeanTLTerm>`,
+:class:`MooneyRivlinTLTerm
+<sfepy.terms.terms_hyperelastic_tl.MooneyRivlinTLTerm>`)
 and the ones used in this example is:
 
 .. math::
@@ -64,7 +67,8 @@ and the ones used in this example is:
 
     \kappa = 2\, C_{(01)} \;.
 
-**Usage Examples**
+Usage Examples
+--------------
 
 Default options::
 
@@ -76,15 +80,28 @@ To show a comparison of stress against the analytic formula::
 
 Using different mesh fineness::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py --shape 5 5 5
+  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+    --shape 5 5 5
 
 Different dimensions of the computational domain::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py --dims 2 1 3
+  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+    --dims 2 1 3
 
 Different length of time interval and/or number of time steps::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py -t 0,15,21
+  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+    -t 0,15,21
+
+Use higher approximation order (the ``-t`` option to decrease the time step is
+required for convergence here)::
+
+  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
+    --order 2 -t 0,2,21
+
+Change material parameters::
+
+  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py -m 2 1
 """
 from __future__ import print_function, absolute_import
 import argparse
@@ -120,6 +137,21 @@ def get_displacement(ts, coors, bc=None, problem=None):
 def plot_graphs(
         material_parameters, global_stress, global_displacement,
         undeformed_lenght=1.0):
+    """
+    Plot a comparison of true stress computed by FEM and using an analytic
+    formula.
+
+    Parameters
+    ----------
+    material_parameters : list or tuple of float
+        C10 and C01 coefficients
+    global_displacement
+        Total displacement for each time step, from FEM
+    global_stress
+        True (Cauchy) stress for each time step, from FEM
+    undeformed_lenght : float
+        Length of undeformed specimen
+    """
     c10, c01 = material_parameters
 
     stretch = 1 + np.array(global_displacement) / undeformed_lenght
@@ -150,6 +182,25 @@ def plot_graphs(
 def stress_strain(
         out, problem, _state, order=1, global_stress=None,
         global_displacement=None, **_):
+    """
+    Compute stress and strain and add them to output.
+
+    Parameters
+    ----------
+    out : dict
+        Holds results of finite element computation
+    problem : sfepy.discrete.Problem
+    order : int
+        Approximation order of displacements
+    global_displacement
+        Total displacement for each time step, current value will be appended
+    global_stress
+        True (Cauchy) stress for each time step, current value will be appended
+
+    Returns
+    -------
+    out : dict
+    """
     strain = problem.evaluate(
         'dw_tl_he_neohook.%d.Omega(m.mu, v, u)' % (2*order),
         mode='el_avg', term_mode='strain', copy_materials=False)
@@ -225,7 +276,8 @@ def main(cli_args):
     y_sym = EssentialBC('y_sym', regions['Near'], {'u.1' : 0.0})
     z_sym = EssentialBC('z_sym', regions['Bottom'], {'u.2' : 0.0})
     disp_fun = Function('disp_fun', get_displacement)
-    displacement = EssentialBC('displacement', regions['Right'], {'u.0' : disp_fun})
+    displacement = EssentialBC(
+        'displacement', regions['Right'], {'u.0' : disp_fun})
     ebcs = Conditions([x_sym, y_sym, z_sym, displacement])
 
     ### Terms and equations ###
@@ -288,6 +340,7 @@ def main(cli_args):
             undeformed_lenght=dims[0])
 
 def parse_args():
+    """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--order', type=int, default=1,
