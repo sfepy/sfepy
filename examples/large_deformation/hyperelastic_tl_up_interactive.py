@@ -176,13 +176,19 @@ def stress_strain(
 
     return out
 
-def main(
-        dims=None, shape=None, centre=None, material_parameters=None, order=1,
-        ts=None, do_plot=True):
-    if dims is None: dims = [1.0, 1.0, 1.0]
-    if shape is None: shape = [4, 4, 4]
-    if centre is None: centre = [0.5*dim for dim in dims]
-    if ts is None: ts = {'t0' : 0.0, 't1' : 10.0, 'n_steps' : 11}
+def main(cli_args):
+    dims = cli_args.dims
+    shape = cli_args.shape
+    centre = cli_args.centre
+    material_parameters = cli_args.material_parameters
+    order = cli_args.order
+
+    ts_vals = cli_args.ts.split(',')
+    ts = {
+        't0' : float(ts_vals[0]), 't1' : float(ts_vals[1]),
+        'n_step' : int(ts_vals[2])}
+
+    do_plot = cli_args.plot
 
     ### Mesh and regions ###
     mesh = gen_block_mesh(
@@ -317,12 +323,4 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    ts_vals = args.ts.split(',')
-    ts_dict = {
-        't0' : float(ts_vals[0]), 't1' : float(ts_vals[1]),
-        'n_step' : int(ts_vals[2])}
-    main(
-        dims=args.dims, shape=args.shape, centre=args.centre,
-        material_parameters=args.material_parameters, order=args.order,
-        ts=ts_dict, do_plot=args.plot,
-    )
+    main(args)
