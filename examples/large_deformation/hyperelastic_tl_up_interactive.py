@@ -330,7 +330,7 @@ def main(cli_args):
             *args, order=order, global_stress=axial_stress,
             global_displacement=axial_displacement, **kwargs)
 
-    for step, time, state in tss(
+    for _ in tss(
             save_results=True, post_process_hook=stress_strain_fun):
         pass
 
