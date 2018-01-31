@@ -121,7 +121,7 @@ def get_displacement(ts, coors, bc=None, problem=None):
     out = 1. * ts.time * coors[:, 0]
     return out
 
-def plot_graphs(undeformed_lenght=1.0):
+def plot_graphs(global_stress, global_displacement, undeformed_lenght=1.0):
     stretch = 1 + np.array(global_displacement) / undeformed_lenght
 
     # axial stress values
@@ -147,10 +147,9 @@ def plot_graphs(undeformed_lenght=1.0):
     ax_difference.grid()
     plt.show()
 
-global_stress = []
-global_displacement = []
-
-def stress_strain(out, problem, _state, order=1, **_):
+def stress_strain(
+        out, problem, _state, order=1, global_stress=None,
+        global_displacement=None, **_):
     strain = problem.evaluate(
         'dw_tl_he_neohook.%d.Omega(m.mu, v, u)' % (2*order),
         mode='el_avg', term_mode='strain', copy_materials=False)
@@ -263,15 +262,19 @@ def main(dims=None, shape=None, centre=None, order=1, ts=None, do_plot=True):
     tss.init_time()
 
     ### Solution ###
+    axial_stress = []
+    axial_displacement = []
     def stress_strain_fun(*args, **kwargs):
-        return stress_strain(*args, order=order, **kwargs)
+        return stress_strain(
+            *args, order=order, global_stress=axial_stress,
+            global_displacement=axial_displacement, **kwargs)
 
     for step, time, state in tss(
             save_results=True, post_process_hook=stress_strain_fun):
         pass
 
     if do_plot:
-        plot_graphs(undeformed_lenght=dims[0])
+        plot_graphs(axial_stress, axial_displacement, undeformed_lenght=dims[0])
 
 def parse_args():
     parser = argparse.ArgumentParser()
