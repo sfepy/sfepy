@@ -58,6 +58,38 @@ def _cache(obj, attr, dep):
         return new_fun
     return decorate
 
+def standard_ts_call(call):
+    """
+    Decorator handling argument preparation and timing for time-stepping
+    solvers.
+    """
+    import time
+
+    def _standard_ts_call(self, vec0=None, nls=None,
+                         init_fun=None, prestep_fun=None, poststep_fun=None,
+                         status=None, **kwargs):
+        tt = time.clock()
+
+        nls = get_default(nls, self.nls,
+                          'nonlinear solver has to be specified!')
+
+        init_fun = get_default(init_fun, lambda ts, vec0: vec0)
+        prestep_fun = get_default(prestep_fun, lambda ts, vec: None)
+        poststep_fun = get_default(poststep_fun, lambda ts, vec: None)
+
+        result = call(self, vec0=vec0, nls=nls, init_fun=init_fun,
+                      prestep_fun=prestep_fun, poststep_fun=poststep_fun,
+                      status=status, **kwargs)
+
+        ttt = time.clock() - tt
+        if status is not None:
+            status['time'] = ttt
+            status['n_step'] = self.ts.n_step
+
+        return result
+
+    return _standard_ts_call
+
 class NewmarkTS(TimeSteppingSolver):
     """
     Assumes block-diagonal matrix in `u`, `v`, `a`.
@@ -178,6 +210,7 @@ class NewmarkTS(TimeSteppingSolver):
 
         return nlst
 
+    @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
                  poststep_fun=None, status=None, **kwargs):
         """
@@ -188,12 +221,12 @@ class NewmarkTS(TimeSteppingSolver):
 
         ts = self.ts
 
+        vec0 = init_fun(ts, vec0)
+
         unpack, pack = gen_multi_vec_packing(len(vec0), 3)
 
         gamma = conf.gamma
         beta = conf.beta
-
-        vec0 = init_fun(ts, vec0)
 
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
                verbose=self.verbose)
@@ -249,6 +282,7 @@ class StationarySolver(TimeSteppingSolver):
 
         self.ts = TimeStepper(0.0, 1.0, n_step=1)
 
+    @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
                  poststep_fun=None, status=None, **kwargs):
         ts = self.ts
@@ -547,6 +581,7 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
                verbose=self.verbose)
 
+    @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
                  poststep_fun=None, status=None, **kwargs):
         """
