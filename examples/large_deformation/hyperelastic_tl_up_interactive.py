@@ -98,8 +98,7 @@ import numpy as np
 
 from sfepy.base.base import IndexedStruct, Struct
 from sfepy.discrete import (
-    FieldVariable, Material, Integral, Function,
-    Equation, Equations, Problem)
+    FieldVariable, Material, Integral, Function, Equation, Equations, Problem)
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.discrete.fem import FEDomain, Field
 from sfepy.homogenization.utils import define_box_regions
@@ -110,8 +109,6 @@ from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.terms import Term
 
 DIMENSION = 3
-ORDER = 1
-MAX_TIME = 10.
 
 # Material parameters:
 C10 = 20.
@@ -153,22 +150,22 @@ def plot_graphs(undeformed_lenght=1.0):
 global_stress = []
 global_displacement = []
 
-def stress_strain(out, problem, _state, **_):
+def stress_strain(out, problem, _state, order=1, **_):
     strain = problem.evaluate(
-        'dw_tl_he_neohook.%d.Omega(m.mu, v, u)' % (2*ORDER),
+        'dw_tl_he_neohook.%d.Omega(m.mu, v, u)' % (2*order),
         mode='el_avg', term_mode='strain', copy_materials=False)
 
     out['green_strain'] = Struct(
         name='output_data', mode='cell', data=strain, dofs=None)
 
     stress_10 = problem.evaluate(
-        'dw_tl_he_neohook.%d.Omega(m.mu, v, u)' % (2*ORDER),
+        'dw_tl_he_neohook.%d.Omega(m.mu, v, u)' % (2*order),
         mode='el_avg', term_mode='stress', copy_materials=False)
     stress_01 = problem.evaluate(
-        'dw_tl_he_mooney_rivlin.%d.Omega(m.kappa, v, u)' % (2*ORDER),
+        'dw_tl_he_mooney_rivlin.%d.Omega(m.kappa, v, u)' % (2*order),
         mode='el_avg', term_mode='stress', copy_materials=False)
     stress_p = problem.evaluate(
-        'dw_tl_bulk_pressure.%d.Omega(v, u, p)' % (2*ORDER),
+        'dw_tl_bulk_pressure.%d.Omega(v, u, p)' % (2*order),
         mode='el_avg', term_mode='stress', copy_materials=False)
     stress = stress_10 + stress_01 + stress_p
 
@@ -180,7 +177,7 @@ def stress_strain(out, problem, _state, **_):
 
     return out
 
-def main(dims=None, shape=None, centre=None, ts=None, do_plot=True):
+def main(dims=None, shape=None, centre=None, order=1, ts=None, do_plot=True):
     if dims is None: dims = [1.0, 1.0, 1.0]
     if shape is None: shape = [4, 4, 4]
     if centre is None: centre = [0.5*dim for dim in dims]
@@ -201,9 +198,9 @@ def main(dims=None, shape=None, centre=None, ts=None, do_plot=True):
 
     ### Fields ###
     scalar_field = Field.from_args(
-        'fu', np.float64, 'scalar', omega, approx_order=ORDER-1)
+        'fu', np.float64, 'scalar', omega, approx_order=order-1)
     vector_field = Field.from_args(
-        'fv', np.float64, 'vector', omega, approx_order=ORDER)
+        'fv', np.float64, 'vector', omega, approx_order=order)
 
     u = FieldVariable('u', 'unknown', vector_field, history=1)
     v = FieldVariable('v', 'test', vector_field, primary_var_name='u')
@@ -224,7 +221,7 @@ def main(dims=None, shape=None, centre=None, ts=None, do_plot=True):
     ebcs = Conditions([x_sym, y_sym, z_sym, displacement])
 
     ### Terms and equations ###
-    integral = Integral('i', order=2*ORDER)
+    integral = Integral('i', order=2*order)
 
     term_neohook = Term.new(
         'dw_tl_he_neohook(m.mu, v, u)',
@@ -266,8 +263,11 @@ def main(dims=None, shape=None, centre=None, ts=None, do_plot=True):
     tss.init_time()
 
     ### Solution ###
+    def stress_strain_fun(*args, **kwargs):
+        return stress_strain(*args, order=order, **kwargs)
+
     for step, time, state in tss(
-            save_results=True, post_process_hook=stress_strain):
+            save_results=True, post_process_hook=stress_strain_fun):
         pass
 
     if do_plot:
@@ -275,6 +275,9 @@ def main(dims=None, shape=None, centre=None, ts=None, do_plot=True):
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--order', type=int, default=1,
+        help='Approximation order of displacements [default: %(default)s]')
     parser.add_argument(
         '--dims', metavar=('DIM_X', 'DIM_Y', 'DIM_Z'), action='store',
         dest='dims', type=float, nargs=DIMENSION, default=[1.0, 1.0, 1.0],
@@ -306,6 +309,6 @@ if __name__ == '__main__':
         't0' : float(ts_vals[0]), 't1' : float(ts_vals[1]),
         'n_step' : int(ts_vals[2])}
     main(
-        dims=args.dims, shape=args.shape, centre=args.centre,
+        dims=args.dims, shape=args.shape, centre=args.centre, order=args.order,
         ts=ts_dict, do_plot=args.plot,
     )
