@@ -280,7 +280,7 @@ class StationarySolver(TimeSteppingSolver):
         TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
                                     **kwargs)
 
-        self.ts = TimeStepper(0.0, 1.0, n_step=1)
+        self.ts = TimeStepper(0.0, 1.0, n_step=1, is_quasistatic=True)
 
     @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
