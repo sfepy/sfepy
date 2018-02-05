@@ -1340,9 +1340,9 @@ class FieldVariable(Variable):
     """
 
     def __init__(self, name, kind, field, order=None, primary_var_name=None,
-                 special=None, flags=None, **kwargs):
+                 special=None, flags=None, history=None, **kwargs):
         Variable.__init__(self, name, kind, order, primary_var_name,
-                          special, flags, **kwargs)
+                          special, flags, history=history, **kwargs)
 
         self._set_field(field)
 
