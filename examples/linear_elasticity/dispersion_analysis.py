@@ -16,7 +16,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import import_file, output, Struct
 from sfepy.base.conf import dict_from_string, ProblemConf
 from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
 from sfepy.base.log import Log
@@ -30,8 +30,15 @@ from sfepy.discrete import Problem
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 
-def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-           plane='strain'):
+def apply_units_le(pars, unit_multipliers):
+    new_pars = apply_unit_multipliers(pars,
+                                      ['stress', 'one', 'density',
+                                       'stress', 'one' ,'density'],
+                                      unit_multipliers)
+    return new_pars
+
+def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
+              plane='strain'):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -119,6 +126,10 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
 
     return locals()
 
+def set_wave_dir_le(materials, wdir):
+    wave_mat = materials['wave']
+    wave_mat.datas['special']['vec'] = wdir
+
 def _max_diff_csr(mtx1, mtx2):
     aux = nm.abs((mtx1 - mtx2).data)
     return aux.max() if len(aux) else 0.0
@@ -147,6 +158,9 @@ helps = {
     'pars' :
     'material parameters in Y1, Y2 subdomains in basic units'
     ' [default: %(default)s]',
+    'conf' :
+    'if given, an alternative problem description file with apply_units() and'
+    ' define() functions [default: %(default)s]',
     'mesh_size' :
     'desired mesh size (max. of bounding box dimensions) in basic units'
     ' - the input periodic cell mesh is rescaled to this size'
@@ -194,6 +208,9 @@ def main():
                         ',young2,poisson2,density2',
                         action='store', dest='pars',
                         default=default_pars, help=helps['pars'])
+    parser.add_argument('--conf', metavar='filename',
+                        action='store', dest='conf',
+                        default=None, help=helps['conf'])
     parser.add_argument('--mesh-size', type=float, metavar='float',
                         action='store', dest='mesh_size',
                         default=None, help=helps['mesh_size'])
@@ -252,6 +269,17 @@ def main():
     output.set_output(filename=os.path.join(output_dir,'output_log.txt'),
                       combined=options.silent == False)
 
+    if options.conf is not None:
+        mod = import_file(options.conf)
+        apply_units = mod.apply_units
+        define = mod.define
+        set_wave_dir = mod.set_wave_dir
+
+    else:
+        apply_units = apply_units_le
+        define = define_le
+        set_wave_dir = set_wave_dir_le
+
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
                                 for ii in options.unit_multipliers.split(',')]
@@ -271,10 +299,7 @@ def main():
     ensure_path(filename)
     save_options(filename, [('options', vars(options))])
 
-    pars = apply_unit_multipliers(options.pars,
-                                  ['stress', 'one', 'density',
-                                   'stress', 'one' ,'density'],
-                                  options.unit_multipliers)
+    pars = apply_units(options.pars, options.unit_multipliers)
     output('material parameters with applied unit multipliers:')
     output(pars)
 
@@ -350,9 +375,8 @@ def main():
         materials_filename = os.path.join(output_dir, 'materials.vtk')
         pb.save_state(materials_filename, out=out)
 
-    wave_mat = pb.get_materials()['wave']
-    # Set the normalized wave vector direction to the wave term material.
-    wave_mat.datas['special']['vec'] = wdir
+    # Set the normalized wave vector direction to the material(s).
+    set_wave_dir(pb.get_materials(), wdir)
 
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
@@ -361,18 +385,22 @@ def main():
     mtx_m = pb.mtx_a.copy()
     eq_m = pb.equations['M']
     mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
+    mtx_m.eliminate_zeros()
 
     mtx_k = pb.mtx_a.copy()
     eq_k = pb.equations['K']
     mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
+    mtx_k.eliminate_zeros()
 
     mtx_s = pb.mtx_a.copy()
     eq_s = pb.equations['S']
     mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
+    mtx_s.eliminate_zeros()
 
     mtx_r = pb.mtx_a.copy()
     eq_r = pb.equations['R']
     mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
+    mtx_r.eliminate_zeros()
 
     output('symmetry checks of real blocks:')
     output('M - M^T:', _max_diff_csr(mtx_m, mtx_m.T))
