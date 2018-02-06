@@ -839,15 +839,16 @@ void evaluateContactConstraints(float64* GPs, int32* ISN, int32* IEN, int32* N, 
 		  d += ra[i] * t1[i];
 		  t1_norm += t1[i] * t1[i];
 		}
-		d = sqrt(d);
 		t1_norm = sqrt(t1_norm);
+		d = d / t1_norm;
 		// Check if inside edge1:
 		if (d >= 0.0 && d <= t1_norm) {
 		  isInside = 1;
+		  d_tmp = d;
 		  d = 0.0;
 		  sign = 0.0;
 		  for (i = 0; i < nsd; ++i) {
-		    Xp[i] = Xm[i*nsn + 0] + t1[i] / t1_norm*ra[i] * t1[i] / t1_norm;
+		    Xp[i] = Xm[i*nsn + 0] + d_tmp * t1[i] / t1_norm;
 		    sign += (Xg[i] - Xp[i])*normal[i];
 		    d += pow(Xg[i] - Xp[i], 2);
 		  }
