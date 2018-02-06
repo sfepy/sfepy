@@ -120,7 +120,6 @@ class ContactTerm(Term):
         AABBmin = AABBmin - (0.5*longestEdge);
         AABBmax = AABBmax + (0.5*longestEdge);
         N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
-        N = nm.ones(nsd, dtype=nm.int32) # BUG workaround.
 
         head, next = cc.init_global_search(N, AABBmin, AABBmax, GPs[:,:nsd])
 
