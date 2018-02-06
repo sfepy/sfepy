@@ -353,7 +353,7 @@ def add_eas_dofs(mtx_b, qp_coors, det, det0, dxidx0):
     mtx_e[:, 0, 4] = mtx_e[:, 1, 5] = mtx_e[:, 3, 6] = cc
 
     dd = (det0 / det)[..., None, None]
-    mtx_ee = dd * nm.einsum('cij,qjk->qik', tg0[:, 0], mtx_e)
+    mtx_ee = dd * nm.einsum('cij,qjk->cqik', tg0[:, 0], mtx_e)
 
     mtx_be = nm.concatenate((mtx_b, mtx_ee), 3)
 
