@@ -1401,6 +1401,7 @@ available:
   use. See `PETSc Users Manual`_, Chapter 4, for more details about available
   Krylov methods and preconditioners. See also the main `PETSc Documentation`_
   page.
+- 'ls.mumps': Interface to (Py)MUMPS solver, see `PyMUMPS`_ and `MUMPS`_ pages.
 - 'ls.schur_complement': Schur complement problem solver.
 
 .. _solving_problems_in_parallel:
