@@ -131,7 +131,7 @@ class Test(TestCommon):
 
             for key, true_val in six.iteritems(true_derived_units):
                 val = derived_units[key]
-                _ok = true_val == val
+                _ok = _cmp(true_val, val)
                 self.report('%s: %s == %s -> %s' % (key, true_val, val, _ok))
 
                 ok = ok and _ok
