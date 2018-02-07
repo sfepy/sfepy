@@ -28,10 +28,18 @@ def transform_basis(transform, bf):
     Transform a basis `bf` using `transform` array of matrices.
     """
     if bf.ndim == 3:
-        nbf = nm.einsum('cij,qdj->cqdi', transform, bf)
+        nbf = nm.einsum('cij,qdj->cqdi', transform, bf, order='C')
 
-    else:
-        nbf = nm.einsum('cij,oqdj->cqdi', transform, bf)
+    elif bf.ndim == 4:
+        if bf.shape[0] == 1:
+            nbf = nm.einsum('cij,qdj->cqdi', transform, bf[0], order='C')
+
+        else:
+            nbf = nm.einsum('cij,cqdj->cqdi', transform, bf, order='C')
+
+    # Note: the 2nd derivatives are not supported here.
+    # Workaround for NumPy 1.14.0 - order is ignored(?)
+    nbf = nm.ascontiguousarray(nbf)
 
     return nbf
 
