@@ -74,6 +74,7 @@ solvers = {
              {'method' : 'superlu',
               'warn' : True,}
     ),
+    'd10' : ('ls.mumps', {}),
     'i00' : ('ls.pyamg',
              {'method' : 'ruge_stuben_solver',
               'accel' : 'cg',
@@ -151,7 +152,7 @@ from sfepy.base.testing import TestCommon
 output_name = 'test_linear_solvers_%s.vtk'
 
 class Test(TestCommon):
-    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc']
+    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc', 'ls.mumps',]
 
     @staticmethod
     def from_conf(conf, options):
@@ -234,7 +235,7 @@ class Test(TestCommon):
         from sfepy.solvers import Solver
         from sfepy.discrete.state import State
 
-        self.problem.init_solvers()
+        self.problem.init_solvers(ls_conf=self.problem.solver_confs['d00'])
         nls = self.problem.get_solver()
 
         state0 = State(self.problem.equations.variables)

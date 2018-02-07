@@ -732,6 +732,66 @@ class PETScKrylovSolver(LinearSolver):
 
         return sol
 
+
+class MUMPSSolver(LinearSolver):
+    """
+    Interface to MUMPS solver.
+
+    """
+    name = 'ls.mumps'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = []
+
+    def __init__(self, conf, **kwargs):
+        try:
+            from mumps import DMumpsContext
+        except ImportError:
+            self.mumps = None
+            msg = 'cannot import MUMPS!'
+            raise ImportError(msg)
+
+        LinearSolver.__init__(self, conf, **kwargs)
+        self.mumps = DMumpsContext()
+        self.mumps_presolved = False
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+
+        context = self.mumps
+
+        if not self.mumps_presolved:
+            self.presolve(mtx)
+
+        out = rhs.copy()
+        context.set_rhs(out)
+        context.run(job=3)  # Solve
+
+        return out
+
+    def presolve(self, mtx):
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
+        if is_new:
+            mtx_coo = mtx.tocoo()
+            context = self.mumps
+
+            if not self.conf.verbose:
+                context.set_silent()
+            context.set_shape(mtx_coo.shape[0])
+            context.set_centralized_assembled(mtx_coo.row + 1, mtx_coo.col + 1,
+                                              mtx_coo.data)
+            context.run(job=1)  # Analyze
+            context.run(job=2)  # Factorize
+            self.mumps_presolved = True
+            self.mtx_digest = mtx_digest
+
+    def __del__(self):
+        if self.mumps is not None:
+            self.mumps.destroy()
+
+
 class SchurGeneralized(ScipyDirect):
     r"""
     Generalized Schur complement.
