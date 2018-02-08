@@ -134,7 +134,7 @@ class Solver(Struct):
             options = Solver._parameters + cls._parameters
 
         else:
-            options = cls._parameters
+            options = Solver._parameters
 
         opts = Struct()
         allow_extra = False
