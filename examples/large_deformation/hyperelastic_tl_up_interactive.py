@@ -308,7 +308,7 @@ def main(cli_args):
     ls = ScipyDirect({})
     nls_status = IndexedStruct()
     nls = Newton(
-        {'is_linear' : False},
+        {'i_max' : 5},
         lin_solver=ls, status=nls_status
     )
 
