@@ -136,7 +136,7 @@ def get_displacement(ts, coors, bc=None, problem=None):
 
 def plot_graphs(
         material_parameters, global_stress, global_displacement,
-        undeformed_lenght=1.0):
+        undeformed_length):
     """
     Plot a comparison of true stress computed by FEM and using an analytic
     formula.
@@ -149,12 +149,12 @@ def plot_graphs(
         Total displacement for each time step, from FEM
     global_stress
         True (Cauchy) stress for each time step, from FEM
-    undeformed_lenght : float
+    undeformed_length : float
         Length of undeformed specimen
     """
     c10, c01 = material_parameters
 
-    stretch = 1 + np.array(global_displacement) / undeformed_lenght
+    stretch = 1 + np.array(global_displacement) / undeformed_length
 
     # axial stress values
     stress_fem_2pk = np.array([sig for sig in global_stress])
@@ -337,7 +337,7 @@ def main(cli_args):
     if do_plot:
         plot_graphs(
             material_parameters, axial_stress, axial_displacement,
-            undeformed_lenght=dims[0])
+            undeformed_length=dims[0])
 
 def parse_args():
     """Parse command line arguments."""
