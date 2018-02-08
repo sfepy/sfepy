@@ -24,7 +24,8 @@ from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import BasicEvaluator, LCBCEvaluator
-from sfepy.solvers import Solver
+from sfepy.solvers import Solver, NonlinearSolver
+from sfepy.solvers.ts_solvers import StationarySolver
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 import six
@@ -246,7 +247,7 @@ class Problem(Struct):
                 domain = list(fields.values())[0].domain
 
             if conf is None:
-                self.conf = Struct(options={},
+                self.conf = Struct(options={}, ics={},
                                    ebcs={}, epbcs={}, lcbcs={}, materials={})
 
         self.equations = equations
@@ -276,7 +277,7 @@ class Problem(Struct):
             self.setup_hooks()
 
         self.mtx_a = None
-        self.nls = None
+        self.solver = None
         self.clear_equations()
 
         self._restart_filenames = []
@@ -518,7 +519,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.nls = None
+            self.solver = None
 
     def set_equations_instance(self, equations, keep_solvers=False):
         """
@@ -529,7 +530,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.nls = None
+            self.solver = None
 
     def set_conf_solvers(self, conf_solvers=None, options=None):
         """
@@ -557,8 +558,7 @@ class Problem(Struct):
 
         self.ts_conf = _get_solver_conf('ts')
         if self.ts_conf is None:
-            self.ts_conf = Struct(name='no ts', kind='ts.stationary',
-                                  quasistatic=True)
+            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
 
         self.nls_conf = _get_solver_conf('nls')
         self.ls_conf = _get_solver_conf('ls')
@@ -573,13 +573,20 @@ class Problem(Struct):
         if info != 'using solvers:':
             output(info)
 
-    def set_solver(self, nls):
+    def set_solver(self, solver):
         """
-        Set the instance of nonlinear solver that will be used in
+        Set a time-stepping or nonlinear solver that will be used in
         `Problem.solve()` call.
+
+        Notes
+        -----
+        Also sets `self.ts` attribute.
         """
-        self.nls = nls
-        self.nls_status = get_default(nls.status, IndexedStruct())
+        if isinstance(solver, NonlinearSolver):
+            solver = StationarySolver({}, nls=solver)
+        self.solver = solver
+        self.ts = solver.ts
+        self.status = get_default(solver.status, IndexedStruct())
 
     def get_solver_conf(self, name):
         return self.solver_confs[name]
@@ -1056,7 +1063,7 @@ class Problem(Struct):
         return ebc_indx, epbc_indx
 
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
-                     force=False):
+                     ts_conf=None, force=False):
         """
         Create and initialize solver instances.
 
@@ -1073,10 +1080,9 @@ class Problem(Struct):
             If True, re-create the solver instances even if they already exist
             in `self.nls` attribute.
         """
-        if (self.nls is None) or force:
+        if (self.solver is None) or force:
             ls_conf = get_default(ls_conf, self.ls_conf,
                                   'you must set linear solver!')
-
             nls_conf = get_default(nls_conf, self.nls_conf,
                                    'you must set nonlinear solver!')
 
@@ -1093,12 +1099,16 @@ class Problem(Struct):
                                        iter_hook=self.nls_iter_hook,
                                        status=nls_status, context=self)
 
-            self.set_solver(nls)
+            ts_conf = get_default(ts_conf, self.ts_conf)
+            if ts_conf is None:
+                self.set_solver(nls)
+
+            else:
+                tss = Solver.any_from_conf(ts_conf, nls=nls, context=self)
+                self.set_solver(tss)
 
     def try_presolve(self, mtx):
-        nls = get_default(None, self.nls,
-                          'you must initialize solvers!')
-        ls = nls.lin_solver
+        ls = self.get_ls()
 
         tt = time.clock()
         ls.presolve(mtx)
@@ -1106,16 +1116,73 @@ class Problem(Struct):
         output('presolve: %.2f [s]' % tt)
 
     def get_solver(self):
-        return getattr(self, 'nls', None)
+        return self.get_tss()
+
+    def get_tss(self):
+        tss = get_default(None, self.solver, 'solver is not set!')
+        return tss
+
+    def get_tss_functions(self, state0, step_hook=None, post_process_hook=None):
+        """
+        """
+        def init_fun(ts, vec0):
+            if not ts.is_quasistatic:
+                self.init_time(ts)
+
+            restart_filename = self.conf.options.get('load_restart', None)
+            if restart_filename is not None:
+                self.load_restart(restart_filename, state=state0,
+                                     ts=ts)
+                self.advance(ts)
+                ts.advance()
+                state = self.create_state()
+                vec0 = state.get_vec(self.active_only)
+
+            return vec0
+
+        def prestep_fun(ts, vec):
+            self.time_update(ts)
+            state = state0.copy()
+            state.set_vec(vec, self.active_only)
+            state.apply_ebc()
+            self.update_materials()
+
+        def poststep_fun(ts, vec):
+            state = state0.copy(preserve_caches=True)
+            state.set_vec(vec, self.active_only)
+            if step_hook is not None:
+                step_hook(self, ts, state)
+
+            restart_filename = self.get_restart_filename(ts=ts)
+            if restart_filename is not None:
+                self.save_restart(restart_filename, state, ts=ts)
+
+            suffix, is_save = prepare_save_data(ts, self.conf)
+            # base is_save on times, not on steps!
+            suffix = suffix % ts.step
+            filename = self.get_output_name(suffix=suffix)
+            self.save_state(filename, state,
+                               post_process_hook=post_process_hook,
+                               file_per_var=None,
+                               ts=ts)
+            self.advance(ts)
+
+        return init_fun, prestep_fun, poststep_fun
+
+    def get_nls(self):
+        tss = self.get_tss()
+        return tss.nls
+
+    def get_ls(self):
+        nls = self.get_nls()
+        return nls.lin_solver
 
     def is_linear(self):
-        nls = get_default(None, self.nls,
-                          'you must initialize solvers!')
+        nls = self.get_nls()
         return nls.conf.get('is_linear', False)
 
     def set_linear(self, is_linear):
-        nls = get_default(None, self.nls,
-                          'you must initialize solvers!')
+        nls = self.get_nls()
         nls.conf.is_linear = is_linear
 
     def get_initial_state(self):
@@ -1132,9 +1199,10 @@ class Problem(Struct):
 
         return state
 
-    def solve(self, state0=None, nls_status=None,
-              ls_conf=None, nls_conf=None, force_values=None,
-              var_data=None, update_materials=True):
+    def solve(self, state0=None, status=None, force_values=None,
+              var_data=None, update_bcs=True, update_materials=True,
+              step_hook=None, post_process_hook=None,
+              post_process_hook_final=None, verbose=True):
         """Solve self.equations in current time step.
 
         Parameters
@@ -1143,41 +1211,50 @@ class Problem(Struct):
             A dictionary of {variable_name : data vector} used to initialize
             parameter variables.
         """
-        nls = self.get_solver()
-        if nls is None:
-            self.init_solvers(nls_status, ls_conf, nls_conf)
-            nls = self.get_solver()
+        if status is None:
+            status = IndexedStruct()
+
+        nls_status = IndexedStruct()
+        status['nls_status'] = nls_status
+        self.init_solvers(nls_status=nls_status)
+
+        tss = self.get_solver()
+
+        self.equations.set_data(var_data, ignore_unknown=True)
 
         if state0 is None:
-            state0 = State(self.equations.variables)
+            state0 = self.get_initial_state()
 
         else:
             if isinstance(state0, nm.ndarray):
                 state0 = State(self.equations.variables, vec=state0)
 
-        self.equations.set_data(var_data, ignore_unknown=True)
+        self.time_update(tss.ts) # Only having adi is required here(?)
+        # Init solvers after time_update() to have LCBC evaluator need known.
+        # -> copy nls and set new functions...
 
-        if update_materials:
-            self.update_materials()
         state0.apply_ebc(force_values=force_values)
 
-        if self.active_only:
-            vec0 = state0.get_reduced()
+        if self.is_linear():
+            mtx = prepare_matrix(self, state0)
+            self.try_presolve(mtx)
 
-        else:
-            vec0 = state0()
+        init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
+            state0, step_hook=step_hook, post_process_hook=post_process_hook)
 
-        nls.lin_solver.set_field_split(state0.variables.adi.indx)
+        vec = tss(state0.get_vec(self.active_only),
+                  init_fun=init_fun,
+                  prestep_fun=prestep_fun,
+                  poststep_fun=poststep_fun,
+                  status=status)
+        output('solved in %d steps in %.2f seconds'
+               % (status['n_step'], status['time']), verbose=verbose)
 
-        self.nls_status = get_default(nls_status, self.nls_status)
-        vec = nls(vec0, status=self.nls_status)
+        state = state0.copy()
+        state.set_vec(vec, self.active_only)
 
-        state = state0.copy(preserve_caches=True)
-        if self.active_only:
-            state.set_reduced(vec, preserve_caches=True)
-
-        else:
-            state.set_full(vec)
+        if post_process_hook_final is not None: # User postprocessing.
+            post_process_hook_final(self, state)
 
         return state
 
@@ -1457,21 +1534,6 @@ class Problem(Struct):
                               names=names, preserve_caches=preserve_caches,
                               mode=mode, dw_mode=dw_mode, term_mode=term_mode,
                               active_only=active_only, verbose=verbose)
-
-    def get_time_solver(self, ts_conf=None, **kwargs):
-        """
-        Create and return a TimeSteppingSolver instance.
-
-        Notes
-        -----
-        Also sets `self.ts` attribute.
-        """
-        ts_conf = get_default(ts_conf, self.ts_conf,
-                              'you must set time-stepping solver!')
-        ts_solver = Solver.any_from_conf(ts_conf, context=self, **kwargs)
-        self.ts = ts_solver.ts
-
-        return ts_solver
 
     def get_materials(self):
         if self.equations is not None:

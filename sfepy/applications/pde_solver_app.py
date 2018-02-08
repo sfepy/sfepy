@@ -183,12 +183,9 @@ class PDESolverApp(Application):
                              file_per_var=self.app_options.file_per_var,
                              linearization=self.app_options.linearization)
 
-    def call(self, nls_status=None, tss_status=None):
-        import sfepy.solvers.ts_solvers as tsol
-
+    def call(self, tss_status=None):
         problem = self.problem
         options = self.options
-        opts = self.app_options
 
         if self.pre_process_hook is not None: # User pre_processing.
             self.pre_process_hook(problem)
@@ -215,86 +212,10 @@ class PDESolverApp(Application):
         if options.solve_not:
             return None, None, None
 
-        state0 = tsol.get_initial_state(problem)
-        tss = problem.get_time_solver()
-        problem.time_update(tss.ts) # Only having adi is required here(?)
-        # Init solvers after time_update() to have LCBC evaluator need known.
-        problem.init_solvers(nls_status=nls_status)
-
-        if problem.is_linear():
-            mtx = tsol.prepare_matrix(problem, state0)
-            problem.try_presolve(mtx)
-
-        # Move this into problem - replace Problem.solve() with (?):
-        # solve = problem.create_solver(opts)
-        # state = solve(state0)
-        def get_vec(state, active_only):
-            if active_only:
-                vec = state.get_reduced()
-
-            else:
-                vec = state()
-
-            return vec
-
-        def set_state(state, vec, active_only):
-            if active_only:
-                state.set_reduced(vec, preserve_caches=True)
-
-            else:
-                state.set_full(vec)
-
-        def init_fun(ts, vec0):
-            if not ts.is_quasistatic:
-                problem.init_time(ts)
-
-            restart_filename = problem.conf.options.get('load_restart', None)
-            if restart_filename is not None:
-                problem.load_restart(restart_filename, state=state0,
-                                     ts=ts)
-                problem.advance(ts)
-                ts.advance()
-                vec0 = get_vec(problem.create_state(), problem.active_only)
-
-            return vec0
-
-        def prestep_fun(ts, vec):
-            problem.time_update(ts)
-            state = state0.copy()
-            set_state(state, vec, problem.active_only)
-            state.apply_ebc()
-            problem.update_materials()
-
-        def poststep_fun(ts, vec):
-            state = state0.copy(preserve_caches=True)
-            set_state(state, vec, problem.active_only)
-            if self.step_hook is not None:
-                self.step_hook(problem, ts, state)
-
-            restart_filename = problem.get_restart_filename(ts=ts)
-            if restart_filename is not None:
-                problem.save_restart(restart_filename, state, ts=ts)
-
-            suffix, is_save = tsol.prepare_save_data(ts, problem.conf)
-            # base is_save on times, not on steps!
-            suffix = suffix % ts.step
-            filename = problem.get_output_name(suffix=suffix)
-            problem.save_state(filename, state,
-                               post_process_hook=self.post_process_hook,
-                               file_per_var=None,
-                               ts=ts)
-            problem.advance(ts)
-
-        vec = tss(get_vec(state0, problem.active_only), nls=problem.nls,
-                  init_fun=init_fun,
-                  prestep_fun=prestep_fun,
-                  poststep_fun=poststep_fun,
-                  status=tss_status)
-        state = state0.copy()
-        set_state(state, vec, problem.active_only)
-
-        if self.post_process_hook_final is not None: # User postprocessing.
-            self.post_process_hook_final(problem, state)
+        state = problem.solve(
+            status=tss_status, step_hook=self.step_hook,
+            post_process_hook=self.post_process_hook,
+            post_process_hook_final=self.post_process_hook_final)
 
         return problem, state
 
