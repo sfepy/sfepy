@@ -30,6 +30,40 @@ from sfepy.solvers.nls import Newton
 import six
 from six.moves import range
 
+def prepare_save_data(ts, conf):
+    """
+    Given a time stepper configuration, return a list of time steps when the
+    state should be saved.
+    """
+    try:
+        save_steps = conf.options.save_steps
+    except:
+        save_steps = -1
+
+    if save_steps == -1:
+        save_steps = ts.n_step
+
+    is_save = nm.linspace(0, ts.n_step - 1, save_steps).astype(nm.int32)
+    is_save = nm.unique(is_save)
+
+    return ts.suffix, is_save
+
+def prepare_matrix(problem, state):
+    """
+    Pre-assemble tangent system matrix.
+    """
+    problem.update_materials()
+
+    ev = problem.get_evaluator()
+    try:
+        mtx = ev.eval_tangent_matrix(state(), is_full=True)
+
+    except ValueError:
+        output('matrix evaluation failed, giving up...')
+        raise
+
+    return mtx
+
 ##
 # 29.01.2006, c
 class Problem(Struct):
