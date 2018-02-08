@@ -129,7 +129,7 @@ DIMENSION = 3
 
 def get_displacement(ts, coors, bc=None, problem=None):
     """
-    Define time-dependent displacement
+    Define the time-dependent displacement.
     """
     out = 1. * ts.time * coors[:, 0]
     return out
@@ -138,19 +138,19 @@ def plot_graphs(
         material_parameters, global_stress, global_displacement,
         undeformed_length):
     """
-    Plot a comparison of true stress computed by FEM and using an analytic
-    formula.
+    Plot a comparison of the true stress computed by the FEM and using the
+    analytic formula.
 
     Parameters
     ----------
     material_parameters : list or tuple of float
-        C10 and C01 coefficients
+        The C10 and C01 coefficients.
     global_displacement
-        Total displacement for each time step, from FEM
+        The total displacement for each time step, from the FEM.
     global_stress
-        True (Cauchy) stress for each time step, from FEM
+        The true (Cauchy) stress for each time step, from the FEM.
     undeformed_length : float
-        Length of undeformed specimen
+        The length of the undeformed specimen.
     """
     c10, c01 = material_parameters
 
@@ -183,19 +183,20 @@ def stress_strain(
         out, problem, _state, order=1, global_stress=None,
         global_displacement=None, **_):
     """
-    Compute stress and strain and add them to output.
+    Compute the stress and the strain and add them to the output.
 
     Parameters
     ----------
     out : dict
-        Holds results of finite element computation
+        Holds the results of the finite element computation.
     problem : sfepy.discrete.Problem
     order : int
-        Approximation order of displacements
+        The approximation order of the displacement field.
     global_displacement
-        Total displacement for each time step, current value will be appended
+        Total displacement for each time step, current value will be appended.
     global_stress
-        True (Cauchy) stress for each time step, current value will be appended
+        The true (Cauchy) stress for each time step, current value will be
+        appended.
 
     Returns
     -------
