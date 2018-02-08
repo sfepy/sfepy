@@ -1118,6 +1118,20 @@ class Problem(Struct):
                           'you must initialize solvers!')
         nls.conf.is_linear = is_linear
 
+    def get_initial_state(self):
+        """
+        Create a zero state vector and apply initial conditions.
+        """
+        state = self.create_state()
+
+        self.setup_ics()
+        state.apply_ic()
+
+        # Initialize variables with history.
+        state.init_history()
+
+        return state
+
     def solve(self, state0=None, nls_status=None,
               ls_conf=None, nls_conf=None, force_values=None,
               var_data=None, update_materials=True):

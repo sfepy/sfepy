@@ -372,20 +372,6 @@ class EquationSequenceSolver(TimeSteppingSolver):
     def init_time(self, nls_status=None):
         self.problem.init_solvers(nls_status=nls_status)
 
-def get_initial_state(problem):
-    """
-    Create a zero state vector and apply initial conditions.
-    """
-    state = problem.create_state()
-
-    problem.setup_ics()
-    state.apply_ic()
-
-    # Initialize variables with history.
-    state.init_history()
-
-    return state
-
 def make_implicit_step(ts, state0, problem, nls_status=None):
     """
     Make a step of an implicit time stepping solver.
