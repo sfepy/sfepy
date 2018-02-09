@@ -26,8 +26,6 @@ from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
 from sfepy.solvers.ts_solvers import StationarySolver
-from sfepy.solvers.ls import ScipyDirect
-from sfepy.solvers.nls import Newton
 import six
 from six.moves import range
 
@@ -98,15 +96,6 @@ class Problem(Struct):
         This argument is required when `auto_conf` is True.
     auto_conf : bool
         If True, fields and domain are determined by `equations`.
-    nls : NonlinearSolver instance, optional
-        The nonlinear solver to use.
-    ls : LinearSolver instance, optional
-        The linear solver to use in the nonlinear solver iterations.
-    ts : TimeSteppingSolver instance, optional
-        The time-stepping solver for evolutionary problems.
-    auto_solvers : bool
-        If True, setup default nonlinear and linear solvers in case those are
-        not given.
     active_only : bool
         If True, the (tangent) matrices and residual vectors (right-hand sides)
         contain only active DOFs, see below.
@@ -200,7 +189,7 @@ class Problem(Struct):
 
         active_only = conf.options.get('active_only', True)
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
-                      domain=domain, auto_conf=False, auto_solvers=False,
+                      domain=domain, auto_conf=False,
                       active_only=active_only)
 
         allow_empty = conf.options.get('allow_empty_regions', False)
@@ -213,7 +202,7 @@ class Problem(Struct):
             obj.set_fields(conf.fields)
 
             if init_equations:
-                obj.set_equations(conf.equations, user={'ts' : obj.ts})
+                obj.set_equations(conf.equations)
 
         if init_solvers:
             obj.set_conf_solvers(conf.solvers, conf.options)
@@ -222,7 +211,6 @@ class Problem(Struct):
 
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
-                 nls=None, ls=None, ts=None, auto_solvers=True,
                  active_only=True):
         self.active_only = active_only
         self.name = name
@@ -230,8 +218,6 @@ class Problem(Struct):
         self.functions = functions
 
         self.reset()
-
-        self.ts = get_default(ts, self.get_default_ts())
 
         if auto_conf:
             if equations is None:
@@ -253,19 +239,6 @@ class Problem(Struct):
         self.equations = equations
         self.fields = fields
         self.domain = domain
-
-        if auto_solvers:
-            if ls is None:
-                ls = ScipyDirect({})
-
-            if nls is None:
-                nls = Newton({}, lin_solver=ls)
-
-            ev = self.get_evaluator()
-            nls.fun = ev.eval_residual
-            nls.fun_grad = ev.eval_tangent_matrix
-
-            self.set_solver(nls)
 
         self.setup_output()
 
@@ -324,7 +297,7 @@ class Problem(Struct):
         obj = self.__class__(name, conf=self.conf, functions=self.functions,
                       domain=self.domain, fields=self.fields,
                       equations=self.equations, auto_conf=False,
-                      auto_solvers=False, active_only=self.active_only)
+                      active_only=self.active_only)
 
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
@@ -361,7 +334,7 @@ class Problem(Struct):
         subpb = Problem(self.name + '_' + '_'.join(var_names), conf=self.conf,
                         functions=self.functions, domain=self.domain,
                         fields=self.fields, auto_conf=False,
-                        auto_solvers=False, active_only=self.active_only)
+                        active_only=self.active_only)
         subpb.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
