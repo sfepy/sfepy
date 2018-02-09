@@ -1,13 +1,11 @@
 """
 PETSc-related parallel evaluation of problem equations.
 """
-import numpy as nm
-
 from sfepy.base.base import Struct
 import sfepy.parallel.parallel as pp
-from sfepy.discrete.evaluate import BasicEvaluator
+from sfepy.discrete.evaluate import Evaluator
 
-class PETScParallelEvaluator(BasicEvaluator):
+class PETScParallelEvaluator(Evaluator):
     """
     The parallel evaluator of the problem equations for
     :class:`PETScNonlinearSolver <sfepy.solvers.nls.PETScNonlinearSolver>`.
@@ -22,7 +20,7 @@ class PETScParallelEvaluator(BasicEvaluator):
 
     def __init__(self, problem, pdofs, drange, is_overlap, psol,
                  comm, matrix_hook=None, verbose=False):
-        BasicEvaluator.__init__(self, problem, matrix_hook=matrix_hook)
+        Evaluator.__init__(self, problem, matrix_hook=matrix_hook)
         Struct.__init__(self, pdofs=pdofs, drange=drange, is_overlap=is_overlap,
                         comm=comm, verbose=verbose)
 
@@ -34,8 +32,8 @@ class PETScParallelEvaluator(BasicEvaluator):
     def eval_residual(self, snes, psol, prhs):
         self.scatter(self.psol_i, psol)
 
-        rhs_if = BasicEvaluator.eval_residual(self, self.psol_i[...],
-                                              is_full=True)
+        rhs_if = Evaluator.eval_residual(self, self.psol_i[...],
+                                         is_full=True)
 
         pp.assemble_rhs_to_petsc(prhs, rhs_if, self.pdofs, self.drange,
                                  self.is_overlap,
@@ -44,8 +42,8 @@ class PETScParallelEvaluator(BasicEvaluator):
     def eval_tangent_matrix(self, snes, psol, pmtx, ppmtx):
         self.scatter(self.psol_i, psol)
 
-        mtx_if = BasicEvaluator.eval_tangent_matrix(self, self.psol_i[...],
-                                                    is_full=True)
+        mtx_if = Evaluator.eval_tangent_matrix(self, self.psol_i[...],
+                                               is_full=True)
         pp.assemble_mtx_to_petsc(pmtx, mtx_if, self.pdofs, self.drange,
                                  self.is_overlap,
                                  self.comm, verbose=self.verbose)

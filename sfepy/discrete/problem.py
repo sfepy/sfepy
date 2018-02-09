@@ -23,7 +23,7 @@ from sfepy.discrete.state import State
 from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations
 from sfepy.solvers.ts import TimeStepper
-from sfepy.discrete.evaluate import BasicEvaluator, LCBCEvaluator
+from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
 from sfepy.solvers.ts_solvers import StationarySolver
 from sfepy.solvers.ls import ScipyDirect
@@ -138,7 +138,7 @@ class Problem(Struct):
     the matrix is not singular, see
     :func:`sfepy.discrete.evaluate.apply_ebc_to_matrix()`, which is called
     automatically in
-    :func:`sfepy.discrete.evaluate.BasicEvaluator.eval_tangent_matrix()`. It is
+    :func:`sfepy.discrete.evaluate.Evaluator.eval_tangent_matrix()`. It is
     not called automatically in :func:`Problem.evaluate()`. Note that setting
     the diagonal entries to one might not be necessary with iterative solvers,
     as the zero matrix rows match the zero residual rows, i.e. if the reduced
@@ -1036,12 +1036,7 @@ class Problem(Struct):
                 raise AttributeError('call Problem.init_solvers() or'\
                                      ' set reuse to False!')
         else:
-            if self.equations.variables.has_lcbc:
-                ev = LCBCEvaluator(self, matrix_hook=self.matrix_hook)
-            else:
-                ev = BasicEvaluator(self, matrix_hook=self.matrix_hook)
-
-        self.evaluator = ev
+            ev = self.evaluator = Evaluator(self, matrix_hook=self.matrix_hook)
 
         return ev
 
