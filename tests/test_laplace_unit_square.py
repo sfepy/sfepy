@@ -164,7 +164,6 @@ class Test( TestCommon ):
     def test_boundary_fluxes( self ):
         import os.path as op
         from sfepy.linalg import rotation_matrix2d
-        from sfepy.discrete.evaluate import BasicEvaluator
         from sfepy.discrete import Material
         problem = self.problem
 
@@ -180,8 +179,8 @@ class Test( TestCommon ):
 #        problem.save_ebc( 'aux.vtk' )
 
         state.apply_ebc()
-        ev = BasicEvaluator( problem )
-        aux = ev.eval_residual(state())
+        nls = problem.get_nls()
+        aux = nls.fun(state())
 
         field = variables['t'].field
 
