@@ -33,16 +33,17 @@ def apply_ebc_to_matrix(mtx, ebc_rows, epbc_rows=None):
 
 ##
 # 02.10.2007, c
-class Evaluator( Struct ):
-    pass
-
-##
-# 02.10.2007, c
-class BasicEvaluator( Evaluator ):
+class Evaluator(Struct):
+    """
+    This class provides the functions required by a nonlinear solver for a
+    given problem.
+    """
 
     def __init__(self, problem, matrix_hook=None):
-        Evaluator.__init__(self, problem=problem,
-                           matrix_hook=matrix_hook)
+        Struct.__init__(self, problem=problem, matrix_hook=matrix_hook,
+                        has_lcbc=problem.equations.variables.has_lcbc)
+        if self.has_lcbc:
+            self.mtx_lcbc = problem.equations.get_lcbc_operator()
 
     def new_ulf_iteration(self, nls, vec, it, err, err0):
 
@@ -62,7 +63,8 @@ class BasicEvaluator( Evaluator ):
         nods = state.field.get_dofs_in_region(state.field.region, merge=True)
         coors = pb.domain.get_mesh_coors().copy()
         vs = state()
-        coors[nods,:] = coors[nods,:] + vs.reshape(len(nods), state.n_components)
+        coors[nods,:] = coors[nods,:] + vs.reshape(len(nods),
+                                                   state.n_components)
         if pb.ts.step == 1 and it == 0:
             state.field.save_mappings()
 
@@ -70,17 +72,24 @@ class BasicEvaluator( Evaluator ):
         pb.set_mesh_coors(coors, update_fields=False, actual=True,
                           clear_all=False)
 
-    def eval_residual( self, vec, is_full = False ):
+    def eval_residual(self, vec, is_full=False):
         if not is_full and self.problem.active_only:
-            vec = self.make_full_vec( vec )
+            vec = self.make_full_vec(vec)
 
         vec_r = self.problem.equations.eval_residuals(vec)
         if self.matrix_hook is not None:
             vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
 
+        if self.has_lcbc:
+            vec_rr = self.mtx_lcbc.T * vec_r
+            if self.matrix_hook is not None:
+                vec_rr = self.matrix_hook(vec_rr, self.problem,
+                                          call_mode='lcbc_residual')
+            vec_r = vec_rr
+
         return vec_r
 
-    def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
+    def eval_tangent_matrix(self, vec, mtx=None, is_full=False):
         if isinstance(vec, basestr) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
 
@@ -98,56 +107,20 @@ class BasicEvaluator( Evaluator ):
         if self.matrix_hook is not None:
             mtx = self.matrix_hook(mtx, pb, call_mode='basic')
 
+        if self.has_lcbc:
+            mtx_r = self.mtx_lcbc.T * mtx * self.mtx_lcbc
+            mtx_r = mtx_r.tocsr()
+            mtx_r.sort_indices()
+
+            if self.matrix_hook is not None:
+                mtx_r = self.matrix_hook(mtx_r, self.problem, call_mode='lcbc')
+
+            mtx = mtx_r
+
         return mtx
 
-    def make_full_vec( self, vec ):
+    def make_full_vec(self, vec):
         return self.problem.equations.make_full_vec(vec)
-
-##
-# 04.10.2007, c
-class LCBCEvaluator( BasicEvaluator ):
-
-    ##
-    # 04.10.2007, c
-    def __init__(self, problem, matrix_hook=None):
-        BasicEvaluator.__init__(self, problem, matrix_hook=matrix_hook)
-        self.mtx_lcbc = problem.equations.get_lcbc_operator()
-
-    ##
-    # 04.10.2007, c
-    def eval_residual( self, vec, is_full = False ):
-        if not is_full:
-            vec = self.make_full_vec( vec )
-        vec_r = BasicEvaluator.eval_residual( self, vec, is_full = True )
-        vec_rr = self.mtx_lcbc.T * vec_r
-        if self.matrix_hook is not None:
-            vec_rr = self.matrix_hook(vec_rr, self.problem,
-                                      call_mode='lcbc_residual')
-        return vec_rr
-
-    ##
-    # 04.10.2007, c
-    def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
-        if isinstance(vec, basestr) and vec == 'linear':
-            return get_default(mtx, self.problem.mtx_a)
-
-        if not is_full:
-            vec = self.make_full_vec( vec )
-        mtx = BasicEvaluator.eval_tangent_matrix( self, vec, mtx = mtx,
-                                                  is_full = True )
-        mtx_r = self.mtx_lcbc.T * mtx * self.mtx_lcbc
-        mtx_r = mtx_r.tocsr()
-        mtx_r.sort_indices()
-##         import pylab
-##         from sfepy.base.plotutils import spy
-##         spy( mtx_r )
-##         pylab.show()
-##         print mtx_r.__repr__()
-
-        if self.matrix_hook is not None:
-            mtx_r = self.matrix_hook(mtx_r, self.problem, call_mode='lcbc')
-
-        return mtx_r
 
 def create_evaluable(expression, fields, materials, variables, integrals,
                      regions=None,
