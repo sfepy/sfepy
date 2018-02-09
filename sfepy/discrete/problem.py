@@ -549,18 +549,35 @@ class Problem(Struct):
 
     def set_solver(self, solver):
         """
-        Set a time-stepping or nonlinear solver that will be used in
-        `Problem.solve()` call.
+        Set a time-stepping or nonlinear solver to be used in
+        :func:`Problem.solve()` call.
+
+        Parameters
+        ----------
+        solver : NonlinearSolver or TimeSteppingSolver instance
+            The nonlinear or time-stepping solver.
 
         Notes
         -----
-        Also sets `self.ts` attribute.
+        A copy of the solver is used, and the nonlinear solver functions are
+        set to those returned by :func:`Problem.get_nls_functions()`, if not
+        set already. If a nonlinear solver is set, a default StationarySolver
+        instance is created automatically as the time-stepping solver. Also
+        sets `self.ts` attribute.
         """
         if isinstance(solver, NonlinearSolver):
-            solver = StationarySolver({}, nls=solver)
-        self.solver = solver
+            solver = StationarySolver({}, nls=solver.copy())
+        self.solver = solver.copy()
         self.ts = solver.ts
         self.status = get_default(solver.status, IndexedStruct())
+
+        # Assign the nonlinear solver functions.
+        nls = self.get_nls()
+        if nls.fun is None:
+            fun, fun_grag, iter_hook = self.get_nls_functions()
+            nls.fun = fun
+            nls.fun_grad = fun_grag
+            nls.iter_hook = iter_hook
 
     def get_solver_conf(self, name):
         return self.solver_confs[name]
@@ -1137,6 +1154,25 @@ class Problem(Struct):
             self.advance(ts)
 
         return init_fun, prestep_fun, poststep_fun
+
+    def get_nls_functions(self):
+        """
+        Returns functions to be used by a nonlinear solver to evaluate the
+        nonlinear function value (the residual) and its gradient (the tangent
+        matrix) corresponding to the problem equations.
+
+        Returns
+        -------
+        fun : function
+            The function ``fun(x)`` for computing the residual.
+        fun_grad : function
+            The function ``fun_grad(x)`` for computing the tangent matrix.
+        iter_hook : function
+            The optional (user-defined) function to be called before each
+            nonlinear solver iteration iteration.
+        """
+        ev = self.get_evaluator()
+        return ev.eval_residual, ev.eval_tangent_matrix, self.nls_iter_hook
 
     def get_nls(self):
         tss = self.get_tss()
