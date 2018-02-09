@@ -218,6 +218,7 @@ class Problem(Struct):
         self.functions = functions
 
         self.reset()
+        self.ls_conf = self.nls_conf = self.ts_conf = None
 
         if auto_conf:
             if equations is None:
