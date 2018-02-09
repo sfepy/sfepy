@@ -81,12 +81,12 @@ To show a comparison of stress against the analytic formula::
 Using different mesh fineness::
 
   $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
-    --shape 5 5 5
+    --shape "5, 5, 5"
 
 Different dimensions of the computational domain::
 
   $ python examples/large_deformation/hyperelastic_tl_up_interactive.py \
-    --dims 2 1 3
+    --dims "2, 1, 3"
 
 Different length of time interval and/or number of time steps::
 
@@ -101,7 +101,7 @@ required for convergence here)::
 
 Change material parameters::
 
-  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py -m 2 1
+  $ python examples/large_deformation/hyperelastic_tl_up_interactive.py -m 2,1
 """
 from __future__ import print_function, absolute_import
 import argparse
@@ -229,10 +229,11 @@ def stress_strain(
     return out
 
 def main(cli_args):
-    dims = cli_args.dims
-    shape = cli_args.shape
-    centre = cli_args.centre
-    material_parameters = cli_args.material_parameters
+    dims = parse_argument_list(cli_args.dims, float)
+    shape = parse_argument_list(cli_args.shape, int)
+    centre = parse_argument_list(cli_args.centre, float)
+    material_parameters = parse_argument_list(cli_args.material_parameters,
+                                              float)
     order = cli_args.order
 
     ts_vals = cli_args.ts.split(',')
@@ -340,31 +341,42 @@ def main(cli_args):
             material_parameters, axial_stress, axial_displacement,
             undeformed_length=dims[0])
 
+def parse_argument_list(cli_arg, type_fun=None, value_separator=','):
+    """
+    Split the command-line argument into a list of items of given type.
+
+    Parameters
+    ----------
+    cli_arg : str
+    type_fun : function
+        A function to be called on each substring of `cli_arg`; default: str.
+    value_separator : str
+    """
+    if type_fun is None:
+        type_fun = str
+    out = [type_fun(value) for value in cli_arg.split(value_separator)]
+    return out
+
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--order', type=int, default=1,
-        help='Approximation order of displacements [default: %(default)s]')
+        '--order', type=int, default=1, help='The approximation order of the '
+        'displacement field [default: %(default)s]')
     parser.add_argument(
-        '-m', '--material-parameters', metavar=('C10', 'C01'), type=float,
-        nargs=2, default=[1.0, 0.5],
+        '-m', '--material-parameters', default='1.0, 0.5',
         help='Material parameters - C10, C01 - of the two-parametric '
         'Mooney-Rivlin hyperelastic model. [default: %(default)s]')
     parser.add_argument(
-        '--dims', metavar=('DIM_X', 'DIM_Y', 'DIM_Z'), action='store',
-        dest='dims', type=float, nargs=DIMENSION, default=[1.0, 1.0, 1.0],
-        help='dimensions of the block [default: %(default)s]')
+        '--dims', default="1.0, 1.0, 1.0",
+        help='Dimensions of the block [default: %(default)s]')
     parser.add_argument(
-        '--shape', metavar=('SHAPE_X', 'SHAPE_Y', 'SHAPE_Z'), action='store',
-        dest='shape', type=int, nargs=DIMENSION, default=[4, 4, 4],
-        help='shape (counts of nodes in x, y, z) of the block [default: '
+        '--shape', default='4, 4, 4',
+        help='Shape (counts of nodes in x, y, z) of the block [default: '
         '%(default)s]')
     parser.add_argument(
-        '--centre', metavar=('CENTRE_X', 'CENTRE_Y', 'CENTRE_Z'),
-        action='store', dest='centre', type=float, nargs=DIMENSION,
-        default=[0.5, 0.5, 0.5],
-        help='centre of the block [default: %(default)s]')
+        '--centre', default='0.5, 0.5, 0.5',
+        help='Centre of the block [default: %(default)s]')
     parser.add_argument(
         '-p', '--plot', action='store_true', default=False,
         help='Whether to plot a comparison with analytical formula.')
