@@ -8,7 +8,7 @@ from sfepy.discrete import Problem
 from sfepy.discrete.fem.meshio import MeshIO
 from .application import Application
 
-def solve_pde(conf, options=None, nls_status=None, **app_options):
+def solve_pde(conf, options=None, status=None, **app_options):
     """
     Solve a system of partial differential equations (PDEs).
 
@@ -22,8 +22,8 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
         or directly the ProblemConf instance.
     options : options
         The command-line options.
-    nls_status : dict-like
-        The object for storing the nonlinear solver return status.
+    status : dict-like
+        The object for storing the solver return status.
     app_options : kwargs
         The keyword arguments that can override application-specific options.
     """
@@ -53,7 +53,7 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
         parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)
 
-    return app(nls_status=nls_status)
+    return app(status=status)
 
 def save_only(conf, save_names, problem=None):
     """
@@ -183,7 +183,7 @@ class PDESolverApp(Application):
                              file_per_var=self.app_options.file_per_var,
                              linearization=self.app_options.linearization)
 
-    def call(self, tss_status=None):
+    def call(self, status=None):
         problem = self.problem
         options = self.options
 
@@ -213,7 +213,7 @@ class PDESolverApp(Application):
             return None, None, None
 
         state = problem.solve(
-            status=tss_status, step_hook=self.step_hook,
+            status=status, step_hook=self.step_hook,
             post_process_hook=self.post_process_hook,
             post_process_hook_final=self.post_process_hook_final)
 
