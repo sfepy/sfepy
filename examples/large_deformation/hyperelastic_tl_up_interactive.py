@@ -359,7 +359,9 @@ def parse_argument_list(cli_arg, type_fun=None, value_separator=','):
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         '--order', type=int, default=1, help='The approximation order of the '
         'displacement field [default: %(default)s]')
