@@ -252,6 +252,7 @@ class Problem(Struct):
 
         self.mtx_a = None
         self.solver = None
+        self.ts = self.get_default_ts()
         self.clear_equations()
 
         self._restart_filenames = []
@@ -566,7 +567,8 @@ class Problem(Struct):
         sets `self.ts` attribute.
         """
         if isinstance(solver, NonlinearSolver):
-            solver = StationarySolver({}, nls=solver.copy())
+            solver = StationarySolver({}, nls=solver.copy(),
+                                      ts=self.get_default_ts())
         self.solver = solver.copy()
         self.ts = solver.ts
         self.status = get_default(solver.status, IndexedStruct())
