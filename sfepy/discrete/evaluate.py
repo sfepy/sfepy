@@ -40,10 +40,7 @@ class Evaluator(Struct):
     """
 
     def __init__(self, problem, matrix_hook=None):
-        Struct.__init__(self, problem=problem, matrix_hook=matrix_hook,
-                        has_lcbc=problem.equations.variables.has_lcbc)
-        if self.has_lcbc:
-            self.mtx_lcbc = problem.equations.get_lcbc_operator()
+        Struct.__init__(self, problem=problem, matrix_hook=matrix_hook)
 
     def new_ulf_iteration(self, nls, vec, it, err, err0):
 
@@ -80,8 +77,10 @@ class Evaluator(Struct):
         if self.matrix_hook is not None:
             vec_r = self.matrix_hook(vec_r, self.problem, call_mode='residual')
 
-        if self.has_lcbc:
-            vec_rr = self.mtx_lcbc.T * vec_r
+        if self.problem.equations.variables.has_lcbc:
+            mtx_lcbc = self.problem.equations.get_lcbc_operator()
+
+            vec_rr = mtx_lcbc.T * vec_r
             if self.matrix_hook is not None:
                 vec_rr = self.matrix_hook(vec_rr, self.problem,
                                           call_mode='lcbc_residual')
@@ -107,8 +106,10 @@ class Evaluator(Struct):
         if self.matrix_hook is not None:
             mtx = self.matrix_hook(mtx, pb, call_mode='basic')
 
-        if self.has_lcbc:
-            mtx_r = self.mtx_lcbc.T * mtx * self.mtx_lcbc
+        if self.problem.equations.variables.has_lcbc:
+            mtx_lcbc = self.problem.equations.get_lcbc_operator()
+
+            mtx_r = mtx_lcbc.T * mtx * mtx_lcbc
             mtx_r = mtx_r.tocsr()
             mtx_r.sort_indices()
 
