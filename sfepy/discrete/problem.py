@@ -548,7 +548,7 @@ class Problem(Struct):
         if info != 'using solvers:':
             output(info)
 
-    def set_solver(self, solver):
+    def set_solver(self, solver, status=None):
         """
         Set a time-stepping or nonlinear solver to be used in
         :func:`Problem.solve()` call.
@@ -568,7 +568,9 @@ class Problem(Struct):
         """
         if isinstance(solver, NonlinearSolver):
             solver = StationarySolver({}, nls=solver.copy(),
-                                      ts=self.get_default_ts())
+                                      ts=self.get_default_ts(),
+                                      status=status)
+
         self.solver = solver.copy()
         self.ts = solver.ts
         self.status = get_default(solver.status, IndexedStruct())
@@ -1050,16 +1052,16 @@ class Problem(Struct):
         epbc_indx = nm.concatenate(epbc_indx, axis=1)
         return ebc_indx, epbc_indx
 
-    def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
+    def init_solvers(self, status=None, ls_conf=None, nls_conf=None,
                      ts_conf=None, force=False):
         """
         Create and initialize solver instances.
 
         Parameters
         ----------
-        nls_status : dict-like, IndexedStruct, optional
-            The user-supplied object to hold nonlinear solver convergence
-            statistics.
+        status : dict-like, IndexedStruct, optional
+            The user-supplied object to hold the time-stepping/nonlinear solver
+            convergence statistics.
         ls_conf : Struct, optional
             The linear solver options.
         nls_conf : Struct, optional
@@ -1081,18 +1083,24 @@ class Problem(Struct):
             if self.conf.options.get('ulf', False):
                 self.nls_iter_hook = ev.new_ulf_iteration
 
+            if status is None:
+                status = IndexedStruct()
+
+            status.set_default('nls_status', IndexedStruct())
+
             nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
                                        fun_grad=ev.eval_tangent_matrix,
                                        lin_solver=ls,
                                        iter_hook=self.nls_iter_hook,
-                                       status=nls_status, context=self)
+                                       status=status.nls_status, context=self)
 
             ts_conf = get_default(ts_conf, self.ts_conf)
             if ts_conf is None:
-                self.set_solver(nls)
+                self.set_solver(nls, status=status)
 
             else:
-                tss = Solver.any_from_conf(ts_conf, nls=nls, context=self)
+                tss = Solver.any_from_conf(ts_conf, nls=nls, context=self,
+                                           status=status)
                 self.set_solver(tss)
 
     def try_presolve(self, mtx):
@@ -1221,9 +1229,8 @@ class Problem(Struct):
         if status is None:
             status = IndexedStruct()
 
-        nls_status = IndexedStruct()
-        status['nls_status'] = nls_status
-        self.init_solvers(nls_status=nls_status)
+        if self.solver is None:
+            self.init_solvers(status=status)
 
         tss = self.get_solver()
 
