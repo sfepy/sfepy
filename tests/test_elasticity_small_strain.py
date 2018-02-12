@@ -173,25 +173,25 @@ class Test( TestCommon ):
 
             self.report('getpars')
             self.conf.equations = self.conf.equations_getpars
-            problem, state1 = solve_pde(self.conf, nls_status=status,
+            problem, state1 = solve_pde(self.conf, status=status,
                                         save_results=False)
-            converged = status.condition == 0
+            converged = status.nls_status.condition == 0
             ok = ok and converged
             self.report('converged: %s' % converged)
 
             self.report('matcoefs')
             self.conf.equations = self.conf.equations_matcoefs
-            problem, state2 = solve_pde(self.conf, nls_status=status,
+            problem, state2 = solve_pde(self.conf, status=status,
                                         save_results=False)
-            converged = status.condition == 0
+            converged = status.nls_status.condition == 0
             ok = ok and converged
             self.report('converged: %s' % converged)
 
             self.report('iso')
             self.conf.equations = self.conf.equations_iso
-            problem, state3 = solve_pde(self.conf, nls_status=status,
+            problem, state3 = solve_pde(self.conf, status=status,
                                         save_results=False)
-            converged = status.condition == 0
+            converged = status.nls_status.condition == 0
             ok = ok and converged
             self.report('converged: %s' % converged)
 
