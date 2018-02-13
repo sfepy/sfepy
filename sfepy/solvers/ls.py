@@ -740,14 +740,17 @@ class SchurGeneralized(ScipyDirect):
     ]
 
     def __init__(self, conf, context=None, **kwargs):
-        from sfepy.discrete.state import State
-
         ScipyDirect.__init__(self, conf, context=context, **kwargs)
 
-        equations = context.equations
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        from sfepy.discrete.state import State
+
+        equations = self.context.equations
         aux_state = State(equations.variables)
 
-        conf.idxs = {}
+        mtxi = {}
         for bk, bv in six.iteritems(conf.blocks):
             aux_state.fill(0.0)
             for jj in bv:
@@ -756,13 +759,8 @@ class SchurGeneralized(ScipyDirect):
 
             aux_state.apply_ebc()
             vec0 = aux_state.get_reduced()
-            conf.idxs[bk] = nm.where(nm.isnan(vec0))[0]
+            mtxi[bk] = nm.where(nm.isnan(vec0))[0]
 
-    @standard_call
-    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
-
-        mtxi= self.orig_conf.idxs
         mtxslc_s = {}
         mtxslc_f = {}
         nn = {}
@@ -841,7 +839,7 @@ class SchurComplement(SchurGeneralized):
 
     __metaclass__ = SolverMeta
 
-    _parameters = ScipyDirect._parameters + [
+    _parameters = SchurGeneralized._parameters + [
         ('eliminate', 'list', None, True,
          'The list of variables to eliminate.'),
         ('keep', 'list', None, True,
