@@ -1224,6 +1224,7 @@ class Problem(Struct):
 
     def solve(self, state0=None, status=None, force_values=None,
               var_data=None, update_bcs=True, update_materials=True,
+              save_results=True,
               step_hook=None, post_process_hook=None,
               post_process_hook_final=None, verbose=True):
         """Solve self.equations in current time step.
@@ -1251,32 +1252,110 @@ class Problem(Struct):
             if isinstance(state0, nm.ndarray):
                 state0 = State(self.equations.variables, vec=state0)
 
-        self.time_update(tss.ts) # Only having adi is required here(?)
-        # Init solvers after time_update() to have LCBC evaluator need known.
-        # -> copy nls and set new functions...
+        if self.conf.options.get('block_solve', False):
+            state = self.block_solve(state0, status=status,
+                                     save_results=save_results,
+                                     step_hook=step_hook,
+                                     post_process_hook=post_process_hook,
+                                     verbose=verbose)
 
-        state0.apply_ebc(force_values=force_values)
+        else:
+            self.time_update(tss.ts) # Only having adi is required here(?)
 
-        if self.is_linear():
-            mtx = prepare_matrix(self, state0)
-            self.try_presolve(mtx)
+            state0.apply_ebc(force_values=force_values)
 
-        init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
-            state0, step_hook=step_hook, post_process_hook=post_process_hook)
+            if self.is_linear():
+                mtx = prepare_matrix(self, state0)
+                self.try_presolve(mtx)
 
-        vec = tss(state0.get_vec(self.active_only),
-                  init_fun=init_fun,
-                  prestep_fun=prestep_fun,
-                  poststep_fun=poststep_fun,
-                  status=status)
-        output('solved in %d steps in %.2f seconds'
-               % (status['n_step'], status['time']), verbose=verbose)
+            init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
+                state0, save_results=save_results,
+                step_hook=step_hook, post_process_hook=post_process_hook)
 
-        state = state0.copy()
-        state.set_vec(vec, self.active_only)
+            vec = tss(state0.get_vec(self.active_only),
+                      init_fun=init_fun,
+                      prestep_fun=prestep_fun,
+                      poststep_fun=poststep_fun,
+                      status=status)
+            output('solved in %d steps in %.2f seconds'
+                   % (status['n_step'], status['time']), verbose=verbose)
+
+            state = state0.copy()
+            state.set_vec(vec, self.active_only)
 
         if post_process_hook_final is not None: # User postprocessing.
             post_process_hook_final(self, state)
+
+        return state
+
+    def block_solve(self, state0=None, status=None, save_results=True,
+                    step_hook=None, post_process_hook=None,
+                    verbose=True):
+        """
+        Call :func:`Problem.solve()` sequentially for the individual matrix
+        blocks of a block-triangular matrix. It is called by
+        :func:`Problem.solve()` if the `'block_solve'` option is set to True.
+        """
+        from sfepy.base.base import invert_dict, get_subdict
+        from sfepy.base.resolve_deps import resolve
+
+        if not isinstance(self.get_solver(), StationarySolver):
+            msg = 'The block solve can be used only for stationary problems!'
+            raise ValueError(msg)
+
+        def replace_virtuals(deps, pairs):
+            out = {}
+            for key, val in six.iteritems(deps):
+                out[pairs[key]] = val
+
+            return out
+
+        if state0 is None:
+            state0 = self.get_initial_state()
+
+        variables = self.get_variables()
+        vtos = variables.get_dual_names()
+        vdeps = self.equations.get_variable_dependencies()
+        sdeps = replace_virtuals(vdeps, vtos)
+
+        sorder = resolve(sdeps)
+
+        stov = invert_dict(vtos)
+        vorder = [[stov[ii] for ii in block] for block in sorder]
+
+        parts0 = state0.get_parts()
+        state = state0.copy()
+        solved = []
+        for ib, block in enumerate(vorder):
+            output('solving for %s...' % sorder[ib], verbose=verbose)
+
+            subpb = self.create_subproblem(block, solved)
+            subpb.conf.options.block_solve = False
+
+            subpb.equations.print_terms()
+
+            substate0 = subpb.create_state()
+
+            vals = get_subdict(parts0, block)
+            substate0.set_parts(vals)
+
+            substate = subpb.solve(state0=substate0, status=status,
+                                   save_results=False, step_hook=step_hook,
+                                   post_process_hook=post_process_hook,
+                                   verbose=verbose)
+
+            state.set_parts(substate.get_parts())
+
+            solved.extend(sorder[ib])
+            output('...done', verbose=verbose)
+
+        if step_hook is not None:
+            step_hook(self, None, state)
+
+        if save_results:
+            self.save_state(self.get_output_name(), state,
+                            post_process_hook=post_process_hook,
+                            file_per_var=None)
 
         return state
 
