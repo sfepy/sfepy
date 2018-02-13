@@ -10,7 +10,7 @@ given by
 
 where :math:`\overline I_1` and :math:`\overline I_2` are the first
 and second main invariants of the deviatoric part of the right
-Cauchy-Green deformation tensor :math:`\overline{\ull{C}}`. The coefficients
+Cauchy-Green deformation tensor :math:`\ull{C}`. The coefficients
 :math:`C_{(10)}` and :math:`C_{(01)}` are material parameters.
 
 Components of the second Piola-Kirchhoff stress are in the case of an
