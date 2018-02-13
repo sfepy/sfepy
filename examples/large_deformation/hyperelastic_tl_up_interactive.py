@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""
 Incompressible Mooney-Rivlin hyperelastic material model.
 In this model, the deformation energy density per unit reference volume is
