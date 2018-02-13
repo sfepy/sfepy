@@ -217,9 +217,11 @@ def main():
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('elasticity', equations=eqs)
 
-    pb.time_update(ebcs=Conditions([xsym, ysym]))
+    pb.set_bcs(ebcs=Conditions([xsym, ysym]))
+
+    pb.set_solver(nls)
 
     # Solve the problem.
     state = pb.solve()

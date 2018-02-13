@@ -205,9 +205,12 @@ def main():
 
     nls = Newton({}, lin_solver=ls)
 
-    pb = Problem('heat', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('heat', equations=eqs)
 
-    pb.time_update(ebcs=Conditions([fix1, fix2]))
+    pb.set_bcs(ebcs=Conditions([fix1, fix2]))
+
+    pb.set_solver(nls)
+
     state = pb.solve()
 
     if subs is not None:
