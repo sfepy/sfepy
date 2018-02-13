@@ -5,30 +5,11 @@ from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import (get_default, output, assert_,
-                             Struct, IndexedStruct, basestr)
+                             Struct, IndexedStruct)
 from sfepy.linalg.utils import output_array_stats
 from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 import six
-
-class NewmarkState(Struct):
-
-    def __init__(self, uname, vname, aname):
-        Struct.__init__(self, uname=uname, vname=vname, aname=aname)
-
-    def unpack(self, state):
-        parts = state.get_parts()
-        vvs = state.variables
-        u = vvs[self.uname].get_reduced(parts[self.uname])
-        v = vvs[self.vname].get_reduced(parts[self.vname])
-        a = vvs[self.aname].get_reduced(parts[self.aname])
-
-        return u, v, a
-
-    def pack(self, state, u, v, a):
-        vec = nm.r_[u, v, a]
-
-        state.set_reduced(vec)
 
 def gen_multi_vec_packing(size, num):
     assert_((size % num) == 0)
@@ -371,39 +352,6 @@ class EquationSequenceSolver(TimeSteppingSolver):
 
     def init_time(self, nls_status=None):
         self.problem.init_solvers(nls_status=nls_status)
-
-def make_implicit_step(ts, state0, problem, nls_status=None):
-    """
-    Make a step of an implicit time stepping solver.
-    """
-    if ts.step == 0:
-        state0.apply_ebc()
-        state = state0.copy(deep=True)
-
-        if not ts.is_quasistatic:
-            ev = problem.get_evaluator()
-            try:
-                vec_r = ev.eval_residual(state(), is_full=True)
-            except ValueError:
-                output('initial residual evaluation failed, giving up...')
-                raise
-            else:
-                err = nm.linalg.norm(vec_r)
-                output('initial residual: %e' % err)
-
-        if problem.is_linear():
-            mtx = prepare_matrix(problem, state)
-            problem.try_presolve(mtx)
-
-        if ts.is_quasistatic:
-            # Ordinary solve.
-            state = problem.solve(state0=state0, nls_status=nls_status)
-
-    else:
-        problem.time_update(ts)
-        state = problem.solve(state0=state0, nls_status=nls_status)
-
-    return state
 
 def get_min_dt(adt):
     red = adt.red
