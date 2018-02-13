@@ -489,6 +489,8 @@ class Term(Struct):
         if user is None:
             user = {}
 
+        user.setdefault('ts', Struct())
+
         kwargs = {}
         for arg_name in self.arg_names:
             if isinstance(arg_name, basestr):
@@ -922,6 +924,9 @@ class Term(Struct):
             self.step = ts.step
             self.dt = ts.dt
             self.is_quasistatic = ts.is_quasistatic
+
+        if 'ts' in self._kwargs:
+            self._kwargs['ts'].update(ts)
 
     def advance(self, ts):
         """

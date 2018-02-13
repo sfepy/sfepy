@@ -228,6 +228,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
                               active_only=active_only, verbose=verbose)
 
     else:
+        for eq in equations:
+            for term in eq.terms:
+                term.time_update(ts)
         setup_extra_data(equations.conn_info)
 
     return equations, variables
