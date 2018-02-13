@@ -891,12 +891,13 @@ class MultiProblem(ScipyDirect):
     ]
 
     def __init__(self, conf, context=None, **kwargs):
+        ScipyDirect.__init__(self, conf, context=context, **kwargs)
+
+    def init_subproblems(self, conf, **kwargs):
         from sfepy.discrete.state import State
         from sfepy.discrete import Problem
         from sfepy.base.conf import ProblemConf, get_standard_keywords
         from scipy.spatial import cKDTree as KDTree
-
-        ScipyDirect.__init__(self, conf, context=context, **kwargs)
 
         # init subproblems
         problem = self.context
@@ -1029,6 +1030,7 @@ class MultiProblem(ScipyDirect):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
+        self.init_subproblems(self.conf, **kwargs)
 
         max_indx = 0
         hst = nm.hstack
