@@ -1118,7 +1118,8 @@ class Problem(Struct):
         tss = get_default(None, self.solver, 'solver is not set!')
         return tss
 
-    def get_tss_functions(self, state0, step_hook=None, post_process_hook=None):
+    def get_tss_functions(self, state0, save_results=True,
+                          step_hook=None, post_process_hook=None):
         """
         """
         def init_fun(ts, vec0):
@@ -1153,14 +1154,21 @@ class Problem(Struct):
             if restart_filename is not None:
                 self.save_restart(restart_filename, state, ts=ts)
 
-            suffix, is_save = prepare_save_data(ts, self.conf)
-            # base is_save on times, not on steps!
-            suffix = suffix % ts.step
-            filename = self.get_output_name(suffix=suffix)
-            self.save_state(filename, state,
-                               post_process_hook=post_process_hook,
-                               file_per_var=None,
-                               ts=ts)
+            if save_results:
+                if not isinstance(self.get_solver(), StationarySolver):
+                    suffix, is_save = prepare_save_data(ts, self.conf)
+                    # base is_save on times, not on steps!
+                    suffix = suffix % ts.step
+
+                else:
+                    suffix = None
+
+                filename = self.get_output_name(suffix=suffix)
+                self.save_state(filename, state,
+                                post_process_hook=post_process_hook,
+                                file_per_var=None,
+                                ts=ts)
+
             self.advance(ts)
 
         return init_fun, prestep_fun, poststep_fun
