@@ -105,6 +105,7 @@ solvers = {
         't1'     : t1,
         'dt'     : None,
         'n_step' : n_step, # has precedence over dt!
+        'verbose' : 1,
     }),
 }
 

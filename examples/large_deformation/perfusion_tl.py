@@ -78,7 +78,7 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'ts' : 'ts',
-    'save_steps' : -1,
+    'save_times' : 'all',
     'post_process_hook' : 'post_process',
 }
 
@@ -194,6 +194,7 @@ solver_2 = {
     't1'    : t1,
     'dt'    : None,
     'n_step' : n_step, # has precedence over dt!
+    'verbose' : 1,
 }
 
 ##
@@ -201,7 +202,7 @@ solver_2 = {
 def get_traction(ts, coors, mode=None):
     """
     Pressure traction.
-    
+
     Parameters
     ----------
     ts : TimeStepper

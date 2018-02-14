@@ -128,5 +128,6 @@ solvers = {
         't1': 1,
         'dt': None,
         'n_step': 11, # has precedence over dt!
+        'verbose' : 1,
         }),
     }

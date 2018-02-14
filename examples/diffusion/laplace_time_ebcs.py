@@ -83,5 +83,6 @@ solvers = {
         'n_step' : 5, # has precedence over dt!
 
         'quasistatic' : True,
+        'verbose' : 1,
     }),
 }

@@ -69,7 +69,7 @@ def get_ic(coor, ic):
 functions = {
     'get_ic' : (get_ic,),
 }
-    
+
 ics = {
     'ic' : ('Omega', {'T.0' : 'get_ic'}),
 }
@@ -118,11 +118,12 @@ solver_2 = {
     't1'    : t1,
     'dt'    : None,
     'n_step' : n_step, # has precedence over dt!
+    'verbose' : 1,
 }
 
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'ts' : 'ts',
-    'save_steps' : -1,
+    'save_times' : 'all',
 }

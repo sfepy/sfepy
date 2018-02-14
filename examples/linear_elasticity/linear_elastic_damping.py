@@ -30,7 +30,7 @@ def print_times(problem, state):
 
 options = {
     'ts' : 'ts',
-    'save_steps' : -1,
+    'save_times' : 'all',
     'post_process_hook_final' : print_times,
     'output_format' : 'h5',
 }

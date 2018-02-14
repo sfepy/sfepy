@@ -137,6 +137,7 @@ solvers = {
         'dt' : None,
         'n_step' : n_step, # has precedence over dt!
         'quasistatic' : False,
+        'verbose' : 1,
     }),
 }
 
@@ -145,6 +146,6 @@ options = {
     'ls' : 'ls',
     'ts' : 'ts',
     'output_dir' : 'output',
-    'save_steps' : -1,
+    'save_times' : 'all',
     'active_only' : False,
 }

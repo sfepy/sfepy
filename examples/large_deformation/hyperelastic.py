@@ -52,7 +52,7 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'ts' : 'ts',
-    'save_steps' : -1,
+    'save_times' : 'all',
     'post_process_hook' : 'stress_strain',
 }
 
@@ -184,4 +184,5 @@ solver_2 = {
     't1'    : 1,
     'dt'    : None,
     'n_step' : 11, # has precedence over dt!
+    'verbose' : 1,
 }

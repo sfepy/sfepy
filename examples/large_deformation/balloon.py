@@ -194,7 +194,7 @@ def define(plot=False):
         'nls' : 'newton',
         'ls' : 'ls',
         'ts' : 'ts',
-        'save_steps' : -1,
+        'save_times' : 'all',
         'output_dir' : '.',
         'output_format' : 'h5',
     }

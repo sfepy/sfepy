@@ -36,7 +36,7 @@ def define():
         'nls' : 'newton',
         'ls' : 'ls',
         'ts' : 'ts',
-        'save_steps' : -1,
+        'save_times' : 'all',
     }
 
     functions = {
@@ -108,6 +108,7 @@ def define():
             't1'    : 1,
             'dt'    : None,
             'n_step' : 101, # has precedence over dt!
+            'verbose' : 1,
         }),
     }
 
