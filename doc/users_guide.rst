@@ -1065,9 +1065,12 @@ Additional options (including solver selection)::
         # string, time stepping solver name
         'ts' : 'ts',
 
-        # int, number of time steps when results should be saved (spaced
-        # regularly from 0 to n_step), or -1 for all time steps
-        'save_steps' : -1,
+        # The times at which results should be saved:
+        # - a sequence of times
+        # - or 'all' for all time steps (the default value)
+        # - or an int, number of time steps, spaced regularly from t0 to t1
+        # - or a function `is_save(ts)`
+        'save_times' : 'all',
 
         # save a restart file for each time step, only the last computed time
         # step restart file is kept.
