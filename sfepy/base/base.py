@@ -1053,10 +1053,10 @@ def dict_to_struct(*args, **kwargs):
 ##
 # 23.01.2006, c
 def is_sequence(var):
-    if issubclass(var.__class__, tuple) or issubclass(var.__class__, list):
-        return True
-    else:
+    from collections import Sequence
+    if isinstance(var, basestring):
         return False
+    return isinstance(var, Sequence)
 
 ##
 # 17.10.2007, c

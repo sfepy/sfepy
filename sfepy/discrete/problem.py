@@ -6,7 +6,7 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import dict_from_keys_init, select_by_names
+from sfepy.base.base import dict_from_keys_init, select_by_names, is_sequence
 from sfepy.base.base import output, get_default, Struct, IndexedStruct
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -29,23 +29,47 @@ from sfepy.solvers.ts_solvers import StationarySolver
 import six
 from six.moves import range
 
-def prepare_save_data(ts, conf):
+def make_is_save(options):
     """
-    Given a time stepper configuration, return a list of time steps when the
-    state should be saved.
+    Given problem options, return a callable that determines whether to save
+    results of a time step.
     """
-    try:
-        save_steps = conf.options.save_steps
-    except:
-        save_steps = -1
+    class IsSave(Struct):
+        def __init__(self, save_times):
+            if is_sequence(save_times):
+                save_times = nm.asarray(save_times)
 
-    if save_steps == -1:
-        save_steps = ts.n_step
+            self.save_times0 = save_times
+            self.reset()
 
-    is_save = nm.linspace(0, ts.n_step - 1, save_steps).astype(nm.int32)
-    is_save = nm.unique(is_save)
+        def reset(self, ts=None):
+            self.ilast = 0
+            self.save_times = self.save_times0
+            if ts is not None:
+                if isinstance(self.save_times0, (int, long)):
+                    self.save_times = nm.linspace(ts.t0, ts.t1,
+                                                  self.save_times0)
 
-    return ts.suffix, is_save
+        def __call__(self, ts):
+            if self.save_times == 'all':
+                return True
+
+            elif isinstance(self.save_times, nm.ndarray):
+                if (self.ilast < len(self.save_times)
+                    and (ts.time + (1e-14 * ts.dt)
+                         >= self.save_times[self.ilast])):
+                    self.ilast += 1
+                    return True
+
+            elif callable(self.save_times):
+                return self.save_times(ts)
+
+            return False
+
+    save_times = options.get('save_times', 'all')
+    is_save = IsSave(save_times)
+
+    return is_save
 
 def prepare_matrix(problem, state):
     """
@@ -1122,14 +1146,17 @@ class Problem(Struct):
                           step_hook=None, post_process_hook=None):
         """
         """
+        is_save = make_is_save(self.conf.options)
+
         def init_fun(ts, vec0):
             if not ts.is_quasistatic:
                 self.init_time(ts)
 
+            is_save.reset(ts)
+
             restart_filename = self.conf.options.get('load_restart', None)
             if restart_filename is not None:
-                self.load_restart(restart_filename, state=state0,
-                                     ts=ts)
+                self.load_restart(restart_filename, state=state0, ts=ts)
                 self.advance(ts)
                 ts.advance()
                 state = self.create_state()
@@ -1154,11 +1181,9 @@ class Problem(Struct):
             if restart_filename is not None:
                 self.save_restart(restart_filename, state, ts=ts)
 
-            if save_results:
+            if save_results and is_save(ts):
                 if not isinstance(self.get_solver(), StationarySolver):
-                    suffix, is_save = prepare_save_data(ts, self.conf)
-                    # base is_save on times, not on steps!
-                    suffix = suffix % ts.step
+                    suffix = ts.suffix % ts.step
 
                 else:
                     suffix = None
