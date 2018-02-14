@@ -246,6 +246,192 @@ class NewmarkTS(TimeSteppingSolver):
 
         return vec
 
+class BatheTS(NewmarkTS):
+    """
+    Solve elastodynamics problems by the Bathe's method [1].
+
+    [1] Klaus-Juergen Bathe, Conserving energy and momentum in nonlinear
+    dynamics: A simple implicit time integration scheme, Computers &
+    Structures, Volume 85, Issues 7-8, 2007, Pages 437-445, ISSN 0045-7949,
+    https://doi.org/10.1016/j.compstruc.2006.09.004
+    """
+    name = 'ts.bathe'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+    ]
+
+    def __init__(self, conf, nls=None, context=None, **kwargs):
+        NewmarkTS.__init__(self, conf, nls=nls, context=context,
+                           **kwargs)
+        self.matrix1 = None
+
+    def create_nlst1(self, nls, dt, u0, v0, a0):
+        """
+        The first sub-step: the trapezoidal rule.
+        """
+        nlst = nls.copy()
+
+        dt4 = 4.0 / dt
+
+        def v(u):
+            return dt4 * (u - u0) - v0
+
+        def a(v):
+            return dt4 * (v - v0) - a0
+
+        def fun(ut):
+            vt = v(ut)
+            at = a(vt)
+            vec = nm.r_[ut, vt, at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, 'matrix1', self.conf.is_linear)
+        def fun_grad(ut):
+            if self.conf.is_linear:
+                vec = None
+            else:
+                vt = v(ut)
+                at = a(vt)
+                vec = nm.r_[ut, vt, at]
+
+            M, C, K = self.get_matrices(nls, vec)
+
+            Kt = dt4 * dt4 * M + dt4 * C + K
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.v = v
+        nlst.a = a
+
+        return nlst
+
+    def create_nlst2(self, nls, dt, u0, u1, v0, v1):
+        """
+        The second sub-step: the three-point Euler backward method.
+        """
+        nlst = nls.copy()
+
+        dt1 = 1.0 / dt
+        dt4 = 4.0 * dt1
+        dt3 = 3.0 * dt1
+
+        def v(u):
+            return dt1 * u0 - dt4 * u1 + dt3 * u
+
+        def a(v):
+            return dt1 * v0 - dt4 * v1 + dt3 * v
+
+        def fun(ut):
+            vt = v(ut)
+            at = a(vt)
+            vec = nm.r_[ut, vt, at]
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, 'matrix', self.conf.is_linear)
+        def fun_grad(ut):
+            if self.conf.is_linear:
+                vec = None
+            else:
+                vt = v(ut)
+                at = a(vt)
+                vec = nm.r_[ut, vt, at]
+
+            M, C, K = self.get_matrices(nls, vec)
+
+            Kt = dt3 * dt3 * M + dt3 * C + K
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.v = v
+        nlst.a = a
+
+        return nlst
+
+    @standard_ts_call
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        """
+        Solve elastodynamics problems by the Bathe's method.
+        """
+        nls = get_default(nls, self.nls)
+
+        ts = self.ts
+
+        vec0 = init_fun(ts, vec0)
+
+        unpack, pack = gen_multi_vec_packing(len(vec0), 3)
+
+        output(self.format % (ts.time, ts.step + 1, ts.n_step),
+               verbose=self.verbose)
+        if ts.step == 0:
+            prestep_fun(ts, vec0)
+            u0, v0, _ = unpack(vec0)
+
+            ut = u0
+            vt = v0
+            at = self.get_a0(nls, u0, v0)
+
+            vec = pack(ut, vt, at)
+            poststep_fun(ts, vec)
+            ts.advance()
+
+        else:
+            vec = vec0
+
+        for step, time in ts.iter_from(ts.step):
+            output(self.format % (time, step + 1, ts.n_step),
+                   verbose=self.verbose)
+            dt = ts.dt
+
+            prestep_fun(ts, vec)
+            ut, vt, at = unpack(vec)
+            nlst1 = self.create_nlst1(nls, dt, ut, vt, at)
+            ut1 = nlst1(ut)
+            vt1 = nlst1.v(ut1)
+            at1 = nlst1.a(vt1)
+
+            ts.set_substep_time(0.5 * dt)
+
+            vec1 = pack(ut1, vt1, at1)
+            prestep_fun(ts, vec1)
+
+            nlst2 = self.create_nlst2(nls, dt, ut, ut1, vt, vt1)
+            ut2 = nlst2(ut1)
+            vt2 = nlst2.v(ut2)
+            at2 = nlst2.a(vt2)
+
+            ts.restore_step_time()
+
+            vec2 = pack(ut2, vt2, at2)
+            poststep_fun(ts, vec2)
+
+            vec = vec2
+
+        return vec
+
 class StationarySolver(TimeSteppingSolver):
     """
     Solver for stationary problems without time stepping.
