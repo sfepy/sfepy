@@ -28,6 +28,7 @@ class TimeStepper(Struct):
                  is_quasistatic=False):
         self.set_from_data(t0, t1, dt=dt, n_step=n_step, step=step)
         self.is_quasistatic = is_quasistatic
+        self.step_start_time = None
 
     def _get_n_step(self, t0, t1, dt):
         n_step = int(round(nm.floor(((t1 - t0) / dt) + 0.5) + 1.0))
@@ -60,6 +61,15 @@ class TimeStepper(Struct):
 
     def set_state(self, step=0, **kwargs):
         self.set_step(step=step)
+
+    def set_substep_time(self, sub_dt):
+        self.step_start_time = self.time
+        self.time += sub_dt
+
+    def restore_step_time(self):
+        if self.step_start_time is not None:
+            self.time = self.step_start_time
+            self.step_start_time = None
 
     def advance(self):
         if self.step < (self.n_step - 1):
