@@ -71,41 +71,12 @@ def standard_ts_call(call):
 
     return _standard_ts_call
 
-class NewmarkTS(TimeSteppingSolver):
+class ElastodynamicsBaseTS(TimeSteppingSolver):
     """
+    Base class for elastodynamics solvers.
+
     Assumes block-diagonal matrix in `u`, `v`, `a`.
-
-    Common settings [1]:
-
-                                 beta gamma Omega_crit
-    trapezoidal rule:    implicit 1/4  1/2  unconditional
-    linear acceleration: implicit 1/6  1/2  2\sqrt{3}
-    Fox-Goodwin:         implicit 1/12 1/2  \sqrt{6}
-    central difference:  explicit 0    1/2  2
-
-    All of these methods are 2-order of accuracy.
-
-    [1] Arnaud Delaplace, David Ryckelynck: Solvers for Computational Mechanics
     """
-    name = 'ts.newmark'
-
-    __metaclass__ = SolverMeta
-
-    _parameters = [
-        ('t0', 'float', 0.0, False,
-         'The initial time.'),
-        ('t1', 'float', 1.0, False,
-         'The final time.'),
-        ('dt', 'float', None, False,
-         'The time step. Used if `n_step` is not given.'),
-        ('n_step', 'int', 10, False,
-         'The number of time steps. Has precedence over `dt`.'),
-        ('is_linear', 'bool', False, False,
-         'If True, the problem is considered to be linear.'),
-        ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
-        ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
-    ]
-
     def __init__(self, conf, nls=None, context=None, **kwargs):
         TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
                                     **kwargs)
@@ -156,58 +127,11 @@ class NewmarkTS(TimeSteppingSolver):
         output_array_stats(a0, 'initial acceleration', verbose=self.verbose)
         return a0
 
-    def create_nlst(self, nls, dt, gamma, beta, u0, v0, a0):
-        nlst = nls.copy()
-
-        dt2 = dt**2
-
-        def v(a):
-            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
-
-        def u(a):
-            return u0 + dt * v0 + dt2 * ((0.5 - beta) * a0 + beta * a)
-
-        def fun(at):
-            vec = nm.r_[u(at), v(at), at]
-
-            aux = nls.fun(vec)
-
-            i3 = len(at)
-            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
-            return rt
-
-        @_cache(self, 'matrix', self.conf.is_linear)
-        def fun_grad(at):
-            vec = None if self.conf.is_linear else nm.r_[u(at), v(at), at]
-            M, C, K = self.get_matrices(nls, vec)
-
-            Kt = M + gamma * dt * C + beta * dt2 * K
-            return Kt
-
-        nlst.fun = fun
-        nlst.fun_grad = fun_grad
-        nlst.u = u
-        nlst.v = v
-
-        return nlst
-
-    @standard_ts_call
-    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
-                 poststep_fun=None, status=None, **kwargs):
-        """
-        Solve elastodynamics problems by the Newmark method.
-        """
-        conf = self.conf
-        nls = get_default(nls, self.nls)
-
+    def get_initial_vec(self, nls, vec0, init_fun, prestep_fun, poststep_fun):
         ts = self.ts
-
         vec0 = init_fun(ts, vec0)
 
         unpack, pack = gen_multi_vec_packing(len(vec0), 3)
-
-        gamma = conf.gamma
-        beta = conf.beta
 
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
                verbose=self.verbose)
@@ -226,6 +150,132 @@ class NewmarkTS(TimeSteppingSolver):
         else:
             vec = vec0
 
+        return vec, unpack, pack
+
+    def _create_nlst_a(self, nls, dt, ufun, vfun, cc, ck, cache_name):
+        nlst = nls.copy()
+
+        def fun(at):
+            vec = nm.r_[ufun(at), vfun(at), at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, 'matrix', self.conf.is_linear)
+        def fun_grad(at):
+            vec = None if self.conf.is_linear else nm.r_[ufun(at), vfun(at), at]
+            M, C, K = self.get_matrices(nls, vec)
+
+            Kt = M + cc * C + ck * K
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.u = ufun
+        nlst.v = vfun
+
+        return nlst
+
+    def _create_nlst_u(self, nls, dt, vfun, afun, cm, cc, cache_name):
+        nlst = nls.copy()
+
+        def fun(ut):
+            vt = vfun(ut)
+            at = afun(vt)
+            vec = nm.r_[ut, vt, at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, cache_name, self.conf.is_linear)
+        def fun_grad(ut):
+            if self.conf.is_linear:
+                vec = None
+            else:
+                vt = vfun(ut)
+                at = afun(vt)
+                vec = nm.r_[ut, vt, at]
+
+            M, C, K = self.get_matrices(nls, vec)
+
+            Kt = cm * M + cc * C + K
+            return Kt
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.v = vfun
+        nlst.a = afun
+
+        return nlst
+
+class NewmarkTS(ElastodynamicsBaseTS):
+    """
+    Solve elastodynamics problems by the Newmark method [1].
+
+    Common settings [2]:
+                                 beta gamma Omega_crit
+    trapezoidal rule:    implicit 1/4  1/2  unconditional
+    linear acceleration: implicit 1/6  1/2  2\sqrt{3}
+    Fox-Goodwin:         implicit 1/12 1/2  \sqrt{6}
+    central difference:  explicit 0    1/2  2
+
+    All of these methods are 2-order of accuracy.
+
+    [1] Newmark, N. M. (1959) A method of computation for structural dynamics.
+    Journal of Engineering Mechanics, ASCE, 85 (EM3) 67-94.
+    [2] Arnaud Delaplace, David Ryckelynck: Solvers for Computational Mechanics
+    """
+    name = 'ts.newmark'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+        ('beta', 'float', 0.25, False, 'The Newmark method parameter beta.'),
+        ('gamma', 'float', 0.5, False, 'The Newmark method parameter gamma.'),
+    ]
+
+    def create_nlst(self, nls, dt, gamma, beta, u0, v0, a0):
+        dt2 = dt**2
+
+        def v(a):
+            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
+
+        def u(a):
+            return u0 + dt * v0 + dt2 * ((0.5 - beta) * a0 + beta * a)
+
+        nlst = self._create_nlst_a(nls, dt, u, v, gamma * dt, beta * dt2,
+                                   'matrix')
+        return nlst
+
+    @standard_ts_call
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        """
+        Solve elastodynamics problems by the Newmark method.
+        """
+        conf = self.conf
+        nls = get_default(nls, self.nls)
+
+        vec, unpack, pack = self.get_initial_vec(
+            nls, vec0, init_fun, prestep_fun, poststep_fun)
+
+        ts = self.ts
         for step, time in ts.iter_from(ts.step):
             output(self.format % (time, step + 1, ts.n_step),
                    verbose=self.verbose)
@@ -234,7 +284,7 @@ class NewmarkTS(TimeSteppingSolver):
             prestep_fun(ts, vec)
             ut, vt, at = unpack(vec)
 
-            nlst = self.create_nlst(nls, dt, gamma, beta, ut, vt, at)
+            nlst = self.create_nlst(nls, dt, conf.gamma, conf.beta, ut, vt, at)
             atp = nlst(at)
             vtp = nlst.v(atp)
             utp = nlst.u(atp)
@@ -246,14 +296,14 @@ class NewmarkTS(TimeSteppingSolver):
 
         return vec
 
-class BatheTS(NewmarkTS):
+class BatheTS(ElastodynamicsBaseTS):
     """
-    Solve elastodynamics problems by the Bathe's method [1].
+    Solve elastodynamics problems by the Bathe method [1].
 
     [1] Klaus-Juergen Bathe, Conserving energy and momentum in nonlinear
     dynamics: A simple implicit time integration scheme, Computers &
     Structures, Volume 85, Issues 7-8, 2007, Pages 437-445, ISSN 0045-7949,
-    https://doi.org/10.1016/j.compstruc.2006.09.004
+    https://doi.org/10.1016/j.compstruc.2006.09.004.
     """
     name = 'ts.bathe'
 
@@ -273,16 +323,14 @@ class BatheTS(NewmarkTS):
     ]
 
     def __init__(self, conf, nls=None, context=None, **kwargs):
-        NewmarkTS.__init__(self, conf, nls=nls, context=context,
-                           **kwargs)
+        ElastodynamicsBaseTS.__init__(self, conf, nls=nls, context=context,
+                                      **kwargs)
         self.matrix1 = None
 
     def create_nlst1(self, nls, dt, u0, v0, a0):
         """
         The first sub-step: the trapezoidal rule.
         """
-        nlst = nls.copy()
-
         dt4 = 4.0 / dt
 
         def v(u):
@@ -291,44 +339,13 @@ class BatheTS(NewmarkTS):
         def a(v):
             return dt4 * (v - v0) - a0
 
-        def fun(ut):
-            vt = v(ut)
-            at = a(vt)
-            vec = nm.r_[ut, vt, at]
-
-            aux = nls.fun(vec)
-
-            i3 = len(at)
-            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
-            return rt
-
-        @_cache(self, 'matrix1', self.conf.is_linear)
-        def fun_grad(ut):
-            if self.conf.is_linear:
-                vec = None
-            else:
-                vt = v(ut)
-                at = a(vt)
-                vec = nm.r_[ut, vt, at]
-
-            M, C, K = self.get_matrices(nls, vec)
-
-            Kt = dt4 * dt4 * M + dt4 * C + K
-            return Kt
-
-        nlst.fun = fun
-        nlst.fun_grad = fun_grad
-        nlst.v = v
-        nlst.a = a
-
+        nlst = self._create_nlst_u(nls, dt, v, a, dt4 * dt4, dt4, 'matrix1')
         return nlst
 
     def create_nlst2(self, nls, dt, u0, u1, v0, v1):
         """
         The second sub-step: the three-point Euler backward method.
         """
-        nlst = nls.copy()
-
         dt1 = 1.0 / dt
         dt4 = 4.0 * dt1
         dt3 = 3.0 * dt1
@@ -339,68 +356,21 @@ class BatheTS(NewmarkTS):
         def a(v):
             return dt1 * v0 - dt4 * v1 + dt3 * v
 
-        def fun(ut):
-            vt = v(ut)
-            at = a(vt)
-            vec = nm.r_[ut, vt, at]
-            aux = nls.fun(vec)
-
-            i3 = len(at)
-            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
-            return rt
-
-        @_cache(self, 'matrix', self.conf.is_linear)
-        def fun_grad(ut):
-            if self.conf.is_linear:
-                vec = None
-            else:
-                vt = v(ut)
-                at = a(vt)
-                vec = nm.r_[ut, vt, at]
-
-            M, C, K = self.get_matrices(nls, vec)
-
-            Kt = dt3 * dt3 * M + dt3 * C + K
-            return Kt
-
-        nlst.fun = fun
-        nlst.fun_grad = fun_grad
-        nlst.v = v
-        nlst.a = a
-
+        nlst = self._create_nlst_u(nls, dt, v, a, dt3 * dt3, dt3, 'matrix')
         return nlst
 
     @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
                  poststep_fun=None, status=None, **kwargs):
         """
-        Solve elastodynamics problems by the Bathe's method.
+        Solve elastodynamics problems by the Bathe method.
         """
         nls = get_default(nls, self.nls)
 
+        vec, unpack, pack = self.get_initial_vec(
+            nls, vec0, init_fun, prestep_fun, poststep_fun)
+
         ts = self.ts
-
-        vec0 = init_fun(ts, vec0)
-
-        unpack, pack = gen_multi_vec_packing(len(vec0), 3)
-
-        output(self.format % (ts.time, ts.step + 1, ts.n_step),
-               verbose=self.verbose)
-        if ts.step == 0:
-            prestep_fun(ts, vec0)
-            u0, v0, _ = unpack(vec0)
-
-            ut = u0
-            vt = v0
-            at = self.get_a0(nls, u0, v0)
-
-            vec = pack(ut, vt, at)
-            poststep_fun(ts, vec)
-            ts.advance()
-
-        else:
-            vec = vec0
-
         for step, time in ts.iter_from(ts.step):
             output(self.format % (time, step + 1, ts.n_step),
                    verbose=self.verbose)
