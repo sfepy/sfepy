@@ -223,6 +223,7 @@ latex_elements = {
 \usepackage{amsfonts}
 \def\dt{{\Delta t}}
 \def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
+\def\pddiff#1#2{\frac{\partial^2 {#1}}{\partial {#2}^2}}
 \def\tdiff#1#2{\frac{{\rm d} {#1}}{{\rm d} {#2}}}
 \def\difd#1{\ {\rm d}#1}
 \def\intl#1#2{\int \limits_{#1}^{#2}}
@@ -321,7 +322,7 @@ def process_terms(app, what_, name, obj, options, lines):
 def setup(app):
     app.connect('autodoc-process-docstring', process_terms)
 
-#    
+#
 # -- Options for manual pages output ---------------------------------------------------
 #
 man_pages = [

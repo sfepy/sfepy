@@ -1,4 +1,59 @@
-"""
+r"""
+The linear elastodynamics solution of an iron plate impact problem.
+
+Find :math:`\ul{u}` such that:
+
+.. math::
+    \int_{\Omega} \rho \ul{v} \pddiff{\ul{u}}{\ul{v}}
+    + \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+
+Notes
+-----
+
+The used elastodynamics solvers expect that the total vector of DOFs contains
+three blocks in this order: the displacements, the velocities, and the
+accelerations. This is achieved by defining three unknown variables ``'u'``,
+``'du'``, ``'ddu'`` and the corresponding test variables, see the `variables`
+definition. Then the solver can automatically extract the mass, damping (zero
+here), and stiffness matrices as diagonal blocks of the global matrix. Note
+also the use of the ``'dw_zero'`` (do-nothing) term that prevents the
+velocity-related variables to be removed from the equations in the absence of a
+damping term.
+
+Usage Examples
+--------------
+
+Run with the default settings (the Newmark method, 3D problem, results stored
+in ``output/ed/``)::
+
+  python simple.py examples/linear_elasticity/elastodynamic.py
+
+Solve using the Bathe method::
+
+  python simple.py examples/linear_elasticity/elastodynamic.py -O "ts='tsb'"
+
+View the resulting deformation using:
+
+- color by :math:`\ul{u}`::
+
+    python postproc.py output/ed/user_block.h5 -b --wireframe --only-names=u -d 'u,plot_displacements,rel_scaling=1e3'
+
+- color by :math:`\ull{e}(\ul{u})`::
+
+    python postproc.py output/ed/user_block.h5 -b --wireframe --only-names=u -d 'u,plot_displacements,rel_scaling=1e3,color_kind="tensors",color_name="cauchy_strain"'
+
+- color by :math:`\ull{\sigma}(\ul{u})`::
+
+    python postproc.py output/ed/user_block.h5 -b --wireframe --only-names=u -d 'u,plot_displacements,rel_scaling=1e3,color_kind="tensors",color_name="cauchy_stress"'
 """
 from __future__ import absolute_import
 
@@ -17,6 +72,7 @@ nu = 0.3
 rho = 7800.0
 
 lam, mu = mc.lame_from_youngpoisson(E, nu, plane=plane)
+# Longitudinal and shear wave propagation speeds.
 cl = nm.sqrt((lam + 2.0 * mu) / rho)
 cs = nm.sqrt(mu / rho)
 
@@ -30,18 +86,21 @@ if dim == 3:
     dims = [L, d, d]
 
     shape = [21, 6, 6]
+    #shape = [101, 26, 26]
 
 else:
     L = 2 * d
     dims = [L, 2 * d]
 
     shape = [61, 61]
+    # shape = [361, 361]
 
 # Element size.
 H = L / (shape[0] - 1)
 
 # Time-stepping parameters.
-dt = H / cl
+# Note: the Courant number C0 =  dt * cl / H
+dt = H / cl # C0 = 1
 
 if dim == 3:
     t1 = 0.9 * L / cl
@@ -109,11 +168,9 @@ integrals = {
 }
 
 variables = {
-    'u' : ('unknown field', 'displacement', 0, 1),
-    'du' : ('unknown field', 'displacement', 1, 1),
-    'ddu' : ('unknown field', 'displacement', 2, 1),
-    # 'du' : ('parameter field', 'displacement', {'ic' : 'get_ic_du'}, 1),
-    # 'ddu' : ('parameter field', 'displacement', {'ic' : 'get_ic_ddu'}, 1),
+    'u' : ('unknown field', 'displacement', 0),
+    'du' : ('unknown field', 'displacement', 1),
+    'ddu' : ('unknown field', 'displacement', 2),
     'v' : ('test field', 'displacement', 'u'),
     'dv' : ('test field', 'displacement', 'du'),
     'ddv' : ('test field', 'displacement', 'ddu'),
@@ -154,9 +211,6 @@ equations = {
     """dw_volume_dot.i.Omega(solid.rho, ddv, ddu)
      + dw_zero.i.Omega(dv, du)
      + dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
-    # 'balance_of_forces' :
-    # """dw_volume_dot.i.Omega(solid.rho, v, d2u/dt2)
-    #  + dw_lin_elastic.i.Omega(solid.D, v, u) = 0""",
 }
 
 solvers = {
@@ -173,20 +227,9 @@ solvers = {
     }),
     'newton' : ('nls.newton', {
         'i_max'      : 1,
-        'eps_a'      : 1e-6,
+        'eps_a'      : 1e0,
+        'eps_r'      : 1e-6,
     }),
-    # 'tss' : ('ts.simple', {
-    #     't0' : 0.0,
-    #     't1' : 1.0,
-    #     'dt' : 0.1,
-    #     'n_step' : None,
-    # }),
-    # 'tsb' : ('ts.bathe', {
-    #     't0' : 0.0,
-    #     't1' : 1.0,
-    #     'dt' : 0.1,
-    #     'n_step' : None,
-    # }),
     'tsn' : ('ts.newmark', {
         't0' : 0.0,
         't1' : t1,
@@ -200,20 +243,24 @@ solvers = {
 
         'verbose' : 1,
     }),
-    # 'tsp' : ('ts.petsc', {
-    #     'method' : 'rk',
-    #     't0' : 0.0,
-    #     't1' : 1.0,
-    #     'dt' : 0.1,
-    #     'n_step' : None,
-    # }),
+    'tsb' : ('ts.bathe', {
+        't0' : 0.0,
+        't1' : t1,
+        'dt' : dt,
+        'n_step' : None,
+
+        'is_linear'  : True,
+
+        'verbose' : 1,
+    }),
 }
 
 options = {
-    'ts' : 'ts',
+    'ts' : 'tsn',
+    # 'ts' : 'tsb',
     'nls' : 'newton',
-    'ls' : 'ls-i',
-    #'ls' : 'ls',
+    # 'ls' : 'ls-i',
+    'ls' : 'ls',
 
     'active_only' : False,
 
