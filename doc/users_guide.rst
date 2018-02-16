@@ -1361,9 +1361,32 @@ The following code demonstrates the use of the postprocessing filters::
 Available Solvers
 -----------------
 
-This Section describes solvers available in SfePy from user's
-perspective. There internal/external solvers include linear, nonlinear,
-eigenvalue, optimization and time stepping solvers.
+This Section describes the linear, nonlinear, eigenvalue, optimization and
+time-stepping solvers available in SfePy. There are many internal and external
+solvers in the :ref:`sfepy_solvers` that can be called using a
+uniform interface.
+
+Time-stepping solvers
+^^^^^^^^^^^^^^^^^^^^^
+
+All PDEs that can be described in a problem description file are solved
+internally by a time-stepping solver. This holds even for stationary problems,
+where the default single-step solver (``'ts.stationary'``) is created
+automatically. In this way, all problems are treated in a uniform way. The same
+holds when building a problem interactively, or when writing a script, whenever
+the :func:`Problem.solve() <sfepy.discrete.problem.Problem.solve>` function is
+used for a problem solution. The time-stepping solvers most commonly used in
+our examples are:
+
+- ``'ts.stationary'``: Solver for stationary problems without time stepping. It
+  is automatically created when not specified.
+- ``'ts.simple'``: Implicit time stepping solver with a fixed time step.
+- ``'ts.adaptive'``: Implicit time stepping solver with an adaptive time step.
+  Either the built-in or user supplied function can be used to adapt the time
+  step.
+
+See :mod:`sfepy.solvers.ts_solvers` for available time-stepping solvers and
+their options.
 
 Nonlinear Solvers
 ^^^^^^^^^^^^^^^^^
@@ -1377,47 +1400,55 @@ always has zero boundary conditions.
 
 The following solvers are available:
 
-- 'nls.newton': Newton solver with backtracking line-search - this is
+- ``'nls.newton'``: Newton solver with backtracking line-search - this is
   the default solver, that is used for almost all examples.
-- 'nls.oseen': Oseen problem solver tailored for stabilized
+- ``'nls.oseen'``: Oseen problem solver tailored for stabilized
   Navier-Stokes equations (see :ref:`navier_stokes-stabilized_navier_stokes`).
-- 'nls.scipy_broyden_like': interface to Broyden and Anderson solvers
+- ``'nls.scipy_broyden_like'``: interface to Broyden and Anderson solvers
   from scipy.optimize.
-- 'nls.semismooth_newton': Semismooth Newton method for contact/friction
+- ``'nls.semismooth_newton'``: Semismooth Newton method for contact/friction
   problems.
-- 'nls.petsc': Interface to PETSc SNES (Scalable Nonlinear Equations Solvers)
-   supporting parallel use.
+- ``'nls.petsc'``: Interface to PETSc SNES (Scalable Nonlinear Equations
+  Solvers) supporting parallel use.
+
+See :mod:`sfepy.solvers.nls`, :mod:`sfepy.solvers.oseen` and
+:mod:`sfepy.solvers.semismooth_newton` for all available nonlinear solvers and
+their options.
+
 
 Linear Solvers
 ^^^^^^^^^^^^^^
 
 A good linear solver is key to solving efficiently stationary as well as
-transient PDEs with implicit time-stepping. The following solvers are
-available:
+transient PDEs with implicit time-stepping. The following solvers are the most
+commonly used in our examples:
 
-- 'ls.scipy_direct': direct solver from SciPy - this is the default
+- ``'ls.scipy_direct'``: direct solver from SciPy - this is the default
   solver for all examples. It is strongly recommended to install umfpack
   and its SciPy wrappers to get good performance.
-- 'ls.scipy_iterative': Interface to SciPy iterative solvers.
-- 'ls.pyamg': Interface to PyAMG solvers, see `PyAMG Wiki`_.
-- 'ls.petsc': Interface to Krylov subspace solvers of PETSc supporting parallel
-  use. See `PETSc Users Manual`_, Chapter 4, for more details about available
-  Krylov methods and preconditioners. See also the main `PETSc Documentation`_
-  page.
-- 'ls.schur_complement': Schur complement problem solver.
+- ``'ls.scipy_iterative'``: Interface to SciPy iterative solvers.
+- ``'ls.petsc'``: Interface to Krylov subspace solvers of PETSc supporting
+  parallel use. See `PETSc Users Manual`_, Chapter 4, for more details about
+  available Krylov methods and preconditioners. See also the main `PETSc
+  Documentation`_ page.
+- ``'ls.schur_complement'``: Schur complement problem solver.
+- ``'ls.pyamg'``: Interface to PyAMG solvers, see `PyAMG Wiki`_.
+
+See :mod:`sfepy.solvers.ls` for all available linear solvers and their options.
 
 .. _solving_problems_in_parallel:
 
 Solving Problems in Parallel
 ----------------------------
 
-The PETSc-based nonlinear equations solver 'nls.petsc' and linear system solver
-'ls.petsc' can be used for parallel computations, together with the modules in
-:ref:`sfepy_parallel_package`. This feature is **very preliminary**, and can be
-used only with the commands for interactive use - problem description files are
-not supported (yet). The key module is :mod:`sfepy.parallel.parallel` that
-takes care of the domain and field DOFs distribution among parallel tasks, as
-well as parallel assembling to PETSc vectors and matrices.
+The PETSc-based nonlinear equations solver ``'nls.petsc'`` and linear system
+solver ``'ls.petsc'`` can be used for parallel computations, together with the
+modules in :ref:`sfepy_parallel_package`. This feature is **very preliminary**,
+and can be used only with the commands for interactive use - problem
+description files are not supported (yet). The key module is
+:mod:`sfepy.parallel.parallel` that takes care of the domain and field DOFs
+distribution among parallel tasks, as well as parallel assembling to PETSc
+vectors and matrices.
 
 Current Implementation Drawbacks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
