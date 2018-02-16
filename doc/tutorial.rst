@@ -120,22 +120,18 @@ Sneak Peek: What is Going on Under the Hood
      variables in use -- only those are fully instantiated, so the input
      file can safely contain definitions of items that are not used actually.
 
-#. Prior to solution, `problem.time_update()` function has to be
-   called to setup boundary conditions, material parameters and other
-   potentially time-dependent data. This holds also for stationary
-   problems with a single "time step".
+#. The solution is then obtained by calling `problem.solve()` function, which
+   in turn calls a top-level time-stepping solver. In each step,
+   `problem.time_update()` is called to setup boundary conditions, material
+   parameters and other potentially time-dependent data. The
+   `problem.save_state()` is called at the end of each time step to save the
+   results. This holds also for stationary problems with a single "time step".
 
-#. The solution is then obtained by calling `problem.solve()`
-   function.
-
-#. Finally, the solution can be stored using `problem.save_state()`.
-
-The above last three steps are essentially repeated for each time step. So that
-is it -- using the code a black-box PDE solver shields the user from having to
-create the `Problem` instance by hand. But note that this is possible, and
-often necessary when the flexibility of the default solvers is not enough. At
-the end of the tutorial an example demonstrating the interactive creation of
-the `Problem` instance is shown, see
+So that is it -- using the code a black-box PDE solver shields the user from
+having to create the `Problem` instance by hand. But note that this is
+possible, and often necessary when the flexibility of the default solvers is
+not enough. At the end of the tutorial an example demonstrating the interactive
+creation of the `Problem` instance is shown, see
 :ref:`sec-interactive-example-linear-elasticity`.
 
 Now let us continue with running a simulation.
@@ -368,12 +364,13 @@ name. The integral definition is superfluous in this case.
        }),
    }
 
-Here, we specify the linear and nonlinear solver kind and options. The
-convergence parameters can be adjusted if necessary, otherwise leave the
-default.
-
+Here, we specify the linear and nonlinear solver kinds and options. See
+:mod:`sfepy.solvers.ls`, :mod:`sfepy.solvers.nls` and
+:mod:`sfepy.solvers.ts_solvers` for available solvers and their parameters..
 Even linear problems are solved by a nonlinear solver (KISS rule) -- only one
-iteration is needed and the final residual is obtained for free.
+iteration is needed and the final residual is obtained for free. Note that we
+do not need to define a time-stepping solver here - the problem is stationary
+and the default ``'ts.stationary'`` solver is created automatically.
 
 ::
 
@@ -383,7 +380,7 @@ iteration is needed and the final residual is obtained for free.
     }
 
 The solvers to use are specified in the options block. We can define multiple
-solvers with different convergence parameters if necessary.
+solvers with different convergence parameters.
 
 That's it! Now it is possible to proceed as described in
 :ref:`invoking_from_command_line`.
@@ -559,13 +556,11 @@ it should converge in one iteration.
     In [32]: nls_status = IndexedStruct()
     In [33]: nls = Newton({}, lin_solver=ls, status=nls_status)
 
-Now we are ready to create a `Problem` instance. Note that the step above is
-not really necessary -- the above solvers are constructed by default. We did
-them to get the `nls_status`.
+Now we are ready to create a `Problem` instance.
 
 .. sourcecode:: ipython
 
-    In [34]: pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+    In [34]: pb = Problem('elasticity', equations=eqs)
 
 The :class:`Problem <sfepy.discrete.problem.Problem>` has several handy methods
 for debugging. Let us try saving the regions into a VTK file.
@@ -589,19 +584,26 @@ You should see this:
    :width: 70 %
    :align: center
 
-Finally, we apply the boundary conditions, solve the problem, save and
-view the results.
+Finally, we set the boundary conditions and the top-level solver , solve the
+problem, save and view the results. For stationary problems, the top-level
+solver needs not to be a time-stepping solver - when a nonlinear solver is set
+instead, the default ``'ts.stationary'`` time-stepping solver is created
+automatically.
 
 .. sourcecode:: ipython
 
-    In [39]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
-    In [40]: vec = pb.solve()
+    In [39]: pb.set_bcs(ebcs=Conditions([fix_u, shift_u]))
+    In [40]: pb.set_solver(nls)
 
-    In [41]: print(nls_status)
+    In [41]: status = IndexedStruct()
+    In [42]: vec = pb.solve(status=status)
 
-    In [42]: pb.save_state('linear_elasticity.vtk', vec)
-    In [43]: view = Viewer('linear_elasticity.vtk')
-    In [44]: view()
+    In [43]: print('Nonlinear solver status:\n', nls_status)
+    In [44]: print('Stationary solver status:\n', status)
+
+    In [45]: pb.save_state('linear_elasticity.vtk', vec)
+    In [46]: view = Viewer('linear_elasticity.vtk')
+    In [47]: view()
 
 This is the resulting image:
 
@@ -614,7 +616,7 @@ shifting the mesh. Close the previous window and do:
 
 .. sourcecode:: ipython
 
-    In [45]: view(vector_mode='warp_norm', rel_scaling=2,
+    In [48]: view(vector_mode='warp_norm', rel_scaling=2,
        ...:       is_scalar_bar=True, is_wireframe=True)
 
 And the result is:
