@@ -531,96 +531,6 @@ class Problem(Struct):
         if not keep_solvers:
             self.solver = None
 
-    def set_conf_solvers(self, conf_solvers=None, options=None):
-        """
-        Choose which solvers should be used. If solvers are not set in
-        `options`, use first suitable in `conf_solvers`.
-        """
-        conf_solvers = get_default(conf_solvers, self.conf.solvers)
-        self.solver_confs = {}
-        for key, val in six.iteritems(conf_solvers):
-            self.solver_confs[val.name] = val
-
-        def _find_suitable(prefix):
-            for key, val in six.iteritems(self.solver_confs):
-                if val.kind.find(prefix) == 0:
-                    return val
-            return None
-
-        def _get_solver_conf(kind):
-            try:
-                key = options[kind]
-                conf = self.solver_confs[key]
-            except:
-                conf = _find_suitable(kind + '.')
-            return conf
-
-        self.ts_conf = _get_solver_conf('ts')
-        if self.ts_conf is None:
-            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
-
-        self.nls_conf = _get_solver_conf('nls')
-        self.ls_conf = _get_solver_conf('ls')
-
-        info = 'using solvers:'
-        if self.ts_conf:
-            info += '\n                ts: %s' % self.ts_conf.name
-        if self.nls_conf:
-            info += '\n               nls: %s' % self.nls_conf.name
-        if self.ls_conf:
-            info += '\n                ls: %s' % self.ls_conf.name
-        if info != 'using solvers:':
-            output(info)
-
-    def set_solver(self, solver, status=None):
-        """
-        Set a time-stepping or nonlinear solver to be used in
-        :func:`Problem.solve()` call.
-
-        Parameters
-        ----------
-        solver : NonlinearSolver or TimeSteppingSolver instance
-            The nonlinear or time-stepping solver.
-
-        Notes
-        -----
-        A copy of the solver is used, and the nonlinear solver functions are
-        set to those returned by :func:`Problem.get_nls_functions()`, if not
-        set already. If a nonlinear solver is set, a default StationarySolver
-        instance is created automatically as the time-stepping solver. Also
-        sets `self.ts` attribute.
-        """
-        if isinstance(solver, NonlinearSolver):
-            solver = StationarySolver({}, nls=solver.copy(),
-                                      ts=self.get_default_ts(),
-                                      status=status)
-
-        self.solver = solver.copy()
-        self.ts = solver.ts
-        self.status = get_default(solver.status, IndexedStruct())
-
-        # Assign the nonlinear solver functions.
-        nls = self.get_nls()
-        if nls.fun is None:
-            fun, fun_grag, iter_hook = self.get_nls_functions()
-            nls.fun = fun
-            nls.fun_grad = fun_grag
-            nls.iter_hook = iter_hook
-
-    def get_solver_conf(self, name):
-        return self.solver_confs[name]
-
-    def get_default_ts(self, t0=None, t1=None, dt=None, n_step=None,
-                       step=None):
-        t0 = get_default(t0, 0.0)
-        t1 = get_default(t1, 1.0)
-        dt = get_default(dt, 1.0)
-        n_step = get_default(n_step, 1)
-
-        ts = TimeStepper(t0, t1, dt, n_step, step=step)
-
-        return ts
-
     def get_integrals(self, names=None):
         """
         Get integrals, initialized from problem configuration if available.
@@ -643,10 +553,6 @@ class Problem(Struct):
                               if ii in integrals.names])
 
         return integrals
-
-    def update_time_stepper(self, ts):
-        if ts is not None:
-            self.ts = ts
 
     def update_materials(self, ts=None, mode='normal', verbose=True):
         """
@@ -793,9 +699,6 @@ class Problem(Struct):
         self.set_bcs(conf_ebc, conf_epbc, conf_lcbc)
         self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
                               self.functions, create_matrix)
-
-    def get_timestepper(self):
-        return self.ts
 
     def create_state(self):
         return State(self.equations.variables)
@@ -1076,6 +979,50 @@ class Problem(Struct):
         epbc_indx = nm.concatenate(epbc_indx, axis=1)
         return ebc_indx, epbc_indx
 
+    def set_conf_solvers(self, conf_solvers=None, options=None):
+        """
+        Choose which solvers should be used. If solvers are not set in
+        `options`, use first suitable in `conf_solvers`.
+        """
+        conf_solvers = get_default(conf_solvers, self.conf.solvers)
+        self.solver_confs = {}
+        for key, val in six.iteritems(conf_solvers):
+            self.solver_confs[val.name] = val
+
+        def _find_suitable(prefix):
+            for key, val in six.iteritems(self.solver_confs):
+                if val.kind.find(prefix) == 0:
+                    return val
+            return None
+
+        def _get_solver_conf(kind):
+            try:
+                key = options[kind]
+                conf = self.solver_confs[key]
+            except:
+                conf = _find_suitable(kind + '.')
+            return conf
+
+        self.ts_conf = _get_solver_conf('ts')
+        if self.ts_conf is None:
+            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
+
+        self.nls_conf = _get_solver_conf('nls')
+        self.ls_conf = _get_solver_conf('ls')
+
+        info = 'using solvers:'
+        if self.ts_conf:
+            info += '\n                ts: %s' % self.ts_conf.name
+        if self.nls_conf:
+            info += '\n               nls: %s' % self.nls_conf.name
+        if self.ls_conf:
+            info += '\n                ls: %s' % self.ls_conf.name
+        if info != 'using solvers:':
+            output(info)
+
+    def get_solver_conf(self, name):
+        return self.solver_confs[name]
+
     def init_solvers(self, status=None, ls_conf=None, nls_conf=None,
                      ts_conf=None, force=False):
         """
@@ -1126,6 +1073,59 @@ class Problem(Struct):
                 tss = Solver.any_from_conf(ts_conf, nls=nls, context=self,
                                            status=status)
                 self.set_solver(tss)
+
+    def get_default_ts(self, t0=None, t1=None, dt=None, n_step=None,
+                       step=None):
+        t0 = get_default(t0, 0.0)
+        t1 = get_default(t1, 1.0)
+        dt = get_default(dt, 1.0)
+        n_step = get_default(n_step, 1)
+
+        ts = TimeStepper(t0, t1, dt, n_step, step=step)
+
+        return ts
+
+    def update_time_stepper(self, ts):
+        if ts is not None:
+            self.ts = ts
+
+    def get_timestepper(self):
+        return self.ts
+
+    def set_solver(self, solver, status=None):
+        """
+        Set a time-stepping or nonlinear solver to be used in
+        :func:`Problem.solve()` call.
+
+        Parameters
+        ----------
+        solver : NonlinearSolver or TimeSteppingSolver instance
+            The nonlinear or time-stepping solver.
+
+        Notes
+        -----
+        A copy of the solver is used, and the nonlinear solver functions are
+        set to those returned by :func:`Problem.get_nls_functions()`, if not
+        set already. If a nonlinear solver is set, a default StationarySolver
+        instance is created automatically as the time-stepping solver. Also
+        sets `self.ts` attribute.
+        """
+        if isinstance(solver, NonlinearSolver):
+            solver = StationarySolver({}, nls=solver.copy(),
+                                      ts=self.get_default_ts(),
+                                      status=status)
+
+        self.solver = solver.copy()
+        self.ts = solver.ts
+        self.status = get_default(solver.status, IndexedStruct())
+
+        # Assign the nonlinear solver functions.
+        nls = self.get_nls()
+        if nls.fun is None:
+            fun, fun_grag, iter_hook = self.get_nls_functions()
+            nls.fun = fun
+            nls.fun_grad = fun_grag
+            nls.iter_hook = iter_hook
 
     def try_presolve(self, mtx):
         ls = self.get_ls()
