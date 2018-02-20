@@ -1420,8 +1420,8 @@ Linear Solvers
 ^^^^^^^^^^^^^^
 
 A good linear solver is key to solving efficiently stationary as well as
-transient PDEs with implicit time-stepping. The following solvers are the most
-commonly used in our examples:
+transient PDEs with implicit time-stepping. The first three solvers in the
+following list are the most commonly used in our examples:
 
 - ``'ls.scipy_direct'``: direct solver from SciPy - this is the default
   solver for all examples. It is strongly recommended to install umfpack
