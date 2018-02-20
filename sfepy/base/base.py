@@ -1054,7 +1054,7 @@ def dict_to_struct(*args, **kwargs):
 # 23.01.2006, c
 def is_sequence(var):
     from collections import Sequence
-    if isinstance(var, basestring):
+    if isinstance(var, basestr):
         return False
     return isinstance(var, Sequence)
 
