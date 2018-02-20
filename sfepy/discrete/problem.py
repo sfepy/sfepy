@@ -1286,13 +1286,53 @@ class Problem(Struct):
               save_results=True,
               step_hook=None, post_process_hook=None,
               post_process_hook_final=None, verbose=True):
-        """Solve self.equations in current time step.
+        """
+        Solve the problem equations by calling the top-level solver.
+
+        Before calling this function the top-level solver has to be set, see
+        :func:`Problem.set_solver()`. Also, the boundary conditions and the
+        initial conditions (for time-dependent problems) has to be set, see
+        :func:`Problem.set_bcs()`, :func:`Problem.set_ics()`.
 
         Parameters
         ----------
-        var_data : dict
+        state0 : State or array, optional
+            If given, the initial state satisfying the initial conditions. By
+            default, it is created and the initial conditions are applied
+            automatically.
+        status : dict-like, optional
+            The user-supplied object to hold the solver convergence statistics.
+        force_values : dict of floats or float, optional
+            If given, the supplied values override the values of the essential
+            boundary conditions.
+        var_data : dict, optional
             A dictionary of {variable_name : data vector} used to initialize
             parameter variables.
+        update_bcs : bool, optional
+            If True, update the boundary conditions in each `prestep_fun` call.
+            See :func:`Problem.get_tss_functions()`.
+        update_materials : bool, optional
+            If True, update the values of material parameters in each
+            `prestep_fun` call. See :func:`Problem.get_tss_functions()`.
+        save_results : bool, optional
+            If True, save the results in each `poststep_fun` call. See
+            :func:`Problem.get_tss_functions()`.
+        step_hook : callable, optional
+            The optional user-defined function that is called in each
+            `poststep_fun` call before saving the results. See
+            :func:`Problem.get_tss_functions()`.
+        post_process_hook : callable, optional
+            The optional user-defined function that is passed in each
+            `poststep_fun` to :func:`Problem.save_state()`. See
+            :func:`Problem.get_tss_functions()`.
+        post_process_hook_final : callable, optional
+            The optional user-defined function that is called after the
+            top-level solver returns.
+
+        Returns
+        -------
+        state : State
+            The final state.
         """
         if status is None:
             status = IndexedStruct()
@@ -1328,7 +1368,9 @@ class Problem(Struct):
                 self.try_presolve(mtx)
 
             init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
-                state0, save_results=save_results,
+                state0,
+                update_bcs=update_bcs, update_materials=update_materials,
+                save_results=save_results,
                 step_hook=step_hook, post_process_hook=post_process_hook)
 
             vec = tss(state0.get_vec(self.active_only),
