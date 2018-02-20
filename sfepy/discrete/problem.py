@@ -1142,9 +1142,40 @@ class Problem(Struct):
         tss = get_default(None, self.solver, 'solver is not set!')
         return tss
 
-    def get_tss_functions(self, state0, save_results=True,
+    def get_tss_functions(self, state0, update_bcs=True, update_materials=True,
+                          save_results=True,
                           step_hook=None, post_process_hook=None):
         """
+        Get the problem-dependent functions required by the time-stepping
+        solver during the solution process.
+
+        Parameters
+        ----------
+        state0 : State
+            The state holding the problem variables.
+        update_bcs : bool, optional
+            If True, update the boundary conditions in each `prestep_fun` call.
+        update_materials : bool, optional
+            If True, update the values of material parameters in each
+            `prestep_fun` call.
+        save_results : bool, optional
+            If True, save the results in each `poststep_fun` call.
+        step_hook : callable, optional
+            The optional user-defined function that is called in each
+            `poststep_fun` call before saving the results.
+        post_process_hook : callable, optional
+            The optional user-defined function that is passed in each
+            `poststep_fun` to :func:`Problem.save_state()`.
+
+        Returns
+        -------
+        init_fun : callable
+            The initialization function called before the actual time-stepping.
+        prestep_fun : callable
+            The function called in each time (sub-)step prior to the nonlinear
+            solver call.
+        poststep_fun : callable
+            The function called at the end of each time step.
         """
         is_save = make_is_save(self.conf.options)
 
@@ -1165,11 +1196,14 @@ class Problem(Struct):
             return vec0
 
         def prestep_fun(ts, vec):
-            self.time_update(ts)
-            state = state0.copy()
-            state.set_vec(vec, self.active_only)
-            state.apply_ebc()
-            self.update_materials()
+            if update_bcs:
+                self.time_update(ts)
+                state = state0.copy()
+                state.set_vec(vec, self.active_only)
+                state.apply_ebc()
+
+            if update_materials:
+                self.update_materials()
 
         def poststep_fun(ts, vec):
             state = state0.copy(preserve_caches=True)
