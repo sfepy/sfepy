@@ -237,7 +237,7 @@ class Test(TestCommon):
         from sfepy.discrete.state import State
 
         self.problem.init_solvers(ls_conf=self.problem.solver_confs['d00'])
-        nls = self.problem.get_solver()
+        nls = self.problem.get_nls()
 
         state0 = State(self.problem.equations.variables)
         state0.apply_ebc()
