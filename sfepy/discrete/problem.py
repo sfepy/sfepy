@@ -959,7 +959,9 @@ class Problem(Struct):
                 raise AttributeError('call Problem.init_solvers() or'\
                                      ' set reuse to False!')
         else:
-            ev = self.evaluator = Evaluator(self, matrix_hook=self.matrix_hook)
+            UserEvaluator = self.conf.options.get('user_evaluator', None)
+            Eval = UserEvaluator if UserEvaluator is not None else Evaluator
+            ev = self.evaluator = Eval(self, matrix_hook=self.matrix_hook)
 
         return ev
 
