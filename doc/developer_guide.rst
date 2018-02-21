@@ -1136,7 +1136,6 @@ sfepy.solvers package
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
    src/sfepy/solvers/oseen
-   src/sfepy/solvers/petsc_worker
    src/sfepy/solvers/semismooth_newton
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts
