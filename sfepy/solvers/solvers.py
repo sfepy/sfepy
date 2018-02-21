@@ -246,15 +246,14 @@ class TimeSteppingSolver(Solver):
     Abstract time stepping solver class.
     """
 
-    def __init__(self, conf, context=None, **kwargs):
-        Solver.__init__(self, conf=conf, context=context, **kwargs)
+    def __init__(self, conf, nls=None, status=None, context=None, **kwargs):
+        Solver.__init__(self, conf=conf, nls=nls, status=status,
+                        context=context, **kwargs)
 
-    def __call__(self, state0=None, save_results=True, step_hook=None,
-                 post_process_hook=None, nls_status=None):
+    def __call__(self, vec0=None, nls=None, init_fun=None,
+                 prestep_fun=None, poststep_fun=None,
+                 status=None, **kwargs):
         raise ValueError('called an abstract TimeSteppingSolver instance!')
-
-    def init_time(self, nls_status=None):
-        pass
 
 class OptimizationSolver(Solver):
     """

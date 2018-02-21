@@ -78,7 +78,7 @@ class Test(TestCommon):
         p = FieldVariable('p', 'unknown', fp)
 
         pb = Problem('test', domain=domain, fields=[fu, fp],
-                     auto_conf=False, auto_solvers=False)
+                     auto_conf=False)
 
         test = Test(problem=pb, variables=Variables([u, p]),
                     conf=conf, options=options)
@@ -236,7 +236,7 @@ class Test(TestCommon):
         eq = Equation('aux', t1 + t2)
         eqs = Equations([eq])
 
-        pb = Problem('test', equations=eqs, auto_solvers=False)
+        pb = Problem('test', equations=eqs)
 
         all_ebcs = []
         all_ebcs.append(EssentialBC('fix_u1', regions['RightFix'],

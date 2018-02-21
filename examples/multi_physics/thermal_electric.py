@@ -105,6 +105,7 @@ solvers = {
         't1'     : t1,
         'dt'     : None,
         'n_step' : n_step, # has precedence over dt!
+        'verbose' : 1,
     }),
 }
 
@@ -125,7 +126,6 @@ def main():
 
     # First solve the stationary electric conduction problem.
     problem.set_equations({'eq' : conf.equations['1']})
-    problem.time_update()
     state_el = problem.solve()
     problem.save_state(problem.get_output_name(suffix = 'el'), state_el)
 
@@ -133,10 +133,7 @@ def main():
     problem.set_equations({'eq' : conf.equations['2']})
     phi_var = problem.get_variables()['phi_known']
     phi_var.set_data(state_el())
-    time_solver = problem.get_time_solver()
-    time_solver.init_time()
-    for _ in time_solver():
-        pass
+    problem.solve()
 
     output('results saved in %s' % problem.get_output_name(suffix = '*'))
 

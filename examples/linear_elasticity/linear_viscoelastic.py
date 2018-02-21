@@ -250,6 +250,7 @@ solvers = {
         'dt' : None,
         'n_step' : n_step,
         'quasistatic' : True,
+        'verbose' : 1,
     }),
 }
 

@@ -86,7 +86,7 @@ functions = {
 options = {
     'ts' : 'ts',
     'output_format' : 'h5',
-    'save_steps' : -1,
+    'save_times' : 'all',
 
     'post_process_hook' : 'post_process',
 }
@@ -133,5 +133,6 @@ solvers = {
              'dt' : None,
              'n_step' : 5,
              'quasistatic' : True,
+             'verbose' : 1,
              }),
 }

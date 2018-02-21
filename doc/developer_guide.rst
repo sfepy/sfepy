@@ -1123,6 +1123,8 @@ sfepy.postprocess package
    src/sfepy/postprocess/utils_vtk
    src/sfepy/postprocess/viewer
 
+.. _sfepy_solvers:
+
 sfepy.solvers package
 ^^^^^^^^^^^^^^^^^^^^^
 

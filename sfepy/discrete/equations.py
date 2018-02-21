@@ -303,7 +303,7 @@ class Equations(Container):
         active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions,
                                                      problem=problem,
                                                      active_only=active_only)
-        graph_changed = active_only and (active_bcs != self.active_bcs)
+        graph_changed = active_bcs != self.active_bcs
         self.active_bcs = active_bcs
 
         if graph_changed or not self.variables.adof_conns:

@@ -28,6 +28,7 @@ class TimeStepper(Struct):
                  is_quasistatic=False):
         self.set_from_data(t0, t1, dt=dt, n_step=n_step, step=step)
         self.is_quasistatic = is_quasistatic
+        self.step_start_time = None
 
     def _get_n_step(self, t0, t1, dt):
         n_step = int(round(nm.floor(((t1 - t0) / dt) + 0.5) + 1.0))
@@ -60,6 +61,15 @@ class TimeStepper(Struct):
 
     def set_state(self, step=0, **kwargs):
         self.set_step(step=step)
+
+    def set_substep_time(self, sub_dt):
+        self.step_start_time = self.time
+        self.time += sub_dt
+
+    def restore_step_time(self):
+        if self.step_start_time is not None:
+            self.time = self.step_start_time
+            self.step_start_time = None
 
     def advance(self):
         if self.step < (self.n_step - 1):
@@ -164,15 +174,17 @@ class VariableTimeStepper(TimeStepper):
         if step is None:
             step = 0
 
-        if step > 0:
-            raise ValueError('cannot set step > 0 in VariableTimeStepper!')
+        if (step > 0) and (step != self.step):
+            msg = 'cannot set step != self.step or 0 in VariableTimeStepper!'
+            raise ValueError(msg)
 
-        self.step = 0
-        self.time = self.t0
-        self.nt = 0.0
-        self.dts = []
-        self.times = []
-        self.n_step = 1
+        if step == 0:
+            self.step = 0
+            self.time = self.t0
+            self.nt = 0.0
+            self.dts = [self.dt]
+            self.times = [self.time]
+            self.n_step = 1
 
     def get_default_time_step(self):
         return self.dt0
@@ -190,7 +202,15 @@ class VariableTimeStepper(TimeStepper):
         self.time += self.dt
         self.normalize_time()
 
+        self.times.append(self.time)
+        self.dts.append(self.dt)
+
         self.n_step = self.step + 1
+
+    def iter_from(self, step):
+        self.set_step(step=step)
+
+        return self.iter_from_current()
 
     def iter_from_current(self):
         """
@@ -198,9 +218,6 @@ class VariableTimeStepper(TimeStepper):
         ts.nt is normalized time in [0, 1].
         """
         while 1:
-            self.times.append(self.time)
-            self.dts.append(self.dt)
-
             yield self.step, self.time
 
             if self.nt >= 1.0:

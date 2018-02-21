@@ -23,6 +23,8 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'ts' : 'ts',
+
+    'active_only' : False,
 }
 
 regions = {
@@ -81,5 +83,6 @@ solvers = {
         'n_step' : 5, # has precedence over dt!
 
         'quasistatic' : True,
+        'verbose' : 1,
     }),
 }

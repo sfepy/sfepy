@@ -229,6 +229,22 @@ class State(Struct):
         """
         return self.variables.get_state_parts(self.vec)
 
+    def get_vec(self, active_only):
+        if active_only:
+            vec = self.get_reduced()
+
+        else:
+            vec = self()
+
+        return vec
+
+    def set_vec(self, vec, active_only):
+        if active_only:
+            self.set_reduced(vec, preserve_caches=True)
+
+        else:
+            self.set_full(vec)
+
     def create_output_dict(self, fill_value=None, var_info=None,
                            extend=True, linearization=None):
         """

@@ -174,8 +174,9 @@ def solve_problem(shape, dims, young, poisson, force, transform=None):
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = Problem('elasticity with shell10x', equations=eqs, nls=nls, ls=ls)
-    pb.time_update(ebcs=Conditions([fix_u]))
+    pb = Problem('elasticity with shell10x', equations=eqs)
+    pb.set_bcs(ebcs=Conditions([fix_u]))
+    pb.set_solver(nls)
 
     state = pb.solve()
 

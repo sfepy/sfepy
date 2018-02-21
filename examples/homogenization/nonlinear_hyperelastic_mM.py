@@ -216,5 +216,6 @@ solvers = {
         't0': 0,
         't1': 1,
         'n_step': 3 + 1,
+        'verbose' : 1,
     })
 }

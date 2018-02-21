@@ -1050,13 +1050,20 @@ def dict_to_struct(*args, **kwargs):
 
     return out
 
+def is_integer(var):
+    if PY3:
+        return isinstance(var, int)
+
+    else:
+        return isinstance(var, (int, long))
+
 ##
 # 23.01.2006, c
 def is_sequence(var):
-    if issubclass(var.__class__, tuple) or issubclass(var.__class__, list):
-        return True
-    else:
+    from collections import Sequence
+    if isinstance(var, basestr):
         return False
+    return isinstance(var, Sequence)
 
 ##
 # 17.10.2007, c

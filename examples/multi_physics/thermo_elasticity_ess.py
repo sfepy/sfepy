@@ -53,9 +53,10 @@ T0 = 20.0 # Background temperature.
 filename_mesh = data_dir + '/meshes/3d/block.mesh'
 
 options = {
-    'ts' : 'ess',
     'nls' : 'newton',
     'ls' : 'ls',
+
+    'block_solve' : True,
 }
 
 regions = {
@@ -110,5 +111,4 @@ solvers = {
         'i_max'      : 1,
         'eps_a'      : 1e-10,
     }),
-    'ess' : ('ts.equation_sequence', {}),
 }

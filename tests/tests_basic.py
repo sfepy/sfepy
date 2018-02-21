@@ -63,18 +63,18 @@ class TestInput(TestCommon):
 
         self.report('solving %s...' % self.conf.input_name)
 
-        status = NLSStatus(conditions=[])
+        status = IndexedStruct(nls_status=NLSStatus(conditions=[]))
 
         solve_pde(self.test_conf,
                   self.solver_options,
-                  nls_status=status,
+                  status=status,
                   output_dir=self.options.out_dir,
                   step_hook=self.step_hook,
                   post_process_hook=self.post_process_hook,
                   post_process_hook_final=self.post_process_hook_final)
         self.report('%s solved' % self.conf.input_name)
 
-        ok = self.check_conditions(nm.array(status.conditions))
+        ok = self.check_conditions(nm.array(status.nls_status.conditions))
 
         return ok
 
@@ -108,9 +108,9 @@ class TestLCBC(TestCommon):
         from sfepy.base.base import IndexedStruct
 
         status = IndexedStruct()
-        problem, state = solve_pde(self.conf, nls_status=status,
+        problem, state = solve_pde(self.conf, status=status,
                                    save_results=False)
-        ok = status.condition == 0
+        ok = status.nls_status.condition == 0
         self.report('converged: %s' % ok)
         out = state.create_output_dict()
 

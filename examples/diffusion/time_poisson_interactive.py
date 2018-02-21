@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 from sfepy.base.base import assert_, output, ordered_iteritems, IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
+from sfepy.discrete.problem import prepare_matrix
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC, InitialCondition
@@ -187,18 +188,19 @@ def main():
     ic_fun = Function('ic_fun', get_ic)
     ic = InitialCondition('ic', omega, {'T.0' : ic_fun})
 
-    ls = ScipyDirect({})
-
-    nls_status = IndexedStruct()
-    nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
-
-    pb = Problem('heat', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('heat', equations=eqs)
     pb.set_bcs(ebcs=Conditions([ebc1, ebc2]))
     pb.set_ics(Conditions([ic]))
 
+    state0 = pb.get_initial_state()
+    init_fun, prestep_fun, _poststep_fun = pb.get_tss_functions(state0)
+
+    ls = ScipyDirect({})
+    nls_status = IndexedStruct()
+    nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
     tss = SimpleTimeSteppingSolver({'t0' : 0.0, 't1' : 100.0, 'n_step' : 11},
-                                   problem=pb)
-    tss.init_time()
+                                   nls=nls, context=pb, verbose=True)
+    pb.set_solver(tss)
 
     if options.probe:
         # Prepare probe data.
@@ -221,10 +223,10 @@ def main():
         if options.show:
             plt.ion()
 
-    # Solve the problem using the time stepping solver.
-    suffix = tss.ts.suffix
-    for step, time, state in tss():
-        if options.probe:
+        suffix = tss.ts.suffix
+        def poststep_fun(ts, vec):
+            _poststep_fun(ts, vec)
+
             # Probe the solution.
             dvel_qp = ev('ev_diffusion_velocity.%d.Omega(m.diffusivity, T)'
                          % order, copy_materials=False, mode='qp')
@@ -239,7 +241,7 @@ def main():
 
             plt.tight_layout()
             fig.savefig('time_poisson_interactive_probe_%s.png'
-                        % (suffix % step), bbox_inches='tight')
+                        % (suffix % ts.step), bbox_inches='tight')
 
             if options.show:
                 plt.draw()
@@ -253,6 +255,23 @@ def main():
                     output('  min: %+.2e, mean: %+.2e, max: %+.2e'
                            % (val.min(), val.mean(), val.max()))
                 output.level -= 2
+
+    else:
+        poststep_fun = _poststep_fun
+
+    pb.time_update(tss.ts)
+    state0.apply_ebc()
+
+    # This is required if {'is_linear' : True} is passed to Newton.
+    mtx = prepare_matrix(pb, state0)
+    pb.try_presolve(mtx)
+
+    tss_status = IndexedStruct()
+    tss(state0.get_vec(pb.active_only),
+        init_fun=init_fun, prestep_fun=prestep_fun, poststep_fun=poststep_fun,
+        status=tss_status)
+
+    output(tss_status)
 
 if __name__ == '__main__':
     main()

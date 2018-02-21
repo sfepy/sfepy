@@ -187,6 +187,10 @@ def extract_time_history(filename, extract, verbose=True):
     output('...done', verbose=verbose)
 
     ts = TimeStepper(*io.read_time_stepper())
+    # Force actual times.
+    steps, times, nts, dts = extract_times(filename)
+    ts.times = times
+    ts.nt = nts
 
     return ths, ts
 

@@ -8,7 +8,7 @@ from sfepy.discrete import Problem
 from sfepy.discrete.fem.meshio import MeshIO
 from .application import Application
 
-def solve_pde(conf, options=None, nls_status=None, **app_options):
+def solve_pde(conf, options=None, status=None, **app_options):
     """
     Solve a system of partial differential equations (PDEs).
 
@@ -22,8 +22,8 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
         or directly the ProblemConf instance.
     options : options
         The command-line options.
-    nls_status : dict-like
-        The object for storing the nonlinear solver return status.
+    status : dict-like
+        The object for storing the solver return status.
     app_options : kwargs
         The keyword arguments that can override application-specific options.
     """
@@ -53,7 +53,7 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
         parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)
 
-    return app(nls_status=nls_status)
+    return app(status=status)
 
 def save_only(conf, save_names, problem=None):
     """
@@ -183,10 +183,9 @@ class PDESolverApp(Application):
                              file_per_var=self.app_options.file_per_var,
                              linearization=self.app_options.linearization)
 
-    def call(self, nls_status=None):
+    def call(self, status=None):
         problem = self.problem
         options = self.options
-        opts = self.app_options
 
         if self.pre_process_hook is not None: # User pre_processing.
             self.pre_process_hook(problem)
@@ -213,15 +212,10 @@ class PDESolverApp(Application):
         if options.solve_not:
             return None, None, None
 
-        time_solver = problem.get_time_solver()
-        time_solver.init_time(nls_status=nls_status)
-        for out in time_solver(save_results=opts.save_results,
-                               step_hook=self.step_hook,
-                               post_process_hook=self.post_process_hook):
-            step, time, state = out
-
-        if self.post_process_hook_final is not None: # User postprocessing.
-            self.post_process_hook_final(problem, state)
+        state = problem.solve(
+            status=status, step_hook=self.step_hook,
+            post_process_hook=self.post_process_hook,
+            post_process_hook_final=self.post_process_hook_final)
 
         return problem, state
 

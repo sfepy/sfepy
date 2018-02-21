@@ -6,8 +6,9 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import dict_from_keys_init, select_by_names
-from sfepy.base.base import output, get_default, Struct, IndexedStruct
+from sfepy.base.base import (
+    dict_from_keys_init, select_by_names, is_integer, is_sequence,
+    output, get_default, Struct, IndexedStruct)
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
@@ -23,12 +24,69 @@ from sfepy.discrete.state import State
 from sfepy.discrete.conditions import Conditions
 from sfepy.discrete.evaluate import create_evaluable, eval_equations
 from sfepy.solvers.ts import TimeStepper
-from sfepy.discrete.evaluate import BasicEvaluator, LCBCEvaluator
-from sfepy.solvers import Solver
-from sfepy.solvers.ls import ScipyDirect
-from sfepy.solvers.nls import Newton
+from sfepy.discrete.evaluate import Evaluator
+from sfepy.solvers import Solver, NonlinearSolver
+from sfepy.solvers.ts_solvers import StationarySolver
 import six
 from six.moves import range
+
+def make_is_save(options):
+    """
+    Given problem options, return a callable that determines whether to save
+    results of a time step.
+    """
+    class IsSave(Struct):
+        def __init__(self, save_times):
+            if is_sequence(save_times):
+                save_times = nm.asarray(save_times)
+
+            self.save_times0 = save_times
+            self.reset()
+
+        def reset(self, ts=None):
+            self.ilast = 0
+            self.save_times = self.save_times0
+            if ts is not None:
+                if is_integer(self.save_times0):
+                    self.save_times = nm.linspace(ts.t0, ts.t1,
+                                                  self.save_times0)
+
+        def __call__(self, ts):
+            if self.save_times == 'all':
+                return True
+
+            elif isinstance(self.save_times, nm.ndarray):
+                if (self.ilast < len(self.save_times)
+                    and (ts.time + (1e-14 * ts.dt)
+                         >= self.save_times[self.ilast])):
+                    self.ilast += 1
+                    return True
+
+            elif callable(self.save_times):
+                return self.save_times(ts)
+
+            return False
+
+    save_times = options.get('save_times', 'all')
+    is_save = IsSave(save_times)
+
+    return is_save
+
+def prepare_matrix(problem, state):
+    """
+    Pre-assemble tangent system matrix.
+    """
+    problem.update_materials()
+
+    ev = problem.get_evaluator()
+    try:
+        mtx = ev.eval_tangent_matrix(state(), is_full=True)
+
+    except ValueError:
+        output('matrix evaluation failed, giving up...')
+        raise
+
+    return mtx
 
 ##
 # 29.01.2006, c
@@ -63,15 +121,6 @@ class Problem(Struct):
         This argument is required when `auto_conf` is True.
     auto_conf : bool
         If True, fields and domain are determined by `equations`.
-    nls : NonlinearSolver instance, optional
-        The nonlinear solver to use.
-    ls : LinearSolver instance, optional
-        The linear solver to use in the nonlinear solver iterations.
-    ts : TimeSteppingSolver instance, optional
-        The time-stepping solver for evolutionary problems.
-    auto_solvers : bool
-        If True, setup default nonlinear and linear solvers in case those are
-        not given.
     active_only : bool
         If True, the (tangent) matrices and residual vectors (right-hand sides)
         contain only active DOFs, see below.
@@ -103,7 +152,7 @@ class Problem(Struct):
     the matrix is not singular, see
     :func:`sfepy.discrete.evaluate.apply_ebc_to_matrix()`, which is called
     automatically in
-    :func:`sfepy.discrete.evaluate.BasicEvaluator.eval_tangent_matrix()`. It is
+    :func:`sfepy.discrete.evaluate.Evaluator.eval_tangent_matrix()`. It is
     not called automatically in :func:`Problem.evaluate()`. Note that setting
     the diagonal entries to one might not be necessary with iterative solvers,
     as the zero matrix rows match the zero residual rows, i.e. if the reduced
@@ -165,7 +214,7 @@ class Problem(Struct):
 
         active_only = conf.options.get('active_only', True)
         obj = Problem('problem_from_conf', conf=conf, functions=functions,
-                      domain=domain, auto_conf=False, auto_solvers=False,
+                      domain=domain, auto_conf=False,
                       active_only=active_only)
 
         allow_empty = conf.options.get('allow_empty_regions', False)
@@ -178,7 +227,7 @@ class Problem(Struct):
             obj.set_fields(conf.fields)
 
             if init_equations:
-                obj.set_equations(conf.equations, user={'ts' : obj.ts})
+                obj.set_equations(conf.equations)
 
         if init_solvers:
             obj.set_conf_solvers(conf.solvers, conf.options)
@@ -187,7 +236,6 @@ class Problem(Struct):
 
     def __init__(self, name, conf=None, functions=None,
                  domain=None, fields=None, equations=None, auto_conf=True,
-                 nls=None, ls=None, ts=None, auto_solvers=True,
                  active_only=True):
         self.active_only = active_only
         self.name = name
@@ -195,8 +243,7 @@ class Problem(Struct):
         self.functions = functions
 
         self.reset()
-
-        self.ts = get_default(ts, self.get_default_ts())
+        self.ls_conf = self.nls_conf = self.ts_conf = None
 
         if auto_conf:
             if equations is None:
@@ -212,25 +259,12 @@ class Problem(Struct):
                 domain = list(fields.values())[0].domain
 
             if conf is None:
-                self.conf = Struct(options={},
+                self.conf = Struct(options={}, ics={},
                                    ebcs={}, epbcs={}, lcbcs={}, materials={})
 
         self.equations = equations
         self.fields = fields
         self.domain = domain
-
-        if auto_solvers:
-            if ls is None:
-                ls = ScipyDirect({})
-
-            if nls is None:
-                nls = Newton({}, lin_solver=ls)
-
-            ev = self.get_evaluator()
-            nls.fun = ev.eval_residual
-            nls.fun_grad = ev.eval_tangent_matrix
-
-            self.set_solver(nls)
 
         self.setup_output()
 
@@ -242,7 +276,8 @@ class Problem(Struct):
             self.setup_hooks()
 
         self.mtx_a = None
-        self.nls = None
+        self.solver = None
+        self.ts = self.get_default_ts()
         self.clear_equations()
 
         self._restart_filenames = []
@@ -289,7 +324,7 @@ class Problem(Struct):
         obj = self.__class__(name, conf=self.conf, functions=self.functions,
                       domain=self.domain, fields=self.fields,
                       equations=self.equations, auto_conf=False,
-                      auto_solvers=False, active_only=self.active_only)
+                      active_only=self.active_only)
 
         obj.ebcs = self.ebcs
         obj.epbcs = self.epbcs
@@ -326,7 +361,7 @@ class Problem(Struct):
         subpb = Problem(self.name + '_' + '_'.join(var_names), conf=self.conf,
                         functions=self.functions, domain=self.domain,
                         fields=self.fields, auto_conf=False,
-                        auto_solvers=False, active_only=self.active_only)
+                        active_only=self.active_only)
         subpb.set_conf_solvers(self.conf.solvers, self.conf.options)
 
         subeqs = self.equations.create_subequations(var_names,
@@ -484,7 +519,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.nls = None
+            self.solver = None
 
     def set_equations_instance(self, equations, keep_solvers=False):
         """
@@ -495,70 +530,7 @@ class Problem(Struct):
         self.equations = equations
 
         if not keep_solvers:
-            self.nls = None
-
-    def set_conf_solvers(self, conf_solvers=None, options=None):
-        """
-        Choose which solvers should be used. If solvers are not set in
-        `options`, use first suitable in `conf_solvers`.
-        """
-        conf_solvers = get_default(conf_solvers, self.conf.solvers)
-        self.solver_confs = {}
-        for key, val in six.iteritems(conf_solvers):
-            self.solver_confs[val.name] = val
-
-        def _find_suitable(prefix):
-            for key, val in six.iteritems(self.solver_confs):
-                if val.kind.find(prefix) == 0:
-                    return val
-            return None
-
-        def _get_solver_conf(kind):
-            try:
-                key = options[kind]
-                conf = self.solver_confs[key]
-            except:
-                conf = _find_suitable(kind + '.')
-            return conf
-
-        self.ts_conf = _get_solver_conf('ts')
-        if self.ts_conf is None:
-            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
-
-        self.nls_conf = _get_solver_conf('nls')
-        self.ls_conf = _get_solver_conf('ls')
-
-        info = 'using solvers:'
-        if self.ts_conf:
-            info += '\n                ts: %s' % self.ts_conf.name
-        if self.nls_conf:
-            info += '\n               nls: %s' % self.nls_conf.name
-        if self.ls_conf:
-            info += '\n                ls: %s' % self.ls_conf.name
-        if info != 'using solvers:':
-            output(info)
-
-    def set_solver(self, nls):
-        """
-        Set the instance of nonlinear solver that will be used in
-        `Problem.solve()` call.
-        """
-        self.nls = nls
-        self.nls_status = get_default(nls.status, IndexedStruct())
-
-    def get_solver_conf(self, name):
-        return self.solver_confs[name]
-
-    def get_default_ts(self, t0=None, t1=None, dt=None, n_step=None,
-                       step=None):
-        t0 = get_default(t0, 0.0)
-        t1 = get_default(t1, 1.0)
-        dt = get_default(dt, 1.0)
-        n_step = get_default(n_step, 1)
-
-        ts = TimeStepper(t0, t1, dt, n_step, step=step)
-
-        return ts
+            self.solver = None
 
     def get_integrals(self, names=None):
         """
@@ -582,10 +554,6 @@ class Problem(Struct):
                               if ii in integrals.names])
 
         return integrals
-
-    def update_time_stepper(self, ts):
-        if ts is not None:
-            self.ts = ts
 
     def update_materials(self, ts=None, mode='normal', verbose=True):
         """
@@ -650,7 +618,8 @@ class Problem(Struct):
         self.graph_changed = graph_changed
 
         if (is_matrix
-            and (graph_changed or (self.mtx_a is None) or create_matrix)):
+            and ((self.active_only and graph_changed)
+                 or (self.mtx_a is None) or create_matrix)):
             self.mtx_a = self.equations.create_matrix_graph(active_only=ac)
             ## import sfepy.base.plotutils as plu
             ## plu.spy(self.mtx_a)
@@ -731,9 +700,6 @@ class Problem(Struct):
         self.set_bcs(conf_ebc, conf_epbc, conf_lcbc)
         self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
                               self.functions, create_matrix)
-
-    def get_timestepper(self):
-        return self.ts
 
     def create_state(self):
         return State(self.equations.variables)
@@ -993,12 +959,7 @@ class Problem(Struct):
                 raise AttributeError('call Problem.init_solvers() or'\
                                      ' set reuse to False!')
         else:
-            if self.equations.variables.has_lcbc:
-                ev = LCBCEvaluator(self, matrix_hook=self.matrix_hook)
-            else:
-                ev = BasicEvaluator(self, matrix_hook=self.matrix_hook)
-
-        self.evaluator = ev
+            ev = self.evaluator = Evaluator(self, matrix_hook=self.matrix_hook)
 
         return ev
 
@@ -1019,16 +980,60 @@ class Problem(Struct):
         epbc_indx = nm.concatenate(epbc_indx, axis=1)
         return ebc_indx, epbc_indx
 
-    def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
-                     force=False):
+    def set_conf_solvers(self, conf_solvers=None, options=None):
+        """
+        Choose which solvers should be used. If solvers are not set in
+        `options`, use first suitable in `conf_solvers`.
+        """
+        conf_solvers = get_default(conf_solvers, self.conf.solvers)
+        self.solver_confs = {}
+        for key, val in six.iteritems(conf_solvers):
+            self.solver_confs[val.name] = val
+
+        def _find_suitable(prefix):
+            for key, val in six.iteritems(self.solver_confs):
+                if val.kind.find(prefix) == 0:
+                    return val
+            return None
+
+        def _get_solver_conf(kind):
+            try:
+                key = options[kind]
+                conf = self.solver_confs[key]
+            except:
+                conf = _find_suitable(kind + '.')
+            return conf
+
+        self.ts_conf = _get_solver_conf('ts')
+        if self.ts_conf is None:
+            self.ts_conf = Struct(name='no ts', kind='ts.stationary')
+
+        self.nls_conf = _get_solver_conf('nls')
+        self.ls_conf = _get_solver_conf('ls')
+
+        info = 'using solvers:'
+        if self.ts_conf:
+            info += '\n                ts: %s' % self.ts_conf.name
+        if self.nls_conf:
+            info += '\n               nls: %s' % self.nls_conf.name
+        if self.ls_conf:
+            info += '\n                ls: %s' % self.ls_conf.name
+        if info != 'using solvers:':
+            output(info)
+
+    def get_solver_conf(self, name):
+        return self.solver_confs[name]
+
+    def init_solvers(self, status=None, ls_conf=None, nls_conf=None,
+                     ts_conf=None, force=False):
         """
         Create and initialize solver instances.
 
         Parameters
         ----------
-        nls_status : dict-like, IndexedStruct, optional
-            The user-supplied object to hold nonlinear solver convergence
-            statistics.
+        status : dict-like, IndexedStruct, optional
+            The user-supplied object to hold the time-stepping/nonlinear solver
+            convergence statistics.
         ls_conf : Struct, optional
             The linear solver options.
         nls_conf : Struct, optional
@@ -1037,10 +1042,9 @@ class Problem(Struct):
             If True, re-create the solver instances even if they already exist
             in `self.nls` attribute.
         """
-        if (self.nls is None) or force:
+        if (self.solver is None) or force:
             ls_conf = get_default(ls_conf, self.ls_conf,
                                   'you must set linear solver!')
-
             nls_conf = get_default(nls_conf, self.nls_conf,
                                    'you must set nonlinear solver!')
 
@@ -1051,18 +1055,81 @@ class Problem(Struct):
             if self.conf.options.get('ulf', False):
                 self.nls_iter_hook = ev.new_ulf_iteration
 
+            if status is None:
+                status = IndexedStruct()
+
+            status.set_default('nls_status', IndexedStruct())
+
             nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
                                        fun_grad=ev.eval_tangent_matrix,
                                        lin_solver=ls,
                                        iter_hook=self.nls_iter_hook,
-                                       status=nls_status, context=self)
+                                       status=status.nls_status, context=self)
 
-            self.set_solver(nls)
+            ts_conf = get_default(ts_conf, self.ts_conf)
+            if ts_conf is None:
+                self.set_solver(nls, status=status)
+
+            else:
+                tss = Solver.any_from_conf(ts_conf, nls=nls, context=self,
+                                           status=status)
+                self.set_solver(tss)
+
+    def get_default_ts(self, t0=None, t1=None, dt=None, n_step=None,
+                       step=None):
+        t0 = get_default(t0, 0.0)
+        t1 = get_default(t1, 1.0)
+        dt = get_default(dt, 1.0)
+        n_step = get_default(n_step, 1)
+
+        ts = TimeStepper(t0, t1, dt, n_step, step=step)
+
+        return ts
+
+    def update_time_stepper(self, ts):
+        if ts is not None:
+            self.ts = ts
+
+    def get_timestepper(self):
+        return self.ts
+
+    def set_solver(self, solver, status=None):
+        """
+        Set a time-stepping or nonlinear solver to be used in
+        :func:`Problem.solve()` call.
+
+        Parameters
+        ----------
+        solver : NonlinearSolver or TimeSteppingSolver instance
+            The nonlinear or time-stepping solver.
+
+        Notes
+        -----
+        A copy of the solver is used, and the nonlinear solver functions are
+        set to those returned by :func:`Problem.get_nls_functions()`, if not
+        set already. If a nonlinear solver is set, a default StationarySolver
+        instance is created automatically as the time-stepping solver. Also
+        sets `self.ts` attribute.
+        """
+        if isinstance(solver, NonlinearSolver):
+            solver = StationarySolver({}, nls=solver.copy(),
+                                      ts=self.get_default_ts(),
+                                      status=status)
+
+        self.solver = solver.copy()
+        self.ts = solver.ts
+        self.status = get_default(solver.status, IndexedStruct())
+
+        # Assign the nonlinear solver functions.
+        nls = self.get_nls()
+        if nls.fun is None:
+            fun, fun_grag, iter_hook = self.get_nls_functions()
+            nls.fun = fun
+            nls.fun_grad = fun_grag
+            nls.iter_hook = iter_hook
 
     def try_presolve(self, mtx):
-        nls = get_default(None, self.nls,
-                          'you must initialize solvers!')
-        ls = nls.lin_solver
+        ls = self.get_ls()
 
         tt = time.clock()
         ls.presolve(mtx)
@@ -1070,64 +1137,327 @@ class Problem(Struct):
         output('presolve: %.2f [s]' % tt)
 
     def get_solver(self):
-        return getattr(self, 'nls', None)
+        return self.get_tss()
 
-    def is_linear(self):
-        nls = get_default(None, self.nls,
-                          'you must initialize solvers!')
-        return nls.conf.get('is_linear', False)
+    def get_tss(self):
+        tss = get_default(None, self.solver, 'solver is not set!')
+        return tss
 
-    def set_linear(self, is_linear):
-        nls = get_default(None, self.nls,
-                          'you must initialize solvers!')
-        nls.conf.is_linear = is_linear
-
-    def solve(self, state0=None, nls_status=None,
-              ls_conf=None, nls_conf=None, force_values=None,
-              var_data=None, update_materials=True):
-        """Solve self.equations in current time step.
+    def get_tss_functions(self, state0, update_bcs=True, update_materials=True,
+                          save_results=True,
+                          step_hook=None, post_process_hook=None):
+        """
+        Get the problem-dependent functions required by the time-stepping
+        solver during the solution process.
 
         Parameters
         ----------
-        var_data : dict
+        state0 : State
+            The state holding the problem variables.
+        update_bcs : bool, optional
+            If True, update the boundary conditions in each `prestep_fun` call.
+        update_materials : bool, optional
+            If True, update the values of material parameters in each
+            `prestep_fun` call.
+        save_results : bool, optional
+            If True, save the results in each `poststep_fun` call.
+        step_hook : callable, optional
+            The optional user-defined function that is called in each
+            `poststep_fun` call before saving the results.
+        post_process_hook : callable, optional
+            The optional user-defined function that is passed in each
+            `poststep_fun` to :func:`Problem.save_state()`.
+
+        Returns
+        -------
+        init_fun : callable
+            The initialization function called before the actual time-stepping.
+        prestep_fun : callable
+            The function called in each time (sub-)step prior to the nonlinear
+            solver call.
+        poststep_fun : callable
+            The function called at the end of each time step.
+        """
+        is_save = make_is_save(self.conf.options)
+
+        def init_fun(ts, vec0):
+            if not ts.is_quasistatic:
+                self.init_time(ts)
+
+            is_save.reset(ts)
+
+            restart_filename = self.conf.options.get('load_restart', None)
+            if restart_filename is not None:
+                self.load_restart(restart_filename, state=state0, ts=ts)
+                self.advance(ts)
+                ts.advance()
+                state = self.create_state()
+                vec0 = state.get_vec(self.active_only)
+
+            return vec0
+
+        def prestep_fun(ts, vec):
+            if update_bcs:
+                self.time_update(ts)
+                state = state0.copy()
+                state.set_vec(vec, self.active_only)
+                state.apply_ebc()
+
+            if update_materials:
+                self.update_materials()
+
+        def poststep_fun(ts, vec):
+            state = state0.copy(preserve_caches=True)
+            state.set_vec(vec, self.active_only)
+            if step_hook is not None:
+                step_hook(self, ts, state)
+
+            restart_filename = self.get_restart_filename(ts=ts)
+            if restart_filename is not None:
+                self.save_restart(restart_filename, state, ts=ts)
+
+            if save_results and is_save(ts):
+                if not isinstance(self.get_solver(), StationarySolver):
+                    suffix = ts.suffix % ts.step
+
+                else:
+                    suffix = None
+
+                filename = self.get_output_name(suffix=suffix)
+                self.save_state(filename, state,
+                                post_process_hook=post_process_hook,
+                                file_per_var=None,
+                                ts=ts)
+
+            self.advance(ts)
+
+        return init_fun, prestep_fun, poststep_fun
+
+    def get_nls_functions(self):
+        """
+        Returns functions to be used by a nonlinear solver to evaluate the
+        nonlinear function value (the residual) and its gradient (the tangent
+        matrix) corresponding to the problem equations.
+
+        Returns
+        -------
+        fun : function
+            The function ``fun(x)`` for computing the residual.
+        fun_grad : function
+            The function ``fun_grad(x)`` for computing the tangent matrix.
+        iter_hook : function
+            The optional (user-defined) function to be called before each
+            nonlinear solver iteration iteration.
+        """
+        ev = self.get_evaluator()
+        return ev.eval_residual, ev.eval_tangent_matrix, self.nls_iter_hook
+
+    def get_nls(self):
+        tss = self.get_tss()
+        return tss.nls
+
+    def get_ls(self):
+        nls = self.get_nls()
+        return nls.lin_solver
+
+    def is_linear(self):
+        nls = self.get_nls()
+        return nls.conf.get('is_linear', False)
+
+    def set_linear(self, is_linear):
+        nls = self.get_nls()
+        nls.conf.is_linear = is_linear
+
+    def get_initial_state(self):
+        """
+        Create a zero state vector and apply initial conditions.
+        """
+        state = self.create_state()
+
+        self.setup_ics()
+        state.apply_ic()
+
+        # Initialize variables with history.
+        state.init_history()
+
+        return state
+
+    def solve(self, state0=None, status=None, force_values=None,
+              var_data=None, update_bcs=True, update_materials=True,
+              save_results=True,
+              step_hook=None, post_process_hook=None,
+              post_process_hook_final=None, verbose=True):
+        """
+        Solve the problem equations by calling the top-level solver.
+
+        Before calling this function the top-level solver has to be set, see
+        :func:`Problem.set_solver()`. Also, the boundary conditions and the
+        initial conditions (for time-dependent problems) has to be set, see
+        :func:`Problem.set_bcs()`, :func:`Problem.set_ics()`.
+
+        Parameters
+        ----------
+        state0 : State or array, optional
+            If given, the initial state satisfying the initial conditions. By
+            default, it is created and the initial conditions are applied
+            automatically.
+        status : dict-like, optional
+            The user-supplied object to hold the solver convergence statistics.
+        force_values : dict of floats or float, optional
+            If given, the supplied values override the values of the essential
+            boundary conditions.
+        var_data : dict, optional
             A dictionary of {variable_name : data vector} used to initialize
             parameter variables.
+        update_bcs : bool, optional
+            If True, update the boundary conditions in each `prestep_fun` call.
+            See :func:`Problem.get_tss_functions()`.
+        update_materials : bool, optional
+            If True, update the values of material parameters in each
+            `prestep_fun` call. See :func:`Problem.get_tss_functions()`.
+        save_results : bool, optional
+            If True, save the results in each `poststep_fun` call. See
+            :func:`Problem.get_tss_functions()`.
+        step_hook : callable, optional
+            The optional user-defined function that is called in each
+            `poststep_fun` call before saving the results. See
+            :func:`Problem.get_tss_functions()`.
+        post_process_hook : callable, optional
+            The optional user-defined function that is passed in each
+            `poststep_fun` to :func:`Problem.save_state()`. See
+            :func:`Problem.get_tss_functions()`.
+        post_process_hook_final : callable, optional
+            The optional user-defined function that is called after the
+            top-level solver returns.
+
+        Returns
+        -------
+        state : State
+            The final state.
         """
-        nls = self.get_solver()
-        if nls is None:
-            self.init_solvers(nls_status, ls_conf, nls_conf)
-            nls = self.get_solver()
+        if status is None:
+            status = IndexedStruct()
+
+        if self.solver is None:
+            self.init_solvers(status=status)
+
+        tss = self.get_solver()
+
+        self.equations.set_data(var_data, ignore_unknown=True)
 
         if state0 is None:
-            state0 = State(self.equations.variables)
+            state0 = self.get_initial_state()
 
         else:
             if isinstance(state0, nm.ndarray):
                 state0 = State(self.equations.variables, vec=state0)
 
-        self.equations.set_data(var_data, ignore_unknown=True)
-
-        if update_materials:
-            self.update_materials()
-        state0.apply_ebc(force_values=force_values)
-
-        if self.active_only:
-            vec0 = state0.get_reduced()
+        if self.conf.options.get('block_solve', False):
+            state = self.block_solve(state0, status=status,
+                                     save_results=save_results,
+                                     step_hook=step_hook,
+                                     post_process_hook=post_process_hook,
+                                     verbose=verbose)
 
         else:
-            vec0 = state0()
+            self.time_update(tss.ts) # Only having adi is required here(?)
 
-        nls.lin_solver.set_field_split(state0.variables.adi.indx)
+            state0.apply_ebc(force_values=force_values)
 
-        self.nls_status = get_default(nls_status, self.nls_status)
-        vec = nls(vec0, status=self.nls_status)
+            if self.is_linear():
+                mtx = prepare_matrix(self, state0)
+                self.try_presolve(mtx)
 
-        state = state0.copy(preserve_caches=True)
-        if self.active_only:
-            state.set_reduced(vec, preserve_caches=True)
+            init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
+                state0,
+                update_bcs=update_bcs, update_materials=update_materials,
+                save_results=save_results,
+                step_hook=step_hook, post_process_hook=post_process_hook)
 
-        else:
-            state.set_full(vec)
+            vec = tss(state0.get_vec(self.active_only),
+                      init_fun=init_fun,
+                      prestep_fun=prestep_fun,
+                      poststep_fun=poststep_fun,
+                      status=status)
+            output('solved in %d steps in %.2f seconds'
+                   % (status['n_step'], status['time']), verbose=verbose)
+
+            state = state0.copy()
+            state.set_vec(vec, self.active_only)
+
+        if post_process_hook_final is not None: # User postprocessing.
+            post_process_hook_final(self, state)
+
+        return state
+
+    def block_solve(self, state0=None, status=None, save_results=True,
+                    step_hook=None, post_process_hook=None,
+                    verbose=True):
+        """
+        Call :func:`Problem.solve()` sequentially for the individual matrix
+        blocks of a block-triangular matrix. It is called by
+        :func:`Problem.solve()` if the `'block_solve'` option is set to True.
+        """
+        from sfepy.base.base import invert_dict, get_subdict
+        from sfepy.base.resolve_deps import resolve
+
+        if not isinstance(self.get_solver(), StationarySolver):
+            msg = 'The block solve can be used only for stationary problems!'
+            raise ValueError(msg)
+
+        def replace_virtuals(deps, pairs):
+            out = {}
+            for key, val in six.iteritems(deps):
+                out[pairs[key]] = val
+
+            return out
+
+        if state0 is None:
+            state0 = self.get_initial_state()
+
+        variables = self.get_variables()
+        vtos = variables.get_dual_names()
+        vdeps = self.equations.get_variable_dependencies()
+        sdeps = replace_virtuals(vdeps, vtos)
+
+        sorder = resolve(sdeps)
+
+        stov = invert_dict(vtos)
+        vorder = [[stov[ii] for ii in block] for block in sorder]
+
+        parts0 = state0.get_parts()
+        state = state0.copy()
+        solved = []
+        for ib, block in enumerate(vorder):
+            output('solving for %s...' % sorder[ib], verbose=verbose)
+
+            subpb = self.create_subproblem(block, solved)
+            subpb.conf.options.block_solve = False
+
+            subpb.equations.print_terms()
+
+            substate0 = subpb.create_state()
+
+            vals = get_subdict(parts0, block)
+            substate0.set_parts(vals)
+
+            substate = subpb.solve(state0=substate0, status=status,
+                                   save_results=False, step_hook=step_hook,
+                                   post_process_hook=post_process_hook,
+                                   verbose=verbose)
+
+            state.set_parts(substate.get_parts())
+
+            solved.extend(sorder[ib])
+            output('...done', verbose=verbose)
+
+        if step_hook is not None:
+            step_hook(self, None, state)
+
+        if save_results:
+            self.save_state(self.get_output_name(), state,
+                            post_process_hook=post_process_hook,
+                            file_per_var=None)
 
         return state
 
@@ -1407,21 +1737,6 @@ class Problem(Struct):
                               names=names, preserve_caches=preserve_caches,
                               mode=mode, dw_mode=dw_mode, term_mode=term_mode,
                               active_only=active_only, verbose=verbose)
-
-    def get_time_solver(self, ts_conf=None, **kwargs):
-        """
-        Create and return a TimeSteppingSolver instance.
-
-        Notes
-        -----
-        Also sets `self.ts` attribute.
-        """
-        ts_conf = get_default(ts_conf, self.ts_conf,
-                              'you must set time-stepping solver!')
-        ts_solver = Solver.any_from_conf(ts_conf, problem=self, **kwargs)
-        self.ts = ts_solver.ts
-
-        return ts_solver
 
     def get_materials(self):
         if self.equations is not None:

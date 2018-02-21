@@ -191,11 +191,11 @@ class Test(TestCommon):
             self.report('        nnz:', self.problem.mtx_a.nnz)
             status = IndexedStruct()
             try:
-                self.problem.init_solvers(nls_status=status,
+                self.problem.init_solvers(status=status,
                                           ls_conf=solver_conf,
                                           force=True)
                 state = self.problem.solve()
-                failed = status.condition != 0
+                failed = status.nls_status.condition != 0
             except Exception as aux:
                 failed = True
                 status = None
@@ -204,6 +204,7 @@ class Test(TestCommon):
             ok = ok and ((not failed) or (solver_conf.kind in self.can_fail))
 
             if status is not None:
+                status = status.nls_status
                 for kv in six.iteritems(status.time_stats):
                     self.report('%10s: %7.2f [s]' % kv)
                 self.report('condition: %d, err0: %.3e, err: %.3e'

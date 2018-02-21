@@ -117,12 +117,11 @@ def make_l2_projection_data(target, eval_data, order=None,
     nls_status = IndexedStruct()
     nls = Newton(nls_options, lin_solver=ls, status=nls_status)
 
-    pb = Problem('aux', equations=eqs, nls=nls, ls=ls)
-
-    pb.time_update()
+    pb = Problem('aux', equations=eqs)
+    pb.set_solver(nls)
 
     # This sets the un variable with the projection solution.
-    pb.solve()
+    pb.solve(save_results=False)
 
     # Copy the projection solution to target.
     target.set_data(un())
@@ -165,12 +164,11 @@ def make_h1_projection_data(target, eval_data):
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = Problem('aux', equations=eqs, nls=nls, ls=ls)
-
-    pb.time_update()
+    pb = Problem('aux', equations=eqs)
+    pb.set_solver(nls)
 
     # This sets the target variable with the projection solution.
-    pb.solve()
+    pb.solve(save_results=False)
 
     if nls_status.condition != 0:
         output('H1 projection: solver did not converge!')

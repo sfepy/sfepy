@@ -72,12 +72,13 @@ solvers = {
         't1' : 0.07,
         'dt' : 0.00002,
         'n_step' : None,
+        'verbose' : 1,
     }),
 }
 
 options = {
     'ls' : 'ls',
     'ts' : 'ts',
-    'save_steps' : 100,
+    'save_times' : 100,
     'output_format' : 'h5',
 }

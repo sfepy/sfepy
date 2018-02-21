@@ -65,6 +65,7 @@ solvers = {
         't1' : 10.0,
         'dt' : None,
         'n_step' : 11, # Has precedence over dt.
+        'verbose' : 1,
     }),
     'newton' : ('nls.newton', {
         'i_max'      : 1,
@@ -77,5 +78,5 @@ options = {
     'ts' : 'ts',
     'nls' : 'newton',
     'ls' : 'ls',
-    'save_steps' : -1,
+    'save_times' : 'all',
 }

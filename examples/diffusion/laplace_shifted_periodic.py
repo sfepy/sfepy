@@ -71,14 +71,11 @@ def run(domain, order):
                                arguments=(shift_fun,))
 
     ls = ScipyDirect({})
+    nls = Newton({}, lin_solver=ls)
 
-    pb = Problem('laplace', equations=eqs, auto_solvers=None)
+    pb = Problem('laplace', equations=eqs)
 
-    pb.time_update(ebcs=Conditions([fix1, fix2]), lcbcs=Conditions([sper]))
-
-    ev = pb.get_evaluator()
-    nls = Newton({}, lin_solver=ls,
-                 fun=ev.eval_residual, fun_grad=ev.eval_tangent_matrix)
+    pb.set_bcs(ebcs=Conditions([fix1, fix2]), lcbcs=Conditions([sper]))
 
     pb.set_solver(nls)
 

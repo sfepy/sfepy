@@ -151,10 +151,11 @@ class Test(TestCommon):
         nls_status = IndexedStruct()
         nls = Newton({}, lin_solver=ls, status=nls_status)
 
-        pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+        pb = Problem('elasticity', equations=eqs)
         ## pb.save_regions_as_groups('regions')
 
-        pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+        pb.set_bcs(ebcs=Conditions([fix_u, shift_u]))
+        pb.set_solver(nls)
 
         state = pb.solve()
 

@@ -82,15 +82,20 @@ def main():
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
 
-    pb = Problem('elasticity', equations=eqs, nls=nls, ls=ls)
+    pb = Problem('elasticity', equations=eqs)
     pb.save_regions_as_groups('regions')
 
-    pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+    pb.set_bcs(ebcs=Conditions([fix_u, shift_u]))
 
-    vec = pb.solve()
-    print(nls_status)
+    pb.set_solver(nls)
 
-    pb.save_state('linear_elasticity.vtk', vec)
+    status = IndexedStruct()
+    state = pb.solve(status=status)
+
+    print('Nonlinear solver status:\n', nls_status)
+    print('Stationary solver status:\n', status)
+
+    pb.save_state('linear_elasticity.vtk', state)
 
     if options.show:
         view = Viewer('linear_elasticity.vtk')

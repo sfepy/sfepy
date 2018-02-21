@@ -36,7 +36,7 @@ def define():
         'nls' : 'newton',
         'ls' : 'ls',
         'ts' : 'ts',
-        'save_steps' : -1,
+        'save_times' : 'all',
     }
 
     functions = {
@@ -108,6 +108,7 @@ def define():
             't1'    : 1,
             'dt'    : None,
             'n_step' : 101, # has precedence over dt!
+            'verbose' : 1,
         }),
     }
 
@@ -145,12 +146,8 @@ def solve_branch(problem, branch_function):
         load = problem.get_materials()['load']
         load.set_function(branch_function)
 
-        time_solver = problem.get_time_solver()
-        time_solver.init_time()
-
         out = []
-        for _ in time_solver(save_results=False, step_hook=store_top_u(out)):
-            pass
+        problem.solve(save_results=False, step_hook=store_top_u(out))
         displacements[key] = nm.array(out, dtype=nm.float64)
 
     return displacements

@@ -30,8 +30,9 @@ def print_times(problem, state):
 
 options = {
     'ts' : 'ts',
-    'save_steps' : -1,
+    'save_times' : 'all',
     'post_process_hook_final' : print_times,
+    'output_format' : 'h5',
 }
 
 variables = {
@@ -57,6 +58,12 @@ equations = {
      + dw_lin_elastic.i.Omega( solid.D, v, u ) = 0""",
 }
 
+def adapt_time_step(ts, status, adt, problem, verbose=False):
+    if ts.time > 0.5:
+        ts.set_time_step(0.1)
+
+    return True
+
 solvers = deepcopy(solvers) # Do not spoil linear_elastic.py namespace in tests.
 solvers.update({
     'ts' : ('ts.adaptive', {
@@ -64,20 +71,14 @@ solvers.update({
         't1' : 1.0,
         'dt' : None,
         'n_step' : 101,
-        'adapt_fun' : 'adapt_time_step',
+        'adapt_fun' : adapt_time_step,
+        'verbose' : 1,
     }),
 })
-
-def adapt_time_step(ts, status, adt, problem):
-    if ts.time > 0.5:
-        ts.set_time_step(0.1)
-
-    return True
 
 ls = solvers['ls']
 ls[1].update({'presolve' : True})
 
 functions = {
     'ebc_sin' : (ebc_sin,),
-    'adapt_time_step' : (adapt_time_step,),
 }

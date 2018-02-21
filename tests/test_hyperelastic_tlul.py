@@ -47,13 +47,13 @@ class Test(TestCommon):
 
             pb, state = solve_pde(test_conf,
                                   solver_options,
-                                  nls_status=status,
+                                  status=status,
                                   output_dir=self.options.out_dir,
                                   step_hook=self.step_hook,
                                   post_process_hook=self.post_process_hook,
                                   post_process_hook_final=self.post_process_hook_final)
 
-            converged = status.condition == 0
+            converged = status.nls_status.condition == 0
             ok = ok and converged
 
             solutions[hp] = state.get_parts()['u']
