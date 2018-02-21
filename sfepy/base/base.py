@@ -1050,6 +1050,13 @@ def dict_to_struct(*args, **kwargs):
 
     return out
 
+def is_integer(var):
+    if PY3:
+        return isinstance(var, int)
+
+    else:
+        return isinstance(var, (int, long))
+
 ##
 # 23.01.2006, c
 def is_sequence(var):

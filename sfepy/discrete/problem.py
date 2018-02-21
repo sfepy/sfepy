@@ -6,8 +6,9 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import dict_from_keys_init, select_by_names, is_sequence
-from sfepy.base.base import output, get_default, Struct, IndexedStruct
+from sfepy.base.base import (
+    dict_from_keys_init, select_by_names, is_integer, is_sequence,
+    output, get_default, Struct, IndexedStruct)
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
@@ -46,7 +47,7 @@ def make_is_save(options):
             self.ilast = 0
             self.save_times = self.save_times0
             if ts is not None:
-                if isinstance(self.save_times0, (int, long)):
+                if is_integer(self.save_times0):
                     self.save_times = nm.linspace(ts.t0, ts.t1,
                                                   self.save_times0)
 
