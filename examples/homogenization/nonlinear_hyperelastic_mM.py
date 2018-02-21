@@ -6,6 +6,7 @@ from sfepy.base.base import Struct, output
 from sfepy.terms.terms_hyperelastic_ul import HyperElasticULFamilyData
 from sfepy.homogenization.micmac import get_homog_coefs_nonlinear
 import sfepy.linalg as la
+from sfepy.discrete.evaluate import Evaluator
 
 hyperelastic_data = {}
 
@@ -114,11 +115,7 @@ def ulf_iteration_hook(pb, nls, vec, it, err, err0):
     pb.update_materials_flag = False
 
 
-class MyEvalResidual(object):
-    def __init__(self, problem, matrix_hook=None):
-        self.problem = problem
-        self.matrix_hook = problem.matrix_hook
-
+class MyEvaluator(Evaluator):
     def eval_residual(self, vec, is_full=False):
         if not is_full:
             vec = self.problem.equations.make_full_vec(vec)
@@ -129,10 +126,6 @@ class MyEvalResidual(object):
 
 def ulf_init(pb):
     pb.family_data = HyperElasticULFamilyData()
-    pb.init_solvers()
-    pb.nls.fun = MyEvalResidual(pb).eval_residual
-    pb.nls_iter_hook = ulf_iteration_hook
-    pb.domain.mesh.coors_act = pb.domain.mesh.coors.copy()
     pb_vars = pb.get_variables()
     pb_vars['u'].init_data()
 
@@ -149,6 +142,7 @@ options = {
     'recover_micro': True,
     'recovery_region': 'Recovery',
     'post_process_hook': post_process,
+    'user_evaluator': MyEvaluator,
 }
 
 materials = {
@@ -216,6 +210,6 @@ solvers = {
         't0': 0,
         't1': 1,
         'n_step': 3 + 1,
-        'verbose' : 1,
+        'verbose': 1,
     })
 }
