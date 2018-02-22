@@ -1395,7 +1395,7 @@ class HDF5MeshIO(MeshIO):
             raise ValueError('pytables not imported!')
 
         step = get_default_attr(ts, 'step', 0)
-        if step == 0:
+        if (step == 0) or not op.exists(filename):
             # A new file.
             with pt.open_file(filename, mode="w",
                               title="SfePy output file") as fd:
@@ -1417,7 +1417,7 @@ class HDF5MeshIO(MeshIO):
                                 'file closing time')
 
                 fd.create_array(fd.root, 'last_step',
-                                nm.array([0], dtype=nm.int32),
+                                nm.array([step], dtype=nm.int32),
                                 'last saved step')
 
         if out is not None:
@@ -1429,7 +1429,13 @@ class HDF5MeshIO(MeshIO):
             # Existing file.
             fd = pt.open_file(filename, mode="r+")
 
-            step_group = fd.create_group('/', 'step%d' % step, 'time step data')
+            step_group_name = 'step%d' % step
+            if step_group_name in fd.root:
+                raise ValueError('step %d is already saved in "%s" file!'
+                                 ' Possible help: remove the old file or'
+                                 ' start saving from the initial time.'
+                                 % (step, filename))
+            step_group = fd.create_group('/', step_group_name, 'time step data')
 
             ts_group = fd.create_group(step_group, 'ts', 'time stepper')
             fd.create_array(ts_group, 'step', step, 'step')
