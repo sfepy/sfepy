@@ -1508,6 +1508,11 @@ class HDF5MeshIO(MeshIO):
 
         return out
 
+    def _get_step_group_names(self, fd):
+        return sorted([name for name in fd.root._v_groups.keys()
+                       if name.startswith('step')],
+                      key=lambda name: int(name[4:]))
+
     def read_times(self, filename=None):
         """
         Read true time step data from individual time steps.
@@ -1524,13 +1529,13 @@ class HDF5MeshIO(MeshIO):
         filename = get_default(filename, self.filename)
         fd = pt.open_file(filename, mode='r')
 
-        steps = sorted(int(name[4:]) for name in fd.root._v_groups.keys()
-                       if name.startswith('step'))
+        steps = []
         times = []
         nts = []
-        for step in steps:
-            ts_group = fd.get_node(fd.root, 'step%d/ts' % step)
+        for gr_name in self._get_step_group_names(fd):
+            ts_group = fd.get_node(fd.root, gr_name + '/ts')
 
+            steps.append(ts_group.step.read())
             times.append(ts_group.t.read())
             nts.append(ts_group.nt.read())
         fd.close()
@@ -1544,6 +1549,9 @@ class HDF5MeshIO(MeshIO):
     def _get_step_group(self, step, filename=None):
         filename = get_default(filename, self.filename)
         fd = pt.open_file(filename, mode="r")
+
+        if step is None:
+            step = int(self._get_step_group_names(fd)[0][4:])
 
         gr_name = 'step%d' % step
         try:
@@ -1597,7 +1605,7 @@ class HDF5MeshIO(MeshIO):
 
         return out
 
-    def read_data_header(self, dname, step=0, filename=None):
+    def read_data_header(self, dname, step=None, filename=None):
         fd, step_group = self._get_step_group(step, filename=filename)
         if fd is None: return None
 
@@ -1622,9 +1630,7 @@ class HDF5MeshIO(MeshIO):
         fd = pt.open_file(filename, mode="r")
 
         th = dict_from_keys_init(indx, list)
-        for step in range(fd.root.last_step[0] + 1):
-            gr_name = 'step%d' % step
-
+        for gr_name in self._get_step_group_names(fd):
             step_group = fd.get_node(fd.root, gr_name)
             data = step_group._f_get_child(node_name).data
 
