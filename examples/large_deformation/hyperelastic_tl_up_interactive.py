@@ -316,14 +316,11 @@ def main(cli_args):
     )
 
     ### Problem ###
-    pb = Problem(
-        'hyper', equations=equations, nls=nls, ls=ls,
-    )
+    pb = Problem('hyper', equations=equations)
     pb.set_bcs(ebcs=ebcs)
     pb.set_ics(ics=Conditions([]))
-
-    tss = SimpleTimeSteppingSolver(ts, problem=pb)
-    tss.init_time()
+    tss = SimpleTimeSteppingSolver(ts, nls=nls, context=pb)
+    pb.set_solver(tss)
 
     ### Solution ###
     axial_stress = []
@@ -333,9 +330,7 @@ def main(cli_args):
             *args, order=order, global_stress=axial_stress,
             global_displacement=axial_displacement, **kwargs)
 
-    for _ in tss(
-            save_results=True, post_process_hook=stress_strain_fun):
-        pass
+    pb.solve(save_results=True, post_process_hook=stress_strain_fun)
 
     if do_plot:
         plot_graphs(
