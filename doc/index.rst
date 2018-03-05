@@ -141,13 +141,13 @@
    - project GA16-03823S (Homogenization and multi-scale computational modelling
      of flow and nonlinear interactions in porous smart structures) of Czech
      Science Foundation, since 2016;
-   - project TA04010992 (Research and development of technologies for obtaining
-     vegetable oils and cakes with an emphasis on quality of cakes as feed and
-     the appropriateness of used of the construction materials) of The
-     Technology Agency of the Czech Republic, since 2014.
 
    In past, work on SfePy was partially supported by the following projects:
 
+   - project TA04010992 (Research and development of technologies for obtaining
+     vegetable oils and cakes with an emphasis on quality of cakes as feed and
+     the appropriateness of the used construction materials) of The
+     Technology Agency of the Czech Republic, in 2014-2017.
    - project GAP101/12/2315 (Modelling of acoustic wave propagation in strongly
      heterogeneous media; multi-scale numerical and analytical approaches) of
      Czech Science Foundation, 2012-2016.
