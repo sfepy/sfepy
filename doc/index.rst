@@ -56,7 +56,7 @@
    Applications
    ------------
 
-   Here we list some of the applications SfePy is developed for.
+   Here we list some of the applications SfePy is/was developed for.
 
    - homogenization of porous media - parallel flows in a deformable porous
      medium
@@ -66,12 +66,6 @@
    - finite element formulation of Schroedinger equation
    - flow of a two-phase non-Newtonian fluid medium in a general domain - oil
      expression in screw presses/extruders
-
-   Featured Applications
-   ---------------------
-
-   - Fish heart model: http://sfepy.org/fish_heart
-   - Phononic materials: http://sfepy.org/phononic
 
    Related Projects
    ----------------

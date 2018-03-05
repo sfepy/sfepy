@@ -15,3 +15,12 @@ generated list of the standard examples that come with SfePy.
    mat_optim
    splinebox
    examples/index
+
+Example Applications
+--------------------
+
+(Note: the examples below were created around 2010 and do not reflect the
+current state of SfePy).
+
+- Fish heart model: http://sfepy.org/fish_heart
+- Phononic materials: http://sfepy.org/phononic
