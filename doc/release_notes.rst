@@ -1,5 +1,243 @@
 # created: 20.07.2007 (-1)
 
+.. _2017.4-2018.1:
+
+from 2017.4 to 2018.1
+=====================
+
+- merge branch 'fix-vc++-9-compilation'
+
+  - fix for Visual C++ for Python 9.0
+
+- merge branch 'fix-mtx-comparison'
+
+  - fix matrix comparisons for in-place changes - use sha1 hash instead of only
+    id
+
+    - initialize .mtx_digest in LinearSolver.__init__()
+    - new _get_cs_matrix_hash(), _is_new_matrix()
+    - fix ScipyDirect, PyAMGSolver, PETScKrylovSolver
+    - update PyAMGKrylovSolver
+
+  - fix _is_new_matrix() for non-CSR matrices (e.g. PETSc.Mat)
+
+- merge branch 'petsc-ls-options'
+
+  - allow setting additional PETSc options in PETScKrylovSolver
+  - update biot_short_syntax.py example
+
+- merge branch 'force-reuse-ls-option'
+
+  - new force_reuse option of PyAMGSolver, PETScKrylovSolver
+
+    - update _is_new_matrix()
+    - allow reusing solver objects without checking matrix digests
+
+  - new test_ls_reuse() in tests/test_linear_solvers.py
+  - fix linear solver call in poisson_parallel_interactive.py example
+
+- merge pull request #441 from vlukes/fix_recovery
+
+  - fix recover_micro_hook_eps()
+
+- merge branch 'reimplement-advect-div-free-term'
+
+  - new ScalarDotMGradScalarTerm (dw_s_dot_mgrad_s)
+  - subclass AdvectDivFreeTerm from ScalarDotMGradScalarTerm, update docstring
+
+- merge branch 'dispersion-analysis2'
+
+  - dispersion_analysis.py: new --conf option for alternative problem
+    descriptions
+
+    - new apply_units_le(), set_wave_dir_le()
+    - rename define() -> define_le()
+
+  - dispersion_analysis.py: eliminate zeros in matrices
+
+- merge branch 'fix-self-contacts'
+
+  - fix evaluateContactConstraints() for self-contacts
+  - turn on global search in ContactTerm.get_fargs()
+
+- merge branch 'numpy-1.14.0-fixes'
+
+  - fix einsum() call in add_eas_dofs()
+  - fix transform_basis(), workaround for NumPy 1.14.0
+  - use _cmp() in test_consistent_sets() to fix float comparison
+
+- merge pull request #444 from vlukes/mumps_solver
+
+  - new interface to MUMPS linear solver
+  - update User's Guide: MUMPS linear solver
+  - fix Solver.process_conf()
+
+- merge pull request #443 from heczis/add_hyper_example
+
+  - Add new interactive hyperelastic example
+
+- merge pull request #446 from rc/rewrite-time-stepping-add-dynamics
+
+  - set initial conditions of parameter variables using setter functions
+
+    - update Variables.setup_initial_conditions()
+    - new FieldVariable._get_setter()
+
+  - update FieldVariable.time_update() for ._get_setter()
+  - new ZeroTerm (dw_zero)
+  - update TimeSteppingSolver arguments
+  - new examples/linear_elasticity/elastodynamic.py + test
+  - new NewmarkTS
+  - set quasistatic option of default ts_conf in Problem.set_conf_solvers()
+  - update Problem.get_time_solver(), NewmarkTS.__init__() for context argument
+  - new output_array_stats()
+  - update TimeSteppingSolver to have a generic interface
+
+    - update TimeSteppingSolver.__init__(), .__call__() signatures
+    - remove .init_time()
+
+  - update PDESolverApp.call() for generic interface (WIP)
+
+    - new init_fun(), prestep_fun(), poststep_fun()
+    - remove init_hook(), step_hook()
+
+  - update StationarySolver for generic interface
+  - update PDESolverApp.call() for active_only, new get_vec(), set_state() (WIP)
+  - update PDESolverApp.call(): presolve, update init_fun() to return vector
+    (WIP)
+  - update SimpleTimeSteppingSolver for generic interface
+
+    - new .solve_step0()
+    - remove .init_time(), .solve_step()
+
+  - update SimpleTimeSteppingSolver to be base for AdaptiveTimeSteppingSolver
+
+    - new .solve_step(), .output_step_info()
+
+  - update AdaptiveTimeSteppingSolver for generic interface
+
+    - adapt_fun in options has to be a function, not a function name string
+    - update .solve_step()
+    - remove .__call__()
+    - new .output_step_info()
+    - update adapt_time_step()
+
+  - update VariableTimeStepper for current AdaptiveTimeSteppingSolver
+
+    - allow setting current step in .set_step()
+    - update .advance(), .iter_from_current()
+    - new .iter_from()
+
+  - fix Equations.time_update() for no active_only and changing EBC DOFs -
+    update Problem.update_equations()
+
+  - fix error reporting in test_term_call_modes()
+  - update extract_time_history() to use actual step times
+  - update linear_elastic_damping.py example for current TS solvers - use HDF5
+    for output
+  - update balloon.py example to use ts.adaptive
+  - update adapt_time_step() docstring
+  - update laplace_time_ebcs.py example for current TS solvers
+  - new standard_ts_call(), decorate .__call__() of TS solvers
+  - fix FieldVariable.__init__() to initialize .history attribute
+  - use quasistatic TimeStepper in StationarySolver.__init__()
+  - add status argument to TimeSteppingSolver.__init__() for consistence
+  - move prepare_save_data(), prepare_matrix() into problem.py
+  - move get_initial_state() -> Problem.get_initial_state()
+  - move time-stepping solver management from PDESolverApp to Problem
+
+    - update PDESolverApp.call()
+    - replace Problem.nls with Problem.solver - a TS solver instance
+    - update .solve()
+    - new .get_tss(), .get_tss_functions(), .get_nls(), .get_ls()
+    - update Problem.__init__(), .reset() .set_equations(),
+      .set_equations_instance(), .set_conf_solvers(), .set_solver(),
+      .try_presolve(), .get_solver(), .is_linear(), .set_linear()
+    - update .init_solvers() - add ts_conf argument
+    - remove .get_time_solver()
+    - new State.get_vec(), .set_vec()
+
+  - unite BasicEvaluator with LCBCEvaluator in Evaluator, clean up
+  - update Problem.get_evaluator(), PETScParallelEvaluator for Evaluator
+  - update tests to use nls.fun() instead of (Basic)Evaluator
+  - update solve_pde(), PDESolverApp.call() to have status argument
+  - remove nls, ls, ts, auto_solvers arguments of Problem.__init__() - update
+    .from_conf(), .copy(), .create_subproblem()
+  - initialize solver configuration attributes in Problem.__init__()
+  - update Problem.set_solver() to set nonlinear solver functions - new
+    .get_nls_functions()
+  - initialize .ts in Problem.reset(), .set_solver()
+  - update Evaluator to check for LCBCs at run-time (remove .has_lcbc,
+    .mtx_lcbc)
+  - update tests for new solver status handling
+  - remove make_implicit_step()
+  - update SchurGeneralized for no active DOF indices at solver creation time -
+    update SchurComplement parameters initialization
+  - new Problem.block_solve() replacing EquationSequenceSolver - update
+    Problem.solve()
+  - update make_l2_projection_data(), make_h1_projection_data() for current
+    Problem
+  - update tests for current Problem
+  - update (interactive) examples for current Problem
+  - update test_install.py for changed output
+  - update MultiProblem for no active DOF indices at solver creation time
+  - update for not passing time stepper in user argument in
+    Problem.set_equations() - update Term.assign_args(), .time_update(),
+    create_evaluable()
+  - replace prepare_save_data() with new make_is_save() - new IsSave
+
+    - update is_sequence()
+    - update Problem.get_tss_functions()
+
+  - update examples for save_times option and time-stepper default verbosity
+    change
+  - docs: update users guide for save_times option
+  - new TimeStepper.set_substep_time(), .restore_step_time()
+
+  - new BatheTS
+  - simplify NewmarkTS, BatheTS by subclassing new ElastodynamicsBaseTS
+  - docs: update tutorial
+  - docs: update solvers sections in users guide
+  - clean up: move solver related-functions together in Problem
+  - docs: tweak for users guide changes in master
+
+- merge branch 'fix-test-ls-reuse'
+
+  - update test_ls_reuse() for #446
+
+- merge branch 'remove-petsc-worker'
+
+  - remove unused sfepy/solvers/petsc_worker.py - see
+    125d59dd82c0f2e4c88031c7c58e2dfa255c8cf8
+  - update sfepy/solvers/__init__.py
+  - docs: sync module index of developer guide with current sources
+
+- merge pull request #448 from vlukes/update_nonlin_homog_example
+
+  - update Problem.get_evaluator(): allow a user evaluator Class specified in
+    problem options
+  - update nonlinear homog. example: adapt to the altered solvers
+
+- merge branch 'fix-hdf5-saving-only-some-steps', closes #445
+
+  - allow saving without step 0 in HDF5MeshIO.write()
+  - update HDF5MeshIO for not saving all steps
+
+    - new HDF5MeshIO._get_step_group_names()
+    - update .read_times()
+    - update ._get_step_group() .read_data_header() for no step 0
+    - update .read_time_history() for missing steps
+
+- merge pull request #449 from heczis/update_interactive_example
+
+  - update hyperelastic_tl_up_interactive.py example for current Problem
+
+- merge branch 'update-web-docs'
+
+  - docs: update support section
+  - docs: move (old) featured applications under examples
+  - update script/gen_gallery.py for current Problem
+
 .. _2017.3-2017.4:
 
 from 2017.3 to 2017.4

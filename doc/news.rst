@@ -1,6 +1,13 @@
 News
 ====
 
+* **06.03.2018** Version 2018.1 released (major update of time-stepping solvers
+  and solver handling, Newmark and Bathe elastodynamics solvers, interface to
+  MUMPS linear solver, new examples: iron plate impact problem
+  (elastodynamics), incompressible Mooney-Rivlin material model
+  (hyperelasticity) as a script, etc.), see :ref:`release notes
+  <2017.4-2018.1>`.
+
 * **29.12.2017** Version 2017.4 released (basic support for penalty-based
   contacts, support for user-defined contexts in all solvers and
   preconditioners, new example: dispersion analysis of heterogeneous periodic
@@ -20,11 +27,5 @@ News
 * **28.02.2017** Version 2017.1 released (spline-box parametrization of an
   arbitrary field, conda-forge recipe, fixes for Python 3.6,
   etc.), see :ref:`release notes <2016.4-2017.1>`.
-
-* **07.12.2016** Version 2016.4 released (support tensor product element meshes
-  with one-level hanging nodes, improve homogenization support for large
-  deformations, parallel calculation of homogenized coefficients and related
-  sub-problems, evaluation of second derivatives of Lagrange basis functions,
-  etc.), see :ref:`release notes <2016.3-2016.4>`.
 
 For historians: see :ref:`archived_news`.
