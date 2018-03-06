@@ -301,6 +301,7 @@ def generate_images(images_dir, examples_dir):
     from sfepy.applications import solve_pde
     from sfepy.postprocess.viewer import Viewer
     from sfepy.postprocess.utils import mlab
+    from sfepy.solvers.ts_solvers import StationarySolver
 
     prefix = output.prefix
 
@@ -345,8 +346,8 @@ def generate_images(images_dir, examples_dir):
             else:
                 views = default_views
 
-            tsolver = problem.get_time_solver()
-            if tsolver.ts is None:
+            tsolver = problem.get_solver()
+            if isinstance(tsolver, StationarySolver):
                 suffix = None
 
             else:
