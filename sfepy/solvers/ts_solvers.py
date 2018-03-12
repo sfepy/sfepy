@@ -450,7 +450,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
             return rt
 
-        @_cache(self, 'matrix', self.conf.is_linear)
+        @_cache(self, cache_name, self.conf.is_linear)
         def fun_grad(at):
             vec = None if self.conf.is_linear else nm.r_[ufun(at), vfun(at), at]
             M, C, K = self.get_matrices(nls, vec)
