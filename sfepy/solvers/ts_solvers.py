@@ -500,6 +500,95 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
         return nlst
 
+class VelocityVerletTS(ElastodynamicsBaseTS):
+    """
+    Solve elastodynamics problems by the velocity-Verlet method [1].
+
+    [1] Swope, William C.; H. C. Andersen; P. H. Berens; K. R. Wilson (1
+    January 1982). "A computer simulation method for the calculation of
+    equilibrium constants for the formation of physical clusters of molecules:
+    Application to small water clusters". The Journal of Chemical Physics. 76
+    (1): 648 (Appendix). doi:10.1063/1.442716
+    """
+    name = 'ts.velocity_verlet'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+    ]
+
+    def create_nlst(self, nls, dt, u0, v0, a0):
+        vm = v0 + 0.5 * dt * a0
+        u1 = u0 + dt * vm
+        def v1(a):
+            return vm + 0.5 * dt * a
+
+        nlst = nls.copy()
+
+        def fun(at):
+            vec = nm.r_[u1, vm, at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, 'matrix', self.conf.is_linear)
+        def fun_grad(at):
+            vec = None if self.conf.is_linear else nm.r_[u1, vm, at]
+            M = self.get_matrices(nls, vec)[0]
+            return M
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.v1 = v1
+        nlst.u1 = u1
+
+        return nlst
+
+    @standard_ts_call
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        """
+        Solve elastodynamics problems by the velocity-Verlet method.
+        """
+        nls = get_default(nls, self.nls)
+
+        vec, unpack, pack = self.get_initial_vec(
+            nls, vec0, init_fun, prestep_fun, poststep_fun)
+
+        ts = self.ts
+        for step, time in ts.iter_from(ts.step):
+            output(self.format % (time, step + 1, ts.n_step),
+                   verbose=self.verbose)
+            dt = ts.dt
+
+            prestep_fun(ts, vec)
+            ut, vt, at = unpack(vec)
+
+            nlst = self.create_nlst(nls, dt, ut, vt, at)
+            atp = nlst(at)
+            vtp = nlst.v1(atp)
+            utp = nlst.u1
+
+            vect = pack(utp, vtp, atp)
+            poststep_fun(ts, vect)
+
+            vec = vect
+
+        return vec
+
 class NewmarkTS(ElastodynamicsBaseTS):
     """
     Solve elastodynamics problems by the Newmark method [1].
