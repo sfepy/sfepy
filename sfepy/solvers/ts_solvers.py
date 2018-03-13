@@ -450,7 +450,7 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
             rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
             return rt
 
-        @_cache(self, 'matrix', self.conf.is_linear)
+        @_cache(self, cache_name, self.conf.is_linear)
         def fun_grad(at):
             vec = None if self.conf.is_linear else nm.r_[ufun(at), vfun(at), at]
             M, C, K = self.get_matrices(nls, vec)
@@ -499,6 +499,95 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
         nlst.a = afun
 
         return nlst
+
+class VelocityVerletTS(ElastodynamicsBaseTS):
+    """
+    Solve elastodynamics problems by the velocity-Verlet method [1].
+
+    [1] Swope, William C.; H. C. Andersen; P. H. Berens; K. R. Wilson (1
+    January 1982). "A computer simulation method for the calculation of
+    equilibrium constants for the formation of physical clusters of molecules:
+    Application to small water clusters". The Journal of Chemical Physics. 76
+    (1): 648 (Appendix). doi:10.1063/1.442716
+    """
+    name = 'ts.velocity_verlet'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+    ]
+
+    def create_nlst(self, nls, dt, u0, v0, a0):
+        vm = v0 + 0.5 * dt * a0
+        u1 = u0 + dt * vm
+        def v1(a):
+            return vm + 0.5 * dt * a
+
+        nlst = nls.copy()
+
+        def fun(at):
+            vec = nm.r_[u1, vm, at]
+
+            aux = nls.fun(vec)
+
+            i3 = len(at)
+            rt = aux[:i3] + aux[i3:2*i3] + aux[2*i3:]
+            return rt
+
+        @_cache(self, 'matrix', self.conf.is_linear)
+        def fun_grad(at):
+            vec = None if self.conf.is_linear else nm.r_[u1, vm, at]
+            M = self.get_matrices(nls, vec)[0]
+            return M
+
+        nlst.fun = fun
+        nlst.fun_grad = fun_grad
+        nlst.v1 = v1
+        nlst.u1 = u1
+
+        return nlst
+
+    @standard_ts_call
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        """
+        Solve elastodynamics problems by the velocity-Verlet method.
+        """
+        nls = get_default(nls, self.nls)
+
+        vec, unpack, pack = self.get_initial_vec(
+            nls, vec0, init_fun, prestep_fun, poststep_fun)
+
+        ts = self.ts
+        for step, time in ts.iter_from(ts.step):
+            output(self.format % (time, step + 1, ts.n_step),
+                   verbose=self.verbose)
+            dt = ts.dt
+
+            prestep_fun(ts, vec)
+            ut, vt, at = unpack(vec)
+
+            nlst = self.create_nlst(nls, dt, ut, vt, at)
+            atp = nlst(at)
+            vtp = nlst.v1(atp)
+            utp = nlst.u1
+
+            vect = pack(utp, vtp, atp)
+            poststep_fun(ts, vect)
+
+            vec = vect
+
+        return vec
 
 class NewmarkTS(ElastodynamicsBaseTS):
     """
@@ -574,6 +663,140 @@ class NewmarkTS(ElastodynamicsBaseTS):
             atp = nlst(at)
             vtp = nlst.v(atp)
             utp = nlst.u(atp)
+
+            vect = pack(utp, vtp, atp)
+            poststep_fun(ts, vect)
+
+            vec = vect
+
+        return vec
+
+class GeneralizedAlphaTS(ElastodynamicsBaseTS):
+    r"""
+    Solve elastodynamics problems by the generalized :math:`\alpha` method [1].
+
+    - The method is unconditionally stable provided :math:`\alpha_m \leq
+      \alpha_f \leq \frac{1}{2}`, :math:`\beta >= \frac{1}{4} +
+      \frac{1}{2}(\alpha_f - \alpha_m)`.
+    - The method is second-order accurate provided :math:`\gamma = \frac{1}{2} -
+      \alpha_m + \alpha_f`. This is used when `gamma` is ``None``.
+    - High frequency dissipation is maximized for :math:`\beta = \frac{1}{4}(1
+      - \alpha_m + \alpha_f)^2`. This is used when `beta` is ``None``.
+    - The default values of :math:`\alpha_m`, :math:`\alpha_f` (if `alpha_m` or
+      `alpha_f`  are ``None``) are based on the user specified high-frequency
+      dissipation parameter `rho_inf`.
+
+    Special settings:
+
+    - :math:`\alpha_m = 0` corresponds to the HHT-:math:`\alpha` method.
+    - :math:`\alpha_f = 0` corresponds to the WBZ-:math:`\alpha` method.
+    - :math:`\alpha_m = 0`, :math:`\alpha_f = 0` produces the Newmark method.
+
+    [1] J. Chung, G.M.Hubert. "A Time Integration Algorithm for Structural
+    Dynamics with Improved Numerical Dissipation: The
+    Generalized-:math:`\alpha` Method" ASME Journal of Applied Mechanics, 60,
+    371:375, 1993.
+    """
+    name = 'ts.generalized_alpha'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('t0', 'float', 0.0, False,
+         'The initial time.'),
+        ('t1', 'float', 1.0, False,
+         'The final time.'),
+        ('dt', 'float', None, False,
+         'The time step. Used if `n_step` is not given.'),
+        ('n_step', 'int', 10, False,
+         'The number of time steps. Has precedence over `dt`.'),
+        ('is_linear', 'bool', False, False,
+         'If True, the problem is considered to be linear.'),
+        ('rho_inf', 'float', 0.5, False,
+         """The spectral radius in the high frequency limit (user specified
+            high-frequency dissipation) in [0, 1]:
+            1 = no dissipation, 0 = asymptotic annihilation."""),
+        ('alpha_m', 'float', None, False,
+         r'The parameter :math:`\alpha_m`.'),
+        ('alpha_f', 'float', None, False,
+         r'The parameter :math:`\alpha_f`.'),
+        ('beta', 'float', None, False,
+         r'The Newmark-like parameter :math:`\beta`.'),
+        ('gamma', 'float', None, False,
+         r'The Newmark-like parameter :math:`\gamma`.'),
+    ]
+
+    def create_nlst(self, nls, dt, alpha_m, alpha_f, gamma, beta, u0, v0, a0):
+        dt2 = dt**2
+
+        def v1(a):
+            return v0 + dt * ((1.0 - gamma) * a0 + gamma * a)
+
+        def u1(a):
+            return u0 + dt * v0 + dt2 * ((0.5 - beta) * a0 + beta * a)
+
+        def v(a):
+            return (1.0 - alpha_f) * v1(a) + alpha_f * v0
+
+        def u(a):
+            return (1.0 - alpha_f) * u1(a) + alpha_f * u0
+
+        def a1(am):
+            return (am - alpha_m * a0) / (1.0 - alpha_m)
+
+        nlst = self._create_nlst_a(nls, dt, u, v,
+                                   (1.0 - alpha_f) * gamma * dt,
+                                   (1.0 - alpha_f) * beta * dt2,
+                                   'matrix')
+        nlst.u1 = u1
+        nlst.v1 = v1
+        nlst.a1 = a1
+
+        return nlst
+
+    @standard_ts_call
+    def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
+                 poststep_fun=None, status=None, **kwargs):
+        """
+        Solve elastodynamics problems by the generalized :math:`\alpha` method.
+        """
+        conf = self.conf
+        nls = get_default(nls, self.nls)
+
+        rho_inf = conf.rho_inf
+        alpha_m = get_default(conf.alpha_m,
+                              (2.0 * rho_inf - 1.0) / (rho_inf + 1.0))
+        alpha_f = get_default(conf.alpha_f, rho_inf / (rho_inf + 1.0))
+        beta = get_default(conf.beta, 0.25 * (1.0 - alpha_m + alpha_f)**2)
+        gamma = get_default(conf.gamma, 0.5 - alpha_m + alpha_f)
+
+        output('parameters rho_inf, alpha_m, alpha_f, beta, gamma:',
+               verbose=self.verbose)
+        output(rho_inf, alpha_m, alpha_f, beta, gamma,
+               verbose=self.verbose)
+
+        vec, unpack, pack = self.get_initial_vec(
+            nls, vec0, init_fun, prestep_fun, poststep_fun)
+
+        ts = self.ts
+        for step, time in ts.iter_from(ts.step):
+            output(self.format % (time, step + 1, ts.n_step),
+                   verbose=self.verbose)
+            dt = ts.dt
+
+            prestep_fun(ts, vec)
+            ut, vt, at = unpack(vec)
+
+            nlst = self.create_nlst(nls, dt, alpha_m, alpha_f, gamma, beta,
+                                    ut, vt, at)
+
+            ts.set_substep_time((1.0 - alpha_f) * dt)
+            am = nlst(at)
+            ts.restore_step_time()
+
+            atp = nlst.a1(am)
+            vtp = nlst.v1(atp)
+            utp = nlst.u1(atp)
 
             vect = pack(utp, vtp, atp)
             poststep_fun(ts, vect)
