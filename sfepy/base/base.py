@@ -1050,6 +1050,9 @@ def dict_to_struct(*args, **kwargs):
 
     return out
 
+def is_string(var):
+    return isinstance(var, basestr)
+
 def is_integer(var):
     if PY3:
         return isinstance(var, int)

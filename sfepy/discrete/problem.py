@@ -7,7 +7,7 @@ from copy import copy
 import numpy as nm
 
 from sfepy.base.base import (
-    dict_from_keys_init, select_by_names, is_integer, is_sequence,
+    dict_from_keys_init, select_by_names, is_string, is_integer, is_sequence,
     output, get_default, Struct, IndexedStruct)
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
@@ -52,7 +52,7 @@ def make_is_save(options):
                                                   self.save_times0)
 
         def __call__(self, ts):
-            if self.save_times == 'all':
+            if is_string(self.save_times) and self.save_times == 'all':
                 return True
 
             elif isinstance(self.save_times, nm.ndarray):
