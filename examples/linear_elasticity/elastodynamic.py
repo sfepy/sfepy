@@ -227,8 +227,20 @@ solvers = {
     }),
     'newton' : ('nls.newton', {
         'i_max'      : 1,
-        'eps_a'      : 1e0,
+        'eps_a'      : 1e-6,
         'eps_r'      : 1e-6,
+    }),
+    'tsvv' : ('ts.velocity_verlet', {
+        # Excplicit method -> requires at least 10x smaller dt than the other
+        # time-stepping solvers.
+        't0' : 0.0,
+        't1' : t1,
+        'dt' : dt,
+        'n_step' : None,
+
+        'is_linear'  : True,
+
+        'verbose' : 1,
     }),
     'tsn' : ('ts.newmark', {
         't0' : 0.0,
@@ -240,6 +252,22 @@ solvers = {
 
         'beta' : 0.25,
         'gamma' : 0.5,
+
+        'verbose' : 1,
+    }),
+    'tsga' : ('ts.generalized_alpha', {
+        't0' : 0.0,
+        't1' : t1,
+        'dt' : dt,
+        'n_step' : None,
+
+        'is_linear'  : True,
+
+        'rho_inf' : 0.5,
+        'alpha_m' : None,
+        'alpha_f' : None,
+        'beta' : None,
+        'gamma' : None,
 
         'verbose' : 1,
     }),
@@ -261,6 +289,8 @@ options = {
     'nls' : 'newton',
     # 'ls' : 'ls-i',
     'ls' : 'ls',
+
+    'save_times' : 20,
 
     'active_only' : False,
 
