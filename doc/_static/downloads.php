@@ -12,7 +12,7 @@
   <body>
     <div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
       <a href="http://sfepy.org"><img src="sfepy_logo_title_small.png" border="0" height="70px" alt="SfePy"/></a>
-      <a href="http://www.zcu.cz/ntc/en/"><img src="ntc_logo.png" align="right" border="0" height="80px" alt="NTC"/></a>
+      <a href="http://ntc.zcu.cz/en/"><img src="ntc_logo.png" align="right" border="0" height="80px" alt="NTC"/></a>
     </div>
 
     <div class="related">
