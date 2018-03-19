@@ -10,6 +10,7 @@ import sys
 from argparse import ArgumentParser
 
 sys.path.append('.')
+
 import sfepy
 from sfepy.base.base import load_classes
 from sfepy.solvers import NonlinearSolver, TimeSteppingSolver, LinearSolver, \
@@ -20,11 +21,10 @@ remove = ['setup.py', 'solvers.py']
 solver_files = [name for name in solver_files
                 if op.basename(name) not in remove]
 
-
 solvers_by_type_table = [
+    [[TimeSteppingSolver], "Time-Stepping Solvers"],
     [[LinearSolver], "Linear Solvers"],
     [[NonlinearSolver], "Non-linear Solvers"],
-    [[TimeSteppingSolver], "Time Stepping Solvers"],
     [[EigenvalueSolver], "Eigen Value Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
@@ -36,21 +36,18 @@ for i in enumerate(solvers_by_type_table):
                      package_name='sfepy.solvers')
 
 
-def typeset_solver_tables(fd, solver_table):
+def typeset_solver_tables(fd, solver_tables):
     """
     Generate solver tables ReST output.
-    :param fd:
-    :param solver_table:
-    :return: none
     """
 
-    sec_level = '"'
+    doc_sec_level = '"'
 
-    for solver_type in solver_table:
-        sec_label = "Table of available %s" % solver_type[1]
-        fd.write(''.join([sec_label,
+    for solver_type in solver_tables:
+        doc_sec_label = "%s" % solver_type[1]
+        fd.write(''.join([doc_sec_label,
                           '\n',
-                          sec_level * len(sec_label),
+                          doc_sec_level * len(doc_sec_label),
                           '\n'])
                  )
         for name, cls in solver_type[0].items():
@@ -60,12 +57,12 @@ def typeset_solver_tables(fd, solver_table):
         fd.write('\n')
 
 
-def typeset(filename):
+def typeset(fd):
     """
     Utility function called by Sphinx.
     """
 
-    fd = open(filename, 'w')
+    fd = open(fd, 'w')
     typeset_solver_tables(fd, solvers_by_type_table)
     fd.close()
 
