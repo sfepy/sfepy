@@ -1362,8 +1362,8 @@ Solvers
 -------
 
 This section describes the time-stepping, linear, nonlinear, eigenvalue and
-optimization and solvers available in *SfePy*. There are many internal and
-external solvers in the :ref:`sfepy_solvers` that can be called using a uniform
+optimization solvers available in *SfePy*. There are many internal and external
+solvers in the :ref:`sfepy_solvers` that can be called using a uniform
 interface.
 
 Time-stepping solvers
