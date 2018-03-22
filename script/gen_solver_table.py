@@ -33,10 +33,10 @@ for i in enumerate(solver_by_type_table):
 
 def paragraphs(fileobj, separator='\n'):
     """
-    Read doc string by paragraphs.
+    Read iterable string by paragraphs.
     :param fileobj: iterable text object
     :param separator: paragraph separator
-    :return: generator object ref
+    :return: generator object
     """
     if separator[-1:] != '\n':
         separator += '\n'
