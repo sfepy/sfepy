@@ -3,7 +3,7 @@
 """
 Generate table of available solvers for the Sphinx documentation.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, generators
 import os.path as op
 import sys
 
@@ -16,24 +16,40 @@ from sfepy.base.base import load_classes
 from sfepy.solvers import NonlinearSolver, TimeSteppingSolver, LinearSolver, \
     EigenvalueSolver, OptimizationSolver
 
-solver_files = sfepy.get_paths('sfepy/solvers/*.py')
-remove = ['setup.py', 'solvers.py']
-solver_files = [name for name in solver_files
-                if op.basename(name) not in remove]
-
-solvers_by_type_table = [
-    [[TimeSteppingSolver], "Time-Stepping Solvers"],
+solver_by_type_table = [
     [[LinearSolver], "Linear Solvers"],
     [[NonlinearSolver], "Non-linear Solvers"],
+    [[TimeSteppingSolver], "Time-Stepping Solvers"],
     [[EigenvalueSolver], "Eigen Value Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
 
-for i in enumerate(solvers_by_type_table):
-    solvers_by_type_table[i[0]][0] = \
-        load_classes(solver_files,
-                     solvers_by_type_table[i[0]][0],
+for i in enumerate(solver_by_type_table):
+    solver_by_type_table[i[0]][0] = \
+        load_classes(sfepy.solvers.solver_files,
+                     solver_by_type_table[i[0]][0],
                      package_name='sfepy.solvers')
+
+
+def paragraphs(fileobj, separator='\n'):
+    """
+    Read doc string by paragraphs.
+    :param fileobj: iterable text object
+    :param separator: paragraph separator
+    :return: generator object ref
+    """
+    if separator[-1:] != '\n':
+        separator += '\n'
+    paragraph = []
+    for line in fileobj:
+        if line == separator:
+            if paragraph:
+                yield ''.join(paragraph)
+                paragraph = []
+        else:
+            paragraph.append(line)
+    if paragraph:
+        yield ''.join(paragraph)
 
 
 def typeset_solver_tables(fd, solver_tables):
@@ -51,8 +67,8 @@ def typeset_solver_tables(fd, solver_tables):
                           '\n'])
                  )
         for name, cls in solver_type[0].items():
-            fd.write('*%s*' % name)
-            fd.write(cls.__doc__)
+            fd.write('*%s*\n' % name)
+            fd.write(next(paragraphs(cls.__doc__, '\n')))
             fd.write('\n')
         fd.write('\n')
 
@@ -63,7 +79,7 @@ def typeset(fd):
     """
 
     fd = open(fd, 'w')
-    typeset_solver_tables(fd, solvers_by_type_table)
+    typeset_solver_tables(fd, solver_by_type_table)
     fd.close()
 
 
