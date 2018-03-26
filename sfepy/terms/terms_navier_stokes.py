@@ -455,6 +455,7 @@ class StokesWaveTerm(Term):
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '.: D',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
 
     @staticmethod
     def function(out, out_qp, geo, fmode):
@@ -463,17 +464,13 @@ class StokesWaveTerm(Term):
 
     def get_fargs(self, kappa, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        from sfepy.discrete.variables import create_adof_conn
+        from sfepy.discrete.variables import create_adof_conn, expand_basis
 
         geo, _ = self.get_mapping(state)
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
 
-        # Expand basis for all components.
-        bf = geo.bf
-        ebf = nm.zeros(bf.shape[:2] + (dim, n_en * dim), dtype=nm.float64)
-        for ir in range(dim):
-            ebf[..., ir, ir*n_en:(ir+1)*n_en] = bf[..., 0, :]
+        ebf = expand_basis(geo.bf, dim)
 
         aux = nm.einsum('i,...ij->...j', kappa, ebf)[0, :, None, :]
         kebf = insert_strided_axis(aux, 0, n_el)
@@ -519,6 +516,7 @@ class StokesWaveDivTerm(Term):
                  ('material', 'state', 'virtual'))
     arg_shapes = {'material' : '.: D',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
     modes = ('kd', 'dk')
 
     @staticmethod
@@ -528,17 +526,13 @@ class StokesWaveDivTerm(Term):
 
     def get_fargs(self, kappa, kvar, dvar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        from sfepy.discrete.variables import create_adof_conn
+        from sfepy.discrete.variables import create_adof_conn, expand_basis
 
         geo, _ = self.get_mapping(dvar)
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(kvar)
 
-        # Expand basis for all components.
-        bf = geo.bf
-        ebf = nm.zeros(bf.shape[:2] + (dim, n_en * dim), dtype=nm.float64)
-        for ir in range(dim):
-            ebf[..., ir, ir*n_en:(ir+1)*n_en] = bf[..., 0, :]
+        ebf = expand_basis(geo.bf, dim)
 
         aux = nm.einsum('i,...ij->...j', kappa, ebf)[0, :, None, :]
         kebf = insert_strided_axis(aux, 0, n_el)
