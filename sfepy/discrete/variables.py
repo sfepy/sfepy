@@ -139,6 +139,18 @@ def create_adof_conn(eq, conn, dpn, offset):
 
     return adc
 
+def expand_basis(basis, n_c):
+    """
+    Expand basis for variables with several components, in a way compatible
+    with :func:`create_adof_conn()`.
+    """
+    n_bf = basis.shape[-1]
+    ebasis = nm.zeros(basis.shape[:2] + (n_c, n_bf * n_c), dtype=nm.float64)
+    for ir in range(n_c):
+        ebasis[..., ir, ir*n_bf:(ir+1)*n_bf] = basis[..., 0, :]
+
+    return ebasis
+
 class Variables(Container):
     """
     Container holding instances of Variable.
