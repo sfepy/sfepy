@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.linalg import dot_sequences
+from sfepy.linalg import dot_sequences, insert_strided_axis
 from sfepy.terms.terms import Term, terms
 
 class DivGradTerm(Term):
@@ -436,6 +436,139 @@ class DivOperatorTerm(Term):
         vg, _ = self.get_mapping(virtual)
 
         return mat, vg
+
+class StokesWaveTerm(Term):
+    r"""
+    Stokes dispersion term with the wave vector :math:`\ul{\kappa}`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} (\ul{\kappa} \cdot \ul{v}) (\ul{\kappa} \cdot \ul{u})
+
+    :Arguments:
+        - material : :math:`\ul{\kappa}`
+        - virtual  : :math:`\ul{v}`
+        - statee   : :math:`\ul{u}`
+    """
+    name = 'dw_stokes_wave'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '.: D',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    @staticmethod
+    def function(out, out_qp, geo, fmode):
+        status = geo.integrate(out, out_qp)
+        return status
+
+    def get_fargs(self, kappa, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn, expand_basis
+
+        geo, _ = self.get_mapping(state)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+
+        ebf = expand_basis(geo.bf, dim)
+
+        aux = nm.einsum('i,...ij->...j', kappa, ebf)[0, :, None, :]
+        kebf = insert_strided_axis(aux, 0, n_el)
+
+        if diff_var is None:
+            econn = state.field.get_econn('volume', self.region)
+            adc = create_adof_conn(nm.arange(state.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+            vals = state()[adc]
+            aux = dot_sequences(kebf, vals[:, None, :, None])
+            out_qp = dot_sequences(kebf, aux, 'ATB')
+            fmode = 0
+
+        else:
+            out_qp = dot_sequences(kebf, kebf, 'ATB')
+            fmode = 1
+
+        return out_qp, geo, fmode
+
+class StokesWaveDivTerm(Term):
+    r"""
+    Stokes dispersion term with the wave vector :math:`\ul{\kappa}` and the
+    divergence operator.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} (\ul{\kappa} \cdot \ul{v}) (\nabla \cdot \ul{u}) \;,
+        \int_{\Omega} (\ul{\kappa} \cdot \ul{u}) (\nabla \cdot \ul{v})
+
+    :Arguments 1:
+        - material : :math:`\ul{\kappa}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material : :math:`\ul{\kappa}`
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`\ul{v}`
+    """
+    name = 'dw_stokes_wave_div'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'))
+    arg_shapes = {'material' : '.: D',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+    modes = ('kd', 'dk')
+
+    @staticmethod
+    def function(out, out_qp, geo, fmode):
+        status = geo.integrate(out, out_qp)
+        return status
+
+    def get_fargs(self, kappa, kvar, dvar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import create_adof_conn, expand_basis
+
+        geo, _ = self.get_mapping(dvar)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(kvar)
+
+        ebf = expand_basis(geo.bf, dim)
+
+        aux = nm.einsum('i,...ij->...j', kappa, ebf)[0, :, None, :]
+        kebf = insert_strided_axis(aux, 0, n_el)
+
+        div_bf = geo.bfg
+
+        div_bf = div_bf.reshape((n_el, n_qp, 1, dim * n_en))
+        div_bf = nm.ascontiguousarray(div_bf)
+
+        if diff_var is None:
+            avar = dvar if self.mode == 'kd' else kvar
+            econn = avar.field.get_econn('volume', self.region)
+            adc = create_adof_conn(nm.arange(avar.n_dof, dtype=nm.int32),
+                                   econn, n_c, 0)
+            vals = avar()[adc]
+
+            if self.mode == 'kd':
+                aux = dot_sequences(div_bf, vals[:, None, :, None])
+                out_qp = dot_sequences(kebf, aux, 'ATB')
+
+            else:
+                aux = dot_sequences(kebf, vals[:, None, :, None])
+                out_qp = dot_sequences(div_bf, aux, 'ATB')
+
+            fmode = 0
+
+        else:
+            if self.mode == 'kd':
+                out_qp = dot_sequences(kebf, div_bf, 'ATB')
+
+            else:
+                out_qp = dot_sequences(div_bf, kebf, 'ATB')
+
+            fmode = 1
+
+        return out_qp, geo, fmode
 
 class GradDivStabilizationTerm(Term):
     r"""

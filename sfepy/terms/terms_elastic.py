@@ -785,17 +785,13 @@ class ElasticWaveTerm(Term):
 
     def get_fargs(self, mat, kappa, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        from sfepy.discrete.variables import create_adof_conn
+        from sfepy.discrete.variables import create_adof_conn, expand_basis
 
         geo, _ = self.get_mapping(state)
 
-        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(virtual)
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
 
-        # Expand basis for all components.
-        bf = geo.bf
-        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
-        for ir in range(dim):
-            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+        ebf = expand_basis(geo.bf, dim)
 
         gmat = _build_wave_strain_op(kappa, ebf)
 
@@ -858,17 +854,13 @@ class ElasticWaveCauchyTerm(Term):
 
     def get_fargs(self, mat, kappa, gvar, evar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        from sfepy.discrete.variables import create_adof_conn
+        from sfepy.discrete.variables import create_adof_conn, expand_basis
 
         geo, _ = self.get_mapping(evar)
 
-        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(gvar)
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(gvar)
 
-        # Expand basis for all components.
-        bf = geo.bf
-        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
-        for ir in range(dim):
-            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+        ebf = expand_basis(geo.bf, dim)
 
         gmat = _build_wave_strain_op(kappa, ebf)
         emat = _build_cauchy_strain_op(geo.bfg)

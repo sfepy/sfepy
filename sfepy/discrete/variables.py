@@ -139,6 +139,20 @@ def create_adof_conn(eq, conn, dpn, offset):
 
     return adc
 
+def expand_basis(basis, dpn):
+    """
+    Expand basis for variables with several components (DOFs per node), in a
+    way compatible with :func:`create_adof_conn()`, according to `dpn`
+    (DOF-per-node count).
+    """
+    n_c, n_bf = basis.shape[-2:]
+    ebasis = nm.zeros(basis.shape[:2] + (dpn, n_bf * dpn), dtype=nm.float64)
+    for ic in range(n_c):
+        for ir in range(dpn):
+            ebasis[..., n_c*ir+ic, ir*n_bf:(ir+1)*n_bf] = basis[..., ic, :]
+
+    return ebasis
+
 class Variables(Container):
     """
     Container holding instances of Variable.
