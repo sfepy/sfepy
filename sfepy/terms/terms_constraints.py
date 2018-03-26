@@ -3,7 +3,6 @@ import numpy as nm
 
 from sfepy.terms.terms import Term
 from sfepy.linalg import dot_sequences
-from six.moves import range
 
 class NonPenetrationTerm(Term):
     r"""
@@ -79,6 +78,8 @@ class NonPenetrationTerm(Term):
 
     def get_fargs(self, mat, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import expand_basis
+
         if self.mode == 'grad':
             qp_var = svar
 
@@ -94,11 +95,7 @@ class NonPenetrationTerm(Term):
         if mat is None:
             mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
-        # Expand base corresponding to \ul{u} for all dofs.
-        bf = vsg.bf
-        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
-        for ir in range(dim):
-            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+        ebf = expand_basis(vsg.bf, dim)
 
         return val_qp, ebf, ssg.bf, mat, vsg, diff_var, self.mode
 
@@ -144,6 +141,8 @@ class NonPenetrationPenaltyTerm(Term):
 
     def get_fargs(self, mat, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.discrete.variables import expand_basis
+
         if diff_var is None:
             val_qp = self.get(svar, 'val')
 
@@ -153,10 +152,6 @@ class NonPenetrationPenaltyTerm(Term):
         sg, _ = self.get_mapping(vvar)
         n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(vvar)
 
-        # Expand basis for all dofs.
-        bf = sg.bf
-        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
-        for ir in range(dim):
-            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
+        ebf = expand_basis(sg.bf, dim)
 
         return val_qp, ebf, mat, sg, diff_var
