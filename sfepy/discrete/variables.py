@@ -1855,9 +1855,7 @@ class FieldVariable(Variable):
 
         return out
 
-    def set_from_other(self, other, strategy='projection',
-                       search_strategy='kdtree', ordering_strategy='rcm',
-                       close_limit=0.1):
+    def set_from_other(self, other, strategy='projection', close_limit=0.1):
         """
         Set the variable using another variable. Undefined values (e.g. outside
         the other mesh) are set to numpy.nan, or extrapolated.
@@ -1865,30 +1863,14 @@ class FieldVariable(Variable):
         Parameters
         ----------
         strategy : 'projection' or 'interpolation'
-            The strategy to set the values: the L^2 orthogonal projection, or
-            a direct interpolation to the nodes (nodal elements only!)
+            The strategy to set the values: the L^2 orthogonal projection (not
+            implemented!), or a direct interpolation to the nodes (nodal
+            elements only!)
 
         Notes
         -----
         If the other variable uses the same field mesh, the coefficients are
         set directly.
-
-        If the other variable uses the same field mesh, only deformed slightly,
-        it is advisable to provide directly the node ids as a hint where to
-        start searching for a containing element; the order of nodes does not
-        matter then.
-
-        Otherwise (large deformation, unrelated meshes, ...) there are
-        basically two ways:
-        a) query each node (its coordinates) using a KDTree of the other nodes
-        - this completely disregards the connectivity information;
-        b) iterate the mesh nodes so that the subsequent ones are close to each
-        other - then also the elements of the other mesh should be close to each
-        other: the previous one can be used as a start for the directional
-        neighbour element crawling to the target point.
-
-        Not sure which way is faster, depends on implementation efficiency and
-        the particular meshes.
         """
         flag_same_mesh = self.has_same_mesh(other)
 
@@ -1907,24 +1889,7 @@ class FieldVariable(Variable):
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
 
-        if search_strategy == 'kdtree':
-            tt = time.clock()
-            iter_nodes = CloseNodesIterator(self.field, create_graph=False)
-            output('iterator: %f s' % (time.clock()-tt))
-
-        elif search_strategy == 'crawl':
-            tt = time.clock()
-            iter_nodes = CloseNodesIterator(self.field, strategy='rcm')
-            output('iterator: %f s' % (time.clock()-tt))
-
-            iter_nodes.test_permutations()
-
-        else:
-            raise ValueError('unknown search strategy! (%s)' % search_strategy)
-
-        perm = iter_nodes.get_permutation(iter_nodes.strategy)
-
-        vals = other.evaluate_at(coors[perm], strategy='general',
+        vals = other.evaluate_at(coors, strategy='general',
                                  close_limit=close_limit)
 
         if strategy == 'interpolation':
