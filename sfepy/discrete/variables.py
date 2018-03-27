@@ -1203,149 +1203,6 @@ class Variable(Struct):
         else:
             return self.initial_condition
 
-class CloseNodesIterator(Struct):
-
-    def __init__(self, field, create_mesh=True, create_graph=True,
-                 strategy=None):
-        self.field = field
-        self.coors = self.field.get_coor()
-
-        if create_mesh or create_graph:
-            self.mesh = self.field.create_mesh()
-
-        if create_graph:
-            self.graph = self.mesh.create_conn_graph()
-            self.perm = self.get_permutation(strategy=strategy)
-            self.strategy = strategy
-
-        else:
-            self.graph = None
-            self.strategy = None
-
-    def __call__(self, strategy=None):
-        if strategy is None or (strategy != self.strategy):
-            self.perm = self.get_permutation(strategy=strategy)
-            self.strategy = strategy
-
-        self.ii = 0
-        return self
-
-    def get_permutation(self, strategy=None):
-        graph = self.graph
-
-        n_nod = self.coors.shape[0]
-        dtype = nm.int32
-
-        if strategy is None:
-            perm = nm.arange(n_nod, dtype=dtype)
-
-        elif strategy == 'rcm':
-            from sfepy.linalg import rcm
-            perm = rcm(graph)
-
-        elif 'greedy' in strategy:
-            ipop, iin = {'00' : (0, 0),
-                         'e0' : (-1, 0),
-                         '0e' : (0, -1),
-                         'ee' : (-1, -1),
-                         '01' : (0, 1),
-                         }[strategy[-2:]]
-
-            perm_i = nm.empty((n_nod,), dtype=dtype)
-            perm_i.fill(-1)
-
-            n_nod = perm_i.shape[0]
-            num = graph.indptr[1:] - graph.indptr[:-1]
-
-            ir = nm.argmin(num)
-            perm_i[ir] = 0
-            active = [ir]
-            ii = 1
-            while ii < n_nod:
-                ir = active.pop(ipop)
-                row = graph.indices[graph.indptr[ir]:graph.indptr[ir+1]]
-
-                ips = []
-                for ip in row:
-                    if perm_i[ip] < 0:
-                        perm_i[ip] = ii
-                        ii += 1
-                        ips.append(ip)
-                if iin >= 0:
-                    active[iin:iin] = ips
-                else:
-                    active.extend(ips)
-
-            perm = nm.empty_like(perm_i)
-            perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
-
-        return perm
-
-    def test_permutations(self, strategy='rcm'):
-        from sfepy.linalg import permute_in_place, save_sparse_txt
-
-        save_sparse_txt('graph', self.graph, fmt='%d %d %d\n')
-        graph = self.graph.copy()
-
-        perm = self.get_permutation('rcm')
-
-        g_types = ['00', 'e0', '0e', 'ee', '01']
-        g_names = ['greedy_%s' % ii for ii in g_types]
-        g_perms = [self.get_permutation('greedy_%s' % ii) for ii in g_types]
-
-        c1 = self.mesh.coors
-        d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
-        d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
-        print(d1.min(), d1.mean(), d1.max(), d1.std(), d1.var())
-        print(d2.min(), d2.mean(), d2.max(), d2.std(), d2.var())
-        ds = []
-        for g_perm in g_perms:
-            d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
-            ds.append(d3)
-            print(d3.min(), d3.mean(), d3.max(), d3.std(), d3.var())
-
-        permute_in_place(graph, perm)
-        save_sparse_txt('graph_rcm', graph, fmt='%d %d %d\n')
-
-        for ii, g_name in enumerate(g_names):
-            graph = self.graph.copy()
-            permute_in_place(graph, g_perms[ii])
-            save_sparse_txt('graph_%s' % g_name, graph, fmt='%d %d %d\n')
-
-        from matplotlib import pyplot as plt
-        n_bins = 30
-        plt.figure()
-        plt.subplot(311)
-        _, bins, ps = plt.hist(d1, n_bins, histtype='bar')
-        plt.legend(ps[0:1], ['default'])
-        plt.subplot(312)
-        plt.hist(d2, bins, histtype='bar')
-        plt.legend(ps[0:1], ['RCM'])
-        plt.subplot(313)
-        _, _, ps = plt.hist(nm.array(ds).T, bins, histtype='bar')
-        plt.legend([ii[0] for ii in ps], g_names)
-        plt.savefig('hist_distances_sub.pdf', transparent=True)
-
-        plt.figure()
-        _, _, ps = plt.hist(nm.array([d1, d2] + ds).T, n_bins, histtype='bar')
-        plt.legend([ii[0] for ii in ps], ['default', 'RCM'] + g_names)
-        plt.savefig('hist_distances.pdf', transparent=True)
-        plt.show()
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        try:
-            ii = self.perm[self.ii]
-            val = self.coors[ii]
-        except IndexError:
-            raise StopIteration
-
-        self.ii += 1
-
-        return ii, val
-
 class FieldVariable(Variable):
     """
     A finite element field variable.
@@ -1998,9 +1855,7 @@ class FieldVariable(Variable):
 
         return out
 
-    def set_from_other(self, other, strategy='projection',
-                       search_strategy='kdtree', ordering_strategy='rcm',
-                       close_limit=0.1):
+    def set_from_other(self, other, strategy='projection', close_limit=0.1):
         """
         Set the variable using another variable. Undefined values (e.g. outside
         the other mesh) are set to numpy.nan, or extrapolated.
@@ -2008,30 +1863,14 @@ class FieldVariable(Variable):
         Parameters
         ----------
         strategy : 'projection' or 'interpolation'
-            The strategy to set the values: the L^2 orthogonal projection, or
-            a direct interpolation to the nodes (nodal elements only!)
+            The strategy to set the values: the L^2 orthogonal projection (not
+            implemented!), or a direct interpolation to the nodes (nodal
+            elements only!)
 
         Notes
         -----
         If the other variable uses the same field mesh, the coefficients are
         set directly.
-
-        If the other variable uses the same field mesh, only deformed slightly,
-        it is advisable to provide directly the node ids as a hint where to
-        start searching for a containing element; the order of nodes does not
-        matter then.
-
-        Otherwise (large deformation, unrelated meshes, ...) there are
-        basically two ways:
-        a) query each node (its coordinates) using a KDTree of the other nodes
-        - this completely disregards the connectivity information;
-        b) iterate the mesh nodes so that the subsequent ones are close to each
-        other - then also the elements of the other mesh should be close to each
-        other: the previous one can be used as a start for the directional
-        neighbour element crawling to the target point.
-
-        Not sure which way is faster, depends on implementation efficiency and
-        the particular meshes.
         """
         flag_same_mesh = self.has_same_mesh(other)
 
@@ -2050,24 +1889,7 @@ class FieldVariable(Variable):
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
 
-        if search_strategy == 'kdtree':
-            tt = time.clock()
-            iter_nodes = CloseNodesIterator(self.field, create_graph=False)
-            output('iterator: %f s' % (time.clock()-tt))
-
-        elif search_strategy == 'crawl':
-            tt = time.clock()
-            iter_nodes = CloseNodesIterator(self.field, strategy='rcm')
-            output('iterator: %f s' % (time.clock()-tt))
-
-            iter_nodes.test_permutations()
-
-        else:
-            raise ValueError('unknown search strategy! (%s)' % search_strategy)
-
-        perm = iter_nodes.get_permutation(iter_nodes.strategy)
-
-        vals = other.evaluate_at(coors[perm], strategy='general',
+        vals = other.evaluate_at(coors, strategy='general',
                                  close_limit=close_limit)
 
         if strategy == 'interpolation':
