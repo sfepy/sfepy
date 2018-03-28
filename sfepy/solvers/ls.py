@@ -230,7 +230,7 @@ class ScipyIterative(LinearSolver):
          """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
-        ('eps_a', 'float', 1e0, False,
+        ('eps_a', 'float', 1e-8, False,
          'The absolute tolerance for the residual.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative tolerance for the residual.'),
