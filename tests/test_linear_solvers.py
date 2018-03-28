@@ -124,16 +124,19 @@ solvers = {
     'i20' : ('ls.scipy_iterative',
              {'method' : 'cg',
               'i_max'   : 1000,
+              'eps_a'   : 1e-12,
               'eps_r'   : 1e-12,}
     ),
     'i21' : ('ls.scipy_iterative',
              {'method' : 'bicgstab',
               'i_max'   : 1000,
+              'eps_a'   : 1e-12,
               'eps_r'   : 1e-12,}
     ),
     'i22' : ('ls.scipy_iterative',
              {'method' : 'qmr',
               'i_max'   : 1000,
+              'eps_a'   : 1e-12,
               'eps_r'   : 1e-12,}
     ),
 

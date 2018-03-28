@@ -230,7 +230,7 @@ class ScipyIterative(LinearSolver):
          """),
         ('i_max', 'int', 100, False,
          'The maximum number of iterations.'),
-        ('eps_a', 'float', 1e0, False,
+        ('eps_a', 'float', 1e-8, False,
          'The absolute tolerance for the residual.'),
         ('eps_r', 'float', 1e-8, False,
          'The relative tolerance for the residual.'),
@@ -265,6 +265,7 @@ class ScipyIterative(LinearSolver):
                  i_max=None, mtx=None, status=None, context=None, **kwargs):
         solver_kwargs = self.build_solver_kwargs(conf)
 
+        eps_a = get_default(eps_a, self.conf.eps_a)
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
 
@@ -302,7 +303,7 @@ class ScipyIterative(LinearSolver):
         solver_kwargs.update(prec_args)
 
         try:
-            sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, rtol=eps_r,
+            sol, info = self.solver(mtx, rhs, x0=x0, atol=eps_a, tol=eps_r,
                                     maxiter=i_max, callback=iter_callback,
                                     **solver_kwargs)
         except TypeError:

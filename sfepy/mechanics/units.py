@@ -281,6 +281,7 @@ def apply_unit_multipliers(values, unit_kinds, unit_multipliers):
         'density' : 1.0 / (c / b**3),
         'force' : 1.0 / ((c * b) / a**2),
         'stress' : 1.0 / (c / (b * a**2)),
+        'compressibility' : 1.0 / ((b * a**2) / c),
         'energy' : 1.0 / (c * b**2 / a**2),
     }
 
