@@ -588,21 +588,23 @@ def recover_micro_hook_eps(micro_filename, region,
         mesh = pb.domain.mesh
         coors, conn, outs, ndoffset = [], [], [], 0
         # Recover region
+        mic_coors = (mesh.coors - mesh.get_bounding_box()[0, :]) * eps0
+        evfield = eval_var.field
         for ii, c0 in enumerate(x0):
             local_macro = {'eps0': eps0}
-            local_coors = pb.domain.mesh.coors * eps0 + c0
+            local_coors = mic_coors + c0
             # Inside recovery region?
-            v = nm.ones((eval_var.field.region.entities[0].shape[0], 1))
-            v[region.entities[0]] = 0
+            v = nm.ones((evfield.region.entities[0].shape[0], 1))
+            v[evfield.vertex_remap[region.entities[0]]] = 0
             no = nm.sum(v)
-            aux = eval_var.field.evaluate_at(local_coors, v)
+            aux = evfield.evaluate_at(local_coors, v)
             if (nm.sum(aux) / no) > 1e-3:
                 continue
 
             output('ii: %d' % ii)
 
             for k, v in six.iteritems(nodal_values):
-                local_macro[k] = eval_var.field.evaluate_at(local_coors, v)
+                local_macro[k] = evfield.evaluate_at(local_coors, v)
             for k, v in six.iteritems(const_values):
                 local_macro[k] = v
 
