@@ -1375,15 +1375,13 @@ where the default single-step solver (``'ts.stationary'``) is created
 automatically. In this way, all problems are treated in a uniform way. The same
 holds when building a problem interactively, or when writing a script, whenever
 the :func:`Problem.solve() <sfepy.discrete.problem.Problem.solve>` function is
-used for a problem solution. The time-stepping solvers most commonly used in
-our examples are:
+used for a problem solution.
 
-- ``'ts.stationary'``: Solver for stationary problems without time stepping. It
-  is automatically created when not specified.
-- ``'ts.simple'``: Implicit time stepping solver with a fixed time step.
-- ``'ts.adaptive'``: Implicit time stepping solver with an adaptive time step.
-  Either the built-in or user supplied function can be used to adapt the time
-  step.
+The following solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   <Time-Stepping Solvers>
+    :end-before:    </Time-Stepping Solvers>
 
 See :mod:`sfepy.solvers.ts_solvers` for available time-stepping solvers and
 their options.
@@ -1392,21 +1390,14 @@ Linear Solvers
 ^^^^^^^^^^^^^^
 
 A good linear solver is key to solving efficiently stationary as well as
-transient PDEs with implicit time-stepping. The first three solvers in the
-following list are the most commonly used in our examples:
+transient PDEs with implicit time-stepping.
 
-- ``'ls.scipy_direct'``: direct solver from SciPy - this is the default
-  solver for all examples. It is strongly recommended to install umfpack
-  and its SciPy wrappers to get good performance.
-- ``'ls.scipy_iterative'``: Interface to SciPy iterative solvers.
-- ``'ls.petsc'``: Interface to Krylov subspace solvers of PETSc supporting
-  parallel use. See `PETSc Users Manual`_, Chapter 4, for more details about
-  available Krylov methods and preconditioners. See also the main `PETSc
-  Documentation`_ page.
-- ``'ls.schur_complement'``: Schur complement problem solver.
-- ``'ls.pyamg'``: Interface to PyAMG solvers, see `PyAMG Wiki`_.
-- ``'ls.mumps'``: Interface to (Py)MUMPS solver, see `PyMUMPS`_ and `MUMPS`_
-  pages.
+The following solvers are available (the first three solvers are the most
+commonly one used in our examples):
+
+.. include:: solver_table.rst
+    :start-after:   <Linear Solvers>
+    :end-before:    </Linear Solvers>
 
 See :mod:`sfepy.solvers.ls` for all available linear solvers and their options.
 
@@ -1422,29 +1413,23 @@ always has zero boundary conditions.
 
 The following solvers are available:
 
-- ``'nls.newton'``: Newton solver with backtracking line-search - this is
-  the default solver, that is used for almost all examples.
-- ``'nls.oseen'``: Oseen problem solver tailored for stabilized
-  Navier-Stokes equations (see :ref:`navier_stokes-stabilized_navier_stokes`).
-- ``'nls.scipy_broyden_like'``: interface to Broyden and Anderson solvers
-  from scipy.optimize.
-- ``'nls.semismooth_newton'``: Semismooth Newton method for contact/friction
-  problems.
-- ``'nls.petsc'``: Interface to PETSc SNES (Scalable Nonlinear Equations
-  Solvers) supporting parallel use.
+.. include:: solver_table.rst
+    :start-after:   <Non-linear Solvers>
+    :end-before:    </Non-linear Solvers>
+
+.. include:: solver_table.rst
+    :start-after:   <Eigen Value Solvers>
+    :end-before:    </Eigen Value Solvers>
+
+.. include:: solver_table.rst
+    :start-after:   <Optimization Solvers>
+    :end-before:    </Optimization Solvers>
+
 
 See :mod:`sfepy.solvers.nls`, :mod:`sfepy.solvers.oseen` and
 :mod:`sfepy.solvers.semismooth_newton` for all available nonlinear solvers and
 their options.
 
-
-Table of available solvers
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This section summarises currently available *SfePy* solvers. For further
-references see :ref:`sfepy_solvers`.
-
-.. include:: solver_table.rst
 
 .. _solving_problems_in_parallel:
 
