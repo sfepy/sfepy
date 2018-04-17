@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-
 """
-Generate table of available solvers for the Sphinx documentation.
+Generate available solvers table for ReST documentation.
 """
-from __future__ import absolute_import, generators
+from __future__ import absolute_import
 import os.path as op
 import sys
 
@@ -17,9 +16,9 @@ from sfepy.solvers import NonlinearSolver, TimeSteppingSolver, LinearSolver, \
     EigenvalueSolver, OptimizationSolver
 
 solver_by_type_table = [
+    [[TimeSteppingSolver], "Time-Stepping Solvers"],
     [[LinearSolver], "Linear Solvers"],
     [[NonlinearSolver], "Non-linear Solvers"],
-    [[TimeSteppingSolver], "Time-Stepping Solvers"],
     [[EigenvalueSolver], "Eigen Value Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
@@ -31,55 +30,54 @@ for i in enumerate(solver_by_type_table):
                      package_name='sfepy.solvers')
 
 
-def paragraphs(fileobj, separator='\n'):
-    """
-    Read iterable string by paragraphs.
-    :param fileobj: iterable text object
-    :param separator: paragraph separator
-    :return: generator object
-    """
-    if separator[-1:] != '\n':
-        separator += '\n'
-    paragraph = []
-    for line in fileobj:
-        if line == separator:
-            if paragraph:
-                yield ''.join(paragraph)
-                paragraph = []
-        else:
-            paragraph.append(line)
-    if paragraph:
-        yield ''.join(paragraph)
+def trim(docstring):
+    """Trim and split (doc)string."""
+    if not docstring:
+        return ''
+    # Convert tabs to spaces (following the normal Python rules)
+    # and split into a list of lines:
+    lines = docstring.expandtabs().splitlines()
+    # Determine minimum indentation (first line doesn't count):
+    indent = sys.maxsize
+    for line in lines[1:]:
+        stripped = line.lstrip()
+        if stripped:
+            indent = min(indent, len(line) - len(stripped))
+    # Remove indentation (first line is special):
+    trimmed = [lines[0].strip()]
+    if indent < sys.maxsize:
+        for line in lines[1:]:
+            trimmed.append(line[indent:].rstrip())
+    # Strip off trailing and leading blank lines:
+    while trimmed and not trimmed[-1]:
+        trimmed.pop()
+    while trimmed and not trimmed[0]:
+        trimmed.pop(0)
+    # Return a splitted string:
+    return trimmed
 
 
-def typeset_solver_tables(fd, solver_tables):
+def typeset_solvers_table(fd, solver_table):
     """
-    Generate solver tables ReST output.
+    Generate solvers table ReST output.
     """
+    ReST_tag_start = '<%s>\n'
+    ReST_tag_end = '</%s>\n'
 
-    doc_sec_level = '"'
-
-    for solver_type in solver_tables:
-        doc_sec_label = "%s" % solver_type[1]
-        fd.write(''.join([doc_sec_label,
-                          '\n',
-                          doc_sec_level * len(doc_sec_label),
-                          '\n'])
-                 )
+    for solver_type in solver_table:
+        fd.write(ReST_tag_start % solver_type[1])
         for name, cls in solver_type[0].items():
-            fd.write('*%s*\n' % name)
-            fd.write(next(paragraphs(cls.__doc__, '\n')))
-            fd.write('\n')
-        fd.write('\n')
+            fd.write('- *%s*: ' % name)
+            fd.write('%s\n' % trim(cls.__doc__)[0])
+        fd.write(ReST_tag_end % solver_type[1])
 
 
 def typeset(fd):
     """
     Utility function called by Sphinx.
     """
-
     fd = open(fd, 'w')
-    typeset_solver_tables(fd, solver_by_type_table)
+    typeset_solvers_table(fd, solver_by_type_table)
     fd.close()
 
 
