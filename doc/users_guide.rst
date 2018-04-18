@@ -1341,7 +1341,8 @@ The following postprocessing functions based on the *VTK* filters are available:
 - 'get_vtk_surface': extract mesh surface
 - 'get_vtk_edges': extract mesh edges
 - 'get_vtk_by_group': extract domain by a material ID
-- 'tetrahedralize_vtk_mesh': 3D cells are converted to tetrahedral meshes, 2D cells to triangles
+- 'tetrahedralize_vtk_mesh': 3D cells are converted to tetrahedral meshes, 2D
+cells to triangles
 
 The following code demonstrates the use of the postprocessing filters::
 
@@ -1361,9 +1362,9 @@ The following code demonstrates the use of the postprocessing filters::
 Solvers
 -------
 
-This section describes the time-stepping, linear, nonlinear, eigenvalue and
-optimization solvers available in *SfePy*. There are many internal and external
-solvers in the :ref:`sfepy_solvers` that can be called using a uniform
+This section describes the *time-stepping*, *nonlinear*, *linear*, *eigenvalue*
+and *optimization* solvers available in *SfePy*. There are many internal and
+external solvers in the :ref:`sfepy_solvers` that can be called using a uniform
 interface.
 
 Time-stepping solvers
@@ -1383,26 +1384,11 @@ The following solvers are available:
     :start-after:   <Time-Stepping Solvers>
     :end-before:    </Time-Stepping Solvers>
 
-See :mod:`sfepy.solvers.ts_solvers` for available time-stepping solvers and
+See :mod:`sfepy.solvers.ts_solvers` for available *Time-stepping* solvers and
 their options.
 
-Linear Solvers
-^^^^^^^^^^^^^^
-
-A good linear solver is key to solving efficiently stationary as well as
-transient PDEs with implicit time-stepping.
-
-The following solvers are available (the first three solvers are the most
-commonly one used in our examples):
-
-.. include:: solver_table.rst
-    :start-after:   <Linear Solvers>
-    :end-before:    </Linear Solvers>
-
-See :mod:`sfepy.solvers.ls` for all available linear solvers and their options.
-
-Nonlinear Solvers
-^^^^^^^^^^^^^^^^^
+Non-Linear Solvers
+^^^^^^^^^^^^^^^^^^
 
 Almost every problem, even linear, is solved in *SfePy* using a nonlinear
 solver that calls a linear solver in each iteration. This approach
@@ -1414,22 +1400,51 @@ always has zero boundary conditions.
 The following solvers are available:
 
 .. include:: solver_table.rst
-    :start-after:   <Non-linear Solvers>
-    :end-before:    </Non-linear Solvers>
+    :start-after:   .. <Non-linear Solvers>
+    :end-before:    .. </Non-linear Solvers>
+
+See :mod:`sfepy.solvers.nls` for all available *Non-Linear* solvers and their
+options.
+
+Linear Solvers
+^^^^^^^^^^^^^^
+
+A good linear solver is key to solving efficiently stationary as well as
+transient PDEs with implicit time-stepping.
+
+The following solvers are available:
 
 .. include:: solver_table.rst
-    :start-after:   <Eigen Value Solvers>
-    :end-before:    </Eigen Value Solvers>
+    :start-after:   .. <Linear Solvers>
+    :end-before:    .. </Linear Solvers>
+
+See :mod:`sfepy.solvers.ls` for all available *Linear* solvers and their
+options.
+
+Eigen Value Solvers
+^^^^^^^^^^^^^^^^^^^
+
+TBD: Add some description kind words here...)
+
 
 .. include:: solver_table.rst
-    :start-after:   <Optimization Solvers>
-    :end-before:    </Optimization Solvers>
+    :start-after:   .. <Eigen Value Solvers>
+    :end-before:    .. </Eigen Value Solvers>
 
+See :mod:`sfepy.solvers.oseen` for available *Eigen-Value* solvers and their
+options.
 
-See :mod:`sfepy.solvers.nls`, :mod:`sfepy.solvers.oseen` and
-:mod:`sfepy.solvers.semismooth_newton` for all available nonlinear solvers and
-their options.
+Optimization Solvers
+^^^^^^^^^^^^^^^^^^^^
 
+TBD: Add some description kind words here...)
+
+See :mod:`sfepy.solvers.semismooth_newton` for available *Optimization* solvers
+and their options.
+
+.. include:: solver_table.rst
+    :start-after:   .. <Optimization Solvers>
+    :end-before:    .. </Optimization Solvers>
 
 .. _solving_problems_in_parallel:
 

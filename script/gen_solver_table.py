@@ -17,8 +17,8 @@ from sfepy.solvers import NonlinearSolver, TimeSteppingSolver, LinearSolver, \
 
 solver_by_type_table = [
     [[TimeSteppingSolver], "Time-Stepping Solvers"],
-    [[LinearSolver], "Linear Solvers"],
     [[NonlinearSolver], "Non-linear Solvers"],
+    [[LinearSolver], "Linear Solvers"],
     [[EigenvalueSolver], "Eigen Value Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
@@ -61,8 +61,8 @@ def typeset_solvers_table(fd, solver_table):
     """
     Generate solvers table ReST output.
     """
-    ReST_tag_start = '<%s>\n'
-    ReST_tag_end = '</%s>\n'
+    ReST_tag_start = '.. <%s>\n'
+    ReST_tag_end = '.. </%s>\n'
 
     for solver_type in solver_table:
         fd.write(ReST_tag_start % solver_type[1])
@@ -70,6 +70,7 @@ def typeset_solvers_table(fd, solver_table):
             fd.write('- *%s*: ' % name)
             fd.write('%s\n' % trim(cls.__doc__)[0])
         fd.write(ReST_tag_end % solver_type[1])
+        fd.write('\n')
 
 
 def typeset(fd):
