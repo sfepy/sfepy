@@ -46,7 +46,7 @@ def get_pars(ts, coors, mode='qp',
     """
     if mode != 'qp': return
 
-    val = nm.empty((coors.shape[0], 1, 1), dtype=nm.float64)
+    val = nm.empty(coors.shape[0], dtype=nm.float64)
     val.fill(1e0)
 
     order = term.integral.order
@@ -65,12 +65,12 @@ def get_pars(ts, coors, mode='qp',
 
     norm = norm_l2_along_axis(dstrain)
 
-    val += norm[:, None, None]
+    val += norm
 
     # Store history.
     strains[0] = strain
-
-    return {'D': stiffness_from_lame(dim=3, lam=1e1, mu=val), 'mu': val}
+    return {'D': stiffness_from_lame(dim=3, lam=1e1, mu=val),
+            'mu': val.reshape(-1, 1, 1)}
 
 def pull(ts, coors, **kwargs):
     val = nm.empty_like(coors[:,0])
