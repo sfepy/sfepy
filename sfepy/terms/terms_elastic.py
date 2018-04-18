@@ -123,7 +123,7 @@ class LinearElasticIsotropicTerm(LinearElasticTerm):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         from sfepy.mechanics.matcoefs import stiffness_from_lame
 
-        mat = stiffness_from_lame(self.region.dim, lam, mu)
+        mat = stiffness_from_lame(self.region.dim, lam, mu)[:, :, 0, 0, :, :]
         return LinearElasticTerm.get_fargs(self, mat, virtual, state,
                                            mode=mode, term_mode=term_mode,
                                            diff_var=diff_var, **kwargs)
