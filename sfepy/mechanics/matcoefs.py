@@ -55,13 +55,12 @@ def stiffness_from_lame(dim, lam, mu):
     """
     sym = (dim + 1) * dim // 2
     o = nm.array([1.] * dim + [0.] * (sym - dim), dtype=nm.float64)
-    oot = nm.outer(o, o)[None, ...]
-    do1 = nm.diag(o + 1.0)[None, ...]
+    oot = nm.outer(o, o)
+    do1 = nm.diag(o + 1.0)
 
-    lam = nm.array(lam, ndmin=1)[:, None, None]
-    mu = nm.array(mu, ndmin=1)[:, None, None]
-
-    return (lam * oot + mu * do1).squeeze()
+    lam = nm.array(lam)[..., None, None]
+    mu = nm.array(mu)[..., None, None]
+    return (lam * oot + mu * do1)
 
 def stiffness_from_youngpoisson(dim, young, poisson, plane='strain'):
     """
