@@ -1421,8 +1421,8 @@ The following solvers are available:
 See :mod:`sfepy.solvers.ls` for all available *Linear* solvers and their
 options.
 
-Eigen Value Solvers
-^^^^^^^^^^^^^^^^^^^
+Eigenvalue Problem Solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 TBD: Add some description kind words here...)
 
