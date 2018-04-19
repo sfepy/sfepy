@@ -108,8 +108,9 @@ def conv_test(conf, it, err, err0):
 
 class Newton(NonlinearSolver):
     r"""
-    Solves a nonlinear system :math:`f(x) = 0` using the Newton method with
-    backtracking line-search, starting with an initial guess :math:`x^0`.
+    Solves a nonlinear system :math:`f(x) = 0` using the Newton method.
+
+    The solver uses a backtracking line-search on divergence.
     """
     name = 'nls.newton'
 
