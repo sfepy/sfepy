@@ -502,7 +502,9 @@ class ElastodynamicsBaseTS(TimeSteppingSolver):
 
 class VelocityVerletTS(ElastodynamicsBaseTS):
     """
-    Solve elastodynamics problems by the velocity-Verlet method [1].
+    Solve elastodynamics problems by the velocity-Verlet method.
+
+    The algorithm can be found in [1].
 
     [1] Swope, William C.; H. C. Andersen; P. H. Berens; K. R. Wilson (1
     January 1982). "A computer simulation method for the calculation of
@@ -591,19 +593,24 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
 
 class NewmarkTS(ElastodynamicsBaseTS):
     """
-    Solve elastodynamics problems by the Newmark method [1].
+    Solve elastodynamics problems by the Newmark method.
 
-    Common settings [2]:
-                                 beta gamma Omega_crit
-    trapezoidal rule:    implicit 1/4  1/2  unconditional
-    linear acceleration: implicit 1/6  1/2  2\sqrt{3}
-    Fox-Goodwin:         implicit 1/12 1/2  \sqrt{6}
-    central difference:  explicit 0    1/2  2
+    The method was introduced in [1]. Common settings [2]:
+
+    ==================== ======== ==== ===== ==========
+    name                 kind     beta gamma Omega_crit
+    ==================== ======== ==== ===== ==========
+    trapezoidal rule:    implicit 1/4  1/2   unconditional
+    linear acceleration: implicit 1/6  1/2   :math:`2\sqrt{3}`
+    Fox-Goodwin:         implicit 1/12 1/2   :math:`\sqrt{6}`
+    central difference:  explicit 0    1/2   2
+    ==================== ======== ==== ===== ==========
 
     All of these methods are 2-order of accuracy.
 
     [1] Newmark, N. M. (1959) A method of computation for structural dynamics.
     Journal of Engineering Mechanics, ASCE, 85 (EM3) 67-94.
+
     [2] Arnaud Delaplace, David Ryckelynck: Solvers for Computational Mechanics
     """
     name = 'ts.newmark'
@@ -673,8 +680,9 @@ class NewmarkTS(ElastodynamicsBaseTS):
 
 class GeneralizedAlphaTS(ElastodynamicsBaseTS):
     r"""
-    Solve elastodynamics problems by the generalized :math:`\alpha` method [1].
+    Solve elastodynamics problems by the generalized :math:`\alpha` method.
 
+    - The method was introduced in [1].
     - The method is unconditionally stable provided :math:`\alpha_m \leq
       \alpha_f \leq \frac{1}{2}`, :math:`\beta >= \frac{1}{4} +
       \frac{1}{2}(\alpha_f - \alpha_m)`.
@@ -807,7 +815,9 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
 
 class BatheTS(ElastodynamicsBaseTS):
     """
-    Solve elastodynamics problems by the Bathe method [1].
+    Solve elastodynamics problems by the Bathe method.
+
+    The method was introduced in [1].
 
     [1] Klaus-Juergen Bathe, Conserving energy and momentum in nonlinear
     dynamics: A simple implicit time integration scheme, Computers &
