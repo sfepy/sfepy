@@ -1384,11 +1384,11 @@ The following solvers are available:
     :start-after:   <Time-Stepping Solvers>
     :end-before:    </Time-Stepping Solvers>
 
-See :mod:`sfepy.solvers.ts_solvers` for available *Time-stepping* solvers and
+See :mod:`sfepy.solvers.ts_solvers` for available *time-stepping* solvers and
 their options.
 
-Non-Linear Solvers
-^^^^^^^^^^^^^^^^^^
+Nonlinear Solvers
+^^^^^^^^^^^^^^^^^
 
 Almost every problem, even linear, is solved in *SfePy* using a nonlinear
 solver that calls a linear solver in each iteration. This approach
@@ -1403,14 +1403,16 @@ The following solvers are available:
     :start-after:   .. <Non-linear Solvers>
     :end-before:    .. </Non-linear Solvers>
 
-See :mod:`sfepy.solvers.nls` for all available *Non-Linear* solvers and their
-options.
+See :mod:`sfepy.solvers.nls`, :mod:`sfepy.solvers.oseen` and
+:mod:`sfepy.solvers.semismooth_newton` for all available *nonlinear* solvers
+and their options.
 
 Linear Solvers
 ^^^^^^^^^^^^^^
 
-A good linear solver is key to solving efficiently stationary as well as
-transient PDEs with implicit time-stepping.
+Choosing a suitable linear solver is key to solving efficiently stationary as
+well as transient PDEs. *SfePy* allows using a number of external solvers with
+a unified interface.
 
 The following solvers are available:
 
@@ -1418,33 +1420,32 @@ The following solvers are available:
     :start-after:   .. <Linear Solvers>
     :end-before:    .. </Linear Solvers>
 
-See :mod:`sfepy.solvers.ls` for all available *Linear* solvers and their
+See :mod:`sfepy.solvers.ls` for all available *linear* solvers and their
 options.
 
 Eigenvalue Problem Solvers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-TBD: Add some description kind words here...)
-
+The following eigenvalue problem solvers are available:
 
 .. include:: solver_table.rst
     :start-after:   .. <Eigen Value Solvers>
     :end-before:    .. </Eigen Value Solvers>
 
-See :mod:`sfepy.solvers.oseen` for available *Eigen-Value* solvers and their
-options.
+See :mod:`sfepy.solvers.eigen` for available *eigenvalue problem* solvers and
+their options.
 
 Optimization Solvers
 ^^^^^^^^^^^^^^^^^^^^
 
-TBD: Add some description kind words here...)
-
-See :mod:`sfepy.solvers.semismooth_newton` for available *Optimization* solvers
-and their options.
+The following optimization solvers are available:
 
 .. include:: solver_table.rst
     :start-after:   .. <Optimization Solvers>
     :end-before:    .. </Optimization Solvers>
+
+See :mod:`sfepy.solvers.optimize` for available *optimization* solvers
+and their options.
 
 .. _solving_problems_in_parallel:
 
