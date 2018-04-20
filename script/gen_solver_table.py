@@ -19,7 +19,7 @@ solver_by_type_table = [
     [[TimeSteppingSolver], "Time-Stepping Solvers"],
     [[NonlinearSolver], "Non-linear Solvers"],
     [[LinearSolver], "Linear Solvers"],
-    [[EigenvalueSolver], "Eigen Value Solvers"],
+    [[EigenvalueSolver], "Eigenvalue Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
 
