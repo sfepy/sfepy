@@ -47,7 +47,7 @@ if numpydoc_path is not None:
 extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
               'sphinx.ext.doctest', 'sphinx.ext.imgmath',
               'sphinx.ext.viewcode', 'numpydoc',
-              'gen_term_table',
+              'gen_term_table', 'gen_solver_table',
               'IPython.sphinxext.ipython_console_highlighting',
               'IPython.sphinxext.ipython_directive']
 #extensions = ['sphinx.ext.autodoc']

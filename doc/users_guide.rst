@@ -1341,7 +1341,8 @@ The following postprocessing functions based on the *VTK* filters are available:
 - 'get_vtk_surface': extract mesh surface
 - 'get_vtk_edges': extract mesh edges
 - 'get_vtk_by_group': extract domain by a material ID
-- 'tetrahedralize_vtk_mesh': 3D cells are converted to tetrahedral meshes, 2D cells to triangles
+- 'tetrahedralize_vtk_mesh': 3D cells are converted to tetrahedral meshes, 2D
+cells to triangles
 
 The following code demonstrates the use of the postprocessing filters::
 
@@ -1358,13 +1359,13 @@ The following code demonstrates the use of the postprocessing filters::
     matrix_edges = get_vtk_edges(matrix)
     write_vtk_to_file('%s_mat1_edges.vtk' % mesh_name, matrix_edges)
 
-Available Solvers
------------------
+Solvers
+-------
 
-This Section describes the linear, nonlinear, eigenvalue, optimization and
-time-stepping solvers available in SfePy. There are many internal and external
-solvers in the :ref:`sfepy_solvers` that can be called using a
-uniform interface.
+This section describes the *time-stepping*, *nonlinear*, *linear*, *eigenvalue*
+and *optimization* solvers available in *SfePy*. There are many internal and
+external solvers in the :ref:`sfepy_solvers` that can be called using a uniform
+interface.
 
 Time-stepping solvers
 ^^^^^^^^^^^^^^^^^^^^^
@@ -1375,23 +1376,21 @@ where the default single-step solver (``'ts.stationary'``) is created
 automatically. In this way, all problems are treated in a uniform way. The same
 holds when building a problem interactively, or when writing a script, whenever
 the :func:`Problem.solve() <sfepy.discrete.problem.Problem.solve>` function is
-used for a problem solution. The time-stepping solvers most commonly used in
-our examples are:
+used for a problem solution.
 
-- ``'ts.stationary'``: Solver for stationary problems without time stepping. It
-  is automatically created when not specified.
-- ``'ts.simple'``: Implicit time stepping solver with a fixed time step.
-- ``'ts.adaptive'``: Implicit time stepping solver with an adaptive time step.
-  Either the built-in or user supplied function can be used to adapt the time
-  step.
+The following solvers are available:
 
-See :mod:`sfepy.solvers.ts_solvers` for available time-stepping solvers and
+.. include:: solver_table.rst
+    :start-after:   <Time-Stepping Solvers>
+    :end-before:    </Time-Stepping Solvers>
+
+See :mod:`sfepy.solvers.ts_solvers` for available *time-stepping* solvers and
 their options.
 
 Nonlinear Solvers
 ^^^^^^^^^^^^^^^^^
 
-Almost every problem, even linear, is solved in SfePy using a nonlinear
+Almost every problem, even linear, is solved in *SfePy* using a nonlinear
 solver that calls a linear solver in each iteration. This approach
 unifies treatment of linear and non-linear problems, and simplifies
 application of Dirichlet (essential) boundary conditions, as the linear
@@ -1400,43 +1399,53 @@ always has zero boundary conditions.
 
 The following solvers are available:
 
-- ``'nls.newton'``: Newton solver with backtracking line-search - this is
-  the default solver, that is used for almost all examples.
-- ``'nls.oseen'``: Oseen problem solver tailored for stabilized
-  Navier-Stokes equations (see :ref:`navier_stokes-stabilized_navier_stokes`).
-- ``'nls.scipy_broyden_like'``: interface to Broyden and Anderson solvers
-  from scipy.optimize.
-- ``'nls.semismooth_newton'``: Semismooth Newton method for contact/friction
-  problems.
-- ``'nls.petsc'``: Interface to PETSc SNES (Scalable Nonlinear Equations
-  Solvers) supporting parallel use.
+.. include:: solver_table.rst
+    :start-after:   .. <Nonlinear Solvers>
+    :end-before:    .. </Nonlinear Solvers>
 
 See :mod:`sfepy.solvers.nls`, :mod:`sfepy.solvers.oseen` and
-:mod:`sfepy.solvers.semismooth_newton` for all available nonlinear solvers and
-their options.
-
+:mod:`sfepy.solvers.semismooth_newton` for all available *nonlinear* solvers
+and their options.
 
 Linear Solvers
 ^^^^^^^^^^^^^^
 
-A good linear solver is key to solving efficiently stationary as well as
-transient PDEs with implicit time-stepping. The first three solvers in the
-following list are the most commonly used in our examples:
+Choosing a suitable linear solver is key to solving efficiently stationary as
+well as transient PDEs. *SfePy* allows using a number of external solvers with
+a unified interface.
 
-- ``'ls.scipy_direct'``: direct solver from SciPy - this is the default
-  solver for all examples. It is strongly recommended to install umfpack
-  and its SciPy wrappers to get good performance.
-- ``'ls.scipy_iterative'``: Interface to SciPy iterative solvers.
-- ``'ls.petsc'``: Interface to Krylov subspace solvers of PETSc supporting
-  parallel use. See `PETSc Users Manual`_, Chapter 4, for more details about
-  available Krylov methods and preconditioners. See also the main `PETSc
-  Documentation`_ page.
-- ``'ls.schur_complement'``: Schur complement problem solver.
-- ``'ls.pyamg'``: Interface to PyAMG solvers, see `PyAMG Wiki`_.
-- ``'ls.mumps'``: Interface to (Py)MUMPS solver, see `PyMUMPS`_ and `MUMPS`_
-  pages.
+The following solvers are available:
 
-See :mod:`sfepy.solvers.ls` for all available linear solvers and their options.
+.. include:: solver_table.rst
+    :start-after:   .. <Linear Solvers>
+    :end-before:    .. </Linear Solvers>
+
+See :mod:`sfepy.solvers.ls` for all available *linear* solvers and their
+options.
+
+Eigenvalue Problem Solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following eigenvalue problem solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   .. <Eigenvalue Problem Solvers>
+    :end-before:    .. </Eigenvalue Problem Solvers>
+
+See :mod:`sfepy.solvers.eigen` for available *eigenvalue problem* solvers and
+their options.
+
+Optimization Solvers
+^^^^^^^^^^^^^^^^^^^^
+
+The following optimization solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   .. <Optimization Solvers>
+    :end-before:    .. </Optimization Solvers>
+
+See :mod:`sfepy.solvers.optimize` for available *optimization* solvers
+and their options.
 
 .. _solving_problems_in_parallel:
 
@@ -1460,7 +1469,7 @@ Current Implementation Drawbacks
   must fit into memory available to each task.
 - While all KSP and SNES solver are supported, in principle, most of their
   options have to be passed using the command-line parameters of PETSc - they
-  are not supported yet in the SfePy solver parameters.
+  are not supported yet in the *SfePy* solver parameters.
 - There are no performance statistics yet. The code was tested on a single
   multi-cpu machine only.
 - The global solution is gathered to task 0 and saved to disk serially.
@@ -1470,7 +1479,7 @@ Current Implementation Drawbacks
 Examples
 ^^^^^^^^
 
-The examples demonstrating the use parallel problem solving in SfePy are:
+The examples demonstrating the use parallel problem solving in *SfePy* are:
 
 - :ref:`diffusion-poisson_parallel_interactive`
 - :ref:`multi_physics-biot_parallel_interactive`
@@ -1486,7 +1495,7 @@ Isogeometric Analysis
 that allows using the NURBS-based domain description from CAD design tools also
 for approximation purposes similar to the finite element method.
 
-The implementation is SfePy is based on Bezier extraction of NURBS as developed
+The implementation is *SfePy* is based on Bezier extraction of NURBS as developed
 in [1]_. This approach allows reusing the existing finite element assembling
 routines, as still the evaluation of weak forms occurs locally in "elements"
 and the local contributions are then assembled to the global system.
@@ -1528,8 +1537,8 @@ Such a file contains:
   either be generated using ``igakit``, created manually or imported from other
   tools.
 - Bezier extraction operators and corresponding DOF connectivity (computed by
-  SfePy).
-- Bezier mesh control points, weights and connectivity (computed by SfePy).
+  *SfePy*).
+- Bezier mesh control points, weights and connectivity (computed by *SfePy*).
 
 The Bezier mesh is used to create a topological Bezier mesh - a subset of the
 Bezier mesh containing the Bezier element corner vertices only. Those vertices
@@ -1548,7 +1557,7 @@ mesh entities.
 Examples
 ^^^^^^^^
 
-The examples demonstrating the use of IGA in SfePy are:
+The examples demonstrating the use of IGA in *SfePy* are:
 
 - :ref:`diffusion-poisson_iga`
 - :ref:`linear_elasticity-linear_elastic_iga`
