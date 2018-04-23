@@ -17,9 +17,9 @@ from sfepy.solvers import NonlinearSolver, TimeSteppingSolver, LinearSolver, \
 
 solver_by_type_table = [
     [[TimeSteppingSolver], "Time-Stepping Solvers"],
-    [[NonlinearSolver], "Non-linear Solvers"],
+    [[NonlinearSolver], "Nonlinear Solvers"],
     [[LinearSolver], "Linear Solvers"],
-    [[EigenvalueSolver], "Eigenvalue Solvers"],
+    [[EigenvalueSolver], "Eigenvalue Problem Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
 

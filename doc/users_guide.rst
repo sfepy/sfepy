@@ -1400,8 +1400,8 @@ always has zero boundary conditions.
 The following solvers are available:
 
 .. include:: solver_table.rst
-    :start-after:   .. <Non-linear Solvers>
-    :end-before:    .. </Non-linear Solvers>
+    :start-after:   .. <Nonlinear Solvers>
+    :end-before:    .. </Nonlinear Solvers>
 
 See :mod:`sfepy.solvers.nls`, :mod:`sfepy.solvers.oseen` and
 :mod:`sfepy.solvers.semismooth_newton` for all available *nonlinear* solvers
@@ -1429,8 +1429,8 @@ Eigenvalue Problem Solvers
 The following eigenvalue problem solvers are available:
 
 .. include:: solver_table.rst
-    :start-after:   .. <Eigen Value Solvers>
-    :end-before:    .. </Eigen Value Solvers>
+    :start-after:   .. <Eigenvalue Problem Solvers>
+    :end-before:    .. </Eigenvalue Problem Solvers>
 
 See :mod:`sfepy.solvers.eigen` for available *eigenvalue problem* solvers and
 their options.
