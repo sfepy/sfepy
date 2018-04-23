@@ -14,8 +14,9 @@ from six.moves import range
 
 class SemismoothNewton(Newton):
     r"""
-    The semi-smooth Newton method for solving problems of the following
-    structure:
+    The semi-smooth Newton method.
+
+    This method is suitable for solving problems of the following structure:
 
     .. math::
         \begin{split}

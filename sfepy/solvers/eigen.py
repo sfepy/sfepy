@@ -53,8 +53,9 @@ def standard_call(call):
 
 class ScipyEigenvalueSolver(EigenvalueSolver):
     """
-    SciPy-based solver for both dense and sparse problems (if `n_eigs`
-    is given).
+    SciPy-based solver for both dense and sparse problems.
+
+    The problem is consirered sparse if `n_eigs` argument is not None.
     """
     name = 'eig.scipy'
 
