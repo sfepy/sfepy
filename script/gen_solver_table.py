@@ -67,7 +67,8 @@ def typeset_solvers_table(fd, solver_table):
     for solver_type in solver_table:
         fd.write(rest_tag_start % solver_type[1])
         for name, cls in sorted(solver_type[0].items()):
-            fd.write('- *%s*: ' % name)
+            fd.write('- :class:`%s <%s.%s>`: ' %
+                     (name, cls.__module__, cls.__name__))
             fd.write('%s\n' % trim(cls.__doc__)[0])
         fd.write(rest_tag_end % solver_type[1])
         fd.write('\n')
