@@ -4,7 +4,7 @@ Multiprocessing functions.
 try:
     from mpi4py import MPI
     use_multiprocessing_mpi = MPI.COMM_WORLD.Get_size() > 1
-except:
+except ImportError:
     use_multiprocessing_mpi = False
 
 try:
