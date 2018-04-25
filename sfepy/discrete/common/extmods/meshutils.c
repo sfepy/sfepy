@@ -65,7 +65,7 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
         gtr_dot_v3(dot, v3, cross, 3);
         /* output("%d %d -> %d %d %d %d %e\n", iel, ir, ip0, ip1, ip2, ip3, */
         /*        dot[0]); */
-        if (dot[0] < CONST_MachEps) {
+        if (dot[0] < 0.0) {
           flag[iel]++;
           for (ii = 0; ii < swap_from_n_col; ii++) {
             SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
@@ -92,7 +92,7 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
         }
         v1[2] = v2[2] = 0.0;
         gtr_cross_product(cross, v1, v2);
-        if (cross[2] < CONST_MachEps) {
+        if (cross[2] < 0.0) {
           flag[iel]++;
           for (ii = 0; ii < swap_from_n_col; ii++) {
             SwapValues(CONN(SWF(ir, ii)), CONN(SWT(ir, ii)), tmp);
@@ -114,7 +114,7 @@ int32 orient_elements(int32 *flag, int32 flag_n_row,
         v0[0] = coors[ip0];
         v1[0] = coors[ip1] - v0[0];
 
-        if (v1[0] < CONST_MachEps){
+        if (v1[0] < 0.0){
           flag[iel]++;
           SwapValues(CONN(SWF(ir, 0)), CONN(SWT(ir, 0)), tmp);
         }
