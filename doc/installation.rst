@@ -66,7 +66,8 @@ Other dependencies/suggestions:
 - Mesh generation tools use `pexpect` and `gmsh` or `tetgen`.
 - `IPython`_ is recommended over the regular Python shell to fluently follow
   some parts of primer/tutorial (see :ref:`using-ipython`).
-
+- `MUMPS`_ library for using MUMPS linear direct solver
+  (real and complex arithmetic, parallel factorization)
 
 .. _Python_distribution:
 
@@ -410,4 +411,3 @@ installed, install it or try `apt-get install` instead)::
 Than *SfePy* can be installed with::
 
    apt-get install python-sfepy
-

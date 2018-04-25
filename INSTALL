@@ -44,6 +44,8 @@ Other dependencies:
 - Mesh generation tools use pexpect and gmsh or tetgen.
 - IPython is preferred over the regular Python shell for following some
   parts of primer/tutorial.
+- MUMPS library for using MUMPS linear direct solver (real and complex
+  arithmetic, parallel factorization)
 
 SfePy can be used in-place without any installation by running the scripts from
 the top-level directory of the distribution (TOPDIR), or can be installed
