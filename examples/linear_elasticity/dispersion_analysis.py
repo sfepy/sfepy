@@ -192,6 +192,8 @@ helps = {
     'clear old solution files from output directory',
     'output_dir' :
     'output directory [default: %(default)s]',
+    'no_show' :
+    'do not show the log figure',
     'mesh_filename' :
     'input periodic cell mesh file name [default: %(default)s]',
 }
@@ -251,6 +253,9 @@ def main():
     parser.add_argument('--log-std-waves',
                         action='store_true', dest='log_std_waves',
                         default=False, help=helps['log_std_waves'])
+    parser.add_argument('--no-show',
+                        action='store_false', dest='show',
+                        default=True, help=helps['no_show'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -444,6 +449,7 @@ def main():
                   xlabels=[r'$\kappa$', r'$\kappa$'],
                   ylabels=[r'eigenvalues $\lambda_i$',
                            r'frequencies $\omega_i$'],
+                  is_plot=options.show,
                   log_filename=os.path.join(output_dir, 'frequencies.txt'),
                   aggregate=1000, sleep=0.1)
 
@@ -499,6 +505,7 @@ def main():
                   yscales=['linear'],
                   xlabels=[r'$\omega$'],
                   ylabels=[r'wave numbers $\kappa_i$'],
+                  is_plot=options.show,
                   log_filename=os.path.join(output_dir, 'wave-numbers.txt'),
                   aggregate=1000, sleep=0.1)
         for io, omega in stepper:
