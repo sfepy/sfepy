@@ -10,6 +10,7 @@ from __future__ import absolute_import
 import os
 import sys
 sys.path.append('.')
+import gc
 import functools
 from copy import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
@@ -481,6 +482,8 @@ def main():
 
             save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
 
+            gc.collect()
+
         log(save_figure=os.path.join(output_dir, 'frequencies.png'))
         log(finished=True)
 
@@ -537,6 +540,8 @@ def main():
             log(*out, x=[omega])
 
             save_eigenvectors(eigenshapes_filename % io, svecs, pb)
+
+            gc.collect()
 
         log(save_figure=os.path.join(output_dir, 'wave-numbers.png'))
         log(finished=True)
