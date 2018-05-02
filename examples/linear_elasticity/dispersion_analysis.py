@@ -302,7 +302,8 @@ def main():
 
     filename = os.path.join(output_dir, 'options.txt')
     ensure_path(filename)
-    save_options(filename, [('options', vars(options))])
+    save_options(filename, [('options', vars(options))],
+                 quote_command_line=True)
 
     pars = apply_units(options.pars, options.unit_multipliers)
     output('material parameters with applied unit multipliers:')
