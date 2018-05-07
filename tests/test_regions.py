@@ -117,6 +117,26 @@ class Test(TestCommon):
         self.report('  vertices:', _ok)
         ok = ok and _ok
 
+        sel = 'vertex 20 *v vertices of group 0'
+        self.report('select:', sel, ', allow_empty == False')
+        _ok = False
+        try:
+            reg = self.domain.create_region('reg', sel, kind='vertex',
+                                            allow_empty=False)
+        except ValueError:
+            _ok = True
+        self.report('  exception raised:', _ok)
+        ok = ok and _ok
+
+        sel = 'vertex 20 *v vertices of group 0'
+        self.report('select:', sel, ', allow_empty == True')
+        reg = self.domain.create_region('reg', sel, kind='vertex',
+                                        allow_empty=True)
+        av = []
+        _ok = (reg.vertices == nm.array(av)).all()
+        self.report('  vertices:', _ok)
+        ok = ok and _ok
+
         sel = 'r.r1 -c cell 1, 4, 5'
         self.report('select:', sel)
         reg = self.domain.create_region('reg', sel)
