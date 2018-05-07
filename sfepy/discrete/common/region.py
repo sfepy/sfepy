@@ -483,8 +483,12 @@ class Region(Struct):
         from the kind entities.
         """
         self._access(self.kind_tdim)
+        is_empty = self.entities[self.kind_tdim].shape[0] == 0
         if allow_empty:
-            self.is_empty = self.entities[self.kind_tdim].shape[0] == 0
+            self.is_empty = is_empty
+
+        elif is_empty:
+            raise ValueError('region "%s" has no entities!' % self.name)
 
         for idim in range(self.kind_tdim - 1, -1, -1):
             if self.can[idim] and self.entities[idim] is not None:
