@@ -483,8 +483,8 @@ class Region(Struct):
         from the kind entities.
         """
         self._access(self.kind_tdim)
-        if allow_empty and ('cell' in self.true_kind):
-            self.is_empty = self.cells.shape[0] == 0
+        if allow_empty:
+            self.is_empty = self.entities[self.kind_tdim].shape[0] == 0
 
         for idim in range(self.kind_tdim - 1, -1, -1):
             if self.can[idim] and self.entities[idim] is not None:
