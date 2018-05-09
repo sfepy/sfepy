@@ -504,7 +504,7 @@ def main():
                 svecs = None
 
             else:
-                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
                                          eigenvectors=True)
             omegas = nm.sqrt(eigs)
 
@@ -566,7 +566,7 @@ def main():
                 svecs = None
 
             else:
-                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
                                          eigenvectors=True)
             kappas = eigs
 
