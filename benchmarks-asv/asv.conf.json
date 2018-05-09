@@ -57,6 +57,15 @@
     //     "six": ["", null],        // test with and without six installed
     //     "pip+emcee": [""],   // emcee is only available for install with pip.
     // },
+    "matrix": {
+        "Cython": [],
+        "numpy": [],
+        "scipy": [],
+        "matplotlib": [],
+        "pyparsing": [],
+        "pytables": [],
+        "sympy": [],
+    },
 
     // Combinations of libraries/python versions can be excluded/included
     // from the set to test. Each entry is a dictionary containing additional

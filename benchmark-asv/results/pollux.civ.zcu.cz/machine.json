@@ -1,8 +1,0 @@
-{
-    "arch": "x86_64",
-    "cpu": "Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz",
-    "machine": "pollux.civ.zcu.cz",
-    "os": "macOS HighSierra 10.13",
-    "ram": "8GB",
-    "version": 1
-}
