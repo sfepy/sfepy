@@ -240,13 +240,15 @@ helps = {
     'save_materials' : 'save material parameters into'
     ' <output_directory>/materials.vtk',
     'log_std_waves' : 'log also standard pressure dilatation and shear waves',
+    'no_legends' :
+    'do not show legends in the log plots',
+    'no_show' :
+    'do not show the log figure',
     'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory',
     'output_dir' :
     'output directory [default: %(default)s]',
-    'no_show' :
-    'do not show the log figure',
     'mesh_filename' :
     'input periodic cell mesh file name [default: %(default)s]',
 }
@@ -306,6 +308,9 @@ def main():
     parser.add_argument('--log-std-waves',
                         action='store_true', dest='log_std_waves',
                         default=False, help=helps['log_std_waves'])
+    parser.add_argument('--no-legends',
+                        action='store_false', dest='show_legends',
+                        default=True, help=helps['no_legends'])
     parser.add_argument('--no-show',
                         action='store_false', dest='show',
                         default=True, help=helps['no_show'])
@@ -480,6 +485,7 @@ def main():
                   xlabels=[r'$\kappa$', r'$\kappa$'],
                   ylabels=[r'eigenvalues $\lambda_i$',
                            r'frequencies $\omega_i$'],
+                  show_legends=options.show_legends,
                   is_plot=options.show,
                   log_filename=os.path.join(output_dir, 'frequencies.txt'),
                   aggregate=1000, sleep=0.1)
@@ -538,6 +544,7 @@ def main():
                   yscales=['linear'],
                   xlabels=[r'$\omega$'],
                   ylabels=[r'wave numbers $\kappa_i$'],
+                  show_legends=options.show_legends,
                   is_plot=options.show,
                   log_filename=os.path.join(output_dir, 'wave-numbers.txt'),
                   aggregate=1000, sleep=0.1)
