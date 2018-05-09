@@ -5,6 +5,14 @@ Dispersion analysis of a heterogeneous finite scale periodic cell.
 The periodic cell mesh has to contain two subdomains Y1, Y2, so that different
 material properties can be defined in each of the subdomains (see `--pars`
 option).
+
+Usage Examples
+--------------
+
+Default material parameters, a square periodic cell with a spherical inclusion,
+log also standard pressure dilatation and shear waves::
+
+  python examples/linear_elasticity/dispersion_analysis.py  --log-std-waves meshes/2d/special/circle_in_square.mesh
 """
 from __future__ import absolute_import
 import os
@@ -276,7 +284,7 @@ def main():
                         default='omega', help=helps['mode'])
     parser.add_argument('--range', metavar='start,stop,count',
                         action='store', dest='range',
-                        default='10,100,10', help=helps['range'])
+                        default='1,10,21', help=helps['range'])
     parser.add_argument('--order', metavar='int', type=int,
                         action='store', dest='order',
                         default=1, help=helps['order'])
