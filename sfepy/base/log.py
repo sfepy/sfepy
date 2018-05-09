@@ -127,7 +127,8 @@ def read_log(filename):
 
     return log, info
 
-def plot_log(axs, log, info, xticks=None, yticks=None, groups=None):
+def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
+             show_legends=True):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
@@ -145,6 +146,8 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None):
         The list of y-axis ticks (array or None) for each subplot.
     groups : list, optional
         The list of data groups subplots. If not given, all groups are plotted.
+    show_legends : bool
+        If True, show legends in plots.
     """
     import matplotlib.pyplot as plt
 
@@ -209,7 +212,9 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None):
         if yticks[isub] is not None:
             ax.set_yticks(yticks[isub])
 
-        ax.legend(loc='best')
+        if show_legends:
+            ax.legend(loc='best')
+
         isub += 1
 
     plt.tight_layout(pad=0.5)
@@ -237,7 +242,7 @@ class Log(Struct):
 
     def __init__(self, data_names=None, plot_kwargs=None,
                  xlabels=None, ylabels=None, yscales=None,
-                 is_plot=True, aggregate=100, sleep=1.0,
+                 show_legends=True, is_plot=True, aggregate=100, sleep=1.0,
                  log_filename=None, formats=None):
         """
         Parameters
@@ -256,6 +261,8 @@ class Log(Struct):
             The y axis labels of subplots.
         yscales : list of 'linear' or 'log'
             The y axis scales of subplots.
+        show_legends : bool
+            If True, show legends in plots.
         is_plot : bool
             If True, try to use LogPlotter for plotting.
         aggregate : int
@@ -274,7 +281,8 @@ class Log(Struct):
             mpl = None
 
         Struct.__init__(self,
-                        is_plot=is_plot, aggregate=aggregate, sleep=sleep,
+                        show_legends=show_legends, is_plot=is_plot,
+                        aggregate=aggregate, sleep=sleep,
                         data_names={}, n_arg=0, n_gr=0,
                         data={}, x_values={}, n_calls=0, plot_kwargs={},
                         yscales={}, xlabels={}, ylabels={},
@@ -494,7 +502,9 @@ class Log(Struct):
             else:
                 ii += len(names)
 
-        send(['legends'])
+        if self.show_legends:
+            send(['legends'])
+
         send(['continue'])
 
     def plot_vlines(self, igs=None, **kwargs):
