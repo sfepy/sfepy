@@ -35,5 +35,8 @@ class SfePySample:
     def mem_domain_creation(self, dim):
         return SfePySample.domain_creation(self, dim)
 
+    def peakmem_domain_creation(self, dim):
+        return SfePySample.domain_creation(self, dim)
+
     def time_domain_creation(self, dim):
         SfePySample.domain_creation(self, dim)
