@@ -17,6 +17,9 @@ class SfePySample:
     param_names = ['Shape dim']
     timeout = 120
 
+    def __init__(self):
+        self.shape = None
+
     def setup(self, dim):
         self.shape = [dim] * 3
 
@@ -29,7 +32,6 @@ class SfePySample:
 
         mesh = gen_block_mesh(dims, self.shape, centre, name='block')
         domain = FEDomain('domain', mesh)
-
         return domain
 
     def mem_domain_creation(self, dim):
