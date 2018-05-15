@@ -174,6 +174,12 @@ class Probe(Struct):
         return Probe.cache if self.share_geometry else self.cache
 
     def get_actual_cache(self, pars, cache, hash_chunk_size=100000):
+        """
+        Return the actual evaluate cache, which is a combination of the
+        (mesh-based) evaluate cache and probe-specific data, like the reference
+        element coordinates. The reference element coordinates are reused, if
+        the sha1 hash of the probe parameter vector does not change.
+        """
         self.acache += cache
 
         def _gen_array_chunks(arr):
@@ -307,8 +313,7 @@ class Probe(Struct):
             vals, ref_coors, cells, status = ev(
                 points, mode=mode, strategy='general',
                 close_limit=self.options.close_limit, cache=acache,
-                ret_ref_coors=True, ret_status=True, ret_cells=True,
-                verbose=True)
+                ret_ref_coors=True, ret_status=True, ret_cells=True)
 
             acache.ref_coors = ref_coors
             acache.cells = cells
