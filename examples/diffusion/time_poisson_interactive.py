@@ -47,14 +47,14 @@ def gen_lines(problem):
     n_point = 1000
 
     p0, p1 = nm.array([0.0, 0.0, 0.0]), nm.array([0.1, 0.0, 0.0])
-    line = LineProbe(p0, p1, n_point)
+    line = LineProbe(p0, p1, n_point, share_geometry=True)
     # Workaround current probe code shortcoming.
     line.set_options(close_limit=0.5)
 
     centre = 0.5 * (p0 + p1)
     normal = [0.0, 1.0, 0.0]
     r = 0.019
-    circle = CircleProbe(centre, normal, r, n_point)
+    circle = CircleProbe(centre, normal, r, n_point, share_geometry=True)
     circle.set_options(close_limit=0.0)
 
     probes = [line, circle]
