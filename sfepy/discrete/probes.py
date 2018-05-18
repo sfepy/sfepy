@@ -1,5 +1,7 @@
 """Classes for probing values of Variables, for example, along a line."""
 from __future__ import absolute_import
+import hashlib
+
 import numpy as nm
 import numpy.linalg as nla
 
@@ -159,6 +161,8 @@ class Probe(Struct):
 
         self.options = Struct(close_limit=0.1, size_hint=None)
         self.cache = Struct(name='probe_local_evaluate_cache')
+        self.acache = Struct(name='probe_actual_evaluate_cache',
+                             pars_digest='')
 
         self.is_refined = False
 
@@ -168,6 +172,34 @@ class Probe(Struct):
         `self.share_geometry`.
         """
         return Probe.cache if self.share_geometry else self.cache
+
+    def get_actual_cache(self, pars, cache, hash_chunk_size=100000):
+        """
+        Return the actual evaluate cache, which is a combination of the
+        (mesh-based) evaluate cache and probe-specific data, like the reference
+        element coordinates. The reference element coordinates are reused, if
+        the sha1 hash of the probe parameter vector does not change.
+        """
+        self.acache += cache
+
+        def _gen_array_chunks(arr):
+            ii = 0
+            while len(arr[ii:]):
+                yield arr[ii:ii+hash_chunk_size].tobytes()
+                ii += hash_chunk_size
+
+        sha1 = hashlib.sha1()
+        for chunk in _gen_array_chunks(pars):
+            sha1.update(chunk)
+
+        digest = sha1.hexdigest()
+        if digest != self.acache.pars_digest:
+            self.acache.pars_digest = digest
+            self.acache.ref_coors = None
+            self.acache.cells = None
+            self.acache.status = None
+
+        return self.acache
 
     def set_n_point(self, n_point):
         """
@@ -276,9 +308,16 @@ class Probe(Struct):
             if not nm.isfinite(points).all():
                 raise ValueError('Inf/nan in probe points!')
 
-            vals, cells = ev(points, mode=mode, strategy='general',
-                             close_limit=self.options.close_limit,
-                             cache=cache, ret_cells=True)
+            acache = self.get_actual_cache(pars, cache)
+
+            vals, ref_coors, cells, status = ev(
+                points, mode=mode, strategy='general',
+                close_limit=self.options.close_limit, cache=acache,
+                ret_ref_coors=True, ret_status=True, ret_cells=True)
+
+            acache.ref_coors = ref_coors
+            acache.cells = cells
+            acache.status = status
 
             if self.is_refined:
                 break

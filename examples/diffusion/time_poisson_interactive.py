@@ -39,7 +39,7 @@ from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.discrete.probes import LineProbe, CircleProbe
 from sfepy.discrete.projections import project_by_component
 
-def gen_lines(problem):
+def gen_probes(problem):
     """
     Define a line probe and a circle probe.
     """
@@ -47,14 +47,14 @@ def gen_lines(problem):
     n_point = 1000
 
     p0, p1 = nm.array([0.0, 0.0, 0.0]), nm.array([0.1, 0.0, 0.0])
-    line = LineProbe(p0, p1, n_point)
+    line = LineProbe(p0, p1, n_point, share_geometry=True)
     # Workaround current probe code shortcoming.
     line.set_options(close_limit=0.5)
 
     centre = 0.5 * (p0 + p1)
     normal = [0.0, 1.0, 0.0]
     r = 0.019
-    circle = CircleProbe(centre, normal, r, n_point)
+    circle = CircleProbe(centre, normal, r, n_point, share_geometry=True)
     circle.set_options(close_limit=0.0)
 
     probes = [line, circle]
@@ -204,7 +204,7 @@ def main():
 
     if options.probe:
         # Prepare probe data.
-        probes, labels = gen_lines(pb)
+        probes, labels = gen_probes(pb)
 
         ev = pb.evaluate
         order = 2 * (options.order - 1)
@@ -219,9 +219,6 @@ def main():
                                   primary_var_name='(set-to-None)')
 
         nls_options = {'eps_a' : 1e-16, 'i_max' : 1}
-
-        if options.show:
-            plt.ion()
 
         suffix = tss.ts.suffix
         def poststep_fun(ts, vec):
@@ -242,9 +239,6 @@ def main():
             plt.tight_layout()
             fig.savefig('time_poisson_interactive_probe_%s.png'
                         % (suffix % ts.step), bbox_inches='tight')
-
-            if options.show:
-                plt.draw()
 
             for ii, results in enumerate(all_results):
                 output('probe %d (%s):' % (ii, probes[ii].name))
@@ -272,6 +266,9 @@ def main():
         status=tss_status)
 
     output(tss_status)
+
+    if options.show:
+        plt.show()
 
 if __name__ == '__main__':
     main()
