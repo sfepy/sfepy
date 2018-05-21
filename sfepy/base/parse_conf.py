@@ -54,9 +54,9 @@ def create_bnf(allow_tuple=False, free_word=False):
     defs = get_standard_type_defs(word)
 
     if allow_tuple:
-        return defs['dict'].inner | defs['tuple'].inner
+        return defs['dict'].inner | Optional(defs['tuple'].inner)
     else:
-        return defs['dict'].inner
+        return Optional(defs['dict'].inner)
 
 def list_of(element, *elements):
     """
