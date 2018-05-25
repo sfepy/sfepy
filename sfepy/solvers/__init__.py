@@ -6,7 +6,7 @@ from .solvers import *
 from .eigen import eig
 
 solver_files = sfepy.get_paths('sfepy/solvers/*.py')
-remove = ['setup.py', 'solvers.py']
+remove = ['setup.py', 'solvers.py', 'ls_mumps_parallel.py']
 solver_files = [name for name in solver_files
                 if os.path.basename(name) not in remove]
 solver_table = load_classes(solver_files,

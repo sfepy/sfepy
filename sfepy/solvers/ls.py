@@ -746,51 +746,112 @@ class MUMPSSolver(LinearSolver):
     _parameters = []
 
     def __init__(self, conf, **kwargs):
-        try:
-            from mumps import DMumpsContext
-        except ImportError:
-            self.mumps = None
-            msg = 'cannot import MUMPS!'
-            raise ImportError(msg)
+        import sfepy.solvers.ls_mumps as mumps
 
-        LinearSolver.__init__(self, conf, **kwargs)
-        self.mumps = DMumpsContext()
-        self.mumps_presolved = False
+        self.mumps_ls = None
+        mumps.load_mumps_libraries()  # try to load MUMPS libraries
+
+        LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
+                              mumps_presolved=False, **kwargs)
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
 
-        context = self.mumps
+        if self.mumps_ls is None:
+            system = 'complex' if mtx.dtype.name.startswith('complex')\
+                else 'real'
+            self.mumps_ls = self.mumps.MumpsSolver(system=system)
 
         if not self.mumps_presolved:
             self.presolve(mtx)
 
         out = rhs.copy()
-        context.set_rhs(out)
-        context.run(job=3)  # Solve
+        self.mumps_ls.set_b(out)
+        self.mumps_ls(3)  # solve
+        from scipy.io import savemat
+        savemat('test_matrix_vector.mat', {'A': mtx, 'b': rhs, 'x': out})
 
         return out
 
     def presolve(self, mtx):
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
         if is_new:
-            mtx_coo = mtx.tocoo()
-            context = self.mumps
+            if self.conf.verbose:
+                self.mumps_ls.set_verbose()
 
-            if not self.conf.verbose:
-                context.set_silent()
-            context.set_shape(mtx_coo.shape[0])
-            context.set_centralized_assembled(mtx_coo.row + 1, mtx_coo.col + 1,
-                                              mtx_coo.data)
-            context.run(job=1)  # Analyze
-            context.run(job=2)  # Factorize
+            self.mumps_ls.set_A_centralized(mtx)
+            self.mumps_ls(1)  # analyze
+            self.mumps_ls(2)  # factorize
             self.mumps_presolved = True
             self.mtx_digest = mtx_digest
 
     def __del__(self):
-        if self.mumps is not None:
-            self.mumps.destroy()
+        if self.mumps_ls is not None:
+            del(self.mumps_ls)
+
+
+class MUMPSParallelSolver(LinearSolver):
+    """
+    Interface to MUMPS parallel solver.
+    """
+    name = 'ls.mumps_par'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = []
+
+    def __init__(self, conf, **kwargs):
+        import multiprocessing
+        import sfepy.solvers.ls_mumps as mumps
+
+        mumps.load_mumps_libraries()  # try to load MUMPS libraries
+
+        LinearSolver.__init__(self, conf, mumps=mumps, mumps_ls=None,
+                              number_of_cpu=multiprocessing.cpu_count(),
+                              mumps_presolved=False, **kwargs)
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        from mpi4py import MPI
+        import sys
+        from sfepy import data_dir
+        import os.path as op
+        from tempfile import gettempdir
+
+        def tmpfile(fname):
+            return op.join(gettempdir(), fname)
+
+        mtx_coo = mtx.tocoo()
+        n = mtx.shape[0]
+        nz = mtx_coo.row.shape[0]
+        flags = nm.memmap(tmpfile('vals_falgs.array'), dtype='int32',
+                          mode='w+', shape=(2,))
+        flags[0] = n
+        flags[1] = 1 if mtx_coo.data.dtype.name.startswith('complex') else 0
+        idxs = nm.memmap(tmpfile('idxs.array'), dtype='int32',
+                         mode='w+', shape=(2, nz))
+        idxs[0, :] = mtx_coo.row + 1
+        idxs[1, :] = mtx_coo.col + 1
+
+        dtype = {0: 'float64', 1: 'complex128'}[flags[1]]
+        vals_mtx = nm.memmap(tmpfile('vals_mtx.array'), dtype=dtype,
+                             mode='w+', shape=(nz,))
+        vals_rhs = nm.memmap(tmpfile('vals_rhs.array'), dtype=dtype,
+                             mode='w+', shape=(n,))
+        vals_mtx[:] = mtx_coo.data
+        vals_rhs[:] = rhs
+
+        mumps_call = op.join(data_dir, 'sfepy', 'solvers',
+                             'ls_mumps_parallel.py')
+        comm = MPI.COMM_SELF.Spawn(sys.executable, args=[mumps_call],
+                                   maxprocs=self.number_of_cpu)
+        comm.Disconnect()
+
+        out = nm.memmap(tmpfile('vals_x.array'), dtype=dtype, mode='r')
+
+        return out
 
 
 class SchurGeneralized(ScipyDirect):
