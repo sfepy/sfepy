@@ -24,7 +24,6 @@ mumps_libs = {}
 
 def load_library(libname):
     """Load shared library in a system dependent way."""
-    import os
     import sys
 
     if sys.platform.startswith('win'):  # Windows system
@@ -33,15 +32,10 @@ def load_library(libname):
         lib_fname = find_library(libname)
 
     else:  # Linux system
-        ld_path = os.environ.get('LD_LIBRARY_PATH').split(':')
-        for ipath in ld_path:
-            lib_fname = os.path.join(ipath, 'lib%s.so' % libname)
-            if os.path.isfile(lib_fname):
-                break
-        else:
-            raise ImportError('No library named %s' % libname)
+        lib_fname = 'lib' + libname + '.so'
 
-        lib = ctypes.cdll.LoadLibrary(lib_fname)
+    lib = ctypes.cdll.LoadLibrary(lib_fname)
+
     return lib
 
 
