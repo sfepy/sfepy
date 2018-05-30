@@ -26,6 +26,8 @@ helps = {
     'output_filename' :
     'save the figure using the given file name',
     'rc' : 'matplotlib resources',
+    'no_legends' :
+    'do not show legends in the log plots',
     'no_show' :
     'do not show the figure',
 }
@@ -42,6 +44,9 @@ def main():
     parser.add_argument('--rc', type=str, metavar='key:val,...',
                         action=ParseRc, dest='rc',
                         default={}, help=helps['rc'])
+    parser.add_argument('--no-legends',
+                        action='store_false', dest='show_legends',
+                        default=True, help=helps['no_legends'])
     parser.add_argument('-n', '--no-show',
                         action='store_true', dest='no_show',
                         default=False, help=helps['no_show'])
@@ -57,7 +62,8 @@ def main():
 
     plt.rcParams.update(options.rc)
 
-    plot_log(None, log, info, groups=options.groups)
+    plot_log(None, log, info, groups=options.groups,
+             show_legends=options.show_legends)
 
     if options.output_filename:
         plt.savefig(options.output_filename)

@@ -5,11 +5,20 @@ Dispersion analysis of a heterogeneous finite scale periodic cell.
 The periodic cell mesh has to contain two subdomains Y1, Y2, so that different
 material properties can be defined in each of the subdomains (see `--pars`
 option).
+
+Usage Examples
+--------------
+
+Default material parameters, a square periodic cell with a spherical inclusion,
+log also standard pressure dilatation and shear waves::
+
+  python examples/linear_elasticity/dispersion_analysis.py  --log-std-waves meshes/2d/special/circle_in_square.mesh
 """
 from __future__ import absolute_import
 import os
 import sys
 sys.path.append('.')
+import gc
 import functools
 from copy import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
@@ -130,6 +139,50 @@ def set_wave_dir_le(materials, wdir):
     wave_mat = materials['wave']
     wave_mat.datas['special']['vec'] = wdir
 
+def save_materials_le(output_dir, pb, options):
+    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
+                            mode='el_avg', copy_materials=False, verbose=False)
+    young, poisson = mc.youngpoisson_from_stiffness(stiffness,
+                                                    plane=options.plane)
+    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+                          mode='el_avg', copy_materials=False, verbose=False)
+
+    out = {}
+    out['young'] = Struct(name='young', mode='cell',
+                          data=young[..., None, None])
+    out['poisson'] = Struct(name='poisson', mode='cell',
+                            data=poisson[..., None, None])
+    out['density'] = Struct(name='density', mode='cell', data=density)
+    materials_filename = os.path.join(output_dir, 'materials.vtk')
+    pb.save_state(materials_filename, out=out)
+
+def get_std_wave_fun_le(pb, options):
+    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
+                            mode='el_avg', copy_materials=False, verbose=False)
+    young, poisson = mc.youngpoisson_from_stiffness(stiffness,
+                                                    plane=options.plane)
+    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+                          mode='el_avg', copy_materials=False, verbose=False)
+
+    lam, mu = mc.lame_from_youngpoisson(young, poisson,
+                                        plane=options.plane)
+    alam = nm.average(lam)
+    amu = nm.average(mu)
+    adensity = nm.average(density)
+
+    cp = nm.sqrt((alam + 2.0 * amu) / adensity)
+    cs = nm.sqrt(amu / adensity)
+    output('average p-wave speed:', cp)
+    output('average shear wave speed:', cs)
+
+    log_names = [r'$\omega_p$', r'$\omega_s$']
+    log_plot_kwargs = [{'ls' : '--', 'color' : 'k'},
+                       {'ls' : '--', 'color' : 'gray'}]
+
+    fun = lambda wmag, wdir: (cp * wmag, cs * wmag)
+
+    return fun, log_names, log_plot_kwargs
+
 def _max_diff_csr(mtx1, mtx2):
     aux = nm.abs((mtx1 - mtx2).data)
     return aux.max() if len(aux) else 0.0
@@ -187,6 +240,10 @@ helps = {
     'save_materials' : 'save material parameters into'
     ' <output_directory>/materials.vtk',
     'log_std_waves' : 'log also standard pressure dilatation and shear waves',
+    'no_legends' :
+    'do not show legends in the log plots',
+    'no_show' :
+    'do not show the log figure',
     'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory',
@@ -229,7 +286,7 @@ def main():
                         default='omega', help=helps['mode'])
     parser.add_argument('--range', metavar='start,stop,count',
                         action='store', dest='range',
-                        default='10,100,10', help=helps['range'])
+                        default='1,10,21', help=helps['range'])
     parser.add_argument('--order', metavar='int', type=int,
                         action='store', dest='order',
                         default=1, help=helps['order'])
@@ -251,6 +308,12 @@ def main():
     parser.add_argument('--log-std-waves',
                         action='store_true', dest='log_std_waves',
                         default=False, help=helps['log_std_waves'])
+    parser.add_argument('--no-legends',
+                        action='store_false', dest='show_legends',
+                        default=True, help=helps['no_legends'])
+    parser.add_argument('--no-show',
+                        action='store_false', dest='show',
+                        default=True, help=helps['no_show'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -274,11 +337,15 @@ def main():
         apply_units = mod.apply_units
         define = mod.define
         set_wave_dir = mod.set_wave_dir
+        save_materials = mod.save_materials
+        get_std_wave_fun = mod.get_std_wave_fun
 
     else:
         apply_units = apply_units_le
         define = define_le
         set_wave_dir = set_wave_dir_le
+        save_materials = save_materials_le
+        get_std_wave_fun = get_std_wave_fun_le
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
@@ -297,7 +364,8 @@ def main():
 
     filename = os.path.join(output_dir, 'options.txt')
     ensure_path(filename)
-    save_options(filename, [('options', vars(options))])
+    save_options(filename, [('options', vars(options))],
+                 quote_command_line=True)
 
     pars = apply_units(options.pars, options.unit_multipliers)
     output('material parameters with applied unit multipliers:')
@@ -357,23 +425,8 @@ def main():
     pb.time_update()
     pb.update_materials()
 
-    if options.save_materials or options.log_std_waves:
-        stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
-                            mode='el_avg', copy_materials=False, verbose=False)
-        young, poisson = mc.youngpoisson_from_stiffness(stiffness,
-                                                        plane=options.plane)
-        density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
-                            mode='el_avg', copy_materials=False, verbose=False)
-
     if options.save_materials:
-        out = {}
-        out['young'] = Struct(name='young', mode='cell',
-                              data=young[..., None, None])
-        out['poisson'] = Struct(name='poisson', mode='cell',
-                                data=poisson[..., None, None])
-        out['density'] = Struct(name='density', mode='cell', data=density)
-        materials_filename = os.path.join(output_dir, 'materials.vtk')
-        pb.save_state(materials_filename, out=out)
+        save_materials(output_dir, pb, options)
 
     # Set the normalized wave vector direction to the material(s).
     set_wave_dir(pb.get_materials(), wdir)
@@ -418,32 +471,22 @@ def main():
                                             'frequency-eigenshapes-%s.vtk'
                                             % stepper.suffix)
 
-        extra = []
-        extra_plot_kwargs = []
+        log_names = []
+        log_plot_kwargs = []
         if options.log_std_waves:
-            lam, mu = mc.lame_from_youngpoisson(young, poisson,
-                                                plane=options.plane)
-            alam = nm.average(lam)
-            amu = nm.average(mu)
-            adensity = nm.average(density)
-
-            cp = nm.sqrt((alam + 2.0 * amu) / adensity)
-            cs = nm.sqrt(amu / adensity)
-            output('average p-wave speed:', cp)
-            output('average shear wave speed:', cs)
-
-            extra = [r'$\omega_p$', r'$\omega_s$']
-            extra_plot_kwargs = [{'ls' : '--', 'color' : 'k'},
-                                 {'ls' : '--', 'color' : 'gray'}]
+            std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
+                pb, options)
 
         log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
                    [r'$\omega_{%d}$'
-                    % ii for ii in range(options.n_eigs)] + extra],
-                  plot_kwargs=[{}, [{}] * options.n_eigs + extra_plot_kwargs],
+                    % ii for ii in range(options.n_eigs)] + log_names],
+                  plot_kwargs=[{}, [{}] * options.n_eigs + log_plot_kwargs],
                   yscales=['linear', 'linear'],
                   xlabels=[r'$\kappa$', r'$\kappa$'],
                   ylabels=[r'eigenvalues $\lambda_i$',
                            r'frequencies $\omega_i$'],
+                  show_legends=options.show_legends,
+                  is_plot=options.show,
                   log_filename=os.path.join(output_dir, 'frequencies.txt'),
                   aggregate=1000, sleep=0.1)
 
@@ -461,7 +504,7 @@ def main():
                 svecs = None
 
             else:
-                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
                                          eigenvectors=True)
             omegas = nm.sqrt(eigs)
 
@@ -469,10 +512,12 @@ def main():
 
             out = tuple(eigs) + tuple(omegas)
             if options.log_std_waves:
-                out = out + (cp * wmag, cs * wmag)
+                out = out + std_wave_fun(wmag, wdir)
             log(*out, x=[wmag, wmag])
 
             save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
+
+            gc.collect()
 
         log(save_figure=os.path.join(output_dir, 'frequencies.png'))
         log(finished=True)
@@ -499,6 +544,8 @@ def main():
                   yscales=['linear'],
                   xlabels=[r'$\omega$'],
                   ylabels=[r'wave numbers $\kappa_i$'],
+                  show_legends=options.show_legends,
+                  is_plot=options.show,
                   log_filename=os.path.join(output_dir, 'wave-numbers.txt'),
                   aggregate=1000, sleep=0.1)
         for io, omega in stepper:
@@ -519,7 +566,7 @@ def main():
                 svecs = None
 
             else:
-                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=options.n_eigs,
+                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
                                          eigenvectors=True)
             kappas = eigs
 
@@ -529,6 +576,8 @@ def main():
             log(*out, x=[omega])
 
             save_eigenvectors(eigenshapes_filename % io, svecs, pb)
+
+            gc.collect()
 
         log(save_figure=os.path.join(output_dir, 'wave-numbers.png'))
         log(finished=True)
