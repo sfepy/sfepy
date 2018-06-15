@@ -114,7 +114,7 @@ def main():
                                                    cp_mode=options.cp_mode,
                                                    name='block', verbose=True)
 
-    io.write_iga_data(filename, nurbs.knots, nurbs.degrees, nurbs.cps,
+    io.write_iga_data(filename, None, nurbs.knots, nurbs.degrees, nurbs.cps,
                       nurbs.weights, nurbs.cs, nurbs.conn,
                       bmesh.cps, bmesh.weights, bmesh.conn,
                       regions)
