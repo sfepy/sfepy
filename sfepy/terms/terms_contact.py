@@ -94,12 +94,23 @@ class ContactTerm(Term):
 
         n = len(elementID)
         IEN = state.field.econn
-        # Need surface bf, bfg corresponding to field approximation here, not
-        # geo...
+
+        # geo.bf corresponds to the field approximation.
         H = nm.asfortranarray(geo.bf[0, :, 0, :])
-        ps = state.field.gel.surface_facet.poly_space
-        gps, gw = self.integral.get_qp(state.field.gel.surface_facet.name)
-        bfg = ps.eval_base(gps, diff=True)
+
+        gname = state.field.gel.name
+        ib = 3 if gname == '3_8' else 0
+
+        bqpkey = (self.integral.order, sd.bkey)
+        bqp = state.field.qp_coors[bqpkey]
+        gw = bqp.weights
+
+        basis = state.field.create_basis_context()
+        bfg3d = basis.evaluate(bqp.vals[ib], diff=True)
+        bfg = bfg3d[:, :region.tdim - 1, state.field.efaces[ib]]
+        if gname == '3_4':
+            bfg = bfg[:, [1, 0], :]
+
         dH  = nm.asfortranarray(bfg.ravel().reshape(((nsd - 1) * ngp, nsn)))
 
         X = nm.asfortranarray(state.field.coors)
