@@ -1,5 +1,119 @@
 # created: 20.07.2007 (-1)
 
+.. _2018.1-2018.2:
+
+from 2018.1 to 2018.2
+=====================
+
+- merge branch 'new-time-stepping-solvers'
+
+  - new GeneralizedAlphaTS
+  - fix cache name in ElastodynamicsBaseTS._create_nlst_a()
+  - new VelocityVerletTS
+  - new is_string(), fix IsSave.__call__() for future NumPy
+  - add new solvers to elastodynamic.py example, use save_times option
+
+- merge branch 'update-ntc-links'
+
+  - update links to NTC web pages
+
+- merge branch 'stokes-wave-terms'
+
+  - new StokesWaveTerm (dw_stokes_wave), StokesWaveDivTerm (dw_stokes_wave_div)
+  - new expand_basis()
+  - use expand_basis() in terms
+
+- merge branch 'remove-rcm'
+
+  - remove CloseNodesIterator
+  - remove sfepy/linalg/extmods/
+  - update setup.py, __init__.py in sfepy/linalg/
+  - update FieldVariable.set_from_other() for no CloseNodesIterator
+  - remove tests/test_permutations.py
+  - docs: sync module index of developer guide with current sources
+
+- merge branch 'misc-updates'
+
+  - update apply_unit_multipliers() for compressibility
+  - fix ScipyIterative.__call__() to use eps_a from configuration options -
+    update for future SciPy (1.1.x, atol argument)
+  - change default eps_a of ScipyIterative
+  - set eps_a of iterative scipy solvers in test_linear_solvers.py
+
+- merge branch 'fix-dw_lin_elastic_iso'
+
+  - simplify stiffness_from_lame() to consistently add two dimensions
+  - update LinearElasticIsotropicTerm.get_fargs() for current
+    stiffness_from_lame() - fixes wrong material shape in single quadrature
+    point per cell case
+  - update get_pars() in material_nonlinearity.py example
+
+- merge pull request #451 from BubuLK/gen-solvers-table, closes #447
+
+  - add gen_solver_table extension.
+  - add preliminary version of gen_solver_table.py
+  - updated 'Solvers' section in users guide. Changed "SfePy" typography
+    according to (updated) install guide...
+  - add solver_table.rst (gen_solver_table.py output) to .gitignore.
+  - added generated solver_table (per-partes) to solvers section.
+  - update/fix docstrings of time-stepping solvers for solver table
+  - update docstrings of nonlinear solvers for solver table
+  - update docstrings of eigenvalue problem solvers for solver table
+  - docs: update introductory paragraphs of solver descriptions in users guide
+  - add link to the corresponding solver class documentation.
+
+- merge branch 'remove-google-analytics'
+
+  - remove google analytics code
+
+- merge branch 'fix-orient-small-cells'
+
+  - fix orient_elements() for cells with very small volumes
+
+- merge branch 'fix-allow-empty-regions'
+
+  - fix Region.finalize() to set .is_empty also for non-cell regions
+  - update Region.finalize() to check for emptiness in any case
+  - update test_operators()
+
+- merge branch 'cache-refcoors-in-probes'
+
+  - reuse reference coordinates in probes if possible - new
+    Probe.get_actual_cache(), update .__init__(), .probe()
+  - share geometry in probes in time_poisson_interactive.py - update gen_lines()
+  - add docstring to Probe.get_actual_cache(), clean up
+  - clean up time_poisson_interactive.py
+
+    - rename gen_lines() -> gen_probes()
+    - show the last figure with --show option
+
+- merge pull request #452 from vlukes/new_mumps
+
+  - MUMPS linear solver: new wrapper for C library using ctypes
+  - update installation instructions
+
+- merge branch 'dispersion-analysis3'
+
+  - dispersion_analysis.py: new --no-show option
+  - dispersion_analysis.py: quote command line in saved options
+  - dispersion_analysis.py: free unused memory after each step - allows running
+    several examples in parallel without hogging memory
+  - dispersion_analysis.py: support custom standard waves logs - new
+    save_materials_le(), get_std_wave_fun_le()
+  - dispersion_analysis.py: update docstring, update defaults for --range option
+  - add show_legends argument to plot_log(), Log.__init__(), update .plot_data()
+  - script/plot_logs.py: new --no-legends option
+  - dispersion_analysis.py: new --no-legends option
+  - dispersion_analysis.py: fix eigensolver calls for all eigenvalues case
+
+- merge pull request #457 from vlukes/upadte_micro_recovery
+
+  - update recover_micro_hook_eps()
+
+- merge pull request #458 from lokik/mmaster
+
+  - fix in script/gen_iga_patch.py
+
 .. _2017.4-2018.1:
 
 from 2017.4 to 2018.1
