@@ -109,9 +109,9 @@ class ContactTerm(Term):
 
         return self.ci
 
-    def call_function(self, fargs):
+    def call_function(self, out, fargs):
         try:
-            out, status = self.function(*fargs)
+            out, status = self.function(out, *fargs)
 
         except (RuntimeError, ValueError):
             terms.errclear()
@@ -125,15 +125,33 @@ class ContactTerm(Term):
 
     def eval_real(self, shape, fargs, mode='eval', term_mode=None,
                   diff_var=None, **kwargs):
-        out, status = self.call_function(fargs)
-        if mode != 'weak':
-            raise ValueError('unsupported evaluation mode! (%s)' % mode)
+        if mode == 'weak':
+            out, status = self.call_function(None, fargs)
+
+        else:
+            out = nm.empty(shape, dtype=nm.float64)
+            status = self.call_function(out, fargs)
 
         return out, status
 
     @staticmethod
-    def function(out_cc):
+    def function_weak(out, out_cc):
         return out_cc, 0
+
+    @staticmethod
+    def integrate(out, val_qp, geo, fmode):
+        if fmode == 2:
+            out[:] = val_qp
+            status = 0
+
+        else:
+            status = geo.integrate(out, val_qp, fmode)
+
+        return out, status
+
+    @staticmethod
+    def function(out, fun, *args):
+        return fun(out, *args)
 
     def get_fargs(self, epss, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -147,45 +165,72 @@ class ContactTerm(Term):
 
         GPs = ci.update(xx)
 
-        Gc = nm.zeros(ci.neq, dtype=nm.float64)
+        if mode == 'weak':
+            Gc = nm.zeros(ci.neq, dtype=nm.float64)
 
-        activeGPs = GPs[:, 2*ci.nsd+3]
-        # gap = GPs[:, nsd + 2]
-        # print activeGPs
-        # print gap
-        # print 'active:', activeGPs.sum()
+            activeGPs = GPs[:, 2*ci.nsd+3]
+            # gap = GPs[:, nsd + 2]
+            # print activeGPs
+            # print gap
+            # print 'active:', activeGPs.sum()
 
-        if diff_var is None:
-            max_num = 1
-            keyContactDetection = self.detect
-            keyAssembleKc = 0
+            if diff_var is None:
+                max_num = 1
+                keyContactDetection = self.detect
+                keyAssembleKc = 0
+
+            else:
+                max_num = 4 * (ci.nsd * ci.nsn)**2 * ci.ngp * GPs.shape[0]
+                keyContactDetection = self.detect
+                keyAssembleKc = 1
+
+            # print 'max_num:', max_num
+            vals = nm.empty(max_num, dtype=nm.float64)
+            rows = nm.empty(max_num, dtype=nm.int32)
+            cols = nm.empty(max_num, dtype=nm.int32)
+
+            aux = cc.assemble_contact_residual_and_stiffness(
+                Gc, vals, rows, cols, ci.GPs, ci.ISN, ci.IEN, X, Um,
+                ci.H, ci.dH, ci.gw, activeGPs, ci.neq, ci.npd,
+                epss, keyContactDetection, keyAssembleKc)
+            Gc, vals, rows, cols, num = aux
+            # print 'true num:', num
+
+            # Uncomment this to detect only in the 1. iteration.
+            #self.detect = max(0, self.detect - 1)
+            if diff_var is None:
+                from sfepy.discrete.variables import create_adof_conn
+                rows = nm.unique(create_adof_conn(nm.arange(len(Gc)),
+                                                  ci.sd.econn,
+                                                  ci.nsd, 0))
+                out_cc = (Gc[rows], rows, state)
+
+            else:
+                out_cc = (vals[:num], rows[:num], cols[:num], state, state)
+
+            return self.function_weak, out_cc
+
+        elif mode in ('el_avg', 'qp'):
+            fmode = {'el_avg' : 1, 'qp' : 2}[mode]
+
+            if term_mode == 'gap':
+                gap = GPs[:, ci.nsd + 2].reshape(-1, ci.ngp, 1, 1)
+                gap[gap > 0] = 0.0
+                return self.integrate, gap, geo, fmode
+
+            else:
+                raise ValueError('unsupported term mode in %s! (%s)'
+                                 % (self.name, term_mode))
 
         else:
-            max_num = 4 * (ci.nsd * ci.nsn)**2 * ci.ngp * GPs.shape[0]
-            keyContactDetection = self.detect
-            keyAssembleKc = 1
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        # print 'max_num:', max_num
-        vals = nm.empty(max_num, dtype=nm.float64)
-        rows = nm.empty(max_num, dtype=nm.int32)
-        cols = nm.empty(max_num, dtype=nm.int32)
+    def get_eval_shape(self, epss, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        aux = cc.assemble_contact_residual_and_stiffness(
-            Gc, vals, rows, cols, ci.GPs, ci.ISN, ci.IEN, X, Um,
-            ci.H, ci.dH, ci.gw, activeGPs, ci.neq, ci.npd,
-            epss, keyContactDetection, keyAssembleKc)
-        Gc, vals, rows, cols, num = aux
-        # print 'true num:', num
+        if mode != 'qp':
+            n_qp = 1
 
-        # Uncomment this to detect only in the 1. iteration.
-        #self.detect = max(0, self.detect - 1)
-        if diff_var is None:
-            from sfepy.discrete.variables import create_adof_conn
-            rows = nm.unique(create_adof_conn(nm.arange(len(Gc)), ci.sd.econn,
-                                              ci.nsd, 0))
-            out_cc = (Gc[rows], rows, state)
-
-        else:
-            out_cc = (vals[:num], rows[:num], cols[:num], state, state)
-
-        return out_cc,
+        return (n_el, n_qp, 1, 1), state.dtype
