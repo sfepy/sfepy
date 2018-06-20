@@ -3,12 +3,71 @@ import numpy as nm
 from sfepy.base.base import Struct
 from sfepy.terms.terms import Term
 from sfepy.terms.extmods import terms
+import sfepy.mechanics.extmods.ccontres as cc
 
 class ContactInfo(Struct):
     """
     Various contact-related data of contact terms.
     """
-    pass
+    def __init__(self, region, integral, geo, state):
+        # Uses field connectivity (higher order nodes).
+        sd = state.field.surface_data[region.name]
+
+        ISN = state.field.efaces.T.copy()
+        nsd = region.dim
+        ngp = geo.n_qp
+        nsn = ISN.shape[0]
+
+        fis = region.get_facet_indices()
+        elementID = fis[:, 0].copy()
+        segmentID = fis[:, 1].copy()
+
+        # geo.bf corresponds to the field approximation.
+        H = nm.asfortranarray(geo.bf[0, :, 0, :])
+
+        gname = state.field.gel.name
+        ib = 3 if gname == '3_8' else 0
+
+        bqpkey = (integral.order, sd.bkey)
+        bqp = state.field.qp_coors[bqpkey]
+
+        basis = state.field.create_basis_context()
+        bfg3d = basis.evaluate(bqp.vals[ib], diff=True)
+        bfg = bfg3d[:, :region.tdim - 1, state.field.efaces[ib]]
+        if gname == '3_4':
+            bfg = bfg[:, [1, 0], :]
+
+        dH  = nm.asfortranarray(bfg.ravel().reshape(((nsd - 1) * ngp, nsn)))
+
+        GPs = nm.empty((len(elementID)*ngp, 2*nsd+6),
+                       dtype=nm.float64, order='F')
+
+        Struct.__init__(self, name='contact_info_%s' % region.name,
+                        sd=sd, nsd=nsd, ngp=ngp, neq=state.n_dof,
+                        nsn=nsn, npd=region.tdim - 1,
+                        elementID=elementID, segmentID=segmentID,
+                        IEN=state.field.econn, ISN=ISN,
+                        gw=bqp.weights, H=H, dH=dH, GPs=GPs)
+
+    def update(self, xx):
+        longestEdge, GPs = cc.get_longest_edge_and_gps(
+            self.GPs, self.neq, self.elementID, self.segmentID,
+            self.ISN, self.IEN, self.H, xx)
+
+        AABBmin, AABBmax = cc.get_AABB(xx, longestEdge, self.IEN, self.ISN,
+                                       self.elementID, self.segmentID, self.neq)
+
+        AABBmin = AABBmin - (0.5*longestEdge);
+        AABBmax = AABBmax + (0.5*longestEdge);
+        N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
+
+        head, next = cc.init_global_search(N, AABBmin, AABBmax,
+                                           GPs[:,:self.nsd])
+        GPs = cc.evaluate_contact_constraints(
+            GPs, self.ISN, self.IEN, N, AABBmin, AABBmax, head, next, xx,
+            self.elementID, self.segmentID, self.npd, self.neq, longestEdge)
+
+        return GPs
 
 class ContactTerm(Term):
     r"""
@@ -44,6 +103,12 @@ class ContactTerm(Term):
         self.detect = 2
         self.ci = None
 
+    def get_contact_info(self, geo, state, init_gps=False):
+        if self.ci is None:
+            self.ci = ContactInfo(self.region, self.integral, geo, state)
+
+        return self.ci
+
     def call_function(self, fargs):
         try:
             out, status = self.function(*fargs)
@@ -74,76 +139,17 @@ class ContactTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         geo, _ = self.get_mapping(virtual)
 
-        region = self.region
-
-        if self.ci is None:
-            self.ci = ContactInfo()
-
-        # Uses field connectivity (higher order nodes).
-        sd = state.field.surface_data[region.name]
-
-        ISN = state.field.efaces.T.copy()
-        nsd = region.dim
-        ngp = geo.n_qp
-        neq = state.n_dof
-        nsn = ISN.shape[0]
-
-        fis = region.get_facet_indices()
-        elementID = fis[:, 0].copy()
-        segmentID = fis[:, 1].copy()
-
-        n = len(elementID)
-        IEN = state.field.econn
-
-        # geo.bf corresponds to the field approximation.
-        H = nm.asfortranarray(geo.bf[0, :, 0, :])
-
-        gname = state.field.gel.name
-        ib = 3 if gname == '3_8' else 0
-
-        bqpkey = (self.integral.order, sd.bkey)
-        bqp = state.field.qp_coors[bqpkey]
-        gw = bqp.weights
-
-        basis = state.field.create_basis_context()
-        bfg3d = basis.evaluate(bqp.vals[ib], diff=True)
-        bfg = bfg3d[:, :region.tdim - 1, state.field.efaces[ib]]
-        if gname == '3_4':
-            bfg = bfg[:, [1, 0], :]
-
-        dH  = nm.asfortranarray(bfg.ravel().reshape(((nsd - 1) * ngp, nsn)))
+        ci = self.get_contact_info(geo, state)
 
         X = nm.asfortranarray(state.field.coors)
-        Um = nm.asfortranarray(state().reshape((-1, nsd)))
+        Um = nm.asfortranarray(state().reshape((-1, ci.nsd)))
         xx = nm.asfortranarray(X + Um)
 
-        import sfepy.mechanics.extmods.ccontres as cc
+        GPs = ci.update(xx)
 
-        GPs = nm.empty((n*ngp, 2*nsd+6), dtype=nm.float64, order='F')
+        Gc = nm.zeros(ci.neq, dtype=nm.float64)
 
-        longestEdge, GPs = cc.get_longest_edge_and_gps(GPs, neq,
-                                                       elementID, segmentID,
-                                                       ISN, IEN, H, xx)
-
-        AABBmin, AABBmax = cc.get_AABB(xx, longestEdge, IEN, ISN,
-                                       elementID, segmentID, neq);
-
-        AABBmin = AABBmin - (0.5*longestEdge);
-        AABBmax = AABBmax + (0.5*longestEdge);
-        N = nm.ceil((AABBmax - AABBmin) / (0.5*longestEdge)).astype(nm.int32)
-
-        head, next = cc.init_global_search(N, AABBmin, AABBmax, GPs[:,:nsd])
-
-        npd = region.tdim - 1
-        GPs = cc.evaluate_contact_constraints(GPs, ISN, IEN, N,
-                                              AABBmin, AABBmax,
-                                              head, next, xx,
-                                              elementID, segmentID,
-                                              npd, neq, longestEdge)
-
-        Gc = nm.zeros(neq, dtype=nm.float64)
-
-        activeGPs = GPs[:, 2*nsd+3]
+        activeGPs = GPs[:, 2*ci.nsd+3]
         # gap = GPs[:, nsd + 2]
         # print activeGPs
         # print gap
@@ -155,7 +161,7 @@ class ContactTerm(Term):
             keyAssembleKc = 0
 
         else:
-            max_num = 4 * (nsd * nsn)**2 * ngp * GPs.shape[0]
+            max_num = 4 * (ci.nsd * ci.nsn)**2 * ci.ngp * GPs.shape[0]
             keyContactDetection = self.detect
             keyAssembleKc = 1
 
@@ -164,13 +170,10 @@ class ContactTerm(Term):
         rows = nm.empty(max_num, dtype=nm.int32)
         cols = nm.empty(max_num, dtype=nm.int32)
 
-        aux = cc.assemble_contact_residual_and_stiffness(Gc, vals, rows, cols,
-                                                         GPs, ISN, IEN,
-                                                         X, Um, H, dH, gw,
-                                                         activeGPs, neq, npd,
-                                                         epss,
-                                                         keyContactDetection,
-                                                         keyAssembleKc)
+        aux = cc.assemble_contact_residual_and_stiffness(
+            Gc, vals, rows, cols, ci.GPs, ci.ISN, ci.IEN, X, Um,
+            ci.H, ci.dH, ci.gw, activeGPs, ci.neq, ci.npd,
+            epss, keyContactDetection, keyAssembleKc)
         Gc, vals, rows, cols, num = aux
         # print 'true num:', num
 
@@ -178,8 +181,8 @@ class ContactTerm(Term):
         #self.detect = max(0, self.detect - 1)
         if diff_var is None:
             from sfepy.discrete.variables import create_adof_conn
-            rows = nm.unique(create_adof_conn(nm.arange(len(Gc)), sd.econn,
-                                              nsd, 0))
+            rows = nm.unique(create_adof_conn(nm.arange(len(Gc)), ci.sd.econn,
+                                              ci.nsd, 0))
             out_cc = (Gc[rows], rows, state)
 
         else:
