@@ -46,6 +46,12 @@ def _get_bqp(geometry, order):
     sd = field.surface_data['Surf']
     qp = field.qp_coors[(integral.order, sd.bkey)]
 
+    output('geometry:', geometry, 'order:', order, 'num. points:',
+           qp.vals.shape[1], 'true_order:',
+           integral.qps[gel.surface_facet_name].order)
+    output('min. weight:', qp.weights.min())
+    output('max. weight:', qp.weights.max())
+
     return (gel, qp.vals.reshape((-1, mesh.dim)),
             nm.tile(qp.weights, qp.vals.shape[0]))
 
