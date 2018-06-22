@@ -1050,6 +1050,16 @@ def dict_to_struct(*args, **kwargs):
 
     return out
 
+def structify(obj):
+    """
+    Convert a (nested) dict `obj` into a (nested) Struct.
+    """
+    out = Struct(**obj)
+    for key, val in out.to_dict().items():
+        if isinstance(val, dict):
+            out.__dict__[key] = structify(val)
+    return out
+
 def is_string(var):
     return isinstance(var, basestr)
 
