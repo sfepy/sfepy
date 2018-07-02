@@ -24,7 +24,7 @@ from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
                                        supported_cell_types)
 from sfepy.discrete.fem.mesh import fix_double_nodes
-from sfepy.mesh.mesh_tools import elems_q2t
+from sfepy.mesh.mesh_tools import triangulate
 
 helps = {
     'scale' : 'scale factor (float or comma-separated list for each axis)'
@@ -191,24 +191,7 @@ def main():
         mesh = domain.mesh
 
     if options.tri_tetra > 0:
-        conns = None
-        for k, new_desc in [('3_8', '3_4'), ('2_4', '2_3')]:
-            if k in mesh.descs:
-                conns = mesh.get_conn(k)
-                break
-
-        if conns is not None:
-            nelo = conns.shape[0]
-            output('initial mesh: %d elements' % nelo)
-
-            new_conns = elems_q2t(conns)
-            nn = new_conns.shape[0] // nelo
-            new_cgroups = nm.repeat(mesh.cmesh.cell_groups, nn)
-
-            output('new mesh: %d elements' % new_conns.shape[0])
-            mesh = Mesh.from_data(mesh.name, mesh.coors,
-                                  mesh.cmesh.vertex_groups,
-                                  [new_conns], [new_cgroups], [new_desc])
+        mesh = triangulate(mesh, verbose=True)
 
     if options.merge:
         desc = mesh.descs[0]
