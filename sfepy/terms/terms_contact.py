@@ -29,6 +29,7 @@ class ContactInfo(Struct):
         ib = 3 if gname == '3_8' else 0
 
         bqpkey = (integral.order, sd.bkey)
+        state.field.create_bqp(region.name, integral)
         bqp = state.field.qp_coors[bqpkey]
 
         basis = state.field.create_basis_context()
