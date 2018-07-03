@@ -104,7 +104,7 @@ class QuadraturePoints(Struct):
     ----------
     data : array_like
         The array of shape `(n_point, dim + 1)` of quadrature point
-        coordinates (first `dim` columns) and weights (the last column). 
+        coordinates (first `dim` columns) and weights (the last column).
     coors : array_like, optional
         Optionally, instead of using `data`, the coordinates and weights can
         be provided separately - `data` are then ignored.
@@ -166,7 +166,6 @@ class QuadraturePoints(Struct):
             else:
                 oo = get_actual_order('1_2', order1d)
                 qp1d = quadrature_tables['1_2'][oo]
-
                 weights = nm.outer(qp1d.weights, qp1d.weights)
 
                 nc = qp1d.coors.shape[0]
@@ -186,7 +185,7 @@ class QuadraturePoints(Struct):
                 weights = weights.ravel()
 
                 qp = QuadraturePoints(None, coors=coors, weights=weights)
-                qp.order = oo
+                qp.order = dim * oo
 
         return qp
 

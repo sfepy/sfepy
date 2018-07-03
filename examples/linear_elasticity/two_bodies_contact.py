@@ -104,11 +104,25 @@ def mesh_hook(mesh, mode):
     elif mode == 'write':
         pass
 
+def post_process(out, pb, state, extend=False):
+    from sfepy.base.base import Struct
+    from sfepy.discrete.fem import extend_cell_data
+
+    ev = pb.evaluate
+    gap = ev('dw_contact.i.Contact(contact.epss, v, u)',
+             mode='el_avg', term_mode='gap')
+    gap = extend_cell_data(gap, pb.domain, 'Contact', val=0.0, is_surface=True)
+    out['gap'] = Struct(name='output_data',
+                        mode='cell', data=gap, dofs=None)
+
+    return out
+
 filename_mesh = UserMeshIO(mesh_hook)
 
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
+    'post_process_hook' : 'post_process',
 }
 
 fields = {

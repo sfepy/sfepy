@@ -282,9 +282,7 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False,
         cells = region.get_cells(true_cells_only=False)
         ucells = nm.unique(cells)
 
-        dii = region.facets
-
-        if len(cells) != len(dii):
+        if len(cells) != len(region.facets):
             raise ValueError('region %s has an inner face!'
                              % region.name)
 
@@ -295,7 +293,7 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False,
             avg = 1.0
 
         for ic in range(data.shape[2]):
-            evals = nm.bincount(cells, weights=data[dii, 0, ic, 0],
+            evals = nm.bincount(cells, weights=data[:, 0, ic, 0],
                                 minlength=n_el)[ucells]
 
             edata[ucells, 0, ic, 0] = evals / avg
