@@ -33,6 +33,42 @@ def elems_q2t(el):
 
     return nm.ascontiguousarray(out)
 
+def triangulate(mesh, verbose=False):
+    """
+    Triangulate a 2D or 3D tensor product mesh: quadrilaterals->triangles,
+    hexahedrons->tetrahedrons.
+
+    Parameters
+    ----------
+    mesh : Mesh
+        The input mesh.
+
+    Returns
+    -------
+    mesh : Mesh
+        The triangulated mesh.
+    """
+    conns = None
+    for k, new_desc in [('3_8', '3_4'), ('2_4', '2_3')]:
+        if k in mesh.descs:
+            conns = mesh.get_conn(k)
+            break
+
+    if conns is not None:
+        nelo = conns.shape[0]
+        output('initial mesh: %d elements' % nelo, verbose=verbose)
+
+        new_conns = elems_q2t(conns)
+        nn = new_conns.shape[0] // nelo
+        new_cgroups = nm.repeat(mesh.cmesh.cell_groups, nn)
+
+        output('new mesh: %d elements' % new_conns.shape[0], verbose=verbose)
+        mesh = Mesh.from_data(mesh.name, mesh.coors,
+                              mesh.cmesh.vertex_groups,
+                              [new_conns], [new_cgroups], [new_desc])
+
+    return mesh
+
 def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
                 weights=None, bconstr=True,
                 volume_corr=False):
