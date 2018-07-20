@@ -574,21 +574,13 @@ supported. There are three types of arguments a term can have:
 - *user data* - anything, but user is responsible for passing them to the
   evaluation functions.
 
-Terms come in two flavors:
-
-- standard terms are subclasses of :class:`sfepy.terms.terms.Term`
-- *new* terms are subclasses of :class:`sfepy.terms.terms_new.NewTerm`
-
-As new terms are now not much more than a highly experimental proof of
-concept, we will focus on the standard terms here.
-
-The purpose of a standard term class is to implement a (vectorized)
-function that assembles the term contribution to residual/matrix and/or
-evaluates the term integral in elements of the term region simultaneously. Most
-such functions are currently implemented in C, but some terms are pure
-Python, vectorized using NumPy. A term with a C function needs to be
-able to extract the real data from its arguments and then pass those
-data to the C function.
+SfePy terms are subclasses of :class:`sfepy.terms.terms.Term`. The purpose of a
+term is to implement a (vectorized) function that assembles the term
+contribution to residual/matrix and/or evaluates the term integral in elements
+of the term region simultaneously. Most such functions are currently
+implemented in C, but some terms are pure Python, vectorized using NumPy. A
+term with a C function needs to be able to extract the real data from its
+arguments and then pass those data to the C function.
 
 Evaluation modes
 ^^^^^^^^^^^^^^^^
