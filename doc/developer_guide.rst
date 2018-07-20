@@ -575,12 +575,10 @@ supported. There are three types of arguments a term can have:
   evaluation functions.
 
 SfePy terms are subclasses of :class:`sfepy.terms.terms.Term`. The purpose of a
-term is to implement a (vectorized) function that assembles the term
+term is to implement a (vectorized) function that evaluates the term
 contribution to residual/matrix and/or evaluates the term integral in elements
-of the term region simultaneously. Most such functions are currently
-implemented in C, but some terms are pure Python, vectorized using NumPy. A
-term with a C function needs to be able to extract the real data from its
-arguments and then pass those data to the C function.
+of the term region. Many such functions are currently implemented in C, but
+some terms are pure Python, vectorized using NumPy.
 
 Evaluation modes
 ^^^^^^^^^^^^^^^^
