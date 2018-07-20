@@ -736,8 +736,8 @@ The default that most terms use is a list of all the geometries::
 
 In that case, the attribute needs not to be define explicitly.
 
-Example
-^^^^^^^
+Examples
+^^^^^^^^
 
 Let us now discuss the implementation of a simple weak term
 `dw_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is a
@@ -810,6 +810,93 @@ implemented as follows::
   - line 33: get reference element mapping corresponding to the virtual
     variable;
   - line 35: return the arguments for the function.
+
+A more complex term that involves an unknown variable and has two call modes,
+is `dw_s_dot_mgrad_s`, defined as :math:`\int_{\Omega} q \ul{y} \cdot \nabla p`
+in the`'grad_state'` mode or :math:`\int_{\Omega} p \ul{y} \cdot \nabla q` in
+the `'grad_virtual'` mode, where :math:`\ul{y}` is a vector material parameter,
+:math:`q` is a virtual variable, and :math:`p` is a state variable::
+
+    class ScalarDotMGradScalarTerm(Term):
+        r"""
+        Volume dot product of a scalar gradient dotted with a material vector
+        with a scalar.
+
+        :Definition:
+
+        .. math::
+            \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }
+            \int_{\Omega} p \ul{y} \cdot \nabla q
+
+        :Arguments 1:
+            - material : :math:`\ul{y}`
+            - virtual  : :math:`q`
+            - state    : :math:`p`
+
+        :Arguments 2:
+            - material : :math:`\ul{y}`
+            - state    : :math:`p`
+            - virtual  : :math:`q`
+        """
+        name = 'dw_s_dot_mgrad_s'
+        arg_types = (('material', 'virtual', 'state'),
+                     ('material', 'state', 'virtual'))
+        arg_shapes = [{'material' : 'D, 1',
+                       'virtual/grad_state' : (1, None),
+                       'state/grad_state' : 1,
+                       'virtual/grad_virtual' : (1, None),
+                       'state/grad_virtual' : 1}]
+        modes = ('grad_state', 'grad_virtual')
+
+        @staticmethod
+        def function(out, out_qp, geo, fmode):
+            status = geo.integrate(out, out_qp)
+            return status
+
+        def get_fargs(self, mat, var1, var2,
+                      mode=None, term_mode=None, diff_var=None, **kwargs):
+            vg1, _ = self.get_mapping(var1)
+            vg2, _ = self.get_mapping(var2)
+
+            if diff_var is None:
+                if self.mode == 'grad_state':
+                    geo = vg1
+                    bf_t = vg1.bf.transpose((0, 1, 3, 2))
+                    val_qp = self.get(var2, 'grad')
+                    out_qp = bf_t * dot_sequences(mat, val_qp, 'ATB')
+
+                else:
+                    geo = vg2
+                    val_qp = self.get(var1, 'val')
+                    out_qp = dot_sequences(vg2.bfg, mat, 'ATB') * val_qp
+
+                fmode = 0
+
+            else:
+                if self.mode == 'grad_state':
+                    geo = vg1
+                    bf_t = vg1.bf.transpose((0, 1, 3, 2))
+                    out_qp = bf_t * dot_sequences(mat, vg2.bfg, 'ATB')
+
+                else:
+                    geo = vg2
+                    out_qp = dot_sequences(vg2.bfg, mat, 'ATB') * vg1.bf
+
+                fmode = 1
+
+            return out_qp, geo, fmode
+
+Only interesting differences with respect to the previous example will by
+discussed:
+
+- the argument types and shapes (lines 23-29) have to be specified for all the
+  call modes (line 30)
+- the term function (lines 32-35) just integrates the element contributions, as
+  all the other calculations are done by the `get_fargs()` function.
+- the `get_fargs()` function (lines 37-68) contains:
+
+  - residual computation (lines 43-54) for both modes
+  - matrix computation (lines 57-66) for both modes
 
 Concluding remarks
 ^^^^^^^^^^^^^^^^^^
