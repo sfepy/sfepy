@@ -1355,6 +1355,13 @@ class FieldVariable(Variable):
 
         self.data[step] = data
 
+    def set_from_mesh_vertices(self, data):
+        """
+        Set the variable using values at the mesh vertices.
+        """
+        ndata = self.field.interp_v_vals_to_n_vals(data)
+        self.set_data(ndata)
+
     def set_from_function(self, fun, step=0):
         """
         Set the variable data (the vector of DOF values) using a function of
@@ -1791,13 +1798,6 @@ class FieldVariable(Variable):
                                     var_name=self.name, dofs=self.dofs)
 
         mesh.write(filename, io='auto', out=out)
-
-    def set_from_mesh_vertices(self, data):
-        """
-        Set the variable using values at the mesh vertices.
-        """
-        ndata = self.field.interp_v_vals_to_n_vals(data)
-        self.set_data(ndata)
 
     def has_same_mesh(self, other):
         """
