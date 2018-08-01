@@ -1355,6 +1355,23 @@ class FieldVariable(Variable):
 
         self.data[step] = data
 
+    def set_from_function(self, fun, step=0):
+        """
+        Set the variable data (the vector of DOF values) using a function of
+        space coordinates.
+
+        Parameters
+        ----------
+        fun : callable
+            The function of coordinates returning DOF values of shape
+            `(n_coor, n_components)`.
+        step : int, optional
+            The time history step, 0 (default) = current.
+        """
+        region = self.field.region
+        _, vv = self.field.set_dofs(fun, region, self.n_components)
+        self.set_data(vv.ravel(), step=step)
+
     def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
                          warn=False):
         """
