@@ -728,7 +728,7 @@ class Variables(Container):
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    def set_data_from_state(self, var_names, state, var_names_state):
+    def set_from_state(self, var_names, state, var_names_state):
         """
         Set variables with names in `var_names` from state variables with names
         in `var_names_state` using DOF values in the state vector `state`.
