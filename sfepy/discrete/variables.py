@@ -1375,8 +1375,7 @@ class FieldVariable(Variable):
         step : int, optional
             The time history step, 0 (default) = current.
         """
-        region = self.field.region
-        _, vv = self.field.set_dofs(fun, region, self.n_components)
+        _, vv = self.field.set_dofs(fun, self.field.region, self.n_components)
         self.set_data(vv.ravel(), step=step)
 
     def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
