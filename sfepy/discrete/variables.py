@@ -1341,7 +1341,7 @@ class FieldVariable(Variable):
             self.set_data(setter(*sargs, **skwargs))
             output('data of %s set by %s()' % (self.name, setter.name))
 
-    def set_data_from_qp(self, data_qp, integral, step=0):
+    def set_from_qp(self, data_qp, integral, step=0):
         """
         Set DOFs of variable using values in quadrature points
         corresponding to the given integral.
