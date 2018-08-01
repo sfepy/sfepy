@@ -728,7 +728,7 @@ class Variables(Container):
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    def set_data_from_state(self, var_names, state, var_names_state):
+    def set_from_state(self, var_names, state, var_names_state):
         """
         Set variables with names in `var_names` from state variables with names
         in `var_names_state` using DOF values in the state vector `state`.
@@ -1341,7 +1341,7 @@ class FieldVariable(Variable):
             self.set_data(setter(*sargs, **skwargs))
             output('data of %s set by %s()' % (self.name, setter.name))
 
-    def set_data_from_qp(self, data_qp, integral, step=0):
+    def set_from_qp(self, data_qp, integral, step=0):
         """
         Set DOFs of variable using values in quadrature points
         corresponding to the given integral.
@@ -1354,6 +1354,29 @@ class FieldVariable(Variable):
         self.indx = slice(0, len(data))
 
         self.data[step] = data
+
+    def set_from_mesh_vertices(self, data):
+        """
+        Set the variable using values at the mesh vertices.
+        """
+        ndata = self.field.interp_v_vals_to_n_vals(data)
+        self.set_data(ndata)
+
+    def set_from_function(self, fun, step=0):
+        """
+        Set the variable data (the vector of DOF values) using a function of
+        space coordinates.
+
+        Parameters
+        ----------
+        fun : callable
+            The function of coordinates returning DOF values of shape
+            `(n_coor, n_components)`.
+        step : int, optional
+            The time history step, 0 (default) = current.
+        """
+        _, vv = self.field.set_dofs(fun, self.field.region, self.n_components)
+        self.set_data(vv.ravel(), step=step)
 
     def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
                          warn=False):
@@ -1774,13 +1797,6 @@ class FieldVariable(Variable):
                                     var_name=self.name, dofs=self.dofs)
 
         mesh.write(filename, io='auto', out=out)
-
-    def set_from_mesh_vertices(self, data):
-        """
-        Set the variable using values at the mesh vertices.
-        """
-        ndata = self.field.interp_v_vals_to_n_vals(data)
-        self.set_data(ndata)
 
     def has_same_mesh(self, other):
         """

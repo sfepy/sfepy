@@ -574,7 +574,7 @@ The above computation could also be done in the customized IPython shell:
     In [31]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
     In [32]: svar = FieldVariable('sigma', 'parameter', sfield,
        ....:                      primary_var_name='(set-to-None)')
-    In [33]: svar.set_data_from_qp(stress, ivn)
+    In [33]: svar.set_from_qp(stress, ivn)
 
     In [34]: print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
     Horizontal tensile stress = 7.57220e+00 MPa/mm

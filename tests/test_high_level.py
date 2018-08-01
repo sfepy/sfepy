@@ -96,21 +96,51 @@ class Test(TestCommon):
         return ok
 
     def test_variables(self):
-        from sfepy.discrete import FieldVariable
+        from sfepy.discrete import FieldVariable, Integral
+
+        ok = True
 
         u = FieldVariable('u', 'parameter', self.field,
                           primary_var_name='(set-to-None)')
-
         u.set_constant(1.0)
-
         vec = u() # Nodal values.
 
-        ok = nm.allclose(vec, 1.0)
+        _ok = nm.allclose(vec, 1.0)
+        self.report('set constant:', _ok)
+        ok = _ok and ok
 
-        ## print u()
-        ## print u.get_vector() # Coefficient vector w.r.t. the field space basis.
-        ## print u(gamma1)
-        ## print u.get_vector(gamma2)
+        def fun(coors):
+            val = nm.empty_like(coors)
+            val[:, 0] = 2 * coors[:, 1] - coors[:, 0]
+            val[:, 1] = coors[:, 0] + 3 * coors[:, 1]
+            return val
+        u.set_from_function(fun)
+
+        coors = u.field.get_coor()
+        eu = u.evaluate_at(coors)
+
+        _ok = nm.allclose(eu, fun(coors), rtol=0.0, atol=1e-13)
+        self.report('set from function:', _ok)
+        ok = _ok and ok
+
+        integral = Integral('i', order=2)
+        gu_qp = u.evaluate(mode='grad', integral=integral)
+
+        # du_i/dx_j, i = column, j = row.
+        gu = nm.array([[-1.,  1.],
+                       [ 2.,  3.]])
+        _ok = nm.allclose(gu_qp, gu[None, None, ...], rtol=0.0, atol=1e-13)
+        self.report('set from function - gradient:', _ok)
+        ok = _ok and ok
+
+        u_qp = gu_qp[..., :, :1]
+        u.set_from_qp(u_qp, integral)
+        vu = u()
+
+        _ok = (nm.allclose(vu[::2], -1, rtol=0.0, atol=1e-13) and
+               nm.allclose(vu[1::2], 2, rtol=0.0, atol=1e-13))
+        self.report('set from qp:', _ok)
+        ok = _ok and ok
 
         return ok
 

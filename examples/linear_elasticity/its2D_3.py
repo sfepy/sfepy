@@ -49,7 +49,7 @@ def nodal_stress(out, pb, state, extend=False, integrals=None):
                              pb.domain.regions['Omega'])
     svar = FieldVariable('sigma', 'parameter', sfield,
                          primary_var_name='(set-to-None)')
-    svar.set_data_from_qp(stress, integrals['ivn'])
+    svar.set_from_qp(stress, integrals['ivn'])
 
     print('\n==================================================================')
     print('Given load = %.2f N' % -P)
