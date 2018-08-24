@@ -104,7 +104,7 @@ def main():
     if (filename_in == '-'):
         file_in = sys.stdin
     else:
-        file_in = open(filename_in, "r");
+        file_in = open(filename_in, "r")
 
     mesh = Mesh.from_file(filename_in)
 
@@ -142,7 +142,7 @@ def main():
         if (filename_out == '-'):
             file_out = sys.stdout
         else:
-            file_out = open(filename_out, "w");
+            file_out = open(filename_out, "w")
         for row in out:
             file_out.write('%d %d %d\n' % (row[0], row[1], row[2]))
         if (filename_out != '-'):
