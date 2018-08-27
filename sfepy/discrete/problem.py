@@ -412,7 +412,7 @@ class Problem(Struct):
         self.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
 
         self.ofn_trunk = get_default(output_filename_trunk,
-                                     io.get_trunk(self.domain.name))
+                                     op.basename(self.domain.name))
 
         self.set_output_dir(output_dir)
 
