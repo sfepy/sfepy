@@ -516,7 +516,7 @@ def recover_micro_hook(micro_filename, region, macro,
             for k, v in six.iteritems(macro):
                 local_macro[k] = v[ii, 0]
 
-            output.set_output(quiet=True if not verbose else False)
+            output.set_output(quiet=not(verbose))
             out = recovery_hook(pb, corrs, local_macro)
             output.output_function = output_fun
 
@@ -625,7 +625,7 @@ def recover_micro_hook_eps(micro_filename, region,
             for k, v in six.iteritems(const_values):
                 local_macro[k] = v
 
-            output.set_output(quiet=True if not verbose else False)
+            output.set_output(quiet=not(verbose))
             outs.append(recovery_hook(pb, corrs, local_macro))
             output.output_function = output_fun
             coors.append(local_coors)
