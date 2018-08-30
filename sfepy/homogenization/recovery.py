@@ -1,6 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 import os
+import time
 
 import numpy as nm
 
@@ -480,7 +481,7 @@ def save_recovery_region(mac_pb, rname, filename=None):
 def recover_micro_hook(micro_filename, region, macro,
                        naming_scheme='step_iel',
                        recovery_file_tag='',
-                       define_args=None):
+                       define_args=None, verbose=False):
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove('equations')
@@ -503,14 +504,21 @@ def recover_micro_hook(micro_filename, region, macro,
 
         format = get_print_info(pb.domain.mesh.n_el, fill='0')[1]
 
+        output('recovering microsctructures...')
+        tt = time.clock()
+        output_fun = output.output_function
+        output_level = output.level
         for ii, iel in enumerate(region.cells):
-            print('ii: %d, iel: %d' % (ii, iel))
+            output.level = output_level
+            output('micro: %d (el=%d)' % (ii, iel))
 
             local_macro = {}
             for k, v in six.iteritems(macro):
                 local_macro[k] = v[ii, 0]
 
+            output.set_output(quiet=not(verbose))
             out = recovery_hook(pb, corrs, local_macro)
+            output.output_function = output_fun
 
             if ii == 0:
                 new_keys = []
@@ -535,6 +543,8 @@ def recover_micro_hook(micro_filename, region, macro,
                 pb.save_state(filename, out=out,
                               file_per_var=fpv)
 
+        output('...done in %.2f s' % (time.clock() - tt))
+
         for jj in new_keys:
             lout = new_data[jj]
             macro[jj] = nm.zeros((nm.max(new_idxs) + 1, 1) + lout[0].shape,
@@ -547,7 +557,7 @@ def recover_micro_hook(micro_filename, region, macro,
 def recover_micro_hook_eps(micro_filename, region,
                            eval_var, nodal_values, const_values, eps0,
                            recovery_file_tag='',
-                           define_args=None):
+                           define_args=None, verbose=False):
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove('equations')
@@ -590,6 +600,12 @@ def recover_micro_hook_eps(micro_filename, region,
         # Recover region
         mic_coors = (mesh.coors - mesh.get_bounding_box()[0, :]) * eps0
         evfield = eval_var.field
+
+        output('recovering microsctructures...')
+        tt = time.clock()
+        output_fun = output.output_function
+        output_level = output.level
+
         for ii, c0 in enumerate(x0):
             local_macro = {'eps0': eps0}
             local_coors = mic_coors + c0
@@ -601,17 +617,22 @@ def recover_micro_hook_eps(micro_filename, region,
             if (nm.sum(aux) / no) > 1e-3:
                 continue
 
-            output('ii: %d' % ii)
+            output.level = output_level
+            output('micro: %d' % ii)
 
             for k, v in six.iteritems(nodal_values):
                 local_macro[k] = evfield.evaluate_at(local_coors, v)
             for k, v in six.iteritems(const_values):
                 local_macro[k] = v
 
+            output.set_output(quiet=not(verbose))
             outs.append(recovery_hook(pb, corrs, local_macro))
+            output.output_function = output_fun
             coors.append(local_coors)
             conn.append(mesh.get_conn(mesh.descs[0]) + ndoffset)
             ndoffset += mesh.n_nod
+
+    output('...done in %.2f s' % (time.clock() - tt))
 
     # Collect output variables
     outvars = {}
