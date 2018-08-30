@@ -71,6 +71,7 @@ def configuration(parent_package='', top_path=None):
         'edit_identifiers.py',
         'eval_ns_forms.py',
         'eval_tl_forms.py',
+        'extract_edges.py',
         'extract_surface.py',
         'gen_gallery.py',
         'gen_iga_patch.py',
