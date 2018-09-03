@@ -1352,20 +1352,28 @@ class Term(Struct):
 
             emode = 'eval' if mode == 'el_eval' else mode
             _args = tuple(args) + (emode, term_mode, diff_var)
-            fargs = self.call_get_fargs(_args, kwargs)
 
             shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
-            if dtype == nm.float64:
-                val, status = self.eval_real(shape, fargs, mode, term_mode,
-                                             **kwargs)
-
-            elif dtype == nm.complex128:
-                val, status = self.eval_complex(shape, fargs, mode, term_mode,
-                                                **kwargs)
+            if shape[0] == 0:
+                val = nm.zeros(shape, dtype=dtype)
+                status = 0
 
             else:
-                raise ValueError('unsupported term dtype! (%s)' % dtype)
+                fargs = self.call_get_fargs(_args, kwargs)
+
+                if dtype == nm.float64:
+                    val, status = self.eval_real(shape, fargs, mode,
+                                                 term_mode,
+                                                 **kwargs)
+
+                elif dtype == nm.complex128:
+                    val, status = self.eval_complex(shape, fargs, mode,
+                                                    term_mode,
+                                                    **kwargs)
+
+                else:
+                    raise ValueError('unsupported term dtype! (%s)' % dtype)
 
             val *= self.sign
             out = (val,)
@@ -1382,9 +1390,6 @@ class Term(Struct):
             args = self.get_args(**kwargs)
             self.check_shapes(*args)
 
-            _args = tuple(args) + (mode, term_mode, diff_var)
-            fargs = self.call_get_fargs(_args, kwargs)
-
             n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
             n_row = n_cr * n_enr
 
@@ -1397,17 +1402,27 @@ class Term(Struct):
 
                 shape = (n_elr, 1, n_row, n_col)
 
-            if varr.dtype == nm.float64:
-                vals, status = self.eval_real(shape, fargs, mode, term_mode,
-                                              diff_var, **kwargs)
-
-            elif varr.dtype == nm.complex128:
-                vals, status = self.eval_complex(shape, fargs, mode, term_mode,
-                                                 diff_var, **kwargs)
+            if shape[0] == 0:
+                vals = nm.zeros(shape, dtype=varr.dtype)
+                status = 0
 
             else:
-                raise ValueError('unsupported term dtype! (%s)'
-                                 % varr.dtype)
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.call_get_fargs(_args, kwargs)
+
+                if varr.dtype == nm.float64:
+                    vals, status = self.eval_real(shape, fargs, mode,
+                                                  term_mode,
+                                                  diff_var, **kwargs)
+
+                elif varr.dtype == nm.complex128:
+                    vals, status = self.eval_complex(shape, fargs, mode,
+                                                     term_mode,
+                                                     diff_var, **kwargs)
+
+                else:
+                    raise ValueError('unsupported term dtype! (%s)'
+                                     % varr.dtype)
 
             if not isinstance(vals, tuple):
                 vals *= self.sign
