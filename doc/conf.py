@@ -32,6 +32,7 @@ sys.path.append(os.path.abspath('sphinxext'))
 
 # This is needed for gen_term_table.
 sys.path.append(os.path.abspath('../script'))
+sys.path.append(os.path.abspath('../'))  # why did I have to add this?
 
 import sfepy
 
