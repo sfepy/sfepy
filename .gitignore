@@ -14,7 +14,7 @@ patches/
 issues/
 .spkg
 *.vtk
-*.mesh
+#*.mesh
 *.txt
 *.pdf
 *.png
@@ -56,4 +56,5 @@ MANIFEST
 # LK
 #
 .idea
-#
+# zitkat ignores for playground and draft
+/sfepy/discrete/dg/DG_Levy/
