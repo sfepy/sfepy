@@ -57,7 +57,10 @@ Things to check before a release
 
 #. create final tarball
 
-   * update doc/release_notes.rst
+   * update doc/release_notes.rst, with the help of::
+
+     $ python script/gen_release_notes.py 2018.2
+
    * update doc/news.rst, doc/archived_news.rst
    * change version number (sfepy/version.py) so that previous release
      tarball is not overwritten!

@@ -77,6 +77,7 @@ def configuration(parent_package='', top_path=None):
         'gen_iga_patch.py',
         'gen_lobatto1d_c.py',
         'gen_mesh_prev.py',
+        'gen_release_notes.py',
         'gen_solver_table.py',
         'gen_term_table.py',
         'plot_condition_numbers.py',
