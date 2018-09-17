@@ -1,5 +1,86 @@
 # created: 20.07.2007 (-1)
 
+.. _2018.2-2018.3:
+
+from 2018.2 to 2018.3
+=====================
+
+- merge branch 'update-contacts'
+
+  - update ContactTerm.get_fargs() to use field approximation for basis
+    gradient
+  - new ContactInfo.__init__(), .update(), ContactTerm.get_contact_info(),
+    update ContactTerm.get_fargs() to use ContactInfo
+  - update ContactTerm.get_fargs() to return gap function in evaluation mode
+
+    - update .call_function(), .eval_real()
+    - rename .function() -> .function_weak()
+    - new .integrate(), .function(), .get_eval_shape()
+
+  - fix surface region case in extend_cell_data()
+  - two_bodies_contact.py: save gap function in new post_process()
+  - fix actual order of tensor product rules in QuadraturePoints
+  - plot_quadrature.py: print info in _get_bqp()
+
+- merge branch 'misc-updates'
+
+  - new structify()
+  - new triangulate()
+  - script/convert_mesh.py: use triangulate()
+
+- merge branch 'update-term-implementation-docs'
+
+  - docs: remove NewTerm references from developer guide
+  - docs: update text
+  - docs: describe dw_s_dot_mgrad_s term implementation in developer guide
+
+- merge branch 'fix-vtk-write'
+
+  - fix tensor reshaping in VTKMeshIO.write() for single cell meshes
+
+- merge branch 'set-variable-from-function'
+
+  - new FieldVariable.set_from_function()
+  - move FieldVariable.set_from_mesh_vertices()
+  - rename FieldVariable.set_data_from_qp() -> .set_from_qp()
+  - rename Variables.set_data_from_state() -> .set_from_state()
+  - update for renames
+  - test FieldVariable.set_from_qp(), .set_from_function() in test_variables()
+  - shorten FieldVariable.set_from_function()
+
+- merge pull request #463 from vlukes/fix_extract_surface
+
+  - fix extract_surface.py: remove useless semicolon
+
+- merge pull request #462 from vlukes/fix_ofn_trunk
+
+  - fix Problem.setup_output(): allow dots in domain name
+
+- merge pull request #464 from vlukes/new_extract_edges
+
+  - new_extract_edges.py: extract outline edges of a given mesh
+  - update setup.py: add extract_edges.py to aux_scripts list
+
+- merge pull request #461 from vlukes/piezo_homog_example
+
+  - new example - homogenization of a piezoelectric heterogeneous structure
+  - update recover_micro_hook*(): suppress outputs when recovering
+    microstructures
+
+- merge pull request #465 from vlukes/update_recovery
+
+  - update recovery_micro_hook*()
+
+- merge branch 'update-term-for-no-cells'
+
+  - update Term.evaluate() for no cells in region - do not call term functions
+
+- merge branch 'gen-release-notes'
+
+  - new script/gen_release_notes.py
+  - docs: update release tasks
+  - add gen_release_notes.py into scripts to install in setup.py
+
 .. _2018.1-2018.2:
 
 from 2018.1 to 2018.2

@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **19.05.2017** Version 2017.2 released (simplified and unified implementation
+  of some homogenized coefficients, support for saving custom structured data to
+  HDF5 files, new tutorial on preparing meshes using FreeCAD/OpenSCAD and Gmsh,
+  etc.), see :ref:`release notes <2017.1-2017.2>`.
+
 * **28.02.2017** Version 2017.1 released (spline-box parametrization of an
   arbitrary field, conda-forge recipe, fixes for Python 3.6,
   etc.), see :ref:`release notes <2016.4-2017.1>`.
