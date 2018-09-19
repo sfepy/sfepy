@@ -1,0 +1,86 @@
+{
+    "commit_hash": "a4350fb811a383520aceb262ec6a22d4d5e04e5f",
+    "date": 1511857268000,
+    "ended_at": {
+        "SfePy_sample.SfePySample.mem_domain_creation": 1526028690000,
+        "SfePy_sample.SfePySample.peakmem_domain_creation": 1526028704000,
+        "SfePy_sample.SfePySample.time_domain_creation": 1526028722000
+    },
+    "env_name": "conda-py3.6-Cython-matplotlib-numpy-pyparsing-pytables-scipy-sympy",
+    "params": {
+        "Cython": "",
+        "arch": "x86_64",
+        "cpu": "Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz",
+        "machine": "pollux.civ.zcu.cz",
+        "matplotlib": "",
+        "numpy": "",
+        "os": "macOS HighSierra 10.13",
+        "pyparsing": "",
+        "pytables": "",
+        "python": "3.6",
+        "ram": "8GB",
+        "scipy": "",
+        "sympy": ""
+    },
+    "profiles": {},
+    "python": "3.6",
+    "requirements": {
+        "Cython": "",
+        "matplotlib": "",
+        "numpy": "",
+        "pyparsing": "",
+        "pytables": "",
+        "scipy": "",
+        "sympy": ""
+    },
+    "results": {
+        "SfePy_sample.SfePySample.mem_domain_creation": {
+            "params": [
+                [
+                    "10",
+                    "50",
+                    "100"
+                ]
+            ],
+            "result": [
+                704,
+                704,
+                704
+            ]
+        },
+        "SfePy_sample.SfePySample.peakmem_domain_creation": {
+            "params": [
+                [
+                    "10",
+                    "50",
+                    "100"
+                ]
+            ],
+            "result": [
+                50769920,
+                119496704,
+                615710720
+            ]
+        },
+        "SfePy_sample.SfePySample.time_domain_creation": {
+            "params": [
+                [
+                    "10",
+                    "50",
+                    "100"
+                ]
+            ],
+            "result": [
+                0.023235099999999998,
+                1.4608799999999995,
+                11.668520000000001
+            ]
+        }
+    },
+    "started_at": {
+        "SfePy_sample.SfePySample.mem_domain_creation": 1526028675000,
+        "SfePy_sample.SfePySample.peakmem_domain_creation": 1526028690000,
+        "SfePy_sample.SfePySample.time_domain_creation": 1526028704000
+    },
+    "version": 1
+}
