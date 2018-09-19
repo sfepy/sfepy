@@ -1,0 +1,393 @@
+{
+    "benchmarks": {
+        "SfePy_sample.SfePySample.mem_domain_creation": {
+            "code": "def mem_domain_creation(self, dim):\n    return SfePySample.domain_creation(self, dim)\n",
+            "name": "SfePy_sample.SfePySample.mem_domain_creation",
+            "param_names": [
+                "Shape dim"
+            ],
+            "params": [
+                [
+                    "10",
+                    "50",
+                    "100"
+                ]
+            ],
+            "pretty_name": "SfePy_sample.SfePySample.mem_domain_creation",
+            "timeout": 120,
+            "type": "memory",
+            "unit": "bytes"
+        },
+        "SfePy_sample.SfePySample.peakmem_domain_creation": {
+            "code": "def peakmem_domain_creation(self, dim):\n    return SfePySample.domain_creation(self, dim)\n",
+            "name": "SfePy_sample.SfePySample.peakmem_domain_creation",
+            "param_names": [
+                "Shape dim"
+            ],
+            "params": [
+                [
+                    "10",
+                    "50",
+                    "100"
+                ]
+            ],
+            "pretty_name": "SfePy_sample.SfePySample.peakmem_domain_creation",
+            "timeout": 120,
+            "type": "peakmemory",
+            "unit": "bytes"
+        },
+        "SfePy_sample.SfePySample.time_domain_creation": {
+            "code": "def time_domain_creation(self, dim):\n    SfePySample.domain_creation(self, dim)\n",
+            "goal_time": 2.0,
+            "name": "SfePy_sample.SfePySample.time_domain_creation",
+            "number": 0,
+            "param_names": [
+                "Shape dim"
+            ],
+            "params": [
+                [
+                    "10",
+                    "50",
+                    "100"
+                ]
+            ],
+            "pretty_name": "SfePy_sample.SfePySample.time_domain_creation",
+            "repeat": 0,
+            "timeout": 120,
+            "type": "time",
+            "unit": "seconds"
+        }
+    },
+    "graph_param_list": [
+        {
+            "Cython": "",
+            "arch": "x86_64",
+            "branch": "master",
+            "cpu": "Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz",
+            "machine": "pollux.civ.zcu.cz",
+            "matplotlib": "",
+            "numpy": "",
+            "os": "macOS HighSierra 10.13",
+            "pyparsing": "",
+            "pytables": "",
+            "python": "3.6",
+            "ram": "8GB",
+            "scipy": "",
+            "sympy": ""
+        }
+    ],
+    "hash_length": 8,
+    "machines": {
+        "pollux.civ.zcu.cz": {
+            "arch": "x86_64",
+            "cpu": "Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz",
+            "machine": "pollux.civ.zcu.cz",
+            "os": "macOS HighSierra 10.13",
+            "ram": "8GB",
+            "version": 1
+        }
+    },
+    "pages": [
+        [
+            "",
+            "Grid view",
+            "Display as a agrid"
+        ],
+        [
+            "summarylist",
+            "List view",
+            "Display as a list"
+        ],
+        [
+            "regressions",
+            "Show regressions",
+            "Display information about recent regressions"
+        ]
+    ],
+    "params": {
+        "Cython": [
+            ""
+        ],
+        "arch": [
+            "x86_64"
+        ],
+        "branch": [
+            "master"
+        ],
+        "cpu": [
+            "Intel(R) Core(TM) i7-4750HQ CPU @ 2.00GHz"
+        ],
+        "machine": [
+            "pollux.civ.zcu.cz"
+        ],
+        "matplotlib": [
+            ""
+        ],
+        "numpy": [
+            ""
+        ],
+        "os": [
+            "macOS HighSierra 10.13"
+        ],
+        "pyparsing": [
+            ""
+        ],
+        "pytables": [
+            ""
+        ],
+        "python": [
+            "3.6"
+        ],
+        "ram": [
+            "8GB"
+        ],
+        "scipy": [
+            ""
+        ],
+        "sympy": [
+            ""
+        ]
+    },
+    "project": "SfePy",
+    "project_url": "http://sfepy.org/",
+    "revision_to_date": {
+        "614": 1236002065000,
+        "725": 1242042570000,
+        "745": 1242394663000,
+        "822": 1246609064000,
+        "844": 1248174749000,
+        "868": 1250165006000,
+        "893": 1251803225000,
+        "909": 1252054534000,
+        "1006": 1259011353000,
+        "1026": 1259254794000,
+        "1053": 1263585948000,
+        "1100": 1264758730000,
+        "1125": 1265298540000,
+        "1156": 1265826931000,
+        "1218": 1267461791000,
+        "1232": 1266841146000,
+        "1382": 1273485344000,
+        "1493": 1276242354000,
+        "1656": 1281114255000,
+        "1676": 1281424868000,
+        "1895": 1290174365000,
+        "1939": 1291225910000,
+        "1951": 1291632236000,
+        "2052": 1295339408000,
+        "2126": 1298560761000,
+        "2198": 1300954750000,
+        "2299": 1305723350000,
+        "2336": 1306827203000,
+        "2452": 1310466945000,
+        "2539": 1312978064000,
+        "2710": 1318594259000,
+        "2813": 1323080924000,
+        "2917": 1326794808000,
+        "3049": 1330367280000,
+        "3162": 1333547409000,
+        "3232": 1338294775000,
+        "3365": 1347482884000,
+        "3391": 1348235409000,
+        "3429": 1350057629000,
+        "3493": 1353518418000,
+        "3559": 1361984488000,
+        "3637": 1366630399000,
+        "3697": 1369227305000,
+        "3701": 1369411424000,
+        "3851": 1379424765000,
+        "3871": 1379511655000,
+        "3939": 1383922581000,
+        "3956": 1384957425000,
+        "3970": 1385122088000,
+        "4002": 1387274899000,
+        "4104": 1392815078000,
+        "4144": 1393335175000,
+        "4306": 1400841345000,
+        "4449": 1411653009000,
+        "4501": 1417170488000,
+        "4622": 1424966852000,
+        "4851": 1432912161000,
+        "5099": 1443000524000,
+        "5169": 1448962488000,
+        "5239": 1456316568000,
+        "5342": 1463036538000,
+        "5520": 1475219115000,
+        "5568": 1478261805000,
+        "5574": 1478685309000,
+        "5613": 1481100651000,
+        "5660": 1488275069000,
+        "5695": 1490703268000,
+        "5742": 1492608788000,
+        "5793": 1495180215000,
+        "5806": 1496396178000,
+        "5905": 1501005200000,
+        "5962": 1505822351000,
+        "5982": 1507034942000,
+        "6075": 1511857268000,
+        "6134": 1513605759000,
+        "6155": 1514547554000,
+        "6157": 1514589477000,
+        "6198": 1516804052000,
+        "6305": 1520283198000,
+        "6311": 1520327994000,
+        "6369": 1524660914000
+    },
+    "revision_to_hash": {
+        "614": "babf3896451a58d7674d0673f804c37bef45ef88",
+        "725": "16ceef3987b8282dad8bf90645a3b786d9fca57f",
+        "745": "1f80c411770ccec6d54e187aab2cbe9ecd684a67",
+        "822": "61670abb13d6d98b96d501ba83946d39c89d85b5",
+        "844": "a5fe8920167bd2cb45c4cddb7ad9e54dc4a48fee",
+        "868": "ec072f400f30e6c4919ba471fd03f652376d100d",
+        "893": "0d6a83714d6f479b8c5c9afde791a9432b45c7ed",
+        "909": "6f754892e77359602dbec3181341d4c7b533c5ba",
+        "1006": "bf7720fa67f312dafed263fe127e4e41cb51035e",
+        "1026": "a81f8a39f9f53f024efe10297618a1a9e68822be",
+        "1053": "123e354daa40257238a9d592b9a6ffcca7f05708",
+        "1100": "55d6553de38e22608743c98c2bb63420b8c216c4",
+        "1125": "c0e243c9f62bfeead4ba19fb3d4962385af24cd8",
+        "1156": "b58a3434567034e4222661db799631beb77fdde4",
+        "1218": "7517595f8ce848ec5c0d3d21ce4265ed9fa6c6ef",
+        "1232": "4f7e3c7d9fcb03f9de13166f1af206a918f90646",
+        "1382": "d72875df9ae6464782b579aff1a05980d111384d",
+        "1493": "74a0457a3546df21c675e84844ecd36cdc5df4d5",
+        "1656": "142b524322b1aba1dfba48772e29479f45cbca6d",
+        "1676": "571558fd68636d5c4a967f6599e71dc783cf0779",
+        "1895": "1428f6d9d1a061c1432ea997127e650cd2266c91",
+        "1939": "e3847d639501ed1b5187b26b765a2df54677121d",
+        "1951": "aeaa391ba4e7e48626b7e964ce80f883a10d9c35",
+        "2052": "654a4430387bd97483598ac21327fb98baf20649",
+        "2126": "9a891b28044a52a9862871612822c609e18e711f",
+        "2198": "0e23c4c196f4f62ed2cb882f48fc271dfa854407",
+        "2299": "e0f0418e52ad9764433daa75d58121d860e2f653",
+        "2336": "ffafeeb8879958be9ed1723274f3c2e6108e1e2e",
+        "2452": "9c35f40fc02ba59fccc873bdbb43c74bdf99c8c0",
+        "2539": "61b3f653dcf4ebe1e162072c4ca9501817291b1d",
+        "2710": "4b695d85ce91c09bc5588b20f99e0c1cbc9ebc78",
+        "2813": "bf2c5f7b13aa63abfb856ed284a09d22b927422a",
+        "2917": "a717d74a940ebca7fd40a0dd5ab648bf9c5ce48b",
+        "3049": "41bb3ef1b61545e8854af7e9e58cd4071bd34fdc",
+        "3162": "4e02bb655b27c0b164fef9e64cacffb1eafd34a8",
+        "3232": "2e09e83dc9b2534e214637fef13a6f581899a9c9",
+        "3365": "49cf9c654ed66495a0da610637fc963a7451511a",
+        "3391": "83c51c04b035d20f980dfd86b9c6ff3bd55144b8",
+        "3429": "d7896dec589116bd259f32ccbde41bfbf07ad59f",
+        "3493": "e6e8ad518411f6d7c94828833bb37267a3c39316",
+        "3559": "e3fb7f2facd9a54b893a843e1d912b58d16dc5fc",
+        "3637": "cc5c2f5fccc0081b96cde65d85839278bdc8d574",
+        "3697": "c38c998e28e057f44585441b60a50d0b22dc313c",
+        "3701": "0366aa825fa72227a543621d044c7f0b5a860525",
+        "3851": "1c90621def119b65aef6b1c993e3e638f148793e",
+        "3871": "c8d29b04a2b6927e240725113a01c17208cbe2a9",
+        "3939": "7e9ebfe8a58c38cbb568fddef3776a55ee51021f",
+        "3956": "89bded8806867458754bebd96aa9f43cf98679d1",
+        "3970": "ece0b0a4b8abf600a2994bff5e854765a15b67a8",
+        "4002": "772a56f1d4c5fbe7b4a063516b4a43a3f4ac5819",
+        "4104": "bb63f3aef8e1ad1c22e0bd472a92bc5c31c58bcc",
+        "4144": "cf2320e60327e6da01721fe592de780e2fce764c",
+        "4306": "fa0415ede7102feae5d2633690ab71dad2941abc",
+        "4449": "ba6679161c62472c31dbc93f4d30eb5c0cee478f",
+        "4501": "99e8a8df2345ce1f796cfc8b1e9f299328743263",
+        "4622": "77fad3ba4b8c5c2d88f593df375ae0a1b1e5fd35",
+        "4851": "eeb4399d217f6696c0e7545d4be31aad720ad1f1",
+        "5099": "e06d521fb5ad54ea26d758cd1611861a3918f5a0",
+        "5169": "a0b5a813ad9bdc2ba2a4bbcb598b9feb830b8d09",
+        "5239": "ec8f05440577a054f5d139251f8f997703f72b23",
+        "5342": "f71404a3fa57ecf926fd786a617e8da808dc147c",
+        "5520": "6874b37576db0810b81db1ba0905a3db5bc77eba",
+        "5568": "ec6e35ce7018e36691c29daa4f4d118f65e8c427",
+        "5574": "9e863a59907092867ad16db0a68b6c1267a8e2c9",
+        "5613": "1f34fc20a5fc6c245c9e0938be4ddc127c581401",
+        "5660": "8f4f526eeeb993563c9113c4dd6682659475e083",
+        "5695": "8eb6494e408e9f5d543ecc2df9f995bbb3aa9e2b",
+        "5742": "7d27effefa4338073f37ab42efacb54c14a8ff53",
+        "5793": "ab3f85b7f446ccc8c18800243440ba98e3576a9a",
+        "5806": "75d5d066bd9bced9883bc30e40bbf062f1aeae6e",
+        "5905": "4e3631c6c29d76a74947e23966df6e573c6824dd",
+        "5962": "f1c2278bf2ced7ae49f8c085715147c1c150121a",
+        "5982": "3b354aba46f82e63a74eb43b064874dbcedd1864",
+        "6075": "a4350fb811a383520aceb262ec6a22d4d5e04e5f",
+        "6134": "8594e198c035215d144cda84e15017f6881ac294",
+        "6155": "4dd3c4891ca0cb69c7497a5bd63f0928d00b6f96",
+        "6157": "d7f01f6a22af3f471b49b3fd777611a19e9a18c9",
+        "6198": "3902a47575f490c0703533349f5c82ef6ef4bb0a",
+        "6305": "4fb618dd056e9400f55ebfbda533314b3782ae73",
+        "6311": "4da6f2a4a87c44869ad7016686ccddc1e75bb845",
+        "6369": "54966c548296930ff123ad3fdedec0c12fe111a0"
+    },
+    "show_commit_url": "http://github.com/sfepy/sfepy/commit/",
+    "tags": {
+        "basic_install_done": 745,
+        "branch_band_gaps_he": 3162,
+        "branch_cbases": 1125,
+        "branch_cmesh": 3701,
+        "branch_contact_planes": 3637,
+        "branch_cython": 2710,
+        "branch_discontinuous": 2052,
+        "branch_dual_mesh": 1676,
+        "branch_easier_terms": 2452,
+        "branch_equation_sequence_solver": 3956,
+        "branch_examples": 1100,
+        "branch_field_shape": 4002,
+        "branch_functions": 893,
+        "branch_hierarchic": 3391,
+        "branch_interp": 1156,
+        "branch_linearizer": 2917,
+        "branch_new_terms": 2299,
+        "branch_ori": 1939,
+        "branch_perfusion": 1053,
+        "branch_porous": 868,
+        "branch_regions": 3851,
+        "branch_semismooth": 1232,
+        "branch_shape": 1026,
+        "branch_split_fem": 4104,
+        "branch_state": 1895,
+        "branch_surfvol": 3429,
+        "branch_terms": 1493,
+        "branch_ulf": 909,
+        "it_works!": 2126,
+        "release_2009.1": 614,
+        "release_2009.2": 725,
+        "release_2009.3": 844,
+        "release_2009.4": 1006,
+        "release_2010.1": 1218,
+        "release_2010.2": 1382,
+        "release_2010.3": 1656,
+        "release_2010.4": 1951,
+        "release_2011.1": 2198,
+        "release_2011.2": 2336,
+        "release_2011.3": 2539,
+        "release_2011.4": 2813,
+        "release_2012.1": 3049,
+        "release_2012.2": 3232,
+        "release_2012.3": 3365,
+        "release_2012.4": 3493,
+        "release_2013.1": 3559,
+        "release_2013.2": 3697,
+        "release_2013.3": 3871,
+        "release_2013.4": 3970,
+        "release_2014.1": 4144,
+        "release_2014.2": 4306,
+        "release_2014.3": 4449,
+        "release_2014.4": 4501,
+        "release_2015.1": 4622,
+        "release_2015.2": 4851,
+        "release_2015.3": 5099,
+        "release_2015.4": 5169,
+        "release_2016.1": 5239,
+        "release_2016.2": 5342,
+        "release_2016.3": 5520,
+        "release_2016.3.1": 5568,
+        "release_2016.3.2": 5574,
+        "release_2016.4": 5613,
+        "release_2017.1": 5660,
+        "release_2017.2": 5793,
+        "release_2017.3": 5962,
+        "release_2017.4": 6155,
+        "release_2017.4.1": 6157,
+        "release_2018.1": 6311,
+        "simplify_integrals": 3939,
+        "windows_install": 822
+    }
+}

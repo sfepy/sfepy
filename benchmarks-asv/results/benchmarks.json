@@ -1,0 +1,60 @@
+{
+    "SfePy_sample.SfePySample.mem_domain_creation": {
+        "code": "def mem_domain_creation(self, dim):\n    return SfePySample.domain_creation(self, dim)\n",
+        "name": "SfePy_sample.SfePySample.mem_domain_creation",
+        "param_names": [
+            "Shape dim"
+        ],
+        "params": [
+            [
+                "10",
+                "50",
+                "100"
+            ]
+        ],
+        "pretty_name": "SfePy_sample.SfePySample.mem_domain_creation",
+        "timeout": 120,
+        "type": "memory",
+        "unit": "bytes"
+    },
+    "SfePy_sample.SfePySample.peakmem_domain_creation": {
+        "code": "def peakmem_domain_creation(self, dim):\n    return SfePySample.domain_creation(self, dim)\n",
+        "name": "SfePy_sample.SfePySample.peakmem_domain_creation",
+        "param_names": [
+            "Shape dim"
+        ],
+        "params": [
+            [
+                "10",
+                "50",
+                "100"
+            ]
+        ],
+        "pretty_name": "SfePy_sample.SfePySample.peakmem_domain_creation",
+        "timeout": 120,
+        "type": "peakmemory",
+        "unit": "bytes"
+    },
+    "SfePy_sample.SfePySample.time_domain_creation": {
+        "code": "def time_domain_creation(self, dim):\n    SfePySample.domain_creation(self, dim)\n",
+        "goal_time": 2.0,
+        "name": "SfePy_sample.SfePySample.time_domain_creation",
+        "number": 0,
+        "param_names": [
+            "Shape dim"
+        ],
+        "params": [
+            [
+                "10",
+                "50",
+                "100"
+            ]
+        ],
+        "pretty_name": "SfePy_sample.SfePySample.time_domain_creation",
+        "repeat": 0,
+        "timeout": 120,
+        "type": "time",
+        "unit": "seconds"
+    },
+    "version": 1
+}
