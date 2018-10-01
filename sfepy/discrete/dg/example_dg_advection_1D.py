@@ -6,7 +6,7 @@ from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO
 
 # local import
-from dg_terms import AdvFluxTerm, AdvIntTerm
+from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
 from dg_equation import Equation
 from dg_tssolver import TSSolver
 
@@ -19,8 +19,8 @@ mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
 a = 1.2
-IntT = AdvIntTerm(mesh, a)
-FluxT = AdvFluxTerm(mesh, a)
+IntT = AdvIntDGTerm(mesh, a)
+FluxT = AdvFluxDGTerm(mesh, a)
 eq = Equation((IntT, FluxT))
 tss = TSSolver(eq, 0)
 tss.solve(0, 1, 10)
