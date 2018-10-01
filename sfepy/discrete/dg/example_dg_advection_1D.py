@@ -8,6 +8,7 @@ from sfepy.discrete.fem.meshio import UserMeshIO
 # local import
 from dg_terms import AdvFluxTerm, AdvIntTerm
 from dg_equation import Equation
+from dg_tssolver import TSSolver
 
 n_nod = 11
 coors = nm.linspace(0.0, 1.0, n_nod).reshape((n_nod, 1))
@@ -21,5 +22,5 @@ a = 1.2
 IntT = AdvIntTerm(mesh, a)
 FluxT = AdvFluxTerm(mesh, a)
 eq = Equation((IntT, FluxT))
-A = eq.assemble()
-print A
+tss = TSSolver(eq, 0)
+tss.solve(0, 1, 10)
