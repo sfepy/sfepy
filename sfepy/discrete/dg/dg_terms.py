@@ -1,7 +1,7 @@
 import numpy as nm
 
 
-class Term:
+class DGTerm:
 
     def __init__(self, mesh):
         self.mesh = mesh
@@ -14,15 +14,17 @@ class Term:
             asm_obj[iels] = asm_obj[iels] + val
 
 
-class AdvIntTerm(Term):
-
+class AdvIntDGTerm(DGTerm):
+    # TODO try inheritigng directly from Term?
     def __init__(self, mesh, a):
-        Term.__init__(self, mesh)
+        DGTerm.__init__(self, mesh)
         self.a = a
         self.vvar = "v"
         self.diff_var = "u"
 
-    def evaluate(self, mode="weak", diff_var="u"):
+    def evaluate(self, mode="weak", diff_var="u",
+                 standalone=True, ret_status=False, **kwargs):
+        # TODO use evaluate from super class, move all calculation to get_fargs() and function()
         if diff_var == self.diff_var:
             # so far only for approx of order 0
             val = (self.mesh.coors[1:] - self.mesh.coors[:-1]).T  # integral over element with constant test
@@ -37,19 +39,22 @@ class AdvIntTerm(Term):
         return val, iels
 
 
-class AdvFluxTerm(Term):
+class AdvFluxDGTerm(DGTerm):
 
     def __init__(self, mesh, a):
-        Term.__init__(self, mesh)
+        DGTerm.__init__(self, mesh)
         self.a = a
         self.vvar = None
         self.diff_var = None
 
-    def evaluate(self, mode="weak", diff_var=None, *args):
+    def evaluate(self, mode="weak", diff_var=None,
+                 standalone=True, ret_status=False, **kwargs):
+
+        u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
             # so far only for approx of order 0
-            val = nm.ones((len(self.mesh.coors)-1, 1)) * self.a + \
-                  nm.ones((len(self.mesh.coors) - 1, 1)) * self.a
+            val = nm.ones((len(self.mesh.coors)-1, 1)) * self.a * u[:-1] + \
+                  nm.ones((len(self.mesh.coors) - 1, 1)) * self.a * u[1:]
             # TODO values of flux terms are functions of solution on previous time step,
             # how to pas these values to the term?
             iels = nm.arange(len(self.mesh.coors) - 1)  # just fill the vector

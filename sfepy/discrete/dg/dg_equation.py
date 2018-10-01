@@ -2,7 +2,7 @@
 # then assembling the matrix, or maybe use the equation from sfepy? hm?
 
 import numpy as nm
-from dg_terms import Term
+from dg_terms import DGTerm
 
 
 class Equation:
@@ -12,10 +12,10 @@ class Equation:
         if len(terms) > 0:
             self.mesh = terms[0].mesh
 
-    def evaluate(self, mode="weak", dw_mode="vector", asm_obj=None, diff_var=None):
+    def evaluate(self, mode="weak", dw_mode="vector", asm_obj=None, diff_var=None, **kwargs):
 
         for term in self.terms:
-            val, iels = term.evaluate(diff_var=diff_var)
+            val, iels = term.evaluate(diff_var=diff_var, **kwargs)
             term.assemble_to(asm_obj, val, iels, mode=dw_mode)
 
         return asm_obj
