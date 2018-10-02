@@ -16,7 +16,7 @@ class TSSolver:
         self.initial_cond = ic
 
     def solve(self, t0, tend, tsteps=10):
-        print("Running testing solver: it does not solve anything, only tests shape and types of data!")
+        print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
         # TODO how to get number of cells from mesh?
         A = nm.zeros((len(self.mesh.coors)-1, len(self.mesh.coors)-1), dtype=nm.float64)
         b = nm.zeros((len(self.mesh.coors)-1, 1), dtype=nm.float64)
