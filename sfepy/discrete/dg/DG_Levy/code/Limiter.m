@@ -1,10 +1,10 @@
-function [C] = Limiter(c, l)
+ï»¿function [C] = Limiter(c, l)
 
 e = size(c,1);
 C = c;
 
 for i = 1:e
-    if i == 1    % Ošetøení okrajových podmínek (periodicity)
+    if i == 1    % OÅ¡etÅ™enÃ­ okrajovÃ½ch podmÃ­nek (periodicity)
         m = e;     o = i + 1;
     elseif i == e
         m = i - 1; o = 1;

@@ -1,13 +1,13 @@
-function [W, xx, t] = RKDG1(e, a, T, int_p, int_l, pp, limiter)
+ï»¿function [W, xx, t] = RKDG1(e, a, T, int_p, int_l, pp, limiter)
 
-% /~~~~~~~~~~~~~~~~~~ DISKRETIZACE V PROSTORU A ÈASE ~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~ DISKRETIZACE V PROSTORU A ÄŒASE ~~~~~~~~~~~~~~~~~~~\ %
 dx = (int_p - int_l) / e;           % Krok
-X = linspace(int_l,int_p,e + 1)';   % Souøadnice prvkù
-% CFL podmínka:
-dt = dx / (abs(a) * 5); % adt/dx < 1/(2k+1), kde k je nejvyšší øád 
-                        % užitých polynomù
+X = linspace(int_l,int_p,e + 1)';   % SouÅ™adnice prvkÅ¯
+% CFL podmÃ­nka:
+dt = dx / (abs(a) * 5); % adt/dx < 1/(2k+1), kde k je nejvyÅ¡Å¡Ã­ Å™Ã¡d 
+                        % uÅ¾itÃ½ch polynomÅ¯
 t = zeros(ceil(T / dt) + 1,1);
-fprintf('Bude provedeno %d èasových krokù\n\n', ceil(T / dt));
+fprintf('Bude provedeno %d ÄasovÃ½ch krokÅ¯\n\n', ceil(T / dt));
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
 % /~~~~~~~~~~~~~~~~~~~~~~~~ INICIALIZACE MATIC ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
@@ -21,7 +21,7 @@ W = zeros(2 * e,1);
 xx = zeros(2 * e,1);
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~ POÈÁTEÈNÍ PODMÍNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~ POÄŒÃTEÄŒNÃ PODMÃNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 Wl(:,1) = pp(X(1:end - 1));
 Wr(:,1) = pp(X(2:end));
 for n = 1:e
@@ -37,9 +37,9 @@ end
 % /~~~~~~~~~~~~~~~ RUNGE-KUTTA + DISCONTINUOUS GALERKIN ~~~~~~~~~~~~~~~~\ %
 for j = 2:length(t)
    % /========================== RUNGE - KUTTA =========================\ %
-   % 1. STUPEÒ:
+   % 1. STUPEÅ‡:
    for n = 1:e
-       if n == 1    % Ošetøení okrajových podmínek (periodicity)
+       if n == 1    % OÅ¡etÅ™enÃ­ okrajovÃ½ch podmÃ­nek (periodicity)
            m = e;     o = n + 1;
        elseif n == e
            m = n - 1; o = 1;
@@ -52,9 +52,9 @@ for j = 2:length(t)
    if strcmp(limiter, 'on') == 1
        C1 = Limiter(C1, 2);  
    end
-   % 2. STUPEÒ:
+   % 2. STUPEÅ‡:
    for n = 1:e
-       if n == 1    % Ošetøení okrajových podmínek (periodicity)
+       if n == 1    % OÅ¡etÅ™enÃ­ okrajovÃ½ch podmÃ­nek (periodicity)
            m = e;     o = n + 1;
        elseif n == e
            m = n - 1; o = 1;
@@ -69,9 +69,9 @@ for j = 2:length(t)
    if strcmp(limiter, 'on') == 1
        C2 = Limiter(C2, 2);  
    end
-   % 3. STUPEÒ:
+   % 3. STUPEÅ‡:
    for n = 1:e
-       if n == 1    % Ošetøení okrajových podmínek (periodicity)
+       if n == 1    % OÅ¡etÅ™enÃ­ okrajovÃ½ch podmÃ­nek (periodicity)
            m = e;     o = n + 1;
        elseif n == e
            m = n - 1; o = 1;
@@ -88,7 +88,7 @@ for j = 2:length(t)
    end
    % \==================================================================/ %
 
-   % /========== ULOŽENÍ HODNOTY ØEŠENÍ NA UZLU ZLEVA A ZPRAVA =========\ %
+   % /========== ULOÅ½ENÃ HODNOTY Å˜EÅ ENÃ NA UZLU ZLEVA A ZPRAVA =========\ %
    C = C3;
    for n = 1:e
        Wl(n) = C(n,1) - C(n,2);
@@ -96,20 +96,20 @@ for j = 2:length(t)
    end
    % \==================================================================/ %
 
-   % /===================== ULOŽENÍ AKTUÁLNÍHO ÈASU ====================\ %
+   % /===================== ULOÅ½ENÃ AKTUÃLNÃHO ÄŒASU ====================\ %
    t(j) = t(j - 1) + dt;
    if ( mod(j - 1,50) ) == 0
-       fprintf('%d. krok výpoètu:   t = %1.3f\n', j - 1, t(j));
+       fprintf('%d. krok vÃ½poÄtu:   t = %1.3f\n', j - 1, t(j));
    end
    % \==================================================================/ %
 end
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ VÝSTUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ VÃSTUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 xx(1) = X(1);
 xx(end) = X(end);
 xx(2:2:end - 1) = X(2:end - 1);
-xx(3:2:end - 1) = X(2:end - 1);     % Sí pro DGFEM
+xx(3:2:end - 1) = X(2:end - 1);     % SÃ­Å¥ pro DGFEM
 
 W(1) = Wl(1);
 W(end) = Wr(end);

@@ -1,14 +1,14 @@
-clear all; clc;
+ï»¿clear all; clc;
 tic
-% /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÚLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÃšLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 a = 1;            % Rychlost
-T = 1;              % Maximální èas
-int_p = 1;          % Pravý kraj intervalu
-int_l = 0;          % Levý kraj intervalu
-e = 100;            % Poèet prvkù
+T = 1;              % MaximÃ¡lnÃ­ Äas
+int_p = 1;          % PravÃ½ kraj intervalu
+int_l = 0;          % LevÃ½ kraj intervalu
+e = 100;            % PoÄet prvkÅ¯
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~ POÈÁTEÈNÍ PODMÍNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~ POÄŒÃTEÄŒNÃ PODMÃNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 %   1) GAUSSOVA FUNKCE:
 % pp = @(x) exp(-((x - (int_l + int_p) / 2).* 5 ./ ((int_l + int_p) / 2) ).^2 );
 
@@ -18,10 +18,10 @@ e = 100;            % Poèet prvkù
 %   3) SINUS:
 % pp = @(x) sin( x * 2 * pi / (int_p + abs(int_l)) );
 
-%   4) JEDNOTKOVÝ SKOK:
+%   4) JEDNOTKOVÃ SKOK:
 % pp = @(x) 1 * (x >= 0.1 & x <= 0.3) + 0 * (x < 0.1 & x > 0.3);
 
-%   5) MIX FUNKCÍ
+%   5) MIX FUNKCÃ
 delta = 0.005;
 alpha = 25;
 b = 0.75;
@@ -48,7 +48,7 @@ pp = @(x) 0 * (x >= 0 & x < 0.1) + ...
 
 [Wlim, ~, ~] = RKDG2(e, T, a, int_l, int_p, pp,'on');
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~~ GRAFICKÉ VÝSTUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~~ GRAFICKÃ‰ VÃSTUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 % subplot(2,1,1)
     plot(xx,W(:,1),'-k',xx,W(:,end),'-b',xx,Wlim(:,end),'-r');
     legend({'exact','k = 2','k = 2 + limiter'},'Interpreter','latex');

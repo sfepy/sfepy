@@ -1,14 +1,14 @@
-clear all;
+Ôªøclear all;
 tic
-% /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ⁄LOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
-T = 1;              % Maxim·lnÌ Ëas
-int_p = 1;          % Prav˝ kraj intervalu
-int_l = 0;          % Lev˝ kraj intervalu
-e = 100;             % PoËet prvk˘
+% /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY √öLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+T = 1;              % Maxim√°ln√≠ ƒças
+int_p = 1;          % Prav√Ω kraj intervalu
+int_l = 0;          % Lev√Ω kraj intervalu
+e = 100;             % Poƒçet prvk≈Ø
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~ PO»¡TE»NÕ PODMÕNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
-X = linspace(int_l,int_p,e + 1)';   % SÌù
+% /~~~~~~~~~~~~~~~~~~~~~~~~ POƒå√ÅTEƒåN√ç PODM√çNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+X = linspace(int_l,int_p,e + 1)';   % S√≠≈•
 
 %   0)
 pp = @(x) 1 / 4 + 0.5 * sin(pi * (2 * x - 1));
@@ -19,9 +19,9 @@ pp = @(x) 1 / 4 + 0.5 * sin(pi * (2 * x - 1));
 % pp = @(x) - 100 * (x - 0.1) .* (x - 0.3) .* (x >= 0.1 & x <= 0.3) + 0 .* (x < 0.1 & x > 0.3);
 %   3) SINUS:
 % pp = @(x) sin( x * 2 * pi / (int_p + abs(int_l)) );
-%   4) JEDNOTKOV› SKOK:
+%   4) JEDNOTKOV√ù SKOK:
 % pp = @(x) 1 * (x >= 0.1 & x <= 0.3) + 0 * (x < 0.1 & x > 0.3);
-%   5) MIX FUNKCÕ
+%   5) MIX FUNKC√ç
 % delta = 0.005;
 % alpha = 25;
 % b = 0.75;
@@ -45,7 +45,7 @@ pp = @(x) 1 / 4 + 0.5 * sin(pi * (2 * x - 1));
 
 [W, xx, t] = bRKDG2(e, T, int_l, int_p, pp, 'on');
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~~ GRAFICK… V›STUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~~ GRAFICK√â V√ùSTUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 subplot(2,1,1)
     plot(xx,W(:,1),'-k');
     hold on;
