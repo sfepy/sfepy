@@ -57,4 +57,5 @@ MANIFEST
 #
 .idea
 # zitkat ignores for playground and draft
-/sfepy/discrete/dg/DG_Levy/
+/sfepy/discrete/dg/DG_Levy/diplomky
+/sfepy/discrete/dg/DG_Levy/skripta
