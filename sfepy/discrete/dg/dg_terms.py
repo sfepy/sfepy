@@ -6,30 +6,46 @@ class DGTerm:
     def __init__(self, mesh):
         self.mesh = mesh
 
-    def evaluate(self, a):
+    def evaluate(self, mode="weak", diff_var="u",
+                 standalone=True, ret_status=False, **kwargs):
         raise NotImplemented
 
     def assemble_to(self, asm_obj, val, iels, mode="vector"):
         if (asm_obj is not None) and (iels is not None):
-            asm_obj[iels] = asm_obj[iels] + val
+            if mode == "vector":
+                if (len(iels) == 2) and (nm.shape(val)[0] == len(iels[0])):
+                    for ii in iels[0]:
+                        asm_obj[ii][iels[1]] = (asm_obj[ii][iels[1]].T + val[ii]).T
+                else:
+                    asm_obj[iels] = asm_obj[iels] + val
+
+            elif mode == "matrix":
+                if (len(iels) == 3) and (nm.shape(val)[0] == len(iels[0])):
+                    for ii in iels[0]:
+                        asm_obj[ii][iels[1], iels[2]] = asm_obj[ii][iels[1], iels[2]] + val[ii]
+                else:
+                    asm_obj[iels] = asm_obj[iels] + val
+            else:
+                raise ValueError("Unknown assebmly mode '%s'" % mode)
 
 
 class AdvIntDGTerm(DGTerm):
     # TODO try inheritigng directly from Term?
-    def __init__(self, mesh, a):
+    def __init__(self, mesh):
         DGTerm.__init__(self, mesh)
-        self.a = a
         self.vvar = "v"
         self.diff_var = "u"
 
     def evaluate(self, mode="weak", diff_var="u",
                  standalone=True, ret_status=False, **kwargs):
-        # TODO use evaluate from super class, move all calculation to get_fargs() and function()
+        # TODO use evaluate from super class, move all calculations to get_fargs() and function()
         if diff_var == self.diff_var:
-            # so far only for approx of order 0
-            val = (self.mesh.coors[1:] - self.mesh.coors[:-1]).T  # integral over element with constant test
+
+            val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
+                             (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
+            # integral over element with constant test
             # function is just volume of the element
-            iels = (nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
             # values go on to the diagonal, in sfepy this is assured
             # by mesh connectivity induced by basis
         else:
@@ -52,15 +68,21 @@ class AdvFluxDGTerm(DGTerm):
 
         u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
-            # so far only for approx of order 0
-            val = nm.ones((len(self.mesh.coors)-1, 1)) * self.a * u[:-1] + \
-                  nm.ones((len(self.mesh.coors) - 1, 1)) * self.a * u[1:]
+            # exact integral
+            intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
+                             1/2*u[1, 1:-1]**2 * (self.mesh.coors[1:] - self.mesh.coors[:-1])).T
+
+            fp = self.a * u[0, 2:].T if self.a > 0 else self.a * u[0, 1:-1].T
+            fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, :-2].T
+
+            val = nm.vstack((fl - fp, - fl - fp + intg))
             # TODO values of flux terms are functions of solution on previous time step,
             # how to pas these values to the term?
-            iels = nm.arange(len(self.mesh.coors) - 1)  # just fill the vector
+
+            # placement is simple, bud getting the values requires looping over neighbours
+            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
         else:
             val = None
             iels = None
-
 
         return val, iels
