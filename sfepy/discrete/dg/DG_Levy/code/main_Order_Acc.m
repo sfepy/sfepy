@@ -1,17 +1,17 @@
-clear all; clc; format long;
+ï»¿clear all; clc; format long;
 tic
-% /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÚLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
-e = 16;            % Poèet prvkù
+% /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÃšLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+e = 16;            % PoÄet prvkÅ¯
 a = 1;            % Rychlost
-T = 1;              % Maximální èas
-% Pravı kraj intervalu je 1
-% Levı kraj intervalu je 0
+T = 1;              % MaximÃ¡lnÃ­ Äas
+% PravÃ½ kraj intervalu je 1
+% LevÃ½ kraj intervalu je 0
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% Meøení numerického øádu pøesnosti probíhá na 5 sítích, na kadé je
-%   dvojnásobnı poèet prvkù oproti pøedchozí.
-% Pro urèení øádu je brána max norma a L2 norma z rozdílu pøesného øešení 
-%   a numerického øešení.
+% MeÅ™enÃ­ numerickÃ©ho Å™Ã¡du pÅ™esnosti probÃ­hÃ¡ na 5 sÃ­tÃ­ch, na kaÅ¾dÃ© je
+%   dvojnÃ¡sobnÃ½ poÄet prvkÅ¯ oproti pÅ™edchozÃ­.
+% Pro urÄenÃ­ Å™Ã¡du je brÃ¡na max norma a L2 norma z rozdÃ­lu pÅ™esnÃ©ho Å™eÅ¡enÃ­ 
+%   a numerickÃ©ho Å™eÅ¡enÃ­.
 
 norma_max0 = zeros(5,1);
 norma_max1 = zeros(5,1);
@@ -24,20 +24,20 @@ for i = 1:5
     
     h(i) = 1/(e);
     fprintf('\n===========================================================\n');
-    fprintf('            Vıpoèet s %d prvky, tj. h = %.5f\n', e, h(i));
+    fprintf('            VÃ½poÄet s %d prvky, tj. h = %.5f\n', e, h(i));
     fprintf('===========================================================\n\n');
     X = linspace(0,1,e + 1)';
-    % POÈÁTEÈNÍ PODMÍNKA ... SINUS:
+    % POÄŒÃTEÄŒNÃ PODMÃNKA ... SINUS:
     pp = @(x) sin(x * 2 * pi);
 
-    fprintf('   × k = 0 \t');
+    fprintf('   Ã— k = 0 \t');
     [W_num_0,xx,t] = RKDG0(e, a, T, 1, 0, pp);
-    fprintf('\n   × k = 1 \t');
+    fprintf('\n   Ã— k = 1 \t');
     [W_num_1,~,~] = RKDG1(e, a, T, 1, 0, pp);
-    fprintf('\n   × k = 2 \t');
+    fprintf('\n   Ã— k = 2 \t');
     [W_num_2,~,~] = RKDG2(e, a, T, 1, 0, pp);
 
-    % ANALYTICKÉ ØEŠENÍ ... SINUS:
+    % ANALYTICKÃ‰ Å˜EÅ ENÃ ... SINUS:
     W_an = sin( pi .* (xx - a * t(end)) ./ (1 / 2) );
     
     
@@ -75,7 +75,7 @@ for i = 1:5
 end
 
 fprintf('\n===========================================================\n');
-fprintf('                  Numerickı øád pøesnosti:\n');
+fprintf('                  NumerickÃ½ Å™Ã¡d pÅ™esnosti:\n');
 fprintf('===========================================================\n\n');
 for i = 2:5
     p0 = log2(norma_max0(i - 1) / norma_max0(i));

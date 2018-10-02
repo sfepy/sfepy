@@ -1,4 +1,4 @@
-function [W, xx, t] = tRKDG1(e, T, a, int_l, int_p, pp, limiter)
+﻿function [W, xx, t] = tRKDG1(e, T, a, int_l, int_p, pp, limiter)
 
 % /~~~~~~~~~~~~~~~~~~ DISKRETIZACE V PROSTORU A ČASE ~~~~~~~~~~~~~~~~~~~\ %
 dx = (int_p - int_l) / e;           % Krok
@@ -7,7 +7,7 @@ X = linspace(int_l,int_p,e + 1)';   % Souřadnice prvků
 dt = dx / (abs(a) * 5); % adt/dx < 1/(2k+1), kde k je nejvyšší řád 
                         % užitých polynomů
 t = zeros(ceil(T / dt) + 1,1);
-fprintf('RKDG1 Bude provedeno %d �?asových kroků\n\n', ceil(T / dt));
+fprintf('RKDG1 Bude provedeno %d časových kroků\n\n', ceil(T / dt));
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
 % /~~~~~~~~~~~~~~~~~~~~~~~~ INICIALIZACE MATIC ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
@@ -21,7 +21,7 @@ W = zeros(2 * e,length(t));
 xx = zeros(2 * e,1);
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~ POČ�?TEČN�? PODM�?NKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~ POČÁTEČNÍ PODMÍNKA ~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 Wl(:,1) = pp(X(1:end - 1));
 Wr(:,1) = pp(X(2:end));
 for n = 1:e
@@ -88,7 +88,7 @@ for j = 2:length(t)
    end
    % \==================================================================/ %
 
-   % /========== ULOŽEN�? HODNOTY ŘEŠEN�? NA UZLU ZLEVA A ZPRAVA =========\ %
+   % /========== ULOŽENÍ HODNOTY ŘEŠENÍ NA UZLU ZLEVA A ZPRAVA =========\ %
    C = C3;
    for n = 1:e
        Wl(n,j) = C(n,1) - C(n,2);
@@ -96,14 +96,14 @@ for j = 2:length(t)
    end
    % \==================================================================/ %
 
-   % /===================== ULOŽEN�? AKTU�?LN�?HO ČASU ====================\ %
+   % /===================== ULOŽENÍ? AKTUÁLNÍHO ČASU ====================\ %
    t(j) = t(j - 1) + dt;
 %    fprintf('%d   t = %1.3f\n', j - 1, t(j));
    % \==================================================================/ %
 end
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
-% /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ V�?STUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
+% /~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ VÝSTUPY ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 xx(1) = X(1);
 xx(end) = X(end);
 xx(2:2:end - 1) = X(2:end - 1);
