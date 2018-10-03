@@ -1,5 +1,5 @@
 import numpy as nm
-
+from sfepy.terms.terms import Term
 
 class DGTerm:
 
@@ -29,33 +29,32 @@ class DGTerm:
                 raise ValueError("Unknown assebmly mode '%s'" % mode)
 
 
-class AdvIntDGTerm(DGTerm):
+class AdvIntDGTerm(Term):
     # TODO try inheritigng directly from Term?
     def __init__(self, mesh):
         DGTerm.__init__(self, mesh)
         self.vvar = "v"
         self.diff_var = "u"
 
-    def evaluate(self, mode="weak", diff_var="u",
-                 standalone=True, ret_status=False, **kwargs):
-        # TODO use evaluate from super class, move all calculations to get_fargs() and function()
-        if diff_var == self.diff_var:
+    def get_fargs(self, *args, **kwargs):
 
-            val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
-                             (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
-            # integral over element with constant test
-            # function is just volume of the element
-            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
-            # values go on to the diagonal, in sfepy this is assured
-            # by mesh connectivity induced by basis
-        else:
-            val = None
-            iels = None
-
-        return val, iels
+        val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
+                         (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
+        # integral over element with constant test
+        # function is just volume of the element
+        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+        # values go on to the diagonal, in sfepy this is assured
+        # by mesh connectivity induced by basis
+        fargs = (val, iels)
+        return fargs
 
 
-class AdvFluxDGTerm(DGTerm):
+    def function(self, out, *fargs):
+
+        status = None
+        return status
+
+class AdvFluxDGTerm(Term):
 
     def __init__(self, mesh, a):
         DGTerm.__init__(self, mesh)
@@ -63,10 +62,10 @@ class AdvFluxDGTerm(DGTerm):
         self.vvar = None
         self.diff_var = None
 
-    def evaluate(self, mode="weak", diff_var=None,
+    def get_fargs(self, state, mode="weak", diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
 
-        u = kwargs.pop('u', None)
+        u = self.get(state, 'val', step=-1)
         if diff_var == self.diff_var:
             # exact integral
             intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
@@ -84,5 +83,11 @@ class AdvFluxDGTerm(DGTerm):
         else:
             val = None
             iels = None
+        fargs = (val, iels)
+        return fargs
 
-        return val, iels
+    def function(selfself, out, *fargs):
+
+
+        status = None
+        return status
