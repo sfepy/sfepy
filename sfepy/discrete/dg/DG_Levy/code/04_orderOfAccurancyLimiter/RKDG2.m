@@ -1,4 +1,4 @@
-﻿function [W, xx, t] = RKDG2(e, a, T, int_p, int_l, pp, limiter)
+function [W, xx, t] = RKDG2(e, a, T, int_p, int_l, pp, limiter)
 
 % /~~~~~~~~~~~~~~~~~~ DISKRETIZACE V PROSTORU A ČASE ~~~~~~~~~~~~~~~~~~~\ %
 dx = (int_p - int_l) / e;           % Krok
