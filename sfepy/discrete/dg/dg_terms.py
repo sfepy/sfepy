@@ -38,13 +38,10 @@ class AdvIntDGTerm(DGTerm):
 
     def evaluate(self, mode="weak", diff_var="u",
                  standalone=True, ret_status=False, **kwargs):
-        # TODO use evaluate from super class, move all calculations to get_fargs() and function()
         if diff_var == self.diff_var:
 
             val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
                              (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
-            # integral over element with constant test
-            # function is just volume of the element
             iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
             # values go on to the diagonal, in sfepy this is assured
             # by mesh connectivity induced by basis
@@ -76,8 +73,6 @@ class AdvFluxDGTerm(DGTerm):
             fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, :-2].T
 
             val = nm.vstack((fl - fp, - fl - fp + intg))
-            # TODO values of flux terms are functions of solution on previous time step,
-            # how to pas these values to the term?
 
             # placement is simple, bud getting the values requires looping over neighbours
             iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
