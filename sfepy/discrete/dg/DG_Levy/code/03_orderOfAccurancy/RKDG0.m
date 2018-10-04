@@ -1,4 +1,4 @@
-﻿function [W, xx, t] = RKDG0(e, a, T, int_p, int_l, pp)
+function [W, xx, t] = RKDG0(e, a, T, int_p, int_l, pp)
 
 % /~~~~~~~~~~~~~~~~~~ DISKRETIZACE V PROSTORU A ČASE ~~~~~~~~~~~~~~~~~~~\ %
 dx = (int_p - int_l) / e;           % Krok

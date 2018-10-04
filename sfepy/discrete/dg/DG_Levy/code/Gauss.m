@@ -1,4 +1,4 @@
-﻿function int = Gauss(a,h,f)
+function int = Gauss(a,h,f)
 %--------------------------------------------------------------------------
 %   Dvobodový Gaussův kvadraturní vzorec transformovaný 
 %   z intervalu <-1,1> na <a,b>

@@ -1,4 +1,4 @@
-﻿function [C] = Limiter(c, l)
+function [C] = Limiter(c, l)
 
 e = size(c,1);
 C = c;
