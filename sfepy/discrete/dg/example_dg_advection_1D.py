@@ -23,7 +23,6 @@ a = 1.2
 IntT = AdvIntDGTerm(mesh)
 FluxT = AdvFluxDGTerm(mesh, a)
 eq = Equation((IntT, FluxT))
-# TODO sample initial condition properly
 ic = left_par_q((mesh.coors[:-1] + mesh.coors[1:])/2)
 bc = {"left" : 0,
       "right" : 0}

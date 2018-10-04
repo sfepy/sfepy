@@ -1,5 +1,5 @@
 import numpy as nm
-from sfepy.terms.terms import Term
+
 
 class DGTerm:
 
@@ -29,32 +29,30 @@ class DGTerm:
                 raise ValueError("Unknown assebmly mode '%s'" % mode)
 
 
-class AdvIntDGTerm(Term):
+class AdvIntDGTerm(DGTerm):
     # TODO try inheritigng directly from Term?
     def __init__(self, mesh):
         DGTerm.__init__(self, mesh)
         self.vvar = "v"
         self.diff_var = "u"
 
-    def get_fargs(self, *args, **kwargs):
+    def evaluate(self, mode="weak", diff_var="u",
+                 standalone=True, ret_status=False, **kwargs):
+        if diff_var == self.diff_var:
 
-        val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
-                         (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
-        # integral over element with constant test
-        # function is just volume of the element
-        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
-        # values go on to the diagonal, in sfepy this is assured
-        # by mesh connectivity induced by basis
-        fargs = (val, iels)
-        return fargs
+            val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
+                             (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
+            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+            # values go on to the diagonal, in sfepy this is assured
+            # by mesh connectivity induced by basis
+        else:
+            val = None
+            iels = None
+
+        return val, iels
 
 
-    def function(self, out, *fargs):
-
-        status = None
-        return status
-
-class AdvFluxDGTerm(Term):
+class AdvFluxDGTerm(DGTerm):
 
     def __init__(self, mesh, a):
         DGTerm.__init__(self, mesh)
@@ -62,10 +60,10 @@ class AdvFluxDGTerm(Term):
         self.vvar = None
         self.diff_var = None
 
-    def get_fargs(self, state, mode="weak", diff_var=None,
+    def evaluate(self, mode="weak", diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
 
-        u = self.get(state, 'val', step=-1)
+        u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
             # exact integral
             intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
@@ -75,19 +73,11 @@ class AdvFluxDGTerm(Term):
             fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, :-2].T
 
             val = nm.vstack((fl - fp, - fl - fp + intg))
-            # TODO values of flux terms are functions of solution on previous time step,
-            # how to pas these values to the term?
 
             # placement is simple, bud getting the values requires looping over neighbours
             iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
         else:
             val = None
             iels = None
-        fargs = (val, iels)
-        return fargs
 
-    def function(selfself, out, *fargs):
-
-
-        status = None
-        return status
+        return val, iels
