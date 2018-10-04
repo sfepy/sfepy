@@ -1,4 +1,4 @@
-﻿clear all;
+clear all;
 tic
 % /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÚLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 T = 1;              % Maximální čas

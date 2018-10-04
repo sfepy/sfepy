@@ -1,4 +1,4 @@
-﻿clear all; clc; format long;
+clear all; clc; format long;
 tic
 % /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÚLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 e = 16;            % Počet prvků

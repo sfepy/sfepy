@@ -1,4 +1,4 @@
-﻿clear all; clc;
+clear all; clc;
 tic
 % /~~~~~~~~~~~~~~~~~~~~~~~~~~ PARAMETRY ÚLOHY ~~~~~~~~~~~~~~~~~~~~~~~~~~\ %
 a = 1;            % Rychlost

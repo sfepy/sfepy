@@ -1,4 +1,4 @@
-﻿function [W, xx, t] = bRKDG1(e, T, int_l, int_p, pp, limiter)
+function [W, xx, t] = bRKDG1(e, T, int_l, int_p, pp, limiter)
 
 % /~~~~~~~~~~~~~~~~~~ DISKRETIZACE V PROSTORU A ČASE ~~~~~~~~~~~~~~~~~~~\ %
 dx = (int_p - int_l) / e;           % Krok
