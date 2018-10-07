@@ -29,7 +29,8 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None):
     :param ax:
     :param fig:
     :param ylims: limits for y axis, originaly [-1, 5], default are 10% offsets of Y extremes
-    :return: the animation object keep to see animation, used for savig too
+
+    :return: the animation object, keep it to see the animation, used for savig too
     """
 
     if ax is None:

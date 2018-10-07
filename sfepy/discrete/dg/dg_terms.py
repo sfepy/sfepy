@@ -68,11 +68,11 @@ class AdvFluxDGTerm(DGTerm):
         if diff_var == self.diff_var:
             # TODO check exact integral!
             intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
-                             1/2*u[1, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1])**2).T
+                             1/2*u[1, 1:-1] * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
 
-            # TODO is flux right
-            fp = self.a * u[0, 2:].T if self.a > 0 else self.a * u[0, 1:-1].T
-            fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, :-2].T
+            # TODO is flux right?
+            fp = self.a * u[0, :-2].T if self.a > 0 else self.a * u[0, 1:-1].T
+            fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, 2:].T
 
             val = nm.vstack((fl - fp, - fl - fp + intg))
 

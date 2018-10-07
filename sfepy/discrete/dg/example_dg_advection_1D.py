@@ -24,11 +24,10 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-a = 1.2
+a = 1
 ts = 0
 te = 1
-tn = 100
-
+tn = 300
 
 IntT = AdvIntDGTerm(mesh)
 FluxT = AdvFluxDGTerm(mesh, a)
@@ -36,7 +35,7 @@ FluxT = AdvFluxDGTerm(mesh, a)
 eq = Equation((IntT, FluxT))
 
 ic = left_par_q
-bc = {"left" : 1,
+bc = {"left" : 0,
       "right" : 0}
 
 tss = RK3Solver(eq, ic, bc, DGBasis(1))
@@ -47,14 +46,14 @@ X = (mesh.coors[1:] + mesh.coors[:-1])/2
 T = nm.linspace(ts, te, tn)
 
 
+plt.figure("Numeric Solution anim")
+plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.5)
+plt.vlines(X, ymin=0, ymax=.3)
+
 plt.plot(X, sic[0, :, 0])
 plt.plot(X, sic[1, :, 0])
+anim = animate1d(u[:, 1:-1, :, 0].T, X, T, ylims=[-2, 2])
+plt.legend(loc="upper left")
+plt.title("Numeric solution")
 
-plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.2)
-plt.vlines(X, ymin=0, ymax=.1)
-anim = animate1d(u[:, 1:-1, :, 0].T, X, T)
 plt.show()
-
-
-
-
