@@ -10,7 +10,8 @@ class DGTerm:
                  standalone=True, ret_status=False, **kwargs):
         raise NotImplemented
 
-    def assemble_to(self, asm_obj, val, iels, mode="vector"):
+    @staticmethod
+    def assemble_to(asm_obj, val, iels, mode="vector"):
         if (asm_obj is not None) and (iels is not None):
             if mode == "vector":
                 if (len(iels) == 2) and (nm.shape(val)[0] == len(iels[0])):
@@ -30,7 +31,7 @@ class DGTerm:
 
 
 class AdvIntDGTerm(DGTerm):
-    # TODO try inheritigng directly from Term?
+
     def __init__(self, mesh):
         DGTerm.__init__(self, mesh)
         self.vvar = "v"
@@ -65,10 +66,11 @@ class AdvFluxDGTerm(DGTerm):
 
         u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
-            # exact integral
+            # TODO check exact integral!
             intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
-                             1/2*u[1, 1:-1]**2 * (self.mesh.coors[1:] - self.mesh.coors[:-1])).T
+                             1/2*u[1, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1])**2).T
 
+            # TODO is flux right
             fp = self.a * u[0, 2:].T if self.a > 0 else self.a * u[0, 1:-1].T
             fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, :-2].T
 

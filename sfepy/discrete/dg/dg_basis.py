@@ -1,9 +1,11 @@
 import numpy as nm
-# TODO Create basis function for reference elemnt, where does mapping come from? maybe try using sfepy one?
+
+
 class DGBasis:
 
     def __init__(self, degree):
-        self.degree = degree + 1
+        self.degree = degree
+        self.pdegree = degree + 1 # practical degree used in calculations
 
     def values(self, points):
 
@@ -11,8 +13,8 @@ class DGBasis:
             n = 1
         else:
             n = len(points)
-        values = nm.ones((self.degree, n))
-        for i in range(1, self.degree):
+        values = nm.ones((self.pdegree, n))
+        for i in range(1, self.pdegree):
             values[i] = points * values[i-1]
         return values.T
 
