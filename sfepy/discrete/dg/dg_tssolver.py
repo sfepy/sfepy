@@ -80,14 +80,13 @@ class TSSolver:
 class RK3Solver(TSSolver):
 
     def solve(self, t0, tend, tsteps=10):
-        dt = (tend - t0) / tsteps
+        dt = float(tend - t0) / tsteps
 
         A = nm.zeros((2, len(self.mesh.coors) - 1, len(self.mesh.coors) - 1), dtype=nm.float64)
         b = nm.zeros((2, len(self.mesh.coors) - 1, 1), dtype=nm.float64)
         u  = nm.ones((2, len(self.mesh.coors) + 1, tsteps, 1), dtype=nm.float64)
         u1 = nm.ones((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
         u2 = nm.ones((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
-        u3 = nm.ones((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
 
         # bc
         u[:, 0, 0] = self.boundary_cond["left"]
@@ -128,23 +127,17 @@ class RK3Solver(TSSolver):
                             + dt * dot(nm.linalg.inv(A[1]), b[1]) / 4
 
             # ----3rd stage-----
-            # bcs
-            u3[:, 0] = self.boundary_cond["left"]
-            u3[:, -1] = self.boundary_cond["right"]
-
             # get RHS
             self.equation.evaluate(dw_mode="matrix", asm_obj=A, diff_var="u")
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u2[:, :])
 
             # get update u3
-            u3[0, 1:-1] = u[0, 1:-1, it - 1] / 3 \
+            u[0, 1:-1, it] = u[0, 1:-1, it - 1] / 3 \
                           + 2*u2[0, 1:-1] / 3 \
                           + 2*dt * dot(nm.linalg.inv(A[0]), b[0]) / 3
-            u3[1, 1:-1] = u[1, 1:-1, it - 1] / 3 \
+            u[1, 1:-1, it] = u[1, 1:-1, it - 1] / 3 \
                           + 2*u2[1, 1:-1] / 3 \
                           + 2*dt * dot(nm.linalg.inv(A[1]), b[1]) / 3
-
-            u[:, :, it] = u3
 
         return u, dt
 
