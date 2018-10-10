@@ -43,7 +43,9 @@ class AdvIntDGTerm(DGTerm):
 
             val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
                              (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
-            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+
+            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1),
+                            nm.arange(len(self.mesh.coors) - 1))
             # values go on to the diagonal, in sfepy this is assured
             # by mesh connectivity induced by basis
         else:
@@ -67,12 +69,13 @@ class AdvFluxDGTerm(DGTerm):
         u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
             # TODO check exact integral!
-            intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
-                             1/2*u[1, 1:-1] * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
+            intg = self.a * u[0, 1:-1].T
+                # (u[0, 1:-1]   * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
+                #              u[1, 1:-1]/2 * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
 
             # TODO is flux right?
-            fp = self.a * u[0, :-2].T if self.a > 0 else self.a * u[0, 1:-1].T
-            fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, 2:].T
+            fl = self.a * (u[0, :-2] + u[1, :-2]).T if self.a > 0 else self.a * u[0, 1:-1].T
+            fp = self.a * (u[0, 1:-1] + u[1, 1:-1]).T if self.a > 0 else self.a * u[0, 2:].T
 
             val = nm.vstack((fl - fp, - fl - fp + intg))
 
