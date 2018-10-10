@@ -165,6 +165,7 @@ requirements = {
         'class': cb.CorrDimDim,
         'save_name': 'corrs_le',
         'dump_variables': ['u'],
+        'is_linear': True,
     },
 }
 
