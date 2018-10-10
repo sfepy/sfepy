@@ -119,12 +119,10 @@ class RK3Solver(TSSolver):
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u1[:, :])
 
             # get update u2
-            u2[0, 1:-1] = 3 * u[0, 1:-1, it - 1]/4  \
-                            + u1[0, 1:-1] / 4 \
-                            + dt * dot(nm.linalg.inv(A[0]), b[0]) / 4
-            u2[1, 1:-1] = 3 * u[1, 1:-1, it - 1]/4  \
-                            + u1[1, 1:-1] / 4 \
-                            + dt * dot(nm.linalg.inv(A[1]), b[1]) / 4
+            u2[0, 1:-1] = (3 * u[0, 1:-1, it - 1] + u1[0, 1:-1] / 4
+                            + dt * dot(nm.linalg.inv(A[0]), b[0])) / 4
+            u2[1, 1:-1] = (3 * u[1, 1:-1, it - 1] + u1[1, 1:-1]
+                            + dt * dot(nm.linalg.inv(A[1]), b[1])) / 4
 
             # ----3rd stage-----
             # get RHS
@@ -132,12 +130,10 @@ class RK3Solver(TSSolver):
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u2[:, :])
 
             # get update u3
-            u[0, 1:-1, it] = u[0, 1:-1, it - 1] / 3 \
-                          + 2*u2[0, 1:-1] / 3 \
-                          + 2*dt * dot(nm.linalg.inv(A[0]), b[0]) / 3
-            u[1, 1:-1, it] = u[1, 1:-1, it - 1] / 3 \
-                          + 2*u2[1, 1:-1] / 3 \
-                          + 2*dt * dot(nm.linalg.inv(A[1]), b[1]) / 3
+            u[0, 1:-1, it] = (u[0, 1:-1, it - 1] + 2*u2[0, 1:-1]
+                          + 2*dt * dot(nm.linalg.inv(A[0]), b[0])) / 3
+            u[1, 1:-1, it] = (u[1, 1:-1, it - 1] + 2*u2[1, 1:-1]
+                            + 2*dt * dot(nm.linalg.inv(A[1]), b[1])) / 3
 
         return u, dt
 
