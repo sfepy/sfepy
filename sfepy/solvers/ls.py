@@ -757,24 +757,21 @@ class MUMPSSolver(LinearSolver):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-
-        if self.mumps_ls is None:
-            system = 'complex' if mtx.dtype.name.startswith('complex')\
-                else 'real'
-            self.mumps_ls = self.mumps.MumpsSolver(system=system)
-
         if not self.mumps_presolved:
             self.presolve(mtx)
 
         out = rhs.copy()
         self.mumps_ls.set_b(out)
         self.mumps_ls(3)  # solve
-        from scipy.io import savemat
-        savemat('test_matrix_vector.mat', {'A': mtx, 'b': rhs, 'x': out})
 
         return out
 
     def presolve(self, mtx):
+        if self.mumps_ls is None:
+            system = 'complex' if mtx.dtype.name.startswith('complex')\
+                else 'real'
+            self.mumps_ls = self.mumps.MumpsSolver(system=system)
+
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
         if is_new:
             if self.conf.verbose:
