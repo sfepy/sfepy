@@ -102,7 +102,7 @@ def const_u(x):
     :param x:
     :return:
     """
-    return np.ones(np.size(x)) * .5
+    return np.ones((np.size(x), 1)) * 0
 
 
 def const_q(x):
@@ -132,6 +132,13 @@ def gauss_init(x):
     :return:
     """
     return np.array(ghump(x-.2))
+
+def gsmooth(x):
+    """
+    :param x:
+    :return:
+    """
+    return np.piecewise(x, [x[:, 0] <= - 1, x[:, 0] >= -1, 1 < x[:, 0]], [0, lambda x: np.exp(1/(x**2 - 1)), 0])
 
 
 #----------------------------------#
