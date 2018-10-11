@@ -69,9 +69,9 @@ class AdvFluxDGTerm(DGTerm):
         u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
             # TODO check exact integral!
-            intg = self.a * u[0, 1:-1].T
-                # (u[0, 1:-1]   * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
-                #              u[1, 1:-1]/2 * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
+            intg = self.a * u[0, :-2].T
+            # intg = (u[0, :-2]  * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
+            #         u[1, :-2]/2 * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
 
             # TODO is flux right?
             fl = self.a * (u[0, :-2] + u[1, :-2]).T if self.a > 0 else self.a * u[0, 1:-1].T

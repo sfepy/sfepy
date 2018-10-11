@@ -84,9 +84,9 @@ class RK3Solver(TSSolver):
 
         A = nm.zeros((2, len(self.mesh.coors) - 1, len(self.mesh.coors) - 1), dtype=nm.float64)
         b = nm.zeros((2, len(self.mesh.coors) - 1, 1), dtype=nm.float64)
-        u  = nm.ones((2, len(self.mesh.coors) + 1, tsteps, 1), dtype=nm.float64)
-        u1 = nm.ones((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
-        u2 = nm.ones((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
+        u = nm.zeros((2, len(self.mesh.coors) + 1, tsteps, 1), dtype=nm.float64)
+        u1 = nm.zeros((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
+        u2 = nm.zeros((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
 
         # bc
         u[:, 0, 0] = self.boundary_cond["left"]
@@ -106,8 +106,8 @@ class RK3Solver(TSSolver):
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u[:, :, it-1])
 
             # get update u1
-            u1[0, 1:-1] = u[0, 1:-1, it-1] + dt * dot(nm.linalg.inv(A[0]), b[0])
-            u1[1, 1:-1] = u[1, 1:-1, it-1] + dt * dot(nm.linalg.inv(A[1]), b[1])
+            u1[0, 1:-1] = u[0, 1:-1, it-1] + dt * b[0] / nm.diag(A[0])[:, nax]
+            u1[1, 1:-1] = u[1, 1:-1, it-1] + dt * b[1] / nm.diag(A[1])[:, nax]
 
             # ----2nd stage----
             # bcs
@@ -119,10 +119,10 @@ class RK3Solver(TSSolver):
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u1[:, :])
 
             # get update u2
-            u2[0, 1:-1] = (3 * u[0, 1:-1, it - 1] + u1[0, 1:-1] / 4
-                            + dt * dot(nm.linalg.inv(A[0]), b[0])) / 4
+            u2[0, 1:-1] = (3 * u[0, 1:-1, it - 1] + u1[0, 1:-1]
+                            + dt * b[0] / nm.diag(A[0])[:, nax]) / 4
             u2[1, 1:-1] = (3 * u[1, 1:-1, it - 1] + u1[1, 1:-1]
-                            + dt * dot(nm.linalg.inv(A[1]), b[1])) / 4
+                            + dt * b[1] / nm.diag(A[1])[:, nax]) / 4
 
             # ----3rd stage-----
             # get RHS
@@ -130,10 +130,10 @@ class RK3Solver(TSSolver):
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u2[:, :])
 
             # get update u3
-            u[0, 1:-1, it] = (u[0, 1:-1, it - 1] + 2*u2[0, 1:-1]
-                          + 2*dt * dot(nm.linalg.inv(A[0]), b[0])) / 3
-            u[1, 1:-1, it] = (u[1, 1:-1, it - 1] + 2*u2[1, 1:-1]
-                            + 2*dt * dot(nm.linalg.inv(A[1]), b[1])) / 3
+            u[0, 1:-1, it] = (u[0, 1:-1, it - 1] + 2 * u2[0, 1:-1]
+                              + 2*dt * b[0] / nm.diag(A[0])[:, nax]) / 3
+            u[1, 1:-1, it] = (u[1, 1:-1, it - 1] + 2 * u2[1, 1:-1]
+                              + 2*dt * b[1] / nm.diag(A[1])[:, nax]) / 3
 
         return u, dt
 

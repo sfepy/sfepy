@@ -12,12 +12,12 @@ from dg_equation import Equation
 from dg_tssolver import TSSolver, RK3Solver
 from dg_basis import DGBasis
 
-from my_utils.inits_consts import left_par_q
+from my_utils.inits_consts import left_par_q, gsmooth, const_u
 from my_utils.visualizer import animate1d
 
 n_nod = 100
 n_el = n_nod - 1
-coors = nm.linspace(0.0, 1.0, n_nod).reshape((n_nod, 1))
+coors = nm.linspace(-3.0, 7.0, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
 mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
 descs = ['1_2']
@@ -26,7 +26,7 @@ mesh = Mesh.from_data('advection_1d', coors, None,
 
 a = 1
 ts = 0
-te = 1
+te = 5
 tn = 300
 
 IntT = AdvIntDGTerm(mesh)
@@ -34,7 +34,7 @@ FluxT = AdvFluxDGTerm(mesh, a)
 
 eq = Equation((IntT, FluxT))
 
-ic = left_par_q
+ic = gsmooth
 bc = {"left" : 0,
       "right" : 0}
 
