@@ -28,7 +28,7 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
     ----------
     obj : a mayavi pipeline object
         The object to probe for data.
-        
+
     return_only : boolean
         If True, do not print the information, just return it to the caller.
 
@@ -47,7 +47,7 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
         mlab.options.offscreen = True
         scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(1, 1))
         obj = mlab.pipeline.open(obj)
-    
+
     if filter_names is None:
         filter_names = []
 
@@ -56,7 +56,12 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
                and not isinstance(source, Filter)):
         source = source.parent
 
-    dm = dataset_manager.DatasetManager(dataset=source.outputs[0])
+    try:
+        dm = dataset_manager.DatasetManager(dataset=source.outputs[0].output)
+
+    except AttributeError:
+        # Prior to Mayavi 4.6.2.
+        dm = dataset_manager.DatasetManager(dataset=source.outputs[0])
 
     ranges = {}
     for attr in ['point_scalars', 'point_vectors', 'point_tensors',

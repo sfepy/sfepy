@@ -11,7 +11,7 @@
 #---------------------------------#
 
 # version format
-version: ''
+#version: ''
 
 init:
 
@@ -61,7 +61,7 @@ install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
   - conda config --set always_yes yes --set changeps1 no
-  
+
   - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy"
   - activate sfepy-test
   #
@@ -78,7 +78,7 @@ install:
   # Revert back to native MSVC build tools
   #
   - conda remove -q libpython
-  #  
+  #
   - conda info -a
   - python -V
 
