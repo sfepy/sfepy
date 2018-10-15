@@ -27,7 +27,7 @@ class DGTerm:
                 else:
                     asm_obj[iels] = asm_obj[iels] + val
             else:
-                raise ValueError("Unknown assebmly mode '%s'" % mode)
+                raise ValueError("Unknown assembly mode '%s'" % mode)
 
 
 class AdvIntDGTerm(DGTerm):
@@ -69,15 +69,20 @@ class AdvFluxDGTerm(DGTerm):
         u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
             # TODO check exact integral!
-            intg = self.a * u[0, :-2].T
+            intg = 0 *self.a * u[0, :-2].T
             # intg = (u[0, :-2]  * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
             #         u[1, :-2]/2 * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
 
             # TODO is flux right?
-            fl = self.a * (u[0, :-2] + u[1, :-2]).T if self.a > 0 else self.a * u[0, 1:-1].T
-            fp = self.a * (u[0, 1:-1] + u[1, 1:-1]).T if self.a > 0 else self.a * u[0, 2:].T
+            fl0 = self.a * (u[0, :-2] + u[0, 1:-1]).T + abs(self.a)/2 * (u[0, :-2] - u[0, 1:-1]).T
+            fp0 = self.a * (u[0, 1:-1] + u[0,  2:]).T + abs(self.a)/2 * (u[0, 1:-1] - u[0,  2:]).T
 
-            val = nm.vstack((fl - fp, - fl - fp + intg))
+
+
+            fl1 = 0 * self.a * (u[1, :-2] + u[1, 1:-1]).T + 0 * abs(self.a)/2 * (u[1, :-2] - u[1, 1:-1]).T
+            fp1 = 0 * self.a * (u[1, 1:-1] + u[1,  2:]).T + 0 * abs(self.a)/2 * (u[1, 1:-1] - u[1,  2:]).T
+
+            val = nm.vstack((fl0 - fp0, - fl1 - fp1 + intg))
 
             # placement is simple, bud getting the values requires looping over neighbours
             iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
