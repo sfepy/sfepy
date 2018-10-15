@@ -4,7 +4,7 @@ import numpy as nm
 from .bspline import BSpline
 from sfepy.base.base import Struct
 from six.moves import range
-
+from sfepy.base.compat import lstsq
 
 class SplineBox(Struct):
     """
@@ -115,7 +115,7 @@ class SplineBox(Struct):
                 b = field
 
             a = self.get_box_matrix()
-            self.cp_values = nm.linalg.lstsq(a, b)[0]
+            self.cp_values = lstsq(a, b)[0]
 
         else:
             self.cp_values = self.cp_coors

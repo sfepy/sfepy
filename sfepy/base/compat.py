@@ -28,3 +28,9 @@ except AttributeError:
     import scipy.misc as scm
 
     factorial = scm.factorial
+
+if nm.lib.NumpyVersion(nm.__version__) >= '1.14.0':
+    def lstsq(a, b, **kwargs):
+        return nm.linalg.lstsq(a, b, rcond=None, **kwargs)
+else:
+    lstsq = nm.linalg.lstsq
