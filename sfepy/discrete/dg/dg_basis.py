@@ -5,7 +5,7 @@ class DGBasis:
 
     def __init__(self, degree):
         self.degree = degree
-        self.pdegree = degree + 1 # practical degree used in calculations
+        self.pdegree = degree + 1  # practical degree used in calculations
 
     def values(self, points):
 

@@ -12,22 +12,22 @@ from dg_equation import Equation
 from dg_tssolver import TSSolver, RK3Solver
 from dg_basis import DGBasis
 
-from my_utils.inits_consts import left_par_q, gsmooth, const_u
+from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import animate1d
 
 n_nod = 100
 n_el = n_nod - 1
-coors = nm.linspace(-3.0, 7.0, n_nod).reshape((n_nod, 1))
+coors = nm.linspace(-3, 7.0, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
 mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
 descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-a = 1
+a = 1.0
 ts = 0
-te = 5
-tn = 300
+te = .10
+tn = 100
 
 IntT = AdvIntDGTerm(mesh)
 FluxT = AdvFluxDGTerm(mesh, a)

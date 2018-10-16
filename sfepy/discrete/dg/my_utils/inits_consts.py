@@ -3,7 +3,7 @@
 Different initial conditions and environment constants as
 functions to enable different samplig in solvers
 """
-import numpy as np
+import numpy as nm
 from scipy import signal
 
 #---------------------------------------#
@@ -21,7 +21,7 @@ def left_par_q(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x < a, 0.1 <= x , 0.3 < x],
+    return nm.piecewise(x, [x < a, 0.1 <= x , 0.3 < x],
                            [0, lambda t: -100*(t - 0.1) * (t - 0.3), 0])
 
 
@@ -33,12 +33,12 @@ def right_par_q(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x < b - .2, b - .2 <= x,  b < x],
+    return nm.piecewise(x, [x < b - .2, b - .2 <= x,  b < x],
                            [0, lambda t: -100*(t - b) * (t - (b - .2)), 0])
 
 
 def middle_par_q(x):
-    return np.piecewise(x, [x <= a, x <= a + .3, a + .3 < x, a + .4 <= x],
+    return nm.piecewise(x, [x <= a, x <= a + .3, a + .3 < x, a + .4 <= x],
                            [0, 0, lambda t: -100*(t - (a + .4)) * (t - (a + .3)), 0])
 
 
@@ -48,8 +48,8 @@ def left_cos(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= a, x <= a + .3, a + .3 < x, a + .4 <= x],
-                        [0, 0, lambda t: (np.cos(np.pi * 20 * (t - .35)) + 1) / 2, 0])
+    return nm.piecewise(x, [x <= a, x <= a + .3, a + .3 < x, a + .4 <= x],
+                        [0, 0, lambda t: (nm.cos(nm.pi * 20 * (t - .35)) + 1) / 2, 0])
 
 
 #----------------------------------#
@@ -61,7 +61,7 @@ def three_step_q(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= a, x <= a + .5, a + .5 < x], [0, 1, 0])
+    return nm.piecewise(x, [x <= a, x <= a + .5, a + .5 < x], [0, 1, 0])
 
 
 def three_step_u(x):
@@ -71,7 +71,7 @@ def three_step_u(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= 0, x <= .7, .7 < x], [0, .5, 2])
+    return nm.piecewise(x, [x <= 0, x <= .7, .7 < x], [0, .5, 2])
 
 
 def four_step_u(x):
@@ -81,7 +81,7 @@ def four_step_u(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= a, x <= a + .4, a + .4 < x, a + .5 <= x], [0, 1, 1.5, 1])
+    return nm.piecewise(x, [x <= a, x <= a + .4, a + .4 < x, a + .5 <= x], [0, 1, 1.5, 1])
 
 
 def four_step_q(x):
@@ -91,7 +91,7 @@ def four_step_q(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= a, x <= a + .4, a + .4 < x, a + .5 <= x], [0, 0, 1, 0])
+    return nm.piecewise(x, [x <= a, x <= a + .4, a + .4 < x, a + .5 <= x], [0, 0, 1, 0])
 
 #------------------------#
 #   Constant functions   #
@@ -102,7 +102,7 @@ def const_u(x):
     :param x:
     :return:
     """
-    return np.ones((np.size(x), 1)) * 0
+    return nm.ones((nm.size(x), 1)) * 0
 
 
 def const_q(x):
@@ -111,7 +111,7 @@ def const_q(x):
     :param x:
     :return:
     """
-    return np.ones(np.size(x)) * .5
+    return nm.ones(nm.size(x)) * .5
 
 
 #------------------------------#
@@ -122,7 +122,7 @@ def ghump(x):
     :param x:
     :return:
     """
-    return np.exp(-200 * x**2)
+    return nm.exp(-200 * x**2)
 
 
 def gauss_init(x):
@@ -131,14 +131,36 @@ def gauss_init(x):
     :param x:
     :return:
     """
-    return np.array(ghump(x-.2))
+    return nm.array(ghump(x-.2))
 
 def gsmooth(x):
     """
     :param x:
     :return:
     """
-    return np.piecewise(x, [x[:, 0] <= - 1, x[:, 0] >= -1, 1 < x[:, 0]], [0, lambda x: np.exp(1/(x**2 - 1)), 0])
+    return nm.piecewise(x, [x[:, 0] <= - 1, x[:, 0] >= -1, 1 < x[:, 0]], [0, lambda x: nm.exp(1/(x**2 - 1)), 0])
+
+
+def superic(x):
+    """
+    All the initial conditions for the price of one, yayy!
+    :param x:
+    :return:
+    """
+    delta = 0.005
+    beta = nm.log(4) / (36 * delta ** 2)
+    alpha = 25
+    z = 0.15
+    b = 0.75
+    ex = lambda x, y: nm.exp(- beta * (x - y) ** 2)
+    F = lambda x, y: nm.sqrt(nm.maximum(1 - alpha ** 2 * (x - y) ** 2, 0))
+
+    return (0 * ((x >= 0) & (x < 0.1)) +
+            0.5 / 6 * (ex(x, z - delta) + ex(x, z + delta) + 4 * ex(x, z)) * ((x >= 0.1) & (x < 0.2)) +
+            0.5 * ((x >= 0.3) & (x < 0.4)) +
+            (0.5 - abs(10 * (x - 0.55))) * ((x >= 0.5) & (x < 0.6)) +
+            # 0.5 / 6 * (F(x, b - delta) + F(x, b + delta) + 4 * F(x, b)) * ((x >= 0.7) & (x < 0.8)))
+            -200 * (x - .8) * (x - .7) * ((x >= .7) & (x <= .8)))
 
 
 #----------------------------------#
@@ -150,7 +172,7 @@ def sawtooth_q(x):
     :param x:
     :return:
     """
-    return signal.sawtooth(2 * np.pi * 5 * x)
+    return signal.sawtooth(2 * nm.pi * 5 * x)
 
 #----------------------------------#
 #        Sinus and constant        #
@@ -160,9 +182,9 @@ def cos_const_q(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= a + .3, a + .3 < x, a + .35 < x, a + .45 < x, a + .5 <= x],
-                        [0, lambda t: (np.cos(np.pi * 20 * (t - .35)) + 1) / 2, 1,
-                            lambda t: (np.cos(np.pi * 20 * (t - .45)) + 1) / 2, 0])
+    return nm.piecewise(x, [x <= a + .3, a + .3 < x, a + .35 < x, a + .45 < x, a + .5 <= x],
+                        [0, lambda t: (nm.cos(nm.pi * 20 * (t - .35)) + 1) / 2, 1,
+                            lambda t: (nm.cos(nm.pi * 20 * (t - .45)) + 1) / 2, 0])
 
 #----------------------------------#
 #   Quadratic and cubic function   #
@@ -172,7 +194,7 @@ def quadr_cub(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= a + .1, a + .1 < x, a + .3 < x, a + .4 <= x],
+    return nm.piecewise(x, [x <= a + .1, a + .1 < x, a + .3 < x, a + .4 <= x],
                         [0, lambda t: -25*(t - 0.1) * (t - 0.5),
                             lambda t: -250*(t - 0.1) * (t - 0.1) * (t-0.4), 0])
 
@@ -186,8 +208,8 @@ def qsysinit(x):
     :param x:
     :return:
     """
-    return np.array([ghump(x),
-                     np.zeros(len(x))]).swapaxes(0, 1)
+    return nm.array([ghump(x),
+                     nm.zeros(len(x))]).swapaxes(0, 1)
 
 
 def wsysinit(x):
@@ -196,8 +218,8 @@ def wsysinit(x):
     :param x:
     :return:
     """
-    return np.stack((np.sum(invRfunc(x)[:, 0, :] * gauss_init(x), 1),
-                     np.sum(invRfunc(x)[:, 1, :] * gauss_init(x), 1)), 1)
+    return nm.stack((nm.sum(invRfunc(x)[:, 0, :] * gauss_init(x), 1),
+                     nm.sum(invRfunc(x)[:, 1, :] * gauss_init(x), 1)), 1)
 
 
 #---------------------------------------#
@@ -213,7 +235,7 @@ def Kfunc(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= 0, x <= 5, 5 < x], [1, 1, 1])
+    return nm.piecewise(x, [x <= 0, x <= 5, 5 < x], [1, 1, 1])
 
 
 def rhofunc(x):
@@ -222,7 +244,7 @@ def rhofunc(x):
     :param x:
     :return:
     """
-    return np.piecewise(x, [x <= 0, x > 0], [1, 4])
+    return nm.piecewise(x, [x <= 0, x > 0], [1, 4])
 
 
 def cfunc(x):
@@ -231,7 +253,7 @@ def cfunc(x):
     :param x:
     :return:
     """
-    return np.sqrt(Kfunc(x) / rhofunc(x))
+    return nm.sqrt(Kfunc(x) / rhofunc(x))
 
 
 def Zfunc(x):
@@ -240,7 +262,7 @@ def Zfunc(x):
     :param x:
     :return:
     """
-    return np.sqrt(Kfunc(x) * rhofunc(x))
+    return nm.sqrt(Kfunc(x) * rhofunc(x))
 
 
 def Afunc(x):
@@ -251,8 +273,8 @@ def Afunc(x):
     :param x:
     :return:
     """
-    return np.array([[np.zeros(len(x)), 1 / rhofunc(x)],
-                     [Kfunc(x), np.zeros(len(x))]]).swapaxes(0, 2)
+    return nm.array([[nm.zeros(len(x)), 1 / rhofunc(x)],
+                     [Kfunc(x), nm.zeros(len(x))]]).swapaxes(0, 2)
 
 
 def ATfunc(x):
@@ -262,7 +284,7 @@ def ATfunc(x):
     :param x:
     :return:
     """
-    return np.transpose(Afunc(x), (0, 2, 1))
+    return nm.transpose(Afunc(x), (0, 2, 1))
 
 
 def eigAfunc(x):
@@ -271,8 +293,8 @@ def eigAfunc(x):
     :param x:
     :return:
     """
-    return np.array([[-cfunc(x), np.zeros(len(x))],
-                     [np.zeros(len(x)), cfunc(x)]]).swapaxes(0, 2)
+    return nm.array([[-cfunc(x), nm.zeros(len(x))],
+                     [nm.zeros(len(x)), cfunc(x)]]).swapaxes(0, 2)
 
 
 def Rfunc(x):
@@ -281,8 +303,8 @@ def Rfunc(x):
     :param x:
     :return:
     """
-    return np.array([[-Zfunc(x), np.ones(len(x))],
-                     [Zfunc(x), np.ones(len(x))]]).swapaxes(0, 2)
+    return nm.array([[-Zfunc(x), nm.ones(len(x))],
+                     [Zfunc(x), nm.ones(len(x))]]).swapaxes(0, 2)
 
 
 def invRfunc(x):
@@ -291,5 +313,13 @@ def invRfunc(x):
     :param x:
     :return:
     """
-    return np.array([[-1 / (2 * Zfunc(x)), np.ones(len(x)) / 2],
-                     [-1 / (2 * Zfunc(x)), np.ones(len(x)) / 2]]).swapaxes(0, 2)
+    return nm.array([[-1 / (2 * Zfunc(x)), nm.ones(len(x)) / 2],
+                     [-1 / (2 * Zfunc(x)), nm.ones(len(x)) / 2]]).swapaxes(0, 2)
+
+
+if __name__ == '__main__':
+    X = nm.linspace(0, 1, 500)
+    Y = superic(X)
+    import matplotlib.pyplot as plt
+    plt.plot(X, Y)
+    plt.show()
