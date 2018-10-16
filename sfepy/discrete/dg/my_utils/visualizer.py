@@ -44,7 +44,7 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None):
         uppery = ylims[1]
     ax.set_ylim(lowery, uppery)
     ax.set_xlim(X[0], X[-1])
-    time_text = ax.text(X[0]+X[0]/10, uppery - uppery / 20, '', fontsize=15)
+    time_text = ax.text(X[0] + np.sign(X[0]) * X[0]/10, uppery - uppery / 10, '', fontsize=15)
 
     if not isinstance(Y, np.ndarray):
         Y = np.stack(Y, axis=2)
@@ -76,6 +76,7 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None):
             return line, time_text
 
     delay = int(np.round(2000 * (T[-1] - T[0])/len(T)))
+    # delay = 1000
     anim = animation.FuncAnimation(fig, animate, frames=len(T), interval=delay,
                                    blit=True, repeat=True, repeat_delay=250)
 

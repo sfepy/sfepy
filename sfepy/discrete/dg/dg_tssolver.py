@@ -16,11 +16,17 @@ class TSSolver:
         self.boundary_cond = bc
 
     def sampleIC(self, mesh, ic, quad, basis):
+        # TODO create basis and check ic sampling
+        sic = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
 
-        sic = nm.zeros((2, len(self.mesh.coors)-1, 1), dtype=nm.float64)
-        sic[0, :] = quad(mesh, ic)/2
-        sic[1, :] = 2*quad(mesh, ic)/3
+        def psi0(x):
+            return 1
 
+        def psi1(x):
+            return 2 * (x - (self.mesh.coors[1:] + self.mesh.coors[:-1]) / 2) / (self.mesh.coors[1:] - self.mesh.coors[:-1])
+
+        sic[0, :] = quad(mesh, lambda t: ic(t)*psi0(t))/2
+        sic[1, :] = 3*quad(mesh, lambda t: ic(t)*psi1(t))/2
         return sic
 
     @staticmethod
@@ -31,14 +37,13 @@ class TSSolver:
 
         w = (mesh.coors[1:] - mesh.coors[:-1]) / 2
 
-        return f(x_1) +  f(x_2)
+        return f(x_1) + f(x_2)
 
     def solve(self, t0, tend, tsteps=10):
         print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
-        # TODO how to get number of cells from mesh?
-        A = nm.zeros((2, len(self.mesh.coors)-1, len(self.mesh.coors)-1), dtype=nm.float64)
-        b = nm.zeros((2, len(self.mesh.coors)-1, 1), dtype=nm.float64)
-        u = nm.ones((2, len(self.mesh.coors) + 1 , 1), dtype=nm.float64)
+        A = nm.zeros((2, self.mesh.n_el, self.mesh.n_el), dtype=nm.float64)
+        b = nm.zeros((2, self.mesh.n_el-1, 1), dtype=nm.float64)
+        u = nm.zeros((2, self.mesh.n_nod + 1 , 1), dtype=nm.float64)
 
         # ic
         u[0, 1:-1] = self.initial_cond
@@ -82,11 +87,11 @@ class RK3Solver(TSSolver):
     def solve(self, t0, tend, tsteps=10):
         dt = float(tend - t0) / tsteps
 
-        A = nm.zeros((2, len(self.mesh.coors) - 1, len(self.mesh.coors) - 1), dtype=nm.float64)
-        b = nm.zeros((2, len(self.mesh.coors) - 1, 1), dtype=nm.float64)
-        u = nm.zeros((2, len(self.mesh.coors) + 1, tsteps, 1), dtype=nm.float64)
-        u1 = nm.zeros((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
-        u2 = nm.zeros((2, len(self.mesh.coors) + 1, 1), dtype=nm.float64)
+        A  = nm.zeros((2, self.mesh.n_el, self.mesh.n_el), dtype=nm.float64)
+        b  = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
+        u  = nm.zeros((2, self.mesh.n_el + 2, tsteps, 1), dtype=nm.float64)
+        u1 = nm.zeros((2, self.mesh.n_el + 2, 1), dtype=nm.float64)
+        u2 = nm.zeros((2, self.mesh.n_el + 2, 1), dtype=nm.float64)
 
         # bc
         u[:, 0, 0] = self.boundary_cond["left"]
@@ -102,8 +107,11 @@ class RK3Solver(TSSolver):
             u1[:, -1] = self.boundary_cond["right"]
 
             # get RHS
+            A[:] = 0
+            b[:] = 0
             self.equation.evaluate(dw_mode="matrix", asm_obj=A, diff_var="u")
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u[:, :, it-1])
+
 
             # get update u1
             u1[0, 1:-1] = u[0, 1:-1, it-1] + dt * b[0] / nm.diag(A[0])[:, nax]
@@ -115,6 +123,8 @@ class RK3Solver(TSSolver):
             u2[:, -1] = self.boundary_cond["right"]
 
             # get RHS
+            A[:] = 0
+            b[:] = 0
             self.equation.evaluate(dw_mode="matrix", asm_obj=A, diff_var="u")
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u1[:, :])
 
@@ -126,6 +136,8 @@ class RK3Solver(TSSolver):
 
             # ----3rd stage-----
             # get RHS
+            A[:] = 0
+            b[:] = 0
             self.equation.evaluate(dw_mode="matrix", asm_obj=A, diff_var="u")
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u2[:, :])
 
