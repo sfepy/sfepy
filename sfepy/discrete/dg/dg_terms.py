@@ -44,8 +44,8 @@ class AdvIntDGTerm(DGTerm):
             val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
                              (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
 
-            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1),
-                            nm.arange(len(self.mesh.coors) - 1))
+            iels = ([0, 1], nm.arange(self.mesh.n_el),
+                            nm.arange(self.mesh.n_el))
             # values go on to the diagonal, in sfepy this is assured
             # by mesh connectivity induced by basis
         else:
@@ -56,6 +56,9 @@ class AdvIntDGTerm(DGTerm):
 
 
 class AdvFluxDGTerm(DGTerm):
+    """
+    So far Lax-Friedrichs flux
+    """
 
     def __init__(self, mesh, a):
         DGTerm.__init__(self, mesh)
@@ -68,18 +71,36 @@ class AdvFluxDGTerm(DGTerm):
 
         u = kwargs.pop('u', None)
         if diff_var == self.diff_var:
-            # TODO check exact integral!
-            intg = self.a * u[0, 1:-1].T
-            # intg = self.a *(u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
-            #         u[1, 1:-1]/2 * (self.mesh.coors[1:]**2 - self.mesh.coors[:-1]**2)).T
 
-            fl = self.a * (u[0, :-2] + u[1, :-2] + u[0, 1:-1] - u[1, 1:-1]).T / 2 + \
-                 abs(self.a) * (u[0, :-2] + u[1, :-2] - (u[0, 1:-1] - u[1, 1:-1])).T / 2
+            # for Legendre basis integral of higher order
+            # functions of the basis is zero,
+            # hence we calculate integral
+            #
+            # int_{j-1/2}^{j+1/2} f(u)dx
+            #
+            # only from the zero order function, over [-1, 1] - hence the 2
+            intg = self.a * u[0, 1:-1].T * 2
 
-            fp = self.a * (u[0, 1:-1] + u[1, 1:-1] + u[0, 2:] - u[1, 2:]).T / 2 + \
-                 abs(self.a) * (u[0, 1:-1] + u[1, 1:-1] - (u[0, 2:] - u[1, 2:])).T / 2
+            #  the Lax-Friedrichs flux is
+            #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
+            # in our case a and b are values to the left and right of the element boundary
+            # for Legendre basis these are:
+            # u_left = U_0 + U_1 + U_2 + ...
+            # u_right = U_0 - U_1 + U_2 + ... = sum_0^{order} (-1)^p * U_p
 
-            val = nm.vstack((fl - fp, 0*(- fl - fp + intg)))
+            # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
+            # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
+            fl = self.a * (u[0, :-2] + u[1, :-2] +
+                          (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
+                 nm.abs(self.a) * (u[0, :-2] + u[1, :-2] -
+                                  (u[0, 1:-1] - u[1, 1:-1])).T / 2
+
+            fp = self.a * (u[0, 1:-1] + u[1, 1:-1] +
+                          (u[0, 2:] - u[1, 2:])).T / 2 + \
+                 nm.abs(self.a) * (u[0, 1:-1] + u[1, 1:-1] -
+                                  (u[0, 2:] - u[1, 2:])).T / 2
+
+            val = nm.vstack((fl - fp, - fl - fp + intg))
 
             # placement is simple, but getting the values requires looping over neighbours
             iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
