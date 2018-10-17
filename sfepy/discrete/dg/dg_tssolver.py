@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from numpy import newaxis as nax
 
 class TSSolver:
+    # TODO refactor Solver to Problem class
 
     def __init__(self, eq, ic, bc, basis):
         self.equation = eq
@@ -16,17 +17,11 @@ class TSSolver:
         self.boundary_cond = bc
 
     def sampleIC(self, mesh, ic, quad, basis):
-        # TODO create basis and check ic sampling
         sic = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
 
-        def psi0(x):
-            return 1
-
-        def psi1(x):
-            return 2 * (x - (self.mesh.coors[1:] + self.mesh.coors[:-1]) / 2) / (self.mesh.coors[1:] - self.mesh.coors[:-1])
-
-        sic[0, :] = quad(mesh, lambda t: ic(t)*psi0(t))/2
-        sic[1, :] = 3*quad(mesh, lambda t: ic(t)*psi1(t))/2
+        # FIXME initialization still is not correct!
+        sic[0, :] = quad(mesh, lambda t: ic(t))/2
+        sic[1, :] = 3*quad(mesh, lambda t: ic(t)*basis.get_nth_fun(1)(t))/2
         return sic
 
     @staticmethod
@@ -83,6 +78,8 @@ class TSSolver:
 
 
 class RK3Solver(TSSolver):
+
+
 
     def solve(self, t0, tend, tsteps=10):
         dt = float(tend - t0) / tsteps
