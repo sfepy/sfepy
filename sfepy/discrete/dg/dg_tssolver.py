@@ -83,6 +83,13 @@ class RK3Solver(TSSolver):
 
     def solve(self, t0, tend, tsteps=10):
         dt = float(tend - t0) / tsteps
+        dx = nm.max(self.mesh.coors[1:] - self.mesh.coors[:-1])
+        dtdx = dt/dx
+        maxa = self.equation.terms[1].a
+
+        print("Space divided into {0} cells, {1} steps, step size is {2}".format(self.mesh.n_el, len(self.mesh.coors), dx))
+        print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tsteps - 1, tsteps, dt))
+        print("Courant number c = max(abs(u)) * dt/dx = {0}".format(maxa * dtdx))
 
         A  = nm.zeros((2, self.mesh.n_el, self.mesh.n_el), dtype=nm.float64)
         b  = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
