@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Module for animating solutions in 1D and also 2D
+Module for animating solutions in 1D.
 Can also save them but requieres ffmpeg package
 see save_animation method.
 """
 
 import matplotlib.animation as animation
-from matplotlib import pylab as plt
+from matplotlib import pyplot as plt
 import numpy as np
 from numpy import newaxis as nax
 from matplotlib import pylab as plt
@@ -16,52 +16,33 @@ from os.path import join as pjoin
 
 __author__ = 'tomas_zitka'
 
+ffmpeg_path = 'C:\\Users\\tomas\\bin\\ffmpeg\\bin\\ffmpeg.exe'  # for saving animations
 
-def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None):
+
+def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None):
     """
-    Animates solution of 1D problem into current figure,
-    keep reference to returned animation object otherwise
+    Animates solution of 1D problem into current figure.
+    Keep reference to returned animation object otherwise
     it is discarded
 
     :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
     :param X: space interval discetization
     :param T: time interval discretization
-    :param ax:
-    :param fig:
-    :param ylims: limits for y axis, originaly [-1, 5], default are 10% offsets of Y extremes
+    :param ax: specify axes to plot to
+    :param fig: specifiy figure to plot to
+    :param ylims: limits for y axis, default are 10% offsets of Y extremes
+    :param labs: labels to use for parts of the solution
+    :param plott: plot type - how to plot data: tested plot, step
 
     :return: the animation object, keep it to see the animation, used for savig too
     """
 
-    if ax is None:
-        fig = plt.gcf()
-        ax = plt.gca()
-    if ylims is None:
-        lowery = np.min(Y) - np.min(Y)/10
-        uppery = np.max(Y) + np.max(Y)/10
-    else:
-        lowery = ylims[0]
-        uppery = ylims[1]
-    ax.set_ylim(lowery, uppery)
-    ax.set_xlim(X[0], X[-1])
-    time_text = ax.text(X[0] + np.sign(X[0]) * X[0]/10, uppery - uppery / 10, '', fontsize=15)
+    ax, fig, time_text = setup_axis(X, Y, ax, fig, ylims)
 
     if not isinstance(Y, np.ndarray):
         Y = np.stack(Y, axis=2)
 
-    if len(Y.shape) > 2:
-        lines = [ax.plot([], [], lw=2)[0] for foo in range(Y.shape[2])]
-        for i, l in enumerate(lines):
-            if labs is None:
-                l.set_label("q" + str(i+1) + "(x, t)")
-            else:
-                l.set_label(labs[i])
-    else:
-        line, = ax.plot([], [], lw=2)
-        if labs is None:
-            line.set_label("q(x, t)")
-        else:
-            line.set_label(labs)
+    lines = setup_lines(ax, Y.shape, labs, plott)
 
     def animate(i):
         ax.legend()
@@ -72,8 +53,8 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None):
             return tuple(lines) + (time_text,)
         # https://stackoverflow.com/questions/20624408/matplotlib-animating-multiple-lines-and-text
         else:
-            line.set_data(X, Y[i])
-            return line, time_text
+            lines.set_data(X, Y[i])
+            return lines, time_text
 
     delay = int(np.round(2000 * (T[-1] - T[0])/len(T)))
     # delay = 1000
@@ -83,59 +64,94 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None):
     return anim
 
 
-def animate2d(Q, X, Y, T, **kwargs):
-    fig = plt.gcf()
-    ax = plt.gca()
-    plt.axes(xlim=(0, max(X)), ylim=(0, max(Y)))
-
-    plt.xlabel(r'x')
-    plt.ylabel(r'y')
-
-    def animate(i):
-        cont = plt.contourf(X, Y, Q[i])
-        return cont,
-
-    anim = animation.FuncAnimation(fig, animate, frames=len(T), interval=10 * T[-1] // len(T), repeat=True)
-    return anim
-
-
-def save_animation(anim, filename):
-    plt.rcParams['animation.ffmpeg_path'] = 'C:\\Users\\tomas\\bin\\ffmpeg\\bin\\ffmpeg.exe'  # for saving animations
-    writer = animation.FFMpegWriter(fps=24)
-    anim.save(filename + ".mp4", writer=writer)
-
-
-def sol_frame(Y, X, T, t0=.5, fig=None, ylims=None, labs=None):
-
-    if fig is None:
+def setup_axis(X, Y, ax=None, fig=None, ylims=None):
+    """
+    Setup axis, including timer for animation or snaps
+    :param X: space disctretization to get limits
+    :param Y: solution to get limits
+    :param ax: ax where to put everything, if None current axes are used
+    :param fig: fig where to put everything, if None current figure is used
+    :param ylims: custom ylims, if None y axis limits are calculated from Y
+    :return: ax, fig, time_text object to fill in text
+    """
+    if ax is None:
         fig = plt.gcf()
         ax = plt.gca()
-    else:
-        ax = fig.axes[0]
     if ylims is None:
-        lowery = np.min(Y) - np.min(Y)/10
-        uppery = np.max(Y) + np.max(Y)/10
+        lowery = np.min(Y) - np.min(Y) / 10
+        uppery = np.max(Y) + np.max(Y) / 10
     else:
         lowery = ylims[0]
         uppery = ylims[1]
     ax.set_ylim(lowery, uppery)
-
     ax.set_xlim(X[0], X[-1])
-    time_text = ax.text(X[0]+X[0]/10, uppery - uppery / 20, '', fontsize=15)
+    time_text = ax.text(X[0] + np.sign(X[0]) * X[0] / 10, uppery - uppery / 10, 'empty', fontsize=15)
+    return ax, fig, time_text
+
+
+def setup_lines(ax, Yshape, labs, plott):
+    """
+    Sets up artist for animation or solution snaps
+    :param ax: axes to use for artist
+    :param Yshape: shape of the solution array
+    :param labs: labels for the solution
+    :param plott: type of plot to use i.e. steps or plot
+    :return:
+    """
+    if plott is None:
+        plott = ax.plot
+    else:
+        plott = ax.__getattribute__(plott)
+
+    if len(Yshape) > 2:
+        lines = [plott([], [], lw=2)[0] for foo in range(Yshape[2])]
+        for i, l in enumerate(lines):
+            if labs is None:
+                l.set_label("q" + str(i + 1) + "(x, t)")
+            else:
+                l.set_label(labs[i])
+    else:
+        lines, = plott([], [], lw=2)
+        if labs is None:
+            lines.set_label("q(x, t)")
+        else:
+            lines.set_label(labs)
+    return lines
+
+
+def save_animation(anim, filename):
+    """
+    Saves animation as .mp4, requires ffmeg package
+    :param anim: animation object
+    :param filename: name of the file, without the .mp4 ending
+    :return: None
+    """
+    plt.rcParams['animation.ffmpeg_path'] = ffmpeg_path
+    writer = animation.FFMpegWriter(fps=24)
+    anim.save(filename + ".mp4", writer=writer)
+
+
+def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=None):
+    """
+    Creates snap of solution at specified time frame t0, basically gets one frame from animate1d,
+    but colors wont be the same :-(
+    :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
+    :param X: space interval discetization
+    :param T: time interval discretization
+    :param t0: time to take snap at
+    :param ax: specify axes to plot to
+    :param fig: specifiy figure to plot to
+    :param ylims: limits for y axis, default are 10% offsets of Y extremes
+    :param labs: labels to use for parts of the solution
+    :param plott: plot type - how to plot data: tested plot, step
+    """
+
+    ax, fig, time_text = setup_axis(X, Y, ax, fig, ylims)
 
     if not isinstance(Y, np.ndarray):
         Y = np.stack(Y, axis=2)
 
-    if len(Y.shape) > 2:
-        lines = [ax.plot([], [], lw=2)[0] for foo in range(Y.shape[2])]
-        for i, l in enumerate(lines):
-            if labs is None:
-                l.set_label("q" + str(i+1) + "(x, t)")
-            else:
-                l.set_label(labs[i])
-    else:
-        line, = ax.plot([], [], lw=2)
-        line.set_label("q(x, t)")
+    lines = setup_lines(ax, Y.shape, labs, plott)
 
     nt0 = np.abs(T - t0).argmin()
 
@@ -145,11 +161,23 @@ def sol_frame(Y, X, T, t0=.5, fig=None, ylims=None, labs=None):
         for ln, l in enumerate(lines):
             l.set_data(X, Y[nt0].swapaxes(0, 1)[ln])
     else:
-        line.set_data(X, Y[nt0])
+        lines.set_data(X, Y[nt0])
     return fig
 
 
-def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None, ylims=None, labs=None):
+def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None, ylims=None, labs=None, plott=None):
+    """
+    Wrapper for sol_frame, saves the frame to file specified.
+    :param name: name of the solution e.g. name of the solver used
+    :param filename: name of the file, overrides automatic generation
+    :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
+    :param X: space interval discetization
+    :param T: time interval discretization
+    :param t0: time to take snap at
+    :param ylims: limits for y axis, default are 10% offsets of Y extremes
+    :param labs: labels to use for parts of the solution
+    :param plott: plot type - how to plot data: tested plot, step
+    """
 
     if filename is None:
         filename = "{0}_solsnap{1:3.2f}-{2:3.3}".format(name, t0, T[-1]).replace(".", "_")
@@ -160,7 +188,7 @@ def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None, ylims=None, labs=Non
 
     fig = plt.figure(filename)
 
-    snap1 = sol_frame(Y, X, T, t0=t0, ylims=ylims, labs=labs)
+    snap1 = sol_frame(Y, X, T, t0=t0, ylims=ylims, labs=labs, plott=None)
     if not isinstance(Y, np.ndarray):
         plt.plot(X, Y[0][0], label="q(x, 0)")
     else:
