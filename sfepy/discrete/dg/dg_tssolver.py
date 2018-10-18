@@ -20,8 +20,11 @@ class TSSolver:
         sic = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
 
         # FIXME initialization still is not correct!
-        sic[0, :] = quad(mesh, lambda t: ic(t))/2
-        sic[1, :] = 3*quad(mesh, lambda t: ic(t)*basis.get_nth_fun(1)(t))/2
+        sic[0, :] = quad(mesh, lambda t: ic(t))/(mesh.coors[1:] - mesh.coors[:-1])
+        sic[1, :] = 3*quad(mesh,
+                           lambda t: ic(t) *
+                                     basis.get_nth_fun(1)(t - (mesh.coors[1:] + mesh.coors[:-1])/2 / (mesh.coors[1:] - mesh.coors[:-1]))) * \
+                    (mesh.coors[1:] - mesh.coors[:-1])
         return sic
 
     @staticmethod
@@ -32,7 +35,7 @@ class TSSolver:
 
         w = (mesh.coors[1:] - mesh.coors[:-1]) / 2
 
-        return f(x_1) + f(x_2)
+        return w*f(x_1) + w*f(x_2)
 
     def solve(self, t0, tend, tsteps=10):
         print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
@@ -78,8 +81,6 @@ class TSSolver:
 
 
 class RK3Solver(TSSolver):
-
-
 
     def solve(self, t0, tend, tsteps=10):
         dt = float(tend - t0) / tsteps
@@ -133,9 +134,9 @@ class RK3Solver(TSSolver):
 
             # get update u2
             u2[0, 1:-1] = (3 * u[0, 1:-1, it - 1] + u1[0, 1:-1]
-                            + dt * b[0] / nm.diag(A[0])[:, nax]) / 4
+                           + dt * b[0] / nm.diag(A[0])[:, nax]) / 4
             u2[1, 1:-1] = (3 * u[1, 1:-1, it - 1] + u1[1, 1:-1]
-                            + dt * b[1] / nm.diag(A[1])[:, nax]) / 4
+                           + dt * b[1] / nm.diag(A[1])[:, nax]) / 4
 
             # ----3rd stage-----
             # get RHS
