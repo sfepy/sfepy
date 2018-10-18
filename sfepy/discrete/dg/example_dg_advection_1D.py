@@ -15,7 +15,7 @@ from dg_tssolver import TSSolver, RK3Solver
 from dg_basis import LegendrePolySpace
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
-from my_utils.visualizer import animate1d
+from my_utils.visualizer import animate1d, sol_frame
 
 X1 = -3.
 XN1 = 7.
@@ -28,10 +28,10 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-a = 1.0
+a = -1.0
 ts = 0
-te = 10
-tn = 1000
+te = 5
+tn = 500
 
 IntT = AdvIntDGTerm(mesh)
 FluxT = AdvFluxDGTerm(mesh, a)
@@ -45,7 +45,6 @@ bc = {"left" : 0,
 geometry = Struct(n_vertex=2,
                   dim=1,
                   coors=coors.copy())
-
 tss = RK3Solver(eq, ic, bc, LegendrePolySpace("legb", geometry, 1))
 
 u, dt = tss.solve(ts, te, tn)
@@ -60,17 +59,32 @@ plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.5, colors="grey")
 plt.vlines((mesh.coors[0], mesh.coors[-1]), ymin=0, ymax=.5, colors="k")
 plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
+def alones(n):
+    if (int(n) % 2) == 0:
+        return nm.tile([-1, 1], int(n/2))[:, None]
+    else:
+        return nm.append(nm.tile([1, -1], int(n / 2)), -1)[:, None]
+
 
 # Plot IC
-plt.plot(X, sic[0, :, 0], label="IC-0", marker=".", ls="")
-plt.plot(X, sic[1, :, 0], label="IC-1", marker=".", ls="")
+c0 = plt.plot(X, sic[0, :, 0], label="IC-0", marker=".", ls="")[0].get_color()
+c1 = plt.plot(X, sic[1, :, 0], label="IC-1", marker=".", ls="")[0].get_color()
+# plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
+plt.step(coors[1:], sic[0, :, 0], label="IC-0", color=c0)
+plt.step(coors[1:], sic[1, :, 0], label="IC-1", color=c1)
+# plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
 xs = nm.linspace(X1, XN1, 500)[:, None]
 plt.plot(xs, gsmooth(xs), label="IC-ex")
 
 # Animate solution
-anim = animate1d(u[:, :, :, 0].T, nm.append(nm.append(coors[0], X), coors[-1]), T, ylims=[-1, 1])
+anim = animate1d(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, ylims=[-1, 1], plott="step")
+
+# TODO reconstruct solution from u[0, :] and u[1, :]
 plt.xlim(coors[0]-.1, coors[-1]+.1)
 plt.legend(loc="upper left")
 plt.title("Numeric solution")
+
+# sol_frame(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, t0=0., ylims=[-1, 1], plott="step")
+
 
 plt.show()
