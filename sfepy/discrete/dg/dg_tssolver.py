@@ -20,22 +20,20 @@ class TSSolver:
         sic = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
 
         # FIXME initialization still is not correct!
-        sic[0, :] = quad(mesh, lambda t: ic(t))/(mesh.coors[1:] - mesh.coors[:-1])
-        sic[1, :] = 3*quad(mesh,
-                           lambda t: ic(t) *
-                                     basis.get_nth_fun(1)(t - (mesh.coors[1:] + mesh.coors[:-1])/2 / (mesh.coors[1:] - mesh.coors[:-1]))) * \
-                    (mesh.coors[1:] - mesh.coors[:-1])
+        # TODO check transformation to the reference element
+        c = (mesh.coors[1:] + mesh.coors[:-1])/2  # center
+        s = (mesh.coors[1:] - mesh.coors[:-1])/2  # scale
+        sic[0, :] = quad(lambda t: ic(c + t*s))/2
+        sic[1, :] = 3*quad(lambda t: t*ic(c + t*s))/2
         return sic
 
     @staticmethod
-    def intGauss2(mesh, f):
-        # TODO check transformation to the reference element
-        x_1 = mesh.coors[:-1] + (mesh.coors[1:] - mesh.coors[:-1]) * (-nm.sqrt(1 / 2) + 1) / 2
-        x_2 = mesh.coors[:-1] + (mesh.coors[1:] - mesh.coors[:-1]) * (nm.sqrt(1 / 3) + 1) / 2
+    def intGauss2(f):
 
-        w = (mesh.coors[1:] - mesh.coors[:-1]) / 2
+        x_1 = -1/nm.sqrt(1./3)
+        x_2 = 1/nm.sqrt(1./3)
 
-        return w*f(x_1) + w*f(x_2)
+        return f(x_1) + f(x_2)
 
     def solve(self, t0, tend, tsteps=10):
         print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
@@ -86,7 +84,7 @@ class RK3Solver(TSSolver):
         dt = float(tend - t0) / tsteps
         dx = nm.max(self.mesh.coors[1:] - self.mesh.coors[:-1])
         dtdx = dt/dx
-        maxa = self.equation.terms[1].a
+        maxa = abs(self.equation.terms[1].a)
 
         print("Space divided into {0} cells, {1} steps, step size is {2}".format(self.mesh.n_el, len(self.mesh.coors), dx))
         print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tsteps - 1, tsteps, dt))
