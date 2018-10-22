@@ -30,7 +30,7 @@ mesh = Mesh.from_data('advection_1d', coors, None,
 
 a = -1.0
 ts = 0
-te = 5
+te = 1
 tn = 500
 
 IntT = AdvIntDGTerm(mesh)
@@ -53,20 +53,13 @@ X = (mesh.coors[1:] + mesh.coors[:-1])/2
 T = nm.linspace(ts, te, tn)
 
 
-plt.figure("Numeric Solution anim")
+plt.figure("Sampled Solution anim")
 # Plot mesh
 plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.5, colors="grey")
 plt.vlines((mesh.coors[0], mesh.coors[-1]), ymin=0, ymax=.5, colors="k")
 plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
-def alones(n):
-    if (int(n) % 2) == 0:
-        return nm.tile([-1, 1], int(n/2))[:, None]
-    else:
-        return nm.append(nm.tile([1, -1], int(n / 2)), -1)[:, None]
-
-
-# Plot IC
+# Plot IC and its sampling
 c0 = plt.plot(X, sic[0, :, 0], label="IC-0", marker=".", ls="")[0].get_color()
 c1 = plt.plot(X, sic[1, :, 0], label="IC-1", marker=".", ls="")[0].get_color()
 # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
@@ -74,15 +67,45 @@ plt.step(coors[1:], sic[0, :, 0], label="IC-0", color=c0)
 plt.step(coors[1:], sic[1, :, 0], label="IC-1", color=c1)
 # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
 xs = nm.linspace(X1, XN1, 500)[:, None]
-plt.plot(xs, gsmooth(xs), label="IC-ex")
+plt.plot(xs, ic(xs), label="IC-ex")
 
-# Animate solution
+# Animate sampled solution
 anim = animate1d(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, ylims=[-1, 1], plott="step")
-
-# TODO reconstruct solution from u[0, :] and u[1, :]
 plt.xlim(coors[0]-.1, coors[-1]+.1)
 plt.legend(loc="upper left")
-plt.title("Numeric solution")
+plt.title("Sampled solution")
+
+plt.figure("Reconstructed Solution anim")
+# Plot mesh
+plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.5, colors="grey")
+plt.vlines((mesh.coors[0], mesh.coors[-1]), ymin=0, ymax=.5, colors="k")
+plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+
+# Prepare reconstructed solution
+ww = nm.zeros((2*n_nod, tn, 1))
+ww[0, :] = u[0, 0, :] - u[1, 0, :]
+ww[-1, :] = u[0, -1, :] + u[1, -1, :]
+ww[:-2:2] = u[0, 1:-1, :] - u[1, 1:-1, :]
+ww[1:-1:2] = u[0, 1:-1, :] + u[1, 1:-1, :]
+
+# nodes for plotting reconstructed solution
+xx = nm.zeros((2*n_nod, 1))
+xx[0] = mesh.coors[0]
+xx[-1] = mesh.coors[-1]
+xx[1:-3:2] = mesh.coors[1:-1]
+xx[2:-2:2] = mesh.coors[1:-1]
+# plt.vlines(xx, ymin=0, ymax=.3, colors="green")
+
+# plot reconstructed IC
+plt.plot(xx, ww[:, 0], label="IC")
+
+# Animate reconstructed
+anim_rec = animate1d(ww[:, :, 0].T, xx, T, ylims=[-1, 1])
+
+
+plt.xlim(coors[0]-.1, coors[-1]+.1)
+plt.legend(loc="upper left")
+plt.title("Reconstructed solution")
 
 # sol_frame(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, t0=0., ylims=[-1, 1], plott="step")
 
