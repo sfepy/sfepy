@@ -761,7 +761,7 @@ class MUMPSSolver(LinearSolver):
             self.presolve(mtx)
 
         out = rhs.copy()
-        self.mumps_ls.set_b(out)
+        self.mumps_ls.set_rhs(out)
         self.mumps_ls(3)  # solve
 
         return out
@@ -777,9 +777,8 @@ class MUMPSSolver(LinearSolver):
             if self.conf.verbose:
                 self.mumps_ls.set_verbose()
 
-            self.mumps_ls.set_A_centralized(mtx)
-            self.mumps_ls(1)  # analyze
-            self.mumps_ls(2)  # factorize
+            self.mumps_ls.set_mtx_centralized(mtx)
+            self.mumps_ls(4)  # analyze + factorize
             self.mumps_presolved = True
             self.mtx_digest = mtx_digest
 

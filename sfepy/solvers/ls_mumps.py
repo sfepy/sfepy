@@ -320,27 +320,27 @@ class MumpsSolver(object):
 
         self.struct = None
 
-    def set_A_centralized(self, A):
+    def set_mtx_centralized(self, mtx):
         """
         Set the sparse matrix.
 
         Parameters
         ----------
-        A : scipy sparse martix
+        mtx : scipy sparse martix
             The sparse matrix.
         """
-        assert A.shape[0] == A.shape[1]
+        assert mtx.shape[0] == mtx.shape[1]
 
-        A = A.tocoo()
-        rr = A.row + 1
-        cc = A.col + 1
-        self.set_rcd_centralized(rr, cc, A.data, A.shape[0])
+        mtx = mtx.tocoo()
+        rr = mtx.row + 1
+        cc = mtx.col + 1
+        self.set_rcd_centralized(rr, cc, mtx.data, mtx.shape[0])
 
     def set_rcd_centralized(self, ir, ic, data, n):
         """
         Set the matrix by row and column indicies and data vector.
         The matrix shape is determined by the maximal values of
-        row and column indicies.
+        row and column indicies. The indices start with 1.
 
         Parameters
         ----------
@@ -358,15 +358,16 @@ class MumpsSolver(object):
         self._data.update(ir=ir, ic=ic, data=data)
         self.struct.n = n
         self.struct.nz = ir.shape[0]
-        self.struct.nnz = ir.shape[0]
+        if hasattr(self.struct, 'nnz'):
+            self.struct.nnz = ir.shape[0]
         self.struct.irn = ir.ctypes.data_as(mumps_pint)
         self.struct.jcn = ic.ctypes.data_as(mumps_pint)
         self.struct.a = data.ctypes.data_as(mumps_pcomplex)
 
-    def set_b(self, b):
+    def set_rhs(self, rhs):
         """Set the right hand side of the linear system."""
-        self._data.update(b=b)
-        self.struct.rhs = b.ctypes.data_as(mumps_pcomplex)
+        self._data.update(rhs=rhs)
+        self.struct.rhs = rhs.ctypes.data_as(mumps_pcomplex)
 
     def __call__(self, job):
         """Set the job and call MUMPS."""
