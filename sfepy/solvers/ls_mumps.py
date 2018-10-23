@@ -373,6 +373,71 @@ class MumpsSolver(object):
         """Set the job and call MUMPS."""
         self._mumps_call(job)
 
+    def get_schur(self, schur_list):
+        """Get the Schur matrix and the condensed right-hand side vector.
+
+        Parameters
+        ----------
+        schur_list : array
+            The list of the Schur DOFs (indexing starts with 1).
+
+        Returns
+        -------
+        schur_arr : array
+            The Schur matrix of order 'schur_size'.
+        schur_rhs : array
+            The reduced right-hand side vector. 
+        """
+        # Schur
+        schur_size = schur_list.shape[0]
+        schur_arr = nm.empty((schur_size**2, ), dtype='d')
+        schur_rhs = nm.empty((schur_size, ), dtype='d')
+        self._schur_rhs = schur_rhs
+
+        self.struct.size_schur = schur_size
+        self.struct.listvar_schur = schur_list.ctypes.data_as(mumps_pint)
+        self.struct.schur = schur_arr.ctypes.data_as(mumps_pcomplex)
+        self.struct.lredrhs = schur_size
+        self.struct.redrhs = schur_rhs.ctypes.data_as(mumps_pcomplex)
+
+        # get matrix
+        self.struct.schur_lld = schur_size
+        self.struct.nprow = 1
+        self.struct.npcol = 1
+        self.struct.mbloc = 100
+        self.struct.nbloc = 100
+
+        self.struct.icntl[18] = 3  # centr. Schur complement stored by columns
+        self.struct.job = 4  # analyze + factorize
+        self._mumps_c(ctypes.byref(self.struct))
+
+        # get RHS
+        self.struct.icntl[25] = 1  # Reduction/condensation phase
+        self.struct.job = 3  # solve
+        self._mumps_c(ctypes.byref(self.struct))
+
+        return schur_arr.reshape((schur_size, schur_size)), schur_rhs
+
+    def expand_schur(self, x2):
+        """Expand the Schur local solution on the complete solution.
+
+        Parameters
+        ----------
+        x2 : array
+            The local Schur solution.
+
+        Returns
+        -------
+        x : array
+            The global solution.
+        """
+        self._schur_rhs[:] = x2
+        self.struct.icntl[25] = 2  # Expansion phase
+        self.struct.job = 3  # solve
+        self._mumps_c(ctypes.byref(self.struct))
+
+        return self._data['rhs']
+
     def _mumps_call(self, job):
         """Set the job and call MUMPS.
 

@@ -850,6 +850,45 @@ class MUMPSParallelSolver(LinearSolver):
         return out
 
 
+class SchurMumps(MUMPSSolver):
+    r"""
+    Mumps Schur complement solver.
+    """
+    name = 'ls.schur_mumps'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = ScipyDirect._parameters + [
+        ('schur_variables', 'list', None, True,
+         'The list of Schur variables.'),
+    ]
+
+    @standard_call
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        import scipy.linalg as sla
+
+        system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
+        self.mumps_ls = self.mumps.MumpsSolver(system=system)
+
+        if self.conf.verbose:
+            self.mumps_ls.set_verbose()
+
+        schur_list = []
+        for schur_var in conf.schur_variables:
+            slc = self.context.equations.variables.di.indx[schur_var]
+            schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i') + 1)
+
+        self.mumps_ls.set_mtx_centralized(mtx)
+        out = rhs.copy()
+        self.mumps_ls.set_rhs(out)
+
+        S, y2 = self.mumps_ls.get_schur(nm.hstack(schur_list))
+        x2 = sla.solve(S.T, y2)  # solve the dense Schur system using scipy.linalg
+
+        return self.mumps_ls.expand_schur(x2)
+
+
 class SchurGeneralized(ScipyDirect):
     r"""
     Generalized Schur complement.
