@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from numpy import newaxis as nax
 
+
 class TSSolver:
     # TODO refactor Solver to Problem class
 
@@ -34,6 +35,17 @@ class TSSolver:
         x_2 = 1/nm.sqrt(1./3)
 
         return f(x_1) + f(x_2)
+
+    @staticmethod
+    def intGauss3(f):
+        x_0 = 0
+        x_1 = - nm.sqrt(3./5.)
+        x_2 = nm.sqrt(3./5.)
+
+        w_0 = 8./9.
+        w_1 = 5. / 9.
+
+        return w_0 * f(x_0) + w_1 * f(x_1) + w_1 * f(x_2)
 
     def solve(self, t0, tend, tsteps=10):
         print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
