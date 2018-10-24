@@ -25,7 +25,7 @@ def mumps_parallel_solve():
         n = flags[0]
         mumps_ls.set_rcd_centralized(idxs[0, :], idxs[1, :], vals_mtx, n)
         x = vals_rhs.copy()
-        mumps_ls.set_b(x)
+        mumps_ls.set_rhs(x)
 
     mumps_ls(6)  # analyse, factorize, solve
 
