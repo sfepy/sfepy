@@ -45,6 +45,11 @@ class TSSolver:
 
         return w_0 * f(x_0) + w_1 * f(x_1) + w_1 * f(x_2)
 
+    @staticmethod
+    def limiter(u):
+
+        return u
+
     def solve(self, t0, tend, tsteps=10):
         print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
         A = nm.zeros((2, self.mesh.n_el, self.mesh.n_el), dtype=nm.float64)
