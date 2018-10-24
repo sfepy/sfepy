@@ -20,8 +20,6 @@ class TSSolver:
     def sampleIC(self, mesh, ic, quad, basis):
         sic = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
 
-        # FIXME initialization still is not correct!
-        # TODO check transformation to the reference element
         c = (mesh.coors[1:] + mesh.coors[:-1])/2  # center
         s = (mesh.coors[1:] - mesh.coors[:-1])/2  # scale
         sic[0, :] = quad(lambda t: ic(c + t*s))/2
@@ -31,8 +29,8 @@ class TSSolver:
     @staticmethod
     def intGauss2(f):
 
-        x_1 = -1/nm.sqrt(1./3)
-        x_2 = 1/nm.sqrt(1./3)
+        x_1 = - nm.sqrt(1./3.)
+        x_2 = nm.sqrt(1./3.)
 
         return f(x_1) + f(x_2)
 
