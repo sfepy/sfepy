@@ -17,9 +17,9 @@ from dg_basis import LegendrePolySpace
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import animate1d, sol_frame
 
-X1 = -3.
-XN1 = 7.
-n_nod = 100
+X1 = 0.
+XN1 = 1.
+n_nod = 500
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN1, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
@@ -28,17 +28,17 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-a = -1.0
+a = 1.0
 ts = 0
-te = 1
-tn = 500
+te = .5
+tn = 600
 
 IntT = AdvIntDGTerm(mesh)
 FluxT = AdvFluxDGTerm(mesh, a)
 
 eq = Equation((IntT, FluxT))
 
-ic = gsmooth
+ic = superic
 bc = {"left" : 0,
       "right" : 0}
 
@@ -70,7 +70,7 @@ xs = nm.linspace(X1, XN1, 500)[:, None]
 plt.plot(xs, ic(xs), label="IC-ex")
 
 # Animate sampled solution
-anim = animate1d(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, ylims=[-1, 1], plott="step")
+anim = animate1d(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, ylims=[-1, 2], plott="step")
 plt.xlim(coors[0]-.1, coors[-1]+.1)
 plt.legend(loc="upper left")
 plt.title("Sampled solution")
@@ -82,27 +82,43 @@ plt.vlines((mesh.coors[0], mesh.coors[-1]), ymin=0, ymax=.5, colors="k")
 plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
 # Prepare reconstructed solution
-ww = nm.zeros((2*n_nod, tn, 1))
+# ww = nm.zeros((2*n_nod, tn, 1))
+# ww[0, :] = u[0, 0, :] - u[1, 0, :]
+# ww[-1, :] = u[0, -1, :] + u[1, -1, :]
+# ww[:-2:2] = u[0, 1:-1, :] - u[1, 1:-1, :]
+# ww[1:-1:2] = u[0, 1:-1, :] + u[1, 1:-1, :]
+#
+# # nodes for plotting reconstructed solution
+# xx = nm.zeros((2*n_nod, 1))
+# xx[0] = mesh.coors[0]
+# xx[-1] = mesh.coors[-1]
+# xx[2::2] = mesh.coors[1:]
+# xx[1:-1:2] = mesh.coors[1:]
+# # plt.vlines(xx, ymin=0, ymax=.3, colors="green")
+#
+
+# Plot discontinuously!
+ww = nm.zeros((3*n_nod-1, tn, 1))
 ww[0, :] = u[0, 0, :] - u[1, 0, :]
 ww[-1, :] = u[0, -1, :] + u[1, -1, :]
-ww[:-2:2] = u[0, 1:-1, :] - u[1, 1:-1, :]
-ww[1:-1:2] = u[0, 1:-1, :] + u[1, 1:-1, :]
+
+ww[0:-2:3] = u[0, 1:-1, :] - u[1, 1:-1, :]  # left edges of elements
+ww[1:-1:3] = u[0, 1:-1, :] + u[1, 1:-1, :]  # right edges of elements
+ww[2::3, :] = nm.NaN  # NaNs ensure plotting of discontinuities at element borders
 
 # nodes for plotting reconstructed solution
-xx = nm.zeros((2*n_nod, 1))
+xx = nm.zeros((3*n_nod-1, 1))
 xx[0] = mesh.coors[0]
 xx[-1] = mesh.coors[-1]
-xx[1:-3:2] = mesh.coors[1:-1]
-xx[2:-2:2] = mesh.coors[1:-1]
+# the ending ones are still a bit odd, but hey, it works!
+xx[1:-1] = nm.repeat(mesh.coors[1:], 3)[:, None]
 # plt.vlines(xx, ymin=0, ymax=.3, colors="green")
 
 # plot reconstructed IC
 plt.plot(xx, ww[:, 0], label="IC")
 
 # Animate reconstructed
-anim_rec = animate1d(ww[:, :, 0].T, xx, T, ylims=[-1, 1])
-
-
+anim_disc = animate1d(ww[:, :, 0].T, xx, T, ylims=[-1, 2])
 plt.xlim(coors[0]-.1, coors[-1]+.1)
 plt.legend(loc="upper left")
 plt.title("Reconstructed solution")
