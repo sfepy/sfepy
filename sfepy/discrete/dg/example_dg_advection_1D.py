@@ -1,12 +1,10 @@
 import numpy as nm
 import matplotlib.pyplot as plt
 
-
 # sfepy imports
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
-
 
 # local import
 from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
@@ -19,7 +17,7 @@ from my_utils.visualizer import animate1d, sol_frame
 
 X1 = 0.
 XN1 = 1.
-n_nod = 500
+n_nod = 100
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN1, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
@@ -30,8 +28,8 @@ mesh = Mesh.from_data('advection_1d', coors, None,
 
 a = 1.0
 ts = 0
-te = .5
-tn = 600
+te = 2
+tn = 800
 
 IntT = AdvIntDGTerm(mesh)
 FluxT = AdvFluxDGTerm(mesh, a)
@@ -45,15 +43,19 @@ bc = {"left" : 0,
 geometry = Struct(n_vertex=2,
                   dim=1,
                   coors=coors.copy())
-tss = RK3Solver(eq, ic, bc, LegendrePolySpace("legb", geometry, 1))
+tss = RK3Solver(eq, ic, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
 
 u, dt = tss.solve(ts, te, tn)
 sic = tss.initial_cond
+
+
+#--------
+#| Plot |
+#--------
+plt.figure("Sampled Solution anim")
 X = (mesh.coors[1:] + mesh.coors[:-1])/2
 T = nm.linspace(ts, te, tn)
 
-
-plt.figure("Sampled Solution anim")
 # Plot mesh
 plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.5, colors="grey")
 plt.vlines((mesh.coors[0], mesh.coors[-1]), ymin=0, ymax=.5, colors="k")
@@ -124,6 +126,5 @@ plt.legend(loc="upper left")
 plt.title("Reconstructed solution")
 
 # sol_frame(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, t0=0., ylims=[-1, 1], plott="step")
-
 
 plt.show()
