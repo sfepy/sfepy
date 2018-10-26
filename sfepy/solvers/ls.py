@@ -767,10 +767,14 @@ class MUMPSSolver(LinearSolver):
         return out
 
     def presolve(self, mtx):
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
         if self.mumps_ls is None:
             system = 'complex' if mtx.dtype.name.startswith('complex')\
                 else 'real'
-            self.mumps_ls = self.mumps.MumpsSolver(system=system)
+            is_sym = self.mumps.coo_is_symmetric(mtx)
+            self.mumps_ls = self.mumps.MumpsSolver(system=system,
+                                                   is_sym=is_sym)
 
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
         if is_new:

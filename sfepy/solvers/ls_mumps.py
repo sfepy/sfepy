@@ -44,6 +44,32 @@ def load_mumps_libraries():
     mumps_libs['zmumps'] = load_library('zmumps').zmumps_c
 
 
+def coo_is_symmetric(mtx, tol=1e-6):
+    r, c = mtx.row, mtx.col
+    odiag = nm.where(r != c)[0]
+    if odiag.shape[0] == 0:
+        return True
+
+    odr, odc, odd = r[odiag], c[odiag], mtx.data[odiag]
+
+    idxs = nm.where(odc > odr)[0]
+    if (idxs.shape[0] * 2) == odiag.shape[0]:
+        odr[idxs], odc[idxs] = odc[idxs], odr[idxs]
+
+        idxs = nm.lexsort((odc, odr))
+        odr, odc, odd = odr[idxs], odc[idxs], odd[idxs]
+        d1 = nm.abs(nm.diff(nm.vstack([odr, odc]))).sum(axis=0)
+        d2 = nm.diff(odd)
+        if nm.all(d1[::2] == 0):
+            vals = nm.abs(d2[::2])
+            idxs = nm.where(vals > nm.finfo(vals.dtype).resolution)[0]
+            vals[idxs] /= odd.reshape((vals.shape[0], 2)).max(axis=1)[idxs]
+            if nm.all(vals < tol):
+                return True
+
+    return False
+
+
 mumps_fields_part1 = [
     ('sym', mumps_int),
     ('par', mumps_int),
@@ -196,7 +222,8 @@ class mumps_struc_c_5_1(ctypes.Structure):  # MUMPS 5.1.x
 class MumpsSolver(object):
     """MUMPS object."""
 
-    def __init__(self, sym=0, mpi_comm=None, system='real', silent=True):
+    def __init__(self, is_sym=False, mpi_comm=None,
+                 system='real', silent=True):
         """
         Init MUMUPS solver.
 
@@ -232,7 +259,7 @@ class MumpsSolver(object):
 
         self.struct = mumps_struc_c_x()
         self.struct.par = 1
-        self.struct.sym = sym
+        self.struct.sym = 0
         self.struct.comm_fortran = self.mpi_comm.py2f()
         self.struct.job = -1
 
@@ -260,7 +287,7 @@ class MumpsSolver(object):
 
         self.struct = mumps_struc_c()
         self.struct.par = 1
-        self.struct.sym = sym
+        self.struct.sym = 2 if is_sym else 0
         self.struct.n = 0
         self.struct.comm_fortran = self.mpi_comm.py2f()
 
@@ -299,14 +326,19 @@ class MumpsSolver(object):
         Parameters
         ----------
         mtx : scipy sparse martix
-            The sparse matrix.
+            The sparse matrix in COO format.
         """
         assert mtx.shape[0] == mtx.shape[1]
 
-        mtx = mtx.tocoo()
         rr = mtx.row + 1
         cc = mtx.col + 1
-        self.set_rcd_centralized(rr, cc, mtx.data, mtx.shape[0])
+        data = mtx.data
+
+        if self.struct.sym > 0:
+            idxs = nm.where(cc >= rr)[0]  # upper triangular matrix
+            rr, cc, data = rr[idxs], cc[idxs], data[idxs]
+
+        self.set_rcd_centralized(rr, cc, data, mtx.shape[0])
 
     def set_rcd_centralized(self, ir, ic, data, n):
         """
