@@ -8,7 +8,7 @@ see paper [1].
 [1] E. Rohan, V. Lukeš: Modeling Tissue Perfusion Using a Homogenized
 Model with Layer-wise Decomposition. IFAC Proceedings Volumes 45(2), 2012,
 pages 1029-1034.
-http://seth.asc.tuwien.ac.at/proc12/full_paper/Contribution183.pdf
+https://doi.org/10.3182/20120215-3-AT-3016.00182
 """
 
 from __future__ import absolute_import

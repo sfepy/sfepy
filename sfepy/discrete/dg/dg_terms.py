@@ -10,7 +10,8 @@ class DGTerm:
                  standalone=True, ret_status=False, **kwargs):
         raise NotImplemented
 
-    def assemble_to(self, asm_obj, val, iels, mode="vector"):
+    @staticmethod
+    def assemble_to(asm_obj, val, iels, mode="vector"):
         if (asm_obj is not None) and (iels is not None):
             if mode == "vector":
                 if (len(iels) == 2) and (nm.shape(val)[0] == len(iels[0])):
@@ -26,13 +27,19 @@ class DGTerm:
                 else:
                     asm_obj[iels] = asm_obj[iels] + val
             else:
-                raise ValueError("Unknown assebmly mode '%s'" % mode)
+                raise ValueError("Unknown assembly mode '%s'" % mode)
 
 
 class AdvIntDGTerm(Term):
     # TODO try inheritigng directly from Term?
     # TODO Replace this term by sfepy.terms.dw_volume?
     name = "dw_volume"
+class AdvIntDGTerm(DGTerm):
+
+    def __init__(self, mesh):
+        DGTerm.__init__(self, mesh)
+        self.vvar = "v"
+        self.diff_var = "u"
 
     def get_fargs(self, *args, **kwargs):
 
@@ -85,7 +92,7 @@ class AdvFluxDGTerm(Term):
         #
         # only from the zero order function, over [-1, 1] - hence the 2
         intg = a * u[0, 1:-1].T * 2
-        
+
         #  the Lax-Friedrichs flux is
         #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
         # in our case a and b are values to the left and right of the element boundary

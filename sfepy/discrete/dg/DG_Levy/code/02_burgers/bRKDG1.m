@@ -8,7 +8,7 @@ Wmax = max(pp(X));
 dt = 0.5 * dx / (abs(Wmax) * 5); % adt/dx < 1/(2k+1), kde k je nejvyšší řád 
                         % užitých polynomů
 t = zeros(ceil(T / dt) + 1,1);
-fprintf('Bude provedeno %d časových kroků\n\n', ceil(T / dt));
+fprintf('Bude provedeno %d casovych kroku\n\n', ceil(T / dt));
 % \~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/ %
 
 % /~~~~~~~~~~~~~~~~~~~~~~~~ INICIALIZACE MATIC ~~~~~~~~~~~~~~~~~~~~~~~~~\ %

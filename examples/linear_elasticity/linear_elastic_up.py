@@ -103,10 +103,7 @@ equations = {
 #! Even linear problems are solved by a nonlinear solver - only one
 #! iteration is needed and the final residual is obtained for free.
 solvers = {
-    'ls' : ('ls.schur_complement', {
-        'keep': ['p'],
-        'eliminate': ['u'],
-    }),
+    'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton', {
         'i_max'      : 1,
         'eps_a'      : 1e-2,

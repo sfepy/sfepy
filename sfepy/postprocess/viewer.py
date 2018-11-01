@@ -16,6 +16,7 @@ try:
     from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
     from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
     from enthought.mayavi.core.dataset_manager import DatasetManager
+    from enthought.pyface.gui import GUI
 
 except ImportError:
     from traits.api \
@@ -27,6 +28,7 @@ except ImportError:
     from mayavi.tools.mlab_scene_model import MlabSceneModel
     from mayavi.core.ui.mayavi_scene import MayaviScene
     from mayavi.core.dataset_manager import DatasetManager
+    from pyface.gui import GUI
 
 from sfepy.base.base import (insert_as_static_method, output, assert_,
                              get_arguments, get_default, Struct, basestr)
@@ -1198,7 +1200,10 @@ def make_animation(filename, view, roll, anim_format, options,
 
 class ClosingHandler(Handler):
     def object_button_quit_changed(self, info):
+        if not info.initialized: return
         info.ui.dispose()
+        gui = GUI()
+        gui.stop_event_loop()
 
 class ViewerGUI(HasTraits):
 

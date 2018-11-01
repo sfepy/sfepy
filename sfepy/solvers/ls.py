@@ -757,32 +757,32 @@ class MUMPSSolver(LinearSolver):
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-
-        if self.mumps_ls is None:
-            system = 'complex' if mtx.dtype.name.startswith('complex')\
-                else 'real'
-            self.mumps_ls = self.mumps.MumpsSolver(system=system)
-
         if not self.mumps_presolved:
             self.presolve(mtx)
 
         out = rhs.copy()
-        self.mumps_ls.set_b(out)
+        self.mumps_ls.set_rhs(out)
         self.mumps_ls(3)  # solve
-        from scipy.io import savemat
-        savemat('test_matrix_vector.mat', {'A': mtx, 'b': rhs, 'x': out})
 
         return out
 
     def presolve(self, mtx):
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
+        if self.mumps_ls is None:
+            system = 'complex' if mtx.dtype.name.startswith('complex')\
+                else 'real'
+            is_sym = self.mumps.coo_is_symmetric(mtx)
+            self.mumps_ls = self.mumps.MumpsSolver(system=system,
+                                                   is_sym=is_sym)
+
         is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
         if is_new:
             if self.conf.verbose:
                 self.mumps_ls.set_verbose()
 
-            self.mumps_ls.set_A_centralized(mtx)
-            self.mumps_ls(1)  # analyze
-            self.mumps_ls(2)  # factorize
+            self.mumps_ls.set_mtx_centralized(mtx)
+            self.mumps_ls(4)  # analyze + factorize
             self.mumps_presolved = True
             self.mtx_digest = mtx_digest
 
@@ -854,157 +854,44 @@ class MUMPSParallelSolver(LinearSolver):
         return out
 
 
-class SchurGeneralized(ScipyDirect):
+class SchurMumps(MUMPSSolver):
     r"""
-    Generalized Schur complement.
-
-    Defines the matrix blocks and calls user defined function.
+    Mumps Schur complement solver.
     """
-    name = 'ls.schur_generalized'
+    name = 'ls.schur_mumps'
 
     __metaclass__ = SolverMeta
 
     _parameters = ScipyDirect._parameters + [
-        ('blocks', 'dict', None, True,
-         """The description of blocks: ``{block_name1 : [variable_name1, ...],
-            ...}``."""),
-        ('function', 'callable', None, True,
-         'The user defined function.'),
+        ('schur_variables', 'list', None, True,
+         'The list of Schur variables.'),
     ]
-
-    def __init__(self, conf, context=None, **kwargs):
-        ScipyDirect.__init__(self, conf, context=context, **kwargs)
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        from sfepy.discrete.state import State
+        import scipy.linalg as sla
 
-        equations = self.context.equations
-        aux_state = State(equations.variables)
+        system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
+        self.mumps_ls = self.mumps.MumpsSolver(system=system)
 
-        mtxi = {}
-        for bk, bv in six.iteritems(conf.blocks):
-            aux_state.fill(0.0)
-            for jj in bv:
-                idx = equations.variables.di.indx[jj]
-                aux_state.vec[idx] = nm.nan
+        if self.conf.verbose:
+            self.mumps_ls.set_verbose()
 
-            aux_state.apply_ebc()
-            vec0 = aux_state.get_reduced()
-            mtxi[bk] = nm.where(nm.isnan(vec0))[0]
+        schur_list = []
+        for schur_var in conf.schur_variables:
+            slc = self.context.equations.variables.di.indx[schur_var]
+            schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i') + 1)
 
-        mtxslc_s = {}
-        mtxslc_f = {}
-        nn = {}
+        self.mumps_ls.set_mtx_centralized(mtx)
+        out = rhs.copy()
+        self.mumps_ls.set_rhs(out)
 
-        for ik, iv in six.iteritems(mtxi):
-            ptr = 0
-            nn[ik] = len(iv)
-            mtxslc_s[ik] = []
-            mtxslc_f[ik] = []
-            while ptr < nn[ik]:
-                idx0 = iv[ptr:]
-                idxrange = nm.arange(idx0[0], idx0[0] + len(idx0))
-                aux = nm.where(idx0 == idxrange)[0]
-                mtxslc_s[ik].append(slice(ptr + aux[0], ptr + aux[-1] + 1))
-                mtxslc_f[ik].append(slice(idx0[aux][0], idx0[aux][-1] + 1))
-                ptr += aux[-1] + 1
+        S, y2 = self.mumps_ls.get_schur(nm.hstack(schur_list))
+        x2 = sla.solve(S.T, y2)  # solve the dense Schur system using scipy.linalg
 
-        mtxs = {}
-        rhss = {}
-        ress = {}
-        get_sub = mtx._get_submatrix
-        for ir in six.iterkeys(mtxi):
-            rhss[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
-            ress[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
-            for jr, idxr in enumerate(mtxslc_f[ir]):
-                rhss[ir][mtxslc_s[ir][jr]] = rhs[idxr]
+        return self.mumps_ls.expand_schur(x2)
 
-            for ic in six.iterkeys(mtxi):
-                mtxid = '%s%s' % (ir, ic)
-                mtxs[mtxid] = nm.zeros((nn[ir], nn[ic]), dtype=nm.float64)
-                for jr, idxr in enumerate(mtxslc_f[ir]):
-                    for jc, idxc in enumerate(mtxslc_f[ic]):
-                        iir = mtxslc_s[ir][jr]
-                        iic = mtxslc_s[ic][jc]
-                        mtxs[mtxid][iir, iic] = get_sub(idxr, idxc).todense()
-
-        self.orig_conf.function(ress, mtxs, rhss, nn)
-
-        res = nm.zeros_like(rhs)
-        for ir in six.iterkeys(mtxi):
-            for jr, idxr in enumerate(mtxslc_f[ir]):
-                res[idxr] = ress[ir][mtxslc_s[ir][jr]]
-
-        return res
-
-class SchurComplement(SchurGeneralized):
-    r"""
-    Schur complement.
-
-    Solution of the linear system
-
-    .. math::
-       \left[ \begin{array}{cc}
-       A & B \\
-       C & D \end{array} \right]
-       \cdot
-       \left[ \begin{array}{c}
-       u \\
-       v \end{array} \right]
-       =
-       \left[ \begin{array}{c}
-       f \\
-       g \end{array} \right]
-
-    is obtained by solving the following equation:
-
-    .. math::
-       (D - C A^{-1} B) \cdot v = g - C A^{-1} f
-
-    variable(s) :math:`u` are specified in "eliminate" list,
-    variable(s) :math:`v` are specified in "keep" list,
-
-    See: http://en.wikipedia.org/wiki/Schur_complement
-    """
-    name = 'ls.schur_complement'
-
-    __metaclass__ = SolverMeta
-
-    _parameters = SchurGeneralized._parameters + [
-        ('eliminate', 'list', None, True,
-         'The list of variables to eliminate.'),
-        ('keep', 'list', None, True,
-         'The list of variables to keep.'),
-    ]
-
-    @staticmethod
-    def schur_fun(res, mtx, rhs, nn):
-        import scipy.sparse as scs
-        import scipy.sparse.linalg as sls
-
-        invA = sls.splu(scs.csc_matrix(mtx['11']))
-        invAB = nm.zeros_like(mtx['12'])
-        for j, b in enumerate(mtx['12'].T):
-            invAB[:,j] = invA.solve(b)
-
-        invAf = invA.solve(rhs['1'])
-
-        spC = scs.csc_matrix(mtx['21'])
-        k_rhs = rhs['2'] - spC * invAf
-        res['2'] = sls.spsolve(scs.csc_matrix(mtx['22'] - spC * invAB), k_rhs)
-        res['1'] = invAf - nm.dot(invAB, res['2'])
-
-    def __init__(self, conf, **kwargs):
-        get = conf.get
-        conf.blocks = {'1': get('eliminate', None,
-                                'missing "eliminate" in options!'),
-                       '2': get('keep', None,
-                                'missing "keep" in options!'),}
-        conf.function = SchurComplement.schur_fun
-
-        SchurGeneralized.__init__(self, conf, **kwargs)
 
 class MultiProblem(ScipyDirect):
     r"""
