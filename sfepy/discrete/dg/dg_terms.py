@@ -30,7 +30,6 @@ class DGTerm:
 
 
 class AdvIntDGTerm(Term):
-    # TODO try inheritigng directly from Term?
     # TODO Replace this term by sfepy.terms.dw_volume?
     name = "dw_volume"
 
@@ -52,9 +51,17 @@ class AdvIntDGTerm(Term):
         status = None
         return status
 
+
 class AdvFluxDGTerm(Term):
 
-    name = "dw_dg_advect__flux"
+    def __init__(self, integral, region, u=None, v=None, a=lambda x: 1):
+        Term.__init__("adv_lf_flux", None, integral, region, None)
+        self.u = u
+        self.v = v
+        self.a = a
+
+
+    name = "dw_dg_advect_flux"
     modes = ("weak",)
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material': 'a, 1', 'virtual': ('1', 'state'),
@@ -68,7 +75,7 @@ class AdvFluxDGTerm(Term):
 
         if diff_var == self.diff_var:
             u = self.get(state, 'val', step=-1)
-            a = self.get()
+            a = self.a(self.region.coors)
 
         else:
             val = None
