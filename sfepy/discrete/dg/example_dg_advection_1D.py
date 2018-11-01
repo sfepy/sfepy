@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
+from sfepy.base.base import IndexedStruct
+from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+                            Equation, Equations, Problem)
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 
 # local import
 from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
@@ -31,8 +35,19 @@ ts = 0
 te = 2
 tn = 800
 
-IntT = AdvIntDGTerm(mesh)
-FluxT = AdvFluxDGTerm(mesh, a)
+domain = FEDomain('domain', mesh)
+omega = domain.create_region('Omega', 'all')
+field = Field.from_args('fu', nm.float64, 'vector', omega,
+                        approx_order=2)
+u = FieldVariable('u', 'unknown', field, history=1)
+v = FieldVariable('v', 'test', field, primary_var_name='u')
+integral = Integral('i', order=2)
+
+# TODO use sfepy volume term?
+IntT = AdvIntDGTerm(integral, omega, v=v, u=u)
+
+# TODO write constructors for flux term?
+FluxT = AdvFluxDGTerm(integral, omega, a=a, v=v, u=u)
 
 eq = Equation((IntT, FluxT))
 
