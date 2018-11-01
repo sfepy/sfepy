@@ -31,10 +31,8 @@ class DGTerm:
 
 class AdvIntDGTerm(Term):
     # TODO try inheritigng directly from Term?
-    def __init__(self, mesh):
-        DGTerm.__init__(self, mesh)
-        self.vvar = "v"
-        self.diff_var = "u"
+    # TODO Replace this term by sfepy.terms.dw_volume?
+    name = "dw_volume"
 
     def get_fargs(self, *args, **kwargs):
 
@@ -56,38 +54,63 @@ class AdvIntDGTerm(Term):
 
 class AdvFluxDGTerm(Term):
 
-    def __init__(self, mesh, a):
-        DGTerm.__init__(self, mesh)
-        self.a = a
-        self.vvar = None
-        self.diff_var = None
+    name = "dw_dg_advect__flux"
+    modes = ("weak",)
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material': 'a, 1', 'virtual': ('1', 'state'),
+                  'state'   : '1'}
+    symbolic = {'expression' : 'grad(a*u)',
+                'map': {'u': 'state', 'a': 'material'}
+    }
 
     def get_fargs(self, state, mode="weak", diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
 
-        u = self.get(state, 'val', step=-1)
         if diff_var == self.diff_var:
-            # exact integral
-            intg = self.a * (u[0, 1:-1] * (self.mesh.coors[1:] - self.mesh.coors[:-1]) +
-                             1/2*u[1, 1:-1]**2 * (self.mesh.coors[1:] - self.mesh.coors[:-1])).T
+            u = self.get(state, 'val', step=-1)
+            a = self.get()
 
-            fp = self.a * u[0, 2:].T if self.a > 0 else self.a * u[0, 1:-1].T
-            fl = self.a * u[0, 1:-1].T if self.a > 0 else self.a * u[0, :-2].T
-
-            val = nm.vstack((fl - fp, - fl - fp + intg))
-            # TODO values of flux terms are functions of solution on previous time step,
-            # how to pas these values to the term?
-
-            # placement is simple, bud getting the values requires looping over neighbours
-            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
         else:
             val = None
             iels = None
-        fargs = (val, iels)
+        fargs = (u, a)
         return fargs
 
-    def function(selfself, out, *fargs):
+    def function(self, out, u, a):
+        # for Legendre basis integral of higher order
+        # functions of the basis is zero,
+        # hence we calculate integral
+        #
+        # int_{j-1/2}^{j+1/2} f(u)dx
+        #
+        # only from the zero order function, over [-1, 1] - hence the 2
+        intg = a * u[0, 1:-1].T * 2
+        
+        #  the Lax-Friedrichs flux is
+        #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
+        # in our case a and b are values to the left and right of the element boundary
+        # for Legendre basis these are:
+        # u_left = U_0 + U_1 + U_2 + ...
+        # u_right = U_0 - U_1 + U_2 + ... = sum_0^{order} (-1)^p * U_p
 
+        # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
+        # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
 
+        fl = a * (u[0, :-2] + u[1, :-2] +
+                 (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
+             nm.abs(a) * (u[0, :-2] + u[1, :-2] -
+                         (u[0, 1:-1] - u[1, 1:-1])).T / 2
+
+        fp = a * (u[0, 1:-1] + u[1, 1:-1] +
+                 (u[0, 2:] - u[1, 2:])).T / 2 + \
+             nm.abs(a) * (u[0, 1:-1] + u[1, 1:-1] -
+                         (u[0, 2:] - u[1, 2:])).T / 2
+
+        val = nm.vstack((fl - fp, - fl - fp + intg))
+
+        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
+
+        vals = nm.vstack((fl - fp, - fl - fp + intg))
+        out = (vals, iels)
         status = None
         return status
