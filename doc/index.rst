@@ -42,7 +42,7 @@
          * - Latest release version documentation
            - http://sfepy.org/doc
          * - Automatically generated gallery
-           - http://sfepy.org/gallery/gallery
+           - http://sfepy.org/gallery
          * - Mailing list (both user and developer)
            - `sfepy(at)python.org
              <https://mail.python.org/mm3/mailman3/lists/sfepy.python.org>`_
