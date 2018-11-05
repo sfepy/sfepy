@@ -9,11 +9,12 @@ from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.fem import Mesh, FEDomain, Field
+from sfepy.discrete.conditions import InitialCondition
 
 # local import
 from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
 from dg_equation import Equation
-from dg_tssolver import TSSolver, RK3Solver
+from dg_tssolver import TSSolver, RK3Solver, EU1Solver
 from dg_basis import LegendrePolySpace
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
@@ -44,21 +45,27 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=2)
 
 # TODO use sfepy volume term?
-IntT = AdvIntDGTerm(integral, omega, v=v, u=u)
+IntT = AdvIntDGTerm(mesh)
 
-# TODO write constructors for flux term?
-FluxT = AdvFluxDGTerm(integral, omega, a=a, v=v, u=u)
+a = Material('a', val=[1.0])  # TODO how doe materials really work?
+FluxT = AdvFluxDGTerm(integral, omega, v=v, u=u)
 
 eq = Equation((IntT, FluxT))
 
+
+ic_fun = Function('ic_fun', superic)
+ic = InitialCondition('ic', omega, {'T.0': ic_fun})  # TODO how to initialize variable with IC?
+
 ic = superic
+
+
 bc = {"left" : 0,
       "right" : 0}
 
 geometry = Struct(n_vertex=2,
                   dim=1,
                   coors=coors.copy())
-tss = RK3Solver(eq, ic, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
+tss = EU1Solver(eq, ic, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
 
 u, dt = tss.solve(ts, te, tn)
 sic = tss.initial_cond
