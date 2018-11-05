@@ -18,7 +18,7 @@ try:
     from enthought.mayavi.core.dataset_manager import DatasetManager
     from enthought.pyface.gui import GUI
 
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     from traits.api \
          import HasTraits, Instance, Button, Int, Float, Bool, on_trait_change
     from traitsui.api \
