@@ -133,6 +133,7 @@ def petsc_call(call):
 
     return _petsc_call
 
+
 class ScipyDirect(LinearSolver):
     """
     Direct sparse solver from SciPy.
@@ -146,43 +147,44 @@ class ScipyDirect(LinearSolver):
          'The actual solver to use.'),
         ('presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
-        ('warn', 'bool', True, False,
-         'If True, allow warnings.'),
     ]
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, method=None, **kwargs):
         LinearSolver.__init__(self, conf, solve=None, **kwargs)
         um = self.sls = None
+        if method is None:
+            method = self.conf.method
 
         aux = try_imports(['import scipy.linsolve as sls',
                            'import scipy.splinalg.dsolve as sls',
                            'import scipy.sparse.linalg.dsolve as sls'],
                           'cannot import scipy sparse direct solvers!')
-        self.sls = aux['sls']
-        aux = try_imports(['import scipy.linsolve.umfpack as um',
-                           'import scipy.splinalg.dsolve.umfpack as um',
-                           'import scipy.sparse.linalg.dsolve.umfpack as um',
-                           'import scikits.umfpack as um'])
-        if 'um' in aux:
-            um = aux['um']
-
-        if um is not None:
-            is_umfpack = hasattr(um, 'UMFPACK_OK')
+        if 'sls' in aux:
+            self.sls = aux['sls']
         else:
-            is_umfpack = False
+            raise ValueError('SuperLU not available!')
 
-        method = self.conf.method
-        if method == 'superlu':
-            self.sls.use_solver(useUmfpack=False)
-        elif method == 'umfpack':
-            if not is_umfpack and self.conf.warn:
-                output('umfpack not available, using superlu!')
-        elif method != 'auto':
+        if method in ['auto', 'umfpack']:
+            aux = try_imports([
+                'import scipy.linsolve.umfpack as um',
+                'import scipy.splinalg.dsolve.umfpack as um',
+                'import scipy.sparse.linalg.dsolve.umfpack as um',
+                'import scikits.umfpack as um'])
+
+            is_umfpack = True if 'um' in aux\
+                and hasattr(aux['um'], 'UMFPACK_OK') else False
+            if method == 'umfpack' and not is_umfpack:
+                raise ValueError('UMFPACK not available!')
+        elif method == 'superlu':
+            is_umfpack = False
+        else:
             raise ValueError('uknown solution method! (%s)' % method)
 
-        if method != 'superlu' and is_umfpack:
+        if is_umfpack:
             self.sls.use_solver(useUmfpack=True,
                                 assumeSortedIndices=True)
+        else:
+            self.sls.use_solver(useUmfpack=False)
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
@@ -202,6 +204,37 @@ class ScipyDirect(LinearSolver):
         if is_new:
             self.solve = self.sls.factorized(mtx)
             self.mtx_digest = mtx_digest
+
+
+class ScipySuperLU(ScipyDirect):
+    """
+    SuperLU - direct sparse solver from SciPy.
+    """
+    name = 'ls.scipy_superlu'
+
+    _parameters = [
+        ('presolve', 'bool', False, False,
+         'If True, pre-factorize the matrix.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        ScipyDirect.__init__(self, conf, method='superlu', **kwargs)
+
+
+class ScipyUmfpack(ScipyDirect):
+    """
+    UMFPACK - direct sparse solver from SciPy.
+    """
+    name = 'ls.scipy_umfpack'
+
+    _parameters = [
+        ('presolve', 'bool', False, False,
+         'If True, pre-factorize the matrix.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        ScipyDirect.__init__(self, conf, method='umfpack', **kwargs)
+
 
 class ScipyIterative(LinearSolver):
     """
@@ -737,7 +770,6 @@ class PETScKrylovSolver(LinearSolver):
 class MUMPSSolver(LinearSolver):
     """
     Interface to MUMPS solver.
-
     """
     name = 'ls.mumps'
 
@@ -877,7 +909,7 @@ class SchurMumps(MUMPSSolver):
 
     __metaclass__ = SolverMeta
 
-    _parameters = ScipyDirect._parameters + [
+    _parameters = [
         ('schur_variables', 'list', None, True,
          'The list of Schur variables.'),
     ]
