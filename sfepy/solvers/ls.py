@@ -827,24 +827,35 @@ class MUMPSParallelSolver(LinearSolver):
         def tmpfile(fname):
             return op.join(gettempdir(), fname)
 
-        mtx_coo = mtx.tocoo()
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
+
+        is_sym = self.mumps.coo_is_symmetric(mtx)
+        rr, cc, data = mtx.row + 1, mtx.col + 1, mtx.data
+        if is_sym:
+            idxs = nm.where(cc >= rr)[0]  # upper triangular matrix
+            rr, cc, data = rr[idxs], cc[idxs], data[idxs]
+
         n = mtx.shape[0]
-        nz = mtx_coo.row.shape[0]
-        flags = nm.memmap(tmpfile('vals_falgs.array'), dtype='int32',
-                          mode='w+', shape=(2,))
+        nz = rr.shape[0]
+        flags = nm.memmap(tmpfile('vals_flags.array'), dtype='int32',
+                          mode='w+', shape=(4,))
         flags[0] = n
-        flags[1] = 1 if mtx_coo.data.dtype.name.startswith('complex') else 0
+        flags[1] = 1 if data.dtype.name.startswith('complex') else 0
+        flags[2] = int(is_sym)
+        flags[3] = int(self.conf.verbose)
+
         idxs = nm.memmap(tmpfile('idxs.array'), dtype='int32',
                          mode='w+', shape=(2, nz))
-        idxs[0, :] = mtx_coo.row + 1
-        idxs[1, :] = mtx_coo.col + 1
+        idxs[0, :] = rr
+        idxs[1, :] = cc
 
         dtype = {0: 'float64', 1: 'complex128'}[flags[1]]
         vals_mtx = nm.memmap(tmpfile('vals_mtx.array'), dtype=dtype,
                              mode='w+', shape=(nz,))
         vals_rhs = nm.memmap(tmpfile('vals_rhs.array'), dtype=dtype,
                              mode='w+', shape=(n,))
-        vals_mtx[:] = mtx_coo.data
+        vals_mtx[:] = data
         vals_rhs[:] = rhs
 
         mumps_call = op.join(data_dir, 'sfepy', 'solvers',
