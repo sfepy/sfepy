@@ -10,7 +10,8 @@ class DGTerm:
                  standalone=True, ret_status=False, **kwargs):
         raise NotImplemented
 
-    def assemble_to(self, asm_obj, val, iels, mode="vector"):
+    @staticmethod
+    def assemble_to(asm_obj, val, iels, mode="vector"):
         if (asm_obj is not None) and (iels is not None):
             if mode == "vector":
                 if (len(iels) == 2) and (nm.shape(val)[0] == len(iels[0])):
@@ -26,12 +27,19 @@ class DGTerm:
                 else:
                     asm_obj[iels] = asm_obj[iels] + val
             else:
-                raise ValueError("Unknown assebmly mode '%s'" % mode)
+                raise ValueError("Unknown assembly mode '%s'" % mode)
 
 
 class AdvIntDGTerm(Term):
     # TODO Replace this term by sfepy.terms.dw_volume?
     name = "dw_volume"
+
+class AdvIntDGTerm(DGTerm):
+
+    def __init__(self, mesh):
+        DGTerm.__init__(self, mesh)
+        self.vvar = "v"
+        self.diff_var = "u"
 
     def get_fargs(self, *args, **kwargs):
 
@@ -39,47 +47,56 @@ class AdvIntDGTerm(Term):
                          (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
         # integral over element with constant test
         # function is just volume of the element
-        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
-        # values go on to the diagonal, in sfepy this is assured
-        # by mesh connectivity induced by basis
-        fargs = (val, iels)
+
+        fargs = (val,)
         return fargs
 
+    def function(self, out, vals):
 
-    def function(self, out, *fargs):
-
+        out[:] = vals
         status = None
         return status
+
+    def evaluate(self, mode="weak", diff_var="u",
+                 standalone=True, ret_status=False, **kwargs):
+        if diff_var == self.diff_var:
+            fargs = self.get_fargs()
+            out = nm.zeros((2, self.mesh.n_el))
+            self.function(out, *fargs)
+            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+            # values go on to the diagonal, in sfepy this is assured
+            # by mesh connectivity induced by basis
+            return out, iels
+        else:
+            return None, None
+
 
 
 class AdvFluxDGTerm(Term):
 
     def __init__(self, integral, region, u=None, v=None, a=lambda x: 1):
-        Term.__init__("adv_lf_flux", None, integral, region, None)
+        Term.__init__(self, "adv_lf_flux", "v, u", integral, region, u=u, v=v)
         self.u = u
         self.v = v
         self.a = a
-
+        self.setup()
 
     name = "dw_dg_advect_flux"
     modes = ("weak",)
-    arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material': 'a, 1', 'virtual': ('1', 'state'),
+    arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual': ('1', 'state'),
                   'state'   : '1'}
     symbolic = {'expression' : 'grad(a*u)',
                 'map': {'u': 'state', 'a': 'material'}
     }
 
-    def get_fargs(self, state, mode="weak", diff_var=None,
+    def get_fargs(self, test, state, mode="weak",
                  standalone=True, ret_status=False, **kwargs):
 
-        if diff_var == self.diff_var:
-            u = self.get(state, 'val', step=-1)
-            a = self.a(self.region.coors)
+        varc = self.get_variables(as_list=False)['u']
+        u = self.get(state, 'val', step=-1)
+        a = self.a(self.region.coors)
 
-        else:
-            val = None
-            iels = None
         fargs = (u, a)
         return fargs
 
@@ -92,7 +109,7 @@ class AdvFluxDGTerm(Term):
         #
         # only from the zero order function, over [-1, 1] - hence the 2
         intg = a * u[0, 1:-1].T * 2
-        
+
         #  the Lax-Friedrichs flux is
         #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
         # in our case a and b are values to the left and right of the element boundary
