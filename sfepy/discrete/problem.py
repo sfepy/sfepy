@@ -277,6 +277,7 @@ class Problem(Struct):
 
         self.mtx_a = None
         self.solver = None
+        self.linear_solver = None
         self.ts = self.get_default_ts()
         self.clear_equations()
 
@@ -531,6 +532,7 @@ class Problem(Struct):
 
         if not keep_solvers:
             self.solver = None
+            self.linear_solver = None
 
     def get_integrals(self, names=None):
         """
@@ -1026,6 +1028,14 @@ class Problem(Struct):
     def get_solver_conf(self, name):
         return self.solver_confs[name]
 
+    def init_linear_solver(self, status=None, ls_conf=None, force=False):
+        if self.linear_solver is None or force:
+            ls_conf = get_default(ls_conf, self.ls_conf,
+                                  'you must set linear solver!')
+            self.linear_solver = Solver.any_from_conf(ls_conf, context=self)
+
+        return self.linear_solver
+
     def init_solvers(self, status=None, ls_conf=None, nls_conf=None,
                      ts_conf=None, force=False):
         """
@@ -1045,12 +1055,8 @@ class Problem(Struct):
             in `self.nls` attribute.
         """
         if (self.solver is None) or force:
-            ls_conf = get_default(ls_conf, self.ls_conf,
-                                  'you must set linear solver!')
             nls_conf = get_default(nls_conf, self.nls_conf,
                                    'you must set nonlinear solver!')
-
-            ls = Solver.any_from_conf(ls_conf, context=self)
 
             ev = self.get_evaluator()
 
@@ -1064,7 +1070,7 @@ class Problem(Struct):
 
             nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
                                        fun_grad=ev.eval_tangent_matrix,
-                                       lin_solver=ls,
+                                       lin_solver=self.init_linear_solver(),
                                        iter_hook=self.nls_iter_hook,
                                        status=status.nls_status, context=self)
 
