@@ -71,7 +71,6 @@ class AdvIntDGTerm(DGTerm):
             return None, None
 
 
-
 class AdvFluxDGTerm(Term):
 
     def __init__(self, integral, region, u=None, v=None, a=lambda x: 1):

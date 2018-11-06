@@ -9,12 +9,14 @@ from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.fem import Mesh, FEDomain, Field
-from sfepy.discrete.conditions import InitialCondition
+from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
+from sfepy.terms.terms_basic import VolumeTerm
+from sfepy.terms.terms import Term
 
 # local import
 from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
 from dg_equation import Equation
-from dg_tssolver import TSSolver, RK3Solver, EU1Solver
+from dg_tssolver import TSSolver, RK3Solver, EUSolver
 from dg_basis import LegendrePolySpace
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
@@ -38,6 +40,12 @@ tn = 800
 
 domain = FEDomain('domain', mesh)
 omega = domain.create_region('Omega', 'all')
+gamma1 = domain.create_region('Gamma1',
+                              'vertices in x == %.10f' % X1,
+                              'vertex')
+gamma2 = domain.create_region('Gamma2',
+                              'vertices in x == %.10f' % XN1,
+                              'vertex')
 field = Field.from_args('fu', nm.float64, 'vector', omega,
                         approx_order=2)
 u = FieldVariable('u', 'unknown', field, history=1)
@@ -45,27 +53,38 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=2)
 
 # TODO use sfepy volume term?
-IntT = AdvIntDGTerm(mesh)
+IntT = (mesh)
 
 a = Material('a', val=[1.0])  # TODO how doe materials really work?
-FluxT = AdvFluxDGTerm(integral, omega, v=v, u=u)
+FluxT = Term.new("d_volume()", integral, omega)
 
-eq = Equation((IntT, FluxT))
 
+eq = Equation('balance', IntT + FluxT)
+eqs = Equations([eq])
+
+left_fix_u = EssentialBC('left_fix_u', gamma1, {'u.all' : 0.0})
+right_fix_u = EssentialBC('right_fix_u', gamma2, {'u.all' : 0.0})
 
 ic_fun = Function('ic_fun', superic)
-ic = InitialCondition('ic', omega, {'T.0': ic_fun})  # TODO how to initialize variable with IC?
+ics = InitialCondition('ic', omega, {'u.0': ic_fun})  # TODO how to initialize variable with IC?
 
-ic = superic
+pb = Problem('advection', equations=eqs)
+pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
+pb.set_ics(Conditions([ics]))
 
+state0 = pb.get_initial_state()
 
-bc = {"left" : 0,
-      "right" : 0}
 
 geometry = Struct(n_vertex=2,
                   dim=1,
                   coors=coors.copy())
-tss = EU1Solver(eq, ic, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
+
+ic = superic
+bc = {"right" : 0.0,
+      "left" : 0.0}
+
+
+tss = EUSolver(eq, ic, ics, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
 
 u, dt = tss.solve(ts, te, tn)
 sic = tss.initial_cond

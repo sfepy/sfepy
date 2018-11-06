@@ -91,58 +91,21 @@ class TSSolver:
         idx = nm.arange(nm.shape(u[0, 1:-1])[0])
         nu = nm.copy(u)
         for l in range(1, 0, -1):
-            tilu = TSSolver.minmod(nu[l, 1:-1][idx],
-                                   nu[l-1, 2:][idx] - nu[l-1, 1:-1][idx],
-                                   nu[l-1, 1:-1][idx] - nu[l-1, :-2][idx])
+            tilu = minmod(nu[l, 1:-1][idx],
+                          nu[l-1, 2:][idx] - nu[l-1, 1:-1][idx],
+                          nu[l-1, 1:-1][idx] - nu[l-1, :-2][idx])
             idx = tilu != nu
             nu[l, 1:-1][idx] = tilu[idx]
         return nu
 
     def solve(self, t0, tend, tsteps=10):
-        print("Running testing solver: it does not solve anything, only tests shapes and types of data!")
-        A = nm.zeros((2, self.mesh.n_el, self.mesh.n_el), dtype=nm.float64)
-        b = nm.zeros((2, self.mesh.n_el-1, 1), dtype=nm.float64)
-        u = nm.zeros((2, self.mesh.n_nod + 1 , 1), dtype=nm.float64)
-
-        # ic
-        u[0, 1:-1] = self.initial_cond
-        u[1, 1:-1] = self.initial_cond
-
-        # bc
-        u[0, 0] = self.boundary_cond["left"]
-        u[0, -1] = self.boundary_cond["right"]
-        u[1, 0] = self.boundary_cond["left"]
-        u[1, -1] = self.boundary_cond["right"]
-
-        self.equation.evaluate(dw_mode="matrix", asm_obj=A, diff_var="u")
-        self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u)
-
-        # print(A)
-        # print(b)
-
-        plt.figure("A[0]")
-        plt.imshow(A[0])
-        plt.figure("A[1]")
-        plt.imshow(A[1])
-
-        plt.figure("b")
-        plt.plot(b[0], label="b0")
-        plt.plot(b[1], label="b1")
-        plt.legend()
-
-        u[0, 1:-1] = dot(nm.linalg.inv(A[0]), b[0])
-        u[1, 1:-1] = dot(nm.linalg.inv(A[1]), b[1])
-
-        # print(u)
-        plt.figure("u")
-        plt.plot(u[0], label="u0")
-        plt.plot(u[1], label="u1")
-        plt.legend()
-        plt.show()
+        raise NotImplemented
 
 
 class RK3Solver(TSSolver):
-
+    """
+    Runge-Kutta of order 3, with limiter
+    """
 
     def solve(self, t0, tend, tsteps=10):
 
@@ -165,6 +128,9 @@ class RK3Solver(TSSolver):
             self.equation.evaluate(dw_mode="vector", asm_obj=b, diff_var=None, u=u[:, :, it-1])
 
             # get update u1
+            # maybe use: for more general cases
+            #                                     dot(nm.linalg.inv(A[0]), b[0])
+            #                                     dot(nm.linalg.inv(A[1]), b[1])
             u1[0, 1:-1] = u[0, 1:-1, it-1] + dt * b[0] / nm.diag(A[0])[:, nax]
             u1[1, 1:-1] = u[1, 1:-1, it-1] + dt * b[1] / nm.diag(A[1])[:, nax]
 
@@ -209,7 +175,10 @@ class RK3Solver(TSSolver):
 
         return u, dt
 
-class EU1Solver(TSSolver):
+class EUSolver(TSSolver):
+    """
+    Euler method with limiter
+    """
 
     def solve(self, t0, tend, tsteps=10):
         """
@@ -220,7 +189,9 @@ class EU1Solver(TSSolver):
         :return:
         """
         A, b, dt, u = self.initialize(t0, tend, tsteps)
-        # self.equation.terms[1].get_state_variables()[0].setup_initial_conditions()
+        self.equation.terms[1].get_state_variables()[0].setup_dof_info()
+        di = self.equation.terms[1].get_state_variables()[0].di
+        self.equation.terms[1].get_state_variables()[0].setup_initial_conditions(self.ics)
 
         for it in range(1, tsteps):
             A[:] = 0
@@ -235,3 +206,4 @@ class EU1Solver(TSSolver):
             u[:, :, it] = self.limiter(u[:, :, it])
 
         return u, dt
+
