@@ -42,7 +42,8 @@ from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
-from sfepy.solvers.ls import ScipyDirect
+from sfepy.solvers.auto_fallback import AutoDirect
+from sfepy.solvers.ls import ScipyDirect, ScipySuperLU, ScipyUmfpack, MUMPSSolver
 from sfepy.solvers.nls import Newton
 from sfepy.discrete.fem.geometry_element import geometry_data
 from sfepy.discrete.probes import LineProbe
@@ -212,7 +213,7 @@ def main():
     xsym = EssentialBC('XSym', bottom, {'u.1' : 0.0})
     ysym = EssentialBC('YSym', left, {'u.0' : 0.0})
 
-    ls = ScipyDirect({})
+    ls = AutoDirect({})
 
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)
