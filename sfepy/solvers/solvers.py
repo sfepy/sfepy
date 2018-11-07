@@ -2,7 +2,7 @@
 Base (abstract) solver classes.
 """
 from __future__ import absolute_import
-from sfepy.base.base import Struct
+from sfepy.base.base import Struct, output
 import six
 
 def make_get_conf(conf, kwargs):
@@ -59,6 +59,30 @@ def make_option_docstring(name, kind, default, required, doc):
     entry += typeset_to_indent(doc, 8, 75)
 
     return entry
+
+
+def ls_fallback(ls_list, context=None):
+    prev_name = None
+    for ls, conf in ls_list:
+        name = ls if isinstance(ls, str) else ls.name
+        if prev_name is not None:
+            output("'%s' not available, trying '%s'" % (prev_name, name))
+
+        try:
+            if isinstance(ls, str):
+                out = Solver.any_from_conf(conf, context=context)
+            else:
+                out = ls(conf, contex=context)
+
+            output("using '%s' linear solver" % name)
+            break
+        except (ValueError, OSError):
+            prev_name = name
+
+    else:
+        raise ValueError('no linear solver available!')
+
+    return out
 
 par_template = \
 """
