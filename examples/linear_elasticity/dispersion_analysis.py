@@ -34,6 +34,7 @@ from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
 import sfepy.mechanics.matcoefs as mc
 from sfepy.mechanics.units import apply_unit_multipliers
 import sfepy.discrete.fem.periodic as per
+from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.homogenization.utils import define_box_regions
 from sfepy.discrete import Problem
 from sfepy.solvers import Solver
@@ -187,7 +188,7 @@ def _max_diff_csr(mtx1, mtx2):
     aux = nm.abs((mtx1 - mtx2).data)
     return aux.max() if len(aux) else 0.0
 
-def save_eigenvectors(filename, svecs, pb):
+def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     if svecs is None: return
 
     variables = pb.get_variables()
@@ -200,9 +201,16 @@ def save_eigenvectors(filename, svecs, pb):
     # Save the eigenvectors.
     out = {}
     state = pb.create_state()
+
+    pp = getattr(pb.conf.funmod, pb.conf.options.get('post_process_hook', ''),
+                 lambda out, *args, **kwargs: out)
+
     for ii in range(svecs.shape[1]):
         state.set_full(vecs[:, ii])
         aux = state.create_output_dict()
+        aux2 = {}
+        pp(aux2, pb, state, wmag=wmag, wdir=wdir)
+        aux.update(convert_complex_output(aux2))
         out.update({key + '%03d' % ii : aux[key] for key in aux})
 
     pb.save_state(filename, out=out)
@@ -341,6 +349,7 @@ def main():
         get_std_wave_fun = mod.get_std_wave_fun
 
     else:
+        mod = sys.modules[__name__]
         apply_units = apply_units_le
         define = define_le
         set_wave_dir = set_wave_dir_le
@@ -393,7 +402,7 @@ def main():
                                        solver_conf=options.solver_conf,
                                        plane=options.plane)
 
-    conf = ProblemConf.from_dict(define_problem(), sys.modules[__name__])
+    conf = ProblemConf.from_dict(define_problem(), mod)
 
     pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
@@ -515,7 +524,7 @@ def main():
                 out = out + std_wave_fun(wmag, wdir)
             log(*out, x=[wmag, wmag])
 
-            save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
+            save_eigenvectors(eigenshapes_filename % iv, svecs, wmag, wdir, pb)
 
             gc.collect()
 
@@ -575,7 +584,7 @@ def main():
             out = tuple(kappas)
             log(*out, x=[omega])
 
-            save_eigenvectors(eigenshapes_filename % io, svecs, pb)
+            save_eigenvectors(eigenshapes_filename % io, svecs, wmag, wdir, pb)
 
             gc.collect()
 
