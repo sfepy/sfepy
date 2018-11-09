@@ -37,6 +37,7 @@ import sfepy.discrete.fem.periodic as per
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.homogenization.utils import define_box_regions
 from sfepy.discrete import Problem
+from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 
@@ -47,8 +48,21 @@ def apply_units_le(pars, unit_multipliers):
                                       unit_multipliers)
     return new_pars
 
+def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
+    """
+    Calculate the von Mises stress.
+    """
+    stress = pb.evaluate('ev_cauchy_stress.i.Omega(m.D, u)', mode='el_avg')
+
+    vms = get_von_mises_stress(stress.squeeze())
+    vms.shape = (vms.shape[0], 1, 1, 1)
+    out['von_mises_stress'] = Struct(name='output_data', mode='cell',
+                                     data=vms)
+
+    return out
+
 def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-              plane='strain'):
+              plane='strain', post_process=False):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -57,6 +71,7 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     options = {
         'absolute_mesh_path' : True,
         'refinement_level' : refinement_level,
+        'post_process_hook' : 'compute_von_mises' if post_process else None,
     }
 
     fields = {
@@ -202,7 +217,8 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     out = {}
     state = pb.create_state()
 
-    pp = getattr(pb.conf.funmod, pb.conf.options.get('post_process_hook', ''),
+    pp_name = pb.conf.options.get('post_process_hook')
+    pp = getattr(pb.conf.funmod, pp_name if pp_name is not None else '',
                  lambda out, *args, **kwargs: out)
 
     for ii in range(svecs.shape[1]):
@@ -243,6 +259,7 @@ helps = {
     'refine' : 'number of uniform mesh refinements [default: %(default)s]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %(default)s]',
     'eigs_only' : 'compute only eigenvalues, not eigenvectors',
+    'post_process' : 'post-process eigenvectors',
     'solver_conf' : 'eigenvalue problem solver configuration options'
     ' [default: %(default)s]',
     'save_materials' : 'save material parameters into'
@@ -304,9 +321,13 @@ def main():
     parser.add_argument('-n', '--n-eigs', metavar='int', type=int,
                         action='store', dest='n_eigs',
                         default=6, help=helps['n_eigs'])
-    parser.add_argument('--eigs-only',
-                        action='store_true', dest='eigs_only',
-                        default=False, help=helps['eigs_only'])
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--eigs-only',
+                       action='store_true', dest='eigs_only',
+                       default=False, help=helps['eigs_only'])
+    group.add_argument('--post-process',
+                       action='store_true', dest='post_process',
+                       default=False, help=helps['post_process'])
     parser.add_argument('--solver-conf', metavar='dict-like',
                         action='store', dest='solver_conf',
                         default=default_solver_conf, help=helps['solver_conf'])
@@ -400,7 +421,8 @@ def main():
                                        approx_order=options.order,
                                        refinement_level=options.refine,
                                        solver_conf=options.solver_conf,
-                                       plane=options.plane)
+                                       plane=options.plane,
+                                       post_process=options.post_process)
 
     conf = ProblemConf.from_dict(define_problem(), mod)
 
