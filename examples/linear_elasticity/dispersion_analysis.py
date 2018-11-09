@@ -40,6 +40,7 @@ from sfepy.discrete import Problem
 from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
+from sfepy.linalg.utils import output_array_stats
 
 def apply_units_le(pars, unit_multipliers):
     new_pars = apply_unit_multipliers(pars,
@@ -470,21 +471,25 @@ def main():
     eq_m = pb.equations['M']
     mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
     mtx_m.eliminate_zeros()
+    output_array_stats(mtx_m.data, 'nonzeros in M')
 
     mtx_k = pb.mtx_a.copy()
     eq_k = pb.equations['K']
     mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
     mtx_k.eliminate_zeros()
+    output_array_stats(mtx_k.data, 'nonzeros in K')
 
     mtx_s = pb.mtx_a.copy()
     eq_s = pb.equations['S']
     mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
     mtx_s.eliminate_zeros()
+    output_array_stats(mtx_s.data, 'nonzeros in S')
 
     mtx_r = pb.mtx_a.copy()
     eq_r = pb.equations['R']
     mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
     mtx_r.eliminate_zeros()
+    output_array_stats(mtx_r.data, 'nonzeros in R')
 
     output('symmetry checks of real blocks:')
     output('M - M^T:', _max_diff_csr(mtx_m, mtx_m.T))
