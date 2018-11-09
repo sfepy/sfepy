@@ -263,6 +263,8 @@ helps = {
     'post_process' : 'post-process eigenvectors',
     'solver_conf' : 'eigenvalue problem solver configuration options'
     ' [default: %(default)s]',
+    'save_regions' : 'save defined regions into'
+    ' <output_directory>/regions.vtk',
     'save_materials' : 'save material parameters into'
     ' <output_directory>/materials.vtk',
     'log_std_waves' : 'log also standard pressure dilatation and shear waves',
@@ -332,6 +334,9 @@ def main():
     parser.add_argument('--solver-conf', metavar='dict-like',
                         action='store', dest='solver_conf',
                         default=default_solver_conf, help=helps['solver_conf'])
+    parser.add_argument('--save-regions',
+                        action='store_true', dest='save_regions',
+                        default=False, help=helps['save_regions'])
     parser.add_argument('--save-materials',
                         action='store_true', dest='save_materials',
                         default=False, help=helps['save_materials'])
@@ -449,6 +454,9 @@ def main():
     output('new mesh size with applied unit multipliers:', scaling * size)
     pb.domain.mesh.coors[:] *= scaling
     pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
+
+    if options.save_regions:
+        pb.save_regions_as_groups(os.path.join(output_dir, 'regions'))
 
     bzone = 2.0 * nm.pi / (scaling * size)
     output('1. Brillouin zone size:', bzone * scaling0)
