@@ -34,10 +34,13 @@ from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
 import sfepy.mechanics.matcoefs as mc
 from sfepy.mechanics.units import apply_unit_multipliers
 import sfepy.discrete.fem.periodic as per
+from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.homogenization.utils import define_box_regions
 from sfepy.discrete import Problem
+from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
+from sfepy.linalg.utils import output_array_stats
 
 def apply_units_le(pars, unit_multipliers):
     new_pars = apply_unit_multipliers(pars,
@@ -46,8 +49,21 @@ def apply_units_le(pars, unit_multipliers):
                                       unit_multipliers)
     return new_pars
 
+def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
+    """
+    Calculate the von Mises stress.
+    """
+    stress = pb.evaluate('ev_cauchy_stress.i.Omega(m.D, u)', mode='el_avg')
+
+    vms = get_von_mises_stress(stress.squeeze())
+    vms.shape = (vms.shape[0], 1, 1, 1)
+    out['von_mises_stress'] = Struct(name='output_data', mode='cell',
+                                     data=vms)
+
+    return out
+
 def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-              plane='strain'):
+              plane='strain', post_process=False):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -56,6 +72,7 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     options = {
         'absolute_mesh_path' : True,
         'refinement_level' : refinement_level,
+        'post_process_hook' : 'compute_von_mises' if post_process else None,
     }
 
     fields = {
@@ -187,7 +204,7 @@ def _max_diff_csr(mtx1, mtx2):
     aux = nm.abs((mtx1 - mtx2).data)
     return aux.max() if len(aux) else 0.0
 
-def save_eigenvectors(filename, svecs, pb):
+def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     if svecs is None: return
 
     variables = pb.get_variables()
@@ -200,9 +217,17 @@ def save_eigenvectors(filename, svecs, pb):
     # Save the eigenvectors.
     out = {}
     state = pb.create_state()
+
+    pp_name = pb.conf.options.get('post_process_hook')
+    pp = getattr(pb.conf.funmod, pp_name if pp_name is not None else '',
+                 lambda out, *args, **kwargs: out)
+
     for ii in range(svecs.shape[1]):
         state.set_full(vecs[:, ii])
         aux = state.create_output_dict()
+        aux2 = {}
+        pp(aux2, pb, state, wmag=wmag, wdir=wdir)
+        aux.update(convert_complex_output(aux2))
         out.update({key + '%03d' % ii : aux[key] for key in aux})
 
     pb.save_state(filename, out=out)
@@ -235,8 +260,11 @@ helps = {
     'refine' : 'number of uniform mesh refinements [default: %(default)s]',
     'n_eigs' : 'the number of eigenvalues to compute [default: %(default)s]',
     'eigs_only' : 'compute only eigenvalues, not eigenvectors',
+    'post_process' : 'post-process eigenvectors',
     'solver_conf' : 'eigenvalue problem solver configuration options'
     ' [default: %(default)s]',
+    'save_regions' : 'save defined regions into'
+    ' <output_directory>/regions.vtk',
     'save_materials' : 'save material parameters into'
     ' <output_directory>/materials.vtk',
     'log_std_waves' : 'log also standard pressure dilatation and shear waves',
@@ -296,12 +324,19 @@ def main():
     parser.add_argument('-n', '--n-eigs', metavar='int', type=int,
                         action='store', dest='n_eigs',
                         default=6, help=helps['n_eigs'])
-    parser.add_argument('--eigs-only',
-                        action='store_true', dest='eigs_only',
-                        default=False, help=helps['eigs_only'])
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--eigs-only',
+                       action='store_true', dest='eigs_only',
+                       default=False, help=helps['eigs_only'])
+    group.add_argument('--post-process',
+                       action='store_true', dest='post_process',
+                       default=False, help=helps['post_process'])
     parser.add_argument('--solver-conf', metavar='dict-like',
                         action='store', dest='solver_conf',
                         default=default_solver_conf, help=helps['solver_conf'])
+    parser.add_argument('--save-regions',
+                        action='store_true', dest='save_regions',
+                        default=False, help=helps['save_regions'])
     parser.add_argument('--save-materials',
                         action='store_true', dest='save_materials',
                         default=False, help=helps['save_materials'])
@@ -341,6 +376,7 @@ def main():
         get_std_wave_fun = mod.get_std_wave_fun
 
     else:
+        mod = sys.modules[__name__]
         apply_units = apply_units_le
         define = define_le
         set_wave_dir = set_wave_dir_le
@@ -391,9 +427,10 @@ def main():
                                        approx_order=options.order,
                                        refinement_level=options.refine,
                                        solver_conf=options.solver_conf,
-                                       plane=options.plane)
+                                       plane=options.plane,
+                                       post_process=options.post_process)
 
-    conf = ProblemConf.from_dict(define_problem(), sys.modules[__name__])
+    conf = ProblemConf.from_dict(define_problem(), mod)
 
     pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
@@ -418,6 +455,9 @@ def main():
     pb.domain.mesh.coors[:] *= scaling
     pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
 
+    if options.save_regions:
+        pb.save_regions_as_groups(os.path.join(output_dir, 'regions'))
+
     bzone = 2.0 * nm.pi / (scaling * size)
     output('1. Brillouin zone size:', bzone * scaling0)
     output('1. Brillouin zone size with applied unit multipliers:', bzone)
@@ -439,21 +479,25 @@ def main():
     eq_m = pb.equations['M']
     mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
     mtx_m.eliminate_zeros()
+    output_array_stats(mtx_m.data, 'nonzeros in M')
 
     mtx_k = pb.mtx_a.copy()
     eq_k = pb.equations['K']
     mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
     mtx_k.eliminate_zeros()
+    output_array_stats(mtx_k.data, 'nonzeros in K')
 
     mtx_s = pb.mtx_a.copy()
     eq_s = pb.equations['S']
     mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
     mtx_s.eliminate_zeros()
+    output_array_stats(mtx_s.data, 'nonzeros in S')
 
     mtx_r = pb.mtx_a.copy()
     eq_r = pb.equations['R']
     mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
     mtx_r.eliminate_zeros()
+    output_array_stats(mtx_r.data, 'nonzeros in R')
 
     output('symmetry checks of real blocks:')
     output('M - M^T:', _max_diff_csr(mtx_m, mtx_m.T))
@@ -515,7 +559,7 @@ def main():
                 out = out + std_wave_fun(wmag, wdir)
             log(*out, x=[wmag, wmag])
 
-            save_eigenvectors(eigenshapes_filename % iv, svecs, pb)
+            save_eigenvectors(eigenshapes_filename % iv, svecs, wmag, wdir, pb)
 
             gc.collect()
 
@@ -575,7 +619,7 @@ def main():
             out = tuple(kappas)
             log(*out, x=[omega])
 
-            save_eigenvectors(eigenshapes_filename % io, svecs, pb)
+            save_eigenvectors(eigenshapes_filename % io, svecs, wmag, wdir, pb)
 
             gc.collect()
 
