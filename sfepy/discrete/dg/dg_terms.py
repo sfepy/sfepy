@@ -32,7 +32,7 @@ class DGTerm:
 
 class AdvIntDGTerm(Term):
     # TODO Replace this term by sfepy.terms.dw_volume?
-    name = "dw_volume"
+    name = "dw_volume_lvf"
 
 class AdvIntDGTerm(DGTerm):
 
@@ -120,20 +120,19 @@ class AdvFluxDGTerm(Term):
         # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
 
         fl = a * (u[0, :-2] + u[1, :-2] +
-                 (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
+                  (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
              nm.abs(a) * (u[0, :-2] + u[1, :-2] -
-                         (u[0, 1:-1] - u[1, 1:-1])).T / 2
+                          (u[0, 1:-1] - u[1, 1:-1])).T / 2
 
         fp = a * (u[0, 1:-1] + u[1, 1:-1] +
-                 (u[0, 2:] - u[1, 2:])).T / 2 + \
+                  (u[0, 2:] - u[1, 2:])).T / 2 + \
              nm.abs(a) * (u[0, 1:-1] + u[1, 1:-1] -
-                         (u[0, 2:] - u[1, 2:])).T / 2
+                          (u[0, 2:] - u[1, 2:])).T / 2
 
         val = nm.vstack((fl - fp, - fl - fp + intg))
 
         iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
 
-        vals = nm.vstack((fl - fp, - fl - fp + intg))
-        out = (vals, iels)
+        out[:] = val, iels
         status = None
         return status

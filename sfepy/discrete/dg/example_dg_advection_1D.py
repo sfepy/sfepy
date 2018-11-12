@@ -10,12 +10,14 @@ from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
-from sfepy.terms.terms_basic import VolumeTerm
 from sfepy.terms.terms import Term
+from sfepy.solvers.ls import ScipyDirect
+from sfepy.solvers.nls import Newton
+from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
 # local import
 from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
-from dg_equation import Equation
+# from dg_equation import Equation
 from dg_tssolver import TSSolver, RK3Solver, EUSolver
 from dg_basis import LegendrePolySpace
 
@@ -33,17 +35,16 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-a = 1.0
 ts = 0
 te = 2
 tn = 800
 
-domain = FEDomain('domain', mesh)
+domain = FEDomain('domain', mesh)  # TODO DGDomain
 omega = domain.create_region('Omega', 'all')
-gamma1 = domain.create_region('Gamma1',
+left = domain.create_region('Gamma1',
                               'vertices in x == %.10f' % X1,
                               'vertex')
-gamma2 = domain.create_region('Gamma2',
+right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN1,
                               'vertex')
 field = Field.from_args('fu', nm.float64, 'vector', omega,
@@ -53,19 +54,21 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=2)
 
 # TODO use sfepy volume term?
-IntT = (mesh)
 
-a = Material('a', val=[1.0])  # TODO how doe materials really work?
-FluxT = Term.new("d_volume()", integral, omega)
+f = Material('f', val=[1.0])  # TODO how do materials really work?
+IntT = Term.new("dw_volume_lvf(f.val, v)", integral, omega, v=v, f=f)
+
+a = Material('a', val=[1.0])
+FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v)
 
 
 eq = Equation('balance', IntT + FluxT)
 eqs = Equations([eq])
 
-left_fix_u = EssentialBC('left_fix_u', gamma1, {'u.all' : 0.0})
-right_fix_u = EssentialBC('right_fix_u', gamma2, {'u.all' : 0.0})
+left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})
+right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
-ic_fun = Function('ic_fun', superic)
+ic_fun = Function('ic_fun', lambda x, ic: superic(x))  # why does IC function get ic object?
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})  # TODO how to initialize variable with IC?
 
 pb = Problem('advection', equations=eqs)
@@ -73,6 +76,7 @@ pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
 state0 = pb.get_initial_state()
+# it kinda works up until now
 
 
 geometry = Struct(n_vertex=2,
@@ -83,19 +87,37 @@ ic = superic
 bc = {"right" : 0.0,
       "left" : 0.0}
 
+# TODO use sfepy solver, which one? How do we get complete solution out?
+# tss = EUSolver(eq, ic, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
 
-tss = EUSolver(eq, ic, ics, bc, TSSolver.moment_limiter, LegendrePolySpace("legb", geometry, 1))
+# from time_poisson_interactive.py
+ls = ScipyDirect({})
+nls_status = IndexedStruct()
+nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
+tss = SimpleTimeSteppingSolver({'t0' : 0.0, 't1' : 1.0, 'n_step' : 100},
+                               nls=nls, context=pb, verbose=True)
+pb.set_solver(tss)
 
-u, dt = tss.solve(ts, te, tn)
-sic = tss.initial_cond
+pb.time_update(tss.ts)
+state0.apply_ebc()
+
+tss_status = IndexedStruct()
+tss(state0.get_vec(pb.active_only),
+    status=tss_status)
+
+print(tss_status)
+# u, dt = tss.solve(ts, te, tn)
+# sic = tss.initial_cond
 
 
 #--------
 #| Plot |
 #--------
+# TODO move plotting to visualizer
 plt.figure("Sampled Solution anim")
 X = (mesh.coors[1:] + mesh.coors[:-1])/2
 T = nm.linspace(ts, te, tn)
+# sic = TSSolver.initial_cond
 
 # Plot mesh
 plt.vlines(mesh.coors[:, 0], ymin=0, ymax=.5, colors="grey")
@@ -103,11 +125,12 @@ plt.vlines((mesh.coors[0], mesh.coors[-1]), ymin=0, ymax=.5, colors="k")
 plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
 # Plot IC and its sampling
-c0 = plt.plot(X, sic[0, :, 0], label="IC-0", marker=".", ls="")[0].get_color()
-c1 = plt.plot(X, sic[1, :, 0], label="IC-1", marker=".", ls="")[0].get_color()
-# plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
-plt.step(coors[1:], sic[0, :, 0], label="IC-0", color=c0)
-plt.step(coors[1:], sic[1, :, 0], label="IC-1", color=c1)
+# TODO get IC sampling, from where?
+# c0 = plt.plot(X, sic[0, :, 0], label="IC-0", marker=".", ls="")[0].get_color()
+# c1 = plt.plot(X, sic[1, :, 0], label="IC-1", marker=".", ls="")[0].get_color()
+# # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
+# plt.step(coors[1:], sic[0, :, 0], label="IC-0", color=c0)
+# plt.step(coors[1:], sic[1, :, 0], label="IC-1", color=c1)
 # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
 xs = nm.linspace(X1, XN1, 500)[:, None]
 plt.plot(xs, ic(xs), label="IC-ex")
@@ -142,8 +165,8 @@ plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
 # Plot discontinuously!
 ww = nm.zeros((3*n_nod-1, tn, 1))
-ww[0, :] = u[0, 0, :] - u[1, 0, :]
-ww[-1, :] = u[0, -1, :] + u[1, -1, :]
+ww[0, :] = u[0, 0, :] - u[1, 0, :]  # left bc
+ww[-1, :] = u[0, -1, :] + u[1, -1, :]  # right bc
 
 ww[0:-2:3] = u[0, 1:-1, :] - u[1, 1:-1, :]  # left edges of elements
 ww[1:-1:3] = u[0, 1:-1, :] + u[1, 1:-1, :]  # right edges of elements
