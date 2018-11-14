@@ -23,7 +23,7 @@ class PrimitivePolySPace(PolySpace):
 
 class LegendrePolySpace(PolySpace):
     """
-    Legendre polynomials basis, over [-1, 1] domain
+    Legendre hierarchical polynomials basis, over [-1, 1] domain
     use transform y = 2*x-1 to get basis over [0, 1]
     """
 

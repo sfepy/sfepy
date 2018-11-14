@@ -859,7 +859,6 @@ class Term(Struct):
                     args.append(self.args[ii])
 
             else:
-                # FIXME why are material data not set?
                 mat, par_name = self.args[ii]
                 if mat is not None:
                     mat_data = mat.get_data((region_name, iorder), par_name)

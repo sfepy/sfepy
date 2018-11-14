@@ -1,6 +1,7 @@
 import numpy as nm
 from sfepy.terms.terms import Term
 
+
 class DGTerm:
 
     def __init__(self, mesh):
@@ -31,7 +32,7 @@ class DGTerm:
 
 
 class AdvIntDGTerm(Term):
-    # TODO Replace this term by sfepy.terms.dw_volume?
+    # TODO Replace this term by sfepy.terms.dw_volume_lvf?
     name = "dw_volume_lvf"
 
 class AdvIntDGTerm(DGTerm):
@@ -45,15 +46,17 @@ class AdvIntDGTerm(DGTerm):
 
         val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
                          (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
+        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
         # integral over element with constant test
         # function is just volume of the element
 
-        fargs = (val,)
+        fargs = (val, iels)
         return fargs
 
-    def function(self, out, vals):
 
-        out[:] = vals
+    def function(self, out, vals, iels):
+
+        out[:] = (vals, iels)
         status = None
         return status
 
@@ -61,20 +64,20 @@ class AdvIntDGTerm(DGTerm):
                  standalone=True, ret_status=False, **kwargs):
         if diff_var == self.diff_var:
             fargs = self.get_fargs()
-            out = nm.zeros((2, self.mesh.n_el))
+            out = [None, None]
             self.function(out, *fargs)
-            iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+
             # values go on to the diagonal, in sfepy this is assured
             # by mesh connectivity induced by basis
-            return out, iels
+            return out + (None, )
         else:
-            return None, None
+            return None, None, None
 
 
 class AdvFluxDGTerm(Term):
 
     def __init__(self, integral, region, u=None, v=None, a=lambda x: 1):
-        Term.__init__(self, "adv_lf_flux", "v, u", integral, region, u=u, v=v)
+        Term.__init__(self, "adv_lf_flux(a.val, v, u)", "a.val, v, u", integral, region, u=u, v=v, a=a)
         self.u = u
         self.v = v
         self.a = a
@@ -82,24 +85,29 @@ class AdvFluxDGTerm(Term):
 
     name = "dw_dg_advect_flux"
     modes = ("weak",)
-    arg_types = ('virtual', 'state')
-    arg_shapes = {'virtual': ('1', 'state'),
-                  'state'   : '1'}
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material': 'D, 1',
+                  'virtual': ('D', 'state'),
+                  'state'   : 1}
     symbolic = {'expression' : 'grad(a*u)',
                 'map': {'u': 'state', 'a': 'material'}
     }
 
-    def get_fargs(self, test, state, mode="weak",
+    def get_fargs(self, a, test, state, mode="weak",
                  standalone=True, ret_status=False, **kwargs):
 
-        varc = self.get_variables(as_list=False)['u']
+        # varc = self.get_variables(as_list=False)['u']
         u = self.get(state, 'val', step=-1)
-        a = self.a(self.region.coors)
+        # IF timestep == 0: None
+        # TODO ret_status is set to 'u', why?
 
-        fargs = (u, a)
+        fargs = u, a
         return fargs
 
     def function(self, out, u, a):
+
+
+        # TODO Rewrite fluxTerm to work with new variable structure
         # for Legendre basis integral of higher order
         # functions of the basis is zero,
         # hence we calculate integral
