@@ -840,6 +840,22 @@ Solver selection::
         'ls' : 'ls',
     }
 
+If the linear solver could be unavailable, it is possible to set ``fallback``
+option which specifies the second in line solver::
+
+    solvers = {
+        'ls': ('ls.mumps', {'fallback': 'ls2'}),
+        'ls2': ('ls.scipy_umfpack', {}),
+        'newton': ('nls.newton', {
+            'i_max'      : 1,
+            'eps_a'      : 1e-10,
+        }),
+    }
+
+Another possibility is to use a "virtual" solver that ensures the automatic
+selection of the available solver, see
+`Virtual Linear Solvers with Automatic Selection`_.
+
 Functions
 ^^^^^^^^^
 
@@ -1406,6 +1422,21 @@ The following solvers are available:
 
 See :mod:`sfepy.solvers.ls` for all available *linear* solvers and their
 options.
+
+Virtual Linear Solvers with Automatic Selection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A "virtual" solver can be used in case it is not clear which external linear
+solvers are available. It selects the first disposable solver from
+a defined list.
+
+The following solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   .. <Virtual Solvers with Automatic Fallback>
+    :end-before:    .. </Virtual Solvers with Automatic Fallback>
+
+See :mod:`sfepy.solvers.auto_fallback` for all available *virtual* solvers.
 
 Eigenvalue Problem Solvers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
