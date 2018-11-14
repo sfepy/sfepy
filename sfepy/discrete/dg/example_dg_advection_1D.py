@@ -8,18 +8,19 @@ from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.fem import Mesh, FEDomain, Field
+from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
 from sfepy.terms.terms import Term
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
+
 # local import
 from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
 # from dg_equation import Equation
 from dg_tssolver import TSSolver, RK3Solver, EUSolver
-from dg_basis import LegendrePolySpace
+from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import animate1d, sol_frame
@@ -47,7 +48,7 @@ left = domain.create_region('Gamma1',
 right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN1,
                               'vertex')
-field = Field.from_args('fu', nm.float64, 'vector', omega,
+field = DGField.from_args('fu', nm.float64, 'vector', omega,
                         approx_order=2)
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
@@ -59,7 +60,7 @@ f = Material('f', val=[1.0])  # TODO how do materials really work?
 IntT = Term.new("dw_volume_lvf(f.val, v)", integral, omega, v=v, f=f)
 
 a = Material('a', val=[1.0])
-FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v)
+FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
 
 eq = Equation('balance', IntT + FluxT)
@@ -102,8 +103,9 @@ pb.time_update(tss.ts)
 state0.apply_ebc()
 
 tss_status = IndexedStruct()
-tss(state0.get_vec(pb.active_only),
-    status=tss_status)
+pb.solve()
+# tss(state0.get_vec(pb.active_only),
+#     status=tss_status)
 
 print(tss_status)
 # u, dt = tss.solve(ts, te, tn)
