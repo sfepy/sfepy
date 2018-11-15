@@ -2,76 +2,38 @@ import numpy as nm
 from sfepy.terms.terms import Term
 
 
-class DGTerm:
+class AdvVolDGTerm(Term):
 
-    def __init__(self, mesh):
-        self.mesh = mesh
+    name = "dw_dg_volume"
+    modes = ("weak",)
+    arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual': ('D', 'state'),
+                  'state': 1}
+    symbolic = {'expression': '1',
+                'map': {'u': 'state'}
+                }
 
-    def evaluate(self, mode="weak", diff_var="u",
+    def __init__(self, integral, region, u=None, v=None):
+        Term.__init__(self, "adv_vol(v, u)", "v, u", integral, region, u=u, v=v)
+        self.u = u
+        self.v = v
+        self.setup()
+
+    def get_fargs(self, test, state, mode="weak",
                  standalone=True, ret_status=False, **kwargs):
-        raise NotImplemented
 
-    @staticmethod
-    def assemble_to(asm_obj, val, iels, mode="vector"):
-        if (asm_obj is not None) and (iels is not None):
-            if mode == "vector":
-                if (len(iels) == 2) and (nm.shape(val)[0] == len(iels[0])):
-                    for ii in iels[0]:
-                        asm_obj[ii][iels[1]] = (asm_obj[ii][iels[1]].T + val[ii]).T
-                else:
-                    asm_obj[iels] = asm_obj[iels] + val
+        return []
 
-            elif mode == "matrix":
-                if (len(iels) == 3) and (nm.shape(val)[0] == len(iels[0])):
-                    for ii in iels[0]:
-                        asm_obj[ii][iels[1], iels[2]] = asm_obj[ii][iels[1], iels[2]] + val[ii]
-                else:
-                    asm_obj[iels] = asm_obj[iels] + val
-            else:
-                raise ValueError("Unknown assembly mode '%s'" % mode)
-
-
-class AdvIntDGTerm(Term):
-    # TODO Replace this term by sfepy.terms.dw_volume_lvf?
-    name = "dw_volume_lvf"
-
-class AdvIntDGTerm(DGTerm):
-
-    def __init__(self, mesh):
-        DGTerm.__init__(self, mesh)
-        self.vvar = "v"
-        self.diff_var = "u"
-
-    def get_fargs(self, *args, **kwargs):
-
-        val = nm.vstack(((self.mesh.coors[1:] - self.mesh.coors[:-1]).T,
-                         (self.mesh.coors[1:] - self.mesh.coors[:-1]).T/3))
-        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1), nm.arange(len(self.mesh.coors) - 1))
+    def function(self, out, *args):
+        vols = self.region.domain.cmesh.get_volumes(1)  # TODO which dimension do we really want?
         # integral over element with constant test
         # function is just volume of the element
-
-        fargs = (val, iels)
-        return fargs
-
-
-    def function(self, out, vals, iels):
-
-        out[:] = (vals, iels)
+        out[:] = 0
+        out[:, 0, 0, 0] = vols
+        out[:, 0, 1, 1] = vols / 3.0
+        # TODO move to for cycle to add values for higher order approx
         status = None
         return status
-
-    def evaluate(self, mode="weak", diff_var="u",
-                 standalone=True, ret_status=False, **kwargs):
-        if diff_var == self.diff_var:
-            fargs = self.get_fargs()
-            out = [None, None]
-            self.function(out, *fargs)
-
-            # values go on to the diagonal, in sfepy this is assured
-            # by mesh connectivity induced by basis
-            return out + (None, )
-        else:
-            return None, None, None
 
 
 class AdvFluxDGTerm(Term):
@@ -105,9 +67,6 @@ class AdvFluxDGTerm(Term):
         return fargs
 
     def function(self, out, u, a):
-
-
-        # TODO Rewrite fluxTerm to work with new variable structure
         # for Legendre basis integral of higher order
         # functions of the basis is zero,
         # hence we calculate integral
@@ -115,7 +74,7 @@ class AdvFluxDGTerm(Term):
         # int_{j-1/2}^{j+1/2} f(u)dx
         #
         # only from the zero order function, over [-1, 1] - hence the 2
-        intg = a * u[0, 1:-1].T * 2
+        intg = a[:, 0] * u[:, 0] * 2
 
         #  the Lax-Friedrichs flux is
         #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
@@ -127,20 +86,39 @@ class AdvFluxDGTerm(Term):
         # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
         # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
 
-        fl = a * (u[0, :-2] + u[1, :-2] +
-                  (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
-             nm.abs(a) * (u[0, :-2] + u[1, :-2] -
-                          (u[0, 1:-1] - u[1, 1:-1])).T / 2
+        # fl = a * (u[0, :-2] + u[1, :-2] +
+        #           (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
+        #      nm.abs(a) * (u[0, :-2] + u[1, :-2] -
+        #                   (u[0, 1:-1] - u[1, 1:-1])).T / 2
 
-        fp = a * (u[0, 1:-1] + u[1, 1:-1] +
-                  (u[0, 2:] - u[1, 2:])).T / 2 + \
-             nm.abs(a) * (u[0, 1:-1] + u[1, 1:-1] -
-                          (u[0, 2:] - u[1, 2:])).T / 2
+        # TODO how to treat bcs inside term?
+        bc_shape = (1, ) + nm.shape(u)[1:]
+        bcl = u[0].reshape(bc_shape)
+        bcr = u[-1].reshape(bc_shape)
+        ur = nm.concatenate((u[1:], bcr))
+        ul = nm.concatenate((bcl, u[:-1]))
 
-        val = nm.vstack((fl - fp, - fl - fp + intg))
+        # TODO move to for cycle to add values for higher order approx
+        # TODO find general fluxes for higher dimensions
+        fl = a[:, 0] * (ul[:, 0] + ul[:, 1] +
+                        (u[:, 0] - u[:, 1])) / 2 + \
+            nm.abs(a[:, 0]) * (ul[:, 0] + ul[:, 1] -
+                               (u[:, 0] - u[:, 1])) / 2
 
-        iels = ([0, 1], nm.arange(len(self.mesh.coors) - 1))  # just fill the vector
+        # fp = a * (u[0, 1:-1] + u[1, 1:-1] +
+        #           (u[0, 2:] - u[1, 2:])).T / 2 + \
+        #      nm.abs(a) * (u[0, 1:-1] + u[1, 1:-1] -
+        #                   (u[0, 2:] - u[1, 2:])).T / 2
 
-        out[:] = val, iels
+        fp = a[:, 0] * (u[:, 0] + u[:, 1] +
+                        (ur[:, 0] - ur[: , 1])) / 2 + \
+            nm.abs(a[:, 0]) * (u[:, 0] + u[:, 1] -
+                         (ur[:, 0] - ur[:, 1])) / 2
+
+        # val = nm.vstack((fl - fp, - fl - fp + intg))
+
+        out[:] = 0.0
+        out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
+        out[:, 0, 1, 1] = (- fl - fp + intg)[:, 0, 0]
         status = None
         return status
