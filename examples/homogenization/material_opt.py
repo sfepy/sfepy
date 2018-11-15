@@ -4,9 +4,6 @@ from __future__ import absolute_import
 import sys
 sys.path.append('.')
 
-import matplotlib
-matplotlib.use('GTKAgg')
-
 import numpy as nm
 from scipy.optimize import fmin_tnc
 
