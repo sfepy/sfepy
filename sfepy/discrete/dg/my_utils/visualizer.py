@@ -7,7 +7,7 @@ see save_animation method.
 
 import matplotlib.animation as animation
 from matplotlib import pyplot as plt
-import numpy as np
+import numpy as nm
 from numpy import newaxis as nax
 from matplotlib import pylab as plt
 from matplotlib import colors
@@ -39,14 +39,16 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None):
 
     ax, fig, time_text = setup_axis(X, Y, ax, fig, ylims)
 
-    if not isinstance(Y, np.ndarray):
-        Y = np.stack(Y, axis=2)
+    if not isinstance(Y, nm.ndarray):
+        Y = nm.stack(Y, axis=2)
 
     lines = setup_lines(ax, Y.shape, labs, plott)
 
     def animate(i):
         ax.legend()
         time_text.set_text("t= {0:3.2f} / {1:3.3}".format(T[i], T[-1]))
+        # from sfepy.base.base import debug;
+        # debug()
         if len(Y.shape) > 2:
             for ln, l in enumerate(lines):
                 l.set_data(X, Y[i].swapaxes(0, 1)[ln])
@@ -56,7 +58,7 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None):
             lines.set_data(X, Y[i])
             return lines, time_text
 
-    delay = int(np.round(2000 * (T[-1] - T[0])/len(T)))
+    delay = int(nm.round(2000 * (T[-1] - T[0]) / len(T)))
     # delay = 1000
     anim = animation.FuncAnimation(fig, animate, frames=len(T), interval=delay,
                                    blit=True, repeat=True, repeat_delay=250)
@@ -78,14 +80,14 @@ def setup_axis(X, Y, ax=None, fig=None, ylims=None):
         fig = plt.gcf()
         ax = plt.gca()
     if ylims is None:
-        lowery = np.min(Y) - np.min(Y) / 10
-        uppery = np.max(Y) + np.max(Y) / 10
+        lowery = nm.min(Y) - nm.min(Y) / 10
+        uppery = nm.max(Y) + nm.max(Y) / 10
     else:
         lowery = ylims[0]
         uppery = ylims[1]
     ax.set_ylim(lowery, uppery)
     ax.set_xlim(X[0], X[-1])
-    time_text = ax.text(X[0] + np.sign(X[0]) * X[0] / 10, uppery - uppery / 10, 'empty', fontsize=15)
+    time_text = ax.text(X[0] + nm.sign(X[0]) * X[0] / 10, uppery - uppery / 10, 'empty', fontsize=15)
     return ax, fig, time_text
 
 
@@ -148,12 +150,12 @@ def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=No
 
     ax, fig, time_text = setup_axis(X, Y, ax, fig, ylims)
 
-    if not isinstance(Y, np.ndarray):
-        Y = np.stack(Y, axis=2)
+    if not isinstance(Y, nm.ndarray):
+        Y = nm.stack(Y, axis=2)
 
     lines = setup_lines(ax, Y.shape, labs, plott)
 
-    nt0 = np.abs(T - t0).argmin()
+    nt0 = nm.abs(T - t0).argmin()
 
     ax.legend()
     time_text.set_text("t= {0:3.2f} / {1:3.3}".format(T[nt0], T[-1]))
@@ -189,7 +191,7 @@ def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None, ylims=None, labs=Non
     fig = plt.figure(filename)
 
     snap1 = sol_frame(Y, X, T, t0=t0, ylims=ylims, labs=labs, plott=None)
-    if not isinstance(Y, np.ndarray):
+    if not isinstance(Y, nm.ndarray):
         plt.plot(X, Y[0][0], label="q(x, 0)")
     else:
         if len(Y.shape) > 2:
@@ -217,7 +219,7 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     cmap1.set_bad('white')
     # cmap2 = plt.cm.get_cmap("BrBG")
     # cmap2.set_bad('white')
-    bounds = np.arange(-1, 1, .05)
+    bounds = nm.arange(-1, 1, .05)
     norm1 = colors.BoundaryNorm(bounds, cmap1.N)
     # norm2 = colors.BoundaryNorm(bounds, cmap2.N)
 
@@ -249,3 +251,107 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     fig.colorbar(c3, ax=[ax1, ax2, ax3])
 
 
+def load_vtks(fold, name, tn, order):
+    """
+    Reads series of .vtk files and cunches them into form
+    suitable for plot10_DG_sol
+    :param fold: folder where to look for files
+    :param name: used in {name}.i.vtk, i = 0,1, ... tn -1
+    :param tn: numer of time steps, i.e. number of files
+    :param order: order of approximation used TODO how to save and retrieve DOFs?
+    :return: space coors, solution data
+    """
+
+    from sfepy.discrete.fem.meshio import VTKMeshIO
+
+    io = VTKMeshIO(pjoin(fold, ".".join((name, str(0), "vtk"))))
+    coors = io.read_coors()[:, 0, None]
+    u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
+
+    for i in range(tn):
+        io = VTKMeshIO(pjoin(fold, ".".join((name, str(i), "vtk"))))
+        u[0, :, i, 0] = io.read_data(0)['u'].data[1:]  # TODO this is hack to test plot_1D_DG_sol, REMOVE!
+
+    return coors, u
+
+
+def plot1D_DG_sol(coors, t0, t1, tn, u, ic=lambda x: 0.0):
+    """
+    Plots solution produced by DG to 1D problem, handles discontinuities,
+    u are vectors of coefficients, for each order one
+
+    :param coors: coordinates of the mesh
+    :param t0: starting time
+    :param t1: final time
+    :param tn: number of time steps, must correspond to dimention of u
+    :param u: shape(u) = (order,space_steps, t_steps, 1)
+    :param ic: analytical initial condition, optional
+    :return:
+    """
+    XN1 = coors[-1]
+    X1 = coors[0]
+    n_nod = len(coors)
+
+    figs, axs = plt.subplots()
+    X = (coors[1:] + coors[:-1]) / 2
+    T = nm.linspace(t0, t1, tn)
+    # sic = TSSolver.initial_cond
+
+    # Plot mesh
+    plt.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
+    plt.vlines((coors[0], coors[-1]), ymin=0, ymax=.5, colors="k")
+    plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+
+    # Plot IC and its sampling
+    # TODO get IC sampling, from where?
+    c0 = plt.plot(X, u[0, :, 0, 0], label="IC-0", marker=".", ls="")[0].get_color()
+    c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
+    # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
+    plt.step(coors[1:], u[0, :, 0,  0], color=c0)
+    plt.step(coors[1:], u[1, :, 0,  0], color=c1)
+    # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
+    xs = nm.linspace(X1, XN1, 500)[:, None]
+    plt.plot(xs, ic(xs), label="IC-ex")
+
+    # Animate sampled solution
+    anim = animate1d(u[:, :, :, 0].T, coors[1:], T, axs, figs, ylims=[-1, 2], plott="step")
+    plt.xlim(coors[0] - .1, coors[-1] + .1)
+    plt.legend(loc="upper left")
+    plt.title("Sampled solution")
+
+    figr, axr = plt.subplots()
+
+    # Plot mesh
+    plt.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
+    plt.vlines((coors[0], coors[-1]), ymin=0, ymax=.5, colors="k")
+    plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+
+    # Plot discontinuously!
+    # (order, space_steps, t_steps, 1)
+    ww = nm.zeros((3 * n_nod - 1, tn, 1))
+    ww[0, :] = u[0, 0, :] - u[1, 0, :]  # left bc
+    ww[-1, :] = u[0, -1, :] + u[1, -1, :]  # right bc
+
+    ww[0:-2:3] = u[0, :, :] - u[1, :, :]  # left edges of elements
+    ww[1:-1:3] = u[0, :, :] + u[1, :, :]  # right edges of elements
+    ww[2::3, :] = nm.NaN  # NaNs ensure plotting of discontinuities at element borders
+
+    # nodes for plotting reconstructed solution
+    xx = nm.zeros((3 * n_nod - 1, 1))
+    xx[0] = coors[0]
+    xx[-1] = coors[-1]
+    # the ending ones are still a bit odd, but hey, it works!
+    xx[1:-1] = nm.repeat(coors[1:], 3)[:, None]
+    # plt.vlines(xx, ymin=0, ymax=.3, colors="green")
+
+    # plot reconstructed IC
+    plt.plot(xx, ww[:, 0], label="IC")
+
+    # Animate reconstructed
+    anim_disc = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2])
+    plt.xlim(coors[0] - .1, coors[-1] + .1)
+    plt.legend(loc="upper left")
+    plt.title("Reconstructed solution")
+
+    # sol_frame(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, t0=0., ylims=[-1, 1], plott="step")
+    plt.show()
