@@ -19,19 +19,27 @@ class AdvVolDGTerm(Term):
         self.v = v
         self.setup()
 
-    def get_fargs(self, test, state, mode="weak",
-                 standalone=True, ret_status=False, **kwargs):
+    def get_fargs(self, test, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if diff_var is not None:
+            doeval = True
+        else:
+            doeval = False
 
-        return []
+        return (doeval,)
 
-    def function(self, out, *args):
-        vols = self.region.domain.cmesh.get_volumes(1)  # TODO which dimension do we really want?
-        # integral over element with constant test
-        # function is just volume of the element
-        out[:] = 0
-        out[:, 0, 0, 0] = vols
-        out[:, 0, 1, 1] = vols / 3.0
-        # TODO move to for cycle to add values for higher order approx
+    def function(self, out, doeval):
+        if doeval:
+            vols = self.region.domain.cmesh.get_volumes(1)
+            # TODO which dimension do we really want?
+            # integral over element with constant test
+            # function is just volume of the element
+            out[:] = 0
+            out[:, 0, 0, 0] = vols
+            out[:, 0, 1, 1] = vols / 3.0
+            # TODO move to for cycle to add values for higher order approx
+        else:
+            out[:] = 0.0
         status = None
         return status
 
@@ -55,18 +63,25 @@ class AdvFluxDGTerm(Term):
                 'map': {'u': 'state', 'a': 'material'}
     }
 
-    def get_fargs(self, a, test, state, mode="weak",
-                 standalone=True, ret_status=False, **kwargs):
+    def get_fargs(self, a, test, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
 
         # varc = self.get_variables(as_list=False)['u']
         u = self.get(state, 'val', step=-1)
-        # IF timestep == 0: None
-        # TODO ret_status is set to 'u', why?
 
-        fargs = u, a
+        if diff_var is not None:
+            doeval = False
+        else:
+            doeval = True
+
+        fargs = u, a, doeval
         return fargs
 
-    def function(self, out, u, a):
+    def function(self, out, u, a, doeval):
+        if not doeval:
+            out[:] = 0
+            return None
+
         # for Legendre basis integral of higher order
         # functions of the basis is zero,
         # hence we calculate integral
@@ -119,6 +134,6 @@ class AdvFluxDGTerm(Term):
 
         out[:] = 0.0
         out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
-        out[:, 0, 1, 1] = (- fl - fp + intg)[:, 0, 0]
+        out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
         status = None
         return status
