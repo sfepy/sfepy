@@ -8,7 +8,6 @@ from numpy import newaxis as nax
 
 
 class TSSolver:
-    # TODO refactor Solver to Problem class
 
     def __init__(self, eq, ic, bc, limiter, basis):
         self.equation = eq
