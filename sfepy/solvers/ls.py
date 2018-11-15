@@ -919,6 +919,9 @@ class SchurMumps(MUMPSSolver):
                  i_max=None, mtx=None, status=None, **kwargs):
         import scipy.linalg as sla
 
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
+
         system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
         self.mumps_ls = self.mumps.MumpsSolver(system=system)
 
