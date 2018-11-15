@@ -8,7 +8,7 @@ from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.fem import Mesh, FEDomain
+from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
 from sfepy.terms.terms import Term
 from sfepy.solvers.ls import ScipyDirect
@@ -17,7 +17,7 @@ from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
 
 # local import
-from dg_terms import AdvFluxDGTerm, AdvIntDGTerm
+from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
 # from dg_equation import Equation
 from dg_tssolver import TSSolver, RK3Solver, EUSolver
 from dg_field import DGField
@@ -48,16 +48,17 @@ left = domain.create_region('Gamma1',
 right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN1,
                               'vertex')
-field = DGField.from_args('fu', nm.float64, 'vector', omega,
-                        approx_order=2)
+# field = DGField.from_args('fu', nm.float64, 'vector', omega,
+#                         approx_order=2)
+field = Field.from_args('fu', nm.float64, 'vector', omega,
+                        approx_order=1)
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=2)
 
-# TODO use sfepy volume term?
 
-f = Material('f', val=[1.0])  # TODO how do materials really work?
-IntT = Term.new("dw_volume_lvf(f.val, v)", integral, omega, v=v, f=f)
+f = Material('f', val=[1.0])
+IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[1.0])
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
@@ -95,19 +96,14 @@ bc = {"right" : 0.0,
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
 nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
-tss = SimpleTimeSteppingSolver({'t0' : 0.0, 't1' : 1.0, 'n_step' : 100},
+tss = SimpleTimeSteppingSolver({'t0' : 0.0, 't1' : 1.0, 'n_step' : 10},
                                nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
 
 pb.time_update(tss.ts)
-state0.apply_ebc()
-
-tss_status = IndexedStruct()
 pb.solve()
-# tss(state0.get_vec(pb.active_only),
-#     status=tss_status)
 
-print(tss_status)
+
 # u, dt = tss.solve(ts, te, tn)
 # sic = tss.initial_cond
 
