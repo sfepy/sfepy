@@ -43,6 +43,7 @@ t1 = 1
 tn = 10
 
 domain = FEDomain('domain', mesh)  # TODO DGDomain?
+# FEDomain contains default lagrange polyspace in its geometry, it the trnslates to Field
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
                               'vertices in x == %.10f' % X1,
@@ -50,9 +51,8 @@ left = domain.create_region('Gamma1',
 right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN1,
                               'vertex')
-# field = DGField.from_args('fu', nm.float64, 'vector', omega,
-#                         approx_order=1)
-field = Field.from_args('fu', nm.float64, 'vector', omega, approx_order=1)  # TODO DGField
+field = DGField('dgfu', nm.float64, 'scalar', omega, approx_order=1)
+# field = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=1)  # TODO DGField
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=2)
