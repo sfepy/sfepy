@@ -63,7 +63,8 @@ def coo_is_symmetric(mtx, tol=1e-6):
         if nm.all(d1[::2] == 0):
             vals = nm.abs(d2[::2])
             idxs = nm.where(vals > nm.finfo(vals.dtype).resolution)[0]
-            vals[idxs] /= odd.reshape((vals.shape[0], 2)).max(axis=1)[idxs]
+            odd_rs = odd.reshape((vals.shape[0], 2))
+            vals[idxs] /= nm.abs(odd_rs).max(axis=1)[idxs]
             if nm.all(vals < tol):
                 return True
 
