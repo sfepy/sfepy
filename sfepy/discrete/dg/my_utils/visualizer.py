@@ -253,11 +253,12 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
 
 def load_vtks(fold, name, tn, order):
     """
-    Reads series of .vtk files and cunches them into form
+    Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol
+
     :param fold: folder where to look for files
     :param name: used in {name}.i.vtk, i = 0,1, ... tn -1
-    :param tn: numer of time steps, i.e. number of files
+    :param tn: number of time steps, i.e. number of files
     :param order: order of approximation used TODO how to save and retrieve DOFs?
     :return: space coors, solution data
     """
@@ -286,7 +287,7 @@ def plot1D_DG_sol(coors, t0, t1, tn, u, ic=lambda x: 0.0):
     :param tn: number of time steps, must correspond to dimention of u
     :param u: shape(u) = (order,space_steps, t_steps, 1)
     :param ic: analytical initial condition, optional
-    :return:
+    :return: nothing
     """
     XN1 = coors[-1]
     X1 = coors[0]

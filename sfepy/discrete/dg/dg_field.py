@@ -2,13 +2,13 @@
 Fields for Discontinous Galerkin
 """
 import numpy as nm
+import six
+
 
 # sfepy imports
 from sfepy.base.base import assert_, basestr, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete import Integral, FieldVariable
-from sfepy.discrete.iga.mappings import IGMapping
-from sfepy.discrete.iga.iga import get_bezier_element_entities
 from six.moves import range
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.fem.poly_spaces import PolySpace
@@ -44,22 +44,23 @@ class DGField(Field):
                         region=region)
 
         self.domain = region.domain
-        self.region = region  # TODO is use of ragion ok?
+        self.region = region  # TODO is this use of region ok?
         self.approx_order = approx_order
-        # self._setup_geometry()
+        self._setup_geometry()
         # self._setup_kind()
         self._setup_shape()
+
         self.space = space
         self.poly_space_base = poly_space_base
         # TODO put LegendrePolySpace to table in PolySpace any_from_args, or use only Legendre for DG?
-        self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", region.domain.geom_els["1_2"], approx_order)
+        self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", self.gel, approx_order)
         # poly_space = PolySpace.any_from_args("legendre", region.domain.geom_els["1_2"], base="legendre", order=approx_order)
 
         self._setup_global_base()
 
 
         # wrapper for convinient integration
-        self._integrate = lambda fun: Integral("dg_fi", order=approx_order).integrate(fun, order=approx_order)
+        self.integral = Integral("dg_fi", order=approx_order+1)
 
 
     def _check_region(self, region):
@@ -79,15 +80,44 @@ class DGField(Field):
         self.n_edge_dof = 0 # use facets DOFS for AFS methods
         self.n_face_dof = 0 # use facet DOF for AFS methods
 
-        self.n_element_dof = self.region.get_n_cells(self.is_surface) * (self.approx_order + 1) # is that right?
-        self.element_remap = self.region.cells  # what is remap used for?
-        self.element_dofs = self.region.cells  # TODO this should be kinda main region
+        self.n_bubble_dof = self.region.get_n_cells(self.is_surface) * (self.approx_order + 1) # is that right?
+        self.bubble_remap = nm.arange(self.n_bubble_dof).reshape((self.region.get_n_cells(self.is_surface),
+                                                                  self.approx_order + 1)
+                                                                 )  # what is remap used for?
+        self.bubble_dofs = nm.arange(self.n_bubble_dof)
 
-        self.n_nod = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof + self.n_element_dof
+        self.n_nod = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof + self.n_bubble_dof
 
     def _setup_shape(self):
         self.n_components = nm.prod(self.shape)
         self.val_shape = self.shape
+
+    def _setup_geometry(self):
+        """
+        Setup the field region geometry.
+        """
+        # from VolumeField
+        cmesh = self.domain.cmesh
+        for key, gel in six.iteritems(self.domain.geom_els):
+            ct = cmesh.cell_types
+            if (ct[self.region.cells] == cmesh.key_to_index[gel.name]).all():
+                self.gel = gel
+                break
+
+        else:
+            raise ValueError('region %s of field %s contains multiple'
+                             ' reference geometries!'
+                             % (self.region.name, self.name))
+
+        self.is_surface = False
+
+    def setup_extra_data(self, geometry, info, is_trace):
+        # TODO place holder, what is this used for?
+
+        dct = info.dc_type.type # TODO check DOF connectivity type
+
+        self.info = info
+        self.is_trace = is_trace
 
     def get_dofs_in_region(self, region, merge=True):
         """
@@ -112,11 +142,12 @@ class DGField(Field):
         #                                  self.face_dofs)
         # dofs.append(fdofs)
 
+        # based on get_dofs_in_region from FEField
         dofs = []
         eldofs = nm.empty((0,), dtype=nm.int32)
-        if region.has_cells(): # TODO use "and (node_desc.element is not None)"
-            els = self.element_remap[region.cells]
-            eldofs = self.element_dofs[els[els >= 0]].ravel()
+        if region.has_cells(): # TODO use "and (node_desc.bubble is not None)"
+            els = nm.ravel(self.bubble_remap[region.cells])
+            eldofs = self.bubble_dofs[els[els >= 0]].ravel()
         dofs.append(eldofs)
 
         if merge:
@@ -125,25 +156,98 @@ class DGField(Field):
         return dofs
 
 
+    def get_data_shape(self, integral, integration='volume', region_name=None):
+
+
+        if integration in ('volume'):
+            # from FEField.get_data_shape()
+            _, weights = integral.get_qp(self.gel.name)
+            n_qp = weights.shape[0]
+
+            data_shape = (shape.n_cell, n_qp, dim, self.econn.shape[1])
+
+        else:
+            # TODO what bout other integrations? do they make sense for DG?
+            raise NotImplementedError('unsupported integration! (%s)'
+                                      % integration)
+
+        return data_shape
+
+
+    def get_econn(self, conn_type, region, is_trace=False, integration=None):
+        pass
+        # TODO implement
+
     def create_mapping(self, region, integral, integration):
         # TODO create a new reference mapping, maybe steal this from FE
         raise NotImplemented
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
-        # TODO used to setup DOFs directly, basically sampleIC from TSs
 
-        mesh = self.domain.mesh  # TODO use remap and self.element_dofs to get indicies!
-        sic = nm.zeros((2, self.mesh.n_el, 1), dtype=nm.float64)
+        if region is None:
+            region = self.region
 
-        c = (mesh.coors[1:] + mesh.coors[:-1]) / 2  # center
-        s = (mesh.coors[1:] - mesh.coors[:-1]) / 2  # scale
-        sic[0, :] = self._integrate(lambda t: fun(c + t * s)) / 2
-        sic[1, :] = 3 * self._integrate(lambda t: t * fun(c + t * s)) / 2
+        aux = self.get_dofs_in_region(region)
+        nods = nm.unique(nm.hstack(aux))
 
-        vals = sic  # TODO should vals correspond to shape of variable? i.e. n_nod
-        nods = c # TODO what should nods be? Mapping from element_dofs? element_remap?
+        if nm.isscalar(fun):
+            vals = nm.repeat([fun], nods.shape[0] * dpn)
+
+        elif isinstance(fun, nm.ndarray):
+            assert_(len(fun) == dpn)
+            vals = nm.repeat(fun, nods.shape[0])
+
+        elif callable(fun):
+
+            mesh = region.domain.mesh  # TODO use remap and self.bubble_dofs to get indicies!
+
+            qp, weights = self.integral.get_qp(self.gel.name)
+            qp, weights = qp.T, weights[:, None].T # transpose for array expansion
+            qp = 2*qp - 1  # in DG we use [-1,1] reference element, change that to [0, 1]?
+            weights = 2 * weights  # weights need to be tranformed as well
+
+            def mapping1D(x):
+                # TODO move mapping
+                c = (mesh.coors[1:] + mesh.coors[:-1]) / 2  # center
+                s = (mesh.coors[1:] - mesh.coors[:-1]) / 2  # scale
+                return c + x * s
+            coors = mapping1D(qp)
+
+            # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
+            # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
+            # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
+
+            base_vals_coors = self.poly_space.eval_base(coors)
+            base_vals_qp = self.poly_space.eval_base(qp)
+
+            # left hand, so far only orthogonal basis
+            lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=2)
+            # right hand
+            rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=2)
+
+            vals = rhs_vec / lhs_diag
+            # self.plot_1D_dofs((vals,), fun)
 
         return nods, vals
+
+    def plot_1D_dofs(self, dofss, fun):
+        # TODO move to visualizer
+        import matplotlib.pyplot as plt
+        mesh = self.region.domain.mesh
+        coors = mesh.coors
+        X = (coors[1:] + coors[:-1]) / 2
+        plt.figure("DOFs for function fun")
+        for ii, dofs in enumerate(dofss):
+            for i in range(dofs.shape[0]):
+                c0 = plt.plot(X, dofs[i, :], label="fun-{}dof-{}".format(ii, i), marker=".", ls="")[0].get_color()
+                # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
+                plt.step(coors[1:], dofs[i, :], color=c0)
+                # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
+
+        xs = nm.linspace(0,1, 500)[:, None]
+        plt.legend()
+        plt.plot(xs, fun(xs), label="fun-ex")
+        plt.show()
 
 # _get_facets
 # create_basis_context
