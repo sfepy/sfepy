@@ -27,6 +27,34 @@ class LegendrePolySpace(PolySpace):
     use transform y = 2*x-1 to get basis over [0, 1]
     """
 
+    def __init__(self, name, geometry, order, init_context=True):
+        """
+        Does not use init_context
+        :param name:
+        :param geometry: so far only 1_2 supported
+        :param order:
+        :param init_context: not used!
+        """
+        # TODO how is PolySpace supposed to look and work?
+        # FIXME - complete LegendrePolySpace
+
+        # "C:\Users\Lucia Moa\Python_Projects\sfepy\sfepy\discrete\fem\mappings.py", line 99, in get_mapping
+        # cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
+        #
+        # "sfepy\discrete\common\extmods\mappings.pyx", line 104, in sfepy.discrete.common.extmods.mappings.CMapping.describe
+        # ValueError: ccore error(seeabove)
+
+        PolySpace.__init__(self, name, geometry, order)
+
+        n_v, dim = geometry.n_vertex, geometry.dim
+        self.n_nod = (order + 1) ** dim
+
+        self.nodes = nm.array([[1, 0], [0, 1]])
+        self.nts = nm.array([[0, 0], [0, 1]])
+        self.node_coors = nm.array([[-1.], [1.]])
+
+        self.eval_ctx = None
+
     funs = [lambda x: 1,
             lambda x: x,
             lambda x: (3*x**2 - 1)/2,
@@ -37,7 +65,17 @@ class LegendrePolySpace(PolySpace):
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
-        # TODO this does not correspond to _eval_base of other basis
+        """
+        Numpy valuation of basis functions
+        :param coors:
+        :param diff: not supported!
+        :param ori: not supported!
+        :param suppress_errors:
+        :param eps: ???
+        :return: values in coors of all the basis function up to order
+        shape = (order + 1, ) + coors.shape() or (order + 1, 1) of coors is scalar
+        """
+        # TODO this does not correspond to _eval_base of other basis!
         if isinstance(coors, (int, float)):
             sh = (1,)
         else:
@@ -50,6 +88,11 @@ class LegendrePolySpace(PolySpace):
         return values
 
     def get_nth_fun(self, n):
+        """
+        Convenience function for testing
+        :param n:
+        :return: n-th function of the legendre basis
+        """
 
         if n < 6:
             return self.funs[n]
