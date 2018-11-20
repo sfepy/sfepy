@@ -30,7 +30,7 @@ updated example files:
 Additional steps for sfepy.org deployment:
 
 - copy doc/_build/html/ to <sfepy.org>/doc-devel/
-- copy gallery/gallery.html and gallery/images/ to <sfepy.org>/
+- copy gallery/index.html and gallery/images/ to <sfepy.org>/
 """
 from __future__ import absolute_import
 import sys
@@ -628,7 +628,7 @@ def main():
                         default=False, help=helps['no_images'])
     parser.add_argument('-o', '--output', metavar='output_filename',
                         action='store', dest='output_filename',
-                        default='gallery/gallery.html',
+                        default='gallery/index.html',
                         help=helps['output_filename'])
     parser.add_argument('-l', '--link-prefix', metavar='prefix',
                         action='store', dest='link_prefix',

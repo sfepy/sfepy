@@ -1,11 +1,12 @@
 #!/usr/bin/env python
+"""
+See the :ref:`sec-mat_optim` tutorial for a comprehensive description of this
+example.
+"""
 from __future__ import print_function
 from __future__ import absolute_import
 import sys
 sys.path.append('.')
-
-import matplotlib
-matplotlib.use('GTKAgg')
 
 import numpy as nm
 from scipy.optimize import fmin_tnc
