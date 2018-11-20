@@ -332,6 +332,9 @@ class Log(Struct):
         Add a new data group. Notify the plotting process if it is
         already running.
         """
+        if plot_kwargs is None:
+            plot_kwargs = {}
+
         ig = self.n_gr
         self.n_gr += 1
 
