@@ -35,8 +35,10 @@ class AdvVolDGTerm(Term):
             # integral over element with constant test
             # function is just volume of the element
             out[:] = 0
-            out[:, 0, 0, 0] = vols
-            out[:, 0, 1, 1] = vols / 3.0
+            # out[:, 0, 0, 0] = vols
+            # out[:, 0, 1, 1] = vols / 3.0
+            out[::2, 0, 0, 0] = vols
+            out[1::2, 0, 0, 0] = vols / 3.0
             # TODO move to for cycle to add values for higher order approx
         else:
             out[:] = 0.0
@@ -115,6 +117,8 @@ class AdvFluxDGTerm(Term):
 
         # TODO move to for cycle to add values for higher order approx
         # TODO find general fluxes for higher dimensions
+
+        # FIXME u and a will most likely have different shape
         fl = a[:, 0] * (ul[:, 0] + ul[:, 1] +
                         (u[:, 0] - u[:, 1])) / 2 + \
             nm.abs(a[:, 0]) * (ul[:, 0] + ul[:, 1] -
@@ -133,7 +137,9 @@ class AdvFluxDGTerm(Term):
         # val = nm.vstack((fl - fp, - fl - fp + intg))
 
         out[:] = 0.0
-        out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
-        out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
+        # out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
+        # out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
+        out[::2, 0, 0, 0] = (fl - fp)[:, 0, 0]  # this is how DGField should work
+        out[1::2, 0, 0, 0] = (- fl - fp + intg)[:, 0, 0]
         status = None
         return status

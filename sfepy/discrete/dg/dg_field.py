@@ -10,8 +10,9 @@ from sfepy.base.base import assert_, basestr, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete import Integral, FieldVariable
 from six.moves import range
-from sfepy.discrete.fem import Mesh, FEDomain, Field
+from sfepy.discrete.fem import Mesh, Field
 from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete.fem.mappings import VolumeMapping
 
 
 # local imports
@@ -20,17 +21,18 @@ from dg_basis import LegendrePolySpace
 class DGField(Field):
     # TODO inherit from FEField?
     # - that would require adding element dofs to it
+    # TODO rename to DGVolumeField? does DGSurfaceeField make sense? Use abstrakt class and subclasses?
     family_name = 'volume_H1_DGLegendre'
     is_surface = False
-
 
     def __init__(self, name, dtype, shape, region, space="H1",
                  poly_space_base="dglegendre",  approx_order=0):
         """
-
+        Creates DG Field, with Legendre poly space and integral corresponding to
+        approx_order + 1.
         :param name:
         :param dtype:
-        :param shape:
+        :param shape: shape of the problem?
         :param region:
         :param space:
         :param poly_space_base: use Legendre base
@@ -43,58 +45,93 @@ class DGField(Field):
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
 
+        # geometry
         self.domain = region.domain
-        self.region = region  # TODO is this use of region ok?
+        self.region = region
         self.approx_order = approx_order
-        self._setup_geometry()
-        # self._setup_kind()
-        self._setup_shape()
 
+        self._setup_geometry()
+        self._setup_shape()
+        self._setup_all_dofs()
+
+        # approximation space
         self.space = space
         self.poly_space_base = poly_space_base
         # TODO put LegendrePolySpace to table in PolySpace any_from_args, or use only Legendre for DG?
         self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", self.gel, approx_order)
         # poly_space = PolySpace.any_from_args("legendre", region.domain.geom_els["1_2"], base="legendre", order=approx_order)
 
-        self._setup_global_base()
-
-
-        # wrapper for convinient integration
+        # integral
+        self.clear_qp_base()
         self.integral = Integral("dg_fi", order=approx_order+1)
+
+        # mapping
+        self.mappings = {}
+        self.mappings0 = {}
+
+        self.ori = None
+        self.basis_transform = None
+
 
 
     def _check_region(self, region):
         # TODO what are the requirements on region?
         return True
 
-
     def _init_econn(self):
         """
-        Initialize the extended DOF connectivity.
+        Initialize the extended DOF connectivity. What is this supposed to do?
         """
         return None
 
-    def _setup_global_base(self):
+    def _setup_all_dofs(self):
+        """
+        Sets up all the differet kinds of DOFs, for DG only bubble DOFs
+        originaly called _setup_global_base
+        """
         self._init_econn()
         self.n_vertex_dof = 0  # in DG we will propably never need vertex DOFs
         self.n_edge_dof = 0 # use facets DOFS for AFS methods
         self.n_face_dof = 0 # use facet DOF for AFS methods
 
-        self.n_bubble_dof = self.region.get_n_cells(self.is_surface) * (self.approx_order + 1) # is that right?
-        self.bubble_remap = nm.arange(self.n_bubble_dof).reshape((self.region.get_n_cells(self.is_surface),
-                                                                  self.approx_order + 1)
-                                                                 )  # what is remap used for?
-        self.bubble_dofs = nm.arange(self.n_bubble_dof)
+        (self.n_bubble_dof,
+        self.bubble_remap,
+        self.bubble_dofs) = self._setup_bubble_dofs()
 
         self.n_nod = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof + self.n_bubble_dof
 
+    def _setup_bubble_dofs(self):
+        """
+        Creates DOF information for  so called element, cell or bubble DOFs - the only DOFs used in DG
+        n_dof is set as n_cells * order
+        remap is setup to map (order) DOFs to each cell
+        dofs is ???
+        :return:
+        """
+        n_dof = self.region.get_n_cells(self.is_surface) * (self.approx_order + 1)  # is that right?
+        remap = nm.arange(n_dof).reshape((self.region.get_n_cells(self.is_surface),
+                                                                  self.approx_order + 1)
+                                                                 )  # what is remap used for?
+        dofs = nm.arange(n_dof)
+
+        self.econn = dofs[:, None]
+        # TODO setup elements connectivity (it should be simple)
+
+        return n_dof, remap, dofs
+
     def _setup_shape(self):
+        """
+        What is shape used for and what it really means.
+        Does it represent shape of the problem?
+        :return:
+        """
         self.n_components = nm.prod(self.shape)
         self.val_shape = self.shape
 
     def _setup_geometry(self):
         """
         Setup the field region geometry.
+        Somehow pulls the highet dimension geometry from self.region
         """
         # from VolumeField
         cmesh = self.domain.cmesh
@@ -109,10 +146,24 @@ class DGField(Field):
                              ' reference geometries!'
                              % (self.region.name, self.name))
 
-        self.is_surface = False
+    def clear_qp_base(self):
+        """
+        Remove cached quadrature points and base functions.
+        Used in __init__ to set empty qp_coors and bf.
+        """
+        self.qp_coors = {}
+        self.bf = {}
 
     def setup_extra_data(self, geometry, info, is_trace):
-        # TODO place holder, what is this used for?
+        """
+        This called in create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True)
+        for each variable but has no effect.
+        :param geometry:
+        :param info:
+        :param is_trace:
+        :return:
+        """
+        # TODO placeholder, what is this used for?
 
         dct = info.dc_type.type # TODO check DOF connectivity type
 
@@ -122,6 +173,12 @@ class DGField(Field):
     def get_dofs_in_region(self, region, merge=True):
         """
         Return indices of DOFs that belong to the given region and group.
+        NOT really tested, called only with the ragion being the "main" region
+        of the problem, i.e. self.region
+
+        :param region:
+        :param merge: merge dof tuple into one numpy array
+        :return:
         """
 
         # node_desc = self.node_desc # TODO what is node_desc for?
@@ -155,16 +212,30 @@ class DGField(Field):
 
         return dofs
 
-
     def get_data_shape(self, integral, integration='volume', region_name=None):
-
+        """
+        Returns data shape for term, right now it is
+        (n_nod, n_qp, self.gel.dim, 1)
+        which results in matrix n_nod x n_nod, hovewer in
+        FEM it is
+        (shape.n_cell, n_qp, dim, self.econn.shape[1])
+        how does this translates to domension of the matrix?
+        :param integral: integral used
+        :param integration:
+        :param region_name: not used
+        :return:
+        """
 
         if integration in ('volume'):
             # from FEField.get_data_shape()
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
 
-            data_shape = (shape.n_cell, n_qp, dim, self.econn.shape[1])
+            # from FEField data_shape = (shape.n_cell, n_qp, dim, self.econn.shape[1])
+            data_shape = (self.n_nod, n_qp, self.gel.dim, 1)
+
+            # TODO last is econn.shape[1]
+            # we do not have connectivity in DG but need this enyway, I think
 
         else:
             # TODO what bout other integrations? do they make sense for DG?
@@ -173,16 +244,124 @@ class DGField(Field):
 
         return data_shape
 
-
     def get_econn(self, conn_type, region, is_trace=False, integration=None):
-        pass
-        # TODO implement
+        """
+        getter for econn
+        :param conn_type:
+        :param region:
+        :param is_trace:
+        :param integration: 'volume' is only supported value
+        :return:
+        """
+
+        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+
+        if ct == 'volume':
+            if region.name == self.region.name:
+                conn = self.econn
+            else:
+                raise ValueError("Bad region for the field")
+        else:
+            raise ValueError('unknown connectivity type! (%s)' % ct)
+
+        return conn
 
     def create_mapping(self, region, integral, integration):
-        # TODO create a new reference mapping, maybe steal this from FE
-        raise NotImplemented
+        """
+        Creates and returns mapping
+        :param region:
+        :param integral:
+        :param integration: 'volume' is so far only accepted option
+        :return:
+        """
+
+        domain = self.domain
+        coors = domain.get_mesh_coors(actual=True)
+        dconn = domain.get_conn()
+        # from FEField
+        if integration == 'volume':
+            # TODO qp = self.get_qp('v', integral)
+            qp = self.integral.get_qp(self.gel.name)
+            iels = region.get_cells()
+
+            geo_ps = self.gel.poly_space
+            ps = self.poly_space
+            bf = self.get_base('v', 0, integral, iels=iels)
+
+            conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
+            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
+            vg = mapping.get_mapping(qp[0], qp[1], poly_space=ps,
+                                     ori=self.ori,
+                                     transform=self.basis_transform)
+
+            out = vg
+        else:
+            raise ValueError('unknown integration geometry type: %s'
+                             % integration)
+
+        if out is not None:
+            # Store the integral used.
+            out.integral = integral
+            out.qp = qp
+            out.ps = ps
+            # Update base.
+            out.bf[:] = bf
+
+        if return_mapping:
+            out = (out, mapping)
+
+        return out
+
+    def get_base(self, key, derivative, integral, iels=None,
+                 from_geometry=False, base_only=True):
+        """
+        Return values of base functions at quadrature points of given integral
+        :param key: 'v' - volume, 's' - surface
+        :param derivative:
+        :param integral:
+        :param iels:
+        :param from_geometry:
+        :param base_only:
+        :return:
+        """
+        # from FEField
+        qp = integral.get_qp(self.gel.name)
+
+        if from_geometry:
+            ps = self.gel.poly_space
+
+        else:
+            ps = self.poly_space
+
+        _key = key if not from_geometry else 'g' + key
+        bf_key = (integral.order, _key, derivative)
+
+        if bf_key not in self.bf:
+            if (iels is not None) and (self.ori is not None):
+                ori = self.ori[iels]
+
+            else:
+                ori = self.ori
+
+            self.bf[bf_key] = ps.eval_base(qp[0], diff=derivative, ori=ori,
+                                           transform=self.basis_transform)
+
+        if base_only:
+            return self.bf[bf_key]
+        else:
+            return self.bf[bf_key], qp.weights
+
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+        """
+        Compute projection of fun into the basis, alternatevely set DOFs directly to provided
+        value or values
+        :param fun: callable, scallar or array corresponding to dofs
+        :param region: region to set DOFs on
+        :param dpn: number of dofs per element
+        :param warn: not used
+        :return: nods, vals
+        """
 
         if region is None:
             region = self.region
@@ -199,7 +378,7 @@ class DGField(Field):
 
         elif callable(fun):
 
-            mesh = region.domain.mesh  # TODO use remap and self.bubble_dofs to get indicies!
+            mesh = region.domain.mesh  # TODO use remap and self.bubble_dofs to get indicies?
 
             qp, weights = self.integral.get_qp(self.gel.name)
             qp, weights = qp.T, weights[:, None].T # transpose for array expansion
@@ -207,7 +386,7 @@ class DGField(Field):
             weights = 2 * weights  # weights need to be tranformed as well
 
             def mapping1D(x):
-                # TODO move mapping
+                # TODO this should be somehow part of the mapping
                 c = (mesh.coors[1:] + mesh.coors[:-1]) / 2  # center
                 s = (mesh.coors[1:] - mesh.coors[:-1]) / 2  # scale
                 return c + x * s
@@ -217,6 +396,7 @@ class DGField(Field):
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
+            # TODO higher order approx seem off
             base_vals_coors = self.poly_space.eval_base(coors)
             base_vals_qp = self.poly_space.eval_base(qp)
 
@@ -248,6 +428,27 @@ class DGField(Field):
         plt.legend()
         plt.plot(xs, fun(xs), label="fun-ex")
         plt.show()
+
+    def interp_to_qp(self, dofs):
+        """
+        Interpolate DOFs into quadrature points.
+
+        The quadrature order is given by the field approximation order.
+
+        Parameters
+        ----------
+        dofs : array
+            The array of DOF values of shape `(n_nod, n_component)`.
+
+        Returns
+        -------
+        data_qp : array
+            The values interpolated into the quadrature points.
+        integral : Integral
+            The corresponding integral defining the quadrature points.
+        """
+        # TODO this seems useful
+        raise NotImplementedError
 
 # _get_facets
 # create_basis_context
@@ -510,6 +711,7 @@ if __name__ == '__main__':
     mesh = Mesh.from_data('advection_1d', coors, None,
                           [conn], [mat_ids], descs)
 
+    from sfepy.discrete.fem import FEDomain
     domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
 
