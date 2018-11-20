@@ -19,8 +19,9 @@ def main():
     log2 = Log([['x^3']],
                yscales=['linear'],
                xlabels=['x'], ylabels=['a cubic function'],
-               aggregate=50, sleep=0.5,
-               log_filename=os.path.join(cwd, 'live_plot2.log'))
+               aggregate=50, sleep=0.05,
+               log_filename=os.path.join(cwd, 'live_plot2.log'),
+               formats=[['{:.5e}']])
 
     added = 0
     for x in nm.linspace(0, 4.0 * nm.pi, 200):
