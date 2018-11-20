@@ -35,8 +35,8 @@ def main():
                     x=[x, None, x])
             else:
                 log.plot_vlines(color='r', linewidth=2)
-                log.add_group(['x^2'], 'linear', 'new x', 'square',
-                              formats=['%+g'])
+                log.add_group(['x^2'], yscale='linear', xlabel='new x',
+                              ylabel='square', formats=['%+g'])
             added += 1
 
         if (added == 20) or (added == 50):
