@@ -286,7 +286,8 @@ class Log(Struct):
                         data_names={}, n_arg=0, n_gr=0,
                         data={}, x_values={}, n_calls=0, plot_kwargs={},
                         yscales={}, xlabels={}, ylabels={},
-                        plot_pipe=None, formats={}, output=None)
+                        plot_pipe=None, formats={}, _format_styles={},
+                        output=None)
 
         if data_names is not None:
             n_gr = len(data_names)
@@ -356,7 +357,9 @@ class Log(Struct):
             if formats is not None:
                 self.formats[key] = formats[iseq]
             else:
-                self.formats[key] = '%.3e'
+                self.formats[key] = '{:.3e}'
+
+            self._format_styles[key] = 0 if '%' in self.formats[key] else 1
 
         self.n_arg = ii
 
@@ -442,8 +445,13 @@ class Log(Struct):
             self.data[key].append(aux)
 
             if self.output:
-                self.output(('%%s: %%s: %s' % self.formats[key])
-                            % (name, self.x_values[ig][-1], aux))
+                if self._format_styles[key]:
+                    self.output(('{}: {}: %s' % self.formats[key])
+                                .format(name, self.x_values[ig][-1], aux))
+
+                else:
+                    self.output(('%%s: %%s: %s' % self.formats[key])
+                                % (name, self.x_values[ig][-1], aux))
 
         if self.is_plot and self.can_plot:
             if self.n_calls == 0:
