@@ -85,7 +85,8 @@ class LegendrePolySpace(PolySpace):
         for i in range(2, self.order + 1):
             values[i, :] = ((2*i + 1) * coors * values[i-1, :] - i * values[i-2, :]) / (i + 1)
 
-        return values
+        # TODO this is to return the same shape as other basis, refactor
+        return nm.swapaxes(nm.swapaxes(values, 0, -1), 0, -2)
 
     def get_nth_fun(self, n):
         """
