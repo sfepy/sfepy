@@ -498,6 +498,7 @@ class Log(Struct):
                 send(['ig', ig])
                 send(['clear'])
                 for ip, name in enumerate(names):
+                    send(['ip', ip])
                     key = name_to_key(name, ii)
                     try:
                         send(['plot',
