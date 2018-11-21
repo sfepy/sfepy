@@ -69,7 +69,7 @@ class AdvFluxDGTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         # varc = self.get_variables(as_list=False)['u']
-        u = self.get(state, 'val', step=-1)
+        u = self.get(state, 'dg', step=-1)
 
         if diff_var is not None:
             doeval = False

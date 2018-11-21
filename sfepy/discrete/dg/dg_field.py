@@ -82,6 +82,7 @@ class DGField(Field):
         """
         Initialize the extended DOF connectivity. What is this supposed to do?
         """
+
         return None
 
     def _setup_all_dofs(self):
@@ -156,7 +157,7 @@ class DGField(Field):
 
     def setup_extra_data(self, geometry, info, is_trace):
         """
-        This called in create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True)
+        This is called in create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True)
         for each variable but has no effect.
         :param geometry:
         :param info:
@@ -266,7 +267,41 @@ class DGField(Field):
 
         return conn
 
-    def create_mapping(self, region, integral, integration):
+    def create_output(self, dofs, var_name, dof_names=None,
+                      key=None, extend=True, fill_value=None,
+                      linearization=None):
+        """
+        Convert the DOFs corresponding to the field to a dictionary of
+        output data usable by Mesh.write().
+        # TODO how shloud the dictionary look
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        var_name : str
+            The variable name corresponding to `dofs`.
+        dof_names : tuple of str
+            The names of DOF components.
+        key : str, optional
+            The key to be used in the output dictionary instead of the
+            variable name.
+        extend : bool
+            Extend the DOF values to cover the whole domain.
+        fill_value : float or complex
+           The value used to fill the missing DOF values if `extend` is True.
+        linearization : Struct or None
+            The linearization configuration for higher order approximations.
+
+        Returns
+        -------
+        out : dict
+            The output dictionary.
+        """
+        raise NotImplementedError
+        return None
+
+    def create_mapping(self, region, integral, integration, return_mapping=True):
         """
         Creates and returns mapping
         :param region:
@@ -397,8 +432,9 @@ class DGField(Field):
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
             # TODO higher order approx seem off
-            base_vals_coors = self.poly_space.eval_base(coors)
-            base_vals_qp = self.poly_space.eval_base(qp)
+            # base_vals_coors = self.poly_space.eval_base(coors)
+            base_vals_qp = self.poly_space.eval_base(qp)       # -2  0   -1  0
+            base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
             # left hand, so far only orthogonal basis
             lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=2)
@@ -455,13 +491,8 @@ class DGField(Field):
 # create_eval_mesh
 # create_mesh
 # create_output
-# get_data_shape
-# get_dofs_in_region
-# get_econn
 # get_true_order
 # is_higher_order
-# setup_extra_data
-# is_surface
 
 missing =[ '__dir__',
 '__eq__',
