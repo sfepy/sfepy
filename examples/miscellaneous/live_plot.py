@@ -12,7 +12,7 @@ from sfepy.base.log import Log
 def main():
     cwd = os.path.split(os.path.join(os.getcwd(), __file__))[0]
 
-    log = Log((['sin(x)', 'cos(x)'], ['exp(x)']),
+    log = Log((['sin(x) + i sin(x**2)', 'cos(x)'], ['exp(x)']),
               yscales=['linear', 'log'],
               xlabels=['angle', None], ylabels=[None, 'a function'],
               log_filename=os.path.join(cwd, 'live_plot.log'))
@@ -28,11 +28,11 @@ def main():
         output('x: ', x)
 
         if x < (2.0 * nm.pi):
-            log(nm.sin(x), nm.cos(x), nm.exp(x), x = [x, None])
+            log(nm.sin(x)+1j*nm.sin(x**2), nm.cos(x), nm.exp(x), x=[x, None])
 
         else:
             if added:
-                log(nm.sin(x), nm.cos(x), nm.exp(x), x**2,
+                log(nm.sin(x)+1j*nm.sin(x**2), nm.cos(x), nm.exp(x), x**2,
                     x=[x, None, x])
             else:
                 log.plot_vlines(color='r', linewidth=2)
