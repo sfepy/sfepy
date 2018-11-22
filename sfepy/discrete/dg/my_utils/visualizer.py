@@ -267,18 +267,19 @@ def load_vtks(fold, name, tn, order):
 
     from sfepy.discrete.fem.meshio import VTKMeshIO
 
-    io = VTKMeshIO(pjoin(fold, ".".join((name, str(0), "vtk"))))
+    digs = int(nm.ceil(nm.log10(tn)))   # number of digits in filename
+    full_name = ".".join((name, ("{:0" + str(digs) + "d}"), "vtk"))
+    io = VTKMeshIO(pjoin(fold, full_name.format(0)))
     coors = io.read_coors()[:, 0, None]
     u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
 
     for i in range(tn):
-        io = VTKMeshIO(pjoin(fold, ".".join((name, str(i), "vtk"))))
+        io = VTKMeshIO(pjoin(fold, full_name.format(i)))
+        data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
         for ii in range(order + 1):
-            # parameter step is useless for VTKMeshIO
-            u[ii, :, i, 0] = io.read_data(step=0)['u{}'.format(ii)].data
+            u[ii, :, i, 0] = data['u{}'.format(ii)].data
 
     return coors, u
-
 
 def plot1D_DG_sol(coors, t0, t1, tn, u, ic=lambda x: 0.0):
     """
@@ -289,7 +290,7 @@ def plot1D_DG_sol(coors, t0, t1, tn, u, ic=lambda x: 0.0):
     :param t0: starting time
     :param t1: final time
     :param tn: number of time steps, must correspond to dimention of u
-    :param u: shape(u) = (order,space_steps, t_steps, 1)
+    :param u: shape(u) = (order, space_steps, t_steps, 1)
     :param ic: analytical initial condition, optional
     :return: nothing
     """

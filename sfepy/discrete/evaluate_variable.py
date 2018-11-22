@@ -41,7 +41,7 @@ def eval_real(vec, conn, geo, mode, shape, bf=None):
         out = nm.empty((n_el, n_qp, sym, 1), dtype=dtype)
         function(out, vec, geo, conn)
     # TODO repair this ugly hotfix!
-    # in DG i dont see reason why get values of variable in qp points
+    # in DG I dont see reason why get values of variable in qp points
     elif mode == 'dg':
         out = nm.empty((geo.n_el, 2), dtype=dtype)
         out[:, 0] = vec[:geo.n_el]

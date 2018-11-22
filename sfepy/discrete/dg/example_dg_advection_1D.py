@@ -57,13 +57,10 @@ u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=2)
 
-
-f = Material('f', val=[1.0])
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[10.0])
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
-
 
 eq = Equation('balance', IntT + FluxT)
 eqs = Equations([eq])
@@ -103,7 +100,7 @@ tss = SimpleTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step' : tn},
                                nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
 
-pb.time_update(tss.ts)
+# pb.time_update(tss.ts)
 pb.solve()
 
 
