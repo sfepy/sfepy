@@ -109,10 +109,9 @@ class DGField(Field):
         dofs is ???
         :return:
         """
-        n_dof = self.region.get_n_cells(self.is_surface) * (self.approx_order + 1)  # is that right?
-        remap = nm.arange(n_dof).reshape((self.region.get_n_cells(self.is_surface),
-                                                                  self.approx_order + 1)
-                                                                 )  # what is remap used for?
+        self.n_cell = self.region.get_n_cells(self.is_surface)
+        n_dof = self.n_cell * (self.approx_order + 1)  # is that right?
+        remap = nm.arange(n_dof).reshape((self.n_cell, self.approx_order + 1))  # what is remap used for?
         dofs = nm.arange(n_dof)
 
         self.econn = dofs[:, None]
@@ -298,8 +297,15 @@ class DGField(Field):
         out : dict
             The output dictionary.
         """
-        raise NotImplementedError
-        return None
+        res = {}
+        for i in range(self.approx_order + 1):
+            res["u{}".format(i)] = Struct(mode="cell",
+                              data=dofs[self.n_cell * i : self.n_cell*(i+1) ,:, None, None])
+
+                              # nm.hstack((dofs[:self.n_cell],
+                              #                 dofs[self.n_cell:])).reshape(self.n_cell, 1,1, 2)
+                              #
+        return res
 
     def create_mapping(self, region, integral, integration, return_mapping=True):
         """

@@ -254,12 +254,14 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
 def load_vtks(fold, name, tn, order):
     """
     Reads series of .vtk files and crunches them into form
-    suitable for plot10_DG_sol
+    suitable for plot10_DG_sol.
+
+    In fact reads cell data of shape mesh.coors - 1 i.e. mesh.n_el
 
     :param fold: folder where to look for files
-    :param name: used in {name}.i.vtk, i = 0,1, ... tn -1
+    :param name: used in {name}.i.vtk, i = 0,1, ... tn - 1
     :param tn: number of time steps, i.e. number of files
-    :param order: order of approximation used TODO how to save and retrieve DOFs?
+    :param order: order of approximation used
     :return: space coors, solution data
     """
 
@@ -271,7 +273,9 @@ def load_vtks(fold, name, tn, order):
 
     for i in range(tn):
         io = VTKMeshIO(pjoin(fold, ".".join((name, str(i), "vtk"))))
-        u[0, :, i, 0] = io.read_data(0)['u'].data[1:]  # TODO this is hack to test plot_1D_DG_sol, REMOVE!
+        for ii in range(order + 1):
+            # parameter step is useless for VTKMeshIO
+            u[ii, :, i, 0] = io.read_data(step=0)['u{}'.format(ii)].data
 
     return coors, u
 
