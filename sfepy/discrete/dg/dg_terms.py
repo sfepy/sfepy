@@ -76,7 +76,7 @@ class AdvFluxDGTerm(Term):
         else:
             doeval = True
 
-        fargs = u, a, doeval
+        fargs = u, a[:, :, 0, 0], doeval
         return fargs
 
     def function(self, out, u, a, doeval):
@@ -103,12 +103,7 @@ class AdvFluxDGTerm(Term):
         # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
         # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
 
-        # fl = a * (u[0, :-2] + u[1, :-2] +
-        #           (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
-        #      nm.abs(a) * (u[0, :-2] + u[1, :-2] -
-        #                   (u[0, 1:-1] - u[1, 1:-1])).T / 2
-
-        # TODO how to treat bcs inside term?
+        # TODO how to treat BCs inside term?
         bc_shape = (1, ) + nm.shape(u)[1:]
         bcl = u[0].reshape(bc_shape)
         bcr = u[-1].reshape(bc_shape)
@@ -116,8 +111,12 @@ class AdvFluxDGTerm(Term):
         ul = nm.concatenate((bcl, u[:-1]))
 
         # TODO move to for cycle to add values for higher order approx
-        # TODO find general fluxes for higher dimensions
+        # TODO research general fluxes for higher dimensions
 
+        # fl = a * (u[0, :-2] + u[1, :-2] +
+        #           (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
+        #      nm.abs(a) * (u[0, :-2] + u[1, :-2] -
+        #                   (u[0, 1:-1] - u[1, 1:-1])).T / 2
         # FIXME u and a will most likely have different shape
         fl = a[:, 0] * (ul[:, 0] + ul[:, 1] +
                         (u[:, 0] - u[:, 1])) / 2 + \
@@ -139,7 +138,7 @@ class AdvFluxDGTerm(Term):
         out[:] = 0.0
         # out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
         # out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
-        out[::2, 0, 0, 0] = (fl - fp)[:, 0, 0]  # this is how DGField should work
-        out[1::2, 0, 0, 0] = (- fl - fp + intg)[:, 0, 0]
+        out[::2, 0, 0, 0] = (fl - fp)  # this is how DGField should work
+        out[1::2, 0, 0, 0] = (- fl - fp + intg)
         status = None
         return status
