@@ -105,7 +105,7 @@ class Test( TestCommon ):
         goptions['verbose'] = 1
         output('test3')
 
-        _ok1 = goptions['verbose'] == True
+        _ok1 = bool(goptions['verbose'])
         _ok2 = fd.getvalue() == 'test test1\ntest test3\n'
 
         fd.close()
@@ -141,6 +141,7 @@ class Test( TestCommon ):
 
     def test_parse_conf(self):
         from sfepy.base.parse_conf import list_dict
+        from sfepy.base.conf import dict_from_string as parse_dict
         ld = list_dict()
 
         def parse(x):
@@ -153,4 +154,19 @@ class Test( TestCommon ):
         assert_(parse("1,(2),c:3,uu=7") == ([1,(2,)],{'c':3,'uu':7}))
         assert_(parse("'long string ([\"',(2,5),c:3") ==
                      (['long string (["',(2,5)],{'c':3}))
+
+
+        assert_(parse_dict('') == {})
+        assert_(parse_dict('a:[]') == {'a':[]})
+        assert_(parse_dict('a:{}') == {'a':{}})
+        assert_(parse_dict('1:2,a:{},3:4') == {1:2,'a':{},3:4})
+
+        assert_(parse('') == ([],{}))
+        assert_(parse('[ ]') == ([[]],{}))
+        assert_(parse('[]') == ([[]],{}))
+        assert_(parse('[[]]') == ([[[]]],{}))
+        assert_(parse('[[[]]]')==([[[[]]]],{}))
+        assert_(parse('a,{},[],None,True,False,"False"') ==
+                         (['a',{},[],None,True,False,"False"],{}))
+
         return True
