@@ -14,7 +14,8 @@ class LogPlotter(Struct):
     output = staticmethod(output)
 
     def __init__(self, aggregate=100, sleep=1.0):
-        Struct.__init__(self, aggregate=aggregate, sleep=sleep)
+        Struct.__init__(self, aggregate=aggregate, sleep=sleep,
+                        ig=0, ip=0)
 
     def process_command(self, command):
         from matplotlib.ticker import LogLocator, AutoLocator
@@ -24,14 +25,30 @@ class LogPlotter(Struct):
         if command[0] == 'ig':
             self.ig = command[1]
 
+        if command[0] == 'ip':
+            self.ip = command[1]
+
         elif command[0] == 'plot':
             xdata, ydata, plot_kwargs = command[1:]
 
-            ig = self.ig
+            ig, ip = self.ig, self.ip
             ax = self.ax[ig]
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
-            ax.plot(xdata, ydata, **plot_kwargs)
+            if nm.isrealobj(ydata):
+                ax.plot(xdata, ydata, label=self.data_names[ig][ip],
+                        **plot_kwargs)
+
+            else:
+                lines = ax.plot(xdata, ydata.real,
+                               label='Re ' + self.data_names[ig][ip],
+                               **plot_kwargs)
+                plot_kwargs['color'] = lines[0].get_color()
+                alpha = lines[0].get_alpha()
+                plot_kwargs['alpha'] = 0.5 if alpha is None else 0.5 * alpha
+                ax.plot(xdata, ydata.imag,
+                        label='Im ' + self.data_names[ig][ip],
+                        **plot_kwargs)
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()
@@ -52,7 +69,7 @@ class LogPlotter(Struct):
         elif command[0] == 'legends':
             for ig, ax in enumerate(self.ax):
                 try:
-                    ax.legend(self.data_names[ig])
+                    ax.legend()
                 except:
                     pass
 
