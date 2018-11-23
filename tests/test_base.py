@@ -141,15 +141,11 @@ class Test( TestCommon ):
 
     def test_parse_conf(self):
         from sfepy.base.parse_conf import list_dict
-        from sfepy.base.conf import dict_from_string
+        from sfepy.base.conf import dict_from_string as parse_dict
         ld = list_dict()
 
         def parse(x):
             out = ld.parseString(x, True)[0]
-            return out
-
-        def parse_dict(x):
-            out = dict_from_string(x)
             return out
 
         assert_(parse("1,2") == ([1,2],{}))
