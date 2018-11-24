@@ -128,9 +128,6 @@ directory is `sfepy/`, which has the following contents:
    * - `parallel/`
      - modules supporting parallel assembling and solution of problems
      -
-   * - `physics/`
-     - small utilities for quantum physics (`schroedinger.py`)
-     - *
    * - `postprocess/`
      - Mayavi-based post-processing modules (`postproc.py`)
      -

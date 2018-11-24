@@ -52,22 +52,6 @@ Applications
 
     * see ``examples/phononic/output/``
 
-* ``schroedinger.py``
-
-  * (order is important below):
-
-    1. ::
-
-        $ ./schroedinger.py --2d --create-mesh
-
-    2. ::
-
-        $ ./schroedinger.py --2d --hydrogen
-
-    3. ::
-
-        $ ./postproc.py mesh.vtk
-
 .. _SfePy-command-wrapper:
 
 Using Command Wrapper
@@ -82,7 +66,7 @@ All top-level *SfePy* scripts (applications) can be run via single
   Simple wrapper for main SfePy commands.
 
   positional arguments:
-  {extractor,homogen,phonon,postproc,probe,run_tests,schroedinger,simple}
+  {extractor,homogen,phonon,postproc,probe,run_tests,simple}
                         Available SfePy command(s).
   options               Additional options passed directly to selected
                         [command].
