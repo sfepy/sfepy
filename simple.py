@@ -18,7 +18,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import sfepy
 from sfepy.base.base import output
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.applications import PDESolverApp
+from sfepy.applications import PDESolverApp, EVPSolverApp
 
 def print_terms():
     import sfepy.terms as t
@@ -167,7 +167,12 @@ def main():
     opts.save_restart = options.save_restart
     opts.load_restart = options.load_restart
 
-    app = PDESolverApp(conf, options, output_prefix)
+    if conf.options.get('ls') is not None:
+        app = PDESolverApp(conf, options, output_prefix)
+
+    else:
+        app = EVPSolverApp(conf, options, output_prefix)
+
     if hasattr(opts, 'parametric_hook'): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)
