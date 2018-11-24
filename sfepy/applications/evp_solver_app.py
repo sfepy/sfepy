@@ -105,9 +105,6 @@ class EVPSolverApp(PDESolverApp):
 
         output('...done')
 
-        output('eigenvalues:')
-        output(eigs)
-
         vecs = self.make_full(svecs)
         self.save_results(eigs, vecs)
 
@@ -150,10 +147,11 @@ class EVPSolverApp(PDESolverApp):
                 out['__mesh__'] = aux['__mesh__']
 
             pb.save_state(mesh_results_name, out=out)
-            output("solution saved to %s" % self.problem.get_output_name())
-            output("in %s" % self.app_options.output_dir)
+            output('solution saved to %s' % mesh_results_name)
 
         eig_results_name = get_default(eig_results_name,
                                        self.eig_results_name)
         with open(eig_results_name, 'w') as fd:
             eigs.tofile(fd, ' ')
+
+        output('eigenvalues saved to %s' % eig_results_name)
