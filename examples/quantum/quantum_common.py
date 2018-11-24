@@ -1,6 +1,11 @@
 """
 Common code for basic electronic structure examples.
 
+It covers only simple single electron problems, e.g. well, oscillator, hydrogen
+atom and boron atom with 1 electron - see the corresponding files in this
+directory, where potentials as well as exact solutions for those problems are
+defined.
+
 Notes
 -----
 
@@ -11,26 +16,55 @@ means higher accuracy.
 Try changing C, F and L parameters in square.geo and regenerate the mesh using
 gmsh::
 
-  $ gmsh -2 -format mesh meshes/quantum/square.geo -o meshes/quantum/square.mesh
-  $ ./script/convert_mesh.py meshes/quantum/square.mesh meshes/quantum/aux.vtk
-  $ ./script/convert_mesh.py meshes/quantum/aux.vtk meshes/quantum/square.mesh
+  gmsh -2 -format mesh meshes/quantum/square.geo -o meshes/quantum/square.mesh
+  ./script/convert_mesh.py -2 meshes/quantum/square.mesh meshes/quantum/square.mesh
 
-The ``script/convert_mesh.py`` calls make the mesh 2D, as gmsh does not save
-planar medit meshes.
+The ``script/convert_mesh.py`` call makes the mesh planar, as gmsh saves 2D
+medit meshes including the zero z coordinates.
 
 Also try changing approximation order ('approx_order') of the field below, as
 well as the integral order (should be two times the approximation order).
 """
 from __future__ import absolute_import
+from sfepy.base.base import output
 from sfepy import data_dir
 
-def common(fun_v, n_eigs=5, tau=0.0):
+def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
+
+    def report_eigs(pb, evp):
+        from numpy import NaN
+
+        bounding_box = pb.domain.mesh.get_bounding_box()
+        box_size = bounding_box[1][0] - bounding_box[0][0]
+        output('box_size: %f' % box_size)
+        output('eigenvalues:')
+
+        if get_exact is not None:
+            eeigs = get_exact(n_eigs, box_size, pb.domain.shape.dim)
+
+            output('n      exact         FEM      error')
+            for ie, eig in enumerate(evp.eigs):
+                if ie < len(eeigs):
+                    exact = eeigs[ie]
+                    err = 100*abs((exact - eig)/exact)
+                else:
+                    exact = NaN
+                    err = NaN
+                output('%d:  %.8f   %.8f  %5.2f%%' % (ie, exact, eig, err))
+
+        else:
+            output('n       FEM')
+            for ie, eig in enumerate(evp.eigs):
+                output('%d:  %.8f' % (ie, eig))
+
     filename_mesh = data_dir + '/meshes/quantum/square.mesh'
 
     options = {
-        'save_eig_vectors' : None,
         'n_eigs' : n_eigs,
-        'eigen_solver' : 'eigen1',
+        'eigs_only' : False,
+        'post_process_hook_final' : 'report_eigs',
+
+        'evps' : 'eigen1',
     }
 
     region_1000 = {
