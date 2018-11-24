@@ -24,6 +24,17 @@ medit meshes including the zero z coordinates.
 
 Also try changing approximation order ('approx_order') of the field below, as
 well as the integral order (should be two times the approximation order).
+
+Usage Examples
+--------------
+
+The following examples are available and can be run using the `simple.py`
+script::
+
+  python simple.py examples/quantum/boron.py
+  python simple.py examples/quantum/hydrogen.py
+  python simple.py examples/quantum/oscillator.py
+  python simple.py examples/quantum/well.py
 """
 from __future__ import absolute_import
 from sfepy.base.base import output
