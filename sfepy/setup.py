@@ -14,7 +14,6 @@ def configuration(parent_package='',top_path=None):
         'linalg',
         'mechanics',
         'parallel',
-        'physics',
         'postprocess',
         'solvers',
         'terms'

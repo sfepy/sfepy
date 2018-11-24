@@ -59,7 +59,6 @@ def configuration(parent_package='', top_path=None):
         'postproc.py',
         'probe.py',
         'run_tests.py',
-        'schroedinger.py',
         'simple.py',
         'test_install.py',
     ]
