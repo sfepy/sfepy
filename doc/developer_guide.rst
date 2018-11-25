@@ -924,7 +924,6 @@ Main scripts
    src/postproc
    src/probe
    src/run_tests
-   src/schroedinger
    src/simple
    src/simple_homog_mpi
 
@@ -978,6 +977,7 @@ sfepy.applications package
    :maxdepth: 2
 
    src/sfepy/applications/application
+   src/sfepy/applications/evp_solver_app
    src/sfepy/applications/pde_solver_app
 
 sfepy.base package
@@ -1171,15 +1171,6 @@ sfepy.parallel package
    src/sfepy/parallel/evaluate
    src/sfepy/parallel/parallel
    src/sfepy/parallel/plot_parallel_dofs
-
-sfepy.physics package
-^^^^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   src/sfepy/physics/potentials
-   src/sfepy/physics/schroedinger_app
 
 sfepy.postprocess package
 ^^^^^^^^^^^^^^^^^^^^^^^^^
