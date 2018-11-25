@@ -437,7 +437,7 @@ class DGField(Field):
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
-            # TODO higher order approx seem off
+            # TODO higher order approx seems off
             # base_vals_coors = self.poly_space.eval_base(coors)
             base_vals_qp = self.poly_space.eval_base(qp)       # -2  0   -1  0
             base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
@@ -448,15 +448,14 @@ class DGField(Field):
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=2)
 
             vals = rhs_vec / lhs_diag
-            # self.plot_1D_dofs((vals,), fun)
+            # self.plot_1D_dofs(self.domain.mesh.coors, (vals,), fun)
 
         return nods, vals
 
-    def plot_1D_dofs(self, dofss, fun):
+    @staticmethod
+    def plot_1D_dofs(coors, dofss, fun):
         # TODO move to visualizer
         import matplotlib.pyplot as plt
-        mesh = self.region.domain.mesh
-        coors = mesh.coors
         X = (coors[1:] + coors[:-1]) / 2
         plt.figure("DOFs for function fun")
         for ii, dofs in enumerate(dofss):

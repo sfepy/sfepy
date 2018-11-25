@@ -37,8 +37,8 @@ class AdvVolDGTerm(Term):
             out[:] = 0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
-            out[::2, 0, 0, 0] = vols
-            out[1::2, 0, 0, 0] = vols / 3.0
+            out[:nm.shape(vols)[0], 0, 0, 0] = -vols  # TODO how to arrange DOFs into variable vector?
+            out[nm.shape(vols)[0]:, 0, 0, 0] = -vols / 3.0
             # TODO move to for cycle to add values for higher order approx
         else:
             out[:] = 0.0
@@ -138,7 +138,7 @@ class AdvFluxDGTerm(Term):
         out[:] = 0.0
         # out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
         # out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
-        out[::2, 0, 0, 0] = (fl - fp)  # this is how DGField should work
-        out[1::2, 0, 0, 0] = (- fl - fp + intg)
+        out[:nm.shape(fp)[0], 0, 0, 0] = (fl - fp)  # this is how DGField should work
+        out[nm.shape(fp)[0]:, 0, 0, 0] = (- fl - fp + intg)
         status = None
         return status
