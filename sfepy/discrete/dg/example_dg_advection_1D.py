@@ -43,7 +43,7 @@ t1 = 1
 tn = 10
 
 domain = FEDomain('domain', mesh)  # TODO DGDomain?
-# FEDomain contains default lagrange polyspace in its geometry, it the trnslates to Field
+# FEDomain contains default lagrange polyspace in its geometry
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
                               'vertices in x == %.10f' % X1,
@@ -59,7 +59,7 @@ integral = Integral('i', order=2)
 
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
-a = Material('a', val=[10.0])
+a = Material('a', val=[1.0])
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
 eq = Equation('balance', IntT + FluxT)
@@ -76,22 +76,11 @@ def ic_wrap(x, ic=None):
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs, conf=ProblemConf({"options": {"output_format" : "h5"}}))
+pb = Problem('advection', equations=eqs)
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
-state0 = pb.get_initial_state()
-# it kinda works up until now
-
-
-geometry = Struct(n_vertex=2,
-                  dim=1,
-                  coors=coors.copy())
-
-ic = superic
-bc = {"right" : 0.0,
-      "left" : 0.0}
-
+# state0 = pb.get_initial_state()
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
