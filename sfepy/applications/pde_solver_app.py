@@ -48,7 +48,14 @@ def solve_pde(conf, options=None, status=None, **app_options):
                          save_regions_as_groups=False,
                          solve_not=False)
 
-    app = PDESolverApp(conf, options, output_prefix)
+    if conf.options.get('evps') is None:
+        app = PDESolverApp(conf, options, output_prefix)
+
+    else:
+        from .evp_solver_app import EVPSolverApp
+
+        app = EVPSolverApp(conf, options, output_prefix)
+
     if hasattr(opts, 'parametric_hook'): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)

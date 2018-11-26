@@ -226,8 +226,8 @@ def main():
     eok += report(out, '...', -9, 2, '4.58709531e+07')
     eok += report(out, '...', -8, 1, '1.13929200e+11]')
 
-    out, err = check_output('%s ./schroedinger.py --hydrogen' % cmd)
-    eok += report(out, '...', -4, -2, '-0.01913506', eps=1e-4)
+    out, err = check_output('%s ./simple.py examples/quantum/hydrogen.py' % cmd)
+    eok += report(out, '...', -2, -2, '-0.01913506', eps=1e-4)
 
     out, err = check_output('%s ./homogen.py examples/homogenization/perfusion_micro.py' % cmd)
     eok += report2(out, '...', ['computing EpA', 'computing PA_3',
