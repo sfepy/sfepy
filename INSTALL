@@ -29,7 +29,7 @@ Python packages required for using SfePy:
 - PyTables, for storing results in HDF5 files
 - SymPy, for some tests and functions
 - Mayavi, for postproc.py
-- Pysparse, for simple quantum mechanical systems examples
+- Pysparse, for additional eigenvalue problem solvers
 - igakit, for script/gen_iga_patch.py - simple IGA domain generator
 - petsc4py and mpi4py, for running parallel examples and using parallel
   solvers from PETSc
