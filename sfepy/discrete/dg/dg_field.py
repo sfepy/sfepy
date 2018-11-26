@@ -449,7 +449,7 @@ class DGField(Field):
 
             vals = rhs_vec / lhs_diag
             # self.plot_1D_dofs(self.domain.mesh.coors, (vals,), fun)
-
+            vals = nm.append(vals[0, :], vals[1, :])
         return nods, vals
 
     @staticmethod
