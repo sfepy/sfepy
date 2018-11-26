@@ -3,8 +3,8 @@ Common code for basic electronic structure examples.
 
 It covers only simple single electron problems, e.g. well, oscillator, hydrogen
 atom and boron atom with 1 electron - see the corresponding files in this
-directory, where potentials as well as exact solutions for those problems are
-defined.
+directory, where potentials (:func:`fun_v()`) as well as exact solutions
+(:func:`get_exact()`) for those problems are defined.
 
 Notes
 -----

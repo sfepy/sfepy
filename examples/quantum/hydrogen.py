@@ -1,3 +1,6 @@
+"""
+See :ref:`quantum-quantum_common`.
+"""
 from __future__ import absolute_import
 from sfepy.linalg import norm_l2_along_axis
 
