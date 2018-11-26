@@ -57,12 +57,15 @@ class EVPSolverApp(PDESolverApp):
                                              self.problem.ofn_trunk
                                              + '_eigs.txt')
 
-    def call(self):
+    def call(self, status=None):
         # This cannot be in __init__(), as parametric calls may change
         # the output directory.
         self.setup_output()
 
         evp = self.solve_eigen_problem()
+        if status is not None:
+            n_eigs = get_default(self.app_options.n_eigs, evp.vecs.shape[0])
+            status.nls_status = Struct(conditions=n_eigs - len(evp.eigs))
 
         if self.post_process_hook_final is not None: # User postprocessing.
             self.post_process_hook_final(self.problem, evp=evp)
