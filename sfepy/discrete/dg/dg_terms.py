@@ -32,13 +32,14 @@ class AdvVolDGTerm(Term):
         if doeval:
             vols = self.region.domain.cmesh.get_volumes(1)
             # TODO which dimension do we really want?
+
             # integral over element with constant test
             # function is just volume of the element
             out[:] = 0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
-            out[:nm.shape(vols)[0], 0, 0, 0] = -vols  # TODO how to arrange DOFs into variable vector?
-            out[nm.shape(vols)[0]:, 0, 0, 0] = -vols / 3.0
+            out[:nm.shape(vols)[0], 0, 0, 0] = vols  # TODO sign does correspond to standard way solvers expect
+            out[nm.shape(vols)[0]:, 0, 0, 0] = vols / 3.0
             # TODO move to for cycle to add values for higher order approx
         else:
             out[:] = 0.0
@@ -69,15 +70,23 @@ class AdvFluxDGTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         # varc = self.get_variables(as_list=False)['u']
-        u = self.get(state, 'dg', step=-1)
-
+        # ur = self.get(state, 'dg', step=-1)
         if diff_var is not None:
             doeval = False
+            return None, None, doeval
         else:
             doeval = True
+            ur = state.data[0]
+            # ur = self.get(state, 'dg', step=-1)
 
-        fargs = u, a[:, :, 0, 0], doeval
-        return fargs
+            # TODO how to pass order or number of cells to term?
+            n_cell = self.region.get_n_cells(False)
+            u = nm.zeros((n_cell, 2))  # 2 is approx order
+            for i in range(2):
+                u[:, i] = ur[n_cell * i : n_cell*(i+1)]
+
+            fargs = u, a[:, :, 0, 0], doeval
+            return fargs
 
     def function(self, out, u, a, doeval):
         if not doeval:
@@ -138,7 +147,13 @@ class AdvFluxDGTerm(Term):
         out[:] = 0.0
         # out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
         # out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
-        out[:nm.shape(fp)[0], 0, 0, 0] = (fl - fp)  # this is how DGField should work
-        out[nm.shape(fp)[0]:, 0, 0, 0] = (- fl - fp + intg)
+        flux0 = (fl - fp)  # this is how DGField should work
+        flux1 = (- fl - fp + intg)
+
+        out[:nm.shape(fp)[0], 0, 0, 0] = flux0
+        out[nm.shape(fp)[0]:, 0, 0, 0] = flux1
+
+        # out[:nm.shape(fp)[0], 0, 0, 0] = vols * u[:, 0] - flux0
+        # out[nm.shape(fp)[0]:, 0, 0, 0] = vols/3 * u[:, 1] - flux1
         status = None
         return status
