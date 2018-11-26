@@ -13,8 +13,8 @@ The same code should work also with a 3D (box) mesh, but a very fine mesh would
 be required. Also in the 2D case, finer mesh and/or higher approximation order
 means higher accuracy.
 
-Try changing C, F and L parameters in square.geo and regenerate the mesh using
-gmsh::
+Try changing C, F and L parameters in ``meshes/quantum/square.geo`` and
+regenerate the mesh using gmsh::
 
   gmsh -2 -format mesh meshes/quantum/square.geo -o meshes/quantum/square.mesh
   ./script/convert_mesh.py -2 meshes/quantum/square.mesh meshes/quantum/square.mesh
@@ -22,8 +22,7 @@ gmsh::
 The ``script/convert_mesh.py`` call makes the mesh planar, as gmsh saves 2D
 medit meshes including the zero z coordinates.
 
-Also try changing approximation order ('approx_order') of the field below, as
-well as the integral order (should be two times the approximation order).
+Also try changing approximation order ('approx_order') of the field below.
 
 Usage Examples
 --------------
@@ -61,7 +60,7 @@ def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
                 else:
                     exact = NaN
                     err = NaN
-                output('%d:  %.8f   %.8f  %5.2f%%' % (ie, exact, eig, err))
+                output('%d:  %.8f   %.8f  %7.4f%%' % (ie, exact, eig, err))
 
         else:
             output('n       FEM')
@@ -75,92 +74,57 @@ def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
         'eigs_only' : False,
         'post_process_hook_final' : 'report_eigs',
 
-        'evps' : 'eigen1',
+        'evps' : 'eig',
     }
 
-    region_1000 = {
-        'name' : 'Omega',
-        'select' : 'all',
+    regions = {
+        'Omega' : 'all',
+        'Surface' : ('vertices of surface', 'facet'),
     }
 
-    region_2 = {
-        'name' : 'Surface',
-        'select' : 'vertices of surface',
-        'kind' : 'facet',
+    materials = {
+        'm' : ({'val' : 0.5},),
+        'mat_v' : 'fun_v',
     }
 
     functions = {
         'fun_v' : (fun_v,),
     }
 
-    material_1 = {
-        'name' : 'm',
-
-        'values' : {
-            'val' : 0.5,
-        },
+    approx_order = 2
+    fields = {
+        'field_Psi' : ('real', 'scalar', 'Omega', approx_order),
     }
 
-    material_2 = {
-        'name' : 'mat_v',
-
-        'function' : 'fun_v',
+    variables = {
+        'Psi' : ('unknown field', 'field_Psi', 0),
+        'v' : ('test field', 'field_Psi', 'Psi'),
     }
 
-    field_0 = {
-        'name' : 'field_Psi',
-        'dtype' : 'real',
-        'shape' : 'scalar',
-        'region' : 'Omega',
-        'approx_order' : 2,
+    ebcs = {
+        'ZeroSurface' : ('Surface', {'Psi.0' : 0.0}),
     }
 
-    integral_1 = {
-        'name' : 'i',
-        'order' : 4,
-    }
-
-    variable_1 = {
-        'name' : 'Psi',
-        'kind' : 'unknown field',
-        'field' : 'field_Psi',
-        'order' : 0,
-    }
-    variable_2 = {
-        'name' : 'v',
-        'kind' : 'test field',
-        'field' : 'field_Psi',
-        'dual' : 'Psi',
-    }
-    variable_3 = {
-        'name' : 'V',
-        'kind' : 'parameter field',
-        'field' : 'field_Psi',
-        'like' : 'Psi',
-    }
-
-    ebc_1 = {
-        'name' : 'ZeroSurface',
-        'region' : 'Surface',
-        'dofs' : {'Psi.0' : 0.0},
+    integrals = {
+        'i' : 2 * approx_order,
     }
 
     equations = {
-        'lhs' : """  dw_laplace.i.Omega( m.val, v, Psi )
-                   + dw_volume_dot.i.Omega( mat_v.V, v, Psi )""",
-        'rhs' : """dw_volume_dot.i.Omega( v, Psi )""",
+        'lhs' : """dw_laplace.i.Omega(m.val, v, Psi)
+                 + dw_volume_dot.i.Omega(mat_v.V, v, Psi)""",
+        'rhs' : """dw_volume_dot.i.Omega(v, Psi)""",
     }
 
-    solver_2 = {
-        'name' : 'eigen1',
-        'kind' : 'eig.pysparse',
+    solvers = {
+        'eig' : ('eig.scipy', {
+            'method' : 'eigh',
+            'tol' : 1e-10,
+            'maxiter' : 150,
 
-        'tau' : tau,
-        'eps_a' : 1e-10,
-        'i_max' : 150,
-        'method' : 'qmrs',
-        'verbosity' : 0,
-        'strategy' : 1,
+            # Compute the eigenvalues near tau using the shift-invert mode.
+            'which' : 'LM',
+            'sigma' : tau,
+        }),
     }
 
     return locals()
