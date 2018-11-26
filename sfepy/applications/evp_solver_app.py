@@ -51,8 +51,7 @@ class EVPSolverApp(PDESolverApp):
 
         opts = self.app_options
         opts.output_dir = output_dir
-        self.mesh_results_name = os.path.join(opts.output_dir,
-                                              self.problem.get_output_name())
+        self.mesh_results_name = self.problem.get_output_name()
         self.eig_results_name = os.path.join(opts.output_dir,
                                              self.problem.ofn_trunk
                                              + '_eigs.txt')
