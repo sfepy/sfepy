@@ -48,7 +48,7 @@ def solve_pde(conf, options=None, status=None, **app_options):
                          save_regions_as_groups=False,
                          solve_not=False)
 
-    if conf.options.get('ls') is not None:
+    if conf.options.get('evps') is None:
         app = PDESolverApp(conf, options, output_prefix)
 
     else:

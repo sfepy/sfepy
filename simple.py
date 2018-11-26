@@ -167,7 +167,7 @@ def main():
     opts.save_restart = options.save_restart
     opts.load_restart = options.load_restart
 
-    if conf.options.get('ls') is not None:
+    if conf.options.get('evps') is None:
         app = PDESolverApp(conf, options, output_prefix)
 
     else:
