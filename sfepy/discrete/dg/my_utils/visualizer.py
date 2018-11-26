@@ -12,6 +12,7 @@ from numpy import newaxis as nax
 from matplotlib import pylab as plt
 from matplotlib import colors
 from os.path import join as pjoin
+from toolz import accumulate
 
 
 __author__ = 'tomas_zitka'
@@ -59,7 +60,7 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None):
             return lines, time_text
 
     delay = int(nm.round(2000 * (T[-1] - T[0]) / len(T)))
-    # delay = 1000
+    delay = 1000
     anim = animation.FuncAnimation(fig, animate, frames=len(T), interval=delay,
                                    blit=True, repeat=True, repeat_delay=250)
 
@@ -251,7 +252,7 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     fig.colorbar(c3, ax=[ax1, ax2, ax3])
 
 
-def load_vtks(fold, name, tn, order):
+def load_vtks(fold, name, tn, order, tns=None):
     """
     Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
@@ -267,13 +268,16 @@ def load_vtks(fold, name, tn, order):
 
     from sfepy.discrete.fem.meshio import VTKMeshIO
 
+    if tns is None:
+        tns = tn
+
     digs = int(nm.ceil(nm.log10(tn)))   # number of digits in filename
     full_name = ".".join((name, ("{:0" + str(digs) + "d}"), "vtk"))
     io = VTKMeshIO(pjoin(fold, full_name.format(0)))
     coors = io.read_coors()[:, 0, None]
-    u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
+    u = nm.zeros((order + 1, coors.shape[0] - 1, tns, 1))
 
-    for i in range(tn):
+    for i in range(tns):
         io = VTKMeshIO(pjoin(fold, full_name.format(i)))
         data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
         for ii in range(order + 1):
@@ -281,7 +285,7 @@ def load_vtks(fold, name, tn, order):
 
     return coors, u
 
-def plot1D_DG_sol(coors, t0, t1, tn, u, ic=lambda x: 0.0):
+def plot1D_DG_sol(coors, t0, t1, u, ic=lambda x: 0.0, tn=None, dt=None):
     """
     Plots solution produced by DG to 1D problem, handles discontinuities,
     u are vectors of coefficients, for each order one
@@ -300,7 +304,13 @@ def plot1D_DG_sol(coors, t0, t1, tn, u, ic=lambda x: 0.0):
 
     figs, axs = plt.subplots()
     X = (coors[1:] + coors[:-1]) / 2
-    T = nm.linspace(t0, t1, tn)
+    if tn is not None and dt is not None:
+        T = nm.array(nm.cumsum(nm.ones(tn) * dt))
+    elif tn is not None:
+        T = nm.linspace(t0, t1, tn)
+    elif dt is not None:
+        tn = float(t1 - t0) / dt
+        T = nm.linspace(t0, t1, tn)
     # sic = TSSolver.initial_cond
 
     # Plot mesh
