@@ -37,6 +37,7 @@ def mumps_parallel_solve():
     del(mumps_ls)
 
 
-comm = MPI.Comm.Get_parent()
-mumps_parallel_solve()
-comm.Disconnect()
+if __name__ == '__main__':
+    comm = MPI.Comm.Get_parent()
+    mumps_parallel_solve()
+    comm.Disconnect()
