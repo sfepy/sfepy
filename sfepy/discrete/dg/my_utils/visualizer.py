@@ -20,7 +20,7 @@ __author__ = 'tomas_zitka'
 ffmpeg_path = 'C:\\Users\\tomas\\bin\\ffmpeg\\bin\\ffmpeg.exe'  # for saving animations
 
 
-def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None):
+def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None, delay=None):
     """
     Animates solution of 1D problem into current figure.
     Keep reference to returned animation object otherwise
@@ -59,8 +59,8 @@ def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None):
             lines.set_data(X, Y[i])
             return lines, time_text
 
-    delay = int(nm.round(2000 * (T[-1] - T[0]) / len(T)))
-    delay = 1000
+    if delay is None:
+        delay = int(nm.round(2000 * (T[-1] - T[0]) / len(T)))
     anim = animation.FuncAnimation(fig, animate, frames=len(T), interval=delay,
                                    blit=True, repeat=True, repeat_delay=250)
 
@@ -257,12 +257,16 @@ def load_vtks(fold, name, tn, order, tns=None):
     Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
 
-    In fact reads cell data of shape mesh.coors - 1 i.e. mesh.n_el
+    Attempts to read cell data for variables u0, u1 ...
+
+    Resulting solution data have shape:
+    (order, nspace_steps, ntime_steps, 1)
 
     :param fold: folder where to look for files
-    :param name: used in {name}.i.vtk, i = 0,1, ... tn - 1
-    :param tn: number of time steps, i.e. number of files
-    :param order: order of approximation used
+    :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
+    :param tn: total number of files - needed to determine naming
+    :param tns: number of time steps, i.e. number of files to read
+    :param order: order of approximation used in u1, u1 ...u{order}
     :return: space coors, solution data
     """
 
@@ -285,21 +289,26 @@ def load_vtks(fold, name, tn, order, tns=None):
 
     return coors, u
 
-def plot1D_DG_sol(coors, t0, t1, u, ic=lambda x: 0.0, tn=None, dt=None):
+def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     """
-    Plots solution produced by DG to 1D problem, handles discontinuities,
-    u are vectors of coefficients, for each order one
+    Animates solution to 1D problem produced by DG:
+        1. animates DOF values in elements as steps
+        2. animates reconstructed solution with discontinuities
 
     :param coors: coordinates of the mesh
     :param t0: starting time
     :param t1: final time
-    :param tn: number of time steps, must correspond to dimention of u
-    :param u: shape(u) = (order, space_steps, t_steps, 1)
+    :param u: vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
     :param ic: analytical initial condition, optional
-    :return: nothing
+    :param tn: number of time steps to plot, starting at 0, if None and dt is not None run animation through
+        all time steps, spaced dt within [t0, tn]
+    :param dt: time step size, if None and tn is not None computed as (t1- t0) / tn otherwise set to 1
+        if dt and tn are both None, t0 and t1 are ignored and solution is animated as if in time 0 ... ntime_steps
+    :return: anim object of DOFs, anim object of reconstruction
     """
-    XN1 = coors[-1]
+    XN = coors[-1]
     X1 = coors[0]
+    Xvol = XN - X1
     n_nod = len(coors)
 
     figs, axs = plt.subplots()
@@ -307,67 +316,96 @@ def plot1D_DG_sol(coors, t0, t1, u, ic=lambda x: 0.0, tn=None, dt=None):
     if tn is not None and dt is not None:
         T = nm.array(nm.cumsum(nm.ones(tn) * dt))
     elif tn is not None:
-        T = nm.linspace(t0, t1, tn)
+        T, dt = nm.linspace(t0, t1, tn, retstep=True)
     elif dt is not None:
-        tn = float(t1 - t0) / dt
+        tn = int(float(t1 - t0) / dt)
         T = nm.linspace(t0, t1, tn)
-    # sic = TSSolver.initial_cond
+    else:
+        T = nm.arange(nm.shape(u)[2])
 
     # Plot mesh
     plt.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
-    plt.vlines((coors[0], coors[-1]), ymin=0, ymax=.5, colors="k")
+    plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
     plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
     # Plot IC and its sampling
-    # TODO get IC sampling, from where?
     c0 = plt.plot(X, u[0, :, 0, 0], label="IC-0", marker=".", ls="")[0].get_color()
     c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
     # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
     plt.step(coors[1:], u[0, :, 0,  0], color=c0)
     plt.step(coors[1:], u[1, :, 0,  0], color=c1)
     # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
-    xs = nm.linspace(X1, XN1, 500)[:, None]
+    xs = nm.linspace(X1, XN, 500)[:, None]
     plt.plot(xs, ic(xs), label="IC-ex")
 
-    # Animate sampled solution
-    anim = animate1d(u[:, :, :, 0].T, coors[1:], T, axs, figs, ylims=[-1, 2], plott="step")
-    plt.xlim(coors[0] - .1, coors[-1] + .1)
+    # Animate sampled solution DOFs directly
+    anim_dofs = animate1d(u[:, :, :, 0].T, coors[1:], T, axs, figs, ylims=[-1, 2], plott="step")
+    plt.xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     plt.legend(loc="upper left")
     plt.title("Sampled solution")
 
     figr, axr = plt.subplots()
-
     # Plot mesh
     plt.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
-    plt.vlines((coors[0], coors[-1]), ymin=0, ymax=.5, colors="k")
+    plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
     plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
     # Plot discontinuously!
     # (order, space_steps, t_steps, 1)
-    ww = nm.zeros((3 * n_nod - 1, tn, 1))
-    ww[0, :] = u[0, 0, :] - u[1, 0, :]  # left bc
-    ww[-1, :] = u[0, -1, :] + u[1, -1, :]  # right bc
-
-    ww[0:-2:3] = u[0, :, :] - u[1, :, :]  # left edges of elements
-    ww[1:-1:3] = u[0, :, :] + u[1, :, :]  # right edges of elements
-    ww[2::3, :] = nm.NaN  # NaNs ensure plotting of discontinuities at element borders
-
-    # nodes for plotting reconstructed solution
-    xx = nm.zeros((3 * n_nod - 1, 1))
-    xx[0] = coors[0]
-    xx[-1] = coors[-1]
-    # the ending ones are still a bit odd, but hey, it works!
-    xx[1:-1] = nm.repeat(coors[1:], 3)[:, None]
+    ww, xx = reconstruct_legendre_dofs(coors, tn, u)
     # plt.vlines(xx, ymin=0, ymax=.3, colors="green")
 
     # plot reconstructed IC
     plt.plot(xx, ww[:, 0], label="IC")
 
-    # Animate reconstructed
-    anim_disc = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2])
-    plt.xlim(coors[0] - .1, coors[-1] + .1)
+    # Animate reconstructed solution
+    anim_recon = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2])
+    plt.xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     plt.legend(loc="upper left")
     plt.title("Reconstructed solution")
 
     # sol_frame(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, t0=0., ylims=[-1, 1], plott="step")
     plt.show()
+    return anim_dofs, anim_recon
+
+
+def reconstruct_legendre_dofs(coors, tn, u):
+    """
+    Creates solution and coordinates vector which when plotted by as
+
+        plot(xx, ww)
+
+    represent solution reconstructed from DOFs in Legendre poly space at
+    cell borders
+
+    So far work only for order 1
+    # TODO generalize for arbitrary order
+    :param coors: coors of nodes of the mesh
+    :param u: vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
+    :param tn: number of time steps to reconstruct, if None all steps are reconstructed
+    :return: ww - solution values vector, shape is (3 * nspace_steps - 1, ntime_steps, 1),
+             xx - corresponding coordinates vector, shape is (3 * nspace_steps - 1, 1)
+    """
+    XN = coors[-1]
+    X1 = coors[0]
+    n_nod = len(coors)
+    if tn is None:
+        tn = nm.shape(u)[2]
+    order = nm.shape(u)[0]
+
+    ww = nm.zeros((3 * n_nod - 1, tn, 1))
+
+    for i in range(order):
+        ww[0, :] = ww[0, :] + (-1)**i * u[i, 0, :]  # left bc
+        ww[-1, :] = ww[-1, :] + u[i, -1, :]  # right bc
+        ww[0:-2:3] = ww[0:-2:3] + (-1)**i * u[i, :, :]  # left edges of elements
+        ww[1:-1:3] = ww[1:-1:3] + u[i, :, :]  # right edges of elements
+    ww[2::3, :] = nm.NaN  # NaNs ensure plotting of discontinuities at element borders
+
+    # nodes for plotting reconstructed solution
+    xx = nm.zeros((3 * n_nod - 1, 1))
+    xx[0] = X1
+    xx[-1] = XN
+    # the ending is still a bit odd, but hey, it works!
+    xx[1:-1] = nm.repeat(coors[1:], 3)[:, None]
+    return ww, xx

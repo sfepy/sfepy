@@ -59,7 +59,7 @@ class DGField(Field):
         self.poly_space_base = poly_space_base
         # TODO put LegendrePolySpace to table in PolySpace any_from_args, or use only Legendre for DG?
         self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", self.gel, approx_order)
-        # poly_space = PolySpace.any_from_args("legendre", region.domain.geom_els["1_2"], base="legendre", order=approx_order)
+        # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
         # integral
         self.clear_qp_base()
@@ -112,10 +112,16 @@ class DGField(Field):
         self.n_cell = self.region.get_n_cells(self.is_surface)
         n_dof = self.n_cell * (self.approx_order + 1)  # is that right?
         remap = nm.arange(n_dof).reshape((self.n_cell, self.approx_order + 1))  # what is remap used for?
-        dofs = nm.arange(n_dof)
+        dofs = nm.arange(n_dof)[:, None]
 
-        self.econn = dofs[:, None]
-        # TODO setup elements connectivity (it should be simple)
+        remap = nm.arange(self.n_cell)
+        # dofs = nm.arange(n_dof).reshape((self.n_cell, self.approx_order + 1))
+        dofs = nm.hstack((dofs[:self.n_cell], dofs[self.n_cell:]))  # TODO rewrite
+
+        # nm.array([nm.arange(self.n_cell), nm.arange(self.n_cell)]).T
+
+
+        self.econn = dofs
 
         return n_dof, remap, dofs
 
@@ -173,6 +179,7 @@ class DGField(Field):
     def get_dofs_in_region(self, region, merge=True):
         """
         Return indices of DOFs that belong to the given region and group.
+
         NOT really tested, called only with the ragion being the "main" region
         of the problem, i.e. self.region
 
@@ -204,7 +211,7 @@ class DGField(Field):
         eldofs = nm.empty((0,), dtype=nm.int32)
         if region.has_cells(): # TODO use "and (node_desc.bubble is not None)"
             els = nm.ravel(self.bubble_remap[region.cells])
-            eldofs = self.bubble_dofs[els[els >= 0]].ravel()
+            eldofs = self.bubble_dofs[els[els >= 0]]
         dofs.append(eldofs)
 
         if merge:
@@ -216,7 +223,7 @@ class DGField(Field):
         """
         Returns data shape for term, right now it is
         (n_nod, n_qp, self.gel.dim, 1)
-        which results in matrix n_nod x n_nod, hovewer in
+        which results in matrix of shape n_nod x n_nod, hovewer in
         FEM it is
         (shape.n_cell, n_qp, dim, self.econn.shape[1])
         how does this translates to domension of the matrix?
@@ -233,6 +240,9 @@ class DGField(Field):
 
             # from FEField data_shape = (shape.n_cell, n_qp, dim, self.econn.shape[1])
             data_shape = (self.n_nod, n_qp, self.gel.dim, 1)
+            data_shape = (self.n_cell, n_qp, self.gel.dim, self.approx_order + 1)
+            # number of DOFs in each element does not depend on dimension or number of quadrature points
+            # only on approc_order, i.e. only on
 
             # TODO last is econn.shape[1]
             # we do not have connectivity in DG but need this enyway, I think
@@ -301,10 +311,6 @@ class DGField(Field):
         for i in range(self.approx_order + 1):
             res["u{}".format(i)] = Struct(mode="cell",
                               data=dofs[self.n_cell * i : self.n_cell*(i+1) ,:, None, None])
-
-                              # nm.hstack((dofs[:self.n_cell],
-                              #                 dofs[self.n_cell:])).reshape(self.n_cell, 1,1, 2)
-                              #
         return res
 
     def create_mapping(self, region, integral, integration, return_mapping=True):
@@ -337,7 +343,7 @@ class DGField(Field):
 
             out = vg
         else:
-            raise ValueError('unknown integration geometry type: %s'
+            raise ValueError('unsupported integration geometry type: %s'
                              % integration)
 
         if out is not None:
@@ -437,8 +443,9 @@ class DGField(Field):
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
-            # TODO higher order approx seems off
+            # TODO higher order (3+) approx seems off
             # base_vals_coors = self.poly_space.eval_base(coors)
+            # self.mapping.get_physical_qps
             base_vals_qp = self.poly_space.eval_base(qp)       # -2  0   -1  0
             base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
@@ -449,7 +456,7 @@ class DGField(Field):
 
             vals = rhs_vec / lhs_diag
             # self.plot_1D_dofs(self.domain.mesh.coors, (vals,), fun)
-            vals = nm.append(vals[0, :], vals[1, :])
+            # vals = nm.append(vals[0, :], vals[1, :])
         return nods, vals
 
     @staticmethod
@@ -499,238 +506,6 @@ class DGField(Field):
 # get_true_order
 # is_higher_order
 
-missing =[ '__dir__',
-'__eq__',
-'__ge__',
-'__gt__',
-'__init_subclass__',
-'__le__',
-'__lt__',
-'__ne__',
-'_check_region',
-'_create_interpolant',
-'_eval_basis_transform',
-'_get_facet_dofs',
-'_init_econn',
-'_set_approx_order',
-'_setup_bubble_dofs',
-'_setup_edge_dofs',
-'_setup_esurface',
-'_setup_face_dofs',
-'_setup_facet_dofs',
-'_setup_facet_orientations',
-'_setup_geometry',
-'_setup_global_base',
-'_setup_shape',
-'_setup_vertex_dofs',
-'_substitute_dofs',
-'average_qp_to_vertices',
-'basis_transform',
-'bf',
-'bubble_dofs',
-'bubble_remap',
-'clear_qp_base',
-'coors',
-'create_basis_context',
-'create_bqp',
-'create_mesh',
-'create_output',
-'domain',
-'econn',
-'econn0',
-'edge_dofs',
-'edge_remap',
-'efaces',
-'extend_dofs',
-'face_dofs',
-'face_remap',
-'force_bubble',
-'gel',
-'get_base',
-'get_connectivity',
-'get_coor',
-'get_data_shape',
-'get_dofs_in_region',
-'get_econn',
-'get_evaluate_cache',
-'get_output_approx_order',
-'get_qp',
-'get_true_order',
-'get_vertices',
-'interp_to_qp',
-'interp_v_vals_to_n_vals',
-'is_higher_order',
-'is_surface',
-'linearize',
-'mappings',
-'mappings0',
-'n_bubble_dof',
-'n_components',
-'n_edge_dof',
-'n_face_dof',
-'n_nod',
-'n_vertex_dof',
-'node_desc',
-'ori',
-'point_data',
-'qp_coors',
-'remove_extra_dofs',
-'restore_dofs',
-'restore_substituted',
-'set_basis_transform',
-'set_coors',
-'setup_coors',
-'setup_extra_data',
-'setup_point_data',
-'setup_surface_data',
-'stored_subs',
-'substitute_dofs',
-'surface_data',
-'unused_dofs',
-'val_shape',
-'vertex_remap',
-'vertex_remap_i' ]
-
-fem_field_dir = set(['__add__',
- '__class__',
- '__delattr__',
- '__dict__',
- '__dir__',
- '__doc__',
- '__eq__',
- '__format__',
- '__ge__',
- '__getattribute__',
- '__gt__',
- '__hash__',
- '__iadd__',
- '__init__',
- '__init_subclass__',
- '__le__',
- '__lt__',
- '__module__',
- '__ne__',
- '__new__',
- '__reduce__',
- '__reduce_ex__',
- '__repr__',
- '__setattr__',
- '__sizeof__',
- '__str__',
- '__subclasshook__',
- '__weakref__',
- '_all',
- '_check_region',
- '_create_interpolant',
- '_eval_basis_transform',
- '_format_sequence',
- '_get_facet_dofs',
- '_init_econn',
- '_set_approx_order',
- '_setup_bubble_dofs',
- '_setup_edge_dofs',
- '_setup_esurface',
- '_setup_face_dofs',
- '_setup_facet_dofs',
- '_setup_facet_orientations',
- '_setup_geometry',
- '_setup_global_base',
- '_setup_kind',
- '_setup_shape',
- '_setup_vertex_dofs',
- '_str',
- '_substitute_dofs',
- 'approx_order',
- 'average_qp_to_vertices',
- 'basis_transform',
- 'bf',
- 'bubble_dofs',
- 'bubble_remap',
- 'clear_mappings',
- 'clear_qp_base',
- 'coors',
- 'copy',
- 'create_basis_context',
- 'create_bqp',
- 'create_eval_mesh',
- 'create_mapping',
- 'create_mesh',
- 'create_output',
- 'domain',
- 'dtype',
- 'econn',
- 'econn0',
- 'edge_dofs',
- 'edge_remap',
- 'efaces',
- 'evaluate_at',
- 'extend_dofs',
- 'face_dofs',
- 'face_remap',
- 'family_name',
- 'force_bubble',
- 'from_args',
- 'from_conf',
- 'gel',
- 'get',
- 'get_base',
- 'get_connectivity',
- 'get_coor',
- 'get_data_shape',
- 'get_dofs_in_region',
- 'get_econn',
- 'get_evaluate_cache',
- 'get_mapping',
- 'get_output_approx_order',
- 'get_qp',
- 'get_true_order',
- 'get_vertices',
- 'interp_to_qp',
- 'interp_v_vals_to_n_vals',
- 'is_higher_order',
- 'is_surface',
- 'linearize',
- 'mappings',
- 'mappings0',
- 'n_bubble_dof',
- 'n_components',
- 'n_edge_dof',
- 'n_face_dof',
- 'n_nod',
- 'n_vertex_dof',
- 'name',
- 'node_desc',
- 'ori',
- 'point_data',
- 'poly_space',
- 'poly_space_base',
- 'qp_coors',
- 'region',
- 'remove_extra_dofs',
- 'restore_dofs',
- 'restore_substituted',
- 'save_mappings',
- 'set_basis_transform',
- 'set_coors',
- 'set_default',
- 'set_dofs',
- 'setup_coors',
- 'setup_extra_data',
- 'setup_point_data',
- 'setup_surface_data',
- 'shape',
- 'space',
- 'stored_subs',
- 'str_all',
- 'str_class',
- 'substitute_dofs',
- 'surface_data',
- 'to_dict',
- 'unused_dofs',
- 'update',
- 'val_shape',
- 'vertex_remap',
- 'vertex_remap_i'])
 
 
 if __name__ == '__main__':
