@@ -53,7 +53,7 @@ right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN1,
                               'vertex')
 field = DGField('dgfu', nm.float64, 'scalar', omega, approx_order=1)
-# field = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=1)  # TODO DGField
+# field = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=1)
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 integral = Integral('i', order=1)
@@ -78,6 +78,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs)
+# pb.setup_output(output_format="h5")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
@@ -112,5 +113,5 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-lmesh, u = load_vtks(".", "domain", tn, order=1, tns=20)
-plot1D_DG_sol(lmesh, t0, t1, u, ic_wrap, dt=dt,  tn=20,)
+lmesh, u = load_vtks(".", "domain", tn, order=1)
+plot1D_DG_sol(lmesh, t0, t1, u, dt=dt,  ic=ic_wrap)

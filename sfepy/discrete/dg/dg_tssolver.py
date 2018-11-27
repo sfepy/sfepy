@@ -107,7 +107,6 @@ class TSSolver:
     def solve(self, t0, tend, tsteps=10):
         raise NotImplemented
 
-
 class RK3Solver(TSSolver):
     """
     Runge-Kutta of order 3, with limiter
@@ -215,7 +214,10 @@ class EUSolver(TSSolver):
 
 class DGTimeSteppingSolver(TimeSteppingSolver):
     """
-    Implicit time stepping solver with a fixed time step.
+    Explicit time stepping solver with a fixed time step.
+
+    # TODO maybe inherit directly from SimpleTimeSteppingSolver and override solve_step method
+    # TODO or create metaclass ExplicitTimeSteppingSolver
     """
     name = 'ts.euler'
 
@@ -248,18 +250,15 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
         self.verbose = self.conf.verbose
 
     def solve_step0(self, nls, vec0):
-        if self.conf.quasistatic:
-            vec = nls(vec0)
-
-        else:
-            res = nls.fun(vec0)
-            err = nm.linalg.norm(res)
-            output('initial residual: %e' % err, verbose=self.verbose)
-            vec = vec0.copy()
+        res = nls.fun(vec0)
+        err = nm.linalg.norm(res)
+        output('initial residual: %e' % err, verbose=self.verbose)
+        vec = vec0.copy()
 
         return vec
 
     def solve_step(self, ts, nls, vec, prestep_fun=None):
+        # TODO what could prestep_fun be used for in nls call?
         return nls(vec, ts=ts)
 
     def output_step_info(self, ts):
@@ -302,14 +301,25 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
 
         return vec
 
+
 from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
 from sfepy.base.log import Log, get_logging_conf
 
 
 class EulerStepSolver(NonlinearSolver):
+    """
+    Not actually nonlinear solver, solves only linear system.
+    Updates solution using euler method
+    # TODO create ExplicitStepSolver(?) class, inherit from it
+    # - unify structure of __call__ method, something like:
+    #  1. prepare data
+    #  2. call method computing all the stages
+    #  3. provide stats for status, outputs
+    #  4. return
+    """
     name = 'sls.euler'
     __metaclass__ = SolverMeta
-    _parameters = {}
+    _parameters = []
 
     def __init__(self, conf, **kwargs):
         NonlinearSolver.__init__(self, conf, **kwargs)
@@ -334,6 +344,8 @@ class EulerStepSolver(NonlinearSolver):
 
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None, ts=None):
+        if ts is None:
+            raise ValueError("Provide TimeStepper to explicit Euler solver")
 
         conf = get_default(conf, self.conf)
         fun = get_default(fun, self.fun)
@@ -367,10 +379,16 @@ class EulerStepSolver(NonlinearSolver):
         return vec_x
 
 class RK3StepSolver(NonlinearSolver):
+    """
+    3rd order Runge-Kutta method
+
+    # TODO create ExplicitStepSolver(?) class, inherit from it
+
+    """
 
     name = 'sls.runge_kutta_3'
     __metaclass__ = SolverMeta
-    _parameters = {}
+    _parameters = []
 
     def __init__(self, conf, **kwargs):
         NonlinearSolver.__init__(self, conf, **kwargs)
@@ -395,6 +413,8 @@ class RK3StepSolver(NonlinearSolver):
 
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None, ts=None):
+        if ts is None:
+            raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
         conf = get_default(conf, self.conf)
         fun = get_default(fun, self.fun)
@@ -408,6 +428,7 @@ class RK3StepSolver(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         ls_status = {}
 
+        # TODO add pre-stage hook
         # ----1st stage----
         vec_x = vec_x0.copy()
 
@@ -418,6 +439,7 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x1 = vec_x + ts.dt * vec_dx
+        # TODO add post-stage hook
 
         # ----2nd stage----
         vec_r = fun(vec_x1)

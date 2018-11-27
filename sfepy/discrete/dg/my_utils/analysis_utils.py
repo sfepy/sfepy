@@ -64,15 +64,16 @@ def get_exact_solution(X, T, bc, q0, ux):
 
 
 def calc_FFT2D(q, X, T):
-    # placeholder sofar
+    # placeholder so far
     return np.fft.rfft2(q)
 
 
 def calc_FFT1D(y):
     """
-    TODO documentation
+    Computes fourier transform ov y, returns only positive part of
+    spectrum
     :param y: signal
-    :return: frequency bins, intesities
+    :return: frequency bins, intensities
     """
     n = len(y)
     Y = np.fft.fft(y) / n  # fft computing and normalization
@@ -82,8 +83,9 @@ def calc_FFT1D(y):
 
 def calc_FFT1dfbins(n, Fs):
     """
-    TODO documentation
+    :param n: samples
     :param Fs: signal frequency
+    :return: frequency bin intervals
     """
     k = np.arange(n)
     T = n / Fs

@@ -7,6 +7,7 @@ class AdvVolDGTerm(Term):
     name = "dw_dg_volume"
     modes = ("weak",)
     arg_types = ('virtual', 'state')
+    # arg_types = ('ts', 'virtual', 'state')
     arg_shapes = {'virtual': ('D', 'state'),
                   'state': 1}
     symbolic = {'expression': '1',
@@ -22,15 +23,24 @@ class AdvVolDGTerm(Term):
     def get_fargs(self, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if diff_var is not None:
-            doeval = True
+            mtx_mode = True
+            u = None
         else:
-            doeval = False
+            mtx_mode = False
+            ur = state.data[0]  # this uses data provided by solver
 
-        return (doeval,)
+            n_cell = self.region.get_n_cells(False)
+            u = nm.zeros((n_cell, 2))  # 2 is approx order!
+            for i in range(2):
+                u[:, i] = ur[n_cell * i: n_cell * (i + 1)]
 
-    def function(self, out, doeval):
-        if doeval:
-            vols = self.region.domain.cmesh.get_volumes(1)
+        # vg, _ = self.get_mapping(state)
+
+        return u, mtx_mode
+
+    def function(self, out, u, mtx_mode):
+        vols = self.region.domain.cmesh.get_volumes(1)
+        if mtx_mode:
             # TODO which dimension do we really want?
 
             # integral over element with constant test
@@ -38,11 +48,13 @@ class AdvVolDGTerm(Term):
             out[:] = 0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
-            out[:nm.shape(vols)[0], 0, 0, 0] = vols  # TODO sign does correspond to standard way solvers expect
-            out[nm.shape(vols)[0]:, 0, 0, 0] = vols / 3.0
+            out[:, 0, 0, 0] = vols  # TODO sign does NOT correspond to standard way solvers expect
+            out[:, 0, 1, 1] = vols / 3.0
             # TODO move to for cycle to add values for higher order approx
         else:
-            out[:] = 0.0
+            out[:, 0, 0, 0] = vols * u[:, 0]
+            out[:, 0, 1, 0] = vols/3. * u[:, 1]
+            out[:] = 0
         status = None
         return status
 
@@ -69,19 +81,21 @@ class AdvFluxDGTerm(Term):
     def get_fargs(self, a, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
-        # varc = self.get_variables(as_list=False)['u']
-        # ur = self.get(state, 'dg', step=-1)
         if diff_var is not None:
+            # do not eval in matrix mode, we however still need
+            # this term to have diff_var in order for it to receive the values
             doeval = False
             return None, None, doeval
         else:
             doeval = True
-            ur = state.data[0]
-            # ur = self.get(state, 'dg', step=-1)
+            ur = state.data[0]  # this uses data provided by solver
+            # ur = self.get(state, 'dg', step=-1)  # however this probably too,
+            # as they set to variable in equation
 
+            # reshape DOFs vector for convenience in function()
             # TODO how to pass order or number of cells to term?
             n_cell = self.region.get_n_cells(False)
-            u = nm.zeros((n_cell, 2))  # 2 is approx order
+            u = nm.zeros((n_cell, 2))  # 2 is approx order!
             for i in range(2):
                 u[:, i] = ur[n_cell * i : n_cell*(i+1)]
 
@@ -90,7 +104,7 @@ class AdvFluxDGTerm(Term):
 
     def function(self, out, u, a, doeval):
         if not doeval:
-            out[:] = 0
+            out[:] = 0.0
             return None
 
         # for Legendre basis integral of higher order
@@ -101,10 +115,14 @@ class AdvFluxDGTerm(Term):
         #
         # only from the zero order function, over [-1, 1] - hence the 2
         intg = a[:, 0] * u[:, 0] * 2
+        # i.e. intg = a * u0 * reference_el_vol
 
         #  the Lax-Friedrichs flux is
+
         #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
-        # in our case a and b are values to the left and right of the element boundary
+
+        # in our case a and b are values in the elements left and right of
+        # the respective element boundaries
         # for Legendre basis these are:
         # u_left = U_0 + U_1 + U_2 + ...
         # u_right = U_0 - U_1 + U_2 + ... = sum_0^{order} (-1)^p * U_p
@@ -122,38 +140,26 @@ class AdvFluxDGTerm(Term):
         # TODO move to for cycle to add values for higher order approx
         # TODO research general fluxes for higher dimensions
 
-        # fl = a * (u[0, :-2] + u[1, :-2] +
-        #           (u[0, 1:-1] - u[1, 1:-1])).T / 2 + \
-        #      nm.abs(a) * (u[0, :-2] + u[1, :-2] -
-        #                   (u[0, 1:-1] - u[1, 1:-1])).T / 2
-        # FIXME u and a will most likely have different shape
         fl = a[:, 0] * (ul[:, 0] + ul[:, 1] +
                         (u[:, 0] - u[:, 1])) / 2 + \
             nm.abs(a[:, 0]) * (ul[:, 0] + ul[:, 1] -
                                (u[:, 0] - u[:, 1])) / 2
 
-        # fp = a * (u[0, 1:-1] + u[1, 1:-1] +
-        #           (u[0, 2:] - u[1, 2:])).T / 2 + \
-        #      nm.abs(a) * (u[0, 1:-1] + u[1, 1:-1] -
-        #                   (u[0, 2:] - u[1, 2:])).T / 2
-
         fp = a[:, 0] * (u[:, 0] + u[:, 1] +
                         (ur[:, 0] - ur[: , 1])) / 2 + \
             nm.abs(a[:, 0]) * (u[:, 0] + u[:, 1] -
-                         (ur[:, 0] - ur[:, 1])) / 2
-
-        # val = nm.vstack((fl - fp, - fl - fp + intg))
+                               (ur[:, 0] - ur[:, 1])) / 2
 
         out[:] = 0.0
-        # out[:, 0, 0, 0] = (fl - fp)[:, 0, 0]
-        # out[:, 0, 1, 0] = (- fl - fp + intg)[:, 0, 0]
-        flux0 = (fl - fp)  # this is how DGField should work
+        flux0 = (fl - fp)
         flux1 = (- fl - fp + intg)
 
-        out[:nm.shape(fp)[0], 0, 0, 0] = flux0
-        out[nm.shape(fp)[0]:, 0, 0, 0] = flux1
+        out[:, 0, 0, 0] = flux0
+        out[:, 0, 1, 0] = flux1
 
-        # out[:nm.shape(fp)[0], 0, 0, 0] = vols * u[:, 0] - flux0
-        # out[nm.shape(fp)[0]:, 0, 0, 0] = vols/3 * u[:, 1] - flux1
+        # compute residual
+        # vols = self.region.domain.cmesh.get_volumes(1)
+        # out[:, 0, 0, 0] = vols * u[:, 0] - flux0
+        # out[:, 0, 1, 0] = vols/3 * u[:, 1] - flux1
         status = None
         return status
