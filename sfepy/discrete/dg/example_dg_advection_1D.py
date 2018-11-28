@@ -43,7 +43,7 @@ t1 = .8
 tn = 200
 speed = 1.0
 
-domain = FEDomain('domain', mesh)  # TODO DGDomain?
+domain = FEDomain('domain', mesh)
 # FEDomain contains default lagrange polyspace in its geometry
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
@@ -78,7 +78,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs)
-pb.setup_output(output_dir="./output/")# output_format="h5")
+pb.setup_output(output_dir="./output/", output_format="h5")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
@@ -113,5 +113,5 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-lmesh, u = load_vtks("./output/", "domain", tn, order=1)
-plot1D_DG_sol(lmesh, t0, t1, u, dt=dt,  ic=ic_wrap)
+# lmesh, u = load_vtks("./output/", "domain", tn, order=1)
+# plot1D_DG_sol(lmesh, t0, t1, u, dt=dt,  ic=ic_wrap)

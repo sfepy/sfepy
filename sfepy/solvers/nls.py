@@ -255,8 +255,6 @@ class Newton(NonlinearSolver):
 
                 try:
                     vec_r = fun(vec_x)
-                    # TODO this should return residuals, but in implementation of FluxTerm
-                    # returns right hand side of the LAE system, should the term compute residuals?
 
                 except ValueError:
                     if (it == 0) or (ls < conf.ls_min):
