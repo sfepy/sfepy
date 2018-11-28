@@ -374,7 +374,7 @@ class EulerStepSolver(NonlinearSolver):
         output('mtx max {}, min {}, trace {}'
                .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
 
-        vec_x = vec_x + ts.dt * vec_dx
+        vec_x = vec_x - ts.dt * (vec_dx - vec_x)
 
         return vec_x
 
@@ -438,7 +438,7 @@ class RK3StepSolver(NonlinearSolver):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x1 = vec_x + ts.dt * vec_dx
+        vec_x1 = vec_x - ts.dt * (vec_dx - vec_x)
         # TODO add post-stage hook
 
         # ----2nd stage----
@@ -448,7 +448,7 @@ class RK3StepSolver(NonlinearSolver):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x2 = (3 * vec_x + vec_x1 + ts.dt * vec_dx)/4
+        vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1))/4
 
         # ----3rd stage-----
         vec_r = fun(vec_x2)
@@ -457,7 +457,7 @@ class RK3StepSolver(NonlinearSolver):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x3 = (vec_x + 2 * vec_x2 + 2*ts.dt * vec_dx)/3
+        vec_x3 = (vec_x + 2 * vec_x2 - 2*ts.dt * (vec_dx - vec_x2))/3
 
         # vec_e = mtx_a * vec_dx - vec_r
         # lerr = nla.norm(vec_e)
