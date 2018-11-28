@@ -49,10 +49,7 @@ class DGField(Field):
         self.domain = region.domain
         self.region = region
         self.approx_order = approx_order
-
         self._setup_geometry()
-        self._setup_shape()
-        self._setup_all_dofs()
 
         # approximation space
         self.space = space
@@ -60,6 +57,11 @@ class DGField(Field):
         # TODO put LegendrePolySpace to table in PolySpace any_from_args, or use only Legendre for DG?
         self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", self.gel, approx_order)
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
+
+        # DOFs
+        self._setup_shape()
+        self._setup_all_dofs()
+
 
         # integral
         self.clear_qp_base()
@@ -91,6 +93,7 @@ class DGField(Field):
         originaly called _setup_global_base
         """
         self._init_econn()
+        self.n_el_nod = self.poly_space.n_nod
         self.n_vertex_dof = 0  # in DG we will propably never need vertex DOFs
         self.n_edge_dof = 0 # use facets DOFS for AFS methods
         self.n_face_dof = 0 # use facet DOF for AFS methods
@@ -110,17 +113,12 @@ class DGField(Field):
         :return:
         """
         self.n_cell = self.region.get_n_cells(self.is_surface)
-        n_dof = self.n_cell * (self.approx_order + 1)  # is that right?
-        remap = nm.arange(n_dof).reshape((self.n_cell, self.approx_order + 1))  # what is remap used for?
-        dofs = nm.arange(n_dof)[:, None]
+        n_dof = self.n_cell * self.n_el_nod
+        dofs = nm.ones((self.n_cell, self.n_el_nod), dtype=nm.int32)
+        for i in range(self.n_el_nod):
+            dofs[:, i] = nm.arange(self.n_cell*i, self.n_cell*(i+1), dtype=nm.int32)
 
         remap = nm.arange(self.n_cell)
-        # dofs = nm.arange(n_dof).reshape((self.n_cell, self.approx_order + 1))
-        dofs = nm.hstack((dofs[:self.n_cell], dofs[self.n_cell:]))  # TODO rewrite
-
-        # nm.array([nm.arange(self.n_cell), nm.arange(self.n_cell)]).T
-
-
         self.econn = dofs
 
         return n_dof, remap, dofs
@@ -239,13 +237,8 @@ class DGField(Field):
             n_qp = weights.shape[0]
 
             # from FEField data_shape = (shape.n_cell, n_qp, dim, self.econn.shape[1])
-            data_shape = (self.n_nod, n_qp, self.gel.dim, 1)
-            data_shape = (self.n_cell, n_qp, self.gel.dim, self.approx_order + 1)
-            # number of DOFs in each element does not depend on dimension or number of quadrature points
-            # only on approc_order, i.e. only on
-
-            # TODO last is econn.shape[1]
-            # we do not have connectivity in DG but need this enyway, I think
+            data_shape = (self.n_cell, n_qp, self.gel.dim, self.n_el_nod)
+            # econn.shape[1] == n_nod
 
         else:
             # TODO what bout other integrations? do they make sense for DG?
@@ -282,7 +275,6 @@ class DGField(Field):
         """
         Convert the DOFs corresponding to the field to a dictionary of
         output data usable by Mesh.write().
-        # TODO how shloud the dictionary look
         Parameters
         ----------
         dofs : array, shape (n_nod, n_component)
@@ -433,7 +425,7 @@ class DGField(Field):
             weights = 2 * weights  # weights need to be tranformed as well
 
             def mapping1D(x):
-                # TODO this should be somehow part of the mapping
+                # TODO this should be somehow part of the mapping/use self.mapping.get_physical_qps
                 c = (mesh.coors[1:] + mesh.coors[:-1]) / 2  # center
                 s = (mesh.coors[1:] - mesh.coors[:-1]) / 2  # scale
                 return c + x * s
@@ -445,7 +437,6 @@ class DGField(Field):
 
             # TODO higher order (3+) approx seems off
             # base_vals_coors = self.poly_space.eval_base(coors)
-            # self.mapping.get_physical_qps
             base_vals_qp = self.poly_space.eval_base(qp)       # -2  0   -1  0
             base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
@@ -455,61 +446,13 @@ class DGField(Field):
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=2)
 
             vals = rhs_vec / lhs_diag
-            # self.plot_1D_dofs(self.domain.mesh.coors, (vals,), fun)
-            # vals = nm.append(vals[0, :], vals[1, :])
+            # from my_utils.visualizer import plot_1D_legendre_dofs
+            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+
         return nods, vals
-
-    @staticmethod
-    def plot_1D_dofs(coors, dofss, fun):
-        # TODO move to visualizer
-        import matplotlib.pyplot as plt
-        X = (coors[1:] + coors[:-1]) / 2
-        plt.figure("DOFs for function fun")
-        for ii, dofs in enumerate(dofss):
-            for i in range(dofs.shape[0]):
-                c0 = plt.plot(X, dofs[i, :], label="fun-{}dof-{}".format(ii, i), marker=".", ls="")[0].get_color()
-                # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
-                plt.step(coors[1:], dofs[i, :], color=c0)
-                # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
-
-        xs = nm.linspace(0,1, 500)[:, None]
-        plt.legend()
-        plt.plot(xs, fun(xs), label="fun-ex")
-        plt.show()
-
-    def interp_to_qp(self, dofs):
-        """
-        Interpolate DOFs into quadrature points.
-
-        The quadrature order is given by the field approximation order.
-
-        Parameters
-        ----------
-        dofs : array
-            The array of DOF values of shape `(n_nod, n_component)`.
-
-        Returns
-        -------
-        data_qp : array
-            The values interpolated into the quadrature points.
-        integral : Integral
-            The corresponding integral defining the quadrature points.
-        """
-        # TODO this seems useful
-        raise NotImplementedError
-
-# _get_facets
-# create_basis_context
-# create_eval_mesh
-# create_mesh
-# create_output
-# get_true_order
-# is_higher_order
-
 
 
 if __name__ == '__main__':
-    from toolz import *
 
     X1 = 0.
     XN1 = 1.

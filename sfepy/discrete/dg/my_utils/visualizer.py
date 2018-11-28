@@ -368,6 +368,28 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     plt.show()
     return anim_dofs, anim_recon
 
+def plot_1D_legendre_dofs(coors, dofss, fun=None):
+    """
+    Plots values of DOFs as steps
+    :param coors: coordinates of nodes of the mesh
+    :param dofss: iterable of different projections' DOFs into legendre space
+    :param fun: analytical function to plot
+    :return:
+    """
+    X = (coors[1:] + coors[:-1]) / 2
+    plt.figure("DOFs for function fun")
+    for ii, dofs in enumerate(dofss):
+        for i in range(dofs.shape[0]):
+            c0 = plt.plot(X, dofs[i, :], label="fun-{}dof-{}".format(ii, i), marker=".", ls="")[0].get_color()
+            # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
+            plt.step(coors[1:], dofs[i, :], color=c0)
+            # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
+
+    if fun is not None:
+        xs = nm.linspace(0, 1, 500)[:, None]
+        plt.plot(xs, fun(xs), label="fun-ex")
+    plt.legend()
+    plt.show()
 
 def reconstruct_legendre_dofs(coors, tn, u):
     """
@@ -379,7 +401,7 @@ def reconstruct_legendre_dofs(coors, tn, u):
     cell borders
 
     So far work only for order 1
-    # TODO generalize for arbitrary order
+    # TODO reconstruct solution on finer mesh to display curvature in higher order
     :param coors: coors of nodes of the mesh
     :param u: vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
     :param tn: number of time steps to reconstruct, if None all steps are reconstructed

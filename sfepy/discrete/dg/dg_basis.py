@@ -6,7 +6,7 @@ from numpy import newaxis as nax
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
 
-class PrimitivePolySPace(PolySpace):
+class CanonicalPolySPace(PolySpace):
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
@@ -38,16 +38,10 @@ class LegendrePolySpace(PolySpace):
         # TODO how is PolySpace supposed to look and work?
         # FIXME - complete LegendrePolySpace
 
-        # "C:\Users\Lucia Moa\Python_Projects\sfepy\sfepy\discrete\fem\mappings.py", line 99, in get_mapping
-        # cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
-        #
-        # "sfepy\discrete\common\extmods\mappings.pyx", line 104, in sfepy.discrete.common.extmods.mappings.CMapping.describe
-        # ValueError: ccore error(seeabove)
-
         PolySpace.__init__(self, name, geometry, order)
 
         n_v, dim = geometry.n_vertex, geometry.dim
-        self.n_nod = (order + 1) ** dim
+        self.n_nod = (order + 1) ** dim  # number of DOFs per element
 
         self.nodes = nm.array([[1, 0], [0, 1]])
         self.nts = nm.array([[0, 0], [0, 1]])
@@ -75,7 +69,6 @@ class LegendrePolySpace(PolySpace):
         :return: values in coors of all the basis function up to order
         shape = (order + 1, ) + coors.shape() or (order + 1, 1) of coors is scalar
         """
-        # TODO this does not correspond to _eval_base of other basis!
         if isinstance(coors, (int, float)):
             sh = (1,)
         else:
@@ -85,13 +78,13 @@ class LegendrePolySpace(PolySpace):
         for i in range(2, self.order + 1):
             values[i, :] = ((2*i + 1) * coors * values[i-1, :] - i * values[i-2, :]) / (i + 1)
 
-        # TODO this is to return the same shape as other basis, refactor
+        # this is to return the same shape as other basis, refactor?
         return nm.swapaxes(nm.swapaxes(values, 0, -1), 0, -2)
 
     def get_nth_fun(self, n):
         """
         Convenience function for testing
-        :param n:
+        :param n: 0,1 , 2, 3, ...
         :return: n-th function of the legendre basis
         """
 
@@ -116,7 +109,7 @@ if __name__ == '__main__':
                       dim=1,
                       coors=coors.copy())
 
-    bs = PrimitivePolySPace('primb', geometry, 5)
+    bs = CanonicalPolySPace('primb', geometry, 5)
     vals = bs.eval_base(coors)
 
     bs = LegendrePolySpace('legb', geometry, 2)

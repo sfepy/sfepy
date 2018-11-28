@@ -48,9 +48,9 @@ class AdvVolDGTerm(Term):
             out[:] = 0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
-            out[:, 0, 0, 0] = vols  # TODO sign does NOT correspond to standard way solvers expect
+            out[:, 0, 0, 0] = vols
             out[:, 0, 1, 1] = vols / 3.0
-            # TODO move to for cycle to add values for higher order approx
+            # TODO move to for cycle to add values for higher order approximations
         else:
             out[:, 0, 0, 0] = vols * u[:, 0]
             out[:, 0, 1, 0] = vols/3. * u[:, 1]
@@ -93,10 +93,10 @@ class AdvFluxDGTerm(Term):
             # as they set to variable in equation
 
             # reshape DOFs vector for convenience in function()
-            # TODO how to pass order or number of cells to term?
-            n_cell = self.region.get_n_cells(False)
-            u = nm.zeros((n_cell, 2))  # 2 is approx order!
-            for i in range(2):
+            n_cell = state.field.n_cell
+            n_nod = state.field.poly_space.n_nod
+            u = nm.zeros((n_cell, n_nod))
+            for i in range(n_nod):
                 u[:, i] = ur[n_cell * i : n_cell*(i+1)]
 
             fargs = u, a[:, :, 0, 0], doeval
