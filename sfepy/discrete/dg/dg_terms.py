@@ -54,7 +54,7 @@ class AdvVolDGTerm(Term):
         else:
             out[:, 0, 0, 0] = vols * u[:, 0]
             out[:, 0, 1, 0] = vols/3. * u[:, 1]
-            out[:] = 0
+            # out[:] = 0
         status = None
         return status
 
@@ -154,8 +154,8 @@ class AdvFluxDGTerm(Term):
         flux0 = (fl - fp)
         flux1 = (- fl - fp + intg)
 
-        out[:, 0, 0, 0] = flux0
-        out[:, 0, 1, 0] = flux1
+        out[:, 0, 0, 0] = -flux0
+        out[:, 0, 1, 0] = -flux1
 
         # compute residual
         # vols = self.region.domain.cmesh.get_volumes(1)
