@@ -33,7 +33,7 @@ download the repository (read-write, permission needed)::
 
 web access (fork the repository there if you wish to help):
 
-   http://github.com/sfepy/sfepy
+   https://github.com/sfepy/sfepy
 
 latest snapshot:
 

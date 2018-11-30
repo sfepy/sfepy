@@ -7,18 +7,18 @@
    is needed for sfepy, SfePy, Sfepy, etc...
 
 .. sfepy links
-.. _sfepy: http://sfepy.org
-.. _sfepy web site: http://sfepy.org
+.. _sfepy: https://sfepy.org
+.. _sfepy web site: https://sfepy.org
 .. _mailing list: https://mail.python.org/mm3/mailman3/lists/sfepy.python.org/
 .. _sfepy mailing list: https://mail.python.org/mm3/mailman3/lists/sfepy.python.org/
 .. _our mailing list: https://mail.python.org/mm3/mailman3/lists/sfepy.python.org/
 .. _sfepy issues: https://github.com/sfepy/sfepy/issues
 .. _issues: https://github.com/sfepy/sfepy/issues
-.. _sfepy download: http://sfepy.org/doc-devel/downloads.html
-.. _download: http://sfepy.org/doc-devel/downloads.html
+.. _sfepy download: https://sfepy.org/doc-devel/downloads.html
+.. _download: https://sfepy.org/doc-devel/downloads.html
 .. _sfepy git repository: https://github.com/sfepy/sfepy
 .. _sfepy/sfepy: https://github.com/sfepy/sfepy
-.. _sfepy tarball: http://github.com/sfepy/sfepy/tarball/master
+.. _sfepy tarball: https://github.com/sfepy/sfepy/tarball/master
 .. _our wiki: https://github.com/sfepy/sfepy/wiki
 
 .. other links

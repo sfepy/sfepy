@@ -38,16 +38,16 @@
       .. list-table::
 
          * - Development version documentation
-           - http://sfepy.org/doc-devel
+           - https://sfepy.org/doc-devel
          * - Latest release version documentation
-           - http://sfepy.org/doc
+           - https://sfepy.org/doc
          * - Automatically generated gallery
-           - http://sfepy.org/gallery
+           - https://sfepy.org/gallery
          * - Mailing list (both user and developer)
            - `sfepy(at)python.org
              <https://mail.python.org/mm3/mailman3/lists/sfepy.python.org>`_
          * - Github organization
-           - http://github.com/sfepy
+           - https://github.com/sfepy
          * - Source code (main git repository)
            - https://github.com/sfepy/sfepy
          * - Bug/issue tracking
