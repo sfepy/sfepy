@@ -28,6 +28,10 @@ helps = {
     ' [default: %(default)s]',
     'wireframe_opts' : 'plotting options for mesh wireframe'
     ' [default: %(default)s]',
+    'no_axes' :
+    'do not show the figure axes',
+    'no_show' :
+    'do not show the mesh plot figure',
 }
 
 def main():
@@ -42,19 +46,19 @@ def main():
 
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--version', action='version', version='%(prog)s')
-    parser.add_argument('--vertex-opts', metavar='list of dicts',
+    parser.add_argument('--vertex-opts', metavar='dict-like',
                         action='store', dest='vertex_opts',
                         default=default_vertex_opts,
                         help=helps['vertex_opts'])
-    parser.add_argument('--edge-opts', metavar='list of dicts',
+    parser.add_argument('--edge-opts', metavar='dict-like',
                         action='store', dest='edge_opts',
                         default=default_edge_opts,
                         help=helps['edge_opts'])
-    parser.add_argument('--face-opts', metavar='list of dicts',
+    parser.add_argument('--face-opts', metavar='dict-like',
                         action='store', dest='face_opts',
                         default=default_face_opts,
                         help=helps['face_opts'])
-    parser.add_argument('--cell-opts', metavar='list of dicts',
+    parser.add_argument('--cell-opts', metavar='dict-like',
                         action='store', dest='cell_opts',
                         default=default_cell_opts,
                         help=helps['cell_opts'])
@@ -62,7 +66,14 @@ def main():
                         action='store', dest='wireframe_opts',
                         default=default_wireframe_opts,
                         help=helps['wireframe_opts'])
+    parser.add_argument('--no-axes',
+                        action='store_false', dest='axes',
+                        help=helps['no_axes'])
+    parser.add_argument('-n', '--no-show',
+                        action='store_false', dest='show',
+                        help=helps['no_show'])
     parser.add_argument('filename')
+    parser.add_argument('figname', nargs='?')
     options = parser.parse_args()
 
     entities_opts = [
@@ -87,11 +98,20 @@ def main():
 
     if dim == 2: entities_opts.pop(2)
 
-    pc.plot_cmesh(None, domain.cmesh,
-                  wireframe_opts=wireframe_opts,
-                  entities_opts=entities_opts)
+    ax = pc.plot_cmesh(None, domain.cmesh,
+                       wireframe_opts=wireframe_opts,
+                       entities_opts=entities_opts)
+    ax.axis('image')
+    if not options.axes:
+        ax.axis('off')
+    plt.tight_layout()
 
-    plt.show()
+    if options.figname:
+        fig = ax.figure
+        fig.savefig(options.figname, bbox_inches='tight')
+
+    if options.show:
+        plt.show()
 
 if __name__ == '__main__':
     main()
