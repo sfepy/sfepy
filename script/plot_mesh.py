@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
 Plot mesh connectivities, facet orientations, global and local DOF ids etc.
+
+To switch off plotting some mesh entities, set the corresponding color to
+`None`.
 """
 from __future__ import absolute_import
 import sys
@@ -10,17 +13,65 @@ from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 
 from sfepy.base.base import output
+from sfepy.base.conf import dict_from_string
 from sfepy.discrete.fem import Mesh, FEDomain
 import sfepy.postprocess.plot_cmesh as pc
 
 helps = {
+    'vertex_opts' : 'plotting options for mesh vertices'
+    ' [default: %(default)s]',
+    'edge_opts' : 'plotting options for mesh edges'
+    ' [default: %(default)s]',
+    'face_opts' : 'plotting options for mesh faces'
+    ' [default: %(default)s]',
+    'cell_opts' : 'plotting options for mesh cells'
+    ' [default: %(default)s]',
+    'wireframe_opts' : 'plotting options for mesh wireframe'
+    ' [default: %(default)s]',
 }
 
 def main():
+    default_vertex_opts = """color='k', label_global=12,
+                             label_local=8"""
+    default_edge_opts = """color='b', label_global=12,
+                           label_local=8"""
+    default_face_opts = """color='g', label_global=12,
+                           label_local=8"""
+    default_cell_opts = """color='r', label_global=12"""
+    default_wireframe_opts = "color='k'"
+
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--version', action='version', version='%(prog)s')
+    parser.add_argument('--vertex-opts', metavar='list of dicts',
+                        action='store', dest='vertex_opts',
+                        default=default_vertex_opts,
+                        help=helps['vertex_opts'])
+    parser.add_argument('--edge-opts', metavar='list of dicts',
+                        action='store', dest='edge_opts',
+                        default=default_edge_opts,
+                        help=helps['edge_opts'])
+    parser.add_argument('--face-opts', metavar='list of dicts',
+                        action='store', dest='face_opts',
+                        default=default_face_opts,
+                        help=helps['face_opts'])
+    parser.add_argument('--cell-opts', metavar='list of dicts',
+                        action='store', dest='cell_opts',
+                        default=default_cell_opts,
+                        help=helps['cell_opts'])
+    parser.add_argument('--wireframe-opts', metavar='dict-like',
+                        action='store', dest='wireframe_opts',
+                        default=default_wireframe_opts,
+                        help=helps['wireframe_opts'])
     parser.add_argument('filename')
     options = parser.parse_args()
+
+    entities_opts = [
+        dict_from_string(options.vertex_opts),
+        dict_from_string(options.edge_opts),
+        dict_from_string(options.face_opts),
+        dict_from_string(options.cell_opts),
+    ]
+    wireframe_opts = dict_from_string(options.wireframe_opts)
 
     filename = options.filename
 
@@ -34,16 +85,10 @@ def main():
     domain.cmesh.cprint(1)
     dim = domain.cmesh.dim
 
-    entities_opts = [
-        {'color' : 'k', 'label_global' : 12, 'label_local' : 8},
-        {'color' : 'b', 'label_global' : 12, 'label_local' : 8},
-        {'color' : 'g', 'label_global' : 12, 'label_local' : 8},
-        {'color' : 'r', 'label_global' : 12},
-    ]
     if dim == 2: entities_opts.pop(2)
 
     pc.plot_cmesh(None, domain.cmesh,
-                  wireframe_opts = {'color' : 'k'},
+                  wireframe_opts=wireframe_opts,
                   entities_opts=entities_opts)
 
     plt.show()
