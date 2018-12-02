@@ -328,6 +328,8 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
     plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
+    plt.plot([X1, XN], [1, 1], 'k')
+
     # Plot IC and its sampling
     c0 = plt.plot(X, u[0, :, 0, 0], label="IC-0", marker=".", ls="")[0].get_color()
     c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
@@ -350,6 +352,7 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
     plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
+    plt.plot([X1, XN], [1, 1], 'k')
     # Plot discontinuously!
     # (order, space_steps, t_steps, 1)
     ww, xx = reconstruct_legendre_dofs(coors, tn, u)
@@ -386,10 +389,10 @@ def plot_1D_legendre_dofs(coors, dofss, fun=None):
             # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
 
     if fun is not None:
-        xs = nm.linspace(0, 1, 500)[:, None]
+        xs = nm.linspace(nm.min(coors), nm.max(coors), 500)[:, None]
         plt.plot(xs, fun(xs), label="fun-ex")
     plt.legend()
-    plt.show()
+    # plt.show()
 
 def reconstruct_legendre_dofs(coors, tn, u):
     """

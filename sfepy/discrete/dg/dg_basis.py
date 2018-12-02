@@ -6,6 +6,7 @@ from numpy import newaxis as nax
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
 
+
 class CanonicalPolySPace(PolySpace):
 
     def _eval_base(self, coors, diff=0, ori=None,
@@ -23,8 +24,8 @@ class CanonicalPolySPace(PolySpace):
 
 class LegendrePolySpace(PolySpace):
     """
-    Legendre hierarchical polynomials basis, over [-1, 1] domain
-    use transform y = 2*x-1 to get basis over [0, 1]
+    Legendre hierarchical polynomials basis, over [0, 1] domain
+    use transform x = (y + 1)/2 to get basis over [0, 1]
     """
 
     def __init__(self, name, geometry, order, init_context=True):
@@ -61,22 +62,25 @@ class LegendrePolySpace(PolySpace):
                    suppress_errors=False, eps=1e-15):
         """
         Numpy valuation of basis functions
-        :param coors:
+        :param coors: coordinates, preferably in interval [0, 1] for which this basisi is intented
         :param diff: not supported!
         :param ori: not supported!
         :param suppress_errors:
         :param eps: ???
         :return: values in coors of all the basis function up to order
-        shape = (order + 1, ) + coors.shape() or (order + 1, 1) of coors is scalar
+
         """
+        # coors = 2 * coors - 1
         if isinstance(coors, (int, float)):
             sh = (1,)
         else:
             sh = nm.shape(coors)
         values = nm.ones((self.order + 1,) + sh)
-        values[1, :] = coors
+        values[1, :] = 2*coors-1
         for i in range(2, self.order + 1):
-            values[i, :] = ((2*i + 1) * coors * values[i-1, :] - i * values[i-2, :]) / (i + 1)
+            # values[i, :] = ((2*i + 1) * coors * values[i-1, :] - i * values[i-2, :]) / (i + 1)
+            # FIXME tranform recursive formula
+            values[i, :] = self.get_nth_fun(i)(coors)
 
         # this is to return the same shape as other basis, refactor?
         return nm.swapaxes(nm.swapaxes(values, 0, -1), 0, -2)
@@ -89,14 +93,14 @@ class LegendrePolySpace(PolySpace):
         """
 
         if n < 6:
-            return self.funs[n]
+            return lambda x: self.funs[n](2*x - 1)
         else:
             from scipy.misc import comb as comb
 
             def fun(x):
                 val = 0
                 for k in range(n):
-                    val = val + comb(n, k) * comb(n + k, k) * ((x-1)/2.)**k
+                    val = val + comb(n, k) * comb(n + k, k) * (((2*x-1)-1)/2.)**k
 
             return fun
 
@@ -104,7 +108,7 @@ class LegendrePolySpace(PolySpace):
 if __name__ == '__main__':
     from matplotlib import pylab as plt
 
-    coors = nm.linspace(-1, 1)[:, nax]
+    coors = nm.linspace(0, 1)[:, nax]
     geometry = Struct(n_vertex=2,
                       dim=1,
                       coors=coors.copy())
@@ -113,13 +117,13 @@ if __name__ == '__main__':
     vals = bs.eval_base(coors)
 
     bs = LegendrePolySpace('legb', geometry, 2)
-    Legvals = bs.eval_base(coors)
+    Legvals = bs.eval_base(coors)**2
 
     # plt.figure("Primitive polyspace")
     # plt.plot(nm.linspace(-1, 1), vals[: ,: ,0])
 
     plt.figure("Legendre polyspace")
-    plt.plot(nm.linspace(-1, 1), Legvals[:, :, 0].T)
+    plt.plot(coors, Legvals[:, 0, :])
     plt.show()
     # geometry = Struct(n_vertex = 2,
     #              dim = 1,

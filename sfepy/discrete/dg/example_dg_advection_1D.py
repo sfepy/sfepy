@@ -43,6 +43,9 @@ t1 = .8
 tn = 200
 speed = 1.0
 
+approx_order = 2
+
+integral = Integral('i', order=5)
 domain = FEDomain('domain', mesh)
 # FEDomain contains default lagrange polyspace in its geometry
 omega = domain.create_region('Omega', 'all')
@@ -52,11 +55,12 @@ left = domain.create_region('Gamma1',
 right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN1,
                               'vertex')
-field = DGField('dgfu', nm.float64, 'scalar', omega, approx_order=1)
-# field = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=1)
+field = DGField('dgfu', nm.float64, 'scalar', omega,
+                approx_order=approx_order, integral=integral)
+# field = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
-integral = Integral('i', order=1)
+
 
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
@@ -78,7 +82,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs)
-pb.setup_output(output_dir="./output/", output_format="h5")
+pb.setup_output(output_dir="./output/" )#, output_format="h5")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
@@ -88,7 +92,7 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-# nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
+nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 
 
 dt = float(t1 - t0) / tn
@@ -99,11 +103,11 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(maxa * dtdx))
 
-# tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
-#                                nls=nls, context=pb, verbose=True)
-
-tss = SimpleTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step' : tn},
+tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
                                nls=nls, context=pb, verbose=True)
+
+# tss = SimpleTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step' : tn},
+#                                nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
 
 # pb.time_update(tss.ts)
@@ -113,5 +117,5 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-# lmesh, u = load_vtks("./output/", "domain", tn, order=1)
-# plot1D_DG_sol(lmesh, t0, t1, u, dt=dt,  ic=ic_wrap)
+lmesh, u = load_vtks("./output/", "domain", tn, order=approx_order)
+plot1D_DG_sol(lmesh, t0, t1, u, dt=dt,  ic=ic_wrap)
