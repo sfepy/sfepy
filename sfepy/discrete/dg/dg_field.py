@@ -26,7 +26,7 @@ class DGField(Field):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base="dglegendre",  approx_order=0):
+        poly_space_base="dglegendre",  approx_order=0, integral=None):
         """
         Creates DG Field, with Legendre poly space and integral corresponding to
         approx_order + 1.
@@ -65,16 +65,20 @@ class DGField(Field):
 
         # integral
         self.clear_qp_base()
-        self.integral = Integral("dg_fi", order=approx_order+1)
-
-        # mapping
-        self.mappings = {}
-        self.mappings0 = {}
+        if integral is None:
+            self.integral = Integral("dg_fi", order=approx_order+2)
+        else:
+            self.integral = integral
+        # FIXME integrals have only odd orders, so order of 2 is the same as order 3 and 4!
+        # what order of integral should we use?
 
         self.ori = None
         self.basis_transform = None
 
-
+        # mapping
+        self.mappings = {}
+        self.mapping = self.create_mapping(self.region, self.integral, "volume", return_mapping=True)[1]
+        self.mappings0 = {}
 
     def _check_region(self, region):
         # TODO what are the requirements on region?
@@ -275,6 +279,10 @@ class DGField(Field):
         """
         Convert the DOFs corresponding to the field to a dictionary of
         output data usable by Mesh.write().
+
+        Puts DOFs into vairables u0 ... un, where n = approx_order and marks them for writing
+        as cell data.
+
         Parameters
         ----------
         dofs : array, shape (n_nod, n_component)
@@ -417,42 +425,36 @@ class DGField(Field):
 
         elif callable(fun):
 
-            mesh = region.domain.mesh  # TODO use remap and self.bubble_dofs to get indicies?
-
             qp, weights = self.integral.get_qp(self.gel.name)
             qp, weights = qp.T, weights[:, None].T # transpose for array expansion
-            qp = 2*qp - 1  # in DG we use [-1,1] reference element, change that to [0, 1]?
-            weights = 2 * weights  # weights need to be tranformed as well
-
-            def mapping1D(x):
-                # TODO this should be somehow part of the mapping/use self.mapping.get_physical_qps
-                c = (mesh.coors[1:] + mesh.coors[:-1]) / 2  # center
-                s = (mesh.coors[1:] - mesh.coors[:-1]) / 2  # scale
-                return c + x * s
-            coors = mapping1D(qp)
+            coors = self.mapping.get_physical_qps(qp.T)[:, :, 0]
 
             # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
-            # TODO higher order (3+) approx seems off
-            # base_vals_coors = self.poly_space.eval_base(coors)
-            base_vals_qp = self.poly_space.eval_base(qp)       # -2  0   -1  0
+            base_vals_qp = self.poly_space.eval_base(qp)
             base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
             # left hand, so far only orthogonal basis
             lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=2)
+            # for legendre base it is exactly: 1 / (2 * nm.arange(self.n_el_nod) + 1).reshape((3, 1))
+
             # right hand
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=2)
 
             vals = rhs_vec / lhs_diag
-            # from my_utils.visualizer import plot_1D_legendre_dofs
-            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            import matplotlib.pyplot as plt
+            plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
+            plt.plot(xx ,ww[:, 0])
 
         return nods, vals
 
 
 if __name__ == '__main__':
+    from toolz import *
 
     X1 = 0.
     XN1 = 1.

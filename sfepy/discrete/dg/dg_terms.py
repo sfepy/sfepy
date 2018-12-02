@@ -20,6 +20,7 @@ class AdvVolDGTerm(Term):
         self.v = v
         self.setup()
 
+
     def get_fargs(self, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if diff_var is not None:
@@ -45,13 +46,15 @@ class AdvVolDGTerm(Term):
 
             # integral over element with constant test
             # function is just volume of the element
-            out[:] = 0
+            out[:] = 0.0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
             out[:, 0, 0, 0] = vols
             out[:, 0, 1, 1] = vols / 3.0
+            out[:, 0, 2, 2] = 1
             # TODO move to for cycle to add values for higher order approximations
         else:
+            out[:] = 0.0
             out[:, 0, 0, 0] = vols * u[:, 0]
             out[:, 0, 1, 0] = vols/3. * u[:, 1]
             # out[:] = 0
@@ -125,7 +128,7 @@ class AdvFluxDGTerm(Term):
         # the respective element boundaries
         # for Legendre basis these are:
         # u_left = U_0 + U_1 + U_2 + ...
-        # u_right = U_0 - U_1 + U_2 + ... = sum_0^{order} (-1)^p * U_p
+        # u_right = U_0 - U_1 + U_2 - U_3 ... = sum_{p=0}^{order} (-1)^p * U_p
 
         # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
         # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
