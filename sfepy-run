@@ -28,7 +28,6 @@ def get_commands():
         'postproc.py',
         'probe.py',
         'run_tests.py',
-        'schroedinger.py',
         'simple.py',
     ]
 

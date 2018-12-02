@@ -270,7 +270,7 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False,
         else: # Scalar.
             val = nm.amin(data)
 
-    edata = nm.empty((n_el,) + data.shape[1:], dtype = nm.float64)
+    edata = nm.empty((n_el,) + data.shape[1:], dtype=data.dtype)
     edata.fill(val)
 
     region = domain.regions[rname]
@@ -293,8 +293,16 @@ def extend_cell_data(data, domain, rname, val=None, is_surface=False,
             avg = 1.0
 
         for ic in range(data.shape[2]):
-            evals = nm.bincount(cells, weights=data[:, 0, ic, 0],
-                                minlength=n_el)[ucells]
+            if nm.isrealobj(data):
+                evals = nm.bincount(cells, weights=data[:, 0, ic, 0],
+                                    minlength=n_el)[ucells]
+
+            else:
+                evals = (nm.bincount(cells, weights=data[:, 0, ic, 0].real,
+                                     minlength=n_el)[ucells]
+                         + 1j *
+                         nm.bincount(cells, weights=data[:, 0, ic, 0].imag,
+                                     minlength=n_el)[ucells])
 
             edata[ucells, 0, ic, 0] = evals / avg
 
@@ -333,4 +341,3 @@ def refine_mesh(filename, level):
         domain.mesh.write(filename, io='auto')
 
     return filename
-
