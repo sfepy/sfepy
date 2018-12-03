@@ -70,20 +70,22 @@ class LegendrePolySpace(PolySpace):
         :return: values in coors of all the basis function up to order
 
         """
-        # coors = 2 * coors - 1
         if isinstance(coors, (int, float)):
             sh = (1,)
         else:
             sh = nm.shape(coors)
-        values = nm.ones((self.order + 1,) + sh)
-        values[1, :] = 2*coors-1
-        for i in range(2, self.order + 1):
-            # values[i, :] = ((2*i + 1) * coors * values[i-1, :] - i * values[i-2, :]) / (i + 1)
-            # FIXME tranform recursive formula
-            values[i, :] = self.get_nth_fun(i)(coors)
+        values = nm.ones(sh + (self.order + 1,))
 
-        # this is to return the same shape as other basis, refactor?
-        return nm.swapaxes(nm.swapaxes(values, 0, -1), 0, -2)
+        if self.order == 0:
+            return values
+
+        values[..., 1] = 2*coors-1
+        for i in range(2, self.order + 1):
+            # values[..., i] = ((2*i + 1) * coors * values[..., i-1] - i * values[..., i-2]) / (i + 1)
+            # FIXME tranform recursive formula
+            values[..., i] = self.get_nth_fun(i)(coors)
+
+        return values
 
     def get_nth_fun(self, n):
         """
@@ -113,17 +115,22 @@ if __name__ == '__main__':
                       dim=1,
                       coors=coors.copy())
 
-    bs = CanonicalPolySPace('primb', geometry, 5)
-    vals = bs.eval_base(coors)
+    # bs = CanonicalPolySPace('primb', geometry, 5)
+    # vals = bs.eval_base(coors)
 
-    bs = LegendrePolySpace('legb', geometry, 2)
-    Legvals = bs.eval_base(coors)**2
+    bs = LegendrePolySpace('legb', geometry, 4)
+    Legvals = bs.eval_base(coors)
 
     # plt.figure("Primitive polyspace")
     # plt.plot(nm.linspace(-1, 1), vals[: ,: ,0])
 
     plt.figure("Legendre polyspace")
     plt.plot(coors, Legvals[:, 0, :])
+    plt.plot(coors, bs.get_nth_fun(2)(coors), "--")
+    plt.plot(coors, bs.get_nth_fun(3)(coors), "--")
+    plt.plot(coors, bs.get_nth_fun(4)(coors), "--")
+    plt.plot([0, 1], [0, 0], 'k')
+
     plt.show()
     # geometry = Struct(n_vertex = 2,
     #              dim = 1,

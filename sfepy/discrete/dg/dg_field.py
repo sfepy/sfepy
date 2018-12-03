@@ -19,9 +19,6 @@ from sfepy.discrete.fem.mappings import VolumeMapping
 from dg_basis import LegendrePolySpace
 
 class DGField(Field):
-    # TODO inherit from FEField?
-    # - that would require adding element dofs to it
-    # TODO rename to DGVolumeField? does DGSurfaceeField make sense? Use abstrakt class and subclasses?
     family_name = 'volume_H1_DGLegendre'
     is_surface = False
 
@@ -54,7 +51,7 @@ class DGField(Field):
         # approximation space
         self.space = space
         self.poly_space_base = poly_space_base
-        # TODO put LegendrePolySpace to table in PolySpace any_from_args, or use only Legendre for DG?
+        # TODO put LegendrePolySpace into table in PolySpace any_from_args, or use only Legendre for DG?
         self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", self.gel, approx_order)
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
@@ -66,11 +63,9 @@ class DGField(Field):
         # integral
         self.clear_qp_base()
         if integral is None:
-            self.integral = Integral("dg_fi", order=approx_order+2)
+            self.integral = Integral("dg_fi", order=2*approx_order)
         else:
             self.integral = integral
-        # FIXME integrals have only odd orders, so order of 2 is the same as order 3 and 4!
-        # what order of integral should we use?
 
         self.ori = None
         self.basis_transform = None
@@ -171,9 +166,9 @@ class DGField(Field):
         :param is_trace:
         :return:
         """
-        # TODO placeholder, what is this used for?
+        # placeholder, what is this used for?
 
-        dct = info.dc_type.type # TODO check DOF connectivity type
+        dct = info.dc_type.type
 
         self.info = info
         self.is_trace = is_trace
@@ -190,28 +185,9 @@ class DGField(Field):
         :return:
         """
 
-        # node_desc = self.node_desc # TODO what is node_desc for?
-
-
-        # DG probably never needs facet DOFs, but AFS...?
-        # edofs = nm.empty((0,), dtype=nm.int32)
-        # if node_desc.edge is not None:
-        #     edofs = self._get_facet_dofs(region.edges,
-        #                                  self.edge_remap,
-        #                                  self.edge_dofs)
-        # dofs.append(edofs)
-        #
-        # fdofs = nm.empty((0,), dtype=nm.int32)
-        # if node_desc.face is not None:
-        #     fdofs = self._get_facet_dofs(region.faces,
-        #                                  self.face_remap,
-        #                                  self.face_dofs)
-        # dofs.append(fdofs)
-
-        # based on get_dofs_in_region from FEField
         dofs = []
         eldofs = nm.empty((0,), dtype=nm.int32)
-        if region.has_cells(): # TODO use "and (node_desc.bubble is not None)"
+        if region.has_cells():
             els = nm.ravel(self.bubble_remap[region.cells])
             eldofs = self.bubble_dofs[els[els >= 0]]
         dofs.append(eldofs)
@@ -221,14 +197,22 @@ class DGField(Field):
 
         return dofs
 
+    def get_nbrhd_dofs(self, region, variable):
+        nbrhs_rgns, nbrhs_dofs = None, None
+        # TODO use cmesh.get_incident to extract neighbours
+        # TODO get their dofs
+        # TODO throw in bonus DOFs for virtual border elements
+        # TODO return normals too?
+        region
+
+
+        return nbrhs_rgns, nbrhs_dofs
+
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
-        Returns data shape for term, right now it is
-        (n_nod, n_qp, self.gel.dim, 1)
-        which results in matrix of shape n_nod x n_nod, hovewer in
-        FEM it is
-        (shape.n_cell, n_qp, dim, self.econn.shape[1])
-        how does this translates to domension of the matrix?
+        Returns data shape
+        (n_nod, n_qp, self.gel.dim, self.n_el_nod)
+
         :param integral: integral used
         :param integration:
         :param region_name: not used
@@ -240,12 +224,11 @@ class DGField(Field):
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
 
-            # from FEField data_shape = (shape.n_cell, n_qp, dim, self.econn.shape[1])
             data_shape = (self.n_cell, n_qp, self.gel.dim, self.n_el_nod)
-            # econn.shape[1] == n_nod
+            # econn.shape[1] == n_el_nod i.e. number nod in element
 
         else:
-            # TODO what bout other integrations? do they make sense for DG?
+            # what bout other integrations? do they make sense for DG?
             raise NotImplementedError('unsupported integration! (%s)'
                                       % integration)
 

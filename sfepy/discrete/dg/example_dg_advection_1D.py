@@ -90,7 +90,7 @@ pb.set_ics(Conditions([ics]))
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
+# nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
 nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 
@@ -104,10 +104,10 @@ print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, 
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(maxa * dtdx))
 
 tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
-                               nls=nls, context=pb, verbose=True)
+                                nls=nls, context=pb, verbose=True)
 
 # tss = SimpleTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step' : tn},
-#                                nls=nls, context=pb, verbose=True)
+#                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
 
 # pb.time_update(tss.ts)

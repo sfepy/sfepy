@@ -310,6 +310,7 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     X1 = coors[0]
     Xvol = XN - X1
     n_nod = len(coors)
+    n_el_nod = nm.shape(u)[0]
 
     figs, axs = plt.subplots()
     X = (coors[1:] + coors[:-1]) / 2
@@ -331,12 +332,13 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     plt.plot([X1, XN], [1, 1], 'k')
 
     # Plot IC and its sampling
-    c0 = plt.plot(X, u[0, :, 0, 0], label="IC-0", marker=".", ls="")[0].get_color()
-    c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
-    # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
-    plt.step(coors[1:], u[0, :, 0,  0], color=c0)
-    plt.step(coors[1:], u[1, :, 0,  0], color=c1)
-    # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
+    for i in range(n_el_nod):
+        c0 = plt.plot(X, u[i, :, 0, 0], label="IC-0", marker=".", ls="")[0].get_color()
+        # c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
+        # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
+        plt.step(coors[1:], u[i, :, 0,  0], color=c0)
+        # plt.step(coors[1:], u[1, :, 0,  0], color=c1)
+        # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
     xs = nm.linspace(X1, XN, 500)[:, None]
     plt.plot(xs, ic(xs), label="IC-ex")
 
@@ -416,11 +418,11 @@ def reconstruct_legendre_dofs(coors, tn, u):
     n_nod = len(coors)
     if tn is None:
         tn = nm.shape(u)[2]
-    order = nm.shape(u)[0]
+    n_el_nod = nm.shape(u)[0]
 
     ww = nm.zeros((3 * n_nod - 1, tn, 1))
 
-    for i in range(order):
+    for i in range(n_el_nod):
         ww[0, :] = ww[0, :] + (-1)**i * u[i, 0, :]  # left bc
         ww[-1, :] = ww[-1, :] + u[i, -1, :]  # right bc
         ww[0:-2:3] = ww[0:-2:3] + (-1)**i * u[i, :, :]  # left edges of elements
