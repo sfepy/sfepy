@@ -2,6 +2,32 @@ import numpy as nm
 from sfepy.terms.terms import Term
 
 
+def unravel_sol(state):
+    """
+    Unpacks solution from flat vector to
+    (n_cell, n_el_nod, n_comp)
+
+
+    :param state:
+    """
+
+    u = state.data[0]  # this uses data provided by solver
+    # this uses data provided by solver
+    # ur = self.get(state, 'dg', step=-1)
+    # however this would probably too,
+    # as they are set to variable in equation
+
+    # in 2D+ case this will be replaced by get_nbrhd_dofs
+
+    n_cell = state.field.n_cell
+    n_el_nod = state.field.poly_space.n_nod
+    # TODO for vector?
+    ur = nm.zeros((n_cell, n_el_nod, 1))
+    for i in range(n_el_nod):
+        ur[:, i] = u[n_cell * i: n_cell * (i + 1), None]
+    return ur, n_el_nod
+
+
 class AdvVolDGTerm(Term):
 
     name = "dw_dg_volume"
@@ -20,27 +46,20 @@ class AdvVolDGTerm(Term):
         self.v = v
         self.setup()
 
-
     def get_fargs(self, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if diff_var is not None:
             mtx_mode = True
             u = None
+            n_el_nod = state.field.poly_space.n_nod
         else:
             mtx_mode = False
-            ur = state.data[0]  # this uses data provided by solver
+            u, n_el_nod = unravel_sol(state)
 
-            n_cell = self.region.get_n_cells(False)
-            u = nm.zeros((n_cell, 2))  # 2 is approx order!
-            for i in range(2):
-                u[:, i] = ur[n_cell * i: n_cell * (i + 1)]
+        return u, mtx_mode, n_el_nod
 
-        # vg, _ = self.get_mapping(state)
-
-        return u, mtx_mode
-
-    def function(self, out, u, mtx_mode):
-        vols = self.region.domain.cmesh.get_volumes(1)
+    def function(self, out, u, mtx_mode, n_el_nod):
+        vols = self.region.domain.cmesh.get_volumes(1)[:, None]
         if mtx_mode:
             # TODO which dimension do we really want?
 
@@ -49,15 +68,13 @@ class AdvVolDGTerm(Term):
             out[:] = 0.0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
-            out[:, 0, 0, 0] = vols
-            out[:, 0, 1, 1] = vols / 3.0
-            out[:, 0, 2, 2] = 1
-            # TODO move to for cycle to add values for higher order approximations
+            for i in range(n_el_nod):
+                out[:, :, i, i] = vols / (2.0 * i + 1.0)
         else:
             out[:] = 0.0
-            out[:, 0, 0, 0] = vols * u[:, 0]
-            out[:, 0, 1, 0] = vols/3. * u[:, 1]
-            # out[:] = 0
+            for i in range(n_el_nod):
+                out[:, :, i, 0] = vols / (2.0 * i + 1.0) * u[:, i]
+                # TODO does this hold for higher orders?
         status = None
         return status
 
@@ -88,24 +105,16 @@ class AdvFluxDGTerm(Term):
             # do not eval in matrix mode, we however still need
             # this term to have diff_var in order for it to receive the values
             doeval = False
-            return None, None, doeval
+            return None, None, doeval, 0
         else:
             doeval = True
-            ur = state.data[0]  # this uses data provided by solver
-            # ur = self.get(state, 'dg', step=-1)  # however this probably too,
-            # as they set to variable in equation
 
-            # reshape DOFs vector for convenience in function()
-            n_cell = state.field.n_cell
-            n_nod = state.field.poly_space.n_nod
-            u = nm.zeros((n_cell, n_nod))
-            for i in range(n_nod):
-                u[:, i] = ur[n_cell * i : n_cell*(i+1)]
+            u, n_el_nod = unravel_sol(state)
 
-            fargs = u, a[:, :, 0, 0], doeval
+            fargs = (u, a[:, :1, 0, 0], doeval, n_el_nod)
             return fargs
 
-    def function(self, out, u, a, doeval):
+    def function(self, out, u, velo, doeval, n_el_nod):
         if not doeval:
             out[:] = 0.0
             return None
@@ -117,12 +126,12 @@ class AdvFluxDGTerm(Term):
         # int_{j-1/2}^{j+1/2} f(u)dx
         #
         # only from the zero order function, over [-1, 1] - hence the 2
-        intg = a[:, 0] * u[:, 0] * 2
+        intg = velo * u[:, 0] * 2
         # i.e. intg = a * u0 * reference_el_vol
 
         #  the Lax-Friedrichs flux is
 
-        #       F(a, b) = 1/2(f(a) + f(b)) + max(f'(w)) / 2 * (a - b)
+        #       F(a, b) = 1/2(f(a) + f(b)) + max(|f'(w)|) / 2 * (a - b)
 
         # in our case a and b are values in the elements left and right of
         # the respective element boundaries
@@ -139,30 +148,52 @@ class AdvFluxDGTerm(Term):
         bcr = u[-1].reshape(bc_shape)
         ur = nm.concatenate((u[1:], bcr))
         ul = nm.concatenate((bcl, u[:-1]))
+        # TODO n_el_nod get neighbour dofs
 
-        # TODO move to for cycle to add values for higher order approx
-        # TODO research general fluxes for higher dimensions
+        # fl:
+        # fl = velo[:, 0] * (ul[:, 0] + ul[:, 1] +
+        #                    (u[:, 0] - u[:, 1])) / 2 + \
+        #      nm.abs(velo[:, 0]) * (ul[:, 0] + ul[:, 1] -
+        #                            (u[:, 0] - u[:, 1])) / 2
+        a = 0
+        b = 0
+        sign = 1
+        for i in range(n_el_nod):
+            a += ul[:, i]
+            b += sign * u[:, i]
+            sign *= -1
 
-        fl = a[:, 0] * (ul[:, 0] + ul[:, 1] +
-                        (u[:, 0] - u[:, 1])) / 2 + \
-            nm.abs(a[:, 0]) * (ul[:, 0] + ul[:, 1] -
-                               (u[:, 0] - u[:, 1])) / 2
+        fl = (velo * a + velo * b) / 2 + \
+             nm.abs(velo) * (a - b) / 2
 
-        fp = a[:, 0] * (u[:, 0] + u[:, 1] +
-                        (ur[:, 0] - ur[: , 1])) / 2 + \
-            nm.abs(a[:, 0]) * (u[:, 0] + u[:, 1] -
-                               (ur[:, 0] - ur[:, 1])) / 2
+        # fl:
+        # fp = velo[:, 0] * (u[:, 0] + u[:, 1] +
+        #                            (ur[:, 0] - ur[: , 1])) / 2 + \
+        #              nm.abs(velo[:, 0]) * (u[:, 0] + u[:, 1] -
+        #                                    (ur[:, 0] - ur[:, 1])) / 2
+        a = 0
+        b = 0
+        sign = 1
+        for i in range(n_el_nod):
+            a += u[:, i]
+            b += sign * ur[:, i]
+            sign *= -1
+
+        fp = (velo * a + velo * b) / 2 + \
+             nm.abs(velo) * (a - b) / 2
+
 
         out[:] = 0.0
-        flux0 = (fl - fp)
-        flux1 = (- fl - fp + intg)
 
-        out[:, 0, 0, 0] = -flux0
-        out[:, 0, 1, 0] = -flux1
+        # flux0 = (fl - fp)
+        # flux1 = (- fl - fp + intg)
+        # out[:, 0, 0, 0] = -flux0
+        # out[:, 0, 1, 0] = -flux1
 
-        # compute residual
-        # vols = self.region.domain.cmesh.get_volumes(1)
-        # out[:, 0, 0, 0] = vols * u[:, 0] - flux0
-        # out[:, 0, 1, 0] = vols/3 * u[:, 1] - flux1
+        flux = (fl - fp), (- fl - fp + intg), 0
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = -flux[i]
+
+
         status = None
         return status
