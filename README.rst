@@ -53,14 +53,14 @@ documentation.
 References
 ----------
 
-.. [1] http://sfepy.org - main SfePy development site (releases, mailing lists,
+.. [1] https://sfepy.org - main SfePy development site (releases, mailing lists,
        wiki, issue tracking, downloads, documentation, examples)
-.. [2] http://github.com/sfepy - master git repository
+.. [2] https://github.com/sfepy - master git repository
 .. [3] http://numpy.org
 .. [4] http://scipy.org
 .. [5] http://en.wikipedia.org/wiki/Weak_formulation
-.. [6] http://docs.sfepy.org/doc/terms_overview.html
-.. [7] http://docs.sfepy.org/doc/tutorial.html#interactive-example-linear-elasticity
+.. [6] https://docs.sfepy.org/doc/terms_overview.html
+.. [7] https://docs.sfepy.org/doc/tutorial.html#interactive-example-linear-elasticity
 .. [8] http://www.vtk.org/VTK/img/file-formats.pdf
 .. [9] http://paraview.org/
 .. [10] http://code.enthought.com/projects/mayavi/

@@ -22,5 +22,5 @@ Example Applications
 (Note: the examples below were created around 2010 and do not reflect the
 current state of SfePy).
 
-- Fish heart model: http://sfepy.org/fish_heart
-- Phononic materials: http://sfepy.org/phononic
+- Fish heart model: https://sfepy.org/fish_heart
+- Phononic materials: https://sfepy.org/phononic
