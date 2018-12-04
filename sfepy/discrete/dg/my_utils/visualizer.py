@@ -289,7 +289,7 @@ def load_vtks(fold, name, tn, order, tns=None):
 
     return coors, u
 
-def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
+def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0, delay=None):
     """
     Animates solution to 1D problem produced by DG:
         1. animates DOF values in elements as steps
@@ -333,7 +333,7 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
 
     # Plot IC and its sampling
     for i in range(n_el_nod):
-        c0 = plt.plot(X, u[i, :, 0, 0], label="IC-0", marker=".", ls="")[0].get_color()
+        c0 = plt.plot(X, u[i, :, 0, 0], label="IC-{}".format(i), marker=".", ls="")[0].get_color()
         # c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
         # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
         plt.step(coors[1:], u[i, :, 0,  0], color=c0)
@@ -343,7 +343,7 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     plt.plot(xs, ic(xs), label="IC-ex")
 
     # Animate sampled solution DOFs directly
-    anim_dofs = animate1d(u[:, :, :, 0].T, coors[1:], T, axs, figs, ylims=[-1, 2], plott="step")
+    anim_dofs = animate1d(u[:, :, :, 0].T, coors[1:], T, axs, figs, ylims=[-1, 2], plott="step", delay=delay)
     plt.xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     plt.legend(loc="upper left")
     plt.title("Sampled solution")
@@ -364,7 +364,7 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0):
     plt.plot(xx, ww[:, 0], label="IC")
 
     # Animate reconstructed solution
-    anim_recon = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2])
+    anim_recon = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2], delay=delay)
     plt.xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     plt.legend(loc="upper left")
     plt.title("Reconstructed solution")
