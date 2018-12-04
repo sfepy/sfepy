@@ -27,8 +27,8 @@ from dg_field import DGField
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
-X1 = -.5
-XN1 = .5
+X1 = 0
+XN1 = 1
 n_nod = 100
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN1, n_nod).reshape((n_nod, 1))
@@ -43,7 +43,7 @@ t1 = .8
 tn = 200
 speed = 1.0
 
-approx_order = 2
+approx_order = 1
 
 integral = Integral('i', order=5)
 domain = FEDomain('domain', mesh)
@@ -75,7 +75,7 @@ right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
 
 def ic_wrap(x, ic=None):
-    return ghump(x)
+    return superic(x)
 
 
 ic_fun = Function('ic_fun', ic_wrap)
@@ -90,9 +90,19 @@ pb.set_ics(Conditions([ics]))
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
+# create limiter
+from dg_limiters import moment_limiter_1D, get_unraveler, get_raveler
+def limiter(vec):
+    # TODO unify shapes
+    u = get_unraveler(field.n_el_nod, field.n_cell)(vec).swapaxes(0, 1)
+    u = moment_limiter_1D(u)
+    rvec = get_raveler(field.n_el_nod, field.n_cell)(u.swapaxes(0, 1))
+    return rvec[:, 0]
+
+
 # nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
+nls = RK3StepSolver({}, lin_solver=ls, status=nls_status, post_stage_hook=limiter)
 
 
 dt = float(t1 - t0) / tn
@@ -118,4 +128,4 @@ pb.solve()
 #| Plot |
 #--------
 lmesh, u = load_vtks("./output/", "domain", tn, order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, dt=dt,  ic=ic_wrap)
+plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap, delay=100)

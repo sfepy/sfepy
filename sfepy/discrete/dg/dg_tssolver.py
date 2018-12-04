@@ -1,5 +1,3 @@
-
-
 import numpy as nm
 from numpy import dot
 import matplotlib.pyplot as plt
@@ -321,7 +319,7 @@ class EulerStepSolver(NonlinearSolver):
     __metaclass__ = SolverMeta
     _parameters = []
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, post_stage_hook=lambda x: x, **kwargs):
         NonlinearSolver.__init__(self, conf, **kwargs)
 
         conf = self.conf
@@ -341,6 +339,7 @@ class EulerStepSolver(NonlinearSolver):
 
         else:
             self.log = None
+        self.post_stage_hook = post_stage_hook
 
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None, ts=None):
@@ -375,6 +374,7 @@ class EulerStepSolver(NonlinearSolver):
                .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
 
         vec_x = vec_x - ts.dt * (vec_dx - vec_x)
+        vec_x = self.post_stage_hook(vec_x)
 
         return vec_x
 
@@ -390,7 +390,7 @@ class RK3StepSolver(NonlinearSolver):
     __metaclass__ = SolverMeta
     _parameters = []
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, post_stage_hook=lambda x: x, **kwargs):
         NonlinearSolver.__init__(self, conf, **kwargs)
 
         conf = self.conf
@@ -410,6 +410,8 @@ class RK3StepSolver(NonlinearSolver):
 
         else:
             self.log = None
+
+        self.post_stage_hook = post_stage_hook
 
     def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
                  lin_solver=None, iter_hook=None, status=None, ts=None):
@@ -439,7 +441,7 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x1 = vec_x - ts.dt * (vec_dx - vec_x)
-        # TODO add post-stage hook
+        vec_x1 = self.post_stage_hook(vec_x1)
 
         # ----2nd stage----
         vec_r = fun(vec_x1)
@@ -449,6 +451,7 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1))/4
+        vec_x2 = self.post_stage_hook(vec_x2)
 
         # ----3rd stage-----
         vec_r = fun(vec_x2)
@@ -458,6 +461,7 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x3 = (vec_x + 2 * vec_x2 - 2*ts.dt * (vec_dx - vec_x2))/3
+        vec_x3 = self.post_stage_hook(vec_x3)
 
         # vec_e = mtx_a * vec_dx - vec_r
         # lerr = nla.norm(vec_e)
