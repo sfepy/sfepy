@@ -1,31 +1,5 @@
 import numpy as nm
 
-
-# from dg_terms import unravel_sol
-
-# TODO move the into dg_field
-def get_unraveler(n_el_nod, n_cell):
-
-    def unravel(u):
-        ur = nm.zeros((n_cell, n_el_nod, 1))
-        for i in range(n_el_nod):
-            ur[:, i] = u[n_cell * i: n_cell * (i + 1), None]
-        return ur
-
-    return unravel
-
-
-def get_raveler(n_el_nod, n_cell):
-
-    def ravel(u):
-        ur = nm.zeros((n_cell * n_el_nod, 1))
-        for i in range(n_el_nod):
-            ur[n_cell * i: n_cell * (i + 1)] = u[:, i]
-        return ur
-
-    return ravel
-
-
 def moment_limiter_1D(u):
     """
     Krivodonova(2007): Limiters for high-order discontinuous Galerkin methods

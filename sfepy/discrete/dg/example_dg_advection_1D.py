@@ -90,8 +90,9 @@ pb.set_ics(Conditions([ics]))
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-# create limiter
-from dg_limiters import moment_limiter_1D, get_unraveler, get_raveler
+# create post stage hook with limiter
+from dg_field import get_unraveler, get_raveler
+from dg_limiters import moment_limiter_1D
 def limiter(vec):
     # TODO unify shapes
     u = get_unraveler(field.n_el_nod, field.n_cell)(vec).swapaxes(0, 1)

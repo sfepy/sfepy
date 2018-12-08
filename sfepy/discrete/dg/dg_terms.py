@@ -1,7 +1,8 @@
 import numpy as nm
 from sfepy.terms.terms import Term
 
-from dg_limiters import get_unraveler
+from dg_field import get_unraveler, get_raveler
+
 
 
 def unravel_sol(state):
@@ -106,18 +107,19 @@ class AdvFluxDGTerm(Term):
             # do not eval in matrix mode, we however still need
             # this term to have diff_var in order for it to receive the values
             doeval = False
-            return None, None, doeval, 0
+            return None, None, None, None, doeval, 0
         else:
             doeval = True
 
-            u = unravel_sol(state)
+            u = unravel_sol(state) # TODO we unravel twice, refactor
             n_el_nod = state.field.poly_space.n_nod
-            state.field.get_nbrhd_dofs(state.field.region, state)
+            nb_dofs, nb_normals = state.field.get_nbrhd_dofs(state.field.region, state)
+            # state variable has dt in it!
 
-            fargs = (u, a[:, :1, 0, 0], doeval, n_el_nod)
+            fargs = (u, nb_dofs, nb_normals, a[:, :1, 0, 0], doeval, n_el_nod)
             return fargs
 
-    def function(self, out, u, velo, doeval, n_el_nod):
+    def function(self, out, u, nb_u, nb_n, velo, doeval, n_el_nod):
         if not doeval:
             out[:] = 0.0
             return None
@@ -145,13 +147,6 @@ class AdvFluxDGTerm(Term):
         # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
         # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
 
-        bc_shape = (1, ) + nm.shape(u)[1:]
-        bcl = u[0].reshape(bc_shape)
-        bcr = u[-1].reshape(bc_shape)
-        ur = nm.concatenate((u[1:], bcr))
-        ul = nm.concatenate((bcl, u[:-1]))
-        # TODO n_el_nod get neighbour dofs
-
         # fl:
         # fl = velo[:, 0] * (ul[:, 0] + ul[:, 1] +
         #                    (u[:, 0] - u[:, 1])) / 2 + \
@@ -161,7 +156,7 @@ class AdvFluxDGTerm(Term):
         b = 0
         sign = 1
         for i in range(n_el_nod):
-            a += ul[:, i]
+            a += nb_u[:, 0, i]  # TODO iterate over nuber n_el_facets
             b += sign * u[:, i]
             sign *= -1
 
@@ -178,7 +173,7 @@ class AdvFluxDGTerm(Term):
         sign = 1
         for i in range(n_el_nod):
             a += u[:, i]
-            b += sign * ur[:, i]
+            b += sign * nb_u[:,1 , i]
             sign *= -1
 
         fp = (velo * a + velo * b) / 2 + \

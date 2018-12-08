@@ -18,6 +18,29 @@ from sfepy.discrete.fem.mappings import VolumeMapping
 # local imports
 from dg_basis import LegendrePolySpace
 
+
+def get_unraveler(n_el_nod, n_cell):
+
+    def unravel(u):
+        ur = nm.zeros((n_cell, n_el_nod, 1))
+        for i in range(n_el_nod):
+            ur[:, i] = u[n_cell * i: n_cell * (i + 1), None]
+        return ur
+
+    return unravel
+
+
+def get_raveler(n_el_nod, n_cell):
+
+    def ravel(u):
+        ur = nm.zeros((n_cell * n_el_nod, 1))
+        for i in range(n_el_nod):
+            ur[n_cell * i: n_cell * (i + 1)] = u[:, i]
+        return ur
+
+    return ravel
+
+
 class DGField(Field):
     family_name = 'volume_H1_DGLegendre'
     is_surface = False
@@ -45,8 +68,8 @@ class DGField(Field):
         # geometry
         self.domain = region.domain
         self.region = region
-        self.approx_order = approx_order
         self._setup_geometry()
+        self._setup_connectivity()
 
         # approximation space
         self.space = space
@@ -56,9 +79,15 @@ class DGField(Field):
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
         # DOFs
+        self.approx_order = approx_order
         self._setup_shape()
         self._setup_all_dofs()
 
+        self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
+        self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
+
+        # boundary DOFS TODO temporary
+        self.boundary_val = 0.0
 
         # integral
         self.clear_qp_base()
@@ -138,16 +167,28 @@ class DGField(Field):
         """
         # from VolumeField
         cmesh = self.domain.cmesh
+        self.dim = cmesh.dim
         for key, gel in six.iteritems(self.domain.geom_els):
             ct = cmesh.cell_types
             if (ct[self.region.cells] == cmesh.key_to_index[gel.name]).all():
                 self.gel = gel
                 break
 
-        else:
-            raise ValueError('region %s of field %s contains multiple'
-                             ' reference geometries!'
-                             % (self.region.name, self.name))
+            else:
+                raise ValueError('region %s of field %s contains multiple'
+                                 ' reference geometries!'
+                                 % (self.region.name, self.name))
+
+    def _setup_connectivity(self):
+        """
+        Forces self.domain.mesh to build neccesary conectivities
+        so the are available in self.get_nbrhd_dofs
+        :return:
+        """
+        self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim)
+        self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
+
+
 
     def clear_qp_base(self):
         """
@@ -198,15 +239,68 @@ class DGField(Field):
         return dofs
 
     def get_nbrhd_dofs(self, region, variable):
-        nbrhs_rgns, nbrhs_dofs = None, None
-        # TODO use cmesh.get_incident to extract neighbours
-        # TODO get their dofs
-        # TODO throw in bonus DOFs for virtual border elements
-        # TODO return normals too?
-        region
+        """
+        Returns unraveled (i.e. non-flat) array of DOFs in neighbouring element
+        along with normals of the facets that connects them
+
+        :param region:
+        :param variable: state variable with state.data[0] containing the DOFs
+        :return: neighbouring dofs for each elemnt in region, facet normals corresponding to neighbours
+        """
+
+        n_el_nod = self.n_el_nod
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        nb_dofs = -1 * nm.ones((n_cell, n_el_nod, n_el_facets, 1))
+
+        cmesh = region.domain.mesh.cmesh
+        nb_cell_idx, nb_cell_offs = cmesh.get_incident(dim, region.cells, dim, ret_offsets=True)
+
+        # inner cells are easy
+        is_inner = nm.diff(nb_cell_offs) == n_el_facets
+        inner_nb_strides = nm.array((nb_cell_offs[nm.where(is_inner)], nb_cell_offs[nm.where(is_inner)[0] + 1])).T
+        inner_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]] for stride in inner_nb_strides] )# TODO use numpy implementation
 
 
-        return nbrhs_rgns, nbrhs_dofs
+        ur = self.unravel_sol(variable.data[0])
+        nb_dofs[nm.where(is_inner)] = nm.take(ur, inner_nb_indc, axis=0)
+
+
+        # facets per element index
+        facet_idx, facet_offs = cmesh.get_incident(dim - 1, region.cells, dim, ret_offsets=True)
+        facet_strides = nm.array((facet_offs[:-1], facet_offs[1:])).T
+        # indexes of facets common to neigbours in array of shape (n_cell, n_el_facets)
+        # TODO this relies on facets of the element being in the same order as its neighbours returned by get_incident(1, 1)
+        facet_indc = nm.array([facet_idx[stride[0]: stride[1]] for stride in facet_strides])
+
+        facet_normals = cmesh.get_facet_normals()
+        nb_normals = nm.take(facet_normals, facet_indc, axis=0)
+
+
+        if dim == 1: # FIXME only temporary solution, mesh does not return proper normals
+            nb_normals[:, 0] = -1
+            nb_normals[:, 1] = 1
+
+        # boundary
+        is_boundary =  nm.diff(nb_cell_offs) < n_el_facets  # are protruding cells allowed?
+        boundary_nb_strides = nm.array((nb_cell_offs[nm.where(is_boundary)], nb_cell_offs[nm.where(is_boundary)[0] + 1])).T
+        boundary_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]]  for stride in boundary_nb_strides])
+        boundary_els_facets = facet_indc[nm.where(is_boundary)]
+
+        # found boundary facets
+        for el_i, boundary_el_facets in zip(nm.where(is_boundary)[0], boundary_els_facets):
+            for facet_i, boundary_el_facet in enumerate(boundary_el_facets):
+                nbs_i = nm.where(facet_indc == boundary_el_facet)[0]
+                if len(nbs_i) == 1: # facet is adjacent only to one elemnt
+                    nb_dofs[el_i, facet_i, :] = self.boundary_val
+                else:
+                    nb_i = nbs_i[nbs_i != el_i]
+                    nb_dofs[el_i, facet_i, :] = ur[nb_i, :]
+
+        return nb_dofs, nb_normals
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
