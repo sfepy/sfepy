@@ -44,11 +44,11 @@ class LegendrePolySpace(PolySpace):
         n_v, dim = geometry.n_vertex, geometry.dim
         self.n_nod = (order + 1) ** dim  # number of DOFs per element
 
+        # TODO move to subclasses
         self.nodes = nm.array([[1, 0], [0, 1]])
         self.nts = nm.array([[0, 0], [0, 1]])
-        self.node_coors = nm.array([[-1.], [1.]])
+        self.node_coors = nm.array([[0.], [1.]])
 
-        self.eval_ctx = None
 
     funs = [lambda x: 1,
             lambda x: x,
@@ -58,17 +58,15 @@ class LegendrePolySpace(PolySpace):
             lambda x: (63*x**5 - 70*x**3 + 15*x)/8
             ]
 
-    def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
+    def base_values(self, coors, diff=0, ori=None,
+                    suppress_erros=False, eps=1e-15):
         """
-        Numpy valuation of basis functions
         :param coors: coordinates, preferably in interval [0, 1] for which this basisi is intented
         :param diff: not supported!
         :param ori: not supported!
         :param suppress_errors:
         :param eps: ???
         :return: values in coors of all the basis function up to order
-
         """
         if isinstance(coors, (int, float)):
             sh = (1,)
@@ -79,13 +77,18 @@ class LegendrePolySpace(PolySpace):
         if self.order == 0:
             return values
 
-        values[..., 1] = 2*coors-1
+        values[..., 1] = 2 * coors - 1
         for i in range(2, self.order + 1):
             # values[..., i] = ((2*i + 1) * coors * values[..., i-1] - i * values[..., i-2]) / (i + 1)
             # FIXME tranform recursive formula
             values[..., i] = self.get_nth_fun(i)(coors)
 
         return values
+
+
+    def _eval_base(self, coors, diff=0, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        return self.base_values(coors, diff, ori, suppress_errors, eps)
 
     def get_nth_fun(self, n):
         """
@@ -105,6 +108,27 @@ class LegendrePolySpace(PolySpace):
                     val = val + comb(n, k) * comb(n + k, k) * (((2*x-1)-1)/2.)**k
 
             return fun
+
+
+class LegendreSimplexPolySpace(LegendrePolySpace):
+    name = "legendre_simplex"
+
+    def _eval_base(self, coors, diff=0, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        # P_i(x) + P_j(y)
+
+        return None
+
+
+class LegendreTensorProductPolySpace(LegendrePolySpace):
+    name = "legendre_tensor_product"
+
+    def _eval_base(self, coors, diff=0, ori=None,
+                   suppress_errors=False, eps=1e-15):
+
+        # P_i(x) * P_j(y)
+
+        return None
 
 
 if __name__ == '__main__':
