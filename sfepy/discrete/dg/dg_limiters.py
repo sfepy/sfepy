@@ -22,7 +22,6 @@ def moment_limiter_1D(u):
     idx = nm.arange(nm.shape(u[0, 1:-1])[0])
     nu = nm.copy(u)
     for l in range(1, 0, -1):
-        # tODO is limiter right this way?
         tilu = minmod(nu[l, 1:-1][idx],
                       nu[l - 1, 2:][idx] - nu[l - 1, 1:-1][idx],
                       nu[l - 1, 1:-1][idx] - nu[l - 1, :-2][idx])
