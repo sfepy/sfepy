@@ -319,7 +319,7 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0, delay=No
     elif tn is not None:
         T, dt = nm.linspace(t0, t1, tn, retstep=True)
     elif dt is not None:
-        tn = int(float(t1 - t0) / dt)
+        tn = int(nm.ceil(float(t1 - t0) / dt))
         T = nm.linspace(t0, t1, tn)
     else:
         T = nm.arange(nm.shape(u)[2])
