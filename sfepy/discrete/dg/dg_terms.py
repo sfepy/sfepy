@@ -76,7 +76,7 @@ class AdvVolDGTerm(Term):
             out[:] = 0.0
             for i in range(n_el_nod):
                 out[:, :, i, 0] = vols / (2.0 * i + 1.0) * u[:, i]
-                # TODO does this hold for higher orders?
+                # TODO does this hold for higher orders? -  seems like it does...
         status = None
         return status
 
@@ -124,16 +124,6 @@ class AdvFluxDGTerm(Term):
             out[:] = 0.0
             return None
 
-        # for Legendre basis integral of higher order
-        # functions of the basis is zero,
-        # hence we calculate integral
-        #
-        # int_{j-1/2}^{j+1/2} f(u)dx
-        #
-        # only from the zero order function, over [-1, 1] - hence the 2
-        intg = velo * u[:, 0] * 2
-        # i.e. intg = a * u0 * reference_el_vol
-
         #  the Lax-Friedrichs flux is
 
         #       F(a, b) = 1/2(f(a) + f(b)) + max(|f'(w)|) / 2 * (a - b)
@@ -161,7 +151,7 @@ class AdvFluxDGTerm(Term):
             sign *= -1
 
         fl = (velo * a + velo * b) / 2 + \
-             nm.abs(velo) * (a - b) / 2
+              nm.abs(velo) * (a - b) / 2
 
         # fl:
         # fp = velo[:, 0] * (u[:, 0] + u[:, 1] +
@@ -177,18 +167,28 @@ class AdvFluxDGTerm(Term):
             sign *= -1
 
         fp = (velo * a + velo * b) / 2 + \
-             nm.abs(velo) * (a - b) / 2
-
+              nm.abs(velo) * (a - b) / 2
 
         out[:] = 0.0
 
         # flux0 = (fl - fp)
-        # flux1 = (- fl - fp + intg)
+        # flux1 = (- fl - fp + intg1)
         # out[:, 0, 0, 0] = -flux0
         # out[:, 0, 1, 0] = -flux1
 
+        # for Legendre basis integral of higher order
+        # functions of the basis is zero,
+        # hence we calculate integral
+        #
+        # int_{j-1/2}^{j+1/2} f(u)dx
+        #
+        # only from the zero order function, over [-1, 1] - hence the 2
+        intg1 = velo * u[:, 0] * 2
+        intg2 = velo * u[:, 1] * 2 if n_el_nod > 2 else 0
+        # i.e. intg1 = a * u0 * reference_el_vol
+
         flux = list()
-        flux[:3] = (fl - fp), (- fl - fp + intg), (fl - fp + 2 * velo * u[:, 1]) if n_el_nod > 2 else 0
+        flux[:3] = (fl - fp), (- fl - fp + intg1), (fl - fp + intg2)
         for i in range(n_el_nod):
             out[:, :, i, 0] = -flux[i]
 

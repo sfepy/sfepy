@@ -38,10 +38,14 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
+velo = 1.0
+
 t0 = 0
-t1 = .8
-tn = 200
-speed = 1.0
+t1 = 1
+dx = (XN1 - X1)/n_nod
+dt = dx / velo * 1/2
+# time_steps_N = int((tf - t0) / dt) * 2
+tn = int(nm.ceil((t1 - t0) / dt))
 
 approx_order = 1
 
@@ -64,7 +68,7 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
-a = Material('a', val=[speed])
+a = Material('a', val=[velo])
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
 eq = Equation('balance', IntT + FluxT)
@@ -109,7 +113,7 @@ nls = RK3StepSolver({}, lin_solver=ls, status=nls_status, post_stage_hook=limite
 dt = float(t1 - t0) / tn
 dx = nm.max(mesh.coors[1:] - mesh.coors[:-1])
 dtdx = dt / dx
-maxa = nm.max(nm.abs(speed))
+maxa = nm.max(nm.abs(velo))
 print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(maxa * dtdx))
