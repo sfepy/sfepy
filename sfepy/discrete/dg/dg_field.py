@@ -70,6 +70,8 @@ class DGField(Field):
         self.region = region
         self._setup_geometry()
         self._setup_connectivity()
+        self.n_el_facets = self.dim + 1 if self.gel.is_simplex else 2 ** self.dim
+
 
         # approximation space
         self.space = space
@@ -108,19 +110,11 @@ class DGField(Field):
         # TODO what are the requirements on region?
         return True
 
-    def _init_econn(self):
-        """
-        Initialize the extended DOF connectivity. What is this supposed to do?
-        """
-
-        return None
-
     def _setup_all_dofs(self):
         """
         Sets up all the differet kinds of DOFs, for DG only bubble DOFs
         originaly called _setup_global_base
         """
-        self._init_econn()
         self.n_el_nod = self.poly_space.n_nod
         self.n_vertex_dof = 0  # in DG we will propably never need vertex DOFs
         self.n_edge_dof = 0 # use facets DOFS for AFS methods
@@ -135,7 +129,7 @@ class DGField(Field):
     def _setup_bubble_dofs(self):
         """
         Creates DOF information for  so called element, cell or bubble DOFs - the only DOFs used in DG
-        n_dof is set as n_cells * order
+        n_dof is set as n_cells * n_el_nod
         remap is setup to map (order) DOFs to each cell
         dofs is ???
         :return:
@@ -187,7 +181,6 @@ class DGField(Field):
         """
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim)
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
-
 
 
     def clear_qp_base(self):
@@ -261,8 +254,10 @@ class DGField(Field):
 
         # inner cells are easy
         is_inner = nm.diff(nb_cell_offs) == n_el_facets
-        inner_nb_strides = nm.array((nb_cell_offs[nm.where(is_inner)], nb_cell_offs[nm.where(is_inner)[0] + 1])).T
-        inner_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]] for stride in inner_nb_strides] )# TODO use numpy implementation
+        inner_nb_strides = nm.array((nb_cell_offs[nm.where(is_inner)],
+                                     nb_cell_offs[nm.where(is_inner)[0] + 1])).T
+        inner_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]] for stride in inner_nb_strides] )
+        # TODO use numpy implementation
 
 
         ur = self.unravel_sol(variable.data[0])
@@ -271,22 +266,25 @@ class DGField(Field):
 
         # facets per element index
         facet_idx, facet_offs = cmesh.get_incident(dim - 1, region.cells, dim, ret_offsets=True)
-        facet_strides = nm.array((facet_offs[:-1], facet_offs[1:])).T
+        facet_strides = nm.array((facet_offs[:-1],
+                                  facet_offs[1:])).T
         # indexes of facets common to neigbours in array of shape (n_cell, n_el_facets)
-        # TODO this relies on facets of the element being in the same order as its neighbours returned by get_incident(1, 1)
+        # TODO this relies on facets of the element being in the same order
+        #  as its neighbours returned by get_incident(dim, dim)
         facet_indc = nm.array([facet_idx[stride[0]: stride[1]] for stride in facet_strides])
 
         facet_normals = cmesh.get_facet_normals()
         nb_normals = nm.take(facet_normals, facet_indc, axis=0)
 
 
-        if dim == 1: # FIXME only temporary solution, mesh does not return proper normals
+        if dim == 1: # FIXME only temporary solution, mesh does not return proper normals in 1D
             nb_normals[:, 0] = -1
             nb_normals[:, 1] = 1
 
         # boundary
         is_boundary =  nm.diff(nb_cell_offs) < n_el_facets  # are protruding cells allowed?
-        boundary_nb_strides = nm.array((nb_cell_offs[nm.where(is_boundary)], nb_cell_offs[nm.where(is_boundary)[0] + 1])).T
+        boundary_nb_strides = nm.array((nb_cell_offs[nm.where(is_boundary)],
+                                        nb_cell_offs[nm.where(is_boundary)[0] + 1])).T
         boundary_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]]  for stride in boundary_nb_strides])
         boundary_els_facets = facet_indc[nm.where(is_boundary)]
 
@@ -521,11 +519,12 @@ class DGField(Field):
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=2)
 
             vals = rhs_vec / lhs_diag
-            from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-            import matplotlib.pyplot as plt
-            plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
-            ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
-            plt.plot(xx ,ww[:, 0])
+
+            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            # import matplotlib.pyplot as plt
+            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
+            # plt.plot(xx ,ww[:, 0])
 
         return nods, vals
 
