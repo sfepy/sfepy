@@ -231,14 +231,15 @@ class DGField(Field):
 
         return dofs
 
-    def get_nbrhd_dofs(self, region, variable):
+    def get_nbrhd_dofs_old(self, region, variable):
         """
         Returns unraveled (i.e. non-flat) array of DOFs in neighbouring element
         along with normals of the facets that connects them
 
         :param region:
         :param variable: state variable with state.data[0] containing the DOFs
-        :return: neighbouring dofs for each elemnt in region, facet normals corresponding to neighbours
+        :return: neighbouring dofs for each elemnt in region,
+                 facet normals corresponding to neighbours
         """
 
         n_el_nod = self.n_el_nod
@@ -256,7 +257,8 @@ class DGField(Field):
         is_inner = nm.diff(nb_cell_offs) == n_el_facets
         inner_nb_strides = nm.array((nb_cell_offs[nm.where(is_inner)],
                                      nb_cell_offs[nm.where(is_inner)[0] + 1])).T
-        inner_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]] for stride in inner_nb_strides] )
+        inner_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]]
+                                  for stride in inner_nb_strides] )
         # TODO use numpy implementation
 
 
@@ -285,7 +287,8 @@ class DGField(Field):
         is_boundary =  nm.diff(nb_cell_offs) < n_el_facets  # are protruding cells allowed?
         boundary_nb_strides = nm.array((nb_cell_offs[nm.where(is_boundary)],
                                         nb_cell_offs[nm.where(is_boundary)[0] + 1])).T
-        boundary_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]]  for stride in boundary_nb_strides])
+        boundary_nb_indc = nm.array([nb_cell_idx[stride[0]: stride[1]]
+                                     for stride in boundary_nb_strides])
         boundary_els_facets = facet_indc[nm.where(is_boundary)]
 
         # found boundary facets
@@ -299,6 +302,99 @@ class DGField(Field):
                     nb_dofs[el_i, facet_i, :] = ur[nb_i, :]
 
         return nb_dofs, nb_normals
+
+    def get_nbrhd_dofs(self, region, variable):
+        n_el_nod = self.n_el_nod
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        nb_dofs = -1 * nm.ones((n_cell, n_el_nod, n_el_facets, 1))
+        dofs = self.unravel_sol(variable.data[0])
+
+        neighbours = self.get_cell_nb_per_facet(region)
+        nb_normals = self.get_cell_nn_per_facet(region, neighbours)
+
+        ghost_nbrs = nm.where(neighbours < 0)
+
+        # TODO treat boundary conditions
+        nb_dofs[ghost_nbrs] = self.boundary_val
+
+        if dim == 1:  # periodic boundary conditions in 1D
+            neighbours[0, 0] = -1
+            neighbours[-1, 1] = 0
+
+
+
+
+        nb_dofs[:] = nm.take(dofs, neighbours, axis=0)
+
+        return nb_dofs, nb_normals
+
+
+
+    def get_cell_nb_per_facet(self, region):
+        """
+        Retruns array of cell neighbbours sharing facet
+        :param region:
+        # TODO why should be ragion passed?
+        :return:
+        """
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        cmesh = region.domain.mesh.cmesh
+        cells = region.cells
+
+        neighbours = nm.zeros((n_cell, n_el_facets), dtype=nm.int32)
+
+        c2fi, c2fo = cmesh.get_incident(dim - 1, cells, dim, ret_offsets=True)
+        for ic, o1 in enumerate(c2fo[:-1]):  # loop over cells
+            o2 = c2fo[ic + 1]
+
+            c2ci, c2co = cmesh.get_incident(dim, c2fi[o1:o2], dim - 1,
+                                            ret_offsets=True)  # get neighbours per facet of the cell
+            nbrs = []
+            for ifa, of1 in enumerate(c2co[:-1]):  # loop over facets
+                of2 = c2co[ifa + 1]
+                if of2 == (of1 + 1):  # facet has only one cell
+                    # Surface facet.
+                    nbrs.append(-1)  # c2ci[of1])  # append the cell, itself
+                else:
+                    if c2ci[of1] == cells[ic]:  # do not append the cell itself
+                        nbrs.append(c2ci[of2 - 1])
+                    else:
+                        nbrs.append(c2ci[of1])
+            neighbours[ic] = nbrs
+
+        return neighbours
+
+
+    def get_cell_nn_per_facet(self, region, neighbours):
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        cmesh = region.domain.mesh.cmesh
+        cells = region.cells
+
+        normals = cmesh.get_facet_normals()
+        if dim == 1:
+            normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0]/2))
+        normals_out = nm.zeros((n_cell, n_el_facets, dim))
+
+        c2f = cmesh.get_conn(dim, dim - 1)
+        for ic, o1 in enumerate(c2f.offsets[:-1]):
+            o2 = c2f.offsets[ic + 1]
+            for ifal, ifa in enumerate(c2f.indices[o1:o2]):
+                normals_out[ic, ifal] = normals[o1 + ifal]
+
+        return normals_out
+
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """

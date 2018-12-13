@@ -58,8 +58,8 @@ class LegendrePolySpace(PolySpace):
             lambda x: (63*x**5 - 70*x**3 + 15*x)/8
             ]
 
-    def base_values(self, coors, diff=0, ori=None,
-                    suppress_erros=False, eps=1e-15):
+    def _base_values(self, coors, diff=0, ori=None,
+                     suppress_erros=False, eps=1e-15):
         """
         :param coors: coordinates, preferably in interval [0, 1] for which this basisi is intented
         :param diff: not supported!
@@ -88,7 +88,7 @@ class LegendrePolySpace(PolySpace):
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
-        return self.base_values(coors, diff, ori, suppress_errors, eps)
+        return self._base_values(coors, diff, ori, suppress_errors, eps)
 
     def get_nth_fun(self, n):
         """
