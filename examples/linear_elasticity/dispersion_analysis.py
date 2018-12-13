@@ -284,7 +284,7 @@ helps = {
 def main():
     # Aluminium and epoxy.
     default_pars = '70e9,0.35,2.799e3, 3.8e9,0.27,1.142e3'
-    default_solver_conf = ("kind='eig.scipy',method='eigh',tol=1.0e-5,"
+    default_solver_conf = ("kind='eig.scipy',method='eigsh',tol=1.0e-5,"
                            "maxiter=1000,which='LM',sigma=0.0")
 
     parser = ArgumentParser(description=__doc__,

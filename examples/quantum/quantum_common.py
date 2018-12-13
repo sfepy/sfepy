@@ -117,7 +117,7 @@ def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
 
     solvers = {
         'eig' : ('eig.scipy', {
-            'method' : 'eigh',
+            'method' : 'eigsh',
             'tol' : 1e-10,
             'maxiter' : 150,
 
