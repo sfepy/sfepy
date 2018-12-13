@@ -146,7 +146,7 @@ class AdvFluxDGTerm(Term):
         b = 0
         sign = 1
         for i in range(n_el_nod):
-            a += nb_u[:, 0, i]  # TODO iterate over nuber n_el_facets
+            a += nb_u[:, 0, i]  # TODO iterate over number of n_el_facets
             b += sign * u[:, i]
             sign *= -1
 

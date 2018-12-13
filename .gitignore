@@ -59,3 +59,9 @@ MANIFEST
 # zitkat ignores for playground and draft
 /sfepy/discrete/dg/DG_Levy/diplomky
 /sfepy/discrete/dg/DG_Levy/skripta
+
+
+#
+# Emacs
+#
+/sfepy/discrete/dg/#*#
