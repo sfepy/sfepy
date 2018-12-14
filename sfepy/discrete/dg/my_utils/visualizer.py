@@ -289,7 +289,10 @@ def load_vtks(fold, name, tn, order, tns=None):
 
     return coors, u
 
-def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0, delay=None):
+
+def plot1D_DG_sol(coors, t0, t1, u,
+                  tn=None, dt=None, ic=lambda x: 0.0, delay=None,
+                  periodic=False, polar=False):
     """
     Animates solution to 1D problem produced by DG:
         1. animates DOF values in elements as steps
@@ -309,11 +312,30 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0, delay=No
     XN = coors[-1]
     X1 = coors[0]
     Xvol = XN - X1
+    X = (coors[1:] + coors[:-1]) / 2
+    XS = nm.linspace(X1, XN, 500)[:, None]
+    ics = ic(XS)
+
+
     n_nod = len(coors)
     n_el_nod = nm.shape(u)[0]
 
-    figs, axs = plt.subplots()
-    X = (coors[1:] + coors[:-1]) / 2
+    if polar:
+        coors *= 2*nm.pi
+        X *= 2*nm.pi
+        XS *= 2*nm.pi
+
+    if periodic:
+         u_step = nm.append(u[:, -2:-1, :, 0], u[:, :, :, 0], axis=1)
+    else:
+        u_step = nm.append(u[:, 0:1, :, 0], u[:, :, :, 0], axis=1)
+
+    figs = plt.figure()
+    if polar:
+        axs = plt.subplot(111, projection='polar')
+    else:
+        axs = plt.subplot(111)
+
     if tn is not None and dt is not None:
         T = nm.array(nm.cumsum(nm.ones(tn) * dt))
     elif tn is not None:
@@ -325,53 +347,59 @@ def plot1D_DG_sol(coors, t0, t1, u, tn=None, dt=None, ic=lambda x: 0.0, delay=No
         T = nm.arange(nm.shape(u)[2])
 
     # Plot mesh
-    plt.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
-    plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
-    plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+    axs.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
+    axs.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
+    axs.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
-    plt.plot([X1, XN], [1, 1], 'k')
+    axs.plot([X1, XN], [1, 1], 'k')
 
     # Plot IC and its sampling
     for i in range(n_el_nod):
-        c0 = plt.plot(X, u[i, :, 0, 0], label="IC-{}".format(i), marker=".", ls="")[0].get_color()
+        c0 = axs.plot(X, u[i, :, 0, 0], label="IC-{}".format(i), marker=".", ls="")[0].get_color()
         # c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
         # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
-        plt.step(coors[1:], u[i, :, 0,  0], color=c0)
+        axs.step(coors[1:], u[i, :, 0,  0], color=c0)
         # plt.step(coors[1:], u[1, :, 0,  0], color=c1)
         # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
-    xs = nm.linspace(X1, XN, 500)[:, None]
-    plt.plot(xs, ic(xs), label="IC-ex")
+    axs.plot(XS, ics, label="IC-ex")
 
     # Animate sampled solution DOFs directly
-    anim_dofs = animate1d(u[:, :, :, 0].T, coors[1:], T, axs, figs, ylims=[-1, 2], plott="step", delay=delay)
-    plt.xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
-    plt.legend(loc="upper left")
-    plt.title("Sampled solution")
+    anim_dofs = animate1d(u_step.T, coors, T, axs, figs, ylims=[-1, 2], plott="step", delay=delay)
+    if not polar:
+        axs.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
+    axs.legend(loc="upper left")
+    axs.set_title("Sampled solution")
 
-    figr, axr = plt.subplots()
+    figr = plt.figure()
+    if polar:
+        axr = plt.subplot(111, projection='polar')
+    else:
+        axr = plt.subplot(111)
     # Plot mesh
-    plt.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
-    plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
-    plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+    axr.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
+    axr.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
+    axr.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
-    plt.plot([X1, XN], [1, 1], 'k')
+    axr.plot([X1, XN], [1, 1], 'k')
     # Plot discontinuously!
     # (order, space_steps, t_steps, 1)
     ww, xx = reconstruct_legendre_dofs(coors, tn, u)
     # plt.vlines(xx, ymin=0, ymax=.3, colors="green")
 
     # plot reconstructed IC
-    plt.plot(xx, ww[:, 0], label="IC")
+    axr.plot(xx, ww[:, 0], label="IC")
 
     # Animate reconstructed solution
     anim_recon = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2], delay=delay)
-    plt.xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
-    plt.legend(loc="upper left")
-    plt.title("Reconstructed solution")
+    if not polar:
+        axr.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
+    axr.legend(loc="upper left")
+    axr.set_title("Reconstructed solution")
 
     # sol_frame(u[:, :, :, 0].T, nm.append(coors, coors[-1]), T, t0=0., ylims=[-1, 1], plott="step")
     plt.show()
     return anim_dofs, anim_recon
+
 
 def plot_1D_legendre_dofs(coors, dofss, fun=None):
     """
@@ -395,6 +423,7 @@ def plot_1D_legendre_dofs(coors, dofss, fun=None):
         plt.plot(xs, fun(xs), label="fun-ex")
     plt.legend()
     # plt.show()
+
 
 def reconstruct_legendre_dofs(coors, tn, u):
     """
