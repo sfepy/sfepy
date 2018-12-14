@@ -112,7 +112,7 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
             eigs = out
 
         if nm.iscomplexobj(eigs):
-            ii = nm.argsort(nm.linalg.norm(eigs[:, None]))
+            ii = nm.argsort(nm.linalg.norm(eigs[:, None], axis=1))
 
         else:
             ii = nm.argsort(eigs)
