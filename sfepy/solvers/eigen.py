@@ -101,7 +101,7 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
                                     eigvals_only=not eigenvectors, **kwargs)
 
         else:
-            eig = self.ssla.eigs if conf.method == 'eig' else self.ssla.eigsh
+            eig = self.ssla.eigs if conf.method == 'eigs' else self.ssla.eigsh
             out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
                       return_eigenvectors=eigenvectors, **kwargs)
 
