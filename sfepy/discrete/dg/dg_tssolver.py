@@ -105,6 +105,7 @@ class TSSolver:
     def solve(self, t0, tend, tsteps=10):
         raise NotImplemented
 
+
 class RK3Solver(TSSolver):
     """
     Runge-Kutta of order 3, with limiter
@@ -377,6 +378,7 @@ class EulerStepSolver(NonlinearSolver):
         vec_x = self.post_stage_hook(vec_x)
 
         return vec_x
+
 
 class RK3StepSolver(NonlinearSolver):
     """

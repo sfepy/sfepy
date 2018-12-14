@@ -28,10 +28,10 @@ from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
 X1 = 0
-XN1 = 1
+XN = 1
 n_nod = 100
 n_el = n_nod - 1
-coors = nm.linspace(X1, XN1, n_nod).reshape((n_nod, 1))
+coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
 mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
 descs = ['1_2']
@@ -42,7 +42,7 @@ velo = 1.0
 
 t0 = 0
 t1 = 1
-dx = (XN1 - X1)/n_nod
+dx = (XN - X1) / n_nod
 dt = dx / velo * 1/2
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
@@ -57,7 +57,7 @@ left = domain.create_region('Gamma1',
                               'vertices in x == %.10f' % X1,
                               'vertex')
 right = domain.create_region('Gamma2',
-                              'vertices in x == %.10f' % XN1,
+                              'vertices in x == %.10f' % XN,
                               'vertex')
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order, integral=integral)
@@ -79,7 +79,7 @@ right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
 
 def ic_wrap(x, ic=None):
-    return superic(x)
+    return left_par_q(x)
 
 
 ic_fun = Function('ic_fun', ic_wrap)
@@ -133,4 +133,5 @@ pb.solve()
 #| Plot |
 #--------
 lmesh, u = load_vtks("./output/", "domain", tn, order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap, delay=100)
+plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
+              delay=100, periodic=False, polar=True)
