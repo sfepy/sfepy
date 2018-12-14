@@ -94,16 +94,16 @@ class EVPSolverApp(PDESolverApp):
         else:
             mtx_b = None
 
-        n_eigs = get_default(opts.n_eigs, mtx_a.shape[0])
+        _n_eigs = get_default(opts.n_eigs, mtx_a.shape[0])
 
-        output('solving eigenvalue problem for {} values...'.format(n_eigs))
+        output('solving eigenvalue problem for {} values...'.format(_n_eigs))
         eig = Solver.any_from_conf(pb.get_solver_conf(opts.evps))
         if opts.eigs_only:
-            eigs = eig(mtx_a, mtx_b, n_eigs, eigenvectors=False)
+            eigs = eig(mtx_a, mtx_b, opts.n_eigs, eigenvectors=False)
             svecs = None
 
         else:
-            eigs, svecs = eig(mtx_a, mtx_b, n_eigs, eigenvectors=True)
+            eigs, svecs = eig(mtx_a, mtx_b, opts.n_eigs, eigenvectors=True)
 
         output('...done')
 
@@ -154,6 +154,10 @@ class EVPSolverApp(PDESolverApp):
         eig_results_name = get_default(eig_results_name,
                                        self.eig_results_name)
         with open(eig_results_name, 'w') as fd:
-            eigs.tofile(fd, ' ')
+            if nm.iscomplexobj(eigs):
+                nm.savetxt(fd, eigs, '% .18e % .18e')
+
+            else:
+                nm.savetxt(fd, eigs, '% .18e')
 
         output('eigenvalues saved to %s' % eig_results_name)

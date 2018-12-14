@@ -128,7 +128,7 @@ def main():
     parser.add_argument('--solver', metavar='solver', action='store',
                         dest='solver',
                         default= \
-                        "eig.scipy,method:'eigh',tol:1e-5,maxiter:1000",
+                        "eig.scipy,method:'eigsh',tol:1e-5,maxiter:1000",
                         help=helps['solver'])
     parser.add_argument('--show',
                         action="store_true", dest='show',
