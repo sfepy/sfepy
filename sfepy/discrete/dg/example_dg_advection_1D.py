@@ -79,7 +79,7 @@ right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
 
 def ic_wrap(x, ic=None):
-    return left_par_q(x)
+    return superic(x)
 
 
 ic_fun = Function('ic_fun', ic_wrap)
@@ -134,4 +134,4 @@ pb.solve()
 #--------
 lmesh, u = load_vtks("./output/", "domain", tn, order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
-              delay=100, periodic=False, polar=True)
+              delay=100, polar=True)

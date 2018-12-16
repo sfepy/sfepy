@@ -291,8 +291,7 @@ def load_vtks(fold, name, tn, order, tns=None):
 
 
 def plot1D_DG_sol(coors, t0, t1, u,
-                  tn=None, dt=None, ic=lambda x: 0.0, delay=None,
-                  periodic=False, polar=False):
+                  tn=None, dt=None, ic=lambda x: 0.0, delay=None, polar=False):
     """
     Animates solution to 1D problem produced by DG:
         1. animates DOF values in elements as steps
@@ -309,6 +308,9 @@ def plot1D_DG_sol(coors, t0, t1, u,
         if dt and tn are both None, t0 and t1 are ignored and solution is animated as if in time 0 ... ntime_steps
     :return: anim object of DOFs, anim object of reconstruction
     """
+
+
+    # Setup space coordinates
     XN = coors[-1]
     X1 = coors[0]
     Xvol = XN - X1
@@ -316,26 +318,12 @@ def plot1D_DG_sol(coors, t0, t1, u,
     XS = nm.linspace(X1, XN, 500)[:, None]
     ics = ic(XS)
 
-
-    n_nod = len(coors)
-    n_el_nod = nm.shape(u)[0]
-
     if polar:
         coors *= 2*nm.pi
         X *= 2*nm.pi
         XS *= 2*nm.pi
 
-    if periodic:
-         u_step = nm.append(u[:, -2:-1, :, 0], u[:, :, :, 0], axis=1)
-    else:
-        u_step = nm.append(u[:, 0:1, :, 0], u[:, :, :, 0], axis=1)
-
-    figs = plt.figure()
-    if polar:
-        axs = plt.subplot(111, projection='polar')
-    else:
-        axs = plt.subplot(111)
-
+    # Setup times
     if tn is not None and dt is not None:
         T = nm.array(nm.cumsum(nm.ones(tn) * dt))
     elif tn is not None:
@@ -345,6 +333,20 @@ def plot1D_DG_sol(coors, t0, t1, u,
         T = nm.linspace(t0, t1, tn)
     else:
         T = nm.arange(nm.shape(u)[2])
+
+    n_nod = len(coors)
+    n_el_nod = nm.shape(u)[0]
+    # prepend u[:, 0, ...] to all time frames for plotting steps
+    u_step = nm.append(u[:, 0:1, :, 0], u[:, :, :, 0], axis=1)
+
+    # Plot DOFs directly
+    figs = plt.figure()
+    if polar:
+        axs = plt.subplot(111, projection='polar')
+        axs.set_theta_direction('clockwise')
+
+    else:
+        axs = plt.subplot(111)
 
     # Plot mesh
     axs.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
@@ -370,11 +372,15 @@ def plot1D_DG_sol(coors, t0, t1, u,
     axs.legend(loc="upper left")
     axs.set_title("Sampled solution")
 
+
+    # Plot reconstructed solution
     figr = plt.figure()
     if polar:
         axr = plt.subplot(111, projection='polar')
+        axr.set_theta_direction('clockwise')
     else:
         axr = plt.subplot(111)
+
     # Plot mesh
     axr.vlines(coors[:, 0], ymin=0, ymax=.5, colors="grey")
     axr.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
@@ -442,9 +448,11 @@ def reconstruct_legendre_dofs(coors, tn, u):
     :return: ww - solution values vector, shape is (3 * nspace_steps - 1, ntime_steps, 1),
              xx - corresponding coordinates vector, shape is (3 * nspace_steps - 1, 1)
     """
+
+
     XN = coors[-1]
     X1 = coors[0]
-    n_nod = len(coors)
+    n_nod = len(coors) - 1
     if tn is None:
         tn = nm.shape(u)[2]
     n_el_nod = nm.shape(u)[0]
@@ -452,10 +460,8 @@ def reconstruct_legendre_dofs(coors, tn, u):
     ww = nm.zeros((3 * n_nod - 1, tn, 1))
 
     for i in range(n_el_nod):
-        ww[0, :] = ww[0, :] + (-1)**i * u[i, 0, :]  # left bc
-        ww[-1, :] = ww[-1, :] + u[i, -1, :]  # right bc
-        ww[0:-2:3] = ww[0:-2:3] + (-1)**i * u[i, :, :]  # left edges of elements
-        ww[1:-1:3] = ww[1:-1:3] + u[i, :, :]  # right edges of elements
+        ww[0:-1:3] = ww[0:-1:3] + (-1)**i * u[i, :, :]  # left edges of elements
+        ww[1::3] = ww[1::3] + u[i, :, :]  # right edges of elements
     ww[2::3, :] = nm.NaN  # NaNs ensure plotting of discontinuities at element borders
 
     # nodes for plotting reconstructed solution
@@ -463,5 +469,5 @@ def reconstruct_legendre_dofs(coors, tn, u):
     xx[0] = X1
     xx[-1] = XN
     # the ending is still a bit odd, but hey, it works!
-    xx[1:-1] = nm.repeat(coors[1:], 3)[:, None]
+    xx[1:-1] = nm.repeat(coors[1:-1], 3)[:, None]
     return ww, xx
