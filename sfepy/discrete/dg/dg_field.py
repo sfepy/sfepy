@@ -16,7 +16,7 @@ from sfepy.discrete.fem.mappings import VolumeMapping
 
 
 # local imports
-from dg_basis import LegendrePolySpace
+from dg_basis import LegendrePolySpace, LegendreSimplexPolySpace
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -77,7 +77,7 @@ class DGField(Field):
         self.space = space
         self.poly_space_base = poly_space_base
         # TODO put LegendrePolySpace into table in PolySpace any_from_args, or use only Legendre for DG?
-        self.poly_space = LegendrePolySpace("1_2_H1_dglegendre_1", self.gel, approx_order)
+        self.poly_space = LegendreSimplexPolySpace("1_2_H1_dglegendre", self.gel, approx_order)
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
         # DOFs
@@ -310,7 +310,7 @@ class DGField(Field):
         gel = self.gel
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
 
-        nb_dofs = -1 * nm.ones((n_cell, n_el_nod, n_el_facets, 1))
+        nb_dofs = -1 * nm.ones((n_cell,n_el_facets, n_el_nod, 1))
         dofs = self.unravel_sol(variable.data[0])
 
         neighbours = self.get_cell_nb_per_facet(region)
@@ -318,17 +318,16 @@ class DGField(Field):
 
         ghost_nbrs = nm.where(neighbours < 0)
 
+
         # TODO treat boundary conditions
-        nb_dofs[ghost_nbrs] = self.boundary_val
 
         if dim == 1:  # periodic boundary conditions in 1D
-            neighbours[0, 0] = -1
-            neighbours[-1, 1] = 0
-
-
-
-
+             neighbours[0, 0] = -1
+             neighbours[-1, 1] = 0
         nb_dofs[:] = nm.take(dofs, neighbours, axis=0)
+        # nb_dofs[ghost_nbrs] = self.boundary_val
+
+
 
         return nb_dofs, nb_normals
 
