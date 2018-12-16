@@ -16,7 +16,7 @@ from sfepy.discrete.fem.mappings import VolumeMapping
 
 
 # local imports
-from dg_basis import LegendrePolySpace, LegendreSimplexPolySpace
+from dg_basis import LegendrePolySpace, LegendreSimplexPolySpace, LegendreTensorProductPolySpace
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -46,7 +46,7 @@ class DGField(Field):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-        poly_space_base="dglegendre",  approx_order=0, integral=None):
+        poly_space_base=None,  approx_order=0, integral=None):
         """
         Creates DG Field, with Legendre poly space and integral corresponding to
         approx_order + 1.
@@ -77,7 +77,10 @@ class DGField(Field):
         self.space = space
         self.poly_space_base = poly_space_base
         # TODO put LegendrePolySpace into table in PolySpace any_from_args, or use only Legendre for DG?
-        self.poly_space = LegendreSimplexPolySpace("1_2_H1_dglegendre", self.gel, approx_order)
+        if poly_space_base is not None:
+            self.poly_space = poly_space_base("H1_dglegendre", self.gel, approx_order)
+        else:
+            self.poly_space = LegendreTensorProductPolySpace("1_2_H1_dglegendre", self.gel, approx_order)
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
         # DOFs
@@ -596,30 +599,30 @@ class DGField(Field):
         elif callable(fun):
 
             qp, weights = self.integral.get_qp(self.gel.name)
-            qp, weights = qp.T, weights[:, None].T # transpose for array expansion
-            coors = self.mapping.get_physical_qps(qp.T)[:, :, 0]
+            weights = weights.reshape(nm.shape(weights) + tuple(nm.ones(nm.ndim(qp), dtype=nm.int32))) # reshape weights to match qp
+            coors = self.mapping.get_physical_qps(qp)
 
             # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
             base_vals_qp = self.poly_space.eval_base(qp)
-            base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
+            # base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
             # left hand, so far only orthogonal basis
-            lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=2)
-            # for legendre base it is exactly: 1 / (2 * nm.arange(self.n_el_nod) + 1).reshape((3, 1))
+            lhs_diag = nm.sum(weights * base_vals_qp**2, axis=0)
+            # for legendre base it is exactly: 1 / (2 * nm.arange(self.n_el_nod) + 1)
 
-            # right hand
-            rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=2)
+            # right hand TODO this is hot fix, check this in 2D and 3D case
+            rhs_vec = nm.sum((weights * base_vals_qp)[:, 0, :] * fun(coors), axis=1)
 
-            vals = rhs_vec / lhs_diag
+            vals = (rhs_vec / lhs_diag).T
 
-            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-            # import matplotlib.pyplot as plt
-            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
-            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
-            # plt.plot(xx ,ww[:, 0])
+            from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            import matplotlib.pyplot as plt
+            plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
+            plt.plot(xx ,ww[:, 0])
 
         return nods, vals
 
