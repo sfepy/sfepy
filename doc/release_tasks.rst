@@ -101,7 +101,7 @@ Useful Git commands
 Web update and file uploading
 -----------------------------
 
-* upload the tarball to http://sfepy.org/doc-devel/downloads.html
+* upload the tarball to https://sfepy.org/doc-devel/downloads.html
 
 * make a pull request with the updated version in
   ``sfepy-feedstock/recipe/meta.yaml`` from a fork

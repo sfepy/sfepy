@@ -1550,7 +1550,7 @@ class Problem(Struct):
         --------
         `problem` is Problem instance.
 
-        >>> out = problem.create_evaluable('dq_state_in_volume_qp.i1.Omega(u)')
+        >>> out = problem.create_evaluable('ev_volume_integrate.i1.Omega(u)')
         >>> equations, variables = out
 
         `vec` is a vector of coefficients compatible with the field

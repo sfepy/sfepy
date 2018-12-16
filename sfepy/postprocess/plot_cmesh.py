@@ -47,7 +47,9 @@ def label_global_entities(ax, cmesh, edim, color='b', fontsize=10, **kwargs):
     ax = _get_axes(ax, dim)
 
     for ii, cc in enumerate(coors):
-        ax.text(*cc.T, s=ii, color=color, fontsize=fontsize, **kwargs)
+        ax.text(*cc.T, s=ii, color=color, fontsize=fontsize,
+                horizontalalignment='center', verticalalignment='center',
+                **kwargs)
 
     return ax
 
@@ -66,13 +68,15 @@ def label_local_entities(ax, cmesh, edim, color='b', fontsize=10, **kwargs):
 
     ax = _get_axes(ax, dim)
 
-    eps = 0.1
+    eps = 0.015 * fontsize
     oeps = 1.0 - eps
     for ii in range(conn.num):
         for ic, ie in enumerate(conn.indices[off[ii]:off[ii+1]]):
             # Shift labels towards the cell centre.
             cc = oeps * coors[ie] + eps * centres[ii]
-            ax.text(*cc.T, s=ic, color=color, fontsize=fontsize, **kwargs)
+            ax.text(*cc.T, s=ic, color=color, fontsize=fontsize,
+                    horizontalalignment='center', verticalalignment='center',
+                    **kwargs)
 
     return ax
 

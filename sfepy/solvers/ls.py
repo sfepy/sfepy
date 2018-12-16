@@ -743,7 +743,10 @@ class MUMPSSolver(LinearSolver):
 
     __metaclass__ = SolverMeta
 
-    _parameters = []
+    _parameters = [
+        ('presolve', 'bool', False, False,
+         'If True, pre-factorize the matrix.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         import sfepy.solvers.ls_mumps as mumps
@@ -758,7 +761,7 @@ class MUMPSSolver(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
         if not self.mumps_presolved:
-            self.presolve(mtx)
+            self.presolve(mtx, presolve_flag=conf.presolve)
 
         out = rhs.copy()
         self.mumps_ls.set_rhs(out)
@@ -766,7 +769,7 @@ class MUMPSSolver(LinearSolver):
 
         return out
 
-    def presolve(self, mtx):
+    def presolve(self, mtx, presolve_flag=False):
         if not isinstance(mtx, sps.coo_matrix):
             mtx = mtx.tocoo()
         if self.mumps_ls is None:
@@ -783,7 +786,8 @@ class MUMPSSolver(LinearSolver):
 
             self.mumps_ls.set_mtx_centralized(mtx)
             self.mumps_ls(4)  # analyze + factorize
-            self.mumps_presolved = True
+            if presolve_flag:
+                self.mumps_presolved = True
             self.mtx_digest = mtx_digest
 
     def __del__(self):

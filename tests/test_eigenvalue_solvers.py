@@ -57,10 +57,16 @@ equations = {
 solvers = {
     'evp0' : ('eig.scipy', {
         'method' : 'eig',
-        'maxiter' : 100,
     }),
     'evp0h' : ('eig.scipy', {
         'method' : 'eigh',
+    }),
+    'evp0s' : ('eig.scipy', {
+        'method' : 'eigs',
+        'maxiter' : 100,
+    }),
+    'evp0sh' : ('eig.scipy', {
+        'method' : 'eigsh',
         'maxiter' : 100,
     }),
     'evp1' : ('eig.sgscipy', {}),

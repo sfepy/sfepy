@@ -62,15 +62,16 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
     __metaclass__ = SolverMeta
 
     _parameters = [
-        ('method', "{'eig', 'eigh'}", 'eig', False,
+        ('method', "{'eig', 'eigh', 'eigs', 'eigsh'}", 'eigs', False,
          """The method for solving general or symmetric eigenvalue problems:
-            for dense problems :func:`eig()` or :func:`eigh()` are used, for
-            sparse problems (if `n_eigs` is given) :func:`eigs()` or
-            :func:`eigsh()` are used."""),
+            for dense problems :func:`eig()` or :func:`eigh()` can be used, for
+            sparse problems :func:`eigs()` or :func:`eigsh()` should be
+            used."""),
         ('which', "'LM' | 'SM' | 'LR' | 'SR' | 'LI' | 'SI'", 'SM', False,
          """Which eigenvectors and eigenvalues to find,
             see :func:`scipy.sparse.linalg.eigs()`
-            or :func:`scipy.sparse.linalg.eigsh()`."""),
+            or :func:`scipy.sparse.linalg.eigsh()`. For dense problmes,
+            only 'LM' and 'SM' can be used"""),
         ('*', '*', None, False,
          'Additional parameters supported by the method.'),
     ]
@@ -90,7 +91,7 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
                  status=None, conf=None):
         kwargs = self.build_solver_kwargs(conf)
 
-        if n_eigs is None:
+        if conf.method in ('eig', 'eigh'):
             mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
             if conf.method == 'eig':
                 out = self.sla.eig(mtx_a, mtx_b, right=eigenvectors, **kwargs)
@@ -100,7 +101,7 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
                                     eigvals_only=not eigenvectors, **kwargs)
 
         else:
-            eig = self.ssla.eigs if conf.method == 'eig' else self.ssla.eigsh
+            eig = self.ssla.eigs if conf.method == 'eigs' else self.ssla.eigsh
             out = eig(mtx_a, M=mtx_b, k=n_eigs, which=conf.which,
                       return_eigenvectors=eigenvectors, **kwargs)
 
@@ -110,7 +111,22 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
         else:
             eigs = out
 
-        ii = nm.argsort(eigs)
+        if nm.iscomplexobj(eigs):
+            ii = nm.argsort(nm.linalg.norm(eigs[:, None], axis=1))
+
+        else:
+            ii = nm.argsort(eigs)
+
+        if n_eigs is not None and (conf.method in ('eig', 'eigh')):
+            if conf.which == 'SM':
+                ii = ii[:n_eigs]
+
+            elif conf.which == 'LM':
+                ii = ii[:-n_eigs-1:-1]
+
+            else:
+                raise ValueError("only 'LM' or 'SM' can be used with dense"
+                                 " problems! (%s)" % conf.which)
 
         if eigenvectors:
             mtx_ev = out[1][:, ii]
