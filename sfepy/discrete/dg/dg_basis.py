@@ -28,7 +28,9 @@ class LegendrePolySpace(PolySpace):
     use transform x = (y + 1)/2 to get basis over [0, 1]
     """
 
-    def __init__(self, name, geometry, order, init_context=True):
+    def __init__(self, name, geometry, order):
+        from toolz import map, reduce
+        from operator import add, mul
         """
         Does not use init_context
         :param name:
@@ -41,13 +43,10 @@ class LegendrePolySpace(PolySpace):
 
         PolySpace.__init__(self, name, geometry, order)
 
-        n_v, dim = geometry.n_vertex, geometry.dim
-        self.n_nod = (order + 1) ** dim  # number of DOFs per element
-
-        # TODO move to subclasses
-        self.nodes = nm.array([[1, 0], [0, 1]])
-        self.nts = nm.array([[0, 0], [0, 1]])
-        self.node_coors = nm.array([[0.], [1.]])
+        self.n_v = geometry.n_vertex,
+        self.dim = geometry.dim
+        self.n_nod = int(reduce(mul, map(lambda i: order + i + 1, range(self.dim))) /
+                         reduce(mul, range(1, self.dim+1)))  # number of DOFs per element
 
 
     funs = [lambda x: 1,
@@ -58,15 +57,10 @@ class LegendrePolySpace(PolySpace):
             lambda x: (63*x**5 - 70*x**3 + 15*x)/8
             ]
 
-    def _base_values(self, coors, diff=0, ori=None,
-                     suppress_erros=False, eps=1e-15):
+    def legendreP(self, coors):
         """
         :param coors: coordinates, preferably in interval [0, 1] for which this basisi is intented
-        :param diff: not supported!
-        :param ori: not supported!
-        :param suppress_errors:
-        :param eps: ???
-        :return: values in coors of all the basis function up to order
+        :return: values in coors of all the legendre polynomials up to self.order
         """
         if isinstance(coors, (int, float)):
             sh = (1,)
@@ -80,15 +74,60 @@ class LegendrePolySpace(PolySpace):
         values[..., 1] = 2 * coors - 1
         for i in range(2, self.order + 1):
             # values[..., i] = ((2*i + 1) * coors * values[..., i-1] - i * values[..., i-2]) / (i + 1)
-            # FIXME tranform recursive formula
+            # FIXME transform recursive formula
             values[..., i] = self.get_nth_fun(i)(coors)
 
         return values
 
+    def jacobiP(self, coors, alpha, beta):
+        """
+        Evals very general jacobi polynomials for all orders from 0 to self.order
+        Used formula works only for alpha, beta > -1 and alpha+beta != -1
+
+        TODO move to JacobiPolySpace
+
+        :param coors:
+        :param alpha:
+        :param beta:
+        :return:
+        """
+        if isinstance(coors, (int, float)):
+            sh = (1,)
+        else:
+            sh = nm.shape(coors)
+        PL = nm.ones(sh + (self.order + 1,))
+
+        from scipy.special import gamma
+        gamma0 = 2 ** (alpha + beta + 1) / (alpha + beta + 1) * gamma(alpha + 1) * \
+                 gamma(beta + 1) / gamma(alpha + beta + 1)
+
+        PL[..., 0] = 1 / nm.sqrt(gamma0)
+        if self.order == 0:
+            return PL
+
+        gamma1 = (alpha + 1) * (beta + 1) / (alpha + beta + 3) * gamma0
+
+        PL[..., 1] = ((alpha + beta + 2) * coors / 2 + (alpha - beta) / 2) / nm.sqrt(gamma1)
+        if self.order == 1:
+            return PL
+
+        aold = 2 / (2 + alpha + beta) * nm.sqrt((alpha + 1) * (beta + 1) / (alpha + beta + 3))
+
+        for i in range(self.order - 1):
+            # FIXME transform recursive formula to interval [0, 1]
+            h1 = 2 * i + alpha + beta;
+            anew = 2 / (h1 + 2) * nm.sqrt((i + 1) * (i + 1 + alpha + beta) * (i + 1 + alpha) *
+                                          (i + 1 + beta) / (h1 + 1) / (h1 + 3))
+            bnew = - (alpha ^ 2 - beta ^ 2) / h1 / (h1 + 2)
+            PL[..., i + 2] = 1 / anew * (-aold * PL[..., i] + (coors - bnew) * PL[..., i + 1])
+            aold = anew
+
+        return PL
+
 
     def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
-        return self._base_values(coors, diff, ori, suppress_errors, eps)
+                       suppress_errors=False, eps=1e-15):
+        return self.legendreP(coors)
 
     def get_nth_fun(self, n):
         """
@@ -113,11 +152,43 @@ class LegendrePolySpace(PolySpace):
 class LegendreSimplexPolySpace(LegendrePolySpace):
     name = "legendre_simplex"
 
+    def __init__(self, name, geometry, order):
+        LegendrePolySpace.__init__(self, name, geometry, order)
+
+        # self.nodes = nm.array([[1, 0], [0, 1]])
+        # self.nts = nm.array([[0, 0], [0, 1]])
+        # self.node_coors = nm.array([[0.], [1.]])
+
+
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
-        # P_i(x) + P_j(y)
+        """
+        expects coors to be in shape (..., dim),
+        returns values of the simplex basis in shape
+            (coors.shape[:-1], n_el_nod)
 
-        return None
+        :param coors:
+        :param diff:
+        :param ori:
+        :param suppress_errors:
+        :param eps:
+        :return:
+        """
+        porder = self.order + 1
+        polyvals = nm.zeros(coors.shape + (porder,))
+        values = nm.zeros(coors.shape[:-1] + (self.n_nod,))
+        for i in range(self.dim):
+            polyvals[..., i, :] = self.legendreP(coors[..., i])
+
+        sq2 = nm.sqrt(2)
+        # TODO so far only for 1 and 2D
+        for i in range(porder):
+            for j in range(porder - i):
+                m = int(j + porder*i - i/2 * (i - 1))
+                # reduce(mul, [polyvals[..., d, ind] for (d, ind) in zip(range(self.dim), (i, j, k))])
+                values[..., m] = sq2 * polyvals[..., 0, i] * polyvals[..., 1, j]*(1 - coors[..., 1])**2
+
+        return values
 
 
 class LegendreTensorProductPolySpace(LegendrePolySpace):

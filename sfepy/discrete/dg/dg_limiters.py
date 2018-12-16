@@ -9,6 +9,10 @@ def moment_limiter_1D(u):
     :return: limited solution
     """
 
+    # for convenience do not try to limit FV
+    if u.shape[0] == 1:
+        return u
+
     def minmod(a, b, c):
         seq = (nm.sign(a) == nm.sign(b)) & (nm.sign(b) == nm.sign(c))
 
