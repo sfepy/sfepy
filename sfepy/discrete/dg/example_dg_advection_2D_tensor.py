@@ -33,6 +33,7 @@ from my_utils.visualizer import load_vtks, plot1D_DG_sol
 mesh = gen_block_mesh((1., 1.), (10, 10), (0., 0.))
 outfile = "output/mesh/tensor_1D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
+# meshio.write(outfile, mesh)
 
 
 domain = FEDomain('domain', mesh)
@@ -40,10 +41,12 @@ omega = domain.create_region('Omega', 'all')
 
 approx_order = 1
 
+fefield = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
+
 
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
-u = FieldVariable('u', 'unknown', field, history=1)
-v = FieldVariable('v', 'test', field, primary_var_name='u')
+dgu = FieldVariable('u', 'unknown', field, history=1)
+dgv = FieldVariable('v', 'test', field, primary_var_name='u')
 

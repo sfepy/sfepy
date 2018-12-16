@@ -2,7 +2,6 @@ import numpy as nm
 
 from numpy import newaxis as nax
 
-
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
 
@@ -38,8 +37,6 @@ class LegendrePolySpace(PolySpace):
         :param order:
         :param init_context: not used!
         """
-        # TODO how is PolySpace supposed to look and work?
-        # FIXME - complete LegendrePolySpace
 
         PolySpace.__init__(self, name, geometry, order)
 
@@ -49,12 +46,12 @@ class LegendrePolySpace(PolySpace):
                          reduce(mul, range(1, self.dim+1)))  # number of DOFs per element
 
 
-    funs = [lambda x: 1,
-            lambda x: x,
-            lambda x: (3*x**2 - 1)/2,
-            lambda x: (5*x**3 - 3*x)/2,
-            lambda x: (35*x**4 - 30*x**2 + 3)/8,
-            lambda x: (63*x**5 - 70*x**3 + 15*x)/8
+    funs = [lambda x: x - x + 1,
+            lambda x: 2*x - 1,
+            lambda x: (6*x**2 - 6*x + 1),
+            lambda x: (20*x**3 - 30*x**2 + 12*x - 1),
+            lambda x: (70*x**4 - 140*x**3 + 90*x**2 - 20*x + 1),
+            lambda x: (252*x**5 - 630*x**4 + 560*x**3 - 210*x**2 + 30*x -1)
             ]
 
     def legendreP(self, coors):
@@ -78,6 +75,30 @@ class LegendrePolySpace(PolySpace):
             values[..., i] = self.get_nth_fun(i)(coors)
 
         return values
+
+    def gradlegendreP(self, coors, d=1):
+        """
+               :param coors: coordinates, preferably in interval [0, 1] for which this basisi is intented
+               :return: values in coors of all the legendre polynomials up to self.order
+               """
+        if isinstance(coors, (int, float)):
+            sh = (1,)
+        else:
+            sh = nm.shape(coors)
+
+        values = nm.zeros(sh + (self.order + 1,))
+
+        if self.order == 0:
+            return values
+
+        values[..., 1] = 2
+        for i in range(2, self.order + 1):
+            # values[..., i] = ((2*i + 1) * coors * values[..., i-1] - i * values[..., i-2]) / (i + 1)
+            # FIXME transform recursive formula for derivatives too
+            values[..., i] = self.get_nth_fun_der(i, d)(coors)
+        return values
+
+
 
     def jacobiP(self, coors, alpha, beta):
         """
@@ -137,20 +158,38 @@ class LegendrePolySpace(PolySpace):
         """
 
         if n < 6:
-            return lambda x: self.funs[n](2*x - 1)
+            return self.funs[n]
         else:
-            from scipy.misc import comb as comb
+            from scipy.special import comb as comb
 
             def fun(x):
                 val = 0
-                for k in range(n):
-                    val = val + comb(n, k) * comb(n + k, k) * (((2*x-1)-1)/2.)**k
+                for k in range(n+1):
+                    val = val + comb(n, k) * comb(n + k, k) * (-x)**k
+                val *= -1 if n % 2 else 1
+                return val
 
             return fun
 
+    def get_nth_fun_der(self, n, l=1):
+        """
+        Returns lth derivative of nth function
+        :param n:
+        :param l:
+        :return:
+        """
+        def dfun(x):
+            from scipy.special import comb as comb, factorial
+            val = x * 0
+            for k in range(l, n + 1):
+                val += comb(n, k) * comb(n + k, k) * factorial(k) / factorial(k - l) * (-x) ** (k - l)
+            val *= -1 if (n - l) % 2 else 1
+            return val
+        return dfun
 
-class LegendreSimplexPolySpace(LegendrePolySpace):
-    name = "legendre_simplex"
+
+class LegendreTensorProductPolySpace(LegendrePolySpace):
+    name = "legendre_tensor_product"
 
     def __init__(self, name, geometry, order):
         LegendrePolySpace.__init__(self, name, geometry, order)
@@ -159,13 +198,12 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
         # self.nts = nm.array([[0, 0], [0, 1]])
         # self.node_coors = nm.array([[0.], [1.]])
 
-
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
         """
         expects coors to be in shape (..., dim),
         returns values of the simplex basis in shape
-            (coors.shape[:-1], n_el_nod)
+            (coors.shape[:-1], dim, n_el_nod)
 
         :param coors:
         :param diff:
@@ -175,34 +213,107 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
         :return:
         """
         porder = self.order + 1
-        polyvals = nm.zeros(coors.shape + (porder,))
-        values = nm.zeros(coors.shape[:-1] + (self.n_nod,))
-        for i in range(self.dim):
-            polyvals[..., i, :] = self.legendreP(coors[..., i])
+        if diff:
+            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim, self.n_nod))  # number of values of derivative is equal to dimension
+            polyvals = nm.zeros(coors.shape + (porder, 2))  # 2 is derivative order plus 1, so far we support only first derivative
+            polyvals[..., 0] = self.legendreP(coors)
+            polyvals[..., 1] = self.gradlegendreP(coors)
 
-        sq2 = nm.sqrt(2)
-        # TODO so far only for 1 and 2D
-        for i in range(porder):
-            for j in range(porder - i):
-                m = int(j + porder*i - i/2 * (i - 1))
-                # reduce(mul, [polyvals[..., d, ind] for (d, ind) in zip(range(self.dim), (i, j, k))])
-                values[..., m] = sq2 * polyvals[..., 0, i] * polyvals[..., 1, j]*(1 - coors[..., 1])**2
+            for m, idx in enumerate(self.iter_by_order(self.order, self.dim)):
+                for d in range(self.dim):
+                    values[..., d, m] = self.get_polyvals_derprod(polyvals, d, idx)
+
+        else:
+            values = nm.zeros(coors.shape[:-1] + (1, self.n_nod,))  # 1, because no matter the dimension functions have only one value
+            polyvals = self.legendreP(coors)
+            for m, idx in enumerate(self.iter_by_order(self.order, self.dim)):
+                values[..., 0, m] = self.get_polyvals_prod(polyvals, idx)
 
         return values
 
+    def iter_by_order(self, order, dim):
+        """
+        Iterates over all combinations of basis functions indexes
+        needed to create multidimensional basis.
+        :param order: desired order of multidimensional basis
+        :param dim: dimension of the basis
+        :yields: tuple containing indexes, use in get_polyval_prod
+        :return: None
+        """
 
-class LegendreTensorProductPolySpace(LegendrePolySpace):
-    name = "legendre_tensor_product"
+        # nth(iter(map(lambda x: x + (order - reduce(add,x),)), range(order)), dim)
+        # nth(dim, iterate(map(lambda x: x + (order - reduce(add,x),)), map(tuple, range(order))))
+        # nth(2, iterate(map(lambda x: x + (order - reduce(add,x),)), map(lambda x: (x,), range(order))))
+        porder = order + 1
+        if dim == 1:
+            for i in range(porder):
+                yield((i,))
+            return
+        elif dim == 2:
+            for i in range(porder):
+                for j in range(porder - i):
+                    m = int(j + porder * i - i / 2 * (i - 1))
+                    yield((i, j))
+            return
+        elif dim == 3:
+            for i in range(porder):
+                for j in range(porder - i):
+                    for k in range(porder - i - j):
+                        m = int(1 + ((11 + 12*porder + 3*porder**2)*i)/6 + ((2*porder + 3)*j)/2
+                                + k - (2 + porder)*i**2/2 - i*j - j**2/2 + i**3/6)
+                        yield((i, j, k))
+            return
+
+    def get_polyvals_prod(self, polyvals, idx):
+        return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
+
+    def get_polyvals_derprod(self, polyvals, der, idx):
+        dimz = range(len(idx))
+        derz = nm.zeros(len(idx), dtype=nm.int32)
+        derz[der] = 1
+        return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+
+
+class LegendreSimplexPolySpace(LegendrePolySpace):
+    name = "legendre_simplex"
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
-
-        # P_i(x) * P_j(y)
-
-        return None
+        # TODO use from tensor product polyspace with something like simplex tail
+        return
 
 
-if __name__ == '__main__':
+def plot_tensor_basis():
+
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+
+
+
+    # Make data.
+    X = nm.arange(0, 1, 0.025)
+    Y = nm.arange(0, 1, 0.025)
+    coors = nm.array(nm.meshgrid(X, Y)).T
+
+    geometry = Struct(n_vertex=4,
+                      dim=2,
+                      coors=coors)
+
+    order = 2
+    bs = LegendreTensorProductPolySpace('legb', geometry, order)
+    Z = bs.eval_base(coors, diff=False)
+
+    for i, idx in enumerate(bs.iter_by_order(order, 2)):
+        fig = plt.figure("{}>{}".format(i, idx))
+        ax = fig.gca(projection='3d')
+        surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
+                               linewidth=0, antialiased=False)
+    plt.show()
+
+
+def plot_1D_basis():
     from matplotlib import pylab as plt
 
     coors = nm.linspace(0, 1)[:, nax]
@@ -213,20 +324,26 @@ if __name__ == '__main__':
     # bs = CanonicalPolySPace('primb', geometry, 5)
     # vals = bs.eval_base(coors)
 
-    bs = LegendrePolySpace('legb', geometry, 4)
-    Legvals = bs.eval_base(coors)
+    bs = LegendreTensorProductPolySpace('legb', geometry, 3)
+    Legvals = bs.eval_base(coors, diff=False)
 
     # plt.figure("Primitive polyspace")
     # plt.plot(nm.linspace(-1, 1), vals[: ,: ,0])
 
     plt.figure("Legendre polyspace")
     plt.plot(coors, Legvals[:, 0, :])
-    plt.plot(coors, bs.get_nth_fun(2)(coors), "--")
-    plt.plot(coors, bs.get_nth_fun(3)(coors), "--")
-    plt.plot(coors, bs.get_nth_fun(4)(coors), "--")
-    plt.plot([0, 1], [0, 0], 'k')
+
+    # plt.plot(coors, bs.get_nth_fun(2)(coors))
+    # plt.plot(coors, bs.get_nth_fun_der(2)(coors), "--")
+    # plt.plot(coors, bs.get_nth_fun_der(2, 2)(coors), "--")
+    # plt.plot(coors, bs.get_nth_fun_der(2, 3)(coors), "--")
+    # plt.plot([0, 1], [0, 0], 'k')
 
     plt.show()
     # geometry = Struct(n_vertex = 2,
     #              dim = 1,
     #              coors = self.bbox[:,0:1].copy())
+
+
+if __name__ == '__main__':
+    plot_tensor_basis()
