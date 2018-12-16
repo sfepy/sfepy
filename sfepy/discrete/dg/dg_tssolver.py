@@ -257,7 +257,6 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
         return vec
 
     def solve_step(self, ts, nls, vec, prestep_fun=None):
-        # TODO what could prestep_fun be used for in nls call?
         return nls(vec, ts=ts)
 
     def output_step_info(self, ts):
@@ -432,7 +431,7 @@ class RK3StepSolver(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         ls_status = {}
 
-        # TODO add pre-stage hook
+        # TODO add pre-stage hook?
         # ----1st stage----
         vec_x = vec_x0.copy()
 

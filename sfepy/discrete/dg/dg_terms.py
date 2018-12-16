@@ -63,14 +63,13 @@ class AdvVolDGTerm(Term):
     def function(self, out, u, mtx_mode, n_el_nod):
         vols = self.region.domain.cmesh.get_volumes(1)[:, None]
         if mtx_mode:
-            # TODO which dimension do we really want?
-
             # integral over element with constant test
             # function is just volume of the element
             out[:] = 0.0
             # out[:, 0, 0, 0] = vols
             # out[:, 0, 1, 1] = vols / 3.0
             for i in range(n_el_nod):
+                # these are values for legendre basis in 1D!
                 out[:, :, i, i] = vols / (2.0 * i + 1.0)
         else:
             out[:] = 0.0
@@ -111,7 +110,7 @@ class AdvFluxDGTerm(Term):
         else:
             doeval = True
 
-            u = unravel_sol(state) # TODO we unravel twice, refactor
+            u = unravel_sol(state)  # TODO we unravel twice, refactor
             n_el_nod = state.field.poly_space.n_nod
             nb_dofs, nb_normals = state.field.get_nbrhd_dofs(state.field.region, state)
             # state variable has dt in it!

@@ -441,7 +441,7 @@ def reconstruct_legendre_dofs(coors, tn, u):
     cell borders
 
     So far work only for order 1
-    # TODO reconstruct solution on finer mesh to display curvature in higher order
+    # TODO reconstruct solution on finer mesh to display curvature in higher order -> different function
     :param coors: coors of nodes of the mesh
     :param u: vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
     :param tn: number of time steps to reconstruct, if None all steps are reconstructed
