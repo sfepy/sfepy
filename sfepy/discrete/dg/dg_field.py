@@ -241,14 +241,14 @@ class DGField(Field):
         gel = self.gel
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
 
-        nb_dofs = -1 * nm.ones((n_cell,n_el_facets, n_el_nod, 1))
+        nb_dofs = -1 * nm.ones((n_cell, n_el_facets, n_el_nod, 1))
+
         dofs = self.unravel_sol(variable.data[0])
 
         neighbours = self.get_cell_nb_per_facet(region)
         nb_normals = self.get_cell_normals_per_facet(region, neighbours)
 
         ghost_nbrs = nm.where(neighbours < 0)
-
 
         # TODO treat boundary conditions
         if dim == 1:  # periodic boundary conditions in 1D
@@ -299,7 +299,6 @@ class DGField(Field):
 
         return neighbours
 
-
     def get_cell_normals_per_facet(self, region, neighbours):
         n_cell = self.n_cell
         dim = self.dim
@@ -321,7 +320,6 @@ class DGField(Field):
                 normals_out[ic, ifal] = normals[o1 + ifal]
 
         return normals_out
-
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
@@ -496,7 +494,6 @@ class DGField(Field):
         else:
             return self.bf[bf_key], qp.weights
 
-
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
         Compute projection of fun into the basis, alternatevely set DOFs directly to provided
@@ -543,11 +540,11 @@ class DGField(Field):
 
             vals = (rhs_vec / lhs_diag).T
 
-            from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-            import matplotlib.pyplot as plt
-            plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
-            ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
-            plt.plot(xx ,ww[:, 0])
+            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            # import matplotlib.pyplot as plt
+            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
+            # plt.plot(xx ,ww[:, 0])
 
         return nods, vals
 
