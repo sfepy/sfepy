@@ -1,4 +1,5 @@
 import numpy as nm
+from  numpy.linalg import norm
 import matplotlib.pyplot as plt
 
 
@@ -40,13 +41,58 @@ domain = FEDomain('domain', mesh)
 omega = domain.create_region('Omega', 'all')
 
 approx_order = 1
-
-fefield = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
-
-
+# fefield = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
-dgu = FieldVariable('u', 'unknown', field, history=1)
-dgv = FieldVariable('v', 'test', field, primary_var_name='u')
+u = FieldVariable('u', 'unknown', field, history=1)
+v = FieldVariable('v', 'test', field, primary_var_name='u')
 
+velo = nm.array([1., 0.])
+
+t0 = 0
+t1 = 1
+max_velo = nm.max(nm.abs(velo))
+
+dx = nm.min(mesh.cmesh.get_volumes(2))
+dt = dx / norm(velo) * 1/2
+# time_steps_N = int((tf - t0) / dt) * 2
+tn = int(nm.ceil((t1 - t0) / dt))
+dtdx = dt / dx
+print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
+print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
+print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
+
+integral = Integral('i', order=5)
+IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
+
+a = Material('a', val=[velo])
+FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
+
+eq = Equation('balance', IntT + FluxT)
+eqs = Equations([eq])
+
+
+def ic_wrap(x, ic=None):
+    return superic(x[..., 0:1])*superic(x[..., 1:])
+
+
+ic_fun = Function('ic_fun', ic_wrap)
+ics = InitialCondition('ic', omega, {'u.0': ic_fun})
+
+pb = Problem('advection', equations=eqs)
+pb.setup_output(output_dir="./output/" )#, output_format="h5")
+# pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
+pb.set_ics(Conditions([ics]))
+
+state0 = pb.get_initial_state()  # TODO mapping from vec to mesh?
+
+
+ls = ScipyDirect({})
+nls_status = IndexedStruct()
+nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
+
+tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
+                                nls=nls, context=pb, verbose=True)
+pb.set_solver(tss)
+pb.solve()

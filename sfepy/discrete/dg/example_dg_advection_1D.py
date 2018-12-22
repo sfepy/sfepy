@@ -27,8 +27,8 @@ from dg_field import DGField
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
-X1 = 0
-XN = 1
+X1 = 0.
+XN = 1.
 n_nod = 100
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
@@ -60,7 +60,7 @@ right = domain.create_region('Gamma2',
                               'vertices in x == %.10f' % XN,
                               'vertex')
 field = DGField('dgfu', nm.float64, 'scalar', omega,
-                approx_order=approx_order, integral=integral)
+                approx_order=approx_order)
 # field = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
@@ -134,4 +134,4 @@ pb.solve()
 #--------
 lmesh, u = load_vtks("./output/", "domain", tn, order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
-              delay=100, polar=True)
+              delay=100, polar=False)
