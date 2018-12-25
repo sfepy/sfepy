@@ -47,10 +47,10 @@ dt = dx / velo * 1/2
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 
-approx_order = 1
+approx_order = 2
 
 integral = Integral('i', order=5)
-domain = FEDomain('domain', mesh)
+domain = FEDomain('domain_1D', mesh)
 # FEDomain contains default lagrange polyspace in its geometry
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
@@ -86,7 +86,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs)
-pb.setup_output(output_dir="./output/" )#, output_format="h5")
+pb.setup_output(output_dir="./output/", output_format="msh")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
