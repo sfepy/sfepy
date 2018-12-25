@@ -40,21 +40,6 @@ def iter_by_order(order, dim):
         return
 
 
-class CanonicalPolySPace(PolySpace):
-
-    def _eval_base(self, coors, diff=0, ori=None,
-                   suppress_errors=False, eps=1e-15):
-
-        if isinstance(coors, (int, float)):
-            n = 1
-        else:
-            n = len(coors)
-        values = nm.ones((n, self.order + 1, 1))
-        for i in range(1, self.order + 1):
-            values[:, i] = coors * values[:, i-1]
-        return values
-
-
 class LegendrePolySpace(PolySpace):
     """
     Legendre hierarchical polynomials basis, over [0, 1] domain
@@ -341,8 +326,6 @@ def plot_2Dtensor_basis_grad():
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib.pyplot as plt
     from matplotlib import cm
-    from matplotlib.ticker import LinearLocator, FormatStrFormatter
-
 
     gel_coors = nm.array([[0, 0], [0, 1], [1, 1], [0, 1]])
     geometry = Struct(n_vertex=4,
@@ -476,9 +459,6 @@ def plot_1D_basis():
     plt.plot([0, 1], [0, 0], 'k')
 
     plt.show()
-    # geometry = Struct(n_vertex = 2,
-    #              dim = 1,
-    #              coors = self.bbox[:,0:1].copy())
 
 
 if __name__ == '__main__':

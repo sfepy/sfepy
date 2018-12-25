@@ -48,7 +48,7 @@ class DGField(Field):
     def __init__(self, name, dtype, shape, region, space="H1",
         poly_space_base=None,  approx_order=0, integral=None):
         """
-        Creates DG Field, with Legendre poly space and integral corresponding to
+        Creates DGField, with Legendre poly space and integral corresponding to
         approx_order + 1.
         :param name:
         :param dtype:
@@ -72,15 +72,19 @@ class DGField(Field):
         self._setup_connectivity()
         self.n_el_facets = self.dim + 1 if self.gel.is_simplex else 2 ** self.dim
 
-
-        # approximation space
         self.space = space
         self.poly_space_base = poly_space_base
-        # TODO put LegendrePolySpace into table in PolySpace any_from_args, or use only Legendre for DG?
         if poly_space_base is not None:
-            self.poly_space = poly_space_base("H1_dglegendre", self.gel, approx_order)
+            self.poly_space = poly_space_base(self.gel.name + "H1_what?",
+                                              self.gel, approx_order)
+        elif self.gel.name in ["1_2", "2_4", "3_8"]:
+            self.poly_space = LegendreTensorProductPolySpace(self.gel.name + "_H1_dglegendre",
+                                                             self.gel, approx_order)
         else:
-            self.poly_space = LegendreTensorProductPolySpace("1_2_H1_dglegendre", self.gel, approx_order)
+            self.poly_space = LegendreSimplexPolySpace(self.gel.name + "_H1_dglegendre",
+                                                       self.gel, approx_order)
+
+        # TODO put LegendrePolySpace into table in PolySpace any_from_args, or use only Legendre for DG?
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
         # DOFs
@@ -185,7 +189,6 @@ class DGField(Field):
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim)
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
 
-
     def clear_qp_base(self):
         """
         Remove cached quadrature points and base functions.
@@ -193,6 +196,115 @@ class DGField(Field):
         """
         self.qp_coors = {}
         self.bf = {}
+
+    def get_qp(self, key, integral):
+        """
+        Get quadrature points and weights corresponding to the given key
+        and integral. The key is 'v' or 's#', where # is the number of
+        face vertices.
+        """
+        qpkey = (integral.order, key)
+
+        if qpkey not in self.qp_coors:
+            if (key[0] == 's') and not self.is_surface:
+                dim = self.gel.dim - 1
+                n_fp = self.gel.surface_facet.n_vertex
+                geometry = '%d_%d' % (dim, n_fp)
+
+            else:
+                geometry = self.gel.name
+
+            vals, weights = integral.get_qp(geometry)
+            self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
+
+        return self.qp_coors[qpkey]
+
+    def get_base(self, key, derivative, integral, iels=None,
+                 from_geometry=False, base_only=True):
+        """
+        Return values of base functions at quadrature points of given integral
+        :param key: 'v' - volume, 's' - surface
+        :param derivative:
+        :param integral:
+        :param iels:
+        :param from_geometry:
+        :param base_only:
+        :return:
+        """
+        # from FEField
+        qp = integral.get_qp(self.gel.name)
+
+        if from_geometry:
+            ps = self.gel.poly_space
+
+        else:
+            ps = self.poly_space
+
+        _key = key if not from_geometry else 'g' + key
+        bf_key = (integral.order, _key, derivative)
+
+        if bf_key not in self.bf:
+            if (iels is not None) and (self.ori is not None):
+                ori = self.ori[iels]
+
+            else:
+                ori = self.ori
+
+            self.bf[bf_key] = ps.eval_base(qp[0], diff=derivative, ori=ori,
+                                           transform=self.basis_transform)
+
+        if base_only:
+            return self.bf[bf_key]
+        else:
+            return self.bf[bf_key], qp.weights
+
+    def get_data_shape(self, integral, integration='volume', region_name=None):
+        """
+        Returns data shape
+        (n_nod, n_qp, self.gel.dim, self.n_el_nod)
+
+        :param integral: integral used
+        :param integration:
+        :param region_name: not used
+        :return:
+        """
+
+        if integration in ('volume'):
+            # from FEField.get_data_shape()
+            _, weights = integral.get_qp(self.gel.name)
+            n_qp = weights.shape[0]
+
+            data_shape = (self.n_cell, n_qp, self.gel.dim, self.n_el_nod)
+            # econn.shape[1] == n_el_nod i.e. number nod in element
+
+        else:
+            # what bout other integrations? do they make sense for DG?
+            raise NotImplementedError('unsupported integration! (%s)'
+                                      % integration)
+
+        return data_shape
+
+    def get_econn(self, conn_type, region, is_trace=False, integration=None):
+        """
+        getter for econn
+        :param conn_type:
+        :param region:
+        :param is_trace:
+        :param integration: 'volume' is only supported value
+        :return:
+        """
+
+        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
+
+        if ct == 'volume':
+            if region.name == self.region.name:
+                conn = self.econn
+            else:
+                raise ValueError("Bad region for the field")
+        else:
+            raise ValueError('unknown connectivity type! (%s)' % ct)
+
+        return conn
 
     def setup_extra_data(self, geometry, info, is_trace):
         """
@@ -234,6 +346,51 @@ class DGField(Field):
 
         return dofs
 
+    def create_mapping(self, region, integral, integration, return_mapping=True):
+        """
+        Creates and returns mapping
+        :param region:
+        :param integral:
+        :param integration: 'volume' is so far only accepted option
+        :return:
+        """
+        domain = self.domain
+        coors = domain.get_mesh_coors(actual=True)
+        dconn = domain.get_conn()
+        # from FEField
+        if integration == 'volume':
+            qp = self.get_qp('v', integral)
+            # qp = self.integral.get_qp(self.gel.name)
+            iels = region.get_cells()
+
+            geo_ps = self.gel.poly_space
+            ps = self.poly_space
+            bf = self.get_base('v', 0, integral, iels=iels)
+
+            conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
+            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
+            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                     ori=self.ori,
+                                     transform=self.basis_transform)
+
+            out = vg
+        else:
+            raise ValueError('unsupported integration geometry type: %s'
+                             % integration)
+
+        if out is not None:
+            # Store the integral used.
+            out.integral = integral
+            out.qp = qp
+            out.ps = ps
+            # Update base.
+            out.bf[:] = bf
+
+        if return_mapping:
+            out = (out, mapping)
+
+        return out
+
     def get_nbrhd_dofs(self, region, variable):
         n_el_nod = self.n_el_nod
         n_cell = self.n_cell
@@ -258,8 +415,6 @@ class DGField(Field):
         # nb_dofs[ghost_nbrs] = self.boundary_val
 
         return nb_dofs, nb_normals
-
-
 
     def get_cell_nb_per_facet(self, region):
         """
@@ -321,179 +476,6 @@ class DGField(Field):
 
         return normals_out
 
-    def get_data_shape(self, integral, integration='volume', region_name=None):
-        """
-        Returns data shape
-        (n_nod, n_qp, self.gel.dim, self.n_el_nod)
-
-        :param integral: integral used
-        :param integration:
-        :param region_name: not used
-        :return:
-        """
-
-        if integration in ('volume'):
-            # from FEField.get_data_shape()
-            _, weights = integral.get_qp(self.gel.name)
-            n_qp = weights.shape[0]
-
-            data_shape = (self.n_cell, n_qp, self.gel.dim, self.n_el_nod)
-            # econn.shape[1] == n_el_nod i.e. number nod in element
-
-        else:
-            # what bout other integrations? do they make sense for DG?
-            raise NotImplementedError('unsupported integration! (%s)'
-                                      % integration)
-
-        return data_shape
-
-    def get_econn(self, conn_type, region, is_trace=False, integration=None):
-        """
-        getter for econn
-        :param conn_type:
-        :param region:
-        :param is_trace:
-        :param integration: 'volume' is only supported value
-        :return:
-        """
-
-        ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
-
-        if ct == 'volume':
-            if region.name == self.region.name:
-                conn = self.econn
-            else:
-                raise ValueError("Bad region for the field")
-        else:
-            raise ValueError('unknown connectivity type! (%s)' % ct)
-
-        return conn
-
-    def create_output(self, dofs, var_name, dof_names=None,
-                      key=None, extend=True, fill_value=None,
-                      linearization=None):
-        """
-        Convert the DOFs corresponding to the field to a dictionary of
-        output data usable by Mesh.write().
-
-        Puts DOFs into vairables u0 ... un, where n = approx_order and marks them for writing
-        as cell data.
-
-        Parameters
-        ----------
-        dofs : array, shape (n_nod, n_component)
-            The array of DOFs reshaped so that each column corresponds
-            to one component.
-        var_name : str
-            The variable name corresponding to `dofs`.
-        dof_names : tuple of str
-            The names of DOF components.
-        key : str, optional
-            The key to be used in the output dictionary instead of the
-            variable name.
-        extend : bool
-            Extend the DOF values to cover the whole domain.
-        fill_value : float or complex
-           The value used to fill the missing DOF values if `extend` is True.
-        linearization : Struct or None
-            The linearization configuration for higher order approximations.
-
-        Returns
-        -------
-        out : dict
-            The output dictionary.
-        """
-        res = {}
-        for i in range(self.approx_order + 1):
-            res["u{}".format(i)] = Struct(mode="cell",
-                              data=dofs[self.n_cell * i : self.n_cell*(i+1) ,:, None, None])
-        return res
-
-    def create_mapping(self, region, integral, integration, return_mapping=True):
-        """
-        Creates and returns mapping
-        :param region:
-        :param integral:
-        :param integration: 'volume' is so far only accepted option
-        :return:
-        """
-
-        domain = self.domain
-        coors = domain.get_mesh_coors(actual=True)
-        dconn = domain.get_conn()
-        # from FEField
-        if integration == 'volume':
-            # TODO qp = self.get_qp('v', integral)
-            qp = self.integral.get_qp(self.gel.name)
-            iels = region.get_cells()
-
-            geo_ps = self.gel.poly_space
-            ps = self.poly_space
-            bf = self.get_base('v', 0, integral, iels=iels)
-
-            conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
-            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
-            vg = mapping.get_mapping(qp[0], qp[1], poly_space=ps,
-                                     ori=self.ori,
-                                     transform=self.basis_transform)
-
-            out = vg
-        else:
-            raise ValueError('unsupported integration geometry type: %s'
-                             % integration)
-
-        if out is not None:
-            # Store the integral used.
-            out.integral = integral
-            out.qp = qp
-            out.ps = ps
-            # Update base.
-            out.bf[:] = bf
-
-        if return_mapping:
-            out = (out, mapping)
-
-        return out
-
-    def get_base(self, key, derivative, integral, iels=None,
-                 from_geometry=False, base_only=True):
-        """
-        Return values of base functions at quadrature points of given integral
-        :param key: 'v' - volume, 's' - surface
-        :param derivative:
-        :param integral:
-        :param iels:
-        :param from_geometry:
-        :param base_only:
-        :return:
-        """
-        # from FEField
-        qp = integral.get_qp(self.gel.name)
-
-        if from_geometry:
-            ps = self.gel.poly_space
-
-        else:
-            ps = self.poly_space
-
-        _key = key if not from_geometry else 'g' + key
-        bf_key = (integral.order, _key, derivative)
-
-        if bf_key not in self.bf:
-            if (iels is not None) and (self.ori is not None):
-                ori = self.ori[iels]
-
-            else:
-                ori = self.ori
-
-            self.bf[bf_key] = ps.eval_base(qp[0], diff=derivative, ori=ori,
-                                           transform=self.basis_transform)
-
-        if base_only:
-            return self.bf[bf_key]
-        else:
-            return self.bf[bf_key], qp.weights
-
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
         Compute projection of fun into the basis, alternatevely set DOFs directly to provided
@@ -547,6 +529,100 @@ class DGField(Field):
             # plt.plot(xx ,ww[:, 0])
 
         return nods, vals
+
+    def get_nodal_values(self, dofs, region, ref_nodes=None):
+        """
+        Computes nodal representation of the DOFs
+        :param dofs:
+        :param region:
+        :param ref_nodes:
+        :return:
+        """
+        # TODO get basis vals at ref_nodes
+        # TODO put them in matrix
+        # TODO multiply all DOFs by said matrix
+        # TODO return nodal dofs and nodes
+        if ref_nodes is None:
+            ref_nodes = nm.linspace(0, 1, self.approx_order + 1)[:, None]
+            # TODO only remrorary, compute LGL quadrature points
+        base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]
+        dofs = self.unravel_sol(dofs[:, 0])
+
+        def distdot(A, B):
+            """
+            Dot product of two arrays of ndarrays done fast,
+            works element wise for items of the array i. e.
+            for arrays of matrices A = [A1, A2, A3] and B = [B1, B2, B3]
+            returns [A1 @ B1, A2 @ B2, A3 @ B3]
+
+            :param A: list of matrices
+            :param B: list of matrices
+            :return:
+            """
+            # TODO test for rectangular matrices
+            if A.ndim > 2 and B.ndim > 2:
+                rows = [nm.sum(A[:, i, :] * B[:, :, j], 1) for j in nm.arange(B.shape[2]) for i in
+                        nm.arange(A.shape[1])]
+                return nm.transpose(nm.stack(rows, 1).reshape((A.shape[0], A.shape[1], B.shape[2])), (0, 2, 1))
+            elif A.ndim > 2:  # B.shape[2] <= 2
+                rows = [nm.sum(A[:, i, :] * B, 1) for i in nm.arange(A.shape[1])]
+            elif B.ndim > 2:  # i. e. B is matrix A is vector
+                rows = [nm.sum(A * B[:, :, i], 1) for i in nm.arange(B.shape[2])]
+            else:  # both are vectors
+                rows = nm.sum(A * B, 1)
+                return rows[:, None]  # don!t stack - result is array of scalaras
+
+            return nm.stack(rows, 1)
+
+        nodal_vals = nm.sum(dofs * base_vals_node, axis=1)
+        nodes = self.mapping.get_physical_qps(ref_nodes)
+
+        import matplotlib.pyplot as plt
+        plt.plot(nodes[:, 0], nodal_vals)
+        plt.show()
+
+        return nodes, nodal_vals
+
+    def create_output(self, dofs, var_name, dof_names=None,
+                      key=None, extend=True, fill_value=None,
+                      linearization=None):
+        """
+        Convert the DOFs corresponding to the field to a dictionary of
+        output data usable by Mesh.write().
+
+        Puts DOFs into vairables u0 ... un, where n = approx_order and marks them for writing
+        as cell data.
+
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        var_name : str
+            The variable name corresponding to `dofs`.
+        dof_names : tuple of str
+            The names of DOF components.
+        key : str, optional
+            The key to be used in the output dictionary instead of the
+            variable name.
+        extend : bool
+            Extend the DOF values to cover the whole domain.
+        fill_value : float or complex
+           The value used to fill the missing DOF values if `extend` is True.
+        linearization : Struct or None
+            The linearization configuration for higher order approximations.
+
+        Returns
+        -------
+        out : dict
+            The output dictionary.
+        """
+        # self.get_nodal_values(dofs, None, None)
+        res = {}
+        for i in range(self.n_el_nod):
+            res["u{}".format(i)] = Struct(mode="cell",
+                              data=dofs[self.n_cell * i: self.n_cell*(i+1), :, None, None])
+        return res
 
 
 if __name__ == '__main__':
