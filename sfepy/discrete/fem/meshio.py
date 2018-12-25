@@ -54,7 +54,7 @@ supported_capabilities = {
     'gambit' : ['r', 'rn'],
     'med' : ['r'],
     'ansys_cdb' : ['r'],
-    'msh_v2' : ['r'],
+    'msh_v2' : ['r', 'w'],
 }
 
 supported_cell_types = {
@@ -2862,6 +2862,21 @@ class Msh2MeshIO(MeshIO):
                           conns0, mat_ids0, descs0)
 
         return mesh
+
+    def write(self, filename, mesh, out=None, ts=None, **kwargs):
+        """
+
+        :param filename: path to file
+        :param mesh: computational mesh
+        :param out: data on the computational mesh
+        :param ts: time step?
+        :param kwargs:
+        :return:
+        """
+        fd = open(filename, 'w')
+
+        return
+
 
 def guess_format(filename, ext, formats, io_table):
     """
