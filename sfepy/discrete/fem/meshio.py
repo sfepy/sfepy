@@ -2712,6 +2712,9 @@ class ANSYSCDBMeshIO(MeshIO):
 
         return mesh
 
+
+
+
 class Msh2MeshIO(MeshIO):
     format = 'msh_v2'
 
@@ -2723,7 +2726,20 @@ class Msh2MeshIO(MeshIO):
         5: (3, 8),
         6: (3, 6),
     }
+
+    geo2msh_type = {
+        "1_2" : 1, # ? but we will probably not need this
+        "2_3" : 2,
+        "2_4" : 3,
+        "3_4" : 4,
+        "3_8" : 5
+    }
     prism2hexa = nm.asarray([0, 1, 2, 2, 3, 4, 5, 5])
+
+    msh20header = ["$MeshFormat\n",
+                   "2.0 0 8\n"
+                   "$EndMeshFormat\n"]
+
 
     def read_dimension(self, ret_fd=True):
         fd = open(self.filename, 'r')
@@ -2873,10 +2889,73 @@ class Msh2MeshIO(MeshIO):
         :param kwargs:
         :return:
         """
+        def write_mesh(fd, mesh):
+            """
+
+            :param fd: file opened for writing
+            :param mesh: mehs to write
+            :return:
+            """
+
+
+            coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+            dim = mesh.dim
+
+            fd.write("$Nodes\n")
+            fd.write(str(mesh.n_nod) + "\n")
+            s = "{}" + dim*" {:.3f}" + (3 - dim)*" 0.0" + "\n"
+            for i, node in enumerate(coors):
+                fd.write(s.format(i, *node))
+            fd.write("$EndNodes\n")
+
+            fd.write("$Elements\n")
+            fd.write(str(sum( len(conn) for conn in conns)) + "\n")# sum elements acrcoss all conns
+            for desc, conn in zip(descs, conns):
+                _, n_el_verts = [int(f) for f in desc.split("_")]
+                el_type = self.geo2msh_type[desc]
+                s = "{} {} 2 0 0" + n_el_verts * " {}" + "\n"
+                for i, element in enumerate(conn):
+                    fd.write(s.format(i, el_type, *element))
+            fd.write("$EndElements\n")
+
+        def write_data(fd, out, ts):
+            # write elemnts data
+            datas = [st.data for st in out.values() if st.mode == "cell"]
+            datas = nm.hstack(datas)[:, :, 0, 0]
+            n_el_nod = nm.shape(datas)[1]
+            fd.write("$ElementNodeData\n")
+            fd.write("1\n")
+            fd.write("u")
+            if ts is not None:
+                fd.write("1")
+                fd.write(str(ts.time))
+            else:
+                fd.write("0")
+            fd.write("1")
+            fd.write("1")
+            fd.write("0\n")
+            s = "{} {}" + n_el_nod * " {}" + "\n"
+            for i, el_node_vals in enumerate(datas):
+                fd.write(s.format(i, n_el_nod,*el_node_vals))
+            fd.write("$EndElementNodeData\n")
+
+            fd.write("$InterpolationScheme")
+            "name"
+            #number - of - element - topologies
+            #elm - topology
+            #number - of - interpolation - matrices
+            #num - rows
+            #num - columns
+            #value ...
+            # ...
+            fd.write("$EndInterpolationScheme")
+
         fd = open(filename, 'w')
-
+        fd.writelines(self.msh20header)  # size of double
+        write_mesh(fd, mesh)
+        write_data(fd, out, ts)
+        fd.close()
         return
-
 
 def guess_format(filename, ext, formats, io_table):
     """
