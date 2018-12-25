@@ -31,13 +31,13 @@ from dg_field import DGField
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
-mesh = gen_block_mesh((1., 1.), (10, 10), (0., 0.))
-outfile = "output/mesh/tensor_1D_mesh.vtk"
+mesh = gen_block_mesh((1., 1.), (100, 100), (0.5, 0.5))
+outfile = "output/mesh/tensor_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
-# meshio.write(outfile, mesh)
+meshio.write(outfile, mesh)
 
 
-domain = FEDomain('domain', mesh)
+domain = FEDomain('domain_tensor_2D', mesh)
 omega = domain.create_region('Omega', 'all')
 
 approx_order = 1
@@ -74,25 +74,46 @@ eqs = Equations([eq])
 
 
 def ic_wrap(x, ic=None):
-    return superic(x[..., 0:1])*superic(x[..., 1:])
+    return gsmooth(x[..., 0:1])*gsmooth(x[..., 1:])
+
+
+X = nm.arange(0, 1, 0.005)
+Y = nm.arange(0, 1, 0.005)
+X, Y = nm.meshgrid(X, Y)
+coors = nm.dstack((X[:, :, None], Y[:, :, None]))
+
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
+fig = plt.figure()
+ax = fig.gca(projection='3d')
+Z = ic_wrap(coors)
+surf = ax.plot_surface(X, Y, Z[:, :, 0], cmap=cm.coolwarm,
+                       linewidth=0, antialiased=False, alpha=.6)
+
+fig = plt.figure()
+ax = fig.gca()
+ax.contour(X, Y, Z[..., 0])
+plt.show()
 
 
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs)
-pb.setup_output(output_dir="./output/" )#, output_format="h5")
+pb.setup_output(output_dir="./output/", output_format="h5")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
-state0 = pb.get_initial_state()  # TODO mapping from vec to mesh?
-
+state0 = pb.get_initial_state()
+pb.save_state("output/state0_tensor_2D.vtk", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
 nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 
-tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
+tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
-pb.solve()
+# pb.solve()
