@@ -1,6 +1,10 @@
 News
 ====
 
+* **27.12.2018** Version 2018.4 released (better support for eigenvalue
+  problems, improved MUMPS solver interface, support for logging and plotting
+  of complex values, etc.), see :ref:`release notes <2018.3-2018.4>`.
+
 * **17.09.2018** Version 2018.3 released (easier setting of values of
   variables, new script for outline edge extraction, new example:
   homogenization of a piezoelectric heterogeneous structure, etc.), see
@@ -22,11 +26,5 @@ News
   contacts, support for user-defined contexts in all solvers and
   preconditioners, new example: dispersion analysis of heterogeneous periodic
   materials, etc.), see :ref:`release notes <2017.3-2017.4>`.
-
-* **19.09.2017** Version 2017.3 released (support preconditioning in SciPy and
-  PyAMG based linear solvers, user-defined preconditioners for PETSc linear
-  solvers, parallel multiscale (macro-micro) homogenization-based computations,
-  improved tutorial and installation instructions, etc.), see :ref:`release
-  notes <2017.2-2017.3>`.
 
 For historians: see :ref:`archived_news`.
