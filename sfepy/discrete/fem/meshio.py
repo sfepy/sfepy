@@ -54,7 +54,7 @@ supported_capabilities = {
     'gambit' : ['r', 'rn'],
     'med' : ['r'],
     'ansys_cdb' : ['r'],
-    'msh_v2' : ['r'],
+    'msh_v2' : ['r', 'w'],
 }
 
 supported_cell_types = {
@@ -2711,6 +2711,9 @@ class ANSYSCDBMeshIO(MeshIO):
 
         return mesh
 
+
+
+
 class Msh2MeshIO(MeshIO):
     format = 'msh_v2'
 
@@ -2722,7 +2725,20 @@ class Msh2MeshIO(MeshIO):
         5: (3, 8),
         6: (3, 6),
     }
+
+    geo2msh_type = {
+        "1_2" : 1, # ? but we will probably not need this
+        "2_3" : 2,
+        "2_4" : 3,
+        "3_4" : 4,
+        "3_8" : 5
+    }
     prism2hexa = nm.asarray([0, 1, 2, 2, 3, 4, 5, 5])
+
+    msh20header = ["$MeshFormat\n",
+                   "2.0 0 8\n"
+                   "$EndMeshFormat\n"]
+
 
     def read_dimension(self, ret_fd=True):
         fd = open(self.filename, 'r')
@@ -2861,6 +2877,79 @@ class Msh2MeshIO(MeshIO):
                           conns0, mat_ids0, descs0)
 
         return mesh
+
+    def write(self, filename, mesh, out=None, ts=None, **kwargs):
+        """
+
+        :param filename: path to file
+        :param mesh: computational mesh
+        :param out: data on the computational mesh
+        :param ts: time step?
+        :param kwargs:
+        :return:
+        """
+        def write_mesh(fd, mesh):
+            """
+            write mesh into opened file fd
+            :param fd: file opened for writing
+            :param mesh: mesh to write
+            :return:
+            """
+            coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+            dim = mesh.dim
+
+            fd.write("$Nodes\n")
+            fd.write(str(mesh.n_nod) + "\n")
+            s = "{}" + dim*" {:.3f}" + (3 - dim)*" 0.0" + "\n"
+            for i, node in enumerate(coors):
+                fd.write(s.format(i, *node))
+            fd.write("$EndNodes\n")
+
+            fd.write("$Elements\n")
+            fd.write(str(sum( len(conn) for conn in conns)) + "\n")  # sum number ofelements acrcoss all conns
+            for desc, conn in zip(descs, conns):
+                _, n_el_verts = [int(f) for f in desc.split("_")]
+                el_type = self.geo2msh_type[desc]
+                s = "{} {} 2 0 0" + n_el_verts * " {}" + "\n"
+                for i, element in enumerate(conn):
+                    fd.write(s.format(i, el_type, *element))
+            fd.write("$EndElements\n")
+
+        def write_elementnodedata(fd, out, ts):
+            """
+            Writes cell_nodes data as $ElementNodeData
+            :param fd:
+            :param out:
+            :param ts:
+            :return:
+            """
+            # write elements data
+            datas = [st.data for st in out.values() if st.mode == "cell_nodes"]
+            for key, value in out.items():
+                if not value.mode == "cell_nodes":
+                    continue
+                data = value.data
+                n_el_nod = nm.shape(data)[1]
+                fd.write("$ElementNodeData\n")
+                fd.write("1\n")
+                fd.write('"{}"\n'.format(key))  # name
+                fd.write("1\n") # number of real tags
+                fd.write("{}\n".format(ts.time if ts is not None else 0.0))
+                fd.write("3\n") # number of intiger tags
+                fd.write("{}\n".format(ts.step if ts is not None else 0))
+                fd.write("1\n") # number of components
+                fd.write("{}\n".format(data.shape[0]))
+                s = "{} {}" + n_el_nod * " {}" + "\n"
+                for i, el_node_vals in enumerate(data):
+                    fd.write(s.format(i, n_el_nod,*el_node_vals))
+                fd.write("$EndElementNodeData\n")
+
+        fd = open(filename, 'w')
+        fd.writelines(self.msh20header)
+        write_mesh(fd, mesh)
+        write_elementnodedata(fd, out, ts)
+        fd.close()
+        return
 
 def guess_format(filename, ext, formats, io_table):
     """
