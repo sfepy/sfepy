@@ -95,7 +95,7 @@ class DGField(Field):
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
 
-        # boundary DOFS TODO temporary
+        # boundary DOFS TODO temporary - resolve BC treatement
         self.boundary_val = 0.0
 
         # integral
@@ -503,22 +503,23 @@ class DGField(Field):
         elif callable(fun):
 
             qp, weights = self.integral.get_qp(self.gel.name)
-            weights = weights.reshape(nm.shape(weights) + tuple(nm.ones(nm.ndim(qp), dtype=nm.int32))) # reshape weights to match qp
+            weights = weights[:, None] # add axis for broadcasting
             coors = self.mapping.get_physical_qps(qp)
 
             # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
-            base_vals_qp = self.poly_space.eval_base(qp)
+            base_vals_qp = self.poly_space.eval_base(qp)[:, 0,:]
+            # this drops redundant axis that is returned by eval_base due to consistency with derivatives
             # base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
             # left hand, so far only orthogonal basis
             lhs_diag = nm.sum(weights * base_vals_qp**2, axis=0)
-            # for legendre base it is exactly: 1 / (2 * nm.arange(self.n_el_nod) + 1)
+            # for legendre base this can be calculated exactly
+            # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
 
-            # right hand TODO this is hot fix, check this in 2D and 3D case
-            rhs_vec = nm.sum((weights * base_vals_qp)[:, 0, :] * fun(coors), axis=1)
+            rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
 
             vals = (rhs_vec / lhs_diag).T
 
@@ -564,6 +565,8 @@ class DGField(Field):
         Puts DOFs into vairables u0 ... un, where n = approx_order and marks them for writing
         as cell data.
 
+        Also get node values and adds them to dictionary as cell_nodes
+
         Parameters
         ----------
         dofs : array, shape (n_nod, n_component)
@@ -588,12 +591,12 @@ class DGField(Field):
         out : dict
             The output dictionary.
         """
-        cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
-                                                       #ref_nodes=nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64))
         res = {}
         for i in range(self.n_el_nod):
             res["u_modal{}".format(i)] = Struct(mode="cell",
                               data=dofs[self.n_cell * i: self.n_cell*(i+1), :, None, None])
+
+        cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
 

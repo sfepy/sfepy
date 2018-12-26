@@ -75,7 +75,7 @@ class AdvVolDGTerm(Term):
             out[:] = 0.0
             for i in range(n_el_nod):
                 out[:, :, i, 0] = vols / (2.0 * i + 1.0) * u[:, i]
-                # TODO does this hold for higher orders? -  seems like it does...
+                # TODO does this hold for higher orders and dimensions?! -  seems like it does...
         status = None
         return status
 
