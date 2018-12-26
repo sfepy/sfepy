@@ -2890,13 +2890,11 @@ class Msh2MeshIO(MeshIO):
         """
         def write_mesh(fd, mesh):
             """
-
+            write mesh into opened file fd
             :param fd: file opened for writing
-            :param mesh: mehs to write
+            :param mesh: mesh to write
             :return:
             """
-
-
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
             dim = mesh.dim
 
@@ -2908,7 +2906,7 @@ class Msh2MeshIO(MeshIO):
             fd.write("$EndNodes\n")
 
             fd.write("$Elements\n")
-            fd.write(str(sum( len(conn) for conn in conns)) + "\n")# sum elements acrcoss all conns
+            fd.write(str(sum( len(conn) for conn in conns)) + "\n")  # sum number ofelements acrcoss all conns
             for desc, conn in zip(descs, conns):
                 _, n_el_verts = [int(f) for f in desc.split("_")]
                 el_type = self.geo2msh_type[desc]
@@ -2917,42 +2915,39 @@ class Msh2MeshIO(MeshIO):
                     fd.write(s.format(i, el_type, *element))
             fd.write("$EndElements\n")
 
-        def write_data(fd, out, ts):
-            # write elemnts data
-            datas = [st.data for st in out.values() if st.mode == "cell"]
-            datas = nm.hstack(datas)[:, :, 0, 0]
-            n_el_nod = nm.shape(datas)[1]
-            fd.write("$ElementNodeData\n")
-            fd.write("1\n")
-            fd.write("u")
-            if ts is not None:
-                fd.write("1")
-                fd.write(str(ts.time))
-            else:
-                fd.write("0")
-            fd.write("1")
-            fd.write("1")
-            fd.write("0\n")
-            s = "{} {}" + n_el_nod * " {}" + "\n"
-            for i, el_node_vals in enumerate(datas):
-                fd.write(s.format(i, n_el_nod,*el_node_vals))
-            fd.write("$EndElementNodeData\n")
-
-            fd.write("$InterpolationScheme")
-            "name"
-            #number - of - element - topologies
-            #elm - topology
-            #number - of - interpolation - matrices
-            #num - rows
-            #num - columns
-            #value ...
-            # ...
-            fd.write("$EndInterpolationScheme")
+        def write_elementnodedata(fd, out, ts):
+            """
+            Writes cell_nodes data as $ElementNodeData
+            :param fd:
+            :param out:
+            :param ts:
+            :return:
+            """
+            # write elements data
+            datas = [st.data for st in out.values() if st.mode == "cell_nodes"]
+            for key, value in out.items():
+                if not value.mode == "cell_nodes":
+                    continue
+                data = value.data
+                n_el_nod = nm.shape(data)[1]
+                fd.write("$ElementNodeData\n")
+                fd.write("1\n")
+                fd.write('"{}"\n'.format(key))  # name
+                fd.write("1\n") # number of real tags
+                fd.write("{}\n".format(ts.time if ts is not None else 0.0))
+                fd.write("3\n") # number of intiger tags
+                fd.write("{}\n".format(ts.step if ts is not None else 0))
+                fd.write("1\n") # number of components
+                fd.write("{}\n".format(data.shape[0]))
+                s = "{} {}" + n_el_nod * " {}" + "\n"
+                for i, el_node_vals in enumerate(data):
+                    fd.write(s.format(i, n_el_nod,*el_node_vals))
+                fd.write("$EndElementNodeData\n")
 
         fd = open(filename, 'w')
-        fd.writelines(self.msh20header)  # size of double
+        fd.writelines(self.msh20header)
         write_mesh(fd, mesh)
-        write_data(fd, out, ts)
+        write_elementnodedata(fd, out, ts)
         fd.close()
         return
 
