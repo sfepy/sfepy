@@ -684,7 +684,12 @@ cdef class CMesh:
         ccf = self.get_conn(td, td - 1)
 
         out = np.empty((ccf.n_incident, self.dim), dtype=np.float64)
-        mesh_get_facet_normals(self.mesh, &out[0, 0], which)
+        if self.dim == 1:
+            # TODO quick fix for normals, relies on nice ordering of 1D mesh
+            # i.e. cell facets are indexed from left to right
+            out = np.tile([-1, 1], ccf.n_incident/2)
+        else:
+            mesh_get_facet_normals(self.mesh, &out[0, 0], which)
 
         return out
 
