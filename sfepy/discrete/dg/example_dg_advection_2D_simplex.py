@@ -42,7 +42,7 @@ omega = domain.create_region('Omega', 'all')
 integral = Integral('i', order=5)
 
 
-approx_order = 1
+approx_order = 3
 
 dgfield = DGField('dgfu', nm.float64, 'scalar', omega,
                   approx_order=approx_order)
@@ -107,7 +107,7 @@ pb.setup_output(output_dir="./output/", output_format="h5")
 pb.set_ics(Conditions([ics]))
 
 state0 = pb.get_initial_state()
-pb.save_state("output/state0_simplex_2D.vtk", state=state0)
+pb.save_state("output/state0_simplex_2D.msh", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()

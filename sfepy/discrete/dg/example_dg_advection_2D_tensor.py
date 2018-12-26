@@ -40,7 +40,7 @@ meshio.write(outfile, mesh)
 domain = FEDomain('domain_tensor_2D', mesh)
 omega = domain.create_region('Omega', 'all')
 
-approx_order = 1
+approx_order = 3
 # fefield = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
@@ -86,16 +86,16 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-Z = ic_wrap(coors)
-surf = ax.plot_surface(X, Y, Z[:, :, 0], cmap=cm.coolwarm,
-                       linewidth=0, antialiased=False, alpha=.6)
-
-fig = plt.figure()
-ax = fig.gca()
-ax.contour(X, Y, Z[..., 0])
-plt.show()
+# fig = plt.figure()
+# ax = fig.gca(projection='3d')
+# Z = ic_wrap(coors)
+# surf = ax.plot_surface(X, Y, Z[:, :, 0], cmap=cm.coolwarm,
+#                        linewidth=0, antialiased=False, alpha=.6)
+#
+# fig = plt.figure()
+# ax = fig.gca()
+# ax.contour(X, Y, Z[..., 0])
+# plt.show()
 
 
 ic_fun = Function('ic_fun', ic_wrap)
@@ -107,7 +107,7 @@ pb.setup_output(output_dir="./output/", output_format="h5")
 pb.set_ics(Conditions([ics]))
 
 state0 = pb.get_initial_state()
-pb.save_state("output/state0_tensor_2D.vtk", state=state0)
+pb.save_state("output/state0_tensor_2D.msh", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()

@@ -109,6 +109,32 @@ class LegendrePolySpace(PolySpace):
     def combine_polyvals_diff(self, coors, polyvals, der, idx):
         raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
+
+    def get_interp_matrices(self):
+        """
+        Let us assume that the approximation of the view's value over an element is written as a linear
+        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
+        list-of-values). Defining
+
+        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
+
+        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
+        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+
+        In the same way, let us also assume that the coordinates x, y and z of the element are obtained
+        through a geometrical mapping from parameter space as a linear combination of m basis functions
+
+        g[i], i=0, ..., m-1 (the coefficients being stored in list-of-coords). Defining
+
+        g[i] = Sum(j=0, ..., m-1) G[i][j]*q[j],
+
+        with q[j] = u^Q[j][0]*v^Q[j][1]*w^Q[j][2], then geo-coef-matrix denotes
+        the m x m matrix G and geo-exp-matrix denotes the m x 3 matrix Q.
+        :return F, P, G, Q
+        """
+        return
+
+
     # --------------------- #
     # 1D legendre polyspace #
     # --------------------- #
@@ -373,7 +399,7 @@ def plot_2Dsimplex_basis_grad():
                       dim=2,
                       coors=gel_coors)
 
-    order = 2
+    order = 3
     bs = LegendreSimplexPolySpace('legb', geometry, order)
 
     def simplex_nodes2D(N):
@@ -381,7 +407,7 @@ def plot_2Dsimplex_basis_grad():
         # Purpose  : Compute (x,y) nodes in equilateral triangle for polynomial of order N
 
         # total number of nodes
-        Np = (N + 1) * (N + 2) / 2
+        Np = int((N + 1) * (N + 2) / 2)
 
         # Create equidistributed nodes on equilateral triangle
         x = nm.zeros((Np,))
