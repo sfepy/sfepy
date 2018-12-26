@@ -1,5 +1,168 @@
 # created: 20.07.2007 (-1)
 
+.. _2018.3-2018.4:
+
+from 2018.3 to 2018.4
+=====================
+
+- merge branch 'fix-viewer-for-mayavi-4.6.2', closes #466
+
+  - fix get_data_ranges() for Mayavi 4.6.2
+  - fix hanging of ClosingHandler.object_button_quit_changed()
+
+- merge pull request #468 from vlukes/mumps_update
+
+  - fix mumps solver and update for mumps library version 5.1.2
+
+- merge pull request #467 from vlukes/update_homog_example
+
+  - update linear_homogenization.py: set option 'is_linear' to True for
+    speed-up
+
+- merge pull request #470 from bubulk/ci-appveyor, closes #469
+
+  - Changed 'version' statement.
+
+- merge pull request #471 from vlukes/coefs_update
+
+  - update coeffficients.py: saving of complex valued coefficients to .txt
+
+- merge pull request #472 from vlukes/fix_splinebox
+
+  - fix scipy FutureWarning warning in scipy.linalg.lstsq()
+
+- merge pull request #473 from vlukes/fix_homperf_example
+
+  - fix the url of the cited paper in
+    examples/homogenization/perfusion_micro.py
+
+- merge pull request #474 from vlukes/new_schur
+
+  - update mumps solver - rename functions: set_b -> set_rhs, set_A_* ->
+    set_mtx_*
+  - new schur_mumps linear solver
+  - remove old Schur linear solver
+  - update mumps wrapper - fix various library versions
+
+- merge pull request #475 from vlukes/update_mumps_sym
+
+  - update mumps: use a symmetric solver if the matrix is symmetric
+
+- merge pull request #480 from vlukes/fix_gallery_link
+
+  - fix links to the gallery
+
+- merge pull request #481 from vlukes/fix_download_page
+
+  - fix downloads counter after HW upgrade
+
+- merge branch 'fix-refmaps-small-cells'
+
+  - fix reference mappings in C for cells with very small volumes - update
+    _v_describe(), dq_finite_strain(), dq_tl_finite_strain_surface()
+
+- merge branch 'dispersion-post-processing'
+
+  - dispersion_analysis.py: support eigenvector post-processing - update
+    save_eigenvectors()
+  - dispersion_analysis.py: new --post-process option - new
+    compute_von_mises(), update define_le()
+  - support complex arrays in output_array_stats()
+  - dispersion_analysis.py: output nonzero stats of matrices
+  - dispersion_analysis.py: new --save-regions option
+
+- merge branch 'example-boundary-fluxes'
+
+  - new meshes/2d/cross-51-0.34.mesh
+  - update poisson_neumann.py example to compute boundary fluxes, change mesh
+
+- merge branch 'example-material-opt-clean-up'
+
+  - remove matplotlib backend selection (Log does not need it anymore)
+  - add a rudimentary docstring to material_opt.py example
+
+- merge pull request #484 from vlukes/fix_mumps
+
+  - fix ls.mumps for symmetric complex valued matrices
+
+- merge branch 'log-complex-values'
+
+  - support str.format() style string formatting in Log - enables logging
+    complex values - update .__init__(), .add_group(), .__call__()
+  - fix default plot_kwargs in Log.add_group()
+  - fix Log.add_group() use in live_plot.py example
+  - use str.format() style format in live_plot.py example
+  - log and plot complex values in live_plot.py example
+  - automatically plot and label real and imaginary parts in LogPlotter - the
+    imaginary part line has alpha reduced to one half of the real part - update
+    Log.plot_data(), LogPlotter.process_command()
+
+- merge pull request #485 from lokik/parse_conf
+
+  - Allow empty dict in dict_from_string
+  - parse_conf grammar improvments
+  - Code cleaning
+
+- merge branch 'evp-solver-app', closes #479
+
+  - new EVPSolverApp, based on SchroedingerApp
+  - simple.py: update for EVPSolverApp
+  - tweak EVPSolverApp output
+  - update examples/quantum/ for EVPSolverApp - new get_exact() in examples -
+    new report_eigs() in quantum_common.py
+  - add usage examples to quantum_common.py example
+  - remove schroedinger.py - quantum examples can be run using simple.py
+  - remove sfepy/physics/ - SchroedingerApp obsoleted by EVPSolverApp
+  - update setup.py files
+  - update sfepy-run
+  - update test_install.py
+  - docs: update for no schroedinger.py and sfepy/physics/
+  - preserve dtype in EVPSolverApp.make_full()
+  - docs: sync module index of developer guide with current sources
+  - add rudimentary docstrings to quantum examples
+  - use short syntax in quantum_common.py, replace eig.pysparse with eig.scipy
+  - docs: update Pysparse description
+  - update solve_pde() for EVPSolverApp, support status arg in
+    EVPSolverApp.call()
+  - new tests/test_input_{boron,hydrogen,oscillator,well}.py
+
+- merge branch 'fix-extend-cell-data'
+
+  - fix extend_cell_data() for complex values
+
+- merge pull request #488 from rc/mumps-parallel-check-main-scope
+
+  - do not execute code in ls_mumps_parallel.py on import - add main scope
+    check
+
+- merge branch 'update-plot-mesh'
+
+  - update text alignment in label_global_entities(), label_local_entities()
+  - script/plot_mesh.py: new --{vertex,edge,face,cell,wireframe}-opts options
+  - script/plot_mesh.py: new --no-axes, --no-show, figname options
+
+- merge pull request #489 from rc/http-to-https
+
+  - docs: http -> https in sfepy-related links
+
+- merge pull request #490 from heczis/update_docstring
+
+  - Update example in the docstring of Problem.create_evaluable
+
+- merge pull request #492 from vlukes/fix_mumps_presolve
+
+  - fix presolve() in  mumps solver
+
+- merge branch 'allow-n-eigs-none'
+
+  - allow unspecified n_eigs in EVPSolverApp.solve_eigen_problem()
+  - update saving complex eigs in EVPSolverApp.save_results() for easier
+    loading
+  - split dense and sparse solvers in ScipyEigenvalueSolver - 'method' can be
+    {'eig', 'eigh', 'eigs', 'eigsh'}, default is 'eigs' - basic support of
+    n_eigs argument for dense problems
+  - update tests and examples for current ScipyEigenvalueSolver
+
 .. _2018.2-2018.3:
 
 from 2018.2 to 2018.3
