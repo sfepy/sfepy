@@ -538,48 +538,19 @@ class DGField(Field):
         :param ref_nodes:
         :return:
         """
-        # TODO get basis vals at ref_nodes
-        # TODO put them in matrix
-        # TODO multiply all DOFs by said matrix
-        # TODO return nodal dofs and nodes
         if ref_nodes is None:
-            ref_nodes = nm.linspace(0, 1, self.approx_order + 1)[:, None]
-            # TODO only remrorary, compute LGL quadrature points
+            # TODO we need exactly as many ref_nodes as we have basis functions, maybe poly_space should provide those
+            ref_nodes = self.get_qp('v', Integral("I", order=self.approx_order + 1)).vals
+            # ref_nodes = nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64)
         base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]
         dofs = self.unravel_sol(dofs[:, 0])
 
-        def distdot(A, B):
-            """
-            Dot product of two arrays of ndarrays done fast,
-            works element wise for items of the array i. e.
-            for arrays of matrices A = [A1, A2, A3] and B = [B1, B2, B3]
-            returns [A1 @ B1, A2 @ B2, A3 @ B3]
-
-            :param A: list of matrices
-            :param B: list of matrices
-            :return:
-            """
-            # TODO test for rectangular matrices
-            if A.ndim > 2 and B.ndim > 2:
-                rows = [nm.sum(A[:, i, :] * B[:, :, j], 1) for j in nm.arange(B.shape[2]) for i in
-                        nm.arange(A.shape[1])]
-                return nm.transpose(nm.stack(rows, 1).reshape((A.shape[0], A.shape[1], B.shape[2])), (0, 2, 1))
-            elif A.ndim > 2:  # B.shape[2] <= 2
-                rows = [nm.sum(A[:, i, :] * B, 1) for i in nm.arange(A.shape[1])]
-            elif B.ndim > 2:  # i. e. B is matrix A is vector
-                rows = [nm.sum(A * B[:, :, i], 1) for i in nm.arange(B.shape[2])]
-            else:  # both are vectors
-                rows = nm.sum(A * B, 1)
-                return rows[:, None]  # don!t stack - result is array of scalaras
-
-            return nm.stack(rows, 1)
-
-        nodal_vals = nm.sum(dofs * base_vals_node, axis=1)
+        nodal_vals = nm.sum(dofs * base_vals_node.T, axis=1)
         nodes = self.mapping.get_physical_qps(ref_nodes)
 
-        import matplotlib.pyplot as plt
-        plt.plot(nodes[:, 0], nodal_vals)
-        plt.show()
+        # import matplotlib.pyplot as plt
+        # plt.plot(nodes[:, 0], nodal_vals)
+        # plt.show()
 
         return nodes, nodal_vals
 
@@ -617,11 +588,13 @@ class DGField(Field):
         out : dict
             The output dictionary.
         """
-        # self.get_nodal_values(dofs, None, None)
+        cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
+                                                       #ref_nodes=nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64))
         res = {}
         for i in range(self.n_el_nod):
-            res["u{}".format(i)] = Struct(mode="cell",
+            res["u_modal{}".format(i)] = Struct(mode="cell",
                               data=dofs[self.n_cell * i: self.n_cell*(i+1), :, None, None])
+        res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
 
 
