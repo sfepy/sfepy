@@ -39,9 +39,9 @@ meshio.write(outfile, mesh)
 
 domain = FEDomain('domain_tensor_2D', mesh)
 omega = domain.create_region('Omega', 'all')
-
-approx_order = 3
-# fefield = Field.from_args('fu', nm.float64, 'scalar', omega, approx_order=approx_order)
+#vvvvvvvvvvvvvvvv#
+approx_order = 1
+#^^^^^^^^^^^^^^^^#
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
