@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **19.09.2017** Version 2017.3 released (support preconditioning in SciPy and
+  PyAMG based linear solvers, user-defined preconditioners for PETSc linear
+  solvers, parallel multiscale (macro-micro) homogenization-based computations,
+  improved tutorial and installation instructions, etc.), see :ref:`release
+  notes <2017.2-2017.3>`.
+
 * **19.05.2017** Version 2017.2 released (simplified and unified implementation
   of some homogenized coefficients, support for saving custom structured data to
   HDF5 files, new tutorial on preparing meshes using FreeCAD/OpenSCAD and Gmsh,
