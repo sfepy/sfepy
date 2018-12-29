@@ -285,7 +285,7 @@ def load_vtks(fold, name, tn, order, tns=None):
         io = VTKMeshIO(pjoin(fold, full_name.format(i)))
         data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
         for ii in range(order + 1):
-            u[ii, :, i, 0] = data['u{}'.format(ii)].data
+            u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
 
     return coors, u
 
