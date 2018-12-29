@@ -132,6 +132,6 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-lmesh, u = load_vtks("./output/", "domain", tn, order=approx_order)
+lmesh, u = load_vtks("./output/", "domain_1D", tn, order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
               delay=100, polar=False)

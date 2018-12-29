@@ -41,8 +41,9 @@ domain = FEDomain('domain_simplex_2D', mesh)
 omega = domain.create_region('Omega', 'all')
 integral = Integral('i', order=5)
 
-
+#vvvvvvvvvvvvvvvv#
 approx_order = 3
+#^^^^^^^^^^^^^^^^#
 
 dgfield = DGField('dgfu', nm.float64, 'scalar', omega,
                   approx_order=approx_order)

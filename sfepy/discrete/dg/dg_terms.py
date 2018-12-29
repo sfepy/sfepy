@@ -106,19 +106,20 @@ class AdvFluxDGTerm(Term):
             # do not eval in matrix mode, we however still need
             # this term to have diff_var in order for it to receive the values
             doeval = False
-            return None, None, None, None, doeval, 0
+            return None, None, None, None, doeval, 0, 0
         else:
             doeval = True
 
             u = unravel_sol(state)  # TODO we unravel twice, refactor
             n_el_nod = state.field.poly_space.n_nod
+            n_el_facets = state.field.n_el_facets
             nb_dofs, nb_normals = state.field.get_nbrhd_dofs(state.field.region, state)
             # state variable has dt in it!
 
-            fargs = (u, nb_dofs, nb_normals, a[:, :1, 0, 0], doeval, n_el_nod)
+            fargs = (u, nb_dofs, nb_normals, a[:, :1, 0, 0], doeval, n_el_nod, n_el_facets)
             return fargs
 
-    def function(self, out, u, nb_u, nb_n, velo, doeval, n_el_nod):
+    def function(self, out, u, nb_u, nb_n, velo, doeval, n_el_nod, n_el_facets):
         if not doeval:
             out[:] = 0.0
             return None
