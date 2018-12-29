@@ -273,6 +273,18 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         derz[der] = 1
         return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
+    def get_interpol_scheme(self):
+        # TODO get true interpolation scheme, this is just mockup
+        interp_scheme_dict = Struct(name=self.name + "_interpol_scheme",
+                                    F=nm.array([[1, 0, 0],
+                                                [0, 1, 0],
+                                                [0, 0, 1]]),
+                                    P=nm.array([[0, 0, 0],
+                                                [1, 0, 0],
+                                                [0, 1, 0]])
+                                    )
+        return interp_scheme_dict
+
 
 class LegendreSimplexPolySpace(LegendrePolySpace):
     name = "legendre_simplex"
@@ -347,6 +359,9 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                    eval_jacobi(idx[1], 2 * idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
 
+    def get_interpol_scheme(self):
+        pass
+
 
 def plot_2Dtensor_basis_grad():
     from mpl_toolkits.mplot3d import Axes3D
@@ -358,7 +373,7 @@ def plot_2Dtensor_basis_grad():
                       dim=2,
                       coors=gel_coors)
 
-    order = 3
+    order = 1
     bs = LegendreTensorProductPolySpace('legb', geometry, order)
 
     # Make data.
@@ -488,6 +503,6 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    # plot_2Dtensor_basis_grad()
-    plot_2Dsimplex_basis_grad()
+    plot_2Dtensor_basis_grad()
+    # plot_2Dsimplex_basis_grad()
     # plot_1D_basis()

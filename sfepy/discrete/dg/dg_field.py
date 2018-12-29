@@ -597,8 +597,13 @@ class DGField(Field):
             res["u_modal{}".format(i)] = Struct(mode="cell",
                               data=dofs[self.n_cell * i: self.n_cell*(i+1), :, None, None])
 
+        unravel = get_unraveler(self.n_el_nod, self.n_cell)
+        res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
+                                           data=unravel(dofs)[..., 0],
+                                           interpolation_scheme=self.poly_space.get_interpol_scheme())
+        # TODO somehow choose output
         cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
-        res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
+        # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
 
 
