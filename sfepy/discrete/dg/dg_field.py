@@ -2,6 +2,7 @@
 Fields for Discontinous Galerkin
 """
 import numpy as nm
+from numpy.lib.stride_tricks import as_strided
 import six
 
 
@@ -22,9 +23,9 @@ from dg_basis import LegendrePolySpace, LegendreSimplexPolySpace, LegendreTensor
 def get_unraveler(n_el_nod, n_cell):
 
     def unravel(u):
-        ur = nm.zeros((n_cell, n_el_nod, 1))
-        for i in range(n_el_nod):
-            ur[:, i] = u[n_cell * i: n_cell * (i + 1), None]
+        ustride1 = u.strides[0]
+        ur = as_strided(u,shape=(n_cell, n_el_nod,1),
+                          strides=(ustride1, ustride1*n_cell, ustride1), writeable=False)
         return ur
 
     return unravel
@@ -33,9 +34,9 @@ def get_unraveler(n_el_nod, n_cell):
 def get_raveler(n_el_nod, n_cell):
 
     def ravel(u):
-        ur = nm.zeros((n_cell * n_el_nod, 1))
-        for i in range(n_el_nod):
-            ur[n_cell * i: n_cell * (i + 1)] = u[:, i]
+        ustride1 = u.strides[-1]
+        ur = as_strided(u, shape=(n_el_nod*n_cell, 1),
+                           strides=(ustride1, ustride1))
         return ur
 
     return ravel
