@@ -536,8 +536,8 @@ class DGField(Field):
         """
         Computes nodal representation of the DOFs
         :param dofs:
-        :param region:
-        :param ref_nodes:
+        :param region: will we use this?
+        :param ref_nodes: defaults to proper set of nodes to get best interpolant properties
         :return:
         """
         if ref_nodes is None:
