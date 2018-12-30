@@ -109,30 +109,8 @@ class LegendrePolySpace(PolySpace):
     def combine_polyvals_diff(self, coors, polyvals, der, idx):
         raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
-
-    def get_interp_matrices(self):
-        """
-        Let us assume that the approximation of the view's value over an element is written as a linear
-        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
-        list-of-values). Defining
-
-        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
-
-        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
-        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
-
-        In the same way, let us also assume that the coordinates x, y and z of the element are obtained
-        through a geometrical mapping from parameter space as a linear combination of m basis functions
-
-        g[i], i=0, ..., m-1 (the coefficients being stored in list-of-coords). Defining
-
-        g[i] = Sum(j=0, ..., m-1) G[i][j]*q[j],
-
-        with q[j] = u^Q[j][0]*v^Q[j][1]*w^Q[j][2], then geo-coef-matrix denotes
-        the m x m matrix G and geo-exp-matrix denotes the m x 3 matrix Q.
-        :return F, P, G, Q
-        """
-        return
+    def get_interpol_scheme(self):
+        raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
 
     # --------------------- #
@@ -274,15 +252,44 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def get_interpol_scheme(self):
-        # TODO get true interpolation scheme, this is just mockup
+        """
+        Builds F and P matrices according to gmsh basis specification:
+
+        Let us assume that the approximation of the view's value over an element is written as a linear
+        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
+        list-of-values). Defining
+
+        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
+
+        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
+        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+
+        :return:
+        """
+
+        from scipy.special import jacobi
+
+        def flattten_upper_left_triag(A):
+            res = []
+            for i, row in enumerate(A):
+                res.append(row[:A.shape[1] - i])
+            return nm.concatenate(res)
+
+        P = nm.zeros((self.n_nod, 3))
+        for m, idx in enumerate(iter_by_order(self.order, 2)):
+            P[m, :self.dim] = idx
+
+        F = nm.zeros((self.n_nod, self.n_nod))
+        for m, idx in enumerate(iter_by_order(self.order, 2)):
+            xcoefs = list(jacobi(idx[0], 0, 0).coef)[::-1]
+            xcoefs = nm.array(xcoefs + [0] * (self.order + 1 - len(xcoefs)))
+            ycoefs = list(jacobi(idx[1], 0, 0).coef)[::-1]
+            ycoefs = nm.array(ycoefs + [0] * (self.order + 1 - len(ycoefs)))
+            coef_mat = nm.outer(ycoefs, xcoefs)
+            F[m, :] = flattten_upper_left_triag(coef_mat)
+
         interp_scheme_dict = Struct(name=self.name + "_interpol_scheme",
-                                    F=nm.array([[1, 0, 0],
-                                                [0, 1, 0],
-                                                [0, 0, 1]]),
-                                    P=nm.array([[0, 0, 0],
-                                                [1, 0, 0],
-                                                [0, 1, 0]])
-                                    )
+                                    F=F, P=P)
         return interp_scheme_dict
 
 
