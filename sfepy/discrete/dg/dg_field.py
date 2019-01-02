@@ -188,6 +188,7 @@ class DGField(Field):
         :return:
         """
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim)
+        self.region.domain.mesh.cmesh.setup_connectivity(self.dim - 1, self.dim)
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
 
     def clear_qp_base(self):
@@ -476,6 +477,19 @@ class DGField(Field):
                 normals_out[ic, ifal] = normals[o1 + ifal]
 
         return normals_out
+
+    def get_facet_integrals(self, region, variable):
+        """
+        Calculates integrals over facets, returns them for cells and neighbours:
+        cell: cell inner values, cell outer values
+        :param region:
+        :param variable:
+        :return: (n_cell, n_el_facets, self.n_el_facets)
+        """
+        facet_integrals = nm.zeros(self.n_cell, self.n_el_facets, 2)
+        # TODO ensure that facet_integrals correspond to facet normals and neighbour dofs
+
+        return facet_integrals
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
