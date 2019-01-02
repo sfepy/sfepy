@@ -34,7 +34,7 @@ class AdvVolDGTerm(Term):
     modes = ("weak",)
     arg_types = ('virtual', 'state')
     # arg_types = ('ts', 'virtual', 'state')
-    arg_shapes = {'virtual': ('D', 'state'),
+    arg_shapes = {'virtual': 1, #('D', 'state'),
                   'state': 1}
     symbolic = {'expression': '1',
                 'map': {'u': 'state'}
@@ -51,17 +51,16 @@ class AdvVolDGTerm(Term):
         if diff_var is not None:
             mtx_mode = True
             u = None
-            n_el_nod = state.field.poly_space.n_nod
         else:
             mtx_mode = False
             u = unravel_sol(state)
-            n_el_nod = state.field.poly_space.n_nod
 
+        dim = state.field.dim
+        n_el_nod = state.field.poly_space.n_nod
+        vols = self.region.domain.cmesh.get_volumes(dim)[:, None]
+        return u, mtx_mode, n_el_nod, vols
 
-        return u, mtx_mode, n_el_nod
-
-    def function(self, out, u, mtx_mode, n_el_nod):
-        vols = self.region.domain.cmesh.get_volumes(1)[:, None]
+    def function(self, out, u, mtx_mode, n_el_nod, vols):
         if mtx_mode:
             # integral over element with constant test
             # function is just volume of the element
@@ -80,7 +79,7 @@ class AdvVolDGTerm(Term):
         return status
 
 
-class AdvFluxDGTerm(Term):
+class AdvFluxDGTerm1D(Term):
 
     def __init__(self, integral, region, u=None, v=None, a=lambda x: 1):
         Term.__init__(self, "adv_lf_flux(a.val, v, u)", "a.val, v, u", integral, region, u=u, v=v, a=a)
@@ -128,7 +127,7 @@ class AdvFluxDGTerm(Term):
 
         #       F(a, b) = 1/2(f(a) + f(b)) + max(|f'(w)|) / 2 * (a - b)
 
-        # in our case a and b are values in the elements left and right of
+        # in our case a and b are values from elements left and right of
         # the respective element boundaries
         # for Legendre basis these are:
         # u_left = U_0 + U_1 + U_2 + ...
@@ -146,7 +145,7 @@ class AdvFluxDGTerm(Term):
         b = 0
         sign = 1
         for i in range(n_el_nod):
-            a += nb_u[:, 0, i]  # TODO iterate over number of n_el_facets
+            a += nb_u[:, 0, i]  # integral left
             b += sign * u[:, i]
             sign *= -1
 
@@ -191,6 +190,105 @@ class AdvFluxDGTerm(Term):
         flux[:3] = (fl - fp), (- fl - fp + intg1), (fl - fp + intg2)
         for i in range(n_el_nod):
             out[:, :, i, 0] = -flux[i]
+
+
+        status = None
+        return status
+
+
+class AdvFluxDGTerm(Term):
+
+    def __init__(self, integral, region, u=None, v=None, a=lambda x: 1):
+        Term.__init__(self, "adv_lf_flux(a.val, v, u)", "a.val, v, u", integral, region, u=u, v=v, a=a)
+        self.u = u
+        self.v = v
+        self.a = a
+        self.setup()
+
+    name = "dw_dg_advect_flux"
+    modes = ("weak",)
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material': '1, D',
+                  'virtual': 1,  #('D', 'state'),
+                  'state': 1}
+    symbolic = {'expression' : 'grad(a*u)',
+                'map': {'u': 'state', 'a': 'material'}
+    }
+
+    def get_fargs(self, a, test, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        if diff_var is not None:
+            # do not eval in matrix mode, we however still need
+            # this term to have diff_var in order for it to receive the values
+            doeval = False
+            return None, None, None, None, doeval, 0, 0
+        else:
+            doeval = True
+
+            u = unravel_sol(state)  # TODO we unravel twice, refactor
+            n_el_nod = state.field.poly_space.n_nod
+            n_el_facets = state.field.n_el_facets
+            nb_dofs, facet_normals = state.field.get_nbrhd_dofs(state.field.region, state)
+            facet_integrals = state.field.get_facet_integrals(state.field.region, state)
+            # state variable has dt in it!
+
+            fargs = (u, nb_dofs, facet_normals, facet_integrals, a[:, :1, 0, 0], doeval, n_el_nod, n_el_facets)
+            return fargs
+
+    def function(self, out, u, nb_u, fc_n, fc_i, velo, doeval, n_el_nod, n_el_facets):
+        if not doeval:
+            out[:] = 0.0
+            return None
+
+        #  the Lax-Friedrichs flux is
+
+        #       F(a, b) = 1/2(f(a) + f(b)) + max(|f'(w)|) / 2 * (a - b)
+
+        # in our case a and b are values from elements left and right of
+        # the respective element boundaries
+        # for Legendre basis these are:
+        # u_left = U_0 + U_1 + U_2 + ...
+        # u_right = U_0 - U_1 + U_2 - U_3 ... = sum_{p=0}^{order} (-1)^p * U_p
+
+        # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
+        # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
+
+        # fl:
+        # fl = velo[:, 0] * (ul[:, 0] + ul[:, 1] +
+        #                    (u[:, 0] - u[:, 1])) / 2 + \
+        #      nm.abs(velo[:, 0]) * (ul[:, 0] + ul[:, 1] -
+        #                            (u[:, 0] - u[:, 1])) / 2
+        facet_fluxs = nm.zeros(nm.shape(out)[0], n_el_facets)
+        for facet_n in range(n_el_facets):
+            a = fc_i[:, facet_n, 0]
+            b = fc_i[:, facet_n, 1]
+            # TODO how does Lax-Frie flux look in more dimensions?
+            facet_fluxs[:, facet_n] = nm.dot(fc_n[:, facet_n, :], (velo * a + velo * b) / 2) + \
+                  nm.linalg.norm(velo) * (fc_n[:, facet_n, :] * a - fc_n[:, facet_n, :]*b) / 2
+
+        fluxs = nm.zeros(nm.shape(out)[0], n_el_nod)
+        fluxs[:, 0] = nm.sum(facet_fluxs, axis=1)
+        for nth_nod in range(1, n_el_nod):
+            flux = nm.sum(facet_fluxs, axis=1)  # TODO properly combine facet fluxes to get complete flux for the mode
+
+        # flux0 = (fl - fp)
+        # flux1 = (- fl - fp + intg1)
+
+        # for Legendre basis integral of higher order
+        # functions of the basis is zero,
+        # hence we calculate integral
+        #
+        # int_{j-1/2}^{j+1/2} f(u)dx
+        #
+        # only from the zero order function, over [-1, 1] - hence the 2
+        intg1 = velo * u[:, 0] * 2
+        intg2 = velo * u[:, 1] * 2 if n_el_nod > 2 else 0
+        # i.e. intg1 = a * u0 * reference_el_vol
+
+        out[:] = 0.0
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = -flux[:, i]
 
 
         status = None
