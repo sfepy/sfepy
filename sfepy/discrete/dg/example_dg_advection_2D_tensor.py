@@ -74,7 +74,7 @@ eqs = Equations([eq])
 
 
 def ic_wrap(x, ic=None):
-    return gsmooth(x[..., 0:1])*gsmooth(x[..., 1:])
+    return superic(x[..., 0:1])*gsmooth(x[..., 1:])
 
 
 X = nm.arange(0, 1, 0.005)
@@ -116,4 +116,4 @@ nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
-# pb.solve()
+pb.solve()

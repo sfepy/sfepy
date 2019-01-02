@@ -42,7 +42,7 @@ omega = domain.create_region('Omega', 'all')
 integral = Integral('i', order=5)
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 3
+approx_order = 2
 #^^^^^^^^^^^^^^^^#
 
 dgfield = DGField('dgfu', nm.float64, 'scalar', omega,

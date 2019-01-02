@@ -288,9 +288,9 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             coef_mat = nm.outer(ycoefs, xcoefs)
             F[m, :] = flattten_upper_left_triag(coef_mat)
 
-        interp_scheme_dict = Struct(name=self.name + "_interpol_scheme",
-                                    F=F, P=P)
-        return interp_scheme_dict
+        interp_scheme_struct = Struct(name=self.name + "_interpol_scheme",
+                                    F=F, P=P, desc=self.geometry.name)
+        return interp_scheme_struct
 
 
 class LegendreSimplexPolySpace(LegendrePolySpace):
@@ -367,7 +367,35 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                    eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
 
     def get_interpol_scheme(self):
-        pass
+        """
+        Builds F and P matrices according to gmsh basis specification:
+
+        Let us assume that the approximation of the view's value over an element is written as a linear
+        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
+        list-of-values). Defining
+
+        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
+
+        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
+        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+
+        :return: struct with name of the scheme, geometry desc and P and F
+        """
+        F = nm.array([[ 1,   0,  0,  0,  0,  0],
+                      [-2,   4,  0,  2,  0,  0],
+                      [ 4, -24, 24, -8, 24,  4],
+                      [-1,   0,  0,  3,  0,  0],
+                      [ 2,  -4,  0,-12, 20, 10],
+                      [ 1,   0,  0, -8,  0, 10]])
+        P = nm.array([[0, 0, 0],
+                      [1, 0, 0],
+                      [2, 0, 0],
+                      [0, 1, 0],
+                      [1, 1, 0],
+                      [0, 2, 0]])
+        interp_scheme_struct = Struct(name=self.name + "_interpol_scheme",
+                                      F=F, P=P, desc=self.geometry.name)
+        return interp_scheme_struct
 
 
 def plot_2Dtensor_basis_grad():
