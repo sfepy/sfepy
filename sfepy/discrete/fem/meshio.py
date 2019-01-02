@@ -2897,11 +2897,11 @@ class Msh2MeshIO(MeshIO):
 
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
         """
-
+        Writes data into msh v2.0 file, handles cell_nodes data from DGField
         :param filename: path to file
         :param mesh: computational mesh
         :param out: data on the computational mesh
-        :param ts: time step?
+        :param ts: time stepper?
         :param kwargs:
         :return:
         """
@@ -2942,7 +2942,7 @@ class Msh2MeshIO(MeshIO):
             fd.write('$InterpolationScheme\n')
             fd.write('"{}"\n'.format(scheme.name))
             fd.write("1\n")  # one int tag
-            fd.write("{}\n".format(4))  # TODO get element type from mesh.desc
+            fd.write("{}\n".format(scheme.desc[-1]))  # TODO get element type from mesh.desc
             fd.write("2\n")  # nimber of matrices
             fd.write("{} {}\n".format(*scheme.F.shape))
             sF = "{} " * scheme.F.shape[1] + "\n"
