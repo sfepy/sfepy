@@ -24,8 +24,9 @@ def get_unraveler(n_el_nod, n_cell):
 
     def unravel(u):
         ustride1 = u.strides[0]
-        ur = as_strided(u,shape=(n_cell, n_el_nod,1),
+        ur = as_strided(u, shape=(n_cell, n_el_nod, 1),
                           strides=(ustride1, ustride1*n_cell, ustride1), writeable=False)
+        # FIXME writeable is not valid option for Python 2
         return ur
 
     return unravel
@@ -37,6 +38,7 @@ def get_raveler(n_el_nod, n_cell):
         ustride1 = u.strides[-1]
         ur = as_strided(u, shape=(n_el_nod*n_cell, 1),
                            strides=(ustride1, ustride1))
+        # FIXME writeable is not valid option for Python 2
         return ur
 
     return ravel
@@ -478,16 +480,22 @@ class DGField(Field):
 
         return normals_out
 
-    def get_facet_integrals(self, region, variable):
+    def get_facet_integrals(self, region, dofs, nb_dofs):
         """
         Calculates integrals over facets, returns them for cells and neighbours:
         cell: cell inner values, cell outer values
         :param region:
-        :param variable:
+        :param dofs: in shape (n_cell, n_el_nod, 1)
+        :param nb_dofs: in shape (n_cell, n_el_facets, n_el_nod, 1)
         :return: (n_cell, n_el_facets, self.n_el_facets)
         """
-        facet_integrals = nm.zeros(self.n_cell, self.n_el_facets, 2)
-        # TODO ensure that facet_integrals correspond to facet normals and neighbour dofs
+        facet_integrals = nm.zeros((self.n_cell, self.n_el_facets, 2, 1), dtype=nm.float64)
+
+        facet_integrals[:, 0, 0] = dofs[:, 0] - dofs[:, 1]
+        facet_integrals[:, 1, 0] = dofs[:, 0] + dofs[:, 1]
+        facet_integrals[:, 0, 1] = nb_dofs[:, 0, 0] + nb_dofs[:, 0, 1]
+        facet_integrals[:, 1, 1] = nb_dofs[:, 1, 0] - nb_dofs[:, 1, 1]
+
 
         return facet_integrals
 
@@ -525,9 +533,8 @@ class DGField(Field):
             # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
             # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
-            base_vals_qp = self.poly_space.eval_base(qp)[:, 0,:]
+            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
             # this drops redundant axis that is returned by eval_base due to consistency with derivatives
-            # base_vals_qp = nm.swapaxes(nm.swapaxes(base_vals_qp, -2, 0), -1, 0)
 
             # left hand, so far only orthogonal basis
             lhs_diag = nm.sum(weights * base_vals_qp**2, axis=0)
@@ -538,6 +545,7 @@ class DGField(Field):
 
             vals = (rhs_vec / lhs_diag).T
 
+            # plot for 1D
             # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
             # import matplotlib.pyplot as plt
             # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
@@ -612,9 +620,9 @@ class DGField(Field):
                               data=dofs[self.n_cell * i: self.n_cell*(i+1), :, None, None])
 
         unravel = get_unraveler(self.n_el_nod, self.n_cell)
-        res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
-                                           data=unravel(dofs)[..., 0],
-                                           interpolation_scheme=self.poly_space.get_interpol_scheme())
+        # res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
+        #                                    data=unravel(dofs)[..., 0],
+        #                                    interpolation_scheme=self.poly_space.get_interpol_scheme())
         # TODO somehow choose output
         cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
