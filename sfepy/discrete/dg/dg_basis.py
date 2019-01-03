@@ -270,17 +270,29 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         from scipy.special import jacobi
 
         def flattten_upper_left_triag(A):
+            """
+            Returns flattened upper triangular part of the antidiagonal of the matrix
+            i.e. zeros in this case:
+                0 0 0
+                0 0 .
+                0 . .
+            If the matrix represents product of two polynomials this effectively gets rid of highest powers
+            x^2y, xy^2, x^2y^2
+            :param A:
+            :return:
+            """
+            # Antidiagonal
             res = []
             for i, row in enumerate(A):
                 res.append(row[:A.shape[1] - i])
             return nm.concatenate(res)
 
         P = nm.zeros((self.n_nod, 3))
-        for m, idx in enumerate(iter_by_order(self.order, 2)):
+        for m, idx in enumerate(iter_by_order(self.order, self.dim)):
             P[m, :self.dim] = idx
 
         F = nm.zeros((self.n_nod, self.n_nod))
-        for m, idx in enumerate(iter_by_order(self.order, 2)):
+        for m, idx in enumerate(iter_by_order(self.order, self.dim)):
             xcoefs = list(jacobi(idx[0], 0, 0).coef)[::-1]
             xcoefs = nm.array(xcoefs + [0] * (self.order + 1 - len(xcoefs)))
             ycoefs = list(jacobi(idx[1], 0, 0).coef)[::-1]
@@ -323,7 +335,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             b[nm.isnan(b)] = 1.
             # a = (a + 1) / 2
             # b = (b + 1) / 2
-            # TODO maybe, just maybe somehowtransform this to be able to use with jacobi polys on interval [0, 1]
+            # TODO maybe, just maybe somehow transform this to be able to use with jacobi polys on interval [0, 1]
             return nm.sqrt(8) * eval_jacobi(idx[0], 0, 0, a) * \
                    eval_jacobi(idx[1], 2*idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2*idx[0] + 2*idx[1] + 2, 0, c) * (1 - c)**(idx[0] + idx[1])
@@ -341,10 +353,10 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             b = s
             a[nm.isnan(a)] = 1.
 
-            if di == 0:
+            if di == 0:  # d/dx
                 return polyvals[..., 0, idx[0], 1] * \
                        self.jacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]*(1 - b)**idx[0]
-            elif di == 1:
+            elif di == 1:  # d/dy
                 return 2 * polyvals[..., 0, idx[0], 0] * \
                        (self.gradjacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]*(1 - b)**idx[0] -
                         self.jacobiP(b, 2 * idx[0] + 1, 0,)[..., idx[1]]*(1 - b) ** (idx[0] - 1))
@@ -381,12 +393,12 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
 
         :return: struct with name of the scheme, geometry desc and P and F
         """
-        F = nm.array([[ 1,   0,  0,  0,  0,  0],
-                      [-2,   4,  0,  2,  0,  0],
-                      [ 4, -24, 24, -8, 24,  4],
-                      [-1,   0,  0,  3,  0,  0],
-                      [ 2,  -4,  0,-12, 20, 10],
-                      [ 1,   0,  0, -8,  0, 10]])
+        F = nm.array([[  1,   0,  0,   0,  0,  0],
+                      [ -2,   4,  0,   2,  0,  0],
+                      [  4, -24, 24,  -8, 24,  4],
+                      [ -1,   0,  0,   3,  0,  0],
+                      [  2,  -4,  0, -12, 20, 10],
+                      [  1,   0,  0,  -8,  0, 10]])
         P = nm.array([[0, 0, 0],
                       [1, 0, 0],
                       [2, 0, 0],

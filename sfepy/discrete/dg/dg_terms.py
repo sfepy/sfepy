@@ -222,7 +222,8 @@ class AdvFluxDGTerm(Term):
             # do not eval in matrix mode, we however still need
             # this term to have diff_var in order for it to receive the values
             doeval = False
-            return None, None, None, None, doeval, 0, 0
+            u = unravel_sol(state)
+            return u, None, None, None, a[:, :1, 0, 0], doeval, 0, 0
         else:
             doeval = True
 
@@ -230,7 +231,7 @@ class AdvFluxDGTerm(Term):
             n_el_nod = state.field.poly_space.n_nod
             n_el_facets = state.field.n_el_facets
             nb_dofs, facet_normals = state.field.get_nbrhd_dofs(state.field.region, state)
-            facet_integrals = state.field.get_facet_integrals(state.field.region, state)
+            facet_integrals = state.field.get_facet_integrals(state.field.region, u, nb_dofs)
             # state variable has dt in it!
 
             fargs = (u, nb_dofs, facet_normals, facet_integrals, a[:, :1, 0, 0], doeval, n_el_nod, n_el_facets)
@@ -243,7 +244,7 @@ class AdvFluxDGTerm(Term):
 
         #  the Lax-Friedrichs flux is
 
-        #       F(a, b) = 1/2(f(a) + f(b)) + max(|f'(w)|) / 2 * (a - b)
+        #       F(a, b) = (f(a) + f(b))/2 + max(n_x * |df1(u)/du  +  n_y * df2(u)/du|) / 2 * n * (a - b)
 
         # in our case a and b are values from elements left and right of
         # the respective element boundaries
@@ -259,18 +260,18 @@ class AdvFluxDGTerm(Term):
         #                    (u[:, 0] - u[:, 1])) / 2 + \
         #      nm.abs(velo[:, 0]) * (ul[:, 0] + ul[:, 1] -
         #                            (u[:, 0] - u[:, 1])) / 2
-        facet_fluxs = nm.zeros(nm.shape(out)[0], n_el_facets)
+        facet_fluxs = nm.zeros((nm.shape(out)[0], n_el_facets, 1))
         for facet_n in range(n_el_facets):
             a = fc_i[:, facet_n, 0]
             b = fc_i[:, facet_n, 1]
-            # TODO how does Lax-Frie flux look in more dimensions?
-            facet_fluxs[:, facet_n] = nm.dot(fc_n[:, facet_n, :], (velo * a + velo * b) / 2) + \
-                  nm.linalg.norm(velo) * (fc_n[:, facet_n, :] * a - fc_n[:, facet_n, :]*b) / 2
+            C = nm.abs(nm.sum(fc_n[:, facet_n, :] * velo, axis=1))[:, None]
+            facet_fluxs[:, facet_n] = (velo * a + velo * b) / 2 + \
+                  C * fc_n[:, facet_n, :] * (a - b) / 2
 
-        fluxs = nm.zeros(nm.shape(out)[0], n_el_nod)
-        fluxs[:, 0] = nm.sum(facet_fluxs, axis=1)
-        for nth_nod in range(1, n_el_nod):
-            flux = nm.sum(facet_fluxs, axis=1)  # TODO properly combine facet fluxes to get complete flux for the mode
+        fluxs = nm.zeros((nm.shape(out)[0], n_el_nod, 1))
+        fluxs[:, 0] = - nm.sum(facet_fluxs * fc_n, axis=1)
+        intg1 = velo * u[:, 0] * 2
+        fluxs[:, 1] = - facet_fluxs[:, 0] - facet_fluxs[:, 1] + intg1
 
         # flux0 = (fl - fp)
         # flux1 = (- fl - fp + intg1)
@@ -282,13 +283,14 @@ class AdvFluxDGTerm(Term):
         # int_{j-1/2}^{j+1/2} f(u)dx
         #
         # only from the zero order function, over [-1, 1] - hence the 2
-        intg1 = velo * u[:, 0] * 2
-        intg2 = velo * u[:, 1] * 2 if n_el_nod > 2 else 0
+        # TODO move this to matrix mode?
+        # intg1 = velo * u[:, 0] * 2
+        # intg2 = velo * u[:, 1] * 2 if n_el_nod > 2 else 0
         # i.e. intg1 = a * u0 * reference_el_vol
 
         out[:] = 0.0
         for i in range(n_el_nod):
-            out[:, :, i, 0] = -flux[:, i]
+            out[:, :, i, 0] = -fluxs[:, i]
 
 
         status = None

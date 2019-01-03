@@ -19,7 +19,7 @@ from sfepy.base.conf import ProblemConf
 
 
 # local import
-from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
+from dg_terms import AdvFluxDGTerm, AdvVolDGTerm, AdvFluxDGTerm1D
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
@@ -41,7 +41,7 @@ mesh = Mesh.from_data('advection_1d', coors, None,
 velo = 1.0
 
 t0 = 0
-t1 = 1
+t1 = 0.08
 dx = (XN - X1) / n_nod
 dt = dx / velo * 1/2
 # time_steps_N = int((tf - t0) / dt) * 2
