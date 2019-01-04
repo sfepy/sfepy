@@ -110,11 +110,11 @@ def convert_complex_output(out_in):
         if val.data.dtype in  complex_types:
             rval = copy(val)
             rval.data = val.data.real
-            out['real(%s)' % key] = rval
+            out['real.%s' % key] = rval
 
             ival = copy(val)
             ival.data = val.data.imag
-            out['imag(%s)' % key] = ival
+            out['imag.%s' % key] = ival
 
         else:
             out[key] = val
