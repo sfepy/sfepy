@@ -55,7 +55,6 @@ omits = [
     'vibro_acoustic3d_mid.py',
     'its2D_5.py',
     'linear_elastic_probes.py',
-    'quantum_common.py',
     '__init__.py',
 ]
 
@@ -261,7 +260,39 @@ custom = {
             'roll' : -65,
             'opacity' : {'wireframe' : 0.3},
         },
-    }
+    },
+    'quantum/boron.py' : {
+        '' : {
+            'is_scalar_bar' : False,
+            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
+            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
+            'roll' : 0.0,
+        },
+    },
+    'quantum/hydrogen.py' : {
+        '' : {
+            'is_scalar_bar' : False,
+            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
+            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
+            'roll' : 0.0,
+        },
+    },
+    'quantum/oscillator.py' : {
+        '' : {
+            'is_scalar_bar' : False,
+            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
+            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
+            'roll' : 0.0,
+        },
+    },
+    'quantum/well.py' : {
+        '' : {
+            'is_scalar_bar' : False,
+            'only_names' : ['Psi000', 'Psi001', 'Psi002'],
+            'view' : (0.0, 0.0, 200.0, [-25., -25.,   0.]),
+            'roll' : 0.0,
+        },
+    },
 }
 
 def _omit(filename):
