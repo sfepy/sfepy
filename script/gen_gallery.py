@@ -366,15 +366,20 @@ def generate_images(images_dir, examples_dir):
             else:
                 views = default_views
 
-            tsolver = problem.get_solver()
-            if isinstance(tsolver, StationarySolver):
+            try:
+                tsolver = problem.get_solver()
+
+            except ValueError:
                 suffix = None
 
             else:
-                suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
+                if isinstance(tsolver, StationarySolver):
+                    suffix = None
+
+                else:
+                    suffix = tsolver.ts.suffix % (tsolver.ts.n_step - 1)
 
             filename = problem.get_output_name(suffix=suffix)
-
             for suffix, kwargs in six.iteritems(views):
                 fig_filename = _get_fig_filename(ebase, images_dir, suffix)
 
