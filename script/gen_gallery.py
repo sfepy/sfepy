@@ -55,6 +55,7 @@ omits = [
     'vibro_acoustic3d_mid.py',
     'its2D_5.py',
     'linear_elastic_probes.py',
+    'quantum_common.py',
     '__init__.py',
 ]
 
@@ -65,34 +66,41 @@ omit_dirs = [
 custom = {
     'acoustics/acoustics3d.py' : {
         '_p_1' : {
+            'is_scalar_bar' : True,
             'view' : (44, 57, 0.24, [-0.004, -0.007, 0.09]),
             'roll' : 0,
         },
         '_p_2' : {
+            'is_scalar_bar' : True,
             'view' : (-99, 120, 0.4, [0.0, 0.0, 0.07]),
             'roll' : 141,
         },
     },
     'acoustics/vibro_acoustic3d.py' : {
         '_p1' : {
+            'is_scalar_bar' : True,
             'view' : (45.0, 54.7, 1.47, [0.0, 0.0, 0.05]),
             'roll' : -120,
         },
         '_p2' : {
+            'is_scalar_bar' : True,
             'view' : (45.0, 54.7, 1.47, [0.0, 0.0, 0.15]),
             'roll' : -120,
         },
         '_w' : {
+            'is_scalar_bar' : True,
             'view' : (0.0, 0.0, 0.86, [0.0, 0.0, 0.1]),
             'roll' : 0,
         },
         '_g0' : {
+            'is_scalar_bar' : True,
             'view' : (0.0, 0.0, 0.86, [0.0, 0.0, 0.1]),
             'roll' : 0,
         },
     },
     'diffusion/laplace_1d.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 't' : DomainSpecificPlot('plot_warp_scalar',
@@ -105,6 +113,7 @@ custom = {
     },
     'diffusion/laplace_coupling_lcbcs.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 'u1' : DomainSpecificPlot('plot_warp_scalar',
@@ -119,6 +128,7 @@ custom = {
     },
     'diffusion/poisson_iga.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 't' : DomainSpecificPlot('plot_warp_scalar',
@@ -131,6 +141,7 @@ custom = {
     },
     'diffusion/sinbc.py' : {
         '_t' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 't' : DomainSpecificPlot('plot_warp_scalar',
@@ -141,6 +152,7 @@ custom = {
             'opacity' : {'wireframe' : 0.3},
         },
         '_grad' : {
+            'is_scalar_bar' : True,
             'opacity' : {'surface' : 0.3},
             'view' : (-170, 30, 4.7, [0.34, 0.23, -0.26]),
             'roll' : 71,
@@ -148,6 +160,7 @@ custom = {
     },
     'linear_elasticity/elastic_contact_planes.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 'u' : DomainSpecificPlot('plot_displacements',
@@ -160,6 +173,7 @@ custom = {
     },
     'linear_elasticity/elastic_contact_sphere.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 'u' : DomainSpecificPlot('plot_displacements',
@@ -172,6 +186,7 @@ custom = {
     },
     'linear_elasticity/elastic_shifted_periodic.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'only_names' : ['u'],
             'domain_specific' : {
@@ -187,6 +202,7 @@ custom = {
     },
     'linear_elasticity/linear_elastic_iga.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 'u' : DomainSpecificPlot('plot_displacements',
@@ -199,6 +215,7 @@ custom = {
     },
     'linear_elasticity/shell10x_cantilever.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'domain_specific' : {
                 'u_disp' : DomainSpecificPlot('plot_displacements',
@@ -211,6 +228,7 @@ custom = {
     },
     'navier_stokes/stokes_slip_bc.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'view' : (-63, 52, 5.2, [-1.5, -0.65, 0.12]),
             'roll' : -32,
             'resolution' : (800, 600),
@@ -220,6 +238,7 @@ custom = {
     },
     'navier_stokes/stokes_slip_bc_penalty.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'view' : (-63, 52, 5.2, [-1.5, -0.65, 0.12]),
             'roll' : -32,
             'resolution' : (800, 600),
@@ -229,6 +248,7 @@ custom = {
     },
     'multi_physics/thermo_elasticity_ess.py' : {
         '' : {
+            'is_scalar_bar' : True,
             'is_wireframe' : True,
             'only_names' : ['u'],
             'domain_specific' : {
@@ -315,7 +335,7 @@ def generate_images(images_dir, examples_dir):
                      save_field_meshes=False,
                      save_regions_as_groups=False,
                      solve_not=False)
-    default_views = {'' : {}}
+    default_views = {'' : {'is_scalar_bar' : True}}
 
     ensure_path(images_dir + os.path.sep)
 
@@ -364,7 +384,7 @@ def generate_images(images_dir, examples_dir):
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
                 view.filename = fname
-                view(scene=view.scene, show=False, is_scalar_bar=True, **kwargs)
+                view(scene=view.scene, show=False, **kwargs)
                 view.save_image(fig_filename)
                 mlab.clf()
 
