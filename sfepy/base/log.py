@@ -15,7 +15,7 @@ import numpy as nm
 
 from sfepy.base.base import sfepy_config_dir, ordered_iteritems
 from sfepy.base.base import output, get_default, set_defaults, Output, Struct
-from sfepy.base.log_plotter import LogPlotter
+from sfepy.base.log_plotter import draw_data, LogPlotter
 
 _msg_no_live = 'warning: log plot is disabled, install matplotlib and' \
     ' multiprocessing'
@@ -69,6 +69,8 @@ def read_log(filename):
     info : dict
         The log plot configuration with subplot numbers as keys.
     """
+    from sfepy.base.base import as_float_or_complex as afc
+
     log = {}
     info = {}
 
@@ -110,7 +112,8 @@ def read_log(filename):
 
         else:
             try:
-                xval, yval = float(ls[1]), float(ls[2])
+                xval = afc(ls[1])
+                yval = afc(ls[2])
 
             except ValueError:
                 continue
@@ -128,7 +131,7 @@ def read_log(filename):
     return log, info
 
 def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
-             show_legends=True):
+             show_legends=True, swap_axes=False):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
@@ -148,6 +151,8 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         The list of data groups subplots. If not given, all groups are plotted.
     show_legends : bool
         If True, show legends in plots.
+    swap_axes : bool
+        If True, swap the axes of the plots.
     """
     import matplotlib.pyplot as plt
 
@@ -188,29 +193,49 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         else:
             ax = axs[ii]
 
-        ax.set_yscale(yscale)
+        if not swap_axes:
+            ax.set_yscale(yscale)
+            for ip, name in enumerate(names):
+                xs, ys, vlines = log[name]
+                draw_data(ax, xs, ys, name, plot_kwargs[ip])
+
+                for x in vlines:
+                    ax.axvline(x, color='k', alpha=0.3)
+
+            if xticks[isub] is not None:
+                ax.set_xticks(xticks[isub])
+
+            else:
+                ax.locator_params(axis='x', nbins=10)
+
+            if yticks[isub] is not None:
+                ax.set_yticks(yticks[isub])
+
+        else:
+            xlabel, ylabel = ylabel, xlabel
+            ax.set_xscale(yscale)
+
+            for ip, name in enumerate(names):
+                xs, ys, vlines = log[name]
+                draw_data(ax, xs, ys, name, plot_kwargs[ip], swap_axes=True)
+
+                for x in vlines:
+                    ax.axhline(x, color='k', alpha=0.3)
+
+            if yticks[isub] is not None:
+                ax.set_xticks(yticks[isub])
+
+            else:
+                ax.locator_params(axis='y', nbins=10)
+
+            if xticks[isub] is not None:
+                ax.set_yticks(yticks[isub])
 
         if xlabel:
             ax.set_xlabel(xlabel)
 
         if ylabel:
             ax.set_ylabel(ylabel)
-
-        for ip, name in enumerate(names):
-            xs, ys, vlines = log[name]
-            ax.plot(xs, ys, label=name, **plot_kwargs[ip])
-
-            for x in vlines:
-                ax.axvline(x, color='k', alpha=0.3)
-
-        if xticks[isub] is not None:
-            ax.set_xticks(xticks[isub])
-
-        else:
-            ax.locator_params(axis='x', nbins=10)
-
-        if yticks[isub] is not None:
-            ax.set_yticks(yticks[isub])
 
         if show_legends:
             ax.legend(loc='best')
@@ -311,13 +336,15 @@ class Log(Struct):
         self.can_plot = (mpl is not None) and (Process is not None)
 
         if log_filename is not None:
+            _fmt = lambda x: '%s' % x if x is not None else ''
             self.output = Output('', filename=log_filename)
             self.output('# started: %s' % time.asctime())
             self.output('# groups: %d' % n_gr)
             for ig, names in enumerate(data_names):
                 self.output('#   %d' % ig)
                 self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
-                            % (xlabels[ig], ylabels[ig], yscales[ig]))
+                            % (_fmt(xlabels[ig]), _fmt(ylabels[ig]),
+                               yscales[ig]))
                 self.output('#     names: "%s"' % ', '.join(names))
                 self.output('#     plot_kwargs: "%s"'
                             % ', '.join('%s' % ii
