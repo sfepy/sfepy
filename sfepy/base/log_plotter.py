@@ -6,6 +6,44 @@ import numpy as nm
 
 from sfepy.base.base import Output, Struct
 
+def draw_data(ax, xdata, ydata, label, plot_kwargs, swap_axes=False):
+    """
+    Draw log data to a given axes, obeying `swap_axes`.
+    """
+
+    def _update_plot_kwargs(lines):
+        plot_kwargs['color'] = lines[0].get_color()
+        alpha = lines[0].get_alpha()
+        plot_kwargs['alpha'] = 0.5 if alpha is None else 0.5 * alpha
+
+    if not swap_axes:
+        if nm.isrealobj(ydata):
+            ax.plot(xdata, ydata, label=label,
+                    **plot_kwargs)
+
+        else:
+            lines = ax.plot(xdata, ydata.real,
+                           label='Re ' + label,
+                           **plot_kwargs)
+            _update_plot_kwargs(lines)
+            ax.plot(xdata, ydata.imag,
+                    label='Im ' + label,
+                    **plot_kwargs)
+
+    else:
+        if nm.isrealobj(ydata):
+            ax.plot(ydata, xdata, label=label,
+                    **plot_kwargs)
+
+        else:
+            lines = ax.plot(ydata.real, xdata,
+                           label='Re ' + label,
+                           **plot_kwargs)
+            _update_plot_kwargs(lines)
+            ax.plot(ydata.imag, xdata,
+                    label='Im ' + label,
+                    **plot_kwargs)
+
 class LogPlotter(Struct):
     """
     LogPlotter to be used by :class:`sfepy.base.log.Log`.
@@ -35,20 +73,7 @@ class LogPlotter(Struct):
             ax = self.ax[ig]
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
-            if nm.isrealobj(ydata):
-                ax.plot(xdata, ydata, label=self.data_names[ig][ip],
-                        **plot_kwargs)
-
-            else:
-                lines = ax.plot(xdata, ydata.real,
-                               label='Re ' + self.data_names[ig][ip],
-                               **plot_kwargs)
-                plot_kwargs['color'] = lines[0].get_color()
-                alpha = lines[0].get_alpha()
-                plot_kwargs['alpha'] = 0.5 if alpha is None else 0.5 * alpha
-                ax.plot(xdata, ydata.imag,
-                        label='Im ' + self.data_names[ig][ip],
-                        **plot_kwargs)
+            draw_data(ax, xdata, ydata, self.data_names[ig][ip], plot_kwargs)
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()
