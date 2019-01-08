@@ -180,9 +180,6 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
     if yticks is None:
         yticks = [None] * n_gr
 
-    if swap_axes:
-        xticks, yticks = yticks, xticks
-
     isub = 0
     for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
         if ii not in groups: continue
@@ -202,6 +199,15 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
                 for x in vlines:
                     ax.axvline(x, color='k', alpha=0.3)
 
+            if xticks[isub] is not None:
+                ax.set_xticks(xticks[isub])
+
+            else:
+                ax.locator_params(axis='x', nbins=10)
+
+            if yticks[isub] is not None:
+                ax.set_yticks(yticks[isub])
+
         else:
             xlabel, ylabel = ylabel, xlabel
             ax.set_xscale(yscale)
@@ -213,20 +219,20 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
                 for x in vlines:
                     ax.axhline(x, color='k', alpha=0.3)
 
+            if yticks[isub] is not None:
+                ax.set_xticks(yticks[isub])
+
+            else:
+                ax.locator_params(axis='y', nbins=10)
+
+            if xticks[isub] is not None:
+                ax.set_yticks(yticks[isub])
+
         if xlabel:
             ax.set_xlabel(xlabel)
 
         if ylabel:
             ax.set_ylabel(ylabel)
-
-        if xticks[isub] is not None:
-            ax.set_xticks(xticks[isub])
-
-        else:
-            ax.locator_params(axis='x', nbins=10)
-
-        if yticks[isub] is not None:
-            ax.set_yticks(yticks[isub])
 
         if show_legends:
             ax.legend(loc='best')
