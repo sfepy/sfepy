@@ -336,13 +336,15 @@ class Log(Struct):
         self.can_plot = (mpl is not None) and (Process is not None)
 
         if log_filename is not None:
+            _fmt = lambda x: '%s' % x if x is not None else ''
             self.output = Output('', filename=log_filename)
             self.output('# started: %s' % time.asctime())
             self.output('# groups: %d' % n_gr)
             for ig, names in enumerate(data_names):
                 self.output('#   %d' % ig)
                 self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
-                            % (xlabels[ig], ylabels[ig], yscales[ig]))
+                            % (_fmt(xlabels[ig]), _fmt(ylabels[ig]),
+                               yscales[ig]))
                 self.output('#     names: "%s"' % ', '.join(names))
                 self.output('#     plot_kwargs: "%s"'
                             % ', '.join('%s' % ii
