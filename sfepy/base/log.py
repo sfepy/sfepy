@@ -128,7 +128,7 @@ def read_log(filename):
     return log, info
 
 def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
-             show_legends=True):
+             show_legends=True, swap_axes=False):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
@@ -148,6 +148,8 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         The list of data groups subplots. If not given, all groups are plotted.
     show_legends : bool
         If True, show legends in plots.
+    swap_axes : bool
+        If True, swap the axes of the plots.
     """
     import matplotlib.pyplot as plt
 
@@ -178,6 +180,9 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
     if yticks is None:
         yticks = [None] * n_gr
 
+    if swap_axes:
+        xticks, yticks = yticks, xticks
+
     isub = 0
     for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
         if ii not in groups: continue
@@ -188,20 +193,31 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         else:
             ax = axs[ii]
 
-        ax.set_yscale(yscale)
+        if not swap_axes:
+            ax.set_yscale(yscale)
+            for ip, name in enumerate(names):
+                xs, ys, vlines = log[name]
+                ax.plot(xs, ys, label=name, **plot_kwargs[ip])
+
+                for x in vlines:
+                    ax.axvline(x, color='k', alpha=0.3)
+
+        else:
+            xlabel, ylabel = ylabel, xlabel
+            ax.set_xscale(yscale)
+
+            for ip, name in enumerate(names):
+                xs, ys, vlines = log[name]
+                ax.plot(ys, xs, label=name, **plot_kwargs[ip])
+
+                for x in vlines:
+                    ax.axhline(x, color='k', alpha=0.3)
 
         if xlabel:
             ax.set_xlabel(xlabel)
 
         if ylabel:
             ax.set_ylabel(ylabel)
-
-        for ip, name in enumerate(names):
-            xs, ys, vlines = log[name]
-            ax.plot(xs, ys, label=name, **plot_kwargs[ip])
-
-            for x in vlines:
-                ax.axvline(x, color='k', alpha=0.3)
 
         if xticks[isub] is not None:
             ax.set_xticks(xticks[isub])
