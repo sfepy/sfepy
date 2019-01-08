@@ -15,7 +15,7 @@ import numpy as nm
 
 from sfepy.base.base import sfepy_config_dir, ordered_iteritems
 from sfepy.base.base import output, get_default, set_defaults, Output, Struct
-from sfepy.base.log_plotter import LogPlotter
+from sfepy.base.log_plotter import draw_data, LogPlotter
 
 _msg_no_live = 'warning: log plot is disabled, install matplotlib and' \
     ' multiprocessing'
@@ -69,6 +69,8 @@ def read_log(filename):
     info : dict
         The log plot configuration with subplot numbers as keys.
     """
+    from sfepy.base.base import as_float_or_complex as afc
+
     log = {}
     info = {}
 
@@ -110,7 +112,8 @@ def read_log(filename):
 
         else:
             try:
-                xval, yval = float(ls[1]), float(ls[2])
+                xval = afc(ls[1])
+                yval = afc(ls[2])
 
             except ValueError:
                 continue
@@ -194,7 +197,7 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
             ax.set_yscale(yscale)
             for ip, name in enumerate(names):
                 xs, ys, vlines = log[name]
-                ax.plot(xs, ys, label=name, **plot_kwargs[ip])
+                draw_data(ax, xs, ys, name, plot_kwargs[ip])
 
                 for x in vlines:
                     ax.axvline(x, color='k', alpha=0.3)
@@ -214,7 +217,7 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
 
             for ip, name in enumerate(names):
                 xs, ys, vlines = log[name]
-                ax.plot(ys, xs, label=name, **plot_kwargs[ip])
+                draw_data(ax, xs, ys, name, plot_kwargs[ip], swap_axes=True)
 
                 for x in vlines:
                     ax.axhline(x, color='k', alpha=0.3)
