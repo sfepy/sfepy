@@ -24,6 +24,7 @@ from copy import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import numpy as nm
+import matplotlib.pyplot as plt
 
 from sfepy.base.base import import_file, output, Struct
 from sfepy.base.conf import dict_from_string, ProblemConf
@@ -196,7 +197,11 @@ def get_std_wave_fun_le(pb, options):
     log_plot_kwargs = [{'ls' : '--', 'color' : 'k'},
                        {'ls' : '--', 'color' : 'gray'}]
 
-    fun = lambda wmag, wdir: (cp * wmag, cs * wmag)
+    if options.mode == 'omega':
+        fun = lambda wmag, wdir: (cp * wmag, cs * wmag)
+
+    else:
+        fun = lambda wmag, wdir: (wmag / cp, wmag / cs)
 
     return fun, log_names, log_plot_kwargs
 
@@ -516,6 +521,10 @@ def main():
             options.n_eigs = 2 * mtx_k.shape[0]
             n_eigs = None
 
+    get_color = lambda ii: plt.cm.viridis((float(ii) / (options.n_eigs - 1)))
+    plot_kwargs = [{'color' : get_color(ii), 'ls' : '', 'marker' : 'o'}
+                  for ii in range(options.n_eigs)]
+
     if options.mode == 'omega':
         eigenshapes_filename = os.path.join(output_dir,
                                             'frequency-eigenshapes-%s.vtk'
@@ -589,8 +598,16 @@ def main():
 
         output('S - LL^T:', _max_diff_csr(mtx_s, mtx_l * mtx_l.T))
 
-        log = Log([[r'$\kappa_{%d}$' % ii for ii in range(options.n_eigs)]],
-                  plot_kwargs=[{'ls' : 'None', 'marker' : 'o'}],
+        log_names = []
+        log_plot_kwargs = []
+        if options.log_std_waves:
+            std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
+                pb, options)
+
+        log = Log([[r'$\kappa_{%d}$' % ii for ii in range(options.n_eigs)]
+                   + log_names],
+                  plot_kwargs=[plot_kwargs + log_plot_kwargs],
+                  formats=[['{:.5e}'] * (options.n_eigs + len(log_names))],
                   yscales=['linear'],
                   xlabels=[r'$\omega$'],
                   ylabels=[r'wave numbers $\kappa_i$'],
@@ -636,7 +653,10 @@ def main():
             for ii, kr in enumerate(kappas.real):
                 output('{: 23.5e}, {:.10e}'.format(rks[ii], kr))
 
-            out = tuple(kappas)
+            if options.log_std_waves:
+                out = out + tuple(ii if ii <= max_kappa else nm.nan
+                                  for ii in std_wave_fun(omega, wdir))
+
             log(*out, x=[omega])
 
             if not options.eigs_only:
