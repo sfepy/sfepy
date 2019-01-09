@@ -73,6 +73,7 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     options = {
         'absolute_mesh_path' : True,
         'refinement_level' : refinement_level,
+        'allow_empty_regions' : True,
         'post_process_hook' : 'compute_von_mises' if post_process else None,
     }
 
