@@ -539,7 +539,9 @@ def main():
         log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
                    [r'$\omega_{%d}$'
                     % ii for ii in range(options.n_eigs)] + log_names],
-                  plot_kwargs=[{}, [{}] * options.n_eigs + log_plot_kwargs],
+                  plot_kwargs=[plot_kwargs, plot_kwargs + log_plot_kwargs],
+                  formats=[['{:.5e}'] * options.n_eigs,
+                           ['{:.5e}'] * (options.n_eigs + len(log_names))],
                   yscales=['linear', 'linear'],
                   xlabels=[r'$\kappa$', r'$\kappa$'],
                   ylabels=[r'eigenvalues $\lambda_i$',
@@ -567,7 +569,9 @@ def main():
                                          eigenvectors=True)
             omegas = nm.sqrt(eigs)
 
-            output('eigs, omegas:\n', nm.c_[eigs, omegas])
+            output('eigs, omegas:')
+            for ii, om in enumerate(omegas):
+                output('{: .10e}, {:.10e}'.format(eigs[ii], om))
 
             out = tuple(eigs) + tuple(omegas)
             if options.log_std_waves:
