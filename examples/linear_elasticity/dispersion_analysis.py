@@ -572,7 +572,7 @@ def main():
 
             output('eigs, omegas:')
             for ii, om in enumerate(omegas):
-                output('{: .10e}, {:.10e}'.format(eigs[ii], om))
+                output('{:>3}. {: .10e}, {:.10e}'.format(ii, eigs[ii], om))
 
             out = tuple(eigs) + tuple(omegas)
             if options.log_std_waves:
@@ -656,7 +656,7 @@ def main():
 
             output('raw kappas, masked real part:',)
             for ii, kr in enumerate(kappas.real):
-                output('{: 23.5e}, {:.10e}'.format(rks[ii], kr))
+                output('{:>3}. {: 23.5e}, {:.10e}'.format(ii, rks[ii], kr))
 
             if options.log_std_waves:
                 out = out + tuple(ii if ii <= max_kappa else nm.nan
