@@ -506,9 +506,15 @@ def main():
     output('R + R^T:', _max_diff_csr(mtx_r, -mtx_r.T))
 
     n_eigs = options.n_eigs
-    if options.n_eigs > mtx_k.shape[0]:
-        options.n_eigs = mtx_k.shape[0]
-        n_eigs = None
+    if options.mode == 'omega':
+        if options.n_eigs > mtx_k.shape[0]:
+            options.n_eigs = mtx_k.shape[0]
+            n_eigs = None
+
+    else:
+        if options.n_eigs > 2 * mtx_k.shape[0]:
+            options.n_eigs = 2 * mtx_k.shape[0]
+            n_eigs = None
 
     if options.mode == 'omega':
         eigenshapes_filename = os.path.join(output_dir,
@@ -595,7 +601,7 @@ def main():
         for io, omega in stepper:
             output('step %d: frequency %s' % (io, omega))
 
-            mtx_a = sps.bmat([[mtx_k - omega**2 * mtx_m, None],
+            mtx_a = sps.bmat([[omega**2 * mtx_m - mtx_k, None],
                               [None, mtx_eye]])
             mtx_b = sps.bmat([[1j * mtx_r, mtx_l],
                               [mtx_l.T, None]])
@@ -610,16 +616,36 @@ def main():
                 svecs = None
 
             else:
-                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
-                                         eigenvectors=True)
+                eigs, esvecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
+                                          eigenvectors=True)
+
             kappas = eigs
 
-            output('kappas:\n', kappas[:, None])
+            rks = kappas.copy()
+
+            # Mask modes far from 1. Brillouin zone.
+            max_kappa = 1.2 * bzone
+            kappas[kappas.real > max_kappa] = nm.nan
+
+            # Mask non-physical modes.
+            kappas[kappas.real < 0] = nm.nan
+            kappas[nm.abs(kappas.imag) > 1e-10] = nm.nan
+            out = tuple(kappas.real)
+
+            output('raw kappas, masked real part:',)
+            for ii, kr in enumerate(kappas.real):
+                output('{: 23.5e}, {:.10e}'.format(rks[ii], kr))
 
             out = tuple(kappas)
             log(*out, x=[omega])
 
-            save_eigenvectors(eigenshapes_filename % io, svecs, wmag, wdir, pb)
+            if not options.eigs_only:
+                # Save vectors corresponding to physical modes.
+                ii = nm.isfinite(kappas.real)
+                svecs = esvecs[:mtx_k.shape[0], ii]
+
+            save_eigenvectors(eigenshapes_filename % io, svecs, kappas, wdir,
+                              pb)
 
             gc.collect()
 
