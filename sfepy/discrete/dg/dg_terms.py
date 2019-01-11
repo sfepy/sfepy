@@ -283,7 +283,7 @@ class AdvFluxDGTerm(Term):
         # int_{j-1/2}^{j+1/2} f(u)dx
         #
         # only from the zero order function, over [-1, 1] - hence the 2
-        # TODO move this to matrix mode?
+        # TODO move this (stiffness matrix) to matrix mode?
         # intg1 = velo * u[:, 0] * 2
         # intg2 = velo * u[:, 1] * 2 if n_el_nod > 2 else 0
         # i.e. intg1 = a * u0 * reference_el_vol

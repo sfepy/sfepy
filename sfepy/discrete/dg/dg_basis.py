@@ -28,7 +28,7 @@ def iter_by_order(order, dim):
         for i in range(porder):
             for j in range(porder - i):
                 m = int(j + porder * i - i / 2 * (i - 1))
-                yield ((j, i))
+                yield ((i, j))
         return
     elif dim == 3:
         for i in range(porder):
