@@ -25,10 +25,11 @@ def iter_by_order(order, dim):
             yield ((i,))
         return
     elif dim == 2:
-        for i in range(porder):
-            for j in range(porder - i):
-                m = int(j + porder * i - i / 2 * (i - 1))
-                yield ((i, j))
+        for k in range(porder):
+            for i in range(k + 1):
+                # print(k, k - i, i)
+                # m = int(j + porder * i - i / 2 * (i - 1))
+                yield ((i, k - i))
         return
     elif dim == 3:
         for i in range(porder):
@@ -103,14 +104,36 @@ class LegendrePolySpace(PolySpace):
 
         return values
 
+    def get_interpol_scheme(self):
+        """
+        Returns F and P matrices according to gmsh basis specification:
+
+        Let us assume that the approximation of the view's value over an element is written as a linear
+        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
+        list-of-values). Defining
+
+        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
+
+        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
+        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+
+        :return: struct with name of the scheme, geometry desc and P and F
+        """
+        if self.dim > 1:
+            interp_scheme_struct = Struct(name=self.name + "_interpol_scheme",
+                                          F=self.coefM, P=self.expoM, desc=self.geometry.name)
+        else:
+            interp_scheme_struct = None
+        return interp_scheme_struct
+
     def combine_polyvals(self, coors, polyvals, idx):
         raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
     def combine_polyvals_diff(self, coors, polyvals, der, idx):
         raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
-    def get_interpol_scheme(self):
-        raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
+    # def get_interpol_scheme(self):
+    #     raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
 
     # --------------------- #
@@ -241,6 +264,8 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
 
     def __init__(self, name, geometry, order):
         LegendrePolySpace.__init__(self, name, geometry, order)
+        if self.dim > 1:
+            self.coefM, self.expoM = self.build_interpol_scheme()
 
     def combine_polyvals(self, coors, polyvals, idx):
         return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
@@ -251,7 +276,7 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         derz[der] = 1
         return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
-    def get_interpol_scheme(self):
+    def build_interpol_scheme(self):
         """
         Builds F and P matrices according to gmsh basis specification:
 
@@ -264,7 +289,7 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
         space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
-        :return:
+        :return: F, P
         """
 
         from scipy.special import jacobi
@@ -287,26 +312,32 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
                 res.append(row[:A.shape[1] - i])
             return nm.concatenate(res)
 
-        P = nm.zeros((self.n_nod, 3))
+        P = nm.zeros((self.n_nod, 3), dtype=nm.int32)
         for m, idx in enumerate(iter_by_order(self.order, self.dim)):
             P[m, :self.dim] = idx
 
         F = nm.zeros((self.n_nod, self.n_nod))
+        Fa = nm.zeros((self.n_nod, self.n_nod))
+
         for m, idx in enumerate(iter_by_order(self.order, self.dim)):
             xcoefs = list(jacobi(idx[0], 0, 0).coef)[::-1]
             xcoefs = nm.array(xcoefs + [0] * (self.order + 1 - len(xcoefs)))
             ycoefs = list(jacobi(idx[1], 0, 0).coef)[::-1]
             ycoefs = nm.array(ycoefs + [0] * (self.order + 1 - len(ycoefs)))
-            coef_mat = nm.outer(ycoefs, xcoefs)
-            F[m, :] = flattten_upper_left_triag(coef_mat)
-
-        interp_scheme_struct = Struct(name=self.name + "_interpol_scheme",
-                                    F=F, P=P, desc=self.geometry.name)
-        return interp_scheme_struct
+            coef_mat = nm.outer(xcoefs, ycoefs)
+            F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim)]
+        # TODO this could be all mush more elegant, and maybe work in 3D too
+        return F, P
 
 
 class LegendreSimplexPolySpace(LegendrePolySpace):
     name = "legendre_simplex"
+
+    def __init__(self, name, geometry, order):
+        LegendrePolySpace.__init__(self, name, geometry, order)
+        if self.dim > 1:
+            self.coefM = nm.loadtxt("legendre2D_simplex_coefs.txt")[:self.n_nod, :self.n_nod]
+            self.expoM = nm.loadtxt("legendre2D_simplex_expos.txt")[:self.n_nod, :]
 
     def combine_polyvals(self, coors, polyvals, idx):
 
@@ -318,12 +349,9 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             s = coors[..., 1]
             a = 2 * (1 + r) / (1 - s) - 1
             b = s
-            a[nm.isnan(a)] = 1.
-
-            # a = (a + 1) / 2
-            # b = (b + 1) / 2
+            # a[nm.isnan(a)] = 1.
             # TODO maybe, just maybe somehow transform this to be able to use with jacobi polys on interval [0, 1]
-            return nm.sqrt(2) * eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
+            return eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
         elif len(idx) == 3:
             r = coors[..., 0]
             s = coors[..., 1]
@@ -341,9 +369,6 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                    eval_jacobi(idx[2], 2*idx[0] + 2*idx[1] + 2, 0, c) * (1 - c)**(idx[0] + idx[1])
 
     def combine_polyvals_diff(self, coors, polyvals, di, idx):
-        dimz = range(len(idx))
-        derz = nm.zeros(len(idx), dtype=nm.int32)
-        derz[di] = 1
         if len(idx) == 1:
             nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
         elif len(idx) == 2:
@@ -354,17 +379,22 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             a[nm.isnan(a)] = 1.
 
             if di == 0:  # d/dx
-                return polyvals[..., 0, idx[0], 1] * \
-                       self.jacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]*(1 - b)**idx[0]
+                # r - derivative
+                # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
+                return 2 * polyvals[..., 0, idx[0], 1] * \
+                       self.jacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]**((0.5*(1-b))**(idx[0]-1))
+
             elif di == 1:  # d/dy
-                return 2 * polyvals[..., 0, idx[0], 0] * \
+                # s - derivative
+                # d / ds = ((1 + a) / 2) / ((1 - b) / 2) d / da + d / db
+                return 2 * polyvals[..., 0, idx[0], 1] * \
                        (self.gradjacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]*(1 - b)**idx[0] -
                         self.jacobiP(b, 2 * idx[0] + 1, 0,)[..., idx[1]]*(1 - b) ** (idx[0] - 1))
                         # 2 due to transformation of coor in eval basis, TODO refactor!
         elif len(idx) == 3:
-            r = 2 * coors[..., 0] - 1
-            s = 2 * coors[..., 1] - 1
-            t = 2 * coors[..., 2] - 1
+            r = coors[..., 0]
+            s = coors[..., 1]
+            t = coors[..., 2]
             a = -2 * (1 + r) / (s + t) - 1
             b = 2 * (1 + s) / (1 - t) - t
             c = t
@@ -372,42 +402,13 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             b[nm.isnan(b)] = 1.
             # a = (a + 1) / 2
             # b = (b + 1) / 2
-            raise NotImplementedError("Not implemented yet, tough luck :-|")
+            # raise NotImplementedError("Not implemented yet, tough luck :-|")
             # TODO maybe, just maybe somehow transform this to be able to use jacobi polys on interval [0, 1]
+            from scipy.special import jacobi, eval_jacobi
             return nm.sqrt(8) * eval_jacobi(idx[0], 0, 0, a) * \
                    eval_jacobi(idx[1], 2 * idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
 
-    def get_interpol_scheme(self):
-        """
-        Builds F and P matrices according to gmsh basis specification:
-
-        Let us assume that the approximation of the view's value over an element is written as a linear
-        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
-        list-of-values). Defining
-
-        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
-
-        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
-        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
-
-        :return: struct with name of the scheme, geometry desc and P and F
-        """
-        F = nm.array([[  1,   0,  0,   0,  0,  0],
-                      [ -2,   4,  0,   2,  0,  0],
-                      [  4, -24, 24,  -8, 24,  4],
-                      [ -1,   0,  0,   3,  0,  0],
-                      [  2,  -4,  0, -12, 20, 10],
-                      [  1,   0,  0,  -8,  0, 10]])
-        P = nm.array([[0, 0, 0],
-                      [1, 0, 0],
-                      [2, 0, 0],
-                      [0, 1, 0],
-                      [1, 1, 0],
-                      [0, 2, 0]])
-        interp_scheme_struct = Struct(name=self.name + "_interpol_scheme",
-                                      F=F, P=P, desc=self.geometry.name)
-        return interp_scheme_struct
 
 
 def plot_2Dtensor_basis_grad():
@@ -420,7 +421,7 @@ def plot_2Dtensor_basis_grad():
                       dim=2,
                       coors=gel_coors)
 
-    order = 1
+    order = 2
     bs = LegendreTensorProductPolySpace('legb', geometry, order)
 
     # Make data.
@@ -434,7 +435,7 @@ def plot_2Dtensor_basis_grad():
     coorsgrad = nm.array(nm.meshgrid(Xgrad, Ygrad)).T
     Zgrad = bs.eval_base(coorsgrad, diff=True)
 
-    Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:] /100  # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
+    Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:] / 200  # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
@@ -504,7 +505,7 @@ def plot_2Dsimplex_basis_grad():
         vec_field = ax.quiver(coorsgrad[:,  0], coorsgrad[:, 1], -1*nm.ones((Np,)),
                               zgrad[0, :,  0, i], zgrad[0, :,  1, i], nm.zeros((Np,)), color='r')
         #  ax.scatter(x, y, z[:, 0, i])
-        ax.scatter(gx, gy, nm.sqrt(zgrad[0, :,  0, i]**2 + zgrad[0, :,  1, i]**2), 'k')
+        # ax.scatter(gx, gy, nm.sqrt(zgrad[0, :,  0, i]**2 + zgrad[0, :,  1, i]**2), 'k')
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -550,6 +551,6 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    plot_2Dtensor_basis_grad()
-    # plot_2Dsimplex_basis_grad()
+    # plot_2Dtensor_basis_grad()
+    plot_2Dsimplex_basis_grad()
     # plot_1D_basis()

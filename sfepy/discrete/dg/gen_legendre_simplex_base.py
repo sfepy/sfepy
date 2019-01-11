@@ -15,7 +15,7 @@ from dg_basis import iter_by_order
 a, b = symbols("a, b")
 r, s = symbols("r, s")
 x, y = symbols("x, y")
-order = 3
+order = 10
 dim = 2
 n_el_nod = int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
                reduce(mul, range(1, dim+1)))  # number of DOFs per element
@@ -30,7 +30,7 @@ for m, idx in enumerate(iter_by_order(order, dim)):
     # print(m, idx)
     exponentM[m, :dim] = idx
     pa = jacobi_P(idx[0], 0, 0, a)
-    pb = jacobi_P(idx[1], 2*idx[0] + 1, 0,b)*(1 - b)**idx[0]
+    pb = jacobi_P(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
     # print("P_{} = {}".format(m, pa*pb))
     polrs = cancel((pa*pb).subs(b , s).subs(
                     a, 2 * (1 + r) / (1 - s) - 1))
