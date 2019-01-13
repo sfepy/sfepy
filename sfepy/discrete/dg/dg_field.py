@@ -563,7 +563,7 @@ class DGField(Field):
         :return:
         """
         if ref_nodes is None:
-            # TODO we need exactly as many ref_nodes as we have basis functions, maybe poly_space should provide those
+            # TODO we need exactly as many ref_nodes as we have basis functions, maybe poly_space should provide those?
             ref_nodes = self.get_qp('v', Integral("I", order=self.approx_order + 1)).vals
             # ref_nodes = nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64)
         base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]

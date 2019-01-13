@@ -9,7 +9,7 @@ from sfepy.base.base import Struct
 def iter_by_order(order, dim):
     """
     Iterates over all combinations of basis functions indexes
-    needed to create multidimensional basis.
+    needed to create multidimensional basis in a way that creates hierarchical basis
     :param order: desired order of multidimensional basis
     :param dim: dimension of the basis
     :yields: tuple containing indexes, use in combine_polyvals and combine_polyvals_der
@@ -79,18 +79,20 @@ class LegendrePolySpace(PolySpace):
 
         :param coors:
         :param diff:
-        :param ori: TODO what is this for?
+        :param ori: we do not need ori, because the basis is discontinoues across elements
         :param suppress_errors:
         :param eps:
         :return:
         """
+        coors = 2*coors-1
         porder = self.order + 1
-        coors = 2 * coors - 1
         if diff:
+            if type(diff) == bool:
+                diff = 1
             values = nm.zeros((1,) + coors.shape[:-1] + (self.dim, self.n_nod))  # number of values of derivative is equal to dimension
-            polyvals = nm.zeros(coors.shape + (porder, 2))  # 2 is derivative order plus 1, so far we support only first derivative
+            polyvals = nm.zeros(coors.shape + (porder,) + (self.dim,)*diff)  # (dim,)*derivative order is shape of derivation tensor, so far we support only first derivative
             polyvals[..., 0] = self.legendreP(coors)
-            polyvals[..., 1] = 2 * self.gradlegendreP(coors)  # 2 due to transformation of coordinates
+            polyvals[..., 1] = self.gradlegendreP(coors)
 
             for m, idx in enumerate(iter_by_order(self.order, self.dim)):
                 for d in range(self.dim):
@@ -106,7 +108,7 @@ class LegendrePolySpace(PolySpace):
 
     def get_interpol_scheme(self):
         """
-        Returns F and P matrices according to gmsh basis specification:
+        For dim > 1 returns F and P matrices according to gmsh basis specification:
 
         Let us assume that the approximation of the view's value over an element is written as a linear
         combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
@@ -119,11 +121,10 @@ class LegendrePolySpace(PolySpace):
 
         :return: struct with name of the scheme, geometry desc and P and F
         """
+        interp_scheme_struct = None
         if self.dim > 1:
             interp_scheme_struct = Struct(name=self.name + "_interpol_scheme",
                                           F=self.coefM, P=self.expoM, desc=self.geometry.name)
-        else:
-            interp_scheme_struct = None
         return interp_scheme_struct
 
     def combine_polyvals(self, coors, polyvals, idx):
@@ -208,7 +209,7 @@ class LegendrePolySpace(PolySpace):
     # --------------------- #
     def jacobiP(self, coors, alpha, beta):
         """
-        Values of the jacobi polynomials shifted to interval [-1, 1]
+        Values of the jacobi polynomials shifted to interval [0, 1]
         up to self.order + 1 at coors
         :param coors:
         :param alpha:
@@ -243,7 +244,6 @@ class LegendrePolySpace(PolySpace):
         :param diff:
         :return: output shape is shape(coor) + (self.order + 1,)
         """
-
         if isinstance(coors, (int, float)):
             sh = (1,)
         else:
@@ -253,7 +253,6 @@ class LegendrePolySpace(PolySpace):
         values = nm.zeros(sh + (self.order + 1,))
         for i in range(self.order + 1):
             jacob_poly = jacobi(i, alpha, beta)
-            jacob_poly.deriv(m=diff)
             values[..., i] = jacob_poly.deriv(m=diff)(coors)
 
         return values
@@ -336,8 +335,12 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
     def __init__(self, name, geometry, order):
         LegendrePolySpace.__init__(self, name, geometry, order)
         if self.dim > 1:
-            self.coefM = nm.loadtxt("legendre2D_simplex_coefs.txt")[:self.n_nod, :self.n_nod]
-            self.expoM = nm.loadtxt("legendre2D_simplex_expos.txt")[:self.n_nod, :]
+            try:
+                self.coefM = nm.loadtxt("legendre2D_simplex_coefs.txt")[:self.n_nod, :self.n_nod]
+                self.expoM = nm.loadtxt("legendre2D_simplex_expos.txt")[:self.n_nod, :]
+            except FileNotFoundError as e:
+                raise FileNotFoundError("File {} not found, run gen_legendre_simplex_base to generate it."
+                                        .format(e.filename))
 
     def combine_polyvals(self, coors, polyvals, idx):
 
@@ -364,11 +367,11 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             # a = (a + 1) / 2
             # b = (b + 1) / 2
             # TODO maybe, just maybe somehow transform this to be able to use with jacobi polys on interval [0, 1]
-            return nm.sqrt(8) * eval_jacobi(idx[0], 0, 0, a) * \
+            return eval_jacobi(idx[0], 0, 0, a) * \
                    eval_jacobi(idx[1], 2*idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2*idx[0] + 2*idx[1] + 2, 0, c) * (1 - c)**(idx[0] + idx[1])
 
-    def combine_polyvals_diff(self, coors, polyvals, di, idx):
+    def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
         if len(idx) == 1:
             nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
         elif len(idx) == 2:
@@ -376,21 +379,30 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             s = coors[..., 1]
             a = 2 * (1 + r) / (1 - s) - 1
             b = s
-            a[nm.isnan(a)] = 1.
+            a[nm.isnan(a)] = -1.
+            di = idx[0]
+            dj = idx[0]
 
-            if di == 0:  # d/dx
+            fa = self.jacobiP(a, 0, 0)[..., di]
+            dfa = self.gradjacobiP(a, 0, 0, di)[..., di]
+            gb = self.jacobiP(b, 2 * di + 1, 0)[..., dj]
+            dgb = self.gradjacobiP(b, 2 * di + 1, 0)[..., dj]
+
+            if dvar == 0:  # d/dr
                 # r - derivative
                 # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
-                return 2 * polyvals[..., 0, idx[0], 1] * \
-                       self.jacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]**((0.5*(1-b))**(idx[0]-1))
+                dmodedr = dfa * gb
+                return 2 * dmodedr *((0.5*(1-b))**(di-1)) if di > 0 else dmodedr
 
-            elif di == 1:  # d/dy
+            elif dvar == 1:  # d/ds
                 # s - derivative
                 # d / ds = ((1 + a) / 2) / ((1 - b) / 2) d / da + d / db
-                return 2 * polyvals[..., 0, idx[0], 1] * \
-                       (self.gradjacobiP(b, 2*idx[0] + 1, 0)[..., idx[1]]*(1 - b)**idx[0] -
-                        self.jacobiP(b, 2 * idx[0] + 1, 0,)[..., idx[1]]*(1 - b) ** (idx[0] - 1))
-                        # 2 due to transformation of coor in eval basis, TODO refactor!
+                dmodeds = dfa * (gb * (0.5 * (1 + a)))
+                dmodeds = dmodeds * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodeds
+                tmp = dgb * ((0.5 * (1 - b)) ** di)
+                tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else tmp
+                return 2 * dmodeds+fa*tmp
+                    # 2 due to transformation of coors in eval basis, TODO refactor!
         elif len(idx) == 3:
             r = coors[..., 0]
             s = coors[..., 1]
@@ -415,6 +427,7 @@ def plot_2Dtensor_basis_grad():
     from mpl_toolkits.mplot3d import Axes3D
     import matplotlib.pyplot as plt
     from matplotlib import cm
+    from numpy.linalg import norm
 
     gel_coors = nm.array([[0, 0], [0, 1], [1, 1], [0, 1]])
     geometry = Struct(n_vertex=4,
@@ -435,15 +448,17 @@ def plot_2Dtensor_basis_grad():
     coorsgrad = nm.array(nm.meshgrid(Xgrad, Ygrad)).T
     Zgrad = bs.eval_base(coorsgrad, diff=True)
 
-    Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:] / 200  # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
+    # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
-        surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
+        fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
                                linewidth=0, antialiased=False, alpha=.6)
-        vec_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1*nm.ones((10, 10)),
-                               Zgrad[:, :, 0, i], Zgrad[:, :, 1, i], nm.zeros((10, 10)), color='r')
+        grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1*nm.ones((10, 10)),
+                               Zgrad[:, :, 0, i]/ 50, Zgrad[:, :, 1, i]/ 50, nm.zeros((10, 10)), color='r')
+        grad_norm = ax.scatter(coorsgrad[:, :, 0], coorsgrad[:, :, 1], norm(Zgrad[:,:, :, i], axis=2))
+
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
         ax.set_zlabel("Z")
@@ -456,6 +471,7 @@ def plot_2Dsimplex_basis_grad():
     import matplotlib.pyplot as plt
     from matplotlib import cm
     from matplotlib.ticker import LinearLocator, FormatStrFormatter
+    from numpy.linalg import norm
 
     gel_coors = nm.array([[0, 0], [0, 1], [1, 1], [0, 1]])
     geometry = Struct(n_vertex=4,
@@ -495,17 +511,16 @@ def plot_2Dsimplex_basis_grad():
     gx, gy, Np = simplex_nodes2D(5)
     coorsgrad = nm.zeros((Np, 2))
     coorsgrad[:, 0] = gx
-    coorsgrad[:, 0] = gy
-    zgrad = bs.eval_base(coorsgrad, diff=True)
+    coorsgrad[:, 1] = gy
+    Zgrad = bs.eval_base(coorsgrad, diff=True)[0, ...]
 
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
-        ax.plot_trisurf(coors[:, 0], coors[:, 1], z[:, 0, i], linewidth=0.2, antialiased=True)
-        vec_field = ax.quiver(coorsgrad[:,  0], coorsgrad[:, 1], -1*nm.ones((Np,)),
-                              zgrad[0, :,  0, i], zgrad[0, :,  1, i], nm.zeros((Np,)), color='r')
-        #  ax.scatter(x, y, z[:, 0, i])
-        # ax.scatter(gx, gy, nm.sqrt(zgrad[0, :,  0, i]**2 + zgrad[0, :,  1, i]**2), 'k')
+        fun_surf = ax.plot_trisurf(coors[:, 0], coors[:, 1], z[:, 0, i], linewidth=0.2, antialiased=True)
+        grad_field = ax.quiver(coorsgrad[:,  0], coorsgrad[:,  1], -1 * nm.ones(Np),
+                               Zgrad[:,  0, i] / 50, Zgrad[:, 1, i] / 50, nm.zeros(Np), color='r')
+        grad_norm = ax.scatter(coorsgrad[:,  0], coorsgrad[:, 1], norm(Zgrad[:, :, i], axis=1))
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
