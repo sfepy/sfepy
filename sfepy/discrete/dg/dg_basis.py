@@ -84,7 +84,7 @@ class LegendrePolySpace(PolySpace):
         :param eps:
         :return:
         """
-        coors = 2*coors-1
+        coors = 2*coors-1  # TODO refactor
         porder = self.order + 1
         if diff:
             if type(diff) == bool:
@@ -366,13 +366,13 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             b[nm.isnan(b)] = -1.
             # a = (a + 1) / 2
             # b = (b + 1) / 2
-            # TODO maybe, just maybe somehow transform this to be able to use with jacobi polys on interval [0, 1]
             return eval_jacobi(idx[0], 0, 0, a) * \
                    eval_jacobi(idx[1], 2*idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2*idx[0] + 2*idx[1] + 2, 0, c) * (1 - c)**(idx[0] + idx[1])
 
     def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
         if len(idx) == 1:
+            # TODO derivative in 1D
             nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
         elif len(idx) == 2:
             r = coors[..., 0]
@@ -404,6 +404,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 return 2 * dmodeds + 2 * fa*tmp
                     # 2 due to transformation of coors in eval basis, TODO refactor!
         elif len(idx) == 3:
+            # TODO 3d derivative
             r = coors[..., 0]
             s = coors[..., 1]
             t = coors[..., 2]
@@ -414,13 +415,10 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             b[nm.isnan(b)] = -1.
             # a = (a + 1) / 2
             # b = (b + 1) / 2
-            # raise NotImplementedError("Not implemented yet, tough luck :-|")
-            # TODO maybe, just maybe somehow transform this to be able to use jacobi polys on interval [0, 1]
             from scipy.special import jacobi, eval_jacobi
             return nm.sqrt(8) * eval_jacobi(idx[0], 0, 0, a) * \
                    eval_jacobi(idx[1], 2 * idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
-
 
 
 def plot_2Dtensor_basis_grad():
