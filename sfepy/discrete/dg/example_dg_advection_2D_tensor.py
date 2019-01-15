@@ -18,9 +18,8 @@ from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem.meshio import VTKMeshIO
-
-
 from sfepy.base.conf import ProblemConf
+from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
 # local import
 from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
@@ -40,7 +39,7 @@ meshio.write(outfile, mesh)
 domain = FEDomain('domain_tensor_2D', mesh)
 omega = domain.create_region('Omega', 'all')
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 2
 #^^^^^^^^^^^^^^^^#
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
@@ -48,7 +47,7 @@ field = DGField('dgfu', nm.float64, 'scalar', omega,
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-velo = nm.array([1., 0.])
+velo = nm.array([[1., 0.]]).T
 
 t0 = 0
 t1 = 1
@@ -67,9 +66,12 @@ integral = Integral('i', order=5)
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+                                  u=u, v=v, a=a, mode="grad_virtual")
+
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', IntT + FluxT)
+eq = Equation('balance', IntT + StiffT + FluxT)
 eqs = Equations([eq])
 
 

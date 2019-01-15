@@ -19,6 +19,8 @@ from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.mesh.mesh_tools import triangulate
 from sfepy.discrete.fem.meshio import VTKMeshIO
+from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
+
 
 from sfepy.base.conf import ProblemConf
 
@@ -51,7 +53,7 @@ dgfield = DGField('dgfu', nm.float64, 'scalar', omega,
 u = FieldVariable('u', 'unknown', dgfield, history=1)
 v = FieldVariable('v', 'test', dgfield, primary_var_name='u')
 
-velo = nm.array([1., 0.])
+velo = nm.array([[1., 0.]]).T
 
 t0 = 0
 t1 = 1
@@ -70,6 +72,8 @@ integral = Integral('i', order=5)
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+                                  u=u, v=v, a=a, mode="grad_virtual")
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
 eq = Equation('balance', IntT + FluxT)
@@ -117,4 +121,4 @@ nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
-# pb.solve()
+pb.solve()
