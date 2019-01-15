@@ -232,7 +232,7 @@ class LegendrePolySpace(PolySpace):
 
     def gradjacobiP(self, coors, alpha, beta, diff=1):
         """
-         diff derivative of the jacobi polynomials shifted to interval [-1, 1]
+         diff derivative of the jacobi polynomials on interval [-1, 1]
         up to self.order + 1 at coors
 
         Warning
@@ -351,9 +351,9 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             r = coors[..., 0]
             s = coors[..., 1]
             a = 2 * (1 + r) / (1 - s) - 1
+            a[nm.isnan(a)] = -1.
             b = s
             # a[nm.isnan(a)] = 1.
-            # TODO maybe, just maybe somehow transform this to be able to use with jacobi polys on interval [0, 1]
             return eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
         elif len(idx) == 3:
             r = coors[..., 0]
@@ -362,8 +362,8 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             a = -2 * (1 + r) / (s + t) - 1
             b = 2 * (1 + s) / (1 - t) - t
             c = t
-            a[nm.isnan(a)] = 1.
-            b[nm.isnan(b)] = 1.
+            a[nm.isnan(a)] = -1.
+            b[nm.isnan(b)] = -1.
             # a = (a + 1) / 2
             # b = (b + 1) / 2
             # TODO maybe, just maybe somehow transform this to be able to use with jacobi polys on interval [0, 1]
@@ -381,10 +381,10 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             b = s
             a[nm.isnan(a)] = -1.
             di = idx[0]
-            dj = idx[0]
+            dj = idx[1]
 
             fa = self.jacobiP(a, 0, 0)[..., di]
-            dfa = self.gradjacobiP(a, 0, 0, di)[..., di]
+            dfa = self.gradjacobiP(a, 0, 0)[..., di]
             gb = self.jacobiP(b, 2 * di + 1, 0)[..., dj]
             dgb = self.gradjacobiP(b, 2 * di + 1, 0)[..., dj]
 
@@ -392,16 +392,16 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 # r - derivative
                 # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
                 dmodedr = dfa * gb
-                return 2 * dmodedr *((0.5*(1-b))**(di-1)) if di > 0 else dmodedr
+                return 2 * dmodedr * ((0.5*(1-b))**(di-1)) if di > 0 else dmodedr
 
             elif dvar == 1:  # d/ds
                 # s - derivative
                 # d / ds = ((1 + a) / 2) / ((1 - b) / 2) d / da + d / db
                 dmodeds = dfa * (gb * (0.5 * (1 + a)))
-                dmodeds = dmodeds * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodeds
+                dmodeds = dmodeds * ((0.5 * (1 - b))**(di - 1)) if di > 0 else dmodeds
                 tmp = dgb * ((0.5 * (1 - b)) ** di)
-                tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else tmp
-                return 2 * dmodeds+fa*tmp
+                tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b))**(di - 1)) if di > 0 else tmp
+                return 2 * dmodeds + 2 * fa*tmp
                     # 2 due to transformation of coors in eval basis, TODO refactor!
         elif len(idx) == 3:
             r = coors[..., 0]
@@ -410,8 +410,8 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             a = -2 * (1 + r) / (s + t) - 1
             b = 2 * (1 + s) / (1 - t) - t
             c = t
-            a[nm.isnan(a)] = 1.
-            b[nm.isnan(b)] = 1.
+            a[nm.isnan(a)] = -1.
+            b[nm.isnan(b)] = -1.
             # a = (a + 1) / 2
             # b = (b + 1) / 2
             # raise NotImplementedError("Not implemented yet, tough luck :-|")
@@ -501,14 +501,14 @@ def plot_2Dsimplex_basis_grad():
             start = start + N - n + 1
         return x, y, Np
 
-    x, y, Np = simplex_nodes2D(20)
+    x, y, Np = simplex_nodes2D(10)
 
     coors = nm.zeros((Np, 2))
     coors[:, 0] = x
     coors[:, 1] = y
     z = bs.eval_base(coors, diff=False)
 
-    gx, gy, Np = simplex_nodes2D(5)
+    gx, gy, Np = simplex_nodes2D(10)
     coorsgrad = nm.zeros((Np, 2))
     coorsgrad[:, 0] = gx
     coorsgrad[:, 1] = gy
@@ -517,10 +517,10 @@ def plot_2Dsimplex_basis_grad():
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
-        fun_surf = ax.plot_trisurf(coors[:, 0], coors[:, 1], z[:, 0, i], linewidth=0.2, antialiased=True)
+        fun_surf = ax.plot_trisurf(coors[:, 0], coors[:, 1], z[:, 0, i], linewidth=0.2, antialiased=True, alpha=.7)
         grad_field = ax.quiver(coorsgrad[:,  0], coorsgrad[:,  1], -1 * nm.ones(Np),
                                Zgrad[:,  0, i] / 50, Zgrad[:, 1, i] / 50, nm.zeros(Np), color='r')
-        grad_norm = ax.scatter(coorsgrad[:,  0], coorsgrad[:, 1], norm(Zgrad[:, :, i], axis=1))
+        grad_norm = ax.scatter(coorsgrad[:,  0], coorsgrad[:, 1], norm(Zgrad[:, :, i], axis=1), color='r')
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
