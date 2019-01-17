@@ -319,7 +319,7 @@ class AdvFluxDGTerm(Term):
                                           C * fc_n[:, facet_n, :] * (a - b) / 2
             return facet_fluxs
         elif dim == 2:
-            qp, ws = field.get_facet_qp(None)
+            facet_bf, whs = field.get_facet_base()
             # TODO get basis values at qps
             # TODO get C
             # TODO compute fluxes as above
