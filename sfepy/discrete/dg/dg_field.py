@@ -103,12 +103,11 @@ class DGField(Field):
 
         # integral
         self.clear_qp_base()
+        self.clear_facet_qp_base()
         if integral is None:
             self.integral = Integral("dg_fi", order=2*approx_order)
         else:
             self.integral = integral
-
-
 
         self.ori = None
         self.basis_transform = None
@@ -263,6 +262,107 @@ class DGField(Field):
             return self.bf[bf_key]
         else:
             return self.bf[bf_key], qp.weights
+
+    def clear_facet_qp_base(self):
+        self.facet_bf = None
+        self.facet_qp = None
+        self.facet_whs = None
+
+    def _transform_qps_to_facets(self, qps, geo_name):
+        """
+        Transforms points given in qps to all facets of the reference element
+        of geometry geo_name. Return is of shape shape(qps) + (n_el_facets, geo dim)
+        :param qps:
+        :param geo_name:
+        :return: tqps
+        """
+
+        if geo_name == "1_2":
+            tqps = nm.zeros(nm.shape(qps) + (2, 1,))
+            tqps[..., 0, 0] = 0.
+            tqps[..., 1, 0] = 1.
+        elif geo_name == "2_3":
+            tqps = nm.zeros(nm.shape(qps) + (3, 2, ))
+            # 0.
+            tqps[..., 0, 0] = qps  # x = 0 + t
+            tqps[..., 0, 1] = 0.  # y = 0
+            # 1.
+            tqps[..., 1, 0] = 1 - qps  # x = 1 - t
+            tqps[..., 1, 1] = qps  # y = t
+            # 2.
+            tqps[..., 2, 0] = 0  # x = 0
+            tqps[..., 2, 1] = 1 - qps  # y = 1 - t
+        elif geo_name == "2_4":
+            tqps = nm.zeros(nm.shape(qps) + (4, 2,))
+            # 0.
+            tqps[..., 0, 0] = qps  # x = t
+            tqps[..., 0, 1] = 0.  # y = 0
+            # 1.
+            tqps[..., 1, 0] = 1  # x = 1
+            tqps[..., 1, 1] = qps  # y = t
+            # 2.
+            tqps[..., 2, 0] = 1 - qps  # x = 1 -t
+            tqps[..., 2, 1] = 1  # y = 1
+            # 3.
+            tqps[..., 3, 0] = 0  # x = 0
+            tqps[..., 3, 1] = 1 - qps  # y = 1 - t
+        else:
+            raise NotImplementedError("Geometry {} not supported".format(geo_name))
+        return tqps
+
+
+    def get_facet_qp(self):
+        """
+        Returns dim - 1 quadrature points on all facets of the reference element in array of shape
+        ()
+        :return: qp, weights
+        """
+
+        qps, weights = self.integral.get_qp("1_2")  # TODO determine facet geometry from cell geo for use in 3D
+        weights = weights[:, None]  # add axis for broadcasting, TODO transform weights?
+        facet_qps = self._transform_qps_to_facets(qps, self.gel.name)
+
+        # from postprocess.plot_facets import plot_geometry
+        # from postprocess.plot_quadrature import plot_weighted_points
+        # import matplotlib.pyplot as plt
+        # fig, ax = plt.subplots()
+        # plot_geometry(ax, self.gel)
+        # facet_qps_flat = nm.concatenate([facet_qps[..., i,:] for i in range(self.n_el_facets)])
+        # facet_weights_flat = nm.concatenate([weights] * self.n_el_facets)[:, 0]
+        # ax.scatter(facet_qps_flat[..., 0, 0], facet_qps_flat[..., 0, 1])
+        # plt.show()
+
+        return facet_qps, weights
+
+    def get_facet_base(self, derivative=False, base_only=False):
+        """
+        Raturns values of base in facets quadrature points, data shape is a bit crazy right now - TODO refactor
+        currently (number of qps, 1, n_el_facets, 1, n_el_nod)
+        :param derivative: not yet supported
+        :param base_only:
+        :return:
+        """
+
+        if self.facet_bf is not None:
+            facet_bf =  self.facet_bf
+            whs = self.facet_whs
+        else:
+            qps, whs = self.get_facet_qp()
+            ps = self.poly_space
+            self.facet_qp = qps
+            self.facet_whs = whs
+            self.facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod)) # TODO adjust shape for derivative
+            for i in range(self.n_el_facets):
+                self.facet_bf[..., i, :, :] = ps.eval_base(qps[..., i, :], diff=derivative,
+                             transform=self.basis_transform)
+            facet_bf = self.facet_bf
+
+
+        if base_only:
+            return facet_bf
+        else:
+            return facet_bf, whs
+
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
@@ -481,67 +581,6 @@ class DGField(Field):
                 normals_out[ic, ifal] = normals[o1 + ifal]
 
         return normals_out
-
-    def get_facet_qp(self, region):
-        """
-        Calculates integrals over facets, returns them for cells and neighbours:
-        cell: cell inner values, cell outer values
-        :param region:
-        :param dofs: in shape (n_cell, n_el_nod, 1)
-        :param nb_dofs: in shape (n_cell, n_el_facets, n_el_nod, 1)
-        :return: (n_cell, n_el_facets, self.n_el_facets)
-        """
-
-        qps, weights = self.integral.get_qp("1_2")  # TODO determine facet geometry from cell geo
-        weights = weights[:, None]  # add axis for broadcasting, TODO transform weights?
-        facet_qps = self._transform_qps_to_facets(qps, self.gel.name)
-
-        # from postprocess.plot_facets import plot_geometry
-        # from postprocess.plot_quadrature import plot_weighted_points
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots()
-        # plot_geometry(ax, self.gel)
-        # facet_qps_flat = nm.concatenate([facet_qps[..., i,:] for i in range(self.n_el_facets)])
-        # facet_weights_flat = nm.concatenate([weights] * self.n_el_facets)[:, 0]
-        # ax.scatter(facet_qps_flat[..., 0, 0], facet_qps_flat[..., 0, 1])
-        # plt.show()
-
-        return facet_qps, weights
-
-    def _transform_qps_to_facets(self, qps, geo_name):
-
-        if geo_name == "1_2":
-            tqps = nm.zeros(nm.shape(qps) + (2, 1,))
-            tqps[..., 0, 0] = 0.
-            tqps[..., 1, 0] = 1.
-        elif geo_name == "2_3":
-            tqps = nm.zeros(nm.shape(qps) + (3, 2, ))
-            # 0.
-            tqps[..., 0, 0] = qps  # x = 0 + t
-            tqps[..., 0, 1] = 0.  # y = 0
-            # 1.
-            tqps[..., 1, 0] = 1 - qps  # x = 1 - t
-            tqps[..., 1, 1] = qps  # y = t
-            # 2.
-            tqps[..., 2, 0] = 0  # x = 0
-            tqps[..., 2, 1] = 1 - qps  # y = 1 - t
-        elif geo_name == "2_4":
-            tqps = nm.zeros(nm.shape(qps) + (4, 2,))
-            # 0.
-            tqps[..., 0, 0] = qps  # x = t
-            tqps[..., 0, 1] = 0.  # y = 0
-            # 1.
-            tqps[..., 1, 0] = 1  # x = 1
-            tqps[..., 1, 1] = qps  # y = t
-            # 2.
-            tqps[..., 2, 0] = 1 - qps  # x = 1 -t
-            tqps[..., 2, 1] = 1  # y = 1
-            # 3.
-            tqps[..., 3, 0] = 0  # x = 0
-            tqps[..., 3, 1] = 1 - qps  # y = 1 - t
-        else:
-            raise NotImplementedError("Geometry {} not supported".format(geo_name))
-        return tqps
 
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
