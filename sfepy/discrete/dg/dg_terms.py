@@ -222,19 +222,23 @@ class AdvFluxDGTerm(Term):
             # do not eval in matrix mode, we however still need
             # this term to have diff_var in order for it to receive the values
             doeval = False
-            u = unravel_sol(state)
-            return u, None, None, None, a[:, 0, :, 0], doeval, 0, 0
+            dofs = unravel_sol(state)
+            return dofs, None, None, None, a[:, 0, :, 0], doeval, 0, 0
         else:
             doeval = True
 
             field = state.field
-            u = unravel_sol(state)  # TODO we unravel twice, refactor
+            region = field.region
             n_el_nod = state.field.poly_space.n_nod
             n_el_facets = state.field.n_el_facets
-            nb_dofs, facet_normals = state.field.get_nbrhd_dofs(state.field.region, state)
+
+            dofs = unravel_sol(state)  # TODO we unravel twice, refactor
+            nb_dofs, facet_normals = state.field.get_nbrhd_dofs(region, state)
+            inner_facet_qp_vals, outer_facet_qp_vals, whs = field.get_both_facet_qp_vals(dofs, region)
             # state variable has dt in it!
 
-            fargs = (u, nb_dofs, facet_normals, a[:, 0, :, 0], doeval, n_el_nod, n_el_facets, field)
+            # TODO get rid of all the unnecessary data
+            fargs = (dofs, nb_dofs, facet_normals, a[:, 0, :, 0], doeval, n_el_nod, n_el_facets, field)
             return fargs
 
     def function(self, out, u, nb_u, fc_n, velo, doeval, n_el_nod, n_el_facets, field):
@@ -264,7 +268,7 @@ class AdvFluxDGTerm(Term):
 
         fluxs = nm.zeros((nm.shape(out)[0], n_el_nod, 1))
         fluxs[:, 0] = - nm.sum(facet_fluxs * fc_n, axis=1)
-        intg1 = velo * u[:, 0] * 2  # TODO this goes to the stifness matrix, provided by ScalarDotMGradScalarTerm
+        intg1 = velo * u[:, 0] * 2  # TODO this goes to the stiffness matrix, provided by ScalarDotMGradScalarTerm
         fluxs[:, 1] = - facet_fluxs[:, 0] - facet_fluxs[:, 1] + intg1
 
         # flux0 = (fl - fp)
@@ -302,9 +306,11 @@ class AdvFluxDGTerm(Term):
         :param nb_dofs: in shape (n_cell, n_el_facets, n_el_nod, 1)
         :return: (n_cell, n_el_facets, self.n_el_facets)
         """
+        # TODO use data obtained from field, it should be easy from now on
         dim = fc_n.shape[-1]
+        n_cell = nm.shape(dofs)[0]
         if dim == 1:
-            facet_integrals = nm.zeros((self.n_cell, self.n_el_facets, 2, 1), dtype=nm.float64)
+            facet_integrals = nm.zeros((n_cell, n_el_facets, 2, 1), dtype=nm.float64)
             facet_integrals[:, 0, 0] = dofs[:, 0] - dofs[:, 1]
             facet_integrals[:, 1, 0] = dofs[:, 0] + dofs[:, 1]
             facet_integrals[:, 0, 1] = nb_dofs[:, 0, 0] + nb_dofs[:, 0, 1]
@@ -320,8 +326,9 @@ class AdvFluxDGTerm(Term):
             return facet_fluxs
         elif dim == 2:
             facet_bf, whs = field.get_facet_base()
-            # TODO get basis values at qps
-            # TODO get C
+            facet_qp_vals = nm.zeros((n_cell, n_el_facets, len(whs)))
+            facet_qp_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
+            C = nm.abs(nm.sum(fc_n * velo[:, None, :], axis=-1))[:, None]
             # TODO compute fluxes as above
 
 

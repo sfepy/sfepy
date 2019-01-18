@@ -277,6 +277,7 @@ class DGField(Field):
         :return: tqps
         """
 
+        # TODO use from sfepy.discrete.fem import geometry_element
         if geo_name == "1_2":
             tqps = nm.zeros(nm.shape(qps) + (2, 1,))
             tqps[..., 0, 0] = 0.
@@ -310,7 +311,6 @@ class DGField(Field):
             raise NotImplementedError("Geometry {} not supported".format(geo_name))
         return tqps
 
-
     def get_facet_qp(self):
         """
         Returns dim - 1 quadrature points on all facets of the reference element in array of shape
@@ -336,8 +336,10 @@ class DGField(Field):
 
     def get_facet_base(self, derivative=False, base_only=False):
         """
-        Raturns values of base in facets quadrature points, data shape is a bit crazy right now - TODO refactor
-        currently (number of qps, 1, n_el_facets, 1, n_el_nod)
+        Returns values of base in facets quadrature points, data shape is a bit crazy right now - TODO refactor
+        currently (number of qps, 1, n_el_facets, 1, n_el_nod). This is because base eval preserves qp shape and ads
+        dimension of the value - in case of derivative this will be (dim,) * derivative order and all basis values
+        i.e. n_el_nod values
         :param derivative: not yet supported
         :param base_only:
         :return:
@@ -362,7 +364,6 @@ class DGField(Field):
             return facet_bf
         else:
             return facet_bf, whs
-
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
@@ -508,7 +509,7 @@ class DGField(Field):
 
         dofs = self.unravel_sol(variable.data[0])
 
-        neighbours = self.get_cell_nb_per_facet(region)
+        neighbours = self.get_cell_nb_per_facet(region)[..., 0]
         nb_normals = self.get_cell_normals_per_facet(region, neighbours)
 
         ghost_nbrs = nm.where(neighbours < 0)
@@ -524,11 +525,13 @@ class DGField(Field):
 
     def get_cell_nb_per_facet(self, region):
         """
-        Retruns array of cell neighbbours sharing facet
+        Returns array of cell neighbours sharing facet, along with local index
+        of the facet within neighbour, puts -1 where there are no neighbours
         :param region:
-        # TODO why should be region passed?
-        :return:
+        :return: shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
+        the second is index of the facet this nb. cell in said nb. cell
         """
+        # FIXME this is very time consuming, but data are only indexes which do not vary so we can cash them.
         n_cell = self.n_cell
         dim = self.dim
         gel = self.gel
@@ -537,28 +540,58 @@ class DGField(Field):
         cmesh = region.domain.mesh.cmesh
         cells = region.cells
 
-        neighbours = nm.zeros((n_cell, n_el_facets), dtype=nm.int32)
+        facet_neighbours = nm.zeros((n_cell, n_el_facets, 2), dtype=nm.int32)
 
         c2fi, c2fo = cmesh.get_incident(dim - 1, cells, dim, ret_offsets=True)
+
         for ic, o1 in enumerate(c2fo[:-1]):  # loop over cells
             o2 = c2fo[ic + 1]
 
             c2ci, c2co = cmesh.get_incident(dim, c2fi[o1:o2], dim - 1,
                                             ret_offsets=True)  # get neighbours per facet of the cell
+            ii = cmesh.get_local_ids(c2fi[o1:o2], dim - 1, c2ci, c2co, dim)
+            fis = nm.c_[c2ci, ii]
+
             nbrs = []
             for ifa, of1 in enumerate(c2co[:-1]):  # loop over facets
                 of2 = c2co[ifa + 1]
                 if of2 == (of1 + 1):  # facet has only one cell
                     # Surface facet.
-                    nbrs.append(-1)  # c2ci[of1])  # append the cell, itself
+                    nbrs.append([-1, -1])  # c2ci[of1])  # append the cell, itself
                 else:
                     if c2ci[of1] == cells[ic]:  # do not append the cell itself
-                        nbrs.append(c2ci[of2 - 1])
+                        nbrs.append(fis[of2 - 1])
                     else:
-                        nbrs.append(c2ci[of1])
-            neighbours[ic] = nbrs
+                        nbrs.append(fis[of1])
+            facet_neighbours[ic, :, :] = nbrs
 
-        return neighbours
+        return facet_neighbours
+
+    def get_both_facet_qp_vals(self, dofs, region):
+        """
+        Computes values of the variable represented by dofs in
+        quadrature points located at facets, returns both values -
+        inner and outer, along with weights.
+        :param dofs:
+        :param region:
+        :return:
+        """
+        # TODO try for 1D
+        facet_bf, whs = self.get_facet_base()
+        # facet_bf = facet_bf[:, 0, :, 0, :].T
+        inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, len(whs)))
+        inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
+
+        outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, len(whs)))
+        facet_neighbours = self.get_cell_nb_per_facet(region)
+
+        for facet_n in range(self.n_el_facets):
+            outer_facet_vals[:, facet_n, :] = nm.sum(
+                dofs[facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
+                facet_bf[:, 0, facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
+                # TODO treat boundary conditions
+
+        return inner_facet_vals, outer_facet_vals, whs
 
     def get_cell_normals_per_facet(self, region, neighbours):
         n_cell = self.n_cell
@@ -582,10 +615,9 @@ class DGField(Field):
 
         return normals_out
 
-
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
-        Compute projection of fun into the basis, alternatevely set DOFs directly to provided
+        Compute projection of fun into the basis, alternatively set DOFs directly to provided
         value or values
         :param fun: callable, scallar or array corresponding to dofs
         :param region: region to set DOFs on
