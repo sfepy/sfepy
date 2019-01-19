@@ -15,11 +15,14 @@ from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
+from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
+
+
 from sfepy.base.conf import ProblemConf
 
 
 # local import
-from dg_terms import AdvFluxDGTerm, AdvVolDGTerm, AdvFluxDGTerm1D
+from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
@@ -41,7 +44,7 @@ mesh = Mesh.from_data('advection_1d', coors, None,
 velo = 1.0
 
 t0 = 0
-t1 = 0.08
+t1 = 0.8
 dx = (XN - X1) / n_nod
 dt = dx / velo * 1/2
 # time_steps_N = int((tf - t0) / dt) * 2
@@ -65,13 +68,15 @@ field = DGField('dgfu', nm.float64, 'scalar', omega,
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 
-
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+                                  u=u, v=v, a=a, mode="grad_virtual")
+
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', IntT + FluxT)
+eq = Equation('balance', IntT + StiffT + FluxT )
 eqs = Equations([eq])
 
 left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})

@@ -229,66 +229,40 @@ class AdvFluxDGTerm(Term):
 
             field = state.field
             region = field.region
-            n_el_nod = state.field.poly_space.n_nod
-            n_el_facets = state.field.n_el_facets
 
             dofs = unravel_sol(state)  # TODO we unravel twice, refactor
-            nb_dofs, facet_normals = state.field.get_nbrhd_dofs(region, state)
+            cell_normals = field.get_cell_normals_per_facet(region)
+            facet_base_vals = field.get_facet_base(base_only=True)
             inner_facet_qp_vals, outer_facet_qp_vals, whs = field.get_both_facet_qp_vals(dofs, region)
             # state variable has dt in it!
 
-            # TODO get rid of all the unnecessary data
-            fargs = (dofs, nb_dofs, facet_normals, a[:, 0, :, 0], doeval, n_el_nod, n_el_facets, field)
+            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals, facet_base_vals, whs,  cell_normals, a[:, 0, :, 0], doeval)
             return fargs
 
-    def function(self, out, u, nb_u, fc_n, velo, doeval, n_el_nod, n_el_facets, field):
+    def function(self, out, dofs, in_fc_v, out_fc_v, fc_b, whs, fc_n, velo, doeval):
         if not doeval:
             out[:] = 0.0
             return None
 
-        #  the Lax-Friedrichs flux is
-
-        #       F(a, b) = (f(a) + f(b))/2 + max(n_x * |df1(u)/du  +  n_y * df2(u)/du|) / 2 * n * (a - b)
-
-        # in our case a and b are values from elements left and right of
-        # the respective element boundaries
-        # for Legendre basis these are:
-        # u_left = U_0 + U_1 + U_2 + ...
-        # u_right = U_0 - U_1 + U_2 - U_3 ... = sum_{p=0}^{order} (-1)^p * U_p
-
-        # left flux is calculated in j_-1/2  where U(j-1) and U(j) meet
-        # right flux is calculated in j_+1/2 where U(j) and U(j+1) meet
-
-        # fl:
-        # fl = velo[:, 0] * (ul[:, 0] + ul[:, 1] +
-        #                    (u[:, 0] - u[:, 1])) / 2 + \
-        #      nm.abs(velo[:, 0]) * (ul[:, 0] + ul[:, 1] -
-        #                            (u[:, 0] - u[:, 1])) / 2
-        facet_fluxs = self.get_facet_fluxes(u, nb_u, velo, fc_n, n_el_facets, field)
-
-        fluxs = nm.zeros((nm.shape(out)[0], n_el_nod, 1))
-        fluxs[:, 0] = - nm.sum(facet_fluxs * fc_n, axis=1)
-        intg1 = velo * u[:, 0] * 2  # TODO this goes to the stiffness matrix, provided by ScalarDotMGradScalarTerm
-        fluxs[:, 1] = - facet_fluxs[:, 0] - facet_fluxs[:, 1] + intg1
-
-        # flux0 = (fl - fp)
-        # flux1 = (- fl - fp + intg1)
-
-        # for Legendre basis integral of higher order
-        # functions of the basis is zero,
-        # hence we calculate integral
-        #
-        # int_{j-1/2}^{j+1/2} f(u)dx
-        #
-        # only from the zero order function, over [-1, 1] - hence the 2
-        # TODO move this (stiffness matrix) to matrix mode?
-        # intg1 = velo * u[:, 0] * 2
-        # intg2 = velo * u[:, 1] * 2 if n_el_nod > 2 else 0
-        # i.e. intg1 = a * u0 * reference_el_vol
+        n_cell = dofs.shape[0]
+        n_el_nod = dofs.shape[1]
+        n_el_facets = fc_n.shape[-2]
+        C = nm.abs(nm.sum(fc_n * velo[:, None, :], axis=-1))[:, None]
+        facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
+        for facet_n in range(n_el_facets):
+            for n in range(n_el_nod):
+                fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
+                fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
+                central = velo[:, None, :] * fc_v_p[:, :, None]
+                upwind =  (C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
+                facet_fluxes[:, facet_n, n] = 1./2. * nm.sum(fc_n[:, facet_n] *
+                                                             nm.sum((central + upwind) * fc_b[None, :, 0, facet_n, 0, n, None] * whs[None, :, :], axis=1),
+                                                             axis=1)
+        cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
         out[:] = 0.0
         for i in range(n_el_nod):
-            out[:, :, i, 0] = -fluxs[:, i]
+            out[:, :, i, 0] = cell_fluxes[:, i, None]
 
 
         status = None
