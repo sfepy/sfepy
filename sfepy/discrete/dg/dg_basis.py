@@ -89,8 +89,8 @@ class LegendrePolySpace(PolySpace):
         if diff:
             if type(diff) == bool:
                 diff = 1
-            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim, self.n_nod))  # number of values of derivative is equal to dimension
-            polyvals = nm.zeros(coors.shape + (porder,) + (self.dim,)*diff)  # (dim,)*derivative order is shape of derivation tensor, so far we support only first derivative
+            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim,)*diff + (self.n_nod,))  # (dim,)*derivative order is shape of derivation tensor, so far we support only first derivative
+            polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))  # diff + 1 is number of values of one dimensional base
             polyvals[..., 0] = self.legendreP(coors)
             polyvals[..., 1] = self.gradlegendreP(coors)
 
@@ -564,6 +564,6 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    # plot_2Dtensor_basis_grad()
-    plot_2Dsimplex_basis_grad()
+    plot_2Dtensor_basis_grad()
+    #plot_2Dsimplex_basis_grad()
     # plot_1D_basis()
