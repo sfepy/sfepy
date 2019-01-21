@@ -517,7 +517,7 @@ class DGField(Field):
         dofs = self.unravel_sol(variable.data[0])
 
         neighbours = self.get_cell_nb_per_facet(region)[..., 0]
-        nb_normals = self.get_cell_normals_per_facet(region, neighbours)
+        nb_normals = self.get_cell_normals_per_facet(region)
 
         ghost_nbrs = nm.where(neighbours < 0)
 
@@ -605,13 +605,17 @@ class DGField(Field):
 
         ghost_nbrs = nm.where(per_facet_neighbours < 0)
 
+        if self.dim == 1:  # periodic boundary conditions in 1D
+            per_facet_neighbours[0, 0] = [-1, 1]
+            per_facet_neighbours[-1, 1] = [0, 0]
+
         for facet_n in range(self.n_el_facets):
             outer_facet_vals[:, facet_n, :] = nm.sum(
                 dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
                 facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
         # TODO treat boundary conditions more comprehensively
-        outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
+        # outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
 
         return inner_facet_vals, outer_facet_vals, whs
 
