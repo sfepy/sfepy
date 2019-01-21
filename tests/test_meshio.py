@@ -198,6 +198,12 @@ class Test(TestCommon):
         return sum(oks) == len(oks)
 
     def test_hdf5_meshio(self):
+        try:
+            from igakit import igalib
+        except ImportError:
+            self.report('hdf5_meshio not-tested (missing igalib module)!')
+            return True
+
         import tempfile
         import numpy as nm
         import scipy.sparse as sps

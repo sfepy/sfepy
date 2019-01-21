@@ -17,6 +17,17 @@ class NLSStatus(IndexedStruct):
         if key == 'condition':
             self.conditions.append(val)
 
+class TestDummy(TestCommon):
+    """Simulate test OK result for missing optional modules."""
+
+    @staticmethod
+    def from_conf(conf, options):
+        return TestDummy()
+
+    def test_dummy(self):
+        return True
+
+
 class TestInput(TestCommon):
     """Test that an input file works. See test_input_*.py files."""
 
