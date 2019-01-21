@@ -12,7 +12,7 @@ import sfepy.postprocess.plot_cmesh as pc
 
 mesh = gen_block_mesh([1, 1], [4, 4], [0, 0], verbose=False)
 #mesh = gen_block_mesh([1, 1, 1], [4, 4, 3], [0, 0, 0], verbose=False)
-#mesh = Mesh.from_file('meshes/2d/its2D.mesh')
+mesh = Mesh.from_file('../../../meshes/2d/its2D.mesh')
 
 # X1 = 0
 # XN1 = 1
@@ -103,12 +103,12 @@ ax = pc.plot_cmesh(
     None, cmesh,
     wireframe_opts = {'color' : 'k', 'linewidth' : 2},
     entities_opts=[
-        # {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},
+        {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},
         {'color' : 'b', 'label_global' : 6, 'label_local' : 8, 'size' : 10},
         {'color' : 'r', 'label_global' : 12, 'size' : 20},
     ])
 
 ax = plot_facet_normals(ax, cmesh, normals, scale, neighbours)
-ax.set_ylim([-1, 1])
+# ax.set_ylim([-1, 1])
 
 plt.show()

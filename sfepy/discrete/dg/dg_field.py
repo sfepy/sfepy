@@ -344,7 +344,7 @@ class DGField(Field):
 
     def get_facet_base(self, derivative=False, base_only=False):
         """
-        Returns values of base in facets quadrature points, data shape is a bit crazy right now - TODO refactor
+        Returns values of base in facets quadrature points, data shape is a bit crazy right now
         currently (number of qps, 1, n_el_facets, 1, n_el_nod). This is because base eval preserves qp shape and ads
         dimension of the value - in case of derivative this will be (dim,) * derivative order and all basis values
         i.e. n_el_nod values
@@ -352,7 +352,6 @@ class DGField(Field):
         :param base_only:
         :return:
         """
-
         if self.facet_bf is not None:
             facet_bf =  self.facet_bf
             whs = self.facet_whs
@@ -361,10 +360,15 @@ class DGField(Field):
             ps = self.poly_space
             self.facet_qp = qps
             self.facet_whs = whs
-            self.facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod)) # TODO adjust shape for derivative
+            if derivative:
+                diff = derivative if isinstance(derivative, int) else 1
+                self.facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] + (self.dim,)*diff + (self.n_el_nod,))
+            else:
+                self.facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod,))
+
             for i in range(self.n_el_facets):
                 self.facet_bf[..., i, :, :] = ps.eval_base(qps[..., i, :], diff=derivative,
-                             transform=self.basis_transform)
+                                                           transform=self.basis_transform)
             facet_bf = self.facet_bf
 
         if base_only:
@@ -594,7 +598,6 @@ class DGField(Field):
         :param region:
         :return:
         """
-        # TODO try for 1D
         facet_bf, whs = self.get_facet_base()
         # facet_bf = facet_bf[:, 0, :, 0, :].T
         inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, len(whs)))

@@ -25,7 +25,7 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 from sfepy.base.conf import ProblemConf
 
 # local import
-from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
+from dg_terms import AdvFluxDGTerm, AdvVolDGTerm, ScalarDotMGradScalarDGTerm
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
@@ -72,8 +72,8 @@ integral = Integral('i', order=5)
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
-                                  u=u, v=v, a=a, mode="grad_virtual")
+StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+                                    u=u, v=v, a=a, mode="grad_virtual")
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
 eq = Equation('balance', IntT + FluxT)

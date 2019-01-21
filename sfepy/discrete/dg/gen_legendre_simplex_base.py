@@ -43,6 +43,6 @@ for m, idx in enumerate(iter_by_order(order, dim)):
     print("P_{}{} = {}".format(m, idx, simplexP[m]))
     print()
 np.savetxt("legendre2D_simplex_expos.txt", exponentM, fmt="%d")
-np.savetxt("legendre2D_simplex_coefs.txt", coefM, fmt="%d") # tODO are coefs always integers?
+np.savetxt("legendre2D_simplex_coefs.txt", coefM, fmt="%d")  # TODO are coefs always integers?
 
 
