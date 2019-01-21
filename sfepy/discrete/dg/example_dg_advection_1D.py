@@ -22,7 +22,7 @@ from sfepy.base.conf import ProblemConf
 
 
 # local import
-from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
+from dg_terms import AdvFluxDGTerm, AdvVolDGTerm, ScalarDotMGradScalarDGTerm
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
@@ -52,7 +52,7 @@ tn = int(nm.ceil((t1 - t0) / dt))
 
 approx_order = 1
 
-integral = Integral('i', order=5)
+integral = Integral('i', order=7)
 domain = FEDomain('domain_1D', mesh)
 # FEDomain contains default lagrange polyspace in its geometry
 omega = domain.create_region('Omega', 'all')
@@ -71,12 +71,12 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 IntT = AdvVolDGTerm(integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
-                                  u=u, v=v, a=a, mode="grad_virtual")
+StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+                                    u=u, v=v, a=a, mode="grad_virtual")
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', IntT + StiffT + FluxT )
+eq = Equation('balance', IntT - 2*StiffT + FluxT)  # TODO why the 2? it does not work for higher orders!
 eqs = Equations([eq])
 
 left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})

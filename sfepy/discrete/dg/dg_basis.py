@@ -404,7 +404,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 return 2 * dmodeds + 2 * fa*tmp
                     # 2 due to transformation of coors in eval basis, TODO refactor!
         elif len(idx) == 3:
-            # TODO 3d derivative
+            # TODO 3D derivative
             r = coors[..., 0]
             s = coors[..., 1]
             t = coors[..., 2]
@@ -553,17 +553,20 @@ def plot_1D_basis():
     plt.plot([0, 1], [0, 0], 'k')
 
     plt.figure("Jacobi polyspace diff")
-    plt.plot(coors, grad_vals[0, :,0, :])
+    plt.plot(coors, grad_vals[0, :, 0, 2], "--")
+    plt.plot(coors, vals[:, 0, 2])
 
-    plt.plot(coors, bs.get_nth_fun_der(2)(coors), ".-")
-    plt.plot(coors, bs.get_nth_fun_der(3)(coors), ".-")
-    plt.plot(coors, bs.get_nth_fun_der(4)(coors), ".-")
+
+    # plt.plot(coors, bs.get_nth_fun(1)(coors), ".-")
+    # plt.plot(coors, bs.get_nth_fun_der(1)(coors), ".-")
+    # plt.plot(coors, bs.get_nth_fun_der(3)(coors), ".-")
+    # plt.plot(coors, bs.get_nth_fun_der(4)(coors), ".-")
     plt.plot([0, 1], [0, 0], 'k')
 
     plt.show()
 
 
 if __name__ == '__main__':
-    plot_2Dtensor_basis_grad()
+    # plot_2Dtensor_basis_grad()
     #plot_2Dsimplex_basis_grad()
-    # plot_1D_basis()
+    plot_1D_basis()
