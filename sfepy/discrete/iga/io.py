@@ -35,7 +35,7 @@ def write_iga_data(filename, group, knots, degrees, control_points, weights,
 
         nurbs = fd.create_group(group, 'nurbs', 'nurbs')
 
-        fd.create_array(nurbs, 'dim', control_points.shape[1], 'dim')
+        fd.create_array(nurbs, 'dim', (int)(control_points.shape[1]), 'dim')
         fd.create_array(nurbs, 'tdim', len(degrees), 'tdim')
         for ii, kv in enumerate(knots):
             key = 'knots_%d' % ii
