@@ -61,6 +61,7 @@ install:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
   - conda config --set always_yes yes --set changeps1 no
+  - conda config --add channels conda-forge
 
   - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy"
   - activate sfepy-test
@@ -70,14 +71,15 @@ install:
   # IGA kit
   # Install mingw/gfortran build tools
   #
-  - conda install -q -c msys2 m2w64-toolchain
-  - conda install -q libpython
+  - conda install -q m2w64-gcc m2w64-gcc-gfortran
+  #- conda install -q libpython
   #
   - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
+  #- pip install --global-option build_ext --global-option --compiler=mingw32 https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
   #
   # Revert back to native MSVC build tools
   #
-  - conda remove -q libpython
+  # - conda remove -q libpython
   #
   - conda info -a
   - python -V
