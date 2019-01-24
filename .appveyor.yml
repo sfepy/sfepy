@@ -71,7 +71,7 @@ install:
   # IGA kit
   # Install mingw/gfortran build tools
   #
-  - conda install -q m2w64-gcc m2w64-gcc-gfortran
+  - conda install -q m2w64-gcc m2w64-gcc-libs m2w64-gcc-libs-core m2w64-gcc-fortran
   #- conda install -q libpython
   #
   - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
