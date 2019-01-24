@@ -74,8 +74,8 @@ install:
   - conda install -q m2w64-gcc m2w64-gcc-libs m2w64-gcc-libs-core m2w64-gcc-fortran
   #- conda install -q libpython
   #
-  - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
-  #- pip install --global-option build_ext --global-option --compiler=mingw32 https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
+  #- pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
+  - pip install --global-option build_ext --global-option --compiler=mingw32 https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
   #
   # Revert back to native MSVC build tools
   #
@@ -89,7 +89,7 @@ install:
 #---------------------------------#
 
 # to disable automatic builds
-build: false
+build: off
 
 #---------------------------------#
 #       tests configuration       #
