@@ -25,7 +25,7 @@ def get_unraveler(n_el_nod, n_cell):
     def unravel(u):
         ustride1 = u.strides[0]
         ur = as_strided(u, shape=(n_cell, n_el_nod, 1),
-                          strides=(ustride1, ustride1*n_cell, ustride1), writeable=False)
+                        strides=(n_el_nod * ustride1, ustride1, ustride1), writeable=False)
         # FIXME writeable is not valid option for Python 2
         return ur
 
@@ -35,10 +35,10 @@ def get_unraveler(n_el_nod, n_cell):
 def get_raveler(n_el_nod, n_cell):
 
     def ravel(u):
-        ustride1 = u.strides[-1]
-        ur = as_strided(u, shape=(n_el_nod*n_cell, 1),
-                           strides=(ustride1, ustride1))
-        # FIXME writeable is not valid option for Python 2
+        # ustride1 = u.strides[0]
+        # ur = as_strided(u, shape=(n_el_nod*n_cell, 1),
+        #                     strides=(n_cell*ustride1, ustride1))
+        ur = nm.ravel(u)[:, None]
         return ur
 
     return ravel
@@ -152,9 +152,10 @@ class DGField(Field):
         self.n_cell = self.region.get_n_cells(self.is_surface)
         n_dof = self.n_cell * self.n_el_nod
         dofs = nm.ones((self.n_cell, self.n_el_nod), dtype=nm.int32)
-        for i in range(self.n_el_nod):
-            dofs[:, i] = nm.arange(self.n_cell*i, self.n_cell*(i+1), dtype=nm.int32)
+        # for i in range(self.n_el_nod):
+        #     dofs[:, i] = nm.arange(self.n_cell*i, self.n_cell*(i+1), dtype=nm.int32)
 
+        dofs = nm.arange(n_dof, dtype=nm.int32).reshape(self.n_cell, self.n_el_nod)
         remap = nm.arange(self.n_cell)
         self.econn = dofs
 
@@ -312,7 +313,7 @@ class DGField(Field):
             tqps[..., 3, 0] = 0  # x = 0
             tqps[..., 3, 1] = 1 - qps  # y = 1 - t
         else:
-            raise NotImplementedError("Geometry {} not supported".format(geo_name))
+            raise NotImplementedError("Geometry {} not supported, yet".format(geo_name))
         return tqps
 
     def get_facet_qp(self):
@@ -542,9 +543,9 @@ class DGField(Field):
 
     def get_cell_nb_per_facet(self, region):
         """
-        Returns array of cell neighbours sharing facet, along with local index
+        Returns index of cell neighbours sharing facet, along with local index
         of the facet within neighbour, puts -1 where there are no neighbours
-        Cashes neighbour index in facet_neighbours index
+        Cashes neighbour index in self.facet_neighbours
         :param region:
         :return: shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
         the second is index of the facet this nb. cell in said nb. cell
@@ -618,7 +619,7 @@ class DGField(Field):
                 facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
         # TODO treat boundary conditions more comprehensively
-        # outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
+        outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
 
         return inner_facet_vals, outer_facet_vals, whs
 
@@ -688,7 +689,7 @@ class DGField(Field):
 
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
 
-            vals = (rhs_vec / lhs_diag).T
+            vals = (rhs_vec / lhs_diag)
 
             # plot for 1D
             # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
@@ -760,16 +761,18 @@ class DGField(Field):
             The output dictionary.
         """
         res = {}
+        udofs = self.unravel_sol(dofs)
+
         for i in range(self.n_el_nod):
             res["u_modal{}".format(i)] = Struct(mode="cell",
-                              data=dofs[self.n_cell * i: self.n_cell*(i+1), :, None, None])
+                              data=udofs[:, i, None, None])
 
         unravel = get_unraveler(self.n_el_nod, self.n_cell)
         res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
                                            data=unravel(dofs)[..., 0],
                                            interpolation_scheme=self.poly_space.get_interpol_scheme())
-        # TODO somehow choose output
-        cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
+        # TODO somehow choose nodal vs modal output
+        # cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
 
