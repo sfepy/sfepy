@@ -409,7 +409,7 @@ class Problem(Struct):
         Sets output options to given values, or uses the defaults for
         each argument that is None.
         """
-        self.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
+        self.output_modes = {'vtk' : 'sequence', 'h5' : 'single', 'msh' : 'sequence'}
 
         self.ofn_trunk = get_default(output_filename_trunk,
                                      op.basename(self.domain.name))
