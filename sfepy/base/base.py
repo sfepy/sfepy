@@ -187,7 +187,7 @@ def import_file(filename, package_name=None, can_reload=True):
             reload(mod)
 
     if remove_path:
-        sys.path.pop(-1)
+        sys.path.remove(path)
 
     return mod
 
