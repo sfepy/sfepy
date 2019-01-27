@@ -1,4 +1,6 @@
 """
+Boron atom with 1 electron.
+
 See :ref:`quantum-quantum_common`.
 """
 from __future__ import absolute_import

@@ -69,7 +69,7 @@ class EVPSolverApp(PDESolverApp):
         if self.post_process_hook_final is not None: # User postprocessing.
             self.post_process_hook_final(self.problem, evp=evp)
 
-        return evp
+        return evp.pb, evp
 
     def solve_eigen_problem(self):
         opts = self.app_options
