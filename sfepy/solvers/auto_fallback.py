@@ -46,7 +46,7 @@ class AutoIterative(AutoFallbackSolver):
 
     The first available solver from the following list is used:
     `ls.petsc <sfepy.solvers.ls.PETScKrylovSolver>` and
-    `ls.scipy_iterative <sfepy.solvers.ls.MUMPSSolver>`
+    `ls.scipy_iterative <sfepy.solvers.ls.ScipyIterative>`
     """
     name = 'ls.auto_iterative'
 
