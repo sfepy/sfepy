@@ -61,28 +61,29 @@ def make_option_docstring(name, kind, default, required, doc):
     return entry
 
 
-def ls_fallback(ls_list, context=None):
+def use_first_available(solver_list, context=None):
     prev_name = None
-    for ls, conf in ls_list:
-        name = ls if isinstance(ls, str) else ls.name
+    for solver, conf in solver_list:
+        name = solver if isinstance(solver, str) else solver.name
         if prev_name is not None:
             output("'%s' not available, trying '%s'" % (prev_name, name))
 
         try:
             _conf = conf.copy()
             _conf.__dict__.pop('fallback', None)
-            if isinstance(ls, str):
+            if isinstance(solver, str):
                 out = Solver.any_from_conf(_conf, context=context)
             else:
-                out = ls(_conf, contex=context)
+                out = solver(_conf, contex=context)
 
-            output("using '%s' linear solver" % name)
+            output("using '%s' solver" % name)
             break
         except (ValueError, OSError):
             prev_name = name
 
     else:
-        raise ValueError('no linear solver available!')
+        raise ValueError('no solver available from %s!'
+                         % [ii[0] for ii in solver_list])
 
     return out
 

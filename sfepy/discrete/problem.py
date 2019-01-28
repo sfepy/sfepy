@@ -26,7 +26,7 @@ from sfepy.discrete.evaluate import create_evaluable, eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
-from sfepy.solvers.solvers import ls_fallback
+from sfepy.solvers.solvers import use_first_available
 from sfepy.solvers.ts_solvers import StationarySolver
 import six
 from six.moves import range
@@ -1069,7 +1069,7 @@ class Problem(Struct):
                     break
 
             if len(fb_list) > 1:
-                ls = ls_fallback(fb_list, context=self)
+                ls = use_first_available(fb_list, context=self)
             else:
                 ls = Solver.any_from_conf(ls_conf, context=self)
 

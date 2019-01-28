@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from sfepy.base.base import Struct
-from sfepy.solvers.solvers import Solver, ls_fallback
+from sfepy.solvers.solvers import Solver, use_first_available
 
 
 class AutoFallbackSolver(Solver):
@@ -21,7 +21,7 @@ class AutoFallbackSolver(Solver):
         ls_solvers = [(ls, Struct(**conf) + Struct(kind=ls))
                       for ls, conf in cls._ls_solvers]
 
-        return ls_fallback(ls_solvers)
+        return use_first_available(ls_solvers)
 
 
 class AutoDirect(AutoFallbackSolver):
