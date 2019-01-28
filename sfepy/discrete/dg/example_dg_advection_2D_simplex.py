@@ -22,11 +22,9 @@ from sfepy.discrete.fem.meshio import VTKMeshIO
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
-
-
 from sfepy.base.conf import ProblemConf
 
-# local import
+# local imports
 from dg_terms import AdvFluxDGTerm
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
@@ -37,7 +35,7 @@ from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
 mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
 mesh = triangulate(mesh)
-outfile =  "output/mesh/simp_2D_mesh.vtk"
+outfile = "output/mesh/simp_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 # meshio.write(outfile, mesh)
 
@@ -78,7 +76,7 @@ StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integ
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', MassT + FluxT)
+eq = Equation('balance', MassT + StiffT + FluxT)
 eqs = Equations([eq])
 
 

@@ -4,7 +4,6 @@ from sfepy.terms.terms import Term
 from dg_field import get_unraveler, get_raveler
 
 
-
 def unravel_sol(state):
     """
     Unpacks solution from flat vector to
@@ -13,15 +12,7 @@ def unravel_sol(state):
 
     :param state:
     """
-
-    u = state.data[0]  # this uses data provided by solver
-    # this uses data provided by solver
-    # ur = self.get(state, 'dg', step=-1)
-    # however this would probably too,
-    # as they are set to variable in equation
-
-    # in 2D+ case this will be replaced by get_nbrhd_dofs
-
+    u = state.data[0]
     n_cell = state.field.n_cell
     n_el_nod = state.field.poly_space.n_nod
     unravel = get_unraveler(n_el_nod, n_cell)
@@ -51,7 +42,7 @@ class AdvVolDGTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if diff_var is not None:
             mtx_mode = True
-            u = None
+            u = unravel_sol(state)
         else:
             mtx_mode = False
             u = unravel_sol(state)

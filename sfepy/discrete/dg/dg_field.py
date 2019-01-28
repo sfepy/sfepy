@@ -136,8 +136,8 @@ class DGField(Field):
         self.n_face_dof = 0 # use facet DOF for AFS methods
 
         (self.n_bubble_dof,
-        self.bubble_remap,
-        self.bubble_dofs) = self._setup_bubble_dofs()
+         self.bubble_remap,
+         self.bubble_dofs) = self._setup_bubble_dofs()
 
         self.n_nod = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof + self.n_bubble_dof
 
@@ -324,11 +324,12 @@ class DGField(Field):
         """
 
         if self.dim == 1:
-            facet_qps = self._transform_qps_to_facets( nm.zeros((1,1)), "1_2")
+            facet_qps = self._transform_qps_to_facets(nm.zeros((1, 1)), "1_2")
             weights = nm.ones((1, 1))
         else:
             qps, weights = self.integral.get_qp("1_2")  # TODO determine facet geometry from cell geo for use in 3D
-            weights = weights[:, None]  # add axis for broadcasting, TODO transform weights?
+            vols = self.region.domain.cmesh.get_volumes(self.dim - 1)[:, None]
+            weights = weights[None, :, None]  # TODO transform weights for real this time!
             facet_qps = self._transform_qps_to_facets(qps, self.gel.name)
 
         # from postprocess.plot_facets import plot_geometry
@@ -349,12 +350,12 @@ class DGField(Field):
         currently (number of qps, 1, n_el_facets, 1, n_el_nod). This is because base eval preserves qp shape and ads
         dimension of the value - in case of derivative this will be (dim,) * derivative order and all basis values
         i.e. n_el_nod values
-        :param derivative: not yet supported
+        :param derivative:
         :param base_only:
         :return:
         """
         if self.facet_bf is not None:
-            facet_bf =  self.facet_bf
+            facet_bf = self.facet_bf
             whs = self.facet_whs
         else:
             qps, whs = self.get_facet_qp()
