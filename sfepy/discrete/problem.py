@@ -986,8 +986,9 @@ class Problem(Struct):
     def set_conf_solvers(self, conf_solvers=None, options=None):
         """
         Choose which solvers should be used. If solvers are not set in
-        `options`, use the ones named `ls`, `nls` or `ts`. If such solvers
-        do not exist, us the firsts suitable in `conf_solvers`.
+        `options`, use the ones named `ls`, `nls` or `ts`. If such solver names
+        do not exist, use the first of each required solver kind listed in
+        `conf_solvers`.
         """
         conf_solvers = get_default(conf_solvers, self.conf.solvers)
         self.solver_confs = {}
