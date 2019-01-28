@@ -62,6 +62,21 @@ def make_option_docstring(name, kind, default, required, doc):
 
 
 def use_first_available(solver_list, context=None):
+    """
+    Use the first available solver from `solver_list`.
+
+    Parameters
+    ----------
+    solver_list : list of str or Struct
+        The list of solver names or configuration objects.
+    context : object, optional
+        An optional solver context to pass to the solver.
+
+    Returns
+    -------
+    out : Solver
+        The first available solver.
+    """
     prev_name = None
     for solver, conf in solver_list:
         name = solver if isinstance(solver, str) else solver.name
