@@ -20,7 +20,7 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 from sfepy.base.conf import ProblemConf
 
 
-# local import
+# local imports
 from dg_terms import AdvFluxDGTerm, AdvVolDGTerm
 # # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver

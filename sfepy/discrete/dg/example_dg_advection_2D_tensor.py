@@ -22,7 +22,7 @@ from sfepy.base.conf import ProblemConf
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 
-# local import
+# local importa
 from dg_terms import AdvFluxDGTerm
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
@@ -52,7 +52,7 @@ print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, 
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 1
 #^^^^^^^^^^^^^^^^#
 integral = Integral('i', order=5)
 

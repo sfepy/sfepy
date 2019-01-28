@@ -73,7 +73,7 @@ class LegendrePolySpace(PolySpace):
         expects coors to be in shape
             (..., dim),
         Returns values of the basis in shape
-            (1, coors.shape[:-1], 1, n_el_nod)
+            (coors.shape[:-1], 1, n_el_nod)
         or values of the gradient in shape
             (1, coors.shape[:-1], dim, n_el_nod)
 
@@ -89,8 +89,10 @@ class LegendrePolySpace(PolySpace):
         if diff:
             if type(diff) == bool:
                 diff = 1
-            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim,)*diff + (self.n_nod,))  # (dim,)*derivative order is shape of derivation tensor, so far we support only first derivative
-            polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))  # diff + 1 is number of values of one dimensional base
+            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim,)*diff + (self.n_nod,))
+            # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
+            polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))
+            # diff + 1 is number of values of one dimensional base
             polyvals[..., 0] = self.legendreP(coors)
             polyvals[..., 1] = self.gradlegendreP(coors)
 
@@ -99,7 +101,8 @@ class LegendrePolySpace(PolySpace):
                     values[..., d, m] = self.combine_polyvals_diff(coors, polyvals, d, idx)
 
         else:
-            values = nm.zeros(coors.shape[:-1] + (1, self.n_nod,))  # 1, because no matter the dimension functions have only one value
+            values = nm.zeros(coors.shape[:-1] + (1, self.n_nod,))
+            # 1, because no matter the dimension functions have only one value
             polyvals = self.legendreP(coors)
             for m, idx in enumerate(iter_by_order(self.order, self.dim)):
                 values[..., 0, m] = self.combine_polyvals(coors, polyvals, idx)
@@ -128,14 +131,12 @@ class LegendrePolySpace(PolySpace):
         return interp_scheme_struct
 
     def combine_polyvals(self, coors, polyvals, idx):
-        raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
+        raise NotImplementedError(
+            "Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
     def combine_polyvals_diff(self, coors, polyvals, der, idx):
-        raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
-
-    # def get_interpol_scheme(self):
-    #     raise NotImplementedError("Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
-
+        raise NotImplementedError(
+            "Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
 
     # --------------------- #
     # 1D legendre polyspace #
@@ -269,10 +270,10 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
     def combine_polyvals(self, coors, polyvals, idx):
         return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
 
-    def combine_polyvals_diff(self, coors, polyvals, der, idx):
+    def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
         dimz = range(len(idx))
         derz = nm.zeros(len(idx), dtype=nm.int32)
-        derz[der] = 1
+        derz[dvar] = 1
         return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def build_interpol_scheme(self):
@@ -325,7 +326,7 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             ycoefs = nm.array(ycoefs + [0] * (self.order + 1 - len(ycoefs)))
             coef_mat = nm.outer(xcoefs, ycoefs)
             F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim)]
-        # TODO this could be all mush more elegant, and maybe work in 3D too
+        # TODO this could be all much more elegant, and maybe work in 3D too
         return F, P
 
 
@@ -339,7 +340,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 self.coefM = nm.loadtxt("legendre2D_simplex_coefs.txt")[:self.n_nod, :self.n_nod]
                 self.expoM = nm.loadtxt("legendre2D_simplex_expos.txt")[:self.n_nod, :]
             except FileNotFoundError as e:
-                raise FileNotFoundError("File {} not found, run gen_legendre_simplex_base to generate it."
+                raise FileNotFoundError("File {} not found, run gen_legendre_simplex_base.py to generate it."
                                         .format(e.filename))
 
     def combine_polyvals(self, coors, polyvals, idx):
@@ -353,7 +354,6 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             a = 2 * (1 + r) / (1 - s) - 1
             a[nm.isnan(a)] = -1.
             b = s
-            # a[nm.isnan(a)] = 1.
             return eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
         elif len(idx) == 3:
             r = coors[..., 0]
@@ -364,16 +364,16 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             c = t
             a[nm.isnan(a)] = -1.
             b[nm.isnan(b)] = -1.
-            # a = (a + 1) / 2
-            # b = (b + 1) / 2
             return eval_jacobi(idx[0], 0, 0, a) * \
                    eval_jacobi(idx[1], 2*idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2*idx[0] + 2*idx[1] + 2, 0, c) * (1 - c)**(idx[0] + idx[1])
 
     def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
         if len(idx) == 1:
-            # TODO derivative in 1D
-            nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
+            dimz = range(len(idx))
+            derz = nm.zeros(len(idx), dtype=nm.int32)
+            derz[dvar] = 1
+            return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
         elif len(idx) == 2:
             r = coors[..., 0]
             s = coors[..., 1]
@@ -402,7 +402,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 tmp = dgb * ((0.5 * (1 - b)) ** di)
                 tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b))**(di - 1)) if di > 0 else tmp
                 return 2 * dmodeds + 2 * fa*tmp
-                    # 2 due to transformation of coors in eval basis, TODO refactor!
+                # 2 due to transformation of coors in eval basis, TODO refactor!
         elif len(idx) == 3:
             # TODO 3D derivative
             r = coors[..., 0]
