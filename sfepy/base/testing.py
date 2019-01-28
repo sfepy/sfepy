@@ -129,6 +129,10 @@ class TestCommon(Struct):
                              None.__class__, type)
         if sys.version_info < (3, 0):
             assert_base_types = assert_base_types + (unicode,) # NOQA
+            #
+            # Dirty fix for Py27/win64/NumPy combo (LK) NOQA
+            #
+            assert_base_types = assert_base_types + (long,)
 
         if a is b: return
 
