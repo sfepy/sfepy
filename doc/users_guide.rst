@@ -840,8 +840,9 @@ Solver selection::
         'ls' : 'ls',
     }
 
-If the linear solver could be unavailable, it is possible to set ``fallback``
-option which specifies the second in line solver::
+For the case that a chosen linear solver is not available, it is possible to
+define the ``fallback`` option of the chosen solver which specifies a possible
+alternative::
 
     solvers = {
         'ls': ('ls.mumps', {'fallback': 'ls2'}),
@@ -852,8 +853,8 @@ option which specifies the second in line solver::
         }),
     }
 
-Another possibility is to use a "virtual" solver that ensures the automatic
-selection of the available solver, see
+Another possibility is to use a "virtual" solver that ensures an automatic
+selection of an available solver, see
 `Virtual Linear Solvers with Automatic Selection`_.
 
 Functions
@@ -1427,8 +1428,8 @@ Virtual Linear Solvers with Automatic Selection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A "virtual" solver can be used in case it is not clear which external linear
-solvers are available. It selects the first disposable solver from
-a defined list.
+solvers are available. Each "virtual" solver selects the first available solver
+from a pre-defined list.
 
 The following solvers are available:
 
