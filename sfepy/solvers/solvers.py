@@ -69,10 +69,12 @@ def ls_fallback(ls_list, context=None):
             output("'%s' not available, trying '%s'" % (prev_name, name))
 
         try:
+            _conf = conf.copy()
+            _conf.__dict__.pop('fallback', None)
             if isinstance(ls, str):
-                out = Solver.any_from_conf(conf, context=context)
+                out = Solver.any_from_conf(_conf, context=context)
             else:
-                out = ls(conf, contex=context)
+                out = ls(_conf, contex=context)
 
             output("using '%s' linear solver" % name)
             break
