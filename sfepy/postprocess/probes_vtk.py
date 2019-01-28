@@ -110,6 +110,33 @@ class Probe(Struct):
         self.probes[name] = (line, pars)
         self.probes_png[name] = False
 
+    def add_points_probe(self, name, coors):
+        """
+        Create the point probe - VTK object.
+
+        Parameters
+        ----------
+        name : str
+            The probe name.
+        coors : array
+            The coordinates of the probe points.
+        """
+        coors = nm.asarray(coors)
+        npts = coors.shape[0]
+        pts = vtk.vtkPoints()
+        pts.SetNumberOfPoints(npts)
+        for ii in range(npts):
+            pts.SetPoint(ii, coors[ii, :])
+
+        poly = vtk.vtkPolyData()
+        poly.SetPoints(pts)
+        if vtk_version < 6:
+            vtk.Update()
+
+        pars = nm.arange(npts + 1)
+        self.probes[name] = (poly, pars)
+        self.probes_png[name] = False
+
     def add_ray_probe(self, name, p0, dirvec, p_fun, n_point):
         """
         Create the ray (line) probe - VTK object.
