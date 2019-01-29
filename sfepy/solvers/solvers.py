@@ -93,7 +93,7 @@ def use_first_available(solver_list, context=None):
 
             output("using '%s' solver" % name)
             break
-        except (ValueError, OSError, ImportError):
+        except (ValueError, OSError, ImportError, TypeError):
             prev_name = name
 
     else:
