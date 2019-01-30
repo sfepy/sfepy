@@ -211,7 +211,9 @@ class Test(TestCommon):
                     try:
                         _ok = self._test_single_term(term_cls, domain, rname)
 
-                    except:
+                    except Exception as exc:
+                        self.report('exc:', exc.message)
+                        raise
                         _ok = False
 
                     if not _ok:
