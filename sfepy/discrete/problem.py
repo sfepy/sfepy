@@ -26,6 +26,7 @@ from sfepy.discrete.evaluate import create_evaluable, eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.discrete.evaluate import Evaluator
 from sfepy.solvers import Solver, NonlinearSolver
+from sfepy.solvers.solvers import use_first_available
 from sfepy.solvers.ts_solvers import StationarySolver
 import six
 from six.moves import range
@@ -985,18 +986,28 @@ class Problem(Struct):
     def set_conf_solvers(self, conf_solvers=None, options=None):
         """
         Choose which solvers should be used. If solvers are not set in
-        `options`, use first suitable in `conf_solvers`.
+        `options`, use the ones named `ls`, `nls` or `ts`. If such solver names
+        do not exist, use the first of each required solver kind listed in
+        `conf_solvers`.
         """
         conf_solvers = get_default(conf_solvers, self.conf.solvers)
         self.solver_confs = {}
+
         for key, val in six.iteritems(conf_solvers):
             self.solver_confs[val.name] = val
 
         def _find_suitable(prefix):
+            cands = []
             for key, val in six.iteritems(self.solver_confs):
                 if val.kind.find(prefix) == 0:
-                    return val
-            return None
+                    if val.name == prefix[:-1]:
+                        return val
+                    else:
+                        cands.append(val)
+            if len(cands) > 0:
+                return cands[0]
+            else:
+                return None
 
         def _get_solver_conf(kind):
             try:
@@ -1050,7 +1061,18 @@ class Problem(Struct):
             nls_conf = get_default(nls_conf, self.nls_conf,
                                    'you must set nonlinear solver!')
 
-            ls = Solver.any_from_conf(ls_conf, context=self)
+            fb_list = []
+            for ii in range(100):
+                fb_list.append((ls_conf.kind, ls_conf))
+                if hasattr(ls_conf, 'fallback'):
+                    ls_conf = self.solver_confs[ls_conf.fallback]
+                else:
+                    break
+
+            if len(fb_list) > 1:
+                ls = use_first_available(fb_list, context=self)
+            else:
+                ls = Solver.any_from_conf(ls_conf, context=self)
 
             ev = self.get_evaluator()
 

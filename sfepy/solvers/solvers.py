@@ -2,7 +2,7 @@
 Base (abstract) solver classes.
 """
 from __future__ import absolute_import
-from sfepy.base.base import Struct
+from sfepy.base.base import Struct, output
 import six
 
 def make_get_conf(conf, kwargs):
@@ -59,6 +59,48 @@ def make_option_docstring(name, kind, default, required, doc):
     entry += typeset_to_indent(doc, 8, 75)
 
     return entry
+
+
+def use_first_available(solver_list, context=None):
+    """
+    Use the first available solver from `solver_list`.
+
+    Parameters
+    ----------
+    solver_list : list of str or Struct
+        The list of solver names or configuration objects.
+    context : object, optional
+        An optional solver context to pass to the solver.
+
+    Returns
+    -------
+    out : Solver
+        The first available solver.
+    """
+    prev_name = None
+    for solver, conf in solver_list:
+        name = solver if isinstance(solver, str) else solver.name
+        if prev_name is not None:
+            output("'%s' not available, trying '%s'" % (prev_name, name))
+
+        try:
+            _conf = conf.copy()
+            _conf.__dict__.pop('fallback', None)
+            if isinstance(solver, str):
+                out = Solver.any_from_conf(_conf, context=context)
+            else:
+                out = solver(_conf, contex=context)
+
+            output("using '%s' solver" % name)
+            break
+        except (ValueError, OSError, ImportError, TypeError):
+            prev_name = name
+
+    else:
+        raise ValueError('no solver available from %s!'
+                         % [ii[0] for ii in solver_list])
+
+    return out
 
 par_template = \
 """

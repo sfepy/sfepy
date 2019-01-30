@@ -67,10 +67,13 @@ def setup_petsc_precond(mtx, problem):
 
 solvers = {
     'd00' : ('ls.scipy_direct',
+             {}
+    ),
+    'd01' : ('ls.scipy_direct',
              {'method' : 'umfpack',
               'warn' : True,}
     ),
-    'd01' : ('ls.scipy_direct',
+    'd02' : ('ls.scipy_direct',
              {'method' : 'superlu',
               'warn' : True,}
     ),
@@ -155,7 +158,8 @@ from sfepy.base.testing import TestCommon
 output_name = 'test_linear_solvers_%s.vtk'
 
 class Test(TestCommon):
-    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc', 'ls.mumps',]
+    can_fail = ['ls.pyamg', 'ls.pyamg_krylov', 'ls.petsc', 'ls.mumps',
+                'ls.scipy_direct']
 
     @staticmethod
     def from_conf(conf, options):
