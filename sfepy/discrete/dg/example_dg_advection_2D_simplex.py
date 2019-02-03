@@ -25,13 +25,12 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 from sfepy.base.conf import ProblemConf
 
 # local imports
-from dg_terms import AdvFluxDGTerm
+from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
 # from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
-from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
 mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
 mesh = triangulate(mesh)
@@ -71,12 +70,12 @@ v = FieldVariable('v', 'test', dgfield, primary_var_name='u')
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
                                     u=u, v=v, a=a, mode="grad_virtual")
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', MassT + StiffT + FluxT)
+eq = Equation('balance', MassT - StiffT + FluxT)
 eqs = Equations([eq])
 
 

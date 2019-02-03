@@ -30,17 +30,17 @@ from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 from my_utils.visualizer import load_vtks, plot1D_DG_sol
 
 X1 = 0.
-XN = 1.
+XN = 2*nm.pi
 n_nod = 100
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
 mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
 descs = ['1_2']
-mesh = Mesh.from_data('advection_1d', coors, None,
+mesh = Mesh.from_data('advection_book_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-velo = 1.0
+velo = 2*nm.pi
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
@@ -54,16 +54,16 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-approx_order = 1
+approx_order = 0
 
 integral = Integral('i', order=7)
-domain = FEDomain('domain_1D', mesh)
+domain = FEDomain('adv_sin_1D', mesh)
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
                               'vertices in x == %.10f' % X1,
                               'vertex')
 right = domain.create_region('Gamma2',
-                              'vertices in x == %.10f' % XN,
+                              'vertices in x > %.10f' % (XN - dx),
                               'vertex')
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
@@ -84,12 +84,11 @@ eq = Equation('balance', MassT - StiffT + FluxT)
 eqs = Equations([eq])
 
 left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})
+#
 right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
-
 def ic_wrap(x, ic=None):
-    return gsmooth(x)
-
+    return nm.sin(x)
 
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
@@ -98,9 +97,6 @@ pb = Problem('advection', equations=eqs)
 pb.setup_output(output_dir="./output/") #, output_format="msh")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
-
-# state0 = pb.get_initial_state()
-
 
 # create post stage hook with limiter
 from dg_field import get_unraveler, get_raveler
@@ -127,6 +123,6 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-lmesh, u = load_vtks("./output/", "domain_1D", tn, order=approx_order)
+lmesh, u = load_vtks("./output/", "adv_sin_1D", tn, order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
               delay=100, polar=False)
