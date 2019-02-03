@@ -622,6 +622,13 @@ class DGField(Field):
         # TODO treat boundary conditions more comprehensively
         outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
 
+        # plot for 1D
+        # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+        # import matplotlib.pyplot as plt
+        # plot_1D_legendre_dofs(self.domain.mesh.coors, (dofs,))
+        # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, dofs[..., None, None])
+        # plt.plot(xx ,ww[:, 0])
+
         return inner_facet_vals, outer_facet_vals, whs
 
     def get_cell_normals_per_facet(self, region):

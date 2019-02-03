@@ -234,6 +234,8 @@ class AdvFluxDGTerm(Term):
             out[:] = 0.0
             return None
 
+        alf = 0.0
+
         n_cell = dofs.shape[0]
         n_el_nod = dofs.shape[1]
         n_el_facets = fc_n.shape[-2]
@@ -244,13 +246,21 @@ class AdvFluxDGTerm(Term):
             for n in range(n_el_nod):
                 fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
                 fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
-                central = velo[:, None, :] * fc_v_p[:, :, None]
-                upwind = (C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
-                facet_fluxes[:, facet_n, n] = 1./2. * nm.sum(fc_n[:, facet_n] *
+                central = velo[:, None, :] * fc_v_p[:, :, None]/2.
+                upwind = (C[:, :, facet_n]*(1 - alf)/2. * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
+                facet_fluxes[:, facet_n, n] =  nm.sum(fc_n[:, facet_n] *
                                                              nm.sum((central + upwind) *
                                                                     fc_b[None, :, 0, facet_n, 0, n, None] *
                                                                     whs[None, :, :], axis=1),
                                                              axis=1)
+        # TODO plot facet vals and fluxes
+        # plot for 1D
+        # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+        # import matplotlib.pyplot as plt
+        # plot_1D_legendre_dofs(self.domain.mesh.coors, (dofs,))
+        # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, dofs[..., None, None])
+        # plt.plot(xx ,ww[:, 0])
+
         cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
         out[:] = 0.0
@@ -260,3 +270,78 @@ class AdvFluxDGTerm(Term):
 
         status = None
         return status
+
+class ScalarDotMGradScalarDGTerm(Term):
+    r"""
+    Volume dot product of a scalar gradient dotted with a material vector with
+    a scalar.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }
+        \int_{\Omega} p \ul{y} \cdot \nabla q
+
+    :Arguments 1:
+        - material : :math:`\ul{y}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material : :math:`\ul{y}`
+        - state    : :math:`p`
+        - virtual  : :math:`q`
+    """
+    name = 'dw_s_dot_mgrad_s'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'))
+    arg_shapes = [{'material' : 'D, 1',
+                   'virtual/grad_state' : (1, None),
+                   'state/grad_state' : 1,
+                   'virtual/grad_virtual' : (1, None),
+                   'state/grad_virtual' : 1}]
+    modes = ('grad_state', 'grad_virtual')
+
+    @staticmethod
+    def function(out, out_qp, geo, fmode):
+        if fmode == 0:
+            status = geo.integrate(out, out_qp)
+        else:
+            status = None
+            out[:] = 0.0
+        return status
+
+    def get_fargs(self, mat, var1, var2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        from sfepy.linalg import dot_sequences
+
+        vg1, _ = self.get_mapping(var1)
+        vg2, _ = self.get_mapping(var2)
+
+        if diff_var is None:
+            if self.mode == 'grad_state':
+                geo = vg1
+                bf_t = vg1.bf.transpose((0, 1, 3, 2))
+                val_qp = self.get(var2, 'grad')
+                out_qp = bf_t * dot_sequences(mat, val_qp, 'ATB')
+
+            else:
+                geo = vg2
+                val_qp = self.get(var1, 'val')
+                out_qp = dot_sequences(vg2.bfg, mat, 'ATB') * val_qp
+
+            fmode = 0
+
+        else:
+            if self.mode == 'grad_state':
+                geo = vg1
+                bf_t = vg1.bf.transpose((0, 1, 3, 2))
+                out_qp = bf_t * dot_sequences(mat, vg2.bfg, 'ATB')
+
+            else:
+                geo = vg2
+                out_qp = dot_sequences(vg2.bfg, mat, 'ATB') * vg1.bf
+
+            fmode = 1
+
+        return out_qp, geo, fmode
