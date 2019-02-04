@@ -46,7 +46,7 @@ max_velo = nm.max(nm.abs(velo))
 t0 = 0
 t1 = 0.8
 dx = (XN - X1) / n_nod
-dt = dx / nm.abs(velo) *.4
+dt = dx / nm.abs(velo) *.75
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
@@ -116,7 +116,7 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 # nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status, post_stage_hook=limiter)
+nls = RK3StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
 
 tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)

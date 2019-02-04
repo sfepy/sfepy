@@ -234,7 +234,7 @@ class AdvFluxDGTerm(Term):
             out[:] = 0.0
             return None
 
-        alf = 0.0
+        alf = 1
 
         n_cell = dofs.shape[0]
         n_el_nod = dofs.shape[1]
@@ -248,20 +248,92 @@ class AdvFluxDGTerm(Term):
                 fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
                 central = velo[:, None, :] * fc_v_p[:, :, None]/2.
                 upwind = (C[:, :, facet_n]*(1 - alf)/2. * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
-                facet_fluxes[:, facet_n, n] =  nm.sum(fc_n[:, facet_n] *
+                facet_fluxes[:, facet_n, n] = nm.sum(fc_n[:, facet_n] *
                                                              nm.sum((central + upwind) *
                                                                     fc_b[None, :, 0, facet_n, 0, n, None] *
                                                                     whs[None, :, :], axis=1),
                                                              axis=1)
-        # TODO plot facet vals and fluxes
-        # plot for 1D
-        # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-        # import matplotlib.pyplot as plt
-        # plot_1D_legendre_dofs(self.domain.mesh.coors, (dofs,))
-        # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, dofs[..., None, None])
-        # plt.plot(xx ,ww[:, 0])
-
         cell_fluxes = nm.sum(facet_fluxes, axis=1)
+
+        if False:
+            from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            import matplotlib.pyplot as plt
+            x = self.region.domain.mesh.coors
+            plot_1D_legendre_dofs(x, (dofs,))
+            ww, xx = reconstruct_legendre_dofs(x, 1, dofs.T[0, ..., None, None])
+            plt.plot(xx, ww[:, 0], label="recon")
+
+            # plt.figure("Vals outer")
+            # plt.plot(x[:-1], out_fc_v[:, 0], marker=".", label="left outer", color="b",  ls="")
+            # plt.plot(x[1:], out_fc_v[:, 1], marker=".",  label="right outer", color="r",  ls="")
+            # plt.plot(xx, ww[:, 0], label="recon")
+            # plt.legend()
+            #
+            # # Plot mesh
+            # XN = x[-1]
+            # X1 = x[0]
+            # Xvol = XN - X1
+            # X = (x[1:] + x[:-1]) / 2
+            # plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
+            # plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
+            # plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+            #
+            # plt.figure("Vals inner")
+            # plt.plot(xx, ww[:, 0], label="recon")
+            # plt.plot(x[:-1], in_fc_v[:, 0], marker=".", label="left in", color="b", ls="")
+            # plt.plot(x[1:], in_fc_v[:, 1], marker=".", label="right in", color="r", ls="")
+            # plt.legend()
+            #
+            # # Plot mesh
+            # XN = x[-1]
+            # X1 = x[0]
+            # Xvol = XN - X1
+            # X = (x[1:] + x[:-1]) / 2
+            # plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
+            # plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
+            # plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+            # plt.legend()
+
+            for n in range(n_el_nod):
+                plt.figure("Flux {}".format(n))
+                fig = plt.gcf()
+                fig.clear()
+                plt.plot(xx, ww[:, 0], label="recon")
+                plt.plot(xx, ww[:, 0], label="recon")
+                plt.plot(x[:-1], facet_fluxes[:, 0, n], marker=">", label="flux {} left".format(n), color="b", ls="")
+                plt.plot(x[1:], facet_fluxes[:, 1,  n], marker=">", label="flux {} right".format(n), color="r", ls="")
+
+
+                # Plot mesh
+                XN = x[-1]
+                X1 = x[0]
+                Xvol = XN - X1
+                X = (x[1:] + x[:-1]) / 2
+                plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
+                plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
+                plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+                plt.legend()
+
+            # plt.show()
+
+            for n in range(n_el_nod):
+                plt.figure("Flux {}".format(n))
+                fig = plt.gcf()
+                fig.clear()
+                plt.plot(xx, ww[:, 0], label="recon")
+                plt.plot(xx, ww[:, 0], label="recon")
+                plt.plot(X, cell_fluxes[:, n], marker="D", label="cell flux {}".format(n), color="r", ls="")
+
+
+                # Plot mesh
+                XN = x[-1]
+                X1 = x[0]
+                Xvol = XN - X1
+                X = (x[1:] + x[:-1]) / 2
+                plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
+                plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
+                plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
+                plt.legend()
 
         out[:] = 0.0
         for i in range(n_el_nod):

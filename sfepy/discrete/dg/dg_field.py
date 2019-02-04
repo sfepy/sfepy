@@ -610,9 +610,9 @@ class DGField(Field):
 
         ghost_nbrs = nm.where(per_facet_neighbours < 0)
 
-        if self.dim == 1:  # periodic boundary conditions in 1D
-            per_facet_neighbours[0, 0] = [-1, 1]
-            per_facet_neighbours[-1, 1] = [0, 0]
+        # if self.dim == 1:  # periodic boundary conditions in 1D
+        #     per_facet_neighbours[0, 0] = [-1, 1]
+        #     per_facet_neighbours[-1, 1] = [0, 0]
 
         for facet_n in range(self.n_el_facets):
             outer_facet_vals[:, facet_n, :] = nm.sum(
@@ -621,13 +621,6 @@ class DGField(Field):
 
         # TODO treat boundary conditions more comprehensively
         outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
-
-        # plot for 1D
-        # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-        # import matplotlib.pyplot as plt
-        # plot_1D_legendre_dofs(self.domain.mesh.coors, (dofs,))
-        # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, dofs[..., None, None])
-        # plt.plot(xx ,ww[:, 0])
 
         return inner_facet_vals, outer_facet_vals, whs
 
@@ -703,8 +696,9 @@ class DGField(Field):
             # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
             # import matplotlib.pyplot as plt
             # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
-            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals[..., None, None])
-            # plt.plot(xx ,ww[:, 0])
+            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals.T[..., None, None])
+            # plt.plot(xx, ww[:, 0], label="reconstructed dofs")
+            # plt.show()
 
         return nods, vals
 
