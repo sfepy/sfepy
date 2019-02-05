@@ -370,13 +370,13 @@ class SurfaceMomentTerm(Term):
 
         return (n_fa, 1, dim, dim), parameter.dtype
 
-class IntegrateMatTerm(Term):
+class IntegrateVolumeMatTerm(Term):
     r"""
-    Evaluate material parameter :math:`m` in a volume/surface region.
+    Evaluate material parameter :math:`m` in a volume region.
 
     Depending on evaluation mode, integrate a material parameter over a
-    volume/surface region ('eval'), average it in elements/faces ('el_avg') or
-    interpolate it into volume/surface quadrature points ('qp').
+    volume region ('eval'), average it in elements ('el_avg') or
+    interpolate it into volume quadrature points ('qp').
 
     Uses reference mapping of :math:`y` variable.
 
@@ -397,7 +397,7 @@ class IntegrateMatTerm(Term):
         - material  : :math:`m` (can have up to two dimensions)
         - parameter : :math:`y`
     """
-    name = 'ev_integrate_mat'
+    name = 'ev_volume_integrate_mat'
     arg_types = ('material', 'parameter')
     arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
 
@@ -429,6 +429,38 @@ class IntegrateMatTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, n_row, n_col), mat.dtype
+
+class IntegrateSurfaceMatTerm(IntegrateVolumeMatTerm):
+    r"""
+    Evaluate material parameter :math:`m` in a surface region.
+
+    Depending on evaluation mode, integrate a material parameter over a
+    surface region ('eval'), average it in faces ('el_avg') or
+    interpolate it into surface quadrature points ('qp').
+
+    Uses reference mapping of :math:`y` variable.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+
+    .. math::
+        \int_\Gamma m
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
+
+    .. math::
+        m|_{qp}
+
+    :Arguments:
+        - material  : :math:`m` (can have up to two dimensions)
+        - parameter : :math:`y`
+    """
+    name = 'ev_surface_integrate_mat'
+    arg_types = ('material', 'parameter')
+    arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
+    integration = 'surface'
 
 class SumNodalValuesTerm(Term):
     r"""

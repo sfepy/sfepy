@@ -190,11 +190,11 @@ def set_wave_dir_le(materials, wdir):
     wave_mat.datas['special']['vec'] = wdir
 
 def save_materials_le(output_dir, pb, options):
-    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
+    stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
                                                     plane=options.plane)
-    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+    density = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.density, u)',
                           mode='el_avg', copy_materials=False, verbose=False)
 
     out = {}
@@ -207,11 +207,11 @@ def save_materials_le(output_dir, pb, options):
     pb.save_state(materials_filename, out=out)
 
 def get_std_wave_fun_le(pb, options):
-    stiffness = pb.evaluate('ev_integrate_mat.2.Omega(m.D, u)',
+    stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
                                                     plane=options.plane)
-    density = pb.evaluate('ev_integrate_mat.2.Omega(m.density, u)',
+    density = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.density, u)',
                           mode='el_avg', copy_materials=False, verbose=False)
 
     lam, mu = mc.lame_from_youngpoisson(young, poisson,
