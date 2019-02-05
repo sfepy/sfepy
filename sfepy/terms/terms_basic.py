@@ -430,6 +430,38 @@ class IntegrateMatTerm(Term):
 
         return (n_el, n_qp, n_row, n_col), mat.dtype
 
+class IntegrateSurfaceMatTerm(IntegrateMatTerm):
+    r"""
+    Evaluate material parameter :math:`m` in a surface region.
+
+    Depending on evaluation mode, integrate a material parameter over a
+    surface region ('eval'), average it in faces ('el_avg') or
+    interpolate it into surface quadrature points ('qp').
+
+    Uses reference mapping of :math:`y` variable.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+
+    .. math::
+        \int_\Gamma m
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
+
+    .. math::
+        m|_{qp}
+
+    :Arguments:
+        - material  : :math:`m` (can have up to two dimensions)
+        - parameter : :math:`y`
+    """
+    name = 'ev_surface_integrate_mat'
+    arg_types = ('material', 'parameter')
+    arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
+    integration = 'surface'
+
 class SumNodalValuesTerm(Term):
     r"""
     Sum nodal values.
