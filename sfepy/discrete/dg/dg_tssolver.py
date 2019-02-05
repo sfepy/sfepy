@@ -431,12 +431,13 @@ class RK3StepSolver(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         ls_status = {}
 
-        # TODO add pre-stage hook?
+        # Add pre-stage hook?
         # ----1st stage----
         vec_x = vec_x0.copy()
 
         vec_r = fun(vec_x)
         mtx_a = fun_grad(vec_x)
+        full_mtx_a = mtx_a.toarray()
         vec_dx = lin_solver(vec_r, x0=vec_x,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)

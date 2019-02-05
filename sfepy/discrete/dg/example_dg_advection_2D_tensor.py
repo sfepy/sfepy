@@ -35,14 +35,14 @@ outfile = "output/mesh/tensor_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 # meshio.write(outfile, mesh)
 
-velo = nm.array([[1., 1.0]]).T
+velo = nm.array([[1., 0.]]).T
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
 t1 = 0.8
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
-dt = dx / norm(velo)
+dt = dx / norm(velo) * .5
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx

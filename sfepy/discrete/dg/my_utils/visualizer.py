@@ -228,7 +228,6 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     fig.suptitle("X-T plane plot")
     if lab1 is not None:
         ax1.set(title=lab1)
-    # FIXME X-T plane plot of exact solution is not ok
     c1 = ax1.imshow(Y1, extent=extent,
                     cmap=cmap1, norm=norm1,
                     interpolation='none',
@@ -417,11 +416,12 @@ def plot_1D_legendre_dofs(coors, dofss, fun=None):
     """
     X = (coors[1:] + coors[:-1]) / 2
     plt.figure("DOFs for function fun")
+    plt.gcf().clf()
     for ii, dofs in enumerate(dofss):
-        for i in range(dofs.shape[0]):
-            c0 = plt.plot(X, dofs[i, :], label="fun-{}dof-{}".format(ii, i), marker=".", ls="")[0].get_color()
+        for i in range(dofs.shape[1]):
+            c0 = plt.plot(X, dofs[:, i], label="fun-{}dof-{}".format(ii, i), marker=".", ls="")[0].get_color()
             # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
-            plt.step(coors[1:], dofs[i, :], color=c0)
+            plt.step(coors[1:], dofs[:, i], color=c0)
             # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
 
     if fun is not None:
