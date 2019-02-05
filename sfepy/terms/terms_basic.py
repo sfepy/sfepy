@@ -370,7 +370,7 @@ class SurfaceMomentTerm(Term):
 
         return (n_fa, 1, dim, dim), parameter.dtype
 
-class IntegrateMatTerm(Term):
+class IntegrateVolumeMatTerm(Term):
     r"""
     Evaluate material parameter :math:`m` in a volume region.
 
@@ -397,7 +397,7 @@ class IntegrateMatTerm(Term):
         - material  : :math:`m` (can have up to two dimensions)
         - parameter : :math:`y`
     """
-    name = 'ev_integrate_mat'
+    name = 'ev_volume_integrate_mat'
     arg_types = ('material', 'parameter')
     arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
 
@@ -430,13 +430,7 @@ class IntegrateMatTerm(Term):
 
         return (n_el, n_qp, n_row, n_col), mat.dtype
 
-class IntegrateVolumeMatTerm(IntegrateMatTerm):
-    """
-    Alias to :class:`IntegrateMatTerm`.
-    """
-    name = 'ev_volume_integrate_mat'
-
-class IntegrateSurfaceMatTerm(IntegrateMatTerm):
+class IntegrateSurfaceMatTerm(IntegrateVolumeMatTerm):
     r"""
     Evaluate material parameter :math:`m` in a surface region.
 
