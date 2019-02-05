@@ -325,11 +325,10 @@ class DGField(Field):
 
         if self.dim == 1:
             facet_qps = self._transform_qps_to_facets(nm.zeros((1, 1)), "1_2")
-            weights = nm.ones((1, 1))
+            weights = nm.ones((1, 1, 1))
         else:
             qps, weights = self.integral.get_qp("1_2")  # TODO determine facet geometry from cell geo for use in 3D
-            vols = self.region.domain.cmesh.get_volumes(self.dim - 1)[:, None]
-            weights = weights[None, :, None]  # TODO transform weights for real this time!
+            weights = weights[None, :, None]
             facet_qps = self._transform_qps_to_facets(qps, self.gel.name)
 
         # from postprocess.plot_facets import plot_geometry
@@ -601,12 +600,15 @@ class DGField(Field):
         :return:
         """
         facet_bf, whs = self.get_facet_base()
+
         # facet_bf = facet_bf[:, 0, :, 0, :].T
-        inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, len(whs)))
+        inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
         inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
 
-        outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, len(whs)))
+        outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
         per_facet_neighbours = self.get_cell_nb_per_facet(region)
+        facet_vols = self.get_facet_vols(region, per_facet_neighbours)
+        whs = facet_vols * whs[None, :, :, 0]
 
         ghost_nbrs = nm.where(per_facet_neighbours < 0)
 
@@ -645,6 +647,32 @@ class DGField(Field):
                 normals_out[ic, ifal] = normals[o1 + ifal]
 
         return normals_out
+
+    def get_facet_vols(self, region, per_facet_neighbours):
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        cmesh = region.domain.mesh.cmesh
+        cells = region.cells
+
+        if dim == 1:
+            vols = nm.ones((cmesh.num[0], 1))
+            vols[:, 0] = nm.tile([1, 1], int(vols.shape[0] / 2))
+        else:
+            vols = cmesh.get_volumes(self.dim - 1)[:, None]
+
+        vols_out = nm.zeros((n_cell, n_el_facets, 1))
+
+        c2f = cmesh.get_conn(dim, dim - 1)
+
+        for ic, o1 in enumerate(c2f.offsets[:-1]):
+            o2 = c2f.offsets[ic + 1]
+            for ifal, ifa in enumerate(c2f.indices[o1:o2]):
+                vols_out[ic, ifal] = vols[ifa]
+
+        return vols_out
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """

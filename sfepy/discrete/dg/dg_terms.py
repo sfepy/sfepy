@@ -234,7 +234,7 @@ class AdvFluxDGTerm(Term):
             out[:] = 0.0
             return None
 
-        alf = 1
+        alf = 0
 
         n_cell = dofs.shape[0]
         n_el_nod = dofs.shape[1]
@@ -250,8 +250,8 @@ class AdvFluxDGTerm(Term):
                 upwind = (C[:, :, facet_n]*(1 - alf)/2. * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
                 facet_fluxes[:, facet_n, n] = nm.sum(fc_n[:, facet_n] *
                                                              nm.sum((central + upwind) *
-                                                                    fc_b[None, :, 0, facet_n, 0, n, None] *
-                                                                    whs[None, :, :], axis=1),
+                                                                    (fc_b[None, :, 0, facet_n, 0, n] *
+                                                                     whs[:, facet_n, :])[..., None], axis=1),
                                                              axis=1)
         cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
