@@ -274,7 +274,7 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         dimz = range(len(idx))
         derz = nm.zeros(len(idx), dtype=nm.int32)
         derz[dvar] = 1
-        return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+        return 2*nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def build_interpol_scheme(self):
         """
@@ -373,7 +373,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             dimz = range(len(idx))
             derz = nm.zeros(len(idx), dtype=nm.int32)
             derz[dvar] = 1
-            return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+            return 2*nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
         elif len(idx) == 2:
             r = coors[..., 0]
             s = coors[..., 1]
@@ -553,20 +553,20 @@ def plot_1D_basis():
     plt.plot([0, 1], [0, 0], 'k')
 
     plt.figure("Jacobi polyspace diff")
-    plt.plot(coors, grad_vals[0, :, 0, 2], "--")
-    plt.plot(coors, vals[:, 0, 2])
+    plt.plot(coors, grad_vals[0, :, 0, :4], "--")
+    # plt.plot(coors, vals[:, 0, ])
 
-
+    plt.figure("Legendre polyspace diff")
     # plt.plot(coors, bs.get_nth_fun(1)(coors), ".-")
-    # plt.plot(coors, bs.get_nth_fun_der(1)(coors), ".-")
-    # plt.plot(coors, bs.get_nth_fun_der(3)(coors), ".-")
-    # plt.plot(coors, bs.get_nth_fun_der(4)(coors), ".-")
+    plt.plot(coors, bs.get_nth_fun_der(1)(coors), ".-")
+    plt.plot(coors, bs.get_nth_fun_der(2)(coors), ".-")
+    plt.plot(coors, bs.get_nth_fun_der(3)(coors), ".-")
     plt.plot([0, 1], [0, 0], 'k')
 
     plt.show()
 
 
 if __name__ == '__main__':
-    # plot_2Dtensor_basis_grad()
+    plot_2Dtensor_basis_grad()
     #plot_2Dsimplex_basis_grad()
-    plot_1D_basis()
+    # plot_1D_basis()

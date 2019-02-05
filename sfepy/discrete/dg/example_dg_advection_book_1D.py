@@ -90,6 +90,7 @@ right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 def ic_wrap(x, ic=None):
     return nm.sin(x)
 
+
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 

@@ -62,9 +62,9 @@ class DGField(Field):
         :param approx_order: 0 for finite volume methods
         """
         shape = parse_shape(shape, region.domain.shape.dim)
-        if not self._check_region(region):
-            raise ValueError('unsuitable region for field %s! (%s)' %
-                             (name, region.name))
+        # if not self._check_region(region):
+        #     raise ValueError('unsuitable region for field %s! (%s)' %
+        #                      (name, region.name))
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
 
@@ -120,10 +120,6 @@ class DGField(Field):
 
         # neighbour facet mapping
         self.facet_neighbour_index = {}
-
-    def _check_region(self, region):
-        # TODO what are the requirements on region?
-        return True
 
     def _setup_all_dofs(self):
         """

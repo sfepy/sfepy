@@ -179,6 +179,7 @@ class AdvFluxDGTerm1D(Term):
 
         flux = list()
         flux[:3] = (fl - fp), (- fl - fp + intg1), (fl - fp + intg2)
+
         for i in range(n_el_nod):
             out[:, :, i, 0] = -flux[i]
 
