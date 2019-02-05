@@ -430,6 +430,12 @@ class IntegrateMatTerm(Term):
 
         return (n_el, n_qp, n_row, n_col), mat.dtype
 
+class IntegrateVolumeMatTerm(IntegrateMatTerm):
+    """
+    Alias to :class:`IntegrateMatTerm`.
+    """
+    name = 'ev_volume_integrate_mat'
+
 class IntegrateSurfaceMatTerm(IntegrateMatTerm):
     r"""
     Evaluate material parameter :math:`m` in a surface region.
