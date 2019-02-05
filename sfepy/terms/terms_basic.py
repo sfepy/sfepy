@@ -372,11 +372,11 @@ class SurfaceMomentTerm(Term):
 
 class IntegrateMatTerm(Term):
     r"""
-    Evaluate material parameter :math:`m` in a volume/surface region.
+    Evaluate material parameter :math:`m` in a volume region.
 
     Depending on evaluation mode, integrate a material parameter over a
-    volume/surface region ('eval'), average it in elements/faces ('el_avg') or
-    interpolate it into volume/surface quadrature points ('qp').
+    volume region ('eval'), average it in elements ('el_avg') or
+    interpolate it into volume quadrature points ('qp').
 
     Uses reference mapping of :math:`y` variable.
 
