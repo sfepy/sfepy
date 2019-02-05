@@ -54,7 +54,7 @@ print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, 
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 2
 #^^^^^^^^^^^^^^^^#
 
 integral = Integral('i', order=5)
@@ -106,7 +106,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs)
-pb.setup_output(output_dir="./output/", output_format="msh")
+pb.setup_output(output_dir="./output/adv_simp_2D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 

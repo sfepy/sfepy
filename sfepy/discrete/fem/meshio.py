@@ -2739,22 +2739,6 @@ class Msh2MeshIO(MeshIO):
                    "2.0 0 8\n"
                    "$EndMeshFormat\n"]
 
-    msh2Dtensor_intscheme1 = [
-                                '$InterpolationScheme\n'
-                                '"INTERPOLATION_SCHEME"\n'
-                                '1\n'
-                                '4\n'
-                                '2\n'
-                                '3 3\n'
-                                '1 0 0\n'
-                                '0 0 1\n'
-                                '0 1 0\n'
-                                '3 2\n'
-                                '0 0 0\n'
-                                '1 0 0\n'
-                                '0 1 0\n' 
-                                '$EndInterpolationScheme\n']
-
 
     def read_dimension(self, ret_fd=True):
         fd = open(self.filename, 'r')
@@ -2963,7 +2947,6 @@ class Msh2MeshIO(MeshIO):
             """
             # write elements data
             # fd.writelines(self.msh2Dtensor_intscheme1)
-            datas = [st.data for st in out.values() if st.mode == "cell_nodes"]
             for key, value in out.items():
                 if not value.mode == "cell_nodes":
                     continue
@@ -2979,7 +2962,7 @@ class Msh2MeshIO(MeshIO):
                     fd.write('"{}"\n'.format(interpolation_scheme_name))
                 fd.write("1\n") # number of real tags
                 fd.write("{}\n".format(ts.time if ts is not None else 0.0))
-                fd.write("3\n") # number of intiger tags
+                fd.write("3\n") # number of integer tags
                 fd.write("{}\n".format(ts.step if ts is not None else 0))
                 fd.write("1\n") # number of components
                 fd.write("{}\n".format(data.shape[0]))
