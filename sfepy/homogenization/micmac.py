@@ -155,9 +155,13 @@ def get_correctors_from_file( coefs_filename = 'coefs.h5',
     out = {}
 
     for key, val in six.iteritems(dump_names):
-        corr_name = op.split( val )[-1]
-        io = HDF5MeshIO( val+'.h5' )
-        data = io.read_data( 0 )
+        if type(val) in [tuple, list]:
+            h5name, corr_name = val
+        else:
+            h5name, corr_name = val, op.split(val)[-1]
+
+        io = HDF5MeshIO(h5name + '.h5')
+        data = io.read_data(0)
         dkeys = list(data.keys())
         corr = {}
         for dk in dkeys:
