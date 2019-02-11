@@ -7,9 +7,10 @@ import subprocess
 def main():
     args = shlex.split('git log --pretty=format:"%an <%ae>"')
     p = subprocess.Popen(args, stdout=subprocess.PIPE)
-    out = p.communicate()[0].decode().split('\n')
+    out = p.communicate()[0].decode('utf-8').split('\n')
 
     done = set()
+    e2n = {}
     unique = []
     counts = {}
     for line in reversed(out):
@@ -21,14 +22,21 @@ def main():
         email = '<' + email.strip()
 
         if not name in done:
-            done.add(name)
-            unique.append(name)
+            if email not in e2n:
+                done.add(name)
+                e2n[email] = name
+
+                unique.append(name)
+
+            elif name not in counts[e2n[email]]:
+                counts[e2n[email]].append(name)
+
+        name = e2n.get(email, name)
 
         record = counts.setdefault(name, [0, email])
         record[0] += 1
         if not email in record[1:]:
             record.append(email)
-
 
     print('List of contributors ordered by date of the first commit,'
           ' with commit counts:')
