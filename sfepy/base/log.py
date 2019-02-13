@@ -130,6 +130,31 @@ def read_log(filename):
 
     return log, info
 
+def write_log(output, log, info):
+    _fmt = lambda x: '%s' % x if x is not None else ''
+
+    output('# started: %s' % time.asctime())
+    output('# groups: %d' % len(info))
+    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
+        in six.iteritems(info):
+        output('#   %d' % ii)
+        output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
+               % (_fmt(xlabel), _fmt(ylabel), yscale))
+        output('#     names: "%s"' % ', '.join(names))
+        output('#     plot_kwargs: "%s"'
+               % ', '.join('%s' % ip for ip in plot_kwargs))
+
+    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
+        in six.iteritems(info):
+        for ip, name in enumerate(names):
+            xs, ys, vlines = log[name]
+
+            for ir, x in enumerate(xs):
+                output('{}: {}: {:.16e}'.format(name, x, ys[ir]))
+
+                if x in vlines:
+                    output(name + ': -----')
+
 def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
              show_legends=True, swap_axes=False):
     """
