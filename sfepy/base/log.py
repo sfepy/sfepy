@@ -131,21 +131,11 @@ def read_log(filename):
     return log, info
 
 def write_log(output, log, info):
-    _fmt = lambda x: '%s' % x if x is not None else ''
-
-    output('# started: %s' % time.asctime())
-    output('# groups: %d' % len(info))
-    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
-        in six.iteritems(info):
-        output('#   %d' % ii)
-        output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
-               % (_fmt(xlabel), _fmt(ylabel), yscale))
-        output('#     names: "%s"' % ', '.join(names))
-        output('#     plot_kwargs: "%s"'
-               % ', '.join('%s' % ip for ip in plot_kwargs))
+    xlabels, ylabels, yscales, names, plot_kwargs = zip(*info.values())
+    _write_header(output, xlabels, ylabels, yscales, names, plot_kwargs)
 
     for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
-        in six.iteritems(info):
+        in ordered_iteritems(info):
         for ip, name in enumerate(names):
             xs, ys, vlines = log[name]
 
@@ -154,6 +144,23 @@ def write_log(output, log, info):
 
                 if x in vlines:
                     output(name + ': -----')
+
+    output('# ended: %s' % time.asctime())
+
+def _write_header(output, xlabels, ylabels, yscales, data_names, plot_kwargs):
+    _fmt = lambda x: '%s' % x if x is not None else ''
+
+    output('# started: %s' % time.asctime())
+    output('# groups: %d' % len(data_names))
+    for ig, names in enumerate(data_names):
+        output('#   %d' % ig)
+        output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
+                    % (_fmt(xlabels[ig]), _fmt(ylabels[ig]),
+                       yscales[ig]))
+        output('#     names: "%s"' % ', '.join(names))
+        output('#     plot_kwargs: "%s"'
+                    % ', '.join('%s' % ii
+                                for ii in plot_kwargs[ig]))
 
 def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
              show_legends=True, swap_axes=False):
@@ -361,19 +368,9 @@ class Log(Struct):
         self.can_plot = (mpl is not None) and (Process is not None)
 
         if log_filename is not None:
-            _fmt = lambda x: '%s' % x if x is not None else ''
             self.output = Output('', filename=log_filename)
-            self.output('# started: %s' % time.asctime())
-            self.output('# groups: %d' % n_gr)
-            for ig, names in enumerate(data_names):
-                self.output('#   %d' % ig)
-                self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
-                            % (_fmt(xlabels[ig]), _fmt(ylabels[ig]),
-                               yscales[ig]))
-                self.output('#     names: "%s"' % ', '.join(names))
-                self.output('#     plot_kwargs: "%s"'
-                            % ', '.join('%s' % ii
-                                        for ii in self.plot_kwargs[ig]))
+            _write_header(self.output, xlabels, ylabels, yscales, data_names,
+                          plot_kwargs)
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
