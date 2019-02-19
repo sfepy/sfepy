@@ -44,7 +44,7 @@ velo = 1.0
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
-t1 = 0.8
+t1 = 0.08
 dx = (XN - X1) / n_nod
 dt = dx / nm.abs(velo) * .5
 # time_steps_N = int((tf - t0) / dt) * 2
@@ -54,7 +54,7 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-approx_order = 1
+approx_order = 2
 
 integral = Integral('i', order=7)
 domain = FEDomain('domain_1D', mesh)
@@ -80,7 +80,7 @@ StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, v, u)", "a.val, u, v", int
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', MassT - StiffT + FluxT)
+eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
 
 left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})

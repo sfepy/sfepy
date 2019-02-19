@@ -452,10 +452,10 @@ def plot_2Dtensor_basis_grad():
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
         fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
-                               linewidth=0, antialiased=False, alpha=.6)
+                                linewidth=0, antialiased=False, alpha=.6)
         grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1*nm.ones((10, 10)),
-                               Zgrad[:, :, 0, i]/ 50, Zgrad[:, :, 1, i]/ 50, nm.zeros((10, 10)), color='r')
-        grad_norm = ax.scatter(coorsgrad[:, :, 0], coorsgrad[:, :, 1], norm(Zgrad[:,:, :, i], axis=2))
+                               Zgrad[:, :, 0, i]/30, Zgrad[:, :, 1, i]/30, nm.zeros((10, 10)), color='r')
+        grad_norm = ax.scatter(coorsgrad[:, :, 0], coorsgrad[:, :, 1], norm(Zgrad[:, :, :, i], axis=2))
 
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -526,6 +526,48 @@ def plot_2Dsimplex_basis_grad():
 
     plt.show()
 
+def plot_2D_simplex_as_tensor():
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    from matplotlib.ticker import LinearLocator, FormatStrFormatter
+    from numpy.linalg import norm
+
+    gel_coors = nm.array([[0, 0], [0, 1], [1, 1], [0, 1]])
+    geometry = Struct(n_vertex=4,
+                      dim=2,
+                      coors=gel_coors)
+
+    order = 3
+    bs = LegendreSimplexPolySpace('legb', geometry, order)
+
+    # Make data.
+    X = nm.arange(0, 1, 0.025)
+    Y = nm.arange(0, 1, 0.025)
+    coors = nm.array(nm.meshgrid(X, Y)).T
+    Z = bs.eval_base(coors, diff=False)
+
+    Xgrad = nm.linspace(0, 1, 10)
+    Ygrad = nm.linspace(0, 1, 10)
+    coorsgrad = nm.array(nm.meshgrid(Xgrad, Ygrad)).T
+    Zgrad = bs.eval_base(coorsgrad, diff=True)
+
+    # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
+
+    for i, idx in enumerate(iter_by_order(order, 2)):
+        fig = plt.figure("{}>{}".format(i, idx))
+        ax = fig.gca(projection='3d')
+        fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
+                                   linewidth=0, antialiased=False, alpha=.6)
+        grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1 * nm.ones((10, 10)),
+                               Zgrad[:, :, 0, i] / 30, Zgrad[:, :, 1, i] / 30, nm.zeros((10, 10)), color='r')
+        grad_norm = ax.scatter(coorsgrad[:, :, 0], coorsgrad[:, :, 1], norm(Zgrad[:, :, :, i], axis=2))
+        ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+
+    plt.show()
 
 def plot_1D_basis():
     from matplotlib import pylab as plt
@@ -567,6 +609,7 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    plot_2Dtensor_basis_grad()
-    #plot_2Dsimplex_basis_grad()
+    # plot_2Dtensor_basis_grad()
+    # plot_2Dsimplex_basis_grad()
+    plot_2D_simplex_as_tensor()
     # plot_1D_basis()

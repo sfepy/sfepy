@@ -75,7 +75,7 @@ StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", int
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', MassT - StiffT + FluxT)
+eq = Equation('balance', MassT + StiffT + FluxT)
 eqs = Equations([eq])
 
 
