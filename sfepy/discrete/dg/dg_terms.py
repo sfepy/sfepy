@@ -250,7 +250,7 @@ class AdvFluxDGTerm(Term):
                 central = velo[:, None, :] * fc_v_p[:, :, None]/2.
                 upwind = (C[:, :, facet_n]*(1 - alf)/2. * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
                 facet_fluxes[:, facet_n, n] = nm.sum(fc_n[:, facet_n] *
-                                                             nm.sum((central + upwind) *
+                                                             nm.sum((central - upwind) *
                                                                     (fc_b[None, :, 0, facet_n, 0, n] *
                                                                      whs[:, facet_n, :])[..., None], axis=1),
                                                              axis=1)

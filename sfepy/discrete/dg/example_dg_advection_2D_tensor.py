@@ -35,7 +35,7 @@ outfile = "output/mesh/tensor_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 # meshio.write(outfile, mesh)
 
-velo = nm.array([[1., 0.]]).T
+velo = nm.array([[-1., -1.]]).T
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
@@ -71,7 +71,7 @@ StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", int
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 
-eq = Equation('balance', MassT - StiffT + FluxT)
+eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
 
 def ic_wrap(x, ic=None):
