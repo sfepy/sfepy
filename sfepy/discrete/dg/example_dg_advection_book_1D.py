@@ -27,7 +27,7 @@ from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
-from my_utils.visualizer import load_vtks, plot1D_DG_sol
+from my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 
 X1 = 0.
 XN = 2*nm.pi
@@ -124,6 +124,6 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-lmesh, u = load_vtks("./output/", "adv_sin_1D", tn, order=approx_order)
+lmesh, u = load_1D_vtks("./output/", "adv_sin_1D", tn, order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
               delay=100, polar=False)

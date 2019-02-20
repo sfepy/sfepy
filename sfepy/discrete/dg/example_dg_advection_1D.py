@@ -27,7 +27,7 @@ from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
-from my_utils.visualizer import load_vtks, plot1D_DG_sol
+from my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 
 X1 = 0.
 XN = 1.
@@ -54,7 +54,7 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-approx_order = 3
+approx_order = 2
 
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain('domain_1D', mesh)
@@ -94,7 +94,8 @@ def ic_wrap(x, ic=None):
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs)
+pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": "20"}, ics={},
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_1D") #, output_format="msh")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
@@ -116,7 +117,7 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 # nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status, post_stage_hook=limiter)
+nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)  # , post_stage_hook=limiter)
 
 tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
@@ -127,6 +128,6 @@ pb.solve()
 #--------
 #| Plot |
 #--------
-lmesh, u = load_vtks("./output/adv_1D", "domain_1D", tn, order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, dt=dt, ic=ic_wrap,
+lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
+plot1D_DG_sol(lmesh, t0, t1, u, tn=20, ic=ic_wrap,
               delay=100, polar=False)

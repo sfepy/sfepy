@@ -251,7 +251,7 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     fig.colorbar(c3, ax=[ax1, ax2, ax3])
 
 
-def load_vtks(fold, name, tn, order, tns=None):
+def load_1D_vtks(fold, name, order, tns=None):
     """
     Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
@@ -263,25 +263,25 @@ def load_vtks(fold, name, tn, order, tns=None):
 
     :param fold: folder where to look for files
     :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
-    :param tn: total number of files - needed to determine naming
     :param tns: number of time steps, i.e. number of files to read
     :param order: order of approximation used in u1, u1 ...u{order}
     :return: space coors, solution data
     """
 
     from sfepy.discrete.fem.meshio import VTKMeshIO
+    from glob import glob
+    from os.path import join as pjoin
+    files = glob(pjoin(fold, name) + "*")
 
-    if tns is None:
-        tns = tn
-
-    digs = int(nm.ceil(nm.log10(tn)))   # number of digits in filename
-    full_name = ".".join((name, ("{:0" + str(digs) + "d}"), "vtk"))
-    io = VTKMeshIO(pjoin(fold, full_name.format(0)))
+    if len(files) == 0:
+        print("No files for name {} found in {}".format(name, fold))
+        return
+    io = VTKMeshIO(files[0])
     coors = io.read_coors()[:, 0, None]
-    u = nm.zeros((order + 1, coors.shape[0] - 1, tns, 1))
+    u = nm.zeros((order + 1, coors.shape[0] - 1, len(files), 1))
 
-    for i in range(tns):
-        io = VTKMeshIO(pjoin(fold, full_name.format(i)))
+    for i, f in enumerate(files):
+        io = VTKMeshIO(files)
         data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
         for ii in range(order + 1):
             u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
