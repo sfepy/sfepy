@@ -40,11 +40,11 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
-velo = 1.0
+velo = -1.0
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
-t1 = 0.08
+t1 = 0.8
 dx = (XN - X1) / n_nod
 dt = dx / nm.abs(velo) * .5
 # time_steps_N = int((tf - t0) / dt) * 2
@@ -54,9 +54,9 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-approx_order = 2
+approx_order = 3
 
-integral = Integral('i', order=7)
+integral = Integral('i', order=approx_order * 2)
 domain = FEDomain('domain_1D', mesh)
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
@@ -88,7 +88,7 @@ right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
 
 def ic_wrap(x, ic=None):
-    return gsmooth(x)
+    return superic(x)
 
 
 ic_fun = Function('ic_fun', ic_wrap)

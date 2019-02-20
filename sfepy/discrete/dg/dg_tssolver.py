@@ -443,7 +443,16 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x1 = vec_x - ts.dt * (vec_dx - vec_x)
+
+        from dg_field import get_unraveler, get_raveler
+        unravel = get_unraveler(3, 99)
+        un_vec_r = unravel(vec_r)
+        un_vec_x1 = unravel(vec_x1)
+        un_vec_x0 = unravel(vec_x0)
+
         vec_x1 = self.post_stage_hook(vec_x1)
+
+        un_vec_x1_lim = unravel(vec_x1)
 
         # ----2nd stage----
         vec_r = fun(vec_x1)
@@ -453,7 +462,10 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1))/4
+        un_vec_x2 = unravel(vec_x2)
         vec_x2 = self.post_stage_hook(vec_x2)
+        un_vec_x2_lim = unravel(vec_x2)
+
 
         # ----3rd stage-----
         vec_r = fun(vec_x2)
@@ -463,7 +475,10 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x3 = (vec_x + 2 * vec_x2 - 2*ts.dt * (vec_dx - vec_x2))/3
+
+        un_vec_x3 = unravel(vec_x3)
         vec_x3 = self.post_stage_hook(vec_x3)
+        un_vec_x3_lim = unravel(vec_x3)
 
         # vec_e = mtx_a * vec_dx - vec_r
         # lerr = nla.norm(vec_e)
