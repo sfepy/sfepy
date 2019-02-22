@@ -17,7 +17,7 @@ class Test(TestCommon):
         from sfepy.base.log import Log
 
         log = Log([['x^3']],
-                  plot_kwargs = [[{'color' : 'b', 'ls' : '', 'marker' : 'o'}]],
+                  plot_kwargs = [{'color' : 'b', 'ls' : '', 'marker' : 'o'}],
                   yscales=['linear'],
                   xlabels=['x'], ylabels=['a cubic function'],
                   is_plot=False,
