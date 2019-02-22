@@ -370,7 +370,7 @@ class Log(Struct):
         if log_filename is not None:
             self.output = Output('', filename=log_filename)
             _write_header(self.output, xlabels, ylabels, yscales, data_names,
-                          plot_kwargs)
+                          self.plot_kwargs)
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
