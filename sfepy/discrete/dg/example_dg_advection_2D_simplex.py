@@ -38,14 +38,20 @@ outfile = "output/mesh/simp_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 # meshio.write(outfile, mesh)
 
-velo = nm.array([[1., 0.]]).T
+
+#vvvvvvvvvvvvvvvv#
+approx_order = 2
+CFL = 1.
+#^^^^^^^^^^^^^^^^#
+
+velo = nm.array([[-1., 0.]]).T
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
-t1 = 0.8
+t1 = 1
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
-dt = dx / norm(velo)
+dt = dx / norm(velo) * CFL/(2*approx_order + 1)
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
@@ -53,9 +59,6 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-#vvvvvvvvvvvvvvvv#
-approx_order = 2
-#^^^^^^^^^^^^^^^^#
 
 integral = Integral('i', order=5)
 
@@ -105,7 +108,8 @@ def ic_wrap(x, ic=None):
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs)
+pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_simp_2D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
@@ -119,5 +123,9 @@ nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 
 tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
+
+#---------
+#| Solve |
+#---------
 pb.set_solver(tss)
 pb.solve()
