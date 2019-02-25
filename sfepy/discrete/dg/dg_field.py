@@ -441,7 +441,7 @@ class DGField(Field):
         """
         Return indices of DOFs that belong to the given region and group.
 
-        NOT really tested, called only with the ragion being the "main" region
+        NOT really tested, called only with the region being the "main" region
         of the problem, i.e. self.region
 
         :param region:

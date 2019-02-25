@@ -299,12 +299,18 @@ def load_1D_vtks(fold, name, order, tns=None):
         return
     io = VTKMeshIO(files[0])
     coors = io.read_coors()[:, 0, None]
-    u = nm.zeros((order + 1, coors.shape[0] - 1, len(files), 1))
 
-    for i, f in enumerate(files):
-        io = VTKMeshIO(f)
+    tn = len(files)
+    nts = sorted([int(f.split(".")[-2]) for f in files])
+
+    digs = len(files[0].split(".")[-2])
+    full_name_form = ".".join((pjoin(fold, name), ("{:0" + str(digs) + "d}"), "vtk"))
+
+    u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
+    for i, nt in enumerate(nts):
+        io = VTKMeshIO(full_name_form.format(nt))
         data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
-        for ii in range(order):
+        for ii in range(order + 1):
             u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
 
     return coors, u
