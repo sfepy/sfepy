@@ -107,6 +107,8 @@ state0 = pb.get_initial_state()
 # create post stage hook with limiter
 from dg_field import get_unraveler, get_raveler
 from dg_limiters import moment_limiter_1D
+
+
 def limiter(vec):
     # TODO unify shapes for limiter
     u = get_unraveler(field.n_el_nod, field.n_cell)(vec).swapaxes(0, 1)
@@ -121,7 +123,7 @@ nls_status = IndexedStruct()
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
 nls = RK3StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
 
-tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
+tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
 
