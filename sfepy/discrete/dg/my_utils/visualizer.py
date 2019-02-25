@@ -251,6 +251,27 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     fig.colorbar(c3, ax=[ax1, ax2, ax3])
 
 
+def load_state_1D_vtk(name, order):
+    """
+    Load one VTK file containing state in time
+    :param name:
+    :param order:
+    :return:
+    """
+
+    from sfepy.discrete.fem.meshio import VTKMeshIO
+    from glob import glob
+    from os.path import join as pjoin
+    io = VTKMeshIO(name)
+    data = io.read_data(step=0)
+    coors = io.read_coors()[:, 0, None]
+    u = nm.zeros((order + 1, coors.shape[0] - 1, 1, 1))
+    for ii in range(order + 1):
+        u[ii, :, 0, 0] = data['u_modal{}'.format(ii)].data
+
+    return coors, u
+
+
 def load_1D_vtks(fold, name, order, tns=None):
     """
     Reads series of .vtk files and crunches them into form
@@ -271,7 +292,7 @@ def load_1D_vtks(fold, name, order, tns=None):
     from sfepy.discrete.fem.meshio import VTKMeshIO
     from glob import glob
     from os.path import join as pjoin
-    files = glob(pjoin(fold, name) + "*")
+    files = glob(pjoin(fold, name) + ".[0-9]*")
 
     if len(files) == 0:
         print("No files for name {} found in {}".format(name, fold))
@@ -281,9 +302,9 @@ def load_1D_vtks(fold, name, order, tns=None):
     u = nm.zeros((order + 1, coors.shape[0] - 1, len(files), 1))
 
     for i, f in enumerate(files):
-        io = VTKMeshIO(files)
+        io = VTKMeshIO(f)
         data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
-        for ii in range(order + 1):
+        for ii in range(order):
             u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
 
     return coors, u

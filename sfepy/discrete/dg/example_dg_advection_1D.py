@@ -40,13 +40,15 @@ descs = ['1_2']
 mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
+approx_order = 2
+
 velo = -1.0
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
-t1 = 0.8
+t1 = 1
 dx = (XN - X1) / n_nod
-dt = dx / nm.abs(velo) * .5
+dt = dx / nm.abs(velo) * 1/(2*approx_order + 1 )
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
@@ -54,7 +56,7 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-approx_order = 2
+
 
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain('domain_1D', mesh)
@@ -94,14 +96,13 @@ def ic_wrap(x, ic=None):
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": "20"}, ics={},
+pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
                                    ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_1D") #, output_format="msh")
 pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
-# state0 = pb.get_initial_state()
-
+state0 = pb.get_initial_state()
 
 # create post stage hook with limiter
 from dg_field import get_unraveler, get_raveler
@@ -113,21 +114,46 @@ def limiter(vec):
     rvec = get_raveler(field.n_el_nod, field.n_cell)(u.swapaxes(0, 1))
     return rvec[:, 0]
 
+
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
 # nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)  # , post_stage_hook=limiter)
+nls = RK3StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
 
 tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
-pb.solve()
+
+#---------
+#| Solve |
+#---------
+state_end = pb.solve()
+pb.save_state("./output/adv_1D/domain_1D_end.vtk", state=state_end)
 
 
 #--------
 #| Plot |
 #--------
 lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, tn=20, ic=ic_wrap,
+plot1D_DG_sol(lmesh, t0, t1, u, tn=100, ic=ic_wrap,
               delay=100, polar=False)
+
+from my_utils.visualizer import load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
+coors, u_end = load_state_1D_vtk("./output/adv_1D/domain_1D_end.vtk", order=approx_order)
+
+
+u_start = get_unraveler(field.n_el_nod, field.n_cell)(state0.vec).swapaxes(0, 1)[..., None]
+# u_end = get_unraveler(field.n_el_nod, field.n_cell)(state_end.vec).swapaxes(0, 1)[..., None]
+
+
+plot_1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
+
+plt.figure("reconstructed")
+ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)
+ww_e, _ = reconstruct_legendre_dofs(coors, None, u_start)
+
+plt.plot(xx, ww_s[:, 0])
+plt.plot(xx, ww_e[:, 0])
+plt.show()
+

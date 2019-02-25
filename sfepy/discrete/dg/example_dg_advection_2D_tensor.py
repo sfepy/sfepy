@@ -35,14 +35,19 @@ outfile = "output/mesh/tensor_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 # meshio.write(outfile, mesh)
 
+#vvvvvvvvvvvvvvvv#
+approx_order = 2
+CFL = 1.
+#^^^^^^^^^^^^^^^^#
+
 velo = nm.array([[-1., -1.]]).T
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
-t1 = 0.8
+t1 = 1
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
-dt = dx / norm(velo) * .5
+dt = dx / norm(velo) * CFL/(2*approx_order + 1)
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
@@ -50,9 +55,7 @@ print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
-#vvvvvvvvvvvvvvvv#
-approx_order = 2
-#^^^^^^^^^^^^^^^^#
+
 integral = Integral('i', order=5)
 
 domain = FEDomain('domain_tensor_2D', mesh)
@@ -100,7 +103,8 @@ from matplotlib import cm
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs)
+pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
+                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_tens_2D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
