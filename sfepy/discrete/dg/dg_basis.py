@@ -446,17 +446,27 @@ def plot_2Dtensor_basis_grad():
     coorsgrad = nm.array(nm.meshgrid(Xgrad, Ygrad)).T
     Zgrad = bs.eval_base(coorsgrad, diff=True)
 
+    Zn = bs.eval_base(coorsgrad, diff=False)
+    Znumgrad = nm.zeros(Zgrad.shape)
+    Znumgrad[1:, :, :1, :] = nm.diff(Zn, axis=0)
+    Znumgrad[:, 1:, 1:2, :] = nm.diff(Zn, axis=1)
+
     # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
         fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
-                                linewidth=0, antialiased=False, alpha=.6)
+                                 linewidth=0, antialiased=False, alpha=.6)
         grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1*nm.ones((10, 10)),
-                               Zgrad[:, :, 0, i]/30, Zgrad[:, :, 1, i]/30, nm.zeros((10, 10)), color='r')
+                               Zgrad[:, :, 0, i]/50, Zgrad[:, :, 1, i]/50, nm.zeros((10, 10)), color='r')
+        num_grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1 * nm.ones((10, 10)),
+                               Znumgrad[:, :, 0, i], Znumgrad[:, :, 1, i], nm.zeros((10, 10)), color='g')
         grad_norm = ax.scatter(coorsgrad[:, :, 0], coorsgrad[:, :, 1], norm(Zgrad[:, :, :, i], axis=2))
 
+        # ax.set_xlim(-5, 5)
+        # ax.set_ylim(-5, 5)
+        # ax.set_zlim(-5, 5)
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
         ax.set_zlabel("Z")
@@ -609,7 +619,7 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    # plot_2Dtensor_basis_grad()
+    plot_2Dtensor_basis_grad()
     # plot_2Dsimplex_basis_grad()
-    plot_2D_simplex_as_tensor()
+    # plot_2D_simplex_as_tensor()
     # plot_1D_basis()
