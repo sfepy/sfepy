@@ -1451,6 +1451,18 @@ The following eigenvalue problem solvers are available:
 See :mod:`sfepy.solvers.eigen` for available *eigenvalue problem* solvers and
 their options.
 
+Quadratic Eigenvalue Problem Solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following quadratic eigenvalue problem solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   .. <Quadratic Eigenvalue Problem Solvers>
+    :end-before:    .. </Quadratic Eigenvalue Problem Solvers>
+
+See :mod:`sfepy.solvers.qeigen` for available *quadratic eigenvalue problem*
+solvers and their options.
+
 Optimization Solvers
 ^^^^^^^^^^^^^^^^^^^^
 
