@@ -72,7 +72,7 @@ from sfepy.discrete import Problem
 from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
-from sfepy.linalg.utils import output_array_stats
+from sfepy.linalg.utils import output_array_stats, max_diff_csr
 
 def apply_units_le(pars, unit_multipliers):
     new_pars = apply_unit_multipliers(pars,
@@ -236,10 +236,6 @@ def get_std_wave_fun_le(pb, options):
         fun = lambda wmag, wdir: (wmag / cp, wmag / cs)
 
     return fun, log_names, log_plot_kwargs
-
-def _max_diff_csr(mtx1, mtx2):
-    aux = nm.abs((mtx1 - mtx2).data)
-    return aux.max() if len(aux) else 0.0
 
 def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     if svecs is None: return
@@ -537,10 +533,10 @@ def main():
     output_array_stats(mtx_r.data, 'nonzeros in R')
 
     output('symmetry checks of real blocks:')
-    output('M - M^T:', _max_diff_csr(mtx_m, mtx_m.T))
-    output('K - K^T:', _max_diff_csr(mtx_k, mtx_k.T))
-    output('S - S^T:', _max_diff_csr(mtx_s, mtx_s.T))
-    output('R + R^T:', _max_diff_csr(mtx_r, -mtx_r.T))
+    output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
+    output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
+    output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
+    output('R + R^T:', max_diff_csr(mtx_r, -mtx_r.T))
 
     n_eigs = options.n_eigs
     if options.mode == 'omega':
@@ -589,7 +585,7 @@ def main():
             mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
             mtx_b = mtx_m
 
-            output('A - A^H:', _max_diff_csr(mtx_a, mtx_a.H))
+            output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
 
             if options.eigs_only:
                 eigs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,

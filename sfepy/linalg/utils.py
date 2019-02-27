@@ -122,6 +122,10 @@ def output_array_stats(ar, name, verbose=True):
         output_array_stats(ar.real, 'Re(%s)' % name , verbose=verbose)
         output_array_stats(ar.imag, 'Im(%s)' % name, verbose=verbose)
 
+def max_diff_csr(mtx1, mtx2):
+    aux = nm.abs((mtx1 - mtx2).data)
+    return aux.max() if len(aux) else 0.0
+
 ##
 # 21.11.2005, c
 def split_range( n_item, step ):
