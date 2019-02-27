@@ -265,7 +265,12 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
     def __init__(self, name, geometry, order):
         LegendrePolySpace.__init__(self, name, geometry, order)
         if self.dim > 1:
-            self.coefM, self.expoM = self.build_interpol_scheme()
+            try:
+                self.coefM = nm.loadtxt("legendre2D_tensor_coefs.txt")[:self.n_nod, :self.n_nod]
+                self.expoM = nm.loadtxt("legendre2D_tensor_expos.txt")[:self.n_nod, :]
+            except FileNotFoundError as e:
+                raise FileNotFoundError("File {} not found, run gen_legendre_tensor_base.py to generate it."
+                                        .format(e.filename))
 
     def combine_polyvals(self, coors, polyvals, idx):
         return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
@@ -448,8 +453,8 @@ def plot_2Dtensor_basis_grad():
 
     Zn = bs.eval_base(coorsgrad, diff=False)
     Znumgrad = nm.zeros(Zgrad.shape)
-    Znumgrad[1:, :, :1, :] = nm.diff(Zn, axis=0)
-    Znumgrad[:, 1:, 1:2, :] = nm.diff(Zn, axis=1)
+    Znumgrad[1:, :, :1, :] = nm.diff(Zn, axis=0) / nm.diff(Xgrad)[:, None, None, None]
+    Znumgrad[:, 1:, 1:2, :] = nm.diff(Zn, axis=1) / nm.diff(Ygrad)[None,:, None, None]
 
     # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
@@ -619,7 +624,7 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    plot_2Dtensor_basis_grad()
-    # plot_2Dsimplex_basis_grad()
+    # plot_2Dtensor_basis_grad()
+    plot_2Dsimplex_basis_grad()
     # plot_2D_simplex_as_tensor()
     # plot_1D_basis()
