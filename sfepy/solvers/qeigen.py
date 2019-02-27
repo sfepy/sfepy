@@ -7,7 +7,8 @@ import time
 import numpy as nm
 import scipy.sparse as sps
 
-from sfepy.base.base import get_default, structify
+from sfepy.base.base import output, get_default, structify
+from sfepy.linalg.utils import max_diff_csr
 from sfepy.solvers.solvers import SolverMeta, Solver
 
 def standard_call(call):
@@ -74,6 +75,8 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
             the linearized problem (A - w B) x = 0."""),
         ('mode', "{'normal', 'inverted'}", 'normal', False,
          'Solve either A - w B (normal), or B - 1/w A (inverted).'),
+        ('debug', 'bool', False, False,
+         'If True, print debugging information.'),
     ]
 
     @standard_call
@@ -97,6 +100,9 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
             mtx_p = sps.coo_matrix((nm.ones_like(perm), (ir, perm)))
             mtx_l = mtx_p.T * factor.L()
 
+            if conf.debug:
+                output('S - LL^T:', max_diff_csr(mtx_m, mtx_l * mtx_l.T))
+
             mtx_eye = sps.eye(mtx_l.shape[0], dtype=nm.float64)
 
             mtx_a = sps.bmat([[-mtx_k, None],
@@ -106,6 +112,12 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
 
         else:
             raise ValueError('unknown method! (%s)' % conf.method)
+
+        if conf.debug:
+            output('A - A^T:', max_diff_csr(mtx_a, mtx_a.T))
+            output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
+            output('B - B^T:', max_diff_csr(mtx_b, mtx_b.T))
+            output('B - B^H:', max_diff_csr(mtx_b, mtx_b.H))
 
         if conf.mode == 'normal':
             out = self.solver(mtx_a, mtx_b, n_eigs=n_eigs,
