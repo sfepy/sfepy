@@ -2,7 +2,7 @@
 Base (abstract) solver classes.
 """
 from __future__ import absolute_import
-from sfepy.base.base import Struct, output
+from sfepy.base.base import Struct, output, structify
 import six
 
 def make_get_conf(conf, kwargs):
@@ -334,3 +334,20 @@ class EigenvalueSolver(Solver):
             if hasattr(mtx_b, 'toarray'):
                 mtx_b = mtx_b.toarray()
         return mtx_a, mtx_b
+
+class QuadraticEVPSolver(Solver):
+    """
+    Abstract quadratic eigenvalue problem solver class.
+    """
+
+    def __init__(self, conf, mtx_m=None, mtx_d=None, mtx_k=None, n_eigs=None,
+                 eigenvectors=None, status=None, context=None, **kwargs):
+        Solver.__init__(self, conf=conf, mtx_m=mtx_m, mtx_d=mtx_d, mtx_k=mtx_k,
+                        n_eigs=n_eigs, eigenvectors=eigenvectors,
+                        status=status, context=context)
+        solver_conf = structify(conf.solver)
+        self.solver = Solver.any_from_conf(solver_conf)
+
+    def __call__(self, mtx_m, mtx_d, mtx_k, n_eigs=None,
+                 eigenvectors=None, status=None, conf=None):
+        raise ValueError('called an abstract QuadraticEVPSolver instance!')

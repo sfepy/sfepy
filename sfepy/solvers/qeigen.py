@@ -7,9 +7,9 @@ import time
 import numpy as nm
 import scipy.sparse as sps
 
-from sfepy.base.base import output, get_default, structify
+from sfepy.base.base import output, get_default
 from sfepy.linalg.utils import max_diff_csr
-from sfepy.solvers.solvers import SolverMeta, Solver
+from sfepy.solvers.solvers import SolverMeta, QuadraticEVPSolver
 
 def standard_call(call):
     """
@@ -39,23 +39,6 @@ def standard_call(call):
         return result
 
     return _standard_call
-
-class QuadraticEVPSolver(Solver):
-    """
-    Abstract quadratic eigenvalue problem solver class.
-    """
-
-    def __init__(self, conf, mtx_m=None, mtx_d=None, mtx_k=None, n_eigs=None,
-                 eigenvectors=None, status=None, context=None, **kwargs):
-        Solver.__init__(self, conf=conf, mtx_m=mtx_m, mtx_d=mtx_d, mtx_k=mtx_k,
-                        n_eigs=n_eigs, eigenvectors=eigenvectors,
-                        status=status, context=context)
-        solver_conf = structify(conf.solver)
-        self.solver = Solver.any_from_conf(solver_conf)
-
-    def __call__(self, mtx_m, mtx_d, mtx_k, n_eigs=None,
-                 eigenvectors=None, status=None, conf=None):
-        raise ValueError('called an abstract QuadraticEVPSolver instance!')
 
 class LQuadraticEVPSolver(QuadraticEVPSolver):
     """

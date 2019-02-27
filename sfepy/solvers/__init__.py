@@ -4,7 +4,6 @@ import sfepy
 from sfepy.base.base import load_classes, insert_static_method
 from .solvers import *
 from .eigen import eig
-from .qeigen import QuadraticEVPSolver
 from .auto_fallback import AutoFallbackSolver
 
 solver_files = sfepy.get_paths('sfepy/solvers/*.py')
