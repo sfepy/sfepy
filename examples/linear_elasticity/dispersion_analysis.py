@@ -30,7 +30,7 @@ solver required!)::
 
   python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.scipy', method='eigh'" --log-std-waves -n 10 --range=0,640,101 --mesh-size=1e-2 --mode=omega --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/omega
 
-  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.scipy', method='eig'" --log-std-waves -n 500 --range=0,4000000,1001 --mesh-size=1e-2 --mode=kappa --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/kappa
+  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_2m.mesh --solver-conf="kind='eig.qevp', method='companion', mode='inverted', solver={kind='eig.scipy', method='eig'}" --log-std-waves -n 500 --range=0,4000000,1001 --mesh-size=1e-2 --mode=kappa --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/kappa
 
 View/compare the resulting logs::
 
@@ -618,21 +618,9 @@ def main():
         log(finished=True)
 
     else:
-        import scipy.sparse as sps
-        from sksparse.cholmod import cholesky
-
         eigenshapes_filename = os.path.join(output_dir,
                                             'wave-number-eigenshapes-%s.vtk'
                                             % stepper.suffix)
-
-        factor = cholesky(mtx_s)
-        perm = factor.P()
-        ir = nm.arange(len(perm))
-        mtx_p = sps.coo_matrix((nm.ones_like(perm), (ir, perm)))
-        mtx_l = mtx_p.T * factor.L()
-        mtx_eye = sps.eye(mtx_l.shape[0], dtype=nm.float64)
-
-        output('S - LL^T:', _max_diff_csr(mtx_s, mtx_l * mtx_l.T))
 
         log_names = []
         log_plot_kwargs = []
@@ -654,22 +642,17 @@ def main():
         for io, omega in stepper:
             output('step %d: frequency %s' % (io, omega))
 
-            mtx_a = sps.bmat([[omega**2 * mtx_m - mtx_k, None],
-                              [None, mtx_eye]])
-            mtx_b = sps.bmat([[1j * mtx_r, mtx_l],
-                              [mtx_l.T, None]])
-
-            output('A - A^T:', _max_diff_csr(mtx_a, mtx_a.T))
-            output('A - A^H:', _max_diff_csr(mtx_a, mtx_a.T))
-            output('B - B^H:', _max_diff_csr(mtx_b, mtx_b.H))
-
             if options.eigs_only:
-                eigs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
+                eigs = eig_solver(mtx_s, 1j * mtx_r,
+                                  mtx_k - omega**2 * mtx_m,
+                                  n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
             else:
-                eigs, esvecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
+                eigs, esvecs = eig_solver(mtx_s, 1j * mtx_r,
+                                          mtx_k - omega**2 * mtx_m,
+                                          n_eigs=n_eigs,
                                           eigenvectors=True)
 
             kappas = eigs
