@@ -40,8 +40,8 @@ meshio = VTKMeshIO(outfile)
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 2
-CFL = 1.
+approx_order = 0
+CFL = .5
 #^^^^^^^^^^^^^^^^#
 
 velo = nm.array([[-1., 0.]]).T
