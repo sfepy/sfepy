@@ -74,7 +74,7 @@ from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 from sfepy.linalg.utils import output_array_stats, max_diff_csr
 
-def apply_units_le(pars, unit_multipliers):
+def apply_units(pars, unit_multipliers):
     new_pars = apply_unit_multipliers(pars,
                                       ['stress', 'one', 'density',
                                        'stress', 'one' ,'density'],
@@ -94,8 +94,8 @@ def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
 
     return out
 
-def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-              plane='strain', post_process=False):
+def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
+           plane='strain', post_process=False):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -185,11 +185,11 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
 
     return locals()
 
-def set_wave_dir_le(materials, wdir):
+def set_wave_dir(materials, wdir):
     wave_mat = materials['wave']
     wave_mat.datas['special']['vec'] = wdir
 
-def save_materials_le(output_dir, pb, options):
+def save_materials(output_dir, pb, options):
     stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
@@ -206,7 +206,7 @@ def save_materials_le(output_dir, pb, options):
     materials_filename = os.path.join(output_dir, 'materials.vtk')
     pb.save_state(materials_filename, out=out)
 
-def get_std_wave_fun_le(pb, options):
+def get_std_wave_fun(pb, options):
     stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
@@ -477,19 +477,15 @@ def main():
 
     if options.conf is not None:
         mod = import_file(options.conf)
-        apply_units = mod.apply_units
-        define = mod.define
-        set_wave_dir = mod.set_wave_dir
-        save_materials = mod.save_materials
-        get_std_wave_fun = mod.get_std_wave_fun
 
     else:
         mod = sys.modules[__name__]
-        apply_units = apply_units_le
-        define = define_le
-        set_wave_dir = set_wave_dir_le
-        save_materials = save_materials_le
-        get_std_wave_fun = get_std_wave_fun_le
+
+    apply_units = mod.apply_units
+    define = mod.define
+    set_wave_dir = mod.set_wave_dir
+    save_materials = mod.save_materials
+    get_std_wave_fun = mod.get_std_wave_fun
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
