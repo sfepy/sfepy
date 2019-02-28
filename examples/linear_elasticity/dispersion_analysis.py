@@ -175,8 +175,8 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     equations = {
         'K' : 'dw_lin_elastic.i.Omega(m.D, v, u)',
         'S' : 'dw_elastic_wave.i.Omega(m.D, wave.vec, v, u)',
-        'R' : """dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
-               - dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)""",
+        'R' : """1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
+               - 1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)""",
         'M' : 'dw_volume_dot.i.Omega(m.density, v, u)',
     }
 
@@ -592,7 +592,7 @@ def main():
         for iv, wmag in stepper:
             output('step %d: wave vector %s' % (iv, wmag * wdir))
 
-            mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
+            mtx_a = mtx_k + wmag**2 * mtx_s + wmag * mtx_r
             mtx_b = mtx_m
 
             output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
@@ -649,14 +649,14 @@ def main():
             output('step %d: frequency %s' % (io, omega))
 
             if options.eigs_only:
-                eigs = eig_solver(mtx_s, 1j * mtx_r,
+                eigs = eig_solver(mtx_s, mtx_r,
                                   mtx_k - omega**2 * mtx_m,
                                   n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
             else:
-                eigs, esvecs = eig_solver(mtx_s, 1j * mtx_r,
+                eigs, esvecs = eig_solver(mtx_s, mtx_r,
                                           mtx_k - omega**2 * mtx_m,
                                           n_eigs=n_eigs,
                                           eigenvectors=True)
