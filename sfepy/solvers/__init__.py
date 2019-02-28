@@ -14,6 +14,7 @@ solver_table = load_classes(solver_files,
                             [AutoFallbackSolver,
                              LinearSolver, NonlinearSolver,
                              TimeSteppingSolver, EigenvalueSolver,
+                             QuadraticEVPSolver,
                              OptimizationSolver], package_name='sfepy.solvers')
 
 

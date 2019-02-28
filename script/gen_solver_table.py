@@ -13,7 +13,7 @@ sys.path.append('.')
 import sfepy
 from sfepy.base.base import load_classes
 from sfepy.solvers import NonlinearSolver, TimeSteppingSolver, LinearSolver, \
-    EigenvalueSolver, OptimizationSolver
+    EigenvalueSolver, QuadraticEVPSolver, OptimizationSolver
 from sfepy.solvers.auto_fallback import AutoFallbackSolver
 
 solver_by_type_table = [
@@ -22,6 +22,7 @@ solver_by_type_table = [
     [[NonlinearSolver], "Nonlinear Solvers"],
     [[LinearSolver], "Linear Solvers"],
     [[EigenvalueSolver], "Eigenvalue Problem Solvers"],
+    [[QuadraticEVPSolver], "Quadratic Eigenvalue Problem Solvers"],
     [[OptimizationSolver], "Optimization Solvers"]
 ]
 
