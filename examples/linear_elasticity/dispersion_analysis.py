@@ -265,6 +265,81 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
 
     pb.save_state(filename, out=out)
 
+def assemble_matrices(define, mod, pars, set_wave_dir, options):
+    """
+    Assemble the dispersion eigenvalue problem matrices.
+    """
+    define_problem = functools.partial(define,
+                                       filename_mesh=options.mesh_filename,
+                                       pars=pars,
+                                       approx_order=options.order,
+                                       refinement_level=options.refine,
+                                       solver_conf=options.solver_conf,
+                                       plane=options.plane,
+                                       post_process=options.post_process)
+
+    conf = ProblemConf.from_dict(define_problem(), mod)
+
+    pb = Problem.from_conf(conf)
+    dim = pb.domain.shape.dim
+
+    bbox = pb.domain.mesh.get_bounding_box()
+    size = (bbox[1] - bbox[0]).max()
+    scaling0 = apply_unit_multipliers([1.0], ['length'],
+                                      options.unit_multipliers)[0]
+    scaling = scaling0
+    if options.mesh_size is not None:
+        scaling *= options.mesh_size / size
+    output('scaling factor of periodic cell mesh coordinates:', scaling)
+    output('new mesh size with applied unit multipliers:', scaling * size)
+    pb.domain.mesh.coors[:] *= scaling
+    pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
+
+    bzone = 2.0 * nm.pi / (scaling * size)
+    output('1. Brillouin zone size:', bzone * scaling0)
+    output('1. Brillouin zone size with applied unit multipliers:', bzone)
+
+    pb.time_update()
+    pb.update_materials()
+
+    # Set the normalized wave vector direction to the material(s).
+    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
+    wdir = wdir / nm.linalg.norm(wdir)
+    set_wave_dir(pb.get_materials(), wdir)
+
+    # Assemble the matrices.
+    mtx_m = pb.mtx_a.copy()
+    eq_m = pb.equations['M']
+    mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
+    mtx_m.eliminate_zeros()
+    output_array_stats(mtx_m.data, 'nonzeros in M')
+
+    mtx_k = pb.mtx_a.copy()
+    eq_k = pb.equations['K']
+    mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
+    mtx_k.eliminate_zeros()
+    output_array_stats(mtx_k.data, 'nonzeros in K')
+
+    mtx_s = pb.mtx_a.copy()
+    eq_s = pb.equations['S']
+    mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
+    mtx_s.eliminate_zeros()
+    output_array_stats(mtx_s.data, 'nonzeros in S')
+
+    mtx_r = pb.mtx_a.copy()
+    eq_r = pb.equations['R']
+    mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
+    mtx_r.eliminate_zeros()
+    output_array_stats(mtx_r.data, 'nonzeros in R')
+
+    output('symmetry checks of real blocks:')
+    output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
+    output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
+    output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
+    output('R + R^T:', max_diff_csr(mtx_r, -mtx_r.T))
+
+    return pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r
+
 helps = {
     'pars' :
     'material parameters in Y1, Y2 subdomains in basic units'
@@ -454,89 +529,24 @@ def main():
                                          options.unit_multipliers)
         output('frequency range with applied unit multipliers:', rng)
 
-    define_problem = functools.partial(define,
-                                       filename_mesh=options.mesh_filename,
-                                       pars=pars,
-                                       approx_order=options.order,
-                                       refinement_level=options.refine,
-                                       solver_conf=options.solver_conf,
-                                       plane=options.plane,
-                                       post_process=options.post_process)
+    aux = assemble_matrices(define, mod, pars, set_wave_dir, options)
+    pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r = aux
 
-    conf = ProblemConf.from_dict(define_problem(), mod)
-
-    pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
 
     if dim != 2:
         options.plane = 'strain'
 
-    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
-    wdir = wdir / nm.linalg.norm(wdir)
-
     stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
-
-    bbox = pb.domain.mesh.get_bounding_box()
-    size = (bbox[1] - bbox[0]).max()
-    scaling0 = apply_unit_multipliers([1.0], ['length'],
-                                      options.unit_multipliers)[0]
-    scaling = scaling0
-    if options.mesh_size is not None:
-        scaling *= options.mesh_size / size
-    output('scaling factor of periodic cell mesh coordinates:', scaling)
-    output('new mesh size with applied unit multipliers:', scaling * size)
-    pb.domain.mesh.coors[:] *= scaling
-    pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
 
     if options.save_regions:
         pb.save_regions_as_groups(os.path.join(output_dir, 'regions'))
 
-    bzone = 2.0 * nm.pi / (scaling * size)
-    output('1. Brillouin zone size:', bzone * scaling0)
-    output('1. Brillouin zone size with applied unit multipliers:', bzone)
-
-    pb.time_update()
-    pb.update_materials()
-
     if options.save_materials:
         save_materials(output_dir, pb, options)
 
-    # Set the normalized wave vector direction to the material(s).
-    set_wave_dir(pb.get_materials(), wdir)
-
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
-
-    # Assemble the matrices.
-    mtx_m = pb.mtx_a.copy()
-    eq_m = pb.equations['M']
-    mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
-    mtx_m.eliminate_zeros()
-    output_array_stats(mtx_m.data, 'nonzeros in M')
-
-    mtx_k = pb.mtx_a.copy()
-    eq_k = pb.equations['K']
-    mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
-    mtx_k.eliminate_zeros()
-    output_array_stats(mtx_k.data, 'nonzeros in K')
-
-    mtx_s = pb.mtx_a.copy()
-    eq_s = pb.equations['S']
-    mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
-    mtx_s.eliminate_zeros()
-    output_array_stats(mtx_s.data, 'nonzeros in S')
-
-    mtx_r = pb.mtx_a.copy()
-    eq_r = pb.equations['R']
-    mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
-    mtx_r.eliminate_zeros()
-    output_array_stats(mtx_r.data, 'nonzeros in R')
-
-    output('symmetry checks of real blocks:')
-    output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
-    output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
-    output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
-    output('R + R^T:', max_diff_csr(mtx_r, -mtx_r.T))
 
     n_eigs = options.n_eigs
     if options.mode == 'omega':
