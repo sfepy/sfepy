@@ -332,11 +332,15 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     mtx_r.eliminate_zeros()
     output_array_stats(mtx_r.data, 'nonzeros in R')
 
-    output('symmetry checks of real blocks:')
+    output('symmetry checks of blocks:')
     output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
     output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
     output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
-    output('R + R^T:', max_diff_csr(mtx_r, -mtx_r.T))
+    output('R - R^T:', max_diff_csr(mtx_r, mtx_r.T))
+    output('M - M^H:', max_diff_csr(mtx_m, mtx_m.H))
+    output('K - K^H:', max_diff_csr(mtx_k, mtx_k.H))
+    output('S - S^H:', max_diff_csr(mtx_s, mtx_s.H))
+    output('R - R^H:', max_diff_csr(mtx_r, mtx_r.H))
 
     return pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r
 
