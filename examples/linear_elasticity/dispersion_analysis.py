@@ -74,7 +74,7 @@ from sfepy.solvers import Solver
 from sfepy.solvers.ts import TimeStepper
 from sfepy.linalg.utils import output_array_stats, max_diff_csr
 
-def apply_units_le(pars, unit_multipliers):
+def apply_units(pars, unit_multipliers):
     new_pars = apply_unit_multipliers(pars,
                                       ['stress', 'one', 'density',
                                        'stress', 'one' ,'density'],
@@ -94,8 +94,8 @@ def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
 
     return out
 
-def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-              plane='strain', post_process=False):
+def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
+           plane='strain', post_process=False):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
@@ -175,8 +175,8 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     equations = {
         'K' : 'dw_lin_elastic.i.Omega(m.D, v, u)',
         'S' : 'dw_elastic_wave.i.Omega(m.D, wave.vec, v, u)',
-        'R' : """dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
-               - dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)""",
+        'R' : """1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, u, v)
+               - 1j * dw_elastic_wave_cauchy.i.Omega(m.D, wave.vec, v, u)""",
         'M' : 'dw_volume_dot.i.Omega(m.density, v, u)',
     }
 
@@ -185,11 +185,11 @@ def define_le(filename_mesh, pars, approx_order, refinement_level, solver_conf,
 
     return locals()
 
-def set_wave_dir_le(materials, wdir):
+def set_wave_dir(materials, wdir):
     wave_mat = materials['wave']
     wave_mat.datas['special']['vec'] = wdir
 
-def save_materials_le(output_dir, pb, options):
+def save_materials(output_dir, pb, options):
     stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
@@ -206,7 +206,7 @@ def save_materials_le(output_dir, pb, options):
     materials_filename = os.path.join(output_dir, 'materials.vtk')
     pb.save_state(materials_filename, out=out)
 
-def get_std_wave_fun_le(pb, options):
+def get_std_wave_fun(pb, options):
     stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
                             mode='el_avg', copy_materials=False, verbose=False)
     young, poisson = mc.youngpoisson_from_stiffness(stiffness,
@@ -264,6 +264,85 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
         out.update({key + '%03d' % ii : aux[key] for key in aux})
 
     pb.save_state(filename, out=out)
+
+def assemble_matrices(define, mod, pars, set_wave_dir, options):
+    """
+    Assemble the dispersion eigenvalue problem matrices.
+    """
+    define_problem = functools.partial(define,
+                                       filename_mesh=options.mesh_filename,
+                                       pars=pars,
+                                       approx_order=options.order,
+                                       refinement_level=options.refine,
+                                       solver_conf=options.solver_conf,
+                                       plane=options.plane,
+                                       post_process=options.post_process)
+
+    conf = ProblemConf.from_dict(define_problem(), mod)
+
+    pb = Problem.from_conf(conf)
+    dim = pb.domain.shape.dim
+
+    bbox = pb.domain.mesh.get_bounding_box()
+    size = (bbox[1] - bbox[0]).max()
+    scaling0 = apply_unit_multipliers([1.0], ['length'],
+                                      options.unit_multipliers)[0]
+    scaling = scaling0
+    if options.mesh_size is not None:
+        scaling *= options.mesh_size / size
+    output('scaling factor of periodic cell mesh coordinates:', scaling)
+    output('new mesh size with applied unit multipliers:', scaling * size)
+    pb.domain.mesh.coors[:] *= scaling
+    pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
+
+    bzone = 2.0 * nm.pi / (scaling * size)
+    output('1. Brillouin zone size:', bzone * scaling0)
+    output('1. Brillouin zone size with applied unit multipliers:', bzone)
+
+    pb.time_update()
+    pb.update_materials()
+
+    # Set the normalized wave vector direction to the material(s).
+    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
+    wdir = wdir / nm.linalg.norm(wdir)
+    set_wave_dir(pb.get_materials(), wdir)
+
+    # Assemble the matrices.
+    mtx_m = pb.mtx_a.copy()
+    eq_m = pb.equations['M']
+    mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
+    mtx_m.eliminate_zeros()
+    output_array_stats(mtx_m.data, 'nonzeros in M')
+
+    mtx_k = pb.mtx_a.copy()
+    eq_k = pb.equations['K']
+    mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
+    mtx_k.eliminate_zeros()
+    output_array_stats(mtx_k.data, 'nonzeros in K')
+
+    mtx_s = pb.mtx_a.copy()
+    eq_s = pb.equations['S']
+    mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
+    mtx_s.eliminate_zeros()
+    output_array_stats(mtx_s.data, 'nonzeros in S')
+
+    mtx_r = pb.mtx_a.copy()
+    eq_r = pb.equations['R']
+    mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
+    mtx_r.eliminate_zeros()
+    output_array_stats(mtx_r.data, 'nonzeros in R')
+
+    output('symmetry checks of blocks:')
+    output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
+    output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
+    output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
+    output('R - R^T:', max_diff_csr(mtx_r, mtx_r.T))
+    output('M - M^H:', max_diff_csr(mtx_m, mtx_m.H))
+    output('K - K^H:', max_diff_csr(mtx_k, mtx_k.H))
+    output('S - S^H:', max_diff_csr(mtx_s, mtx_s.H))
+    output('R - R^H:', max_diff_csr(mtx_r, mtx_r.H))
+
+    return pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r
 
 helps = {
     'pars' :
@@ -402,19 +481,15 @@ def main():
 
     if options.conf is not None:
         mod = import_file(options.conf)
-        apply_units = mod.apply_units
-        define = mod.define
-        set_wave_dir = mod.set_wave_dir
-        save_materials = mod.save_materials
-        get_std_wave_fun = mod.get_std_wave_fun
 
     else:
         mod = sys.modules[__name__]
-        apply_units = apply_units_le
-        define = define_le
-        set_wave_dir = set_wave_dir_le
-        save_materials = save_materials_le
-        get_std_wave_fun = get_std_wave_fun_le
+
+    apply_units = mod.apply_units
+    define = mod.define
+    set_wave_dir = mod.set_wave_dir
+    save_materials = mod.save_materials
+    get_std_wave_fun = mod.get_std_wave_fun
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
@@ -454,89 +529,24 @@ def main():
                                          options.unit_multipliers)
         output('frequency range with applied unit multipliers:', rng)
 
-    define_problem = functools.partial(define,
-                                       filename_mesh=options.mesh_filename,
-                                       pars=pars,
-                                       approx_order=options.order,
-                                       refinement_level=options.refine,
-                                       solver_conf=options.solver_conf,
-                                       plane=options.plane,
-                                       post_process=options.post_process)
+    aux = assemble_matrices(define, mod, pars, set_wave_dir, options)
+    pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r = aux
 
-    conf = ProblemConf.from_dict(define_problem(), mod)
-
-    pb = Problem.from_conf(conf)
     dim = pb.domain.shape.dim
 
     if dim != 2:
         options.plane = 'strain'
 
-    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
-    wdir = wdir / nm.linalg.norm(wdir)
-
     stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
-
-    bbox = pb.domain.mesh.get_bounding_box()
-    size = (bbox[1] - bbox[0]).max()
-    scaling0 = apply_unit_multipliers([1.0], ['length'],
-                                      options.unit_multipliers)[0]
-    scaling = scaling0
-    if options.mesh_size is not None:
-        scaling *= options.mesh_size / size
-    output('scaling factor of periodic cell mesh coordinates:', scaling)
-    output('new mesh size with applied unit multipliers:', scaling * size)
-    pb.domain.mesh.coors[:] *= scaling
-    pb.set_mesh_coors(pb.domain.mesh.coors, update_fields=True)
 
     if options.save_regions:
         pb.save_regions_as_groups(os.path.join(output_dir, 'regions'))
 
-    bzone = 2.0 * nm.pi / (scaling * size)
-    output('1. Brillouin zone size:', bzone * scaling0)
-    output('1. Brillouin zone size with applied unit multipliers:', bzone)
-
-    pb.time_update()
-    pb.update_materials()
-
     if options.save_materials:
         save_materials(output_dir, pb, options)
 
-    # Set the normalized wave vector direction to the material(s).
-    set_wave_dir(pb.get_materials(), wdir)
-
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
-
-    # Assemble the matrices.
-    mtx_m = pb.mtx_a.copy()
-    eq_m = pb.equations['M']
-    mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
-    mtx_m.eliminate_zeros()
-    output_array_stats(mtx_m.data, 'nonzeros in M')
-
-    mtx_k = pb.mtx_a.copy()
-    eq_k = pb.equations['K']
-    mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
-    mtx_k.eliminate_zeros()
-    output_array_stats(mtx_k.data, 'nonzeros in K')
-
-    mtx_s = pb.mtx_a.copy()
-    eq_s = pb.equations['S']
-    mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
-    mtx_s.eliminate_zeros()
-    output_array_stats(mtx_s.data, 'nonzeros in S')
-
-    mtx_r = pb.mtx_a.copy()
-    eq_r = pb.equations['R']
-    mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
-    mtx_r.eliminate_zeros()
-    output_array_stats(mtx_r.data, 'nonzeros in R')
-
-    output('symmetry checks of real blocks:')
-    output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
-    output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
-    output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
-    output('R + R^T:', max_diff_csr(mtx_r, -mtx_r.T))
 
     n_eigs = options.n_eigs
     if options.mode == 'omega':
@@ -582,7 +592,7 @@ def main():
         for iv, wmag in stepper:
             output('step %d: wave vector %s' % (iv, wmag * wdir))
 
-            mtx_a = mtx_k + wmag**2 * mtx_s + (1j * wmag) * mtx_r
+            mtx_a = mtx_k + wmag**2 * mtx_s + wmag * mtx_r
             mtx_b = mtx_m
 
             output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
@@ -639,14 +649,14 @@ def main():
             output('step %d: frequency %s' % (io, omega))
 
             if options.eigs_only:
-                eigs = eig_solver(mtx_s, 1j * mtx_r,
+                eigs = eig_solver(mtx_s, mtx_r,
                                   mtx_k - omega**2 * mtx_m,
                                   n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
             else:
-                eigs, esvecs = eig_solver(mtx_s, 1j * mtx_r,
+                eigs, esvecs = eig_solver(mtx_s, mtx_r,
                                           mtx_k - omega**2 * mtx_m,
                                           n_eigs=n_eigs,
                                           eigenvectors=True)
