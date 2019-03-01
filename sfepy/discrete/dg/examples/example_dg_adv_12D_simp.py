@@ -30,14 +30,32 @@ from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
-mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5))
+mesh = gen_block_mesh((1., 1.), (20, 2), (.5, 0.5))
 mesh = triangulate(mesh)
 outfile = "output/mesh/simp_12D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 # meshio.write(outfile, mesh)
 
+cmesh = mesh.cmesh
+dim = cmesh.dim
+# cmesh.setup_connectivity(dim, dim)
+# cmesh.setup_connectivity(dim, dim - 1)
+# cmesh.setup_connectivity(dim - 1, dim)
+# c2c = cmesh.get_conn(dim, dim)
+
+import sfepy.postprocess.plot_cmesh as pc
+ax = pc.plot_cmesh(
+    None, cmesh,
+    wireframe_opts = {'color' : 'k', 'linewidth' : 2},
+    entities_opts=[
+        {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},
+        {'color' : 'b', 'label_global' : 6, 'label_local' : 8, 'size' : 10},
+        {'color' : 'r', 'label_global' : 12, 'size' : 20},
+    ])
+
+
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 1
 CFL = 1.
 #^^^^^^^^^^^^^^^^#
 

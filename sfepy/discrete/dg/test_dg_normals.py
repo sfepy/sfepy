@@ -8,11 +8,14 @@ from sfepy.discrete.fem import FEDomain, Mesh
 from sfepy.mesh.mesh_generators import gen_block_mesh
 
 import sfepy.postprocess.plot_cmesh as pc
+from sfepy.mesh.mesh_tools import triangulate
 
 
-mesh = gen_block_mesh([1, 1], [4, 4], [0, 0], verbose=False)
+mesh = gen_block_mesh([1., 1.], [20, 2], [0.5, 0.05], verbose=False)
+mesh = triangulate(mesh)
+
 #mesh = gen_block_mesh([1, 1, 1], [4, 4, 3], [0, 0, 0], verbose=False)
-mesh = Mesh.from_file('../../../meshes/2d/its2D.mesh')
+# mesh = Mesh.from_file('../../../meshes/2d/its2D.mesh')
 
 # X1 = 0
 # XN1 = 1
@@ -24,7 +27,7 @@ mesh = Mesh.from_file('../../../meshes/2d/its2D.mesh')
 # descs = ['1_2']
 # mesh = Mesh.from_data('advection_1d', coors, None,
 #                       [conn], [mat_ids], descs)
-
+#
 domain = FEDomain('domain', mesh)
 omega = domain.create_region('Omega', 'all')
 
@@ -103,9 +106,9 @@ ax = pc.plot_cmesh(
     None, cmesh,
     wireframe_opts = {'color' : 'k', 'linewidth' : 2},
     entities_opts=[
-        {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},
-        {'color' : 'b', 'label_global' : 6, 'label_local' : 8, 'size' : 10},
-        {'color' : 'r', 'label_global' : 12, 'size' : 20},
+        {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},  # vertices
+        {'color' : 'b', 'label_global' : 6, 'label_local' : 8, 'size' : 10},  # faces
+        {'color' : 'r', 'label_global' : 12, 'size' : 1},  # cells
     ])
 
 ax = plot_facet_normals(ax, cmesh, normals, scale, neighbours)
