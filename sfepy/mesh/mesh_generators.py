@@ -109,7 +109,8 @@ def gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
     ngrid = nm.mgrid[[slice(ii) for ii in shape]]
     ngrid.shape = (dim, n_nod)
 
-    coors = x0 + ngrid.T * dd
+    if coors is None:
+        coors = x0 + ngrid.T * dd
     output('...done', verbose=verbose)
 
     n_el = nm.prod(shape - 1)

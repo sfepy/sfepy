@@ -268,9 +268,8 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             try:
                 self.coefM = nm.loadtxt("legendre2D_tensor_coefs.txt")[:self.n_nod, :self.n_nod]
                 self.expoM = nm.loadtxt("legendre2D_tensor_expos.txt")[:self.n_nod, :]
-            except FileNotFoundError as e:
-                raise FileNotFoundError("File {} not found, run gen_legendre_tensor_base.py to generate it."
-                                        .format(e.filename))
+            except IOError as e:
+                raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
 
     def combine_polyvals(self, coors, polyvals, idx):
         return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
