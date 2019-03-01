@@ -397,16 +397,19 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 # r - derivative
                 # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
                 dmodedr = dfa * gb
-                return 2 * dmodedr * ((0.5*(1-b))**(di-1)) if di > 0 else dmodedr
+                dmodedr = dmodedr * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodedr
+                return 2*2**di * dmodedr
 
             elif dvar == 1:  # d/ds
                 # s - derivative
                 # d / ds = ((1 + a) / 2) / ((1 - b) / 2) d / da + d / db
                 dmodeds = dfa * (gb * (0.5 * (1 + a)))
                 dmodeds = dmodeds * ((0.5 * (1 - b))**(di - 1)) if di > 0 else dmodeds
+
                 tmp = dgb * ((0.5 * (1 - b)) ** di)
                 tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b))**(di - 1)) if di > 0 else tmp
-                return 2 * dmodeds + 2 * fa*tmp
+                dmodeds = dmodeds + fa*tmp
+                return 2*2**di * dmodeds
                 # 2 due to transformation of coors in eval basis, TODO refactor!
         elif len(idx) == 3:
             # TODO 3D derivative
@@ -451,10 +454,14 @@ def plot_2Dtensor_basis_grad():
     coorsgrad = nm.array(nm.meshgrid(Xgrad, Ygrad)).T
     Zgrad = bs.eval_base(coorsgrad, diff=True)
 
-    Zn = bs.eval_base(coorsgrad, diff=False)
+    dx = 1e-5
+    dy = 1e-5
+    Zn = bs.eval_base(nm.array(nm.meshgrid(Xgrad, Ygrad)).T, diff=False)
+    Zndx = bs.eval_base(nm.array(nm.meshgrid(Xgrad + dx, Ygrad)).T, diff=False)
+    Zndy = bs.eval_base(nm.array(nm.meshgrid(Xgrad, Ygrad + dy)).T, diff=False)
     Znumgrad = nm.zeros(Zgrad.shape)
-    Znumgrad[1:, :, :1, :] = nm.diff(Zn, axis=0) / nm.diff(Xgrad)[:, None, None, None]
-    Znumgrad[:, 1:, 1:2, :] = nm.diff(Zn, axis=1) / nm.diff(Ygrad)[None,:, None, None]
+    Znumgrad[:, :, :1, :] = (Zndx - Zn) / dx
+    Znumgrad[:, :, 1:2, :] = (Zndy - Zn) / dy
 
     # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
@@ -527,6 +534,21 @@ def plot_2Dsimplex_basis_grad():
     coorsgrad[:, 1] = gy
     Zgrad = bs.eval_base(coorsgrad, diff=True)[0, ...]
 
+    dx = 1e-5
+    dy = 1e-5
+
+    coorsdx = nm.zeros((Np, 2))
+    coorsdy = nm.zeros((Np, 2))
+    coorsdx[:, 0] = dx
+    coorsdy[:, 1] = dy
+
+    Zn = bs.eval_base(coorsgrad, diff=False)
+    Zndx = bs.eval_base(coorsgrad + coorsdx, diff=False)
+    Zndy = bs.eval_base(coorsgrad + coorsdy, diff=False)
+    Znumgrad = nm.zeros(Zgrad.shape)
+    Znumgrad[:, :1, :] = (Zndx - Zn) / dx
+    Znumgrad[:, 1:2, :] = (Zndy - Zn) / dy
+
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
@@ -534,6 +556,10 @@ def plot_2Dsimplex_basis_grad():
         grad_field = ax.quiver(coorsgrad[:,  0], coorsgrad[:,  1], -1 * nm.ones(Np),
                                Zgrad[:,  0, i] / 50, Zgrad[:, 1, i] / 50, nm.zeros(Np), color='r')
         grad_norm = ax.scatter(coorsgrad[:,  0], coorsgrad[:, 1], norm(Zgrad[:, :, i], axis=1), color='r')
+
+        numgrad_field = ax.quiver(coorsgrad[:, 0], coorsgrad[:, 1], -1 * nm.ones(Np),
+                               Znumgrad[:, 0, i] , Znumgrad[:, 1, i] , nm.zeros(Np), color='g')
+        numgrad_norm = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], norm(Znumgrad[:, :, i], axis=1), color='g')
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
