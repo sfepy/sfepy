@@ -65,6 +65,14 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
     @standard_call
     def __call__(self, mtx_m, mtx_d, mtx_k, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
+        if conf.debug:
+            ssym = status['matrix_info'] = {}
+            ssym['|M - M^T|'] = max_diff_csr(mtx_m, mtx_m.T)
+            ssym['|D - D^T|'] = max_diff_csr(mtx_d, mtx_d.T)
+            ssym['|K - K^T|'] = max_diff_csr(mtx_k, mtx_k.T)
+            ssym['|M - M^H|'] = max_diff_csr(mtx_m, mtx_m.H)
+            ssym['|D - D^H|'] = max_diff_csr(mtx_d, mtx_d.H)
+            ssym['|K - K^H|'] = max_diff_csr(mtx_k, mtx_k.H)
 
         if conf.method == 'companion':
             mtx_eye = -sps.eye(mtx_m.shape[0], dtype=mtx_m.dtype)
@@ -84,7 +92,7 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
             mtx_l = mtx_p.T * factor.L()
 
             if conf.debug:
-                output('S - LL^T:', max_diff_csr(mtx_m, mtx_l * mtx_l.T))
+                ssym['|S - LL^T|'] = max_diff_csr(mtx_m, mtx_l * mtx_l.T)
 
             mtx_eye = sps.eye(mtx_l.shape[0], dtype=nm.float64)
 
@@ -97,10 +105,13 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
             raise ValueError('unknown method! (%s)' % conf.method)
 
         if conf.debug:
-            output('A - A^T:', max_diff_csr(mtx_a, mtx_a.T))
-            output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
-            output('B - B^T:', max_diff_csr(mtx_b, mtx_b.T))
-            output('B - B^H:', max_diff_csr(mtx_b, mtx_b.H))
+            ssym['|A - A^T|'] = max_diff_csr(mtx_a, mtx_a.T)
+            ssym['|A - A^H|'] = max_diff_csr(mtx_a, mtx_a.H)
+            ssym['|B - B^T|'] = max_diff_csr(mtx_b, mtx_b.T)
+            ssym['|B - B^H|'] = max_diff_csr(mtx_b, mtx_b.H)
+
+            for key, val in sorted(ssym.items()):
+                output('{}: {}'.format(key, val))
 
         if conf.mode == 'normal':
             out = self.solver(mtx_a, mtx_b, n_eigs=n_eigs,
@@ -110,6 +121,10 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
                 eigs, vecs = out
                 out = (eigs, vecs[:mtx_m.shape[0], :])
 
+                if conf.debug:
+                    res = mtx_a.dot(vecs) - eigs * mtx_b.dot(vecs)
+                    status['lin. error'] = nm.linalg.norm(res, nm.inf)
+
         else:
             out = self.solver(mtx_b, mtx_a, n_eigs=n_eigs,
                               eigenvectors=eigenvectors, status=status)
@@ -118,7 +133,18 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
                 eigs, vecs = out
                 out = (1.0 / eigs, vecs[:mtx_m.shape[0], :])
 
+                if conf.debug:
+                    res = (1.0 / eigs) * mtx_b.dot(vecs) -  mtx_a.dot(vecs)
+                    status['lin. error'] = nm.linalg.norm(res, nm.inf)
+
             else:
                 out = 1.0 / out
+
+        if conf.debug and eigenvectors:
+            eigs, vecs = out
+            res = ((eigs**2 * (mtx_m.dot(vecs)))
+                   + (eigs * (mtx_d.dot(vecs)))
+                   + (mtx_k.dot(vecs)))
+            status['error'] = nm.linalg.norm(res, nm.inf)
 
         return out
