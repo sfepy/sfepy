@@ -337,6 +337,47 @@ def build_evp_matrices(mtxs, val, mode, pb):
 
     return evp_mtxs
 
+def process_eigs(eigs, val, mode, wdir, bzone, std_wave_fun=None):
+    """
+    Transform eigenvalues to either omegas or kappas, depending on `mode`.
+    Return also the values to log.
+    """
+    if mode == 'omega':
+        omegas = nm.sqrt(eigs)
+
+        output('eigs, omegas:')
+        for ii, om in enumerate(omegas):
+            output('{:>3}. {: .10e}, {:.10e}'.format(ii, eigs[ii], om))
+
+        out = tuple(eigs) + tuple(omegas)
+        if std_wave_fun is not None:
+            out = out + std_wave_fun(val, wdir)
+
+        return omegas, out
+
+    else:
+        kappas = eigs.copy()
+        rks = kappas.copy()
+
+        # Mask modes far from 1. Brillouin zone.
+        max_kappa = 1.2 * bzone
+        kappas[kappas.real > max_kappa] = nm.nan
+
+        # Mask non-physical modes.
+        kappas[kappas.real < 0] = nm.nan
+        kappas[nm.abs(kappas.imag) > 1e-10] = nm.nan
+        out = tuple(kappas.real)
+
+        output('raw kappas, masked real part:',)
+        for ii, kr in enumerate(kappas.real):
+            output('{:>3}. {: 23.5e}, {:.10e}'.format(ii, rks[ii], kr))
+
+        if std_wave_fun is not None:
+            out = out + tuple(ii if ii <= max_kappa else nm.nan
+                              for ii in std_wave_fun(val, wdir))
+
+        return kappas, out
+
 helps = {
     'pars' :
     'material parameters in Y1, Y2 subdomains in basic units'
@@ -484,6 +525,7 @@ def main():
     build_evp_matrices = mod.build_evp_matrices
     save_materials = mod.save_materials
     get_std_wave_fun = mod.get_std_wave_fun
+    process_eigs = mod.process_eigs
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
@@ -557,16 +599,19 @@ def main():
     plot_kwargs = [{'color' : get_color(ii), 'ls' : '', 'marker' : 'o'}
                   for ii in range(options.n_eigs)]
 
+    log_names = []
+    log_plot_kwargs = []
+    if options.log_std_waves:
+        std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
+            pb, options)
+
+    else:
+        std_wave_fun = None
+
     if options.mode == 'omega':
         eigenshapes_filename = os.path.join(output_dir,
                                             'frequency-eigenshapes-%s.vtk'
                                             % stepper.suffix)
-
-        log_names = []
-        log_plot_kwargs = []
-        if options.log_std_waves:
-            std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
-                pb, options)
 
         log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
                    [r'$\omega_{%d}$'
@@ -596,15 +641,9 @@ def main():
             else:
                 eigs, svecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
                                          eigenvectors=True)
-            omegas = nm.sqrt(eigs)
 
-            output('eigs, omegas:')
-            for ii, om in enumerate(omegas):
-                output('{:>3}. {: .10e}, {:.10e}'.format(ii, eigs[ii], om))
-
-            out = tuple(eigs) + tuple(omegas)
-            if options.log_std_waves:
-                out = out + std_wave_fun(wmag, wdir)
+            omegas, out = process_eigs(eigs, wmag, options.mode, wdir, bzone,
+                                       std_wave_fun=std_wave_fun)
             log(*out, x=[wmag, wmag])
 
             save_eigenvectors(eigenshapes_filename % iv, svecs, wmag, wdir, pb)
@@ -618,12 +657,6 @@ def main():
         eigenshapes_filename = os.path.join(output_dir,
                                             'wave-number-eigenshapes-%s.vtk'
                                             % stepper.suffix)
-
-        log_names = []
-        log_plot_kwargs = []
-        if options.log_std_waves:
-            std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
-                pb, options)
 
         log = Log([[r'$\kappa_{%d}$' % ii for ii in range(options.n_eigs)]
                    + log_names],
@@ -650,27 +683,8 @@ def main():
                 eigs, esvecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
                                           eigenvectors=True)
 
-            kappas = eigs
-
-            rks = kappas.copy()
-
-            # Mask modes far from 1. Brillouin zone.
-            max_kappa = 1.2 * bzone
-            kappas[kappas.real > max_kappa] = nm.nan
-
-            # Mask non-physical modes.
-            kappas[kappas.real < 0] = nm.nan
-            kappas[nm.abs(kappas.imag) > 1e-10] = nm.nan
-            out = tuple(kappas.real)
-
-            output('raw kappas, masked real part:',)
-            for ii, kr in enumerate(kappas.real):
-                output('{:>3}. {: 23.5e}, {:.10e}'.format(ii, rks[ii], kr))
-
-            if options.log_std_waves:
-                out = out + tuple(ii if ii <= max_kappa else nm.nan
-                                  for ii in std_wave_fun(omega, wdir))
-
+            kappas, out = process_eigs(eigs, omega, options.mode, wdir, bzone,
+                                       std_wave_fun=std_wave_fun)
             log(*out, x=[omega])
 
             if not options.eigs_only:
