@@ -22,22 +22,18 @@ def iter_by_order(order, dim):
     porder = order + 1
     if dim == 1:
         for i in range(porder):
-            yield ((i,))
+            yield (i,)
         return
     elif dim == 2:
         for k in range(porder):
             for i in range(k + 1):
-                # print(k, k - i, i)
-                # m = int(j + porder * i - i / 2 * (i - 1))
-                yield ((i, k - i))
+                yield (i, k - i)
         return
     elif dim == 3:
-        for i in range(porder):
-            for j in range(porder - i):
-                for k in range(porder - i - j):
-                    m = int(1 + ((11 + 12 * porder + 3 * porder ** 2) * i) / 6 + ((2 * porder + 3) * j) / 2
-                            + k - (2 + porder) * i ** 2 / 2 - i * j - j ** 2 / 2 + i ** 3 / 6)
-                    yield ((i, j, k))
+        for k in range(porder):
+            for j in range(k + 1):
+                for i in range(j + 1):
+                    yield (i, j - i, k - j)
         return
 
 
@@ -650,6 +646,12 @@ def plot_1D_basis():
 
 if __name__ == '__main__':
     # plot_2Dtensor_basis_grad()
-    plot_2Dsimplex_basis_grad()
+    # plot_2Dsimplex_basis_grad()
     # plot_2D_simplex_as_tensor()
     # plot_1D_basis()
+
+    for m, idx in enumerate(iter_by_order(2, 2)):
+        print(m, idx)
+
+    for m, idx in enumerate(iter_by_order(3, 3)):
+        print(m, idx)
