@@ -39,7 +39,7 @@ def iter_by_order(order, dim):
 
 class LegendrePolySpace(PolySpace):
     """
-    Legendre hierarchical polynomials basis, over [0, 1] domain
+    Legendre hierarchical polynomials basis, over [-1, 1] domain
     use transform x = (y + 1)/2 to get basis over [0, 1]
     """
 
@@ -59,7 +59,7 @@ class LegendrePolySpace(PolySpace):
         self.n_v = geometry.n_vertex,
         self.dim = geometry.dim
         self.n_nod = int(reduce(mul, map(lambda i: order + i + 1, range(self.dim))) /
-                         reduce(mul, range(1, self.dim+1)))  # number of DOFs per element
+                         reduce(mul, range(1, self.dim + 1)))  # number of DOFs per element
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
@@ -80,12 +80,12 @@ class LegendrePolySpace(PolySpace):
         :param eps:
         :return:
         """
-        coors = 2*coors-1  # TODO refactor
+        coors = 2 * coors - 1  # TODO refactor
         porder = self.order + 1
         if diff:
             if type(diff) == bool:
                 diff = 1
-            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim,)*diff + (self.n_nod,))
+            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim,) * diff + (self.n_nod,))
             # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
             polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))
             # diff + 1 is number of values of one dimensional base
@@ -118,7 +118,7 @@ class LegendrePolySpace(PolySpace):
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
         space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
-        :return: struct with name of the scheme, geometry desc and P and F
+        :return: Struct with name of the scheme, geometry desc and P and F
         """
         interp_scheme_struct = None
         if self.dim > 1:
@@ -138,11 +138,11 @@ class LegendrePolySpace(PolySpace):
     # 1D legendre polyspace #
     # --------------------- #
     funs = [lambda x: x - x + 1,
-            lambda x: 2*x - 1,
-            lambda x: (6*x ** 2 - 6*x + 1),
-            lambda x: (20*x ** 3 - 30*x ** 2 + 12*x - 1),
-            lambda x: (70*x ** 4 - 140*x ** 3 + 90*x ** 2 - 20*x + 1),
-            lambda x: (252*x ** 5 - 630*x ** 4 + 560*x ** 3 - 210*x ** 2 + 30*x - 1)
+            lambda x: 2 * x - 1,
+            lambda x: (6 * x ** 2 - 6 * x + 1),
+            lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
+            lambda x: (70 * x ** 4 - 140 * x ** 3 + 90 * x ** 2 - 20 * x + 1),
+            lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3 - 210 * x ** 2 + 30 * x - 1)
             ]
 
     def legendreP(self, coors):
@@ -161,8 +161,8 @@ class LegendrePolySpace(PolySpace):
 
     def get_nth_fun(self, n):
         """
-        Uses shifted legendre
-        polynomials formula. Useful for testing.
+        Uses shifted Legendre
+        polynomials formula on interval [0, 1]. Useful for testing.
         Convenience function for testing
         :param n: 0,1 , 2, 3, ...
         :return: n-th function of the legendre basis
@@ -185,7 +185,7 @@ class LegendrePolySpace(PolySpace):
     def get_nth_fun_der(self, n, diff=1):
         """
         Returns diff derivative of nth function. Uses shifted legendre
-        polynomials formula. Useful for testing.
+        polynomials formula on interval [0, 1]. Useful for testing.
         :param n:
         :param diff:
         :return:
@@ -206,7 +206,7 @@ class LegendrePolySpace(PolySpace):
     # --------------------- #
     def jacobiP(self, coors, alpha, beta):
         """
-        Values of the jacobi polynomials shifted to interval [0, 1]
+        Values of the jacobi polynomials shifted to interval [-1, 1]
         up to self.order + 1 at coors
         :param coors:
         :param alpha:
@@ -274,7 +274,7 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         dimz = range(len(idx))
         derz = nm.zeros(len(idx), dtype=nm.int32)
         derz[dvar] = 1
-        return 2*nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+        return 2 * nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def build_interpol_scheme(self):
         """
@@ -339,23 +339,22 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             try:
                 self.coefM = nm.loadtxt("legendre2D_simplex_coefs.txt")[:self.n_nod, :self.n_nod]
                 self.expoM = nm.loadtxt("legendre2D_simplex_expos.txt")[:self.n_nod, :]
-            except FileNotFoundError as e:
-                raise FileNotFoundError("File {} not found, run gen_legendre_simplex_base.py to generate it."
-                                        .format(e.filename))
+            except IOError as e:
+                raise IOError("File {} not found, run gen_legendre_simplex_base.py to generate it.".format(e.args[0]))
 
     def combine_polyvals(self, coors, polyvals, idx):
 
         from scipy.special import jacobi, eval_jacobi
-        if len(idx) == 1:
+        if len(idx) == 1:  # 1D
             nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
-        elif len(idx) == 2:
+        elif len(idx) == 2:  # 2D
             r = coors[..., 0]
             s = coors[..., 1]
             a = 2 * (1 + r) / (1 - s) - 1
             a[nm.isnan(a)] = -1.
             b = s
-            return eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
-        elif len(idx) == 3:
+            return eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1], 2 * idx[0] + 1, 0, b) * (1 - b) ** idx[0]
+        elif len(idx) == 3:  # 3D
             r = coors[..., 0]
             s = coors[..., 1]
             t = coors[..., 2]
@@ -365,16 +364,16 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             a[nm.isnan(a)] = -1.
             b[nm.isnan(b)] = -1.
             return eval_jacobi(idx[0], 0, 0, a) * \
-                   eval_jacobi(idx[1], 2*idx[0] + 1, 0, 0, b) * \
-                   eval_jacobi(idx[2], 2*idx[0] + 2*idx[1] + 2, 0, c) * (1 - c)**(idx[0] + idx[1])
+                   eval_jacobi(idx[1], 2 * idx[0] + 1, 0, 0, b) * \
+                   eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
 
     def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
-        if len(idx) == 1:
+        if len(idx) == 1:  # D
             dimz = range(len(idx))
             derz = nm.zeros(len(idx), dtype=nm.int32)
             derz[dvar] = 1
-            return 2*nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
-        elif len(idx) == 2:
+            return 2 * nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+        elif len(idx) == 2:  # 2D
             r = coors[..., 0]
             s = coors[..., 1]
             a = 2 * (1 + r) / (1 - s) - 1
@@ -393,21 +392,21 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
                 dmodedr = dfa * gb
                 dmodedr = dmodedr * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodedr
-                return 2*2**di * dmodedr
+                return 2 * 2 ** di * dmodedr
 
             elif dvar == 1:  # d/ds
                 # s - derivative
                 # d / ds = ((1 + a) / 2) / ((1 - b) / 2) d / da + d / db
                 dmodeds = dfa * (gb * (0.5 * (1 + a)))
-                dmodeds = dmodeds * ((0.5 * (1 - b))**(di - 1)) if di > 0 else dmodeds
+                dmodeds = dmodeds * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodeds
 
                 tmp = dgb * ((0.5 * (1 - b)) ** di)
-                tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b))**(di - 1)) if di > 0 else tmp
-                dmodeds = dmodeds + fa*tmp
-                return 2*2**di * dmodeds
+                tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else tmp
+                dmodeds = dmodeds + fa * tmp
+                return 2 * 2 ** di * dmodeds
                 # 2 due to transformation of coors in eval basis, TODO refactor!
-        elif len(idx) == 3:
-            # TODO 3D derivative
+        elif len(idx) == 3:  # 3D
+            # TODO test
             r = coors[..., 0]
             s = coors[..., 1]
             t = coors[..., 2]
@@ -416,12 +415,41 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             c = t
             a[nm.isnan(a)] = -1.
             b[nm.isnan(b)] = -1.
-            # a = (a + 1) / 2
-            # b = (b + 1) / 2
-            from scipy.special import jacobi, eval_jacobi
-            return nm.sqrt(8) * eval_jacobi(idx[0], 0, 0, a) * \
-                   eval_jacobi(idx[1], 2 * idx[0] + 1, 0, 0, b) * \
-                   eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
+            di = idx[0]
+            dj = idx[1]
+            dk = idx[2]
+            fa = self.jacobiP(a, 0, 0)[..., di]
+            dfa = self.gradjacobiP(a, 0, 0)[..., di]
+            gb = self.jacobiP(b, 2 * di + 1, 0)[..., dj]
+            dgb = self.gradjacobiP(b, 2 * di + 1, 0)[..., dj]
+            hc = self.jacobiP(c, 2 * (di + dj) + 2, 0, dk)
+            dhc = self.gradjacobiP(c, 2 * (di + dj) + 2, 0, dk)
+
+            V3Dr = dfa * (gb * hc)
+            V3Dr = V3Dr * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else V3Dr
+            V3Dr = V3Dr * ((0.5 * (1 - c)) ** (di + dj - 1)) if di + dj > 0 else V3Dr
+
+            tmp = dgb * ((0.5 * (1 - b)) ** di)
+            tmp = tmp + (-0.5 * di) * (gb * (0.5 * (1 - b)) ** (di - 1)) if di > 0 else tmp
+            tmp = tmp * ((0.5 * (1 - c)) ** (di + dj - 1)) if di + dj > 0 else tmp
+            tmp = fa * (tmp * hc)
+
+            if dvar == 0:
+                return V3Dr * 2 * (2 ** (2 * di + dj + 1))
+            elif dvar == 1:
+                V3Ds = 0.5 * (1 + a) * V3Dr
+
+                V3Ds = V3Ds + tmp
+                return V3Ds * 2 * (2 ** (2 * di + dj + 1))
+            elif dvar == 2:
+                V3Dt = 0.5 * (1 + a) * V3Dr + 0.5 * (1 + b) * tmp
+                tmp = dhc * ((0.5 * (1 - c)) ** (di + dj))
+                tmp = tmp - 0.5 * (di + dj) * (hc * ((0.5 * (1 - c)) ** (di + dj - 1))) if di + dj > 0 else tmp
+                tmp = fa * (gb * tmp)
+                tmp = tmp * ((0.5 * (1 - b)) ** di)
+                V3Dt = V3Dt + tmp
+                return V3Dt * 2 * (2 ** (2 * di + dj + 1))
+                # 2 due to transformation of coors in eval basis, TODO refactor!
 
 
 def plot_2Dtensor_basis_grad():
@@ -464,11 +492,11 @@ def plot_2Dtensor_basis_grad():
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
         fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
-                                 linewidth=0, antialiased=False, alpha=.6)
-        grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1*nm.ones((10, 10)),
-                               Zgrad[:, :, 0, i]/50, Zgrad[:, :, 1, i]/50, nm.zeros((10, 10)), color='r')
+                                   linewidth=0, antialiased=False, alpha=.6)
+        grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1 * nm.ones((10, 10)),
+                               Zgrad[:, :, 0, i] / 50, Zgrad[:, :, 1, i] / 50, nm.zeros((10, 10)), color='r')
         num_grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1 * nm.ones((10, 10)),
-                               Znumgrad[:, :, 0, i], Znumgrad[:, :, 1, i], nm.zeros((10, 10)), color='g')
+                                   Znumgrad[:, :, 0, i], Znumgrad[:, :, 1, i], nm.zeros((10, 10)), color='g')
         grad_norm = ax.scatter(coorsgrad[:, :, 0], coorsgrad[:, :, 1], norm(Zgrad[:, :, :, i], axis=2))
 
         # ax.set_xlim(-5, 5)
@@ -548,12 +576,12 @@ def plot_2Dsimplex_basis_grad():
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
         fun_surf = ax.plot_trisurf(coors[:, 0], coors[:, 1], z[:, 0, i], linewidth=0.2, antialiased=True, alpha=.7)
-        grad_field = ax.quiver(coorsgrad[:,  0], coorsgrad[:,  1], -1 * nm.ones(Np),
-                               Zgrad[:,  0, i] / 50, Zgrad[:, 1, i] / 50, nm.zeros(Np), color='r')
-        grad_norm = ax.scatter(coorsgrad[:,  0], coorsgrad[:, 1], norm(Zgrad[:, :, i], axis=1), color='r')
+        grad_field = ax.quiver(coorsgrad[:, 0], coorsgrad[:, 1], -1 * nm.ones(Np),
+                               Zgrad[:, 0, i] / 50, Zgrad[:, 1, i] / 50, nm.zeros(Np), color='r')
+        grad_norm = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], norm(Zgrad[:, :, i], axis=1), color='r')
 
         numgrad_field = ax.quiver(coorsgrad[:, 0], coorsgrad[:, 1], -1 * nm.ones(Np),
-                               Znumgrad[:, 0, i] , Znumgrad[:, 1, i] , nm.zeros(Np), color='g')
+                                  Znumgrad[:, 0, i], Znumgrad[:, 1, i], nm.zeros(Np), color='g')
         numgrad_norm = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], norm(Znumgrad[:, :, i], axis=1), color='g')
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
@@ -561,6 +589,7 @@ def plot_2Dsimplex_basis_grad():
         ax.set_zlabel("Z")
 
     plt.show()
+
 
 def plot_2D_simplex_as_tensor():
     from mpl_toolkits.mplot3d import Axes3D
@@ -604,6 +633,7 @@ def plot_2D_simplex_as_tensor():
         ax.set_zlabel("Z")
 
     plt.show()
+
 
 def plot_1D_basis():
     from matplotlib import pylab as plt
