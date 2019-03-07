@@ -31,9 +31,9 @@ from dg_field import DGField
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
 mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5))
-outfile = "output/mesh/tensor_12D_mesh.vtk"
+outfile = "output/mesh/tens_12D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
-# meshio.write(outfile, mesh)
+meshio.write(outfile, mesh)
 
 
 #vvvvvvvvvvvvvvvv#

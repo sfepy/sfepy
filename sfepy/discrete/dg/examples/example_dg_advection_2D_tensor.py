@@ -1,5 +1,5 @@
 import numpy as nm
-from  numpy.linalg import norm
+from numpy.linalg import norm
 import matplotlib.pyplot as plt
 
 
@@ -24,30 +24,33 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local import
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-# from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
 mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
-outfile = "output/mesh/tensor_2D_mesh.vtk"
+outfile = "output/mesh/tens_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
-# meshio.write(outfile, mesh)
+meshio.write(outfile, mesh)
+
+
+angle = - nm.pi/5
+rotm = nm.array([[nm.cos(angle),  -nm.sin(angle)],
+                 [nm.sin(angle),  nm.cos(angle)]])
+velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
+max_velo = nm.max(nm.linalg.norm(velo))
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 2
 CFL = .5
 #^^^^^^^^^^^^^^^^#
-
-velo = nm.array([[-1., -1.]]).T
-max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
 t1 = 1
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
-dt = dx / norm(velo) * CFL/(2*approx_order + 1)
+dt = dx / max_velo * CFL/(2*approx_order + 1)
 # time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
@@ -80,14 +83,15 @@ eqs = Equations([eq])
 def ic_wrap(x, ic=None):
     return gsmooth(x[..., 0:1])*gsmooth(x[..., 1:])
 
+
 # X = nm.arange(0, 1, 0.005)
 # Y = nm.arange(0, 1, 0.005)
 # X, Y = nm.meshgrid(X, Y)
 # coors = nm.dstack((X[:, :, None], Y[:, :, None]))
 
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-from matplotlib import cm
+# from mpl_toolkits.mplot3d import Axes3D
+# import matplotlib.pyplot as plt
+# from matplotlib import cm
 
 # fig = plt.figure()
 # ax = fig.gca(projection='3d')
@@ -104,8 +108,8 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
-                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
-pb.setup_output(output_dir="./output/adv_tens_2D", output_format="msh")
+                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}))
+pb.setup_output(output_dir="output/adv_tens_2D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
@@ -118,5 +122,9 @@ nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
 
 tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
+
+#---------
+#| Solve |
+#---------
 pb.set_solver(tss)
 pb.solve()

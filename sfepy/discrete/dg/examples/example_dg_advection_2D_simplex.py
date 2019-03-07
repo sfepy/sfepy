@@ -22,26 +22,25 @@ from sfepy.discrete.fem.meshio import VTKMeshIO
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
-from sfepy.base.conf import ProblemConf
-
 # local imports
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-# from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
-mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
-mesh = triangulate(mesh)
-outfile = "output/mesh/simp_2D_mesh.vtk"
+# mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
+# mesh = triangulate(mesh)
+mesh_name = "square_tri2"
+mesh = Mesh.from_file("meshes/" + mesh_name + ".mesh")
+outfile = "output/mesh/" + mesh_name + ".vtk"
 meshio = VTKMeshIO(outfile)
-# meshio.write(outfile, mesh)
+meshio.write(outfile, mesh)
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
-CFL = .5
+approx_order = 2
+CFL = 1.
 #^^^^^^^^^^^^^^^^#
 
 velo = nm.array([[-1., 0.]]).T
@@ -52,7 +51,6 @@ t1 = 1
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / norm(velo) * CFL/(2*approx_order + 1)
-# time_steps_N = int((tf - t0) / dt) * 2
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
 print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
@@ -109,7 +107,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
-                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
+                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_simp_2D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
