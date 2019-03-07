@@ -24,38 +24,38 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local import
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-# from dg_equation import Equation
 from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
 mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5))
+
+# TODO move to some utils
 pi = nm.pi
 coors = mesh.coors
-angle = pi/5
+angle = - pi/5
 rotm = nm.array([[nm.cos(angle),  -nm.sin(angle)],
-                 [nm.sin(angle),  nm.cos(angle)]]).T
-rotcoors = nm.sum(coors[..., None] * rotm[None, :, :], axis=-2)
+                 [nm.sin(angle),  nm.cos(angle)]])
+rotcoors = nm.sum(rotm[None, :, :] * coors[..., None], axis=-2)
 
+mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5), coors=rotcoors)
 
-rotmesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5), coors=rotcoors)
-outfile = "output/mesh/tensor_rot12D_mesh.vtk"
+outfile = "output/mesh/tens_rot12D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
-meshio.write(outfile, rotmesh)
+meshio.write(outfile, mesh)
 
-mesh = rotmesh
+velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
+max_velo = nm.max(nm.linalg.norm(velo))
+
 
 #vvvvvvvvvvvvvvvv#
 approx_order = 2
 CFL = 1.
 #^^^^^^^^^^^^^^^^#
 
-velo = nm.array([[-1., 0.]]).T
-max_velo = nm.max(nm.abs(velo))
-
 t0 = 0
-t1 = 2
+t1 = 1
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / norm(velo) * CFL/(2*approx_order + 1)
@@ -90,7 +90,7 @@ eqs = Equations([eq])
 
 
 def ic_wrap(x, ic=None):
-    x = nm.sum(x[..., None] * rotm.T[None, :, :], axis=-2)
+    x = nm.sum(rotm.T[None, :, :] * x[..., None], axis=-2)
     return gsmooth(x[..., 0:1])
 
 # X = nm.arange(0, 1, 0.005)
@@ -119,7 +119,7 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
-                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
+                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_tens_rot12D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))

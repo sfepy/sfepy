@@ -30,28 +30,37 @@ from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
+
+#------------
+#| Get mesh |
+#------------
 mesh = gen_block_mesh((1., 1.), (20, 2), (.5, 0.5))
 mesh = triangulate(mesh)
 outfile = "output/mesh/simp_12D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
-# meshio.write(outfile, mesh)
+meshio.write(outfile, mesh)
 
-cmesh = mesh.cmesh
-dim = cmesh.dim
-# cmesh.setup_connectivity(dim, dim)
-# cmesh.setup_connectivity(dim, dim - 1)
-# cmesh.setup_connectivity(dim - 1, dim)
-# c2c = cmesh.get_conn(dim, dim)
 
-import sfepy.postprocess.plot_cmesh as pc
-ax = pc.plot_cmesh(
-    None, cmesh,
-    wireframe_opts = {'color' : 'k', 'linewidth' : 2},
-    entities_opts=[
-        {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},
-        {'color' : 'b', 'label_global' : 6, 'label_local' : 8, 'size' : 10},
-        {'color' : 'r', 'label_global' : 12, 'size' : 20},
-    ])
+#-------------
+#| Plot mesh |
+#-------------
+# TODO move to some utils
+# from sfepy.discrete.fem.geometry_element import create_geometry_elements
+# gels = create_geometry_elements()
+# mesh.cmesh.set_local_entities(gels)
+# mesh.cmesh.setup_entities()
+#
+# import sfepy.postprocess.plot_cmesh as pc
+# ax = pc.plot_cmesh(
+#     None, mesh.cmesh,
+#     wireframe_opts = {'color' : 'k', 'linewidth' : 2},
+#     entities_opts=[
+#         {'color' : 'k', 'label_global' : 12, 'label_local' : 8, 'size' : 20},
+#         {'color' : 'b', 'label_global' : 6, 'label_local' : 8, 'size' : 10},
+#         {'color' : 'r', 'label_global' : 12, 'size' : 20},
+#     ])
+#
+# plt.show()
 
 
 #vvvvvvvvvvvvvvvv#
@@ -100,6 +109,9 @@ eqs = Equations([eq])
 def ic_wrap(x, ic=None):
     return gsmooth(x[..., 0:1])
 
+#-----------
+#| Plot IC |
+#-----------
 # X = nm.arange(0, 1, 0.005)
 # Y = nm.arange(0, 1, 0.005)
 # X, Y = nm.meshgrid(X, Y)
@@ -124,13 +136,13 @@ ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
 pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
-                                   ebcs={}, epbcs={}, lcbcs={}, materials={}))
+                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_simp_12D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
 state0 = pb.get_initial_state()
-pb.save_state("output/state0_simplex_12D.msh", state=state0)
+pb.save_state("output/state0_simp_12D.msh", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
