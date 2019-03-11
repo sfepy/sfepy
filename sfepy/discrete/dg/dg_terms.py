@@ -235,7 +235,7 @@ class AdvFluxDGTerm(Term):
             out[:] = 0.0
             return None
 
-        alf = 0
+        alf = 0  # zero for upwind
 
         n_cell = dofs.shape[0]
         n_el_nod = dofs.shape[1]
