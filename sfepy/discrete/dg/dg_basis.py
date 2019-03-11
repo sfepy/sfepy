@@ -289,6 +289,8 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
         space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
+        NOT USED, matrices are loaded from file.
+
         :return: F, P
         """
 
@@ -326,7 +328,6 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             ycoefs = nm.array(ycoefs + [0] * (self.order + 1 - len(ycoefs)))
             coef_mat = nm.outer(xcoefs, ycoefs)
             F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim)]
-        # TODO this could be all much more elegant, and maybe work in 3D too
         return F, P
 
 

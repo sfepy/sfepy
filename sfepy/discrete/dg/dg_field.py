@@ -43,6 +43,23 @@ def get_raveler(n_el_nod, n_cell):
 
     return ravel
 
+def get_cell_facet_gel_name(cell_gel_name):
+    """
+    Returns name pf the facet geometry for given cell geometry
+    :param cell_gel_name: name of the cell geometry
+    :return: name of the facet geometry
+    """
+    if cell_gel_name == "1_2":
+        return "0_1"
+    elif cell_gel_name == "2_3" or cell_gel_name == "2_4":
+        return "1_2"
+    elif cell_gel_name == "3_4":
+        return "2_3"
+    elif cell_gel_name == "3_8":
+        return "2_4"
+    else:
+        raise ValueError('unknown geometry type! {}'.format(cell_gel_name))
+
 
 class DGField(Field):
     family_name = 'volume_H1_DGLegendre'
@@ -277,8 +294,6 @@ class DGField(Field):
         :param geo_name:
         :return: tqps
         """
-
-        # TODO use from sfepy.discrete.fem import geometry_element
         if geo_name == "1_2":
             tqps = nm.zeros(nm.shape(qps) + (2, 1,))
             tqps[..., 0, 0] = 0.
@@ -308,6 +323,12 @@ class DGField(Field):
             # 3.
             tqps[..., 3, 0] = 0  # x = 0
             tqps[..., 3, 1] = 1 - qps  # y = 1 - t
+        elif geo_name == "3_4":
+            tqps = nm.zeros(nm.shape(qps) + (4, 3,))
+            raise NotImplementedError("Geometry {} not supported, yet".format(geo_name))
+        elif geo_name == "3_8":
+            tqps = nm.zeros(nm.shape(qps) + (8, 3,))
+            raise NotImplementedError("Geometry {} not supported, yet".format(geo_name))
         else:
             raise NotImplementedError("Geometry {} not supported, yet".format(geo_name))
         return tqps
@@ -323,7 +344,7 @@ class DGField(Field):
             facet_qps = self._transform_qps_to_facets(nm.zeros((1, 1)), "1_2")
             weights = nm.ones((1, 1, 1))
         else:
-            qps, weights = self.integral.get_qp("1_2")  # TODO determine facet geometry from cell geo for use in 3D
+            qps, weights = self.integral.get_qp(get_cell_facet_gel_name(self.gel.name))
             weights = weights[None, :, None]
             facet_qps = self._transform_qps_to_facets(qps, self.gel.name)
 
