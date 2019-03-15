@@ -281,6 +281,7 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     conf = ProblemConf.from_dict(define_problem(), mod)
 
     pb = Problem.from_conf(conf)
+    pb.set_output_dir(options.output_dir)
     dim = pb.domain.shape.dim
 
     bbox = pb.domain.mesh.get_bounding_box()
