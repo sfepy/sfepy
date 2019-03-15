@@ -361,9 +361,11 @@ def build_evp_matrices(mtxs, val, mode, pb):
 
     return evp_mtxs
 
-def process_eigs(eigs, val, mode, wdir, bzone, std_wave_fun=None):
+def process_evp_results(eigs, svecs, val, mode, wdir, bzone, pb, mtxs,
+                        std_wave_fun=None):
     """
     Transform eigenvalues to either omegas or kappas, depending on `mode`.
+    Transform eigenvectors, if available, depending on `mode`.
     Return also the values to log.
     """
     if mode == 'omega':
@@ -377,7 +379,7 @@ def process_eigs(eigs, val, mode, wdir, bzone, std_wave_fun=None):
         if std_wave_fun is not None:
             out = out + std_wave_fun(val, wdir)
 
-        return omegas, out
+        return omegas, svecs, out
 
     else:
         kappas = eigs.copy()
@@ -396,11 +398,17 @@ def process_eigs(eigs, val, mode, wdir, bzone, std_wave_fun=None):
         for ii, kr in enumerate(kappas.real):
             output('{:>3}. {: 23.5e}, {:.10e}'.format(ii, rks[ii], kr))
 
+        if svecs is not None:
+            n_dof = mtxs['K'].shape[0]
+            # Select only vectors corresponding to physical modes.
+            ii = nm.isfinite(kappas.real)
+            svecs = svecs[:n_dof, ii]
+
         if std_wave_fun is not None:
             out = out + tuple(ii if ii <= max_kappa else nm.nan
                               for ii in std_wave_fun(val, wdir))
 
-        return kappas, out
+        return kappas, svecs, out
 
 helps = {
     'pars' :
@@ -550,7 +558,7 @@ def main():
     build_evp_matrices = mod.build_evp_matrices
     save_materials = mod.save_materials
     get_std_wave_fun = mod.get_std_wave_fun
-    process_eigs = mod.process_eigs
+    process_evp_results = mod.process_evp_results
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
@@ -593,7 +601,6 @@ def main():
     pb, wdir, bzone, mtxs = assemble_matrices(define, mod, pars, set_wave_dir,
                                               options)
     dim = pb.domain.shape.dim
-    n_dof = mtxs.values()[0].shape[0]
 
     if dim != 2:
         options.plane = 'strain'
@@ -658,8 +665,10 @@ def main():
                 eigs, svecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
                                          eigenvectors=True)
 
-            omegas, out = process_eigs(eigs, wmag, options.mode, wdir, bzone,
-                                       std_wave_fun=std_wave_fun)
+            omegas, svecs, out = process_evp_results(
+                eigs, svecs, wmag, options.mode,
+                wdir, bzone, pb, mtxs, std_wave_fun=std_wave_fun
+            )
             log(*out, x=[wmag, wmag])
 
             save_eigenvectors(eigenshapes_filename % iv, svecs, wmag, wdir, pb)
@@ -696,17 +705,14 @@ def main():
                 svecs = None
 
             else:
-                eigs, esvecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
-                                          eigenvectors=True)
+                eigs, svecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
+                                         eigenvectors=True)
 
-            kappas, out = process_eigs(eigs, omega, options.mode, wdir, bzone,
-                                       std_wave_fun=std_wave_fun)
+            kappas, svecs, out = process_evp_results(
+                eigs, svecs, omega, options.mode,
+                wdir, bzone, pb, mtxs, std_wave_fun=std_wave_fun
+            )
             log(*out, x=[omega])
-
-            if not options.eigs_only:
-                # Save vectors corresponding to physical modes.
-                ii = nm.isfinite(kappas.real)
-                svecs = esvecs[:n_dof, ii]
 
             save_eigenvectors(eigenshapes_filename % io, svecs, kappas, wdir,
                               pb)
