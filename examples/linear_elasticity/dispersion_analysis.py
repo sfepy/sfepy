@@ -328,6 +328,24 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
 
     return pb, wdir, bzone, mtxs
 
+def setup_n_eigs(options, pb, mtxs):
+    """
+    Setup the numbers of eigenvalues based on options and numbers of DOFs.
+    """
+    solver_n_eigs = n_eigs = options.n_eigs
+    n_dof = mtxs['K'].shape[0]
+    if options.mode == 'omega':
+        if options.n_eigs > n_dof:
+            n_eigs = n_dof
+            solver_n_eigs = None
+
+    else:
+        if options.n_eigs > 2 * n_dof:
+            n_eigs = 2 * n_dof
+            solver_n_eigs = None
+
+    return solver_n_eigs, n_eigs
+
 def build_evp_matrices(mtxs, val, mode, pb):
     """
     Build the matrices of the dispersion eigenvalue problem.
@@ -528,6 +546,7 @@ def main():
     apply_units = mod.apply_units
     define = mod.define
     set_wave_dir = mod.set_wave_dir
+    setup_n_eigs = mod.setup_n_eigs
     build_evp_matrices = mod.build_evp_matrices
     save_materials = mod.save_materials
     get_std_wave_fun = mod.get_std_wave_fun
@@ -590,16 +609,7 @@ def main():
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
 
-    n_eigs = options.n_eigs
-    if options.mode == 'omega':
-        if options.n_eigs > n_dof:
-            options.n_eigs = n_dof
-            n_eigs = None
-
-    else:
-        if options.n_eigs > 2 * n_dof:
-            options.n_eigs = 2 * n_dof
-            n_eigs = None
+    n_eigs, options.n_eigs = setup_n_eigs(options, pb, mtxs)
 
     get_color = lambda ii: plt.cm.viridis((float(ii) / (options.n_eigs - 1)))
     plot_kwargs = [{'color' : get_color(ii), 'ls' : '', 'marker' : 'o'}
