@@ -522,7 +522,7 @@ def plot_2Dsimplex_basis_grad():
                       dim=2,
                       coors=gel_coors)
 
-    order = 3
+    order = 1
     bs = LegendreSimplexPolySpace('legb', geometry, order)
 
     def simplex_nodes2D(N):
@@ -573,6 +573,8 @@ def plot_2Dsimplex_basis_grad():
     Znumgrad[:, :1, :] = (Zndx - Zn) / dx
     Znumgrad[:, 1:2, :] = (Zndy - Zn) / dy
 
+    print(nm.max(nm.abs(Zgrad - Znumgrad), axis=1))
+
     for i, idx in enumerate(iter_by_order(order, 2)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
@@ -584,6 +586,14 @@ def plot_2Dsimplex_basis_grad():
         numgrad_field = ax.quiver(coorsgrad[:, 0], coorsgrad[:, 1], -1 * nm.ones(Np),
                                   Znumgrad[:, 0, i], Znumgrad[:, 1, i], nm.zeros(Np), color='g')
         numgrad_norm = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], norm(Znumgrad[:, :, i], axis=1), color='g')
+        ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+
+        fig = plt.figure("{}>{} err".format(i, idx))
+        ax = fig.gca(projection='3d')
+        gradnum_err = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], nm.max(nm.abs(Zgrad - Znumgrad), axis=1)[:, i], color='g')
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -677,12 +687,7 @@ def plot_1D_basis():
 
 if __name__ == '__main__':
     # plot_2Dtensor_basis_grad()
-    # plot_2Dsimplex_basis_grad()
+    plot_2Dsimplex_basis_grad()
     # plot_2D_simplex_as_tensor()
     # plot_1D_basis()
 
-    for m, idx in enumerate(iter_by_order(2, 2)):
-        print(m, idx)
-
-    for m, idx in enumerate(iter_by_order(3, 3)):
-        print(m, idx)

@@ -64,15 +64,15 @@ meshio.write(outfile, mesh)
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
-CFL = 1.
+approx_order = 0
+CFL = .1
 #^^^^^^^^^^^^^^^^#
 
 velo = nm.array([[-1., 0.]]).T
 max_velo = nm.max(nm.abs(velo))
 
 t0 = 0
-t1 = 1
+t1 = .1
 
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / norm(velo) * CFL/(2*approx_order + 1)
@@ -86,7 +86,7 @@ print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
 integral = Integral('i', order=5)
 
-domain = FEDomain('domain_simplex_2D', mesh)
+domain = FEDomain('domain_simplex_12D', mesh)
 omega = domain.create_region('Omega', 'all')
 dgfield = DGField('dgfu', nm.float64, 'scalar', omega,
                   approx_order=approx_order)
@@ -135,7 +135,7 @@ def ic_wrap(x, ic=None):
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
+pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": "all"}, ics={},
                                                      ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="./output/adv_simp_12D", output_format="msh")
 # pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
