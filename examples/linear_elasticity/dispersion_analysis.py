@@ -121,9 +121,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
                                     plane=plane)},
             'density' : {'Y1' : density1, 'Y2' : density2},
         },),
-        'wave' : ({
-            '.vec' : [1] * dim,
-        },),
+        'wave' : 'get_wdir',
     }
 
     variables = {
@@ -166,6 +164,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
         'match_z_plane' : (per.match_z_plane,),
         'match_x_line' : (per.match_x_line,),
         'match_y_line' : (per.match_y_line,),
+        'get_wdir' : (get_wdir,),
     }
 
     integrals = {
@@ -185,9 +184,15 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
 
     return locals()
 
-def set_wave_dir(materials, wdir):
+def get_wdir(ts, coors, mode=None,
+             equations=None, term=None, problem=None, wdir=None, **kwargs):
+    if mode == 'special':
+        return {'vec' : wdir}
+
+def set_wave_dir(pb, wdir):
+    materials = pb.get_materials()
     wave_mat = materials['wave']
-    wave_mat.datas['special']['vec'] = wdir
+    wave_mat.set_extra_args(wdir=wdir)
 
 def save_materials(output_dir, pb, options):
     stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
@@ -284,6 +289,11 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     pb.set_output_dir(options.output_dir)
     dim = pb.domain.shape.dim
 
+    # Set the normalized wave vector direction to the material(s).
+    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
+    wdir = wdir / nm.linalg.norm(wdir)
+    set_wave_dir(pb, wdir)
+
     bbox = pb.domain.mesh.get_bounding_box()
     size = (bbox[1] - bbox[0]).max()
     scaling0 = apply_unit_multipliers([1.0], ['length'],
@@ -302,11 +312,6 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
 
     pb.time_update()
     pb.update_materials()
-
-    # Set the normalized wave vector direction to the material(s).
-    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
-    wdir = wdir / nm.linalg.norm(wdir)
-    set_wave_dir(pb.get_materials(), wdir)
 
     # Assemble the matrices.
     mtxs = {}
