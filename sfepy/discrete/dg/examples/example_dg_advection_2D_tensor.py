@@ -42,7 +42,7 @@ velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
 max_velo = nm.max(nm.linalg.norm(velo))
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 2
+approx_order = 1
 CFL = .5
 #^^^^^^^^^^^^^^^^#
 

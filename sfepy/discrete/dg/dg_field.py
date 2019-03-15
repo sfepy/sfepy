@@ -304,8 +304,8 @@ class DGField(Field):
             tqps[..., 0, 0] = qps  # x = 0 + t
             tqps[..., 0, 1] = 0.  # y = 0
             # 1.
-            tqps[..., 1, 0] = 1 - qps  # x = 1 - t
-            tqps[..., 1, 1] = qps  # y = t
+            tqps[..., 1, 0] = 1 + qps  # x = 1 - t
+            tqps[..., 1, 1] = - qps  # y = t
             # 2.
             tqps[..., 2, 0] = 0  # x = 0
             tqps[..., 2, 1] = 1 - qps  # y = 1 - t
@@ -595,7 +595,7 @@ class DGField(Field):
                     of2 = c2co[ifa + 1]
                     if of2 == (of1 + 1):  # facet has only one cell
                         # Surface facet.
-                        nbrs.append([-1, -1])  # c2ci[of1])  # append the cell, itself
+                        nbrs.append([-1, -1])  # c2ci[of1])  # append no neighbours
                     else:
                         if c2ci[of1] == cells[ic]:  # do not append the cell itself
                             nbrs.append(fis[of2 - 1])

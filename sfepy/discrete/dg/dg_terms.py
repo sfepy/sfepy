@@ -235,7 +235,7 @@ class AdvFluxDGTerm(Term):
             out[:] = 0.0
             return None
 
-        alf = 0  # zero for upwind
+        alf = .0  # zero for upwind
 
         n_cell = dofs.shape[0]
         n_el_nod = dofs.shape[1]
@@ -248,14 +248,15 @@ class AdvFluxDGTerm(Term):
                 fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
                 fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
                 central = velo[:, None, :] * fc_v_p[:, :, None]/2.
-                upwind = (C[:, :, facet_n]*(1 - alf)/2. * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
+                upwind = ((1 - alf)/2. * C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
                 facet_fluxes[:, facet_n, n] = nm.sum(fc_n[:, facet_n] *
-                                                             nm.sum((central - upwind) *
-                                                                    (fc_b[None, :, 0, facet_n, 0, n] *
-                                                                     whs[:, facet_n, :])[..., None], axis=1),
-                                                             axis=1)
+                                                     nm.sum((central - upwind) *
+                                                            (fc_b[None, :, 0, facet_n, 0, n] *
+                                                             whs[:, facet_n, :])[..., None], axis=1),
+                                                     axis=1)
         cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
+        # 1D plots
         if False:
             from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
             import matplotlib.pyplot as plt
@@ -335,6 +336,49 @@ class AdvFluxDGTerm(Term):
                 plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
                 plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
                 plt.legend()
+
+        if False:
+            import matplotlib.pyplot as plt
+            import sfepy.postprocess.plot_cmesh as pc
+
+            cmesh = self.region.domain.mesh.cmesh
+
+            def plot_facet_normals(ax, cmesh, normals, scale, col='m'):
+                dim = cmesh.dim
+                ax = pc._get_axes(ax, dim)
+
+                edim = dim - 1
+                coors = cmesh.get_centroids(edim)
+                coors = pc._to2d(coors)
+
+                cmesh.setup_connectivity(dim, edim)
+                c2f = cmesh.get_conn(dim, edim)
+                for ic, o1 in enumerate(c2f.offsets[:-1]):
+                    o2 = c2f.offsets[ic + 1]
+                    for ifal, ifa in enumerate(c2f.indices[o1:o2]):
+                        # print(ic, ifal, ifa)
+                        cc = nm.array([coors[ifa], coors[ifa] + scale * normals[ic, ifal]])
+                        # print(cc)
+                        ax.plot(*cc.T, color=col)
+                        ax.plot([cc[1, 0]], [cc[1, 1]], color=col, marker=">")
+
+
+                return ax
+
+
+            ax = pc.plot_cmesh(
+                None, cmesh,
+                wireframe_opts={'color': 'k', 'linewidth': 2},
+                entities_opts=[
+                    {'color': 'k', 'label_global': 12, 'label_local': 8, 'size': 20},  # vertices
+                    {'color': 'b', 'label_global': 6, 'label_local': 8, 'size': 10},  # faces
+                    {'color': 'r', 'label_global': 12, 'size': 1},  # cells
+                ])
+            for i in range(n_el_nod):
+                ax = plot_facet_normals(ax, cmesh, facet_fluxes[:, :, i, None] * fc_n, 1, col='r')
+
+            # ax = plot_facet_normals(ax, cmesh, fc_n, .01, col='m')
+            plt.show()
 
         out[:] = 0.0
         for i in range(n_el_nod):

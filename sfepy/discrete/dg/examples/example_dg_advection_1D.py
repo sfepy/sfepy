@@ -23,7 +23,7 @@ from sfepy.base.conf import ProblemConf
 
 # local imports
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver, RK4StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
@@ -46,7 +46,7 @@ meshio = VTKMeshIO(outfile)
 meshio.write(outfile, mesh)
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 1
 CFL = 1.
 #^^^^^^^^^^^^^^^^#
 
@@ -131,7 +131,7 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 # nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)  # , post_stage_hook=limiter)
+nls = RK4StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
 
 tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)

@@ -81,6 +81,7 @@ eqs = Equations([eq])
 
 
 def ic_wrap(x, ic=None):
+    x = (x + 1) / 2
     return gsmooth(x[..., 0:1])*gsmooth(x[..., 1:])
 
 # X = nm.arange(0, 1, 0.005)
