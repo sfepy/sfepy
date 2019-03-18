@@ -19,21 +19,24 @@ from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.mesh.mesh_tools import triangulate
 from sfepy.discrete.fem.meshio import VTKMeshIO
-
+from sfepy.base.ioutils import ensure_path
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local imports
-from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
-from dg_field import DGField
+from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
+from sfepy.discrete.dg.dg_tssolver import \
+    EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+from sfepy.discrete.dg.dg_field import DGField
 
-from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
+from sfepy.discrete.dg.my_utils.inits_consts import \
+    left_par_q, gsmooth, const_u, ghump, superic
 
 # mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
 # mesh = triangulate(mesh)
 mesh_name = "square_tri2"
 mesh = Mesh.from_file("meshes/" + mesh_name + ".mesh")
 outfile = "output/mesh/" + mesh_name + ".vtk"
+ensure_path(outfile)
 meshio = VTKMeshIO(outfile)
 meshio.write(outfile, mesh)
 

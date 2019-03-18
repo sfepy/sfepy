@@ -16,15 +16,20 @@ from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 from sfepy.discrete.fem.meshio import VTKMeshIO
+from sfepy.base.ioutils import ensure_path
+
+from sfepy.base.conf import ProblemConf
 
 
 # local imports
-from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-from dg_tssolver import EulerStepSolver, DGMultiStageTS, TVDRK3StepSolver, RK4StepSolver
-from dg_field import DGField
+from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
+from sfepy.discrete.dg.dg_tssolver import \
+    EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver, RK4StepSolver
+from sfepy.discrete.dg.dg_field import DGField
 
-from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
-from my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
+from sfepy.discrete.dg.my_utils.inits_consts import \
+    left_par_q, gsmooth, const_u, ghump, superic
+from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 
 X1 = 0.
 XN = 1.
@@ -39,6 +44,7 @@ mesh = Mesh.from_data('advection_1d', coors, None,
                       [conn], [mat_ids], descs)
 
 outfile = "output/mesh/tens_1D_mesh.vtk"
+ensure_path(outfile)
 meshio = VTKMeshIO(outfile)
 meshio.write(outfile, mesh)
 
@@ -87,8 +93,8 @@ FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
 
-left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 3.2})#, times="all")
-right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 4.2})#, times="all")
+left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})
+right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
 
 def ic_wrap(x, ic=None):
@@ -109,8 +115,8 @@ state0 = pb.get_initial_state()
 #------------------
 #| Create limiter |
 #------------------
-from dg_field import get_unraveler, get_raveler
-from dg_limiters import moment_limiter_1D
+from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
+from sfepy.discrete.dg.dg_limiters import moment_limiter_1D
 
 
 def limiter(vec):
@@ -126,19 +132,12 @@ def limiter(vec):
 #------------------
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
+# nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-# nls = RK4StepSolver({}, lin_solver=ls, status=nls_status)  #, post_stage_hook=limiter)
+nls = RK4StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
 
-# tss = DGMultiStageTS({'t0': t0, 't1': t1, 'n_step': tn},
-#                      nls=nls, context=pb, verbose=True)
-
-tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-                         nls=nls, context=pb, verbose=True)
-                        # ,post_stage_hook=limiter)
-
-# tss = RK4StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-#                          nls=nls, context=pb, verbose=True)
+tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                                nls=nls, context=pb, verbose=True)
 #---------
 #| Solve |
 #---------
@@ -154,7 +153,8 @@ lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, tn=100, ic=ic_wrap,
               delay=100, polar=False)
 
-from my_utils.visualizer import load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
+from sfepy.discrete.dg.my_utils.visualizer import \
+    load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
 coors, u_end = load_state_1D_vtk("output/adv_1D/domain_1D_end.vtk", order=approx_order)
 
 
