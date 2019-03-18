@@ -18,20 +18,24 @@ from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem.meshio import VTKMeshIO
+from sfepy.base.ioutils import ensure_path
 from sfepy.base.conf import ProblemConf
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 
 # local import
-from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
+from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
 # from dg_equation import Equation
-from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
-from dg_field import DGField
+from sfepy.discrete.dg.dg_tssolver \
+    import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+from sfepy.discrete.dg.dg_field import DGField
 
-from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
+from sfepy.discrete.dg.my_utils.inits_consts \
+    import left_par_q, gsmooth, const_u, ghump, superic
 
 mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5))
 outfile = "output/mesh/tens_12D_mesh.vtk"
+ensure_path(outfile)
 meshio = VTKMeshIO(outfile)
 meshio.write(outfile, mesh)
 
