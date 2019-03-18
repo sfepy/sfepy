@@ -475,7 +475,13 @@ class DGField(Field):
         if region.has_cells():
             els = nm.ravel(self.bubble_remap[region.cells])
             eldofs = self.bubble_dofs[els[els >= 0]]
-        dofs.append(eldofs)
+            dofs.append(eldofs)
+        else:
+            # FIXME hot fix to actually evaluate EBC
+            # returned DOFS need to be non empty, so return
+            # entities of highest aviable dimension
+            dofs.append(region.entities[-2])
+            # or region.kind_tdim
 
         if merge:
             dofs = nm.concatenate(dofs)
@@ -696,7 +702,7 @@ class DGField(Field):
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
         Compute projection of fun into the basis, alternatively set DOFs directly to provided
-        value or values
+        value or values either in main volume region or in boundary region
         :param fun: callable, scallar or array corresponding to dofs
         :param region: region to set DOFs on
         :param dpn: number of dofs per element
@@ -706,21 +712,41 @@ class DGField(Field):
 
         if region is None:
             region = self.region
+            return self.set_volume_dofs(fun, region, dpn, warn)
+        elif region.has_cells():
+            return self.set_volume_dofs(fun, region, dpn, warn)
+        elif region.kind_tdim == self.dim - 1:
+            nods, vals = self.set_surface_dofs(fun, region, dpn, warn)
+            return nods, vals
+
+
+    def set_volume_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+        """
+        Compute projection of fun onto the basis, in main region, alternatively
+        set DOFs directly to provided value or values
+        :param fun: callable, scallar or array corresponding to dofs
+        :param region: region to set DOFs on
+        :param dpn: number of dofs per element
+        :param warn: not used
+        :return: nods, vals
+        """
 
         aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
 
         if nm.isscalar(fun):
+            # TODO set only zero order
             vals = nm.repeat([fun], nods.shape[0] * dpn)
 
         elif isinstance(fun, nm.ndarray):
             assert_(len(fun) == dpn)
+            # TODO set only zero order
             vals = nm.repeat(fun, nods.shape[0])
 
         elif callable(fun):
 
             qp, weights = self.integral.get_qp(self.gel.name)
-            weights = weights[:, None] # add axis for broadcasting
+            weights = weights[:, None]  # add axis for broadcasting
             coors = self.mapping.get_physical_qps(qp)
 
             # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
@@ -731,7 +757,7 @@ class DGField(Field):
             # this drops redundant axis that is returned by eval_base due to consistency with derivatives
 
             # left hand, so far only orthogonal basis
-            lhs_diag = nm.sum(weights * base_vals_qp**2, axis=0)
+            lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=0)
             # for legendre base this can be calculated exactly
             # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
 
@@ -748,6 +774,62 @@ class DGField(Field):
             # plt.show()
 
         return nods, vals
+
+    def set_surface_dofs(self, fun, region, dpn, warn):
+        """
+        Compute projection of fun onto the basis, in main region, alternatively
+        set DOFs directly to provided value or values
+        :param fun: callable, scallar or array corresponding to dofs
+        :param region: region to set DOFs on
+        :param dpn: number of dofs per element
+        :param warn: not used
+        :return: nods, vals
+        """
+
+        aux = self.get_dofs_in_region(region)
+        nods = nm.unique(nm.hstack(aux))
+
+        if nm.isscalar(fun):
+            # TODO set only zero order
+            vals = nm.repeat([fun], nods.shape[0] * dpn)
+
+        elif isinstance(fun, nm.ndarray):
+            assert_(len(fun) == dpn)
+            # TODO set only zero order
+            vals = nm.repeat(fun, nods.shape[0])
+
+        elif callable(fun):
+            # TODO proper projection onto the surface
+            qp, weights = self.integral.get_qp(self.gel.name)
+            weights = weights[:, None]  # add axis for broadcasting
+            coors = self.mapping.get_physical_qps(qp)
+
+            # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
+            # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
+            # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
+
+            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
+            # this drops redundant axis that is returned by eval_base due to consistency with derivatives
+
+            # left hand, so far only orthogonal basis
+            lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=0)
+            # for legendre base this can be calculated exactly
+            # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
+
+            rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
+
+            vals = (rhs_vec / lhs_diag)
+
+            # plot for 1D
+            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            # import matplotlib.pyplot as plt
+            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals.T[..., None, None])
+            # plt.plot(xx, ww[:, 0], label="reconstructed dofs")
+            # plt.show()
+
+        return nods, vals
+
 
     def get_nodal_values(self, dofs, region, ref_nodes=None):
         """
@@ -824,6 +906,8 @@ class DGField(Field):
         # cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
+
+
 
 
 if __name__ == '__main__':

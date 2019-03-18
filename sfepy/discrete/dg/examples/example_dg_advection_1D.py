@@ -87,8 +87,8 @@ FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
 
-left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.0})
-right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
+left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 3.2})#, times="all")
+right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 4.2})#, times="all")
 
 
 def ic_wrap(x, ic=None):
