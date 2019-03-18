@@ -2,6 +2,7 @@ import numpy as nm
 
 from numpy import newaxis as nax
 
+from sfepy.base.ioutils import InDir
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
 
@@ -261,9 +262,14 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
     def __init__(self, name, geometry, order):
         LegendrePolySpace.__init__(self, name, geometry, order)
         if self.dim > 1:
+            indir = InDir(__file__)
             try:
-                self.coefM = nm.loadtxt("legendre2D_tensor_coefs.txt")[:self.n_nod, :self.n_nod]
-                self.expoM = nm.loadtxt("legendre2D_tensor_expos.txt")[:self.n_nod, :]
+                self.coefM = nm.loadtxt(
+                    indir("legendre2D_tensor_coefs.txt")
+                )[:self.n_nod, :self.n_nod]
+                self.expoM = nm.loadtxt(
+                    indir("legendre2D_tensor_expos.txt")
+                )[:self.n_nod, :]
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
 
@@ -337,9 +343,14 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
     def __init__(self, name, geometry, order):
         LegendrePolySpace.__init__(self, name, geometry, order)
         if self.dim > 1:
+            indir = InDir(__file__)
             try:
-                self.coefM = nm.loadtxt("legendre2D_simplex_coefs.txt")[:self.n_nod, :self.n_nod]
-                self.expoM = nm.loadtxt("legendre2D_simplex_expos.txt")[:self.n_nod, :]
+                self.coefM = nm.loadtxt(
+                    indir("legendre2D_simplex_coefs.txt")
+                )[:self.n_nod, :self.n_nod]
+                self.expoM = nm.loadtxt(
+                    indir("legendre2D_simplex_expos.txt")
+                )[:self.n_nod, :]
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_simplex_base.py to generate it.".format(e.args[0]))
 
