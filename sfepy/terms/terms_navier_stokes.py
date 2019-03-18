@@ -175,6 +175,56 @@ class LinearConvectTerm(Term):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
+class LinearConvect2Term(Term):
+    r"""
+    Linearized convective term with the convection velocity given as a material
+    parameter.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+
+    .. math::
+        ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
+
+    :Arguments:
+        - material : :math:`\ul{b}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
+    name = 'dw_lin_convect2'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : 'D, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+
+    function = staticmethod(terms.dw_lin_convect)
+
+    def get_fargs(self, material, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
+
+        if mode == 'weak':
+            if diff_var is None:
+                grad = self.get(state, 'grad').transpose((0, 1, 3, 2)).copy()
+                fmode = 0
+
+            else:
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return grad, material, vg, fmode
+
+        elif mode == 'qp':
+            grad = self.get(state, 'grad').transpose((0, 1, 3, 2)).copy()
+            fmode = 2
+
+            return grad, material, vg, fmode
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
 class StokesTerm(Term):
     r"""
     Stokes problem coupling term. Corresponds to weak forms of gradient and
