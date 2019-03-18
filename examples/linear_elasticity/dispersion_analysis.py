@@ -121,9 +121,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
                                     plane=plane)},
             'density' : {'Y1' : density1, 'Y2' : density2},
         },),
-        'wave' : ({
-            '.vec' : [1] * dim,
-        },),
+        'wave' : 'get_wdir',
     }
 
     variables = {
@@ -166,6 +164,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
         'match_z_plane' : (per.match_z_plane,),
         'match_x_line' : (per.match_x_line,),
         'match_y_line' : (per.match_y_line,),
+        'get_wdir' : (get_wdir,),
     }
 
     integrals = {
@@ -185,9 +184,15 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
 
     return locals()
 
-def set_wave_dir(materials, wdir):
+def get_wdir(ts, coors, mode=None,
+             equations=None, term=None, problem=None, wdir=None, **kwargs):
+    if mode == 'special':
+        return {'vec' : wdir}
+
+def set_wave_dir(pb, wdir):
+    materials = pb.get_materials()
     wave_mat = materials['wave']
-    wave_mat.datas['special']['vec'] = wdir
+    wave_mat.set_extra_args(wdir=wdir)
 
 def save_materials(output_dir, pb, options):
     stiffness = pb.evaluate('ev_volume_integrate_mat.2.Omega(m.D, u)',
@@ -267,7 +272,7 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
 
 def assemble_matrices(define, mod, pars, set_wave_dir, options):
     """
-    Assemble the dispersion eigenvalue problem matrices.
+    Assemble the blocks of dispersion eigenvalue problem matrices.
     """
     define_problem = functools.partial(define,
                                        filename_mesh=options.mesh_filename,
@@ -281,7 +286,13 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     conf = ProblemConf.from_dict(define_problem(), mod)
 
     pb = Problem.from_conf(conf)
+    pb.set_output_dir(options.output_dir)
     dim = pb.domain.shape.dim
+
+    # Set the normalized wave vector direction to the material(s).
+    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
+    wdir = wdir / nm.linalg.norm(wdir)
+    set_wave_dir(pb, wdir)
 
     bbox = pb.domain.mesh.get_bounding_box()
     size = (bbox[1] - bbox[0]).max()
@@ -302,47 +313,102 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     pb.time_update()
     pb.update_materials()
 
-    # Set the normalized wave vector direction to the material(s).
-    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
-    wdir = wdir / nm.linalg.norm(wdir)
-    set_wave_dir(pb.get_materials(), wdir)
-
     # Assemble the matrices.
-    mtx_m = pb.mtx_a.copy()
-    eq_m = pb.equations['M']
-    mtx_m = eq_m.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_m)
-    mtx_m.eliminate_zeros()
-    output_array_stats(mtx_m.data, 'nonzeros in M')
+    mtxs = {}
+    for key, eq in pb.equations.iteritems():
+        print key
+        mtxs[key] = mtx = pb.mtx_a.copy()
+        mtx = eq.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx)
+        mtx.eliminate_zeros()
+        output_array_stats(mtx.data, 'nonzeros in %s' % key)
 
-    mtx_k = pb.mtx_a.copy()
-    eq_k = pb.equations['K']
-    mtx_k = eq_k.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_k)
-    mtx_k.eliminate_zeros()
-    output_array_stats(mtx_k.data, 'nonzeros in K')
+        output('symmetry checks:')
+        output('%s - %s^T:' % (key, key), max_diff_csr(mtx, mtx.T))
+        output('%s - %s^H:' % (key, key), max_diff_csr(mtx, mtx.H))
 
-    mtx_s = pb.mtx_a.copy()
-    eq_s = pb.equations['S']
-    mtx_s = eq_s.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_s)
-    mtx_s.eliminate_zeros()
-    output_array_stats(mtx_s.data, 'nonzeros in S')
+    return pb, wdir, bzone, mtxs
 
-    mtx_r = pb.mtx_a.copy()
-    eq_r = pb.equations['R']
-    mtx_r = eq_r.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx_r)
-    mtx_r.eliminate_zeros()
-    output_array_stats(mtx_r.data, 'nonzeros in R')
+def setup_n_eigs(options, pb, mtxs):
+    """
+    Setup the numbers of eigenvalues based on options and numbers of DOFs.
+    """
+    solver_n_eigs = n_eigs = options.n_eigs
+    n_dof = mtxs['K'].shape[0]
+    if options.mode == 'omega':
+        if options.n_eigs > n_dof:
+            n_eigs = n_dof
+            solver_n_eigs = None
 
-    output('symmetry checks of blocks:')
-    output('M - M^T:', max_diff_csr(mtx_m, mtx_m.T))
-    output('K - K^T:', max_diff_csr(mtx_k, mtx_k.T))
-    output('S - S^T:', max_diff_csr(mtx_s, mtx_s.T))
-    output('R - R^T:', max_diff_csr(mtx_r, mtx_r.T))
-    output('M - M^H:', max_diff_csr(mtx_m, mtx_m.H))
-    output('K - K^H:', max_diff_csr(mtx_k, mtx_k.H))
-    output('S - S^H:', max_diff_csr(mtx_s, mtx_s.H))
-    output('R - R^H:', max_diff_csr(mtx_r, mtx_r.H))
+    else:
+        if options.n_eigs > 2 * n_dof:
+            n_eigs = 2 * n_dof
+            solver_n_eigs = None
 
-    return pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r
+    return solver_n_eigs, n_eigs
+
+def build_evp_matrices(mtxs, val, mode, pb):
+    """
+    Build the matrices of the dispersion eigenvalue problem.
+    """
+    if mode == 'omega':
+        mtx_a = mtxs['K'] + val**2 * mtxs['S'] + val * mtxs['R']
+        output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
+
+        evp_mtxs = (mtx_a, mtxs['M'])
+
+    else:
+        evp_mtxs = (mtxs['S'], mtxs['R'], mtxs['K'] - val**2 * mtxs['M'])
+
+    return evp_mtxs
+
+def process_evp_results(eigs, svecs, val, mode, wdir, bzone, pb, mtxs,
+                        std_wave_fun=None):
+    """
+    Transform eigenvalues to either omegas or kappas, depending on `mode`.
+    Transform eigenvectors, if available, depending on `mode`.
+    Return also the values to log.
+    """
+    if mode == 'omega':
+        omegas = nm.sqrt(eigs)
+
+        output('eigs, omegas:')
+        for ii, om in enumerate(omegas):
+            output('{:>3}. {: .10e}, {:.10e}'.format(ii, eigs[ii], om))
+
+        out = tuple(eigs) + tuple(omegas)
+        if std_wave_fun is not None:
+            out = out + std_wave_fun(val, wdir)
+
+        return omegas, svecs, out
+
+    else:
+        kappas = eigs.copy()
+        rks = kappas.copy()
+
+        # Mask modes far from 1. Brillouin zone.
+        max_kappa = 1.2 * bzone
+        kappas[kappas.real > max_kappa] = nm.nan
+
+        # Mask non-physical modes.
+        kappas[kappas.real < 0] = nm.nan
+        kappas[nm.abs(kappas.imag) > 1e-10] = nm.nan
+        out = tuple(kappas.real)
+
+        output('raw kappas, masked real part:',)
+        for ii, kr in enumerate(kappas.real):
+            output('{:>3}. {: 23.5e}, {:.10e}'.format(ii, rks[ii], kr))
+
+        if svecs is not None:
+            n_dof = mtxs['K'].shape[0]
+            # Select only vectors corresponding to physical modes.
+            ii = nm.isfinite(kappas.real)
+            svecs = svecs[:n_dof, ii]
+
+        if std_wave_fun is not None:
+            out = out + tuple(ii if ii <= max_kappa else nm.nan
+                              for ii in std_wave_fun(val, wdir))
+
+        return kappas, svecs, out
 
 helps = {
     'pars' :
@@ -488,8 +554,11 @@ def main():
     apply_units = mod.apply_units
     define = mod.define
     set_wave_dir = mod.set_wave_dir
+    setup_n_eigs = mod.setup_n_eigs
+    build_evp_matrices = mod.build_evp_matrices
     save_materials = mod.save_materials
     get_std_wave_fun = mod.get_std_wave_fun
+    process_evp_results = mod.process_evp_results
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
@@ -529,9 +598,8 @@ def main():
                                          options.unit_multipliers)
         output('frequency range with applied unit multipliers:', rng)
 
-    aux = assemble_matrices(define, mod, pars, set_wave_dir, options)
-    pb, wdir, bzone, mtx_m, mtx_k, mtx_s, mtx_r = aux
-
+    pb, wdir, bzone, mtxs = assemble_matrices(define, mod, pars, set_wave_dir,
+                                              options)
     dim = pb.domain.shape.dim
 
     if dim != 2:
@@ -548,31 +616,25 @@ def main():
     conf = pb.solver_confs['eig']
     eig_solver = Solver.any_from_conf(conf)
 
-    n_eigs = options.n_eigs
-    if options.mode == 'omega':
-        if options.n_eigs > mtx_k.shape[0]:
-            options.n_eigs = mtx_k.shape[0]
-            n_eigs = None
-
-    else:
-        if options.n_eigs > 2 * mtx_k.shape[0]:
-            options.n_eigs = 2 * mtx_k.shape[0]
-            n_eigs = None
+    n_eigs, options.n_eigs = setup_n_eigs(options, pb, mtxs)
 
     get_color = lambda ii: plt.cm.viridis((float(ii) / (options.n_eigs - 1)))
     plot_kwargs = [{'color' : get_color(ii), 'ls' : '', 'marker' : 'o'}
                   for ii in range(options.n_eigs)]
 
+    log_names = []
+    log_plot_kwargs = []
+    if options.log_std_waves:
+        std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
+            pb, options)
+
+    else:
+        std_wave_fun = None
+
     if options.mode == 'omega':
         eigenshapes_filename = os.path.join(output_dir,
                                             'frequency-eigenshapes-%s.vtk'
                                             % stepper.suffix)
-
-        log_names = []
-        log_plot_kwargs = []
-        if options.log_std_waves:
-            std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
-                pb, options)
 
         log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
                    [r'$\omega_{%d}$'
@@ -592,28 +654,21 @@ def main():
         for iv, wmag in stepper:
             output('step %d: wave vector %s' % (iv, wmag * wdir))
 
-            mtx_a = mtx_k + wmag**2 * mtx_s + wmag * mtx_r
-            mtx_b = mtx_m
-
-            output('A - A^H:', max_diff_csr(mtx_a, mtx_a.H))
+            evp_mtxs = build_evp_matrices(mtxs, wmag, options.mode, pb)
 
             if options.eigs_only:
-                eigs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
+                eigs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
             else:
-                eigs, svecs = eig_solver(mtx_a, mtx_b, n_eigs=n_eigs,
+                eigs, svecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
                                          eigenvectors=True)
-            omegas = nm.sqrt(eigs)
 
-            output('eigs, omegas:')
-            for ii, om in enumerate(omegas):
-                output('{:>3}. {: .10e}, {:.10e}'.format(ii, eigs[ii], om))
-
-            out = tuple(eigs) + tuple(omegas)
-            if options.log_std_waves:
-                out = out + std_wave_fun(wmag, wdir)
+            omegas, svecs, out = process_evp_results(
+                eigs, svecs, wmag, options.mode,
+                wdir, bzone, pb, mtxs, std_wave_fun=std_wave_fun
+            )
             log(*out, x=[wmag, wmag])
 
             save_eigenvectors(eigenshapes_filename % iv, svecs, wmag, wdir, pb)
@@ -627,12 +682,6 @@ def main():
         eigenshapes_filename = os.path.join(output_dir,
                                             'wave-number-eigenshapes-%s.vtk'
                                             % stepper.suffix)
-
-        log_names = []
-        log_plot_kwargs = []
-        if options.log_std_waves:
-            std_wave_fun, log_names, log_plot_kwargs = get_std_wave_fun(
-                pb, options)
 
         log = Log([[r'$\kappa_{%d}$' % ii for ii in range(options.n_eigs)]
                    + log_names],
@@ -648,46 +697,22 @@ def main():
         for io, omega in stepper:
             output('step %d: frequency %s' % (io, omega))
 
+            evp_mtxs = build_evp_matrices(mtxs, omega, options.mode, pb)
+
             if options.eigs_only:
-                eigs = eig_solver(mtx_s, mtx_r,
-                                  mtx_k - omega**2 * mtx_m,
-                                  n_eigs=n_eigs,
+                eigs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
                                   eigenvectors=False)
                 svecs = None
 
             else:
-                eigs, esvecs = eig_solver(mtx_s, mtx_r,
-                                          mtx_k - omega**2 * mtx_m,
-                                          n_eigs=n_eigs,
-                                          eigenvectors=True)
+                eigs, svecs = eig_solver(*evp_mtxs, n_eigs=n_eigs,
+                                         eigenvectors=True)
 
-            kappas = eigs
-
-            rks = kappas.copy()
-
-            # Mask modes far from 1. Brillouin zone.
-            max_kappa = 1.2 * bzone
-            kappas[kappas.real > max_kappa] = nm.nan
-
-            # Mask non-physical modes.
-            kappas[kappas.real < 0] = nm.nan
-            kappas[nm.abs(kappas.imag) > 1e-10] = nm.nan
-            out = tuple(kappas.real)
-
-            output('raw kappas, masked real part:',)
-            for ii, kr in enumerate(kappas.real):
-                output('{:>3}. {: 23.5e}, {:.10e}'.format(ii, rks[ii], kr))
-
-            if options.log_std_waves:
-                out = out + tuple(ii if ii <= max_kappa else nm.nan
-                                  for ii in std_wave_fun(omega, wdir))
-
+            kappas, svecs, out = process_evp_results(
+                eigs, svecs, omega, options.mode,
+                wdir, bzone, pb, mtxs, std_wave_fun=std_wave_fun
+            )
             log(*out, x=[omega])
-
-            if not options.eigs_only:
-                # Save vectors corresponding to physical modes.
-                ii = nm.isfinite(kappas.real)
-                svecs = esvecs[:mtx_k.shape[0], ii]
 
             save_eigenvectors(eigenshapes_filename % io, svecs, kappas, wdir,
                               pb)

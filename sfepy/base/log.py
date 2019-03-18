@@ -466,14 +466,12 @@ class Log(Struct):
             self.terminate()
             return
 
+        if save_figure: return
+
         ls = len(args), self.n_arg
         if full and (ls[0] != ls[1]):
-            if kwargs:
-                return
-            else:
-                msg = 'log called with wrong number of arguments! (%d == %d)' \
-                      % ls
-                raise IndexError(msg)
+            msg = 'log called with wrong number of arguments! (%d == %d)' % ls
+            raise IndexError(msg)
 
         for ig in igs:
             if (x_values is not None) and (x_values[ig] is not None):
