@@ -12,16 +12,14 @@ from sfepy.solvers.ts_solvers import standard_ts_call
 from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
 from sfepy.base.log import Log, get_logging_conf
 
-class DGTimeSteppingSolver(TimeSteppingSolver):
+class DGMultiStageTS(TimeSteppingSolver):
     """
-    Explicit time stepping solver with a fixed time step.
+    Explicit time stepping solver with multistage solve_step
+    """
 
-    # TODO maybe inherit directly from SimpleTimeSteppingSolver and override solve_step method
-    # TODO or create metaclass ExplicitTimeSteppingSolver
-    """
-    name = 'ts.euler'
 
     __metaclass__ = SolverMeta
+    name = "ts.multistaged"
 
     _parameters = [
         ('t0', 'float', 0.0, False,
@@ -48,6 +46,11 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
 
         self.format = format
         self.verbose = self.conf.verbose
+        if "post_stage_hook" in kwargs.keys():
+            self.post_stage_hook = kwargs["post_stage_hook"]
+        else:
+            self.post_stage_hook = lambda x: x
+        pass
 
     def solve_step0(self, nls, vec0):
         res = nls.fun(vec0)
@@ -57,8 +60,8 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
 
         return vec
 
-    def solve_step(self, ts, nls, vec, prestep_fun=None):
-        return nls(vec, ts=ts)
+    def solve_step(self, ts, nls, vec, prestep_fun=None,  poststep_fun=None, status=None):
+        raise NotImplementedError("Called abstract solver, call subclass.")
 
     def output_step_info(self, ts):
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
@@ -66,7 +69,7 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
 
     @standard_ts_call
     def __call__(self, vec0=None, nls=None, init_fun=None, prestep_fun=None,
-                 poststep_fun=None, status=None, **kwargs):
+                 poststep_fun=None, status=None):
         """
         Solve the time-dependent problem.
         """
@@ -92,7 +95,7 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
 
             prestep_fun(ts, vec)
 
-            vect = self.solve_step(ts, nls, vec, prestep_fun)
+            vect = self.solve_step(ts, nls, vec, prestep_fun, poststep_fun, status)
 
             poststep_fun(ts, vect)
 
@@ -101,54 +104,29 @@ class DGTimeSteppingSolver(TimeSteppingSolver):
         return vec
 
 
-class EulerStepSolver(NonlinearSolver):
+class EulerStepSolver(DGMultiStageTS):
     """
-    Not actually nonlinear solver, solves only linear system.
     Updates solution using euler method
-    # TODO create ExplicitStepSolver(?) class, inherit from it
     # - unify structure of __call__ method, something like:
     #  1. prepare data
     #  2. call method computing all the stages
     #  3. provide stats for status, outputs
     #  4. return
     """
-    name = 'sls.euler'
+    name = 'ts.euler'
     __metaclass__ = SolverMeta
-    _parameters = []
 
-    def __init__(self, conf, post_stage_hook=lambda x: x, **kwargs):
-        NonlinearSolver.__init__(self, conf, **kwargs)
-
-        conf = self.conf
-
-        log = get_logging_conf(conf)
-        conf.log = log = Struct(name='log_conf', **log)
-        conf.is_any_log = (log.text is not None) or (log.plot is not None)
-
-        if conf.is_any_log:
-            self.log = Log([[r'$||r||$'], ['iteration']],
-                           xlabels=['', 'all iterations'],
-                           ylabels=[r'$||r||$', 'iteration'],
-                           yscales=['log', 'linear'],
-                           is_plot=conf.log.plot is not None,
-                           log_filename=conf.log.text,
-                           formats=[['%.8e'], ['%d']])
-
-        else:
-            self.log = None
-        self.post_stage_hook = post_stage_hook
-
-    def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
-                 lin_solver=None, iter_hook=None, status=None, ts=None):
+    def solve_step(self, ts, nls, vec_x0, status=None,
+                   prestep_fun=None, poststep_fun=None):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Euler solver")
 
-        conf = get_default(conf, self.conf)
-        fun = get_default(fun, self.fun)
-        fun_grad = get_default(fun_grad, self.fun_grad)
-        lin_solver = get_default(lin_solver, self.lin_solver)
-        iter_hook = get_default(iter_hook, self.iter_hook)
-        status = get_default(status, self.status)
+        conf = nls.conf
+        fun = nls.fun
+        fun_grad = nls.fun_grad
+        lin_solver = nls.lin_solver
+        iter_hook = nls.iter_hook
+        status = get_default(status, nls.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -160,6 +138,7 @@ class EulerStepSolver(NonlinearSolver):
 
         mtx_a = fun_grad(vec_x)
         ls_status = {}
+        # TODO maybe use nls?
         vec_dx = lin_solver(vec_r, x0=vec_x,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
@@ -176,52 +155,25 @@ class EulerStepSolver(NonlinearSolver):
         return vec_x
 
 
-class RK3StepSolver(NonlinearSolver):
+class TVDRK3StepSolver(DGMultiStageTS):
     """
     3rd order Runge-Kutta method
-
-    # TODO create ExplicitStepSolver(?) class, inherit from it
-
     """
 
-    name = 'sls.runge_kutta_3'
+    name = 'ts.tvd_runge_kutta_3'
     __metaclass__ = SolverMeta
-    _parameters = []
 
-    def __init__(self, conf, post_stage_hook=lambda x: x, **kwargs):
-        NonlinearSolver.__init__(self, conf, **kwargs)
-
-        conf = self.conf
-
-        log = get_logging_conf(conf)
-        conf.log = log = Struct(name='log_conf', **log)
-        conf.is_any_log = (log.text is not None) or (log.plot is not None)
-
-        if conf.is_any_log:
-            self.log = Log([[r'$||r||$'], ['iteration']],
-                           xlabels=['', 'all iterations'],
-                           ylabels=[r'$||r||$', 'iteration'],
-                           yscales=['log', 'linear'],
-                           is_plot=conf.log.plot is not None,
-                           log_filename=conf.log.text,
-                           formats=[['%.8e'], ['%d']])
-
-        else:
-            self.log = None
-
-        self.post_stage_hook = post_stage_hook
-
-    def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
-                 lin_solver=None, iter_hook=None, status=None, ts=None):
+    def solve_step(self, ts, nls, vec_x0, status=None,
+                   prestep_fun=None, poststep_fun=None):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
-        conf = get_default(conf, self.conf)
-        fun = get_default(fun, self.fun)
-        fun_grad = get_default(fun_grad, self.fun_grad)
-        lin_solver = get_default(lin_solver, self.lin_solver)
-        iter_hook = get_default(iter_hook, self.iter_hook)
-        status = get_default(status, self.status)
+        conf = nls.conf
+        fun = nls.fun
+        fun_grad = nls.fun_grad
+        lin_solver = nls.lin_solver
+        iter_hook = nls.iter_hook
+        status = get_default(status, nls.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -252,6 +204,8 @@ class RK3StepSolver(NonlinearSolver):
         un_vec_x1_lim = unravel(vec_x1)
 
         # ----2nd stage----
+        ts.set_substep_time(1./2. * ts.dt)
+        prestep_fun(ts, vec_x1)
         vec_r = fun(vec_x1)
         mtx_a = fun_grad(vec_x1)
         vec_dx = lin_solver(vec_r, x0=vec_x1,
@@ -259,12 +213,16 @@ class RK3StepSolver(NonlinearSolver):
                             status=ls_status)
 
         vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1))/4
+
         un_vec_x2 = unravel(vec_x2)
+
         vec_x2 = self.post_stage_hook(vec_x2)
+
         un_vec_x2_lim = unravel(vec_x2)
 
-
         # ----3rd stage-----
+        ts.set_substep_time(1./2. * ts.dt)
+        prestep_fun(ts, vec_x2)
         vec_r = fun(vec_x2)
         mtx_a = fun_grad(vec_x2)
         vec_dx = lin_solver(vec_r, x0=vec_x2,
@@ -287,7 +245,7 @@ class RK3StepSolver(NonlinearSolver):
         return vec_x3
 
 
-class RK4StepSolver(NonlinearSolver):
+class RK4StepSolver(DGMultiStageTS):
     """
     Based on Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
     Journal of Physics A: Mathematical and Theoretical (Vol. 54). New York, NY: Springer New York.
@@ -296,46 +254,22 @@ class RK4StepSolver(NonlinearSolver):
     p. 63
 
     """
-    name = 'sls.runge_kutta_4'
+    name = 'ts.runge_kutta_4'
     __metaclass__ = SolverMeta
-    _parameters = []
 
-    def __init__(self, conf, post_stage_hook=lambda x: x, **kwargs):
-        NonlinearSolver.__init__(self, conf, **kwargs)
-
-        conf = self.conf
-
-        log = get_logging_conf(conf)
-        conf.log = log = Struct(name='log_conf', **log)
-        conf.is_any_log = (log.text is not None) or (log.plot is not None)
-
-        if conf.is_any_log:
-            self.log = Log([[r'$||r||$'], ['iteration']],
-                           xlabels=['', 'all iterations'],
-                           ylabels=[r'$||r||$', 'iteration'],
-                           yscales=['log', 'linear'],
-                           is_plot=conf.log.plot is not None,
-                           log_filename=conf.log.text,
-                           formats=[['%.8e'], ['%d']])
-
-        else:
-            self.log = None
-
-        self.post_stage_hook = post_stage_hook
-
-    def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
-                 lin_solver=None, iter_hook=None, status=None, ts=None):
+    def solve_step(self, ts, nls, vec_x0, status=None,
+                   prestep_fun=None, poststep_fun=None):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
         from dg_field import get_unraveler, get_raveler
         unravel = get_unraveler(3, 99)
 
-        conf = get_default(conf, self.conf)
-        fun = get_default(fun, self.fun)
-        fun_grad = get_default(fun_grad, self.fun_grad)
-        lin_solver = get_default(lin_solver, self.lin_solver)
-        iter_hook = get_default(iter_hook, self.iter_hook)
+        conf = nls.conf
+        fun = nls.fun
+        fun_grad = nls.fun_grad
+        lin_solver = nls.lin_solver
+        iter_hook = nls.iter_hook
         status = get_default(status, self.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()

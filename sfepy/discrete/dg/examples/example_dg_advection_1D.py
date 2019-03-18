@@ -18,12 +18,9 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 from sfepy.discrete.fem.meshio import VTKMeshIO
 
 
-from sfepy.base.conf import ProblemConf
-
-
 # local imports
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver, RK4StepSolver
+from dg_tssolver import EulerStepSolver, DGMultiStageTS, TVDRK3StepSolver, RK4StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
@@ -129,12 +126,19 @@ def limiter(vec):
 #------------------
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-# nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
+nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK4StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
+# nls = RK4StepSolver({}, lin_solver=ls, status=nls_status)  #, post_stage_hook=limiter)
 
-tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
-                                nls=nls, context=pb, verbose=True)
+# tss = DGMultiStageTS({'t0': t0, 't1': t1, 'n_step': tn},
+#                      nls=nls, context=pb, verbose=True)
+
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                         nls=nls, context=pb, verbose=True)
+                        # ,post_stage_hook=limiter)
+
+# tss = RK4StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+#                          nls=nls, context=pb, verbose=True)
 #---------
 #| Solve |
 #---------
