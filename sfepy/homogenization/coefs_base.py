@@ -286,24 +286,25 @@ class CorrEval(CorrMiniApp):
 
         val = eval(expr)
 
-        var_name = self.variable
         clist = ['data']
 
         if type(val) is dict:
             corr_sol = CorrSolution(name=self.name,
                                     state=val,
                                     components=clist)
-        else:
+        elif type(val) is nm.ndarray:
             if val.dtype == nm.object:
                 corr_sol = CorrSolution(name=self.name,
                                         states=val,
                                         components=clist)
             else:
                 ndof, ndim = val.shape
-                state = {var_name: val.reshape((ndof * ndim,))}
+                state = {self.variable: val.reshape((ndof * ndim,))}
                 corr_sol = CorrSolution(name=self.name,
                                         state=state,
                                         components=clist)
+        else:
+            corr_sol = val
 
         return corr_sol
 
