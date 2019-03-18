@@ -405,9 +405,9 @@ class Term(Struct):
         return out
 
     def get_str(self):
-        return ('%+.2e * %s.%d.%s(%s)'
-                % (self.sign, self.name, self.integral.order,
-                   self.region.name, self.arg_str))
+        return '{:+} * {}.{}.{}({})'.format(
+            self.sign, self.name, self.integral.order,
+            self.region.name, self.arg_str)
 
     def set_integral(self, integral):
         """
