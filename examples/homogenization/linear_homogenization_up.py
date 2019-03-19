@@ -145,6 +145,7 @@ options = {
     'output_dir': 'output',
     'coefs_filename': 'coefs_le_up',
     'recovery_hook': 'recovery_le',
+    'multiprocessing': False,
 }
 
 equation_corrs = {
@@ -199,9 +200,7 @@ requirements = {
 }
 
 solvers = {
-    'ls': ('ls.scipy_iterative', {
-        'method': 'cg',
-    }),
+    'ls': ('ls.auto_iterative', {}),
     'newton': ('nls.newton', {
         'i_max': 1,
         'eps_a': 1e2,

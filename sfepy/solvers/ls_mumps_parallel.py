@@ -11,9 +11,14 @@ def tmpfile(fname):
 
 def mumps_parallel_solve():
     comm = MPI.COMM_WORLD
-    flags = nm.memmap('vals_falgs.array', dtype='int32', mode='r')
+    flags = nm.memmap(tmpfile('vals_flags.array'), dtype='int32', mode='r')
 
-    mumps_ls = mumps.MumpsSolver(system={0: 'real', 1: 'complex'}[flags[1]])
+    mumps_ls = mumps.MumpsSolver(system={0: 'real', 1: 'complex'}[flags[1]],
+                                 is_sym=flags[2])
+
+    if flags[3]:
+        mumps_ls.set_verbose()
+
     if comm.rank == 0:
         dtype = {0: 'float64', 1: 'complex128'}[flags[1]]
 
@@ -22,8 +27,8 @@ def mumps_parallel_solve():
         idxs = nm.memmap(tmpfile('idxs.array'), dtype='int32',
                          mode='r').reshape((2, vals_mtx.shape[0]))
 
-        n = flags[0]
-        mumps_ls.set_rcd_centralized(idxs[0, :], idxs[1, :], vals_mtx, n)
+        mumps_ls.set_rcd_centralized(idxs[0, :], idxs[1, :], vals_mtx,
+                                     flags[0])
         x = vals_rhs.copy()
         mumps_ls.set_rhs(x)
 

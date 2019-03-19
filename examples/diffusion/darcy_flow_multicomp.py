@@ -102,7 +102,7 @@ options = {
 }
 
 def postproc(out, pb, state, extend=False):
-    alpha = pb.evaluate('ev_integrate_mat.5.Omega(mat.G_alfa, p1)',
+    alpha = pb.evaluate('ev_volume_integrate_mat.5.Omega(mat.G_alfa, p1)',
                         mode='el_avg')
     out['alpha'] = Struct(name='output_data',
                           mode='cell',

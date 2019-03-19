@@ -65,7 +65,8 @@ from sfepy.discrete import (FieldVariable, Material, Integral,
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
 from sfepy.discrete.conditions import Conditions, EssentialBC
-from sfepy.solvers.ls import ScipyDirect
+from sfepy.solvers.solvers import use_first_available
+from sfepy.solvers.ls import MUMPSSolver, ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.linalg import make_axis_rotation_matrix
 from sfepy.mechanics.tensors import transform_data
@@ -169,7 +170,7 @@ def solve_problem(shape, dims, young, poisson, force, transform=None):
 
     fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
 
-    ls = ScipyDirect({})
+    ls = use_first_available([(MUMPSSolver, {}), (ScipyDirect, {})])
 
     nls_status = IndexedStruct()
     nls = Newton({}, lin_solver=ls, status=nls_status)

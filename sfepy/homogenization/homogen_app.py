@@ -81,6 +81,8 @@ class HomogenizationApp(HomogenizationEngine):
         PDESolverApp.setup_options(self)
         po = HomogenizationApp.process_options
         self.app_options += po(self.conf.options)
+        if hasattr(self, 'he'):
+            self.he.setup_options()
 
     def setup_macro_deformation(self, mtx_F):
         """

@@ -14,10 +14,8 @@ def configuration(parent_package='', top_path=None):
     auto_name = op.split(auto_dir)[-1]
     config = Configuration(auto_name, parent_package, top_path)
 
-    sdir = '\\"%s\\"' % auto_dir.replace('\\', '\\\\')
     inline = 'inline' if system == 'posix' else '__inline'
-    defines = [('__SDIR__', sdir),
-               ('SFEPY_PLATFORM', os_flag),
+    defines = [('SFEPY_PLATFORM', os_flag),
                ('inline', inline)]
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))

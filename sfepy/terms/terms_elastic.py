@@ -731,24 +731,26 @@ def _build_wave_strain_op(vec, bf):
     out = nm.einsum('ik,cqkj->cqij', nmat, bf)
     return out
 
+from sfepy.base.compat import block
+
 def _build_cauchy_strain_op(bfg):
     dim = bfg.shape[2]
     if dim == 2:
         g1, g2 = bfg[..., 0:1, :], bfg[..., 1:2, :]
         zz = nm.zeros_like(g1)
-        out = nm.block([[g1, zz],
-                        [zz, g2],
-                        [g2, g1]])
+        out = block([[g1, zz],
+                     [zz, g2],
+                     [g2, g1]])
 
     else:
         g1, g2, g3 = bfg[..., 0:1, :], bfg[..., 1:2, :], bfg[..., 2:3, :]
         zz = nm.zeros_like(g1)
-        out = nm.block([[g1, zz, zz],
-                        [zz, g2, zz],
-                        [zz, zz, g3],
-                        [g2, g1, zz],
-                        [g3, zz, g1],
-                        [zz, g3, g2]])
+        out = block([[g1, zz, zz],
+                     [zz, g2, zz],
+                     [zz, zz, g3],
+                     [g2, g1, zz],
+                     [g3, zz, g1],
+                     [zz, g3, g2]])
 
     return out
 
