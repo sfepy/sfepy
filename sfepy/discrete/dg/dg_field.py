@@ -712,15 +712,14 @@ class DGField(Field):
 
         if region is None:
             region = self.region
-            return self.set_volume_dofs(fun, region, dpn, warn)
+            return self.set_cell_dofs(fun, region, dpn, warn)
         elif region.has_cells():
-            return self.set_volume_dofs(fun, region, dpn, warn)
+            return self.set_cell_dofs(fun, region, dpn, warn)
         elif region.kind_tdim == self.dim - 1:
-            nods, vals = self.set_surface_dofs(fun, region, dpn, warn)
+            nods, vals = self.set_facet_dofs(fun, region, dpn, warn)
             return nods, vals
 
-
-    def set_volume_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+    def set_cell_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
         Compute projection of fun onto the basis, in main region, alternatively
         set DOFs directly to provided value or values
@@ -775,7 +774,7 @@ class DGField(Field):
 
         return nods, vals
 
-    def set_surface_dofs(self, fun, region, dpn, warn):
+    def set_facet_dofs(self, fun, region, dpn, warn):
         """
         Compute projection of fun onto the basis, in main region, alternatively
         set DOFs directly to provided value or values
@@ -829,7 +828,6 @@ class DGField(Field):
             # plt.show()
 
         return nods, vals
-
 
     def get_nodal_values(self, dofs, region, ref_nodes=None):
         """
