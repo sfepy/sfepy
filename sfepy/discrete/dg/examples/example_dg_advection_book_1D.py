@@ -23,7 +23,7 @@ from sfepy.base.conf import ProblemConf
 # local imports
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
 # # from dg_equation import Equation
-from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+from dg_tssolver import EulerStepSolver, TVDRK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
@@ -113,9 +113,9 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 # nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 # nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status, post_stage_hook=limiter)
+nls = Newton({}, lin_solver=ls, status=nls_status, post_stage_hook=limiter)
 
-tss = DGTimeSteppingSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
+tss = TVDRK3StepSolver({'t0' : t0, 't1' : t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 pb.set_solver(tss)
 pb.solve()

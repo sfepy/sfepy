@@ -25,7 +25,7 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 # local imports
 from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
 from sfepy.discrete.dg.dg_tssolver import \
-    EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+    EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
@@ -121,9 +121,9 @@ pb.save_state("output/state0_simplex_2D.msh", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
+nls = Newton({}, lin_solver=ls, status=nls_status)
 
-tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 
 #---------

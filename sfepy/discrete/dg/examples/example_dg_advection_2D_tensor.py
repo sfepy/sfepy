@@ -24,7 +24,7 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local import
 from dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-from dg_tssolver import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+from dg_tssolver import EulerStepSolver, TVDRK3StepSolver
 from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
@@ -42,7 +42,7 @@ velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
 max_velo = nm.max(nm.linalg.norm(velo))
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 2
 CFL = .5
 #^^^^^^^^^^^^^^^^#
 
@@ -118,9 +118,9 @@ pb.save_state("output/state0_tensor_2D.msh", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
+nls = Newton({}, lin_solver=ls, status=nls_status)
 
-tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
                                 nls=nls, context=pb, verbose=True)
 
 #---------
