@@ -83,6 +83,12 @@ class Test(TestCommon):
         return ok
 
     def test_projection_iga_fem(self):
+        try:
+            from igakit import igalib
+        except ImportError:
+            self.report('iga-fem projection not-tested (missing igalib module)!')
+            return True
+
         from sfepy.discrete import FieldVariable
         from sfepy.discrete.fem import FEDomain, Field
         from sfepy.discrete.iga.domain import IGDomain

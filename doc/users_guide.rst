@@ -840,6 +840,23 @@ Solver selection::
         'ls' : 'ls',
     }
 
+For the case that a chosen linear solver is not available, it is possible to
+define the ``fallback`` option of the chosen solver which specifies a possible
+alternative::
+
+    solvers = {
+        'ls': ('ls.mumps', {'fallback': 'ls2'}),
+        'ls2': ('ls.scipy_umfpack', {}),
+        'newton': ('nls.newton', {
+            'i_max'      : 1,
+            'eps_a'      : 1e-10,
+        }),
+    }
+
+Another possibility is to use a "virtual" solver that ensures an automatic
+selection of an available solver, see
+`Virtual Linear Solvers with Automatic Selection`_.
+
 Functions
 ^^^^^^^^^
 
@@ -1279,7 +1296,7 @@ as discussed in :ref:`miscellaneous_options`, see `'post_process_hook'` and
     def post_process(out, pb, state, extend=False):
         from sfepy.base.base import Struct
 
-        mu = pb.evaluate('ev_integrate_mat.2.Omega(nonlinear.mu, u)',
+        mu = pb.evaluate('ev_volume_integrate_mat.2.Omega(nonlinear.mu, u)',
                          mode='el_avg', copy_materials=False, verbose=False)
         out['mu'] = Struct(name='mu', mode='cell', data=mu, dofs=None)
 
@@ -1407,6 +1424,21 @@ The following solvers are available:
 See :mod:`sfepy.solvers.ls` for all available *linear* solvers and their
 options.
 
+Virtual Linear Solvers with Automatic Selection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A "virtual" solver can be used in case it is not clear which external linear
+solvers are available. Each "virtual" solver selects the first available solver
+from a pre-defined list.
+
+The following solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   .. <Virtual Solvers with Automatic Fallback>
+    :end-before:    .. </Virtual Solvers with Automatic Fallback>
+
+See :mod:`sfepy.solvers.auto_fallback` for all available *virtual* solvers.
+
 Eigenvalue Problem Solvers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1418,6 +1450,18 @@ The following eigenvalue problem solvers are available:
 
 See :mod:`sfepy.solvers.eigen` for available *eigenvalue problem* solvers and
 their options.
+
+Quadratic Eigenvalue Problem Solvers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following quadratic eigenvalue problem solvers are available:
+
+.. include:: solver_table.rst
+    :start-after:   .. <Quadratic Eigenvalue Problem Solvers>
+    :end-before:    .. </Quadratic Eigenvalue Problem Solvers>
+
+See :mod:`sfepy.solvers.qeigen` for available *quadratic eigenvalue problem*
+solvers and their options.
 
 Optimization Solvers
 ^^^^^^^^^^^^^^^^^^^^

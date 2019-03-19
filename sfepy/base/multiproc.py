@@ -8,8 +8,16 @@ except ImportError:
     use_multiprocessing_mpi = False
 
 try:
-    from multiprocessing import cpu_count
-    use_multiprocessing_proc = cpu_count() > 1
+    import sys
+    if sys.platform.startswith('win'):
+        #
+        # Multiprocessing-proc implementation is currently broken on Windows platform
+        # TBD: Fix (engine.py ??)
+        #
+        use_multiprocessing_proc = False
+    else:
+        from multiprocessing import cpu_count
+        use_multiprocessing_proc = cpu_count() > 1
 except:
     use_multiprocessing_proc = False
 

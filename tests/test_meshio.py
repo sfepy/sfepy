@@ -1,5 +1,6 @@
 # coding=utf8
 from __future__ import absolute_import
+import os
 from sfepy import data_dir
 import six
 
@@ -198,6 +199,12 @@ class Test(TestCommon):
         return sum(oks) == len(oks)
 
     def test_hdf5_meshio(self):
+        try:
+            from igakit import igalib
+        except ImportError:
+            self.report('hdf5_meshio not-tested (missing igalib module)!')
+            return True
+
         import tempfile
         import numpy as nm
         import scipy.sparse as sps
@@ -253,7 +260,7 @@ class Test(TestCommon):
              )
         }
 
-        with tempfile.NamedTemporaryFile(suffix='.h5') as fil:
+        with tempfile.NamedTemporaryFile(suffix='.h5', delete=False) as fil:
             io = HDF5MeshIO(fil.name)
             ts = TimeStepper(0,1.,0.1, 10)
 
@@ -342,6 +349,8 @@ class Test(TestCommon):
             }, ts=ts)
             out3 = io.read_data(2)['cdata']
             assert_(out3[0] is out3[1])
+
+        os.remove(fil.name)
 
         #this property is not restored
         del data['iga'].nurbs.nurbs

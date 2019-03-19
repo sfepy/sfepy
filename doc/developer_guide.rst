@@ -1198,6 +1198,7 @@ sfepy.solvers package
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/solvers/auto_fallback.py
    src/sfepy/solvers/eigen
    src/sfepy/solvers/ls
    src/sfepy/solvers/ls_mumps
@@ -1205,6 +1206,7 @@ sfepy.solvers package
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
    src/sfepy/solvers/oseen
+   src/sfepy/solvers/qeigen
    src/sfepy/solvers/semismooth_newton
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts

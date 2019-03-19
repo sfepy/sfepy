@@ -133,6 +133,7 @@ def petsc_call(call):
 
     return _petsc_call
 
+
 class ScipyDirect(LinearSolver):
     """
     Direct sparse solver from SciPy.
@@ -146,43 +147,44 @@ class ScipyDirect(LinearSolver):
          'The actual solver to use.'),
         ('presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
-        ('warn', 'bool', True, False,
-         'If True, allow warnings.'),
     ]
 
-    def __init__(self, conf, **kwargs):
+    def __init__(self, conf, method=None, **kwargs):
         LinearSolver.__init__(self, conf, solve=None, **kwargs)
         um = self.sls = None
+        if method is None:
+            method = self.conf.method
 
         aux = try_imports(['import scipy.linsolve as sls',
                            'import scipy.splinalg.dsolve as sls',
                            'import scipy.sparse.linalg.dsolve as sls'],
                           'cannot import scipy sparse direct solvers!')
-        self.sls = aux['sls']
-        aux = try_imports(['import scipy.linsolve.umfpack as um',
-                           'import scipy.splinalg.dsolve.umfpack as um',
-                           'import scipy.sparse.linalg.dsolve.umfpack as um',
-                           'import scikits.umfpack as um'])
-        if 'um' in aux:
-            um = aux['um']
-
-        if um is not None:
-            is_umfpack = hasattr(um, 'UMFPACK_OK')
+        if 'sls' in aux:
+            self.sls = aux['sls']
         else:
-            is_umfpack = False
+            raise ValueError('SuperLU not available!')
 
-        method = self.conf.method
-        if method == 'superlu':
-            self.sls.use_solver(useUmfpack=False)
-        elif method == 'umfpack':
-            if not is_umfpack and self.conf.warn:
-                output('umfpack not available, using superlu!')
-        elif method != 'auto':
+        if method in ['auto', 'umfpack']:
+            aux = try_imports([
+                'import scipy.linsolve.umfpack as um',
+                'import scipy.splinalg.dsolve.umfpack as um',
+                'import scipy.sparse.linalg.dsolve.umfpack as um',
+                'import scikits.umfpack as um'])
+
+            is_umfpack = True if 'um' in aux\
+                and hasattr(aux['um'], 'UMFPACK_OK') else False
+            if method == 'umfpack' and not is_umfpack:
+                raise ValueError('UMFPACK not available!')
+        elif method == 'superlu':
+            is_umfpack = False
+        else:
             raise ValueError('uknown solution method! (%s)' % method)
 
-        if method != 'superlu' and is_umfpack:
+        if is_umfpack:
             self.sls.use_solver(useUmfpack=True,
                                 assumeSortedIndices=True)
+        else:
+            self.sls.use_solver(useUmfpack=False)
 
     @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
@@ -202,6 +204,37 @@ class ScipyDirect(LinearSolver):
         if is_new:
             self.solve = self.sls.factorized(mtx)
             self.mtx_digest = mtx_digest
+
+
+class ScipySuperLU(ScipyDirect):
+    """
+    SuperLU - direct sparse solver from SciPy.
+    """
+    name = 'ls.scipy_superlu'
+
+    _parameters = [
+        ('presolve', 'bool', False, False,
+         'If True, pre-factorize the matrix.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        ScipyDirect.__init__(self, conf, method='superlu', **kwargs)
+
+
+class ScipyUmfpack(ScipyDirect):
+    """
+    UMFPACK - direct sparse solver from SciPy.
+    """
+    name = 'ls.scipy_umfpack'
+
+    _parameters = [
+        ('presolve', 'bool', False, False,
+         'If True, pre-factorize the matrix.'),
+    ]
+
+    def __init__(self, conf, **kwargs):
+        ScipyDirect.__init__(self, conf, method='umfpack', **kwargs)
+
 
 class ScipyIterative(LinearSolver):
     """
@@ -737,7 +770,6 @@ class PETScKrylovSolver(LinearSolver):
 class MUMPSSolver(LinearSolver):
     """
     Interface to MUMPS solver.
-
     """
     name = 'ls.mumps'
 
@@ -827,24 +859,35 @@ class MUMPSParallelSolver(LinearSolver):
         def tmpfile(fname):
             return op.join(gettempdir(), fname)
 
-        mtx_coo = mtx.tocoo()
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
+
+        is_sym = self.mumps.coo_is_symmetric(mtx)
+        rr, cc, data = mtx.row + 1, mtx.col + 1, mtx.data
+        if is_sym:
+            idxs = nm.where(cc >= rr)[0]  # upper triangular matrix
+            rr, cc, data = rr[idxs], cc[idxs], data[idxs]
+
         n = mtx.shape[0]
-        nz = mtx_coo.row.shape[0]
-        flags = nm.memmap(tmpfile('vals_falgs.array'), dtype='int32',
-                          mode='w+', shape=(2,))
+        nz = rr.shape[0]
+        flags = nm.memmap(tmpfile('vals_flags.array'), dtype='int32',
+                          mode='w+', shape=(4,))
         flags[0] = n
-        flags[1] = 1 if mtx_coo.data.dtype.name.startswith('complex') else 0
+        flags[1] = 1 if data.dtype.name.startswith('complex') else 0
+        flags[2] = int(is_sym)
+        flags[3] = int(self.conf.verbose)
+
         idxs = nm.memmap(tmpfile('idxs.array'), dtype='int32',
                          mode='w+', shape=(2, nz))
-        idxs[0, :] = mtx_coo.row + 1
-        idxs[1, :] = mtx_coo.col + 1
+        idxs[0, :] = rr
+        idxs[1, :] = cc
 
         dtype = {0: 'float64', 1: 'complex128'}[flags[1]]
         vals_mtx = nm.memmap(tmpfile('vals_mtx.array'), dtype=dtype,
                              mode='w+', shape=(nz,))
         vals_rhs = nm.memmap(tmpfile('vals_rhs.array'), dtype=dtype,
                              mode='w+', shape=(n,))
-        vals_mtx[:] = mtx_coo.data
+        vals_mtx[:] = data
         vals_rhs[:] = rhs
 
         mumps_call = op.join(data_dir, 'sfepy', 'solvers',
@@ -866,7 +909,7 @@ class SchurMumps(MUMPSSolver):
 
     __metaclass__ = SolverMeta
 
-    _parameters = ScipyDirect._parameters + [
+    _parameters = [
         ('schur_variables', 'list', None, True,
          'The list of Schur variables.'),
     ]
@@ -875,6 +918,9 @@ class SchurMumps(MUMPSSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
         import scipy.linalg as sla
+
+        if not isinstance(mtx, sps.coo_matrix):
+            mtx = mtx.tocoo()
 
         system = 'complex' if mtx.dtype.name.startswith('complex') else 'real'
         self.mumps_ls = self.mumps.MumpsSolver(system=system)

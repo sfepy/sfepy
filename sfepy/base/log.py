@@ -15,7 +15,7 @@ import numpy as nm
 
 from sfepy.base.base import sfepy_config_dir, ordered_iteritems
 from sfepy.base.base import output, get_default, set_defaults, Output, Struct
-from sfepy.base.log_plotter import LogPlotter
+from sfepy.base.log_plotter import draw_data, LogPlotter
 
 _msg_no_live = 'warning: log plot is disabled, install matplotlib and' \
     ' multiprocessing'
@@ -69,6 +69,8 @@ def read_log(filename):
     info : dict
         The log plot configuration with subplot numbers as keys.
     """
+    from sfepy.base.base import as_float_or_complex as afc
+
     log = {}
     info = {}
 
@@ -110,7 +112,8 @@ def read_log(filename):
 
         else:
             try:
-                xval, yval = float(ls[1]), float(ls[2])
+                xval = afc(ls[1])
+                yval = afc(ls[2])
 
             except ValueError:
                 continue
@@ -127,8 +130,40 @@ def read_log(filename):
 
     return log, info
 
+def write_log(output, log, info):
+    xlabels, ylabels, yscales, names, plot_kwargs = zip(*info.values())
+    _write_header(output, xlabels, ylabels, yscales, names, plot_kwargs)
+
+    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
+        in ordered_iteritems(info):
+        for ip, name in enumerate(names):
+            xs, ys, vlines = log[name]
+
+            for ir, x in enumerate(xs):
+                output('{}: {}: {:.16e}'.format(name, x, ys[ir]))
+
+                if x in vlines:
+                    output(name + ': -----')
+
+    output('# ended: %s' % time.asctime())
+
+def _write_header(output, xlabels, ylabels, yscales, data_names, plot_kwargs):
+    _fmt = lambda x: '%s' % x if x is not None else ''
+
+    output('# started: %s' % time.asctime())
+    output('# groups: %d' % len(data_names))
+    for ig, names in enumerate(data_names):
+        output('#   %d' % ig)
+        output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
+                    % (_fmt(xlabels[ig]), _fmt(ylabels[ig]),
+                       yscales[ig]))
+        output('#     names: "%s"' % ', '.join(names))
+        output('#     plot_kwargs: "%s"'
+                    % ', '.join('%s' % ii
+                                for ii in plot_kwargs[ig]))
+
 def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
-             show_legends=True):
+             show_legends=True, swap_axes=False):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
@@ -148,6 +183,8 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         The list of data groups subplots. If not given, all groups are plotted.
     show_legends : bool
         If True, show legends in plots.
+    swap_axes : bool
+        If True, swap the axes of the plots.
     """
     import matplotlib.pyplot as plt
 
@@ -188,29 +225,49 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         else:
             ax = axs[ii]
 
-        ax.set_yscale(yscale)
+        if not swap_axes:
+            ax.set_yscale(yscale)
+            for ip, name in enumerate(names):
+                xs, ys, vlines = log[name]
+                draw_data(ax, xs, ys, name, plot_kwargs[ip])
+
+                for x in vlines:
+                    ax.axvline(x, color='k', alpha=0.3)
+
+            if xticks[isub] is not None:
+                ax.set_xticks(xticks[isub])
+
+            else:
+                ax.locator_params(axis='x', nbins=10)
+
+            if yticks[isub] is not None:
+                ax.set_yticks(yticks[isub])
+
+        else:
+            xlabel, ylabel = ylabel, xlabel
+            ax.set_xscale(yscale)
+
+            for ip, name in enumerate(names):
+                xs, ys, vlines = log[name]
+                draw_data(ax, xs, ys, name, plot_kwargs[ip], swap_axes=True)
+
+                for x in vlines:
+                    ax.axhline(x, color='k', alpha=0.3)
+
+            if yticks[isub] is not None:
+                ax.set_xticks(yticks[isub])
+
+            else:
+                ax.locator_params(axis='y', nbins=10)
+
+            if xticks[isub] is not None:
+                ax.set_yticks(yticks[isub])
 
         if xlabel:
             ax.set_xlabel(xlabel)
 
         if ylabel:
             ax.set_ylabel(ylabel)
-
-        for ip, name in enumerate(names):
-            xs, ys, vlines = log[name]
-            ax.plot(xs, ys, label=name, **plot_kwargs[ip])
-
-            for x in vlines:
-                ax.axvline(x, color='k', alpha=0.3)
-
-        if xticks[isub] is not None:
-            ax.set_xticks(xticks[isub])
-
-        else:
-            ax.locator_params(axis='x', nbins=10)
-
-        if yticks[isub] is not None:
-            ax.set_yticks(yticks[isub])
 
         if show_legends:
             ax.legend(loc='best')
@@ -312,16 +369,8 @@ class Log(Struct):
 
         if log_filename is not None:
             self.output = Output('', filename=log_filename)
-            self.output('# started: %s' % time.asctime())
-            self.output('# groups: %d' % n_gr)
-            for ig, names in enumerate(data_names):
-                self.output('#   %d' % ig)
-                self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
-                            % (xlabels[ig], ylabels[ig], yscales[ig]))
-                self.output('#     names: "%s"' % ', '.join(names))
-                self.output('#     plot_kwargs: "%s"'
-                            % ', '.join('%s' % ii
-                                        for ii in self.plot_kwargs[ig]))
+            _write_header(self.output, xlabels, ylabels, yscales, data_names,
+                          self.plot_kwargs)
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
@@ -417,14 +466,12 @@ class Log(Struct):
             self.terminate()
             return
 
+        if save_figure: return
+
         ls = len(args), self.n_arg
         if full and (ls[0] != ls[1]):
-            if kwargs:
-                return
-            else:
-                msg = 'log called with wrong number of arguments! (%d == %d)' \
-                      % ls
-                raise IndexError(msg)
+            msg = 'log called with wrong number of arguments! (%d == %d)' % ls
+            raise IndexError(msg)
 
         for ig in igs:
             if (x_values is not None) and (x_values[ig] is not None):

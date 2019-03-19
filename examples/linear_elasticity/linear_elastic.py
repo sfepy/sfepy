@@ -80,8 +80,8 @@ equations = {
 }
 
 solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton', {
+    'ls': ('ls.auto_direct', {}),
+    'newton': ('nls.newton', {
         'i_max'      : 1,
         'eps_a'      : 1e-10,
     }),

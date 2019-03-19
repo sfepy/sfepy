@@ -276,7 +276,7 @@ def add_stress_p(out, pb, integral, region, vp, data):
 
 
 def compute_mac_stress_part(pb, integral, region, material, vu, mac_strain):
-    avgmat = pb.evaluate('ev_integrate_mat.%s.%s(%s, %s)'
+    avgmat = pb.evaluate('ev_volume_integrate_mat.%s.%s(%s, %s)'
                          % (integral, region, material, vu), verbose=False,
                          mode='el_avg')
 
