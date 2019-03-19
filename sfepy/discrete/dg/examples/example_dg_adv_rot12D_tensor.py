@@ -68,6 +68,7 @@ tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
 print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
+print("CFL coefficient was {0} and order correction {1}".format(CFL, 1/(2*approx_order + 1)))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
 

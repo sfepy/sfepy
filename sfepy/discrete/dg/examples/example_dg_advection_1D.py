@@ -60,9 +60,11 @@ t1 = 1
 dx = (XN - X1) / n_nod
 dt = dx / nm.abs(velo) * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))
+save_timestn = 100
 dtdx = dt / dx
 print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
+print("CFL coefficient was {0} and order correction {1}".format(CFL, 1/(2*approx_order + 1)))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 
 integral = Integral('i', order=approx_order * 2)
@@ -103,10 +105,10 @@ def ic_wrap(x, ic=None):
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
+pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": save_timestn}, ics={},
                                                      ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="output/adv_1D")  # , output_format="msh")
-# pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
+pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
 state0 = pb.get_initial_state()
@@ -139,6 +141,7 @@ tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
 
 # tss = RK4StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
 #                          nls=nls, context=pb, verbose=True)
+
 #---------
 #| Solve |
 #---------
@@ -151,7 +154,7 @@ pb.save_state("output/adv_1D/domain_1D_end.vtk", state=state_end)
 #| Plot |
 #--------
 lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, tn=100, ic=ic_wrap,
+plot1D_DG_sol(lmesh, t0, t1, u, tn=save_timestn, ic=ic_wrap,
               delay=100, polar=False)
 
 from sfepy.discrete.dg.my_utils.visualizer import \
