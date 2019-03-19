@@ -26,7 +26,7 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
 # from sfepy.discrete.dg.dg_equation import Equation
 from sfepy.discrete.dg.dg_tssolver \
-    import EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver
+    import EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
 
 from sfepy.discrete.dg.my_utils.inits_consts \
@@ -65,10 +65,9 @@ meshio.write(outfile, mesh)
 #
 # plt.show()
 
-
 #vvvvvvvvvvvvvvvv#
 approx_order = 0
-CFL = .1
+CFL = 1.
 #^^^^^^^^^^^^^^^^#
 
 velo = nm.array([[-1., 0.]]).T
@@ -149,10 +148,10 @@ pb.save_state("output/state0_simp_12D.msh", state=state0)
 
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-nls = RK3StepSolver({}, lin_solver=ls, status=nls_status)
+nls = Newton({}, lin_solver=ls, status=nls_status)
 
-tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
-                                nls=nls, context=pb, verbose=True)
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                        nls=nls, context=pb, verbose=True)
 
 #---------
 #| Solve |

@@ -23,8 +23,7 @@ from sfepy.base.conf import ProblemConf
 
 # local imports
 from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
-from sfepy.discrete.dg.dg_tssolver import \
-    EulerStepSolver, DGTimeSteppingSolver, RK3StepSolver, RK4StepSolver
+from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver
 from sfepy.discrete.dg.dg_field import DGField
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
@@ -98,7 +97,7 @@ right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
 
 def ic_wrap(x, ic=None):
-    return superic(x)
+    return ghump(x - .3)
 
 
 ic_fun = Function('ic_fun', ic_wrap)
@@ -107,7 +106,7 @@ ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": 100}, ics={},
                                                      ebcs={}, epbcs={}, lcbcs={}, materials={}))
 pb.setup_output(output_dir="output/adv_1D")  # , output_format="msh")
-pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
+# pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
 
 state0 = pb.get_initial_state()
@@ -132,12 +131,14 @@ def limiter(vec):
 #------------------
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
-# nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
-# nls = EulerStepSolver({}, lin_solver=ls, status=nls_status)
-nls = RK4StepSolver({}, lin_solver=ls, status=nls_status) #, post_stage_hook=limiter)
+nls = Newton({'is_linear' : True}, lin_solver=ls, status=nls_status)
 
-tss = DGTimeSteppingSolver({'t0': t0, 't1': t1, 'n_step': tn},
-                                nls=nls, context=pb, verbose=True)
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                         nls=nls, context=pb, verbose=True)
+                        # ,post_stage_hook=limiter)
+
+# tss = RK4StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+#                          nls=nls, context=pb, verbose=True)
 #---------
 #| Solve |
 #---------
