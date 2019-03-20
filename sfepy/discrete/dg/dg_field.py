@@ -43,6 +43,7 @@ def get_raveler(n_el_nod, n_cell):
 
     return ravel
 
+
 def get_cell_facet_gel_name(cell_gel_name):
     """
     Returns name pf the facet geometry for given cell geometry
@@ -66,10 +67,11 @@ class DGField(Field):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-        poly_space_base=None,  approx_order=0, integral=None):
+                 poly_space_base=None,  approx_order=0, integral=None):
         """
         Creates DGField, with Legendre poly space and integral corresponding to
-        approx_order + 1.
+        2*approx_order.
+
         :param name:
         :param dtype:
         :param shape: shape of the problem?

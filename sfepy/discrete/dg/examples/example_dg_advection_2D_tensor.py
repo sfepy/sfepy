@@ -29,7 +29,7 @@ from dg_field import DGField
 
 from my_utils.inits_consts import left_par_q, gsmooth, const_u, ghump, superic
 
-mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
+mesh = gen_block_mesh((1., 1.), (50, 50), (0.5, 0.5))
 outfile = "output/mesh/tens_2D_mesh.vtk"
 meshio = VTKMeshIO(outfile)
 meshio.write(outfile, mesh)
@@ -43,7 +43,7 @@ max_velo = nm.max(nm.linalg.norm(velo))
 
 #vvvvvvvvvvvvvvvv#
 approx_order = 2
-CFL = .5
+CFL = .8
 #^^^^^^^^^^^^^^^^#
 
 t0 = 0
