@@ -16,8 +16,6 @@ class DGMultiStageTS(TimeSteppingSolver):
     """
     Explicit time stepping solver with multistage solve_step
     """
-
-
     __metaclass__ = SolverMeta
     name = "ts.multistaged"
 
@@ -138,10 +136,10 @@ class EulerStepSolver(DGMultiStageTS):
 
         mtx_a = fun_grad(vec_x)
         ls_status = {}
-        # TODO maybe use nls?
+
         vec_dx = lin_solver(vec_r, x0=vec_x,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                            status=ls_status)
+                            status=ls_status) - vec_x
 
         vec_e = mtx_a * vec_dx - vec_r
         lerr = nla.norm(vec_e)
@@ -149,7 +147,7 @@ class EulerStepSolver(DGMultiStageTS):
         output('mtx max {}, min {}, trace {}'
                .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
 
-        vec_x = vec_x - ts.dt * (vec_dx - vec_x)
+        vec_x = vec_x + ts.dt * vec_dx
         vec_x = self.post_stage_hook(vec_x)
 
         return vec_x
@@ -191,7 +189,7 @@ class TVDRK3StepSolver(DGMultiStageTS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x1 = vec_x - ts.dt * (vec_dx - vec_x)
+        vec_x1 = vec_x + ts.dt * (vec_dx - vec_x)
 
         from dg_field import get_unraveler, get_raveler
         unravel = get_unraveler(3, 99)
@@ -204,15 +202,15 @@ class TVDRK3StepSolver(DGMultiStageTS):
         un_vec_x1_lim = unravel(vec_x1)
 
         # ----2nd stage----
-        ts.set_substep_time(1./2. * ts.dt)
-        prestep_fun(ts, vec_x1)
+        # ts.set_substep_time(1./2. * ts.dt)
+        # prestep_fun(ts, vec_x1)
         vec_r = fun(vec_x1)
         mtx_a = fun_grad(vec_x1)
         vec_dx = lin_solver(vec_r, x0=vec_x1,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1))/4
+        vec_x2 = (3 * vec_x + vec_x1 + ts.dt * (vec_dx - vec_x1))/4
 
         un_vec_x2 = unravel(vec_x2)
 
@@ -229,7 +227,7 @@ class TVDRK3StepSolver(DGMultiStageTS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x3 = (vec_x + 2 * vec_x2 - 2*ts.dt * (vec_dx - vec_x2))/3
+        vec_x3 = (vec_x + 2 * vec_x2 + 2*ts.dt * (vec_dx - vec_x2))/3
 
         un_vec_x3 = unravel(vec_x3)
         vec_x3 = self.post_stage_hook(vec_x3)
@@ -284,7 +282,7 @@ class RK4StepSolver(DGMultiStageTS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x1 = vec_x0 + vec_dx
+        vec_x1 = vec_dx - vec_x0
 
         # for debugging
         full_mtx_a = mtx_a.toarray()
@@ -303,7 +301,7 @@ class RK4StepSolver(DGMultiStageTS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x2 = vec_x1 + vec_dx
+        vec_x2 = vec_dx - vec_x1
 
         un_vec_x2 = unravel(vec_x2)
 
@@ -319,7 +317,7 @@ class RK4StepSolver(DGMultiStageTS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x3 = vec_x2 + vec_dx
+        vec_x3 = vec_dx - vec_x2
 
         un_vec_x3 = unravel(vec_x3)
 
@@ -334,7 +332,7 @@ class RK4StepSolver(DGMultiStageTS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x4 = vec_x3 + vec_dx
+        vec_x4 = vec_dx - vec_x3
 
         un_vec_x4 = unravel(vec_x4)
 
