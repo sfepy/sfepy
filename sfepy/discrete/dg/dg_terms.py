@@ -250,7 +250,7 @@ class AdvFluxDGTerm(Term):
                 central = velo[:, None, :] * fc_v_p[:, :, None]/2.
                 upwind = ((1 - alf)/2. * C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
                 facet_fluxes[:, facet_n, n] = nm.sum(fc_n[:, facet_n] *
-                                                     nm.sum((central - upwind) *
+                                                     nm.sum((central + upwind) *
                                                             (fc_b[None, :, 0, facet_n, 0, n] *
                                                              whs[:, facet_n, :])[..., None], axis=1),
                                                      axis=1)
@@ -337,7 +337,8 @@ class AdvFluxDGTerm(Term):
                 plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
                 plt.legend()
 
-        if False:
+        # 2D plots
+        if True:
             import matplotlib.pyplot as plt
             import sfepy.postprocess.plot_cmesh as pc
 
@@ -374,26 +375,26 @@ class AdvFluxDGTerm(Term):
                     {'color': 'b', 'label_global': 6, 'label_local': 8, 'size': 10},  # faces
                     {'color': 'r', 'label_global': 12, 'size': 1},  # cells
                 ])
-            for i in range(n_el_nod):
-                ax = plot_facet_normals(ax, cmesh, facet_fluxes[:, :, i, None] * fc_n, 1, col='r')
+            # for i in range(n_el_nod):
+            #     ax = plot_facet_normals(ax, cmesh, facet_fluxes[:, :, i, None] * fc_n, 1, col='r')
 
-            # ax = plot_facet_normals(ax, cmesh, fc_n, .01, col='m')
+            ax = plot_facet_normals(ax, cmesh, fc_n, .01, col='m')
             plt.show()
 
         out[:] = 0.0
         for i in range(n_el_nod):
             out[:, :, i, 0] = cell_fluxes[:, i, None]
 
-
         status = None
         return status
+
 
 class ScalarDotMGradScalarDGTerm(Term):
     r"""
     Volume dot product of a scalar gradient dotted with a material vector with
     a scalar.
 
-    :Definition:
+    :Definition:100
 
     .. math::
         \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }

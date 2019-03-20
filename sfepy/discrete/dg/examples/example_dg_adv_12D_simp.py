@@ -67,7 +67,7 @@ v = FieldVariable('v', 'test', dgfield, primary_var_name='u')
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
 
-velo = nm.array([[-1., 0.]]).T
+velo = nm.array([[1., 0.]]).T
 a = Material('a', val=[velo])
 StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
                                     u=u, v=v, a=a, mode="grad_virtual")

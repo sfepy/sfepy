@@ -306,8 +306,8 @@ class DGField(Field):
             tqps[..., 0, 0] = qps  # x = 0 + t
             tqps[..., 0, 1] = 0.  # y = 0
             # 1.
-            tqps[..., 1, 0] = 1 + qps  # x = 1 - t
-            tqps[..., 1, 1] = - qps  # y = t
+            tqps[..., 1, 0] = 1 - qps  # x = 1 - t
+            tqps[..., 1, 1] = qps  # y = t
             # 2.
             tqps[..., 2, 0] = 0  # x = 0
             tqps[..., 2, 1] = 1 - qps  # y = 1 - t
@@ -395,6 +395,146 @@ class DGField(Field):
             return facet_bf
         else:
             return facet_bf, whs
+
+    def clear_facet_neighbour_idx(self, region=None):
+        if region is None:
+            self.facet_neighbour_index = {}
+        else:
+            self.facet_neighbour_index.pop(region.name)
+
+    def get_cell_nb_per_facet(self, region):
+        """
+        Returns index of cell neighbours sharing facet, along with local index
+        of the facet within neighbour, puts -1 where there are no neighbours
+        Cashes neighbour index in self.facet_neighbours
+        :param region:
+        :return: shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
+        the second is index of the facet this nb. cell in said nb. cell
+        """
+        if region.name in self.facet_neighbour_index:
+            facet_neighbours = self.facet_neighbour_index[region.name]
+        else:
+            n_cell = self.n_cell
+            dim = self.dim
+            gel = self.gel
+            n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+            cmesh = region.domain.mesh.cmesh
+            cells = region.cells
+
+            facet_neighbours = nm.zeros((n_cell, n_el_facets, 2), dtype=nm.int32)
+
+            c2fi, c2fo = cmesh.get_incident(dim - 1, cells, dim, ret_offsets=True)
+
+            for ic, o1 in enumerate(c2fo[:-1]):  # loop over cells
+                o2 = c2fo[ic + 1]
+
+                c2ci, c2co = cmesh.get_incident(dim, c2fi[o1:o2], dim - 1,
+                                                ret_offsets=True)  # get neighbours per facet of the cell
+                ii = cmesh.get_local_ids(c2fi[o1:o2], dim - 1, c2ci, c2co, dim)
+                fis = nm.c_[c2ci, ii]
+
+                nbrs = []
+                for ifa, of1 in enumerate(c2co[:-1]):  # loop over facets
+                    of2 = c2co[ifa + 1]
+                    if of2 == (of1 + 1):  # facet has only one cell
+                        # Surface facet.
+                        nbrs.append([-1, -1])  # c2ci[of1])  # append no neighbours
+                    else:
+                        if c2ci[of1] == cells[ic]:  # do not append the cell itself
+                            nbrs.append(fis[of2 - 1])
+                        else:
+                            nbrs.append(fis[of1])
+                facet_neighbours[ic, :, :] = nbrs
+
+            self.facet_neighbour_index[region.name] = facet_neighbours
+
+        return facet_neighbours
+
+    def get_both_facet_qp_vals(self, dofs, region):
+        """
+        Computes values of the variable represented by dofs in
+        quadrature points located at facets, returns both values -
+        inner and outer, along with weights.
+        :param dofs:
+        :param region:
+        :return:
+        """
+        facet_bf, whs = self.get_facet_base()
+
+        # facet_bf = facet_bf[:, 0, :, 0, :].T
+        inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
+        inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
+
+        outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
+        per_facet_neighbours = self.get_cell_nb_per_facet(region)
+        facet_vols = self.get_facet_vols(region, per_facet_neighbours)
+        whs = facet_vols * whs[None, :, :, 0]
+
+        ghost_nbrs = nm.where(per_facet_neighbours < 0)
+
+        if self.dim == 1:  # periodic boundary conditions in 1D
+            per_facet_neighbours[0, 0] = [-1, 1]
+            per_facet_neighbours[-1, 1] = [0, 0]
+
+        for facet_n in range(self.n_el_facets):
+            outer_facet_vals[:, facet_n, :] = nm.sum(
+                dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
+                facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
+
+        if self.dim > 1:
+            outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
+
+
+        return inner_facet_vals, outer_facet_vals, whs
+
+    def get_cell_normals_per_facet(self, region):
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        cmesh = region.domain.mesh.cmesh
+        cells = region.cells
+
+        normals = cmesh.get_facet_normals()
+        if dim == 1:
+            normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0]/2))
+        normals_out = nm.zeros((n_cell, n_el_facets, dim))
+
+        c2f = cmesh.get_conn(dim, dim - 1)
+        for ic, o1 in enumerate(c2f.offsets[:-1]):
+            o2 = c2f.offsets[ic + 1]
+            for ifal, ifa in enumerate(c2f.indices[o1:o2]):
+                normals_out[ic, ifal] = normals[o1 + ifal]
+
+        return normals_out
+
+    def get_facet_vols(self, region, per_facet_neighbours):
+        n_cell = self.n_cell
+        dim = self.dim
+        gel = self.gel
+        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
+
+        cmesh = region.domain.mesh.cmesh
+        cells = region.cells
+
+        if dim == 1:
+            vols = nm.ones((cmesh.num[0], 1))
+            vols[:, 0] = nm.tile([1, 1], int(vols.shape[0] / 2))
+        else:
+            vols = cmesh.get_volumes(self.dim - 1)[:, None]
+
+        vols_out = nm.zeros((n_cell, n_el_facets, 1))
+
+        c2f = cmesh.get_conn(dim, dim - 1)
+
+        for ic, o1 in enumerate(c2f.offsets[:-1]):
+            o2 = c2f.offsets[ic + 1]
+            for ifal, ifa in enumerate(c2f.indices[o1:o2]):
+                vols_out[ic, ifal] = vols[ifa]
+
+        return vols_out
 
     def get_data_shape(self, integral, integration='volume', region_name=None):
         """
@@ -536,6 +676,7 @@ class DGField(Field):
         return out
 
     def get_nbrhd_dofs(self, region, variable):
+
         n_el_nod = self.n_el_nod
         n_cell = self.n_cell
         dim = self.dim
@@ -551,155 +692,13 @@ class DGField(Field):
 
         ghost_nbrs = nm.where(neighbours < 0)
 
-        # TODO treat boundary conditions
-        if dim == 1:  # periodic boundary conditions in 1D
-             neighbours[0, 0] = -1
-             neighbours[-1, 1] = 0
+        if dim == 1:
+            neighbours[0, 0] = -1
+            neighbours[-1, 1] = 0
         nb_dofs[:] = nm.take(dofs, neighbours, axis=0)
         # nb_dofs[ghost_nbrs] = self.boundary_val
 
         return nb_dofs, nb_normals
-
-    def clear_facet_neighbour_idx(self, region=None):
-        if region is None:
-            self.facet_neighbour_index = {}
-        else:
-            self.facet_neighbour_index.pop(region.name)
-
-    def get_cell_nb_per_facet(self, region):
-        """
-        Returns index of cell neighbours sharing facet, along with local index
-        of the facet within neighbour, puts -1 where there are no neighbours
-        Cashes neighbour index in self.facet_neighbours
-        :param region:
-        :return: shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
-        the second is index of the facet this nb. cell in said nb. cell
-        """
-        if region.name in self.facet_neighbour_index:
-            facet_neighbours = self.facet_neighbour_index[region.name]
-        else:
-            n_cell = self.n_cell
-            dim = self.dim
-            gel = self.gel
-            n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
-
-            cmesh = region.domain.mesh.cmesh
-            cells = region.cells
-
-            facet_neighbours = nm.zeros((n_cell, n_el_facets, 2), dtype=nm.int32)
-
-            c2fi, c2fo = cmesh.get_incident(dim - 1, cells, dim, ret_offsets=True)
-
-            for ic, o1 in enumerate(c2fo[:-1]):  # loop over cells
-                o2 = c2fo[ic + 1]
-
-                c2ci, c2co = cmesh.get_incident(dim, c2fi[o1:o2], dim - 1,
-                                                ret_offsets=True)  # get neighbours per facet of the cell
-                ii = cmesh.get_local_ids(c2fi[o1:o2], dim - 1, c2ci, c2co, dim)
-                fis = nm.c_[c2ci, ii]
-
-                nbrs = []
-                for ifa, of1 in enumerate(c2co[:-1]):  # loop over facets
-                    of2 = c2co[ifa + 1]
-                    if of2 == (of1 + 1):  # facet has only one cell
-                        # Surface facet.
-                        nbrs.append([-1, -1])  # c2ci[of1])  # append no neighbours
-                    else:
-                        if c2ci[of1] == cells[ic]:  # do not append the cell itself
-                            nbrs.append(fis[of2 - 1])
-                        else:
-                            nbrs.append(fis[of1])
-                facet_neighbours[ic, :, :] = nbrs
-
-            self.facet_neighbour_index[region.name] = facet_neighbours
-
-        return facet_neighbours
-
-    def get_both_facet_qp_vals(self, dofs, region):
-        """
-        Computes values of the variable represented by dofs in
-        quadrature points located at facets, returns both values -
-        inner and outer, along with weights.
-        :param dofs:
-        :param region:
-        :return:
-        """
-        facet_bf, whs = self.get_facet_base()
-
-        # facet_bf = facet_bf[:, 0, :, 0, :].T
-        inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
-        inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
-
-        outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
-        per_facet_neighbours = self.get_cell_nb_per_facet(region)
-        facet_vols = self.get_facet_vols(region, per_facet_neighbours)
-        whs = facet_vols * whs[None, :, :, 0]
-
-        ghost_nbrs = nm.where(per_facet_neighbours < 0)
-
-        if self.dim == 1:  # periodic boundary conditions in 1D
-            per_facet_neighbours[0, 0] = [-1, 1]
-            per_facet_neighbours[-1, 1] = [0, 0]
-
-        for facet_n in range(self.n_el_facets):
-            outer_facet_vals[:, facet_n, :] = nm.sum(
-                dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
-                facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
-
-        if self.dim > 1:
-            # TODO treat boundary conditions more comprehensively
-            outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
-
-
-        return inner_facet_vals, outer_facet_vals, whs
-
-    def get_cell_normals_per_facet(self, region):
-        n_cell = self.n_cell
-        dim = self.dim
-        gel = self.gel
-        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
-
-        cmesh = region.domain.mesh.cmesh
-        cells = region.cells
-
-        normals = cmesh.get_facet_normals()
-        if dim == 1:
-            normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0]/2))
-        normals_out = nm.zeros((n_cell, n_el_facets, dim))
-
-        c2f = cmesh.get_conn(dim, dim - 1)
-        for ic, o1 in enumerate(c2f.offsets[:-1]):
-            o2 = c2f.offsets[ic + 1]
-            for ifal, ifa in enumerate(c2f.indices[o1:o2]):
-                normals_out[ic, ifal] = normals[o1 + ifal]
-
-        return normals_out
-
-    def get_facet_vols(self, region, per_facet_neighbours):
-        n_cell = self.n_cell
-        dim = self.dim
-        gel = self.gel
-        n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
-
-        cmesh = region.domain.mesh.cmesh
-        cells = region.cells
-
-        if dim == 1:
-            vols = nm.ones((cmesh.num[0], 1))
-            vols[:, 0] = nm.tile([1, 1], int(vols.shape[0] / 2))
-        else:
-            vols = cmesh.get_volumes(self.dim - 1)[:, None]
-
-        vols_out = nm.zeros((n_cell, n_el_facets, 1))
-
-        c2f = cmesh.get_conn(dim, dim - 1)
-
-        for ic, o1 in enumerate(c2f.offsets[:-1]):
-            o2 = c2f.offsets[ic + 1]
-            for ifal, ifa in enumerate(c2f.indices[o1:o2]):
-                vols_out[ic, ifal] = vols[ifa]
-
-        return vols_out
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
