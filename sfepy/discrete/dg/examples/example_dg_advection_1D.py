@@ -36,7 +36,7 @@ from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 domain_name = "domain_1D"
 output_folder = "output/adv_1D/"
 output_folder_mesh = "output/mesh"
-save_timesn = 100
+save_timestn = 100
 
 
 #------------
@@ -44,7 +44,7 @@ save_timesn = 100
 #------------
 X1 = 0.
 XN = 1.
-n_nod = 100
+n_nod = 20
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
@@ -77,7 +77,7 @@ right = domain.create_region('Gamma2',
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
-u = FieldVariable('u', 'unknown', field)  #, history=1)
+u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 
@@ -85,7 +85,7 @@ MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
 
 velo = 1.0
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, v, u)", "a.val, u, v", integral, omega,
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, v, u)", "a.val, u[-1], v", integral, omega,
                                     u=u, v=v, a=a)
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
@@ -132,10 +132,10 @@ limiter = Moment1DLimiter(field.n_el_nod, field.n_cell)
 #---------------------------
 #| Set time discretization |
 #---------------------------
-CFL = .5
+CFL = .4
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = 1
+t1 = .2
 dx = (XN - X1) / n_nod
 dt = dx / nm.abs(velo) * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))
@@ -185,7 +185,7 @@ pb.save_state("output/adv_1D/domain_1D_end.vtk", state=state_end)
 #| Plot 1D|
 #----------
 lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, tn=save_timestn, ic=ic_wrap,
+plot1D_DG_sol(lmesh, t0, t1, u, tn=30, ic=ic_wrap,
               delay=100, polar=False)
 
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler

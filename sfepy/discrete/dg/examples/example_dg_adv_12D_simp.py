@@ -20,6 +20,7 @@ from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.mesh.mesh_tools import triangulate
 from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
+
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local imports
@@ -42,7 +43,7 @@ save_timesn = 100
 #------------
 #| Get mesh |
 #------------
-mesh = gen_block_mesh((1., 1.), (20, 2), (.5, 0.5))
+mesh = gen_block_mesh((1., 1.), (20, 3), (.5, 0.5))
 mesh = triangulate(mesh)
 outfile = "output/mesh/simp_12D_mesh.vtk"
 ensure_path(outfile)
@@ -54,7 +55,7 @@ meshio.write(outfile, mesh)
 #| Create problem components |
 #-----------------------------
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 0
 #^^^^^^^^^^^^^^^^#
 integral = Integral('i', order=5)
 domain = FEDomain('domain_simplex_12D', mesh)
@@ -129,7 +130,7 @@ pb.save_state("output/state0_simp_12D.msh", state=state0)
 CFL = .4
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = .1
+t1 = .2
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / norm(velo) * CFL/(2*approx_order + 1)
 # time_steps_N = int((tf - t0) / dt) * 2
@@ -142,11 +143,11 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 nls = Newton({}, lin_solver=ls, status=nls_status)
 
-tss = EulerStepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-                        nls=nls, context=pb, verbose=True)
+# tss = EulerStepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+#                         nls=nls, context=pb, verbose=True)
 
-# tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-#                          nls=nls, context=pb, verbose=True)
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                         nls=nls, context=pb, verbose=True)
 
 
 #---------

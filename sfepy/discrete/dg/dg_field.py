@@ -7,17 +7,17 @@ import six
 
 
 # sfepy imports
-from sfepy.base.base import assert_, basestr, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete import Integral, FieldVariable
 from six.moves import range
 from sfepy.discrete.fem import Mesh, Field
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.mappings import VolumeMapping
-
+from sfepy.base.base import (get_default, output, assert_,
+                             Struct, basestr, IndexedStruct)
 
 # local imports
-from dg_basis import LegendrePolySpace, LegendreSimplexPolySpace, LegendreTensorProductPolySpace
+from sfepy.discrete.dg.dg_basis import LegendrePolySpace, LegendreSimplexPolySpace, LegendreTensorProductPolySpace
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -827,6 +827,11 @@ class DGField(Field):
             # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals.T[..., None, None])
             # plt.plot(xx, ww[:, 0], label="reconstructed dofs")
             # plt.show()
+
+            # FIXME - this is only for testing
+            # output("DGField {} Setting IC to testing: vals[4, 0] = 1., zero elsewhere".format(self.family_name))
+            # vals[:] = 0
+            # vals[8:12, 0] = 1.
 
         return nods, vals
 

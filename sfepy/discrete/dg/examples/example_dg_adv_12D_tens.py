@@ -129,7 +129,7 @@ pb.save_state("output/state0_tens_12D.msh", state=state0)
 CFL = .4
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = .1
+t1 = .2
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / norm(velo) * CFL/(2*approx_order + 1)
 # time_steps_N = int((tf - t0) / dt) * 2
@@ -142,15 +142,11 @@ ls = ScipyDirect({})
 nls_status = IndexedStruct()
 nls = Newton({}, lin_solver=ls, status=nls_status)
 
-tss = EulerStepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-                        nls=nls, context=pb, verbose=True)
+# tss = EulerStepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+#                         nls=nls, context=pb, verbose=True)
 
-# tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-#                          nls=nls, context=pb, verbose=True)
-
-
-# tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-#                          nls=nls, context=pb, verbose=True)
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                         nls=nls, context=pb, verbose=True)
 
 
 #---------
