@@ -19,7 +19,7 @@ from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
+from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
@@ -85,7 +85,7 @@ a = Material('a', val=[velo])
 StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, v, u)", "a.val, u[-1], v", integral, omega,
                                     u=u, v=v, a=a)
 
-FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
+FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a, alpha=0.0)
 
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])

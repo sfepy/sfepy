@@ -24,7 +24,7 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 
 # local import
-from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm, ScalarDotMGradScalarDGTerm
+from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm
 from sfepy.discrete.dg.dg_tssolver import \
     EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
@@ -85,7 +85,7 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
 
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarDGTerm("adv_stiff(a.val, u, v)", "a.val, u, v", integral, omega,
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", integral, omega,
                                     u=u, v=v, a=a, mode="grad_virtual")
 
 FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
