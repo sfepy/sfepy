@@ -1,5 +1,164 @@
 # created: 20.07.2007 (-1)
 
+.. _2018.4-2019.1:
+
+from 2018.4 to 2019.1
+=====================
+
+- merge branch 'change-complex-output-names'
+
+  - update convert_complex_output(): convert name into real.name, imag.name
+
+- merge branch 'evp-gallery'
+
+  - update EVPSolverApp.call() to return (problem, evp) tuple
+  - script/gen_gallery.py: make is_scalar_bar configurable in custom views
+  - script/gen_gallery.py: update generate_images() for eigenvalue problems
+  - script/gen_gallery.py: add custom views for quantum examples
+  - add single line descriptions to quantum examples
+
+- merge branch 'plot-log-swap-axes'
+
+  - add swap_axes argument to plot_log()
+  - script/plot_logs.py: new --swap-axes option
+  - new draw_data(), update LogPlotter.process_command()
+  - update read_log(), plot_log() for complex data - use draw_data()
+  - improve log header saving with empty axes labels in Log.__init__()
+
+- merge branch 'dispersion-kappa-mode'
+
+  - dispersion_analysis.py: fix kappa mode - mask non-physical eigenmodes - fix
+    saving eigenvectors
+  - dispersion_analysis.py: support logging standard waves in kappa mode - log
+    plot: use viridis colormap, plot points only
+  - dispersion_analysis.py: update logging in omega mode according to kappa
+    mode
+  - dispersion_analysis.py: allow empty regions
+  - dispersion_analysis.py: output eigenvalue indices
+  - dispersion_analysis.py: update docstring, change default range
+  - new square_1m.mesh, square_2m.mesh for kappa mode
+
+- merge branch 'update-import-file'
+
+  - explicitly name path to remove in import_file()
+
+- merge pull request #493 from vlukes/vtk_point_probe
+
+  - new VTK point probe
+
+- merge pull request #495 from bubulk/tests-fix
+
+  - Misc ASV data changes.
+  - Removed ASV data.
+  - Add tests for missing igalib module to tests suite.
+  - "Fixed" NamedTemporyryFile behaviour on windows platform.
+  - Fix py27/win64/numpy numpy.array.shape[] type inconsistency (int-long).
+  - Add fix for broken multipocessing implementation on windows platform.
+  - Updated appveryor.yml
+  - Fixed appveryor.yml #2
+  - Updated appveryor.yml (#3): trying to fix IGAkit build.
+
+- merge pull request #482 from {vlukes,rc}/update_linear_solvers
+
+  - update MUMPS solver: consider matrix symmetry, verbose flag, ...
+  - update linear direct solvers: new scipy_superlu, scipy_umfpack
+  - new 'fallback' option to linear solvers, new 'auto_direct' solver
+  - update examples: use fallback option and AutoDirect/AutoIterative solvers
+  - update doc: new "virtual" solver and fallback option
+  - fix ls.schur_mumps: convert matrix to COO format
+  - rename ls_fallback() -> use_first_available(), improve failure reporting
+
+- merge pull request #499 from rc/block-compat
+
+  - add block() from NumPy 1.14.1 to compat.py
+  - use block() in _build_cauchy_strain_op()
+
+- merge pull request #500 from rc/surface-integrate-mat-term
+
+  - new IntegrateSurfaceMatTerm (ev_surface_integrate_mat)
+  - fix docstring of IntegrateMatTerm
+  - new alias of ev_integrate_mat: IntegrateVolumeMatTerm
+    (ev_volume_integrate_mat)
+  - rename IntegrateMatTerm -> IntegrateVolumeMatTerm (remove the alias) -
+    ev_integrate_mat -> ev_volume_integrate_mat
+  - update for ev_volume_integrate_mat
+  - docs: update users guide for ev_volume_integrate_mat
+
+- merge pull request #501 from vlukes/update_micmac
+
+  - update get_correctors_from_file() - allow corrector file names to be
+    different from corrector names
+
+- merge pull request #502 from bubulk/fix-c-defs
+
+  - Removed "obsolete" (and trouble-making) __SDIR__ C pre-processor cmd line
+    defs.
+
+- merge branch 'update-show-authors'
+
+  - fix script/show_authors.py for unicode, update for several names
+
+- merge branch 'write-log'
+
+  - new write_log()
+  - move header writing from write_log() to new _write_header() - update
+    Log.__init__()
+  - new tests/test_log.py - new test_log_create(), test_log_rw()
+
+- merge branch 'fix-log-plot-kwargs'
+
+  - fix saving plot kwargs in Log.__init__()
+  - update test_log_create()
+
+- merge branch 'quadratic-evp'
+
+  - new sfepy/solvers/qeigen.py: QuadraticEVPSolver, LQuadraticEVPSolver - new
+    standard_call()
+  - update solver_table
+  - update script/gen_solver_table.py
+  - docs: update users guide
+  - docs: sync module index of developer guide with current sources
+  - dispersion_analysis.py: update for LQuadraticEVPSolver
+  - dispersion_analysis.py: move _max_diff_csr() to sfepy/linalg/utils.py
+  - add debug parameter to LQuadraticEVPSolver
+  - move QuadraticEVPSolver into sfepy/solvers/solvers.py
+
+- merge branch 'dispersion-split'
+
+  - dispersion_analysis.py: move assembling to new assemble_matrices()
+  - dispersion_analysis.py: put coefficients other than omega, kappa into
+    equations
+  - dispersion_analysis.py: remove _le suffix from problem-dependent functions
+  - dispersion_analysis.py: update symmetry checks in assemble_matrices()
+
+- merge branch 'quadratic-evp-status'
+
+  - update LQuadraticEVPSolver to store matrix info in status in debug mode
+  - update LQuadraticEVPSolver to store solution errors in status in debug mode
+
+- merge branch 'dispersion-generalize'
+
+  - dispersion_analysis.py: use new build_evp_matrices() - assemble_matrices()
+    returns dict of blocks
+  - dispersion_analysis.py: use new process_eigs()
+  - dispersion_analysis.py: set output_dir to problem in assemble_matrices()
+  - dispersion_analysis.py: set wave vector direction using material function -
+    new get_wdir() - update define(), set_wave_dir(), assemble_matrices()
+  - dispersion_analysis.py: use new setup_n_eigs()
+  - dispersion_analysis.py: update, rename process_eigs() ->
+    process_evp_results()
+  - fix Term.get_str() for complex coefficients
+  - do not check argument count when saving figures in Log.__call__()
+
+- merge branch 'lin-convect2-term'
+
+  - new LinearConvect2Term (dw_lin_convect2)
+
+- merge pull request #503 from vlukes/update_homog
+
+  - update homog. app - call setup_options() properly
+  - update CorrEval
+
 .. _2018.3-2018.4:
 
 from 2018.3 to 2018.4
