@@ -1,7 +1,12 @@
 import numpy as nm
-from sfepy.terms.terms import Term
 
-from dg_field import get_unraveler, get_raveler
+
+# sfepy imports
+from sfepy.terms.terms import Term, terms
+from sfepy.base.base import (get_default, output, assert_,
+                             Struct, basestr, IndexedStruct)
+
+from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 
 
 def unravel_sol(state):
@@ -188,62 +193,103 @@ class AdvFluxDGTerm1D(Term):
         return status
 
 
-class AdvFluxDGTerm(Term):
+class AdvectDGFluxTerm(Term):
+    r"""
+    Lax-Friedrichs flux term for advection of scalar quantity :math:`p` with the advection velocity
+    :math:`\ul{a}` given as a material parameter (a known function of space and time).
 
-    def __init__(self, integral, region, u=None, v=None, a=lambda x: 1, alpha=0.0):
-        """
+    Part of the discretization of
+        math::
 
-        :param integral:
-        :param region:
-        :param u:
-        :param v:
-        :param a: advection speed
-        :param alpha: regulates transition between purely central and upwind scheme, 0 for upwind, 1 for central
-        """
-        Term.__init__(self, "adv_lf_flux(a.val, v, u)", "a.val, v, u", integral, region, u=u, v=v, a=a)
-        self.u = u
-        self.v = v
-        self.a = a
-        self.alf = alpha
-        self.setup()
 
+
+    Is residual only! Use with state variable history [-1].
+
+    :Definition:
+
+    .. math::
+
+        \int_{\partial{T_K}} \vec{n} \cdot f^{*} (p_{in}, p_{out})\cdot q
+
+        where
+            f^{*}(p_{in}, p_{out}) =  \vec{a}  \frac{p_{in} + p_{out}}{2}  + (1 - \alpha) \vec{n}
+            C \frac{ p_{in} - p_{out}}{2},
+
+        $\alpha \in [0, 1]$, $\alpha = 0$ for upwind scheme, $\alpha = 1$ for central scheme,  and
+
+            C = \max_{u \in [?, ?]} \abs{n_x \pdiff{a_1}{u} + n_y \pdiff{a_2}{u}}
+
+        the $p_{in}$ resp. $p_{out}$ is solution on the boundary of the element provided
+        by element itself resp. its neighbor and a is advection velocity.
+
+    :Arguments 1:
+        - material : :math:`\ul{a}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 3:
+        - material    : :math:`\ul{a}`
+        - virtual     : :math:`q`
+        - state       : :math:`p`
+        - opt_material : :math: `\alpha`
+    """
+
+    alf = 0
     name = "dw_dg_advect_laxfrie_flux"
     modes = ("weak",)
-    arg_types = ('material', 'virtual', 'state')
-    arg_shapes = {'material': 'D, 1',
-                  'virtual': 1,  #('D', 'state'),
-                  'state': 1}
-    symbolic = {'expression' : 'grad(a*u)',
-                'map': {'u': 'state', 'a': 'material'}
-    }
+    arg_types = ('opt_material', 'state', 'virtual', 'material_advelo')
 
-    def get_fargs(self, a, test, state,
+    arg_shapes = [{'opt_material': '1, 1',
+                  'material_advelo': 'D, 1',
+                  'virtual': 1,  #('D', 'state'),
+                  'state': 1
+                  },
+                {'opt_material': None}]
+    # symbolic = {'expression' : 'div(a*u)',
+    #             'map': {'u': 'state', 'a': 'material'}
+    # }
+
+    def get_fargs(self, alpha, state, test, advelo,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
-        if diff_var is not None:
-            # TODO maybe it makes sense to have this evaluate in matrix mode, use u[-1], like with StiffT
-            # do not eval in matrix mode, we however still need
-            # this term to have diff_var in order for it to receive the values
-            doeval = False
-            dofs = unravel_sol(state)
-            return dofs, None, None, None, a[:, 0, :, 0], doeval, 0, 0
-        else:
-            doeval = True
+        if alpha is not None:
+            # FIXME this is only hotfix to get scalar!
+            self.alf = nm.max(alpha) # extract alpha value regardless of shape
 
+        if diff_var is not None:
+            output("Diff var is not None in residual only term {} ! Skipping.".format(sefl.name))
+            return None, None, None, None, None, advelo[:, 0, :, 0], 0
+        else:
             field = state.field
             region = field.region
+
+            if not "DG" in field.family_name:
+                raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
             dofs = unravel_sol(state)
             cell_normals = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
-            inner_facet_qp_vals, outer_facet_qp_vals, whs = field.get_both_facet_qp_vals(dofs, region)
+            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
 
-            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals, facet_base_vals, whs,  cell_normals, a[:, 0, :, 0], doeval)
+            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals,
+                     facet_base_vals, weights, cell_normals, advelo[:, 0, :, 0])
             return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, dofs, in_fc_v, out_fc_v, fc_b, whs, fc_n, velo, doeval):
-        if not doeval:
+    def function(self, out, dofs, in_fc_v, out_fc_v, fc_b, whs, fc_n, advelo):
+        """
+
+        :param out:
+        :param dofs: NOT necessary but was good for debugging, shape = (n_cell, n_el_nod)
+        :param in_fc_v: inner values for facets per cell, shape = (n_cell, n_el_faces, 1)
+        :param out_fc_v: outer values for facets per cell, shape = (n_cell, n_el_faces, 1)
+        :param fc_b: values of basis in facets qps, shape = (1, n_el_facet, n_qp)
+        :param whs: weights of the qps on facets, shape = (n_cell, n_el_facet, n_qp
+        :param fc_n: facet normals, shape = (n_cell, n_el_facets)
+        :param advelo: advection velocity, shape = (n_cell, 1)
+        :return:
+        """
+        if dofs is None:
             out[:] = 0.0
             return None
 
@@ -251,23 +297,26 @@ class AdvFluxDGTerm(Term):
         n_el_nod = dofs.shape[1]
         n_el_facets = fc_n.shape[-2]
         #  Calculate integrals over facets representing Lax-Friedrichs fluxes
-        C = nm.abs(nm.sum(fc_n * velo[:, None, :], axis=-1))[:, None]
+        C = nm.abs(nm.sum(fc_n * advelo[:, None, :], axis=-1))[:, None]
         facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
         for facet_n in range(n_el_facets):
-            for n in range(n_el_nod):
+            for mode_n in range(n_el_nod):
                 fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
                 fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
-                central = velo[:, None, :] * fc_v_p[:, :, None]/2.
+                central = advelo[:, None, :] * fc_v_p[:, :, None] / 2.
                 upwind = ((1 - self.alf)/2. * C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
-                facet_fluxes[:, facet_n, n] = nm.sum(fc_n[:, facet_n] *
+
+                facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
                                                      nm.sum((central + upwind) *
-                                                            (fc_b[None, :, 0, facet_n, 0, n] *
+                                                            (fc_b[None, :, 0, facet_n, 0, mode_n] *
                                                              whs[:, facet_n, :])[..., None], axis=1),
                                                      axis=1)
+
         cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
         # 1D plots
         if False:
+            # TODO remove 1D plots
             from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
             import matplotlib.pyplot as plt
             x = self.region.domain.mesh.coors
@@ -306,14 +355,14 @@ class AdvFluxDGTerm(Term):
             # plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
             # plt.legend()
 
-            for n in range(n_el_nod):
-                plt.figure("Flux {}".format(n))
+            for mode_n in range(n_el_nod):
+                plt.figure("Flux {}".format(mode_n))
                 fig = plt.gcf()
                 fig.clear()
                 plt.plot(xx, ww[:, 0], label="recon")
                 plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(x[:-1], facet_fluxes[:, 0, n], marker=">", label="flux {} left".format(n), color="b", ls="")
-                plt.plot(x[1:], facet_fluxes[:, 1,  n], marker=">", label="flux {} right".format(n), color="r", ls="")
+                plt.plot(x[:-1], facet_fluxes[:, 0, mode_n], marker=">", label="flux {} left".format(mode_n), color="b", ls="")
+                plt.plot(x[1:], facet_fluxes[:, 1,  mode_n], marker=">", label="flux {} right".format(mode_n), color="r", ls="")
 
 
                 # Plot mesh
@@ -328,13 +377,13 @@ class AdvFluxDGTerm(Term):
 
             # plt.show()
 
-            for n in range(n_el_nod):
-                plt.figure("Flux {}".format(n))
+            for mode_n in range(n_el_nod):
+                plt.figure("Flux {}".format(mode_n))
                 fig = plt.gcf()
                 fig.clear()
                 plt.plot(xx, ww[:, 0], label="recon")
                 plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(X, cell_fluxes[:, n], marker="D", label="cell flux {}".format(n), color="r", ls="")
+                plt.plot(X, cell_fluxes[:, mode_n], marker="D", label="cell flux {}".format(mode_n), color="r", ls="")
 
 
                 # Plot mesh
@@ -349,6 +398,7 @@ class AdvFluxDGTerm(Term):
 
         # 2D plots
         if False:
+            # TODO remove 2D plots
             import matplotlib.pyplot as plt
             import sfepy.postprocess.plot_cmesh as pc
 

@@ -2,13 +2,12 @@ import numpy as nm
 import matplotlib.pyplot as plt
 
 # sfepy imports
-from sfepy.discrete.fem import Mesh
+from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
@@ -22,7 +21,7 @@ from sfepy.base.conf import ProblemConf
 
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm
+from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
@@ -88,7 +87,8 @@ a = Material('a', val=[velo])
 StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, v, u)", "a.val, u[-1], v", integral, omega,
                                     u=u, v=v, a=a)
 
-FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a, alpha=0.0)
+alpha = Material('alpha', val=[.0])
+FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "alpha.val, u[-1], v, a.val", integral, omega, u=u, v=v, a=a, alpha=alpha)
 
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
