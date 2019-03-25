@@ -24,7 +24,7 @@ from sfepy.base.ioutils import ensure_path
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvFluxDGTerm
+from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 # from sfepy.discrete.dg.dg_equation import Equation
 from sfepy.discrete.dg.dg_tssolver \
     import EulerStepSolver, TVDRK3StepSolver
@@ -73,7 +73,8 @@ a = Material('a', val=[velo])
 StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", integral, omega,
                                     u=u, v=v, a=a, mode="grad_virtual")
 
-FluxT = AdvFluxDGTerm(integral, omega, u=u, v=v, a=a)
+alpha = Material('alpha', val=[.0])
+FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "alpha.val, u[-1], v, a.val", integral, omega, u=u, v=v, a=a, alpha=alpha)
 
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
