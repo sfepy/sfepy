@@ -1,6 +1,10 @@
 News
 ====
 
+* **26.03.2019** Version 2019.1 released (automatic fallback for linear
+  solvers, quadratic eigenvalue problem solver, etc.), see :ref:`release notes
+  <2018.4-2019.1>`.
+
 * **27.12.2018** Version 2018.4 released (better support for eigenvalue
   problems, improved MUMPS solver interface, support for logging and plotting
   of complex values, etc.), see :ref:`release notes <2018.3-2018.4>`.
@@ -21,10 +25,5 @@ News
   (elastodynamics), incompressible Mooney-Rivlin material model
   (hyperelasticity) as a script, etc.), see :ref:`release notes
   <2017.4-2018.1>`.
-
-* **29.12.2017** Version 2017.4 released (basic support for penalty-based
-  contacts, support for user-defined contexts in all solvers and
-  preconditioners, new example: dispersion analysis of heterogeneous periodic
-  materials, etc.), see :ref:`release notes <2017.3-2017.4>`.
 
 For historians: see :ref:`archived_news`.
