@@ -248,6 +248,10 @@ class ShapeDim(CorrMiniApp):
         corr_sol = CorrSolution(name=self.name,
                                 states=pis,
                                 components=clist)
+
+        self.save(corr_sol, problem,
+                  variables=problem.create_variables([self.variables[0]]))
+
         return corr_sol
 
 class OnesDim(CorrMiniApp):
@@ -273,6 +277,9 @@ class OnesDim(CorrMiniApp):
         corr_sol = CorrSolution(name=self.name,
                                 states=ones,
                                 components=clist)
+
+        self.save(corr_sol, problem)
+
         return corr_sol
 
 
