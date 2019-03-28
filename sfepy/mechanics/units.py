@@ -278,9 +278,12 @@ def apply_unit_multipliers(values, unit_kinds, unit_multipliers):
         'mass' : 1.0 / c,
         'frequency' : 1.0 / (1.0 / a),
         'wave_number' : 1.0 / (1.0 / b),
+        'velocity' : 1.0 / (b / a),
+        'acceleration' : 1.0 / (b / a**2),
         'density' : 1.0 / (c / b**3),
         'force' : 1.0 / ((c * b) / a**2),
         'stress' : 1.0 / (c / (b * a**2)),
+        'dyn_viscosity' : 1.0 / (c / (b * a)),
         'compressibility' : 1.0 / ((b * a**2) / c),
         'energy' : 1.0 / (c * b**2 / a**2),
     }
