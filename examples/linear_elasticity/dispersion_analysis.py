@@ -242,6 +242,10 @@ def get_std_wave_fun(pb, options):
 
     return fun, log_names, log_plot_kwargs
 
+def get_stepper(rng, pb, options):
+    stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
+    return stepper
+
 def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     if svecs is None: return
 
@@ -558,6 +562,7 @@ def main():
     build_evp_matrices = mod.build_evp_matrices
     save_materials = mod.save_materials
     get_std_wave_fun = mod.get_std_wave_fun
+    get_stepper = mod.get_stepper
     process_evp_results = mod.process_evp_results
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
@@ -605,8 +610,6 @@ def main():
     if dim != 2:
         options.plane = 'strain'
 
-    stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
-
     if options.save_regions:
         pb.save_regions_as_groups(os.path.join(output_dir, 'regions'))
 
@@ -630,6 +633,8 @@ def main():
 
     else:
         std_wave_fun = None
+
+    stepper = get_stepper(rng, pb, options)
 
     if options.mode == 'omega':
         eigenshapes_filename = os.path.join(output_dir,
