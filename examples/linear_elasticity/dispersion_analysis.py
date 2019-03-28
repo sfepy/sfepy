@@ -286,6 +286,7 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     conf = ProblemConf.from_dict(define_problem(), mod)
 
     pb = Problem.from_conf(conf)
+    pb.dispersion_options = options
     pb.set_output_dir(options.output_dir)
     dim = pb.domain.shape.dim
 
@@ -316,7 +317,6 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     # Assemble the matrices.
     mtxs = {}
     for key, eq in pb.equations.iteritems():
-        print key
         mtxs[key] = mtx = pb.mtx_a.copy()
         mtx = eq.evaluate(mode='weak', dw_mode='matrix', asm_obj=mtx)
         mtx.eliminate_zeros()
