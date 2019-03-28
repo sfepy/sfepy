@@ -40,8 +40,12 @@ def standard_call(call):
         eigenvectors = get_default(eigenvectors, self.eigenvectors)
         status = get_default(status, self.status)
 
-        result = call(self, mtx_a, mtx_b, n_eigs, eigenvectors, status, conf,
-                      **kwargs)
+        if n_eigs == 0:
+            result =  self._ret_zero(mtx_a, eigenvectors=eigenvectors)
+
+        else:
+            result = call(self, mtx_a, mtx_b, n_eigs, eigenvectors, status,
+                          conf, **kwargs)
 
         ttt = time.clock() - tt
         if status is not None:
