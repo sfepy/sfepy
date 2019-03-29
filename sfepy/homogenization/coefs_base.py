@@ -263,8 +263,8 @@ class OnesDim(CorrMiniApp):
 
         dim = problem.domain.mesh.dim
         nnod = var.n_nod
-        e00 = nm.zeros((nnod, dim), dtype=nm.float64)
-        e1 = nm.ones((nnod,), dtype=nm.float64)
+        e00 = nm.zeros((nnod, dim), dtype=var.dtype)
+        e1 = nm.ones((nnod,), dtype=var.dtype)
 
         ones = nm.zeros((dim,), dtype=nm.object)
         clist = []
@@ -853,8 +853,9 @@ class VolumeFractions(MiniAppBase):
             vkey = 'volume_%s' % region_name
             key = 'fraction_%s' % region_name
 
-            equations, variables = problem.create_evaluable(self.expression % region_name)
-            val = eval_equations(equations, variables)
+            equations, variables = problem.create_evaluable(
+                self.expression % region_name)
+            val = eval_equations(equations, variables).real
 
             vf[vkey] = nm.asarray(val, dtype=nm.float64)
             vf[key] = vf[vkey] / self._get_volume(volume)
