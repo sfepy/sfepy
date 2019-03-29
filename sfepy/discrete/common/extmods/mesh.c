@@ -183,14 +183,10 @@ inline int32 mei_go(MeshEntityIterator *iter)
 
 inline int32 mei_next(MeshEntityIterator *iter)
 {
-  if(iter->it > 32765){
-    output("MEI_NEXT1: iter->it_end: %d iter->it: %d iter->ptr[iter->it]: %d\n",\
-            iter->it_end, iter->it, iter->ptr[iter->it]);
-    output("MEI_NEXT2: iter->ptr[iter->it+1]: %d\n", iter->ptr[iter->it+1]);
-  }
-
   iter->it += 1;
-  iter->entity->ii = (iter->ptr ? iter->ptr[iter->it] : iter->it);
+  if (iter->it < iter->it_end) {
+    iter->entity->ii = (iter->ptr ? iter->ptr[iter->it] : iter->it);
+  }
 
   return(RET_OK);
 }
