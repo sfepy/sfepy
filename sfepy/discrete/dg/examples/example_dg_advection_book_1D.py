@@ -151,6 +151,7 @@ lmesh, u = load_1D_vtks("./output/adv_book1D", "adv_book1D", order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, tn=save_timestn, ic=ic_wrap,
               delay=100, polar=False)
 
+from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 from sfepy.discrete.dg.my_utils.visualizer import \
     load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
 coors, u_end = load_state_1D_vtk("output/adv_book1D/adv_book1D_end.vtk", order=approx_order)

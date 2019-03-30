@@ -15,6 +15,7 @@ from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.mappings import VolumeMapping
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
+from sfepy.discrete.variables import Variable, Variables
 
 # local imports
 from sfepy.discrete.dg.dg_basis import LegendrePolySpace, LegendreSimplexPolySpace, LegendreTensorProductPolySpace
@@ -402,7 +403,7 @@ class DGField(Field):
         else:
             self.facet_neighbour_index.pop(region.name)
 
-    def get_cell_nb_per_facet(self, region):
+    def get_facet_neighbor_idx(self, region):
         """
         Returns index of cell neighbours sharing facet, along with local index
         of the facet within neighbour, puts -1 where there are no neighbours
@@ -451,40 +452,51 @@ class DGField(Field):
 
         return facet_neighbours
 
-    def get_both_facet_qp_vals(self, dofs, region):
+    def get_both_facet_qp_vals(self, state, region):
         """
         Computes values of the variable represented by dofs in
         quadrature points located at facets, returns both values -
         inner and outer, along with weights.
-        :param dofs:
+        :param state: state variable
         :param region:
         :return:
         """
         facet_bf, whs = self.get_facet_base()
+        dofs = self.unravel_sol(state.data[0])
 
         # facet_bf = facet_bf[:, 0, :, 0, :].T
         inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
         inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
 
         outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
-        per_facet_neighbours = self.get_cell_nb_per_facet(region)
+        per_facet_neighbours = self.get_facet_neighbor_idx(region)
         facet_vols = self.get_facet_vols(region, per_facet_neighbours)
         whs = facet_vols * whs[None, :, :, 0]
 
-        ghost_nbrs = nm.where(per_facet_neighbours < 0)
+        boundary_cells = nm.array(nm.where(per_facet_neighbours < 0)).T
 
-        if self.dim == 1:  # periodic boundary conditions in 1D
+        if state.eq_map.n_epbc > 0:
+            # TODO treat periodic EBCs comprehensively
             per_facet_neighbours[0, 0] = [-1, 1]
             per_facet_neighbours[-1, 1] = [0, 0]
+
 
         for facet_n in range(self.n_el_facets):
             outer_facet_vals[:, facet_n, :] = nm.sum(
                 dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
                 facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
-        if self.dim > 1:
-            outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
+        if state.eq_map.n_ebc > 0:
+            for ebc_ii, ebc_cell in enumerate(state.eq_map.eq_ebc):
+                curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
+                for bn_facet in curr_b_cells[:, 1]:
+                    # so far setting only zero order dof
+                    # TODO change chape and data in state.eq_map.eq_ebc and state.eq_map.val_ebc
+                    # to be able to save projections there
 
+                    # so far we set to all boundary faces of the cell
+                    # TODO treat boundary cells where more BCs meet
+                    outer_facet_vals[ebc_cell, bn_facet , :] = state.eq_map.val_ebc[ebc_ii]
 
         return inner_facet_vals, outer_facet_vals, whs
 
@@ -619,11 +631,11 @@ class DGField(Field):
             eldofs = self.bubble_dofs[els[els >= 0]]
             dofs.append(eldofs)
         else:
-            # FIXME hot fix to actually evaluate EBC
-            # returned DOFS need to be non empty, so return
-            # entities of highest aviable dimension
-            dofs.append(region.entities[-2])
-            # or region.kind_tdim
+            # return indicies of cells adjacent to boundary facets
+            dim = self.dim
+            cmesh = region.domain.mesh.cmesh
+            nb_cells = cmesh.get_incident(dim, region.facets, dim - 1)
+            dofs.append(nb_cells)
 
         if merge:
             dofs = nm.concatenate(dofs)
@@ -687,7 +699,7 @@ class DGField(Field):
 
         dofs = self.unravel_sol(variable.data[0])
 
-        neighbours = self.get_cell_nb_per_facet(region)[..., 0]
+        neighbours = self.get_facet_neighbor_idx(region)[..., 0]
         nb_normals = self.get_cell_normals_per_facet(region)
 
         ghost_nbrs = nm.where(neighbours < 0)

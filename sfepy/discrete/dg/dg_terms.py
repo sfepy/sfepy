@@ -257,7 +257,7 @@ class AdvectDGFluxTerm(Term):
             self.alf = nm.max(alpha) # extract alpha value regardless of shape
 
         if diff_var is not None:
-            output("Diff var is not None in residual only term {} ! Skipping.".format(sefl.name))
+            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
             return None, None, None, None, None, advelo[:, 0, :, 0], 0
         else:
             field = state.field
@@ -266,21 +266,21 @@ class AdvectDGFluxTerm(Term):
             if not "DG" in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            dofs = unravel_sol(state)
+            shapes = (field.n_cell, field.n_el_nod)
             cell_normals = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
-            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
+            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(state, region)
 
-            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals,
+            fargs = (shapes, inner_facet_qp_vals, outer_facet_qp_vals,
                      facet_base_vals, weights, cell_normals, advelo[:, 0, :, 0])
             return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, dofs, in_fc_v, out_fc_v, fc_b, whs, fc_n, advelo):
+    def function(self, out, shapes, in_fc_v, out_fc_v, fc_b, whs, fc_n, advelo):
         """
 
         :param out:
-        :param dofs: NOT necessary but was good for debugging, shape = (n_cell, n_el_nod)
+        :param shapes: (n_cell, n_el_nod)
         :param in_fc_v: inner values for facets per cell, shape = (n_cell, n_el_faces, 1)
         :param out_fc_v: outer values for facets per cell, shape = (n_cell, n_el_faces, 1)
         :param fc_b: values of basis in facets qps, shape = (1, n_el_facet, n_qp)
@@ -289,12 +289,12 @@ class AdvectDGFluxTerm(Term):
         :param advelo: advection velocity, shape = (n_cell, 1)
         :return:
         """
-        if dofs is None:
+        if shapes is None:
             out[:] = 0.0
             return None
 
-        n_cell = dofs.shape[0]
-        n_el_nod = dofs.shape[1]
+        n_cell = shapes[0]
+        n_el_nod = shapes[1]
         n_el_facets = fc_n.shape[-2]
         #  Calculate integrals over facets representing Lax-Friedrichs fluxes
         C = nm.abs(nm.sum(fc_n * advelo[:, None, :], axis=-1))[:, None]

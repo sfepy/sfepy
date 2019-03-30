@@ -45,8 +45,6 @@ class LegendrePolySpace(PolySpace):
     """
 
     def __init__(self, name, geometry, order):
-        from toolz import map, reduce
-        from operator import add, mul
         """
         Does not use init_context
         :param name:
@@ -54,6 +52,9 @@ class LegendrePolySpace(PolySpace):
         :param order:
         :param init_context: not used!
         """
+        from toolz import map, reduce
+        from operator import add, mul
+
 
         PolySpace.__init__(self, name, geometry, order)
 

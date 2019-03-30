@@ -2,22 +2,21 @@ import numpy as nm
 import matplotlib.pyplot as plt
 
 # sfepy imports
+from sfepy.discrete.fem.meshio import VTKMeshIO
+from sfepy.base.ioutils import ensure_path
 from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
+
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
+
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
-from sfepy.discrete.fem.meshio import VTKMeshIO
-from sfepy.base.ioutils import ensure_path
-
-from sfepy.base.conf import ProblemConf
 
 
 # local imports
@@ -25,6 +24,7 @@ from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
+from sfepy.discrete.variables import DGFieldVariable
 
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
@@ -43,7 +43,7 @@ save_timestn = 100
 #------------
 X1 = 0.
 XN = 1.
-n_nod = 20
+n_nod = 100
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
@@ -62,7 +62,7 @@ meshio.write(outfile, mesh)
 #| Create problem components |
 #-----------------------------
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 0
 #^^^^^^^^^^^^^^^^#
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain('domain_1D', mesh)
@@ -76,8 +76,8 @@ right = domain.create_region('Gamma2',
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
-u = FieldVariable('u', 'unknown', field, history=1)
-v = FieldVariable('v', 'test', field, primary_var_name='u')
+u = DGFieldVariable('u', 'unknown', field, history=1)
+v = DGFieldVariable('v', 'test', field, primary_var_name='u')
 
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
@@ -93,11 +93,10 @@ FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "alpha.val, u[-1], v, a.val
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
 
-
 #------------------------------
 #| Create bounrady conditions |
 #------------------------------
-left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 3.2})#, times="all")
+left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.2})#, times="all")
 right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 4.2})#, times="all")
 
 #----------------------------
@@ -114,10 +113,12 @@ ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 #| Create problem |
 #------------------
 pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": save_timestn}, ics={},
-                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}))
+                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}),
+             active_only=False)
 pb.setup_output(output_dir="output/adv_1D")  # , output_format="msh")
-# pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
+pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
 pb.set_ics(Conditions([ics]))
+
 
 state0 = pb.get_initial_state()
 pb.save_state("output/adv_1D/domain_1D_start.vtk", state=state0)
@@ -151,8 +152,8 @@ tss = EulerStepSolver({'t0': t0, 't1': t1, 'n_step': tn},
                          nls=nls, context=pb, verbose=True)
                         # ,post_stage_hook=limiter)
 #
-# tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
-#                          nls=nls, context=pb, verbose=True)
+tss = TVDRK3StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
+                         nls=nls, context=pb, verbose=True)
 
 # tss = RK4StepSolver({'t0': t0, 't1': t1, 'n_step': tn},
 #                          nls=nls, context=pb, verbose=True, post_stage_hook=limiter)
@@ -185,7 +186,7 @@ pb.save_state("output/adv_1D/domain_1D_end.vtk", state=state_end)
 #| Plot 1D|
 #----------
 lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
-plot1D_DG_sol(lmesh, t0, t1, u, tn=30, ic=ic_wrap,
+plot1D_DG_sol(lmesh, t0, t1, u, tn=min(save_timestn, tn), ic=ic_wrap,
               delay=100, polar=False)
 
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler

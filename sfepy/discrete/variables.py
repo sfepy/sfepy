@@ -1240,6 +1240,7 @@ class FieldVariable(Variable):
 
         self.dim = field.domain.shape.dim
 
+
     def _get_setter(self, kind, functions, **kwargs):
         """
         Get the setter function of the variable and its arguments depending in
@@ -1916,3 +1917,58 @@ class FieldVariable(Variable):
 
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
+
+
+class DGFieldVariable(FieldVariable):
+
+    def __init__(self, name, kind, field, order=None, primary_var_name=None,
+                 special=None, flags=None, history=None, **kwargs):
+        FieldVariable.__init__(self, name, kind, field, order=order, primary_var_name=primary_var_name,
+                 special=special, flags=flags, history=history, **kwargs)
+
+        from sfepy.discrete.dg.dg_field import DGField
+        if isinstance(field, DGField):
+            pass
+        else:
+            raise ValueError("Attempted to use DGField variable with non DG field!")
+
+    def apply_ebc(self, vec, offset=0, force_values=None):
+        pass
+
+    def get_full(self, r_vec, r_offset=0, force_value=None,
+                 vec=None, offset=0):
+        """
+        Get the full DOF vector satisfying E(P)BCs from a reduced DOF
+        vector.
+
+        Notes
+        -----
+        The reduced vector starts in `r_vec` at `r_offset`.
+        Passing a `force_value` overrides the EBC values. Optionally,
+        `vec` argument can be provided to store the full vector (in
+        place) starting at `offset`.
+        """
+        if vec is None:
+            vec = nm.empty(self.n_dof, dtype=r_vec.dtype)
+
+        else:
+            vec = vec[offset:offset+self.n_dof]
+
+        eq_map = self.eq_map
+        r_vec = r_vec[r_offset:r_offset+eq_map.n_eq]
+
+        # FIXME overide to hotfix secod application of EBCs, will we ever need it?
+        # # EBC.
+        # vec[eq_map.eq_ebc] = get_default(force_value, eq_map.val_ebc)
+
+        # Reduced vector values.
+        vec[eq_map.eqi] = r_vec
+
+        # EPBC.
+        vec[eq_map.master] = vec[eq_map.slave]
+
+        unused_dofs = self.field.get('unused_dofs')
+        if unused_dofs is not None:
+            vec[:] = self.field.restore_substituted(vec)
+
+        return vec
