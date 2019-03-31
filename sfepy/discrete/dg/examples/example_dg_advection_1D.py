@@ -96,8 +96,8 @@ eqs = Equations([eq])
 #------------------------------
 #| Create bounrady conditions |
 #------------------------------
-left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 0.2})#, times="all")
-right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 4.2})#, times="all")
+left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 1.0})#, times="all")
+right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})#, times="all")
 
 #----------------------------
 #| Create initial condition |
@@ -136,7 +136,7 @@ limiter = Moment1DLimiter(field.n_el_nod, field.n_cell)
 CFL = .4
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = .2
+t1 = 1
 dx = (XN - X1) / n_nod
 dt = dx / nm.abs(velo) * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))

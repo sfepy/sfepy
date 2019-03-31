@@ -457,7 +457,7 @@ class DGField(Field):
         Computes values of the variable represented by dofs in
         quadrature points located at facets, returns both values -
         inner and outer, along with weights.
-        :param state: state variable
+        :param state: state variable containing BC info
         :param region:
         :return:
         """
@@ -479,7 +479,6 @@ class DGField(Field):
             # TODO treat periodic EBCs comprehensively
             per_facet_neighbours[0, 0] = [-1, 1]
             per_facet_neighbours[-1, 1] = [0, 0]
-
 
         for facet_n in range(self.n_el_facets):
             outer_facet_vals[:, facet_n, :] = nm.sum(
@@ -804,46 +803,28 @@ class DGField(Field):
         if nm.isscalar(fun):
             # TODO set only zero order
             vals = nm.repeat([fun], nods.shape[0] * dpn)
+            # get nodal values
+            # set nodal values
+            # project back to modes
 
         elif isinstance(fun, nm.ndarray):
             assert_(len(fun) == dpn)
             # TODO set only zero order
             vals = nm.repeat(fun, nods.shape[0])
+            # get nodal values
+            # set nodal values
+            # project back to modes
 
         elif callable(fun):
-            # TODO proper projection onto the surface
-            qp, weights = self.integral.get_qp(self.gel.name)
-            weights = weights[:, None]  # add axis for broadcasting
-            coors = self.mapping.get_physical_qps(qp)
+            vals = fun(1) # FIXME hot fix to make book examples work
+            # TODO proper projection of BC fun onto the boundary facets
 
-            # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
-            # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
-            # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
+            # get facets QPs
+            # get facets weights
+            # get facet basis vals
+            # get coors
+            # solve for boundary cell DOFs
 
-            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
-            # this drops redundant axis that is returned by eval_base due to consistency with derivatives
-
-            # left hand, so far only orthogonal basis
-            lhs_diag = nm.sum(weights * base_vals_qp ** 2, axis=0)
-            # for legendre base this can be calculated exactly
-            # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
-
-            rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
-
-            vals = (rhs_vec / lhs_diag)
-
-            # plot for 1D
-            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-            # import matplotlib.pyplot as plt
-            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
-            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals.T[..., None, None])
-            # plt.plot(xx, ww[:, 0], label="reconstructed dofs")
-            # plt.show()
-
-            # FIXME - this is only for testing
-            # output("DGField {} Setting IC to testing: vals[4, 0] = 1., zero elsewhere".format(self.family_name))
-            # vals[:] = 0
-            # vals[8:12, 0] = 1.
 
         return nods, vals
 

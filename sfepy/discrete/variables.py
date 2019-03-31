@@ -54,13 +54,15 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             eq = nm.arange(var.n_dof, dtype=nm.int32)
 
         else:
-            if active_only:
-                eq = var.eq_map.eq
-
-            else:
+            if isinstance(var, DGFieldVariable):
                 eq = nm.arange(var.n_dof, dtype=nm.int32)
-                eq[var.eq_map.eq_ebc] = -1 - (var.eq_map.eq_ebc + offset)
-                eq[var.eq_map.master] = eq[var.eq_map.slave]
+            else:
+                if active_only:
+                    eq = var.eq_map.eq
+                else:
+                    eq = nm.arange(var.n_dof, dtype=nm.int32)
+                    eq[var.eq_map.eq_ebc] = -1 - (var.eq_map.eq_ebc + offset)
+                    eq[var.eq_map.master] = eq[var.eq_map.slave]
 
         adc = create_adof_conn(eq, econn, var.n_components, offset)
 
