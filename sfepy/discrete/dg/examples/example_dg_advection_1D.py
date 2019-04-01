@@ -62,7 +62,7 @@ meshio.write(outfile, mesh)
 #| Create problem components |
 #-----------------------------
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 1
 #^^^^^^^^^^^^^^^^#
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain('domain_1D', mesh)
@@ -76,8 +76,8 @@ right = domain.create_region('Gamma2',
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
-u = DGFieldVariable('u', 'unknown', field, history=1)
-v = DGFieldVariable('v', 'test', field, primary_var_name='u')
+u = FieldVariable('u', 'unknown', field, history=1)
+v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
@@ -116,7 +116,7 @@ pb = Problem('advection', equations=eqs, conf=Struct(options={"save_times": save
                                                      ebcs={}, epbcs={}, lcbcs={}, materials={}),
              active_only=False)
 pb.setup_output(output_dir="output/adv_1D")  # , output_format="msh")
-pb.set_bcs(ebcs=Conditions([left_fix_u, right_fix_u]))
+pb.set_bcs(ebcs=Conditions([left_fix_u]))
 pb.set_ics(Conditions([ics]))
 
 

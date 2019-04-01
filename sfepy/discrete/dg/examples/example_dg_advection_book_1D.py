@@ -62,7 +62,7 @@ meshio.write(outfile, mesh)
 #| Create problem components |
 #-----------------------------
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 2
 #^^^^^^^^^^^^^^^^#
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain(domain_name, mesh)
@@ -76,8 +76,8 @@ left = domain.create_region('Gamma1',
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
-u = DGFieldVariable('u', 'unknown', field, history=1)
-v = DGFieldVariable('v', 'test', field, primary_var_name='u')
+u = FieldVariable('u', 'unknown', field, history=1)
+v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)

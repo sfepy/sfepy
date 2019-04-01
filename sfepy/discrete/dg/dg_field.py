@@ -633,8 +633,9 @@ class DGField(Field):
             # return indicies of cells adjacent to boundary facets
             dim = self.dim
             cmesh = region.domain.mesh.cmesh
-            nb_cells = cmesh.get_incident(dim, region.facets, dim - 1)
-            dofs.append(nb_cells)
+            bc_cells = cmesh.get_incident(dim, region.facets, dim - 1)
+            bc_dofs = self.bubble_dofs[bc_cells]
+            dofs.append(bc_dofs)
 
         if merge:
             dofs = nm.concatenate(dofs)
@@ -802,18 +803,18 @@ class DGField(Field):
 
         if nm.isscalar(fun):
             # TODO set only zero order
-            vals = nm.repeat([fun], nods.shape[0] * dpn)
-            # get nodal values
-            # set nodal values
-            # project back to modes
+            vals = nm.zeros(aux.shape)
+            # set zero DOF to value fun, set other DOFs to zero
+            # FIXME only temporary to test BCs
+            vals[:, 0] = .5
+            vals[:, 1] = -.5
+            vals = nm.hstack(vals)
 
         elif isinstance(fun, nm.ndarray):
             assert_(len(fun) == dpn)
             # TODO set only zero order
             vals = nm.repeat(fun, nods.shape[0])
-            # get nodal values
-            # set nodal values
-            # project back to modes
+
 
         elif callable(fun):
             vals = fun(1) # FIXME hot fix to make book examples work
