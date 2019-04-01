@@ -910,7 +910,8 @@ class TSTimes(MiniAppBase):
     """Coefficient-like class, returns times of the time stepper."""
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
-        return problem.get_time_solver().ts.times
+        problem.init_solvers()
+        return problem.get_timestepper().times
 
 class VolumeFractions(MiniAppBase):
     """Coefficient-like class, returns volume fractions of given regions within
