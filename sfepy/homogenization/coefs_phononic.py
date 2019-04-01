@@ -637,8 +637,8 @@ class SchurEVP(SimpleEVP):
         mtx = equations.eval_tangent_matrices(None, problem.mtx_a,
                                               by_blocks=True)
 
-        ls = Solver.any_from_conf(problem.ls_conf,
-                                  presolve=True, mtx=mtx['D'])
+        ls = Solver.any_from_conf(problem.ls_conf
+                                  + Struct(use_presolve=True), mtx=mtx['D'])
 
         mtx_b, mtx_m = mtx['B'], mtx['M']
         mtx_dib = nm.empty(mtx_b.shape, dtype=mtx_b.dtype)

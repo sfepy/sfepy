@@ -88,8 +88,7 @@ equations = {
 solver_0 = {
     'name' : 'ls',
     'kind' : 'ls.scipy_direct',
-
-    'presolve' : True,
+    'use_presolve' : True,
 }
 
 solver_1 = {

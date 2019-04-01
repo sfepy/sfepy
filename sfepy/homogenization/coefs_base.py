@@ -565,8 +565,8 @@ class PressureEigenvalueProblem(CorrMiniApp):
         output('full A size: %.3f MB' % (8.0 * nm.prod(mtx_a.shape) / 1e6))
         output('full B size: %.3f MB' % (8.0 * nm.prod(mtx_bt.shape) / 1e6))
 
-        ls = Solver.any_from_conf(self.problem.ls_conf,
-                                   presolve=True, mtx=mtx_a)
+        ls = Solver.any_from_conf(self.problem.ls_conf
+                                  + Struct(use_presolve=True), mtx=mtx_a)
         if self.mode == 'explicit':
             tt = time.clock()
             mtx_aibt = nm.zeros(mtx_bt.shape, dtype=mtx_bt.dtype)
