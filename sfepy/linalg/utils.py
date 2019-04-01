@@ -113,7 +113,10 @@ def print_array_info(ar):
 
 def output_array_stats(ar, name, verbose=True):
     ar = nm.asarray(ar)
-    if nm.isrealobj(ar):
+    if not len(ar):
+        output('%s: empty' % name)
+
+    elif nm.isrealobj(ar):
         output('%s\nmin: % .6e mean: % .6e median: % .6e max: % .6e'
                % (name, ar.min(), ar.mean(), nm.median(ar), ar.max()),
                verbose=verbose)
