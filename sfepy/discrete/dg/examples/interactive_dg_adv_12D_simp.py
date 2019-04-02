@@ -129,7 +129,7 @@ pb.save_state("output/state0_simp_12D.msh", state=state0)
 #| Set time discretization |
 #---------------------------
 CFL = .4
-max_velo = nm.max(nm.abs(velo))
+max_velo = nm.max(nm.linalg.norm(velo))
 t0 = 0
 t1 = .2
 dx = nm.min(mesh.cmesh.get_volumes(2))
