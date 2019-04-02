@@ -145,7 +145,7 @@ class ScipyDirect(LinearSolver):
     _parameters = [
         ('method', "{'auto', 'umfpack', 'superlu'}", 'auto', False,
          'The actual solver to use.'),
-        ('presolve', 'bool', False, False,
+        ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
     ]
 
@@ -190,7 +190,7 @@ class ScipyDirect(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
 
-        if conf.presolve:
+        if conf.use_presolve:
             self.presolve(mtx)
 
         if self.solve is not None:
@@ -213,7 +213,7 @@ class ScipySuperLU(ScipyDirect):
     name = 'ls.scipy_superlu'
 
     _parameters = [
-        ('presolve', 'bool', False, False,
+        ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
     ]
 
@@ -228,7 +228,7 @@ class ScipyUmfpack(ScipyDirect):
     name = 'ls.scipy_umfpack'
 
     _parameters = [
-        ('presolve', 'bool', False, False,
+        ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
     ]
 
@@ -776,7 +776,7 @@ class MUMPSSolver(LinearSolver):
     __metaclass__ = SolverMeta
 
     _parameters = [
-        ('presolve', 'bool', False, False,
+        ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
     ]
 
@@ -793,7 +793,7 @@ class MUMPSSolver(LinearSolver):
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
         if not self.mumps_presolved:
-            self.presolve(mtx, presolve_flag=conf.presolve)
+            self.presolve(mtx, presolve_flag=conf.use_presolve)
 
         out = rhs.copy()
         self.mumps_ls.set_rhs(out)
@@ -802,6 +802,7 @@ class MUMPSSolver(LinearSolver):
         return out
 
     def presolve(self, mtx, presolve_flag=False):
+        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
         if not isinstance(mtx, sps.coo_matrix):
             mtx = mtx.tocoo()
         if self.mumps_ls is None:
@@ -811,7 +812,6 @@ class MUMPSSolver(LinearSolver):
             self.mumps_ls = self.mumps.MumpsSolver(system=system,
                                                    is_sym=is_sym)
 
-        is_new, mtx_digest = _is_new_matrix(mtx, self.mtx_digest)
         if is_new:
             if self.conf.verbose:
                 self.mumps_ls.set_verbose()

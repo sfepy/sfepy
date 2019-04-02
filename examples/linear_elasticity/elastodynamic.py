@@ -215,7 +215,7 @@ equations = {
 
 solvers = {
     'ls' : ('ls.scipy_direct', {
-        'presolve' : True,
+        'use_presolve' : True,
     }),
     'ls-i' : ('ls.petsc', {
         'method' : 'cg',
