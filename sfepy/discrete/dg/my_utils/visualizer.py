@@ -14,7 +14,7 @@ from matplotlib import colors
 from os.path import join as pjoin
 from toolz import accumulate
 
-
+# TODO refactor this darn thing so it is more flexible
 __author__ = 'tomas_zitka'
 
 ffmpeg_path = 'C:\\Users\\tomas\\bin\\ffmpeg\\bin\\ffmpeg.exe'  # for saving animations

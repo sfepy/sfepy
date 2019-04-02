@@ -41,7 +41,7 @@ clear_output_folder(output_folder)
 #------------
 X1 = 0.
 XN = 1.
-n_nod = 20
+n_nod = 100
 n_el = n_nod - 1
 coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
 conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
@@ -78,15 +78,18 @@ u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
 
 
-MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
+MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
+                             integral, omega, u=u, v=v)
 
 velo = 1.0
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, v, u)", "a.val, u[-1], v", integral, omega,
-                                    u=u, v=v, a=a)
+# TODO u and v are flipped what now?!
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, v, u)", "a.val, u[-1], v",
+                                  integral, omega, u=u, v=v, a=a)
 
 alpha = Material('alpha', val=[.0])
-FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "alpha.val, u[-1], v, a.val", integral, omega, u=u, v=v, a=a, alpha=alpha)
+FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
+                         integral, omega, u=u, v=v, a=a, alpha=alpha)
 
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
@@ -207,4 +210,4 @@ pb.save_state("output/adv_1D/domain_1D_end.vtk", state=state_end)
 # plt.show()
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
 
-load_and_plot_fun(output_folder, domain_name, t0, t1, approx_order, ic_fun)
+load_and_plot_fun(output_folder, domain_name, t0, t1, min(tn, save_timestn), approx_order, ic_fun)

@@ -237,19 +237,19 @@ class AdvectDGFluxTerm(Term):
     alf = 0
     name = "dw_dg_advect_laxfrie_flux"
     modes = ("weak",)
-    arg_types = ('opt_material', 'state', 'virtual', 'material_advelo')
-
-    arg_shapes = [{'opt_material': '1, 1',
+    arg_types = ('opt_material', 'material_advelo', 'virtual', 'state')
+    arg_shapes = [{'opt_material': '.: 1',
                   'material_advelo': 'D, 1',
-                  'virtual': 1,  #('D', 'state'),
+                  'virtual': (1, 'state'),
                   'state': 1
                   },
                 {'opt_material': None}]
+    integration = 'volume'
     # symbolic = {'expression' : 'div(a*u)',
     #             'map': {'u': 'state', 'a': 'material'}
     # }
 
-    def get_fargs(self, alpha, state, test, advelo,
+    def get_fargs(self, alpha, advelo, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:

@@ -64,7 +64,7 @@ def get_cell_facet_gel_name(cell_gel_name):
 
 
 class DGField(Field):
-    family_name = 'volume_H1_DGLegendre'
+    family_name = 'volume_DG_legendre_discontinuous'
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
@@ -88,6 +88,8 @@ class DGField(Field):
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
 
+        self.approx_order = approx_order[0] if isinstance(approx_order, tuple) else approx_order
+
         # geometry
         self.domain = region.domain
         self.region = region
@@ -100,19 +102,18 @@ class DGField(Field):
         self.poly_space_base = poly_space_base
         if poly_space_base is not None:
             self.poly_space = poly_space_base(self.gel.name + "H1_what?",
-                                              self.gel, approx_order)
+                                              self.gel, self.approx_order)
         elif self.gel.name in ["1_2", "2_4", "3_8"]:
-            self.poly_space = LegendreTensorProductPolySpace(self.gel.name + "_H1_dglegendre",
-                                                             self.gel, approx_order)
+            self.poly_space = LegendreTensorProductPolySpace(self.gel.name + "_DG_legendre",
+                                                             self.gel, self.approx_order)
         else:
-            self.poly_space = LegendreSimplexPolySpace(self.gel.name + "_H1_dglegendre",
-                                                       self.gel, approx_order)
+            self.poly_space = LegendreSimplexPolySpace(self.gel.name + "_DG_legendre",
+                                                       self.gel, self.approx_order)
 
         # TODO put LegendrePolySpace into table in PolySpace any_from_args, or use only Legendre for DG?
         # poly_space = PolySpace.any_from_args("legendre", self.gel, base="legendre", order=approx_order)
 
         # DOFs
-        self.approx_order = approx_order
         self._setup_shape()
         self._setup_all_dofs()
 
@@ -126,7 +127,7 @@ class DGField(Field):
         self.clear_qp_base()
         self.clear_facet_qp_base()
         if integral is None:
-            self.integral = Integral("dg_fi", order=2*approx_order)
+            self.integral = Integral("dg_fi", order=2*self.approx_order)
         else:
             self.integral = integral
 

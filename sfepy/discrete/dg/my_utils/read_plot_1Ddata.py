@@ -25,27 +25,27 @@ def clear_output_folder(output_folder, confirm=False):
 
 
 
-def load_and_plot_fun(folder, filename, t0, t1, approx_order, ic_fun=None):
+def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order, ic_fun=None):
 
     # load time data
     lmesh, u = load_1D_vtks(folder, filename, order=approx_order)
-    plot1D_DG_sol(lmesh, t0, t1, u, tn=30, ic=ic_fun,
+    plot1D_DG_sol(lmesh, t0, t1, u, tn=tn, ic=ic_fun,
                   delay=100, polar=False)
 
 
-    coors, u_end = load_state_1D_vtk(pjoin(folder, filename + "_end.vtk"), order=approx_order)
-    coors, u_start = load_state_1D_vtk(pjoin(folder, filename + "_start.vtk"), order=approx_order)
-
-
-    plot_1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
-
-    plt.figure("reconstructed")
-    ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)
-    ww_e, _ = reconstruct_legendre_dofs(coors, None, u_start)
-
-    plt.plot(xx, ww_s[:, 0])
-    plt.plot(xx, ww_e[:, 0])
-    plt.show()
+    # coors, u_end = load_state_1D_vtk(pjoin(folder, filename + "_end.vtk"), order=approx_order)
+    # coors, u_start = load_state_1D_vtk(pjoin(folder, filename + "_start.vtk"), order=approx_order)
+    #
+    #
+    # plot_1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
+    #
+    # plt.figure("reconstructed")
+    # ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)
+    # ww_e, _ = reconstruct_legendre_dofs(coors, None, u_start)
+    #
+    # plt.plot(xx, ww_s[:, 0])
+    # plt.plot(xx, ww_e[:, 0])
+    # plt.show()
 
 
 if __name__ == '__main__':
