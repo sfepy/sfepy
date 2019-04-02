@@ -31,6 +31,8 @@ class DGMultiStageTS(TimeSteppingSolver):
         ('quasistatic', 'bool', False, False,
          """If True, assume a quasistatic time-stepping. Then the non-linear
             solver is invoked also for the initial time."""),
+        ('limiter', 'function', None, None,
+         "Limiter for DG FEM"),
     ]
 
     def __init__(self, conf, nls=None, context=None, **kwargs):
@@ -44,11 +46,18 @@ class DGMultiStageTS(TimeSteppingSolver):
 
         self.format = format
         self.verbose = self.conf.verbose
+
+        if hasattr(conf, "limiter"):
+            if conf.limiter is not None:
+                self.post_stage_hook = conf.limiter
+        if hasattr(conf, "post_stage_hook"):
+            if conf.post_stage_hook is not None:
+                self.post_stage_hook = conf.post_stage_hook
+
         if "post_stage_hook" in kwargs.keys():
             self.post_stage_hook = kwargs["post_stage_hook"]
         else:
             self.post_stage_hook = lambda x: x
-        pass
 
     def solve_step0(self, nls, vec0):
         res = nls.fun(vec0)
