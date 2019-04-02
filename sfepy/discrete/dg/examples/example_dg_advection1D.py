@@ -5,6 +5,7 @@ from sfepy.discrete.fem.meshio import UserMeshIO
 
 from sfepy.terms import register_term
 from sfepy.solvers import  register_solver
+from sfepy.discrete.dg.examples.run_dg_examples import get_cfl_setup
 
 
 # import various ICs
@@ -27,8 +28,7 @@ example_name = "adv_1D"
 dim = int(example_name[example_name.index("D") - 1])
 
 # Setup Mesh
-def get_mesh_hook(XS, XE, n_nod):
-
+def get_1Dmesh_hook(XS, XE, n_nod):
 
     def mesh_hook(mesh, mode):
         """
@@ -50,11 +50,12 @@ def get_mesh_hook(XS, XE, n_nod):
 
     return mesh_hook
 
-filename_mesh = UserMeshIO(get_mesh_hook(0, 1, 100))
+filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 100))
 
 approx_order = 1
 t0 = 0.
 t1 = 1.
+CFL = 5
 
 materials = {
     'a' : ({'val': 1.0, '.flux': 0.0},),
@@ -67,7 +68,7 @@ regions = {
 }
 
 fields = {
-    'density' : ('real', 'scalar', 'Omega', '1d', 'DG', 'legendre') #
+    'density' : ('real', 'scalar', 'Omega', str(approx_order)+'d', 'DG', 'legendre') #
 }
 
 variables = {
@@ -76,8 +77,8 @@ variables = {
 }
 
 ebcs = {
-    'u_left' : ('Gamma_Left', {'u.all' : 0.3}),
-    # 't2' : ('Gamma_Right', {'t.0' : -0.3}),
+    'u_left' : ('Gamma_Left', {'u.all' : 0.0}),
+    # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 }
 
 def get_ic(x, ic=None):
@@ -98,16 +99,15 @@ integrals = {
 equations = {
     'Advection' : """
                    dw_volume_dot.i.Omega(v, u)
-                   + dw_s_dot_mgrad_s.i.Omega(a.val, v, u[-1])
+                   + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
                    - dw_dg_advect_laxfrie_flux.i.Omega(a.val, v, u[-1]) = 0
                   """
 }
 
 solvers = {
-    "tss" : ('ts.euler',
+    "tss" : ('ts.tvd_runge_kutta_3',
                          {"t0": t0,
                           "t1": t1,
-                          "n_step": n_step, # tODO satisfy CFL condition, move to run examples script
                           'limiter' : IdentityLimiter}),
     'nls' : ('nls.newton',{} ),
     'ls'  : ('ls.scipy_direct', {})
@@ -117,5 +117,6 @@ options = {
     'ts' : 'tss',
     'nls' : 'newton',
     'ls' : 'ls',
-    'save_times' : 100
+    'save_times' : 100,
+    'pre_process_hook' : get_cfl_setup(CFL)
 }
