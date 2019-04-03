@@ -3,11 +3,11 @@ from sfepy.discrete.dg.examples.example_dg_common import *
 example_name = "adv_2D_tens"
 dim = int(example_name[example_name.index("D") - 1])
 
-filename_mesh = "output/mesh/tens_2D_mesh.vtk"
+filename_mesh = "mesh/tens_2D_mesh.vtk"
 
 approx_order = 3
 t0 = 0.
-t1 = 1.
+t1 = .2
 CFL = .4
 
 

@@ -98,9 +98,11 @@ class DGMultiStageTS(TimeSteppingSolver):
             vec = vec0
 
         for step, time in ts.iter_from(ts.step):
+            output("\n--- Solving step {}, time {} ---".format(step, time))
             self.output_step_info(ts)
 
             prestep_fun(ts, vec)
+
 
             vect = self.solve_step(ts, nls, vec, prestep_fun, poststep_fun, status)
 

@@ -1,28 +1,4 @@
-import numpy as nm
-
-from sfepy.discrete.fem import Mesh
-from sfepy.discrete.fem.meshio import UserMeshIO
-
-from sfepy.terms import register_term
-from sfepy.solvers import  register_solver
-from sfepy.discrete.dg.examples.run_dg_examples import get_cfl_setup
-
-
-# import various ICs
-from sfepy.discrete.dg.my_utils.inits_consts import ghump, left_par_q, left_cos, superic, three_step_u, \
-    sawtooth_q, const_q, quadr_cub
-
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
-
-
-# import TSSs
-from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
-
-register_term(AdvectDGFluxTerm)
-register_solver(TVDRK3StepSolver)
-register_solver(RK4StepSolver)
-register_solver(EulerStepSolver)
+from sfepy.discrete.dg.examples.example_dg_common import *
 
 example_name = "adv_1D"
 dim = int(example_name[example_name.index("D") - 1])
@@ -55,7 +31,7 @@ filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 100))
 approx_order = 1
 t0 = 0.
 t1 = 1.
-CFL = 5
+CFL = .5
 
 materials = {
     'a' : ({'val': 1.0, '.flux': 0.0},),
@@ -105,7 +81,7 @@ equations = {
 }
 
 solvers = {
-    "tss" : ('ts.tvd_runge_kutta_3',
+    "tss" : ('ts.euler',
                          {"t0": t0,
                           "t1": t1,
                           'limiter' : IdentityLimiter}),

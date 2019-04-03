@@ -1,8 +1,10 @@
 import numpy as nm
 import matplotlib.pyplot as plt
+import argparse
 
 from os.path import join as pjoin
 import os
+import sys
 from glob import glob
 
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
@@ -47,8 +49,21 @@ def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order, ic_fun=None):
     # plt.plot(xx, ww_e[:, 0])
     # plt.show()
 
+parser = argparse.ArgumentParser(description='Plotting of 1D DG data in VTK files',
+                                 epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
+parser.add_argument("input_folder", help="""Folder with VTK data, file names in format <name>.[0-9]*.vtk""")
+parser.add_argument("-t0", "--start_time", type=float, default=0, help="Start time of the simulation")
+parser.add_argument("-t1", "--end_time", type=float, default=0, help="End time of the simulation")
+
+
+def main(argv):
+    if argv is None:
+        argv = sys.argv[1:]
+    # TODO get neccesary data for plotting, maybe from args?
+    args = parser.parse_args(argv)
+
+
+
 
 if __name__ == '__main__':
-    # TODO get neccesary data for plotting, maybe from args?
-    # load_1D_vtks(folder, filename, t0, t1, approx_order, ic_fun)
-    pass
+    main(sys.argv[1:])
