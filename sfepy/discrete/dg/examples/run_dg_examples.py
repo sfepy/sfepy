@@ -1,7 +1,19 @@
-import numpy as nm
+#!python
+# -*- coding:utf-8 -*-
+""""
+Script for running DG conf files.
+"""
 
+import sys
+import os
 from os.path import join as pjoin
 
+import glob
+import time
+import subprocess as sub
+import logging
+import argparse
+import numpy as nm
 
 from sfepy.applications.pde_solver_app import PDESolverApp
 from sfepy.base.conf import ProblemConf
@@ -13,48 +25,23 @@ from sfepy.base.base import (get_default, output, assert_,
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_output_folder
 
-def get_cfl_setup(CFL):
 
-    def setup_cfl_condition(problem):
-        """
-        Sets up CFL condition for problem ts_conf in problem
-        :param problem: discrete.problem.Problem
-        :return:
-        """
-        ts_conf = problem.ts_conf
-        mesh = problem.domain.mesh
-        dim = mesh.dim
-        approx_order = problem.fields['density'].approx_order
-        mats = problem.create_materials('a')
-        velo = problem.conf_materials['material_a__0'].values["val"]
-        max_velo = nm.max(nm.linalg.norm(velo))
-        dx = nm.min(problem.domain.mesh.cmesh.get_volumes(dim))
-        order_corr = 1. / (2 * approx_order + 1)
-        dt = dx / max_velo * CFL * order_corr
-        # time_steps_N = int((tf - t0) / dt) * 2
-        tn = int(nm.ceil((ts_conf.t1 - ts_conf.t0) / dt))
-        dtdx = dt / dx
+parser = argparse.ArgumentParser(description='Run SfePy conf python files',
+                                 epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
+parser.add_argument("conf_file", help="""File containing problem configuration""")
+parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
 
-        ts_conf += Struct(dt=dt, n_step=tn)
-        output("Preprocessing hook setup_cfl_condition:")
-        output("Approximation order of field {} order is {}".format(problem.fields['density'].family_name, approx_order))
-        output("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
-        output("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
-        output("CFL coefficient was {0} and order correction 1/{1} = {2}".format(CFL,  (2 * approx_order + 1), order_corr))
-        output("Courant number c = max(norm(a)) * dt/dx = {0}".format(max_velo * dtdx))
-        output("------------------------------------------")
-        output("Time stepping solver is {}".format(ts_conf.kind))
+def main(argv):
+    if argv is None:
+        argv = sys.argv[1:]
 
+    args = parser.parse_args(argv)
+    conf_file_name = args.conf_file
 
-
-    return setup_cfl_condition
-
-if __name__ == '__main__':
-    # TODO improve to accept options, get problem conf file from args
-    pc = ProblemConf.from_file('example_dg_advection2D_tens.py')
+    pc = ProblemConf.from_file(conf_file_name)
 
     output_folder = "output"
-    output_name_trunk_folder = pjoin(output_folder, pc.example_name, str(pc.approx_order)+"/")
+    output_name_trunk_folder = pjoin(output_folder, pc.example_name, str(pc.approx_order) + "/")
     output_name_trunk_name = pc.example_name + str(pc.approx_order)
     output_name_trunk = pjoin(output_name_trunk_folder, output_name_trunk_name)
     ensure_path(output_name_trunk_folder)
@@ -70,9 +57,11 @@ if __name__ == '__main__':
                                  solve_not=False), "sfepy")
     sa()
 
-
-    if pc.dim == 1:
+    if pc.dim == 1 and args.plot:
         load_times = min(pc.options.save_times, sa.problem.ts.n_step)
 
         load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
                           pc.t0, pc.t1, load_times, pc.approx_order, pc.get_ic)
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
