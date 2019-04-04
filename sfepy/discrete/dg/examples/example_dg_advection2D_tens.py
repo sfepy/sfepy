@@ -60,7 +60,8 @@ solvers = {
     "tss" : ('ts.tvd_runge_kutta_3',
                          {"t0": t0,
                           "t1": t1,
-                          'limiter' : IdentityLimiter}),
+                          'limiter' : IdentityLimiter,
+                          'verbose' : True}),
     'nls' : ('nls.newton',{} ),
     'ls'  : ('ls.scipy_direct', {})
 }
