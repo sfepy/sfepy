@@ -84,7 +84,8 @@ solvers = {
     "tss" : ('ts.euler',
                          {"t0": t0,
                           "t1": t1,
-                          'limiter' : IdentityLimiter}),
+                          'limiter' : Moment1DLimiter,
+                          'verbose' : True}),
     'nls' : ('nls.newton',{} ),
     'ls'  : ('ls.scipy_direct', {})
 }

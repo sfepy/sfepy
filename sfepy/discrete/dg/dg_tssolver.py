@@ -42,22 +42,22 @@ class DGMultiStageTS(TimeSteppingSolver):
         self.ts = TimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
-        format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
+        format = '\n\n====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
+        self.stage_format = '\n---- ' + self.name + ' stage {}: linear system sol error {} ----'
 
         self.format = format
         self.verbose = self.conf.verbose
 
         if hasattr(conf, "limiter"):
             if conf.limiter is not None:
-                self.post_stage_hook = conf.limiter
+                # FIXME - hot fix to get limiter working, maybe specify the field in options
+                n_cell = list(context.fields.values())[0].n_cell
+                n_el_nod = list(context.fields.values())[0].n_el_nod
+                self.post_stage_hook = conf.limiter(n_cell=n_cell, n_el_nod=n_el_nod, verbose=self.verbose)
         if hasattr(conf, "post_stage_hook"):
             if conf.post_stage_hook is not None:
                 self.post_stage_hook = conf.post_stage_hook
 
-        if "post_stage_hook" in kwargs.keys():
-            self.post_stage_hook = kwargs["post_stage_hook"]
-        else:
-            self.post_stage_hook = lambda x: x
 
     def solve_step0(self, nls, vec0):
         res = nls.fun(vec0)
@@ -98,11 +98,9 @@ class DGMultiStageTS(TimeSteppingSolver):
             vec = vec0
 
         for step, time in ts.iter_from(ts.step):
-            output("\n--- Solving step {}, time {} ---".format(step, time))
             self.output_step_info(ts)
 
             prestep_fun(ts, vec)
-
 
             vect = self.solve_step(ts, nls, vec, prestep_fun, poststep_fun, status)
 
@@ -154,9 +152,10 @@ class EulerStepSolver(DGMultiStageTS):
 
         vec_e = mtx_a * vec_dx - vec_r
         lerr = nla.norm(vec_e)
-        output('linear system sol error {}'.format(lerr))
-        output('mtx max {}, min {}, trace {}'
-               .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
+        if self.verbose:
+            output(self.name + ' linear system sol error {}'.format(lerr))
+            output(self.name + ' mtx max {}, min {}, trace {}'
+                   .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
 
         vec_x = vec_x + ts.dt * vec_dx
         vec_x = self.post_stage_hook(vec_x)
@@ -166,7 +165,12 @@ class EulerStepSolver(DGMultiStageTS):
 
 class TVDRK3StepSolver(DGMultiStageTS):
     """
-    3rd order Runge-Kutta method
+    3rd order Total Variation Diminishing Runge-Kutta method
+
+    math::
+        u^{(1)} &= u^n + \Delta t \mathcal{L}(u^n) \\
+        u^{(2)} &= \frac{3}{4}u^n +\frac{1}{4}u^{(1)} + \frac{1}{4}\Delta t \mathcal{L}(u^{(1)})\\
+        u^{n+1} &= \frac{1}{3}u^n +\frac{2}{3}u^{(2)} + \frac{2}{3}\Delta t \mathcal{L}(u^{(2)})
     """
 
     name = 'ts.tvd_runge_kutta_3'
@@ -189,7 +193,6 @@ class TVDRK3StepSolver(DGMultiStageTS):
         eps_r = get_default(ls_eps_r, 1.0)
         ls_status = {}
 
-        # Add pre-stage hook?
         # ----1st stage----
         vec_x = vec_x0.copy()
 
@@ -202,18 +205,16 @@ class TVDRK3StepSolver(DGMultiStageTS):
 
         vec_x1 = vec_x + ts.dt * (vec_dx - vec_x)
 
-        from dg_field import get_unraveler, get_raveler
-        unravel = get_unraveler(3, 99)
-        un_vec_r = unravel(vec_r)
-        un_vec_x1 = unravel(vec_x1)
-        un_vec_x0 = unravel(vec_x0)
+        vec_e = mtx_a * vec_dx - vec_r
+        lerr = nla.norm(vec_e)
+        if self.verbose:
+            output(self.stage_format.format(1, lerr))
 
         vec_x1 = self.post_stage_hook(vec_x1)
 
-        un_vec_x1_lim = unravel(vec_x1)
 
         # ----2nd stage----
-        # ts.set_substep_time(1./2. * ts.dt)
+        # ts.set_substep_time(time + 1./2. * ts.dt)
         # prestep_fun(ts, vec_x1)
         vec_r = fun(vec_x1)
         mtx_a = fun_grad(vec_x1)
@@ -223,13 +224,17 @@ class TVDRK3StepSolver(DGMultiStageTS):
 
         vec_x2 = (3 * vec_x + vec_x1 + ts.dt * (vec_dx - vec_x1))/4
 
-        un_vec_x2 = unravel(vec_x2)
+        vec_e = mtx_a * vec_dx - vec_r
+        lerr = nla.norm(vec_e)
+        if self.verbose:
+            output(self.stage_format.format(2, lerr))
 
         vec_x2 = self.post_stage_hook(vec_x2)
 
-        un_vec_x2_lim = unravel(vec_x2)
 
         # ----3rd stage-----
+        # ts.set_substep_time(time + 1./2. * ts.dt)
+        # prestep_fun(ts, vec_x1)
         ts.set_substep_time(1./2. * ts.dt)
         prestep_fun(ts, vec_x2)
         vec_r = fun(vec_x2)
@@ -240,16 +245,12 @@ class TVDRK3StepSolver(DGMultiStageTS):
 
         vec_x3 = (vec_x + 2 * vec_x2 + 2*ts.dt * (vec_dx - vec_x2))/3
 
-        un_vec_x3 = unravel(vec_x3)
-        vec_x3 = self.post_stage_hook(vec_x3)
-        un_vec_x3_lim = unravel(vec_x3)
+        vec_e = mtx_a * vec_dx - vec_r
+        lerr = nla.norm(vec_e)
+        if self.verbose:
+            output(self.stage_format.format(3, lerr))
 
-        # vec_e = mtx_a * vec_dx - vec_r
-        # lerr = nla.norm(vec_e)
-        # output('linear system sol error {}'.format(lerr))
-        # output('mtx max {}, min {}, trace {}'
-        #        .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
-        # vec_x -= ts.dt * vec_dx
+        vec_x3 = self.post_stage_hook(vec_x3)
 
         return vec_x3
 
