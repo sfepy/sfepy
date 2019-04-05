@@ -77,7 +77,7 @@ solvers.update({
 })
 
 ls = solvers['ls']
-ls[1].update({'presolve' : True})
+ls[1].update({'use_presolve' : True})
 
 functions = {
     'ebc_sin' : (ebc_sin,),

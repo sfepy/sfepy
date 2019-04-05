@@ -181,7 +181,7 @@ class CorrMiniApp(MiniAppBase):
                         var = variables[var_name]
                         shape = (var.n_dof // var.n_components,
                                  var.n_components)
-                        out[skey] = Struct(name = 'dump', mode = 'nodes',
+                        out[skey] = Struct(name = 'dump', mode = 'vertex',
                                            data = dof_vector,
                                            dofs = var.dofs,
                                            shape = shape,
@@ -572,8 +572,8 @@ class PressureEigenvalueProblem(CorrMiniApp):
         output('full A size: %.3f MB' % (8.0 * nm.prod(mtx_a.shape) / 1e6))
         output('full B size: %.3f MB' % (8.0 * nm.prod(mtx_bt.shape) / 1e6))
 
-        ls = Solver.any_from_conf(self.problem.ls_conf,
-                                   presolve=True, mtx=mtx_a)
+        ls = Solver.any_from_conf(self.problem.ls_conf
+                                  + Struct(use_presolve=True), mtx=mtx_a)
         if self.mode == 'explicit':
             tt = time.clock()
             mtx_aibt = nm.zeros(mtx_bt.shape, dtype=mtx_bt.dtype)
@@ -720,6 +720,8 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
         iee_e_qg = 0.0
         format = '====== time %%e (step %%%dd of %%%dd) ====='\
                  % ((ts.n_digit,) * 2)
+        vu, vp = self.dump_variables
+        state = {k: [] for k in [vu, vp, 'd' + vp]}
         for step, time in ts:
             output(format % (time, step + 1, ts.n_step))
 
@@ -744,7 +746,13 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
 ##             print aaa
 ##             print bbb
 
+            state[vu].append(vec_u)
+            state[vp].append(vec_p)
+            state['d' + vp].append(vec_dp)
+
             self.save(dump_name, save_name, vec_u, vec_p, vec_dp, ts, problem)
+
+        return state
 
     def save(self, dump_name, save_name, vec_u, vec_p, vec_dp, ts, problem):
         """
@@ -752,12 +760,12 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
         2. saves correctors transformed to output for visualization
         """
         vu, vp = self.dump_variables
-        out = {vu : Struct(name='dump', mode='nodes', data=vec_u,
-                           dofs=None, var_name=vu),
-               vp : Struct(name='dump', mode='nodes', data=vec_p,
-                           dofs=None, var_name=vp),
-               'd'+vp : Struct(name='dump', mode='nodes', data=vec_dp,
-                               dofs=None, var_name=vp)}
+        out = {vu : Struct(name='dump', mode='vertex',
+                           var_name=vu, data=vec_u[:, nm.newaxis]),
+               vp : Struct(name='dump', mode='vertex',
+                           var_name=vp, data=vec_p[:, nm.newaxis]),
+               'd'+vp : Struct(name='dump', mode='vertex',
+                               var_name=vp, data=vec_dp[:, nm.newaxis])}
 
         problem.save_state(dump_name, out=out, file_per_var=False, ts=ts)
 
@@ -828,6 +836,75 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
 
         return ok
 
+
+def create_ts_coef(cls):
+    """
+    Define a new class with modified call method which accepts
+    time dependent data (correctors).
+    """
+    class TSCoef(cls):
+        @staticmethod
+        def get_ts_val(data, step):
+            if hasattr(data, 'states'):
+                states = nm.zeros(data.states.shape, dtype=nm.object)
+                for idx in data.components:
+                    state = {k: v[step] for k, v in\
+                             six.iteritems(data.states[idx])}
+                    states[idx] = state
+
+                out = CorrSolution(name=data.name,
+                                   states=states,
+                                   components=data.components)
+
+            else:
+                state = {k: v[step] for k, v in six.iteritems(data.state)}
+                out = CorrSolution(name=data.name,
+                                   state=state)
+
+            return out
+
+        def __call__(self, volume=None, problem=None, data=None):
+            problem = get_default(problem, self.problem)
+            ts_keys = []
+            ts_data = {}
+            n_step = None
+            for key, val in six.iteritems(data):
+                if isinstance(val, CorrSolution) and hasattr(val, 'n_tstep'):
+                    if n_step is None:
+                        n_step = val.n_tstep
+                    else:
+                        if not(n_step == val.n_tstep):
+                            raise ValueError('incorrect number of time' +\
+                                             'steps in %s!' % self.name)
+
+                    ts_keys.append(key)
+                else:
+                    ts_data[key] = val
+
+            if n_step is None:
+                raise ValueError('no time steps found in %s!' % self.name)
+
+            n_digit = int(nm.log10(n_step))+1
+            format = '====== step %%%dd of %%%dd =====' % ((n_digit,) * 2)
+            out = []
+            for step in range(n_step):
+                output(format % (step + 1, n_step))
+                for key in ts_keys:
+                    ts_data[key] = self.get_ts_val(data[key], step)
+                out.append(cls.__call__(self, volume, problem, ts_data))
+
+            out = nm.asarray(out)
+            sh = out.shape
+            if len(sh) == 2:
+                out = out.reshape((sh[0], 1, sh[1]))
+            elif len(sh) == 1:
+                out = out.reshape((sh[0], 1, 1))
+
+            return out
+
+    return TSCoef
+
+
 class CoefDummy(MiniAppBase):
     """
     Dummy class serving for computing and returning its requirements.
@@ -840,7 +917,8 @@ class TSTimes(MiniAppBase):
     """Coefficient-like class, returns times of the time stepper."""
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
-        return problem.get_time_solver().ts.times
+        problem.init_solvers()
+        return problem.get_timestepper().times
 
 class VolumeFractions(MiniAppBase):
     """Coefficient-like class, returns volume fractions of given regions within
@@ -955,49 +1033,6 @@ class CoefNonSymNonSym(CoefSymSym):
     is_sym = False
 
 
-class CoefFMSymSym(MiniAppBase):
-    """
-    Fading memory sym x sym coefficients.
-    """
-
-    def __call__(self, volume, problem=None, data=None):
-        problem = get_default(problem, self.problem)
-
-        dim, sym = problem.get_dim(get_sym=True)
-
-        filename = self.set_variables(None, None, None, 0, 0,
-                                      'filename', **data)
-        ts = TimeStepper(*HDF5MeshIO(filename).read_time_stepper())
-
-        coef = nm.zeros((ts.n_step, sym, sym), dtype=self.dtype)
-
-        term_mode = self.term_mode
-        equations, variables = problem.create_evaluable(self.expression,
-                                                        term_mode=term_mode)
-
-        for ir, (irr, icr) in enumerate(iter_sym(dim)):
-            filename = self.set_variables(None, None, None, irr, icr,
-                                          'filename', **data)
-            io = HDF5MeshIO(filename)
-
-            for step, time in ts:
-                self.set_variables(variables, io, step, None, None,
-                                   'row', **data)
-
-                for ic, (irc, icc) in enumerate(iter_sym(dim)):
-                    self.set_variables(variables, None, None, irc, icc,
-                                       'col', **data)
-
-                    val = eval_equations(equations, variables,
-                                         term_mode=term_mode)
-
-                    coef[step,ir,ic] = val
-
-        coef /= self._get_volume(volume)
-
-        return coef
-
-
 class CoefDimSym(CoefNN):
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -1062,42 +1097,6 @@ class CoefNonSym(CoefSym):
     is_sym = False
 
 
-class CoefFMSym(MiniAppBase):
-    """
-    Fading memory sym coefficients.
-    """
-
-    def __call__(self, volume, problem=None, data=None):
-        problem = get_default(problem, self.problem)
-
-        dim, sym = problem.get_dim(get_sym=True)
-
-        filename = self.set_variables(None, 0, 0, 'filename', **data)
-        ts = TimeStepper(*HDF5MeshIO(filename).read_time_stepper())
-
-        coef = nm.zeros((ts.n_step, sym), dtype=self.dtype)
-
-        term_mode = self.term_mode
-        equations, variables = problem.create_evaluable(self.expression,
-                                                        term_mode=term_mode)
-
-        self.set_variables(variables, None, None, 'col', **data)
-
-        for ii, (ir, ic) in enumerate(iter_sym(dim)):
-            filename = self.set_variables(None, ir, ic, 'filename', **data)
-            io = HDF5MeshIO(filename)
-            for step, time in ts:
-                self.set_variables(variables, io, step, 'row', **data)
-
-                val = eval_equations(equations, variables,
-                                     term_mode=term_mode)
-
-                coef[step,ii] = val
-
-        coef /= self._get_volume(volume)
-
-        return coef
-
 class CoefOne(MiniAppBase):
 
     def set_variables_default(variables, set_var, data):
@@ -1126,37 +1125,6 @@ class CoefOne(MiniAppBase):
 
         return coef
 
-class CoefFMOne(MiniAppBase):
-    """
-    Fading memory scalar coefficients.
-    """
-
-    def __call__(self, volume, problem=None, data=None):
-        problem = get_default(problem, self.problem)
-
-        filename = self.set_variables(None, None, None, 'filename', **data)
-        io = HDF5MeshIO(filename)
-        ts = TimeStepper(*io.read_time_stepper())
-
-        coef = nm.zeros((ts.n_step, 1), dtype=self.dtype)
-
-        term_mode = self.term_mode
-        equations, variables = problem.create_evaluable(self.expression,
-                                                        term_mode=term_mode)
-
-        self.set_variables(variables, None, None, 'col', **data)
-
-        for step, time in ts:
-            self.set_variables(variables, io, step, 'row', **data)
-
-            val = eval_equations(equations, variables,
-                                 term_mode=term_mode)
-
-            coef[step] = val
-
-        coef /= self._get_volume(volume)
-
-        return coef
 
 class CoefSum(MiniAppBase):
 
