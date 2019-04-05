@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **29.12.2017** Version 2017.4 released (basic support for penalty-based
+  contacts, support for user-defined contexts in all solvers and
+  preconditioners, new example: dispersion analysis of heterogeneous periodic
+  materials, etc.), see :ref:`release notes <2017.3-2017.4>`.
+
 * **19.09.2017** Version 2017.3 released (support preconditioning in SciPy and
   PyAMG based linear solvers, user-defined preconditioners for PETSc linear
   solvers, parallel multiscale (macro-micro) homogenization-based computations,

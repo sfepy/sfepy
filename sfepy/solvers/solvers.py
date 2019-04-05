@@ -2,6 +2,7 @@
 Base (abstract) solver classes.
 """
 from __future__ import absolute_import
+import numpy as nm
 from sfepy.base.base import Struct, output, structify
 import six
 
@@ -334,6 +335,13 @@ class EigenvalueSolver(Solver):
             if hasattr(mtx_b, 'toarray'):
                 mtx_b = mtx_b.toarray()
         return mtx_a, mtx_b
+
+    def _ret_zero(self, mtx, eigenvectors=None):
+        out = nm.zeros(0, dtype=nm.float64)
+        if eigenvectors:
+            out = (out,
+                   nm.zeros((mtx.shape[0], 0), dtype=nm.float64))
+        return out
 
 class QuadraticEVPSolver(Solver):
     """

@@ -162,8 +162,8 @@ def _write_header(output, xlabels, ylabels, yscales, data_names, plot_kwargs):
                     % ', '.join('%s' % ii
                                 for ii in plot_kwargs[ig]))
 
-def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
-             show_legends=True, swap_axes=False):
+def plot_log(axs, log, info, xticks=None, yticks=None, xnbins=None, ynbins=None,
+             groups=None, show_legends=True, swap_axes=False):
     """
     Plot log data returned by :func:`read_log()` into a specified figure.
 
@@ -179,6 +179,10 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
         The list of x-axis ticks (array or None) for each subplot.
     yticks : list of arrays, optional
         The list of y-axis ticks (array or None) for each subplot.
+    xnbins : list, optional
+        The list of x-axis number of bins (int or None) for each subplot.
+    ynbins : list, optional
+        The list of y-axis number of bins (int or None) for each subplot.
     groups : list, optional
         The list of data groups subplots. If not given, all groups are plotted.
     show_legends : bool
@@ -215,6 +219,12 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
     if yticks is None:
         yticks = [None] * n_gr
 
+    if xnbins is None:
+        xnbins = [None] * n_gr
+
+    if ynbins is None:
+        ynbins = [None] * n_gr
+
     isub = 0
     for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
         if ii not in groups: continue
@@ -226,6 +236,8 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
             ax = axs[ii]
 
         if not swap_axes:
+            xnb, ynb = xnbins[isub], ynbins[isub]
+            xti, yti = xticks[isub], yticks[isub]
             ax.set_yscale(yscale)
             for ip, name in enumerate(names):
                 xs, ys, vlines = log[name]
@@ -234,17 +246,10 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
                 for x in vlines:
                     ax.axvline(x, color='k', alpha=0.3)
 
-            if xticks[isub] is not None:
-                ax.set_xticks(xticks[isub])
-
-            else:
-                ax.locator_params(axis='x', nbins=10)
-
-            if yticks[isub] is not None:
-                ax.set_yticks(yticks[isub])
-
         else:
             xlabel, ylabel = ylabel, xlabel
+            xti, yti = yticks[isub], xticks[isub]
+            xnb, ynb = ynbins[isub], xnbins[isub]
             ax.set_xscale(yscale)
 
             for ip, name in enumerate(names):
@@ -254,14 +259,17 @@ def plot_log(axs, log, info, xticks=None, yticks=None, groups=None,
                 for x in vlines:
                     ax.axhline(x, color='k', alpha=0.3)
 
-            if yticks[isub] is not None:
-                ax.set_xticks(yticks[isub])
+        if xti is not None:
+            ax.set_xticks(xti)
 
-            else:
-                ax.locator_params(axis='y', nbins=10)
+        if yti is not None:
+            ax.set_yticks(yti)
 
-            if xticks[isub] is not None:
-                ax.set_yticks(yticks[isub])
+        if xnb is not None:
+            ax.locator_params(tight=True, axis='x', nbins=xnb)
+
+        if ynb is not None:
+            ax.locator_params(tight=True, axis='y', nbins=ynb)
 
         if xlabel:
             ax.set_xlabel(xlabel)
