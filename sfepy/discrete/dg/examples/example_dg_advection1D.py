@@ -44,7 +44,7 @@ regions = {
 }
 
 fields = {
-    'density' : ('real', 'scalar', 'Omega', str(approx_order)+'d', 'DG', 'legendre') #
+    'density' : ('real', 'scalar', 'Omega', str(approx_order)+'d', 'DG', 'legendre')
 }
 
 variables = {
