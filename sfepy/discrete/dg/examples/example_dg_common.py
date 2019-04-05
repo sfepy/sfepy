@@ -37,7 +37,9 @@ def get_cfl_setup(CFL):
         ts_conf = problem.ts_conf
         mesh = problem.domain.mesh
         dim = mesh.dim
-        approx_order = problem.fields['density'].approx_order
+        first_field = list(problem.fields.values())[0]
+        first_field_name = list(problem.fields.keys())[0]
+        approx_order = first_field.approx_order
         mats = problem.create_materials('a')
         velo = problem.conf_materials['material_a__0'].values["val"]
         max_velo = nm.max(nm.linalg.norm(velo))
@@ -50,7 +52,7 @@ def get_cfl_setup(CFL):
 
         ts_conf += Struct(dt=dt, n_step=tn)
         output("Preprocessing hook setup_cfl_condition:")
-        output("Approximation order of field {} order is {}".format(problem.fields['density'].family_name, approx_order))
+        output("Approximation order of field {}({}) is {}".format(first_field_name, first_field.family_name, approx_order))
         output("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
         output("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
         output("CFL coefficient was {0} and order correction 1/{1} = {2}".format(CFL,  (2 * approx_order + 1), order_corr))

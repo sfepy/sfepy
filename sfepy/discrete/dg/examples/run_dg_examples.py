@@ -26,10 +26,10 @@ from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_output_folder
 
 
-parser = argparse.ArgumentParser(description='Run SfePy conf python files',
+parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',
                                  epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
 parser.add_argument("conf_file", help="""File containing problem configuration""")
-parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
+parser.add_argument('-p', '--plot', help="""To plot 1D case", action="store_true""")
 
 def main(argv):
     if argv is None:
@@ -38,7 +38,10 @@ def main(argv):
     args = parser.parse_args(argv)
     conf_file_name = args.conf_file
 
+    output("Processing conf file {}".format(conf_file_name))
     pc = ProblemConf.from_file(conf_file_name)
+
+    output("Running {}".format(pc.example_name))
 
     output_folder = "output"
     output_name_trunk_folder = pjoin(output_folder, pc.example_name, str(pc.approx_order) + "/")
@@ -46,6 +49,8 @@ def main(argv):
     output_name_trunk = pjoin(output_name_trunk_folder, output_name_trunk_name)
     ensure_path(output_name_trunk_folder)
     clear_output_folder(output_name_trunk_folder)
+
+    output("Output set to {}.*.{}".format(output_name_trunk, pc.options.output_format))
 
     sa = PDESolverApp(pc, Struct(output_filename_trunk=output_name_trunk,
                                  save_ebc=False,
@@ -55,6 +60,7 @@ def main(argv):
                                  save_regions_as_groups=False,
                                  save_field_meshes=False,
                                  solve_not=False), "sfepy")
+
     sa()
 
     if pc.dim == 1 and args.plot:

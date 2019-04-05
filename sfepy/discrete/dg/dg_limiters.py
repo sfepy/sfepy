@@ -3,7 +3,7 @@ from sfepy.discrete.dg.dg_field import get_raveler, get_unraveler
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, IndexedStruct)
 
-MACHINE_EPS = 1e-40
+MACHINE_EPS = 1e-30
 
 def minmod(a, b, c):
     """
@@ -44,7 +44,7 @@ class IdentityLimiter(DGLimiter):
     name = "identity"
 
     def __call__(self, u):
-        if verbose: ouput(self.name)
+        if self.verbose: output(self.name + " limiter")
         return u
 
 
@@ -62,6 +62,7 @@ class Moment1DLimiter(DGLimiter):
         """
         # for convenience do not try to limit FV
         if self.n_el_nod == 1:
+            if self.verbose: output(self.name + " no limiting for FV.")
             return u
         u = self.unravel(u).swapaxes(0, 1)
 
