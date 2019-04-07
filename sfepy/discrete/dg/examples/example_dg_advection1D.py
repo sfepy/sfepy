@@ -26,7 +26,7 @@ def get_1Dmesh_hook(XS, XE, n_nod):
 
     return mesh_hook
 
-filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 100))
+filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 2*nm.pi, 100))
 
 approx_order = 1
 t0 = 0.
@@ -51,17 +51,21 @@ variables = {
     'u' : ('unknown field', 'density', 0, 1),
     'v' : ('test field',    'density', 'u'),
 }
-
-ebcs = {
-    'u_left' : ('Gamma_Left', {'u.all' : 0.0}),
-    # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
-}
+def left_sin(ts, coor, bc, problem, **kwargs):
+    return nm.sin(2*nm.pi*ts.time)
 
 def get_ic(x, ic=None):
-    return ghump(x - .3)
+    return 0*ghump(x - .3)
 
 functions = {
-    'get_ic' : (get_ic,)
+    'get_ic' : (get_ic,),
+    'bc_fun':  (left_sin,)
+}
+
+
+ebcs = {
+    'u_left' : ('Gamma_Left', {'u.all' : 'bc_fun'}),
+    # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 }
 
 ics = {
@@ -81,7 +85,7 @@ equations = {
 }
 
 solvers = {
-    "tss" : ('ts.euler',
+    "tss" : ('ts.tvd_runge_kutta_3',
                          {"t0": t0,
                           "t1": t1,
                           'limiter' : Moment1DLimiter,
@@ -95,5 +99,6 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'save_times' : 100,
+    'active_only' : False,
     'pre_process_hook' : get_cfl_setup(CFL)
 }

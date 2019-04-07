@@ -803,23 +803,23 @@ class DGField(Field):
         nods = nm.unique(nm.hstack(aux))
 
         if nm.isscalar(fun):
-            # TODO set only zero order
             vals = nm.zeros(aux.shape)
             # set zero DOF to value fun, set other DOFs to zero
-            # FIXME only temporary to test BCs
-            vals[:, 0] = .5
-            vals[:, 1] = -.5
+            vals[:, 0] = fun
+            # vals[:, 1] = -.5
             vals = nm.hstack(vals)
 
         elif isinstance(fun, nm.ndarray):
             assert_(len(fun) == dpn)
-            # TODO set only zero order
-            vals = nm.repeat(fun, nods.shape[0])
+            vals = nm.zeros(aux.shape)
+            vals[:, 0] = nm.repeat(fun, vals.shape[0])
 
 
         elif callable(fun):
-            vals = fun(1) # FIXME hot fix to make book examples work
-            # TODO proper projection of BC fun onto the boundary facets
+            vals = nm.zeros(aux.shape)
+            # set zero DOF to value fun, set other DOFs to zero
+            # FIXME only temporary to test BCs
+            vals[:, 0] = fun(1)
 
             # get facets QPs
             # get facets weights

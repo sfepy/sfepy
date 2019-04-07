@@ -29,7 +29,7 @@ from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_output_folder
 parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',
                                  epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
 parser.add_argument("conf_file", help="""File containing problem configuration""")
-parser.add_argument('-p', '--plot', help="""To plot 1D case", action="store_true""")
+parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
 
 def main(argv):
     if argv is None:
@@ -50,7 +50,9 @@ def main(argv):
     ensure_path(output_name_trunk_folder)
     clear_output_folder(output_name_trunk_folder)
 
-    output("Output set to {}.*.{}".format(output_name_trunk, pc.options.output_format))
+    output("Output set to {}.*.{}".format(output_name_trunk,
+                                          pc.options.output_format
+                                          if hasattr(pc.options, "output_format") else "vtk"))
 
     sa = PDESolverApp(pc, Struct(output_filename_trunk=output_name_trunk,
                                  save_ebc=False,
