@@ -23,7 +23,7 @@ from sfepy.base.base import (get_default, output, assert_,
 
 
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_output_folder
+from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
 
 
 parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',
@@ -48,9 +48,14 @@ def main(argv):
     output_name_trunk_name = pc.example_name + str(pc.approx_order)
     output_name_trunk = pjoin(output_name_trunk_folder, output_name_trunk_name)
     ensure_path(output_name_trunk_folder)
-    clear_output_folder(output_name_trunk_folder)
+    output_format = "{}.*.{}".format(output_name_trunk,
+                                      pc.options.output_format
+                                      if hasattr(pc.options, "output_format") else "vtl")
+    output("Output set to {}, clearing ...".format(output_format))
 
-    output("Output set to {}.*.{}".format(output_name_trunk, pc.options.output_format))
+
+    clear_folder(output_format, confirm=False)
+
 
     sa = PDESolverApp(pc, Struct(output_filename_trunk=output_name_trunk,
                                  save_ebc=False,
