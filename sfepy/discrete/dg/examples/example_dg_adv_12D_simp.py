@@ -5,7 +5,7 @@ dim = int(example_name[example_name.index("D") - 1])
 
 filename_mesh = "mesh/simp_12D_mesh.vtk"
 
-approx_order = 0
+approx_order = 1
 t0 = 0.
 t1 = .2
 CFL = .4

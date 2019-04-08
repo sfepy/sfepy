@@ -7,18 +7,27 @@ import os
 import sys
 from glob import glob
 
+from sfepy.base.base import (get_default, output, assert_,
+                             Struct, basestr, IndexedStruct)
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 from sfepy.discrete.dg.my_utils.visualizer import \
     load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
 
 
-def clear_output_folder(output_folder, confirm=False):
-    files = glob(pjoin(output_folder, "*"))
+
+def clear_folder(clear_format, confirm=False):
+    """
+    Deletes files matching the format
+    :param clear_format:
+    :param confirm:
+    :return:
+    """
+    files = glob(clear_format)
     doit = True
     if confirm:
         for file in files:
-            print("Will delete file {}".format(file))
+            output("Will delete file {}".format(file))
         doit = input("--------------\nDelete files [Y/n]? ").strip() == "Y"
 
     if doit:

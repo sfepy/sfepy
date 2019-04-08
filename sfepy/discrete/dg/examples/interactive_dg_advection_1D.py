@@ -27,14 +27,14 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
 from sfepy.discrete.dg.my_utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_output_folder
+from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
 
 # Setup output names
 domain_name = "domain_1D"
 output_folder = "output/adv_1D/"
 output_folder_mesh = "output/mesh"
 save_timestn = 100
-clear_output_folder(output_folder)
+clear_folder(output_folder)
 
 #------------
 #| Get mesh |

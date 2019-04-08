@@ -23,13 +23,13 @@ from sfepy.base.base import (get_default, output, assert_,
 
 
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_output_folder
+from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
 
 
 parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',
                                  epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
 parser.add_argument("conf_file", help="""File containing problem configuration""")
-parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
+parser.add_argument('-p', '--plot', help="""To plot 1D case", action="store_true""")
 
 def main(argv):
     if argv is None:
@@ -48,11 +48,14 @@ def main(argv):
     output_name_trunk_name = pc.example_name + str(pc.approx_order)
     output_name_trunk = pjoin(output_name_trunk_folder, output_name_trunk_name)
     ensure_path(output_name_trunk_folder)
-    clear_output_folder(output_name_trunk_folder)
+    output_format = "{}.*.{}".format(output_name_trunk,
+                                      pc.options.output_format
+                                      if hasattr(pc.options, "output_format") else "vtl")
+    output("Output set to {}, clearing ...".format(output_format))
 
-    output("Output set to {}.*.{}".format(output_name_trunk,
-                                          pc.options.output_format
-                                          if hasattr(pc.options, "output_format") else "vtk"))
+
+    clear_folder(output_format, confirm=False)
+
 
     sa = PDESolverApp(pc, Struct(output_filename_trunk=output_name_trunk,
                                  save_ebc=False,
