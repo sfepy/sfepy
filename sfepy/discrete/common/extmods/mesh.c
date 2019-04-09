@@ -184,7 +184,9 @@ inline int32 mei_go(MeshEntityIterator *iter)
 inline int32 mei_next(MeshEntityIterator *iter)
 {
   iter->it += 1;
-  iter->entity->ii = (iter->ptr ? iter->ptr[iter->it] : iter->it);
+  if (iter->it < iter->it_end) {
+    iter->entity->ii = (iter->ptr ? iter->ptr[iter->it] : iter->it);
+  }
 
   return(RET_OK);
 }

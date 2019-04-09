@@ -1012,7 +1012,10 @@ class Problem(Struct):
         def _get_solver_conf(kind):
             try:
                 key = options[kind]
-                conf = self.solver_confs[key]
+                if key is None:
+                    conf = None
+                else:
+                    conf = self.solver_confs[key]
             except:
                 conf = _find_suitable(kind + '.')
             return conf

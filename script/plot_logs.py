@@ -28,6 +28,8 @@ helps = {
     'rc' : 'matplotlib resources',
     'no_legends' :
     'do not show legends in the log plots',
+    'nbins' :
+    'the numbers of bins in x, y axes for all groups [default: %(default)s]',
     'swap_axes' :
     'swap the axes of the plots',
     'no_show' :
@@ -49,6 +51,9 @@ def main():
     parser.add_argument('--no-legends',
                         action='store_false', dest='show_legends',
                         default=True, help=helps['no_legends'])
+    parser.add_argument('--nbins', metavar='nx1,ny1,...',
+                        action='store', dest='nbins',
+                        default=None, help=helps['nbins'])
     parser.add_argument('--swap-axes',
                         action='store_true', dest='swap_axes',
                         default=False, help=helps['swap_axes'])
@@ -63,11 +68,20 @@ def main():
     if options.groups is not None:
         options.groups = [int(ii) for ii in options.groups.split(',')]
 
+    if options.nbins is not None:
+        aux = [int(ii) if ii != 'None' else None
+               for ii in options.nbins.split(',')]
+        xnbins, ynbins = aux[::2], aux[1::2]
+
+    else:
+        xnbins = ynbins = None
+
     log, info = read_log(filename)
 
     plt.rcParams.update(options.rc)
 
     plot_log(None, log, info, groups=options.groups,
+             xnbins=xnbins, ynbins=ynbins,
              show_legends=options.show_legends, swap_axes=options.swap_axes)
 
     if options.output_filename:

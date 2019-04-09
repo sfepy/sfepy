@@ -81,8 +81,9 @@ solvers = {
     }),
 }
 
-eigs_expected = nm.array([0.04904454, 0.12170685, 0.12170685,
-                          0.19257998, 0.24082108])
+eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
+                           0.19257998, 0.24082108]),
+                 []]
 
 from sfepy.base.testing import TestCommon
 
@@ -115,39 +116,43 @@ class Test(TestCommon):
     def test_eigenvalue_solvers(self):
         eig_confs = self._list_eigenvalue_solvers(self.conf.solvers)
 
-        n_eigs = 5
+        all_n_eigs = [5, 0]
 
         ok = True
         tt = []
-        for eig_conf in eig_confs:
-            self.report(eig_conf.name)
+        for ii, n_eigs in enumerate(all_n_eigs):
+            for eig_conf in eig_confs:
+                self.report(eig_conf.name)
 
-            try:
-                eig_solver = Solver.any_from_conf(eig_conf)
+                try:
+                    eig_solver = Solver.any_from_conf(eig_conf)
 
-            except (ValueError, ImportError):
-                if eig_conf.kind in self.can_fail:
-                    continue
+                except (ValueError, ImportError):
+                    if eig_conf.kind in self.can_fail:
+                        continue
 
-                else:
-                    raise
+                    else:
+                        raise
 
-            t0 = time.clock()
-            eigs, vecs = eig_solver(self.mtx, n_eigs=n_eigs, eigenvectors=True)
-            tt.append([' '.join((eig_conf.name, eig_conf.kind)),
-                       time.clock() - t0])
+                t0 = time.clock()
+                eigs, vecs = eig_solver(self.mtx, n_eigs=n_eigs,
+                                        eigenvectors=True)
+                tt.append([' '.join((eig_conf.name, eig_conf.kind)),
+                           time.clock() - t0, n_eigs])
 
-            self.report(eigs)
+                self.report(eigs)
 
-            _ok = nm.allclose(eigs.real, eigs_expected, rtol=0.0, atol=1e-8)
-            tt[-1].append(_ok)
+                _ok = nm.allclose(eigs.real, eigs_expected[ii],
+                                  rtol=0.0, atol=1e-8)
+                tt[-1].append(_ok)
 
-            ok = ok and (_ok or (eig_conf.kind in self.can_fail)
-                         or (eig_conf.name in self.can_miss))
+                ok = ok and (_ok or (eig_conf.kind in self.can_fail)
+                             or (eig_conf.name in self.can_miss))
 
         tt.sort(key=lambda x: x[1])
         self.report('solution times:')
         for row in tt:
-            self.report('%.2f [s] : %s (ok: %s)' % (row[1], row[0], row[2]))
+            self.report('%.2f [s] : %s (%d) (ok: %s)'
+                        % (row[1], row[0], row[2], row[3]))
 
         return ok
