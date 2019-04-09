@@ -5,7 +5,7 @@ dim = int(example_name[example_name.index("D") - 1])
 
 filename_mesh = "mesh/tens_12D_mesh.vtk"
 
-approx_order = 0
+approx_order = 1
 t0 = 0.
 t1 = .2
 CFL = .1
@@ -78,7 +78,7 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'save_times' : 100,
-    'active_only' : True,
+    'active_only' : False,
     'output_format' : 'msh',
     'pre_process_hook' : get_cfl_setup(CFL)
 }

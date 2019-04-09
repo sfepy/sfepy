@@ -55,7 +55,7 @@ def left_sin(ts, coor, bc, problem, **kwargs):
     return nm.sin(2*nm.pi*ts.time)
 
 def get_ic(x, ic=None):
-    return 0*ghump(x - .3)
+    return ghump(x - .3)
 
 functions = {
     'get_ic' : (get_ic,),
@@ -63,9 +63,16 @@ functions = {
 }
 
 
-ebcs = {
-    'u_left' : ('Gamma_Left', {'u.all' : .5}),
-    # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
+# ebcs = {
+#     'u_left' : ('Gamma_Left', {'u.all' : .5}),
+#     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
+# }
+
+epbc_1 = {
+    'name' : 'u_rl',
+    'region' : ['Gamma_Left', 'Gamma_Right'],
+    'dofs' : {'u.all' : 'u.all'},
+    'match' : 'match_x_line',
 }
 
 ics = {

@@ -11,6 +11,7 @@ from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete import Integral, FieldVariable
 from six.moves import range
 from sfepy.discrete.fem import Mesh, Field
+from sfepy.discrete.fem.fields_base import FEField
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.mappings import VolumeMapping
 from sfepy.base.base import (get_default, output, assert_,
@@ -76,7 +77,7 @@ def get_gel(region):
             raise ValueError('Region {} contains multiple'
                              ' reference geometries!'.format(region))
 
-class DGField(Field):
+class DGField(FEField):
     family_name = 'volume_DG_legendre_discontinuous'
     is_surface = False
 
@@ -134,8 +135,7 @@ class DGField(Field):
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
 
-        # boundary DOFS TODO temporary - resolve BC treatement
-        self.boundary_val = 0.0
+        self.setup_coors()
 
         # integral
         self.clear_qp_base()
