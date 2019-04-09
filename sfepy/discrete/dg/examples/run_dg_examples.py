@@ -50,7 +50,7 @@ def main(argv):
     ensure_path(output_name_trunk_folder)
     output_format = "{}.*.{}".format(output_name_trunk,
                                       pc.options.output_format
-                                      if hasattr(pc.options, "output_format") else "vtl")
+                                      if hasattr(pc.options, "output_format") else "vtk")
     output("Output set to {}, clearing ...".format(output_format))
 
 

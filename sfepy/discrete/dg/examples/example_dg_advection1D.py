@@ -26,11 +26,11 @@ def get_1Dmesh_hook(XS, XE, n_nod):
 
     return mesh_hook
 
-filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 2*nm.pi, 100))
+filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 20))
 
-approx_order = 1
+approx_order = 0
 t0 = 0.
-t1 = 1.
+t1 = .2
 CFL = .5
 
 materials = {
@@ -64,7 +64,7 @@ functions = {
 
 
 ebcs = {
-    'u_left' : ('Gamma_Left', {'u.all' : 'bc_fun'}),
+    'u_left' : ('Gamma_Left', {'u.all' : .5}),
     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 }
 
@@ -85,7 +85,7 @@ equations = {
 }
 
 solvers = {
-    "tss" : ('ts.tvd_runge_kutta_3',
+    "tss" : ('ts.euler',
                          {"t0": t0,
                           "t1": t1,
                           'limiter' : Moment1DLimiter,
@@ -99,6 +99,6 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'save_times' : 100,
-    'active_only' : False,
+    'active_only' : True,
     'pre_process_hook' : get_cfl_setup(CFL)
 }

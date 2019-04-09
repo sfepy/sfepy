@@ -50,9 +50,9 @@ class DGMultiStageTS(TimeSteppingSolver):
 
         if hasattr(conf, "limiter"):
             if conf.limiter is not None:
-                # FIXME - hot fix to get limiter working, maybe specify the field in options
                 n_cell = list(context.fields.values())[0].n_cell
                 n_el_nod = list(context.fields.values())[0].n_el_nod
+                self.limiter_class = conf.limiter
                 self.post_stage_hook = conf.limiter(n_cell=n_cell, n_el_nod=n_el_nod, verbose=self.verbose)
         if hasattr(conf, "post_stage_hook"):
             if conf.post_stage_hook is not None:

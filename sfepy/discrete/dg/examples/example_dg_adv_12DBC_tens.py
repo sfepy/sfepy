@@ -1,6 +1,6 @@
 from sfepy.discrete.dg.examples.example_dg_common import *
 
-example_name = "adv_12D_simp"
+example_name = "adv_12DBC_tens"
 dim = int(example_name[example_name.index("D") - 1])
 
 filename_mesh = "mesh/tens_12D_mesh.vtk"
@@ -8,7 +8,7 @@ filename_mesh = "mesh/tens_12D_mesh.vtk"
 approx_order = 0
 t0 = 0.
 t1 = .2
-CFL = .4
+CFL = .1
 
 
 # get_common(approx_order, CFL, t0, t1, None, get_ic)
@@ -23,7 +23,7 @@ materials = {
 
 regions = {
     'Omega' : 'all',
-    'Gamma_Left': ('vertices in (x < 0.00001)', 'edge'),
+    'Gamma_Left': ('vertices in (x < 0.055)', 'cell'),
 }
 
 fields = {
@@ -47,7 +47,7 @@ ics = {
 }
 
 ebcs = {
-    'u_left' : ('Gamma_Left', {'u.all' : 1}),
+    'u_left' : ('Gamma_Left', {'u.all' : .5}),
     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 }
 
@@ -64,7 +64,7 @@ equations = {
 }
 
 solvers = {
-    "tss" : ('ts.tvd_runge_kutta_3',
+    "tss" : ('ts.euler',
                          {"t0": t0,
                           "t1": t1,
                           'limiter' : IdentityLimiter,
@@ -78,6 +78,7 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'save_times' : 100,
+    'active_only' : True,
     'output_format' : 'msh',
     'pre_process_hook' : get_cfl_setup(CFL)
 }
