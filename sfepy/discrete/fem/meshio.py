@@ -2901,7 +2901,7 @@ class Msh2MeshIO(MeshIO):
             fd.write("$Nodes\n")
             fd.write(str(mesh.n_nod) + "\n")
             s = "{}" + dim*" {:.3f}" + (3 - dim)*" 0.0" + "\n"
-            for i, node in enumerate(coors):
+            for i, node in enumerate(coors, 1):
                 fd.write(s.format(i, *node))
             fd.write("$EndNodes\n")
 
@@ -2911,8 +2911,8 @@ class Msh2MeshIO(MeshIO):
                 _, n_el_verts = [int(f) for f in desc.split("_")]
                 el_type = self.geo2msh_type[desc]
                 s = "{} {} 2 0 0" + n_el_verts * " {}" + "\n"
-                for i, element in enumerate(conn):
-                    fd.write(s.format(i, el_type, *element))
+                for i, element in enumerate(conn, 1):
+                    fd.write(s.format(i, el_type, *nm.array(element) + 1))
             fd.write("$EndElements\n")
 
         def write_interpolation_scheme(fd, scheme):
@@ -2967,8 +2967,8 @@ class Msh2MeshIO(MeshIO):
                 fd.write("1\n") # number of components
                 fd.write("{}\n".format(data.shape[0]))
                 s = "{} {}" + n_el_nod * " {}" + "\n"
-                for i, el_node_vals in enumerate(data):
-                    fd.write(s.format(i, n_el_nod,*el_node_vals))
+                for i, el_node_vals in enumerate(data, 1):
+                    fd.write(s.format(i, n_el_nod, *el_node_vals))
                 fd.write("$EndElementNodeData\n")
 
 
