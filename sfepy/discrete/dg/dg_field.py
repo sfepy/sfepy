@@ -77,7 +77,7 @@ def get_gel(region):
             raise ValueError('Region {} contains multiple'
                              ' reference geometries!'.format(region))
 
-class DGField(FEField):
+class DGField(Field):
     family_name = 'volume_DG_legendre_discontinuous'
     is_surface = False
 
@@ -135,8 +135,6 @@ class DGField(FEField):
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
 
-        self.setup_coors()
-
         # integral
         self.clear_qp_base()
         self.clear_facet_qp_base()
@@ -189,6 +187,7 @@ class DGField(FEField):
         dofs = nm.arange(n_dof, dtype=nm.int32).reshape(self.n_cell, self.n_el_nod)
         remap = nm.arange(self.n_cell)
         self.econn = dofs
+        self.dofs2cells = nm.repeat(nm.arange(self.n_cell), self.n_el_nod)
 
         return n_dof, remap, dofs
 
@@ -287,6 +286,27 @@ class DGField(FEField):
             return self.bf[bf_key]
         else:
             return self.bf[bf_key], qp.weights
+
+    def get_coor(self, nods=None):
+        """
+        Returns coors for matching nodes, uses trick to deceive
+        EPBC implementation in sfepy
+        :param nods: if None use all nodes
+        :return:
+        """
+
+        if nods is None:
+            nods = self.bubble_dofs
+
+        cells = self.dofs2cells[nods]
+        coors = self.domain.mesh.cmesh.get_centroids(self.dim)[cells]
+        eps = min(self.domain.cmesh.get_volumes(self.dim)) / (self.n_el_nod + 2)
+        if self.dim == 1:
+            extended_coors = nm.zeros(nm.shape(coors)[:-1] + (2,))
+            extended_coors[:,0] = coors[:, 0]
+            coors = extended_coors
+        coors += eps * nm.repeat(nm.arange(self.n_el_nod), len(nm.unique(cells)))[:, None]
+        return coors
 
     def clear_facet_qp_base(self):
         self.facet_bf = None

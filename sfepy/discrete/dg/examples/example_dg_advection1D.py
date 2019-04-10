@@ -26,11 +26,11 @@ def get_1Dmesh_hook(XS, XE, n_nod):
 
     return mesh_hook
 
-filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 20))
+filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 100))
 
-approx_order = 0
+approx_order = 1
 t0 = 0.
-t1 = .2
+t1 = 1.
 CFL = .5
 
 materials = {
@@ -39,8 +39,8 @@ materials = {
 
 regions = {
     'Omega' : 'all',
-    'Gamma_Left' : ('vertices in (x < 0.00001)', 'vertex'),
-    'Gamma_Right' : ('vertices in (x > 0.99999)', 'vertex'),
+    'Gamma_Left' : ('vertices in (x < 0.000001)', 'vertex'),
+    'Gamma_Right' : ('vertices in (x > 0.999999)', 'vertex'),
 }
 
 fields = {
@@ -57,9 +57,11 @@ def left_sin(ts, coor, bc, problem, **kwargs):
 def get_ic(x, ic=None):
     return ghump(x - .3)
 
+from sfepy.discrete.fem.periodic import match_y_line, match_coors
 functions = {
     'get_ic' : (get_ic,),
-    'bc_fun':  (left_sin,)
+    'bc_fun':  (left_sin,),
+    'match_y_line': (match_y_line,)
 }
 
 
@@ -70,9 +72,9 @@ functions = {
 
 epbc_1 = {
     'name' : 'u_rl',
-    'region' : ['Gamma_Left', 'Gamma_Right'],
+    'region' : ['Gamma_Right', 'Gamma_Left', ],
     'dofs' : {'u.all' : 'u.all'},
-    'match' : 'match_x_line',
+    'match' : 'match_y_line',
 }
 
 ics = {
@@ -92,10 +94,10 @@ equations = {
 }
 
 solvers = {
-    "tss" : ('ts.euler',
+    "tss" : ('ts.tvd_runge_kutta_3',
                          {"t0": t0,
                           "t1": t1,
-                          'limiter' : Moment1DLimiter,
+                          'limiter' : IdentityLimiter,
                           'verbose' : True}),
     'nls' : ('nls.newton',{} ),
     'ls'  : ('ls.scipy_direct', {})
