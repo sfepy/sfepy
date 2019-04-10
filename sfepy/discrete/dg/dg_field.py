@@ -509,6 +509,21 @@ class DGField(Field):
 
         outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
         per_facet_neighbours = self.get_facet_neighbor_idx(region)
+
+        if state.eq_map.n_epbc > 0:
+            # first repair neighbours of the EPBC cells, to be the same
+            mcells = nm.unique(self.dofs2cells[state.eq_map.master])
+            scells = nm.unique(self.dofs2cells[state.eq_map.slave])
+            periodic_nbrhds = nm.select([per_facet_neighbours[scells] < 0, per_facet_neighbours[mcells] < 0],
+                               [per_facet_neighbours[mcells], per_facet_neighbours[scells]])
+            per_facet_neighbours[mcells] = periodic_nbrhds
+            per_facet_neighbours[scells] = periodic_nbrhds
+
+            # now repair neighbours of the neighbours of EPBC cells to
+            # point to slave cell
+            for pnb, fnb in periodic_nbrhds[0, :]:
+                per_facet_neighbours[pnb, fnb, 0] = mcells
+
         facet_vols = self.get_facet_vols(region, per_facet_neighbours)
         whs = facet_vols * whs[None, :, :, 0]
 
@@ -517,7 +532,7 @@ class DGField(Field):
                 dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
                 facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
-        # set outer ghost dofs to zeros, BC are treated in classical FEM style
+        # set outer ghost dofs to zeros, EBC are treated in classical FEM style
         boundary_cells = per_facet_neighbours < 0
         outer_facet_vals[boundary_cells[:,:,0]] = 0.0
 

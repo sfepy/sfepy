@@ -72,7 +72,7 @@ functions = {
 
 epbc_1 = {
     'name' : 'u_rl',
-    'region' : ['Gamma_Right', 'Gamma_Left', ],
+    'region' : ['Gamma_Right', 'Gamma_Left'],
     'dofs' : {'u.all' : 'u.all'},
     'match' : 'match_y_line',
 }
