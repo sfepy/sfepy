@@ -5,6 +5,7 @@ import numpy as nm
 from sfepy.terms.terms import Term, terms
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
+from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 
@@ -245,9 +246,9 @@ class AdvectDGFluxTerm(Term):
                   },
                 {'opt_material': None}]
     integration = 'volume'
-    # symbolic = {'expression' : 'div(a*u)',
-    #             'map': {'u': 'state', 'a': 'material'}
-    # }
+    symbolic = {'expression' : 'div(a*u)*w',
+                'map': {'u': 'state', 'a': 'material', 'v' : 'virtual'}
+    }
 
     def get_fargs(self, alpha, advelo, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -447,3 +448,208 @@ class AdvectDGFluxTerm(Term):
 
         status = None
         return status
+
+
+class NonlinearHyperDGFluxTerm(AdvectDGFluxTerm):
+
+    alf = 0
+    name = "dw_dg_nonlinear_laxfrie_flux"
+    modes = ("weak",)
+    arg_types = ('opt_material', 'virtual', 'state')
+    arg_shapes = [{'opt_material': '.: 1',
+                   'virtual': (1, 'state'),
+                   'state': 1
+                   },
+                  {'opt_material': None}]
+    integration = 'volume'
+    symbolic = {'expression' : 'div(f(u))*w',
+                'map': {'u': 'state', 'v' : 'virtual', 'a': 'material'}
+    }
+    alf = 0
+    def __init__(self, integral, region, f=None, df=None, **kwargs):
+        AdvectDGFluxTerm.__init__(self, self.name + "(v, u)", "v, u[-1]", integral, region, **kwargs)
+        # TODO how to pass f and df as Term arguments i.e. from conf examples?
+        if f is not None:
+            self.fun = f
+        else:
+            raise ValueError("Function f not provided to {}!".format(self.name))
+        if df is not None:
+            self.dfun = df
+        else:
+            raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
+
+    def get_fargs(self, alpha, test, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        # FIXME - just  to get it working, remove code duplicity!
+
+        if alpha is not None:
+            # FIXME this is only hotfix to get scalar!
+            self.alf = nm.max(alpha)  # extract alpha value regardless of shape
+
+        if diff_var is not None:
+            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
+            return None, None, None, None, None, 0
+        else:
+            field = state.field
+            region = field.region
+
+            if not "DG" in field.family_name:
+                raise ValueError(
+                    "Used DG term with non DG field {} of family {}!".format(field.name, field.family_name))
+
+            dofs = unravel_sol(state)
+            cell_normals = field.get_cell_normals_per_facet(region)
+            facet_base_vals = field.get_facet_base(base_only=True)
+            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
+
+            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals,
+                     facet_base_vals, weights, cell_normals)
+            return fargs
+
+    # noinspection PyUnreachableCode
+    def function(self, out, dofs, in_fc_v, out_fc_v, fc_b, whs, fc_n):
+        """
+
+        :param out:
+        :param dofs: NOT necessary but was good for debugging, shape = (n_cell, n_el_nod)
+        :param in_fc_v: inner values for facets per cell, shape = (n_cell, n_el_faces, 1)
+        :param out_fc_v: outer values for facets per cell, shape = (n_cell, n_el_faces, 1)
+        :param fc_b: values of basis in facets qps, shape = (1, n_el_facet, n_qp)
+        :param whs: weights of the qps on facets, shape = (n_cell, n_el_facet, n_qp
+        :param fc_n: facet normals, shape = (n_cell, n_el_facets)
+        :param advelo: advection velocity, shape = (n_cell, 1)
+        :return:
+        """
+        # FIXME - just  to get it working, remove code duplicity!
+        if dofs is None:
+            out[:] = 0.0
+            return None
+
+        f = self.fun
+        df = self.dfun
+
+        n_cell = dofs.shape[0]
+        n_el_nod = dofs.shape[1]
+        n_el_facets = fc_n.shape[-2]
+        #  Calculate integrals over facets representing Lax-Friedrichs fluxes
+        facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
+
+        # get maximal wave speeds at facets
+        df_in = df(in_fc_v)
+        df_out = df(out_fc_v)
+        fc_n__dot__df_in = nm.sum(fc_n[:,:,None, :] * df_in, axis=-1 )
+        fc_n__dot__df_out = nm.sum(fc_n[:, :, None, :] * df_out, axis=-1)
+        dfdn = nm.stack((fc_n__dot__df_in, fc_n__dot__df_out), axis=-1)
+        C = nm.amax(nm.abs(dfdn), axis=(-2, -1))[..., None, None]
+
+        for facet_n in range(n_el_facets):
+            for mode_n in range(n_el_nod):
+                fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
+
+                central = f(in_fc_v[:, facet_n, :]) + f(out_fc_v[:, facet_n, :]) / 2.
+                upwind = (1 - self.alf) / 2. * C[:, facet_n, :, :] * fc_n[:, facet_n][..., None, :] * fc_v_m[:, :, None]
+
+                facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
+                                                          nm.sum((central + upwind) *
+                                                                 (fc_b[None, :, 0, facet_n, 0, mode_n] *
+                                                                  whs[:, facet_n, :])[..., None], axis=1), # sum over qps to get integral
+                                                          axis=1) # sum over dimension to get scalar product
+
+        cell_fluxes = nm.sum(facet_fluxes, axis=1)
+
+        out[:] = 0.0
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = cell_fluxes[:, i, None]
+
+        status = None
+        return status
+
+
+from sfepy.linalg import dot_sequences
+
+class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
+    r"""
+    Volume dot product of a scalar gradient dotted with a material vector with
+    a scalar.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }
+        \int_{\Omega} p \ul{y} \cdot \nabla q
+
+    :Arguments 1:
+        - material : :math:`\ul{y}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material : :math:`\ul{y}`
+        - state    : :math:`p`
+        - virtual  : :math:`q`
+    """
+    name = 'dw_ns_dot_grad_s'
+    arg_types = (('virtual', 'state'),
+                 ('state', 'virtual'))
+    arg_shapes = [{'virtual/grad_state' : (1, None),
+                   'state/grad_state' : 1,
+                   'virtual/grad_virtual' : (1, None),
+                   'state/grad_virtual' : 1}]
+    modes = ('grad_state', 'grad_virtual')
+
+    def __init__(self, integral, region, f=None, df=None, **kwargs):
+        ScalarDotMGradScalarTerm.__init__(self, self.name + "(v, u)", "u[-1], v", integral, region, **kwargs)
+        # TODO how to pass f and df as Term arguments i.e. from conf examples?
+        if f is not None:
+            self.fun = f
+        else:
+            raise ValueError("Function f not provided to {}!".format(self.name))
+        if df is not None:
+            self.dfun = df
+        else:
+            raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
+
+
+    @staticmethod
+    def function(out, out_qp, geo, fmode):
+        status = geo.integrate(out, out_qp)
+        return status
+
+    def get_fargs(self, var1, var2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg1, _ = self.get_mapping(var1)
+        vg2, _ = self.get_mapping(var2)
+
+        if diff_var is None:
+            if self.mode == 'grad_state':
+                geo = vg1
+                bf_t = vg1.bf.transpose((0, 1, 3, 2))
+                val_qp = self.get(var2, 'grad')
+                out_qp = bf_t * dot_sequences(mat, val_qp, 'ATB')
+
+            else:
+                geo = vg2
+                val_qp = self.fun(self.get(var1, 'val')[..., 0])
+                out_qp = dot_sequences(vg2.bfg, val_qp, 'ATB')
+
+            fmode = 0
+
+        else:
+            if self.mode == 'grad_state':
+                geo = vg1
+                bf_t = vg1.bf.transpose((0, 1, 3, 2))
+                out_qp = bf_t * dot_sequences(mat, vg2.bfg, 'ATB')
+
+            else:
+                geo = vg2
+                out_qp = dot_sequences(vg2.bfg, mat, 'ATB') * vg1.bf
+
+            fmode = 1
+
+        return out_qp, geo, fmode
+
+
+
+
+
+
