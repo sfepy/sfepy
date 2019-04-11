@@ -72,10 +72,12 @@ class Moment1DLimiter(DGLimiter):
             tilu = minmod(nu[l, 1:-1][idx],
                           nu[l - 1, 2:][idx] - nu[l - 1, 1:-1][idx],
                           nu[l - 1, 1:-1][idx] - nu[l - 1, :-2][idx])
-            idx = abs(tilu - nu[l ,1:-1][idx]) > MACHINE_EPS
+            idx = nm.where(abs(tilu - nu[l ,1:-1][idx]) > MACHINE_EPS)[0]
             if self.verbose:
-                output(self.name + " limiting in {} cells of {} :".format(sum(idx[:,0]), self.n_cell))
-                # output(nm.where(idx[:, 0]))
+                output(self.name + " limiting in {} cells of {} :".format(len(idx), self.n_cell))
+                output(idx)
+            if len(idx) == 0:
+                break
             nu[l, 1:-1][idx] = tilu[idx]
 
 
