@@ -30,9 +30,14 @@ from sfepy.discrete.dg.my_utils.inits_consts import \
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
 
+
+#vvvvvvvvvvvvvvvv#
+approx_order = 1
+#^^^^^^^^^^^^^^^^#
+
 # Setup output names
 domain_name = "domain_1D"
-output_folder = "output/burgesss_1D/"
+output_folder = "output/burgesss_1D/" + str(approx_order)
 output_folder_mesh = "output/mesh"
 save_timestn = 100
 clear_folder(output_folder)
@@ -60,9 +65,7 @@ meshio.write(outfile, mesh)
 #-----------------------------
 #| Create problem components |
 #-----------------------------
-#vvvvvvvvvvvvvvvv#
-approx_order = 1
-#^^^^^^^^^^^^^^^^#
+
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain('domain_1D', mesh)
 omega = domain.create_region('Omega', 'all')
@@ -77,6 +80,8 @@ field = DGField('dgfu', nm.float64, 'scalar', omega,
 
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
+
+
 
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",

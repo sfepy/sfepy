@@ -622,10 +622,13 @@ class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
 
         if diff_var is None:
             if self.mode == 'grad_state':
+                # TODO Whata to do when we do grad by state?
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
-                val_qp = self.get(var2, 'grad')
-                out_qp = bf_t * dot_sequences(mat, val_qp, 'ATB')
+                val_qp = self.dfun(self.get(var2, 'val')[..., 0])
+                val_grad_qp = self.get(var2, 'grad')
+                val = dot_sequences(val_qp, val_grad_qp, 'ATB')
+                out_qp = dot_sequences(bf_t , val_grad_qp, 'ATB')
 
             else:
                 geo = vg2
@@ -635,14 +638,15 @@ class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
             fmode = 0
 
         else:
+            # TODO what in matrix mode?
             if self.mode == 'grad_state':
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
-                out_qp = bf_t * dot_sequences(mat, vg2.bfg, 'ATB')
+                out_qp = dot_sequences(bf_t , vg2.bfg, 'ATB')
 
             else:
                 geo = vg2
-                out_qp = dot_sequences(vg2.bfg, mat, 'ATB') * vg1.bf
+                out_qp = dot_sequences(vg2.bfg, vg1.bf, 'ATB')
 
             fmode = 1
 
