@@ -342,7 +342,6 @@ def plot1D_DG_sol(coors, t0, t1, u,
     Xvol = XN - X1
     X = (coors[1:] + coors[:-1]) / 2
     XS = nm.linspace(X1, XN, 500)[:, None]
-    ics = ic(XS)
 
     if polar:
         coors *= 2*nm.pi
@@ -389,7 +388,9 @@ def plot1D_DG_sol(coors, t0, t1, u,
         axs.step(coors[1:], u[i, :, 0,  0], color=c0)
         # plt.step(coors[1:], u[1, :, 0,  0], color=c1)
         # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
-    axs.plot(XS, ics, label="IC-ex")
+    if ic is not None:
+        ics = ic(XS)
+        axs.plot(XS, ics, label="IC-ex")
 
     # Animate sampled solution DOFs directly
     anim_dofs = animate1d(u_step.T, coors, T, axs, figs, ylims=[-1, 2], plott="step", delay=delay)
