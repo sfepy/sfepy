@@ -151,21 +151,21 @@ lmesh, u = load_1D_vtks("./output/adv_book1D", "adv_book1D", order=approx_order)
 plot1D_DG_sol(lmesh, t0, t1, u, tn=save_timestn, ic=ic_wrap,
               delay=100, polar=False)
 
-from sfepy.discrete.dg.my_utils.visualizer import \
-    load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
-coors, u_end = load_state_1D_vtk("output/adv_book1D/adv_book1D_end.vtk", order=approx_order)
-
-
-u_start = get_unraveler(field.n_el_nod, field.n_cell)(state0.vec).swapaxes(0, 1)[..., None]
-# u_end = get_unraveler(field.n_el_nod, field.n_cell)(state_end.vec).swapaxes(0, 1)[..., None]
-
-
-plot_1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
-
-plt.figure("reconstructed")
-ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)
-ww_e, _ = reconstruct_legendre_dofs(coors, None, u_start)
-
-plt.plot(xx, ww_s[:, 0])
-plt.plot(xx, ww_e[:, 0])
-plt.show()
+# from sfepy.discrete.dg.my_utils.visualizer import \
+#     load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
+# coors, u_end = load_state_1D_vtk("output/adv_book1D/adv_book1D_end.vtk", order=approx_order)
+#
+#
+# u_start = get_unraveler(field.n_el_nod, field.n_cell)(state0.vec).swapaxes(0, 1)[..., None]
+# # u_end = get_unraveler(field.n_el_nod, field.n_cell)(state_end.vec).swapaxes(0, 1)[..., None]
+#
+#
+# plot_1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
+#
+# plt.figure("reconstructed")
+# ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)
+# ww_e, _ = reconstruct_legendre_dofs(coors, None, u_start)
+#
+# plt.plot(xx, ww_s[:, 0])
+# plt.plot(xx, ww_e[:, 0])
+# plt.show()
