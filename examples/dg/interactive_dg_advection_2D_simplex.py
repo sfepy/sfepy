@@ -38,7 +38,7 @@ approx_order = 1
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_2D"
-problem_name = "adv_2D_simp"
+problem_name = "iadv_2D_simp"
 output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "msh"
 mesh_output_folder = "output/mesh"
@@ -50,7 +50,7 @@ save_timestn = 100
 # mesh = gen_block_mesh((1., 1.), (20, 20), (0.5, 0.5))
 # mesh = triangulate(mesh)
 mesh_name = "square_tri2"
-mesh = Mesh.from_file("meshes/" + mesh_name + ".mesh")
+mesh = Mesh.from_file("mesh/" + mesh_name + ".mesh")
 
 
 #-----------------------------

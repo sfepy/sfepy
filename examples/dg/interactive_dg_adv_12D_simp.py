@@ -39,7 +39,7 @@ approx_order = 1
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_2D"
-problem_name = "adv_12D_simplex"
+problem_name = "iadv_12D_simplex"
 output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "msh"
 mesh_output_folder = "output/mesh"

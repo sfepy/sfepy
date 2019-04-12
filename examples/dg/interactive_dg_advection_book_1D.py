@@ -36,7 +36,7 @@ approx_order = 1
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_1D"
-problem_name = "adv_book_1D"
+problem_name = "iadv_book_1D"
 output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "vtk"
 mesh_output_folder = "output/mesh"
