@@ -60,19 +60,6 @@ class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
 
         self.save(corr_sol, problem, ts)
 
-        # if self.check:
-        #     self.setup_equations(self.verify_equations)
-        #     self.init_solvers(problem)
-
-        #     output( 'verifying correctors %s...' % self.name )
-        #     verify = self.verify_correctors
-        #     ok = True
-        #     for ir in range( dim ):
-        #         for ic in range( dim ):
-        #             oo = verify(-1.0, corrs.states[ir,ic], filenames[ir,ic])
-        #             ok = ok and oo
-        #     output( '...done, ok: %s' % ok )
-
         return corr_sol
 
 
@@ -103,14 +90,5 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
                                 n_step=ts.n_step)
 
         self.save(corr_sol, problem, ts)
-
-        # if self.check:
-        #     self.setup_equations(self.verify_equations)
-        #     self.init_solvers(problem)
-
-        #     output( 'verifying correctors %s...' % self.name )
-        #     verify = self.verify_correctors
-        #     ok = verify(1.0, corrs.state, filename)
-        #     output( '...done, ok: %s' % ok )
 
         return corr_sol

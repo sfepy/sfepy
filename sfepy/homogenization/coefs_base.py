@@ -799,52 +799,6 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
                                    out=self.get_output(icorrs, is_dump=True),
                                    file_per_var=False, ts=ts0)
 
-    def verify_correctors(self, sign, state0, filename, problem=None):
-
-        problem = get_default(problem, self.problem)
-
-        io = HDF5MeshIO(filename)
-        ts = TimeStepper(*io.read_time_stepper())
-
-        ts.set_step(0)
-        problem.equations.init_time(ts)
-
-        variables = self.problem.get_variables()
-
-        vu, vp = self.dump_variables
-        vdp = self.verify_variables[-1]
-
-        p0 = sign * state0[vp]
-
-        format = '====== time %%e (step %%%dd of %%%dd) ====='\
-                 % ((ts.n_digit,) * 2)
-        vv = variables
-        ok = True
-        for step, time in ts:
-            output(format % (time, step + 1, ts.n_step))
-
-            data = io.read_data(step)
-            if step == 0:
-                assert_(nm.allclose(data[vp].data, p0))
-
-            state0 = problem.create_state()
-            state0.set_full(data[vu].data, vu)
-            state0.set_full(data[vp].data, vp)
-            vv[vdp].set_data(data['d'+vp].data)
-
-            problem.update_time_stepper(ts)
-            state = problem.solve(state0)
-            state, state0 = state(), state0()
-            err = nla.norm(state - state0) / nla.norm(state0)
-            output(state.min(), state.max())
-            output(state0.min(), state0.max())
-            output('>>>>>', err)
-
-            ok = ok and (err < 1e-12)
-            problem.advance(ts)
-
-        return ok
-
 
 def create_ts_coef(cls):
     """
