@@ -113,6 +113,33 @@ class CorrSolution(Struct):
         else:
             yield '', self.state
 
+    def iter_time_steps(self):
+        if hasattr(self, 'n_step') and self.n_step > 0:
+            for ii in range(self.n_step):
+                yield self.get_ts_val(ii)
+        else:
+            yield self
+
+    def get_ts_val(self, step):
+        if hasattr(self, 'states'):
+            states = nm.zeros(self.states.shape, dtype=nm.object)
+            for idx in self.components:
+                state = {k: v[step] for k, v in\
+                            six.iteritems(self.states[idx])}
+                states[idx] = state
+
+            out = CorrSolution(name=self.name,
+                               states=states,
+                               components=self.components)
+
+        else:
+            state = {k: v[step] for k, v in six.iteritems(self.state)}
+            out = CorrSolution(name=self.name,
+                               state=state)
+
+        return out
+
+
 class CorrMiniApp(MiniAppBase):
 
     def __init__(self, name, problem, kwargs):
@@ -682,7 +709,7 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
                            lcbc_names=self.get('lcbcs', []))
         problem.update_materials() # Assume parameters constant in time.
 
-    def compute_correctors(self, evp, sign, state0, ts, dump_name, save_name,
+    def compute_correctors(self, evp, sign, state0, ts,
                            problem=None, vec_g=None):
         problem = get_default(problem, self.problem)
 
@@ -706,10 +733,6 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
         ##
         # follow_epbc = False -> R1 = - R2 as required. ? for other correctors?
         vec_p0 = sign * var_p.get_reduced(state0[vp], follow_epbc=False)
-##         print state0
-##         print vec_p0
-##         print vec_p0.min(), vec_p0.max(), nla.norm(vec_p0)
-##         debug()
 
         # xi0 = Q^{-1} p(0) = Q^T G p(0)
         vec_xi0 = sc.dot(mtx_q.T, sc.dot(mtx['G'],
@@ -736,59 +759,45 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
             vec_p = sc.dot(mtx_q, e_e_qp + iee_e_qg)
             vec_dp = - sc.dot(mtx_q, (eigs * e_e_qp - e_e_qg))
             vec_u = action_aibt(vec_dp)
-##             bbb = sc.dot(vec_dp.T, - mtx['C'] * vec_p0)
 
             vec_u = var_u.get_full(vec_u)
             vec_p = var_p.get_full(vec_p)
             # BC nodes - time derivative of constant is zero!
             vec_dp = var_p.get_full(vec_dp, force_value=0.0)
-##             aaa = sc.dot(vec_xi0.T, eigs * (eigs * e_e_qp))
-##             print aaa
-##             print bbb
 
             state[vu].append(vec_u)
             state[vp].append(vec_p)
             state['d' + vp].append(vec_dp)
 
-            self.save(dump_name, save_name, vec_u, vec_p, vec_dp, ts, problem)
+        return {k: nm.asarray(v) for k, v in state.items()}
 
-        return state
+    def get_save_name_base(self):
+        return self.save_name + '_%s'
 
-    def save(self, dump_name, save_name, vec_u, vec_p, vec_dp, ts, problem):
-        """
-        1. saves raw correctors into hdf5 files (filename)
-        2. saves correctors transformed to output for visualization
-        """
-        vu, vp = self.dump_variables
-        out = {vu : Struct(name='dump', mode='vertex',
-                           var_name=vu, data=vec_u[:, nm.newaxis]),
-               vp : Struct(name='dump', mode='vertex',
-                           var_name=vp, data=vec_p[:, nm.newaxis]),
-               'd'+vp : Struct(name='dump', mode='vertex',
-                               var_name=vp, data=vec_dp[:, nm.newaxis])}
+    def get_dump_name_base(self):
+        return self.save_name
 
-        problem.save_state(dump_name, out=out, file_per_var=False, ts=ts)
+    def save(self, corrs, problem, ts):
+        dump_name = self.get_dump_name()
+        save_name = self.get_save_name()
 
-        # For visualization...
-        out = {}
-        extend = not self.file_per_var
+        ts0 = TimeStepper(0, 1)
+        ts0.set_from_ts(ts, step=0)
+        n_digit = int(nm.log10(ts0.n_step)) + 1
+        save_name = save_name % ('%%0%dd' % n_digit)
 
-        variables = self.problem.get_variables()
-        to_output = variables.state_to_output
+        for step, _ in ts0:
+            icorrs = corrs.get_ts_val(step)
+            if save_name is not None:
+                extend = not self.file_per_var
+                problem.save_state(save_name % step,
+                                   out=self.get_output(icorrs, extend=extend),
+                                   file_per_var=self.file_per_var, ts=ts0)
 
-        out.update(to_output(vec_u, var_info={vu : (True, vu)},
-                             extend=extend))
-        out.update(to_output(vec_p, var_info={vp : (True, vp)},
-                             extend=extend))
-        out.update(to_output(vec_dp, var_info={vp : (True, 'd'+vp)},
-                             extend=extend))
-        if self.post_process_hook is not None:
-            out = self.post_process_hook(out, problem,
-                                          {vu : vec_u,
-                                           vp : vec_p, 'd'+vp : vec_dp},
-                                          extend=extend)
-        problem.save_state(save_name, out=out,
-                            file_per_var=self.file_per_var, ts=ts)
+            if dump_name is not None:
+                problem.save_state(dump_name,
+                                   out=self.get_output(icorrs, is_dump=True),
+                                   file_per_var=False, ts=ts0)
 
     def verify_correctors(self, sign, state0, filename, problem=None):
 
@@ -843,25 +852,6 @@ def create_ts_coef(cls):
     time dependent data (correctors).
     """
     class TSCoef(cls):
-        @staticmethod
-        def get_ts_val(data, step):
-            if hasattr(data, 'states'):
-                states = nm.zeros(data.states.shape, dtype=nm.object)
-                for idx in data.components:
-                    state = {k: v[step] for k, v in\
-                             six.iteritems(data.states[idx])}
-                    states[idx] = state
-
-                out = CorrSolution(name=data.name,
-                                   states=states,
-                                   components=data.components)
-
-            else:
-                state = {k: v[step] for k, v in six.iteritems(data.state)}
-                out = CorrSolution(name=data.name,
-                                   state=state)
-
-            return out
 
         def __call__(self, volume=None, problem=None, data=None):
             problem = get_default(problem, self.problem)
@@ -869,11 +859,11 @@ def create_ts_coef(cls):
             ts_data = {}
             n_step = None
             for key, val in six.iteritems(data):
-                if isinstance(val, CorrSolution) and hasattr(val, 'n_tstep'):
+                if isinstance(val, CorrSolution) and hasattr(val, 'n_step'):
                     if n_step is None:
-                        n_step = val.n_tstep
+                        n_step = val.n_step
                     else:
-                        if not(n_step == val.n_tstep):
+                        if not(n_step == val.n_step):
                             raise ValueError('incorrect number of time' +\
                                              'steps in %s!' % self.name)
 
@@ -890,7 +880,7 @@ def create_ts_coef(cls):
             for step in range(n_step):
                 output(format % (step + 1, n_step))
                 for key in ts_keys:
-                    ts_data[key] = self.get_ts_val(data[key], step)
+                    ts_data[key] = data[key].get_ts_val(step)
                 out.append(cls.__call__(self, volume, problem, ts_data))
 
             out = nm.asarray(out)
