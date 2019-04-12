@@ -31,7 +31,7 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
 from sfepy.discrete.dg.my_utils.inits_consts \
     import left_par_q, gsmooth, const_u, ghump, superic
 
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
+from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#

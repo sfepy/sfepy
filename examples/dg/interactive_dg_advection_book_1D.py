@@ -28,7 +28,7 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
 from sfepy.discrete.dg.my_utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
+from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
@@ -184,6 +184,6 @@ pb.set_solver(tss)
 state_end = pb.solve()
 
 
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
+from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
 
 load_and_plot_fun(output_folder, domain_name, t0, t1, min(tn, save_timestn), approx_order, ic_fun)

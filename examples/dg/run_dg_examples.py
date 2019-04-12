@@ -22,8 +22,8 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 
 
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import load_and_plot_fun
-from sfepy.discrete.dg.my_utils.read_plot_1Ddata import clear_folder
+from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
+from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',

@@ -48,7 +48,7 @@ def main():
                         default=data_dir + '/meshes/2d/square_quad.mesh',
                         help=helps['mesh_filename'])
     parser.add_argument('output_dir', nargs='?',
-                        default='output',
+                        default='output/fem_adv_1D',
                         help=helps['output_dir'])
     options = parser.parse_args()
 
