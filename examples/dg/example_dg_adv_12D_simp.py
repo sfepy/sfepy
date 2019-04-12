@@ -1,4 +1,5 @@
-from sfepy.discrete.dg.examples.example_dg_common import *
+from examples.dg.example_dg_common import *
+
 
 example_name = "adv_12D_simp"
 dim = int(example_name[example_name.index("D") - 1])
