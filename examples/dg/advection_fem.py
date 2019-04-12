@@ -6,7 +6,6 @@ import numpy as nm
 
 import os
 import sys
-
 sys.path.append('.')
 
 from sfepy.base.base import output, Struct, IndexedStruct
@@ -18,16 +17,15 @@ from sfepy.discrete.conditions import Conditions, EssentialBC, InitialCondition
 from sfepy.solvers import Solver
 
 helps = {
-    'tss_name'     : 'time stepping solver name [default: %(default)s]',
-    'implicit'     : 'use implicit time stepping',
-    'order'        : 'field approximation order [default: %(default)s]',
-    'refine'       : 'uniform mesh refinement level [default: %(default)s]',
-    'mesh_filename':
-        'mesh file name [default: %(default)s]',
-    'output_dir'   :
-        'output directory [default: %(default)s]',
+    'tss_name' : 'time stepping solver name [default: %(default)s]',
+    'implicit' : 'use implicit time stepping',
+    'order' : 'field approximation order [default: %(default)s]',
+    'refine' : 'uniform mesh refinement level [default: %(default)s]',
+    'mesh_filename' :
+    'mesh file name [default: %(default)s]',
+    'output_dir' :
+    'output directory [default: %(default)s]',
 }
-
 
 def main():
     from sfepy import data_dir
@@ -50,7 +48,7 @@ def main():
                         default=data_dir + '/meshes/2d/square_quad.mesh',
                         help=helps['mesh_filename'])
     parser.add_argument('output_dir', nargs='?',
-                        default='output/fem_adv_1D',
+                        default='output',
                         help=helps['output_dir'])
     options = parser.parse_args()
 
@@ -75,7 +73,7 @@ def main():
 
     m = Material('m', vel=[[1], [0]])
 
-    integral = Integral('i', order=2 * options.order)
+    integral = Integral('i', order=2*options.order)
     # integral = Integral('i', order=3)
 
     t1 = Term.new('dw_volume_dot(v, du/dt)',
@@ -96,33 +94,32 @@ def main():
         x, y = coors.T
         x = (x - x.min()) / (x.max() - x.min())
         val = .3 * nm.piecewise(
-                x, [x <= 0.1, x >= 0.1, .3 < x],
-                [0, lambda x: nm.exp(1 / ((10 * (x - .2)) ** 2 - 1)) / nm.exp(1 / (- 1)), 0]
+            x, [x <= 0.1, x >= 0.1, .3 < x],
+            [0, lambda x: nm.exp(1/((10*(x - .2))**2 - 1))/nm.exp(1/(- 1)), 0]
         )
         return val
-
     ic_fun = Function('ic_fun', get_ic)
-    ic = InitialCondition('ic', omega, {'u.all': ic_fun})
+    ic = InitialCondition('ic', omega, {'u.all' : ic_fun})
 
-    fix = EssentialBC('fix', gamma, {'u.all': 0.0})
+    fix = EssentialBC('fix', gamma, {'u.all' : 0.0})
 
     ls = Solver.any_from_conf(Struct(**{
-        'name': 'ls', 'kind': 'ls.scipy_direct',
+        'name' : 'ls', 'kind' : 'ls.scipy_direct',
     }))
     nls_status = IndexedStruct()
     nls = Solver.any_from_conf(Struct(**{
-        'name'     : 'newton',
-        'kind'     : 'nls.newton',
-        'i_max'    : 1,
-        'is_linear': True,
+        'name' : 'newton',
+        'kind' : 'nls.newton',
+        'i_max' : 1,
+        'is_linear' : True,
     }), lin_solver=ls, status=nls_status)
     tss = Solver.any_from_conf(Struct(**{
-        'name'  : 'tss',
-        'kind'  : 'ts.%s' % options.tss_name,
-        't0'    : 0.0,
-        't1'    : 1.0,
-        'dt'    : 0.01,
-        'n_step': None,
+        'name' : 'tss',
+        'kind' : 'ts.%s' % options.tss_name,
+        't0' : 0.0,
+        't1' : 1.0,
+        'dt' : 0.01,
+        'n_step' : None,
     }), nls=nls, verbose=True)
 
     pb = Problem('advection', equations=eqs, active_only=False)
@@ -137,7 +134,6 @@ def main():
     status = IndexedStruct()
     pb.solve(status=status)
     output(status)
-
 
 if __name__ == '__main__':
     main()
