@@ -450,41 +450,45 @@ class AdvectDGFluxTerm(Term):
         return status
 
 
-class NonlinearHyperDGFluxTerm(AdvectDGFluxTerm):
+class NonlinearHyperDGFluxTerm(Term):
 
     alf = 0
     name = "dw_dg_nonlinear_laxfrie_flux"
     modes = ("weak",)
-    arg_types = ('opt_material', 'virtual', 'state')
+    arg_types = ('opt_material', 'material_fun', 'material_fun_d', 'virtual', 'state')
     arg_shapes = [{'opt_material': '.: 1',
+                   'material_fun': '.: 1',
+                   'material_fun_d': '.: 1',
                    'virtual': (1, 'state'),
                    'state': 1
                    },
                   {'opt_material': None}]
     integration = 'volume'
     symbolic = {'expression' : 'div(f(u))*w',
-                'map': {'u': 'state', 'v' : 'virtual', 'a': 'material'}
+                'map': {'u': 'state', 'v' : 'virtual', 'f': 'function'}
     }
-    alf = 0
-    def __init__(self, integral, region, f=None, df=None, **kwargs):
-        AdvectDGFluxTerm.__init__(self, self.name + "(v, u)", "v, u[-1]", integral, region, **kwargs)
-        # TODO how to pass f and df as Term arguments i.e. from conf examples?
-        if f is not None:
-            self.fun = f
-        else:
-            raise ValueError("Function f not provided to {}!".format(self.name))
-        if df is not None:
-            self.dfun = df
-        else:
-            raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
+    # def __init__(self, integral, region, f=None, df=None, **kwargs):
+    #     AdvectDGFluxTerm.__init__(self, self.name + "(v, u)", "v, u[-1]", integral, region, **kwargs)
+    #     # TODO how to pass f and df as Term arguments i.e. from conf examples?
+    #     if f is not None:
+    #         self.fun = f
+    #     else:
+    #         raise ValueError("Function f not provided to {}!".format(self.name))
+    #     if df is not None:
+    #         self.dfun = df
+    #     else:
+    #         raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
 
-    def get_fargs(self, alpha, test, state,
+    def get_fargs(self, alpha, fun, dfun, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         # FIXME - just  to get it working, remove code duplicity!
 
         if alpha is not None:
             # FIXME this is only hotfix to get scalar!
             self.alf = nm.max(alpha)  # extract alpha value regardless of shape
+
+        self.fun = fun
+        self.dfun = dfun
 
         if diff_var is not None:
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
@@ -567,7 +571,7 @@ class NonlinearHyperDGFluxTerm(AdvectDGFluxTerm):
 
 from sfepy.linalg import dot_sequences
 
-class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
+class NonlinScalarDotGradTerm(Term):
     r"""
     Volume dot product of a scalar gradient dotted with a material vector with
     a scalar.
@@ -589,25 +593,27 @@ class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
         - virtual  : :math:`q`
     """
     name = 'dw_ns_dot_grad_s'
-    arg_types = (('virtual', 'state'),
-                 ('state', 'virtual'))
-    arg_shapes = [{'virtual/grad_state' : (1, None),
+    arg_types = (( 'material_fun', 'material_fun_d','virtual', 'state'),
+                 ( 'material_fun', 'material_fun_d', 'state', 'virtual'))
+    arg_shapes = [{ 'material_fun': '.: 1',
+                   'material_fun_d': '.: 1',
+                    'virtual/grad_state' : (1, None),
                    'state/grad_state' : 1,
                    'virtual/grad_virtual' : (1, None),
                    'state/grad_virtual' : 1}]
     modes = ('grad_state', 'grad_virtual')
 
-    def __init__(self, integral, region, f=None, df=None, **kwargs):
-        ScalarDotMGradScalarTerm.__init__(self, self.name + "(v, u)", "u[-1], v", integral, region, **kwargs)
-        # TODO how to pass f and df as Term arguments i.e. from conf examples?
-        if f is not None:
-            self.fun = f
-        else:
-            raise ValueError("Function f not provided to {}!".format(self.name))
-        if df is not None:
-            self.dfun = df
-        else:
-            raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
+    # def __init__(self, integral, region, f=None, df=None, **kwargs):
+    #     ScalarDotMGradScalarTerm.__init__(self, self.name + "(v, u)", "u[-1], v", integral, region, **kwargs)
+    #     # TODO how to pass f and df as Term arguments i.e. from conf examples?
+    #     if f is not None:
+    #         self.fun = f
+    #     else:
+    #         raise ValueError("Function f not provided to {}!".format(self.name))
+    #     if df is not None:
+    #         self.dfun = df
+    #     else:
+    #         raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
 
 
     @staticmethod
@@ -615,7 +621,7 @@ class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
         status = geo.integrate(out, out_qp)
         return status
 
-    def get_fargs(self, var1, var2,
+    def get_fargs(self, fun, fund, var1, var2,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg1, _ = self.get_mapping(var1)
         vg2, _ = self.get_mapping(var2)
@@ -625,14 +631,15 @@ class NonlinScalarDotGradTerm(ScalarDotMGradScalarTerm):
                 # TODO Whata to do when we do grad by state?
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
-                val_qp = self.dfun(self.get(var2, 'val')[..., 0])
+                val_qp = dfun(self.get(var2, 'val')[..., 0])
                 val_grad_qp = self.get(var2, 'grad')
                 val = dot_sequences(val_qp, val_grad_qp, 'ATB')
                 out_qp = dot_sequences(bf_t , val_grad_qp, 'ATB')
 
             else:
+                # TODO figure out correct shapes for integration
                 geo = vg2
-                val_qp = self.fun(self.get(var1, 'val')[..., 0])
+                val_qp = fun(self.get(var1, 'val'))[..., 0, :].swapaxes(-2, -1)
                 out_qp = dot_sequences(vg2.bfg, val_qp, 'ATB')
 
             fmode = 0

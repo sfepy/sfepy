@@ -1254,8 +1254,9 @@ class Term(Struct):
                         actual_shapes[key] = aarg.shape[-ls:]
 
                     elif (ls == 1) and (shape[0] == 1):
-                        # Scalar constant or callable as term argument
+                        # Scalar constant or function
                         from numbers import Number
+                        # FIXME - fix for gettin functions as parameters for terms
                         n_ok += isinstance(arg, Number) or callable(arg)
 
                 else:
