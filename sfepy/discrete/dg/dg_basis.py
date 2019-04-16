@@ -38,10 +38,26 @@ def iter_by_order(order, dim):
         return
 
 
+def get_n_el_nod(order, dim):
+    """
+    Number of nodes per element for discontinuous legendre basis, i.e.
+    number of iterations yielded by iter_by_order
+
+    math::
+        N_p =  \frac{(n + 1) \cdot (n + 2) \cdot ... \cdot (n + d)}{d!}
+
+        where n is the order and d the dimension
+
+    :param order:
+    :param dim:
+    :return:
+    """
+    return int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
+                         reduce(mul, range(1, dim + 1)))
+
 class LegendrePolySpace(PolySpace):
     """
-    Legendre hierarchical polynomials basis, over [-1, 1] domain
-    use transform x = (y + 1)/2 to get basis over [0, 1]
+    Legendre hierarchical polynomials basis, over [0, 1] domain.
     """
 
     def __init__(self, name, geometry, order):
@@ -60,8 +76,7 @@ class LegendrePolySpace(PolySpace):
 
         self.n_v = geometry.n_vertex,
         self.dim = geometry.dim
-        self.n_nod = int(reduce(mul, map(lambda i: order + i + 1, range(self.dim))) /
-                         reduce(mul, range(1, self.dim + 1)))  # number of DOFs per element
+        self.n_nod = get_n_el_nod(self.order, self.dim)
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
@@ -208,7 +223,7 @@ class LegendrePolySpace(PolySpace):
     # --------------------- #
     def jacobiP(self, coors, alpha, beta):
         """
-        Values of the jacobi polynomials shifted to interval [-1, 1]
+        Values of the jacobi polynomials on interval [-1, 1]
         up to self.order + 1 at coors
         :param coors:
         :param alpha:
@@ -231,7 +246,7 @@ class LegendrePolySpace(PolySpace):
 
     def gradjacobiP(self, coors, alpha, beta, diff=1):
         """
-         diff derivative of the jacobi polynomials on interval [-1, 1]
+        diff derivative of the jacobi polynomials on interval [-1, 1]
         up to self.order + 1 at coors
 
         Warning

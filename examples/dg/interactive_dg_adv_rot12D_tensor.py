@@ -50,7 +50,6 @@ clear_folder(pjoin(output_folder, output_format))
 #------------
 mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5))
 
-# TODO move to some utils
 pi = nm.pi
 coors = mesh.coors
 angle = - pi/5
@@ -96,7 +95,6 @@ eqs = Equations([eq])
 #------------------------------
 #| Create bounrady conditions |
 #------------------------------
-# TODO BCs
 
 #----------------------------
 #| Create initial condition |

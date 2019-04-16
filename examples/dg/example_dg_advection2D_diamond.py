@@ -7,7 +7,7 @@ dim = 2 #int(example_name[example_name.index("D") - 1])
 
 filename_mesh = "mesh/messedquad2_diamond.vtk"
 
-approx_order = 2
+approx_order = 1
 t0 = 0.
 t1 = 1
 CFL = .4

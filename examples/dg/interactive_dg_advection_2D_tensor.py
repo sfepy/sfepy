@@ -92,7 +92,6 @@ eqs = Equations([eq])
 #------------------------------
 #| Create bounrady conditions |
 #------------------------------
-# TODO BCs
 
 #----------------------------
 #| Create initial condition |

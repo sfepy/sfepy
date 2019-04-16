@@ -133,7 +133,7 @@ class DGField(Field):
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
 
-        # boundary DOFS TODO temporary - resolve BC treatement
+        # boundary DOFS - temporary until BC treatment is merged from corresponding branches
         self.boundary_val = 0.0
 
         # integral
@@ -741,6 +741,7 @@ class DGField(Field):
             vals = nm.repeat([fun], nods.shape[0] * dpn)
 
         elif isinstance(fun, nm.ndarray):
+            # useful for testing, allows to pass complete array of dofs as IC
             if nm.shape(fun) == nm.shape(nods):
                 vals = fun
 
@@ -749,10 +750,6 @@ class DGField(Field):
             qp, weights = self.integral.get_qp(self.gel.name)
             weights = weights[:, None] # add axis for broadcasting
             coors = self.mapping.get_physical_qps(qp)
-
-            # sic = nm.zeros((2, mesh.n_el, 1), dtype=nm.float64)
-            # sic[0, :] = nm.sum(weights * fun(coors), axis=1)[:,  None] / 2
-            # sic[1, :] = 3 * nm.sum(weights * qp * fun(coors), axis=1)[:,  None] / 2
 
             base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
             # this drops redundant axis that is returned by eval_base due to consistency with derivatives
@@ -765,19 +762,6 @@ class DGField(Field):
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
 
             vals = (rhs_vec / lhs_diag)
-
-            # plot for 1D
-            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-            # import matplotlib.pyplot as plt
-            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
-            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals.T[..., None, None])
-            # plt.plot(xx, ww[:, 0], label="reconstructed dofs")
-            # plt.show()
-
-            # FIXME - this is only for testing
-            # output("DGField {} Setting IC to testing: vals[4, 0] = 1., zero elsewhere".format(self.family_name))
-            # vals[:] = 0
-            # vals[8:12, 0] = 1.
 
         return nods, vals
 

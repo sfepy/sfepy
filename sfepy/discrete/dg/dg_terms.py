@@ -254,8 +254,7 @@ class AdvectDGFluxTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:
-            # FIXME this is only hotfix to get scalar!
-            self.alf = nm.max(alpha) # extract alpha value regardless of shape
+            self.alf = alpha # extract alpha value regardless of shape
 
         if diff_var is not None:
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
