@@ -194,7 +194,6 @@ requirements = {
         'set_variables': [('Pi', 'pis', 'u')],
         'class': cb.CorrDimDim,
         'save_name': 'corrs_le',
-        'dump_variables': ['u', 'p'],
         'is_linear': True,
     },
 }

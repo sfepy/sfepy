@@ -224,7 +224,6 @@ requirements = {
         'set_variables': [('Pi', 'pis', 'u')],
         'class': cb.CorrDimDim,
         'save_name': 'corrs_hyper_homog',
-        'dump_variables': ['u'],
     },
 }
 

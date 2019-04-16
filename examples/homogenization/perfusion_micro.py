@@ -19,7 +19,6 @@ from sfepy import data_dir
 import six
 from six.moves import range
 
-
 def get_mats(pk, ph, pe, dim):
     m1 = nm.eye(dim, dtype=nm.float64) * pk
     m1[-1, -1] = pk / ph
@@ -35,7 +34,6 @@ def recovery_perf(pb, corrs, macro):
 
     slev = ''
 
-    micro_coors = pb.domain.mesh.coors
     micro_nnod = pb.domain.mesh.n_nod
 
     centre_Y = nm.sum(pb.domain.mesh.coors, axis=0) / micro_nnod
@@ -438,7 +436,6 @@ requirements = {
         'epbcs': [],
         'save_name': 'corrs_one_YM',
         'class': cb.CorrSetBCS,
-        'dump_variables': ['pM'],
     },
 }
 
@@ -455,7 +452,6 @@ for ipm in ['p', 'm']:
                 },
             'class': cb.CorrOne,
             'save_name': 'corrs_%s_gamma_%s' % (pb_def['name'], ipm),
-            'dump_variables': ['pM'],
         },
     })
 
@@ -545,7 +541,6 @@ for ch, val in six.iteritems(pb_def['channels']):
             'ebcs': ebcs_eta[ch],
             'epbcs': [],
             'save_name': 'corrs_%s_one%s' % (pb_def['name'], ch),
-            'dump_variables': ['pM'],
             'class': cb.CorrSetBCS,
         },
         'corrs_eta' + ch: {
@@ -556,7 +551,6 @@ for ch, val in six.iteritems(pb_def['channels']):
                 },
             'class': cb.CorrOne,
             'save_name': 'corrs_%s_eta%s' % (pb_def['name'], ch),
-            'dump_variables': ['pM'],
         },
         'corrs_pi' + ch: {
             'requires': ['pis_' + ch],
@@ -574,7 +568,6 @@ for ch, val in six.iteritems(pb_def['channels']):
             'dim': pb_def['dim'] - 1,
             'class': cb.CorrDim,
             'save_name': 'corrs_%s_pi%s' % (pb_def['name'], ch),
-            'dump_variables': ['p' + ch],
         },
     })
 
@@ -646,7 +639,6 @@ for ch, val in six.iteritems(pb_def['channels']):
                 },
                 'class': cb.CorrOne,
                 'save_name': 'corrs_%s_gamma_%s' % (pb_def['name'], io),
-                'dump_variables': ['p' + ch],
             },
         })
 
