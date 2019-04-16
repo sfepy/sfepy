@@ -142,13 +142,13 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
 
     return out
 
-def get_correctors_from_file( coefs_filename = 'coefs.h5',
-                              dump_names = None ):
+def get_correctors_from_file_hdf5(coefs_filename='coefs.h5',
+                                  dump_names=None):
 
     if dump_names == None:
         coefs = Coefficients.from_file_hdf5( coefs_filename )
-        if hasattr( coefs, 'dump_names' ):
-            dump_names = coefs.dump_names
+        if hasattr(coefs, 'save_names'):
+            dump_names = coefs.save_names
         else:
             raise ValueError( ' "filenames" coefficient must be used!' )
 
