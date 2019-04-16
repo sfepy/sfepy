@@ -596,6 +596,7 @@ def recover_micro_hook_eps(micro_filename, region,
             x0[:, ii] = icoor.flatten()
 
         mesh = pb.domain.mesh
+
         coors, conn, outs, ndoffset = [], [], [], 0
         # Recover region
         mic_coors = (mesh.coors - mesh.get_bounding_box()[0, :]) * eps0
@@ -614,7 +615,7 @@ def recover_micro_hook_eps(micro_filename, region,
             v[evfield.vertex_remap[region.entities[0]]] = 0
             no = nm.sum(v)
             aux = evfield.evaluate_at(local_coors, v)
-            if (nm.sum(aux) / no) > 1e-3:
+            if no > 0 and (nm.sum(aux) / no) > 1e-3:
                 continue
 
             output.level = output_level
