@@ -550,7 +550,7 @@ class NonlinearHyperDGFluxTerm(Term):
             for mode_n in range(n_el_nod):
                 fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
 
-                central = f(in_fc_v[:, facet_n, :]) + f(out_fc_v[:, facet_n, :]) / 2.
+                central = (f(in_fc_v[:, facet_n, :]) + f(out_fc_v[:, facet_n, :])) / 2.
                 upwind = (1 - self.alf) / 2. * C[:, facet_n, :, :] * fc_n[:, facet_n][..., None, :] * fc_v_m[:, :, None]
 
                 facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
@@ -628,7 +628,7 @@ class NonlinScalarDotGradTerm(Term):
 
         if diff_var is None:
             if self.mode == 'grad_state':
-                # TODO Whata to do when we do grad by state?
+                # TODO chceck correct shapes for integration
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
                 val_qp = dfun(self.get(var2, 'val')[..., 0])
@@ -637,7 +637,7 @@ class NonlinScalarDotGradTerm(Term):
                 out_qp = dot_sequences(bf_t , val_grad_qp, 'ATB')
 
             else:
-                # TODO figure out correct shapes for integration
+                # TODO chceck correct shapes for integration
                 geo = vg2
                 val_qp = fun(self.get(var1, 'val'))[..., 0, :].swapaxes(-2, -1)
                 out_qp = dot_sequences(vg2.bfg, val_qp, 'ATB')

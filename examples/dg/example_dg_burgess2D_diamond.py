@@ -90,7 +90,9 @@ functions = {
 
 materials = {
     'a' : ({'val': [velo], '.flux': 0.0},),
-    'burg' :({'.fun' : adv_fun, '.dfun' : adv_fun_d},),
+    'nonlin' :({'.fun' : adv_fun, '.dfun' : adv_fun_d},),
+    'burg': ({'.fun': burg_fun, '.dfun': burg_fun_d},),
+
 }
 
 ics = {
@@ -102,11 +104,9 @@ integrals = {
 }
 
 equations = {
-    'Advection' : """
-                   dw_volume_dot.i.Omega(v, u)
-                   + dw_ns_dot_grad_s.i.Omega(burg.fun, burg.dfun, u[-1], v)
-                   - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg.fun, burg.dfun, v, u[-1]) = 0
-                  """
+    'Advection' : "dw_volume_dot.i.Omega(v, u)" +
+                  "+ dw_ns_dot_grad_s.i.Omega(burg.fun, burg.dfun, u[-1], v)" +
+                  "- dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg.fun, burg.dfun, v, u[-1]) = 0"
 }
 
 
