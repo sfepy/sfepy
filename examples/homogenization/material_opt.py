@@ -131,7 +131,7 @@ class MaterialOptimizer(object):
         self.iter_step(self.x_norm2real(x0), first_step=True)
 
         print('>>> material optimization START <<<')
-        xopt = fmin_tnc(feval, x0, approx_grad=True, bounds=bnds,
+        xopt = fmin_tnc(feval, x0, approx_grad=True, bounds=list(bnds),
                         xtol=1e-3, callback=istep)
         print('>>> material optimization FINISHED <<<')
 
