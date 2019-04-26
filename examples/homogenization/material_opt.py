@@ -148,7 +148,7 @@ def main():
                            [160.e9, 0.25, 5.e9, 0.45],
                            [120e9, 0.2, 2e9, 0.2],
                            [200e9, 0.45, 8e9, 0.45],
-                           exp_data)
+                           list(exp_data))
 
     optim_par = mo.material_optimize()
     print('optimized parameters: ', optim_par)

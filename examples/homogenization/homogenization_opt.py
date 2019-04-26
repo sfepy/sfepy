@@ -22,7 +22,7 @@ def get_mat(coors, mode, pb):
 
         nqp = coors.shape[0]
         nel = pb.domain.mesh.n_el
-        nqpe = nqp / nel
+        nqpe = nqp // nel
         out = nm.zeros((nqp, 6, 6), dtype=nm.float64)
 
         # set values - matrix
