@@ -94,7 +94,13 @@ def use_first_available(solver_list, context=None):
 
             output("using '%s' solver" % name)
             break
-        except (ValueError, OSError, ImportError, TypeError):
+
+        except (KeyboardInterrupt, SystemExit):
+            raise
+
+        except Exception as exc:
+            output('solver construction failed with: "{}: {}"'
+                   .format(exc.__class__.__name__, exc.message))
             prev_name = name
 
     else:
