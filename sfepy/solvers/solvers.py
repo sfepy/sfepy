@@ -99,8 +99,7 @@ def use_first_available(solver_list, context=None):
             raise
 
         except Exception as exc:
-            output('solver construction failed with: "{}: {}"'
-                   .format(exc.__class__.__name__, exc.message))
+            output('solver construction failed with: "{0!r}"'.format(exc))
             prev_name = name
 
     else:
