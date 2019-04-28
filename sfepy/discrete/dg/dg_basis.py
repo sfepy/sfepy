@@ -1,3 +1,7 @@
+from abc import abstractmethod
+from functools import reduce
+from operator import mul
+
 import numpy as nm
 
 from numpy import newaxis as nax
@@ -13,7 +17,7 @@ def iter_by_order(order, dim):
     needed to create multidimensional basis in a way that creates hierarchical basis
     :param order: desired order of multidimensional basis
     :param dim: dimension of the basis
-    :yields: tuple containing indexes, use in combine_polyvals and combine_polyvals_der
+    :yields: tuple containing indexes, use in _combine_polyvals and combine_polyvals_der
     :return: None
     """
 
@@ -62,11 +66,9 @@ class LegendrePolySpace(PolySpace):
 
     def __init__(self, name, geometry, order):
         """
-        Does not use init_context
         :param name:
-        :param geometry: so far only 1_2 supported
-        :param order:
-        :param init_context: not used!
+        :param geometry: geometry object
+        :param order: approximation order, 0 for constant functions, 1 for linear etc.
         """
         from toolz import map, reduce
         from operator import add, mul
@@ -81,7 +83,7 @@ class LegendrePolySpace(PolySpace):
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
         """
-        Calls combine_polyvals or combine_polyvals_der to build multidimensional basis
+        Calls _combine_polyvals or _combine_polyvals_diff to build multidimensional basis
         implement these methods in subclasses to get different basis.
         expects coors to be in shape
             (..., dim),
@@ -92,18 +94,19 @@ class LegendrePolySpace(PolySpace):
 
         :param coors:
         :param diff:
-        :param ori: we do not need ori, because the basis is discontinoues across elements
+        :param ori: we do not need ori, because the basis is discontinous across elements
         :param suppress_errors:
         :param eps:
         :return:
         """
-        coors = 2 * coors - 1  # TODO refactor
+        coors = 2 * coors - 1 # transofrm from [0, 1] to [-1, 1]
         porder = self.order + 1
         if diff:
             if type(diff) == bool:
                 diff = 1
-            values = nm.zeros((1,) + coors.shape[:-1] + (self.dim,) * diff + (self.n_nod,))
-            # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
+            values = nm.zeros((1,) + coors.shape[:-1] + # (1,) for dummy axis used throughout sfepy
+                              (self.dim,) * diff + # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
+                              (self.n_nod,))
             polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))
             # diff + 1 is number of values of one dimensional base
             polyvals[..., 0] = self.legendreP(coors)
@@ -111,14 +114,14 @@ class LegendrePolySpace(PolySpace):
 
             for m, idx in enumerate(iter_by_order(self.order, self.dim)):
                 for d in range(self.dim):
-                    values[..., d, m] = self.combine_polyvals_diff(coors, polyvals, d, idx)
-
+                    values[..., d, m] = 2 * self._combine_polyvals_diff(coors, polyvals, d, idx)
+                                       #2 is due to transformation from [0,1] to [-1,1]
         else:
             values = nm.zeros(coors.shape[:-1] + (1, self.n_nod,))
-            # 1, because no matter the dimension functions have only one value
+                                                # 1, because no matter the dimension functions have only one value
             polyvals = self.legendreP(coors)
             for m, idx in enumerate(iter_by_order(self.order, self.dim)):
-                values[..., 0, m] = self.combine_polyvals(coors, polyvals, idx)
+                values[..., 0, m] = self._combine_polyvals(coors, polyvals, idx)
 
         return values
 
@@ -135,6 +138,9 @@ class LegendrePolySpace(PolySpace):
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
         space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
+        TODO this seem like a bad practice
+        Expects matrices to saved in atributes coefM and expoM!
+
         :return: Struct with name of the scheme, geometry desc and P and F
         """
         interp_scheme_struct = None
@@ -143,18 +149,37 @@ class LegendrePolySpace(PolySpace):
                                           F=self.coefM, P=self.expoM, desc=self.geometry.name)
         return interp_scheme_struct
 
-    def combine_polyvals(self, coors, polyvals, idx):
-        raise NotImplementedError(
-            "Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
+    @abstractmethod
+    def _combine_polyvals(self, coors, polyvals, idx):
+        """
+        Combines Legendre or Jacobi polynomials to get muldidimensional
+        basis values according to element topolgy
 
-    def combine_polyvals_diff(self, coors, polyvals, der, idx):
-        raise NotImplementedError(
-            "Called abstract method, use some subclass: LegendreTensorPolySpace or LegendreSimplexPolySpace")
+
+        :param coors: coordinates of evaluation points
+        :param polyvals: values of legendre polynomials precomputed in _eval_base
+        :param idx: function index, for tensor-product correspond to orders of polynomials in variables
+        :return:
+        """
+
+    @abstractmethod
+    def _combine_polyvals_diff(self, coors, polyvals, der, idx):
+        """
+        Combines Legendre or Jacobi polynomials to get muldidimensional
+        basis derivative values according to element topolgy.
+
+
+        :param coors: coordinates of evaluation points
+        :param polyvals: values of legendre polynomials precomputed in _eval_base
+        :param der: derivative variable
+        :param idx: function index, for tensor-product correspond to orders of polynomials in variables
+        :return:
+        """
 
     # --------------------- #
     # 1D legendre polyspace #
     # --------------------- #
-    funs = [lambda x: x - x + 1,
+    funs = [lambda x: x - x + 1,  # we need constant prewerving shape and type of x
             lambda x: 2 * x - 1,
             lambda x: (6 * x ** 2 - 6 * x + 1),
             lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
@@ -179,7 +204,7 @@ class LegendrePolySpace(PolySpace):
     def get_nth_fun(self, n):
         """
         Uses shifted Legendre
-        polynomials formula on interval [0, 1]. Useful for testing.
+        polynomials formula on interval [0, 1].
         Convenience function for testing
         :param n: 0,1 , 2, 3, ...
         :return: n-th function of the legendre basis
@@ -276,7 +301,7 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
     name = "legendre_tensor_product"
 
     def __init__(self, name, geometry, order):
-        LegendrePolySpace.__init__(self, name, geometry, order)
+        super().__init__(name, geometry, order)
         if self.dim > 1:
             indir = InDir(__file__)
             try:
@@ -289,14 +314,14 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
 
-    def combine_polyvals(self, coors, polyvals, idx):
+    def _combine_polyvals(self, coors, polyvals, idx):
         return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
 
-    def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
+    def _combine_polyvals_diff(self, coors, polyvals, dvar, idx):
         dimz = range(len(idx))
         derz = nm.zeros(len(idx), dtype=nm.int32)
         derz[dvar] = 1
-        return 2 * nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+        return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def build_interpol_scheme(self):
         """
@@ -357,7 +382,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
     name = "legendre_simplex"
 
     def __init__(self, name, geometry, order):
-        LegendrePolySpace.__init__(self, name, geometry, order)
+        super().__init__(name, geometry, order)
         if self.dim > 1:
             indir = InDir(__file__)
             try:
@@ -370,7 +395,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_simplex_base.py to generate it.".format(e.args[0]))
 
-    def combine_polyvals(self, coors, polyvals, idx):
+    def _combine_polyvals(self, coors, polyvals, idx):
 
         from scipy.special import jacobi, eval_jacobi
         if len(idx) == 1:  # 1D
@@ -395,12 +420,12 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                    eval_jacobi(idx[1], 2 * idx[0] + 1, 0, 0, b) * \
                    eval_jacobi(idx[2], 2 * idx[0] + 2 * idx[1] + 2, 0, c) * (1 - c) ** (idx[0] + idx[1])
 
-    def combine_polyvals_diff(self, coors, polyvals, dvar, idx):
+    def _combine_polyvals_diff(self, coors, polyvals, dvar, idx):
         if len(idx) == 1:  # D
             dimz = range(len(idx))
             derz = nm.zeros(len(idx), dtype=nm.int32)
             derz[dvar] = 1
-            return 2 * nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
+            return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
         elif len(idx) == 2:  # 2D
             r = coors[..., 0]
             s = coors[..., 1]
@@ -420,7 +445,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
                 dmodedr = dfa * gb
                 dmodedr = dmodedr * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodedr
-                return 2 * 2 ** di * dmodedr
+                return  2 ** di * dmodedr
 
             elif dvar == 1:  # d/ds
                 # s - derivative
@@ -431,8 +456,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 tmp = dgb * ((0.5 * (1 - b)) ** di)
                 tmp = tmp - 0.5 * di * gb * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else tmp
                 dmodeds = dmodeds + fa * tmp
-                return 2 * 2 ** di * dmodeds
-                # 2 due to transformation of coors in eval basis, TODO refactor!
+                return 2 ** di * dmodeds
         elif len(idx) == 3:  # 3D
             # TODO test
             r = coors[..., 0]
@@ -463,12 +487,12 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             tmp = fa * (tmp * hc)
 
             if dvar == 0:
-                return V3Dr * 2 * (2 ** (2 * di + dj + 1))
+                return V3Dr * (2 ** (2 * di + dj + 1))
             elif dvar == 1:
                 V3Ds = 0.5 * (1 + a) * V3Dr
 
                 V3Ds = V3Ds + tmp
-                return V3Ds * 2 * (2 ** (2 * di + dj + 1))
+                return V3Ds *  (2 ** (2 * di + dj + 1))
             elif dvar == 2:
                 V3Dt = 0.5 * (1 + a) * V3Dr + 0.5 * (1 + b) * tmp
                 tmp = dhc * ((0.5 * (1 - c)) ** (di + dj))
@@ -476,8 +500,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 tmp = fa * (gb * tmp)
                 tmp = tmp * ((0.5 * (1 - b)) ** di)
                 V3Dt = V3Dt + tmp
-                return V3Dt * 2 * (2 ** (2 * di + dj + 1))
-                # 2 due to transformation of coors in eval basis, TODO refactor!
+                return V3Dt * (2 ** (2 * di + dj + 1))
 
 
 def plot_2Dtensor_basis_grad():
@@ -713,8 +736,8 @@ def plot_1D_basis():
 
 
 if __name__ == '__main__':
-    # plot_2Dtensor_basis_grad()
-    plot_2Dsimplex_basis_grad()
+    plot_2Dtensor_basis_grad()
+    # plot_2Dsimplex_basis_grad()
     # plot_2D_simplex_as_tensor()
     # plot_1D_basis()
 
