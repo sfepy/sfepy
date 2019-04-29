@@ -38,8 +38,8 @@ materials = {
 
 regions = {
     'Omega' : 'all',
-    'Gamma_Left' : ('vertices in (x < 0.00001)', 'vertex'),
-    'Gamma_Right' : ('vertices in (x > 0.99999)', 'vertex'),
+    'Gamma_Left' : ('vertices in (x < 0.0001)', 'vertex'),
+    'Gamma_Right' : ('vertices in (x > 0.9995)', 'vertex'),
 }
 
 fields = {
@@ -54,7 +54,7 @@ def left_sin(ts, coor, bc, problem, **kwargs):
     return nm.sin(2*nm.pi*ts.time)
 
 def get_ic(x, ic=None):
-    return ghump(x - .3)
+    return ghump(x - .6)
 
 from sfepy.discrete.fem.periodic import match_y_line
 functions = {
@@ -69,12 +69,12 @@ functions = {
 #     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 # }
 
-# epbc_1 = {
-#     'name' : 'u_rl',
-#     'region' : ['Gamma_Right', 'Gamma_Left'],
-#     'dofs' : {'u.all' : 'u.all'},
-#     'match' : 'match_y_line',
-# }
+epbc_1 = {
+    'name' : 'u_rl',
+    'region' : ['Gamma_Left', 'Gamma_Right'],
+    'dofs' : {'u.all' : 'u.all'},
+    'match' : 'match_y_line',
+}
 
 ics = {
     'ic' : ('Omega', {'u.0' : 'get_ic'}),
@@ -107,6 +107,6 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'save_times' : 100,
-    'active_only' : True,
+    'active_only' : False,
     'pre_process_hook' : get_cfl_setup(CFL)
 }

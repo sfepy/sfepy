@@ -24,7 +24,9 @@ materials = {
 
 regions = {
     'Omega' : 'all',
-    'Gamma_Left': ('vertices in (x < 0.055)', 'cell'),
+    'Gamma_Left': ('vertices in (x < 0.005)', 'facet'),
+    'Gamma_Right': ('vertices in (x > 0.955)', 'facet'),
+
 }
 
 fields = {
@@ -39,17 +41,29 @@ variables = {
 def get_ic(x, ic=None):
     return gsmooth(x[..., 0:1])# * gsmooth(x[..., 1:])
 
+from sfepy.discrete.fem.periodic import match_y_line
+
+
 functions = {
-    'get_ic' : (get_ic,)
+    'get_ic' : (get_ic,),
+    'match_y_line': (match_y_line,)
 }
+
 
 ics = {
     'ic' : ('Omega', {'u.0' : 'get_ic'}),
 }
+#
+# ebcs = {
+#     'u_left' : ('Gamma_Left', {'u.all' : .5}),
+#     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
+# }
 
-ebcs = {
-    'u_left' : ('Gamma_Left', {'u.all' : .5}),
-    # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
+epbc_1 = {
+    'name' : 'u_rl',
+    'region' : ['Gamma_Right', 'Gamma_Left'],
+    'dofs' : {'u.all' : 'u.all'},
+    'match' : 'match_y_line', # TODO for more general meshes this fails to match coors
 }
 
 integrals = {
