@@ -11,15 +11,15 @@ class AutoFallbackSolver(Solver):
 
     def __new__(cls, conf, **kwargs):
         """
-        Choose a available solver from `self._ls_solvers`.
+        Choose an available solver from `self._ls_solvers`.
 
         Parameters
         ----------
         conf : dict
             The solver configuration.
         """
-        ls_solvers = [(ls, Struct(**conf) + Struct(kind=ls))
-                      for ls, conf in cls._ls_solvers]
+        ls_solvers = [(ls, Struct(**_conf) + Struct(kind=ls))
+                      for ls, _conf in cls._ls_solvers]
 
         return use_first_available(ls_solvers)
 
