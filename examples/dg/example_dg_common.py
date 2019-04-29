@@ -19,7 +19,7 @@ from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 
 # import TSSs
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
+from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 
 register_term(AdvectDGFluxTerm)
 register_solver(TVDRK3StepSolver)

@@ -22,7 +22,7 @@ from sfepy.base.ioutils import ensure_path
 from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
 from sfepy.discrete.dg.dg_field import DGField
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
+from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
@@ -132,7 +132,7 @@ pb.set_ics(Conditions([ics]))
 #------------------
 #| Create limiter |
 #------------------
-limiter = Moment1DLimiter
+limiter = MomentLimiter1D
 
 #---------------------------
 #| Set time discretization |
@@ -156,7 +156,7 @@ nls = Newton({'is_linear': True}, lin_solver=ls, status=nls_status)
 tss_conf = {'t0': t0,
             't1': t1,
             'n_step': tn,
-            "limiter": Moment1DLimiter}
+            "limiter": MomentLimiter1D}
 
 tss = EulerStepSolver(tss_conf,
                          nls=nls, context=pb, verbose=True)

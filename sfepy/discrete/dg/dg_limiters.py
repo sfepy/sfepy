@@ -48,7 +48,7 @@ class IdentityLimiter(DGLimiter):
         return u
 
 
-class Moment1DLimiter(DGLimiter):
+class MomentLimiter1D(DGLimiter):
     """
     Krivodonova(2007): Limiters for high-order discontinuous Galerkin methods
     """
@@ -82,3 +82,13 @@ class Moment1DLimiter(DGLimiter):
 
 
         return self.ravel(nu.swapaxes(0, 1))[:, 0]
+
+class MommentLimiter2D(DGLimiter):
+    """
+    Krivodonova(2007): Limiters for high-order discontinuous Galerkin methods
+    """
+    name= "moment_limiter_2D"
+
+    def __call__(self, u):
+        # TODO this will need information on mesh connectivity!
+        ...

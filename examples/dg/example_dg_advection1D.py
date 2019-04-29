@@ -96,7 +96,7 @@ solvers = {
     "tss" : ('ts.euler',
                          {"t0": t0,
                           "t1": t1,
-                          'limiter' : Moment1DLimiter,
+                          'limiter' : MomentLimiter1D,
                           'verbose' : True}),
     'nls' : ('nls.newton',{} ),
     'ls'  : ('ls.scipy_direct', {})

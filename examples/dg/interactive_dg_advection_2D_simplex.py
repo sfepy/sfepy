@@ -25,7 +25,7 @@ from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 from sfepy.discrete.dg.dg_tssolver \
     import EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, Moment1DLimiter
+from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 
 from sfepy.discrete.dg.my_utils.inits_consts \
     import left_par_q, gsmooth, const_u, ghump, superic
