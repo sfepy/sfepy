@@ -481,14 +481,20 @@ class DGField(Field):
 
         # treat EPBCs
         if eq_map.n_epbc > 0:
-            # first repair neighbours of the EPBC cells, to be the same
+            # set neighbours of periodic cells to one another
             mcells = nm.unique(self.dofs2cells[eq_map.master])
             scells = nm.unique(self.dofs2cells[eq_map.slave])
-            periodic_nbrhds = nm.select(
-                               [facet_neighbours[scells] < 0, facet_neighbours[mcells] < 0],
-                               [facet_neighbours[mcells], facet_neighbours[scells]])
-            facet_neighbours[mcells] = periodic_nbrhds
-            facet_neighbours[scells] = periodic_nbrhds
+            mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0] # facets of mcells
+            scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0] # facets of scells
+
+            facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
+            facet_neighbours[mcells, mcells_facets, 1] = scells_facets
+            # TODO how to distinguish EBC and EPBC? - we do not need to, they over write EPBC, we only need to fix shapes
+
+            facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
+            facet_neighbours[scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
+
+
 
             # now repair neighbours of the neighbours of EPBC cells to
             # point to slave cell
