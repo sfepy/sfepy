@@ -486,9 +486,12 @@ class DGField(Field):
             scells = nm.unique(self.dofs2cells[eq_map.slave])
             mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0] # facets of mcells
             scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0] # facets of scells
+            [1, 0] # above, first we need second axis t get axis on which facet indices are stored,
+            # second we drop axis with neighbour local facet index, for multiple s/mcells this will have to be something like
+            # 1 + 2*nm.arange(len(mcells) - to skip double entries for -1 tags in neighbours and  neighbour local facet idx
 
             facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
-            facet_neighbours[mcells, mcells_facets, 1] = scells_facets
+            facet_neighbours[mcells, mcells_facets, 1] = scells_facets  # set neighbour facets to facets of scell missing neighbour
             # TODO how to distinguish EBC and EPBC? - we do not need to, they over write EPBC, we only need to fix shapes
 
             facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
