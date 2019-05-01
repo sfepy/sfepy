@@ -4,19 +4,22 @@ import matplotlib.pyplot as plt
 from os.path import join as pjoin
 
 # sfepy imports
+from discrete.fem.periodic import match_x_line, match_y_line
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
+from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions, PeriodicBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
+
+from sfepy.discrete.variables import DGFieldVariable
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
@@ -43,20 +46,26 @@ output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "msh"
 mesh_output_folder = "output/mesh"
 save_timestn = 100
+clear_folder(pjoin(output_folder, "*."+output_format))
+
 
 #------------
 #| Get mesh |
 #-----------
 mesh = gen_block_mesh((1., 1.), (50, 50), (0.5, 0.5))
 
+mesh_name = "tens_2D_mesh"
+mesh = Mesh.from_file("mesh/" + mesh_name + ".vtk")
+
 angle = - nm.pi/5
 rotm = nm.array([[nm.cos(angle),  -nm.sin(angle)],
                  [nm.sin(angle),  nm.cos(angle)]])
 velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
+velo = nm.array([[0., -1.]]).T
 max_velo = nm.max(nm.linalg.norm(velo))
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 2
+approx_order = 1
 CFL = .8
 #^^^^^^^^^^^^^^^^#
 
@@ -67,16 +76,33 @@ CFL = .8
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain(domain_name, mesh)
 omega = domain.create_region('Omega', 'all')
+
+left = domain.create_region('left',
+                              'vertices in x == 0' ,
+                              'edge')
+
+right = domain.create_region('right',
+                              'vertices in x == 1' ,
+                              'edge')
+
+top = domain.create_region('top',
+                              'vertices in y == 1' ,
+                              'edge')
+
+bottom = domain.create_region('bottom',
+                              'vertices in y == 0' ,
+                              'edge')
+
+
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                   approx_order=approx_order)
 
-u = FieldVariable('u', 'unknown', field, history=1)
-v = FieldVariable('v', 'test', field, primary_var_name='u')
+u = DGFieldVariable('u', 'unknown', field, history=1)
+v = DGFieldVariable('v', 'test', field, primary_var_name='u')
 
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u", integral, omega, u=u, v=v)
 
-velo = nm.array([[1., 0.]]).T
 a = Material('a', val=[velo])
 StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", integral, omega,
                                     u=u, v=v, a=a)
@@ -92,6 +118,12 @@ eqs = Equations([eq])
 #------------------------------
 #| Create bounrady conditions |
 #------------------------------
+dirichlet_bc_u = EssentialBC('left_fix_u', left, {'u.all' : 1.0})
+periodic1_bc_u = PeriodicBC('top_bot', [top, bottom],{'u.all' : 'u.all'}, match='match_x_line')
+periodic2_bc_u = PeriodicBC('left_right', [left, right],{'u.all' : 'u.all'}, match='match_y_line')
+
+# right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
+
 
 #----------------------------
 #| Create initial condition |
@@ -100,26 +132,6 @@ def ic_wrap(x, ic=None):
     return gsmooth(x[..., 0:1])*gsmooth(x[..., 1:])
 
 
-# X = nm.arange(0, 1, 0.005)
-# Y = nm.arange(0, 1, 0.005)
-# X, Y = nm.meshgrid(X, Y)
-# coors = nm.dstack((X[:, :, None], Y[:, :, None]))
-
-# from mpl_toolkits.mplot3d import Axes3D
-# import matplotlib.pyplot as plt
-# from matplotlib import cm
-
-# fig = plt.figure()
-# ax = fig.gca(projection='3d')
-# Z = ic_wrap(coors)
-# surf = ax.plot_surface(X, Y, Z[:, :, 0], cmap=cm.coolwarm,
-#                        linewidth=0, antialiased=False, alpha=.6)
-#
-# fig = plt.figure()
-# ax = fig.gca()
-# ax.contour(X, Y, Z[..., 0])
-# plt.show()
-
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
@@ -127,11 +139,17 @@ ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 #| Create problem |
 #------------------
 pb = Problem(problem_name, equations=eqs, conf=Struct(options={"save_times": save_timestn}, ics={},
-                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}),
+                                                     ebcs={}, epbcs={}, lcbcs={}, materials={},
+                                                      ),
              active_only=False)
 pb.setup_output(output_dir=output_folder, output_format=output_format)
+pb.functions  = {'match_x_line':  Function("match_x_line", match_x_line),
+                 'match_y_line':  Function("match_y_line", match_y_line)}
 pb.set_ics(Conditions([ics]))
-
+pb.set_bcs(#ebcs=Conditions([dirichlet_bc_u]),
+           epbcs=Conditions([periodic1_bc_u,
+                             # periodic2_bc_u
+                             ]))
 
 #------------------
 #| Create limiter |
@@ -141,10 +159,9 @@ limiter = IdentityLimiter
 #---------------------------
 #| Set time discretization |
 #---------------------------
-CFL = .4
 max_velo = nm.max(nm.linalg.norm(velo))
 t0 = 0
-t1 = .2
+t1 = 3
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / max_velo * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))

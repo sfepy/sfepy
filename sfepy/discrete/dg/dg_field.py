@@ -15,6 +15,7 @@ from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.mappings import VolumeMapping
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
+from sfepy.discrete.variables import Variable, Variables
 
 # local imports
 from sfepy.discrete.dg.dg_basis import LegendrePolySpace, LegendreSimplexPolySpace, LegendreTensorProductPolySpace
@@ -132,6 +133,9 @@ class DGField(Field):
 
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
+
+        # boundary DOFS TODO temporary - resolve BC treatement
+        self.boundary_val = 0.0
 
         # integral
         self.clear_qp_base()
@@ -497,14 +501,6 @@ class DGField(Field):
             facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
             facet_neighbours[scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
 
-
-
-            # now repair neighbours of the neighbours of EPBC cells to
-            # point to slave cell
-            # for scell, nb  in zip(scells, periodic_nbrhds[0, :]):
-            #     pnb, fnb = nb
-            #     per_facet_neighbours[pnb, fnb, 0] = scell
-
         # cache results
         self.facet_neighbour_index[region.name] = facet_neighbours
 
@@ -523,6 +519,7 @@ class DGField(Field):
         gel = get_gel(region)
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
         return dim, n_cell, n_el_facets
+
 
     def get_both_facet_qp_vals(self, state, region):
         """
@@ -550,13 +547,25 @@ class DGField(Field):
                 dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
                 facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
-        # set outer ghost dofs to zeros, EBC are treated in classical FEM style
-        boundary_cells = per_facet_neighbours < 0
-        outer_facet_vals[boundary_cells[:,:,0]] = 0.0
+        if state.eq_map.n_ebc > 0:
+            # get cells with missing neighbours, ignore that we do not know neighbour local fact idx
+            boundary_cells = nm.array(nm.where(per_facet_neighbours[:,:, 0] < 0)).T
+            ebc_cells = self.dofs2cells[state.eq_map.eq_ebc][::self.n_el_nod]
+
+            for ebc_ii, ebc_cell in enumerate(ebc_cells):
+                curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
+                for bn_facet in curr_b_cells[:, 1]:
+                    # so far setting only zero order dof
+                    # TODO change chape and data in state.eq_map.eq_ebc and state.eq_map.val_ebc
+                    # to be able to save projections there
+
+                    # so far we set to all boundary faces of the cell
+                    # TODO treat boundary cells where more BCs meet
+                    outer_facet_vals[ebc_cell, bn_facet, :] = state.eq_map.val_ebc[ebc_ii*self.n_el_nod]
+                    # outer_facet_vals[ebc_cell, bn_facet , :] = state.eq_map.val_ebc[ebc_ii*self.n_el_facets : self.n_el_facets*(ebc_ii+1)]
 
         # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering
         return inner_facet_vals, outer_facet_vals[..., ::-1], whs
-
 
     def get_cell_normals_per_facet(self, region):
         """
