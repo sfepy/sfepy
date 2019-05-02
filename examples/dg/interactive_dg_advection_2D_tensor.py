@@ -37,7 +37,8 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 2
+CFL = .8
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_2D"
@@ -64,10 +65,7 @@ velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
 velo = nm.array([[0., -1.]]).T
 max_velo = nm.max(nm.linalg.norm(velo))
 
-#vvvvvvvvvvvvvvvv#
-approx_order = 1
-CFL = .8
-#^^^^^^^^^^^^^^^^#
+
 
 #-----------------------------
 #| Create problem components |
@@ -138,7 +136,7 @@ ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 #------------------
 #| Create problem |
 #------------------
-pb = Problem(problem_name, equations=eqs, conf=Struct(options={"save_times": save_timestn}, ics={},
+pb = Problem(problem_name, equations=eqs, conf=Struct(options={"save_times": "all"}, ics={},
                                                      ebcs={}, epbcs={}, lcbcs={}, materials={},
                                                       ),
              active_only=False)
@@ -146,7 +144,7 @@ pb.setup_output(output_dir=output_folder, output_format=output_format)
 pb.functions  = {'match_x_line':  Function("match_x_line", match_x_line),
                  'match_y_line':  Function("match_y_line", match_y_line)}
 pb.set_ics(Conditions([ics]))
-pb.set_bcs(#ebcs=Conditions([dirichlet_bc_u]),
+pb.set_bcs(ebcs=Conditions([dirichlet_bc_u]),
            epbcs=Conditions([periodic1_bc_u,
                              # periodic2_bc_u
                              ]))

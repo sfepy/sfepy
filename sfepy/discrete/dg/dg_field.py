@@ -556,13 +556,13 @@ class DGField(Field):
                 curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
                 for bn_facet in curr_b_cells[:, 1]:
                     # so far setting only zero order dof
-                    # TODO change chape and data in state.eq_map.eq_ebc and state.eq_map.val_ebc
+                    # TODO change shape and data in state.eq_map.eq_ebc and state.eq_map.val_ebc
                     # to be able to save projections there
 
                     # so far we set to all boundary faces of the cell
                     # TODO treat boundary cells where more BCs meet
-                    outer_facet_vals[ebc_cell, bn_facet, :] = state.eq_map.val_ebc[ebc_ii*self.n_el_nod]
-                    # outer_facet_vals[ebc_cell, bn_facet , :] = state.eq_map.val_ebc[ebc_ii*self.n_el_facets : self.n_el_facets*(ebc_ii+1)]
+                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[ebc_ii*self.n_el_nod:(ebc_ii+1)*self.n_el_nod][None, :]
+                                                                     * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
 
         # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering
         return inner_facet_vals, outer_facet_vals[..., ::-1], whs
