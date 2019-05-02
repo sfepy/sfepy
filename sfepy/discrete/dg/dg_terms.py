@@ -284,6 +284,54 @@ class AdvectDGFluxTerm(Term):
         return status
 
 
+class DiffusionDGFluxTerm(Term):
+    """
+    Combines Lax-Friedrichs fluxes to get diffusion
+    """
+
+
+    alf = 0
+    name = "dw_dg_difusion_laxfrie_flux"
+    modes = ("weak",)
+    arg_types = ('opt_material', 'material_diff_tensor', 'virtual', 'state')
+    arg_shapes = [{'opt_material': '.: 1',
+                   'material_diff_tensor': 'D, D',
+                   'virtual': (1, 'state'),
+                   'state': 1
+                   },
+                  {'opt_material': None}]
+    integration = 'volume'
+    symbolic = {'expression': 'div(D*grad(u))',
+                'map': {'u': 'state', 'a': 'material', 'v': 'virtual'}
+                }
+
+    def get_fargs(self, alpha, diff_tensor, test, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        # TODO this should be kinda the same, use some abstraction - in NonlinearHyperDGFluxTerm too!
+        if alpha is not None:
+            self.alf = alpha # extract alpha value regardless of shape
+        if diff_var is not None:
+            # TODO will this term be residual only?
+            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
+            return None, None, None, None, None, advelo[:, 0, :, 0], 0
+        else:
+            field = state.field
+            region = field.region
+
+            if not "DG" in field.family_name:
+                raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
+
+            dofs = unravel_sol(state)
+            cell_normals = field.get_cell_normals_per_facet(region)
+            facet_base_vals = field.get_facet_base(base_only=True)
+            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
+
+            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals,
+                     # TODO get correct shape of diffusion tensor
+                     facet_base_vals, weights, cell_normals, diff_tensor[:, 0, :, :])
+            return fargs
+
+
 class NonlinearHyperDGFluxTerm(Term):
 
     alf = 0
