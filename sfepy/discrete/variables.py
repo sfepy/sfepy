@@ -777,7 +777,7 @@ class Variables(Container):
             else:
                 aux = vec[indx]
 
-            out.update(var.create_output(aux, extend=extend,
+            out.update(var.create_output(aux, key=name, extend=extend,
                                          fill_value=fill_value,
                                          linearization=linearization))
 

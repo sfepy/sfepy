@@ -245,7 +245,7 @@ coordinates of the mesh nodes.
 ['q'/other key to quit/continue...]""")
     req = conf.requirements['pis']
     mini_app = cb.ShapeDimDim('pis', problem, req)
-    mini_app.setup_output(save_format='vtk',
+    mini_app.setup_output(save_formats=['vtk'],
                           file_per_var=False)
     pis = mini_app()
     print(pis)
@@ -263,7 +263,7 @@ computed now.
     name = os.path.join(output_dir, save_name)
 
     mini_app = cb.CorrDimDim('steady rs correctors', problem, req)
-    mini_app.setup_output(save_format='vtk',
+    mini_app.setup_output(save_formats=['vtk'],
                           file_per_var=False)
     corrs_rs = mini_app(data={'pis': pis})
     print(corrs_rs)

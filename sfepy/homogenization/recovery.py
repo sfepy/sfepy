@@ -13,7 +13,7 @@ from sfepy.base.conf import get_standard_keywords
 from sfepy.discrete import Problem
 from sfepy.base.conf import ProblemConf
 from sfepy.homogenization.coefficients import Coefficients
-from sfepy.homogenization.micmac import get_correctors_from_file
+from sfepy.homogenization.micmac import get_correctors_from_file_hdf5
 import os.path as op
 import six
 from six.moves import range
@@ -494,7 +494,7 @@ def recover_micro_hook(micro_filename, region, macro,
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5(coefs_filename)
-    corrs = get_correctors_from_file(dump_names=coefs.dump_names)
+    corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
 
     recovery_hook = conf.options.get('recovery_hook', None)
 
@@ -570,7 +570,7 @@ def recover_micro_hook_eps(micro_filename, region,
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5(coefs_filename)
-    corrs = get_correctors_from_file(dump_names=coefs.dump_names)
+    corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
 
     recovery_hook = conf.options.get('recovery_hook', None)
 
@@ -596,6 +596,7 @@ def recover_micro_hook_eps(micro_filename, region,
             x0[:, ii] = icoor.flatten()
 
         mesh = pb.domain.mesh
+
         coors, conn, outs, ndoffset = [], [], [], 0
         # Recover region
         mic_coors = (mesh.coors - mesh.get_bounding_box()[0, :]) * eps0
@@ -614,7 +615,7 @@ def recover_micro_hook_eps(micro_filename, region,
             v[evfield.vertex_remap[region.entities[0]]] = 0
             no = nm.sum(v)
             aux = evfield.evaluate_at(local_coors, v)
-            if (nm.sum(aux) / no) > 1e-3:
+            if no > 0 and (nm.sum(aux) / no) > 1e-3:
                 continue
 
             output.level = output_level
