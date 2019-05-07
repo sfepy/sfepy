@@ -313,7 +313,7 @@ class DiffusionDGFluxTerm(Term):
         if diff_var is not None:
             # TODO will this term be residual only?
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, None, None, advelo[:, 0, :, 0], 0
+            return None, None, None, None, None, diff_tensor[:, 0, :, :], 0
         else:
             field = state.field
             region = field.region
@@ -324,12 +324,18 @@ class DiffusionDGFluxTerm(Term):
             dofs = unravel_sol(state)
             cell_normals = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
-            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
+            facet_base_dvals = field.get_facet_base(base_only=True, derivative=True)
 
-            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals,
+            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
+            inner_facet_qp_dvals, outer_facet_qp_dvals, weights = field.get_both_facet_qp_vals(dofs, region, derivative=True)
+
+            fargs = (dofs, inner_facet_qp_dvals, outer_facet_qp_dvals,
                      # TODO get correct shape of diffusion tensor
-                     facet_base_vals, weights, cell_normals, diff_tensor[:, 0, :, :])
+                     facet_base_dvals, weights, cell_normals, diff_tensor[:, 0, :, :])
             return fargs
+
+        def function(self, out, dofs, in_fc_dv, out_fc_dv, fc_db, whs, fc_n):
+            ...
 
 
 class NonlinearHyperDGFluxTerm(Term):
