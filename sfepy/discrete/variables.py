@@ -1932,7 +1932,7 @@ class DGFieldVariable(FieldVariable):
         if isinstance(field, DGField):
             pass
         else:
-            raise ValueError("Attempted to use DGField variable with non DG field!")
+            raise ValueError("Attempted to use DGFieldVariable with non DGField!")
 
     def apply_ebc(self, vec, offset=0, force_values=None):
         pass

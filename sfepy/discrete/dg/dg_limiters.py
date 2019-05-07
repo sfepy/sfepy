@@ -87,7 +87,7 @@ class MommentLimiter2D(DGLimiter):
     """
     Krivodonova(2007): Limiters for high-order discontinuous Galerkin methods
     """
-    name= "moment_limiter_2D"
+    name = "moment_limiter_2D"
 
     def __call__(self, u):
         # TODO this will need information on mesh connectivity!

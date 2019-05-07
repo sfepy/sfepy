@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 from os.path import join as pjoin
 
 # sfepy imports
+from discrete.fem.periodic import match_y_line, match_x_line
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
+from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions, PeriodicBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
@@ -34,7 +35,8 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 0
+CFL = .4
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_12D"
@@ -51,23 +53,6 @@ clear_folder(pjoin(output_folder, output_format))
 mesh = gen_block_mesh((1., 1.), (20, 2), (.5, 0.5))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #-----------------------------
 #| Create problem components |
 #-----------------------------
@@ -75,6 +60,15 @@ mesh = gen_block_mesh((1., 1.), (20, 2), (.5, 0.5))
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain(domain_name, mesh)
 omega = domain.create_region('Omega', 'all')
+
+left = domain.create_region('left',
+                              'vertices in x == 0',
+                              'edge')
+
+right = domain.create_region('right',
+                              'vertices in x == 1',
+                              'edge')
+
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                   approx_order=approx_order)
 
@@ -100,6 +94,14 @@ eqs = Equations([eq])
 #------------------------------
 #| Create bounrady conditions |
 #------------------------------
+epbc_1 = {
+    'name' : 'u_rl',
+    'region' : ['Gamma_Right', 'Gamma_Left'],
+    'dofs' : {'u.all' : 'u.all'},
+    'match' : 'match_y_line',
+}
+periodic1_bc_u = PeriodicBC('top_bot', [left, right],{'u.all' : 'u.all'}, match='match_y_line')
+
 
 #----------------------------
 #| Create initial condition |
@@ -136,8 +138,14 @@ ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 pb = Problem(problem_name, equations=eqs, conf=Struct(options={"save_times": save_timestn}, ics={},
                                                      ebcs={}, epbcs={}, lcbcs={}, materials={}),
              active_only=False)
+pb.functions = {'match_x_line':  Function("match_x_line", match_x_line),
+                'match_y_line':  Function("match_y_line", match_y_line)}
 pb.setup_output(output_dir=output_folder, output_format=output_format)
 pb.set_ics(Conditions([ics]))
+pb.set_bcs(#ebcs=Conditions([dirichlet_bc_u]),
+           epbcs=Conditions([periodic1_bc_u,
+                             # periodic2_bc_u
+                             ]))
 
 
 #------------------
@@ -148,10 +156,10 @@ limiter = IdentityLimiter
 #---------------------------
 #| Set time discretization |
 #---------------------------
-CFL = .4
+
 max_velo = nm.max(nm.linalg.norm(velo))
 t0 = 0
-t1 = .2
+t1 = 1
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / max_velo * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))
