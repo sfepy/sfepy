@@ -102,8 +102,7 @@ class LegendrePolySpace(PolySpace):
         coors = 2 * coors - 1 # transofrm from [0, 1] to [-1, 1]
         porder = self.order + 1
         if diff:
-            if type(diff) == bool:
-                diff = 1
+            diff = int(diff)
             values = nm.zeros((1,) + coors.shape[:-1] + # (1,) for dummy axis used throughout sfepy
                               (self.dim,) * diff + # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
                               (self.n_nod,))

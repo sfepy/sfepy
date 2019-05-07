@@ -92,7 +92,7 @@ alpha = Material('alpha', val=[.0])
 FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
                          integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-DiffT = DiffusionDGFluxTerm("adv_lf_flux(D.val, v, u)", "D.val, v,  u[-1]",
+DiffT = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)", "D.val, v,  u[-1]",
                          integral, omega, u=u, v=v, D=D, alpha=alpha)
 
 eq = Equation('balance', MassT - DiffT)

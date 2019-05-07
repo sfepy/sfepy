@@ -288,7 +288,7 @@ class DGField(Field):
             return self.bf[bf_key], qp.weights
 
     def clear_facet_qp_base(self):
-        self.facet_bf = None
+        self.facet_bf = {}
         self.facet_qp = None
         self.facet_whs = None
 
@@ -376,8 +376,13 @@ class DGField(Field):
         :param base_only:
         :return:
         """
-        if self.facet_bf is not None:
-            facet_bf = self.facet_bf
+        if derivative:
+            diff = int(derivative)
+        else:
+            diff = 0
+
+        if diff in self.facet_bf:
+            facet_bf = self.facet_bf[diff]
             whs = self.facet_whs
         else:
             qps, whs = self.get_facet_qp()
@@ -385,15 +390,14 @@ class DGField(Field):
             self.facet_qp = qps
             self.facet_whs = whs
             if derivative:
-                diff = derivative if isinstance(derivative, int) else 1
-                self.facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] + (self.dim,)*diff + (self.n_el_nod,))
+                facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] + (self.dim,)*diff + (self.n_el_nod,))
             else:
-                self.facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod,))
+                facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod,))
 
             for i in range(self.n_el_facets):
-                self.facet_bf[..., i, :, :] = ps.eval_base(qps[..., i, :], diff=derivative,
+                facet_bf[..., i, :, :] = ps.eval_base(qps[..., i, :], diff=diff,
                                                            transform=self.basis_transform)
-            facet_bf = self.facet_bf
+            self.facet_bf[diff] = facet_bf
 
         if base_only:
             return facet_bf
@@ -482,7 +486,7 @@ class DGField(Field):
         """
         facet_bf, whs = self.get_facet_base(derivative=derivative)
 
-        # facet_bf = facet_bf[:, 0, :, 0, :].T
+        # TODO appropriate shapes for derivative data - compare with BC branches versions
         inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
         inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
 
