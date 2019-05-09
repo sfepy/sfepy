@@ -323,18 +323,47 @@ class DiffusionDGFluxTerm(Term):
 
             dofs = unravel_sol(state)
             cell_normals = field.get_cell_normals_per_facet(region)
-            facet_base_vals = field.get_facet_base(base_only=True)
+            # TODO use sane facet base shape
+            inner_facet_base_vals = field.get_facet_base(base_only=True)[:,0,:,0,:]
+
+            # TODO create method in field for this
+            per_facet_neighbours = field.get_facet_neighbor_idx(region, state.eq_map)
+            outer_facet_base_vals = inner_facet_base_vals[:,  per_facet_neighbours[:, :, 1], :]
 
             inner_facet_qp_dvals, outer_facet_qp_dvals, weights = field.get_both_facet_qp_vals(state, region, derivative=True)
 
             fargs = (dofs, inner_facet_qp_dvals, outer_facet_qp_dvals,
-                     # TODO get correct shape of diffusion tensor
-                     facet_base_vals, weights, cell_normals, diff_tensor[:, 0, :, :])
+                     inner_facet_base_vals, outer_facet_base_vals, weights, cell_normals, diff_tensor[:, 0, :, :])
             return fargs
 
-        def function(self, out, dofs, in_fc_dv, out_fc_dv, fc_b, whs, fc_n):
+    def function(self, out, dofs, in_fc_dv, out_fc_dv, in_fc_b, out_fc_b, whs, fc_n, D):
+        """
 
-            ...
+        :param out:
+        :param dofs:
+        :param in_fc_dv:
+        :param out_fc_dv:
+        :param in_fc_b:
+        :param out_fc_b:
+        :param whs:
+        :param fc_n:
+        :param D:
+        :return:
+        """
+
+        # TODO decompose and test properly, shapes fit so far however :-)
+        n_el_nod = dofs.shape[1]
+        avgDu = (nm.einsum("ikl,ifkq->ifkq", D, in_fc_dv) + nm.einsum("ikl,ifkq->ifkq", D, out_fc_dv)) / 2.
+        jmpBase = in_fc_b - out_fc_b
+        # multiply (D(u)\nabla u) . N . [\phi] and integrate - in one einsum call! ~~ magic :-D
+        cell_fluxes = nm.einsum("ifkq, ifk , qif... -> i...", avgDu, fc_n, jmpBase)
+
+        out[:] = 0.0
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = cell_fluxes[:, i, None]
+
+        status = None
+        return status
 
 
 class NonlinearHyperDGFluxTerm(Term):

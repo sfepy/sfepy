@@ -544,17 +544,23 @@ class DGField(Field):
 
         dofs = self.unravel_sol(state.data[0])
         facet_bf, whs = self.get_facet_base(derivative=derivative)
-        sane_facet_bf = facet_bf[0, 0, :, 0, :]
-        sane_facet_bf = sane_facet_bf.swapaxes(0, 1)[..., None]
+        n_qp = nm.shape(whs)[1]
 
-        outputs_shape = (self.n_cell, self.n_el_facets) + (self.dim,) * diff + (nm.shape(whs)[1],)
+        base_shape = (self.n_el_nod, self.n_el_facets) + (self.dim,) * diff + (n_qp,)
+        outputs_shape = (self.n_cell, self.n_el_facets) + (self.dim,) * diff + (n_qp,)
+
+        sane_facet_bf = nm.zeros(base_shape)
+        if derivative:
+            sane_facet_bf[:] = facet_bf[0, :, 0, :, :, :].swapaxes(-2, -3).T
+        else:
+            sane_facet_bf[:] = facet_bf[:, 0, :, 0, :].T
+
 
         inner_facet_vals = nm.zeros(outputs_shape)
         inner_facet_vals_old = nm.zeros(outputs_shape)
 
-        inner_facet_vals_old[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
+        # inner_facet_vals_old[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
         inner_facet_vals[:] = nm.einsum('ij...,j...->i...', dofs, sane_facet_bf)
-
 
         per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
 
@@ -562,22 +568,19 @@ class DGField(Field):
         whs = facet_vols * whs[None, :, :, 0]
 
         outer_facet_vals = nm.zeros(outputs_shape)
-        outer_facet_vals_old = nm.zeros(outputs_shape)
-
-
-        # outer_facet_vals[:] = nm.einsum('ij...,j...->i...', dofs[per_facet_neighbours[:, facet_n, 0]], sane_facet_bf[:, facet_n])
+        # outer_facet_vals_old = nm.zeros(outputs_shape)
 
         for facet_n in range(self.n_el_facets):
             outer_facet_vals[:, facet_n, :]  = nm.einsum('ij...,ji...->i...',
                                                          dofs[per_facet_neighbours[:, facet_n, 0]],
                                                          sane_facet_bf[:, per_facet_neighbours[:, facet_n, 1]])
-        for facet_n in range(self.n_el_facets):
-            outer_facet_vals_old[:, facet_n, :] = nm.sum(
-                dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
-                facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
+        # for facet_n in range(self.n_el_facets):
+        #     outer_facet_vals_old[:, facet_n, :] = nm.sum(
+        #         dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
+        #         facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
         if state.eq_map.n_ebc > 0:
-            # get cells with missing neighbours, ignore that we do not know neighbour local fact idx
+            # get cells with missing neighbours, ignore that we do not know neighbour local facet idx
             boundary_cells = nm.array(nm.where(per_facet_neighbours[:,:, 0] < 0)).T
             ebc_cells = self.dofs2cells[state.eq_map.eq_ebc][::self.n_el_nod]
 
@@ -590,7 +593,8 @@ class DGField(Field):
 
                     # so far we set to all boundary faces of the cell
                     # TODO treat boundary cells where more BCs meet
-                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[ebc_ii*self.n_el_nod:(ebc_ii+1)*self.n_el_nod][None, :]
+                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[ebc_ii*self.n_el_nod
+                                                                                          :(ebc_ii+1)*self.n_el_nod][None, :]
                                                                      * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
 
         # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering

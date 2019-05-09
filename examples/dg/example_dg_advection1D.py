@@ -27,7 +27,7 @@ def get_1Dmesh_hook(XS, XE, n_nod):
     return mesh_hook
 filename_mesh = UserMeshIO(get_1Dmesh_hook(0, 1, 100))
 
-approx_order = 1
+approx_order = 2
 t0 = 0.
 t1 = 1.
 CFL = .5
