@@ -596,6 +596,10 @@ class DGField(Field):
                     outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[ebc_ii*self.n_el_nod
                                                                                           :(ebc_ii+1)*self.n_el_nod][None, :]
                                                                      * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
+                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.einsum("d,d...->...",
+                                                                        state.eq_map.val_ebc[ebc_ii*self.n_el_nod
+                                                                                             :(ebc_ii+1)*self.n_el_nod],
+                                                                        sane_facet_bf[:, bn_facet])
 
         # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering
         return inner_facet_vals, outer_facet_vals[..., ::-1], whs
@@ -866,18 +870,17 @@ class DGField(Field):
         elif callable(fun):
 
             qp, weights = self.integral.get_qp(self.gel.name)
-            weights = weights[:, None]  # add axis for broadcasting
             coors = self.mapping.get_physical_qps(qp)
 
             base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
             # this drops redundant axis that is returned by eval_base due to consistency with derivatives
 
             # left hand, so far only orthogonal basis
-            lhs_diag = nm.sum(weights * base_vals_qp**2, axis=0)
             # for legendre base this can be calculated exactly
             # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
+            lhs_diag = nm.einsum("q,q...->...",weights, base_vals_qp**2)
 
-            rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
+            rhs_vec = nm.einsum("q,q...,iq...->i...", weights, base_vals_qp, fun(coors))
 
             vals = (rhs_vec / lhs_diag)
 
