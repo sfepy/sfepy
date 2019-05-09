@@ -133,7 +133,7 @@ class DGField(Field):
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
 
-        # boundary DOFS - temporary until BC treatment is merged from corresponding branches
+        # boundary DOFS TODO temporary - resolve BC treatement
         self.boundary_val = 0.0
 
         # integral
@@ -188,6 +188,7 @@ class DGField(Field):
         dofs = nm.arange(n_dof, dtype=nm.int32).reshape(self.n_cell, self.n_el_nod)
         remap = nm.arange(self.n_cell)
         self.econn = dofs
+        self.dofs2cells = nm.repeat(nm.arange(self.n_cell), self.n_el_nod)
 
         return n_dof, remap, dofs
 
@@ -287,6 +288,29 @@ class DGField(Field):
         else:
             return self.bf[bf_key], qp.weights
 
+    def get_coor(self, nods=None):
+        """
+        Returns coors for matching nodes, uses trick to deceive
+        EPBC implementation in sfepy
+        :param nods: if None use all nodes
+        :return:
+        """
+
+        if nods is None:
+            nods = self.bubble_dofs
+
+        cells = self.dofs2cells[nods]
+        coors = self.domain.mesh.cmesh.get_centroids(self.dim)[cells]
+        eps = min(self.domain.cmesh.get_volumes(self.dim)) / (self.n_el_nod + 2)
+        if self.dim == 1:
+            extended_coors = nm.zeros(nm.shape(coors)[:-1] + (2,))
+            extended_coors[:,0] = coors[:, 0]
+            coors = extended_coors
+        # shift centroid coors to lie within cells but be different for each dof
+        # TODO for simplex meshes these coors fail to match
+        coors += eps * nm.repeat(nm.arange(self.n_el_nod), len(nm.unique(cells)))[:, None]
+        return coors
+
     def clear_facet_qp_base(self):
         self.facet_bf = {}
         self.facet_qp = None
@@ -295,10 +319,10 @@ class DGField(Field):
     def _transform_qps_to_facets(self, qps, geo_name):
         """
         Transforms points given in qps to all facets of the reference element
-        of geometry geo_name. Return is of shape shape(qps) + (n_el_facets, geo dim)
+        with geometry geo_name.
         :param qps:
         :param geo_name:
-        :return: tqps
+        :return: tqps is of shape shape(qps) + (n_el_facets, geo dim)
         """
         if geo_name == "1_2":
             tqps = nm.zeros(nm.shape(qps) + (2, 1,))
@@ -415,49 +439,73 @@ class DGField(Field):
         else:
             self.facet_neighbour_index.pop(region.name)
 
-    def get_cell_nb_per_facet(self, region):
+    def get_facet_neighbor_idx(self, region, eq_map):
         """
         Returns index of cell neighbours sharing facet, along with local index
-        of the facet within neighbour, puts -1 where there are no neighbours
-        Cashes neighbour index in self.facet_neighbours
+        of the facet within neighbour also treats periodic boundary conditions i.e.,
+        plugs correct neighbours for cell on periodic boundary. Where there are no neighbours
+        specified puts -1.
+
+        Cashes neighbour index in self.facet_neighbours!
+
         :param region:
+        :param eq_map: eq_map from state variable containing information on EPBC
         :return: shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
         the second is index of the facet this nb. cell in said nb. cell
         """
         if region.name in self.facet_neighbour_index:
-            facet_neighbours = self.facet_neighbour_index[region.name]
-        else:
-            dim, n_cell, n_el_facets = self.get_region_info(region)
+            return self.facet_neighbour_index[region.name]
 
-            cmesh = region.domain.mesh.cmesh
-            cells = region.cells
+        dim, n_cell, n_el_facets = self.get_region_info(region)
 
-            facet_neighbours = nm.zeros((n_cell, n_el_facets, 2), dtype=nm.int32)
+        cmesh = region.domain.mesh.cmesh
+        cells = region.cells
 
-            c2fi, c2fo = cmesh.get_incident(dim - 1, cells, dim, ret_offsets=True)
+        facet_neighbours = nm.zeros((n_cell, n_el_facets, 2), dtype=nm.int32)
 
-            for ic, o1 in enumerate(c2fo[:-1]):  # loop over cells
-                o2 = c2fo[ic + 1]
+        c2fi, c2fo = cmesh.get_incident(dim - 1, cells, dim, ret_offsets=True)
 
-                c2ci, c2co = cmesh.get_incident(dim, c2fi[o1:o2], dim - 1,
-                                                ret_offsets=True)  # get neighbours per facet of the cell
-                ii = cmesh.get_local_ids(c2fi[o1:o2], dim - 1, c2ci, c2co, dim)
-                fis = nm.c_[c2ci, ii]
+        for ic, o1 in enumerate(c2fo[:-1]):  # loop over cells
+            o2 = c2fo[ic + 1]
 
-                nbrs = []
-                for ifa, of1 in enumerate(c2co[:-1]):  # loop over facets
-                    of2 = c2co[ifa + 1]
-                    if of2 == (of1 + 1):  # facet has only one cell
-                        # Surface facet.
-                        nbrs.append([-1, -1])  # c2ci[of1])  # append no neighbours
+            c2ci, c2co = cmesh.get_incident(dim, c2fi[o1:o2], dim - 1,
+                                            ret_offsets=True)  # get neighbours per facet of the cell
+            ii = cmesh.get_local_ids(c2fi[o1:o2], dim - 1, c2ci, c2co, dim)
+            fis = nm.c_[c2ci, ii]
+
+            nbrs = []
+            for ifa, of1 in enumerate(c2co[:-1]):  # loop over facets
+                of2 = c2co[ifa + 1]
+                if of2 == (of1 + 1):  # facet has only one cell
+                    # Surface facet.
+                    nbrs.append([-1, -1])  # c2ci[of1])  # append no neighbours
+                else:
+                    if c2ci[of1] == cells[ic]:  # do not append the cell itself
+                        nbrs.append(fis[of2 - 1])
                     else:
-                        if c2ci[of1] == cells[ic]:  # do not append the cell itself
-                            nbrs.append(fis[of2 - 1])
-                        else:
-                            nbrs.append(fis[of1])
-                facet_neighbours[ic, :, :] = nbrs
+                        nbrs.append(fis[of1])
+            facet_neighbours[ic, :, :] = nbrs
 
-            self.facet_neighbour_index[region.name] = facet_neighbours
+        # treat EPBCs
+        if eq_map.n_epbc > 0:
+            # set neighbours of periodic cells to one another
+            mcells = nm.unique(self.dofs2cells[eq_map.master])
+            scells = nm.unique(self.dofs2cells[eq_map.slave])
+            mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0] # facets of mcells
+            scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0] # facets of scells
+            [1, 0] # above, first we need second axis t get axis on which facet indices are stored,
+            # second we drop axis with neighbour local facet index, for multiple s/mcells this will have to be something like
+            # 1 + 2*nm.arange(len(mcells) - to skip double entries for -1 tags in neighbours and  neighbour local facet idx
+
+            facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
+            facet_neighbours[mcells, mcells_facets, 1] = scells_facets  # set neighbour facets to facets of scell missing neighbour
+            # TODO how to distinguish EBC and EPBC? - we do not need to, they over write EPBC, we only need to fix shapes
+
+            facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
+            facet_neighbours[scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
+
+        # cache results
+        self.facet_neighbour_index[region.name] = facet_neighbours
 
         return facet_neighbours
 
@@ -475,39 +523,75 @@ class DGField(Field):
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
         return dim, n_cell, n_el_facets
 
-    def get_both_facet_qp_vals(self, dofs, region, derivative=None):
+    def get_both_facet_qp_vals(self, state, region, derivative=None):
         """
         Computes values of the variable represented by dofs in
         quadrature points located at facets, returns both values -
         inner and outer, along with weights.
-        :param dofs:
+        :param state: state variable containing BC info
         :param region:
-        :return:
+        :param derivative: compute derivative if truthy, compute n-th derivative if number
+        :return: inner_facet_values (n_cell, n_el_facets, n_qp), outer facet values (n_cell, n_el_facets, n_qp), weights
+                 if derivative is True: inner_facet_values (n_cell, n_el_facets, dim, n_qp), outer facet values (n_cell, n_el_facets, dim, n_qp)
+
         """
+
+        if derivative:
+            diff = int(derivative)
+        else:
+            diff = 0
+
+
+        dofs = self.unravel_sol(state.data[0])
         facet_bf, whs = self.get_facet_base(derivative=derivative)
+        sane_facet_bf = facet_bf[0, 0, :, 0, :]
+        sane_facet_bf = sane_facet_bf.swapaxes(0, 1)[..., None]
 
-        # TODO appropriate shapes for derivative data - compare with BC branches versions
-        inner_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
-        inner_facet_vals[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
+        outputs_shape = (self.n_cell, self.n_el_facets) + (self.dim,) * diff + (nm.shape(whs)[1],)
 
-        outer_facet_vals = nm.zeros((self.n_cell, self.n_el_facets, nm.shape(whs)[1]))
-        per_facet_neighbours = self.get_cell_nb_per_facet(region)
+        inner_facet_vals = nm.zeros(outputs_shape)
+        inner_facet_vals_old = nm.zeros(outputs_shape)
+
+        inner_facet_vals_old[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
+        inner_facet_vals[:] = nm.einsum('ij...,j...->i...', dofs, sane_facet_bf)
+
+
+        per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
+
         facet_vols = self.get_facet_vols(region, per_facet_neighbours)
         whs = facet_vols * whs[None, :, :, 0]
 
-        ghost_nbrs = nm.where(per_facet_neighbours < 0)
+        outer_facet_vals = nm.zeros(outputs_shape)
+        outer_facet_vals_old = nm.zeros(outputs_shape)
 
-        if self.dim == 1:  # periodic boundary conditions in 1D
-            per_facet_neighbours[0, 0] = [-1, 1]
-            per_facet_neighbours[-1, 1] = [0, 0]
+
+        # outer_facet_vals[:] = nm.einsum('ij...,j...->i...', dofs[per_facet_neighbours[:, facet_n, 0]], sane_facet_bf[:, facet_n])
 
         for facet_n in range(self.n_el_facets):
-            outer_facet_vals[:, facet_n, :] = nm.sum(
+            outer_facet_vals[:, facet_n, :]  = nm.einsum('ij...,ji...->i...',
+                                                         dofs[per_facet_neighbours[:, facet_n, 0]],
+                                                         sane_facet_bf[:, per_facet_neighbours[:, facet_n, 1]])
+        for facet_n in range(self.n_el_facets):
+            outer_facet_vals_old[:, facet_n, :] = nm.sum(
                 dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
                 facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
 
-        if self.dim > 1:
-            outer_facet_vals[ghost_nbrs[:-1]] = self.boundary_val
+        if state.eq_map.n_ebc > 0:
+            # get cells with missing neighbours, ignore that we do not know neighbour local fact idx
+            boundary_cells = nm.array(nm.where(per_facet_neighbours[:,:, 0] < 0)).T
+            ebc_cells = self.dofs2cells[state.eq_map.eq_ebc][::self.n_el_nod]
+
+            for ebc_ii, ebc_cell in enumerate(ebc_cells):
+                curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
+                for bn_facet in curr_b_cells[:, 1]:
+                    # so far setting only zero order dof
+                    # TODO change shape and data in state.eq_map.eq_ebc and state.eq_map.val_ebc
+                    # to be able to save projections there
+
+                    # so far we set to all boundary faces of the cell
+                    # TODO treat boundary cells where more BCs meet
+                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[ebc_ii*self.n_el_nod:(ebc_ii+1)*self.n_el_nod][None, :]
+                                                                     * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
 
         # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering
         return inner_facet_vals, outer_facet_vals[..., ::-1], whs
@@ -647,7 +731,14 @@ class DGField(Field):
         if region.has_cells():
             els = nm.ravel(self.bubble_remap[region.cells])
             eldofs = self.bubble_dofs[els[els >= 0]]
-        dofs.append(eldofs)
+            dofs.append(eldofs)
+        else:
+            # return indicies of cells adjacent to boundary facets
+            dim = self.dim
+            cmesh = region.domain.mesh.cmesh
+            bc_cells = cmesh.get_incident(dim, region.facets, dim - 1)
+            bc_dofs = self.bubble_dofs[bc_cells]
+            dofs.append(bc_dofs)
 
         if merge:
             dofs = nm.concatenate(dofs)
@@ -717,7 +808,7 @@ class DGField(Field):
 
         dofs = self.unravel_sol(variable.data[0])
 
-        neighbours = self.get_cell_nb_per_facet(region)[..., 0]
+        neighbours = self.get_facet_neighbor_idx(region)[..., 0]
         nb_normals = self.get_cell_normals_per_facet(region)
 
         ghost_nbrs = nm.where(neighbours < 0)
@@ -727,7 +818,7 @@ class DGField(Field):
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
         Compute projection of fun into the basis, alternatively set DOFs directly to provided
-        value or values
+        value or values either in main volume region or in boundary region
         :param fun: callable, scallar or array corresponding to dofs
         :param region: region to set DOFs on
         :param dpn: number of dofs per element
@@ -737,12 +828,31 @@ class DGField(Field):
 
         if region is None:
             region = self.region
+            return self.set_cell_dofs(fun, region, dpn, warn)
+        elif region.has_cells():
+            return self.set_cell_dofs(fun, region, dpn, warn)
+        elif region.kind_tdim == self.dim - 1:
+            nods, vals = self.set_facet_dofs(fun, region, dpn, warn)
+            return nods, vals
+
+    def set_cell_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+        """
+        Compute projection of fun onto the basis, in main region, alternatively
+        set DOFs directly to provided value or values
+        :param fun: callable, scallar or array corresponding to dofs
+        :param region: region to set DOFs on
+        :param dpn: number of dofs per element
+        :param warn: not used
+        :return: nods, vals
+        """
 
         aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
 
         if nm.isscalar(fun):
-            vals = nm.repeat([fun], nods.shape[0] * dpn)
+            vals = nm.zeros(aux.shape)
+            vals[:, 0] = fun
+            vals = nm.hstack(vals)
 
         elif isinstance(fun, nm.ndarray):
             # useful for testing, allows to pass complete array of dofs as IC
@@ -752,7 +862,7 @@ class DGField(Field):
         elif callable(fun):
 
             qp, weights = self.integral.get_qp(self.gel.name)
-            weights = weights[:, None] # add axis for broadcasting
+            weights = weights[:, None]  # add axis for broadcasting
             coors = self.mapping.get_physical_qps(qp)
 
             base_vals_qp = self.poly_space.eval_base(qp)[:, 0, :]
@@ -766,6 +876,53 @@ class DGField(Field):
             rhs_vec = nm.sum(weights * base_vals_qp * fun(coors), axis=1)
 
             vals = (rhs_vec / lhs_diag)
+
+            # plot for 1D
+            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
+            # import matplotlib.pyplot as plt
+            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1, vals.T[..., None, None])
+            # plt.plot(xx, ww[:, 0], label="reconstructed dofs")
+            # plt.show()
+
+        return nods, vals
+
+    def set_facet_dofs(self, fun, region, dpn, warn):
+        """
+        Compute projection of fun onto the basis, in main region, alternatively
+        set DOFs directly to provided value or values
+        :param fun: callable, scallar or array corresponding to dofs
+        :param region: region to set DOFs on
+        :param dpn: number of dofs per element
+        :param warn: not used
+        :return: nods, vals
+        """
+
+        aux = self.get_dofs_in_region(region)
+        nods = nm.unique(nm.hstack(aux))
+
+        if nm.isscalar(fun):
+            vals = nm.zeros(aux.shape)
+            vals[:, 0] = fun
+            vals = nm.hstack(vals)
+
+        elif isinstance(fun, nm.ndarray):
+            assert_(len(fun) == dpn)
+            vals = nm.zeros(aux.shape)
+            vals[:, 0] = nm.repeat(fun, vals.shape[0])
+
+        elif callable(fun):
+            vals = nm.zeros(aux.shape)
+            # set zero DOF to value fun, set other DOFs to zero
+            # FIXME only temporary to test BCs
+            vals[:, 0] = fun(1)
+
+            # get facets QPs
+            # get facets weights
+            # get facet basis vals
+            # get coors
+            # solve for boundary cell DOFs
+
 
         return nods, vals
 

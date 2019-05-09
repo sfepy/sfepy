@@ -325,7 +325,7 @@ class DiffusionDGFluxTerm(Term):
             cell_normals = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
 
-            inner_facet_qp_dvals, outer_facet_qp_dvals, weights = field.get_both_facet_qp_vals(dofs, region, derivative=True)
+            inner_facet_qp_dvals, outer_facet_qp_dvals, weights = field.get_both_facet_qp_vals(state, region, derivative=True)
 
             fargs = (dofs, inner_facet_qp_dvals, outer_facet_qp_dvals,
                      # TODO get correct shape of diffusion tensor
@@ -333,6 +333,7 @@ class DiffusionDGFluxTerm(Term):
             return fargs
 
         def function(self, out, dofs, in_fc_dv, out_fc_dv, fc_b, whs, fc_n):
+
             ...
 
 
