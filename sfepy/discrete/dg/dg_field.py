@@ -523,7 +523,7 @@ class DGField(Field):
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
         return dim, n_cell, n_el_facets
 
-    def get_both_facet_qp_vals(self, state, region, derivative=None):
+    def get_both_facet_qp_vals(self, state, region, derivative=None, reduce_nod=True):
         """
         Computes values of the variable represented by dofs in
         quadrature points located at facets, returns both values -
@@ -532,7 +532,8 @@ class DGField(Field):
         :param region:
         :param derivative: compute derivative if truthy, compute n-th derivative if number
         :return: inner_facet_values (n_cell, n_el_facets, n_qp), outer facet values (n_cell, n_el_facets, n_qp), weights
-                 if derivative is True: inner_facet_values (n_cell, n_el_facets, dim, n_qp), outer facet values (n_cell, n_el_facets, dim, n_qp)
+                 if derivative is True: inner_facet_values (n_cell, n_el_facets, dim, n_qp),
+                                        outer facet values (n_cell, n_el_facets, dim, n_qp)
 
         """
 
@@ -540,48 +541,35 @@ class DGField(Field):
             diff = int(derivative)
         else:
             diff = 0
+        unreduce_nod = int(not reduce_nod)
 
-
+        inner_base_vals, outer_base_vals, whs = self.get_both_facet_base_vals(state, region, derivative=derivative)
         dofs = self.unravel_sol(state.data[0])
-        facet_bf, whs = self.get_facet_base(derivative=derivative)
-        n_qp = nm.shape(whs)[1]
 
-        base_shape = (self.n_el_nod, self.n_el_facets) + (self.dim,) * diff + (n_qp,)
-        outputs_shape = (self.n_cell, self.n_el_facets) + (self.dim,) * diff + (n_qp,)
-
-        sane_facet_bf = nm.zeros(base_shape)
-        if derivative:
-            sane_facet_bf[:] = facet_bf[0, :, 0, :, :, :].swapaxes(-2, -3).T
-        else:
-            sane_facet_bf[:] = facet_bf[:, 0, :, 0, :].T
-
+        n_qp = whs.shape[-1]
+        outputs_shape = (self.n_cell, self.n_el_facets) + (self.n_el_nod,)*unreduce_nod + (self.dim,) * diff + (n_qp,)
 
         inner_facet_vals = nm.zeros(outputs_shape)
-        inner_facet_vals_old = nm.zeros(outputs_shape)
-
-        # inner_facet_vals_old[:] = nm.sum(dofs[..., None] * facet_bf[:, 0, :, 0, :].T, axis=1)
-        inner_facet_vals[:] = nm.einsum('ij...,j...->i...', dofs, sane_facet_bf)
+        if unreduce_nod:
+            inner_facet_vals[:] = nm.einsum('id...,idf...->ifd...', dofs, inner_base_vals)
+        else:
+            inner_facet_vals[:] = nm.einsum('id...,id...->i...', dofs, inner_base_vals)
 
         per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
 
-        facet_vols = self.get_facet_vols(region, per_facet_neighbours)
-        whs = facet_vols * whs[None, :, :, 0]
-
         outer_facet_vals = nm.zeros(outputs_shape)
-        # outer_facet_vals_old = nm.zeros(outputs_shape)
-
         for facet_n in range(self.n_el_facets):
-            outer_facet_vals[:, facet_n, :]  = nm.einsum('ij...,ji...->i...',
-                                                         dofs[per_facet_neighbours[:, facet_n, 0]],
-                                                         sane_facet_bf[:, per_facet_neighbours[:, facet_n, 1]])
-        # for facet_n in range(self.n_el_facets):
-        #     outer_facet_vals_old[:, facet_n, :] = nm.sum(
-        #         dofs[per_facet_neighbours[:, facet_n, 0]][None, :, :, 0] *
-        #         facet_bf[:, 0, per_facet_neighbours[:, facet_n, 1], 0, :], axis=-1).T
-
+            if unreduce_nod:
+                outer_facet_vals[:, facet_n, :] = nm.einsum('id...,id...->id...',
+                                                            dofs[per_facet_neighbours[:, facet_n, 0]],
+                                                            outer_base_vals[:, :, facet_n])
+            else:
+                outer_facet_vals[:, facet_n, :] = nm.einsum('id...,id...->i...',
+                                                            dofs[per_facet_neighbours[:, facet_n, 0]],
+                                                            outer_base_vals[:, :, facet_n])
         if state.eq_map.n_ebc > 0:
             # get cells with missing neighbours, ignore that we do not know neighbour local facet idx
-            boundary_cells = nm.array(nm.where(per_facet_neighbours[:,:, 0] < 0)).T
+            boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
             ebc_cells = self.dofs2cells[state.eq_map.eq_ebc][::self.n_el_nod]
 
             for ebc_ii, ebc_cell in enumerate(ebc_cells):
@@ -593,16 +581,57 @@ class DGField(Field):
 
                     # so far we set to all boundary faces of the cell
                     # TODO treat boundary cells where more BCs meet
-                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[ebc_ii*self.n_el_nod
-                                                                                          :(ebc_ii+1)*self.n_el_nod][None, :]
-                                                                     * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
+                    # outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[self.n_el_nod*ebc_ii :
+                    #                                                                       self.n_el_nod*(ebc_ii+1)][None, :]
+                    #                                                  * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
                     outer_facet_vals[ebc_cell, bn_facet, :] = nm.einsum("d,d...->...",
-                                                                        state.eq_map.val_ebc[ebc_ii*self.n_el_nod
-                                                                                             :(ebc_ii+1)*self.n_el_nod],
-                                                                        sane_facet_bf[:, bn_facet])
+                                                                        state.eq_map.val_ebc[self.n_el_nod*ebc_ii :
+                                                                                             self.n_el_nod*(ebc_ii+1)],
+                                                                        inner_base_vals[:, bn_facet])
 
         # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering
         return inner_facet_vals, outer_facet_vals[..., ::-1], whs
+
+    def get_both_facet_base_vals(self, state, region, derivative=None):
+        """
+        Returns values of the basis function in quadrature points on facets broadcasted to all
+        cells inner to the element as well as outer ones along with weights for the qps broadcasted
+        and transformed to cells
+        to elements
+        :param state: used to get EPBC info
+        :param region: for connectivity
+        :param derivative: if u need derivative
+        :return: inner and outer base vals, shape: (n_cell, n_el_nod, n_el_facet, n_qp) or
+                        (n_cell, n_el_nod, n_el_facet, dim, n_qp) whe derivative is True or 1
+                        whs, shape: (n_cell, n_el_facet, n_qp)
+        """
+        if derivative:
+            diff = int(derivative)
+        else:
+            diff = 0
+
+        facet_bf, whs = self.get_facet_base(derivative=derivative)
+        n_qp = nm.shape(whs)[1]
+        facet_vols = self.get_facet_vols(region)
+        whs = facet_vols * whs[None, :, :, 0]
+
+        base_shape = (self.n_cell, self.n_el_nod, self.n_el_facets) + (self.dim,) * diff + (n_qp,)
+        inner_facet_base_vals = nm.zeros(base_shape)
+        outer_facet_base_vals = nm.zeros(base_shape)
+
+        if derivative:
+            inner_facet_base_vals[:] = facet_bf[0, :, 0, :, :, :].swapaxes(-2, -3).T
+        else:
+            inner_facet_base_vals[:] = facet_bf[:, 0, :, 0, :].T
+
+        per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
+        # numpy prepends shape resulting from multiple indexing before remaining shape
+        if derivative:
+            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, : , 1]].swapaxes(-3, -4)
+        else:
+            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, : , 1]].swapaxes(-2, -3)
+
+        return inner_facet_base_vals, outer_facet_base_vals, whs
 
     def get_cell_normals_per_facet(self, region):
         """
@@ -629,11 +658,10 @@ class DGField(Field):
 
         return normals_out
 
-    def get_facet_vols(self, region, per_facet_neighbours):
+    def get_facet_vols(self, region):
         """
 
         :param region:
-        :param per_facet_neighbours: incidence of cells per facets in shape (n_cell, n_el_facets, 2)
         :return: volumes of the facets by cells shape is (n_cell, n_el_facets, 1)
         """
         dim, n_cell, n_el_facets = self.get_region_info(region)
