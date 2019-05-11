@@ -82,16 +82,18 @@ class DGField(Field):
     def __init__(self, name, dtype, shape, region, space="H1",
                  poly_space_base=None,  approx_order=0, integral=None):
         """
-        Creates DGField, with Legendre poly space and integral corresponding to
+
+         Creates DGField, with Legendre poly space and default integral corresponding to
         2*approx_order.
 
         :param name:
         :param dtype:
-        :param shape: shape of the problem?
+        :param shape:  'vector', 'scalar'or something else
         :param region:
-        :param space:
-        :param poly_space_base: use Legendre base
-        :param approx_order: 0 for finite volume methods
+        :param space: default "H1"
+        :param poly_space_base: optionally force polyspace
+        :param approx_order: 0 for FVM
+        :param integral: if None integral of order 2*approx_order is created
         """
         shape = parse_shape(shape, region.domain.shape.dim)
         # if not self._check_region(region):
@@ -108,6 +110,7 @@ class DGField(Field):
         self.dim = region.dim
         self._setup_geometry()
         self._setup_connectivity()
+        # FIXME treat domains embeded to higher dimensional spaces
         self.n_el_facets = self.dim + 1 if self.gel.is_simplex else 2 ** self.dim
 
         # approximation space
@@ -132,9 +135,6 @@ class DGField(Field):
 
         self.ravel_sol = get_raveler(self.n_el_nod, self.n_cell)
         self.unravel_sol = get_unraveler(self.n_el_nod, self.n_cell)
-
-        # boundary DOFS TODO temporary - resolve BC treatement
-        self.boundary_val = 0.0
 
         # integral
         self.clear_qp_base()
@@ -1071,32 +1071,4 @@ class DGField(Field):
         # cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
-
-
-if __name__ == '__main__':
-    from toolz import *
-
-    X1 = 0.
-    XN1 = 1.
-    n_nod = 100
-    n_el = n_nod - 1
-    coors = nm.linspace(X1, XN1, n_nod).reshape((n_nod, 1))
-    conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
-    mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
-    descs = ['1_2']
-    mesh = Mesh.from_data('advection_1d', coors, None,
-                          [conn], [mat_ids], descs)
-
-    from sfepy.discrete.fem import FEDomain
-    domain = FEDomain('domain', mesh)
-    omega = domain.create_region('Omega', 'all')
-
-    dgfield = DGField("dgfu", nm.float64, 'scalar', omega, poly_space_base=None, approx_order=1)
-
-    dg_field_dir = set(dir(dgfield))
-    # print("FEM - DG: {}".format(fem_field_dir.difference(dg_field_dir)))
-    # print("DG - FEM: {}".format(dg_field_dir.difference(fem_field_dir)))
-
-    u = FieldVariable('u', 'unknown', dgfield, history=1)
-    v = FieldVariable('v', 'test', dgfield, primary_var_name='u')
 

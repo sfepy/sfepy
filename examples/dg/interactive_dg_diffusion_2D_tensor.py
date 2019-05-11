@@ -24,7 +24,7 @@ from sfepy.discrete.variables import DGFieldVariable
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
+from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 from sfepy.discrete.dg.dg_tssolver \
     import EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
@@ -37,12 +37,14 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
+from terms.terms_diffusion import LaplaceTerm
+
 approx_order = 2
 CFL = .8
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_2D"
-problem_name = "iadv_2D_tens"
+problem_name = "idiff_2D_tens"
 output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "msh"
 mesh_output_folder = "output/mesh"
@@ -109,7 +111,23 @@ alpha = Material('alpha', val=[.0])
 FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
                          integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-eq = Equation('balance', MassT + StiffT - FluxT)
+diffusion_tensor = 0.002# nm.array([[.002, 0],
+                        #           [0, .002]]).T
+D = Material('D', val=[diffusion_tensor])
+DivGrad = LaplaceTerm("diff_lap(D.val, v, u)", "D.val, v, u[-1]",
+                      integral, omega, u=u, v=v, D=D)
+
+DiffFluxT = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)", "D.val, v,  u[-1]",
+                                integral, omega, u=u, v=v, D=D)
+Cw = Material("Cw", values={".val": 1})
+DiffPen = DiffusionInteriorPenaltyTerm("diff_pen(Cw.val, v, u)", "Cw.val, v, u[-1]",
+                                       integral, omega, u=u, v=v, Cw=Cw)
+
+eq = Equation('balance', MassT
+              # + StiffT - FluxT
+              + DivGrad - DiffFluxT
+              # + diffusion_tensor * DiffPen
+              )
 eqs = Equations([eq])
 
 
@@ -127,7 +145,7 @@ periodic2_bc_u = PeriodicBC('left_right', [left, right],{'u.all' : 'u.all'}, mat
 #| Create initial condition |
 #----------------------------
 def ic_wrap(x, ic=None):
-    return gsmooth(x[..., 0:1])*gsmooth(x[..., 1:])
+    return gsmooth(x[..., 0:1] - .3)*gsmooth(x[..., 1:] - .3)
 
 
 ic_fun = Function('ic_fun', ic_wrap)
@@ -159,7 +177,7 @@ limiter = IdentityLimiter
 #---------------------------
 max_velo = nm.max(nm.linalg.norm(velo))
 t0 = 0
-t1 = 3
+t1 = 1
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / max_velo * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))

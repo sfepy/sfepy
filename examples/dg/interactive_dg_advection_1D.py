@@ -41,7 +41,7 @@ output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "vtk"
 mesh_output_folder = "output/mesh"
 save_timestn = 100
-clear_folder(pjoin(output_folder, output_format))
+clear_folder(pjoin(output_folder, "*" + output_format))
 
 #------------
 #| Get mesh |
@@ -131,7 +131,7 @@ limiter = MomentLimiter1D
 CFL = .4
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = .2
+t1 = 1
 dx = nm.min(mesh.cmesh.get_volumes(1))
 dt = dx / max_velo * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))
