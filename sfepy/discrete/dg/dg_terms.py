@@ -32,8 +32,6 @@ class AdvectDGFluxTerm(Term):
     Part of the discretization of
         math::
 
-
-
     Is residual only! Use with state variable history [-1].
 
     :Definition:
@@ -88,7 +86,7 @@ class AdvectDGFluxTerm(Term):
 
         if diff_var is not None:
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, None, None, advelo[:, 0, :, 0], 0
+            return None, None, None, 0
         else:
             field = state.field
             region = field.region
@@ -96,63 +94,28 @@ class AdvectDGFluxTerm(Term):
             if not "DG" in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            shapes = (field.n_cell, field.n_el_nod)
-            cell_normals = field.get_cell_normals_per_facet(region)
-            facet_base_vals = field.get_facet_base(base_only=True)
-            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(state, region)
-
-            self.dofs = unravel_sol(state)
-
-            fargs = (shapes, inner_facet_qp_vals, outer_facet_qp_vals,
-                     facet_base_vals, weights, cell_normals, advelo[:, 0, :, 0])
+            fargs = (state, field, region, advelo[:, 0, :, 0])
             return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, shapes, in_fc_v, out_fc_v, fc_b, whs, fc_n, advelo):
-        """
+    def function(self, out, state, field, region, advelo):
 
-        :param out:
-        :param shapes: (n_cell, n_el_nod)
-        :param in_fc_v: inner values for facets per cell, shape = (n_cell, n_el_faces, 1)
-        :param out_fc_v: outer values for facets per cell, shape = (n_cell, n_el_faces, 1)
-        :param fc_b: values of basis in facets qps, shape =  (number of qps, 1, n_el_facets, 1, n_el_nod)
-        :param whs: weights of the qps on facets, shape = (n_cell, n_el_facet, n_qp)
-        :param fc_n: facet normals, shape = (n_cell, n_el_facets, 1)
-        :param advelo: advection velocity, shape = (n_cell, 1)
-        :return:
-        """
-        if shapes is None:
-            out[:] = 0.0
+        if state is None:
+            out[:] = 0
             return None
 
-        n_cell = shapes[0]
-        n_el_nod = shapes[1]
-        n_el_facets = fc_n.shape[-2]
-        #  Calculate integrals over facets representing Lax-Friedrichs fluxes
-        # C = nm.abs(nm.sum(fc_n * advelo[:, None, :], axis=-1))[:, None]
-        # facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
-        # for facet_n in range(n_el_facets):
-        #     for mode_n in range(n_el_nod):
-        #         fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
-        #         fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
-        #         central = advelo[:, None, :] * fc_v_p[:, :, None] / 2.
-        #         upwind = ((1 - self.alf)/2. * C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
-        #
-        #         facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
-        #                                              nm.sum((central + upwind) *
-        #                                                     (fc_b[None, :, 0, facet_n, 0, mode_n] *
-        #                                                      whs[:, facet_n, :])[..., None], axis=1),
-        #
-        #                                              axis=1)
-        # using einsum, yayy!
+        fc_n = field.get_cell_normals_per_facet(region)
+        facet_base_vals = field.get_facet_base(base_only=True)
+        in_fc_v, out_fc_v, weights = field.get_both_facet_qp_vals(state, region)
+
         C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
         fc_v_p = in_fc_v + out_fc_v
         fc_v_m = in_fc_v - out_fc_v
         # get sane facet base shape
-        sane_fc_b = fc_b[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+        fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
         central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_p) / 2
         upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_m)
-        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, sane_fc_b, whs)
+        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
         # cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
@@ -240,7 +203,6 @@ class AdvectDGFluxTerm(Term):
                 plt.legend()
                 plt.close('all')
 
-
         # 2D plots
         if False:
             # TODO remove 2D plots
@@ -287,6 +249,7 @@ class AdvectDGFluxTerm(Term):
             plt.show()
 
         out[:] = 0.0
+        n_el_nod = field.n_el_nod
         for i in range(n_el_nod):
             out[:, :, i, 0] = cell_fluxes[:, i, None]
 
@@ -299,7 +262,7 @@ class DiffusionDGFluxTerm(Term):
     name = "dw_dg_diffusion_flux"
     modes = ("weak",)
     arg_types = ('material_diff_tensor', 'virtual', 'state')
-    arg_shapes = [{'material_diff_tensor': 'D, D',
+    arg_shapes = [{'material_diff_tensor': '1, 1',
                    'virtual': (1, 'state'),
                    'state': 1
                    }]
@@ -310,11 +273,10 @@ class DiffusionDGFluxTerm(Term):
 
     def get_fargs(self, diff_tensor, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        # TODO this should be kinda the same, use some abstraction - in NonlinearHyperDGFluxTerm too!
         if diff_var is not None:
             # TODO will this term be residual only?
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, None, None, diff_tensor[:, 0, :, :], 0
+            return None, None, None, 0
         else:
             field = state.field
             region = field.region
@@ -322,52 +284,42 @@ class DiffusionDGFluxTerm(Term):
             if not "DG" in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            dofs = unravel_sol(state)
-            cell_normals = field.get_cell_normals_per_facet(region)
-            inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
-                                                                                               derivative=False)
-            inner_facet_state_d, outer_facet_state_d, weights = field.get_both_facet_qp_vals(state, region,
-                                                                                               derivative=True
-                                                                                               )
-
-            inner_facet_base_d, outer_facet_base_d, _ = field.get_both_facet_base_vals(state, region,
-                                                                                   derivative=True)
-            inner_facet_state, outer_facet_state, weights = field.get_both_facet_qp_vals(state, region,
-                                                                                             derivative=False
-                                                                                             )
-
-            fargs = ((inner_facet_state_d, outer_facet_state_d, inner_facet_base, outer_facet_base),
-                     (inner_facet_state, outer_facet_state, inner_facet_base_d, outer_facet_base_d),
-                     weights, cell_normals, diff_tensor[:, 0, :, :])
+            fargs = (state, field, region, diff_tensor[:, 0, :, :])
             return fargs
 
-    def function(self, out, state_d, base_d , whs, fc_n, D):
-        """
+    def function(self, out, state, field, region, D):
 
-        :param out:
-        :param state_d: (inner_facet_state_d, outer_facet_state_d, inner_facet_base, outer_facet_base)
-        :param base_d:  (inner_facet_state, outer_facet_state, inner_facet_base_d, outer_facet_base_d)
-        :param whs: weights of qps, shape: (n_cell, n_el_facets, n_qp)
-        :param fc_n: facet normal, shape: (n_cell, n_el_facets, dim)
-        :param D: diffusion tensor: shape: (n_cell, dim, dim)
-        :return: empty status
-        """
+        if state is None:
+            out[:] = 0.0
+            return None
 
         # TODO decompose and test properly, shapes fit so far however :-)
-        n_el_nod = nm.shape(state_d[3])[1]
-        avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, state_d[0]) +
-                      nm.einsum("ikl,ifkq->ifkq", D, state_d[1])) / 2.
-        jmpBase = state_d[2] #- state_d[3]
+        fc_n = field.get_cell_normals_per_facet(region)
+        inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
+                                                                               derivative=False
+                                                                               )
+        inner_facet_state_d, outer_facet_state_d, _ = field.get_both_facet_qp_vals(state, region,
+                                                                                   derivative=True
+                                                                                   )
+        inner_facet_base_d, outer_facet_base_d, _ = field.get_both_facet_base_vals(state, region,
+                                                                                   derivative=True)
+        inner_facet_state, outer_facet_state, weights = field.get_both_facet_qp_vals(state, region,
+                                                                                     derivative=False
+                                                                                     )
 
-        avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, base_d[2]) +
-                     nm.einsum("ikl,idfkq->idfkq", D, base_d[3])) / 2.
-        jmpState = base_d[0] # - base_d[1]
+        avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, inner_facet_state_d) +
+                      nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
+        jmpBase = inner_facet_base #- outer_facet_base
+
+        avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, inner_facet_base_d) +
+                     nm.einsum("ikl,idfkq->idfkq", D, outer_facet_base_d)) / 2.
+        jmpState = inner_facet_state # - outer_facet_state
 
         # multiply <D(u)\nabla u> . N . [\phi] and integrate - in one einsum call! ~~ magic :-D
-        int1 = nm.einsum("ifkq , ifk, idfq, ifq -> id", avgDdState, fc_n, jmpBase, whs)
+        int1 = nm.einsum("ifkq , ifk, idfq, ifq -> id", avgDdState, fc_n, jmpBase, weights)
 
         # multiply <D(u)\nabla \phi> . N . [u] and integrate - in one einsum call! ~~ magic :-D
-        int2 = nm.einsum("idfkq, ifk, ifq , ifq -> id", avgDdbase, fc_n, jmpState, whs)
+        int2 = nm.einsum("idfkq, ifk, ifq , ifq -> id", avgDdbase, fc_n, jmpState, weights)
 
         # nonsymetric diffusion form - opposite signs
         cell_fluxes = int1 - int2
@@ -377,6 +329,7 @@ class DiffusionDGFluxTerm(Term):
         # cell_fluxes = int1
 
         out[:] = 0.0
+        n_el_nod = field.n_el_nod
         for i in range(n_el_nod):
             out[:, :, i, 0] = cell_fluxes[:, i, None]
 
@@ -397,7 +350,7 @@ class DiffusionInteriorPenaltyTerm(Term):
         if diff_var is not None:
             # TODO will this term be residual only?
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, None, None, 0
+            return None, None, None, 0
         else:
             field = state.field
             region = field.region
@@ -405,27 +358,21 @@ class DiffusionInteriorPenaltyTerm(Term):
             if not "DG" in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            inner_facet_state, outer_facet_state, weights = field.get_both_facet_qp_vals(state, region,
-                                                                                         derivative=False
-                                                                                         )
-            inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
-                                                                                   derivative=False)
-            facet_vols = nm.sum(weights, axis=-1)
-
-            fargs = (inner_facet_state, outer_facet_state,
-                     inner_facet_base, outer_facet_base, weights, facet_vols, Cw)
+            fargs = (state, field, region, Cw)
             return fargs
 
-    def function(self, out, inner_facet_state, outer_facet_state,
-                     inner_facet_base, outer_facet_base, weights, facet_vols, Cw):
-        """
+    def function(self, out, state, field, region, Cw):
 
-        :param out:
-        :param weights:
-        :param facet_vols:
-        :param Cw:
-        :return:
-        """
+        if state is None:
+            out[:] = 0.0
+            return None
+
+        inner_facet_state, outer_facet_state, weights = field.get_both_facet_qp_vals(state, region,
+                                                                                     derivative=False
+                                                                                     )
+        inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
+                                                                               derivative=False)
+        facet_vols = nm.sum(weights, axis=-1)
 
         jmp_state = inner_facet_state #- outer_facet_state
         jmp_base = inner_facet_base #- outer_facet_base
@@ -458,17 +405,6 @@ class NonlinearHyperDGFluxTerm(Term):
     symbolic = {'expression' : 'div(f(u))*w',
                 'map': {'u': 'state', 'v' : 'virtual', 'f': 'function'}
     }
-    # def __init__(self, integral, region, f=None, df=None, **kwargs):
-    #     AdvectDGFluxTerm.__init__(self, self.name + "(v, u)", "v, u[-1]", integral, region, **kwargs)
-    #     # TODO how to pass f and df as Term arguments i.e. from conf examples?
-    #     if f is not None:
-    #         self.fun = f
-    #     else:
-    #         raise ValueError("Function f not provided to {}!".format(self.name))
-    #     if df is not None:
-    #         self.dfun = df
-    #     else:
-    #         raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
 
     def get_fargs(self, alpha, fun, dfun, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -483,7 +419,7 @@ class NonlinearHyperDGFluxTerm(Term):
 
         if diff_var is not None:
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, None, None, 0
+            return None, None, None, 0, 0
         else:
             field = state.field
             region = field.region
@@ -492,65 +428,39 @@ class NonlinearHyperDGFluxTerm(Term):
                 raise ValueError(
                     "Used DG term with non DG field {} of family {}!".format(field.name, field.family_name))
 
-            dofs = unravel_sol(state)
-            cell_normals = field.get_cell_normals_per_facet(region)
-            facet_base_vals = field.get_facet_base(base_only=True)
-            inner_facet_qp_vals, outer_facet_qp_vals, weights = field.get_both_facet_qp_vals(dofs, region)
-
-            fargs = (dofs, inner_facet_qp_vals, outer_facet_qp_vals,
-                     facet_base_vals, weights, cell_normals)
+            fargs = (state, field, region, fun, dfun)
             return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, dofs, in_fc_v, out_fc_v, fc_b, whs, fc_n):
-        """
-
-        :param out:
-        :param dofs: NOT necessary but was good for debugging, shape = (n_cell, n_el_nod)
-        :param in_fc_v: inner values for facets per cell, shape = (n_cell, n_el_faces, 1)
-        :param out_fc_v: outer values for facets per cell, shape = (n_cell, n_el_faces, 1)
-        :param fc_b: values of basis in facets qps, shape = (1, n_el_facet, n_qp)
-        :param whs: weights of the qps on facets, shape = (n_cell, n_el_facet, n_qp
-        :param fc_n: facet normals, shape = (n_cell, n_el_facets)
-        :param advelo: advection velocity, shape = (n_cell, 1)
-        :return:
-        """
-        # FIXME - just  to get it working, remove code duplicity!
-        if dofs is None:
+    def function(self, out, state, field, region, f, df):
+        if state is None:
             out[:] = 0.0
             return None
 
-        f = self.fun
-        df = self.dfun
+        fc_n = field.get_cell_normals_per_facet(region)
+        facet_base_vals = field.get_facet_base(base_only=True)
+        in_fc_v, out_fc_v, weights = field.get_both_facet_qp_vals(state, region)
 
-        n_cell = dofs.shape[0]
-        n_el_nod = dofs.shape[1]
-        n_el_facets = fc_n.shape[-2]
-        #  Calculate integrals over facets representing Lax-Friedrichs fluxes
-        facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
+        fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+
+        n_cell = field.n_cell
+        n_el_nod = field.n_el_nod
+        n_el_facets = field.n_el_facets
 
         # get maximal wave speeds at facets
         df_in = df(in_fc_v)
         df_out = df(out_fc_v)
-        fc_n__dot__df_in = nm.sum(fc_n[:,:,None, :] * df_in, axis=-1 )
-        fc_n__dot__df_out = nm.sum(fc_n[:, :, None, :] * df_out, axis=-1)
+        fc_n__dot__df_in =  nm.einsum("ifk,ifkq->ifq", fc_n, df_in)
+        fc_n__dot__df_out =  nm.einsum("ifk,ifkq->ifq", fc_n, df_out)  # TODO
         dfdn = nm.stack((fc_n__dot__df_in, fc_n__dot__df_out), axis=-1)
-        C = nm.amax(nm.abs(dfdn), axis=(-2, -1))[..., None, None]
+        C = nm.amax(nm.abs(dfdn), axis=(-2, -1))
 
-        for facet_n in range(n_el_facets):
-            for mode_n in range(n_el_nod):
-                fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
+        fc_f_avg = (f(in_fc_v) + f(out_fc_v)) / 2.
+        fc_v_jmp = in_fc_v - out_fc_v
 
-                central = (f(in_fc_v[:, facet_n, :]) + f(out_fc_v[:, facet_n, :])) / 2.
-                upwind = (1 - self.alf) / 2. * C[:, facet_n, :, :] * fc_n[:, facet_n][..., None, :] * fc_v_m[:, :, None]
-
-                facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
-                                                          nm.sum((central + upwind) *
-                                                                 (fc_b[None, :, 0, facet_n, 0, mode_n] *
-                                                                  whs[:, facet_n, :])[..., None], axis=1), # sum over qps to get integral
-                                                          axis=1) # sum over dimension to get scalar product
-
-        cell_fluxes = nm.sum(facet_fluxes, axis=1)
+        central = fc_f_avg
+        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
+        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
         out[:] = 0.0
         for i in range(n_el_nod):
