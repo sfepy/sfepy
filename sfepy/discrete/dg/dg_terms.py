@@ -40,7 +40,7 @@ class AdvectDGFluxTerm(Term):
 
     .. math::
 
-        \int_{\partial{T_K}} \vec{n} \cdot f^{*} (p_{in}, p_{out})\cdot q
+        \int_{\partial{T_K}} \vec{n} \cdot f^{*} (p_{in}, p_{out})q
 
         where
             f^{*}(p_{in}, p_{out}) =  \vec{a}  \frac{p_{in} + p_{out}}{2}  + (1 - \alpha) \vec{n}
@@ -115,9 +115,9 @@ class AdvectDGFluxTerm(Term):
         :param shapes: (n_cell, n_el_nod)
         :param in_fc_v: inner values for facets per cell, shape = (n_cell, n_el_faces, 1)
         :param out_fc_v: outer values for facets per cell, shape = (n_cell, n_el_faces, 1)
-        :param fc_b: values of basis in facets qps, shape = (1, n_el_facet, n_qp)
-        :param whs: weights of the qps on facets, shape = (n_cell, n_el_facet, n_qp
-        :param fc_n: facet normals, shape = (n_cell, n_el_facets)
+        :param fc_b: values of basis in facets qps, shape =  (number of qps, 1, n_el_facets, 1, n_el_nod)
+        :param whs: weights of the qps on facets, shape = (n_cell, n_el_facet, n_qp)
+        :param fc_n: facet normals, shape = (n_cell, n_el_facets, 1)
         :param advelo: advection velocity, shape = (n_cell, 1)
         :return:
         """
@@ -129,22 +129,32 @@ class AdvectDGFluxTerm(Term):
         n_el_nod = shapes[1]
         n_el_facets = fc_n.shape[-2]
         #  Calculate integrals over facets representing Lax-Friedrichs fluxes
-        C = nm.abs(nm.sum(fc_n * advelo[:, None, :], axis=-1))[:, None]
-        facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
-        for facet_n in range(n_el_facets):
-            for mode_n in range(n_el_nod):
-                fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
-                fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
-                central = advelo[:, None, :] * fc_v_p[:, :, None] / 2.
-                upwind = ((1 - self.alf)/2. * C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
+        # C = nm.abs(nm.sum(fc_n * advelo[:, None, :], axis=-1))[:, None]
+        # facet_fluxes = nm.zeros((n_cell, n_el_facets, n_el_nod))
+        # for facet_n in range(n_el_facets):
+        #     for mode_n in range(n_el_nod):
+        #         fc_v_p = in_fc_v[:, facet_n, :] + out_fc_v[:, facet_n, :]
+        #         fc_v_m = in_fc_v[:, facet_n, :] - out_fc_v[:, facet_n, :]
+        #         central = advelo[:, None, :] * fc_v_p[:, :, None] / 2.
+        #         upwind = ((1 - self.alf)/2. * C[:, :, facet_n] * fc_n[:, facet_n])[..., None, :] * fc_v_m[:, :, None]
+        #
+        #         facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
+        #                                              nm.sum((central + upwind) *
+        #                                                     (fc_b[None, :, 0, facet_n, 0, mode_n] *
+        #                                                      whs[:, facet_n, :])[..., None], axis=1),
+        #
+        #                                              axis=1)
+        # using einsum, yayy!
+        C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+        fc_v_p = in_fc_v + out_fc_v
+        fc_v_m = in_fc_v - out_fc_v
+        # get sane facet base shape
+        sane_fc_b = fc_b[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+        central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_p) / 2
+        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_m)
+        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, sane_fc_b, whs)
 
-                facet_fluxes[:, facet_n, mode_n] = nm.sum(fc_n[:, facet_n] *
-                                                     nm.sum((central + upwind) *
-                                                            (fc_b[None, :, 0, facet_n, 0, mode_n] *
-                                                             whs[:, facet_n, :])[..., None], axis=1),
-                                                     axis=1)
-
-        cell_fluxes = nm.sum(facet_fluxes, axis=1)
+        # cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
         # 1D plots
         if False:
@@ -326,8 +336,7 @@ class DiffusionDGFluxTerm(Term):
                                                                                              derivative=False
                                                                                              )
 
-            fargs = (
-                     (inner_facet_state_d, outer_facet_state_d, inner_facet_base, outer_facet_base),
+            fargs = ((inner_facet_state_d, outer_facet_state_d, inner_facet_base, outer_facet_base),
                      (inner_facet_state, outer_facet_state, inner_facet_base_d, outer_facet_base_d),
                      weights, cell_normals, diff_tensor[:, 0, :, :])
             return fargs
