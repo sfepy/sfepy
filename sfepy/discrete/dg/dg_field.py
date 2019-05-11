@@ -634,7 +634,7 @@ class DGField(Field):
         else:
             outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, : , 1]].swapaxes(-2, -3)
 
-        return inner_facet_base_vals, outer_facet_base_vals, whs
+        return inner_facet_base_vals, outer_facet_base_vals[...,::-1], whs
 
     def clear_normals_cache(self, region=None):
         if region is None:

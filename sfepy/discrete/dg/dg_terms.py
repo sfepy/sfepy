@@ -9,21 +9,6 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 
-
-def unravel_sol(state):
-    """
-    Unpacks solution from flat vector to
-    (n_cell, n_el_nod, n_comp)
-
-
-    :param state:
-    """
-    u = state.data[0]
-    n_cell = state.field.n_cell
-    n_el_nod = state.field.poly_space.n_nod
-    unravel = get_unraveler(n_el_nod, n_cell)
-    return unravel(u)
-
 class AdvectDGFluxTerm(Term):
     r"""
     Lax-Friedrichs flux term for advection of scalar quantity :math:`p` with the advection velocity
@@ -293,7 +278,6 @@ class DiffusionDGFluxTerm(Term):
             out[:] = 0.0
             return None
 
-        # TODO decompose and test properly, shapes fit so far however :-)
         fc_n = field.get_cell_normals_per_facet(region)
         inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
                                                                                derivative=False
@@ -311,20 +295,18 @@ class DiffusionDGFluxTerm(Term):
                       nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
         jmpBase = inner_facet_base #- outer_facet_base
 
-        avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, inner_facet_base_d) +
-                     nm.einsum("ikl,idfkq->idfkq", D, outer_facet_base_d)) / 2.
-        jmpState = inner_facet_state # - outer_facet_state
+        avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, inner_facet_base_d)) / 2.
+                     # nm.einsum("ikl,idfkq->idfkq", D, outer_facet_base_d)) / 2.
+        jmpState = inner_facet_state - outer_facet_state
 
-        # multiply <D(u)\nabla u> . N . [\phi] and integrate - in one einsum call! ~~ magic :-D
         int1 = nm.einsum("ifkq , ifk, idfq, ifq -> id", avgDdState, fc_n, jmpBase, weights)
 
-        # multiply <D(u)\nabla \phi> . N . [u] and integrate - in one einsum call! ~~ magic :-D
         int2 = nm.einsum("idfkq, ifk, ifq , ifq -> id", avgDdbase, fc_n, jmpState, weights)
 
         # nonsymetric diffusion form - opposite signs
-        cell_fluxes = int1 - int2
+        # cell_fluxes = int1 - int2
         # symetric diffusion form
-        # cell_fluxes = int1 + int2
+        cell_fluxes = int1 + int2
         # incomplete
         # cell_fluxes = int1
 
@@ -374,7 +356,7 @@ class DiffusionInteriorPenaltyTerm(Term):
                                                                                derivative=False)
         facet_vols = nm.sum(weights, axis=-1)
 
-        jmp_state = inner_facet_state #- outer_facet_state
+        jmp_state = inner_facet_state - outer_facet_state
         jmp_base = inner_facet_base #- outer_facet_base
         sigma = Cw/facet_vols
 

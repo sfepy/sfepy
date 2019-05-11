@@ -35,8 +35,8 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
-CFL = .1
+approx_order = 2
+CFL = .8
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_1D"
@@ -94,22 +94,22 @@ alpha = Material('alpha', val=[.0])
 AdvFluxT = AdvectDGFluxTerm("adv_lf_flux(alpha.val, a.val, v, u)", "a.val, v, u[-1]",
                             integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-diffusion_tensor = .002
+diffusion_tensor = .02
 D = Material('D', val=[diffusion_tensor])
 DivGrad = LaplaceTerm("diff_lap(D.val, v, u)", "D.val, v, u[-1]",
                       integral, omega, u=u, v=v, D=D)
 
 DiffFluxT = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)", "D.val, v,  u[-1]",
                                 integral, omega, u=u, v=v, D=D)
-Cw = Material("Cw", values={".val": 1})
+Cw = Material("Cw", values={".val": 10})
 DiffPen = DiffusionInteriorPenaltyTerm("diff_pen(Cw.val, v, u)", "Cw.val, v, u[-1]",
                                        integral, omega, u=u, v=v, Cw=Cw)
 
 
 eq = Equation('balance', MassT
-              + StiffT - AdvFluxT
-              + DivGrad - DiffFluxT
-              + diffusion_tensor * DiffPen
+              # + StiffT - AdvFluxT
+              -(+ DivGrad - DiffFluxT
+              + diffusion_tensor * DiffPen)
               )
 eqs = Equations([eq])
 
