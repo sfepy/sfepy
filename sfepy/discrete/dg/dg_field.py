@@ -152,8 +152,11 @@ class DGField(Field):
         self.mapping = self.create_mapping(self.region, self.integral, "volume", return_mapping=True)[1]
         self.mappings0 = {}
 
-        # neighbour facet mapping
-        self.facet_neighbour_index = {}
+        # neighbour facet mapping and data
+        self.clear_facet_neighbour_idx_cache()
+        self.clear_normals_cache()
+        self.clear_facet_vols_cache()
+
 
     def _setup_all_dofs(self):
         """
@@ -428,7 +431,7 @@ class DGField(Field):
         else:
             return facet_bf, whs
 
-    def clear_facet_neighbour_idx(self, region=None):
+    def clear_facet_neighbour_idx_cache(self, region=None):
         """
         If region is None clear all!
         :param region:
@@ -437,7 +440,7 @@ class DGField(Field):
         if region is None:
             self.facet_neighbour_index = {}
         else:
-            self.facet_neighbour_index.pop(region.name)
+            self.facet_neighbour_index.remove(region.name)
 
     def get_facet_neighbor_idx(self, region, eq_map):
         """
@@ -633,12 +636,25 @@ class DGField(Field):
 
         return inner_facet_base_vals, outer_facet_base_vals, whs
 
+    def clear_normals_cache(self, region=None):
+        if region is None:
+            self.normals_cache = {}
+        else:
+            if isinstance(region, str):
+                self.normals_cache.remove(region)
+            else:
+                self.normals_cache.remove(region.name)
+
     def get_cell_normals_per_facet(self, region):
         """
+        Caches resuts, use clear_normals_cache to clear the cache.
 
         :param region:
         :return: normals of facets in array of shape (n_cell, n_el_facets, dim)
         """
+
+        if region.name in self.normals_cache:
+            return self.normals_cache[region.name]
 
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
@@ -656,14 +672,31 @@ class DGField(Field):
             for ifal, ifa in enumerate(c2f.indices[o1:o2]):
                 normals_out[ic, ifal] = normals[o1 + ifal]
 
+        self.normals_cache[region.name] = normals_out
+
         return normals_out
+
+    def clear_facet_vols_cache(self, region=None):
+        if region is None:
+            self.facet_vols_cache = {}
+        else:
+            if isinstance(region, str):
+                self.facet_vols_cache.remove(region)
+            else:
+                self.facet_vols_cache.remove(region.name)
 
     def get_facet_vols(self, region):
         """
 
+        Caches results, use clear_facet_vols_cache to clear the cach
+
         :param region:
         :return: volumes of the facets by cells shape is (n_cell, n_el_facets, 1)
         """
+
+        if region.name in self.facet_vols_cache:
+            return self.facet_vols_cache[region.name]
+
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
         cmesh = region.domain.mesh.cmesh
@@ -683,6 +716,8 @@ class DGField(Field):
             o2 = c2f.offsets[ic + 1]
             for ifal, ifa in enumerate(c2f.indices[o1:o2]):
                 vols_out[ic, ifal] = vols[ifa]
+
+        self.facet_vols_cache[region.name] = vols_out
 
         return vols_out
 
