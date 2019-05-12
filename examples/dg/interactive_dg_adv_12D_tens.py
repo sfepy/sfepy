@@ -36,7 +36,7 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 0
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_12D"
@@ -45,12 +45,12 @@ output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "msh"
 mesh_output_folder = "output/mesh"
 save_timestn = 100
-clear_folder(pjoin(output_folder, output_format))
+clear_folder(pjoin(output_folder, "*" + output_format))
 
 #------------
 #| Get mesh |
 #------------
-mesh = gen_block_mesh((1., 1.), (20, 2), (.5, 0.5))
+mesh = gen_block_mesh((1., 1.), (100, 2), (.5, 0.5))
 
 
 
@@ -132,10 +132,8 @@ pb.setup_output(output_dir=output_folder, output_format=output_format)
 pb.functions = {'match_x_line':  Function("match_x_line", match_x_line),
                 'match_y_line':  Function("match_y_line", match_y_line)}
 pb.set_ics(Conditions([ics]))
-pb.set_bcs(ebcs=Conditions([dirichlet_bc_u]),
-#            epbcs=Conditions([periodic1_bc_u,
-#                              # periodic2_bc_u
-#                              ])
+pb.set_bcs(#ebcs=Conditions([dirichlet_bc_u]),
+           epbcs=Conditions([periodic2_bc_u])
             )
 
 #------------------
@@ -149,7 +147,7 @@ limiter = IdentityLimiter
 CFL = .4
 max_velo = nm.max(nm.linalg.norm(velo))
 t0 = 0
-t1 = .2
+t1 = 1
 dx = nm.min(mesh.cmesh.get_volumes(2))
 dt = dx / max_velo * CFL/(2*approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))

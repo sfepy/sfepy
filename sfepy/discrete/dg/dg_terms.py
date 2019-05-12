@@ -290,7 +290,6 @@ class DiffusionDGFluxTerm(Term):
         inner_facet_state, outer_facet_state, weights = field.get_both_facet_qp_vals(state, region,
                                                                                      derivative=False
                                                                                      )
-
         avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, inner_facet_state_d) +
                       nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
         jmpBase = inner_facet_base #- outer_facet_base

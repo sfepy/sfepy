@@ -570,6 +570,8 @@ class DGField(Field):
                 outer_facet_vals[:, facet_n, :] = nm.einsum('id...,id...->i...',
                                                             dofs[per_facet_neighbours[:, facet_n, 0]],
                                                             outer_base_vals[:, :, facet_n])
+
+
         if state.eq_map.n_ebc > 0:
             # get cells with missing neighbours, ignore that we do not know neighbour local facet idx
             boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
@@ -592,8 +594,8 @@ class DGField(Field):
                                                                                              self.n_el_nod*(ebc_ii+1)],
                                                                         inner_base_vals[:, bn_facet])
 
-        # FIXME flip outer_facet_vals to match the inner_facet_vals qp ordering
-        return inner_facet_vals, outer_facet_vals[..., ::-1], whs
+        # FIXME flip outer_facet_vals moved to get_both_facet_base_vals
+        return inner_facet_vals, outer_facet_vals, whs
 
     def get_both_facet_base_vals(self, state, region, derivative=None):
         """

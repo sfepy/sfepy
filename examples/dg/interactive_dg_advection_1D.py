@@ -32,7 +32,7 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 1
+approx_order = 0
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_1D"
@@ -123,7 +123,7 @@ pb.set_ics(Conditions([ics]))
 #------------------
 #| Create limiter |
 #------------------
-limiter = MomentLimiter1D
+limiter = IdentityLimiter
 
 #---------------------------
 #| Set time discretization |
@@ -147,7 +147,7 @@ nls = Newton({'is_linear': True}, lin_solver=ls, status=nls_status)
 tss_conf = {'t0': t0,
             't1': t1,
             'n_step': tn,
-            "limiter": MomentLimiter1D}
+            "limiter": limiter}
 
 tss = EulerStepSolver(tss_conf,
                          nls=nls, context=pb, verbose=True)
