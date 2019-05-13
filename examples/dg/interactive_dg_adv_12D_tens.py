@@ -10,7 +10,7 @@ from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
-from sfepy.discrete import (FieldVariable, Material, Integral, Function,
+from sfepy.discrete import (FieldVariable, DGFieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions, PeriodicBC
 from sfepy.solvers.ls import ScipyDirect
@@ -36,7 +36,7 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
 #vvvvvvvvvvvvvvvv#
-approx_order = 0
+approx_order = 1
 #^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_12D"
@@ -117,7 +117,7 @@ periodic2_bc_u = PeriodicBC('left_right', [left, right],{'u.all' : 'u.all'}, mat
 #| Create initial condition |
 #----------------------------
 def ic_wrap(x, ic=None):
-    return gsmooth(x[..., 0:1])
+    return 0*gsmooth(x[..., 0:1])
 
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
@@ -132,8 +132,8 @@ pb.setup_output(output_dir=output_folder, output_format=output_format)
 pb.functions = {'match_x_line':  Function("match_x_line", match_x_line),
                 'match_y_line':  Function("match_y_line", match_y_line)}
 pb.set_ics(Conditions([ics]))
-pb.set_bcs(#ebcs=Conditions([dirichlet_bc_u]),
-           epbcs=Conditions([periodic2_bc_u])
+pb.set_bcs(ebcs=Conditions([dirichlet_bc_u]),
+            # epbcs=Conditions([periodic2_bc_u])
             )
 
 #------------------

@@ -496,13 +496,13 @@ class DGField(Field):
             scells = nm.unique(self.dofs2cells[eq_map.slave])
             mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0] # facets of mcells
             scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0] # facets of scells
-            [1, 0] # above, first we need second axis t get axis on which facet indices are stored,
+            [1, 0] # above, first we need second axis to get axis on which facet indices are stored,
             # second we drop axis with neighbour local facet index, for multiple s/mcells this will have to be something like
-            # 1 + 2*nm.arange(len(mcells) - to skip double entries for -1 tags in neighbours and  neighbour local facet idx
+            # 1 + 2*nm.arange(len(mcells)) - to skip double entries for -1 tags in neighbours and  neighbour local facet idx
 
             facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
             facet_neighbours[mcells, mcells_facets, 1] = scells_facets  # set neighbour facets to facets of scell missing neighbour
-            # TODO how to distinguish EBC and EPBC? - we do not need to, they over write EPBC, we only need to fix shapes
+            # TODO how to distinguish EBC and EPBC? - we do not need to, EBC over write EPBC, we only need to fix shapes
 
             facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
             facet_neighbours[scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
@@ -580,19 +580,10 @@ class DGField(Field):
             for ebc_ii, ebc_cell in enumerate(ebc_cells):
                 curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
                 for bn_facet in curr_b_cells[:, 1]:
-                    # so far setting only zero order dof
-                    # TODO change shape and data in state.eq_map.eq_ebc and state.eq_map.val_ebc
-                    # to be able to save projections there
-
-                    # so far we set to all boundary faces of the cell
-                    # TODO treat boundary cells where more BCs meet
-                    # outer_facet_vals[ebc_cell, bn_facet, :] = nm.sum(state.eq_map.val_ebc[self.n_el_nod*ebc_ii :
-                    #                                                                       self.n_el_nod*(ebc_ii+1)][None, :]
-                    #                                                  * facet_bf[:, 0, bn_facet, 0, :], axis=-1)
                     outer_facet_vals[ebc_cell, bn_facet, :] = nm.einsum("d,d...->...",
                                                                         state.eq_map.val_ebc[self.n_el_nod*ebc_ii :
                                                                                              self.n_el_nod*(ebc_ii+1)],
-                                                                        inner_base_vals[:, bn_facet])
+                                                                        inner_base_vals[0, :, bn_facet])
 
         # FIXME flip outer_facet_vals moved to get_both_facet_base_vals
         return inner_facet_vals, outer_facet_vals, whs

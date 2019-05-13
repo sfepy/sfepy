@@ -6,7 +6,7 @@ from sfepy.discrete.common.fields import Field
 
 from .functions import Functions, Function
 from .conditions import Conditions
-from .variables import Variables, Variable, FieldVariable, create_adof_conns
+from .variables import Variables, Variable, FieldVariable, DGFieldVariable, create_adof_conns
 from .materials import Materials, Material
 from .equations import Equations, Equation
 from .integrals import Integrals, Integral
