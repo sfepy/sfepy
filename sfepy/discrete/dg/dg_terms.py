@@ -317,6 +317,7 @@ class DiffusionDGFluxTerm(Term):
         status = None
         return status
 
+
 class DiffusionInteriorPenaltyTerm(Term):
     name = "dw_dg_interior_penal"
     modes = ("weak",)
@@ -356,7 +357,7 @@ class DiffusionInteriorPenaltyTerm(Term):
         facet_vols = nm.sum(weights, axis=-1)
 
         jmp_state = inner_facet_state - outer_facet_state
-        jmp_base = inner_facet_base #- outer_facet_base
+        jmp_base = inner_facet_base  # - outer_facet_base
         sigma = Cw/facet_vols
 
         n_el_nod = nm.shape(inner_facet_base)[1]
@@ -431,8 +432,8 @@ class NonlinearHyperDGFluxTerm(Term):
         # get maximal wave speeds at facets
         df_in = df(in_fc_v)
         df_out = df(out_fc_v)
-        fc_n__dot__df_in =  nm.einsum("ifk,ifkq->ifq", fc_n, df_in)
-        fc_n__dot__df_out =  nm.einsum("ifk,ifkq->ifq", fc_n, df_out)  # TODO
+        fc_n__dot__df_in =  nm.einsum("ifk,ifqk->ifq", fc_n, df_in)
+        fc_n__dot__df_out =  nm.einsum("ifk,ifqk->ifq", fc_n, df_out)  # TODO
         dfdn = nm.stack((fc_n__dot__df_in, fc_n__dot__df_out), axis=-1)
         C = nm.amax(nm.abs(dfdn), axis=(-2, -1))
 
@@ -440,8 +441,8 @@ class NonlinearHyperDGFluxTerm(Term):
         fc_v_jmp = in_fc_v - out_fc_v
 
         central = fc_f_avg
-        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
-        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifqk", C, fc_n, fc_v_jmp)
+        cell_fluxes = nm.einsum("ifk,ifqk,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
         out[:] = 0.0
         for i in range(n_el_nod):
