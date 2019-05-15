@@ -14,10 +14,11 @@ from sfepy.discrete.dg.dg_basis import iter_by_order
 
 helps = {
     'max_order' :
-    'maximum order of polynomials [default: %(default)s]',
-    'output_dir' :
-    'output directory',
+        'maximum order of polynomials [default: %(default)s]',
+    'output_dir':
+        'output directory',
 }
+
 
 def main():
     parser = ArgumentParser(description=__doc__)
@@ -34,9 +35,7 @@ def main():
     order = options.max_order
     dim = 2
     n_el_nod = int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
-                   reduce(mul, range(1, dim+1)))  # number of DOFs per element
-
-
+                   reduce(mul, range(1, dim + 1)))  # number of DOFs per element
 
     tensorP = []
     exponentM = np.zeros((n_el_nod, 3), dtype=np.int32)
@@ -52,7 +51,7 @@ def main():
         polxy = expand(polrs.subs(r, x).subs(s, y))
 
         tensorP.append(simplify(polxy))
-        exponentList.append(x**idx[0]*y**idx[1])
+        exponentList.append(x ** idx[0] * y ** idx[1])
         for j, exponent in enumerate(exponentList):
             coefM[m, j] = tensorP[m].as_coefficients_dict()[exponent]
         print("P_{}{} = {}".format(m, idx, tensorP[m]))
@@ -61,6 +60,7 @@ def main():
     np.savetxt(indir("legendre2D_tensor_expos.txt"), exponentM, fmt="%d")
     # TODO are coefs always integers?
     np.savetxt(indir("legendre2D_tensor_coefs.txt"), coefM, fmt="%d")
+
 
 if __name__ == '__main__':
     main()

@@ -5,6 +5,7 @@ from sfepy.base.base import (get_default, output, assert_,
 
 MACHINE_EPS = 1e-30
 
+
 def minmod(a, b, c):
     """
     Minmod function of three variables, returns:
@@ -24,8 +25,8 @@ def minmod(a, b, c):
 
     return res
 
-class DGLimiter:
 
+class DGLimiter:
     name = "abstract DG limiter"
 
     def __init__(self, n_el_nod, n_cell, verbose=False):
@@ -40,7 +41,6 @@ class DGLimiter:
 
 
 class IdentityLimiter(DGLimiter):
-
     name = "identity"
 
     def __call__(self, u):
@@ -72,7 +72,7 @@ class MomentLimiter1D(DGLimiter):
             tilu = minmod(nu[l, 1:-1][idx],
                           nu[l - 1, 2:][idx] - nu[l - 1, 1:-1][idx],
                           nu[l - 1, 1:-1][idx] - nu[l - 1, :-2][idx])
-            idx = nm.where(abs(tilu - nu[l ,1:-1][idx]) > MACHINE_EPS)[0]
+            idx = nm.where(abs(tilu - nu[l, 1:-1][idx]) > MACHINE_EPS)[0]
             if self.verbose:
                 output(self.name + " limiting in {} cells of {} :".format(len(idx), self.n_cell))
                 output(idx)
@@ -80,8 +80,8 @@ class MomentLimiter1D(DGLimiter):
                 break
             nu[l, 1:-1][idx] = tilu[idx]
 
-
         return self.ravel(nu.swapaxes(0, 1))[:, 0]
+
 
 class MommentLimiter2D(DGLimiter):
     """

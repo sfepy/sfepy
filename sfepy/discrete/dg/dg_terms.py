@@ -1,6 +1,5 @@
 import numpy as nm
 
-
 # sfepy imports
 from sfepy.terms.terms import Term, terms
 from sfepy.base.base import (get_default, output, assert_,
@@ -8,6 +7,7 @@ from sfepy.base.base import (get_default, output, assert_,
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
+
 
 class AdvectDGFluxTerm(Term):
     r"""
@@ -52,22 +52,22 @@ class AdvectDGFluxTerm(Term):
     name = "dw_dg_advect_laxfrie_flux"
     modes = ("weak",)
     arg_types = ('opt_material', 'material_advelo', 'virtual', 'state')
-    arg_shapes = [{'opt_material': '.: 1',
-                  'material_advelo': 'D, 1',
-                  'virtual': (1, 'state'),
-                  'state': 1
-                  },
-                {'opt_material': None}]
+    arg_shapes = [{'opt_material'   : '.: 1',
+                   'material_advelo': 'D, 1',
+                   'virtual'        : (1, 'state'),
+                   'state'          : 1
+                   },
+                  {'opt_material': None}]
     integration = 'volume'
-    symbolic = {'expression' : 'div(a*u)*w',
-                'map': {'u': 'state', 'a': 'material', 'v' : 'virtual'}
-    }
+    symbolic = {'expression': 'div(a*u)*w',
+                'map'       : {'u': 'state', 'a': 'material', 'v': 'virtual'}
+                }
 
     def get_fargs(self, alpha, advelo, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:
-            self.alf = alpha # extract alpha value regardless of shape
+            self.alf = alpha  # extract alpha value regardless of shape
 
         if diff_var is not None:
             output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
@@ -76,7 +76,7 @@ class AdvectDGFluxTerm(Term):
             field = state.field
             region = field.region
 
-            if not "DG" in field.family_name:
+            if "DG" not in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
             fargs = (state, field, region, advelo[:, 0, :, 0])
@@ -152,9 +152,10 @@ class AdvectDGFluxTerm(Term):
                 fig.clear()
                 plt.plot(xx, ww[:, 0], label="recon")
                 plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(x[:-1], facet_fluxes[:, 0, mode_n], marker=">", label="flux {} left".format(mode_n), color="b", ls="")
-                plt.plot(x[1:], facet_fluxes[:, 1,  mode_n], marker=">", label="flux {} right".format(mode_n), color="r", ls="")
-
+                plt.plot(x[:-1], facet_fluxes[:, 0, mode_n], marker=">", label="flux {} left".format(mode_n), color="b",
+                         ls="")
+                plt.plot(x[1:], facet_fluxes[:, 1, mode_n], marker=">", label="flux {} right".format(mode_n), color="r",
+                         ls="")
 
                 # Plot mesh
                 XN = x[-1]
@@ -175,7 +176,6 @@ class AdvectDGFluxTerm(Term):
                 plt.plot(xx, ww[:, 0], label="recon")
                 plt.plot(xx, ww[:, 0], label="recon")
                 plt.plot(X, cell_fluxes[:, mode_n], marker="D", label="cell flux {}".format(mode_n), color="r", ls="")
-
 
                 # Plot mesh
                 XN = x[-1]
@@ -215,18 +215,16 @@ class AdvectDGFluxTerm(Term):
                         ax.plot(*cc.T, color=col)
                         # ax.plot([cc[1, 0]], [cc[1, 1]], color=col, marker=">")
 
-
                 return ax
 
-
             ax = pc.plot_cmesh(
-                None, cmesh,
-                wireframe_opts={'color': 'k', 'linewidth': 2},
-                entities_opts=[
-                    {'color': 'k', 'label_global': 12, 'label_local': 8, 'size': 20},  # vertices
-                    {'color': 'b', 'label_global': 6, 'label_local': 8, 'size': 10},  # faces
-                    {'color': 'r', 'label_global': 12, 'size': 1},  # cells
-                ])
+                    None, cmesh,
+                    wireframe_opts={'color': 'k', 'linewidth': 2},
+                    entities_opts=[
+                        {'color': 'k', 'label_global': 12, 'label_local': 8, 'size': 20},  # vertices
+                        {'color': 'b', 'label_global': 6, 'label_local': 8, 'size': 10},  # faces
+                        {'color': 'r', 'label_global': 12, 'size': 1},  # cells
+                    ])
             # for i in range(n_el_nod):
             #     ax = plot_facet_normals(ax, cmesh, facet_fluxes[:, :, i, None] * fc_n, 1, col='r')
 
@@ -243,17 +241,16 @@ class AdvectDGFluxTerm(Term):
 
 
 class DiffusionDGFluxTerm(Term):
-
     name = "dw_dg_diffusion_flux"
     modes = ("weak",)
     arg_types = ('material_diff_tensor', 'virtual', 'state')
     arg_shapes = [{'material_diff_tensor': '1, 1',
-                   'virtual': (1, 'state'),
-                   'state': 1
+                   'virtual'             : (1, 'state'),
+                   'state'               : 1
                    }]
     integration = 'volume'
     symbolic = {'expression': 'div(D*grad(u))',
-                'map': {'u': 'state', 'a': 'material', 'v': 'virtual'}
+                'map'       : {'u': 'state', 'a': 'material', 'v': 'virtual'}
                 }
 
     def get_fargs(self, diff_tensor, test, state,
@@ -266,7 +263,7 @@ class DiffusionDGFluxTerm(Term):
             field = state.field
             region = field.region
 
-            if not "DG" in field.family_name:
+            if "DG" not in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
             fargs = (state, field, region, diff_tensor[:, 0, :, :])
@@ -292,10 +289,10 @@ class DiffusionDGFluxTerm(Term):
                                                                                      )
         avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, inner_facet_state_d) +
                       nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
-        jmpBase = inner_facet_base #- outer_facet_base
+        jmpBase = inner_facet_base  # - outer_facet_base
 
         avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, inner_facet_base_d)) / 2.
-                     # nm.einsum("ikl,idfkq->idfkq", D, outer_facet_base_d)) / 2.
+        # nm.einsum("ikl,idfkq->idfkq", D, outer_facet_base_d)) / 2.
         jmpState = inner_facet_state - outer_facet_state
 
         int1 = nm.einsum("ifkq , ifk, idfq, ifq -> id", avgDdState, fc_n, jmpBase, weights)
@@ -323,8 +320,8 @@ class DiffusionInteriorPenaltyTerm(Term):
     modes = ("weak",)
     arg_types = ('material_Cw', 'virtual', 'state')
     arg_shapes = [{'material_Cw': '.: 1',
-                   'virtual': (1, 'state'),
-                   'state': 1
+                   'virtual'    : (1, 'state'),
+                   'state'      : 1
                    }]
 
     def get_fargs(self, Cw, test, state, mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -337,7 +334,7 @@ class DiffusionInteriorPenaltyTerm(Term):
             field = state.field
             region = field.region
 
-            if not "DG" in field.family_name:
+            if "DG" not in field.family_name:
                 raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
             fargs = (state, field, region, Cw)
@@ -358,7 +355,7 @@ class DiffusionInteriorPenaltyTerm(Term):
 
         jmp_state = inner_facet_state - outer_facet_state
         jmp_base = inner_facet_base  # - outer_facet_base
-        sigma = Cw/facet_vols
+        sigma = Cw / facet_vols
 
         n_el_nod = nm.shape(inner_facet_base)[1]
         cell_penalty = nm.einsum("if,ifq,idfq,ifq->id", sigma, jmp_state, jmp_base, weights)
@@ -370,23 +367,23 @@ class DiffusionInteriorPenaltyTerm(Term):
         status = None
         return status
 
-class NonlinearHyperDGFluxTerm(Term):
 
+class NonlinearHyperDGFluxTerm(Term):
     alf = 0
     name = "dw_dg_nonlinear_laxfrie_flux"
     modes = ("weak",)
     arg_types = ('opt_material', 'material_fun', 'material_fun_d', 'virtual', 'state')
-    arg_shapes = [{'opt_material': '.: 1',
-                   'material_fun': '.: 1',
+    arg_shapes = [{'opt_material'  : '.: 1',
+                   'material_fun'  : '.: 1',
                    'material_fun_d': '.: 1',
-                   'virtual': (1, 'state'),
-                   'state': 1
+                   'virtual'       : (1, 'state'),
+                   'state'         : 1
                    },
                   {'opt_material': None}]
     integration = 'volume'
-    symbolic = {'expression' : 'div(f(u))*w',
-                'map': {'u': 'state', 'v' : 'virtual', 'f': 'function'}
-    }
+    symbolic = {'expression': 'div(f(u))*w',
+                'map'       : {'u': 'state', 'v': 'virtual', 'f': 'function'}
+                }
 
     def get_fargs(self, alpha, fun, dfun, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -406,9 +403,9 @@ class NonlinearHyperDGFluxTerm(Term):
             field = state.field
             region = field.region
 
-            if not "DG" in field.family_name:
+            if "DG" not in field.family_name:
                 raise ValueError(
-                    "Used DG term with non DG field {} of family {}!".format(field.name, field.family_name))
+                        "Used DG term with non DG field {} of family {}!".format(field.name, field.family_name))
 
             fargs = (state, field, region, fun, dfun)
             return fargs
@@ -432,8 +429,8 @@ class NonlinearHyperDGFluxTerm(Term):
         # get maximal wave speeds at facets
         df_in = df(in_fc_v)
         df_out = df(out_fc_v)
-        fc_n__dot__df_in =  nm.einsum("ifk,ifqk->ifq", fc_n, df_in)
-        fc_n__dot__df_out =  nm.einsum("ifk,ifqk->ifq", fc_n, df_out)  # TODO
+        fc_n__dot__df_in = nm.einsum("ifk,ifqk->ifq", fc_n, df_in)
+        fc_n__dot__df_out = nm.einsum("ifk,ifqk->ifq", fc_n, df_out)  # TODO
         dfdn = nm.stack((fc_n__dot__df_in, fc_n__dot__df_out), axis=-1)
         C = nm.amax(nm.abs(dfdn), axis=(-2, -1))
 
@@ -453,6 +450,7 @@ class NonlinearHyperDGFluxTerm(Term):
 
 
 from sfepy.linalg import dot_sequences
+
 
 class NonlinScalarDotGradTerm(Term):
     r"""
@@ -476,14 +474,14 @@ class NonlinScalarDotGradTerm(Term):
         - virtual  : :math:`q`
     """
     name = 'dw_ns_dot_grad_s'
-    arg_types = (( 'material_fun', 'material_fun_d','virtual', 'state'),
-                 ( 'material_fun', 'material_fun_d', 'state', 'virtual'))
-    arg_shapes = [{ 'material_fun': '.: 1',
-                   'material_fun_d': '.: 1',
-                    'virtual/grad_state' : (1, None),
-                   'state/grad_state' : 1,
-                   'virtual/grad_virtual' : (1, None),
-                   'state/grad_virtual' : 1}]
+    arg_types = (('material_fun', 'material_fun_d', 'virtual', 'state'),
+                 ('material_fun', 'material_fun_d', 'state', 'virtual'))
+    arg_shapes = [{'material_fun'        : '.: 1',
+                   'material_fun_d'      : '.: 1',
+                   'virtual/grad_state'  : (1, None),
+                   'state/grad_state'    : 1,
+                   'virtual/grad_virtual': (1, None),
+                   'state/grad_virtual'  : 1}]
     modes = ('grad_state', 'grad_virtual')
 
     # def __init__(self, integral, region, f=None, df=None, **kwargs):
@@ -497,7 +495,6 @@ class NonlinScalarDotGradTerm(Term):
     #         self.dfun = df
     #     else:
     #         raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
-
 
     @staticmethod
     def function(out, out_qp, geo, fmode):
@@ -517,7 +514,7 @@ class NonlinScalarDotGradTerm(Term):
                 val_qp = dfun(self.get(var2, 'val')[..., 0])
                 val_grad_qp = self.get(var2, 'grad')
                 val = dot_sequences(val_qp, val_grad_qp, 'ATB')
-                out_qp = dot_sequences(bf_t , val_grad_qp, 'ATB')
+                out_qp = dot_sequences(bf_t, val_grad_qp, 'ATB')
 
             else:
                 # TODO chceck correct shapes for integration
@@ -532,7 +529,7 @@ class NonlinScalarDotGradTerm(Term):
             if self.mode == 'grad_state':
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
-                out_qp = dot_sequences(bf_t , vg2.bfg, 'ATB')
+                out_qp = dot_sequences(bf_t, vg2.bfg, 'ATB')
 
             else:
                 geo = vg2
@@ -541,9 +538,3 @@ class NonlinScalarDotGradTerm(Term):
             fmode = 1
 
         return out_qp, geo, fmode
-
-
-
-
-
-

@@ -57,7 +57,8 @@ def get_n_el_nod(order, dim):
     :return:
     """
     return int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
-                         reduce(mul, range(1, dim + 1)))
+               reduce(mul, range(1, dim + 1)))
+
 
 class LegendrePolySpace(PolySpace):
     """
@@ -72,7 +73,6 @@ class LegendrePolySpace(PolySpace):
         """
         from toolz import map, reduce
         from operator import add, mul
-
 
         PolySpace.__init__(self, name, geometry, order)
 
@@ -99,12 +99,13 @@ class LegendrePolySpace(PolySpace):
         :param eps:
         :return:
         """
-        coors = 2 * coors - 1 # transofrm from [0, 1] to [-1, 1]
+        coors = 2 * coors - 1  # transofrm from [0, 1] to [-1, 1]
         porder = self.order + 1
         if diff:
             diff = int(diff)
-            values = nm.zeros((1,) + coors.shape[:-1] + # (1,) for dummy axis used throughout sfepy
-                              (self.dim,) * diff + # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
+            values = nm.zeros((1,) + coors.shape[:-1] +  # (1,) for dummy axis used throughout sfepy
+                              (
+                              self.dim,) * diff +  # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
                               (self.n_nod,))
             polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))
             # diff + 1 is number of values of one dimensional base
@@ -114,10 +115,10 @@ class LegendrePolySpace(PolySpace):
             for m, idx in enumerate(iter_by_order(self.order, self.dim)):
                 for d in range(self.dim):
                     values[..., d, m] = 2 * self._combine_polyvals_diff(coors, polyvals, d, idx)
-                                       #2 is due to transformation from [0,1] to [-1,1]
+                    # 2 is due to transformation from [0,1] to [-1,1]
         else:
             values = nm.zeros(coors.shape[:-1] + (1, self.n_nod,))
-                                                # 1, because no matter the dimension functions have only one value
+            # 1, because no matter the dimension functions have only one value
             polyvals = self.legendreP(coors)
             for m, idx in enumerate(iter_by_order(self.order, self.dim)):
                 values[..., 0, m] = self._combine_polyvals(coors, polyvals, idx)
@@ -195,6 +196,7 @@ class LegendrePolySpace(PolySpace):
 
     def gradlegendreP(self, coors, diff=1):
         """
+        :param diff: default 1
         :param coors: coordinates, preferably in interval [-1, 1] for which this basis is intented
         :return: values in coors of all the legendre polynomials up to self.order
         """
@@ -305,10 +307,10 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             indir = InDir(__file__)
             try:
                 self.coefM = nm.loadtxt(
-                    indir("legendre2D_tensor_coefs.txt")
+                        indir("legendre2D_tensor_coefs.txt")
                 )[:self.n_nod, :self.n_nod]
                 self.expoM = nm.loadtxt(
-                    indir("legendre2D_tensor_expos.txt")
+                        indir("legendre2D_tensor_expos.txt")
                 )[:self.n_nod, :]
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
@@ -386,10 +388,10 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             indir = InDir(__file__)
             try:
                 self.coefM = nm.loadtxt(
-                    indir("legendre2D_simplex_coefs.txt")
+                        indir("legendre2D_simplex_coefs.txt")
                 )[:self.n_nod, :self.n_nod]
                 self.expoM = nm.loadtxt(
-                    indir("legendre2D_simplex_expos.txt")
+                        indir("legendre2D_simplex_expos.txt")
                 )[:self.n_nod, :]
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_simplex_base.py to generate it.".format(e.args[0]))
@@ -444,7 +446,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 # d / dr = da / dr * d / da + db / dr * d / db = (2 / (1 - s)) d / da = (2 / (1 - b)) d / da
                 dmodedr = dfa * gb
                 dmodedr = dmodedr * ((0.5 * (1 - b)) ** (di - 1)) if di > 0 else dmodedr
-                return  2 ** di * dmodedr
+                return 2 ** di * dmodedr
 
             elif dvar == 1:  # d/ds
                 # s - derivative
@@ -491,7 +493,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 V3Ds = 0.5 * (1 + a) * V3Dr
 
                 V3Ds = V3Ds + tmp
-                return V3Ds *  (2 ** (2 * di + dj + 1))
+                return V3Ds * (2 ** (2 * di + dj + 1))
             elif dvar == 2:
                 V3Dt = 0.5 * (1 + a) * V3Dr + 0.5 * (1 + b) * tmp
                 tmp = dhc * ((0.5 * (1 - c)) ** (di + dj))
@@ -642,7 +644,8 @@ def plot_2Dsimplex_basis_grad():
 
         fig = plt.figure("{}>{} err".format(i, idx))
         ax = fig.gca(projection='3d')
-        gradnum_err = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], nm.max(nm.abs(Zgrad - Znumgrad), axis=1)[:, i], color='g')
+        gradnum_err = ax.scatter(coorsgrad[:, 0], coorsgrad[:, 1], nm.max(nm.abs(Zgrad - Znumgrad), axis=1)[:, i],
+                                 color='g')
         ax.plot([0, 0, 1, 0], [0, 1, 0, 0], 'k')
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -739,4 +742,3 @@ if __name__ == '__main__':
     # plot_2Dsimplex_basis_grad()
     # plot_2D_simplex_as_tensor()
     # plot_1D_basis()
-

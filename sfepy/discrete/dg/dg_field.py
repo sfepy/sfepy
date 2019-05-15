@@ -5,7 +5,6 @@ import numpy as nm
 from numpy.lib.stride_tricks import as_strided
 import six
 
-
 # sfepy imports
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete import Integral, FieldVariable
@@ -21,7 +20,6 @@ from sfepy.discrete.dg.dg_basis import LegendrePolySpace, LegendreSimplexPolySpa
 
 
 def get_unraveler(n_el_nod, n_cell):
-
     def unravel(u):
         ustride1 = u.strides[0]
         ur = as_strided(u, shape=(n_cell, n_el_nod, 1),
@@ -33,7 +31,6 @@ def get_unraveler(n_el_nod, n_cell):
 
 
 def get_raveler(n_el_nod, n_cell):
-
     def ravel(u):
         # ustride1 = u.strides[0]
         # ur = as_strided(u, shape=(n_el_nod*n_cell, 1),
@@ -61,6 +58,7 @@ def get_cell_facet_gel_name(cell_gel_name):
     else:
         raise ValueError('unknown geometry type! {}'.format(cell_gel_name))
 
+
 def get_gel(region):
     """
     :param region: sfepy region
@@ -75,12 +73,13 @@ def get_gel(region):
             raise ValueError('Region {} contains multiple'
                              ' reference geometries!'.format(region))
 
+
 class DGField(Field):
     family_name = 'volume_DG_legendre_discontinuous'
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base=None,  approx_order=0, integral=None):
+                 poly_space_base=None, approx_order=0, integral=None):
         """
 
          Creates DGField, with Legendre poly space and default integral corresponding to
@@ -140,7 +139,7 @@ class DGField(Field):
         self.clear_qp_base()
         self.clear_facet_qp_base()
         if integral is None:
-            self.integral = Integral("dg_fi", order=2*self.approx_order)
+            self.integral = Integral("dg_fi", order=2 * self.approx_order)
         else:
             self.integral = integral
 
@@ -157,7 +156,6 @@ class DGField(Field):
         self.clear_normals_cache()
         self.clear_facet_vols_cache()
 
-
     def _setup_all_dofs(self):
         """
         Sets up all the differet kinds of DOFs, for DG only bubble DOFs
@@ -165,8 +163,8 @@ class DGField(Field):
         """
         self.n_el_nod = self.poly_space.n_nod
         self.n_vertex_dof = 0  # in DG we will propably never need vertex DOFs
-        self.n_edge_dof = 0 # use facets DOFS for AFS methods
-        self.n_face_dof = 0 # use facet DOF for AFS methods
+        self.n_edge_dof = 0  # use facets DOFS for AFS methods
+        self.n_face_dof = 0  # use facet DOF for AFS methods
 
         (self.n_bubble_dof,
          self.bubble_remap,
@@ -307,7 +305,7 @@ class DGField(Field):
         eps = min(self.domain.cmesh.get_volumes(self.dim)) / (self.n_el_nod + 2)
         if self.dim == 1:
             extended_coors = nm.zeros(nm.shape(coors)[:-1] + (2,))
-            extended_coors[:,0] = coors[:, 0]
+            extended_coors[:, 0] = coors[:, 0]
             coors = extended_coors
         # shift centroid coors to lie within cells but be different for each dof
         # TODO for simplex meshes these coors fail to match
@@ -332,7 +330,7 @@ class DGField(Field):
             tqps[..., 0, 0] = 0.
             tqps[..., 1, 0] = 1.
         elif geo_name == "2_3":
-            tqps = nm.zeros(nm.shape(qps) + (3, 2, ))
+            tqps = nm.zeros(nm.shape(qps) + (3, 2,))
             # 0.
             tqps[..., 0, 0] = qps  # x = 0 + t
             tqps[..., 0, 1] = 0.  # y = 0
@@ -417,13 +415,13 @@ class DGField(Field):
             self.facet_qp = qps
             self.facet_whs = whs
             if derivative:
-                facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] + (self.dim,)*diff + (self.n_el_nod,))
+                facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] + (self.dim,) * diff + (self.n_el_nod,))
             else:
                 facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod,))
 
             for i in range(self.n_el_facets):
                 facet_bf[..., i, :, :] = ps.eval_base(qps[..., i, :], diff=diff,
-                                                           transform=self.basis_transform)
+                                                      transform=self.basis_transform)
             self.facet_bf[diff] = facet_bf
 
         if base_only:
@@ -494,18 +492,20 @@ class DGField(Field):
             # set neighbours of periodic cells to one another
             mcells = nm.unique(self.dofs2cells[eq_map.master])
             scells = nm.unique(self.dofs2cells[eq_map.slave])
-            mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0] # facets of mcells
-            scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0] # facets of scells
-            [1, 0] # above, first we need second axis to get axis on which facet indices are stored,
+            mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0]  # facets of mcells
+            scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0]  # facets of scells
+            [1, 0]  # above, first we need second axis to get axis on which facet indices are stored,
             # second we drop axis with neighbour local facet index, for multiple s/mcells this will have to be something like
             # 1 + 2*nm.arange(len(mcells)) - to skip double entries for -1 tags in neighbours and  neighbour local facet idx
 
             facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
-            facet_neighbours[mcells, mcells_facets, 1] = scells_facets  # set neighbour facets to facets of scell missing neighbour
+            facet_neighbours[
+                mcells, mcells_facets, 1] = scells_facets  # set neighbour facets to facets of scell missing neighbour
             # TODO how to distinguish EBC and EPBC? - we do not need to, EBC over write EPBC, we only need to fix shapes
 
             facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
-            facet_neighbours[scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
+            facet_neighbours[
+                scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
 
         # cache results
         self.facet_neighbour_index[region.name] = facet_neighbours
@@ -550,7 +550,7 @@ class DGField(Field):
         dofs = self.unravel_sol(state.data[0])
 
         n_qp = whs.shape[-1]
-        outputs_shape = (self.n_cell, self.n_el_facets) + (self.n_el_nod,)*unreduce_nod + (self.dim,) * diff + (n_qp,)
+        outputs_shape = (self.n_cell, self.n_el_facets) + (self.n_el_nod,) * unreduce_nod + (self.dim,) * diff + (n_qp,)
 
         inner_facet_vals = nm.zeros(outputs_shape)
         if unreduce_nod:
@@ -571,7 +571,6 @@ class DGField(Field):
                                                             dofs[per_facet_neighbours[:, facet_n, 0]],
                                                             outer_base_vals[:, :, facet_n])
 
-
         if state.eq_map.n_ebc > 0:
             # get cells with missing neighbours, ignore that we do not know neighbour local facet idx
             boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
@@ -581,8 +580,9 @@ class DGField(Field):
                 curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
                 for bn_facet in curr_b_cells[:, 1]:
                     outer_facet_vals[ebc_cell, bn_facet, :] = nm.einsum("d,d...->...",
-                                                                        state.eq_map.val_ebc[self.n_el_nod*ebc_ii :
-                                                                                             self.n_el_nod*(ebc_ii+1)],
+                                                                        state.eq_map.val_ebc[self.n_el_nod * ebc_ii:
+                                                                                             self.n_el_nod * (
+                                                                                                         ebc_ii + 1)],
                                                                         inner_base_vals[0, :, bn_facet])
 
         # FIXME flip outer_facet_vals moved to get_both_facet_base_vals
@@ -623,11 +623,11 @@ class DGField(Field):
         per_facet_neighbours = self.get_facet_neighbor_idx(region, state.eq_map)
         # numpy prepends shape resulting from multiple indexing before remaining shape
         if derivative:
-            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, : , 1]].swapaxes(-3, -4)
+            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-3, -4)
         else:
-            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, : , 1]].swapaxes(-2, -3)
+            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-2, -3)
 
-        return inner_facet_base_vals, outer_facet_base_vals[...,::-1], whs
+        return inner_facet_base_vals, outer_facet_base_vals[..., ::-1], whs
 
     def clear_normals_cache(self, region=None):
         if region is None:
@@ -656,7 +656,7 @@ class DGField(Field):
 
         normals = cmesh.get_facet_normals()
         if dim == 1:
-            normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0]/2))
+            normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0] / 2))
         normals_out = nm.zeros((n_cell, n_el_facets, dim))
 
         c2f = cmesh.get_conn(dim, dim - 1)
@@ -725,7 +725,7 @@ class DGField(Field):
         :return:
         """
 
-        if integration in ('volume'):
+        if integration in ('volume',):
             # from FEField.get_data_shape()
             _, weights = integral.get_qp(self.gel.name)
             n_qp = weights.shape[0]
@@ -812,6 +812,7 @@ class DGField(Field):
     def create_mapping(self, region, integral, integration, return_mapping=True):
         """
         Creates and returns mapping
+        :param return_mapping: default True
         :param region:
         :param integral:
         :param integration: 'volume' is so far only accepted option
@@ -934,7 +935,7 @@ class DGField(Field):
             # left hand, so far only orthogonal basis
             # for legendre base this can be calculated exactly
             # in 1D it is: 1 / (2 * nm.arange(self.n_el_nod) + 1)
-            lhs_diag = nm.einsum("q,q...->...",weights, base_vals_qp**2)
+            lhs_diag = nm.einsum("q,q...->...", weights, base_vals_qp ** 2)
 
             rhs_vec = nm.einsum("q,q...,iq...->i...", weights, base_vals_qp, fun(coors))
 
@@ -985,7 +986,6 @@ class DGField(Field):
             # get facet basis vals
             # get coors
             # solve for boundary cell DOFs
-
 
         return nods, vals
 
@@ -1054,7 +1054,7 @@ class DGField(Field):
 
         for i in range(self.n_el_nod):
             res["u_modal{}".format(i)] = Struct(mode="cell",
-                              data=udofs[:, i, None, None])
+                                                data=udofs[:, i, None, None])
 
         unravel = get_unraveler(self.n_el_nod, self.n_cell)
         res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
@@ -1064,4 +1064,3 @@ class DGField(Field):
         # cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
-

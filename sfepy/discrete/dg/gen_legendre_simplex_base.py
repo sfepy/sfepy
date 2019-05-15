@@ -17,10 +17,11 @@ from sfepy.discrete.dg.dg_basis import iter_by_order
 
 helps = {
     'max_order' :
-    'maximum order of polynomials [default: %(default)s]',
-    'output_dir' :
-    'output directory',
+        'maximum order of polynomials [default: %(default)s]',
+    'output_dir':
+        'output directory',
 }
+
 
 def main():
     parser = ArgumentParser(description=__doc__)
@@ -38,9 +39,7 @@ def main():
     order = options.max_order
     dim = 2
     n_el_nod = int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
-                   reduce(mul, range(1, dim+1)))  # number of DOFs per element
-
-
+                   reduce(mul, range(1, dim + 1)))  # number of DOFs per element
 
     simplexP = []
     exponentM = np.zeros((n_el_nod, 3), dtype=np.int32)
@@ -50,16 +49,16 @@ def main():
         # print(m, idx)
         exponentM[m, :dim] = idx
         pa = jacobi_P(idx[0], 0, 0, a)
-        pb = jacobi_P(idx[1], 2*idx[0] + 1, 0, b)*(1 - b)**idx[0]
+        pb = jacobi_P(idx[1], 2 * idx[0] + 1, 0, b) * (1 - b) ** idx[0]
         # print("P_{} = {}".format(m, pa*pb))
-        polrs = cancel((pa*pb).subs(b , s).subs(
-                        a, 2 * (1 + r) / (1 - s) - 1))
+        polrs = cancel((pa * pb).subs(b, s).subs(
+                a, 2 * (1 + r) / (1 - s) - 1))
         # print("P_{} = {}".format(m, polrs))
-        polxy = expand(polrs.subs(r, 2*x - 1).subs(s, 2*y - 1))
+        polxy = expand(polrs.subs(r, 2 * x - 1).subs(s, 2 * y - 1))
         # polxy = expand(polrs.subs(r, x).subs(s, y))
 
         simplexP.append(simplify(polxy))
-        exponentList.append(x**idx[0]*y**idx[1])
+        exponentList.append(x ** idx[0] * y ** idx[1])
         for j, exponent in enumerate(exponentList):
             coefM[m, j] = simplexP[m].as_coefficients_dict()[exponent]
         print("P_{}{} = {}".format(m, idx, simplexP[m]))
@@ -68,6 +67,7 @@ def main():
     np.savetxt(indir("legendre2D_simplex_expos.txt"), exponentM, fmt="%d")
     # TODO are coefs always integers?
     np.savetxt(indir("legendre2D_simplex_coefs.txt"), coefM, fmt="%d")
+
 
 if __name__ == '__main__':
     main()
