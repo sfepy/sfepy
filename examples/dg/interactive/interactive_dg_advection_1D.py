@@ -15,29 +15,23 @@ from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
-
-from sfepy.terms.terms_navier_stokes import DivGradTerm
-from sfepy.terms.terms_diffusion import LaplaceTerm
 from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
+from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
-
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
-
-#vvvvvvvvvvvvvvvv#
-approx_order = 2
-CFL = .8
-#^^^^^^^^^^^^^^^^#
+# vvvvvvvvvvvvvvvv#
+approx_order = 0
+# ^^^^^^^^^^^^^^^^#
 # Setup  names
 domain_name = "domain_1D"
 problem_name = "iadv_1D"
@@ -47,9 +41,9 @@ mesh_output_folder = "output/mesh"
 save_timestn = 100
 clear_folder(pjoin(output_folder, "*" + output_format))
 
-#------------
-#| Get mesh |
-#------------
+# ------------
+# | Get mesh |
+# ------------
 X1 = 0.
 XN = 1.
 n_nod = 100
@@ -61,26 +55,24 @@ descs = ['1_2']
 mesh = Mesh.from_data('uniform_1D{}'.format(n_nod), coors, None,
                       [conn], [mat_ids], descs)
 
-
-#-----------------------------
-#| Create problem components |
-#-----------------------------
+# -----------------------------
+# | Create problem components |
+# -----------------------------
 
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain(domain_name, mesh)
 omega = domain.create_region('Omega', 'all')
 left = domain.create_region('Gamma1',
-                              'vertices in x == %.10f' % X1,
-                              'vertex')
+                            'vertices in x == %.10f' % X1,
+                            'vertex')
 right = domain.create_region('Gamma2',
-                              'vertices in x == %.10f' % XN,
-                              'vertex')
+                             'vertices in x == %.10f' % XN,
+                             'vertex')
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
 u = FieldVariable('u', 'unknown', field, history=1)
 v = FieldVariable('v', 'test', field, primary_var_name='u')
-
 
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
                              integral, omega, u=u, v=v)
@@ -88,94 +80,76 @@ MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
 velo = 1.0
 a = Material('a', val=[velo])
 StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", integral, omega,
-                                    u=u, v=v, a=a)
+                                  u=u, v=v, a=a)
 
 alpha = Material('alpha', val=[.0])
-AdvFluxT = AdvectDGFluxTerm("adv_lf_flux(alpha.val, a.val, v, u)", "a.val, v, u[-1]",
-                            integral, omega, u=u, v=v, a=a, alpha=alpha)
+FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
+                         integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-diffusion_tensor = .02
-D = Material('D', val=[diffusion_tensor])
-DivGrad = LaplaceTerm("diff_lap(D.val, v, u)", "D.val, v, u[-1]",
-                      integral, omega, u=u, v=v, D=D)
-
-DiffFluxT = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)", "D.val, v,  u[-1]",
-                                integral, omega, u=u, v=v, D=D)
-Cw = Material("Cw", values={".val": 10})
-DiffPen = DiffusionInteriorPenaltyTerm("diff_pen(Cw.val, v, u)", "Cw.val, v, u[-1]",
-                                       integral, omega, u=u, v=v, Cw=Cw)
-
-
-eq = Equation('balance', MassT
-              # + StiffT - AdvFluxT
-              -(+ DivGrad - DiffFluxT
-              + diffusion_tensor * DiffPen)
-              )
+eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])
 
+# ------------------------------
+# | Create bounrady conditions |
+# ------------------------------
+left_fix_u = EssentialBC('left_fix_u', left, {'u.all': 1.0})
+right_fix_u = EssentialBC('right_fix_u', right, {'u.all': 0.0})
 
-#------------------------------
-#| Create bounrady conditions |
-#------------------------------
-left_fix_u = EssentialBC('left_fix_u', left, {'u.all' : 1.0})
-right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
 
-#----------------------------
-#| Create initial condition |
-#----------------------------
+# ----------------------------
+# | Create initial condition |
+# ----------------------------
 def ic_wrap(x, ic=None):
-    return ghump(x - .5)
+    return ghump(x - .3)
 
 
 ic_fun = Function('ic_fun', ic_wrap)
 ics = InitialCondition('ic', omega, {'u.0': ic_fun})
 
-
-#------------------
-#| Create problem |
-#------------------
+# ------------------
+# | Create problem |
+# ------------------
 pb = Problem(problem_name, equations=eqs, conf=Struct(options={"save_times": save_timestn}, ics={},
-                                                     ebcs={}, epbcs={}, lcbcs={}, materials={}),
+                                                      ebcs={}, epbcs={}, lcbcs={}, materials={}),
              active_only=False)
 pb.setup_output(output_dir=output_folder, output_format=output_format)
 pb.set_ics(Conditions([ics]))
 
-
-#------------------
-#| Create limiter |
-#------------------
+# ------------------
+# | Create limiter |
+# ------------------
 limiter = IdentityLimiter
 
-#---------------------------
-#| Set time discretization |
-#---------------------------
+# ---------------------------
+# | Set time discretization |
+# ---------------------------
+CFL = .4
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = 1.
+t1 = 1
 dx = nm.min(mesh.cmesh.get_volumes(1))
-dt = dx / max_velo * CFL/(2*approx_order + 1)
+dt = dx / max_velo * CFL / (2 * approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
 
-#------------------
-#| Create solver |
-#------------------
+# ------------------
+# | Create solver |
+# ------------------
 ls = ScipyDirect({})
 nls_status = IndexedStruct()
 nls = Newton({'is_linear': True}, lin_solver=ls, status=nls_status)
 
-tss_conf = {'t0': t0,
-            't1': t1,
-            'n_step': tn,
+tss_conf = {'t0'     : t0,
+            't1'     : t1,
+            'n_step' : tn,
             "limiter": limiter}
 
 tss = EulerStepSolver(tss_conf,
-                         nls=nls, context=pb, verbose=True)
+                      nls=nls, context=pb, verbose=True)
 
-
-#---------
-#| Solve |
-#---------
+# ---------
+# | Solve |
+# ---------
 print("Solving equation \n\n\t\t u_t - div(au)) = 0\n")
 print("With IC: {}".format(ic_fun.name))
 # print("and EBCs: {}".format(pb.ebcs.names))
@@ -184,7 +158,7 @@ print("-------------------------------------")
 print("Approximation order is {}".format(approx_order))
 print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
 print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
-print("CFL coefficient was {0} and order correction {1}".format(CFL, 1/(2*approx_order + 1)))
+print("CFL coefficient was {0} and order correction {1}".format(CFL, 1 / (2 * approx_order + 1)))
 print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
 print("------------------------------------------")
 print("Time stepping solver is {}".format(tss.name))
@@ -194,10 +168,9 @@ print("======================================")
 pb.set_solver(tss)
 state_end = pb.solve()
 
-
-#----------
-#| Plot 1D|
-#----------
+# ----------
+# | Plot 1D|
+# ----------
 # lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
 # plot1D_DG_sol(lmesh, t0, t1, u, tn=30, ic=ic_wrap,
 #               delay=100, polar=False)
