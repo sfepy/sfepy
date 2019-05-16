@@ -778,6 +778,8 @@ class MUMPSSolver(LinearSolver):
     _parameters = [
         ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
+        ('memory_relaxation', 'int', 20, False,
+         'The percentage increase in the estimated working space.'),
     ]
 
     def __init__(self, conf, **kwargs):
@@ -809,8 +811,10 @@ class MUMPSSolver(LinearSolver):
             system = 'complex' if mtx.dtype.name.startswith('complex')\
                 else 'real'
             is_sym = self.mumps.coo_is_symmetric(mtx)
+            mem_relax = self.conf.memory_relaxation
             self.mumps_ls = self.mumps.MumpsSolver(system=system,
-                                                   is_sym=is_sym)
+                                                   is_sym=is_sym,
+                                                   mem_relax=mem_relax)
 
         if is_new:
             if self.conf.verbose:
