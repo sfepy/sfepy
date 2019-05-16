@@ -161,12 +161,30 @@ def get_correctors_from_file_hdf5(coefs_filename='coefs.h5',
             h5name, corr_name = val, op.split(val)[-1]
 
         io = HDF5MeshIO(h5name + '.h5')
-        data = io.read_data(0)
-        dkeys = list(data.keys())
-        corr = {}
-        for dk in dkeys:
-            corr[dk] = data[dk].data.reshape(data[dk].shape)
+        try:
+            ts = io.read_time_stepper()
+        except ValueError:
+            ts = None
 
-        out[corr_name] = corr
+        if ts is None:
+            data = io.read_data(0)
+            dkeys = list(data.keys())
+            corr = {}
+            for dk in dkeys:
+                corr[dk] = data[dk].data.reshape(data[dk].shape)
+
+            out[corr_name] = corr
+        else:
+            n_step = ts[3]
+            out[corr_name] = []
+            for step in range(n_step):
+                data = io.read_data(step)
+                dkeys = list(data.keys())
+                corr = {}
+                for dk in dkeys:
+                    corr[dk] = data[dk].data.reshape(data[dk].shape)
+
+                out[corr_name].append(corr)
+            out[corr_name + '_ts'] = ts
 
     return out
