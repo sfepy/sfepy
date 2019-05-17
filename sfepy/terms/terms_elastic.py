@@ -275,11 +275,11 @@ class LinearElasticETHTerm(ETHTerm):
 
 class LinearPrestressTerm(Term):
     r"""
-    Linear prestress term, with the prestress :math:`\sigma_{ij}` given in
-    the usual vector form exploiting symmetry: in 3D it has 6 components
+    Linear prestress term, with the prestress :math:`\sigma_{ij}` given either
+    in the usual vector form exploiting symmetry: in 3D it has 6 components
     with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
-    3 components with the indices ordered as :math:`[11, 22, 12]`. Can be
-    evaluated.
+    3 components with the indices ordered as :math:`[11, 22, 12]`, or in the
+    matrix (possibly non-symmetric) form. Can be evaluated.
 
     :Definition:
 
@@ -297,19 +297,31 @@ class LinearPrestressTerm(Term):
     name = 'dw_lin_prestress'
     arg_types = (('material', 'virtual'),
                  ('material', 'parameter'))
-    arg_shapes = {'material' : 'S, 1', 'virtual' : ('D', None),
-                  'parameter' : 'D'}
+    arg_shapes = [{'material' : 'S, 1', 'virtual' : ('D', None),
+                  'parameter' : 'D'},
+                  {'material' : 'D, D'}]
     modes = ('weak', 'eval')
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(virtual)
 
+        sh = mat.shape
+        is_nonsym = sh[2] == sh[3] == vg.dim and not(vg.dim == 1)
+
+        if is_nonsym:
+            mat = mat.reshape(sh[:2] + (vg.dim**2, 1))
+
         if mode == 'weak':
             return mat, vg
 
         else:
-            strain = self.get(virtual, 'cauchy_strain')
+            if is_nonsym:
+                strain = self.get(virtual, 'grad').transpose((0,1,3,2))
+                nel, nqp, nr, nc = strain.shape
+                strain = strain.reshape((nel, nqp, nr*nc, 1))
+            else:
+                strain = self.get(virtual, 'cauchy_strain')
 
             fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
             return strain, mat, vg, fmode
