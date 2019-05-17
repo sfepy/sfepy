@@ -155,6 +155,8 @@ class DGField(Field):
         self.clear_facet_neighbour_idx_cache()
         self.clear_normals_cache()
         self.clear_facet_vols_cache()
+        self.boundary_facet_local_idx = {}
+
 
     def _setup_all_dofs(self):
         """
@@ -447,7 +449,7 @@ class DGField(Field):
         plugs correct neighbours for cell on periodic boundary. Where there are no neighbours
         specified puts -1.
 
-        Cashes neighbour index in self.facet_neighbours!
+        Cashes neighbour index in self.facet_neighbours
 
         :param region:
         :param eq_map: eq_map from state variable containing information on EPBC
@@ -782,8 +784,7 @@ class DGField(Field):
         """
         Return indices of DOFs that belong to the given region and group.
 
-        NOT really tested, called only with the region being the "main" region
-        of the problem, i.e. self.region
+        Used in BC treatement
 
         :param region:
         :param merge: merge dof tuple into one numpy array
@@ -791,8 +792,7 @@ class DGField(Field):
         """
 
         dofs = []
-        eldofs = nm.empty((0,), dtype=nm.int32)
-        if region.has_cells():
+        if region.has_cells():  # main region or its part
             els = nm.ravel(self.bubble_remap[region.cells])
             eldofs = self.bubble_dofs[els[els >= 0]]
             dofs.append(eldofs)
@@ -808,6 +808,25 @@ class DGField(Field):
             dofs = nm.concatenate(dofs)
 
         return dofs
+
+    def get_facet_boundary_index(self, region):
+        """
+
+        Caches results in self.boundary_facet_local_idx
+
+        :param region: surface region defining BCs
+        :return: index of cells on boundary along with corresponding facets
+        """
+
+        if region.name in self.boundary_facet_local_idx:
+            return self.boundary_facet_local_idx[region.name]
+
+        bc2bfi = region.get_facet_indices()
+        self.boundary_facet_local_idx[region.name] = bc2bfi
+
+        return bc2bfi
+
+
 
     def create_mapping(self, region, integral, integration, return_mapping=True):
         """

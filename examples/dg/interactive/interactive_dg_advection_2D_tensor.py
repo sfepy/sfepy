@@ -29,6 +29,7 @@ from sfepy.discrete.dg.dg_tssolver \
     import EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
+from sfepy.discrete.dg.dg_conditions import DGEssentialBC, DGPeriodicBC
 
 from sfepy.discrete.dg.my_utils.inits_consts \
     import left_par_q, gsmooth, const_u, ghump, superic
@@ -140,7 +141,7 @@ pb.functions = {'match_x_line': Function("match_x_line", match_x_line),
 pb.set_ics(Conditions([ics]))
 pb.set_bcs(
         # ebcs=Conditions([dirichlet_bc_u]),
-        epbcs=Conditions([  # periodic1_bc_u,
+        epbcs=Conditions([ #periodic1_bc_u,
             periodic2_bc_u
         ]))
 
