@@ -61,7 +61,7 @@ angle = - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
 velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
-velo = nm.array([[-1., 0.]]).T
+velo = nm.array([[-1., -1.]]).T
 max_velo = nm.max(nm.linalg.norm(velo))
 
 # -----------------------------
@@ -110,9 +110,9 @@ eqs = Equations([eq])
 # ------------------------------
 # | Create bounrady conditions |
 # ------------------------------
-dirichlet_bc_u = EssentialBC('left_fix_u', left, {'u.all': 1.0})
-periodic1_bc_u = PeriodicBC('top_bot', [top, bottom], {'u.all': 'u.all'}, match='match_x_line')
-periodic2_bc_u = PeriodicBC('left_right', [right, left], {'u.all': 'u.all'}, match='match_y_line')
+dirichlet_bc_u = DGEssentialBC('left_fix_u', left, {'u.all': 1.0})
+periodic1_bc_u = DGPeriodicBC('top_bot', [top, bottom], {'u.all': 'u.all'}, match='match_x_line')
+periodic2_bc_u = DGPeriodicBC('left_right', [right, left], {'u.all': 'u.all'}, match='match_y_line')
 
 
 # right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})
@@ -141,9 +141,11 @@ pb.functions = {'match_x_line': Function("match_x_line", match_x_line),
 pb.set_ics(Conditions([ics]))
 pb.set_bcs(
         # ebcs=Conditions([dirichlet_bc_u]),
-        epbcs=Conditions([ #periodic1_bc_u,
+        epbcs=Conditions([
+            periodic1_bc_u,
             periodic2_bc_u
-        ]))
+        ])
+    )
 
 # ------------------
 # | Create limiter |

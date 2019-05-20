@@ -489,7 +489,7 @@ class DGField(Field):
                         nbrs.append(fis[of1])
             facet_neighbours[ic, :, :] = nbrs
 
-        # treat EPBCs
+        # treat classical FEM EPBCs - we need to correct neighbours
         if eq_map.n_epbc > 0:
             # set neighbours of periodic cells to one another
             mcells = nm.unique(self.dofs2cells[eq_map.master])
@@ -509,7 +509,17 @@ class DGField(Field):
             facet_neighbours[
                 scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
 
-        # cache results
+        # treat DG EPBC - these are definetly prefered
+        for master_bc2bfi, slave_bc2bfi in eq_map.dg_epbc:
+            # set neighbours of periodic cells to one another
+            facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 0] = slave_bc2bfi[:, 0]
+            facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 0] = master_bc2bfi[:, 0]
+
+            # set neigbours facets
+            facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 1] = master_bc2bfi[:, 1]
+            facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 1] = slave_bc2bfi[:, 1]
+
+            # cache results
         self.facet_neighbour_index[region.name] = facet_neighbours
 
         return facet_neighbours
@@ -573,21 +583,14 @@ class DGField(Field):
                                                             dofs[per_facet_neighbours[:, facet_n, 0]],
                                                             outer_base_vals[:, :, facet_n])
 
-        if state.eq_map.n_ebc > 0:
-            # get cells with missing neighbours, ignore that we do not know neighbour local facet idx
-            boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
-            ebc_cells = self.dofs2cells[state.eq_map.eq_ebc][::self.n_el_nod]
+        boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
+        # TODO check and print boundary cells without defined BCs
+        for ebc, ebc_vals in zip(state.eq_map.dg_ebc, state.eq_map.dg_ebc_val):
+            outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = nm.einsum("id,id...->i...",
+                                                                  ebc_vals,
+                                                                  inner_base_vals[0, :, ebc[:, 1]])
 
-            for ebc_ii, ebc_cell in enumerate(ebc_cells):
-                curr_b_cells = boundary_cells[boundary_cells[:, 0] == ebc_cell]
-                for bn_facet in curr_b_cells[:, 1]:
-                    outer_facet_vals[ebc_cell, bn_facet, :] = nm.einsum("d,d...->...",
-                                                                        state.eq_map.val_ebc[self.n_el_nod * ebc_ii:
-                                                                                             self.n_el_nod * (
-                                                                                                         ebc_ii + 1)],
-                                                                        inner_base_vals[0, :, bn_facet])
-
-        # FIXME flip outer_facet_vals moved to get_both_facet_base_vals
+        # flip outer_facet_vals moved to get_both_facet_base_vals
         return inner_facet_vals, outer_facet_vals, whs
 
     def get_both_facet_base_vals(self, state, region, derivative=None):
