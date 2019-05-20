@@ -340,13 +340,16 @@ int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
 int32 dw_lin_prestress( FMField *out, FMField *stress, Mapping *vg )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
-  FMField *res = 0;
+  FMField *res = 0, *ng = 0;
 
   nQP = vg->bfGM->nLev;
   nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
 
   fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
+  if ((stress->nRow == (dim * dim)) && (dim != 1)) {
+    fmf_createAlloc(&ng, 1, nQP, dim * dim, nEP * dim);
+  }
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
@@ -354,13 +357,19 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, Mapping *vg )
       FMF_SetCell( vg->det, ii );
       FMF_SetCell( stress, ii );
 
-      form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
+      if ((stress->nRow == (dim * dim)) && (dim != 1)) {
+        build_nonsym_grad(ng, vg->bfGM);
+        fmf_mulATB_nn(res, ng, stress);
+      } else {
+        form_sdcc_actOpGT_VS3(res, vg->bfGM, stress);
+      }
       fmf_sumLevelsMulF( out, res, vg->det->val );
       ERR_CheckGo( ret );
     }
 
  end_label:
     fmf_freeDestroy( &res );
+    fmf_freeDestroy(&ng);
 
   return( ret );
 }
@@ -507,71 +516,6 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
   fmf_freeDestroy( &disG );
 
   return( ret );
-}
-
-#undef __FUNC__
-#define __FUNC__ "build_nonsym_grad"
-int32 build_nonsym_grad(FMField *out, FMField *gc)
-{
-  int32 iqp, ic, dim, idim, nEP, nQP;
-  float64 *pout1, *pout2, *pout3, *pg;
-
-  nEP = gc->nCol;
-  nQP = gc->nLev;
-  dim = gc->nRow;
-
-#ifdef DEBUG_FMF
-  if ((out->nCol != (dim * nEP))
-      || (out->nRow != (dim * dim)) || (out->nLev != gc->nLev)) {
-    errput( ErrHead "ERR_BadMatch: (%d %d %d), (%d %d %d)\n",
-	    out->nLev, out->nRow, out->nCol,
-	    gc->nLev, gc->nRow, gc->nCol );
-  }
-#endif
-
-  fmf_fillC(out, 0.0);
-  switch (dim) {
-  case 2:
-    for (iqp = 0; iqp < nQP; iqp++) {
-      pg = FMF_PtrLevel(gc, iqp);
-      pout1 = FMF_PtrLevel(out, iqp);
-      pout2 = pout1 + 5 * nEP;
-      for (idim = 0; idim < dim; idim++) {
-        for (ic = 0; ic < nEP; ic++) {
-          pout1[ic] = pg[ic];
-	  pout2[ic] = pg[ic];
-        } /* for (ic) */
-	pout1 += 2 * nEP;
-	pout2 += 2 * nEP;
-	pg += nEP;
-      } /* for (idim) */
-    } /* for (iqp) */
-    break;
-  case 3:
-    for (iqp = 0; iqp < nQP; iqp++) {
-      pg = FMF_PtrLevel(gc, iqp);
-      pout1 = FMF_PtrLevel(out, iqp);
-      pout2 = pout1 + 10 * nEP;
-      pout3 = pout2 + 10 * nEP;
-      for (idim = 0; idim < dim; idim++) {
-        for (ic = 0; ic < nEP; ic++) {
-          pout1[ic] = pg[ic];
-          pout2[ic] = pg[ic];
-          pout3[ic] = pg[ic];
-	} /* for (ic) */
-	pout1 += 3 * nEP;
-	pout2 += 3 * nEP;
-	pout3 += 3 * nEP;
-	pg += nEP;
-      } /* for (idim) */
-    } /* for (iqp) */
-    break;
-  default:
-    errput( ErrHead "ERR_Switch\n" );
-    return( RET_Fail );
-  }
-
-  return(RET_OK);
 }
 
 #undef __FUNC__
