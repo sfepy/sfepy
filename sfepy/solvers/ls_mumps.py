@@ -224,7 +224,7 @@ class MumpsSolver(object):
     """MUMPS object."""
 
     def __init__(self, is_sym=False, mpi_comm=None,
-                 system='real', silent=True):
+                 system='real', silent=True, mem_relax=20):
         """
         Init MUMUPS solver.
 
@@ -238,6 +238,8 @@ class MumpsSolver(object):
             Use real or complex linear solver.
         silent : bool
             If True, no MUMPS error, warning, and diagnostic messages.
+        mem_relax : int
+            The percentage increase in the estimated working space.
         """
         self.struct = None
 
@@ -300,6 +302,8 @@ class MumpsSolver(object):
         # be silent
         if silent:
             self.set_silent()
+
+        self.struct.icntl[13] = mem_relax
 
     def set_silent(self):
         self.struct.icntl[0] = -1  # suppress error messages
