@@ -157,7 +157,6 @@ class DGField(Field):
         self.clear_facet_vols_cache()
         self.boundary_facet_local_idx = {}
 
-
     def _setup_all_dofs(self):
         """
         Sets up all the differet kinds of DOFs, for DG only bubble DOFs
@@ -368,8 +367,8 @@ class DGField(Field):
 
     def get_facet_qp(self):
         """
-        Returns dim - 1 quadrature points on all facets of the reference element in array of shape
-        (n_qp, n_el_facets, dim)
+        Returns quadrature points on all facets of the reference element in array of shape
+        (n_qp, 1 , n_el_facets, dim)
         :return: qp, weights - need to be transformed to actual facets!
         """
 
@@ -632,6 +631,7 @@ class DGField(Field):
         else:
             outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-2, -3)
 
+        # FIXME quick fix to flip facte QPs for right integration order
         return inner_facet_base_vals, outer_facet_base_vals[..., ::-1], whs
 
     def clear_normals_cache(self, region=None):
@@ -829,8 +829,6 @@ class DGField(Field):
 
         return bc2bfi
 
-
-
     def create_mapping(self, region, integral, integration, return_mapping=True):
         """
         Creates and returns mapping
@@ -975,9 +973,9 @@ class DGField(Field):
 
     def set_facet_dofs(self, fun, region, dpn, warn):
         """
-        Compute projection of fun onto the basis, in main region, alternatively
+        Compute projection of fun onto the basis on facets, alternatively
         set DOFs directly to provided value or values
-        :param fun: callable, scallar or array corresponding to dofs
+        :param fun: callable, scalar or array corresponding to dofs
         :param region: region to set DOFs on
         :param dpn: number of dofs per element
         :param warn: not used
@@ -1001,13 +999,30 @@ class DGField(Field):
             vals = nm.zeros(aux.shape)
             # set zero DOF to value fun, set other DOFs to zero
             # FIXME only temporary to test BCs
-            vals[:, 0] = fun(1)
-
             # get facets QPs
-            # get facets weights
-            # get facet basis vals
+            qp, weights = self.get_facet_qp()
+            weights = weights[0, :, 0]
+            qp = qp[:, 0, :, :]
+            # get facets weights ?
+
+
             # get coors
+            bc2bfi = self.get_facet_boundary_index(region)
+            coors = self.mapping.get_physical_qps(qp)
+
+            # get_physical_qps returns data in strange format, swapping some axis and flipping qps order
+            bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
+
+            # get facet basis vals
+            base_vals_qp = self.poly_space.eval_base(qp)[:, 0, 0, :]
+
             # solve for boundary cell DOFs
+            bc_val = fun(bcoors)
+            # TODO this returns singular matrix - drop dofs that are not needed on facet?
+            # or use nodal values approach?
+            lhs = nm.einsum("q,qd,qc->dc", weights, base_vals_qp, base_vals_qp)
+            inv_lhs = nm.linalg.inv(lhs)
+            rhs_vec = nm.einsum("q,q...,iq...->i...", weights, base_vals_qp, bc_val)
 
         return nods, vals
 
