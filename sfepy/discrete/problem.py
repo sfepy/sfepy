@@ -717,8 +717,8 @@ class Problem(Struct):
     def create_state(self):
         return State(self.equations.variables)
 
-    def get_mesh_coors(self):
-        return self.domain.get_mesh_coors()
+    def get_mesh_coors(self, actual=False):
+        return self.domain.get_mesh_coors(actual=actual)
 
     def set_mesh_coors(self, coors, update_fields=False, actual=False,
                        clear_all=True, extra_dofs=False):
