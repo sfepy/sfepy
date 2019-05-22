@@ -1012,7 +1012,15 @@ class CoefOne(MiniAppBase):
 
     def set_variables_default(variables, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].set_data(data[req].state[comp])
+            if type(req) is tuple:
+                val = data[req[0]].state[comp]
+                for ii in req[1:]:
+                    val += data[ii].state[comp]
+
+            else:
+                val = data[req].state[comp]
+
+            variables[var].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
