@@ -811,7 +811,8 @@ class VTKMeshIO(MeshIO):
                      or ((nr == dim) and (nc == dim)):
                 fd.write('\nTENSORS %s float\n' % key)
                 data = val.data[:, 0, ...]
-                data.shape = (data.shape[0], -1)
+                if data.shape[-1] == 1:
+                    data.shape = (data.shape[0], -1)
                 aux = _reshape_tensors(data, dim, sym, nr)
                 _write_tensors(aux)
 
