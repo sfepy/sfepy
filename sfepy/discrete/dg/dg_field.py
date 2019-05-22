@@ -583,11 +583,17 @@ class DGField(Field):
                                                             outer_base_vals[:, :, facet_n])
 
         boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
+        outer_facet_vals[boundary_cells[:, 0], boundary_cells[:, 1]] = 0.0
         # TODO check and print boundary cells without defined BCs
         for ebc, ebc_vals in zip(state.eq_map.dg_ebc, state.eq_map.dg_ebc_val):
-            outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = nm.einsum("id,id...->i...",
-                                                                  ebc_vals,
-                                                                  inner_base_vals[0, :, ebc[:, 1]])
+            if unreduce_nod:
+                raise NotImplementedError("Unreduced DOFs are not available for boundary outer facets")
+                outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = nm.einsum("id,id...->id...",
+                                                                      ebc_vals,
+                                                                      inner_base_vals[0, :, ebc[:, 1]])
+
+            else:
+                outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = ebc_vals[ebc[:, 0],:]
 
         # flip outer_facet_vals moved to get_both_facet_base_vals
         return inner_facet_vals, outer_facet_vals, whs
@@ -981,6 +987,8 @@ class DGField(Field):
         :param warn: not used
         :return: nods, vals
         """
+        raise NotImplementedError("Setting facet DOFs is not supported with DGField, "+
+                                  "use values at qp directly")
 
         aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
@@ -1018,13 +1026,59 @@ class DGField(Field):
 
             # solve for boundary cell DOFs
             bc_val = fun(bcoors)
-            # TODO this returns singular matrix - drop dofs that are not needed on facet?
-            # or use nodal values approach?
-            lhs = nm.einsum("q,qd,qc->dc", weights, base_vals_qp, base_vals_qp)
-            inv_lhs = nm.linalg.inv(lhs)
-            rhs_vec = nm.einsum("q,q...,iq...->i...", weights, base_vals_qp, bc_val)
+            # # TODO this returns singular matrix - drop dofs that are not needed on facet?
+            # # or use nodal values approach?
+            # lhs = nm.einsum("q,qd,qc->dc", weights, base_vals_qp, base_vals_qp)
+            # inv_lhs = nm.linalg.inv(lhs)
+            # rhs_vec = nm.einsum("q,q...,iq...->i...", weights, base_vals_qp, bc_val)
 
         return nods, vals
+
+    def get_qp_values(self, fun, region, ret_coors=False):
+        """
+
+        :param fun: Function value or values to set qps values to
+        :param region:
+        :param ret_coors: dafault False, return physical coors of qps
+        :return: vals.shape == (n_el, n_qp)
+        """
+        if region.has_cells():
+            raise NotImplementedError("We do not need values of function in main regions qps")
+
+        # get facets QPs
+        qp, weights = self.get_facet_qp()
+        weights = weights[0, :, 0]
+        qp = qp[:, 0, :, :]
+        # get facets weights ?
+
+        # get physical coors
+        bc2bfi = self.get_facet_boundary_index(region)
+        coors = self.mapping.get_physical_qps(qp)
+
+        # get_physical_qps returns data in strange format,
+        # swapping some axis and flipping qps order
+        # to get qps only in current region
+        bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
+        vals = nm.zeros(bcoors.shape[:-1])  # we do not need last axis of coors, values are scalars
+
+        if nm.isscalar(fun):
+            vals[:] = fun
+
+        elif isinstance(fun, nm.ndarray):
+            if nm.shape(fun) == nm.shape(vals):
+                vals[:] = fun
+            else:
+                raise ValueError("Shape of provided values {} does not match shape {} of qps in region {}".format(
+                    fun.shape, vals.shape, region.name
+                ))
+
+        elif callable(fun):
+            # get boundary values
+            vals[:] = fun(bcoors)
+
+        if ret_coors:
+            return bcoors, vals
+        return vals
 
     def get_nodal_values(self, dofs, region, ref_nodes=None):
         """

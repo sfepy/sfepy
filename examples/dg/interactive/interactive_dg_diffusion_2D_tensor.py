@@ -24,12 +24,16 @@ from sfepy.discrete.variables import DGFieldVariable
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
 from terms.terms_diffusion import LaplaceTerm
 
+
+
 # local imports
 from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 from sfepy.discrete.dg.dg_tssolver \
     import EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
+from sfepy.discrete.dg.dg_conditions import DGEssentialBC, DGPeriodicBC
+
 
 from sfepy.discrete.dg.my_utils.inits_consts \
     import left_par_q, gsmooth, const_u, ghump, superic
@@ -126,9 +130,9 @@ eqs = Equations([eq])
 # ------------------------------
 # | Create bounrady conditions |
 # ------------------------------
-dirichlet_bc_u = EssentialBC('left_fix_u', left, {'u.all': 1.0})
-periodic1_bc_u = PeriodicBC('top_bot', [top, bottom], {'u.all': 'u.all'}, match='match_x_line')
-periodic2_bc_u = PeriodicBC('left_right', [left, right], {'u.all': 'u.all'}, match='match_y_line')
+dirichlet_bc_u = DGEssentialBC('left_fix_u', left, {'u.all': 1.0})
+periodic1_bc_u = DGPeriodicBC('top_bot', [top, bottom], {'u.all': 'u.all'}, match='match_x_line')
+periodic2_bc_u = DGPeriodicBC('left_right', [left, right], {'u.all': 'u.all'}, match='match_y_line')
 
 
 # right_fix_u = EssentialBC('right_fix_u', right, {'u.all' : 0.0})

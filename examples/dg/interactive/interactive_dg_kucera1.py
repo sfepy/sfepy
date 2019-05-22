@@ -129,7 +129,8 @@ eqs = Equations([eq])
 # | Create bounrady conditions |
 # ------------------------------
 def bcfun_left(ts, coors, bc, problem):
-    return -(nm.exp(-ts.dt) - 1)*nm.sin(4*coors[..., 1])
+    return 2*coors[..., 1]
+    # return -(nm.exp(-ts.dt) - 1)*nm.sin(4*coors[..., 1])
 
 bcFun_left = Function('bcfun_left', bcfun_left)
 

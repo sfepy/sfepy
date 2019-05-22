@@ -61,7 +61,7 @@ angle = - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
 velo = -nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
-velo = nm.array([[-1., -1.]]).T
+velo = nm.array([[1., 1.]]).T
 max_velo = nm.max(nm.linalg.norm(velo))
 
 # -----------------------------
@@ -139,13 +139,13 @@ pb.setup_output(output_dir=output_folder, output_format=output_format)
 pb.functions = {'match_x_line': Function("match_x_line", match_x_line),
                 'match_y_line': Function("match_y_line", match_y_line)}
 pb.set_ics(Conditions([ics]))
-pb.set_bcs(
-        # ebcs=Conditions([dirichlet_bc_u]),
-        epbcs=Conditions([
-            periodic1_bc_u,
-            periodic2_bc_u
-        ])
-    )
+# pb.set_bcs(
+#         # ebcs=Conditions([dirichlet_bc_u]),
+#         epbcs=Conditions([
+#             periodic1_bc_u,
+#             periodic2_bc_u
+#         ])
+#     )
 
 # ------------------
 # | Create limiter |
