@@ -20,6 +20,7 @@ class Functions(Container):
         return obj
     from_conf = staticmethod(from_conf)
 
+
 class Function(Struct):
     """Base class for user-defined functions."""
 
@@ -41,6 +42,30 @@ class Function(Struct):
 
     def set_extra_args(self, **extra_args):
         self.extra_args = extra_args
+
+def Functionize(fun_or_name=None):
+    """
+    Convenience decorator to quickly create
+    sfepy.discrete.functions.Function objects
+
+    Can be used directly without parameter.
+
+    :param fun_or_name: name saved within Function object, if None name of decorated function is used
+    :return:
+    """
+    if callable(fun_or_name):
+        return Function(fun_or_name.__name__, fun_or_name)
+
+    def functionizer(fun):
+        """
+        Internal decorator
+        :param fun: callable to be converted to sfepy.siscrete.functions.Function
+        :return: sfepy.siscrete.functions.Function object
+        """
+        if fun_or_name is not None:
+            return Function(fun_or_name, fun)
+        return Function(fun.__name__, fun)
+    return functionizer
 
 class ConstantFunction(Function):
     """Function with constant values."""
