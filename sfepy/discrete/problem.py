@@ -317,12 +317,6 @@ class Problem(Struct):
                     hook = self.conf.get_function(hook)
                     setattr(self, hook_name, hook)
 
-        iter_hook = self.nls_iter_hook
-        if iter_hook is not None:
-            self.nls_iter_hook = lambda *args, **kwargs: \
-                                 iter_hook(self, *args, **kwargs)
-
-
     def copy(self, name=None):
         """
         Make a copy of Problem.

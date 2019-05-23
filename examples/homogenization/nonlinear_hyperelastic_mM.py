@@ -100,23 +100,9 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
 
     return out
 
+
 def ulf_iteration_hook(pb, nls, vec, it, err, err0):
-    vec = pb.equations.make_full_vec(vec)
-    pb.equations.set_variables_from_state(vec)
-
-    update_var = pb.conf.options.mesh_update_variables[0]
-    state_u = pb.equations.variables[update_var]
-
-    nods = state_u.field.get_dofs_in_region(state_u.field.region, merge=True)
-    coors = pb.domain.get_mesh_coors().copy()  # ???????!!!!!
-    coors[nods, :] += state_u().reshape(len(nods), state_u.n_components)
-
-    if len(state_u.field.mappings0) == 0:
-        state_u.field.save_mappings()
-
-    state_u.field.clear_mappings()
-    pb.set_mesh_coors(coors, update_fields=False, actual=True,
-                      clear_all=False)
+    Evaluator.new_ulf_iteration(pb, nls, vec, it, err, err0)
 
     pb.iiter = it
     pb.update_materials_flag = True
