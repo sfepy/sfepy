@@ -22,4 +22,7 @@ class DGEssentialBC(EssentialBC):
     as EssentialBC, and is created only for branching in
     dof_info.py
     """
-    pass
+
+    def __init__(self, *args, diff=0, **kwargs):
+        EssentialBC.__init__(self, *args, **kwargs)
+        self.diff = diff

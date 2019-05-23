@@ -550,7 +550,6 @@ class DGField(Field):
                                         outer facet values (n_cell, n_el_facets, dim, n_qp)
 
         """
-
         if derivative:
             diff = int(derivative)
         else:
@@ -584,8 +583,8 @@ class DGField(Field):
 
         boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
         outer_facet_vals[boundary_cells[:, 0], boundary_cells[:, 1]] = 0.0
-        # TODO check and print boundary cells without defined BCs
-        for ebc, ebc_vals in zip(state.eq_map.dg_ebc, state.eq_map.dg_ebc_val):
+        # TODO detect and print boundary cells without defined BCs
+        for ebc, ebc_vals in zip(state.eq_map.dg_ebc.get(diff, []), state.eq_map.dg_ebc_val.get(diff, [])):
             if unreduce_nod:
                 raise NotImplementedError("Unreduced DOFs are not available for boundary outer facets")
                 outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = nm.einsum("id,id...->id...",
@@ -593,7 +592,9 @@ class DGField(Field):
                                                                       inner_base_vals[0, :, ebc[:, 1]])
 
             else:
-                outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = ebc_vals[ebc[:, 0],:]
+                # FIXME contains quick fix flipping qp order to accomodate for opposite facet orientation of neighbours
+                # this is partially taken care of in get_both_facet_base_vals, but needs to be repeated here
+                outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = ebc_vals[:, ::-1]
 
         # flip outer_facet_vals moved to get_both_facet_base_vals
         return inner_facet_vals, outer_facet_vals, whs
@@ -637,7 +638,7 @@ class DGField(Field):
         else:
             outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-2, -3)
 
-        # FIXME quick fix to flip facte QPs for right integration order
+        # FIXME quick fix to flip facet QPs for right integration order
         return inner_facet_base_vals, outer_facet_base_vals[..., ::-1], whs
 
     def clear_normals_cache(self, region=None):
@@ -692,7 +693,7 @@ class DGField(Field):
     def get_facet_vols(self, region):
         """
 
-        Caches results, use clear_facet_vols_cache to clear the cach
+        Caches results, use clear_facet_vols_cache to clear the cache
 
         :param region:
         :return: volumes of the facets by cells shape is (n_cell, n_el_facets, 1)
@@ -793,7 +794,7 @@ class DGField(Field):
         """
         Return indices of DOFs that belong to the given region and group.
 
-        Used in BC treatement
+        Not Used in BC treatment
 
         :param region:
         :param merge: merge dof tuple into one numpy array
@@ -1034,13 +1035,14 @@ class DGField(Field):
 
         return nods, vals
 
-    def get_qp_values(self, fun, region, ret_coors=False):
+    def get_qp_values(self, fun, region, ret_coors=False, diff=0):
         """
+        Output is used in
 
         :param fun: Function value or values to set qps values to
-        :param region:
+        :param region: boundary region
         :param ret_coors: dafault False, return physical coors of qps
-        :return: vals.shape == (n_el, n_qp)
+        :return: vals.shape == (n_cell,) + (self.dim,) * diff + (n_qp,)
         """
         if region.has_cells():
             raise NotImplementedError("We do not need values of function in main regions qps")
@@ -1049,17 +1051,20 @@ class DGField(Field):
         qp, weights = self.get_facet_qp()
         weights = weights[0, :, 0]
         qp = qp[:, 0, :, :]
+        n_qp = qp.shape[0]
         # get facets weights ?
 
         # get physical coors
         bc2bfi = self.get_facet_boundary_index(region)
+        n_cell = bc2bfi.shape[0]
         coors = self.mapping.get_physical_qps(qp)
 
         # get_physical_qps returns data in strange format,
         # swapping some axis and flipping qps order
         # to get qps only in current region
         bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
-        vals = nm.zeros(bcoors.shape[:-1])  # we do not need last axis of coors, values are scalars
+        output_shape = (n_cell,) + (self.dim,) * diff + (n_qp,)
+        vals = nm.zeros(output_shape)  # we do not need last axis of coors, values are scalars
 
         if nm.isscalar(fun):
             vals[:] = fun
