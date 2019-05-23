@@ -119,11 +119,10 @@ def main():
                                              verbose=False)
                 options = Struct(output_filename_trunk=None)
                 homogen_app = HomogenizationApp(conf, options, 'micro:',
-                                                n_micro=n_micro,
-                                                update_micro_coors=True)
+                                                n_micro=n_micro)
             elif task == 'calculate':  # data: rel_def_grad, ts, iteration
-                rel_def_grad, ts, iteration = data[:3]
-                homogen_app.setup_macro_deformation(rel_def_grad)
+                macro_data, ts, iteration = data[:3]
+                homogen_app.setup_macro_data(macro_data)
                 homogen_app(ret_all=True, itime=ts.step, iiter=iteration)
             elif task == 'finalize':
                 done = True

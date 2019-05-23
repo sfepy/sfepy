@@ -70,7 +70,7 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     return out
 
-def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
+def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
                               term=None, problem=None,
                               iteration=None, **kwargs):
     if not (mode == 'qp'):
@@ -87,7 +87,7 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
                                      verbose=False)
         options = Struct(output_filename_trunk=None)
         app = HomogenizationApp(conf, options, 'micro:',
-                                n_micro=coor.shape[0], update_micro_coors=True)
+                                n_micro=coor.shape[0])
         problem.homogen_app = app
 
         if hasattr(app.app_options, 'use_mpi') and app.app_options.use_mpi:
@@ -104,19 +104,10 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
         app = problem.homogen_app
         multi_mpi = app.multi_mpi
 
-    def_grad = mtx_f(problem, term) if callable(mtx_f) else mtx_f
-    if hasattr(problem, 'def_grad_prev'):
-        rel_def_grad = la.dot_sequences(def_grad,
-                                        nm.linalg.inv(problem.def_grad_prev),
-                                        'AB')
-    else:
-        rel_def_grad = def_grad.copy()
-
-    problem.def_grad_prev = def_grad.copy()
-    app.setup_macro_deformation(rel_def_grad)
+    app.setup_macro_data(macro_data)
 
     if multi_mpi is not None:
-        multi_mpi.master_send_task('calculate', (rel_def_grad, ts, iteration))
+        multi_mpi.master_send_task('calculate', (macro_data, ts, iteration))
 
     coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
 
