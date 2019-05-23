@@ -77,7 +77,17 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
 
     mtx_f = family_data.mtx_f.reshape((coors.shape[0],)
                                       + family_data.mtx_f.shape[-2:])
-    out = get_homog_coefs_nonlinear(ts, coors, mode, mtx_f,
+
+    if hasattr(problem, 'mtx_f_prev'):
+        rel_mtx_f = la.dot_sequences(mtx_f, nm.linalg.inv(problem.mtx_f_prev),
+                                     'AB')
+    else:
+        rel_mtx_f = mtx_f
+
+    problem.mtx_f_prev = mtx_f.copy()
+
+    macro_data = {'mtx_e': rel_mtx_f - nm.eye(dim)}  # '*' - macro strain
+    out = get_homog_coefs_nonlinear(ts, coors, mode, macro_data,
                                     term=term, problem=problem,
                                     iteration=problem.iiter, **kwargs)
 
@@ -90,7 +100,6 @@ def get_homog_mat(ts, coors, mode, term=None, problem=None, **kwargs):
 
     return out
 
-
 def ulf_iteration_hook(pb, nls, vec, it, err, err0):
     vec = pb.equations.make_full_vec(vec)
     pb.equations.set_variables_from_state(vec)
@@ -99,7 +108,7 @@ def ulf_iteration_hook(pb, nls, vec, it, err, err0):
     state_u = pb.equations.variables[update_var]
 
     nods = state_u.field.get_dofs_in_region(state_u.field.region, merge=True)
-    coors = pb.domain.get_mesh_coors().copy()
+    coors = pb.domain.get_mesh_coors().copy()  # ???????!!!!!
     coors[nods, :] += state_u().reshape(len(nods), state_u.n_components)
 
     if len(state_u.field.mappings0) == 0:
