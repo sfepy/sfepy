@@ -10,7 +10,8 @@ from sfepy.discrete.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
-from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis
+from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis,\
+    rm_multi
 import six
 from six.moves import range
 
@@ -300,9 +301,8 @@ class CorrEval(CorrMiniApp):
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
         expr = self.expression
-        for i in range(len(self.requires)):
-            expr = expr.replace(self.requires[i],
-                                "data['%s']" % self.requires[i])
+        for req in map(rm_multi, self.requires):
+            expr = expr.replace(req, "data['%s']" % req)
 
         val = eval(expr)
 
@@ -1048,10 +1048,9 @@ class CoefOne(MiniAppBase):
 class CoefSum(MiniAppBase):
 
     def __call__(self, volume, problem=None, data=None):
-
         coef = nm.zeros_like(data[self.requires[0]])
-        for i in range(len(self.requires)):
-            coef += data[self.requires[i]]
+        for req in map(rm_multi, self.requires):
+            coef += data[req]
 
         return coef
 
@@ -1060,11 +1059,9 @@ class CoefEval(MiniAppBase):
     Evaluate expression.
     """
     def __call__(self, volume, problem=None, data=None):
-
         expr = self.expression
-        for i in range(len(self.requires)):
-            expr = expr.replace(self.requires[i],
-                                "data['%s']" % self.requires[i])
+        for req in map(rm_multi, self.requires):
+            expr = expr.replace(req, "data['%s']" % req)
 
         coef = eval(expr)
 

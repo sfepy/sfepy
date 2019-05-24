@@ -4,6 +4,7 @@ from copy import copy
 from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import PDESolverApp, Application
 from .coefs_base import MiniAppBase, CoefEval
+from .utils import rm_multi
 from sfepy.discrete.evaluate import eval_equations
 import sfepy.base.multiproc as multi
 import numpy as nm
@@ -42,11 +43,6 @@ def insert_sub_reqs(reqs, levels, req_info):
 
 def get_dict_idxval(dict_array, idx):
     return {k: v[idx] for k, v in six.iteritems(dict_array)}
-
-
-def rm_multi(s):
-    idx = s.rfind('|multiprocessing_')
-    return s[:idx] if idx > 0 else s
 
 
 class CoefVolume(MiniAppBase):
