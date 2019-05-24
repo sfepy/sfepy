@@ -45,6 +45,8 @@ from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 # |   Parameters  |
 # |vvvvvvvvvvvvvvv|
 approx_order = 2
+diffusion_coef = 0.002
+Cw = 15
 CFL = .8
 t0 = 0
 t1 = 1
@@ -78,7 +80,6 @@ max_velo = nm.max(nm.linalg.norm(velo))
 # ┌---------------------------┐
 # | Create problem components |
 # └---------------------------┘
-
 integral = Integral('i', order=approx_order * 2)
 domain = FEDomain(domain_name, mesh)
 omega = domain.create_region('Omega', 'all')
@@ -126,30 +127,29 @@ burg_velo = velo.T / nm.linalg.norm(velo)
 
 
 def burg_fun(u):
-    vu = burg_velo * u[..., None] ** 2
+    vu = 1/2*burg_velo * u[..., None] ** 2
     return vu
 
 
 def burg_fun_d(u):
-    v1 = 2 * burg_velo * u[..., None]
+    v1 = burg_velo * u[..., None]
     return v1
 
 
 nonlin = Material('nonlin', values={'.fun': burg_fun, '.dfun': burg_fun_d})
 
-StiffT = NonlinScalarDotGradTerm("burgess_stiff(f, df, u, v)", "nonlin.fun , nonlin.dfun, u[-1], v",
-                                 integral, omega, u=u, v=v, nonlin=nonlin)
+BurgStiffT = NonlinScalarDotGradTerm("burgess_stiff(f, df, u, v)", "nonlin.fun , nonlin.dfun, u[-1], v",
+                                     integral, omega, u=u, v=v, nonlin=nonlin)
 
-FluxT = NonlinearHyperDGFluxTerm("burgess_lf_flux(f, df, u, v)", "nonlin.fun , nonlin.dfun, v, u[-1]",
-                                 integral, omega, u=u, v=v, nonlin=nonlin)
+BurgFluxT = NonlinearHyperDGFluxTerm("burgess_lf_flux(f, df, u, v)", "nonlin.fun , nonlin.dfun, v, u[-1]",
+                                     integral, omega, u=u, v=v, nonlin=nonlin)
 
 
 # ┌----------------------------┐
 # |   Define Diffusion terms   |
 # └----------------------------┘
-diffusion_coef = 0.002
 D = Material('D', val=[diffusion_coef])
-Cw = Material("Cw", values={".val": 10})
+Cwmat = Material("Cw", values={".val": Cw})
 
 DivGrad = LaplaceTerm("diff_lap(D.val, v, u)", "D.val, v, u[-1]",
                       integral, omega, u=u, v=v, D=D)
@@ -158,7 +158,7 @@ DiffFluxT = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)", "D.val, v,  u[-1]",
                                 integral, omega, u=u, v=v, D=D)
 
 DiffPen = DiffusionInteriorPenaltyTerm("diff_pen(Cw.val, v, u)", "Cw.val, v, u[-1]",
-                                       integral, omega, u=u, v=v, Cw=Cw)
+                                       integral, omega, u=u, v=v, Cw=Cwmat)
 
 # ┌----------------------------┐
 # |    Define source term      |
@@ -190,7 +190,7 @@ SourceTerm = LinearVolumeForceTerm("source_g(g.val, v)", "g.val, v", integral, o
 # |===== Create equation ======|
 # └----------------------------┘
 eq = Equation('balance', MassT
-              + StiffT - FluxT
+              + BurgStiffT - BurgFluxT
               - (+ DivGrad - DiffFluxT) - diffusion_coef * DiffPen
               + SourceTerm
               )
@@ -270,8 +270,8 @@ pb = Problem(problem_name, equations=eqs, conf=Struct(options={"save_times": sav
              active_only=False)
 
 pb.set_ics(Conditions([ics]))
-pb.set_bcs(  # ebcs=Conditions([dirichlet_bc_u]),
-        epbcs=Conditions([left_bc_u, bottom_bc_u,
+pb.set_bcs(
+        ebcs=Conditions([left_bc_u, bottom_bc_u,
                           left_bc_du, bottom_bc_du,
                           right_bc_u, top_bc_u,
                           right_bc_du, top_bc_du
@@ -280,7 +280,7 @@ pb.set_bcs(  # ebcs=Conditions([dirichlet_bc_u]),
 pb.setup_output(output_dir=output_folder, output_format=output_format)
 
 # ┌----------------┐
-# | Create limiter |
+# | Choose limiter |
 # └----------------┘
 limiter = IdentityLimiter
 
@@ -289,7 +289,8 @@ limiter = IdentityLimiter
 # └-------------------------┘
 max_velo = nm.max(nm.linalg.norm(velo))
 dx = nm.min(mesh.cmesh.get_volumes(2))
-dt = dx / max_velo * CFL / (2 * approx_order + 1)
+# dt = dx / max_velo * CFL / (2 * approx_order + 1)
+dt = 1e-5
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
 
@@ -313,8 +314,8 @@ tss = EulerStepSolver(tss_conf,
 # └-------┘
 print("Solving equation \n\n\t\t u_t - div(au)) = 0\n")
 print("With IC: {}".format(ic_fun.name))
-# print("and EBCs: {}".format(pb.ebcs.names))
-# print("and EPBCS: {}".format(pb.epbcs.names))
+print("and EBCs: {}".format(pb.ebcs.names))
+print("and EPBCS: {}".format(pb.epbcs.names))
 print("-------------------------------------")
 print("Approximation order is {}".format(approx_order))
 print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
@@ -328,3 +329,18 @@ print("======================================")
 
 pb.set_solver(tss)
 pb.solve()
+
+print("Equation \n\n\t\t u_t - div(au)) = 0\n")
+print("With IC: {}".format(ic_fun.name))
+print("and EBCs: {}".format(pb.ebcs.names))
+print("and EPBCS: {}".format(pb.epbcs.names))
+print("-------------------------------------")
+print("Approximation order is {}".format(approx_order))
+print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
+print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
+print("CFL coefficient was {0} and order correction {1}".format(CFL, 1 / (2 * approx_order + 1)))
+print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
+print("------------------------------------------")
+print("Time stepping solver is {}".format(tss.name))
+# print("Limiter used: {}".format(limiter.name))
+print("======================================")
