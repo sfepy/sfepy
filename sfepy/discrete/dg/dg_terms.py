@@ -315,6 +315,69 @@ class DiffusionDGFluxTerm(Term):
         return status
 
 
+class LeftDiffusionDGFluxTerm(DiffusionDGFluxTerm):
+    name = "dw_dg_left_diffusion_flux"
+
+    def function(self, out, state, field, region, D):
+
+        if state is None:
+            out[:] = 0.0
+            return None
+
+        fc_n = field.get_cell_normals_per_facet(region)
+        inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
+                                                                               derivative=False
+                                                                               )
+        inner_facet_state_d, outer_facet_state_d, weights = field.get_both_facet_qp_vals(state, region,
+                                                                                   derivative=True
+                                                                                   )
+
+        avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, inner_facet_state_d) +
+                      nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
+        jmpBase = inner_facet_base  # - outer_facet_base
+
+        int1 = nm.einsum("ifkq , ifk, idfq, ifq -> id", avgDdState, fc_n, jmpBase, weights)
+
+        out[:] = 0.0
+        n_el_nod = field.n_el_nod
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = int1[:, i, None]
+
+        status = None
+        return status
+
+
+class RightDiffusionDGFluxTerm(DiffusionDGFluxTerm):
+    name = "dw_dg_right_diffusion_flux"
+
+    def function(self, out, state, field, region, D):
+
+        if state is None:
+            out[:] = 0.0
+            return None
+
+        fc_n = field.get_cell_normals_per_facet(region)
+        inner_facet_base_d, outer_facet_base_d, _ = field.get_both_facet_base_vals(state, region,
+                                                                                   derivative=True)
+        inner_facet_state, outer_facet_state, weights = field.get_both_facet_qp_vals(state, region,
+                                                                                     derivative=False
+                                                                                     )
+
+        avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, inner_facet_base_d)) / 2.
+        # nm.einsum("ikl,idfkq->idfkq", D, outer_facet_base_d)) / 2.
+        jmpState = inner_facet_state - outer_facet_state
+
+        int2 = nm.einsum("idfkq, ifk, ifq , ifq -> id", avgDdbase, fc_n, jmpState, weights)
+
+        out[:] = 0.0
+        n_el_nod = field.n_el_nod
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = int2[:, i, None]
+
+        status = None
+        return status
+
+
 class DiffusionInteriorPenaltyTerm(Term):
     name = "dw_dg_interior_penal"
     modes = ("weak",)
