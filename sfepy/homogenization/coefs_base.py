@@ -1031,11 +1031,12 @@ class CoefOne(MiniAppBase):
         equations, variables = problem.create_evaluable(self.expression,
                                                         term_mode=term_mode)
 
-        if isinstance(self.set_variables, list):
-            self.set_variables_default(variables, self.set_variables,
-                                       data)
-        else:
-            self.set_variables(variables, **data)
+        if hasattr(self, 'set_variables'):
+            if isinstance(self.set_variables, list):
+                self.set_variables_default(variables, self.set_variables,
+                                           data)
+            else:
+                self.set_variables(variables, **data)
 
         val = eval_equations(equations, variables,
                              term_mode=term_mode)

@@ -202,7 +202,6 @@ coefs = {
     },
     'S': {
         'expression': 'ev_volume_integrate_mat.3.Y(mat_he.S, u)',
-        'set_variables': [],
         'class': cb.CoefOne,
     }
 }
