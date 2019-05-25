@@ -89,7 +89,7 @@ MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
 
 velo = 2.0
 a = Material('a', val=[velo])
-# TODO u and v are flipped what now?!
+# TODO update?
 StiffT = NonlinScalarDotGradTerm(integral, omega,
                                  f=lambda u: nm.power(u[..., None], 2),
                                  df=lambda u: 2*u[..., None],

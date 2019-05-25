@@ -309,7 +309,7 @@ class DGField(Field):
             extended_coors[:, 0] = coors[:, 0]
             coors = extended_coors
         # shift centroid coors to lie within cells but be different for each dof
-        # TODO for simplex meshes these coors fail to match
+        # TODO use coors of facet QPs?
         coors += eps * nm.repeat(nm.arange(self.n_el_nod), len(nm.unique(cells)))[:, None]
         return coors
 
@@ -502,7 +502,7 @@ class DGField(Field):
             facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
             facet_neighbours[
                 mcells, mcells_facets, 1] = scells_facets  # set neighbour facets to facets of scell missing neighbour
-            # TODO how to distinguish EBC and EPBC? - we do not need to, EBC over write EPBC, we only need to fix shapes
+            # we do not need to distinguish EBC and EPBC cells, EBC overwrite EPBC, we only need to fix shapes
 
             facet_neighbours[scells, scells_facets, 0] = mcells  # set neighbours of scells to mcells
             facet_neighbours[
@@ -1007,7 +1007,6 @@ class DGField(Field):
         elif callable(fun):
             vals = nm.zeros(aux.shape)
             # set zero DOF to value fun, set other DOFs to zero
-            # FIXME only temporary to test BCs
             # get facets QPs
             qp, weights = self.get_facet_qp()
             weights = weights[0, :, 0]
@@ -1027,8 +1026,7 @@ class DGField(Field):
 
             # solve for boundary cell DOFs
             bc_val = fun(bcoors)
-            # # TODO this returns singular matrix - drop dofs that are not needed on facet?
-            # # or use nodal values approach?
+            # # this returns singular matrix - projection on the boundary should be into facet dim space
             # lhs = nm.einsum("q,qd,qc->dc", weights, base_vals_qp, base_vals_qp)
             # inv_lhs = nm.linalg.inv(lhs)
             # rhs_vec = nm.einsum("q,q...,iq...->i...", weights, base_vals_qp, bc_val)
@@ -1094,7 +1092,7 @@ class DGField(Field):
         :return:
         """
         if ref_nodes is None:
-            # TODO we need exactly as many ref_nodes as we have basis functions, maybe poly_space should provide those?
+            # TODO poly_space should provide special nodes
             ref_nodes = self.get_qp('v', Integral("I", order=self.approx_order + 1)).vals
             # ref_nodes = nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64)
         base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]

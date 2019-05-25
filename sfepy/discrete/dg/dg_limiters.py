@@ -27,6 +27,7 @@ def minmod(a, b, c):
 
 
 class DGLimiter:
+    # TODO connect with DGfield
     name = "abstract DG limiter"
 
     def __init__(self, n_el_nod, n_cell, verbose=False):

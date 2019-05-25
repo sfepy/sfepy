@@ -61,7 +61,7 @@ epbc_1 = {
     'name'  : 'u_rl',
     'region': ['Gamma_Right', 'Gamma_Left'],
     'dofs'  : {'u.all': 'u.all'},
-    'match' : 'match_y_line',  # TODO for more general meshes this fails to match coors
+    'match' : 'match_y_line',
 }
 
 integrals = {

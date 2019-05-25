@@ -80,6 +80,11 @@ class LegendrePolySpace(PolySpace):
         self.dim = geometry.dim
         self.n_nod = get_n_el_nod(self.order, self.dim)
 
+        self.coefM = None
+        self.expoM = None
+
+
+
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
         """
@@ -138,8 +143,7 @@ class LegendrePolySpace(PolySpace):
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
         space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
-        TODO this seem like a bad practice
-        Expects matrices to saved in atributes coefM and expoM!
+        Expects matrices to be saved in atributes coefM and expoM!
 
         :return: Struct with name of the scheme, geometry desc and P and F
         """

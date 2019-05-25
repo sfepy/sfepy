@@ -12,10 +12,8 @@ import glob
 import time
 import subprocess as sub
 import logging
-import argparse
 import numpy as nm
 
-import numpy as nm
 import matplotlib.pyplot as plt
 import argparse
 
@@ -61,7 +59,6 @@ def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order, ic_fun=None, c
                   delay=100, polar=polar)
 
     if compare:
-        # TODO get name of first and last time step file
         files = glob(pjoin(folder, "*.vtk"))
 
         n_first = sorted(files)[0].split(".")[-2]
