@@ -77,51 +77,37 @@
    ------
 
    If you would like to cite the SfePy package in a paper or presentation, the
-   following can be used:
+   following reference can be used:
 
-   - General use:
+   - Plain text:
 
-     - Plain text:
+     Cimrman, R., Lukeš, V., Rohan, E., 2019. Multiscale finite element
+     calculations in Python using SfePy. Adv Comput Math.
+     https://doi.org/10.1007/s10444-019-09666-0
 
-       R. Cimrman. SfePy - write your own FE application. In P. de Buyl
+   - BibTeX::
+
+       @article{Cimrman_Lukes_Rohan_2019,
+         title =        {Multiscale finite element calculations in Python using SfePy},
+         ISSN =         {1572-9044},
+         url =          {https://doi.org/10.1007/s10444-019-09666-0},
+         DOI =          {10.1007/s10444-019-09666-0},
+         journal =      {Advances in Computational Mathematics},
+         author =       {Cimrman, Robert and Lukeš, Vladimír and Rohan, Eduard},
+         year =         2019,
+       }
+
+   - Other references:
+
+     - R. Cimrman. SfePy - write your own FE application. In P. de Buyl
        and N. Varoquaux, editors, Proceedings of the 6th European Con- ference
        on Python in Science (EuroSciPy 2013), pages 65–70, 2014.
        http://arxiv.org/abs/1404.6391.
 
-     - BibTeX::
-
-         @InProceedings{cimrman14:_sfepy_write_your_own_fe_applic,
-           author =       {Robert Cimrman},
-           title =        {{SfePy} - Write Your Own {FE} Application},
-           booktitle =    {Proceedings of the 6th European Conference on
-                           Python in Science (EuroSciPy 2013)},
-           pages =        {65--70},
-           year =         2014,
-           editor =       {Pierre de Buyl and Nelle Varoquaux},
-           note =         {http://arxiv.org/abs/1404.6391},
-         }
-
-   - IGA-specific use:
-
-     - Plain text:
-
-       R. Cimrman. Enhancing SfePy with isogeometric analysis. In P. de Buyl
+     - R. Cimrman. Enhancing SfePy with isogeometric analysis. In P. de Buyl
        and N. Varoquaux, editors, Proceedings of the 7th European Conference on
        Python in Science (EuroSciPy 2014), pages 65–72, 2014.
        http://arxiv.org/abs/1412.6407.
-
-     - BibTeX::
-
-         @InProceedings{cimrman14:_enhan_sfepy_isogeom_analy,
-           author =       {Robert Cimrman},
-           title =        {Enhancing {SfePy} with Isogeometric Analysis},
-           booktitle =    {Proceedings of the 7th European Conference on
-                           Python in Science (EuroSciPy 2014)},
-           pages =        {65--72},
-           year =         2014,
-           editor =       {Pierre de Buyl and Nelle Varoquaux},
-           note =         {http://arxiv.org/abs/1412.6407},
-         }
 
    Support
    -------
