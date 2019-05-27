@@ -11,7 +11,7 @@ from sfepy.base.base import Struct
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
-from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions, PeriodicBC
+from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions, PeriodicBC,  DGPeriodicBC, DGEssentialBC
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
@@ -29,7 +29,6 @@ from sfepy.discrete.dg.dg_tssolver \
     import EulerStepSolver, TVDRK3StepSolver
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
-from sfepy.discrete.dg.dg_conditions import DGEssentialBC, DGPeriodicBC
 
 from sfepy.discrete.dg.my_utils.inits_consts \
     import left_par_q, gsmooth, const_u, ghump, superic
