@@ -1,3 +1,4 @@
+from discrete.functions import Functionize
 from examples.dg.example_dg_common import *
 from toolz import reduce
 from operator import mul
@@ -14,7 +15,7 @@ example_name = "burgess_2D"
 dim = 2  # int(example_name[example_name.index("D") - 1])
 
 # filename_mesh = "mesh/messedquad2_diamond.vtk"
-filename_mesh = "../mesh/tens_2D_mesh20.vtk"
+filename_mesh = "../mesh/square_tri2.mesh"
 
 approx_order = 2
 t0 = 0.
@@ -26,7 +27,10 @@ n_el_nod = int(reduce(mul, map(lambda i: approx_order + i + 1, range(dim))) /
 
 regions = {
     'Omega': 'all',
-    # 'Gamma_Left': ('vertices in (x < 0.055)', 'cell'),
+    'left' : ('vertices in x == -1', 'edge'),
+    'right': ('vertices in x == 1', 'edge'),
+    'top' : ('vertices in y == 1', 'edge'),
+    'bottom': ('vertices in y == -1', 'edge')
 }
 
 fields = {
@@ -45,8 +49,44 @@ rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
 velo = nm.array([[1., 1.]]).T
 
 
-def bc_left(ts, coors, bc, problem):
-    return -(nm.exp(-ts.t) - 1)*nm.sin(4*coors[:, 1])
+def bc_funs(ts, coors, bc, problem):
+    # return 2*coors[..., 1]
+    t = ts.dt*ts.step
+    x_1 = coors[..., 0]
+    x_2 = coors[..., 1]
+    sin = nm.sin
+    cos = nm.cos
+    exp = nm.exp
+    if bc.diff == 0:
+        if "left" in bc.name:
+            res = -(exp(-t) - 1)*(sin(-5*x_2) + sin(8*x_2 - 4))
+        elif "bottom" in bc.name:
+            res = -(exp(-t) - 1) * (sin(-5 * x_1) + sin(8 * x_1 - 4))
+        elif "right" in bc.name:
+            res = -(exp(-t) - 1)*(sin(4) + sin(5*x_2))
+        elif "top" in bc.name:
+            res = -(exp(-t) - 1)*(sin(4) + sin(5*x_1))
+
+    elif bc.diff == 1:
+        if "left" in bc.name:
+            res = nm.stack(((4*(x_2 - 1)*cos(4) - 5*x_2*cos(5*x_2))*(exp(-t) - 1),
+                                -5*(exp(-t) - 1)*cos(5*x_2)),
+                           axis=-2)
+        elif "bottom" in bc.name:
+            res = nm.stack(((5*cos(-5*x_1) - 8*cos(8*x_1 - 4))*(exp(-t) - 1),
+                            -(5*x_1*cos(-5*x_1) - 4*(x_1 - 1)*cos(8*x_1 - 4))*(exp(-t) - 1)),
+                           axis=-2)
+
+        elif "right" in bc.name:
+            res = nm.stack(((4*(x_2 - 1)*cos(4) - 5*x_2*cos(5*x_2))*(exp(-t) - 1),
+                            -5*(exp(-t) - 1)*cos(5*x_2)),
+                           axis=-2)
+        elif "top" in bc.name:
+            res = nm.stack((-5*(exp(-t) - 1)*cos(5*x_1),
+                            (4*(x_1 - 1)*cos(4) - 5*x_1*cos(5*x_1))*(exp(-t) - 1)),
+                           axis=-2)
+
+    return res
 
 def get_ic(x, ic=None):
     return gsmooth(x[..., 0:1] - .4) * gsmooth(x[..., 1:] - .4)
@@ -78,7 +118,8 @@ def burg_fun_d(u):
 functions = {
     'get_ic'    : (get_ic,),
     'burg_fun'  : (burg_fun,),
-    'burg_fun_d': (burg_fun_d,)
+    'burg_fun_d': (burg_fun_d,),
+    'bc_funs' : (bc_funs,)
 }
 
 diffusion_coef = 0.002
@@ -91,6 +132,14 @@ materials = {
 
 ics = {
     'ic': ('Omega', {'u.0': 'get_ic'}),
+}
+
+dgebcs = {
+    'u_left' : ('left', {'u.all': 'bc_funs', 'gradu.all': 'bc_funs'}),
+    'u_right' : ('right', {'u.all': 'bc_funs', 'gradu.all': 'bc_funs'}),
+    'u_bottom' : ('bottom', {'u.all': 'bc_funs', 'gradu.all': 'bc_funs'}),
+    'u_top' : ('top', {'u.all': 'bc_funs', 'gradu.all': 'bc_funs'}),
+
 }
 
 integrals = {

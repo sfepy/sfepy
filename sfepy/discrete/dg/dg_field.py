@@ -1037,13 +1037,15 @@ class DGField(Field):
         """
         Output is used in
 
+        :param diff: derivative 0 or 1 supported
         :param fun: Function value or values to set qps values to
         :param region: boundary region
         :param ret_coors: dafault False, return physical coors of qps
         :return: vals.shape == (n_cell,) + (self.dim,) * diff + (n_qp,)
         """
         if region.has_cells():
-            raise NotImplementedError("We do not need values of function in main regions qps")
+            raise NotImplementedError("We do not need values of function in main regions qps, " +
+                                      "so this is not implemented yet.")
 
         # get facets QPs
         qp, weights = self.get_facet_qp()
@@ -1068,7 +1070,7 @@ class DGField(Field):
             vals[:] = fun
 
         elif isinstance(fun, nm.ndarray):
-            if nm.shape(fun) == nm.shape(vals):
+            if nm.shape(fun) == nm.shape(vals) or nm.shape(fun) == nm.shape(vals)[-1:]:
                 vals[:] = fun
             else:
                 raise ValueError("Shape of provided values {} does not match shape {} of qps in region {}".format(

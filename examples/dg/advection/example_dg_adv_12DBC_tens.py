@@ -53,12 +53,17 @@ ics = {
     'ic': ('Omega', {'u.0': 'get_ic'}),
 }
 
+dgebcs = {
+    'u_left' : ('Gamma_Left', {'u.all': .5, 'gradu.all' : (0.0, 0.0)}),
+    # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
+}
+
 # ebcs = {
 #     'u_left' : ('Gamma_Left', {'u.all' : .5}),
 #     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 # }
 
-epbc_1 = {
+dgepbc_1 = {
     'name'  : 'u_rl',
     'region': ['Gamma_Right', 'Gamma_Left'],
     'dofs'  : {'u.all': 'u.all'},

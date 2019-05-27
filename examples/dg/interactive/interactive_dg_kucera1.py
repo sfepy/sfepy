@@ -289,8 +289,8 @@ limiter = IdentityLimiter
 # └-------------------------┘
 max_velo = nm.max(nm.linalg.norm(velo))
 dx = nm.min(mesh.cmesh.get_volumes(2))
-# dt = dx / max_velo * CFL / (2 * approx_order + 1)
-dt = 1e-5
+dt = dx / max_velo * CFL / (2 * approx_order + 1)
+# dt = 1e-5
 tn = int(nm.ceil((t1 - t0) / dt))
 dtdx = dt / dx
 
