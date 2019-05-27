@@ -2,6 +2,7 @@ from discrete.functions import Functionize
 from examples.dg.example_dg_common import *
 from toolz import reduce
 from operator import mul
+import numpy as nm
 
 from sfepy.discrete.dg.dg_terms import NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
 from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
@@ -11,7 +12,7 @@ register_term(NonlinearHyperDGFluxTerm)
 register_term(DiffusionDGFluxTerm)
 register_term(DiffusionInteriorPenaltyTerm)
 
-example_name = "burgess_2D"
+example_name = "kucera1"
 dim = 2  # int(example_name[example_name.index("D") - 1])
 
 # filename_mesh = "mesh/messedquad2_diamond.vtk"
@@ -19,7 +20,7 @@ filename_mesh = "../mesh/square_tri2.mesh"
 
 approx_order = 2
 t0 = 0.
-t1 = 1
+t1 = .5
 CFL = .4
 
 n_el_nod = int(reduce(mul, map(lambda i: approx_order + i + 1, range(dim))) /
@@ -88,6 +89,25 @@ def bc_funs(ts, coors, bc, problem):
 
     return res
 
+
+def source_fun(ts, coors, mode="qp", **kwargs):
+    if mode == "qp":
+        t = ts.dt * ts.step
+        x_1 = coors[..., 0]
+        x_2 = coors[..., 1]
+        sin = nm.sin
+        cos = nm.cos
+        exp = nm.exp
+        res = (
+                + (5 * x_1 * cos(5 * x_1 * x_2) - 4 * (x_1 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
+                + (5 * x_2 * cos(5 * x_1 * x_2) - 4 * (x_2 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
+                - ((25 * x_1 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_1 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)
+                 + (25 * x_2 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_2 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)) * diffusion_coef
+                + (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * exp(-t)
+        )
+        return {"val": res[..., None, None]}
+
+
 def get_ic(x, ic=None):
     return gsmooth(x[..., 0:1] - .4) * gsmooth(x[..., 1:] - .4)
 
@@ -119,7 +139,8 @@ functions = {
     'get_ic'    : (get_ic,),
     'burg_fun'  : (burg_fun,),
     'burg_fun_d': (burg_fun_d,),
-    'bc_funs' : (bc_funs,)
+    'bc_funs' : (bc_funs,),
+    'source_fun': (source_fun,)
 }
 
 diffusion_coef = 0.002
@@ -127,7 +148,14 @@ materials = {
     'a'     : ({'val': [velo], '.flux': 0.0},),
     'nonlin': ({'.fun': adv_fun, '.dfun': adv_fun_d},),
     'burg'  : ({'.fun': burg_fun, '.dfun': burg_fun_d},),
-    'D'     : ({'val': [diffusion_coef], '.Cw': 1.},)
+    'D'     : ({'val': [diffusion_coef], '.Cw': 1.},),
+    # 'g'     : ({'function': source_fun},)
+}
+
+
+rhs = {
+    'name' : 'g',
+    'function' : 'source_fun',
 }
 
 ics = {
@@ -155,7 +183,8 @@ equations = {
                  " - dw_laplace.i.Omega(D.val, v, u[-1]) + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])"
                  " - "
                  + str(diffusion_coef) + "*"
-                 + "dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
+                 + "dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
+                 + " + dw_volume_lvf.i.Omega(g.val, v)"
                  " = 0"
 }
 

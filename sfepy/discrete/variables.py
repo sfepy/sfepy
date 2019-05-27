@@ -867,8 +867,12 @@ class Variable(Struct):
                 msg = 'field "%s" does not exist!' % conf.field
                 raise KeyError(msg)
 
-            obj = FieldVariable(conf.name, kind, fld, order, primary_var_name,
+            if "DG" in fld.family_name:
+                obj = DGFieldVariable(conf.name, kind, fld, order, primary_var_name,
                                 special=special, key=key, history=history)
+            else:
+                obj = FieldVariable(conf.name, kind, fld, order, primary_var_name,
+                                    special=special, key=key, history=history)
 
         else:
             raise ValueError('unknown variable family! (%s)' % family)
