@@ -77,7 +77,7 @@
    ------
 
    If you would like to cite the SfePy package in a paper or presentation, the
-   following reference can be used:
+   following reference (`full-text link <https://rdcu.be/bCn16>`_) can be used:
 
    - Plain text:
 
