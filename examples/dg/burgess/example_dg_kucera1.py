@@ -1,16 +1,6 @@
-from discrete.functions import Functionize
-from examples.dg.example_dg_common import *
-from toolz import reduce
-from operator import mul
 import numpy as nm
 
-from sfepy.discrete.dg.dg_terms import NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
-from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
-
-register_term(NonlinScalarDotGradTerm)
-register_term(NonlinearHyperDGFluxTerm)
-register_term(DiffusionDGFluxTerm)
-register_term(DiffusionInteriorPenaltyTerm)
+from examples.dg.example_dg_common import *
 
 example_name = "kucera1"
 dim = 2  # int(example_name[example_name.index("D") - 1])
@@ -22,9 +12,6 @@ approx_order = 2
 t0 = 0.
 t1 = .5
 CFL = .4
-
-n_el_nod = int(reduce(mul, map(lambda i: approx_order + i + 1, range(dim))) /
-               reduce(mul, range(1, dim + 1)))  # number of DOFs per element
 
 regions = {
     'Omega': 'all',
@@ -49,7 +36,7 @@ rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
 # velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
 velo = nm.array([[1., 1.]]).T
 
-
+@local_register_function
 def bc_funs(ts, coors, bc, problem):
     # return 2*coors[..., 1]
     t = ts.dt*ts.step
@@ -89,7 +76,7 @@ def bc_funs(ts, coors, bc, problem):
 
     return res
 
-
+@local_register_function
 def source_fun(ts, coors, mode="qp", **kwargs):
     if mode == "qp":
         t = ts.dt * ts.step
@@ -107,16 +94,16 @@ def source_fun(ts, coors, mode="qp", **kwargs):
         )
         return {"val": res[..., None, None]}
 
-
+@local_register_function
 def get_ic(x, ic=None):
     return gsmooth(x[..., 0:1] - .4) * gsmooth(x[..., 1:] - .4)
 
-
+@local_register_function
 def adv_fun(u):
     vu = velo.T * u[..., None]
     return vu
 
-
+@local_register_function
 def adv_fun_d(u):
     v1 = velo.T * nm.ones(u.shape + (1,))
     return v1
@@ -124,24 +111,16 @@ def adv_fun_d(u):
 
 burg_velo = velo.T / nm.linalg.norm(velo)
 
-
+@local_register_function
 def burg_fun(u):
     vu = .5*burg_velo * u[..., None] ** 2
     return vu
 
-
+@local_register_function
 def burg_fun_d(u):
     v1 = burg_velo * u[..., None]
     return v1
 
-
-functions = {
-    'get_ic'    : (get_ic,),
-    'burg_fun'  : (burg_fun,),
-    'burg_fun_d': (burg_fun_d,),
-    'bc_funs' : (bc_funs,),
-    'source_fun': (source_fun,)
-}
 
 diffusion_coef = 0.002
 materials = {
@@ -149,14 +128,14 @@ materials = {
     'nonlin': ({'.fun': adv_fun, '.dfun': adv_fun_d},),
     'burg'  : ({'.fun': burg_fun, '.dfun': burg_fun_d},),
     'D'     : ({'val': [diffusion_coef], '.Cw': 1.},),
-    # 'g'     : ({'function': source_fun},)
+    'g'     : 'source_fun'
 }
 
 
-rhs = {
-    'name' : 'g',
-    'function' : 'source_fun',
-}
+# material_1 = {
+#     'name' : 'g',
+#     'function' : 'source_fun',
+# }
 
 ics = {
     'ic': ('Omega', {'u.0': 'get_ic'}),
@@ -192,7 +171,7 @@ solvers = {
     "tss": ('ts.euler',
             {"t0"     : t0,
              "t1"     : t1,
-             'limiter': IdentityLimiter,
+             # 'limiter': IdentityLimiter,
              'verbose': True}),
     'nls': ('nls.newton', {}),
     'ls' : ('ls.scipy_direct', {})
@@ -203,7 +182,6 @@ options = {
     'nls'             : 'newton',
     'ls'              : 'ls',
     'save_times'      : 100,
-    'active_only'     : False,
     'output_format'   : 'msh',
     'pre_process_hook': get_cfl_setup(CFL)
 }

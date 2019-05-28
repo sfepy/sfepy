@@ -395,9 +395,9 @@ class DGField(Field):
     def get_facet_base(self, derivative=False, base_only=False):
         """
         Returns values of base in facets quadrature points, data shape is a bit crazy right now
-        currently (number of qps, 1, n_el_facets, 1, n_el_nod). This is because base eval preserves qp shape and ads
-        dimension of the value - in case of derivative this will be (dim,) * derivative order and all basis values
-        i.e. n_el_nod values
+            (number of qps, 1, n_el_facets, 1, n_el_nod).
+        This is because base eval preserves qp shape and adds dimension of the value - in case of
+        derivative this will be (dim,) * derivative order and all basis values i.e. n_el_nod values
         :param derivative:
         :param base_only:
         :return:
@@ -537,7 +537,7 @@ class DGField(Field):
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
         return dim, n_cell, n_el_facets
 
-    def get_both_facet_qp_vals(self, state, region, derivative=None, reduce_nod=True):
+    def get_both_facet_state_vals(self, state, region, derivative=None, reduce_nod=True):
         """
         Computes values of the variable represented by dofs in
         quadrature points located at facets, returns both values -
@@ -1033,9 +1033,9 @@ class DGField(Field):
 
         return nods, vals
 
-    def get_qp_values(self, fun, region, ret_coors=False, diff=0):
+    def get_bc_facet_values(self, fun, region, ret_coors=False, diff=0):
         """
-        Output is used in
+        Returns values of fun in facet QPs of the region
 
         :param diff: derivative 0 or 1 supported
         :param fun: Function value or values to set qps values to
@@ -1044,8 +1044,8 @@ class DGField(Field):
         :return: vals.shape == (n_cell,) + (self.dim,) * diff + (n_qp,)
         """
         if region.has_cells():
-            raise NotImplementedError("We do not need values of function in main regions qps, " +
-                                      "so this is not implemented yet.")
+            raise NotImplementedError("Region {} has cells and can't be used as boundary region".
+                                      format(region))
 
         # get facets QPs
         qp, weights = self.get_facet_qp()

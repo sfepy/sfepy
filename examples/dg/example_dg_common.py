@@ -7,24 +7,38 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 
 from sfepy.terms import register_term
-from sfepy.solvers import  register_solver
+from sfepy.solvers import register_solver
 
 # import various ICs
 from sfepy.discrete.dg.my_utils.inits_consts import ghump, gsmooth, left_par_q, left_cos, superic, three_step_u, \
     sawtooth_q, const_q, quadr_cub
 
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm
 
-
-
-# import TSSs
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
+
 from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 
+from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
+from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
+from sfepy.discrete.dg.dg_terms import LeftDiffusionDGFluxTerm, RightDiffusionDGFluxTerm
+
 register_term(AdvectDGFluxTerm)
+register_term(NonlinScalarDotGradTerm)
+register_term(NonlinearHyperDGFluxTerm)
+register_term(DiffusionDGFluxTerm)
+register_term(DiffusionInteriorPenaltyTerm)
+register_term(LeftDiffusionDGFluxTerm)
+register_term(RightDiffusionDGFluxTerm)
+
 register_solver(TVDRK3StepSolver)
 register_solver(RK4StepSolver)
 register_solver(EulerStepSolver)
+
+functions = {}
+
+def local_register_function(fun):
+    functions.update({fun.__name__: (fun,)})
+    return fun
 
 def get_cfl_setup(CFL):
 

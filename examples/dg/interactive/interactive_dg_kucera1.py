@@ -5,7 +5,7 @@ from os.path import join as pjoin
 
 # sfepy imports
 from sfepy.discrete.fem.periodic import match_x_line, match_y_line
-from sfepy.discrete.functions import Functionize
+from sfepy.discrete.functions import make_sfepy_function
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.base.base import Struct
@@ -162,7 +162,7 @@ DiffPen = DiffusionInteriorPenaltyTerm("diff_pen(Cw.val, v, u)", "Cw.val, v, u[-
 # ┌----------------------------┐
 # |    Define source term      |
 # └----------------------------┘
-@Functionize
+@make_sfepy_function
 def source_fun(ts, coors, mode="qp", **kwargs):
     if mode == "qp":
         t = ts.dt * ts.step
@@ -199,7 +199,7 @@ eqs = Equations([eq])
 # ┌----------------------------┐
 # | Create boundary conditions |
 # └----------------------------┘
-@Functionize
+@make_sfepy_function
 def bc_funs(ts, coors, bc, problem):
     # return 2*coors[..., 1]
     t = ts.dt*ts.step
@@ -254,7 +254,7 @@ bottom_bc_du = DGEssentialBC('bottom_fix_du', bottom, {'u.all': bc_funs}, diff=1
 # ┌--------------------------┐
 # | Create initial condition |
 # └--------------------------┘
-@Functionize
+@make_sfepy_function
 def ic_fun(x, ic=None):
     return 0*gsmooth(x[..., 0:1] - .3) * gsmooth(x[..., 1:] - .3)
 
