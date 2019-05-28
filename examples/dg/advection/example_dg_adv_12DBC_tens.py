@@ -54,7 +54,7 @@ ics = {
 }
 
 dgebcs = {
-    'u_left' : ('Gamma_Left', {'u.all': .5, 'gradu.all' : (0.0, 0.0)}),
+    'u_left' : ('Gamma_Left', {'u.all': .5, 'grad.u.all' : (0.0, 0.0)}),
     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
 }
 
