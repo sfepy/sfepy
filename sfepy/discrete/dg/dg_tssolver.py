@@ -51,17 +51,20 @@ class DGMultiStageTS(TimeSteppingSolver):
         self.format = format
         self.verbose = self.conf.verbose
 
-        if hasattr(self.conf, "limiter"):
+        self.post_stage_hook = lambda x: x
+
+        try:
             if self.conf.limiter is not None:
                 # FIXME - hot fix to get limiter working, maybe specify the field in options
                 n_cell = list(context.fields.values())[0].n_cell
                 n_el_nod = list(context.fields.values())[0].n_el_nod
                 self.post_stage_hook = self.conf.limiter(n_cell=n_cell, n_el_nod=n_el_nod, verbose=self.verbose)
-        elif hasattr(self.conf, "post_stage_hook"):
-            if self.conf.post_stage_hook is not None:
+            elif self.conf.post_stage_hook is not None:
                 self.post_stage_hook = self.conf.post_stage_hook
-        else:
-            self.post_stage_hook = lambda x: x
+        except AttributeError:
+            "There is no hook defined."
+            pass
+
 
     def solve_step0(self, nls, vec0):
         res = nls.fun(vec0)
