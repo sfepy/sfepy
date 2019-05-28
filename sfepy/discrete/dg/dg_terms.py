@@ -6,7 +6,7 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
-from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
+from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler, DGField
 
 
 class AdvectDGFluxTerm(Term):
@@ -48,7 +48,7 @@ class AdvectDGFluxTerm(Term):
         - opt_material : :math: `\alpha`
     """
 
-    alf = 0
+    alpha = 0
     name = "dw_dg_advect_laxfrie_flux"
     modes = ("weak",)
     arg_types = ('opt_material', 'material_advelo', 'virtual', 'state')
@@ -67,174 +67,59 @@ class AdvectDGFluxTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:
-            self.alf = alpha  # extract alpha value regardless of shape
+            self.alpha = alpha  # extract alpha value regardless of shape
 
-        if diff_var is not None:
-            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, 0
-        else:
-            field = state.field
-            region = field.region
+        field = state.field
+        region = field.region
 
-            if "DG" not in field.family_name:
-                raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
+        if "DG" not in field.family_name:
+            raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            fargs = (state, field, region, advelo[:, 0, :, 0])
-            return fargs
+        fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
+        return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, state, field, region, advelo):
+    def function(self, out, state, diff_var, field : DGField, region, advelo):
 
-        if state is None:
-            out[:] = 0
-            return None
+        if diff_var is not None:
+            fc_n = field.get_cell_normals_per_facet(region)
+            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
 
-        fc_n = field.get_cell_normals_per_facet(region)
-        facet_base_vals = field.get_facet_base(base_only=True)
-        in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
+            facet_base_vals = field.get_facet_base(base_only=True)
+            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+            in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
+            per_facet_inner_flux = nm.einsum("nfk, ndfk->nd",
+                                             fc_n,
+                                             nm.einsum("nk, nbfq->nbfk", 1/2*advelo, in_fc_b) +
+                                             nm.einsum("nfk, nf, nbfq->nbfk", (1 - self.alpha)*fc_n, C/2, in_fc_b))
 
-        C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
-        fc_v_p = in_fc_v + out_fc_v
-        fc_v_m = in_fc_v - out_fc_v
-        # get sane facet base shape
-        fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
-        central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_p) / 2
-        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_m)
-        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+            per_facet_outer_flux = nm.einsum("nfk, nbfk->nd",
+                                             fc_n,
+                                             nm.einsum("nk, nbfq->nbfk", 1/2*advelo, out_fc_b) +
+                                             nm.einsum("nfk, nf, nbfq->nbfk", -(1 - self.alpha)*fc_n, C/2, out_fc_b))
 
-        # cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
-        # 1D plots
-        if False:
-            dofs = self.dofs
-            # TODO remove 1D plots
-            from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct_legendre_dofs
-            import matplotlib.pyplot as plt
-            x = self.region.domain.mesh.coors
-            plot_1D_legendre_dofs(x, (dofs,))
-            ww, xx = reconstruct_legendre_dofs(x, 1, dofs.T[0, ..., None, None])
-            plt.plot(xx, ww[:, 0], label="recon")
+            pass
+        else:
+            fc_n = field.get_cell_normals_per_facet(region)
+            facet_base_vals = field.get_facet_base(base_only=True)
+            in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
 
-            # plt.figure("Vals outer")
-            # plt.plot(x[:-1], out_fc_v[:, 0], marker=".", label="left outer", color="b",  ls="")
-            # plt.plot(x[1:], out_fc_v[:, 1], marker=".",  label="right outer", color="r",  ls="")
-            # plt.plot(xx, ww[:, 0], label="recon")
-            # plt.legend()
-            #
-            # # Plot mesh
-            # XN = x[-1]
-            # X1 = x[0]
-            # Xvol = XN - X1
-            # X = (x[1:] + x[:-1]) / 2
-            # plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
-            # plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
-            # plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
-            #
-            # plt.figure("Vals inner")
-            # plt.plot(xx, ww[:, 0], label="recon")
-            # plt.plot(x[:-1], in_fc_v[:, 0], marker=".", label="left in", color="b", ls="")
-            # plt.plot(x[1:], in_fc_v[:, 1], marker=".", label="right in", color="r", ls="")
-            # plt.legend()
-            #
-            # # Plot mesh
-            # XN = x[-1]
-            # X1 = x[0]
-            # Xvol = XN - X1
-            # X = (x[1:] + x[:-1]) / 2
-            # plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
-            # plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
-            # plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
-            # plt.legend()
+            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+            fc_v_p = in_fc_v + out_fc_v
+            fc_v_m = in_fc_v - out_fc_v
+            # get sane facet base shape
+            fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+            central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_p) / 2
+            upwind = (1 - self.alpha) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_m)
+            cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
-            for mode_n in range(n_el_nod):
-                plt.figure("Flux {}".format(mode_n))
-                fig = plt.gcf()
-                fig.clear()
-                plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(x[:-1], facet_fluxes[:, 0, mode_n], marker=">", label="flux {} left".format(mode_n), color="b",
-                         ls="")
-                plt.plot(x[1:], facet_fluxes[:, 1, mode_n], marker=">", label="flux {} right".format(mode_n), color="r",
-                         ls="")
+            # cell_fluxes = nm.sum(facet_fluxes, axis=1)
 
-                # Plot mesh
-                XN = x[-1]
-                X1 = x[0]
-                Xvol = XN - X1
-                X = (x[1:] + x[:-1]) / 2
-                plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
-                plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
-                plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
-                plt.legend()
-
-            # plt.show()
-
-            for mode_n in range(n_el_nod):
-                plt.figure("Flux {}".format(mode_n))
-                fig = plt.gcf()
-                fig.clear()
-                plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(xx, ww[:, 0], label="recon")
-                plt.plot(X, cell_fluxes[:, mode_n], marker="D", label="cell flux {}".format(mode_n), color="r", ls="")
-
-                # Plot mesh
-                XN = x[-1]
-                X1 = x[0]
-                Xvol = XN - X1
-                X = (x[1:] + x[:-1]) / 2
-                plt.vlines(x[:, 0], ymin=0, ymax=.5, colors="grey")
-                plt.vlines((X1, XN), ymin=0, ymax=.5, colors="k")
-                plt.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
-                plt.legend()
-                plt.close('all')
-
-        # 2D plots
-        if False:
-            # TODO remove 2D plots
-            import matplotlib.pyplot as plt
-            import sfepy.postprocess.plot_cmesh as pc
-
-            cmesh = self.region.domain.mesh.cmesh
-
-            def plot_facet_normals(ax, cmesh, normals, scale, col='m'):
-                dim = cmesh.dim
-                ax = pc._get_axes(ax, dim)
-
-                edim = dim - 1
-                coors = cmesh.get_centroids(edim)
-                coors = pc._to2d(coors)
-
-                cmesh.setup_connectivity(dim, edim)
-                c2f = cmesh.get_conn(dim, edim)
-                for ic, o1 in enumerate(c2f.offsets[:-1]):
-                    o2 = c2f.offsets[ic + 1]
-                    for ifal, ifa in enumerate(c2f.indices[o1:o2]):
-                        # print(ic, ifal, ifa)
-                        cc = nm.array([coors[ifa], coors[ifa] + scale * normals[ic, ifal]])
-                        # print(cc)
-                        ax.plot(*cc.T, color=col)
-                        # ax.plot([cc[1, 0]], [cc[1, 1]], color=col, marker=">")
-
-                return ax
-
-            ax = pc.plot_cmesh(
-                    None, cmesh,
-                    wireframe_opts={'color': 'k', 'linewidth': 2},
-                    entities_opts=[
-                        {'color': 'k', 'label_global': 12, 'label_local': 8, 'size': 20},  # vertices
-                        {'color': 'b', 'label_global': 6, 'label_local': 8, 'size': 10},  # faces
-                        {'color': 'r', 'label_global': 12, 'size': 1},  # cells
-                    ])
-            # for i in range(n_el_nod):
-            #     ax = plot_facet_normals(ax, cmesh, facet_fluxes[:, :, i, None] * fc_n, 1, col='r')
-
-            ax = plot_facet_normals(ax, cmesh, fc_n, .01, col='m')
-            plt.show()
-
-        out[:] = 0.0
-        n_el_nod = field.n_el_nod
-        for i in range(n_el_nod):
-            out[:, :, i, 0] = cell_fluxes[:, i, None]
+            out[:] = 0.0
+            n_el_nod = field.n_el_nod
+            for i in range(n_el_nod):
+                out[:, :, i, 0] = cell_fluxes[:, i, None]
 
         status = None
         return status
