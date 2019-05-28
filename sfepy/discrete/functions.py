@@ -43,7 +43,7 @@ class Function(Struct):
     def set_extra_args(self, **extra_args):
         self.extra_args = extra_args
 
-def Functionize(fun_or_name=None):
+def make_sfepy_function(fun_or_name=None):
     """
     Convenience decorator to quickly create
     sfepy.discrete.functions.Function objects
