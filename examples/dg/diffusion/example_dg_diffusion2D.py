@@ -7,7 +7,7 @@ register_term(DiffusionInteriorPenaltyTerm)
 example_name = "diff_2D"
 dim = int(example_name[example_name.index("D") - 1])
 
-filename_mesh = "../mesh/tens_2D_mesh.vtk"
+filename_mesh = "../mesh/tens_2D_mesh20.vtk"
 
 approx_order = 3
 t0 = 0.

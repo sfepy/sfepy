@@ -6,7 +6,7 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
-from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
+from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler, DGField
 
 
 class AdvectDGFluxTerm(Term):
@@ -48,7 +48,7 @@ class AdvectDGFluxTerm(Term):
         - opt_material : :math: `\alpha`
     """
 
-    alf = 0
+    alpha = 0
     name = "dw_dg_advect_laxfrie_flux"
     modes = ("weak",)
     arg_types = ('opt_material', 'material_advelo', 'virtual', 'state')
@@ -67,50 +67,72 @@ class AdvectDGFluxTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:
-            self.alf = alpha  # extract alpha value regardless of shape
+            self.alpha = alpha  # extract alpha value regardless of shape
 
-        if diff_var is not None:
-            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, 0
-        else:
-            field = state.field
-            region = field.region
+        field = state.field
+        region = field.region
 
-            if "DG" not in field.family_name:
-                raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
+        if "DG" not in field.family_name:
+            raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            fargs = (state, field, region, advelo[:, 0, :, 0])
-            return fargs
+        fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
+        return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, state, field, region, advelo):
+    def function(self, out, state, diff_var, field : DGField, region, advelo):
 
-        if state is None:
-            out[:] = 0
-            return None
+        if diff_var is not None:
+            fc_n = field.get_cell_normals_per_facet(region)
+            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
 
-        fc_n = field.get_cell_normals_per_facet(region)
-        facet_base_vals = field.get_facet_base(base_only=True)
-        in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
-        # get sane facet base shape
-        fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+            facet_base_vals = field.get_facet_base(base_only=True)
+            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+            in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
+            inner_flux = nm.einsum("nfk, nbfkq->nbfq",
+                                   fc_n,
+                                   nm.einsum("nk, nbfq->nbfkq", 1/2*advelo, in_fc_b) +
+                                   nm.einsum("nfk, nf, nbfq->nbfkq", (1 - self.alpha)*fc_n, C/2, in_fc_b))
 
-        # get maximal wave speeds at facets
-        C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+            per_facet_outer_flux = nm.einsum("nfk, nbfkq->nbfq",
+                                             fc_n,
+                                             nm.einsum("nk, nbfq->nbfkq", 1/2*advelo, out_fc_b) +
+                                             nm.einsum("nfk, nf, nbfq->nbfkq", -(1 - self.alpha)*fc_n, C/2, out_fc_b))
 
-        fc_v_avg = (in_fc_v + out_fc_v)/2
-        fc_v_jmp = in_fc_v - out_fc_v
+            active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] > 0)
+            active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
+            # TODO transform list of active cell connections to list of active DOFs
+            active = nm.stack((active_cells, active_nrbhs), axis=-1)
 
-        central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_avg)
-        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
+            out_vals = nm.einsum('idq,ibq->idb', in_fc_b[active_nrbhs,:, active_facets, :], per_facet_outer_flux[active_nrbhs, :, active_facets])
+            in_vals = nm.einsum('ndfq,nbfq -> ndb', in_fc_b, inner_flux)
+            # iels =
 
-        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
 
-        out[:] = 0.0
-        n_el_nod = field.n_el_nod
-        for i in range(n_el_nod):
-            out[:, :, i, 0] = cell_fluxes[:, i, None]
+
+            pass
+        else:
+            fc_n = field.get_cell_normals_per_facet(region)
+            facet_base_vals = field.get_facet_base(base_only=True)
+            in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
+            # get sane facet base shape
+            fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+
+            # get maximal wave speeds at facets
+            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+
+            fc_v_avg = (in_fc_v + out_fc_v)/2
+            fc_v_jmp = in_fc_v - out_fc_v
+
+            central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_avg)
+            upwind = (1 - self.alpha) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
+
+            cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+
+            out[:] = 0.0
+            n_el_nod = field.n_el_nod
+            for i in range(n_el_nod):
+                out[:, :, i, 0] = cell_fluxes[:, i, None]
 
         status = None
         return status
