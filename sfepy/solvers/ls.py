@@ -839,7 +839,10 @@ class MUMPSParallelSolver(LinearSolver):
 
     __metaclass__ = SolverMeta
 
-    _parameters = []
+    _parameters = [
+        ('memory_relaxation', 'int', 20, False,
+         'The percentage increase in the estimated working space.'),
+    ]
 
     def __init__(self, conf, **kwargs):
         import multiprocessing
@@ -913,7 +916,7 @@ class SchurMumps(MUMPSSolver):
 
     __metaclass__ = SolverMeta
 
-    _parameters = [
+    _parameters = MUMPSSolver._parameters + [
         ('schur_variables', 'list', None, True,
          'The list of Schur variables.'),
     ]
