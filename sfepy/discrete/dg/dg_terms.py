@@ -6,7 +6,7 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 
-from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler, DGField
+from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 
 
 class AdvectDGFluxTerm(Term):
@@ -48,7 +48,7 @@ class AdvectDGFluxTerm(Term):
         - opt_material : :math: `\alpha`
     """
 
-    alpha = 0
+    alf = 0
     name = "dw_dg_advect_laxfrie_flux"
     modes = ("weak",)
     arg_types = ('opt_material', 'material_advelo', 'virtual', 'state')
@@ -67,59 +67,50 @@ class AdvectDGFluxTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:
-            self.alpha = alpha  # extract alpha value regardless of shape
-
-        field = state.field
-        region = field.region
-
-        if "DG" not in field.family_name:
-            raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
-
-        fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
-        return fargs
-
-    # noinspection PyUnreachableCode
-    def function(self, out, state, diff_var, field : DGField, region, advelo):
+            self.alf = alpha  # extract alpha value regardless of shape
 
         if diff_var is not None:
-            fc_n = field.get_cell_normals_per_facet(region)
-            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
-
-            facet_base_vals = field.get_facet_base(base_only=True)
-            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
-            in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
-            per_facet_inner_flux = nm.einsum("nfk, ndfk->nd",
-                                             fc_n,
-                                             nm.einsum("nk, nbfq->nbfk", 1/2*advelo, in_fc_b) +
-                                             nm.einsum("nfk, nf, nbfq->nbfk", (1 - self.alpha)*fc_n, C/2, in_fc_b))
-
-            per_facet_outer_flux = nm.einsum("nfk, nbfk->nd",
-                                             fc_n,
-                                             nm.einsum("nk, nbfq->nbfk", 1/2*advelo, out_fc_b) +
-                                             nm.einsum("nfk, nf, nbfq->nbfk", -(1 - self.alpha)*fc_n, C/2, out_fc_b))
-
-
-            pass
+            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
+            return None, None, None, 0
         else:
-            fc_n = field.get_cell_normals_per_facet(region)
-            facet_base_vals = field.get_facet_base(base_only=True)
-            in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
+            field = state.field
+            region = field.region
 
-            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
-            fc_v_p = in_fc_v + out_fc_v
-            fc_v_m = in_fc_v - out_fc_v
-            # get sane facet base shape
-            fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
-            central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_p) / 2
-            upwind = (1 - self.alpha) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_m)
-            cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+            if "DG" not in field.family_name:
+                raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-            # cell_fluxes = nm.sum(facet_fluxes, axis=1)
+            fargs = (state, field, region, advelo[:, 0, :, 0])
+            return fargs
 
-            out[:] = 0.0
-            n_el_nod = field.n_el_nod
-            for i in range(n_el_nod):
-                out[:, :, i, 0] = cell_fluxes[:, i, None]
+    # noinspection PyUnreachableCode
+    def function(self, out, state, field, region, advelo):
+
+        if state is None:
+            out[:] = 0
+            return None
+
+        fc_n = field.get_cell_normals_per_facet(region)
+        facet_base_vals = field.get_facet_base(base_only=True)
+        in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
+        # get sane facet base shape
+        fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
+
+        # get maximal wave speeds at facets
+        C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+
+        fc_v_avg = (in_fc_v + out_fc_v)/2
+        fc_v_jmp = in_fc_v - out_fc_v
+
+        central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_avg)
+        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
+
+        cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+
+
+        out[:] = 0.0
+        n_el_nod = field.n_el_nod
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = cell_fluxes[:, i, None]
 
         status = None
         return status
@@ -335,10 +326,8 @@ class NonlinearHyperDGFluxTerm(Term):
 
     def get_fargs(self, alpha, fun, dfun, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        # FIXME - just  to get it working, remove code duplicity!
 
         if alpha is not None:
-            # FIXME this is only hotfix to get scalar!
             self.alf = nm.max(alpha)  # extract alpha value regardless of shape
 
         self.fun = fun
@@ -378,7 +367,7 @@ class NonlinearHyperDGFluxTerm(Term):
         df_in = df(in_fc_v)
         df_out = df(out_fc_v)
         fc_n__dot__df_in = nm.einsum("ifk,ifqk->ifq", fc_n, df_in)
-        fc_n__dot__df_out = nm.einsum("ifk,ifqk->ifq", fc_n, df_out)  # TODO
+        fc_n__dot__df_out = nm.einsum("ifk,ifqk->ifq", fc_n, df_out)
         dfdn = nm.stack((fc_n__dot__df_in, fc_n__dot__df_out), axis=-1)
         C = nm.amax(nm.abs(dfdn), axis=(-2, -1))
 
@@ -387,6 +376,7 @@ class NonlinearHyperDGFluxTerm(Term):
 
         central = fc_f_avg
         upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifqk", C, fc_n, fc_v_jmp)
+
         cell_fluxes = nm.einsum("ifk,ifqk,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
         out[:] = 0.0
@@ -432,18 +422,6 @@ class NonlinScalarDotGradTerm(Term):
                    'state/grad_virtual'  : 1}]
     modes = ('grad_state', 'grad_virtual')
 
-    # def __init__(self, integral, region, f=None, df=None, **kwargs):
-    #     ScalarDotMGradScalarTerm.__init__(self, self.name + "(v, u)", "u[-1], v", integral, region, **kwargs)
-    #     # TODO how to pass f and df as Term arguments i.e. from conf examples?
-    #     if f is not None:
-    #         self.fun = f
-    #     else:
-    #         raise ValueError("Function f not provided to {}!".format(self.name))
-    #     if df is not None:
-    #         self.dfun = df
-    #     else:
-    #         raise ValueError("Derivative of function {} no provided to {}".format(self.fun, self.name))
-
     @staticmethod
     def function(out, out_qp, geo, fmode):
         status = geo.integrate(out, out_qp)
@@ -456,7 +434,7 @@ class NonlinScalarDotGradTerm(Term):
 
         if diff_var is None:
             if self.mode == 'grad_state':
-                # TODO chceck correct shapes for integration
+                # TODO check correct shapes for integration
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
                 val_qp = dfun(self.get(var2, 'val')[..., 0])
@@ -465,7 +443,6 @@ class NonlinScalarDotGradTerm(Term):
                 out_qp = dot_sequences(bf_t, val_grad_qp, 'ATB')
 
             else:
-                # TODO chceck correct shapes for integration
                 geo = vg2
                 val_qp = fun(self.get(var1, 'val'))[..., 0, :].swapaxes(-2, -1)
                 out_qp = dot_sequences(vg2.bfg, val_qp, 'ATB')
