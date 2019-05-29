@@ -62,15 +62,12 @@ class SplineBox(Struct):
             ncp.append(ncp0)
             cp.append(cp0)
             ncp_tot *= ncp0
-            print(knots)
-            print(cp0)
 
         cp_coors = nm.zeros((ncp_tot, cdim), dtype=nm.double)
         cp_idx, mul_cp_idx = SplineBox.gen_cp_idxs(ncp)
         for ii in range(cdim):
             cp_coors[:, ii] = cp[ii][cp_idx[ii]]
 
-        print(cp_coors)
         return {'base': base,
                 'uidx': uidx,
                 'ncp': ncp,
