@@ -112,12 +112,9 @@ class SplineBox(Struct):
                 b = field
 
             a = self.get_box_matrix()
-            self.cp_values = lstsq(a, b)[0]
+            self.cp_coors = lstsq(a, b)[0]
 
-        else:
-            self.cp_values = self.cp_coors
-
-        self.cp_values0 = self.cp_values.copy()
+        self.cp_coors0 = self.cp_coors.copy()
 
     def get_coors_shape(self):
         """
@@ -137,10 +134,10 @@ class SplineBox(Struct):
             If True, return the initial state.
         """
         if init:
-            return self.cp_values0
+            return self.cp_coors0
 
         else:
-            return self.cp_values
+            return self.cp_coors
 
     def set_control_points(self, cpt_coors, add=False):
         """
@@ -154,9 +151,9 @@ class SplineBox(Struct):
             If True, coors += cpt_coors
         """
         if add:
-            self.cp_values += cpt_coors
+            self.cp_coors += cpt_coors
         else:
-            self.cp_values = cpt_coors
+            self.cp_coors = cpt_coors.copy()
 
     def move_control_point(self, cpoint, val):
         """
@@ -173,7 +170,7 @@ class SplineBox(Struct):
             idx = nm.dot(nm.array(cpoint), self.mul_cp_idx)
         else:
             idx = cpoint
-        self.cp_values[idx, :] += val
+        self.cp_coors[idx, :] += val
 
     def get_box_matrix(self):
         """
@@ -189,14 +186,14 @@ class SplineBox(Struct):
 
         return mtx
 
-    def evaluate(self, cp_values=None, outside=True):
+    def evaluate(self, cp_coors=None, outside=True):
         """
         Evaluate the new position of the mesh coordinates.
 
         Parameters
         ----------
-        cp_values : array
-            The actual control point values. If None, use self.control_values.
+        cp_coors : array
+            The actual control point positions. If None, use self.cp_coors.
         outside : bool
             If True, return also the coordinates outside the spline box.
 
@@ -205,17 +202,17 @@ class SplineBox(Struct):
         new_coors : array
             The new position of the mesh coordinates.
         """
-        if cp_values is None:
-            cp_values = self.cp_values
+        if cp_coors is None:
+            cp_coors = self.cp_coors
 
         mtx = self.get_box_matrix()
 
         if outside and hasattr(self, 'idxs_inside'):
             field = self.field.copy()
-            field[self.idxs_inside, ...] = nm.dot(mtx, cp_values)
+            field[self.idxs_inside, ...] = nm.dot(mtx, cp_coors)
             return field
         else:
-            return nm.dot(mtx, cp_values)
+            return nm.dot(mtx, cp_coors)
 
     def evaluate_derivative(self, cpoint, dirvec):
         """
@@ -250,7 +247,7 @@ class SplineBox(Struct):
 
         dirvec = nm.asarray(dirvec)
         return nm.dot(aux[:, nm.newaxis],
-                      nm.reshape(dirvec, (1, self.cp_values.shape[1])))
+                      nm.reshape(dirvec, (1, self.cp_coors.shape[1])))
 
     def write_control_net(self, filename):
         """
@@ -302,12 +299,6 @@ class SplineBox(Struct):
             f.write("2 %d %d\n" % tuple(ii))
         f.write("\nCELL_TYPES %d\n" % nc)
         f.write("3\n" * nc)
-
-        f.write("\nPOINT_DATA %d\n" % npt)
-        for ival in range(self.cp_values.shape[1]):
-            f.write("\nSCALARS cp_value_%d float 1\n" % (ival + 1))
-            f.write("LOOKUP_TABLE default\n")
-            f.write('\n'.join(self.cp_values[:, ival].astype('|S10')) + '\n')
 
         f.close()
 
@@ -400,7 +391,7 @@ class SplineRegion2D(SplineBox):
         bnd_poly.append(bnd_poly[0][0, :])
         ncpoints = 1
         base, bspl, uidx, ncp = [], [], [], []
-        for idim, si in enumerate([0, 1]):
+        for si in [0, 1]:
             s = spl_bnd[si]
             bspl0 = BSpline(s.degree, ncp=s.ncp)
             bspl0.set_knot_vector(s.knots)
@@ -481,7 +472,6 @@ class SplineRegion2D(SplineBox):
         self.cdim = coors.shape[1]
         self.coors = coors.copy()
         self.field = self.coors
-        self.cp_values = self.cp_coors
 
         self.ts = self.find_ts(coors[self.idxs_inside, :])
 
