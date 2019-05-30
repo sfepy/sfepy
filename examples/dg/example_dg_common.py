@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO
 
@@ -125,3 +126,41 @@ def get_common(approx_order, CFL, t0, t1, limiter, get_ic):
         'pre_process_hook' : get_cfl_setup(CFL)
     }
     return locals()
+
+def get_1Dmesh_hook(XS, XE, n_nod):
+    def mesh_hook(mesh, mode):
+        """
+        Generate the 1D mesh.
+        """
+        if mode == 'read':
+
+            coors = nm.linspace(XS, XE, n_nod).reshape((n_nod, 1))
+            conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
+            mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
+            descs = ['1_2']
+
+            mesh = Mesh.from_data('laplace_1d', coors, None,
+                                  [conn], [mat_ids], descs)
+            return mesh
+
+        elif mode == 'write':
+            pass
+
+    return mesh_hook
+
+def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
+                   coors=None, verbose=True):
+    def mesh_hook(mesh, mode):
+        """
+        Generate the 1D mesh.
+        """
+        if mode == 'read':
+
+            mesh = gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
+                   coors=None, verbose=True)
+            return mesh
+
+        elif mode == 'write':
+            pass
+
+    return mesh_hook

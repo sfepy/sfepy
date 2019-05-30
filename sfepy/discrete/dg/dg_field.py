@@ -1062,6 +1062,8 @@ class DGField(Field):
         # get_physical_qps returns data in strange format,
         # swapping some axis and flipping qps order
         # to get qps only in current region
+        if len(coors.shape) == 3:
+            coors = coors[:, None, :, :]  # add axis for qps when it is missing
         bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
         output_shape = (n_cell,) + (self.dim,) * diff + (n_qp,)
         vals = nm.zeros(output_shape)  # we do not need last axis of coors, values are scalars

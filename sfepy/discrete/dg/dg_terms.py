@@ -63,6 +63,32 @@ class AdvectDGFluxTerm(Term):
                 'map'       : {'u': 'state', 'a': 'material', 'v': 'virtual'}
                 }
 
+    def call_function(self, out, fargs):
+        try:
+            out, status = self.function(out, *fargs)
+
+        except (RuntimeError, ValueError):
+            terms.errclear()
+            raise
+
+        if status:
+            terms.errclear()
+            raise ValueError('term evaluation failed! (%s)' % self.name)
+
+        return out, status
+
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None,
+                  diff_var=None, **kwargs):
+        out = nm.empty(shape, dtype=nm.float64)
+
+        if mode == 'weak':
+            out, status = self.call_function(out, fargs)
+
+        else:
+            status = self.call_function(out, fargs)
+
+        return out, status
+
     def get_fargs(self, alpha, advelo, test, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
@@ -75,18 +101,23 @@ class AdvectDGFluxTerm(Term):
         if "DG" not in field.family_name:
             raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-        fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
+        fargs = (state, test, diff_var, field, region, advelo[:, 0, :, 0])
         return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, state, diff_var, field : DGField, region, advelo):
+    def function(self, out, state, test, diff_var, field : DGField, region, advelo):
 
         if diff_var is not None:
+
             fc_n = field.get_cell_normals_per_facet(region)
             C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
 
-            facet_base_vals = field.get_facet_base(base_only=True)
             nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+
+            active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
+            active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
+            active_nrbhs_facets = nbrhd_idx[active_cells, active_facets, 1]
+
             in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
             inner_flux = nm.einsum("nfk, nbfkq->nbfq",
                                    fc_n,
@@ -98,19 +129,26 @@ class AdvectDGFluxTerm(Term):
                                              nm.einsum("nk, nbfq->nbfkq", 1/2*advelo, out_fc_b) +
                                              nm.einsum("nfk, nf, nbfq->nbfkq", -(1 - self.alpha)*fc_n, C/2, out_fc_b))
 
-            active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] > 0)
-            active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
-            # TODO transform list of active cell connections to list of active DOFs
-            active = nm.stack((active_cells, active_nrbhs), axis=-1)
+            outer_vals = nm.einsum('idq,ibq->idb',
+                                 in_fc_b[active_cells, :, active_facets],
+                                 per_facet_outer_flux[active_cells, :, active_facets])
+            inner_vals = nm.einsum('ndfq,nbfq -> ndb', in_fc_b, inner_flux)
 
-            out_vals = nm.einsum('idq,ibq->idb', in_fc_b[active_nrbhs,:, active_facets, :], per_facet_outer_flux[active_nrbhs, :, active_facets])
-            in_vals = nm.einsum('ndfq,nbfq -> ndb', in_fc_b, inner_flux)
-            # iels =
+            vals = nm.vstack((inner_vals, outer_vals))
+            vals = vals.flatten()
 
+            inner_iels = field.bubble_dofs
+            inner_iels = nm.stack((nm.repeat(inner_iels, field.n_el_nod), nm.tile(inner_iels, field.n_el_nod).flatten()) , axis=-1)
 
+            outer_iels = nm.stack((
+                                  nm.repeat(field.bubble_dofs[active_cells], field.n_el_nod),
+                                  nm.tile(field.bubble_dofs[active_nrbhs], field.n_el_nod).flatten()), axis=-1)
 
+            iels = nm.vstack((inner_iels, outer_iels))
+            vals = nm.vstack((inner_vals, outer_vals))
+            vals = vals.flatten()
 
-            pass
+            out = (vals, iels[:, 0], iels[:, 1], state, state)
         else:
             fc_n = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
@@ -135,7 +173,7 @@ class AdvectDGFluxTerm(Term):
                 out[:, :, i, 0] = cell_fluxes[:, i, None]
 
         status = None
-        return status
+        return out, status
 
 
 class DiffusionDGFluxTerm(Term):
