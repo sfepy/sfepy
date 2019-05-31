@@ -1,11 +1,12 @@
 from examples.dg.example_dg_common import *
+from sfepy.discrete.dg.dg_basis import get_n_el_nod
 
 example_name = "adv_2D_tens"
 dim = int(example_name[example_name.index("D") - 1])
 
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (3, 3), (.5, .5))
 
-approx_order = 0
+approx_order = 3
 t0 = 0.
 t1 = .2
 CFL = .4
@@ -14,7 +15,7 @@ CFL = .4
 angle = 0.0  # - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
-velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
+velo = nm.sum(rotm.T * nm.array([1., 1.]), axis=-1)[:, None]
 materials = {
     'a': ({'val': [velo], '.flux': 0.0},),
 }
@@ -40,21 +41,24 @@ variables = {
 def get_ic(x, ic=None):
     return gsmooth(x[..., 0:1]) * gsmooth(x[..., 1:])
 
+icarray = nm.zeros((get_n_el_nod(approx_order, dim) * 4,))
+icarray[0] = 1
+
 ics = {
-    'ic': ('Omega', {'u.0': 'get_ic'}),
+    'ic': ('Omega', {'u.0': icarray}),
 }
 
 integrals = {
     'i': 2 * approx_order,
 }
-
-dgebcs = {
-    'u_left' : ('left', {'u.all': 1}),
-    'u_top'  : ('top', {'u.all': 1}),
-    'u_bot'  : ('bottom', {'u.all': 1}),
-    'u_right': ('right', {'u.all': 1}),
-
-}
+#
+# dgebcs = {
+#     'u_left' : ('left', {'u.all': 1}),
+#     'u_top'  : ('top', {'u.all': 1}),
+#     'u_bot'  : ('bottom', {'u.all': 1}),
+#     'u_right': ('right', {'u.all': 1}),
+#
+# }
 
 equations = {
     'balance': """

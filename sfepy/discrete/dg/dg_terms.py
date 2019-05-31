@@ -107,7 +107,8 @@ class AdvectDGFluxTerm(Term):
     # noinspection PyUnreachableCode
     def function(self, out, state, test, diff_var, field : DGField, region, advelo):
 
-        if diff_var is not None:
+        if diff_var is not None or diff_var is None:
+            state.data[0][0] = 1
 
             fc_n = field.get_cell_normals_per_facet(region)
             C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
@@ -119,24 +120,27 @@ class AdvectDGFluxTerm(Term):
             active_nrbhs_facets = nbrhd_idx[active_cells, active_facets, 1]
 
             in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
-            inner_flux = nm.einsum("nfk, nbfkq->nbfq",
+
+
+            # compute values
+            inner_diff = nm.einsum("nfk, nfk->nf",
                                    fc_n,
-                                   nm.einsum("nk, nbfq->nbfkq", 1/2*advelo, in_fc_b) +
-                                   nm.einsum("nfk, nf, nbfq->nbfkq", (1 - self.alpha)*fc_n, C/2, in_fc_b))
+                                   advelo + nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
 
-            per_facet_outer_flux = nm.einsum("nfk, nbfkq->nbfq",
-                                             fc_n,
-                                             nm.einsum("nk, nbfq->nbfkq", 1/2*advelo, out_fc_b) +
-                                             nm.einsum("nfk, nf, nbfq->nbfkq", -(1 - self.alpha)*fc_n, C/2, out_fc_b))
+            outer_diff = nm.einsum("nfk, nfk->nf",
+                                   fc_n,
+                                   advelo - nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
 
-            outer_vals = nm.einsum('idq,ibq->idb',
-                                 in_fc_b[active_cells, :, active_facets],
-                                 per_facet_outer_flux[active_cells, :, active_facets])
-            inner_vals = nm.einsum('ndfq,nbfq -> ndb', in_fc_b, inner_flux)
+            inner_vals = nm.einsum("nf, ndfq, nbfq, nfq -> ndb", inner_diff, in_fc_b, in_fc_b, whs)
+            outer_vals = nm.einsum("i, idq, ibq, iq -> idb",
+                                             outer_diff[active_cells, active_facets],
+                                             in_fc_b[active_cells, :, active_facets], out_fc_b[active_cells, :, active_facets],
+                                             whs[active_cells, active_facets])
 
             vals = nm.vstack((inner_vals, outer_vals))
             vals = vals.flatten()
 
+            # compute postions
             inner_iels = field.bubble_dofs
             inner_iels = nm.stack((nm.repeat(inner_iels, field.n_el_nod), nm.tile(inner_iels, field.n_el_nod).flatten()) , axis=-1)
 
@@ -149,7 +153,14 @@ class AdvectDGFluxTerm(Term):
             vals = vals.flatten()
 
             out = (vals, iels[:, 0], iels[:, 1], state, state)
-        else:
+
+            from scipy.sparse import coo_matrix
+            extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
+                               shape=2*(field.n_el_nod * field.n_cell,))
+            fextra = extra.toarray()
+            Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
+
+        # else:
             fc_n = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
             in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
@@ -159,13 +170,15 @@ class AdvectDGFluxTerm(Term):
             # get maximal wave speeds at facets
             C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
 
-            fc_v_avg = (in_fc_v + out_fc_v)/2
+            fc_v_avg = (in_fc_v + out_fc_v)/2.
             fc_v_jmp = in_fc_v - out_fc_v
 
             central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_avg)
             upwind = (1 - self.alpha) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
 
             cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+
+            dMu = Mu - cell_fluxes
 
             out[:] = 0.0
             n_el_nod = field.n_el_nod
