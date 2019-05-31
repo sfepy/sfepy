@@ -252,7 +252,7 @@ class SplineBox(Struct):
         return nm.dot(aux[:, nm.newaxis],
                       nm.reshape(dirvec, (1, self.cp_values.shape[1])))
 
-    def write_control_net(self, filename):
+    def write_control_net(self, filename, deform_by_values=True):
         """
         Write the SplineBox shape to the VTK file.
 
@@ -275,7 +275,8 @@ class SplineBox(Struct):
         elif self.cdim == 3:
             ptformat = "%e %e %e\n"
 
-        for cpt in self.cp_coors:
+        cp_coors = self.cp_values if deform_by_values else self.cp_coors
+        for cpt in cp_coors:
             f.write(ptformat % tuple(cpt))
 
         cells = nm.array([nm.arange(0, ncp[0] - 1), nm.arange(1, ncp[0])]).T
@@ -400,7 +401,7 @@ class SplineRegion2D(SplineBox):
         bnd_poly.append(bnd_poly[0][0, :])
         ncpoints = 1
         base, bspl, uidx, ncp = [], [], [], []
-        for idim, si in enumerate([0, 1]):
+        for si in [0, 1]:
             s = spl_bnd[si]
             bspl0 = BSpline(s.degree, ncp=s.ncp)
             bspl0.set_knot_vector(s.knots)
