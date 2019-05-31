@@ -15,7 +15,7 @@ CFL = .4
 angle = 0.0  # - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
-velo = nm.sum(rotm.T * nm.array([1., 1.]), axis=-1)[:, None]
+velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
 materials = {
     'a': ({'val': [velo], '.flux': 0.0},),
 }
@@ -52,13 +52,13 @@ integrals = {
     'i': 2 * approx_order,
 }
 #
-# dgebcs = {
-#     'u_left' : ('left', {'u.all': 1}),
-#     'u_top'  : ('top', {'u.all': 1}),
-#     'u_bot'  : ('bottom', {'u.all': 1}),
-#     'u_right': ('right', {'u.all': 1}),
-#
-# }
+dgebcs = {
+    'u_left' : ('left', {'u.all': 1}),
+    'u_top'  : ('top', {'u.all': 1}),
+    'u_bot'  : ('bottom', {'u.all': 1}),
+    'u_right': ('right', {'u.all': 1}),
+
+}
 
 equations = {
     'balance': """

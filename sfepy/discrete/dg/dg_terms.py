@@ -107,8 +107,7 @@ class AdvectDGFluxTerm(Term):
     # noinspection PyUnreachableCode
     def function(self, out, state, test, diff_var, field : DGField, region, advelo):
 
-        if diff_var is not None or diff_var is None:
-            state.data[0][0] = 1
+        if diff_var is not None:  # or diff_var is None:
 
             fc_n = field.get_cell_normals_per_facet(region)
             C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
@@ -144,23 +143,20 @@ class AdvectDGFluxTerm(Term):
             inner_iels = field.bubble_dofs
             inner_iels = nm.stack((nm.repeat(inner_iels, field.n_el_nod), nm.tile(inner_iels, field.n_el_nod).flatten()) , axis=-1)
 
-            outer_iels = nm.stack((
-                                  nm.repeat(field.bubble_dofs[active_cells], field.n_el_nod),
-                                  nm.tile(field.bubble_dofs[active_nrbhs], field.n_el_nod).flatten()), axis=-1)
+            outer_iels = nm.stack((nm.repeat(field.bubble_dofs[active_cells], field.n_el_nod),
+                                   nm.tile(field.bubble_dofs[active_nrbhs], field.n_el_nod).flatten()), axis=-1)
 
             iels = nm.vstack((inner_iels, outer_iels))
-            vals = nm.vstack((inner_vals, outer_vals))
-            vals = vals.flatten()
 
             out = (vals, iels[:, 0], iels[:, 1], state, state)
 
-            from scipy.sparse import coo_matrix
-            extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
-                               shape=2*(field.n_el_nod * field.n_cell,))
-            fextra = extra.toarray()
-            Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
+            # from scipy.sparse import coo_matrix
+            # extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
+            #                    shape=2*(field.n_el_nod * field.n_cell,))
+            # fextra = extra.toarray()
+            # Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
 
-        # else:
+        else:
             fc_n = field.get_cell_normals_per_facet(region)
             facet_base_vals = field.get_facet_base(base_only=True)
             in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
@@ -178,7 +174,7 @@ class AdvectDGFluxTerm(Term):
 
             cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
 
-            dMu = Mu - cell_fluxes
+            # dMu = Mu - cell_fluxes
 
             out[:] = 0.0
             n_el_nod = field.n_el_nod
