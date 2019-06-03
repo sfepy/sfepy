@@ -1,9 +1,6 @@
 from examples.dg.example_dg_common import *
 from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 
-register_term(DiffusionDGFluxTerm)
-register_term(DiffusionInteriorPenaltyTerm)
-
 example_name = "diff_2D"
 dim = int(example_name[example_name.index("D") - 1])
 

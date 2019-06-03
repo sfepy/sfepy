@@ -6,7 +6,7 @@ dim = int(example_name[example_name.index("D") - 1])
 
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (3, 3), (.5, .5))
 
-approx_order = 3
+approx_order = 1
 t0 = 0.
 t1 = .2
 CFL = .4
@@ -16,8 +16,12 @@ angle = 0.0  # - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
 velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
+diffusion_coef = 0.02
+
 materials = {
     'a': ({'val': [velo], '.flux': 0.0},),
+    'D': ({'val': [diffusion_coef], '.Cw': 1.},)
+
 }
 
 regions = {
@@ -54,20 +58,23 @@ integrals = {
 #
 dgebcs = {
     'u_left' : ('left', {'u.all': 1}),
-    'u_top'  : ('top', {'u.all': 1}),
-    'u_bot'  : ('bottom', {'u.all': 1}),
-    'u_right': ('right', {'u.all': 1}),
+    'u_top'  : ('top', {'u.all': 0}),
+    'u_bot'  : ('bottom', {'u.all': 0}),
+    'u_right': ('right', {'u.all': 0}),
 
 }
 
 equations = {
-    'balance': """
-                   dw_s_dot_mgrad_s.i.Omega(a.val, u, v) 
-                   - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u) 
-                   = 0
-                   
-                   
-                  """
+    'balance':
+        # """
+        #  + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
+        #  - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
+        # """ +
+        " - dw_laplace.i.Omega(D.val, v, u) " +
+        " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)"
+        # " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+        " = 0"
+
 }
 
 solver_0 = {
@@ -88,7 +95,7 @@ solver_1 = {
     'ls_red_warp' : 0.001,
     'ls_on'      : 0.99999,
     'ls_min'     : 1e-5,
-    'check'     : 0,
+    'check'     : 2,
     'delta'     : 1e-6,
 }
 
