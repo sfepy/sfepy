@@ -1968,7 +1968,7 @@ class DGFieldVariable(FieldVariable):
         # vec[eq_map.eq_ebc] = get_default(force_value, eq_map.val_ebc)
 
         # Reduced vector values.
-        # vec[eq_map.eqi] = r_vec
+        vec[eq_map.eqi] = r_vec
 
         # EPBC.
         # vec[eq_map.master] = vec[eq_map.slave]
