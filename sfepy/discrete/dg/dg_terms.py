@@ -157,16 +157,16 @@ class AdvectDGFluxTerm(DGTerm):
             vals = nm.vstack((inner_vals, outer_vals))
             vals = vals.flatten()
 
-            # compute postions
+            # compute postions within matrix
             iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
 
             out = (vals, iels[:, 0], iels[:, 1], state, state)
 
-            # from scipy.sparse import coo_matrix
-            # extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
-            #                    shape=2*(field.n_el_nod * field.n_cell,))
-            # fextra = extra.toarray()
-            # Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
+            from scipy.sparse import coo_matrix
+            extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
+                               shape=2*(field.n_el_nod * field.n_cell,))
+            fextra = extra.toarray()
+            Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
 
         else:
             fc_n = field.get_cell_normals_per_facet(region)
@@ -195,8 +195,6 @@ class AdvectDGFluxTerm(DGTerm):
 
         status = None
         return out, status
-
-
 
 
 class DiffusionDGFluxTerm(DGTerm):
@@ -252,21 +250,27 @@ class DiffusionDGFluxTerm(DGTerm):
                               outer_facet_base_d[active_cells, :, active_facets]/2,  # state
                               whs[active_cells, active_facets])
 
-            inner_vals_right = 0 # nm.einsum("nkl, nfk, ndfkq, nbfq, nfq->ndb", D, fc_n,
-                                         # inner_facet_base_d,  # test
-                                         # inner_facet_base/2,  # state
-                                         # whs)
+            inner_vals_right = nm.einsum("nkl, nfk, ndfkq, nbfq, nfq->ndb", D, fc_n,
+                                         inner_facet_base_d/2,  # test
+                                         inner_facet_base,  # state
+                                         whs)
 
-            outer_vals_right = 0 # nm.einsum("ikl, ik, idkq, ibq, iq->idb",
-                                        # D[active_cells],
-                                        # fc_n[active_cells, active_facets],
-                                        # - outer_facet_base_d[active_cells, :, active_facets],  # test
-                                        # outer_facet_base[active_cells, :, active_facets]/2,  # state
-                                        # whs[active_cells, active_facets])
+            outer_vals_right = nm.einsum("ikl, ik, idkq, ibq, iq->idb",
+                                         D[active_cells],
+                                         fc_n[active_cells, active_facets],
+                                         inner_facet_base_d[active_cells, :, active_facets]/2,  # test
+                                         - outer_facet_base[active_cells, :, active_facets],  # state
+                                         whs[active_cells, active_facets])
 
             iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
 
+            # nonsymetric diffusion form - opposite signs
+            # vals = nm.vstack((inner_vals_left - inner_vals_right, outer_vals_left - outer_vals_right))
+            # symetric diffusion form
             vals = nm.vstack((inner_vals_left + inner_vals_right, outer_vals_left + outer_vals_right))
+            # incomplete
+            # vals = nm.vstack((inner_vals_left, outer_vals_left))
+
             vals = vals.flatten()
 
             out = (vals, iels[:, 0], iels[:, 1], state, state)
@@ -304,9 +308,9 @@ class DiffusionDGFluxTerm(DGTerm):
             # nonsymetric diffusion form - opposite signs
             # cell_fluxes = int1 - int2
             # symetric diffusion form
-            # cell_fluxes = int1 + int2
+            cell_fluxes = int1 + int2
             # incomplete
-            cell_fluxes = int1
+            # cell_fluxes = int1
 
             out[:] = 0.0
             n_el_nod = field.n_el_nod
@@ -380,7 +384,7 @@ class RightDiffusionDGFluxTerm(DiffusionDGFluxTerm):
         return status
 
 
-class DiffusionInteriorPenaltyTerm(Term):
+class DiffusionInteriorPenaltyTerm(DGTerm):
     name = "dw_dg_interior_penal"
     modes = ("weak",)
     arg_types = ('material_Cw', 'virtual', 'state')
@@ -391,46 +395,75 @@ class DiffusionInteriorPenaltyTerm(Term):
 
     def get_fargs(self, Cw, test, state, mode=None, term_mode=None, diff_var=None, **kwargs):
 
+        field = state.field
+        region = field.region
+
+        if "DG" not in field.family_name:
+            raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
+
+        fargs = (state, test, diff_var, field, region, Cw)
+        return fargs
+
+    def function(self, out, state, test, diff_var, field, region, Cw):
+
         if diff_var is not None:
-            # TODO will this term be residual only?
-            output("Diff var is not None in residual only term {} ! Skipping.".format(self.name))
-            return None, None, None, 0
+
+            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+            active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
+            active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
+
+            inner_facet_base, outer_facet_base, whs = field.get_both_facet_base_vals(state, region,
+                                                                                   derivative=False)
+
+            facet_vols = nm.sum(whs, axis=-1)
+            inv_facet_vols = 1./nm.sum(whs, axis=-1)
+
+            sigma = Cw / facet_vols
+
+            inner = nm.einsum("nf, ndfq, nbfq, nfq -> ndb",
+                               sigma,
+                               inner_facet_base,  # test
+                               inner_facet_base,  # state
+                               whs)
+
+            outer = nm.einsum("i, idq, ibq, iq -> idb",
+                               sigma[active_cells, active_facets],
+                               inner_facet_base[active_cells, :, active_facets],  # test
+                               - outer_facet_base[active_cells, :, active_facets],  # state
+                               whs[active_cells, active_facets])
+
+            vals = nm.vstack((inner, outer))
+            vals = vals.flatten()
+
+            iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
+            out = (vals, iels[:, 0], iels[:, 1], state, state)
+
+            from scipy.sparse import coo_matrix
+            extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
+                               shape=2 * (field.n_el_nod * field.n_cell,))
+            fextra = extra.toarray()
+            Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
         else:
-            field = state.field
-            region = field.region
+            inner_facet_state, outer_facet_state, whs = field.get_both_facet_state_vals(state, region,
+                                                                                            derivative=False
+                                                                                            )
+            inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
+                                                                                   derivative=False)
+            facet_vols = nm.sum(whs, axis=-1)
 
-            if "DG" not in field.family_name:
-                raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
+            jmp_state = inner_facet_state - outer_facet_state
+            jmp_base = inner_facet_base  # - outer_facet_base
+            sigma = Cw / facet_vols
 
-            fargs = (state, field, region, Cw)
-            return fargs
+            n_el_nod = nm.shape(inner_facet_base)[1]
+            cell_penalty = nm.einsum("nf,nfq,ndfq,nfq->nd", sigma, jmp_state, jmp_base, whs)
 
-    def function(self, out, state, field, region, Cw):
-
-        if state is None:
             out[:] = 0.0
-            return None
-
-        inner_facet_state, outer_facet_state, weights = field.get_both_facet_state_vals(state, region,
-                                                                                        derivative=False
-                                                                                        )
-        inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
-                                                                               derivative=False)
-        facet_vols = nm.sum(weights, axis=-1)
-
-        jmp_state = inner_facet_state - outer_facet_state
-        jmp_base = inner_facet_base  # - outer_facet_base
-        sigma = Cw / facet_vols
-
-        n_el_nod = nm.shape(inner_facet_base)[1]
-        cell_penalty = nm.einsum("if,ifq,idfq,ifq->id", sigma, jmp_state, jmp_base, weights)
-
-        out[:] = 0.0
-        for i in range(n_el_nod):
-            out[:, :, i, 0] = cell_penalty[:, i, None]
+            for i in range(n_el_nod):
+                out[:, :, i, 0] = cell_penalty[:, i, None]
 
         status = None
-        return status
+        return out, status
 
 
 class NonlinearHyperDGFluxTerm(DGTerm):

@@ -6,10 +6,7 @@ dim = int(example_name[example_name.index("D") - 1])
 
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (3, 3), (.5, .5))
 
-approx_order = 1
-t0 = 0.
-t1 = .2
-CFL = .4
+approx_order = 2
 
 # get_common(approx_order, CFL, t0, t1, None, get_ic)
 angle = 0.0  # - nm.pi / 5
@@ -46,7 +43,7 @@ def get_ic(x, ic=None):
     return gsmooth(x[..., 0:1]) * gsmooth(x[..., 1:])
 
 icarray = nm.zeros((get_n_el_nod(approx_order, dim) * 4,))
-icarray[0] = 1
+# icarray[0] = 1
 
 ics = {
     'ic': ('Omega', {'u.0': icarray}),
@@ -57,22 +54,21 @@ integrals = {
 }
 #
 dgebcs = {
-    'u_left' : ('left', {'u.all': 1}),
-    'u_top'  : ('top', {'u.all': 0}),
-    'u_bot'  : ('bottom', {'u.all': 0}),
-    'u_right': ('right', {'u.all': 0}),
-
+    'u_left' : ('left', {'u.all': 1, 'grad.u.all' : (-1, 0)}),
+    'u_top'  : ('top', {'u.all': 0, 'grad.u.all' :  (0, 1)}),
+    'u_bot'  : ('bottom', {'u.all': 0, 'grad.u.all' :  (0, -1)}),
+    'u_right': ('right', {'u.all': 0, 'grad.u.all' :  (1, 0)}),
 }
 
 equations = {
     'balance':
-        # """
-        #  + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
-        #  - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
-        # """ +
+        """
+         + dw_s_dot_mgrad_s.i.Omega(a.val, u, v)
+         - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
+        """ +
         " - dw_laplace.i.Omega(D.val, v, u) " +
         " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)"
-        # " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+         " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
         " = 0"
 
 }
@@ -95,7 +91,7 @@ solver_1 = {
     'ls_red_warp' : 0.001,
     'ls_on'      : 0.99999,
     'ls_min'     : 1e-5,
-    'check'     : 2,
+    'check'     : 0,
     'delta'     : 1e-6,
 }
 
