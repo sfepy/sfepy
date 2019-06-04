@@ -1065,19 +1065,22 @@ class DGField(Field):
         if len(coors.shape) == 3:
             coors = coors[:, None, :, :]  # add axis for qps when it is missing
         bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
-        output_shape = (n_cell,) + (self.dim,) * diff + (n_qp,)
+        diff_shape = (self.dim,) * diff
+        output_shape = (n_cell,) + diff_shape + (n_qp,)
         vals = nm.zeros(output_shape)  # we do not need last axis of coors, values are scalars
 
         if nm.isscalar(fun):
+            if sum(diff_shape) > 1:
+                output("Warning: Setting gradient of shape {} in region {} with scalar value {}"
+                              .format(diff_shape, region.name, fun))
             vals[:] = fun
 
         elif isinstance(fun, nm.ndarray):
-            if nm.shape(fun) == nm.shape(vals) or nm.shape(fun) == nm.shape(vals)[-1:]:
-                vals[:] = fun
-            else:
-                raise ValueError("Shape of provided values {} does not match shape {} of qps in region {}".format(
-                    fun.shape, vals.shape, region.name
-                ))
+            try:
+                vals[:] = fun[:, None]
+            except ValueError:
+                raise ValueError("Provided values of shape {} could not be used to set BC qps of shape {} in region {}"
+                    .format(fun.shape, vals.shape, region.name))
 
         elif callable(fun):
             # get boundary values
