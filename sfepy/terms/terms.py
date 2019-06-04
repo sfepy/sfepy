@@ -1588,7 +1588,8 @@ class Term(Struct):
 
                 extra = coo_matrix((sign * vals, (rows, cols)),
                                    shape=asm_obj.shape)
-
+                fextra = extra.toarray()
+                pass
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
 

@@ -71,8 +71,8 @@ def plot_matrix_diff(mtx1, mtx2, delta, legend, mode):
 
     eps = 1e-16
 
-    print(nm.amin(mtx1.data), nm.amin(mtx2.data))
-    print(nm.amax(mtx1.data), nm.amax(mtx2.data))
+    print("min", legend[0] , legend[1], ":", nm.amin(mtx1.data), nm.amin(mtx2.data))
+    print("max", legend[0] , legend[1], ":", nm.amax(mtx1.data), nm.amax(mtx2.data))
 
     mtx_da = mtx1.copy() # To preserve structure of mtx1.
     mtx_da.data[:] = nm.abs(mtx1.data - mtx2.data)
@@ -82,37 +82,38 @@ def plot_matrix_diff(mtx1, mtx2, delta, legend, mode):
     iin = nm.where(nm.abs(mtx1.data) > eps)[0]
     mtx_dr.data[iin] = mtx_da.data[iin] / nm.abs(mtx1.data[iin])
 
-    print(nm.amin(mtx_da.data), nm.amax(mtx_da.data))
-    print(nm.amin(mtx_dr.data), nm.amax(mtx_dr.data))
+    print("err abs min max:", nm.amin(mtx_da.data), nm.amax(mtx_da.data))
+    print("err rel min max:", nm.amin(mtx_dr.data), nm.amax(mtx_dr.data))
 
     epsilon = max(1e-5, 10 * delta)
 
+    # FIXME - hot fix to see results - findout why does not pause work
     print('epsilon:', epsilon)
-    pause()
+    # pause()
 
     ija = nm.where(mtx_da.data > epsilon)[0]
     print_matrix_diff('--- absolute diff', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ija)
-    pause()
+    # pause()
 
     iin = nm.where(nm.abs(mtx1.data) > epsilon)[0]
     ij = nm.where(nm.abs(mtx_dr.data[iin]) > epsilon)[0]
     ij = iin[ij]
     print_matrix_diff('--- relative diff', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ij)
-    pause()
+    # pause()
 
     ijb = nm.intersect1d(ija, ij)
     print_matrix_diff('--- a-r', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ijb)
-    pause()
+    # pause()
 
     ii = nm.argsort(mtx_dr.data[ijb])
     n_s = min(20, len(ii))
     ijbs = ijb[ii[-1:-n_s-1:-1]]
     print_matrix_diff('--- a-r 20 biggest (by r)', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ijbs)
-    pause()
+    # pause()
 
     if mode < 2: return
 
