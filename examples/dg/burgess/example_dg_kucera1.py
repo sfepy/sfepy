@@ -1,17 +1,24 @@
-import numpy as nm
-
 from examples.dg.example_dg_common import *
 
 example_name = "kucera1"
-dim = 2  # int(example_name[example_name.index("D") - 1])
+dim = 2
 
-# filename_mesh = "mesh/messedquad2_diamond.vtk"
 filename_mesh = "../mesh/square_tri2.mesh"
 
 approx_order = 2
 t0 = 0.
-t1 = .5
+t1 = .1
 CFL = .4
+diffusion_coef = 2*1e-2
+Cw = 10
+velo = [1., 1.]
+flux = 0.0
+
+angle = 0  # - nm.pi / 5
+rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
+                 [nm.sin(angle), nm.cos(angle)]])
+velo = nm.sum(rotm.T * nm.array(velo), axis=-1)[:, None]
+burg_velo = velo.T / nm.linalg.norm(velo)
 
 regions = {
     'Omega': 'all',
@@ -30,11 +37,10 @@ variables = {
     'v': ('test field', 'density', 'u'),
 }
 
-angle = - nm.pi / 5
-rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
-                 [nm.sin(angle), nm.cos(angle)]])
-# velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
-velo = nm.array([[1., 1.]]).T
+integrals = {
+    'i': 2 * approx_order,
+}
+
 
 @local_register_function
 def bc_funs(ts, coors, bc, problem):
@@ -109,8 +115,6 @@ def adv_fun_d(u):
     return v1
 
 
-burg_velo = velo.T / nm.linalg.norm(velo)
-
 @local_register_function
 def burg_fun(u):
     vu = .5*burg_velo * u[..., None] ** 2
@@ -122,7 +126,6 @@ def burg_fun_d(u):
     return v1
 
 
-diffusion_coef = 0.002
 materials = {
     'a'     : ({'val': [velo], '.flux': 0.0},),
     'nonlin': ({'.fun': adv_fun, '.dfun': adv_fun_d},),
@@ -131,14 +134,8 @@ materials = {
     'g'     : 'source_fun'
 }
 
-
-# material_1 = {
-#     'name' : 'g',
-#     'function' : 'source_fun',
-# }
-
 ics = {
-    'ic': ('Omega', {'u.0': 'get_ic'}),
+    'ic': ('Omega', {'u.0': 0}),
 }
 
 dgebcs = {
@@ -149,20 +146,18 @@ dgebcs = {
 
 }
 
-integrals = {
-    'i': 2 * approx_order,
-}
-
 equations = {
-    'Advection': "dw_volume_dot.i.Omega(v, u)" +
-                 # non-linear advection
+                 # temporal der
+    'balance':   "dw_volume_dot.i.Omega(v, u)" +
+                 #  non-linear "advection"
                  " + dw_ns_dot_grad_s.i.Omega(burg.fun, burg.dfun, u[-1], v)" +
                  " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg.fun, burg.dfun, v, u[-1])" +
                  #  diffusion
-                 " - dw_laplace.i.Omega(D.val, v, u[-1]) + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])"
-                 " - "
-                 + str(diffusion_coef) + "*"
-                 + "dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
+                 " - dw_laplace.i.Omega(D.val, v, u[-1])"
+                 " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
+                 " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
+                 " - " + str(diffusion_coef) + "*dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
+                 # source
                  + " + dw_volume_lvf.i.Omega(g.val, v)"
                  " = 0"
 }

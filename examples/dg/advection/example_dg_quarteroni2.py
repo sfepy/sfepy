@@ -1,13 +1,13 @@
 from examples.dg.example_dg_common import *
 
-example_name = "quart1"
+example_name = "quart2"
 dim = 2
 
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
 approx_order = 3
-diffusion_coef = 0.02
-Cw = 10.
+diffusion_coef = 1e-5
+Cw = .001
 velo = [1., 1.]
 flux = 0.0
 
@@ -15,6 +15,7 @@ angle = 0.0  # - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
 velo = nm.sum(rotm.T * nm.array(velo), axis=-1)[:, None]
+
 
 regions = {
     'Omega'     : 'all',
@@ -49,35 +50,41 @@ def bc_funs(ts, coors, bc, problem):
     cos = nm.cos
     exp = nm.exp
     pi = nm.pi
+    arctan = nm.arctan
+    sqrt = nm.sqrt
+
+    eps = diffusion_coef
 
     if bc.diff == 0:
         if "left" in bc.name:
-            res[:] = 0
+            res[:] = -arctan(1/16*(4*(2*x_2 - 1)**2 + 3)/sqrt(eps))
         elif "right" in bc.name:
-            res[:] = 0
-        elif "bottom" in bc.name:
-            res[:] = 0 #-2*sin(2*pi*x_1)
+            res[:] = -arctan(1/16*(4*(2*x_2 - 1)**2 + 3)/sqrt(eps))
+        elif "bot" in bc.name:
+            res[:] = -arctan(1/16*(4*(2*x_1 - 1)**2 + 3)/sqrt(eps))
         elif "top" in bc.name:
-            res[:] = 0
+            res[:] = -arctan(1/16*(4*(2*x_1 - 1)**2 + 3)/sqrt(eps))
 
     elif bc.diff == 1:
         if "left" in bc.name:
-            res = nm.stack((-2*pi*(x_2**2 - x_2),
-                                res),
+            res = nm.stack((256/(((4*(2*x_2 - 1)**2 + 3)**2/eps + 256)*sqrt(eps)),
+                            -256*(2*x_2 - 1)/(((4*(2*x_2 - 1)**2 + 3)**2/eps + 256)*sqrt(eps))),
                            axis=-2)
         elif "right" in bc.name:
-            res = nm.stack((-2*pi*(x_2**2 - x_2), res,),
+            res = nm.stack((-256/(((4*(2*x_2 - 1)**2 + 3)**2/eps + 256)*sqrt(eps)),
+                            -256*(2*x_2 - 1)/(((4*(2*x_2 - 1)**2 + 3)**2/eps + 256)*sqrt(eps))),
                            axis=-2)
         elif "bot" in bc.name:
-            res = nm.stack((res,
-                            sin(2*pi*x_1)),
+            res = nm.stack(((-256*(2*x_1 - 1)/(((4*(2*x_1 - 1)**2 + 3)**2/eps + 256)*sqrt(eps)),
+                             256/(((4*(2*x_1 - 1)**2 + 3)**2/eps + 256)*sqrt(eps)))),
                            axis=-2)
         elif "top" in bc.name:
-            res = nm.stack((res,
-                            -sin(2*pi*x_1)),
+            res = nm.stack(((-256*(2*x_1 - 1)/(((4*(2*x_1 - 1)**2 + 3)**2/eps + 256)*sqrt(eps)),
+                             -256/(((4*(2*x_1 - 1)**2 + 3)**2/eps + 256)*sqrt(eps)))),
                            axis=-2)
 
     return res
+
 
 @local_register_function
 def source_fun(ts, coors, mode="qp", **kwargs):
@@ -91,7 +98,16 @@ def source_fun(ts, coors, mode="qp", **kwargs):
     if mode == "qp":
         x_1 = coors[..., 0]
         x_2 = coors[..., 1]
-        res = -2*pi*(x_2**2 - x_2)*cos(2*pi*x_1) - 2*(2*pi**2*(x_2**2 - x_2)*sin(2*pi*x_1) - sin(2*pi*x_1))*eps - (2*x_2 - 1)*sin(2*pi*x_1)
+        res = (-1024 * eps * (8 * (4 * (2 * x_1 - 1) ** 2 +
+                                   4 * (2 * x_2 - 1) ** 2 - 1) * (2 * x_1 - 1) ** 2 /
+                              (((4 * (2 * x_1 - 1) ** 2 + 4 * (2 * x_2 - 1) ** 2 - 1) ** 2 / eps + 256) ** 2 * eps ** (3 / 2))
+                              + 8 * (4 * (2 * x_1 - 1) ** 2 +
+                                     4 * (2 * x_2 - 1) ** 2 - 1) * (2 * x_2 - 1) ** 2 /
+                              (((4 * (2 * x_1 - 1) ** 2 + 4 * (2 * x_2 - 1) ** 2 - 1) ** 2 / eps + 256) ** 2 * eps ** (3 / 2))
+                              - 1 / (((4 * (2 * x_1 - 1) ** 2 + 4 * (2 * x_2 - 1) ** 2 - 1) ** 2 / eps + 256) * sqrt(eps)))
+               - 256 * (2 * x_1 - 1) / (((4 * (2 * x_1 - 1) ** 2 + 4 * (2 * x_2 - 1) ** 2 - 1) ** 2 / eps + 256) * sqrt(eps))
+               - 256 * (2 * x_2 - 1) / (((4 * (2 * x_1 - 1) ** 2 + 4 * (2 * x_2 - 1) ** 2 - 1) ** 2 / eps + 256) * sqrt(eps))
+               )
         return {"val": res[..., None, None]}
 
 
@@ -115,7 +131,7 @@ equations = {
                """
                +
                " - dw_laplace.i.Omega(D.val, v, u) " +
-               " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
+               " + dw_dg_diffusion_flux.i.Omega(D.val, u, v) " +
                " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
                " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
                " + dw_volume_lvf.i.Omega(g.val, v) = 0"

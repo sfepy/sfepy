@@ -21,15 +21,12 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 
 from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
 from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
-from sfepy.discrete.dg.dg_terms import LeftDiffusionDGFluxTerm, RightDiffusionDGFluxTerm
 
 register_term(AdvectDGFluxTerm)
 register_term(NonlinScalarDotGradTerm)
 register_term(NonlinearHyperDGFluxTerm)
 register_term(DiffusionDGFluxTerm)
 register_term(DiffusionInteriorPenaltyTerm)
-register_term(LeftDiffusionDGFluxTerm)
-register_term(RightDiffusionDGFluxTerm)
 
 register_solver(TVDRK3StepSolver)
 register_solver(RK4StepSolver)
