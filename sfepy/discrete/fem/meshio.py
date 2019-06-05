@@ -2718,6 +2718,10 @@ class ANSYSCDBMeshIO(MeshIO):
 class Msh2MeshIO(MeshIO):
     format = 'msh_v2'
 
+    load_slices = {"all" : slice(0, None),
+                    "first": slice(0, 1),
+                    "last": slice(-1, None)}
+
     msh_cells = {
         1: (2, 2),
         2: (2, 3),
@@ -2740,22 +2744,22 @@ class Msh2MeshIO(MeshIO):
                    "2.0 0 8\n"
                    "$EndMeshFormat\n"]
 
-    msh2Dtensor_intscheme1 = [
-                                '$InterpolationScheme\n'
-                                '"INTERPOLATION_SCHEME"\n'
-                                '1\n'
-                                '4\n'
-                                '2\n'
-                                '3 3\n'
-                                '1 0 0\n'
-                                '0 0 1\n'
-                                '0 1 0\n'
-                                '3 2\n'
-                                '0 0 0\n'
-                                '1 0 0\n'
-                                '0 1 0\n' 
-                                '$EndInterpolationScheme\n']
+    def get_filename_format(self, filename):
+        try:
+            basename, step_num, extension = filename.split(".")
+        except ValueError:
+            raise ValueError("Filename of automatically loaded GMSH data must be:"
+                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
+        n_digits = len(step_num)
+        return basename + ".{:0"+str(n_digits)+"d}." + extension
 
+    def get_filename_wildcard(self, filename):
+        try:
+            basename, step_num, extension = filename.split(".")
+        except ValueError:
+            raise ValueError("Filename of automatically loaded GMSH data must be:"
+                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
+        return basename + ".*[0-9]." + extension
 
     def read_dimension(self, ret_fd=True):
         fd = open(self.filename, 'r')
@@ -2793,8 +2797,9 @@ class Msh2MeshIO(MeshIO):
         return _read_bounding_box(fd, dim, '$Nodes',
                                   c0=1, ret_fd=ret_fd, ret_dim=ret_dim)
 
-    def read(self, mesh, omit_facets=True, **kwargs):
-        fd = open(self.filename, 'r')
+    def read(self, mesh, omit_facets=True, filename=None, **kwargs):
+        filename = get_default(filename, self.filename)
+        fd = open(filename, 'r')
 
         conns = []
         descs = []
@@ -2854,7 +2859,7 @@ class Msh2MeshIO(MeshIO):
                 pass
 
             else:
-                output('skipping unknown entity: %s' % line)
+                # output('skipping unknown entity: %s' % line)
                 continue
 
         fd.close()
@@ -2894,6 +2899,119 @@ class Msh2MeshIO(MeshIO):
                           conns0, mat_ids0, descs0)
 
         return mesh
+
+    def read_data(self, step=None, filename=None, cache=None, return_mesh=True):
+        """
+        Reads file or files with basename filename or self.filename, returns lists
+        containing data. Considers all files to contain data from time steps of
+        solution of single transient problem i.e. all data have the same shape,
+        mesh and same interpolation scheme, if any.
+
+        :param step: "all", "last", "first" or number of step to read:
+                    if "all" read all files with the filename varying step,
+                    if "last" read only last step of all files with the filename,
+                    if "first" reads step=0,
+                    if None reads file of filename provided or specified in object,
+        :param filename: name of the file to use, if None file from objet is used
+        :param cache: has no effect
+        :param return_mesh: default True, return mesh associated with data
+        :return: mesh, datas, times, times_ns, scheme:
+            datas is dictionary of ElementNodeData entries,
+            times are real times values,
+            times_ns are time step numbers read,
+            scheme is interpolation scheme,
+        """
+        filename = get_default(filename, self.filename)
+
+        if step in ["all", "last", "first"]:
+            import glob
+            from os.path import join as pjoin
+            filename_wildcard = self.get_filename_wildcard(filename)
+            filenames = glob.glob(filename_wildcard)[self.load_slices[step]]
+
+            datas = []
+            times = []
+            times_ns = []
+
+            for filename in filenames:
+                data, time, time_n, scheme = self.read_data(step=None, filename=filename, return_mesh=False)
+                datas += data
+                times += time
+                times_ns += time_n
+
+            if return_mesh:
+                from sfepy.discrete.fem.mesh import Mesh
+                mesh = Mesh()
+                mesh = self.read(mesh, filename=filename)
+                return mesh, datas, times, times_ns, scheme
+            return datas, times, times_ns, scheme
+
+        elif isinstance(step, int):
+            filename_format = self.get_filename_format(filename)
+            filename = filename_format.format(step)
+        elif step is None:
+            pass
+        else:
+            raise ValueError("Unsupported vaule for step : {}".format(step))
+
+        try:
+            fd = open(filename, "r")
+        except FileNotFoundError:
+            raise FileNotFoundError("[Errno 2] No such file or directory: {}, maybe time step {} is not in output"
+                                    .format(filename, step))
+
+        scheme = Struct(name=None, desc=None, F=None, P=None)
+        while 1:
+            line = skip_read_line(fd).split()
+            if not line:
+                break
+
+            ls = line[0]
+            if ls == "$InterpolationScheme":
+                scheme.name = skip_read_line(fd).strip('"\'')
+                n_int_tags = int(skip_read_line(fd))
+                scheme.desc = int(skip_read_line(fd))
+                n_matrices = int(skip_read_line(fd))
+                f_shape = [int(i) for i in skip_read_line(fd).split(" ")]
+                scheme.F = read_array(fd, f_shape[0], f_shape[1], nm.float64)
+                p_shape = [int(i) for i in skip_read_line(fd).split(" ")]
+                scheme.P = read_array(fd, p_shape[0], p_shape[1], nm.float64)
+            elif ls == "$ElementNodeData":
+                n_str_tags = int(skip_read_line(fd))
+                data_name = skip_read_line(fd).strip('"\'')
+                if n_str_tags == 2:
+                    interpolation_scheme_name = skip_read_line(fd).strip('"\'')
+                n_float_tags =  int(skip_read_line(fd))
+                time = float(skip_read_line(fd))
+                n_int_tags = int(skip_read_line(fd))
+                time_n = int(skip_read_line(fd))
+                comp = int(skip_read_line(fd))
+                n_el = int(skip_read_line(fd))
+
+                n_el_nod = int(look_ahead_line(fd).split()[1])
+                # read data including indexing
+                data = read_array(fd, n_el, n_el_nod + 2 , nm.float64)
+                # strip indexing columns
+                data = data[:, 2:]
+
+            elif line[0] == '#' or ls[:4] == '$End':
+                pass
+        fd.close()
+
+        if return_mesh:
+            from sfepy.discrete.fem.mesh import Mesh
+            mesh = Mesh()
+            mesh = self.read(mesh, filename=filename)
+            return mesh, [data], [time], [time_n], scheme
+        return [data], [time], [time_n], scheme
+
+
+
+
+
+
+
+
 
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
         """
@@ -2943,7 +3061,7 @@ class Msh2MeshIO(MeshIO):
             fd.write('"{}"\n'.format(scheme.name))
             fd.write("1\n")  # one int tag
             fd.write("{}\n".format(scheme.desc[-1]))  # TODO get element type from mesh.desc
-            fd.write("2\n")  # nimber of matrices
+            fd.write("2\n")  # number of matrices
             fd.write("{} {}\n".format(*scheme.F.shape))
             sF = "{} " * scheme.F.shape[1] + "\n"
             for row in scheme.F:
@@ -2964,7 +3082,6 @@ class Msh2MeshIO(MeshIO):
             """
             # write elements data
             # fd.writelines(self.msh2Dtensor_intscheme1)
-            datas = [st.data for st in out.values() if st.mode == "cell_nodes"]
             for key, value in out.items():
                 if not value.mode == "cell_nodes":
                     continue
@@ -2980,7 +3097,7 @@ class Msh2MeshIO(MeshIO):
                     fd.write('"{}"\n'.format(interpolation_scheme_name))
                 fd.write("1\n") # number of real tags
                 fd.write("{}\n".format(ts.time if ts is not None else 0.0))
-                fd.write("3\n") # number of intiger tags
+                fd.write("3\n") # number of integer tags
                 fd.write("{}\n".format(ts.step if ts is not None else 0))
                 fd.write("1\n") # number of components
                 fd.write("{}\n".format(data.shape[0]))
