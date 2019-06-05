@@ -1,13 +1,13 @@
 from examples.dg.example_dg_common import *
 
-example_name = "quart3"
+example_name = "quart4"
 dim = 2
 
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
 approx_order = 3
-diffusion_coef = 1e-2
-Cw = 10
+diffusion_coef = 1
+Cw = 100
 velo = [1., 1.]
 flux = 0.0
 
@@ -19,7 +19,8 @@ velo = nm.sum(rotm.T * nm.array(velo), axis=-1)[:, None]
 
 regions = {
     'Omega'     : 'all',
-    'left' : ('vertices in x == 0', 'edge'),
+    'bot_left' : ('vertices in (x < 0.01) & (y < 0.5)', 'edge'),
+    'top_left' : ('vertices in (x < 0.01) & (y > 0.5)', 'edge'),
     'right': ('vertices in x == 1', 'edge'),
     'top' : ('vertices in y == 1', 'edge'),
     'bottom': ('vertices in y == 0', 'edge')
@@ -98,18 +99,16 @@ def source_fun(ts, coors, mode="qp", **kwargs):
     if mode == "qp":
         x_1 = coors[..., 0]
         x_2 = coors[..., 1]
-        res = -eps*((x_1 - 1)**2*exp(-(x_1 - 1)*(x_2 - 1)/eps)/(eps**2*(exp(-1/eps) - 1)) +
-                    (x_2 - 1)**2*exp(-(x_1 - 1)*(x_2 - 1)/eps)/(eps**2*(exp(-1/eps) - 1))) \
-              - x_1 - x_2 - (x_1 - 1)*exp(-(x_1 - 1)*(x_2 - 1)/eps)/(eps*(exp(-1/eps) - 1)) - \
-              (x_2 - 1)*exp(-(x_1 - 1)*(x_2 - 1)/eps)/(eps*(exp(-1/eps) - 1)) + 2
+        res = 0 * x_1
         return {"val": res[..., None, None]}
 
 
 dgebcs = {
-    'u_left' : ('left', {'u.all': "bc_funs", 'grad.u.all' : "bc_funs"}),
-    'u_top'  : ('top', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),
-    'u_bot'  : ('bottom', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),
-    'u_right': ('right', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),
+    'u_bot_left' : ('bot_left', {'u.all': 1, 'grad.u.all' : (0, 0)}),
+    'u_top_left': ('top_left', {'u.all': 0, 'grad.u.all': (0, 0)}),
+    'u_top'  : ('top', {'u.all': 0, 'grad.u.all': (0, 0)}),
+    'u_bot'  : ('bottom', {'u.all': 1, 'grad.u.all': (0, 0)}),
+    'u_right': ('right', {'u.all': 0, 'grad.u.all': (0, 0)}),
 }
 
 materials = {
