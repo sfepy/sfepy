@@ -34,11 +34,16 @@ register_solver(EulerStepSolver)
 
 functions = {}
 
+
 def local_register_function(fun):
     functions.update({fun.__name__: (fun,)})
     return fun
 
-def get_cfl_setup(CFL):
+
+def get_cfl_setup(CFL=None, dt=None):
+
+    if CFL is None and dt is None:
+        raise ValueError("Specifiy either CFL or dt in CFL setup")
 
     def setup_cfl_condition(problem):
         """
@@ -57,41 +62,47 @@ def get_cfl_setup(CFL):
         max_velo = nm.max(nm.linalg.norm(velo))
         dx = nm.min(problem.domain.mesh.cmesh.get_volumes(dim))
         order_corr = 1. / (2 * approx_order + 1)
-        dt = dx / max_velo * CFL * order_corr
+        if dt is None:
+            _dt = dx / max_velo * CFL * order_corr
+        else:
+            _dt = dt
         # time_steps_N = int((tf - t0) / dt) * 2
-        tn = int(nm.ceil((ts_conf.t1 - ts_conf.t0) / dt))
-        dtdx = dt / dx
+        tn = int(nm.ceil((ts_conf.t1 - ts_conf.t0) / _dt))
+        dtdx = _dt / dx
 
-        ts_conf += Struct(dt=dt, n_step=tn)
+        ts_conf += Struct(dt=_dt, n_step=tn)
         output("Preprocessing hook setup_cfl_condition:")
         output("Approximation order of field {}({}) is {}".format(first_field_name, first_field.family_name, approx_order))
         output("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
-        output("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
-        output("CFL coefficient was {0} and order correction 1/{1} = {2}".format(CFL,  (2 * approx_order + 1), order_corr))
+        output("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, _dt))
+        if dt is None:
+            output("CFL coefficient was {0} and order correction 1/{1} = {2}".format(CFL,  (2 * approx_order + 1), order_corr))
+        else:
+            output("CFL coefficient {0} was ignored, dt specified directly".format(CFL))
         output("Courant number c = max(norm(a)) * dt/dx = {0}".format(max_velo * dtdx))
         output("------------------------------------------")
         output("Time stepping solver is {}".format(ts_conf.kind))
 
-
     return setup_cfl_condition
 
-def get_common(approx_order, CFL, t0, t1, limiter, get_ic):
+def define_transient_diffusion_advection(approx_order, CFL, t0, t1, limiter, get_ic, dt=None):
+
+    functions = {}
+    def local_register_function(fun):
+        functions.update({fun.__name__: (fun,)})
+        return fun
 
     regions = {
         'Omega' : 'all',
     }
 
     fields = {
-        'density' : ('real', 'scalar', 'Omega', '1d', 'DG', 'legendre') #
+        'density' : ('real', 'scalar', 'Omega', '1d', 'DG', 'legendre')
     }
 
     variables = {
         'u' : ('unknown field', 'density', 0, 1),
         'v' : ('test field',    'density', 'u'),
-    }
-
-    functions = {
-        'get_ic' : (get_ic,)
     }
 
     ics = {
@@ -120,9 +131,10 @@ def get_common(approx_order, CFL, t0, t1, limiter, get_ic):
         'nls' : 'newton',
         'ls' : 'ls',
         'save_times' : 100,
-        'pre_process_hook' : get_cfl_setup(CFL)
+        'pre_process_hook' : get_cfl_setup(CFL=CFL) if CFL is not None else get_cfl_setup(dt=dt)
     }
     return locals()
+
 
 def get_1Dmesh_hook(XS, XE, n_nod):
     def mesh_hook(mesh, mode):
@@ -145,6 +157,7 @@ def get_1Dmesh_hook(XS, XE, n_nod):
 
     return mesh_hook
 
+
 def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
                    coors=None, verbose=True):
     def mesh_hook(mesh, mode):
@@ -153,8 +166,8 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
         """
         if mode == 'read':
 
-            mesh = gen_block_mesh(dims, shape, centre, mat_id=0, name='block',
-                   coors=None, verbose=True)
+            mesh = gen_block_mesh(dims, shape, centre, mat_id=mat_id, name=name,
+                   coors=coors, verbose=verbose)
             return mesh
 
         elif mode == 'write':
