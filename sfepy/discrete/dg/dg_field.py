@@ -106,7 +106,7 @@ class DGField(Field):
         # geometry
         self.domain = region.domain
         self.region = region
-        self.dim = region.dim
+        self.dim = region.tdim
         self._setup_geometry()
         self._setup_connectivity()
         # FIXME treat domains embeded to higher dimensional spaces
@@ -532,7 +532,7 @@ class DGField(Field):
         if not region.has_cells():
             raise ValueError("Region {} has no cells".format(region.name))
         n_cell = region.get_n_cells()
-        dim = region.dim
+        dim = region.tdim
         gel = get_gel(region)
         n_el_facets = dim + 1 if gel.is_simplex else 2 ** dim
         return dim, n_cell, n_el_facets
