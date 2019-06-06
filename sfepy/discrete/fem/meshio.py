@@ -2797,7 +2797,7 @@ class Msh2MeshIO(MeshIO):
         return _read_bounding_box(fd, dim, '$Nodes',
                                   c0=1, ret_fd=ret_fd, ret_dim=ret_dim)
 
-    def read(self, mesh, omit_facets=True, filename=None, **kwargs):
+    def read(self, mesh, omit_facets=True, filename=None, drop_z=False, **kwargs):
         filename = get_default(filename, self.filename)
         fd = open(filename, 'r')
 
@@ -2895,12 +2895,16 @@ class Msh2MeshIO(MeshIO):
                 mat_ids0.append(nm.asarray(mat_ids[ii], dtype=nm.int32))
                 descs0.append(descs[ii])
 
+        # drop third coordinate if zero to get prely 2D mesh
+        if drop_z and nm.sum(coors[:, -1]) == 0.0:
+            coors = coors[:, :-1]
+
         mesh._set_io_data(coors[:,1:], nm.int32(coors[:,-1] * 0),
                           conns0, mat_ids0, descs0)
 
         return mesh
 
-    def read_data(self, step=None, filename=None, cache=None, return_mesh=True):
+    def read_data(self, step=None, filename=None, cache=None, return_mesh=False, drop_z=True):
         """
         Reads file or files with basename filename or self.filename, returns lists
         containing data. Considers all files to contain data from time steps of
@@ -2942,7 +2946,7 @@ class Msh2MeshIO(MeshIO):
             if return_mesh:
                 from sfepy.discrete.fem.mesh import Mesh
                 mesh = Mesh()
-                mesh = self.read(mesh, filename=filename)
+                mesh = self.read(mesh, filename=filename, drop_z=drop_z)
                 return mesh, datas, times, times_ns, scheme
             return datas, times, times_ns, scheme
 
@@ -3001,7 +3005,7 @@ class Msh2MeshIO(MeshIO):
         if return_mesh:
             from sfepy.discrete.fem.mesh import Mesh
             mesh = Mesh()
-            mesh = self.read(mesh, filename=filename)
+            mesh = self.read(mesh, filename=filename, drop_z=drop_z)
             return mesh, [data], [time], [time_n], scheme
         return [data], [time], [time_n], scheme
 
