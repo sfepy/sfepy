@@ -4,7 +4,7 @@ from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPen
 example_name = "diff_2D"
 dim = int(example_name[example_name.index("D") - 1])
 
-filename_mesh = "../mesh/tens_2D_mesh20.vtk"
+filename_mesh = "../mesh/mehs_tens_2D_01_20.vtk"
 
 approx_order = 3
 t0 = 0.

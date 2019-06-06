@@ -1,9 +1,9 @@
 from examples.dg.example_dg_common import *
 
-example_name = "adv_2D_tens"
+example_name = "adv_2D"
 dim = int(example_name[example_name.index("D") - 1])
 
-filename_mesh = "../mesh/tens_2D_mesh20.vtk"
+filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
 
 approx_order = 3
 t0 = 0.

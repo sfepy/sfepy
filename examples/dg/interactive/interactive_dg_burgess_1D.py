@@ -29,9 +29,9 @@ from sfepy.discrete.dg.my_utils.inits_consts import \
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
-# vvvvvvvvvvvvvvvv#
+# vvvvvvvvvvvvvvvv #
 approx_order = 1
-# ^^^^^^^^^^^^^^^^#
+# ^^^^^^^^^^^^^^^^ #
 
 # Setup output names
 domain_name = "domain_1D"

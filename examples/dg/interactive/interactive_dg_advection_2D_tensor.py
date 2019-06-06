@@ -40,7 +40,7 @@ approx_order = 2
 CFL = .8
 # ^^^^^^^^^^^^^^^^#
 # Setup  names
-domain_name = "domain_2D"
+domain_name = "iadv_2D_tens"
 problem_name = "iadv_2D_tens"
 output_folder = pjoin("output", problem_name, str(approx_order))
 output_format = "msh"
@@ -51,9 +51,9 @@ clear_folder(pjoin(output_folder, "*." + output_format))
 # ------------
 # | Get mesh |
 # -----------
-mesh = gen_block_mesh((1., 1.), (50, 50), (0.5, 0.5))
+# mesh = gen_block_mesh((1., 1.), (50, 50), (0.5, 0.5))
 
-mesh_name = "tens_2D_mesh"
+mesh_name = "tens_2D_mesh20"
 mesh = Mesh.from_file("mesh/" + mesh_name + ".vtk")
 
 angle = - nm.pi / 5
