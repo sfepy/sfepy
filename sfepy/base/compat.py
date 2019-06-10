@@ -25,7 +25,7 @@ try:
     factorial = sc.factorial
 
 except AttributeError:
-    import scipy.misc as scm
+    import scipy.special as scm
 
     factorial = scm.factorial
 

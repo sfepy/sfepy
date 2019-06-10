@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import numpy as nm
 import numpy.linalg as nla
 
-from scipy.misc import factorial
+from scipy.special import factorial
 
 from sfepy.base.base import assert_, output
 from sfepy.linalg.utils import norm_l2_along_axis as norm
