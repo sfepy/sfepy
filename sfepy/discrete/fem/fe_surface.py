@@ -85,7 +85,11 @@ class FESurface(Struct):
         conn = region.domain.cmesh.get_conn_as_graph(region.dim, region.dim - 1)
         oris = region.domain.cmesh.facet_oris
 
+        econn = self.econn
         ofis = region.get_facet_indices()
+        if region.mirror_map is not None:
+            ofis = ofis[region.mirror_map]
+            econn = econn[region.mirror_map]
         ooris = oris[conn.indptr[ofis[:, 0]] + ofis[:, 1]]
         mfis = mregion.get_facet_indices()
         moris = oris[conn.indptr[mfis[:, 0]] + mfis[:, 1]]
@@ -96,7 +100,7 @@ class FESurface(Struct):
         n_el, n_ep = self.econn.shape
         ii = nm.repeat(nm.arange(n_el)[:, None], n_ep, 1)
         self.meconn = nm.empty_like(self.econn)
-        self.meconn[ii, omap] = self.econn[ii, mmap]
+        self.meconn[ii, omap] = econn[ii, mmap]
 
         nodes = nm.unique(self.meconn)
         remap = prepare_remap(nodes, nodes.max() + 1)

@@ -147,6 +147,9 @@ def transform_regions(adict):
             c2 = tuple_to_conf(key, conf, ['select', 'kind'])
             if len(conf) == 3:
                 c2.parent = conf[2]
+            if len(conf) == 4:
+                c2.parent = conf[2]
+                c2.extra_options = conf[3]
             d2['region_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1(conf)
