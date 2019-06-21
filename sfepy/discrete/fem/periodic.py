@@ -80,7 +80,7 @@ def match_plane_by_dir(coors1, coors2, direction, get_saved=True):
 
             aux += coors1[0] - coors2[idx[0]]
 
-        i1, i2 = find_map(coors1, aux, eps=eps, join=False)
+        i1, i2 = find_map(coors1, aux, join=False)
 
         if i1.shape[0] != coors1.shape[0]:
             print(direction)
