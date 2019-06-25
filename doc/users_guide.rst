@@ -1095,6 +1095,14 @@ Additional options (including solver selection)::
 
         # string, a function to modify problem definition parameters
         'parametric_hook' : '<parametric_hook_function>',
+
+        # float, default: 1e-9. If the distance between two mesh vertices
+        # is less than this value, they are considered identical.
+        # This affects:
+        # - periodic regions matching
+        # - mirror regions matching
+        # - fixing of mesh doubled vertices
+        'mesh_eps': 1e-7,
     }
 
 * ``post_process_hook`` enables computing derived quantities, like
