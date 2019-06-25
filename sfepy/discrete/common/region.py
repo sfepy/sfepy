@@ -676,19 +676,58 @@ class Region(Struct):
         """
         Find the corresponding mirror region, set up element mapping.
         """
+        from sfepy.discrete.fem.mesh import find_map
+
         regions = self.domain.regions
+        eopts = self.extra_options
 
-        for reg in regions:
-            mirror_parent = regions.find(reg.parent)
-            if mirror_parent is None: continue
-            if ((reg is not self)
-                and nm.all(self.vertices == reg.vertices)):
-                mirror_region = reg
-                break
+        if self.mirror_region is not None:
+            return
+
+        if (eopts is not None) and ('mirror_region' in eopts):
+            mreg = regions[eopts['mirror_region']]
+            if self.vertices.shape[0] != mreg.vertices.shape[0]:
+                raise ValueError('%s: incompatible mirror region! (%s)'
+                    % (self.name, mreg.name))
+            coors = self.domain.cmesh.coors
+            coors1 = coors[self.vertices, :]
+            coors2 = coors[mreg.vertices, :]
+            shift = ((nm.sum(coors2, axis=0) - nm.sum(coors1, axis=0))
+                / coors1.shape[0])
+            vmap1, vmap2 = find_map(coors1, coors2 - shift, join=False)
+            if vmap1.shape[0] != coors1.shape[0]:
+                print(coors1[vmap1])
+                print(coors2[vmap2])
+                raise ValueError('cannot match vertices!')
+
+            fconn = self.domain.cmesh.get_conn_as_graph(self.dim - 1, 0)
+            cc = self.domain.cmesh.get_centroids(self.dim - 1)
+            fmap1, fmap2 = find_map(cc[self.facets], cc[mreg.facets] - shift, join=False)
+            if fmap1.shape[0] != self.facets.shape[0]:
+                print(cc[self.facets][fmap1])
+                print(cc[mreg.facets][fmap2])
+                raise ValueError('cannot match facets!')
+
+            mirror_map_i = nm.zeros_like(fmap1)
+            mirror_map_i[fmap1] = fmap2
+            mirror_map = nm.zeros_like(fmap1)
+            mirror_map[fmap2] = fmap1
         else:
-            raise ValueError('cannot find mirror region! (%s)' % self.name)
+            for reg in regions:
+                mirror_parent = regions.find(reg.parent)
+                if mirror_parent is None: continue
+                if ((reg is not self)
+                    and nm.all(self.vertices == reg.vertices)):
+                    mreg = reg
+                    mirror_map = mirror_map_i = None
+                    break
+            else:
+                raise ValueError('cannot find mirror region! (%s)' % self.name)
 
-        self.mirror_region = mirror_region
+        self.mirror_region = mreg
+        self.mirror_map = mirror_map
+        mreg.mirror_region = self
+        mreg.mirror_map = mirror_map_i
 
     def get_mirror_region(self):
         return self.mirror_region

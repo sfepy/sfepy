@@ -631,7 +631,12 @@ class Term(Struct):
             if field is None:
                 continue
 
-            if not nm.all(in1d(self.region.vertices,
+            region = self.region
+            if self.arg_traces[name]:
+                region.setup_mirror_region()
+                region = region.mirror_region
+
+            if not nm.all(in1d(region.vertices,
                                field.region.vertices)):
                 msg = ('%s: incompatible regions: (self, field %s)'
                        + '(%s in %s)') %\
