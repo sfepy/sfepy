@@ -678,7 +678,9 @@ class Term(Struct):
     def get_conn_key(self):
         """The key to be used in DOF connectivity information."""
         key = (self.name,) + tuple(self.arg_names)
-        key += (self.integral_name, self.region.name)
+        is_any_trace = reduce(lambda x, y: x or y,
+                              list(self.arg_traces.values()))
+        key += (self.integral_name, self.region.name, is_any_trace)
 
         return key
 
