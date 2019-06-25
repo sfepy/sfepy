@@ -69,7 +69,10 @@ def create_bnf(term_descs):
     derivative = Combine(Literal('d') + variable \
                          + Literal('/') + Literal('dt'))
 
-    trace = Combine(Literal('tr') + '(' + variable + ')')
+    trace = Combine(Literal('tr') + '('
+                    + Optional(ident + Literal(','))
+                    + variable
+                    + ')', adjacent=False)
 
     generalized_var = derivative | trace | variable
     args = Group(delimitedList(generalized_var))
