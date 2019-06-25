@@ -197,7 +197,7 @@ def main():
         desc = mesh.descs[0]
         coor, ngroups, conns = fix_double_nodes(mesh.coors,
                                                 mesh.cmesh.vertex_groups,
-                                                mesh.get_conn(desc), 1e-9)
+                                                mesh.get_conn(desc))
         mesh = Mesh.from_data(mesh.name + '_merged',
                               coor, ngroups,
                               [conns], [mesh.cmesh.cell_groups], [desc])

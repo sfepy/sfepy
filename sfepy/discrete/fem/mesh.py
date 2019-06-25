@@ -6,51 +6,45 @@ import scipy.sparse as sp
 from sfepy.base.base import Struct, invert_dict, get_default, output, assert_
 from .meshio import MeshIO, supported_cell_types
 import six
-from six.moves import range
+from scipy.spatial import cKDTree
 
-def find_map(x1, x2, eps=1e-8, allow_double=False, join=True):
+eps = 1e-9
+
+
+def set_accuracy(eps):
+    globals()['eps'] = eps
+
+def find_map(x1, x2, allow_double=False, join=True):
     """
     Find a mapping between common coordinates in x1 and x2, such that
     x1[cmap[:,0]] == x2[cmap[:,1]]
     """
-    off, dim = x1.shape
-    ir = nm.zeros((off + x2.shape[0],), dtype=nm.int32)
-    ir[off:] = off
+    kdtree = cKDTree(nm.vstack([x1, x2]))
+    cmap = kdtree.query_pairs(eps, output_type='ndarray')
+    
+    dns1 = nm.where(cmap[:, 1] < x1.shape[0])[0]
+    dns2 = nm.where(cmap[:, 0] >= x1.shape[0])[0]
 
-    x1 = nm.round(x1.T / eps) * eps
-    x2 = nm.round(x2.T / eps) * eps
-    xx = nm.c_[x1, x2]
-
-    keys = [xx[ii] for ii in range(dim)]
-    iis = nm.lexsort(keys=keys)
-
-    xs = xx.T[iis]
-    xd = nm.sqrt(nm.sum(nm.diff(xs, axis=0)**2.0, axis=1))
-
-    ii = nm.where(xd < eps)[0]
-    off1, off2 = ir[iis][ii], ir[iis][ii+1]
-    i1, i2 = iis[ii] - off1, iis[ii+1] - off2
-    dns = nm.where(off1 == off2)[0]
-    if dns.size:
+    if (dns1.size + dns2.size):
         output('double node(s) in:')
-        for dn in dns:
-            if off1[dn] == 0:
-                output('x1: %d %d -> %s %s' % (i1[dn], i2[dn],
-                                               x1[:,i1[dn]], x1[:,i2[dn]]))
-            else:
-                output('x2: %d %d -> %s %s' % (i1[dn], i2[dn],
-                                               x2[:,i1[dn]], x2[:,i2[dn]]))
+        for dn in dns1:
+            idxs = cmap[dn, :]
+            output('x1: %d %d -> %s %s' % (idxs[0], idxs[1],
+                                           x1[idxs[0], :], x1[idxs[1], :]))
+        for dn in dns2:
+            idxs = cmap[dn, :]
+            output('x2: %d %d -> %s %s' % (idxs[0], idxs[1],
+                                           x2[idxs[0], :], x2[idxs[1], :]))
+
         if not allow_double:
             raise ValueError('double node(s)! (see above)')
 
-    if join:
-        cmap = nm.c_[i1, i2]
-        return cmap
-    else:
-        return i1, i2
+    cmap[:, 1] -= x1.shape[0]
+
+    return cmap if join else (cmap[:, 0], cmap[:, 1])
 
 def merge_mesh(x1, ngroups1, conn1, mat_ids1, x2, ngroups2, conn2, mat_ids2,
-               cmap, eps=1e-8):
+               cmap):
     """
     Merge two meshes in common coordinates found in x1, x2.
 
@@ -82,7 +76,7 @@ def merge_mesh(x1, ngroups1, conn1, mat_ids1, x2, ngroups2, conn2, mat_ids2,
 
     return xx, ngroups, conn, mat_ids
 
-def fix_double_nodes(coor, ngroups, conns, eps):
+def fix_double_nodes(coor, ngroups, conns):
     """
     Detect and attempt fixing double nodes in a mesh.
 
@@ -90,7 +84,7 @@ def fix_double_nodes(coor, ngroups, conns, eps):
     w.r.t. precision given by `eps`.
     """
     n_nod, dim = coor.shape
-    cmap = find_map(coor, nm.zeros((0,dim)), eps=eps, allow_double=True)
+    cmap = find_map(coor, nm.zeros((0,dim)), allow_double=True)
     if cmap.size:
         output('double nodes in input mesh!')
         output('trying to fix...')
@@ -114,8 +108,7 @@ def fix_double_nodes(coor, ngroups, conns, eps):
             for conn in conns:
                 ccs.append(remap[conn])
             conns = ccs
-            cmap = find_map(coor, nm.zeros((0,dim)), eps=eps,
-                            allow_double=True)
+            cmap = find_map(coor, nm.zeros((0,dim)), allow_double=True)
         output('...done')
     return coor, ngroups, conns
 

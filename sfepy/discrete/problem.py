@@ -206,6 +206,12 @@ class Problem(Struct):
             if conf.options.get('ulf', False):
                 domain.mesh.coors_act = domain.mesh.coors.copy()
 
+            if conf.options.get('mesh_eps') is not None:
+                import sfepy.discrete.fem.mesh as msh
+                import sfepy.discrete.fem.periodic as per
+                msh.set_accuracy(conf.options.mesh_eps)
+                per.set_accuracy(conf.options.mesh_eps)
+
         elif conf.get('filename_domain') is not None:
             from sfepy.discrete.iga.domain import IGDomain
             domain = IGDomain.from_file(conf.filename_domain)
