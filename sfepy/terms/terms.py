@@ -442,24 +442,27 @@ class Term(Struct):
         self.arg_steps = {}
         self.arg_derivatives = {}
         self.arg_traces = {}
+        self.arg_trace_regions = {}
 
         parser = create_arg_parser()
         self.arg_desc = parser.parseString(self.arg_str)
-
         for arg in self.arg_desc:
-            trace = False
             derivative = None
+            trace = False
+            trace_region = None
 
             if isinstance(arg[1], int):
                 name, step = arg
 
             else:
                 kind = arg[0]
-                name, step = arg[1]
                 if kind == 'd':
+                    name, step = arg[1]
                     derivative = arg[2]
                 elif kind == 'tr':
                     trace = True
+                    trace_region = arg[1]
+                    name, step = arg[2]
 
             match = _match_material_root(name)
             if match:
@@ -469,6 +472,7 @@ class Term(Struct):
             self.arg_steps[name] = step
             self.arg_derivatives[name] = derivative
             self.arg_traces[name] = trace
+            self.arg_trace_regions[name] = trace_region
 
     def setup_args(self, **kwargs):
         self._kwargs = kwargs
