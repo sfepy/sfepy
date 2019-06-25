@@ -541,7 +541,7 @@ Region Definition Syntax
 Regions are defined by the following Python dictionary::
 
         regions = {
-            <name> : (<selection>, [<kind>], [<parent>]),
+            <name> : (<selection>, [<kind>], [<parent>], [{<misc. options>}]),
         }
 
 or::
@@ -557,6 +557,13 @@ or::
           'Right' : ('vertices in (x > 0.99)', 'facet'),
           'Gamma1' : ("""(cells of group 1 *v cells of group 2)
                          +v r.Right""", 'facet', 'Omega'),
+      }
+
+The mirror region can be defined explicitly as::
+
+      regions = {
+        'Top': ('r.Y *v r.Surf1', 'facet', 'Y', {'mirror_region': 'Bottom'}),
+        'Bottom': ('r.Y *v r.Surf2', 'facet', 'Y', {'mirror_region': 'Top'}),
       }
 
 .. _User's Guide-Fields:
