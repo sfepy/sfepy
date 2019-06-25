@@ -149,6 +149,7 @@ def create_arg_parser():
     from pyparsing import Literal, Word, delimitedList, Group, \
          StringStart, StringEnd, Optional, nums, alphas, alphanums
 
+    ident = Word(alphas, alphanums + "_")
     inumber = Word("+-" + nums, nums)
 
     history = Optional(Literal('[').suppress() + inumber
@@ -160,7 +161,10 @@ def create_arg_parser():
     derivative = Group(Literal('d') + variable\
                        + Literal('/').suppress() + Literal('dt'))
 
-    trace = Group(Literal('tr') + Literal('(').suppress() + variable \
+    trace = Group(Literal('tr')
+                  + Literal('(').suppress()
+                  + Optional(ident + Literal(',').suppress(), default=None)
+                  + variable
                   + Literal(')').suppress())
 
     generalized_var = derivative | trace | variable
