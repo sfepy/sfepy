@@ -30,6 +30,7 @@ class Test(TestCommon):
             """term_.a.a(u)""",
             """term.i1.Omega(v, du/dt) + term2.i2.Gamma(v, dphi/dt)""",
             """dw_jump.isurf.Gamma12_1(jump1.val, q1, p1, tr(p2))""",
+            """term_with_trace.2.Gamma1(v, tr(Gamma2, u))""",
         ]
 
         n_fail = 0
