@@ -177,13 +177,13 @@ class ConnInfo(Struct):
 
     def get_region(self, can_trace=True):
         if self.is_trace and can_trace:
-            return self.region.get_mirror_region()
+            return self.region.get_mirror_region(self.trace_region)
         else:
             return self.region
 
     def get_region_name(self, can_trace=True):
         if self.is_trace and can_trace:
-            reg = self.region.get_mirror_region()
+            reg = self.region.get_mirror_region(self.trace_region)
         else:
             reg = self.region
 
@@ -641,8 +641,15 @@ class Term(Struct):
 
             region = self.region
             if self.arg_traces[name]:
-                region.setup_mirror_region(self.arg_trace_regions[name])
-                region = region.mirror_region
+                mreg_name = self.arg_trace_regions[name]
+                if mreg_name is None:
+                    mreg_name = region.setup_mirror_region(mreg_name,
+                                                           ret_name=True)
+                    self.arg_trace_regions[name] = mreg_name
+                else:
+                    region.setup_mirror_region(mreg_name)
+
+                region = region.get_mirror_region(mreg_name)
 
             if not nm.all(in1d(region.vertices,
                                field.region.vertices)):
@@ -686,9 +693,13 @@ class Term(Struct):
     def get_conn_key(self):
         """The key to be used in DOF connectivity information."""
         key = (self.name,) + tuple(self.arg_names)
-        is_any_trace = reduce(lambda x, y: x or y,
-                              list(self.arg_traces.values()))
-        key += (self.integral_name, self.region.name, is_any_trace)
+        arg_traces = [k for k, v in self.arg_traces.items() if v]
+        if len(arg_traces) > 0:
+            trace = True, self.arg_trace_regions[arg_traces[-1]]
+        else:
+            trace = False, None
+
+        key += (self.integral_name, self.region.name) + trace
 
         return key
 
@@ -719,10 +730,16 @@ class Term(Struct):
 
         region = self.get_region()
         if region is not None:
-            is_any_trace = reduce(lambda x, y: x or y,
-                                  list(self.arg_traces.values()))
-            if is_any_trace:
-                region.setup_mirror_region()
+            arg_traces = [k for k, v in self.arg_traces.items() if v]
+            if len(arg_traces) > 0:
+                aname = arg_traces[-1]
+                mreg_name = self.arg_trace_regions[aname]
+                if mreg_name is None:
+                    mreg_name = region.setup_mirror_region(mreg_name,
+                                                           ret_name=True)
+                    self.arg_trace_regions[aname] = mreg_name
+                else:
+                    region.setup_mirror_region(mreg_name)
 
         vals = []
         aux_pvars = []
@@ -734,6 +751,7 @@ class Term(Struct):
 
             field = svar.get_field()
             is_trace = self.arg_traces[svar.name]
+            trace_region = self.arg_trace_regions[svar.name]
 
             if svar.name in tgs:
                 ps_tg = tgs[svar.name]
@@ -746,6 +764,7 @@ class Term(Struct):
                            has_virtual=True,
                            has_state=True,
                            is_trace=is_trace,
+                           trace_region=trace_region,
                            dc_type=dc_type,
                            v_tg=v_tg,
                            ps_tg=ps_tg,
@@ -757,6 +776,7 @@ class Term(Struct):
         for pvar in pvars:
             field = pvar.get_field()
             is_trace = self.arg_traces[pvar.name]
+            trace_region = self.arg_trace_regions[pvar.name]
 
             if pvar.name in tgs:
                 ps_tg = tgs[pvar.name]
@@ -769,6 +789,7 @@ class Term(Struct):
                            has_virtual=vvar is not None,
                            has_state=False,
                            is_trace=is_trace,
+                           trace_region=trace_region,
                            dc_type=dc_type,
                            v_tg=v_tg,
                            ps_tg=ps_tg,
@@ -784,6 +805,7 @@ class Term(Struct):
                            has_virtual=True,
                            has_state=False,
                            is_trace=False,
+                           trace_region=None,
                            dc_type=dc_type,
                            v_tg=v_tg,
                            ps_tg=v_tg,
@@ -1038,7 +1060,8 @@ class Term(Struct):
         is_trace = self.arg_traces[variable.name]
 
         if is_trace:
-            region = self.region.get_mirror_region()
+            mreg_name = self.arg_trace_regions[variable.name]
+            region = self.region.get_mirror_region(mreg_name)
 
         else:
             region = self.region
@@ -1063,7 +1086,8 @@ class Term(Struct):
         is_trace = self.arg_traces[variable.name]
 
         if is_trace:
-            region = self.region.get_mirror_region()
+            mreg_name = self.arg_trace_regions[variable.name]
+            region = self.region.get_mirror_region(mreg_name)
 
         else:
             region = self.region
@@ -1092,7 +1116,8 @@ class Term(Struct):
                                  region=self.region, integral=self.integral,
                                  integration=integration,
                                  step=step, time_derivative=time_derivative,
-                                 is_trace=self.arg_traces[name], bf=bf)
+                                 is_trace=self.arg_traces[name], bf=bf,
+                                 trace_region=self.arg_trace_regions[name])
         return data
 
     def check_shapes(self, *args, **kwargs):
@@ -1538,7 +1563,8 @@ class Term(Struct):
                 rdc = vvar.get_dof_conn(dc_type)
 
                 is_trace = self.arg_traces[svar.name]
-                cdc = svar.get_dof_conn(dc_type, is_trace=is_trace)
+                trace_region = self.arg_trace_regions[svar.name]
+                cdc = svar.get_dof_conn(dc_type, is_trace, trace_region)
                 assert_(val.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 
                 assemble(tmd[0], tmd[1], tmd[2], val, iels, sign, rdc, cdc)

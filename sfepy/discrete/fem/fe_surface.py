@@ -65,7 +65,7 @@ class FESurface(Struct):
         else:
             self.ori_map = None
 
-    def setup_mirror_connectivity(self, region):
+    def setup_mirror_connectivity(self, region, mirror_name):
         """
         Setup mirror surface connectivity required to integrate over a
         mirror region.
@@ -76,7 +76,7 @@ class FESurface(Struct):
 
         2. orientation -> permutation.
         """
-        mregion = region.get_mirror_region()
+        mregion = region.get_mirror_region(mirror_name)
 
         oo = self.ori_map
         ori_map = nm.zeros((nm.max(list(oo.keys())) + 1, self.n_fp), dtype=nm.int32)
@@ -87,9 +87,11 @@ class FESurface(Struct):
 
         econn = self.econn
         ofis = region.get_facet_indices()
-        if region.mirror_map is not None:
-            ofis = ofis[region.mirror_map]
-            econn = econn[region.mirror_map]
+        if mirror_name in region.mirror_maps\
+            and region.mirror_maps[mirror_name] is not None:
+            mirror_map = region.mirror_maps[mirror_name]
+            ofis = ofis[mirror_map]
+            econn = econn[mirror_map]
         ooris = oris[conn.indptr[ofis[:, 0]] + ofis[:, 1]]
         mfis = mregion.get_facet_indices()
         moris = oris[conn.indptr[mfis[:, 0]] + mfis[:, 1]]

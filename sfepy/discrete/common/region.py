@@ -244,7 +244,7 @@ class Region(Struct):
                         tdim=tdim, kind_tdim=None,
                         entities=[None] * (tdim + 1),
                         kind=None, parent=parent, shape=None,
-                        mirror_region=None, is_empty=False)
+                        mirror_regions={}, mirror_maps={}, is_empty=False)
         self.set_kind(kind)
 
     def set_kind(self, kind):
@@ -672,7 +672,7 @@ class Region(Struct):
 
         return fis
 
-    def setup_mirror_region(self, mirror_name=None):
+    def setup_mirror_region(self, mirror_name=None, ret_name=False):
         """
         Find the corresponding mirror region, set up element mapping.
         """
@@ -681,14 +681,14 @@ class Region(Struct):
         regions = self.domain.regions
         eopts = self.extra_options
 
-        if self.mirror_region is not None:
-            return
-
         if (mirror_name is None) and (eopts is not None)\
             and ('mirror_region' in eopts):
             mirror_name = eopts['mirror_region']
 
         if mirror_name is not None:
+            if mirror_name in self.mirror_regions:
+                return
+
             mreg = regions[mirror_name]
             if self.vertices.shape[0] != mreg.vertices.shape[0]:
                 raise ValueError('%s: incompatible mirror region! (%s)'
@@ -729,13 +729,16 @@ class Region(Struct):
             else:
                 raise ValueError('cannot find mirror region! (%s)' % self.name)
 
-        self.mirror_region = mreg
-        self.mirror_map = mirror_map
-        mreg.mirror_region = self
-        mreg.mirror_map = mirror_map_i
+        self.mirror_regions[mreg.name] = mreg
+        self.mirror_maps[mreg.name] = mirror_map
+        mreg.mirror_regions[self.name] = self
+        mreg.mirror_maps[self.name] = mirror_map_i
 
-    def get_mirror_region(self):
-        return self.mirror_region
+        if ret_name:
+            return mreg.name
+
+    def get_mirror_region(self, name):
+        return self.mirror_regions[name]
 
     def get_n_cells(self, is_surface=False):
         """
