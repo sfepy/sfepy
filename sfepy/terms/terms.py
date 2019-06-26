@@ -641,7 +641,7 @@ class Term(Struct):
 
             region = self.region
             if self.arg_traces[name]:
-                region.setup_mirror_region()
+                region.setup_mirror_region(self.arg_trace_regions[name])
                 region = region.mirror_region
 
             if not nm.all(in1d(region.vertices,

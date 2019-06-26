@@ -672,7 +672,7 @@ class Region(Struct):
 
         return fis
 
-    def setup_mirror_region(self):
+    def setup_mirror_region(self, mirror_name=None):
         """
         Find the corresponding mirror region, set up element mapping.
         """
@@ -684,8 +684,12 @@ class Region(Struct):
         if self.mirror_region is not None:
             return
 
-        if (eopts is not None) and ('mirror_region' in eopts):
-            mreg = regions[eopts['mirror_region']]
+        if (mirror_name is None) and (eopts is not None)\
+            and ('mirror_region' in eopts):
+            mirror_name = eopts['mirror_region']
+
+        if mirror_name is not None:
+            mreg = regions[mirror_name]
             if self.vertices.shape[0] != mreg.vertices.shape[0]:
                 raise ValueError('%s: incompatible mirror region! (%s)'
                     % (self.name, mreg.name))
@@ -702,7 +706,8 @@ class Region(Struct):
 
             fconn = self.domain.cmesh.get_conn_as_graph(self.dim - 1, 0)
             cc = self.domain.cmesh.get_centroids(self.dim - 1)
-            fmap1, fmap2 = find_map(cc[self.facets], cc[mreg.facets] - shift, join=False)
+            fmap1, fmap2 = find_map(cc[self.facets], cc[mreg.facets] - shift,
+                                    join=False)
             if fmap1.shape[0] != self.facets.shape[0]:
                 print(cc[self.facets][fmap1])
                 print(cc[mreg.facets][fmap2])
