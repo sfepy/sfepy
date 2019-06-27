@@ -1287,7 +1287,7 @@ class FieldVariable(Variable):
                                      return_key=return_key)
         return out
 
-    def get_dof_conn(self, dc_type, is_trace=False):
+    def get_dof_conn(self, dc_type, is_trace=False, trace_region=None):
         """
         Get active dof connectivity of a variable.
 
@@ -1306,7 +1306,7 @@ class FieldVariable(Variable):
 
         else:
             aux = self.field.domain.regions[dc_type.region_name]
-            region = aux.get_mirror_region()
+            region = aux.get_mirror_region(trace_region)
             region_name = region.name
 
         key = (var_name, region_name, dc_type.type, is_trace)
@@ -1491,7 +1491,7 @@ class FieldVariable(Variable):
     def evaluate(self, mode='val',
                  region=None, integral=None, integration=None,
                  step=0, time_derivative=None, is_trace=False,
-                 dt=None, bf=None):
+                 trace_region=None, dt=None, bf=None):
         """
         Evaluate various quantities related to the variable according to
         `mode` in quadrature points defined by `integral`.
@@ -1546,7 +1546,7 @@ class FieldVariable(Variable):
             region = field.region
 
         if is_trace:
-            region = region.get_mirror_region()
+            region = region.get_mirror_region(trace_region)
 
         if (region is not field.region) and not region.is_empty:
             assert_(field.region.contains(region))

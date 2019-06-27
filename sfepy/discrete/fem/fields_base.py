@@ -1191,8 +1191,9 @@ class VolumeField(FEField):
 
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
+            mreg_name = info.get_region_name(can_trace=False)
             self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg, is_trace)
+            self.setup_surface_data(reg, is_trace, mreg_name)
 
         elif dct == 'edge':
             raise NotImplementedError('dof connectivity type %s' % dct)
@@ -1209,7 +1210,7 @@ class VolumeField(FEField):
             conn.shape += (1,)
             self.point_data[region.name] = conn
 
-    def setup_surface_data(self, region, is_trace=False):
+    def setup_surface_data(self, region, is_trace=False, trace_region=None):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
         if region.name not in self.surface_data:
@@ -1219,7 +1220,7 @@ class VolumeField(FEField):
 
         if region.name in self.surface_data and is_trace:
             sd = self.surface_data[region.name]
-            sd.setup_mirror_connectivity(region)
+            sd.setup_mirror_connectivity(region, trace_region)
 
         return self.surface_data[region.name]
 
@@ -1365,7 +1366,8 @@ class SurfaceField(FEField):
 
         if reg.name in self.surface_data and is_trace:
             sd = self.surface_data[reg.name]
-            sd.setup_mirror_connectivity(reg)
+            mreg_name = info.get_region_name(can_trace=False)
+            sd.setup_mirror_connectivity(reg, mreg_name)
 
     def _init_econn(self):
         """
