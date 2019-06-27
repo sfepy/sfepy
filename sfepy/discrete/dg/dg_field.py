@@ -587,10 +587,7 @@ class DGField(Field):
         for ebc, ebc_vals in zip(state.eq_map.dg_ebc.get(diff, []), state.eq_map.dg_ebc_val.get(diff, [])):
             if unreduce_nod:
                 raise NotImplementedError("Unreduced DOFs are not available for boundary outer facets")
-                outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = nm.einsum("id,id...->id...",
-                                                                      ebc_vals,
-                                                                      inner_base_vals[0, :, ebc[:, 1]])
-
+                outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = nm.einsum("id,id...->id...", ebc_vals, inner_base_vals[0, :, ebc[:, 1]])
             else:
                 # FIXME contains quick fix flipping qp order to accomodate for opposite facet orientation of neighbours
                 # this is partially taken care of in get_both_facet_base_vals, but needs to be repeated here
@@ -819,7 +816,7 @@ class DGField(Field):
 
         return dofs
 
-    def get_facet_boundary_index(self, region):
+    def get_bc_facet_idx(self, region):
         """
 
         Caches results in self.boundary_facet_local_idx
@@ -1015,7 +1012,7 @@ class DGField(Field):
 
 
             # get coors
-            bc2bfi = self.get_facet_boundary_index(region)
+            bc2bfi = self.get_bc_facet_idx(region)
             coors = self.mapping.get_physical_qps(qp)
 
             # get_physical_qps returns data in strange format, swapping some axis and flipping qps order
@@ -1055,7 +1052,7 @@ class DGField(Field):
         # get facets weights ?
 
         # get physical coors
-        bc2bfi = self.get_facet_boundary_index(region)
+        bc2bfi = self.get_bc_facet_idx(region)
         n_cell = bc2bfi.shape[0]
         coors = self.mapping.get_physical_qps(qp)
 
