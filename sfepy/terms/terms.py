@@ -695,9 +695,10 @@ class Term(Struct):
         key = (self.name,) + tuple(self.arg_names)
         arg_traces = [k for k, v in self.arg_traces.items() if v]
         if len(arg_traces) > 0:
-            trace = True, self.arg_trace_regions[arg_traces[-1]]
+            atr = arg_traces[-1]
+            trace = True, self.arg_trace_regions[atr], atr
         else:
-            trace = False, None
+            trace = False, None, None
 
         key += (self.integral_name, self.region.name) + trace
 

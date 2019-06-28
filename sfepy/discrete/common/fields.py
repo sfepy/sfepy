@@ -66,7 +66,8 @@ def setup_extra_data(conn_info):
     for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
         for var in info.all_vars:
             field = var.get_field()
-            field.setup_extra_data(info.ps_tg, info, info.is_trace)
+            if var == info.primary:
+                field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
 def fields_from_conf(conf, regions):
     fields = {}
