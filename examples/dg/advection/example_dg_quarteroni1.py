@@ -37,6 +37,7 @@ integrals = {
     'i': 2 * approx_order,
 }
 
+
 @local_register_function
 def bc_funs(ts, coors, bc, problem):
     # return 2*coors[..., 1]
@@ -79,6 +80,7 @@ def bc_funs(ts, coors, bc, problem):
 
     return res
 
+
 @local_register_function
 def source_fun(ts, coors, mode="qp", **kwargs):
     # t = ts.dt * ts.step
@@ -93,6 +95,22 @@ def source_fun(ts, coors, mode="qp", **kwargs):
         x_2 = coors[..., 1]
         res = -2*pi*(x_2**2 - x_2)*cos(2*pi*x_1) - 2*(2*pi**2*(x_2**2 - x_2)*sin(2*pi*x_1) - sin(2*pi*x_1))*eps - (2*x_2 - 1)*sin(2*pi*x_1)
         return {"val": res[..., None, None]}
+
+
+def analytic_sol(coors, t):
+    x_1 = coors[..., 0]
+    x_2 = coors[..., 1]
+    sin = nm.sin
+    pi = nm.pi
+    res = -(x_2 ** 2 - x_2) * sin(2 * pi * x_1)
+    return res
+
+
+@local_register_function
+def sol_fun(ts, coors, mode="qp", **kwargs):
+    t = ts.time
+    if mode == "qp":
+        return {"u": analytic_sol(coors, t)[..., None, None]}
 
 
 dgebcs = {

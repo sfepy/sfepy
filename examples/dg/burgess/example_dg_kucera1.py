@@ -24,7 +24,7 @@ regions = {
     'Omega': 'all',
     'left' : ('vertices in x == -1', 'edge'),
     'right': ('vertices in x == 1', 'edge'),
-    'top' : ('vertices in y == 1', 'edge'),
+    'top'  : ('vertices in y == 1', 'edge'),
     'bottom': ('vertices in y == -1', 'edge')
 }
 

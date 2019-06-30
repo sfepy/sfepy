@@ -105,6 +105,24 @@ def source_fun(ts, coors, mode="qp", **kwargs):
         return {"val": res[..., None, None]}
 
 
+def analytic_sol(coors, t):
+    x_1 = coors[..., 0]
+    x_2 = coors[..., 1]
+    sin = nm.sin
+    pi = nm.pi
+    exp = nm.exp
+    eps = diffusion_coef
+    res = -x_1*x_2 + x_1 + x_2 + (exp(-(x_1 - 1)*(x_2 - 1)/eps) - exp(-1/eps))/(exp(-1/eps) - 1)
+    return res
+
+
+@local_register_function
+def sol_fun(ts, coors, mode="qp", **kwargs):
+    t = ts.time
+    if mode == "qp":
+        return {"u": analytic_sol(coors, t)[..., None, None]}
+
+
 dgebcs = {
     'u_left' : ('left', {'u.all': "bc_funs", 'grad.u.all' : "bc_funs"}),
     'u_top'  : ('top', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),

@@ -39,6 +39,7 @@ integrals = {
     'i': 2 * approx_order,
 }
 
+
 @local_register_function
 def bc_funs(ts, coors, bc, problem):
     # return 2*coors[..., 1]
@@ -101,6 +102,8 @@ def source_fun(ts, coors, mode="qp", **kwargs):
         x_2 = coors[..., 1]
         res = 0 * x_1
         return {"val": res[..., None, None]}
+
+
 
 
 dgebcs = {

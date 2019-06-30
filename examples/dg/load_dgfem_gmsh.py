@@ -43,6 +43,7 @@ omega = domain.create_region('Omega', 'all')
 field = DGField('dgfu', nm.float64, 'scalar', omega,
                 approx_order=approx_order)
 
+
 def u_fun(coors, t):
     x_1 = coors[..., 0]
     x_2 = coors[..., 1]
