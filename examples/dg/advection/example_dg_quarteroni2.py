@@ -6,7 +6,7 @@ dim = 2
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
 approx_order = 3
-diffusion_coef = 1e-5
+diffusion_coef = 1e-1
 Cw = .001
 velo = [1., 1.]
 flux = 0.0
@@ -151,7 +151,7 @@ equations = {
                " - dw_laplace.i.Omega(D.val, v, u) " +
                " + dw_dg_diffusion_flux.i.Omega(D.val, u, v) " +
                " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-               " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+               " - " + str(diffusion_coef) + " * dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
                " + dw_volume_lvf.i.Omega(g.val, v) = 0"
 
 }

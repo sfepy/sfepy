@@ -6,14 +6,14 @@ dim = 2
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
 approx_order = 3
-diffusion_coef = 1
+diffusion_coef = 1e-9
 Cw = 100
-velo = [1., 1.]
+velo = [1., 0.]
 flux = 0.0
 
-angle = 0.0  # - nm.pi / 5
-rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
-                 [nm.sin(angle), nm.cos(angle)]])
+angle = nm.pi / 3
+rotm = nm.array([[nm.cos(angle), nm.sin(angle)],
+                 [-nm.sin(angle), nm.cos(angle)]])
 velo = nm.sum(rotm.T * nm.array(velo), axis=-1)[:, None]
 
 
@@ -38,73 +38,6 @@ variables = {
 integrals = {
     'i': 2 * approx_order,
 }
-
-
-@local_register_function
-def bc_funs(ts, coors, bc, problem):
-    # return 2*coors[..., 1]
-    t = ts.dt*ts.step
-    x_1 = coors[..., 0]
-    x_2 = coors[..., 1]
-    res = nm.zeros(nm.shape(x_1))
-
-    sin = nm.sin
-    cos = nm.cos
-    exp = nm.exp
-    pi = nm.pi
-    arctan = nm.arctan
-    sqrt = nm.sqrt
-
-    eps = diffusion_coef
-
-    if bc.diff == 0:
-        if "left" in bc.name:
-            res[:] = x_2 + (exp((x_2 - 1)/eps) - exp(-1/eps))/(exp(-1/eps) - 1)
-        elif "right" in bc.name:
-            res[:] = 0
-        elif "bot" in bc.name:
-            res[:] = x_1 + (exp((x_1 - 1)/eps) - exp(-1/eps))/(exp(-1/eps) - 1)
-        elif "top" in bc.name:
-            res[:] = 0
-
-    elif bc.diff == 1:
-        if "left" in bc.name:
-            res = nm.stack((-x_2 - (x_2 - 1)*exp((x_2 - 1)/eps)/(eps*(exp(-1/eps) - 1)) + 1,
-                            exp((x_2 - 1)/eps)/(eps*(exp(-1/eps) - 1)) + 1),
-                           axis=-2)
-        elif "right" in bc.name:
-            res = nm.stack((-x_2 - (x_2 - 1)/(eps*(exp(-1/eps) - 1)) + 1,
-                            res),
-                           axis=-2)
-        elif "bot" in bc.name:
-            res = nm.stack((exp((x_1 - 1)/eps)/(eps*(exp(-1/eps) - 1)) + 1,
-                            -x_1 - (x_1 - 1)*exp((x_1 - 1)/eps)/(eps*(exp(-1/eps) - 1)) + 1),
-                           axis=-2)
-        elif "top" in bc.name:
-            res = nm.stack((res,
-                            -x_1 - (x_1 - 1)/(eps*(exp(-1/eps) - 1)) + 1),
-                           axis=-2)
-
-    return res
-
-
-@local_register_function
-def source_fun(ts, coors, mode="qp", **kwargs):
-    # t = ts.dt * ts.step
-    eps = diffusion_coef
-    sin = nm.sin
-    cos = nm.cos
-    exp = nm.exp
-    sqrt = nm.sqrt
-    pi = nm.pi
-    if mode == "qp":
-        x_1 = coors[..., 0]
-        x_2 = coors[..., 1]
-        res = 0 * x_1
-        return {"val": res[..., None, None]}
-
-
-
 
 dgebcs = {
     'u_bot_left' : ('bot_left', {'u.all': 1, 'grad.u.all' : (0, 0)}),

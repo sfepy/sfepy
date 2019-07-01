@@ -93,7 +93,9 @@ def source_fun(ts, coors, mode="qp", **kwargs):
     if mode == "qp":
         x_1 = coors[..., 0]
         x_2 = coors[..., 1]
-        res = -2*pi*(x_2**2 - x_2)*cos(2*pi*x_1) - 2*(2*pi**2*(x_2**2 - x_2)*sin(2*pi*x_1) - sin(2*pi*x_1))*eps - (2*x_2 - 1)*sin(2*pi*x_1)
+        res = -2*pi*(x_2**2 - x_2)*cos(2*pi*x_1)\
+              - 2*(2*pi**2*(x_2**2 - x_2)*sin(2*pi*x_1) - sin(2*pi*x_1))*eps\
+              - (2*x_2 - 1)*sin(2*pi*x_1)
         return {"val": res[..., None, None]}
 
 
