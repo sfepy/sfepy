@@ -220,7 +220,8 @@ class PDESolverApp(Application):
             return None, None, None
 
         state = problem.solve(
-            status=status, step_hook=self.step_hook,
+            status=status, save_results=self.app_options.save_results,
+            step_hook=self.step_hook,
             post_process_hook=self.post_process_hook,
             post_process_hook_final=self.post_process_hook_final)
 
