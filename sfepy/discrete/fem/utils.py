@@ -3,6 +3,7 @@ import numpy as nm
 
 import sfepy.linalg as la
 from sfepy.discrete.integrals import Integral
+from sfepy.discrete.fem.poly_spaces import PolySpace
 from six.moves import range
 
 def prepare_remap(indices, n_full):
@@ -56,10 +57,10 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     field.domain.create_surface_group(region)
     field.setup_surface_data(region)
 
-    # Custom integral with quadrature points very close to facet vertices.
-    coors = field.gel.surface_facet.coors
-    centre = coors.sum(axis=0) / coors.shape[0]
-    qp_coors = coors + 1e-8 * (centre - coors)
+    # Custom integral with quadrature points in nodes.
+    ps = PolySpace.any_from_args('', field.gel.surface_facet,
+                                 field.approx_order)
+    qp_coors = ps.node_coors
     # Unit normals -> weights = ones.
     qp_weights = nm.ones(qp_coors.shape[0], dtype=nm.float64)
 
@@ -74,7 +75,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     cmap, _ = field.get_mapping(region, integral, 'surface')
     e_normals = cmap.normal[..., 0]
 
-    sd = field.domain.surface_groups[region.name]
+    sd = field.surface_data[region.name]
     econn = sd.get_connectivity()
     mask[econn] += 1
 
