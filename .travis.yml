@@ -10,12 +10,12 @@ language: python
 # Enable Container-based testing
 #
 sudo: false
-dist: trusty
+dist: xenial
 
 matrix:
   include:
     - python: 2.7
-    - python: 3.6
+    - python: 3.7
 
 addons:
   apt:
@@ -43,8 +43,10 @@ before_install:
 
 install:
 
-  - conda create -q -n sfepy-test python=$TRAVIS_PYTHON_VERSION numpy scipy cython matplotlib pytables pyparsing sympy atlas
-  - source activate sfepy-test
+  - conda init bash
+  - source $(conda info --root)/etc/profile.d/conda.sh # TBD: should be made better...
+  - conda create -q -n sfepy-test python=$TRAVIS_PYTHON_VERSION numpy scipy cython matplotlib pytables pyparsing sympy
+  - conda activate sfepy-test
 
   - conda info -a
   - python -V

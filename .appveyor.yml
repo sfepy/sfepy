@@ -1,5 +1,5 @@
 #
-# SfePy minimal ammveyor.yml config file
+# SfePy minimal appveyor.yml config file
 #
 # YAML Reference Config:         https://www.appveyor.com/docs/appveyor-yml/
 # Environmental Variables Guide: https://www.appveyor.com/docs/environment-variables/
@@ -42,10 +42,10 @@ environment:
       PYTHON_ARCH: "64"
       CONDA_PY: "27"
 
-    - PYTHON: "C:\\Python36_64"
-      PYTHON_VERSION: "3.6"
+    - PYTHON: "C:\\Python37_64"
+      PYTHON_VERSION: "3.7"
       PYTHON_ARCH: "64"
-      CONDA_PY: "36"
+      CONDA_PY: "37"
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -63,8 +63,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels conda-forge
 
+  - cmd.exe /c conda init
+
   - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy"
-  - activate sfepy-test
+  - conda activate sfepy-test
   #
   # Scikit UMFPACK (TBD)
   #
@@ -81,8 +83,6 @@ install:
   #
   # - conda remove -q libpython
   #
-  - conda info -a
-  - python -V
 
 #---------------------------------#
 #       build configuration       #
