@@ -119,7 +119,7 @@ def get_data_name(fd):
             if (len(line) == 0): break
             if len(line) == 1: continue
         except:
-            raise StopIteration
+            return
 
         line = line.strip().split()
         if (len(line) == 3) and (line[0] == '#'):
