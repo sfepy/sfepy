@@ -154,7 +154,7 @@ class Material(Struct):
         """
         Iterate terms for which the material data should be evaluated.
         """
-        if equations is None: raise StopIteration
+        if equations is None: return
 
         for equation in equations:
             for term in equation.terms:
