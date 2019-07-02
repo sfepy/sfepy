@@ -1,5 +1,147 @@
 # created: 20.07.2007 (-1)
 
+.. _2019.1-2019.2:
+
+from 2019.1 to 2019.2
+=====================
+
+- merge branch 'allow-zero-eigs'
+
+  - new EigenvalueSolver._ret_zero(), use it in standard_call()
+  - update test_eigenvalue_solvers() to test zero eigs
+
+- merge branch 'plot-log-nbins'
+
+  - allow specifying numbers of bins in x, y axes in plot_log()
+  - script/plot_logs.py: new --nbins option
+
+- merge branch 'misc-updates'
+
+  - fix output_array_stats() for empty arrays
+  - add velocity, acceleration, dyn_viscosity to apply_unit_multipliers()
+  - allow corrector saving in ShapeDim, OnesDim calls
+  - dispersion_analysis.py: attach options to Problem, clean up
+  - dispersion_analysis.py: allow custom steppers, new get_stepper()
+  - fix/update OnesDim, VolumeFractions for complex variables
+
+- merge pull request #504 from bubulk/refine-hanging-segfault
+
+  - fix mei_next()
+
+- merge pull request #506 from vlukes/homog_ts
+
+  - fix ls.py: avoid conflict between presolve option and presolve() method
+  - update coefs: remove obsolote FM coefs, e.g. CoefFMSymSym can be repalced
+    by TSCoef(CoefSymSym)
+  - update set_conf_solvers(): allow to switch off a solver (e.g. ts in
+    homogenization)
+  - fix TSTime coefficient
+
+- merge pull request #510 from vlukes/fix_mat_opt, closes #509
+
+  - fix material_opt.py: Python 2/3 compatibility issue - zip()
+
+- merge pull request #511 from vlukes/fix_mat_opt
+
+  - fix material_opt.py: Python 2/3 compatibility issue - part II.
+
+- merge pull request #512 from rc/fallback-solvers-fixes
+
+  - fix use_first_available() to catch and report all relevant exceptions
+  - clean up AutoFallbackSolver.__new__()
+  - fix use_first_available() for Python 3
+
+- merge pull request #513 from vlukes/update_homog
+
+  - update homogenization: improved saving/dumping of time variable correctors
+  - remove verify_correctors() in TCorrectorsViaPressureEVP class
+  - fix recover_micro_hook_eps()
+  - update saving homog. correctors, remove 'dump_*' options
+  - update homog. examples
+  - reimplement matching periodic planes - allow skew geometries
+  - fix match_plane_by_dir() for 2D meshes
+
+- merge pull request #515 from vlukes/fix_mumps
+
+  - fix mumps solver for "small and dense" matrices
+
+- merge pull request #516 from vlukes/nonsym_prestress_term
+
+  - update LinearPrestressTerm term: allow for non-symmetric form
+
+- merge pull request #517 from vlukes/fix_meshio
+
+  - fix VTKMeshIO.write(): incorrect tensor data shape
+
+- merge pull request #519 from rc/docs-update-citing-support
+
+  - docs: update sfepy citing section
+  - docs: update support section, move past support to a separate page
+  - docs: add article full text link
+
+- merge pull request #520 from vlukes/fix_mumps_solver
+
+  - fix SchurMumps and MUMPSParallelSolver: add `memory_relaxation` parameter
+
+- merge pull request #521 from vlukes/fix_splinebox
+
+  - fix SplineBox: remove forgotten prints
+
+- merge pull request #523 from heczis/fix_scipy_misc
+
+  - Remove use of scipy.misc
+
+- merge pull request #525 from vlukes/update_splinebox
+
+  - update SplineBox.write_control_net(): use control point values as
+    coordinates
+
+- merge pull request #526 from vlukes/find_map
+
+  - reimplement find_map(): use the scipy.spatial.cKDtree implementation
+
+- merge pull request #527 from vlukes/remote_mirror
+
+  - new remote mirror regions: allow mirror regions with no common vertices
+
+- merge pull request #528 from vlukes/mirror_region_misc
+
+  - update User's Guide: new `mesh_eps` option
+  - fix get_conn_key() for mirror integration
+  - update User's Guide: new `mirror region` option in the regions definition
+
+- merge pull request #529 from rc/trace-regions
+
+  - update create_bnf(), create_arg_parser() for trace regions
+  - update test_parse_equations()
+  - update Term.setup_formal_args() for trace regions
+
+- merge pull request #530 from vlukes/mirror_region_misc
+
+  - update region.setup_mirror_region() for `tr(reg, var)` syntax
+
+- merge pull request #531 from vlukes/multi_traces
+
+  - allow for multiple traces
+
+- merge pull request #532 from vlukes/fix_traces
+
+  - fix traces for evaluation mode
+
+- merge branch 'misc-fixes'
+
+  - fix compute_nodal_normals() for higher order nodes
+  - fix PDESolverApp.call() to obey save_results option
+
+- merge pull request #533 from bubulk/ci-update
+
+  - Updated CI .yml config files.
+  - Temporary disable conda update for Windows.
+
+- merge pull request #534 from rc/fix-for-python-3.7
+
+  - fix Material.iter_terms(), get_data_name() for Python 3.7 (PEP 479)
+
 .. _2018.4-2019.1:
 
 from 2018.4 to 2019.1
