@@ -3,6 +3,13 @@
 Archived News
 =============
 
+* **06.03.2018** Version 2018.1 released (major update of time-stepping solvers
+  and solver handling, Newmark and Bathe elastodynamics solvers, interface to
+  MUMPS linear solver, new examples: iron plate impact problem
+  (elastodynamics), incompressible Mooney-Rivlin material model
+  (hyperelasticity) as a script, etc.), see :ref:`release notes
+  <2017.4-2018.1>`.
+
 * **29.12.2017** Version 2017.4 released (basic support for penalty-based
   contacts, support for user-defined contexts in all solvers and
   preconditioners, new example: dispersion analysis of heterogeneous periodic
