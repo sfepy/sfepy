@@ -33,7 +33,7 @@ parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
 parser.add_argument('-o', '--output', help="""Root output folder""", default="output")
 
 
-def iter_h(base_pc, hs=range(5), output_folder="output"):
+def iter_h(base_pc, hs=range(6), output_folder="output"):
 
     n_don = 2
     for i, h in enumerate(hs):
@@ -51,7 +51,7 @@ def iter_h(base_pc, hs=range(5), output_folder="output"):
         yield pc
 
 
-def iter_order(base_pc, approx_orders=range(1, 5)):
+def iter_order(base_pc, approx_orders=range(1, 7)):
     for approx_order in approx_orders:
         pc = copy(base_pc)
         pc.fields = deepcopy(pc.fields)
@@ -135,18 +135,23 @@ def main(argv):
                                      solve_not=False), "sfepy")
         pb, state = sa()
 
+
+
         from sfepy.discrete.common.mappings import get_jacobian
+
+        ts = pb.ts
+        ts.set_step(step=ts.n_step - 1)
 
         idiff = Integral('idiff', max(pc.approx_order, 10))
         field = pb.fields['density']
         u = pb.equations.variables["u"]
         num_qp = pb.evaluate('ev_volume_integrate.idiff.Omega(u)',
-                             u=u,
+                             u=u, ts=pb.ts,
                              integrals=Integrals([idiff]), mode='qp')
         aux = Material('aux', function=pc.sol_fun)
 
         ana_qp = pb.evaluate('ev_volume_integrate_mat.idiff.Omega(aux.u, u)',
-                             aux=aux, u=u,
+                             aux=aux, u=u, ts=pb.ts,
                              integrals=Integrals([idiff]), mode='qp')
 
         det = get_jacobian(field, idiff)
@@ -157,9 +162,11 @@ def main(argv):
 
         avrg_vol = nm.mean(pb.fields["density"].domain.cmesh.get_volumes(pb.get_dim()))
         var_vol = nm.var(pb.fields["density"].domain.cmesh.get_volumes(pb.get_dim()))
-        err_list.append([pc.h, pc.h_coef, pc.approx_order, avrg_vol, var_vol, error, diff_l2])
+        err_list.append({"h": pc.h, "h_coef": pc.h_coef, "order": pc.approx_order,
+                         "avrg_vol": avrg_vol, "var_vol": var_vol,
+                         "ana_l2": ana_l2, "err_rel": error, "err_l2": diff_l2})
 
-    err_df = pd.DataFrame(err_list, columns=["h", "h_coef", "order", "avrg_vol", "var_vol", "err_rel", "err_l2"])
+    err_df = pd.DataFrame(err_list, columns=["h", "h_coef", "order", "avrg_vol", "var_vol", "ana_l2", "err_rel", "err_l2"])
     err_df.to_csv(pjoin(output_folder, pc_base.example_name, "h-order_error.csv"))
 
 

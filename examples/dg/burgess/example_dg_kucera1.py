@@ -3,14 +3,14 @@ from examples.dg.example_dg_common import *
 example_name = "kucera1"
 dim = 2
 
-filename_mesh = "../mesh/square_tri2.mesh"
+filename_mesh = "../mesh/mesh_simp_2D_11_350.vtk"
 
 approx_order = 2
 t0 = 0.
 t1 = .1
 CFL = .4
 diffusion_coef = 2*1e-2
-Cw = 10
+Cw = 100
 velo = [1., 1.]
 flux = 0.0
 
@@ -40,6 +40,23 @@ variables = {
 integrals = {
     'i': 2 * approx_order,
 }
+
+
+def analytic_sol(coors, t):
+    x_1 = coors[..., 0]
+    x_2 = coors[..., 1]
+    sin = nm.sin
+    pi = nm.pi
+    exp = nm.exp
+    res = -(exp(-t) - 1)*(sin(5*x_1*x_2) + sin(-4*x_1*x_2 + 4*x_1 + 4*x_2))
+    return res
+
+
+@local_register_function
+def sol_fun(ts, coors, mode="qp", **kwargs):
+    t = ts.time
+    if mode == "qp":
+        return {"u": analytic_sol(coors, t)[..., None, None]}
 
 
 @local_register_function
@@ -81,6 +98,7 @@ def bc_funs(ts, coors, bc, problem):
                            axis=-2)
 
     return res
+
 
 @local_register_function
 def source_fun(ts, coors, mode="qp", **kwargs):
@@ -130,7 +148,7 @@ materials = {
     'a'     : ({'val': [velo], '.flux': 0.0},),
     'nonlin': ({'.fun': adv_fun, '.dfun': adv_fun_d},),
     'burg'  : ({'.fun': burg_fun, '.dfun': burg_fun_d},),
-    'D'     : ({'val': [diffusion_coef], '.Cw': 1.},),
+    'D'     : ({'val': [diffusion_coef], '.Cw': Cw},),
     'g'     : 'source_fun'
 }
 

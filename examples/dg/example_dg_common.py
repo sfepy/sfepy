@@ -70,7 +70,8 @@ def get_cfl_setup(CFL=None, dt=None):
         tn = int(nm.ceil((ts_conf.t1 - ts_conf.t0) / _dt))
         dtdx = _dt / dx
 
-        ts_conf += Struct(dt=_dt, n_step=tn)
+        ts_conf.dt = _dt
+        ts_conf.n_step = tn
         output("Preprocessing hook setup_cfl_condition:")
         output("Approximation order of field {}({}) is {}".format(first_field_name, first_field.family_name, approx_order))
         output("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))

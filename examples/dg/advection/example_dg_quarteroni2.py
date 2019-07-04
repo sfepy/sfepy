@@ -29,6 +29,7 @@ fields = {
     'density': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
 }
 
+
 variables = {
     'u': ('unknown field', 'density', 0),
     'v': ('test field', 'density', 'u'),
