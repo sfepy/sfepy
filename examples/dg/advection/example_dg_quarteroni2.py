@@ -6,7 +6,7 @@ dim = 2
 filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
 approx_order = 3
-diffusion_coef = 1e-1
+diffusion_coef = 1e-5
 Cw = .001
 velo = [1., 1.]
 flux = 0.0
