@@ -71,7 +71,7 @@ from sfepy.homogenization.utils import define_box_regions
 from sfepy.discrete import Problem
 from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy.solvers import Solver
-from sfepy.solvers.ts import TimeStepper
+from sfepy.solvers.ts import get_print_info, TimeStepper
 from sfepy.linalg.utils import output_array_stats, max_diff_csr
 
 def apply_units(pars, unit_multipliers):
@@ -243,7 +243,48 @@ def get_std_wave_fun(pb, options):
     return fun, log_names, log_plot_kwargs
 
 def get_stepper(rng, pb, options):
-    stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
+    if options.stepper == 'linear':
+        stepper = TimeStepper(rng[0], rng[1], dt=None, n_step=rng[2])
+        return stepper
+
+    bbox = pb.domain.mesh.get_bounding_box()
+
+    bzone = 2.0 * nm.pi / (bbox[1] - bbox[0])
+
+    num = rng[2] // 3
+
+    class BrillouinStepper(Struct):
+        """
+        Step over 1. Brillouin zone in xy plane.
+        """
+        def __init__(self, t0, t1, dt=None, n_step=None, step=None, **kwargs):
+            Struct.__init__(self, t0=t0, t1=t1, dt=dt, n_step=n_step, step=step)
+
+            self.n_digit, self.format, self.suffix = get_print_info(self.n_step)
+
+        def __iter__(self):
+            ts = TimeStepper(0, bzone[0], dt=None, n_step=num)
+            for ii, val in ts:
+                yield ii, val, nm.array([1.0, 0.0])
+                if ii == (num-2): break
+
+            ts = TimeStepper(0, bzone[1], dt=None, n_step=num)
+            for ii, k1 in ts:
+                wdir = nm.array([bzone[0], k1])
+                val = nm.linalg.norm(wdir)
+                wdir = wdir / val
+                yield num + ii, val, wdir
+                if ii == (num-2): break
+
+            wdir = nm.array([bzone[0], bzone[1]])
+            val = nm.linalg.norm(wdir)
+            wdir = wdir / val
+            ts = TimeStepper(0, 1, dt=None, n_step=num)
+            for ii, _ in ts:
+                yield 2 * num + ii, val * (1.0 - float(ii)/(num-1)), wdir
+
+    stepper = BrillouinStepper(0, 1, n_step=rng[2])
+
     return stepper
 
 def save_eigenvectors(filename, svecs, wmag, wdir, pb):
