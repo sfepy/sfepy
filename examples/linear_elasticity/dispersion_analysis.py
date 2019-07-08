@@ -407,21 +407,26 @@ def build_evp_matrices(mtxs, val, mode, pb):
 
     return evp_mtxs
 
-def process_evp_results(eigs, svecs, val, mode, wdir, bzone, pb, mtxs,
+def process_evp_results(eigs, svecs, val, wdir, bzone, pb, mtxs, options,
                         std_wave_fun=None):
     """
     Transform eigenvalues to either omegas or kappas, depending on `mode`.
     Transform eigenvectors, if available, depending on `mode`.
     Return also the values to log.
     """
-    if mode == 'omega':
+    if options.mode == 'omega':
         omegas = nm.sqrt(eigs)
 
         output('eigs, omegas:')
         for ii, om in enumerate(omegas):
             output('{:>3}. {: .10e}, {:.10e}'.format(ii, eigs[ii], om))
 
-        out = tuple(eigs) + tuple(omegas)
+        if options.stepper == 'linear':
+            out = tuple(eigs) + tuple(omegas)
+
+        else:
+            out = tuple(val * wdir) + tuple(omegas)
+
         if std_wave_fun is not None:
             out = out + std_wave_fun(val, wdir)
 
@@ -476,6 +481,9 @@ helps = {
     ' [default: %(default)s]',
     'mode' : 'solution mode: omega = solve a generalized EVP for omega,'
     ' kappa = solve a quadratic generalized EVP for kappa'
+    ' [default: %(default)s]',
+    'stepper' : 'the range stepper. For "brillouin", only the number'
+    ' of items from --range is used'
     ' [default: %(default)s]',
     'range' : 'the wave vector magnitude / frequency range'
     ' (like numpy.linspace) depending on the mode option'
@@ -536,6 +544,9 @@ def main():
     parser.add_argument('--mode', action='store', dest='mode',
                         choices=['omega', 'kappa'],
                         default='omega', help=helps['mode'])
+    parser.add_argument('--stepper', action='store', dest='stepper',
+                        choices=['linear', 'brillouin'],
+                        default='linear', help=helps['stepper'])
     parser.add_argument('--range', metavar='start,stop,count',
                         action='store', dest='range',
                         default='0,6.4,33', help=helps['range'])
@@ -639,6 +650,9 @@ def main():
         output('wave number range with applied unit multipliers:', rng)
 
     else:
+        if options.stepper == 'brillouin':
+            raise ValueError('Cannot use "brillouin" stepper in kappa mode!')
+
         rng = copy(options.range)
         rng[:2] = apply_unit_multipliers(options.range[:2],
                                          ['frequency', 'frequency'],
@@ -666,6 +680,9 @@ def main():
     get_color = lambda ii: plt.cm.viridis((float(ii) / (options.n_eigs - 1)))
     plot_kwargs = [{'color' : get_color(ii), 'ls' : '', 'marker' : 'o'}
                   for ii in range(options.n_eigs)]
+    get_color_dim = lambda ii: plt.cm.viridis((float(ii) / (dim-1)))
+    plot_kwargs_dim = [{'color' : get_color_dim(ii), 'ls' : '', 'marker' : 'o'}
+                       for ii in range(dim)]
 
     log_names = []
     log_plot_kwargs = []
@@ -683,7 +700,8 @@ def main():
                                             'frequency-eigenshapes-%s.vtk'
                                             % stepper.suffix)
 
-        log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
+        if options.stepper == 'linear':
+            log = Log([[r'$\lambda_{%d}$' % ii for ii in range(options.n_eigs)],
                    [r'$\omega_{%d}$'
                     % ii for ii in range(options.n_eigs)] + log_names],
                   plot_kwargs=[plot_kwargs, plot_kwargs + log_plot_kwargs],
@@ -698,8 +716,35 @@ def main():
                   log_filename=os.path.join(output_dir, 'frequencies.txt'),
                   aggregate=1000, sleep=0.1)
 
-        for iv, wmag in stepper:
+        else:
+            log = Log([[r'$\kappa_{%d}$'% ii for ii in range(dim)],
+                       [r'$\omega_{%d}$'
+                        % ii for ii in range(options.n_eigs)] + log_names],
+                      plot_kwargs=[plot_kwargs_dim,
+                                   plot_kwargs + log_plot_kwargs],
+                      formats=[['{:.5e}'] * dim,
+                               ['{:.5e}'] * (options.n_eigs + len(log_names))],
+                      yscales=['linear', 'linear'],
+                      xlabels=[r'', r''],
+                      ylabels=[r'wave vector $\kappa$',
+                               r'frequencies $\omega_i$'],
+                      show_legends=options.show_legends,
+                      is_plot=options.show,
+                      log_filename=os.path.join(output_dir, 'frequencies.txt'),
+                      aggregate=1000, sleep=0.1)
+
+        for aux in stepper:
+            if options.stepper == 'linear':
+                iv, wmag = aux
+
+            else:
+                iv, wmag, wdir = aux
+
             output('step %d: wave vector %s' % (iv, wmag * wdir))
+
+            if options.stepper == 'brillouin':
+                pb, _, bzone, mtxs = assemble_matrices(
+                    define, mod, pars, set_wave_dir, options, wdir=wdir)
 
             evp_mtxs = build_evp_matrices(mtxs, wmag, options.mode, pb)
 
@@ -713,10 +758,14 @@ def main():
                                          eigenvectors=True)
 
             omegas, svecs, out = process_evp_results(
-                eigs, svecs, wmag, options.mode,
-                wdir, bzone, pb, mtxs, std_wave_fun=std_wave_fun
+                eigs, svecs, wmag, wdir, bzone, pb, mtxs, options,
+                std_wave_fun=std_wave_fun
             )
-            log(*out, x=[wmag, wmag])
+            if options.stepper == 'linear':
+                log(*out, x=[wmag, wmag])
+
+            else:
+                log(*out, x=[iv, iv])
 
             save_eigenvectors(eigenshapes_filename % iv, svecs, wmag, wdir, pb)
 
@@ -756,8 +805,8 @@ def main():
                                          eigenvectors=True)
 
             kappas, svecs, out = process_evp_results(
-                eigs, svecs, omega, options.mode,
-                wdir, bzone, pb, mtxs, std_wave_fun=std_wave_fun
+                eigs, svecs, omega, wdir, bzone, pb, mtxs, options,
+                std_wave_fun=std_wave_fun
             )
             log(*out, x=[omega])
 
