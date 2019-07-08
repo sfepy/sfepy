@@ -315,7 +315,7 @@ def save_eigenvectors(filename, svecs, wmag, wdir, pb):
 
     pb.save_state(filename, out=out)
 
-def assemble_matrices(define, mod, pars, set_wave_dir, options):
+def assemble_matrices(define, mod, pars, set_wave_dir, options, wdir=None):
     """
     Assemble the blocks of dispersion eigenvalue problem matrices.
     """
@@ -336,8 +336,9 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options):
     dim = pb.domain.shape.dim
 
     # Set the normalized wave vector direction to the material(s).
-    wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
-    wdir = wdir / nm.linalg.norm(wdir)
+    if wdir is None:
+        wdir = nm.asarray(options.wave_dir[:dim], dtype=nm.float64)
+        wdir = wdir / nm.linalg.norm(wdir)
     set_wave_dir(pb, wdir)
 
     bbox = pb.domain.mesh.get_bounding_box()
