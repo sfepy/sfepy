@@ -12,17 +12,17 @@ import argparse
 import numpy as nm
 import pandas as pd
 
-
-from sfepy.discrete import Integral, Integrals, Material
 from sfepy.applications.pde_solver_app import PDESolverApp
+
 from sfepy.base.conf import ProblemConf
 from sfepy.base.ioutils import ensure_path
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
+from sfepy.discrete import Integral, Integrals, Material
+from sfepy.discrete.common.mappings import get_jacobian
 
 
 from examples.dg.example_dg_common import get_gen_block_mesh_hook
-from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
 from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
 
@@ -33,15 +33,15 @@ parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
 parser.add_argument('-o', '--output', help="""Root output folder""", default="output")
 
 
-def iter_h(base_pc, hs=range(6), output_folder="output"):
+def iter_h_tens(base_pc, n_refirements, dimensions=(1., 1.), center=(.5, .5)):
 
     n_don = 2
-    for i, h in enumerate(hs):
+    for i in range(n_refirements):
         pc = copy(base_pc)
 
         pc.h = nm.sqrt(2) / (n_don - 1)
         pc.h_coef = 1 / (n_don - 1)
-        pc.filename_mesh = get_gen_block_mesh_hook((1., 1.), (n_don, n_don), (.5, .5))
+        pc.filename_mesh = get_gen_block_mesh_hook(dimensions, (n_don, n_don), center)
 
         pc.example_name += "_h" + str(n_don - 1)
         pc.output_folder = pjoin(pc.output_folder, "h" + str(n_don - 1) + "/")
@@ -78,7 +78,7 @@ def flatten(it, map_iter='values', max_depth=128):
     from collections import Iterable, Mapping
     from operator import methodcaller
     if max_depth < 0:
-        raise RecursionError('maximum recursion depth exceded in flatten')
+        raise RecursionError('maximum recursion depth exceeded in flatten')
     elif isinstance(it, str):
         yield it
     elif isinstance(it, Mapping):
@@ -101,7 +101,7 @@ def iterate_all(iterators, base):
         yield prod
 
 
-def main(argv):
+def main_from_file(argv):
     if argv is None:
         argv = sys.argv[1:]
 
@@ -115,7 +115,7 @@ def main(argv):
 
     err_list = []
 
-    for pc in iterate_all([iter_order, iter_h], pc_base):
+    for pc in iterate_all([iter_order, iter_h_tens], pc_base):
         pc.output_name_trunk = pjoin(pc.output_folder, pc.example_name)
         output("Running {}".format(pc.example_name))
         ensure_path(pc.output_name_trunk)
@@ -134,10 +134,6 @@ def main(argv):
                                      save_field_meshes=False,
                                      solve_not=False), "sfepy")
         pb, state = sa()
-
-
-
-        from sfepy.discrete.common.mappings import get_jacobian
 
         ts = pb.ts
         ts.set_step(step=ts.n_step - 1)
@@ -171,4 +167,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main_from_file(sys.argv[1:])

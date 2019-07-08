@@ -34,9 +34,28 @@ register_solver(EulerStepSolver)
 
 functions = {}
 
+diffusion_schemes_implicit = {"symmetric" :  "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
+                                    "- dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+                     "non-symmetric": "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
+                                      "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+                     "incomplete": " dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
+
+diffusion_schemes_explicit = {"symmetric" :  "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
+                                    "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+                     "non-symmetric": "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
+                                      "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+                     "incomplete": " dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
+
+
 
 def local_register_function(fun):
-    functions.update({fun.__name__: (fun,)})
+    try:
+        functions.update({fun.__name__: (fun,)})
+
+    except AttributeError:  # Already a sfepy Function.
+        fun = fun.function
+        functions.update({fun.__name__: (fun,)})
+
     return fun
 
 
@@ -86,19 +105,62 @@ def get_cfl_setup(CFL=None, dt=None):
 
     return setup_cfl_condition
 
-def define_transient_diffusion_advection(approx_order, CFL, t0, t1, limiter, get_ic, dt=None):
+
+def build_transient_diffusion_advection_2D(mesh_hook, approx_order, CFL, t0, t1,
+                                           dt=None,
+                                           velo=(1, 0),
+                                           diffusion_coef=0.02,
+                                           regions={},
+                                           diffusion_scheme_name="symmetric",
+                                           ic_fun=lambda x, y: nm.zeros(shape=x.shape),
+                                           source_fun=lambda x, y, t: nm.zeros(shape=x.shape),
+                                           bc_funs={},
+                                           ebcs=None,
+                                           epbcs=None,
+                                           **kwargs):
 
     functions = {}
     def local_register_function(fun):
         functions.update({fun.__name__: (fun,)})
         return fun
 
+    for key, val in kwargs.items():
+        if callable(val):
+            local_register_function(val)
+
+    @local_register_function
+    def get_ic(x, ic=None):
+        return get_ic(x[..., 0:1], x[..., 1:])
+
+    @local_register_function
+    def get_source(ts, coors, mode="qp", **kwargs):
+        if mode == "qp":
+            t = ts.dt * ts.step
+            x_1 = coors[..., 0]
+            x_2 = coors[..., 1]
+            res = source_fun(x_1, x_2, t)
+            return {"val": res[..., None, None]}
+
+    @local_register_function
+    def get_bc(ts, coors, bc, problem):
+        return bc_funs(ts, coors, bc, problem)
+
+    materials = {
+        'a': ({'val': [velo], '.flux': 0.0},),
+        'D': ({'val': [diffusion_coef], '.Cw': 1.},),
+        'g': 'get_source'
+    }
+
+    filename_mesh = mesh_hook
+
+    _regions = regions
     regions = {
         'Omega' : 'all',
     }
+    regions.update(_regions)
 
     fields = {
-        'density' : ('real', 'scalar', 'Omega', '1d', 'DG', 'legendre')
+        'density' : ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
     }
 
     variables = {
@@ -110,12 +172,22 @@ def define_transient_diffusion_advection(approx_order, CFL, t0, t1, limiter, get
         'ic' : ('Omega', {'u.0' : 'get_ic'}),
     }
 
+    dgebcs = ebcs if ebcs is not None else {}
+
+    dgepbcs = epbcs if epbcs is not None else {}
+
     equations = {
-        'Advection' : """
-                       dw_volume_dot.i.Omega(v, u)
-                       + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
-                       - dw_dg_advect_laxfrie_flux.i.Omega(a.val, v, u[-1]) = 0
-                      """
+        'Advection' : "  dw_volume_dot.i.Omega(v, u)" +
+
+                      "  + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)" +
+                      "  - dw_dg_advect_laxfrie_flux.i.Omega(a.val, v, u[-1])" +
+
+                      "  - dw_laplace.i.Omega(D.val, v, u[-1])" +
+                      " + " + diffusion_schemes[diffusion_scheme_name] +
+                      " - " + str(diffusion_coef) + " * dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"+
+
+                      " + dw_volume_lvf.i.Omega(g.val, v)" +
+                      " = 0 "
     }
 
     solvers = {
@@ -123,7 +195,7 @@ def define_transient_diffusion_advection(approx_order, CFL, t0, t1, limiter, get
                              {"t0": t0,
                               "t1": t1,
                               'limiter' : IdentityLimiter}),
-        'nls' : ('nls.newton',{} ),
+        'nls' : ('nls.newton', {} ),
         'ls'  : ('ls.scipy_direct', {})
     }
 
