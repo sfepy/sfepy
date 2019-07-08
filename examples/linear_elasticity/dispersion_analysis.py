@@ -44,6 +44,14 @@ square periodic cell (the region Y2 is empty)::
   python examples/linear_elasticity/dispersion_analysis.py meshes/2d/square_1m.mesh --solver-conf="kind='eig.scipy', method='eigh'" --log-std-waves -n 10 --range=0,640,101 --mesh-size=1e-2 --mode=omega --eigs-only --no-legends --unit-multipliers=1e-6,1e-2,1e-3 -o output/omega-h
 
   python script/plot_logs.py output/omega-h/frequencies.txt --no-legends -g 1 -o mode-omega-h.png
+
+Use the Brillouin stepper::
+
+  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves -n=60 --eigs-only --no-legends --stepper=brillouin
+
+  python script/plot_logs.py output/frequencies.txt -g 0 --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-kappas.png
+
+  python script/plot_logs.py output/frequencies.txt -g 1 --no-legends --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-omegas.png
 """
 from __future__ import absolute_import
 import os
