@@ -149,14 +149,6 @@ def main(argv):
     load_and_plot_fun(full_infolder_path, base_name, t0, t1, tn, order, compare=cf, polar=pol)
 
 
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
 
     main(sys.argv[1:])

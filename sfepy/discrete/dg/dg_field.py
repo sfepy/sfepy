@@ -706,7 +706,6 @@ class DGField(Field):
 
         if dim == 1:
             vols = nm.ones((cmesh.num[0], 1))
-            vols[:, 0] = nm.tile([1, 1], int(vols.shape[0] / 2))
         else:
             vols = cmesh.get_volumes(dim - 1)[:, None]
 
@@ -1058,9 +1057,10 @@ class DGField(Field):
 
         # get_physical_qps returns data in strange format,
         # swapping some axis and flipping qps order
-        # to get qps only in current region
+        # to get coors in shape (n_facet, n_qp, n_cell, dim)
         if len(coors.shape) == 3:
             coors = coors[:, None, :, :]  # add axis for qps when it is missing
+            coors = coors.swapaxes(0, 2)
         bcoors = coors[bc2bfi[:, 1], ::-1, bc2bfi[:, 0], :]
         diff_shape = (self.dim,) * diff
         output_shape = (n_cell,) + diff_shape + (n_qp,)

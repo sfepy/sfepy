@@ -477,7 +477,6 @@ def reconstruct_legendre_dofs(coors, tn, u):
              xx - corresponding coordinates vector, shape is (3 * nspace_steps - 1, 1)
     """
 
-
     XN = coors[-1]
     X1 = coors[0]
     n_nod = len(coors) - 1
