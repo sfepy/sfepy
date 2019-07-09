@@ -130,7 +130,7 @@ equations = {
     'Advection': " dw_volume_dot.i.Omega(v, u) " +
 
                  " - dw_laplace.i.Omega(D.val, v, u[-1]) " +
-                 " + " + diffusion_schemes[diff_scheme_name] +
+                 " + " + diffusion_schemes_explicit[diff_scheme_name] +
                  " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
 
                  " + dw_volume_lvf.i.Omega(g.val, v)"

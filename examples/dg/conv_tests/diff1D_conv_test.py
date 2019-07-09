@@ -12,12 +12,11 @@ from os.path import join as pjoin
 from my_utils.visualizer import reconstruct_legendre_dofs
 
 
-def define(filename_mesh=None, approx_order=1, Cw=100, use_symbolic=False):
+def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, use_symbolic=False):
 
     if filename_mesh is None:
         filename_mesh = get_1Dmesh_hook(0, 1, 2)
 
-    diffusion_coef = 1.0
 
     materials = {
         'D': ({'val': [diffusion_coef], '.Cw': Cw},),
@@ -44,6 +43,13 @@ def define(filename_mesh=None, approx_order=1, Cw=100, use_symbolic=False):
         'u_left': ('left', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
         'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
     }
+
+    # dgepbc_1 = {
+    #     'name'  : 'u_rl',
+    #     'region': ['right', 'left'],
+    #     'dofs': {'u.all': 'u.all'},
+    #     'match': 'match_y_line',
+    # }
 
     integrals = {
         'i' : 2 * approx_order,
@@ -151,13 +157,13 @@ def main():
     base_output_folder = "output\\diff1D\\"
 
     n_nod = 2
-    n_refine = 6
+    n_refine = 8
     orders = [1, 2, 3, 4, 5]
     #orders = [1]
 
     mod = sys.modules[__name__]
 
-    fig, axs = plt.subplots(len(orders), n_refine)
+    sol_fig, axs = plt.subplots(len(orders), n_refine, figsize=(18, 10))
 
     results = []
     for ir, refine in enumerate(range(n_refine)):
@@ -182,7 +188,7 @@ def main():
 
             pb.save_state(output_format.replace("*", "0"), state=sol)
 
-            idiff = Integral('idiff', 4 * order)
+            idiff = Integral('idiff', 20)
 
             qps = pb.fields["f"].mapping.get_physical_qps(idiff.get_qp("1_2")[0])
             fqps = qps.flatten()
@@ -207,13 +213,14 @@ def main():
             error = diff_l2 / ana_l2
 
             n_dof = field.n_nod
+            sol_fig.suptitle(
+                "Numerical and exact solutions, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
 
             # from sfepy.discrete.dg.my_utils.visualizer import plot_1D_legendre_dofs
             coors = pb.domain.mesh.coors
             u = pb.fields["f"].unravel_sol(sol.vec)
             uu, xx = reconstruct_legendre_dofs(coors, None, u.swapaxes(0, 1)[:, :, None])
 
-            fig.suptitle("Numerical and exact solutions, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
             ax = axs[order-1][refine]
 
             xs = nm.linspace(nm.min(0), nm.max(1), 500)[:, None]
@@ -224,25 +231,32 @@ def main():
             ax.plot(fqps, num_qp.flatten())
             if io < len(orders) - 1:
                 ax.set_xticks([])
-            if ir > 0:
-                ax.set_yticks([])
+            # if ir > 0:
+            #     ax.set_yticks([])
 
             result = (n_nod-1, order, n_dof, ana_l2, diff_l2, error, elapsed)
             results.append(result)
 
         n_nod = n_nod + n_nod - 1
 
+    sol_fig.savefig("sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=100)
     results = nm.array(results)
     output(results)
 
-    plt.figure()
-    fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
+    conv_fig = plt.figure()
+    conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
     for o in orders:
         curr_results = results[results[:, 1] == o]
-        plt.loglog(curr_results[:, 2], curr_results[:, 4], label=str(o))
-
+        co = plt.loglog(1/curr_results[:, 0], curr_results[:, 4], 'o', label=str(o))[0].get_color()
+        plt.loglog(1/curr_results[:, 0], curr_results[:, 4], color=co)
+        plt.grid()
+        plt.xlabel("h")
+        plt.ylabel("L^2 error")
     plt.legend()
-    plt.show()
+    conv_fig.savefig("conv-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=200)
+
+
+    # plt.show()
 
 if __name__ == '__main__':
     main()
