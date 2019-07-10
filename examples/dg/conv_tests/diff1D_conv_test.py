@@ -156,8 +156,8 @@ def main():
 
     base_output_folder = "output\\diff1D\\"
 
-    n_nod = 2
-    n_refine = 8
+    n_nod = 5
+    n_refine = 6
     orders = [1, 2, 3, 4, 5]
     #orders = [1]
 
@@ -229,6 +229,8 @@ def main():
             ax.plot(xx[:, 0], uu[:, 0, 0], alpha=.5)
             ax.plot(fqps, ana_qp.flatten(), "--", color="grey")
             ax.plot(fqps, num_qp.flatten())
+            ax2 = ax.twinx()
+            ax2.plot(fqps, nm.abs(num_qp.flatten() - ana_qp.flatten()), color="red")
             if io < len(orders) - 1:
                 ax.set_xticks([])
             # if ir > 0:
@@ -239,7 +241,7 @@ def main():
 
         n_nod = n_nod + n_nod - 1
 
-    sol_fig.savefig("sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=100)
+    sol_fig.savefig("err-sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=100)
     results = nm.array(results)
     output(results)
 
@@ -256,7 +258,7 @@ def main():
     conv_fig.savefig("conv-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=200)
 
 
-    # plt.show()
+    plt.show()
 
 if __name__ == '__main__':
     main()
