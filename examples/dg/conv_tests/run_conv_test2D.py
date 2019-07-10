@@ -11,8 +11,9 @@ from os.path import join as pjoin
 
 from my_utils.visualizer import reconstruct_legendre_dofs
 
-from examples.dg.diffusion.example_dg_qartdiff import define
-# from examples.dg.advection.example_dg_quarteroni3 import define
+from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
+# from examples.dg.advection.example_dg_quarteroni1 import define
+from examples.dg.burgess.example_dg_kucera1 import define
 
 
 def main():
@@ -28,8 +29,8 @@ def main():
 
     shape0 = (3, 3)
     n_refine = 6
-    orders = [1, 2, 3, 4, 5]
-    #orders = [1]
+    # orders = [1, 2, 3, 4, 5]
+    orders = [1]
 
     mod = sys.modules[__name__]
 
@@ -40,13 +41,22 @@ def main():
         ashape = nm.array(shape0)
         shape = (ashape - 1) ** refine + 1
 
-        gen_mesh = get_gen_block_mesh_hook((1., 1.), shape, (.5, .5))
+        gen_mesh = get_gen_block_mesh_hook((2., 2.), shape, (.0, .0))
         for io, order in enumerate(orders):
             output('shape:', shape, 'order:', order)
 
             tt = time.clock()
-            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=1000), mod)
+            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=10), mod)
+            try:
+                conf.options.save_times = 0
+            except AttributeError:
+                pass
             pb = Problem.from_conf(conf)
+            try:
+                conf.options.pre_process_hook(pb)
+            except AttributeError:
+                pass
+            tt = time.clock()
             sol = pb.solve()
             elapsed = time.clock() - tt
 
@@ -120,13 +130,13 @@ def main():
     conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
     for o in orders:
         curr_results = results[results[:, 1] == o]
-        co = plt.loglog(1/curr_results[:, 0], curr_results[:, 4], 'o', label=str(o))[0].get_color()
-        plt.loglog(1/curr_results[:, 0], curr_results[:, 4], color=co)
+        co = plt.loglog(curr_results[:, 0]**2, curr_results[:, 4], 'o', label=str(o))[0].get_color()
+        plt.loglog(curr_results[:, 0]**2, curr_results[:, 4], color=co)
         plt.grid()
-        plt.xlabel("h")
+        plt.xlabel("cells")
         plt.ylabel("L^2 error")
     plt.legend()
-    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef)), dpi=200)
+    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef)), dpi=200)
 
 
     import pandas as pd

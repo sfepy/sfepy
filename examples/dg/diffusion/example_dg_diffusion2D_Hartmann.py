@@ -1,6 +1,4 @@
 from examples.dg.example_dg_common import *
-from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
-
 
 def define(filename_mesh=None, approx_order=1, Cw=100,
            diffusion_coef=1, diff_scheme_name="symmetric"):
@@ -17,7 +15,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100,
 
         return fun
 
-    example_name = "tdiffusion_only_hartmann"
+    example_name = "diffusion_only_hartmann"
     dim = 2
 
     if filename_mesh is None:
