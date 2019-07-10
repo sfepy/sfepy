@@ -34,12 +34,12 @@ def define(filename_mesh=None, approx_order=1, Cw=100,
     }
 
     fields = {
-        'density': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
+        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
     }
 
     variables = {
-        'u': ('unknown field', 'density', 0),
-        'v': ('test field', 'density', 'u'),
+        'u': ('unknown field', 'f', 0),
+        'v': ('test field', 'f', 'u'),
     }
 
     @local_register_function
