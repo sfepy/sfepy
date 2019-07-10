@@ -1,167 +1,177 @@
-# from __future__ import absolute_import
-import numpy as nm
-import sympy as sm
-
 from examples.dg.example_dg_common import *
 
-example_name = "quartdiff1"
-dim = 2
 
-filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
+def define(filename_mesh=None, approx_order=1, Cw=100,
+           diffusion_coef=1, diff_scheme_name="symmetric", flux=0):
 
+    functions = {}
+    def local_register_function(fun):
+        try:
+            functions.update({fun.__name__: (fun,)})
 
-approx_order = 1
-diffusion_coef = 1
-Cw = 1000
-use_symbolic = False
+        except AttributeError:  # Already a sfepy Function.
+            fun = fun.function
+            functions.update({fun.__name__: (fun,)})
 
-materials = {
-    'D': ({'val': [diffusion_coef], '.Cw': Cw},),
-    'g': 'source_fun'
-}
+        return fun
+    example_name = "quartdiff1"
+    dim = 2
 
-regions = {
-    'Omega'     : 'all',
-    'left' : ('vertices in x == 0', 'edge'),
-    'right': ('vertices in x == 1', 'edge'),
-    'top' : ('vertices in y == 1', 'edge'),
-    'bottom': ('vertices in y == 0', 'edge')
-}
+    if filename_mesh is None:
+        filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
-fields = {
-    'density': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
-}
+    materials = {
+        'D': ({'val': [diffusion_coef], '.Cw': Cw},),
+        'g': 'source_fun'
+    }
 
-variables = {
-    'u': ('unknown field', 'density', 0),
-    'v': ('test field', 'density', 'u'),
-}
+    regions = {
+        'Omega'     : 'all',
+        'left' : ('vertices in x == 0', 'edge'),
+        'right': ('vertices in x == 1', 'edge'),
+        'top' : ('vertices in y == 1', 'edge'),
+        'bottom': ('vertices in y == 0', 'edge')
+    }
 
-@local_register_function
-def bc_fun(ts, coors, bc, problem):
-    # return 2*coors[..., 1]
-    t = ts.dt * ts.step
-    x_1 = coors[..., 0]
-    x_2 = coors[..., 1]
-    res = nm.zeros(nm.shape(x_1))
+    fields = {
+        'density': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
+    }
 
-    sin = nm.sin
-    cos = nm.cos
-    exp = nm.exp
-    pi = nm.pi
+    variables = {
+        'u': ('unknown field', 'density', 0),
+        'v': ('test field', 'density', 'u'),
+    }
 
-    if bc.diff == 0:
-        if "left" in bc.name:
-            res[:] = 0
-        elif "right" in bc.name:
-            res[:] = 0
-        elif "bottom" in bc.name:
-            res[:] = 0  # -2*sin(2*pi*x_1)
-        elif "top" in bc.name:
-            res[:] = 0
-
-    elif bc.diff == 1:
-        if "left" in bc.name:
-            res = nm.stack((-2 * pi * (x_2 ** 2 - x_2),
-                            res),
-                           axis=-2)
-        elif "right" in bc.name:
-            res = nm.stack((-2 * pi * (x_2 ** 2 - x_2), res,),
-                           axis=-2)
-        elif "bot" in bc.name:
-            res = nm.stack((res,
-                            sin(2 * pi * x_1)),
-                           axis=-2)
-        elif "top" in bc.name:
-            res = nm.stack((res,
-                            -sin(2 * pi * x_1)),
-                           axis=-2)
-
-    return res
-
-
-@local_register_function
-def source_fun(ts, coors, mode="qp", **kwargs):
-    # t = ts.dt * ts.step
-    eps = diffusion_coef
-    sin = nm.sin
-    cos = nm.cos
-    pi = nm.pi
-    if mode == "qp":
+    @local_register_function
+    def bc_fun(ts, coors, bc, problem):
+        # return 2*coors[..., 1]
+        t = ts.dt * ts.step
         x_1 = coors[..., 0]
         x_2 = coors[..., 1]
-        res = -2*(2*pi**2*(x_2**2 - x_2)*sin(2*pi*x_1) - sin(2*pi*x_1))*eps
-        return {"val": res[..., None, None]}
+        res = nm.zeros(nm.shape(x_1))
+
+        sin = nm.sin
+        cos = nm.cos
+        exp = nm.exp
+        pi = nm.pi
+
+        if bc.diff == 0:
+            if "left" in bc.name:
+                res[:] = 0
+            elif "right" in bc.name:
+                res[:] = 0
+            elif "bottom" in bc.name:
+                res[:] = 0  # -2*sin(2*pi*x_1)
+            elif "top" in bc.name:
+                res[:] = 0
+
+        elif bc.diff == 1:
+            if "left" in bc.name:
+                res = nm.stack((-2 * pi * (x_2 ** 2 - x_2),
+                                res),
+                               axis=-2)
+            elif "right" in bc.name:
+                res = nm.stack((-2 * pi * (x_2 ** 2 - x_2), res,),
+                               axis=-2)
+            elif "bot" in bc.name:
+                res = nm.stack((res,
+                                sin(2 * pi * x_1)),
+                               axis=-2)
+            elif "top" in bc.name:
+                res = nm.stack((res,
+                                -sin(2 * pi * x_1)),
+                               axis=-2)
+
+        return res
 
 
-def analytic_sol(coors, t):
-    x_1 = coors[..., 0]
-    x_2 = coors[..., 1]
-    sin = nm.sin
-    pi = nm.pi
-    res = -(x_2 ** 2 - x_2) * sin(2 * pi * x_1)
-    return res
+    @local_register_function
+    def source_fun(ts, coors, mode="qp", **kwargs):
+        # t = ts.dt * ts.step
+        eps = diffusion_coef
+        sin = nm.sin
+        cos = nm.cos
+        pi = nm.pi
+        if mode == "qp":
+            x_1 = coors[..., 0]
+            x_2 = coors[..., 1]
+            res = -2*(2*pi**2*(x_2**2 - x_2)*sin(2*pi*x_1) - sin(2*pi*x_1))*eps
+            return {"val": res[..., None, None]}
 
 
-@local_register_function
-def sol_fun(ts, coors, mode="qp", **kwargs):
-    t = ts.time
-    if mode == "qp":
-        return {"u": analytic_sol(coors, t)[..., None, None]}
+    def analytic_sol(coors, t):
+        x_1 = coors[..., 0]
+        x_2 = coors[..., 1]
+        sin = nm.sin
+        pi = nm.pi
+        res = -(x_2 ** 2 - x_2) * sin(2 * pi * x_1)
+        return res
 
-dgebcs = {
-    'u_left' : ('left', {'u.all': "bc_fun", 'grad.u.all' : "bc_fun"}),
-    'u_top'  : ('top', {'u.all': "bc_fun", 'grad.u.all' :  "bc_fun"}),
-    'u_bot'  : ('bottom', {'u.all': "bc_fun", 'grad.u.all' :  "bc_fun"}),
-    'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all' :  "bc_fun"}),
-}
 
-integrals = {
-    'i': 2 * approx_order,
-}
+    @local_register_function
+    def sol_fun(ts, coors, mode="qp", **kwargs):
+        t = ts.time
+        if mode == "qp":
+            return {"u": analytic_sol(coors, t)[..., None, None]}
 
-diff_scheme_name = "symmetric"
+    dgebcs = {
+        'u_left' : ('left', {'u.all': "bc_fun", 'grad.u.all' : "bc_fun"}),
+        'u_top'  : ('top', {'u.all': "bc_fun", 'grad.u.all' :  "bc_fun"}),
+        'u_bot'  : ('bottom', {'u.all': "bc_fun", 'grad.u.all' :  "bc_fun"}),
+        'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all' :  "bc_fun"}),
+    }
 
-equations = {
-    'Temperature':  " - dw_laplace.i.Omega(D.val, v, u) " +
-                    " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
-                    " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                    " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
-                    " + dw_volume_lvf.i.Omega(g.val, v) = 0"
-}
+    integrals = {
+        'i': 2 * approx_order,
+    }
 
-# solvers = {
-#     'ls': ('ls.auto_direct', {}),
-#     'newton': ('nls.newton',
-#                {'i_max': 1,
-#                 'eps_a': 1e-10,
-#                 }),
-# }
+    diff_scheme_name = "symmetric"
 
-solver_0 = {
-    'name' : 'ls',
-    'kind' : 'ls.scipy_direct',
-}
+    equations = {
+        'Temperature':  " - dw_laplace.i.Omega(D.val, v, u) " +
+                        " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
+                        " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
+                        " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                        " + dw_volume_lvf.i.Omega(g.val, v) = 0"
+    }
 
-solver_1 = {
-    'name' : 'newton',
-    'kind' : 'nls.newton',
+    # solvers = {
+    #     'ls': ('ls.auto_direct', {}),
+    #     'newton': ('nls.newton',
+    #                {'i_max': 1,
+    #                 'eps_a': 1e-10,
+    #                 }),
+    # }
 
-    'i_max'      : 5,
-    'eps_a'      : 1e-8,
-    'eps_r'      : 1.0,
-    'macheps'   : 1e-16,
-    'lin_red'    : 1e-2,  # Linear system error < (eps_a * lin_red).
-    'ls_red'     : 0.1,
-    'ls_red_warp' : 0.001,
-    'ls_on'      : 0.99999,
-    'ls_min'     : 1e-5,
-    'check'     : 0,
-    'delta'     : 1e-6,
-}
+    solver_0 = {
+        'name' : 'ls',
+        'kind' : 'ls.scipy_direct',
+    }
 
-options = {
-    'nls': 'newton',
-    'ls': 'ls',
-    'output_format'   : 'msh',
-}
+    solver_1 = {
+        'name' : 'newton',
+        'kind' : 'nls.newton',
+
+        'i_max'      : 5,
+        'eps_a'      : 1e-8,
+        'eps_r'      : 1.0,
+        'macheps'   : 1e-16,
+        'lin_red'    : 1e-2,  # Linear system error < (eps_a * lin_red).
+        'ls_red'     : 0.1,
+        'ls_red_warp' : 0.001,
+        'ls_on'      : 0.99999,
+        'ls_min'     : 1e-5,
+        'check'     : 0,
+        'delta'     : 1e-6,
+    }
+
+    options = {
+        'nls': 'newton',
+        'ls': 'ls',
+        'output_format'   : 'msh',
+    }
+    return locals()
+
+
+globals().update(define())
+
