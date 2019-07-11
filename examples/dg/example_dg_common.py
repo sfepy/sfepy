@@ -77,8 +77,11 @@ def get_cfl_setup(CFL=None, dt=None):
         first_field_name = list(problem.fields.keys())[0]
         approx_order = first_field.approx_order
         mats = problem.create_materials('a')
-        velo = problem.conf_materials['material_a__0'].values["val"]
-        max_velo = nm.max(nm.linalg.norm(velo))
+        try:
+            velo = problem.conf_materials['material_a__0'].values["val"]
+            max_velo = nm.max(nm.linalg.norm(velo))
+        except KeyError:
+            max_velo = 1
         dx = nm.min(problem.domain.mesh.cmesh.get_volumes(dim))
         order_corr = 1. / (2 * approx_order + 1)
         if dt is None:

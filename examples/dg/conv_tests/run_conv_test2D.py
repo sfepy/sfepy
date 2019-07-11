@@ -11,7 +11,7 @@ from os.path import join as pjoin
 
 from my_utils.visualizer import reconstruct_legendre_dofs
 
-from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
+# from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
 # from examples.dg.advection.example_dg_quarteroni1 import define
 from examples.dg.burgess.example_dg_kucera1 import define
 
@@ -45,7 +45,6 @@ def main():
         for io, order in enumerate(orders):
             output('shape:', shape, 'order:', order)
 
-            tt = time.clock()
             conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=10), mod)
             try:
                 conf.options.save_times = 0
@@ -96,8 +95,6 @@ def main():
             error = diff_l2 / ana_l2
 
             n_dof = field.n_nod
-            result = (n_cell, order, n_dof, ana_l2, diff_l2, error, elapsed)
-            results.append(result)
             # sol_fig.suptitle(
             #     "Numerical and exact solutions, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
             #
@@ -121,6 +118,10 @@ def main():
             #     ax.set_xticks([])
             # # if ir > 0:
             # #     ax.set_yticks([])
+
+            result = (n_cell, order, n_dof, ana_l2, diff_l2, error, elapsed)
+            results.append(result)
+
 
     # sol_fig.savefig("err-sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=100)
     results = nm.array(results)

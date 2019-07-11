@@ -1,3 +1,12 @@
+"""
+Based on
+
+Jan S Hesthaven. Discontinuous Galerkin methods Lecture 8.
+Brown University, Jan.Hesthaven@Brown.edu
+
+
+"""
+
 from examples.dg.example_dg_common import *
 
 
@@ -58,7 +67,6 @@ def define(filename_mesh=None, approx_order=1, Cw=1,
         if mode == "qp":
             return {"u": analytic_sol(coors, t)[..., None, None]}
 
-    @local_register_function
     @local_register_function
     def bc_fun(ts, coors, bc, problem):
         x = coors[..., 0]

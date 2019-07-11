@@ -1,3 +1,9 @@
+"""
+Based on
+
+Ralf Hartmann. Numerical Analysis of Higher Order Discontinuous Galerkin Finite Element methods.
+Institute of Aerodynamic and Flow Technology DLR (German Aerospace Center). 13. Oct. 2008
+"""
 from examples.dg.example_dg_common import *
 
 def define(filename_mesh=None, approx_order=1, Cw=100,

@@ -1,3 +1,10 @@
+"""
+Based on
+
+Kučera, V. (n.d.). Higher order methods for the solution of compressible flows. Charles University. p. 21 eq. (1.39)
+"""
+
+
 from examples.dg.example_dg_common import *
 
 

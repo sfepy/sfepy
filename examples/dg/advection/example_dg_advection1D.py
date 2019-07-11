@@ -102,7 +102,7 @@ solvers = {
     "tss": ('ts.euler',
             {"t0"     : t0,
              "t1"     : t1,
-             'limiter': MomentLimiter1D,
+             'limiter': IdentityLimiter,
              'verbose': True}),
     'nls': ('nls.newton', {}),
     'ls' : ('ls.scipy_direct', {})
@@ -114,5 +114,6 @@ options = {
     'ls'              : 'ls',
     'save_times'      : 100,
     'active_only'     : False,
-    'pre_process_hook': get_cfl_setup(CFL)
+    'pre_process_hook': get_cfl_setup(CFL),
+    'output_format'   : "vtk"
 }

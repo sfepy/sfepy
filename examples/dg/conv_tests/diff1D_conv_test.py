@@ -12,7 +12,7 @@ from os.path import join as pjoin
 from my_utils.visualizer import reconstruct_legendre_dofs
 
 
-def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, use_symbolic=False):
+def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=0.0001, use_symbolic=False):
 
     if filename_mesh is None:
         filename_mesh = get_1Dmesh_hook(0, 1, 2)
@@ -39,17 +39,17 @@ def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, use_sym
         'v' : ('test field',    'f', 'u'),
     }
 
-    dgebcs = {
-        'u_left': ('left', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
-        'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
-    }
-
-    # dgepbc_1 = {
-    #     'name'  : 'u_rl',
-    #     'region': ['right', 'left'],
-    #     'dofs': {'u.all': 'u.all'},
-    #     'match': 'match_y_line',
+    # dgebcs = {
+    #     'u_left': ('left', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
+    #     'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
     # }
+
+    dgepbc_1 = {
+        'name'  : 'u_rl',
+        'region': ['right', 'left'],
+        'dofs': {'u.all': 'u.all'},
+        'match': 'match_y_line',
+    }
 
     integrals = {
         'i' : 2 * approx_order,
@@ -241,7 +241,7 @@ def main():
 
         n_nod = n_nod + n_nod - 1
 
-    sol_fig.savefig("err-sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=100)
+    sol_fig.savefig("per-err-sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=100)
     results = nm.array(results)
     output(results)
 
@@ -255,7 +255,7 @@ def main():
         plt.xlabel("h")
         plt.ylabel("L^2 error")
     plt.legend()
-    conv_fig.savefig("conv-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=200)
+    conv_fig.savefig("per-conv-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef), dpi=200)
 
 
     plt.show()
