@@ -25,7 +25,7 @@ def define(filename_mesh=None, approx_order=1, Cw=1,
 
         return fun
 
-    example_name = "burgess_hesthaven"
+    example_name = "burgess_hartmann"
     dim = 1
 
     if filename_mesh is None:
