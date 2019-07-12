@@ -334,19 +334,20 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
 
     def function(self, out, state, test, diff_var, field, region, Cw):
 
+        approx_order = field.approx_order
+
+        inner_facet_base, outer_facet_base, whs = field.get_both_facet_base_vals(state, region,
+                                                                                 derivative=False)
+        facet_vols = nm.sum(whs, axis=-1)
+        inv_facet_vols = 1. / nm.sum(whs, axis=-1)
+
+        sigma = Cw * approx_order ** 2 / facet_vols
+
         if diff_var is not None:
 
             nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
             active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
             active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
-
-            inner_facet_base, outer_facet_base, whs = field.get_both_facet_base_vals(state, region,
-                                                                                   derivative=False)
-
-            facet_vols = nm.sum(whs, axis=-1)
-            inv_facet_vols = 1./nm.sum(whs, axis=-1)
-
-            sigma = Cw / facet_vols
 
             inner = nm.einsum("nf, ndfq, nbfq, nfq -> ndb",
                                sigma,
@@ -393,7 +394,6 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
 
             jmp_state = inner_facet_state - outer_facet_state
             jmp_base = inner_facet_base  # - outer_facet_base
-            sigma = Cw / facet_vols
 
             n_el_nod = nm.shape(inner_facet_base)[1]
             cell_penalty = nm.einsum("nf,nfq,ndfq,nfq->nd", sigma, jmp_state, jmp_base, whs)
