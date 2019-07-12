@@ -274,6 +274,21 @@ class DiffusionDGFluxTerm(DGTerm):
             inner_facet_state, outer_facet_state, weights = field.get_both_facet_state_vals(state, region,
                                                                                             derivative=False
                                                                                             )
+            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+            bnd_cells, bnd_facets = nm.where(nbrhd_idx[:, :, 0] < 0)
+            bnd_nrbhs = nbrhd_idx[bnd_cells, bnd_facets, 0]
+
+            # Dirichlet
+            # outer_facet_state[bnd_cells, bnd_facets] = - inner_facet_state[bnd_cells, bnd_facets] + \
+            #                                                2*outer_facet_state[bnd_cells, bnd_facets]
+            #
+            # outer_facet_state_d[bnd_cells, bnd_facets] = inner_facet_state_d[bnd_cells, bnd_facets]
+
+            # Neuman
+            # outer_facet_state[bnd_cells, bnd_facets] = inner_facet_state[bnd_cells, bnd_facets]
+            #
+            # outer_facet_state_d[bnd_cells, bnd_facets] = -inner_facet_state_d[bnd_cells, bnd_facets]
+
             if self.mode == 'avg_state':
                 avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, inner_facet_state_d) +
                               nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
@@ -358,10 +373,22 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
             Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
         else:
             inner_facet_state, outer_facet_state, whs = field.get_both_facet_state_vals(state, region,
-                                                                                            derivative=False
-                                                                                            )
+                                                                                        derivative=False
+                                                                                       )
             inner_facet_base, outer_facet_base, _ = field.get_both_facet_base_vals(state, region,
-                                                                                   derivative=False)
+                                                                                   derivative=False
+                                                                                  )
+            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+            bnd_cells, bnd_facets = nm.where(nbrhd_idx[:, :, 0] < 0)
+            bnd_nrbhs = nbrhd_idx[bnd_cells, bnd_facets, 0]
+
+            # Dirichlet
+            # outer_facet_state[bnd_cells, bnd_facets] = - inner_facet_state[bnd_cells, bnd_facets] + \
+            #                                            2 * outer_facet_state[bnd_cells, bnd_facets]
+
+            # Neuman
+            # outer_facet_state[bnd_cells, bnd_facets] = inner_facet_state[bnd_cells, bnd_facets]
+
             facet_vols = nm.sum(whs, axis=-1)
 
             jmp_state = inner_facet_state - outer_facet_state
