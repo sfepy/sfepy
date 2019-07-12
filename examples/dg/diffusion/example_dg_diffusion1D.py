@@ -14,9 +14,9 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4,
            use_symbolic=False, transient=False):
     t0 = 0
-    t1 = 1
+    t1 = 2
 
-    example_name =  "trns_per_diff1D" if transient else "per_diff1D"
+    example_name = "trns_per_diff1D" if transient else "per_diff1D"
     dim = 1
 
     if filename_mesh is None:
@@ -153,7 +153,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4
         pi = nm.pi
         if mode == "qp":
             x = coors[..., 0]
-            res = 4*pi**2*eps*sin(2*pi*x)
+            res = - 4*pi**2*eps*sin(2*pi*x)
             return {"val": res[..., None, None]}
 
     def analytic_sol(coors, t=0):

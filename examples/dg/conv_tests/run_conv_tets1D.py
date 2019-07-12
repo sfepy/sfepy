@@ -121,7 +121,7 @@ def main():
 
         n_nod = n_nod + n_nod - 1
 
-    sol_fig.savefig(pjoin(base_output_folder, "err-sol-i20cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef)), dpi=100)
+    sol_fig.savefig(pjoin(base_output_folder, "err-sol-i20cw{}_d{}_t{}.tif".format(conf.Cw, conf.diffusion_coef, 2)), dpi=100)
     results = nm.array(results)
     output(results)
 
@@ -135,7 +135,7 @@ def main():
         plt.xlabel("cells")
         plt.ylabel("L^2 error")
     plt.legend()
-    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef)), dpi=200)
+    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}_t{}.tif".format(conf.Cw, conf.diffusion_coef, 2)), dpi=200)
 
 
     import pandas as pd

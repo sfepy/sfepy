@@ -12,9 +12,9 @@ from os.path import join as pjoin
 from my_utils.visualizer import reconstruct_legendre_dofs
 
 # from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
-# from examples.dg.advection.example_dg_quarteroni1 import define
-from examples.dg.burgess.example_dg_kucera1 import define
-
+# from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
+# from examples.dg.burgess.example_dg_kucera1 import define
+from examples.dg.diffusion.example_dg_laplace1 import define
 
 def main():
     import sys
@@ -29,8 +29,8 @@ def main():
 
     shape0 = (3, 3)
     n_refine = 6
-    # orders = [1, 2, 3, 4, 5]
-    orders = [1]
+    orders = [1, 2, 3, 4, 5]
+    # orders = [1]
 
     mod = sys.modules[__name__]
 
@@ -41,11 +41,11 @@ def main():
         ashape = nm.array(shape0)
         shape = (ashape - 1) ** refine + 1
 
-        gen_mesh = get_gen_block_mesh_hook((2., 2.), shape, (.0, .0))
+        gen_mesh = get_gen_block_mesh_hook((1., 1.), shape, (.5, .5))
         for io, order in enumerate(orders):
             output('shape:', shape, 'order:', order)
 
-            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=10), mod)
+            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=1000, diffusion_coef=1), mod)
             try:
                 conf.options.save_times = 0
             except AttributeError:
