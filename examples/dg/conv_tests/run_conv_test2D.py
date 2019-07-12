@@ -11,10 +11,9 @@ from os.path import join as pjoin
 
 from my_utils.visualizer import reconstruct_legendre_dofs
 
-# from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
-# from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
+from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
 # from examples.dg.burgess.example_dg_kucera1 import define
-from examples.dg.diffusion.example_dg_laplace1 import define
+# from examples.dg.diffusion.example_dg_laplace1 import define
 
 def main():
     import sys
@@ -45,7 +44,7 @@ def main():
         for io, order in enumerate(orders):
             output('shape:', shape, 'order:', order)
 
-            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=1000, diffusion_coef=1), mod)
+            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=10000, diffusion_coef=1), mod)
             try:
                 conf.options.save_times = 0
             except AttributeError:
@@ -136,8 +135,8 @@ def main():
         plt.grid()
         plt.xlabel("cells")
         plt.ylabel("L^2 error")
-    plt.legend()
-    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.tif".format(conf.Cw, conf.diffusion_coef)), dpi=200)
+    plt.legend(title="Order")
+    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.jpg".format(conf.Cw, conf.diffusion_coef)), dpi=200)
 
 
     import pandas as pd
