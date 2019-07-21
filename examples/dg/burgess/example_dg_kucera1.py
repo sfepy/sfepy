@@ -7,6 +7,8 @@ Kučera, V. (n.d.). Higher order methods for the solution of compressible flows.
 
 from examples.dg.example_dg_common import *
 
+mesh_center = (0, 0)
+mesh_size = (2, 2)
 
 def define(filename_mesh=None, approx_order=1, Cw=10,
            diffusion_coef=0.002, flux=0.0, CFL = .4, diff_scheme_name="symmetric"):
@@ -23,7 +25,7 @@ def define(filename_mesh=None, approx_order=1, Cw=10,
 
         return fun
 
-    example_name = "kucera1"
+    example_name = "kucera1dt"
     dim = 2
 
     if filename_mesh is None:
@@ -31,6 +33,7 @@ def define(filename_mesh=None, approx_order=1, Cw=10,
 
     t0 = 0.
     t1 = .1
+    dt = 1e-5
     velo = [1., 1.]
 
     angle = 0  # - nm.pi / 5
@@ -210,7 +213,7 @@ def define(filename_mesh=None, approx_order=1, Cw=10,
         'ls'              : 'ls',
         'save_times'      : 100,
         'output_format'   : 'msh',
-        'pre_process_hook': get_cfl_setup(CFL)
+        'pre_process_hook': get_cfl_setup(dt=dt)
     }
 
     return locals()

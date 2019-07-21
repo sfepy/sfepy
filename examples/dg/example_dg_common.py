@@ -1,4 +1,5 @@
 import numpy as nm
+import pandas as pd
 
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem import Mesh
@@ -186,7 +187,7 @@ def build_transient_diffusion_advection_2D(mesh_hook, approx_order, CFL, t0, t1,
                       "  - dw_dg_advect_laxfrie_flux.i.Omega(a.val, v, u[-1])" +
 
                       "  - dw_laplace.i.Omega(D.val, v, u[-1])" +
-                      " + " + diffusion_schemes[diffusion_scheme_name] +
+                      " + " + diffusion_schemes_explicit[diffusion_scheme_name] +
                       " - " + str(diffusion_coef) + " * dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"+
 
                       " + dw_volume_lvf.i.Omega(g.val, v)" +
@@ -211,6 +212,37 @@ def build_transient_diffusion_advection_2D(mesh_hook, approx_order, CFL, t0, t1,
     }
     return locals()
 
+
+def calculate_num_order(err_df):
+
+    """
+    Uses diff_l2 and n_rows columns of the dataframe to calculate num_order,
+    splits dataframe on order clumn
+    :param err_df: dataframe, columns: ["n_rows", "order", diff_l2]
+    :return:
+    """
+    res_df = pd.DataFrame()
+    for order in err_df["order"].unique():
+        order_err_df = err_df[err_df["order"] == order].sort_values("n_rows")
+
+        num_orders = [nm.NAN]
+
+        last_err = order_err_df.iloc[0]["diff_l2"]
+        last_h = order_err_df.iloc[0]["n_rows"]
+        #         print(order_err_df.iloc[1:, :])
+        for i, row in order_err_df.iloc[1:, :].iterrows():
+            num_order = nm.log(row["diff_l2"] / last_err) / nm.log(last_h / row["n_rows"] )
+            #             print(row["err_l2"] / last_err)
+            #             print(row["n_rows] / last_h)
+            #             print("-------------------")
+
+            last_err = row["diff_l2"]
+            last_h = row["n_rows"]
+            num_orders.append(num_order)
+
+        order_err_df["num_order"] = num_orders
+        res_df = res_df.append(order_err_df)
+    return res_df
 
 def get_1Dmesh_hook(XS, XE, n_nod):
     def mesh_hook(mesh, mode):
