@@ -138,7 +138,7 @@ def gsmooth(x):
     # return nm.piecewise(x, [x[:, 0] <= - 1, x[:, 0] >= -1, 1 < x[:, 0]],
     #                     [0, lambda x: nm.exp(1 / (x ** 2 - 1)), 0])
     return  .3 * nm.piecewise(x, [x <= 0.1, x >= 0.1, .3 < x],
-                                 [0, lambda x: nm.exp(1/((10*(x - .2))**2 - 1))/nm.exp(1/(- 1)), 0])
+                                 [0, lambda x: nm.exp(1/((10*(x - .2))**2 - 1) + 1), 0])
 
 
 def superic(x):

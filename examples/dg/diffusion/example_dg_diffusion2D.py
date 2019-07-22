@@ -113,7 +113,7 @@ ics = {
 }
 
 dgebcs = {
-    'u_left' : ('left', {'u.all': 'bc_funs', 'grad.u.all': (-a, 0)}),
+    'u_left' : ('left', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),
     'u_right' : ('right', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),
     'u_bottom' : ('bottom', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),
     'u_top' : ('top', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),

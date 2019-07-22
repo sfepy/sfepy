@@ -11,8 +11,8 @@ from os.path import join as pjoin
 
 from my_utils.visualizer import reconstruct_legendre_dofs
 
-# from examples.dg.burgess.example_dg_burgess1D_Hesthaven import define
-from examples.dg.diffusion.example_dg_diffusion1D import define
+from examples.dg.burgess.example_dg_burgess1D_Hesthaven import define
+# from examples.dg.diffusion.example_dg_diffusion1D import define
 
 def main():
     import sys
@@ -37,11 +37,11 @@ def main():
 
     results = []
     for ir, refine in enumerate(range(n_refine)):
-        gen_mesh = get_1Dmesh_hook(0, 1, n_nod)
+        gen_mesh = get_1Dmesh_hook(-1, 1, n_nod)
         for io, order in enumerate(orders):
             output('n_nod:', n_nod, 'order:', order)
 
-            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=10000, diffusion_coef=1, transient=True), mod)
+            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=100, diffusion_coef=0.001), mod)
             try:
                 conf.options.save_times = 0
             except AttributeError:
@@ -103,7 +103,7 @@ def main():
 
             ax = axs[order-1][refine]
 
-            xs = nm.linspace(0, 1, 500)[:, None]
+            xs = nm.linspace(-1, 1, 500)[:, None]
             ax.set_title("o: {}, h: {}".format(order, n_nod - 1))
             ax.plot(xs, conf.analytic_sol(xs, t=1), label="fun-ex", color="grey")
             ax.plot(xx[:, 0], uu[:, 0, 0], alpha=.5)
@@ -132,9 +132,9 @@ def main():
         co = plt.loglog(curr_results[:, 0], curr_results[:, 4], 'o', label=str(o))[0].get_color()
         plt.loglog(curr_results[:, 0], curr_results[:, 4], color=co)
         plt.grid()
-        plt.xlabel("cells")
-        plt.ylabel("L^2 error")
-    plt.legend("Order")
+    plt.xlabel("cells")
+    plt.ylabel("L^2 error")
+    plt.legend(title="Order")
     conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}_t{}.jpg".format(conf.Cw, conf.diffusion_coef, 2)), dpi=200)
 
 

@@ -16,7 +16,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4
     t0 = 0
     t1 = 2
 
-    example_name = "trns_per_diff1D" if transient else "per_diff1D"
+    example_name = "trnsdiff1D" if transient else "diff1D"
     dim = 1
 
     if filename_mesh is None:
@@ -44,17 +44,17 @@ def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4
         'v' : ('test field',    'f', 'u'),
     }
 
-    # dgebcs = {
-    #     'u_left': ('left', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
-    #     'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
-    # }
-
-    dgepbc_1 = {
-        'name'  : 'u_rl',
-        'region': ['right', 'left'],
-        'dofs': {'u.all': 'u.all'},
-        'match': 'match_y_line',
+    dgebcs = {
+        'u_left': ('left', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
+        'u_right': ('right', {'u.all': "bc_fun", 'grad.u.all': "bc_fun"}),
     }
+
+    # dgepbc_1 = {
+    #     'name'  : 'u_rl',
+    #     'region': ['right', 'left'],
+    #     'dofs': {'u.all': 'u.all'},
+    #     'match': 'match_y_line',
+    # }
 
     integrals = {
         'i' : 2 * approx_order,
@@ -153,7 +153,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4
         pi = nm.pi
         if mode == "qp":
             x = coors[..., 0]
-            res = - 4*pi**2*eps*sin(2*pi*x)
+            res = 4*pi**2*eps*sin(2*pi*x)
             return {"val": res[..., None, None]}
 
     def analytic_sol(coors, t=0):

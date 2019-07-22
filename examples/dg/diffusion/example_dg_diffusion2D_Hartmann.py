@@ -137,6 +137,8 @@ def define(filename_mesh=None, approx_order=1, Cw=100,
     solver_0 = {
         'name': 'ls',
         'kind': 'ls.scipy_direct',
+        # 'kind': 'ls.mumps',
+
     }
 
     solver_1 = {

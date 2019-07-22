@@ -223,21 +223,21 @@ def calculate_num_order(err_df):
     """
     res_df = pd.DataFrame()
     for order in err_df["order"].unique():
-        order_err_df = err_df[err_df["order"] == order].sort_values("n_rows")
+        order_err_df = err_df[err_df["order"] == order].sort_values("n_cells")
 
         num_orders = [nm.NAN]
 
         last_err = order_err_df.iloc[0]["diff_l2"]
-        last_h = order_err_df.iloc[0]["n_rows"]
+        last_h = order_err_df.iloc[0]["h"]
         #         print(order_err_df.iloc[1:, :])
         for i, row in order_err_df.iloc[1:, :].iterrows():
-            num_order = nm.log(row["diff_l2"] / last_err) / nm.log(last_h / row["n_rows"] )
+            num_order = nm.log(row["diff_l2"] / last_err) / nm.log( row["h"] / last_h)
             #             print(row["err_l2"] / last_err)
             #             print(row["n_rows] / last_h)
             #             print("-------------------")
 
             last_err = row["diff_l2"]
-            last_h = row["n_rows"]
+            last_h = row["h"]
             num_orders.append(num_order)
 
         order_err_df["num_order"] = num_orders

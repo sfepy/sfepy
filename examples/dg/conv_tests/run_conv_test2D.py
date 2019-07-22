@@ -13,12 +13,51 @@ from os.path import join as pjoin
 mesh_center = (0.5, 0.5)
 mesh_size = (1.0, 1.0)
 
+from discrete.fem.utils import refine_mesh
+
 from my_utils.visualizer import reconstruct_legendre_dofs
 
 # from examples.dg.diffusion.example_dg_diffusion2D_Hartmann import define
-# from examples.dg.burgess.example_dg_kucera1 import define, mesh_center, mesh_size
+from examples.dg.burgess.example_dg_kucera1 import define, mesh_center, mesh_size
 # from examples.dg.diffusion.example_dg_laplace1 import define
-from examples.dg.advection.example_dg_advection2D import define
+# from examples.dg.advection.example_dg_advection2D import define
+
+def plot_conv_results(base_output_folder, conf, err_df):
+
+    conv_fig, ax = plt.subplots(1, 1)
+    if hasattr(conf, "dt"):
+        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}, dt: {}".
+                          format(conf.Cw, conf.diffusion_coef, conf.dt))
+    elif hasattr(conf, "CFL"):
+        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}, CFL: {}".
+                      format(conf.Cw, conf.diffusion_coef, conf.CFL))
+    else:
+        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
+    orders = sorted(err_df["order"].unique())
+    for o in orders:
+        curr_df = err_df[err_df["order"] == o]
+        co = ax.loglog(curr_df["n_cells"] ** 2, curr_df["diff_l2"], 'o', label=str(int(o)))[0].get_color()
+        ax.loglog(curr_df["n_cells"] ** 2, curr_df["diff_l2"], color=co, label="")
+        for i, r in curr_df.iloc[1:, :].iterrows():
+            ax.text(r["n_cells"] ** 2, r["diff_l2"], "{:.2}".format(r["num_order"]))
+
+        ax.grid()
+        ax.set_xlabel("cells")
+        ax.set_ylabel("L^2 error")
+    ax.legend(title="Order")
+    conv_fig.savefig(
+        pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.png".format(conf.Cw, conf.diffusion_coef)),
+        dpi=200)
+
+
+def refine_square_tens(filename, refine):
+    shape0 = (3, 3)  # always start with (3,3) for refine 0 it reduces to (2, 2), cahnge refine to shift refinement
+    ashape = nm.array(shape0)
+    shape = (ashape - 1) ** refine + 1
+
+    gen_mesh = get_gen_block_mesh_hook(mesh_size, shape, mesh_center)
+    return gen_mesh
+
 
 def main():
     import sys
@@ -30,27 +69,24 @@ def main():
     from sfepy.discrete.common.mappings import get_jacobian
     from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
+    mesh = "mesh/mesh_simp_2D_11_8.vtk"
 
-    shape0 = (3, 3)  # always start with (3,3) for refine 0 it reduces to (2, 2), cahnge refine to shift refinement
-    n_refine = 5  # 6 is  way too much
+    refines = [0,1, 2, 3, 4]
     orders = [1, 2, 3, 4, 5]
     # orders = [1]
 
     mod = sys.modules[__name__]
 
     results = []
-    for ir, refine in enumerate(range(n_refine)):
-        ashape = nm.array(shape0)
-        shape = (ashape - 1) ** refine + 1
+    for ir, refine in enumerate(refines):
 
-        gen_mesh = get_gen_block_mesh_hook(mesh_size, shape, mesh_center)
+        gen_mesh = refine_square_tens(mesh, refine)
         for io, order in enumerate(orders):
-            output('shape:', shape, 'order:', order)
 
             conf = ProblemConf.from_dict(define(gen_mesh, order,
-                                                Cw=0, diffusion_coef=0,
-                                                CFL=0.1,
-                                                dt=1
+                                                Cw=10, diffusion_coef=0.002,
+                                                # CFL=0.1,
+                                                dt=1e-5
                                                 ), mod)
             try:
                 conf.options.save_times = 0
@@ -61,17 +97,26 @@ def main():
                 conf.options.pre_process_hook(pb)
             except AttributeError:
                 pass
+
+            n_cells = pb.domain.shape.n_el
+            vols = pb.domain.cmesh.get_volumes(2)
+            if "2_3" in pb.domain.geom_els:
+                h = nm.mean(nm.sqrt(4*vols))
+            elif "2_4" in pb.domain.geom_els:
+                h = nm.mean(nm.sqrt(2*vols))
+
+
+            output('shape:', n_cells, 'order:', order)
+
             tt = time.clock()
             sol = pb.solve()
             elapsed = time.clock() - tt
 
-            n_rows = shape[0] - 1
-
             base_output_folder = pjoin("output", conf.example_name)
-            output_folder = pjoin(base_output_folder, "h" + str(n_rows))
+            output_folder = pjoin(base_output_folder, "h" + str(n_cells))
             output_folder = pjoin(output_folder, "o" + str(order))
 
-            output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}".format(n_rows, order, "msh"))
+            output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}".format(n_cells, order, "msh"))
             output("Output set to {}, clearing ...".format(output_format))
 
             clear_folder(output_format, confirm=False)
@@ -102,14 +147,14 @@ def main():
 
             n_dof = field.n_nod
 
-            result = (n_rows, order, n_dof, ana_l2, diff_l2, error, elapsed)
+            result = (h, n_cells, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed)
             results.append(result)
 
 
     results = nm.array(results)
 
     err_df = pd.DataFrame(results,
-                          columns=["n_rows", "order", "n_dof", "ana_l2", "diff_l2", "err_rel", "elapsed"])
+                          columns=["h", "n_cells", "mean_vol", "order", "n_dof", "ana_l2", "diff_l2", "err_rel", "elapsed"])
     err_df = calculate_num_order(err_df)
     err_df.to_csv(
         pjoin(base_output_folder, conf.example_name + "results-cw{}_d{}.csv".format(conf.Cw, conf.diffusion_coef)))
@@ -122,32 +167,7 @@ def main():
     plt.show()
 
 
-def plot_conv_results(base_output_folder, conf, err_df):
 
-    conv_fig, ax = plt.subplots(1, 1)
-    if hasattr(conf, "dt"):
-        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}, dt: {}".
-                          format(conf.Cw, conf.diffusion_coef, conf.dt))
-    elif hasattr(conf, "CFL"):
-        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}, CFL: {}".
-                      format(conf.Cw, conf.diffusion_coef, conf.CFL))
-    else:
-        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
-    orders = sorted(err_df["order"].unique())
-    for o in orders:
-        curr_df = err_df[err_df["order"] == o]
-        co = ax.loglog(curr_df["n_rows"] ** 2, curr_df["diff_l2"], 'o', label=str(int(o)))[0].get_color()
-        ax.loglog(curr_df["n_rows"] ** 2, curr_df["diff_l2"], color=co, label="")
-        for i, r in curr_df.iloc[1:, :].iterrows():
-            ax.text(r["n_rows"] ** 2, r["diff_l2"], "{:.2}".format(r["num_order"]))
-
-        ax.grid()
-        ax.set_xlabel("cells")
-        ax.set_ylabel("L^2 error")
-    ax.legend(title="Order")
-    conv_fig.savefig(
-        pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.png".format(conf.Cw, conf.diffusion_coef)),
-        dpi=200)
 
 
 if __name__ == '__main__':
