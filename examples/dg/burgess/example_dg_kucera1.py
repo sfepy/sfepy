@@ -205,7 +205,7 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
                 {"t0"     : t0,
                  "t1"     : t1,
                  # 'limiter': IdentityLimiter,
-                 'verbose': True}),
+                 'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }
@@ -218,6 +218,9 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
         'output_format'   : 'msh',
         'pre_process_hook': get_cfl_setup(dt=dt) if CFL is None else get_cfl_setup(CFL)
     }
+
+    if CFL is not None:
+        del dt
 
     return locals()
 

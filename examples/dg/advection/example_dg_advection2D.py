@@ -10,7 +10,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
+        filename_mesh = "mesh/mesh_tens_2D_01_20.vtk"
 
     t0 = 0.
     t1 = 1.
@@ -18,7 +18,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0
     # get_common(approx_order, CFL, t0, t1, None, get_ic)
     rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                      [nm.sin(angle), nm.cos(angle)]])
-    velo = nm.sum(rotm.T * nm.array([0., 0.]), axis=-1)[:, None]
+    velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
     materials = {
         'a': ({'val': [velo], '.flux': 0.0},),
     }
@@ -90,7 +90,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0
     }
 
     solvers = {
-        "tss": ('ts.tvd_runge_kutta_3',
+        "tss": ('ts.euler',
                 {"t0"     : t0,
                  "t1"     : t1,
                  'limiter': IdentityLimiter,

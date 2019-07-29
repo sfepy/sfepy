@@ -22,32 +22,52 @@ from examples.dg.burgess.example_dg_kucera1 import define, mesh_center, mesh_siz
 # from examples.dg.diffusion.example_dg_laplace1 import define
 # from examples.dg.advection.example_dg_advection2D import define
 
-def plot_conv_results(base_output_folder, conf, err_df):
+def plot_conv_results(base_output_folder, conf, err_df, plot_title_attrs=None, save=False):
+    """
+
+    :param base_output_folder:
+    :param conf: conf structure defined in declarative mode, or object containing:
+        dt, CFL or diffusion_coef attributese, example_name
+    :plot_title_attrs: attributes to list in the figure sup title
+    :param err_df: pandas dataframe containing at least: "order", "num_order", "n_cells", "diff_l2" columns
+    :return:
+    """
+    if plot_title_attrs is None:
+        plot_title_attrs = ["Cw", "diffusion_coef", "dt", "CFL"]
+    fig_sup_title = "Convergence by order"
+    file_name = conf.example_name + "-cells"
+    attr_vals = []
+    for attr in plot_title_attrs:
+        attr_val = getattr(conf, attr, None)
+        if attr_val is not None:
+            fig_sup_title += ", " + attr + ": {}"
+            file_name += "_" + attr + "{}"
+            attr_vals += [attr_val]
 
     conv_fig, ax = plt.subplots(1, 1)
-    if hasattr(conf, "dt"):
-        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}, dt: {}".
-                          format(conf.Cw, conf.diffusion_coef, conf.dt))
-    elif hasattr(conf, "CFL"):
-        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}, CFL: {}".
-                      format(conf.Cw, conf.diffusion_coef, conf.CFL))
-    else:
-        conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
+    conv_fig.suptitle(fig_sup_title.format(*attr_vals))
+
     orders = sorted(err_df["order"].unique())
     for o in orders:
         curr_df = err_df[err_df["order"] == o]
-        co = ax.loglog(curr_df["n_cells"] ** 2, curr_df["diff_l2"], 'o', label=str(int(o)))[0].get_color()
-        ax.loglog(curr_df["n_cells"] ** 2, curr_df["diff_l2"], color=co, label="")
+        co = ax.loglog(curr_df["n_cells"], curr_df["diff_l2"], 'o', label=str(int(o)))[0].get_color()
+        ax.loglog(curr_df["n_cells"], curr_df["diff_l2"], color=co, label="")
         for i, r in curr_df.iloc[1:, :].iterrows():
-            ax.text(r["n_cells"] ** 2, r["diff_l2"], "{:.2}".format(r["num_order"]))
+            ax.text(r["n_cells"], r["diff_l2"], "{:.2}".format(r["num_order"]))
 
         ax.grid()
         ax.set_xlabel("cells")
         ax.set_ylabel("L^2 error")
     ax.legend(title="Order")
-    conv_fig.savefig(
-        pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}.png".format(conf.Cw, conf.diffusion_coef)),
-        dpi=200)
+
+    if save:
+        file_name = file_name.format(*attr_vals).replace(".", "")
+        conv_fig.savefig(
+            pjoin(base_output_folder,
+                  file_name + ".png".format(conf.Cw, conf.diffusion_coef)),
+            dpi=200)
+
+    return conv_fig
 
 
 def refine_square_tens(filename, refine):
@@ -71,7 +91,7 @@ def main():
 
     mesh = "mesh/mesh_simp_2D_11_8.vtk"
 
-    refines = [0,1, 2, 3, 4]
+    refines = [0, 1, 2, 3, 4]
     orders = [1, 2, 3, 4, 5]
     # orders = [1]
 
@@ -80,13 +100,13 @@ def main():
     results = []
     for ir, refine in enumerate(refines):
 
-        gen_mesh = refine_square_tens(mesh, refine)
+        gen_mesh = refine_mesh(mesh, refine)
         for io, order in enumerate(orders):
 
             conf = ProblemConf.from_dict(define(gen_mesh, order,
                                                 Cw=10, diffusion_coef=0.002,
                                                 # CFL=0.1,
-                                                dt=1e-5
+                                                dt=1e-5,
                                                 ), mod)
             try:
                 conf.options.save_times = 0
@@ -104,7 +124,6 @@ def main():
                 h = nm.mean(nm.sqrt(4*vols))
             elif "2_4" in pb.domain.geom_els:
                 h = nm.mean(nm.sqrt(2*vols))
-
 
             output('shape:', n_cells, 'order:', order)
 
@@ -150,7 +169,6 @@ def main():
             result = (h, n_cells, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed)
             results.append(result)
 
-
     results = nm.array(results)
 
     err_df = pd.DataFrame(results,
@@ -163,11 +181,7 @@ def main():
 
     err_df.to_csv(pjoin(base_output_folder, conf.example_name + "results-cw{}_d{}.csv".format(conf.Cw, conf.diffusion_coef)))
 
-
     plt.show()
-
-
-
 
 
 if __name__ == '__main__':
