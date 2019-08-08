@@ -63,9 +63,9 @@ View the results using::
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
+import sys
+sys.path.append('.')
 import time
-import glob
-from itertools import chain
 
 import numpy as nm
 import matplotlib.pyplot as plt

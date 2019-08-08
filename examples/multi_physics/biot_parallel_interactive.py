@@ -89,6 +89,8 @@ View the results using (adaptive linearization)::
 from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
+import sys
+sys.path.append('.')
 import time
 
 import numpy as nm
