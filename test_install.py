@@ -17,6 +17,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 import shlex
 import subprocess
 import logging
+import re
 
 DEBUG_FMT = '*' * 55 + '\n%s\n' + '*' * 55
 
@@ -57,13 +58,18 @@ def check_output(cmd):
 
     return out
 
-def report(out, name, line, item, value, eps=None, return_item=False):
+def report(out, name, line, item, value, eps=None, return_item=False,
+           match_numbers=False):
     """
     Check that `item` at `line` of the output string `out` is equal
     to `value`. If not, print the output.
     """
     try:
-        status = out.split('\n')[line].split()
+        if match_numbers:
+            status = out.split('\n')[line]
+
+        else:
+            status = out.split('\n')[line].split()
 
     except IndexError:
         logger.error('  not enough output from command!')
@@ -71,14 +77,22 @@ def report(out, name, line, item, value, eps=None, return_item=False):
 
     else:
         try:
-            logger.info('  comparing: %s %s', status[item], value)
+            if match_numbers:
+                pat = '([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?[jJ]?)'
+                matches = re.findall(pat, status)
+                status_item = matches[item]
+
+            else:
+                status_item = status[item]
+
+            logger.info('  comparing: %s %s', status_item, value)
 
             if eps is None:
-                ok = (status[item] == value)
+                ok = (status_item == value)
 
             else:
                 try:
-                    ok = abs(float(status[item]) - float(value)) < eps
+                    ok = abs(float(status_item) - float(value)) < eps
 
                 except:
                     ok = False
@@ -125,8 +139,6 @@ def report_tests(out, return_item=False):
     Check that all tests in the output string `out` passed.
     If not, print the output.
     """
-    import re
-
     search = re.compile('([0-9]+) test file\(s\) executed in ([0-9.]+) s, ([0-9]+) failure\(s\) of ([0-9]+) test\(s\)').search
 
     try:
@@ -154,7 +166,7 @@ def main():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version', version='%(prog)s')
-    options = parser.parse_args()
+    parser.parse_args()
 
     fd = open('test_install.log', 'w')
     fd.close()
@@ -212,19 +224,19 @@ def main():
     eok += report(out, '...', -3, 2, 'cylinder.png...')
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py' % cmd)
-    eok += report(out, '...', -9, 2, '2.08545116e+08')
-    eok += report(out, '...', -8, 1, '1.16309223e+11]')
+    eok += report(out, '...', -9, 0, '2.08545116e+08', match_numbers=True)
+    eok += report(out, '...', -8, 1, '1.16309223e+11', match_numbers=True)
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py --phase-velocity' % cmd)
-    eok += report(out, '...', -2, 3, '4189.41229592')
-    eok += report(out, '...', -2, 4, '2620.55608256]')
+    eok += report(out, '...', -2, 0, '4189.41229592', match_numbers=True)
+    eok += report(out, '...', -2, 1, '2620.55608256', match_numbers=True)
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps.py -d' % cmd)
     eok += report(out, '...', -6, 1, '[0,')
 
     out, err = check_output('%s ./phonon.py examples/phononic/band_gaps_rigid.py' % cmd)
-    eok += report(out, '...', -9, 2, '4.58709531e+07')
-    eok += report(out, '...', -8, 1, '1.13929200e+11]')
+    eok += report(out, '...', -9, 0, '4.58709531e+07', match_numbers=True)
+    eok += report(out, '...', -8, 1, '1.13929200e+11', match_numbers=True)
 
     out, err = check_output('%s ./simple.py examples/quantum/hydrogen.py' % cmd)
     eok += report(out, '...', -2, -2, '-0.01913506', eps=1e-4)
@@ -235,7 +247,7 @@ def main():
                                 'computing KA'])
 
     out, err = check_output('%s examples/homogenization/rs_correctors.py -n' % cmd)
-    eok += report(out, '...', -2, -1, '1.644e-01]]')
+    eok += report(out, '...', -2, -1, '1.644e-01', match_numbers=True)
 
     out, err = check_output('%s examples/large_deformation/compare_elastic_materials.py -n' % cmd)
     eok += report(out, '...', -3, 5, '1.068759e-14', eps=1e-13)
