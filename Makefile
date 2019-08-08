@@ -1,11 +1,17 @@
 
+PYTHON=python$(shell grep python_version site_cfg.py | cut -c 19)
+
+all clean: site_cfg.py
+site_cfg.py:
+	cp site_cfg_template.py site_cfg.py
+
 all:
-	python setup.py build_ext --inplace
+	$(PYTHON) setup.py build_ext --inplace
 clean:
-	python setup.py clean
+	$(PYTHON) setup.py clean
 htmldocs:
-	python setup.py htmldocs
+	$(PYTHON) setup.py htmldocs
 pdfdocs:
-	python setup.py pdfdocs
+	$(PYTHON) setup.py pdfdocs
 doxygendocs:
-	python setup.py doxygendocs
+	$(PYTHON) setup.py doxygendocs

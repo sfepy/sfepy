@@ -3,6 +3,7 @@ Multiprocessing functions.
 """
 import logging
 import os
+import six
 
 try:
     from mpi4py import MPI
@@ -78,7 +79,7 @@ logger = get_logger()
 
 def enum(*sequential):
     enums = dict(zip(sequential, range(len(sequential))))
-    reverse = dict((value, key) for key, value in enums.iteritems())
+    reverse = dict((value, key) for key, value in six.iteritems(enums))
     enums['name'] = reverse
     return type('Enum', (), enums)
 

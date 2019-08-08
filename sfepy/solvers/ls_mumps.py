@@ -21,6 +21,15 @@ mumps_pcomplex = c_pointer(mumps_complex)
 
 mumps_libs = {}
 
+def dec(val, encoding='utf-8'):
+    """
+    Decode given bytes using the specified encoding.
+    """
+    import sys
+    if isinstance(val, bytes) and sys.version_info > (3, 0):
+        val = val.decode(encoding)
+    return val
+
 
 def load_library(libname):
     """Load shared library in a system dependent way."""
@@ -270,7 +279,7 @@ class MumpsSolver(object):
 
         arr = nm.ctypeslib.as_array(self.struct.aux)
         idxs = nm.where(nm.logical_and(arr >= ord('.'), arr <= ord('9')))[0]
-        s = arr[idxs].tostring()
+        s = dec(arr[idxs].tostring())
         vnums = re.findall('^.*(\d)\.(\d+)\.\d+.*$', s)[-1]
         version = int(vnums[0]) + int(vnums[1]) * 1e-2
         if version < 5:
