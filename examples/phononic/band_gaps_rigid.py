@@ -115,7 +115,7 @@ def _select_yr_circ(coors, domain=None, diameter=None):
 def post_process(out, problem, mtx_phi):
     var = problem.get_variables()['u']
 
-    for key in out.keys():
+    for key in list(out.keys()):
         ii = int(key[1:])
         vec = mtx_phi[:,ii].copy()
         var.set_data(vec)

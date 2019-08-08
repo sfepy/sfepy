@@ -43,8 +43,7 @@ def save_raw_bg_logs(filename, logs):
     for key, log in ordered_iteritems(logs.to_dict()):
         out[key] = nm.concatenate(log, axis=0)
 
-    with open(filename, 'w') as fd:
-        nm.savez(fd, **out)
+    nm.savez(filename, **out)
 
 def transform_plot_data(datas, plot_transform, conf):
     if plot_transform is not None:

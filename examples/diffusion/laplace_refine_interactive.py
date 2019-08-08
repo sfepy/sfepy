@@ -63,6 +63,8 @@ from __future__ import absolute_import
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
 import os
+import sys
+sys.path.append('.')
 import numpy as nm
 
 from sfepy.base.base import output, Struct
