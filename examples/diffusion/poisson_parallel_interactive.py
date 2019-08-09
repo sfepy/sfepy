@@ -65,13 +65,13 @@ from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys
 sys.path.append('.')
-import time
 
 import numpy as nm
 import matplotlib.pyplot as plt
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
+from sfepy.base.timing import Timer
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
@@ -188,8 +188,14 @@ def solve_problem(mesh_filename, options, comm):
 
     output('rank', rank, 'of', size)
 
-    mesh = Mesh.from_file(mesh_filename)
+    stats = Struct()
+    timer = Timer('solve_timer')
 
+    timer.start()
+    mesh = Mesh.from_file(mesh_filename)
+    stats.read_mesh = timer.stop()
+
+    timer.start()
     if rank == 0:
         cell_tasks = pl.partition_mesh(mesh, size, use_metis=options.metis,
                                        verbose=True)
@@ -197,15 +203,20 @@ def solve_problem(mesh_filename, options, comm):
     else:
         cell_tasks = None
 
+    stats.partition_mesh = timer.stop()
+
     output('creating global domain and field...')
-    tt = time.clock()
+    timer.start()
+
     domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('fu', nm.float64, 1, omega, approx_order=order)
-    output('...done in', time.clock() - tt)
+
+    stats.create_global_fields = timer.stop()
+    output('...done in', timer.dt)
 
     output('distributing field %s...' % field.name)
-    tt = time.clock()
+    timer.start()
 
     distribute = pl.distribute_fields_dofs
     lfds, gfds = distribute([field], cell_tasks,
@@ -215,7 +226,8 @@ def solve_problem(mesh_filename, options, comm):
                             comm=comm, verbose=True)
     lfd = lfds[0]
 
-    output('...done in', time.clock() - tt)
+    stats.distribute_fields_dofs = timer.stop()
+    output('...done in', timer.dt)
 
     if rank == 0:
         dof_maps = gfds[0].dof_maps
@@ -230,7 +242,7 @@ def solve_problem(mesh_filename, options, comm):
                                   options.output_dir, size)
 
     output('creating local problem...')
-    tt = time.clock()
+    timer.start()
 
     omega_gi = Region.from_cells(lfd.cells, field.domain)
     omega_gi.finalize()
@@ -238,20 +250,21 @@ def solve_problem(mesh_filename, options, comm):
 
     pb = create_local_problem(omega_gi, order)
 
-    output('...done in', time.clock() - tt)
-
     variables = pb.get_variables()
     eqs = pb.equations
 
     u_i = variables['u_i']
     field_i = u_i.field
 
+    stats.create_local_problem = timer.stop()
+    output('...done in', timer.dt)
+
     if options.plot:
         ppd.plot_local_dofs([None, None], field, field_i, omega_gi,
                             options.output_dir, rank)
 
     output('allocating global system...')
-    tt = time.clock()
+    timer.start()
 
     sizes, drange = pl.get_sizes(lfd.petsc_dofs_range, field.n_nod, 1)
     output('sizes:', sizes)
@@ -265,10 +278,11 @@ def solve_problem(mesh_filename, options, comm):
                                               is_overlap=True, comm=comm,
                                               verbose=True)
 
-    output('...done in', time.clock() - tt)
+    stats.allocate_global_system = timer.stop()
+    output('...done in', timer.dt)
 
     output('evaluating local problem...')
-    tt = time.clock()
+    timer.start()
 
     state = State(variables)
     state.fill(0.0)
@@ -278,10 +292,11 @@ def solve_problem(mesh_filename, options, comm):
     # This must be after pl.create_petsc_system() call!
     mtx_i = eqs.eval_tangent_matrices(state(), pb.mtx_a)
 
-    output('...done in', time.clock() - tt)
+    stats.evaluate_local_problem = timer.stop()
+    output('...done in', timer.dt)
 
     output('assembling global system...')
-    tt = time.clock()
+    timer.start()
 
     apply_ebc_to_matrix(mtx_i, u_i.eq_map.eq_ebc)
     pl.assemble_rhs_to_petsc(prhs, rhs_i, pdofs, drange, is_overlap=True,
@@ -289,20 +304,22 @@ def solve_problem(mesh_filename, options, comm):
     pl.assemble_mtx_to_petsc(pmtx, mtx_i, pdofs, drange, is_overlap=True,
                              comm=comm, verbose=True)
 
-    output('...done in', time.clock() - tt)
+    stats.assemble_global_system = timer.stop()
+    output('...done in', timer.dt)
 
     output('creating solver...')
-    tt = time.clock()
+    timer.start()
 
     conf = Struct(method='cg', precond='gamg', sub_precond='none',
                   i_max=10000, eps_a=1e-50, eps_r=1e-5, eps_d=1e4, verbose=True)
     status = {}
     ls = PETScKrylovSolver(conf, comm=comm, mtx=pmtx, status=status)
 
-    output('...done in', time.clock() - tt)
+    stats.create_solver = timer.stop()
+    output('...done in', timer.dt)
 
     output('solving...')
-    tt = time.clock()
+    timer.start()
 
     psol = ls(prhs, psol)
 
@@ -316,10 +333,11 @@ def solve_problem(mesh_filename, options, comm):
 
     gather(psol, psol_i)
 
-    output('...done in', time.clock() - tt)
+    stats.solve = timer.stop()
+    output('...done in', timer.dt)
 
     output('saving solution...')
-    tt = time.clock()
+    timer.start()
 
     u_i.set_data(sol0_i)
     out = u_i.create_output()
@@ -350,10 +368,15 @@ def solve_problem(mesh_filename, options, comm):
 
             out['u'].mesh.write(filename, io='auto', out=out)
 
-    output('...done in', time.clock() - tt)
+    stats.save_solution = timer.stop()
+    output('...done in', timer.dt)
+
+    stats.total = timer.total
 
     if options.show:
         plt.show()
+
+    return stats
 
 helps = {
     'output_dir' :
@@ -483,7 +506,8 @@ def main():
 
     output('field order:', options.order)
 
-    solve_problem(mesh_filename, options, comm)
+    stats = solve_problem(mesh_filename, options, comm)
+    output(stats)
 
 if __name__ == '__main__':
     main()
