@@ -14,7 +14,7 @@ class Timer(Struct):
 
     def reset(self):
         self.t0 = self.t1 = None
-        self.total = 0.0
+        self.total = self.dt = 0.0
 
     def start(self, reset=False):
         if reset: self.reset()
@@ -27,6 +27,6 @@ class Timer(Struct):
             raise ValueError('timer %s was not started!' % self.name)
         self.t1 = time.clock()
 
-        dt = self.t1 - self.t0
-        self.total += dt
-        return dt
+        self.dt = self.t1 - self.t0
+        self.total += self.dt
+        return self.dt
