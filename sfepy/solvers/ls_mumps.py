@@ -407,13 +407,14 @@ class MumpsSolver(object):
             The reduced right-hand side vector. 
         """
         # Schur
-        schur_size = schur_list.shape[0]
+        slist = schur_list + 1
+        schur_size = slist.shape[0]
         schur_arr = nm.empty((schur_size**2, ), dtype='d')
         schur_rhs = nm.empty((schur_size, ), dtype='d')
         self._schur_rhs = schur_rhs
 
         self.struct.size_schur = schur_size
-        self.struct.listvar_schur = schur_list.ctypes.data_as(mumps_pint)
+        self.struct.listvar_schur = slist.ctypes.data_as(mumps_pint)
         self.struct.schur = schur_arr.ctypes.data_as(mumps_pcomplex)
         self.struct.lredrhs = schur_size
         self.struct.redrhs = schur_rhs.ctypes.data_as(mumps_pcomplex)
@@ -422,8 +423,8 @@ class MumpsSolver(object):
         self.struct.schur_lld = schur_size
         self.struct.nprow = 1
         self.struct.npcol = 1
-        self.struct.mbloc = 100
-        self.struct.nbloc = 100
+        self.struct.mblock = 100
+        self.struct.nblock = 100
 
         self.struct.icntl[18] = 3  # centr. Schur complement stored by columns
         self.struct.job = 4  # analyze + factorize

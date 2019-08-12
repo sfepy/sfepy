@@ -937,8 +937,8 @@ class SchurMumps(MUMPSSolver):
 
         schur_list = []
         for schur_var in conf.schur_variables:
-            slc = self.context.equations.variables.di.indx[schur_var]
-            schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i') + 1)
+            slc = self.context.equations.variables.adi.indx[schur_var]
+            schur_list.append(nm.arange(slc.start, slc.stop, slc.step, dtype='i'))
 
         self.mumps_ls.set_mtx_centralized(mtx)
         out = rhs.copy()
