@@ -435,9 +435,11 @@ helps = {
     'save inter-task regions for debugging partitioning problems',
     'show' :
     'show partitioning plots (implies --plot)',
-    'silent' : 'do not print messages to screen',
+    'stats_filename' :
+    'name of the stats file for storing elapsed time statistics',
     'new_stats' :
-    'create new stats.csv file in output directory (overwrites existing!)',
+    'create a new stats file with a header line (overwrites existing!)',
+    'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory'
     ' (DANGEROUS - use with care!)',
@@ -480,15 +482,18 @@ def main():
     parser.add_argument('--save-inter-regions',
                         action='store_true', dest='save_inter_regions',
                         default=False, help=helps['save_inter_regions'])
+    parser.add_argument('--stats', metavar='filename',
+                        action='store', dest='stats_filename',
+                        default=None, help=helps['stats_filename'])
+    parser.add_argument('--new-stats',
+                        action='store_true', dest='new_stats',
+                        default=False, help=helps['new_stats'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
     parser.add_argument('--clear',
                         action='store_true', dest='clear',
                         default=False, help=helps['clear'])
-    parser.add_argument('--new-stats',
-                        action='store_true', dest='new_stats',
-                        default=False, help=helps['new_stats'])
     options, petsc_opts = parser.parse_known_args()
 
     if options.show:
@@ -542,11 +547,18 @@ def main():
     stats = solve_problem(mesh_filename, options, comm)
     output(stats)
 
-    pars = Struct(dim=dim, shape=shape, order=options.order)
-    filename = os.path.join(output_dir, 'stats.csv')
-    pl.call_in_rank_order(lambda rank, comm:
-                          save_stats(filename, pars, stats, options.new_stats,
-                                     rank, comm), comm)
+    if options.stats_filename:
+        if comm.rank == 0:
+            ensure_path(options.stats_filename)
+        comm.barrier()
+
+        pars = Struct(dim=dim, shape=shape, order=options.order)
+        pl.call_in_rank_order(
+            lambda rank, comm:
+            save_stats(options.stats_filename, pars, stats, options.new_stats,
+                       rank, comm),
+            comm
+        )
 
 if __name__ == '__main__':
     main()
