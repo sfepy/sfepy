@@ -65,6 +65,7 @@ from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys
 sys.path.append('.')
+import csv
 
 import numpy as nm
 import matplotlib.pyplot as plt
@@ -383,6 +384,29 @@ def solve_problem(mesh_filename, options, comm):
 
     return stats
 
+def save_stats(filename, pars, stats, overwrite, rank, comm=None):
+    out = stats.to_dict()
+    names = sorted(out.keys())
+    shape_dict = {'n%d' % ii : pars.shape[ii] for ii in range(pars.dim)}
+    keys = ['size', 'rank', 'dim'] + shape_dict.keys() + ['order'] + names
+
+    out['size'] = comm.size
+    out['rank'] = rank
+    out['dim'] = pars.dim
+    out.update(shape_dict)
+    out['order'] = pars.order
+
+    if rank == 0 and overwrite:
+        with open(filename, 'w') as fd:
+            writer = csv.DictWriter(fd, fieldnames=keys)
+            writer.writeheader()
+            writer.writerow(out)
+
+    else:
+        with open(filename, 'a') as fd:
+            writer = csv.DictWriter(fd, fieldnames=keys)
+            writer.writerow(out)
+
 helps = {
     'output_dir' :
     'output directory',
@@ -412,6 +436,8 @@ helps = {
     'show' :
     'show partitioning plots (implies --plot)',
     'silent' : 'do not print messages to screen',
+    'new_stats' :
+    'create new stats.csv file in output directory (overwrites existing!)',
     'clear' :
     'clear old solution files from output directory'
     ' (DANGEROUS - use with care!)',
@@ -460,6 +486,9 @@ def main():
     parser.add_argument('--clear',
                         action='store_true', dest='clear',
                         default=False, help=helps['clear'])
+    parser.add_argument('--new-stats',
+                        action='store_true', dest='new_stats',
+                        default=False, help=helps['new_stats'])
     options, petsc_opts = parser.parse_known_args()
 
     if options.show:
@@ -481,6 +510,14 @@ def main():
 
     mesh_filename = os.path.join(options.output_dir, 'para.h5')
 
+    dim = 2 if options.is_2d else 3
+    dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
+    shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
+    centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
+    output('dimensions:', dims)
+    output('shape:     ', shape)
+    output('centre:    ', centre)
+
     if comm.rank == 0:
         from sfepy.mesh.mesh_generators import gen_block_mesh
 
@@ -494,15 +531,6 @@ def main():
         save_options(os.path.join(output_dir, 'options.txt'),
                      [('options', vars(options))])
 
-        dim = 2 if options.is_2d else 3
-        dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
-        shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
-        centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
-
-        output('dimensions:', dims)
-        output('shape:     ', shape)
-        output('centre:    ', centre)
-
         mesh = gen_block_mesh(dims, shape, centre, name='block-fem',
                               verbose=True)
         mesh.write(mesh_filename, io='auto')
@@ -513,6 +541,12 @@ def main():
 
     stats = solve_problem(mesh_filename, options, comm)
     output(stats)
+
+    pars = Struct(dim=dim, shape=shape, order=options.order)
+    filename = os.path.join(output_dir, 'stats.csv')
+    pl.call_in_rank_order(lambda rank, comm:
+                          save_stats(filename, pars, stats, options.new_stats,
+                                     rank, comm), comm)
 
 if __name__ == '__main__':
     main()
