@@ -193,7 +193,7 @@ def solve_problem(mesh_filename, options, comm):
 
     timer.start()
     mesh = Mesh.from_file(mesh_filename)
-    stats.read_mesh = timer.stop()
+    stats.t_read_mesh = timer.stop()
 
     timer.start()
     if rank == 0:
@@ -203,7 +203,7 @@ def solve_problem(mesh_filename, options, comm):
     else:
         cell_tasks = None
 
-    stats.partition_mesh = timer.stop()
+    stats.t_partition_mesh = timer.stop()
 
     output('creating global domain and field...')
     timer.start()
@@ -212,7 +212,7 @@ def solve_problem(mesh_filename, options, comm):
     omega = domain.create_region('Omega', 'all')
     field = Field.from_args('fu', nm.float64, 1, omega, approx_order=order)
 
-    stats.create_global_fields = timer.stop()
+    stats.t_create_global_fields = timer.stop()
     output('...done in', timer.dt)
 
     output('distributing field %s...' % field.name)
@@ -226,7 +226,7 @@ def solve_problem(mesh_filename, options, comm):
                             comm=comm, verbose=True)
     lfd = lfds[0]
 
-    stats.distribute_fields_dofs = timer.stop()
+    stats.t_distribute_fields_dofs = timer.stop()
     output('...done in', timer.dt)
 
     if rank == 0:
@@ -256,7 +256,7 @@ def solve_problem(mesh_filename, options, comm):
     u_i = variables['u_i']
     field_i = u_i.field
 
-    stats.create_local_problem = timer.stop()
+    stats.t_create_local_problem = timer.stop()
     output('...done in', timer.dt)
 
     if options.plot:
@@ -278,7 +278,7 @@ def solve_problem(mesh_filename, options, comm):
                                               is_overlap=True, comm=comm,
                                               verbose=True)
 
-    stats.allocate_global_system = timer.stop()
+    stats.t_allocate_global_system = timer.stop()
     output('...done in', timer.dt)
 
     output('evaluating local problem...')
@@ -292,7 +292,7 @@ def solve_problem(mesh_filename, options, comm):
     # This must be after pl.create_petsc_system() call!
     mtx_i = eqs.eval_tangent_matrices(state(), pb.mtx_a)
 
-    stats.evaluate_local_problem = timer.stop()
+    stats.t_evaluate_local_problem = timer.stop()
     output('...done in', timer.dt)
 
     output('assembling global system...')
@@ -304,7 +304,7 @@ def solve_problem(mesh_filename, options, comm):
     pl.assemble_mtx_to_petsc(pmtx, mtx_i, pdofs, drange, is_overlap=True,
                              comm=comm, verbose=True)
 
-    stats.assemble_global_system = timer.stop()
+    stats.t_assemble_global_system = timer.stop()
     output('...done in', timer.dt)
 
     output('creating solver...')
@@ -315,7 +315,7 @@ def solve_problem(mesh_filename, options, comm):
     status = {}
     ls = PETScKrylovSolver(conf, comm=comm, mtx=pmtx, status=status)
 
-    stats.create_solver = timer.stop()
+    stats.t_create_solver = timer.stop()
     output('...done in', timer.dt)
 
     output('solving...')
@@ -333,7 +333,7 @@ def solve_problem(mesh_filename, options, comm):
 
     gather(psol, psol_i)
 
-    stats.solve = timer.stop()
+    stats.t_solve = timer.stop()
     output('...done in', timer.dt)
 
     output('saving solution...')
@@ -368,10 +368,15 @@ def solve_problem(mesh_filename, options, comm):
 
             out['u'].mesh.write(filename, io='auto', out=out)
 
-    stats.save_solution = timer.stop()
+    stats.t_save_solution = timer.stop()
     output('...done in', timer.dt)
 
-    stats.total = timer.total
+    stats.t_total = timer.total
+
+    stats.n_dof = sizes[1]
+    stats.n_dof_local = sizes[0]
+    stats.n_cell = omega.shape.n_cell
+    stats.n_cell_local = omega_gi.shape.n_cell
 
     if options.show:
         plt.show()
