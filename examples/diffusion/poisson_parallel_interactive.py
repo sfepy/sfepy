@@ -388,7 +388,7 @@ def save_stats(filename, pars, stats, overwrite, rank, comm=None):
     out = stats.to_dict()
     names = sorted(out.keys())
     shape_dict = {'n%d' % ii : pars.shape[ii] for ii in range(pars.dim)}
-    keys = ['size', 'rank', 'dim'] + shape_dict.keys() + ['order'] + names
+    keys = ['size', 'rank', 'dim'] + list(shape_dict.keys()) + ['order'] + names
 
     out['size'] = comm.size
     out['rank'] = rank
