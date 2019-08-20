@@ -54,7 +54,7 @@ def partition_mesh(mesh, n_parts, use_metis=True, verbose=False):
 
     else:
         ii = nm.arange(n_parts)
-        n_cell_parts = mesh.n_el / n_parts + ((mesh.n_el % n_parts) > ii)
+        n_cell_parts = mesh.n_el // n_parts + ((mesh.n_el % n_parts) > ii)
         output('cell counts:', n_cell_parts, verbose=verbose)
         assert_(sum(n_cell_parts) == mesh.n_el)
         assert_(nm.all(n_cell_parts > 0))
@@ -607,19 +607,28 @@ def expand_dofs(dofs, n_components):
 
     return edofs
 
-def view_petsc_local(data, name='data', viewer=None, comm=None):
+def call_in_rank_order(fun, comm=None):
     """
-    View local PETSc `data` called `name`. The data object has to have
-    `.view()` method.
+    Call a function `fun` task by task in the task rank order.
     """
     if comm is None:
         comm = PETSc.COMM_WORLD
 
     for rank in range(comm.size):
         if rank == comm.rank:
-            output('contents of local %s on rank %d:' % (name, rank))
-            data.view(viewer=viewer)
+            fun(rank, comm)
         comm.barrier()
+
+def view_petsc_local(data, name='data', viewer=None, comm=None):
+    """
+    View local PETSc `data` called `name`. The data object has to have
+    `.view()` method.
+    """
+    def _view(rank, comm):
+        output('contents of local %s on rank %d:' % (name, rank))
+        data.view(viewer=viewer)
+
+    call_in_rank_order(_view, comm=comm)
 
 def create_local_petsc_vector(pdofs):
     """
