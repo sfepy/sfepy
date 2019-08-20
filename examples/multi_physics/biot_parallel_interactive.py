@@ -91,12 +91,13 @@ from argparse import RawDescriptionHelpFormatter, ArgumentParser
 import os
 import sys
 sys.path.append('.')
-import time
+import csv
 
 import numpy as nm
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import ensure_path, remove_files_patterns, save_options
+from sfepy.base.timing import Timer
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.common.region import Region
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
@@ -205,8 +206,14 @@ def solve_problem(mesh_filename, options, comm):
 
     output('rank', rank, 'of', size)
 
-    mesh = Mesh.from_file(mesh_filename)
+    stats = Struct()
+    timer = Timer('solve_timer')
 
+    timer.start()
+    mesh = Mesh.from_file(mesh_filename)
+    stats.t_read_mesh = timer.stop()
+
+    timer.start()
     if rank == 0:
         cell_tasks = pl.partition_mesh(mesh, size, use_metis=options.metis,
                                        verbose=True)
@@ -214,8 +221,11 @@ def solve_problem(mesh_filename, options, comm):
     else:
         cell_tasks = None
 
+    stats.t_partition_mesh = timer.stop()
+
     output('creating global domain and fields...')
-    tt = time.clock()
+    timer.start()
+
     domain = FEDomain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
     field1 = Field.from_args('fu', nm.float64, mesh.dim, omega,
@@ -223,10 +233,12 @@ def solve_problem(mesh_filename, options, comm):
     field2 = Field.from_args('fp', nm.float64, 1, omega,
                              approx_order=order_p)
     fields = [field1, field2]
-    output('...done in', time.clock() - tt)
+
+    stats.t_create_global_fields = timer.stop()
+    output('...done in', timer.dt)
 
     output('distributing fields...')
-    tt = time.clock()
+    timer.start()
 
     distribute = pl.distribute_fields_dofs
     lfds, gfds = distribute(fields, cell_tasks,
@@ -236,10 +248,11 @@ def solve_problem(mesh_filename, options, comm):
                             output_dir=options.output_dir,
                             comm=comm, verbose=True)
 
-    output('...done in', time.clock() - tt)
+    stats.t_distribute_fields_dofs = timer.stop()
+    output('...done in', timer.dt)
 
     output('creating local problem...')
-    tt = time.clock()
+    timer.start()
 
     cells = lfds[0].cells
 
@@ -255,11 +268,11 @@ def solve_problem(mesh_filename, options, comm):
     state.fill(0.0)
     state.apply_ebc()
 
-    output('...done in', time.clock() - tt)
-
+    stats.t_create_local_problem = timer.stop()
+    output('...done in', timer.dt)
 
     output('allocating global system...')
-    tt = time.clock()
+    timer.start()
 
     sizes, drange, pdofs = pl.setup_composite_dofs(lfds, fields, variables,
                                                    verbose=True)
@@ -267,10 +280,11 @@ def solve_problem(mesh_filename, options, comm):
                                               is_overlap=True, comm=comm,
                                               verbose=True)
 
-    output('...done in', time.clock() - tt)
+    stats.t_allocate_global_system = timer.stop()
+    output('...done in', timer.dt)
 
     output('creating solver...')
-    tt = time.clock()
+    timer.start()
 
     conf = Struct(method='bcgsl', precond='jacobi', sub_precond='none',
                   i_max=10000, eps_a=1e-50, eps_r=1e-6, eps_d=1e4,
@@ -296,10 +310,11 @@ def solve_problem(mesh_filename, options, comm):
                                fun_grad=ev.eval_tangent_matrix,
                                lin_solver=ls, status=nls_status)
 
-    output('...done in', time.clock() - tt)
+    stats.t_create_solver = timer.stop()
+    output('...done in', timer.dt)
 
     output('solving...')
-    tt = time.clock()
+    timer.start()
 
     state = pb.create_state()
     state.apply_ebc()
@@ -312,10 +327,11 @@ def solve_problem(mesh_filename, options, comm):
     ev.scatter(ev.psol_i, psol)
     sol0_i = ev.psol_i[...]
 
-    output('...done in', time.clock() - tt)
+    stats.t_solve = timer.stop()
+    output('...done in', timer.dt)
 
     output('saving solution...')
-    tt = time.clock()
+    timer.start()
 
     state.set_full(sol0_i)
     out = state.create_output_dict()
@@ -364,7 +380,17 @@ def solve_problem(mesh_filename, options, comm):
             filename = os.path.join(options.output_dir, 'sol_p.h5')
             out['p'].mesh.write(filename, io='auto', out=out)
 
-    output('...done in', time.clock() - tt)
+    stats.t_save_solution = timer.stop()
+    output('...done in', timer.dt)
+
+    stats.t_total = timer.total
+
+    stats.n_dof = sizes[1]
+    stats.n_dof_local = sizes[0]
+    stats.n_cell = omega.shape.n_cell
+    stats.n_cell_local = omega_gi.shape.n_cell
+
+    return stats
 
 helps = {
     'output_dir' :
@@ -389,6 +415,10 @@ helps = {
     'use metis for domain partitioning',
     'save_inter_regions' :
     'save inter-task regions for debugging partitioning problems',
+    'stats_filename' :
+    'name of the stats file for storing elapsed time statistics',
+    'new_stats' :
+    'create a new stats file with a header line (overwrites existing!)',
     'silent' : 'do not print messages to screen',
     'clear' :
     'clear old solution files from output directory'
@@ -426,6 +456,12 @@ def main():
     parser.add_argument('--save-inter-regions',
                         action='store_true', dest='save_inter_regions',
                         default=False, help=helps['save_inter_regions'])
+    parser.add_argument('--stats', metavar='filename',
+                        action='store', dest='stats_filename',
+                        default=None, help=helps['stats_filename'])
+    parser.add_argument('--new-stats',
+                        action='store_true', dest='new_stats',
+                        default=False, help=helps['new_stats'])
     parser.add_argument('--silent',
                         action='store_true', dest='silent',
                         default=False, help=helps['silent'])
@@ -450,6 +486,15 @@ def main():
 
     mesh_filename = os.path.join(options.output_dir, 'para.h5')
 
+    dim = 2 if options.is_2d else 3
+    dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
+    shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
+    centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
+
+    output('dimensions:', dims)
+    output('shape:     ', shape)
+    output('centre:    ', centre)
+
     if comm.rank == 0:
         from sfepy.mesh.mesh_generators import gen_block_mesh
 
@@ -463,15 +508,6 @@ def main():
         save_options(os.path.join(output_dir, 'options.txt'),
                      [('options', vars(options))])
 
-        dim = 2 if options.is_2d else 3
-        dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
-        shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
-        centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
-
-        output('dimensions:', dims)
-        output('shape:     ', shape)
-        output('centre:    ', centre)
-
         mesh = gen_block_mesh(dims, shape, centre, name='block-fem',
                               verbose=True)
         mesh.write(mesh_filename, io='auto')
@@ -481,7 +517,22 @@ def main():
     output('field u order:', options.order_u)
     output('field p order:', options.order_p)
 
-    solve_problem(mesh_filename, options, comm)
+    stats = solve_problem(mesh_filename, options, comm)
+    output(stats)
+
+    if options.stats_filename:
+        from examples.diffusion.poisson_parallel_interactive import save_stats
+        if comm.rank == 0:
+            ensure_path(options.stats_filename)
+        comm.barrier()
+
+        pars = Struct(dim=dim, shape=shape, order=options.order_u)
+        pl.call_in_rank_order(
+            lambda rank, comm:
+            save_stats(options.stats_filename, pars, stats, options.new_stats,
+                       rank, comm),
+            comm
+        )
 
 if __name__ == '__main__':
     main()
