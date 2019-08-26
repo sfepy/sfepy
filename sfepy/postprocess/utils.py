@@ -61,7 +61,12 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
 
     except AttributeError:
         # Prior to Mayavi 4.6.2.
-        dm = dataset_manager.DatasetManager(dataset=source.outputs[0])
+        try:
+            dm = dataset_manager.DatasetManager(dataset=source.outputs[0])
+
+        except:
+            # Mayavi 4.7.1.
+            dm = dataset_manager.DatasetManager(dataset=source.data)
 
     ranges = {}
     for attr in ['point_scalars', 'point_vectors', 'point_tensors',
