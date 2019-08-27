@@ -52,13 +52,18 @@ Use the Brillouin stepper::
   python script/plot_logs.py output/frequencies.txt -g 0 --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-kappas.png
 
   python script/plot_logs.py output/frequencies.txt -g 1 --no-legends --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-omegas.png
+
+Additional arguments can be passed to the problem configuration's
+:func:`define()` function using the ``--define-kwargs`` option. In this file,
+only the mesh vertex separation parameter `mesh_eps` can be used::
+
+  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --define-kwargs="mesh_eps=1e-10" --save-regions
 """
 from __future__ import absolute_import
 import os
 import sys
 sys.path.append('.')
 import gc
-import functools
 from copy import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
@@ -103,11 +108,10 @@ def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
     return out
 
 def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-           plane='strain', post_process=False):
+           plane='strain', post_process=False, mesh_eps=1e-8):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
-    size = (bbox[1] - bbox[0]).max()
 
     options = {
         'absolute_mesh_path' : True,
@@ -143,7 +147,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
         'Y2': 'cells of group 2',
     }
     regions.update(define_box_regions(dim,
-                                      bbox[0], bbox[1], 1e-8))
+                                      bbox[0], bbox[1], mesh_eps))
 
     ebcs = {
     }
@@ -165,7 +169,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
                             'match_x_line'),
         }
 
-    per.set_accuracy(1e-8 * size)
+    per.set_accuracy(mesh_eps)
     functions = {
         'match_x_plane' : (per.match_x_plane,),
         'match_y_plane' : (per.match_y_plane,),
@@ -327,16 +331,16 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options, wdir=None):
     """
     Assemble the blocks of dispersion eigenvalue problem matrices.
     """
-    define_problem = functools.partial(define,
-                                       filename_mesh=options.mesh_filename,
-                                       pars=pars,
-                                       approx_order=options.order,
-                                       refinement_level=options.refine,
-                                       solver_conf=options.solver_conf,
-                                       plane=options.plane,
-                                       post_process=options.post_process)
+    define_dict = define(filename_mesh=options.mesh_filename,
+                         pars=pars,
+                         approx_order=options.order,
+                         refinement_level=options.refine,
+                         solver_conf=options.solver_conf,
+                         plane=options.plane,
+                         post_process=options.post_process,
+                         **options.define_kwargs)
 
-    conf = ProblemConf.from_dict(define_problem(), mod)
+    conf = ProblemConf.from_dict(define_dict, mod)
 
     pb = Problem.from_conf(conf)
     pb.dispersion_options = options
@@ -476,6 +480,7 @@ helps = {
     'conf' :
     'if given, an alternative problem description file with apply_units() and'
     ' define() functions [default: %(default)s]',
+    'define_kwargs' : 'additional keyword arguments passed to define()',
     'mesh_size' :
     'desired mesh size (max. of bounding box dimensions) in basic units'
     ' - the input periodic cell mesh is rescaled to this size'
@@ -536,6 +541,9 @@ def main():
     parser.add_argument('--conf', metavar='filename',
                         action='store', dest='conf',
                         default=None, help=helps['conf'])
+    parser.add_argument('--define-kwargs', metavar='dict-like',
+                        action='store', dest='define_kwargs',
+                        default=None, help=helps['define_kwargs'])
     parser.add_argument('--mesh-size', type=float, metavar='float',
                         action='store', dest='mesh_size',
                         default=None, help=helps['mesh_size'])
@@ -634,6 +642,7 @@ def main():
     aux = options.range.split(',')
     options.range = [float(aux[0]), float(aux[1]), int(aux[2])]
     options.solver_conf = dict_from_string(options.solver_conf)
+    options.define_kwargs = dict_from_string(options.define_kwargs)
 
     if options.clear:
         remove_files_patterns(output_dir,
