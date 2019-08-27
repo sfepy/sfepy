@@ -52,6 +52,12 @@ Use the Brillouin stepper::
   python script/plot_logs.py output/frequencies.txt -g 0 --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-kappas.png
 
   python script/plot_logs.py output/frequencies.txt -g 1 --no-legends --rc="'font.size':14, 'lines.linewidth' : 3, 'lines.markersize' : 4" -o brillouin-stepper-omegas.png
+
+Additional arguments can be passed to the problem configuration's
+:func:`define()` function using the ``--define-kwargs`` option. In this file,
+only the mesh vertex separation parameter `mesh_eps` can be used::
+
+  python examples/linear_elasticity/dispersion_analysis.py meshes/2d/special/circle_in_square.mesh --log-std-waves --eigs-only --define-kwargs="mesh_eps=1e-10" --save-regions
 """
 from __future__ import absolute_import
 import os
@@ -102,11 +108,10 @@ def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
     return out
 
 def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
-           plane='strain', post_process=False):
+           plane='strain', post_process=False, mesh_eps=1e-8):
     io = MeshIO.any_from_filename(filename_mesh)
     bbox = io.read_bounding_box()
     dim = bbox.shape[1]
-    size = (bbox[1] - bbox[0]).max()
 
     options = {
         'absolute_mesh_path' : True,
@@ -142,7 +147,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
         'Y2': 'cells of group 2',
     }
     regions.update(define_box_regions(dim,
-                                      bbox[0], bbox[1], 1e-8))
+                                      bbox[0], bbox[1], mesh_eps))
 
     ebcs = {
     }
@@ -164,7 +169,7 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
                             'match_x_line'),
         }
 
-    per.set_accuracy(1e-8 * size)
+    per.set_accuracy(mesh_eps)
     functions = {
         'match_x_plane' : (per.match_x_plane,),
         'match_y_plane' : (per.match_y_plane,),
