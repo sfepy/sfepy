@@ -58,7 +58,6 @@ import os
 import sys
 sys.path.append('.')
 import gc
-import functools
 from copy import copy
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
@@ -327,16 +326,16 @@ def assemble_matrices(define, mod, pars, set_wave_dir, options, wdir=None):
     """
     Assemble the blocks of dispersion eigenvalue problem matrices.
     """
-    define_problem = functools.partial(define,
-                                       filename_mesh=options.mesh_filename,
-                                       pars=pars,
-                                       approx_order=options.order,
-                                       refinement_level=options.refine,
-                                       solver_conf=options.solver_conf,
-                                       plane=options.plane,
-                                       post_process=options.post_process)
+    define_dict = define(filename_mesh=options.mesh_filename,
+                         pars=pars,
+                         approx_order=options.order,
+                         refinement_level=options.refine,
+                         solver_conf=options.solver_conf,
+                         plane=options.plane,
+                         post_process=options.post_process,
+                         **options.define_kwargs)
 
-    conf = ProblemConf.from_dict(define_problem(), mod)
+    conf = ProblemConf.from_dict(define_dict, mod)
 
     pb = Problem.from_conf(conf)
     pb.dispersion_options = options
@@ -476,6 +475,7 @@ helps = {
     'conf' :
     'if given, an alternative problem description file with apply_units() and'
     ' define() functions [default: %(default)s]',
+    'define_kwargs' : 'additional keyword arguments passed to define()',
     'mesh_size' :
     'desired mesh size (max. of bounding box dimensions) in basic units'
     ' - the input periodic cell mesh is rescaled to this size'
@@ -536,6 +536,9 @@ def main():
     parser.add_argument('--conf', metavar='filename',
                         action='store', dest='conf',
                         default=None, help=helps['conf'])
+    parser.add_argument('--define-kwargs', metavar='dict-like',
+                        action='store', dest='define_kwargs',
+                        default=None, help=helps['define_kwargs'])
     parser.add_argument('--mesh-size', type=float, metavar='float',
                         action='store', dest='mesh_size',
                         default=None, help=helps['mesh_size'])
@@ -634,6 +637,7 @@ def main():
     aux = options.range.split(',')
     options.range = [float(aux[0]), float(aux[1]), int(aux[2])]
     options.solver_conf = dict_from_string(options.solver_conf)
+    options.define_kwargs = dict_from_string(options.define_kwargs)
 
     if options.clear:
         remove_files_patterns(output_dir,
