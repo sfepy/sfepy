@@ -44,6 +44,7 @@ Python packages required for using *SfePy*:
 - `igakit`_ for script/gen_iga_patch.py - simple IGA domain generator,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
+- `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_
 - `pymetis`_ for mesh partitioning using `Metis`_,
 - `wxPython`_ for better `IPython`_ integration.
 

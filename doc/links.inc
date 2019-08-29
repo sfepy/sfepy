@@ -60,6 +60,7 @@
 .. _igakit: https://bitbucket.org/dalcinl/igakit
 .. _petsc4py: https://bitbucket.org/petsc/petsc4py
 .. _PETSc: https://www.mcs.anl.gov/petsc
+.. _slepc4py: https://bitbucket.org/slepc/slepc4py
 .. _SLEPc: http://slepc.upv.es
 .. _mpi4py: https://bitbucket.org/mpi4py/mpi4py
 .. _Metis: http://glaros.dtc.umn.edu/gkhome/views/metis
