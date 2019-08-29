@@ -2,9 +2,11 @@ from __future__ import absolute_import
 import time
 
 import numpy as nm
+import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default, try_imports, Struct
 from sfepy.solvers.solvers import SolverMeta, Solver, EigenvalueSolver
+import six
 from six.moves import range
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
@@ -249,6 +251,133 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
 
         if not eigenvectors:
             out = out[0]
+
+        return out
+
+def init_slepc_args():
+    try:
+        import sys, slepc4py
+
+    except ImportError:
+        return
+
+    argv = [arg for arg in sys.argv if arg not in ['-h', '--help']]
+    slepc4py.init(argv)
+
+class SLEPcEigenvalueSolver(EigenvalueSolver):
+    """
+    General SLEPc eigenvalue problem solver.
+    """
+    name = 'eig.slepc'
+
+    __metaclass__ = SolverMeta
+
+    _parameters = [
+        ('method', 'str', 'krylovschur', False,
+         'The actual solver to use.'),
+        ('problem', 'str', 'gnhep', False,
+         """The problem type: Hermitian (hep), non-Hermitian (nhep), generalized
+         Hermitian (ghep), generalized non-Hermitian (gnhep), generalized
+         non-Hermitian with positive semi-definite B (pgnhep), and generalized
+         Hermitian-indefinite (ghiep)."""),
+        ('i_max', 'int', 20, False,
+         'The maximum number of iterations.'),
+        ('eps', 'float', None, False,
+         'The convergence tolerance.'),
+        ('conv_test', '{"abs", "rel", "norm", "user"}, ', 'abs', False,
+         'The type of convergence test.'),
+        ('which', """{'largest_magnitude', 'smallest_magnitude',
+        'largest_real', 'smallest_real',
+        'largest_imaginary', 'smallest_imaginary', 'target_magnitude',
+        'target_real', 'target_imaginary', 'all', 'which_user'}""",
+         'largest_magnitude', False,
+         'Which eigenvectors and eigenvalues to find.'),
+        ('*', '*', None, False,
+         'Additional parameters supported by the method.'),
+    ]
+
+    def __init__(self, conf, comm=None, context=None, **kwargs):
+        if comm is None:
+            init_slepc_args()
+
+        from petsc4py import PETSc as petsc
+        from slepc4py import SLEPc as slepc
+
+        EigenvalueSolver.__init__(self, conf, petsc=petsc, slepc=slepc,
+                                  comm=comm, context=context, **kwargs)
+
+    def create_eps(self, options=None, comm=None):
+        optDB = self.petsc.Options()
+
+        if options is not None:
+            for key, val in six.iteritems(options):
+                optDB[key] = val
+
+        es = self.slepc.EPS()
+        es.create(comm)
+
+        return es
+
+    def create_petsc_matrix(self, mtx, comm=None):
+        if mtx is None or isinstance(mtx, self.petsc.Mat):
+            pmtx = mtx
+
+        else:
+            mtx = sps.csr_matrix(mtx)
+
+            pmtx = self.petsc.Mat()
+            pmtx.createAIJ(mtx.shape, csr=(mtx.indptr, mtx.indices, mtx.data),
+                           comm=comm)
+
+        return pmtx
+
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+                 status=None, conf=None, comm=None, context=None):
+        solver_kwargs = self.build_solver_kwargs(conf)
+
+        pmtx_a = self.create_petsc_matrix(mtx_a, comm=comm)
+        pmtx_b = self.create_petsc_matrix(mtx_b, comm=comm)
+
+        es = self.create_eps(options=solver_kwargs, comm=comm)
+        es.setType(conf.method)
+        es.setProblemType(getattr(es.ProblemType, conf.problem.upper()))
+        es.setDimensions(nev=n_eigs)
+        es.setTolerances(tol=conf.eps, max_it=conf.i_max)
+        es.setOperators(pmtx_a, pmtx_b)
+        es.setConvergenceTest(getattr(es.Conv, conf.conv_test.upper()))
+        es.setWhichEigenpairs(getattr(es.Which, conf.which.upper()))
+        es.setFromOptions()
+
+        es.solve()
+
+        n_converged = es.getConverged()
+        if status is not None:
+            status['n_iter'] = es.getIterationNumber()
+            status['n_converged'] = n_converged
+
+        if not eigenvectors:
+            out = nm.array([es.getEigenvalue(ii) for ii in range(n_converged)])
+
+        else:
+            vr, vi = pmtx_a.createVecs()
+            eigs = []
+            vrs, vis = [], []
+            is_real = True
+            for ii in range(n_converged):
+                val = es.getEigenpair(ii, vr, vi)
+                eigs.append(val if val.imag != 0 else val.real)
+                vrs.append(vr.getArray())
+                vis.append(vi.getArray())
+                if is_real and nm.sum(nm.abs(vis[-1])) > 0.0:
+                    is_real = False
+
+            eigs = nm.array(eigs)
+            vecs = nm.array(vrs)
+            if not is_real:
+                vecs += 1j * nm.array(vis)
+
+            out = (eigs, vecs)
 
         return out
 
