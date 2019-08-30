@@ -178,7 +178,7 @@ def get_jacobian(field, integral, region=None, integration='volume'):
 
     See Also
     --------
-    get_mapping_data()
+    get_mapping_data
 
     Notes
     -----
@@ -208,7 +208,7 @@ def get_normals(field, integral, region):
 
     See Also
     --------
-    get_mapping_data()
+    get_mapping_data
 
     Notes
     -----

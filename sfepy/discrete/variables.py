@@ -1277,7 +1277,7 @@ class FieldVariable(Variable):
 
         See Also
         --------
-        sfepy.discrete.fem.fields.Field.get_mapping()
+        sfepy.discrete.common.fields.Field.get_mapping
         """
         if region is None:
             region = self.field.region
