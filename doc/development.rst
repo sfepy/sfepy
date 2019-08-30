@@ -61,7 +61,7 @@ cimrman3(at)ntc.zcu.cz, or on `our mailing list`_)
   - dynamics/time-stepping solvers, interface PETSc time-steppers
   - interface more sparse linear solvers (or enable via PETSc), for example
     `BDDCML`_
-  - interface more eigenvalue problem solvers (`SLEPc`_, other?)
+  - interface more eigenvalue problem solvers
 
 - visualization of large data
 - automatic differentiation:

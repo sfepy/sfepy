@@ -79,6 +79,13 @@ solvers = {
         'eps_a' : 1e-10,
         'strategy' : 0,
     }),
+    'evp4' : ('eig.slepc', {
+        'method' : 'arnoldi',
+        'problem' : 'hep',
+        'i_max' : 100,
+        'eps' : 1e-10,
+        'which' : 'smallest_real',
+    }),
 }
 
 eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
@@ -88,7 +95,7 @@ eigs_expected = [nm.array([0.04904454, 0.12170685, 0.12170685,
 from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
-    can_fail = ['eig.pysparse']
+    can_fail = ['eig.pysparse', 'eig.slepc']
     can_miss = ['evp0'] # Depending on scipy version, evp0 can miss an
                         # eigenvalue.
 

@@ -327,7 +327,7 @@ class EigenvalueSolver(Solver):
                  eigenvectors=None, status=None, context=None, **kwargs):
         Solver.__init__(self, conf=conf, mtx_a=mtx_a, mtx_b=mtx_b,
                         n_eigs=n_eigs, eigenvectors=eigenvectors,
-                        status=status, context=context)
+                        status=status, context=context, **kwargs)
 
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
