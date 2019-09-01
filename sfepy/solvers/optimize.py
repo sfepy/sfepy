@@ -6,7 +6,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, pause, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import SolverMeta, OptimizationSolver
+from sfepy.solvers.solvers import OptimizationSolver
 
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
@@ -92,8 +92,6 @@ class FMinSteepestDescent(OptimizationSolver):
     Steepest descent optimization solver.
     """
     name = 'opt.fmin_sd'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('i_max', 'int', 10, False,
@@ -313,8 +311,6 @@ class ScipyFMinSolver(OptimizationSolver):
     Interface to SciPy optimization solvers scipy.optimize.fmin_*.
     """
     name = 'nls.scipy_fmin_like'
-
-    __metaclass__ = SolverMeta
 
     _i_max_name  = {
         'fmin' : 'maxiter',

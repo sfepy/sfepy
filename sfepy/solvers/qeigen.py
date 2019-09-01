@@ -9,7 +9,7 @@ import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default
 from sfepy.linalg.utils import max_diff_csr
-from sfepy.solvers.solvers import SolverMeta, QuadraticEVPSolver
+from sfepy.solvers.solvers import QuadraticEVPSolver
 
 def standard_call(call):
     """
@@ -47,8 +47,6 @@ class LQuadraticEVPSolver(QuadraticEVPSolver):
     (w^2 M + w D + K) x = 0.
     """
     name = 'eig.qevp'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', "{'companion', 'cholesky'}", 'companion', False,

@@ -6,7 +6,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
+from sfepy.solvers.solvers import NonlinearSolver
 from .nls import conv_test
 import six
 
@@ -143,8 +143,6 @@ class Oseen(NonlinearSolver):
     The Oseen solver for Navier-Stokes equations.
     """
     name = 'nls.oseen'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('stabil_mat', 'str', None, True,

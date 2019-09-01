@@ -9,7 +9,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
+from sfepy.solvers.solvers import NonlinearSolver
 import six
 from six.moves import range
 
@@ -113,8 +113,6 @@ class Newton(NonlinearSolver):
     The solver uses a backtracking line-search on divergence.
     """
     name = 'nls.newton'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('i_max', 'int', 1, False,
@@ -389,8 +387,6 @@ class ScipyBroyden(NonlinearSolver):
     """
     name = 'nls.scipy_broyden_like'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('method', 'str', 'anderson', False,
          'The name of the solver in ``scipy.optimize``.'),
@@ -468,8 +464,6 @@ class PETScNonlinearSolver(NonlinearSolver):
     <sfepy.parallel.evaluate.PETScParallelEvaluator>`.
     """
     name = 'nls.petsc'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', 'str', 'newtonls', False,

@@ -158,7 +158,6 @@ class Solver(Struct):
     Parameters
     ----------
     """
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('name', 'str', None, True,

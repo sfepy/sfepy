@@ -7,7 +7,7 @@ import numpy as nm
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, IndexedStruct)
 from sfepy.linalg.utils import output_array_stats
-from sfepy.solvers.solvers import SolverMeta, TimeSteppingSolver
+from sfepy.solvers.solvers import TimeSteppingSolver
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
 
 def standard_ts_call(call):
@@ -54,8 +54,6 @@ class StationarySolver(TimeSteppingSolver):
     """
     name = 'ts.stationary'
 
-    __metaclass__ = SolverMeta
-
     def __init__(self, conf, nls=None, context=None, **kwargs):
         TimeSteppingSolver.__init__(self, conf, nls=nls, context=context,
                                     **kwargs)
@@ -83,8 +81,6 @@ class SimpleTimeSteppingSolver(TimeSteppingSolver):
     Implicit time stepping solver with a fixed time step.
     """
     name = 'ts.simple'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('t0', 'float', 0.0, False,
@@ -250,8 +246,6 @@ class AdaptiveTimeSteppingSolver(SimpleTimeSteppingSolver):
     step.
     """
     name = 'ts.adaptive'
-
-    __metaclass__ = SolverMeta
 
     _parameters = SimpleTimeSteppingSolver._parameters + [
         ('adapt_fun', 'callable(ts, status, adt, context, verbose)',
@@ -514,8 +508,6 @@ class VelocityVerletTS(ElastodynamicsBaseTS):
     """
     name = 'ts.velocity_verlet'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('t0', 'float', 0.0, False,
          'The initial time.'),
@@ -615,8 +607,6 @@ class NewmarkTS(ElastodynamicsBaseTS):
     """
     name = 'ts.newmark'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('t0', 'float', 0.0, False,
          'The initial time.'),
@@ -706,8 +696,6 @@ class GeneralizedAlphaTS(ElastodynamicsBaseTS):
     371:375, 1993.
     """
     name = 'ts.generalized_alpha'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('t0', 'float', 0.0, False,
@@ -825,8 +813,6 @@ class BatheTS(ElastodynamicsBaseTS):
     https://doi.org/10.1016/j.compstruc.2006.09.004.
     """
     name = 'ts.bathe'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('t0', 'float', 0.0, False,

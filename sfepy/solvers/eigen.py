@@ -5,7 +5,7 @@ import numpy as nm
 import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default, try_imports, Struct
-from sfepy.solvers.solvers import SolverMeta, Solver, EigenvalueSolver
+from sfepy.solvers.solvers import Solver, EigenvalueSolver
 import six
 from six.moves import range
 
@@ -64,8 +64,6 @@ class ScipyEigenvalueSolver(EigenvalueSolver):
     The problem is consirered sparse if `n_eigs` argument is not None.
     """
     name = 'eig.scipy'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', "{'eig', 'eigh', 'eigs', 'eigsh'}", 'eigs', False,
@@ -149,8 +147,6 @@ class ScipySGEigenvalueSolver(EigenvalueSolver):
     """
     name = 'eig.sgscipy'
 
-    __metaclass__ = SolverMeta
-
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
 
@@ -211,8 +207,6 @@ class LOBPCGEigenvalueSolver(EigenvalueSolver):
     """
     name = 'eig.scipy_lobpcg'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('i_max', 'int', 20, False,
          'The maximum number of iterations.'),
@@ -269,8 +263,6 @@ class SLEPcEigenvalueSolver(EigenvalueSolver):
     General SLEPc eigenvalue problem solver.
     """
     name = 'eig.slepc'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', 'str', 'krylovschur', False,
@@ -386,8 +378,6 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     Pysparse-based eigenvalue solver for sparse symmetric problems.
     """
     name = 'eig.pysparse'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('i_max', 'int', 100, False,
