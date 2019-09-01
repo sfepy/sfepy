@@ -143,6 +143,7 @@ class SolverMeta(type):
 
         return super(SolverMeta, cls).__new__(cls, name, bases, ndict)
 
+@six.add_metaclass(SolverMeta)
 class Solver(Struct):
     """
     Base class for all solver kinds. Takes care of processing of common
@@ -158,7 +159,6 @@ class Solver(Struct):
     Parameters
     ----------
     """
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('name', 'str', None, True,

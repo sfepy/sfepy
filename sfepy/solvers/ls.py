@@ -12,7 +12,7 @@ from six.moves import range
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
 from sfepy.base.base import output, get_default, assert_, try_imports
-from sfepy.solvers.solvers import SolverMeta, LinearSolver
+from sfepy.solvers.solvers import LinearSolver
 
 def solve(mtx, rhs, solver_class=None, solver_conf=None):
     """
@@ -140,8 +140,6 @@ class ScipyDirect(LinearSolver):
     """
     name = 'ls.scipy_direct'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('method', "{'auto', 'umfpack', 'superlu'}", 'auto', False,
          'The actual solver to use.'),
@@ -244,8 +242,6 @@ class ScipyIterative(LinearSolver):
     stop when either the relative or the absolute residual is below it.
     """
     name = 'ls.scipy_iterative'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', 'str', 'cg', False,
@@ -361,8 +357,6 @@ class PyAMGSolver(LinearSolver):
     """
     name = 'ls.pyamg'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('method', 'str', 'smoothed_aggregation_solver', False,
          'The actual solver to use.'),
@@ -460,8 +454,6 @@ class PyAMGKrylovSolver(LinearSolver):
     Interface to PyAMG Krylov solvers.
     """
     name = 'ls.pyamg_krylov'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', 'str', 'cg', False,
@@ -575,8 +567,6 @@ class PETScKrylovSolver(LinearSolver):
     residual.
     """
     name = 'ls.petsc'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('method', 'str', 'cg', False,
@@ -773,8 +763,6 @@ class MUMPSSolver(LinearSolver):
     """
     name = 'ls.mumps'
 
-    __metaclass__ = SolverMeta
-
     _parameters = [
         ('use_presolve', 'bool', False, False,
          'If True, pre-factorize the matrix.'),
@@ -836,8 +824,6 @@ class MUMPSParallelSolver(LinearSolver):
     Interface to MUMPS parallel solver.
     """
     name = 'ls.mumps_par'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('memory_relaxation', 'int', 20, False,
@@ -914,8 +900,6 @@ class SchurMumps(MUMPSSolver):
     """
     name = 'ls.schur_mumps'
 
-    __metaclass__ = SolverMeta
-
     _parameters = MUMPSSolver._parameters + [
         ('schur_variables', 'list', None, True,
          'The list of Schur variables.'),
@@ -957,8 +941,6 @@ class MultiProblem(ScipyDirect):
     Allows to define conjugate multiple problems.
     """
     name = 'ls.cm_pb'
-
-    __metaclass__ = SolverMeta
 
     _parameters = ScipyDirect._parameters + [
         ('others', 'list', None, True,

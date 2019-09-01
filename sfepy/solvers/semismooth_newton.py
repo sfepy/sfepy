@@ -6,7 +6,6 @@ import numpy.linalg as nla
 import scipy.sparse as sp
 
 from sfepy.base.base import output, get_default, debug
-from sfepy.solvers.solvers import SolverMeta
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse
 import six
@@ -35,8 +34,6 @@ class SemismoothNewton(Newton):
     uninitialized, but pre-allocated.
     """
     name = 'nls.semismooth_newton'
-
-    __metaclass__ = SolverMeta
 
     _parameters = [
         ('semismooth', 'bool', True, False,
