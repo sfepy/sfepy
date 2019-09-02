@@ -634,7 +634,12 @@ class Region(Struct):
         """
         fcells = self.get_cells(true_cells_only=true_cells_only)
 
-        if len(nm.unique(cells)) <= len(nm.unique(fcells)):
+        ucells = nm.unique(cells)
+        ufcells = nm.unique(fcells)
+        if not len(nm.intersect1d(ucells, ufcells, assume_unique=True)):
+            return nm.array([], dtype=nm.int)
+
+        if len(ucells) <= len(ufcells):
             # self is a superset of cells.
             ii = nm.searchsorted(fcells, cells)
             assert_((fcells[ii] == cells).all())
