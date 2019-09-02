@@ -16,6 +16,9 @@ def get_pars(ts, coors, mode=None, extra_arg=None,
         coors = problem.get_mesh_coors()
         return {('x_%s' % ic) : coors[:,ic]}
 
+    elif mode == 'qp':
+        return {'a' : nm.tile(-2 + 1j, (coors.shape[0], 1, 1))}
+
 def get_p_edge(ts, coors, bc=None, **kwargs):
     if bc.name == 'p_left':
         return nm.sin(nm.pi * coors[:,1])
@@ -32,6 +35,7 @@ def get_circle(coors, domain=None):
     return nm.where(r < 0.2)[0]
 
 functions = {
+    'get_pars' : (get_pars,),
     'get_pars1' : (lambda ts, coors, mode=None, **kwargs:
                    get_pars(ts, coors, mode, extra_arg='hello!', **kwargs),),
     'get_p_edge' : (get_p_edge,),
@@ -51,11 +55,16 @@ materials = {
     'mf2' : 'get_pars2',
     # Dot denotes a special value, that is not propagated to all QP.
     'mf3' : ({'a' : 10.0, 'b' : 2.0, '.c' : 'ahoj'},),
+    # Complex values.
+    'mf4' : 'get_pars',
+    'mf5' : ({'a' : -2 - 1j},),
+    'mf6' : ({'a' : {'Circle' : 1 + 1j, 'Rest' : 3j}},),
 }
 
 fields = {
     'pressure' : (nm.float64, 1, 'Omega', 2),
     'displacement' : (nm.float64, 2, 'Omega', 2),
+    'complex' : (nm.complex128, 1, 'Omega', 2),
 }
 
 variables = {
@@ -71,6 +80,7 @@ regions = {
     'Left' : ('vertices in (x < -%.3f)' % wx, 'facet'),
     'Right' : ('vertices in (x > %.3f)' % wx, 'facet'),
     'Circle' : 'vertices by get_circle',
+    'Rest' : 'r.Omega -c r.Circle',
 }
 
 ebcs = {
@@ -82,6 +92,18 @@ ebcs = {
 equations = {
     'e1' : """dw_laplace.2.Omega( mf3.a, q, p ) = 0""",
     'e2' : """dw_div_grad.2.Omega( mf3.b, v, u ) = 0""",
+}
+
+variables2 = {
+    'r'   : ('unknown field', 'complex', 2),
+    's'   : ('test field',    'complex', 'r'),
+}
+
+equations2 = {
+    'e3' : """dw_laplace.2.Omega(mf4.a, s, r) = 0""",
+    'e4' : """dw_laplace.2.Omega(mf5.a, s, r) = 0""",
+    'e5' : """dw_laplace.2.Circle(mf6.a, s, r)
+            + dw_laplace.2.Rest(mf6.a, s, r) = 0""",
 }
 
 solver_0 = {
@@ -110,6 +132,7 @@ class Test( TestCommon ):
 
     def test_material_functions(self):
         from sfepy.discrete import Material
+        from sfepy.base.conf import transform_variables
 
         problem = self.problem
         conf = problem.conf
@@ -138,6 +161,26 @@ class Test( TestCommon ):
         assert_(nm.all(mat3.get_data(key, 'a') == 10.0))
         assert_(nm.all(mat3.get_data(key, 'b') == 2.0))
         assert_(mat3.get_data(None, 'c') == 'ahoj')
+
+        pb = problem.copy()
+        pb.set_variables(transform_variables(conf.variables2))
+        pb.set_equations(conf.equations2)
+        materials = pb.get_materials()
+        materials.time_update(ts, pb.equations, mode='normal', problem=pb)
+
+        mat4 = materials['mf4']
+        key = mat4.get_keys(region_name='Omega')[0]
+        assert_(nm.all(mat4.get_data(key, 'a') == -2 + 1j))
+
+        mat5 = materials['mf5']
+        key = mat5.get_keys(region_name='Omega')[0]
+        assert_(nm.all(mat5.get_data(key, 'a') == -2 - 1j))
+
+        mat6 = materials['mf6']
+        key = mat6.get_keys(region_name='Circle')[0]
+        assert_(nm.all(mat6.get_data(key, 'a') == 1 + 1j))
+        key = mat6.get_keys(region_name='Rest')[0]
+        assert_(nm.all(mat6.get_data(key, 'a') == 3j))
 
         return True
 
