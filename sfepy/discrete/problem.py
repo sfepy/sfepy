@@ -251,6 +251,7 @@ class Problem(Struct):
 
         self.reset()
         self.ls_conf = self.nls_conf = self.ts_conf = None
+        self.conf_variables = self.conf_materials = None
 
         if auto_conf:
             if equations is None:
@@ -511,10 +512,10 @@ class Problem(Struct):
         conf_equations = get_default(conf_equations,
                                      self.conf.get('equations', None))
 
-        self.set_variables()
+        self.set_variables(self.conf_variables)
         variables = Variables.from_conf(self.conf_variables, self.fields)
 
-        self.set_materials()
+        self.set_materials(self.conf_materials)
         materials = Materials.from_conf(self.conf_materials, self.functions)
 
         self.integrals = self.get_integrals()

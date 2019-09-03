@@ -64,7 +64,8 @@ class ConstantFunction(Function):
                 for key, val in six.iteritems(values):
                     if '.' in key: continue
 
-                    val = nm.array(val, dtype=nm.float64, ndmin=3)
+                    dtype = nm.float64 if nm.isrealobj(val) else nm.complex128
+                    val = nm.array(val, dtype=dtype, ndmin=3)
                     out[key] = nm.tile(val, (coors.shape[0], 1, 1))
 
             elif (mode == 'special_constant') or (mode is None):
@@ -103,14 +104,14 @@ class ConstantFunctionByRegion(Function):
 
                 for key, val in six.iteritems(values):
                     if '.' in key: continue
-                    rval = nm.array(val[list(val.keys())[0]], dtype=nm.float64,
-                                    ndmin=3)
+                    rval = nm.array(val[list(val.keys())[0]], ndmin=3)
                     s0 = rval.shape[1:]
-                    matdata = nm.zeros(qps.shape[:2] + s0, dtype=nm.float64)
+                    dtype = nm.float64 if nm.isrealobj(rval) else nm.complex128
+                    matdata = nm.zeros(qps.shape[:2] + s0, dtype=dtype)
 
                     for rkey, rval in six.iteritems(val):
                         region = problem.domain.regions[rkey]
-                        rval = nm.array(rval, dtype=nm.float64, ndmin=3)
+                        rval = nm.array(rval, dtype=dtype, ndmin=3)
 
                         cells = region.get_cells(true_cells_only=False)
                         ii = term.region.get_cell_indices(cells,
