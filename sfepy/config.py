@@ -28,7 +28,7 @@ has_attr = lambda obj, attr: obj and hasattr(obj, attr)
 class Config(object):
     def python_version(self):
         if has_attr(site_cfg, 'python_version'):
-            if site_cfg.python_version == 'auto':
+            if '*' in site_cfg.python_version:
                 return "%d.%d" % tuple(sys.version_info[:2])
             else:
                 return site_cfg.python_version
