@@ -241,5 +241,9 @@ if __name__ == '__main__':
     check_versions()
     setup_package()
 
+    from sfepy import Config
+    site_config = Config()
+    log.info('\nUsing Python {}.'.format(site_config.python_version()))
+
     log.info('\nRequired and optional packages found:\n')
     check_versions(show_only=True)
