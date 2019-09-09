@@ -179,7 +179,6 @@ def main():
 
     plot_conv_results(base_output_folder, conf, err_df)
 
-    err_df.to_csv(pjoin(base_output_folder, conf.example_name + "results-cw{}_d{}.csv".format(conf.Cw, conf.diffusion_coef)))
 
     plt.show()
 

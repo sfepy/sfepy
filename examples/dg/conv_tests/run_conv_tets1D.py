@@ -3,16 +3,20 @@ DG FEM convergence test for 1D diffusion only problem
 """
 import numpy as nm
 import sympy as sm
-
-
-from examples.dg.example_dg_common import get_1Dmesh_hook
-from examples.dg.conv_tests.fem_conv_test import SimpleExpression, define_functions, eval_expr
 from os.path import join as pjoin
 
 from my_utils.visualizer import reconstruct_legendre_dofs
 
+from examples.dg.example_dg_common import get_1Dmesh_hook, calculate_num_order
+from examples.dg.conv_tests.fem_conv_test import SimpleExpression, define_functions, eval_expr
+from examples.dg.conv_tests.run_conv_test2D import plot_conv_results
+
+mstart = -1
+mend = 1
+
 from examples.dg.burgess.example_dg_burgess1D_Hesthaven import define
 # from examples.dg.diffusion.example_dg_diffusion1D import define
+from examples.dg.advection.example_dg_advection1D import define, mstart, mend
 
 def main():
     import sys
@@ -37,7 +41,7 @@ def main():
 
     results = []
     for ir, refine in enumerate(range(n_refine)):
-        gen_mesh = get_1Dmesh_hook(-1, 1, n_nod)
+        gen_mesh = get_1Dmesh_hook(mstart, mend, n_nod)
         for io, order in enumerate(orders):
             output('n_nod:', n_nod, 'order:', order)
 
@@ -56,6 +60,8 @@ def main():
             elapsed = time.clock() - tt
 
             n_cell = n_nod - 1
+            vols = pb.domain.cmesh.get_volumes(1)
+            h = nm.mean(vols)
 
             base_output_folder = pjoin("output", conf.example_name)
             output_folder = pjoin(base_output_folder, "h" + str(n_cell))
@@ -103,7 +109,7 @@ def main():
 
             ax = axs[order-1][refine]
 
-            xs = nm.linspace(-1, 1, 500)[:, None]
+            xs = nm.linspace(mstart, mend, 500)[:, None]
             ax.set_title("o: {}, h: {}".format(order, n_nod - 1))
             ax.plot(xs, conf.analytic_sol(xs, t=1), label="fun-ex", color="grey")
             ax.plot(xx[:, 0], uu[:, 0, 0], alpha=.5)
@@ -116,7 +122,8 @@ def main():
             # if ir > 0:
             #     ax.set_yticks([])
 
-            result = (n_cell, order, n_dof, ana_l2, diff_l2, error, elapsed)
+            result = (h, n_cell, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed)
+
             results.append(result)
 
         n_nod = n_nod + n_nod - 1
@@ -125,23 +132,14 @@ def main():
     results = nm.array(results)
     output(results)
 
-    conv_fig = plt.figure()
-    conv_fig.suptitle("Convergences by order, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
-    for o in orders:
-        curr_results = results[results[:, 1] == o]
-        co = plt.loglog(curr_results[:, 0], curr_results[:, 4], 'o', label=str(o))[0].get_color()
-        plt.loglog(curr_results[:, 0], curr_results[:, 4], color=co)
-        plt.grid()
-    plt.xlabel("cells")
-    plt.ylabel("L^2 error")
-    plt.legend(title="Order")
-    conv_fig.savefig(pjoin(base_output_folder, conf.example_name + "-cells-cw{}_d{}_t{}.jpg".format(conf.Cw, conf.diffusion_coef, 2)), dpi=200)
-
-
     import pandas as pd
     err_df = pd.DataFrame(results,
-                          columns=["h_coef", "order", "n_dof", "ana_l2", "diff_l2", "err_rel", "elapsed"])
+                          columns=["h", "n_cells", "mean_vol", "order", "n_dof", "ana_l2", "diff_l2", "err_rel",
+                                   "elapsed"])
+    err_df = calculate_num_order(err_df)
     err_df.to_csv(pjoin(base_output_folder, conf.example_name + "results-cw{}_d{}.csv".format(conf.Cw, conf.diffusion_coef)))
+
+    plot_conv_results(base_output_folder, conf, err_df, save=True)
 
     plt.show()
 
