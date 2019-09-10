@@ -39,10 +39,10 @@ helps = {
     'tri-tetra' : 'convert elements: quad->tri, hexa->tetra',
     '2d' : 'force a 2D mesh by removing the z coordinates - assumes a 3D mesh'
     ' in the xy plane',
+    '3d' : 'force a 3D mesh by removing 1D and 2D cells',
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
     ' numbers (preserves original mesh vertices)',
-
     'remesh' : """when given, remesh the given mesh using tetgen.
       The options can be the following, separated by spaces, in this order: 1.
       "r" causes remeshing of the mesh volume - if not present the mesh surface
@@ -94,6 +94,8 @@ def main():
                         dest='tri_tetra', help=helps['tri-tetra'])
     parser.add_argument('-2', '--2d', action='store_true',
                         dest='force_2d', help=helps['2d'])
+    parser.add_argument('-3', '--3d', action='store_true',
+                        dest='force_3d', help=helps['3d'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
     parser.add_argument('--remesh', metavar='options',
@@ -157,8 +159,12 @@ def main():
     else:
         mesh = Mesh.from_file(filename_in)
 
+    if options.force_3d:
+        data = list(mesh._get_io_data(cell_dim_only=3))
+        mesh = Mesh.from_data(mesh.name, *data)
+
     if options.force_2d:
-        data = list(mesh._get_io_data())
+        data = list(mesh._get_io_data(cell_dim_only=2))
         data[0] = data[0][:, :2]
         mesh = Mesh.from_data(mesh.name, *data)
 
