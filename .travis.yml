@@ -52,7 +52,7 @@ install:
   - python -V
 
   - pip install scikit-umfpack
-  - pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
+  - pip install https://bitbucket.org/dalcinl/igakit/get/0a87ac7cbffb.zip
 
 script:
 
