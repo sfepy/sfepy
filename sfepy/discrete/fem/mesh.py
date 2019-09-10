@@ -379,18 +379,22 @@ class Mesh(Struct):
                                       for conn in conns],
                                      ac(nm.concatenate(mat_ids)), descs)
 
-    def _get_io_data(self):
+    def _get_io_data(self, cell_dim_only=None):
         """
         Return data to be used by `MeshIO`.
         """
         cmesh = self.cmesh
         conns, mat_ids = [], []
-        for desc in self.descs:
+        if cell_dim_only is not None:
+            descs = [ii for ii in self.descs if int(ii[0]) == cell_dim_only]
+        else:
+            descs = self.descs
+        for desc in descs:
             conn, cells = self.get_conn(desc, ret_cells=True)
             conns.append(conn)
             mat_ids.append(cmesh.cell_groups[cells])
 
-        return cmesh.coors, cmesh.vertex_groups, conns, mat_ids, self.descs
+        return cmesh.coors, cmesh.vertex_groups, conns, mat_ids, descs
 
     @property
     def coors(self):
