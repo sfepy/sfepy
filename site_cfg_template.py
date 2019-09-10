@@ -2,8 +2,8 @@
 # Template file for site configuration - copy it to site_cfg.py:
 # $ cp site_cfg_template.py site_cfg.py
 
-# Force python version (e.g. '2.4'), or left 'auto' for autodetection.
-python_version = 'auto'
+# Set python version (e.g. '2.7', '3.7'}), or leave '3.*' for autodetection.
+python_version = '3.*'
 
 # Operating system - one of 'posix', 'windows' or None for automatic
 # determination.
