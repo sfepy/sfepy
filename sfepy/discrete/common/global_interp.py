@@ -1,10 +1,10 @@
 """
 Global interpolation functions.
 """
-import time
 import numpy as nm
 
 from sfepy.base.base import assert_, output, get_default_attr
+from sfepy.base.timing import Timer
 from sfepy.discrete.fem.geometry_element import create_geometry_elements
 import sfepy.discrete.common.extmods.crefcoors as crc
 
@@ -52,8 +52,9 @@ def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
     3. choose initial cell: i0 = first from cells incident to V.
     4. while not P in C_i, change C_i towards P, check if P in new C_i.
     """
-    ref_coors = get_default_attr(cache, 'ref_coors', None)
+    timer = Timer()
 
+    ref_coors = get_default_attr(cache, 'ref_coors', None)
     if ref_coors is None:
         extrapolate = close_limit > 0.0
 
@@ -63,7 +64,7 @@ def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
 
         cmesh = get_default_attr(cache, 'cmesh', None)
         if cmesh is None:
-            tt = time.clock()
+            timer.start()
             mesh = field.create_mesh(extra_nodes=False)
             cmesh = mesh.cmesh
 
@@ -82,7 +83,7 @@ def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
                 normals0 = cmesh.get_facet_normals(0)
                 normals1 = cmesh.get_facet_normals(1)
 
-            output('cmesh setup: %f s' % (time.clock()-tt), verbose=verbose)
+            output('cmesh setup: %f s' % timer.stop(), verbose=verbose)
 
         else:
             centroids = cache.centroids
@@ -93,24 +94,24 @@ def get_ref_coors_convex(field, coors, close_limit=0.1, cache=None,
         if kdtree is None:
             from scipy.spatial import cKDTree as KDTree
 
-            tt = time.clock()
+            timer.start()
             kdtree = KDTree(cmesh.coors)
-            output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
+            output('kdtree: %f s' % timer.stop(), verbose=verbose)
 
-        tt = time.clock()
+        timer.start()
         ics = kdtree.query(coors)[1]
-        output('kdtree query: %f s' % (time.clock()-tt), verbose=verbose)
+        output('kdtree query: %f s' % timer.stop(), verbose=verbose)
 
         ics = nm.asarray(ics, dtype=nm.int32)
 
         coors = nm.ascontiguousarray(coors)
         ctx = field.create_basis_context()
 
-        tt = time.clock()
+        timer.start()
         crc.find_ref_coors_convex(ref_coors, cells, status, coors, cmesh,
                                   centroids, normals0, normals1, ics,
                                   extrapolate, 1e-15, close_limit, ctx)
-        output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
+        output('ref. coordinates: %f s' % timer.stop(), verbose=verbose)
 
     else:
         cells = cache.cells
@@ -232,8 +233,9 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
         close_limit is 0, then status 5 indicates points outside of the field
         domain that had no potential cells.
     """
-    ref_coors = get_default_attr(cache, 'ref_coors', None)
+    timer = Timer()
 
+    ref_coors = get_default_attr(cache, 'ref_coors', None)
     if ref_coors is None:
         extrapolate = close_limit > 0.0
 
@@ -245,7 +247,7 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
 
         cmesh = get_default_attr(cache, 'cmesh', None)
         if cmesh is None:
-            tt = time.clock()
+            timer.start()
             mesh = field.create_mesh(extra_nodes=False)
             cmesh = mesh.cmesh
 
@@ -255,22 +257,22 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
             else:
                 centroids = None
 
-            output('cmesh setup: %f s' % (time.clock()-tt), verbose=verbose)
+            output('cmesh setup: %f s' % timer.stop(), verbose=verbose)
 
         else:
             centroids = cache.centroids
 
-        tt = time.clock()
+        timer.start()
         potential_cells, offsets = get(coors, cmesh, centroids=centroids,
                                        extrapolate=extrapolate)
-        output('potential cells: %f s' % (time.clock()-tt), verbose=verbose)
+        output('potential cells: %f s' % timer.stop(), verbose=verbose)
 
         coors = nm.ascontiguousarray(coors)
         ctx = field.create_basis_context()
 
         eval_cmesh = get_default_attr(cache, 'eval_cmesh', None)
         if eval_cmesh is None:
-            tt = time.clock()
+            timer.start()
             mesh = field.create_eval_mesh()
             if mesh is None:
                 eval_cmesh = cmesh
@@ -279,9 +281,9 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
                 eval_cmesh = mesh.cmesh
 
             output('eval_cmesh setup: %f s'
-                   % (time.clock()-tt), verbose=verbose)
+                   % timer.stop(), verbose=verbose)
 
-        tt = time.clock()
+        timer.start()
 
         crc.find_ref_coors(ref_coors, cells, status, coors, eval_cmesh,
                            potential_cells, offsets, extrapolate,
@@ -289,7 +291,7 @@ def get_ref_coors_general(field, coors, close_limit=0.1, get_cells_fun=None,
         if extrapolate:
             assert_(nm.all(status < 5))
 
-        output('ref. coordinates: %f s' % (time.clock()-tt), verbose=verbose)
+        output('ref. coordinates: %f s' % timer.stop(), verbose=verbose)
 
     else:
         cells = cache.cells

@@ -18,7 +18,7 @@ def standard_call(call):
     """
     def _standard_call(self, mtx_m, mtx_d, mtx_k, n_eigs=None,
                        eigenvectors=None, status=None, conf=None, **kwargs):
-        tt = time.clock()
+        timer = Timer(start=True)
 
         conf = get_default(conf, self.conf)
         mtx_m = get_default(mtx_m, self.mtx_m)
@@ -32,9 +32,9 @@ def standard_call(call):
                       n_eigs, eigenvectors, status, conf,
                       **kwargs)
 
-        ttt = time.clock() - tt
+        elapsed = timer.stop()
         if status is not None:
-            status['time'] = ttt
+            status['time'] = elapsed
 
         return result
 

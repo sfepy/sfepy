@@ -21,7 +21,6 @@ should be defined (example: test_meshio.py)."""
 
 from __future__ import absolute_import
 import sys
-import time
 import os
 import os.path as op
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
@@ -31,6 +30,7 @@ if sfepy.top_dir not in sys.path: sys.path.append(sfepy.top_dir)
 
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.base import output
+from sfepy.base.timing import Timer
 
 class OutputFilter(object):
 
@@ -84,7 +84,7 @@ def run_test(conf_name, options, ifile):
     required = ['Test']
 
     num = 1
-    test_time = 0.0
+    timer = Timer('tests')
     try:
         conf = ProblemConf.from_file(conf_name, required, _required + other)
         test = conf.funmod.Test.from_conf(conf, options)
@@ -102,12 +102,12 @@ def run_test(conf_name, options, ifile):
 
     if ok:
         try:
-            tt = time.clock()
+            timer.start()
             output.set_output_prefix(orig_prefix)
             ok, n_fail, n_total = test.run(debug=options.raise_on_error,
                                            ifile=ifile)
             output.set_output_prefix('[%d] %s' % (ifile, orig_prefix))
-            test_time = time.clock() - tt
+            timer.stop()
         except KeyboardInterrupt:
             print('>>> interrupted')
             sys.exit(0)
@@ -118,7 +118,7 @@ def run_test(conf_name, options, ifile):
             ok, n_fail, n_total = False, num, num
 
     if ok:
-        print('>>> all passed in %.2f s' % test_time)
+        print('>>> all passed in %.2f s' % timer.total)
     else:
         print('!!! %s test failed' % n_fail)
 
@@ -127,7 +127,7 @@ def run_test(conf_name, options, ifile):
 
     output.set_output_prefix(orig_prefix)
 
-    return n_fail, n_total, test_time
+    return n_fail, n_total, timer.total
 
 def wrap_run_tests(options):
     def run_tests(stats, dir_name, filenames):

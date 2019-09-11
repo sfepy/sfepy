@@ -1,9 +1,9 @@
 from __future__ import print_function
-import time
 
 import numpy as nm
 
 from sfepy.base.base import output, assert_, OneTypeList, Struct
+from sfepy.base.timing import Timer
 from sfepy.discrete.common.region import (Region, get_dependency_graph,
                                           sort_by_dependency, get_parents)
 from sfepy.discrete.parse_regions import create_bnf, visit_stack, ParseException
@@ -213,7 +213,7 @@ class Domain(Struct):
 
     def create_regions(self, region_defs, functions=None, allow_empty=False):
         output('creating regions...')
-        tt = time.clock()
+        timer = Timer(start=True)
 
         self.reset_regions()
 
@@ -238,7 +238,7 @@ class Domain(Struct):
                                         allow_empty=allow_empty)
             output(' ', region.name)
 
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
         return self.regions
 

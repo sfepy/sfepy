@@ -1,11 +1,11 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.base.log import Log, get_logging_conf
+from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import NonlinearSolver
 from .nls import conv_test
 import six
@@ -208,6 +208,7 @@ class Oseen(NonlinearSolver):
         problem = get_default(problem, conf.problem,
                               '`problem` parameter needs to be set!')
 
+        timer = Timer()
         time_stats = {}
 
         stabil = problem.get_materials()[conf.stabil_mat]
@@ -257,14 +258,14 @@ class Oseen(NonlinearSolver):
             else:
                 adimensionalize = False
 
-            tt = time.clock()
+            timer.start()
             try:
                 vec_r = fun(vec_x)
             except ValueError:
                 ok = False
             else:
                 ok = True
-            time_stats['residual'] = time.clock() - tt
+            time_stats['residual'] = timer.stop()
             if ok:
                 err = nla.norm(vec_r)
                 if it == 0:
@@ -289,20 +290,20 @@ class Oseen(NonlinearSolver):
                 ## mat.viscosity = viscosity / b_norm
                 ## vec_r[indx_us] /= b_norm
 
-            tt = time.clock()
+            timer.start()
             try:
                 mtx_a = fun_grad(vec_x)
             except ValueError:
                 ok = False
             else:
                 ok = True
-            time_stats['matrix'] = time.clock() - tt
+            time_stats['matrix'] = timer.stop()
             if not ok:
                 raise RuntimeError('giving up...')
 
-            tt = time.clock()
+            timer.start()
             vec_dx = lin_solver(vec_r, x0=vec_x, mtx=mtx_a)
-            time_stats['solve'] = time.clock() - tt
+            time_stats['solve'] = timer.stop()
 
             vec_e = mtx_a * vec_dx - vec_r
             lerr = nla.norm(vec_e)

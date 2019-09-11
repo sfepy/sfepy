@@ -6,6 +6,7 @@ import numpy as nm
 
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, IndexedStruct)
+from sfepy.base.timing import Timer
 from sfepy.linalg.utils import output_array_stats
 from sfepy.solvers.solvers import TimeSteppingSolver
 from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
@@ -15,12 +16,11 @@ def standard_ts_call(call):
     Decorator handling argument preparation and timing for time-stepping
     solvers.
     """
-    import time
 
     def _standard_ts_call(self, vec0=None, nls=None,
                          init_fun=None, prestep_fun=None, poststep_fun=None,
                          status=None, **kwargs):
-        tt = time.clock()
+        timer = Timer(start=True)
 
         nls = get_default(nls, self.nls,
                           'nonlinear solver has to be specified!')
@@ -33,9 +33,9 @@ def standard_ts_call(call):
                       prestep_fun=prestep_fun, poststep_fun=poststep_fun,
                       status=status, **kwargs)
 
-        ttt = time.clock() - tt
+        elapsed = timer.stop()
         if status is not None:
-            status['time'] = ttt
+            status['time'] = elapsed
             status['n_step'] = self.ts.n_step
 
         return result

@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 import os
 import os.path as op
-import time
 from copy import copy
 
 import numpy as nm
@@ -12,6 +11,7 @@ from sfepy.base.base import (
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
+from sfepy.base.timing import Timer
 from .functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.fields_base import set_mesh_coors
@@ -1165,9 +1165,9 @@ class Problem(Struct):
     def try_presolve(self, mtx):
         ls = self.get_ls()
 
-        tt = time.clock()
+        timer = Timer(start=True)
         ls.presolve(mtx)
-        tt = time.clock() - tt
+        tt = timer.stop()
         output('presolve: %.2f [s]' % tt)
 
     def get_solver(self):

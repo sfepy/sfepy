@@ -2,7 +2,6 @@
 Classes of equations composed of terms.
 """
 from __future__ import absolute_import
-import time
 from copy import copy
 
 import numpy as nm
@@ -10,6 +9,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import OneTypeList, Container, Struct
+from sfepy.base.timing import Timer
 from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
@@ -476,12 +476,12 @@ class Equations(Container):
             return None
 
         output('assembling matrix graph...', verbose=verbose)
-        tt = time.clock()
+        timer = Timer(start=True)
 
         nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
                                             len(rdcs), rdcs, cdcs)
 
-        output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
+        output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('matrix structural nonzeros: %d (%.2e%% fill)' \
                % (nnz, float(nnz) / nm.prod(shape)), verbose=verbose)
 

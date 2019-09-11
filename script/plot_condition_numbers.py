@@ -7,12 +7,12 @@ from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser
-import time
 import numpy as nm
 import matplotlib.pyplot as plt
 
 from sfepy import data_dir
 from sfepy.base.base import output, assert_
+from sfepy.base.timing import Timer
 from sfepy.discrete import FieldVariable, Material, Integral
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.terms import Term
@@ -105,9 +105,9 @@ def main():
         term.setup()
 
         output('assembling...')
-        tt = time.clock()
+        timer = Timer(start=True)
         mtx, iels = term.evaluate(mode='weak', diff_var='u')
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
         mtx = mtx[0, 0]
 
         try:

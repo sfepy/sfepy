@@ -1,9 +1,8 @@
 from __future__ import absolute_import
-import time
-from copy import copy
 
 from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
                              output, get_default, basestr)
+from sfepy.base.timing import Timer
 from .functions import ConstantFunction, ConstantFunctionByRegion
 import six
 
@@ -53,11 +52,11 @@ class Materials(Container):
             If False, reduce verbosity.
         """
         if verbose: output('updating materials...')
-        tt = time.clock()
+        timer = Timer(start=True)
         for mat in self:
             if verbose: output(' ', mat.name)
             mat.time_update(ts, equations, mode=mode, problem=problem)
-        if verbose: output('...done in %.2f s' % (time.clock() - tt))
+        if verbose: output('...done in %.2f s' % timer.stop())
 
 class Material(Struct):
     """

@@ -1,10 +1,10 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default, try_imports, Struct
+from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import Solver, EigenvalueSolver
 import six
 from six.moves import range
@@ -33,7 +33,7 @@ def standard_call(call):
     """
     def _standard_call(self, mtx_a, mtx_b=None, n_eigs=None,
                        eigenvectors=None, status=None, conf=None, **kwargs):
-        tt = time.clock()
+        timer = Timer(start=True)
 
         conf = get_default(conf, self.conf)
         mtx_a = get_default(mtx_a, self.mtx_a)
@@ -49,9 +49,9 @@ def standard_call(call):
             result = call(self, mtx_a, mtx_b, n_eigs, eigenvectors, status,
                           conf, **kwargs)
 
-        ttt = time.clock() - tt
+        elapsed = timer.stop()
         if status is not None:
-            status['time'] = ttt
+            status['time'] = elapsed
 
         return result
 

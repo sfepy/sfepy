@@ -153,10 +153,10 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
         return vol, bc
 
-    import time
+    from sfepy.base.timing import Timer
 
     output('smoothing...')
-    tt = time.clock()
+    timer = Timer(start=True)
 
     if weights is None:
         n_nod = mesh.n_nod
@@ -199,10 +199,11 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
     coors = taubin(mesh.coors, weights, lam, mu, n_iter)
 
-    output('...done in %.2f s' % (time.clock() - tt))
+    output('...done in %.2f s' % timer.stop())
 
     if volume_corr:
         output('rescaling...')
+        timer.start()
         volume0, bc = get_volume(mesh.conns[0], mesh.coors)
         volume, _ = get_volume(mesh.conns[0], coors)
 
@@ -211,7 +212,7 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
 
         coors = (coors - bc) * scale + bc
 
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
     return coors
 
