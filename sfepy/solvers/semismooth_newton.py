@@ -1,11 +1,11 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import numpy.linalg as nla
 import scipy.sparse as sp
 
 from sfepy.base.base import output, get_default, debug
+from sfepy.base.timing import Timer
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse
 import six
@@ -82,6 +82,7 @@ class SemismoothNewton(Newton):
         lin_solver = get_default(lin_solver, self.lin_solver)
         status = get_default(status, self.status)
 
+        timer = Timer()
         time_stats = {}
 
         vec_x = vec_x0.copy()
@@ -103,7 +104,7 @@ class SemismoothNewton(Newton):
             vec_dx0 = vec_dx;
             i_ls = 0
             while 1:
-                tt = time.clock()
+                timer.start()
 
                 try:
                     vec_smooth_r = fun_smooth(vec_x)
@@ -134,7 +135,7 @@ class SemismoothNewton(Newton):
 
                     ok = True
 
-                time_stats['residual'] = time.clock() - tt
+                time_stats['residual'] = timer.stop()
 
                 if ok:
                     vec_r = nm.r_[vec_smooth_r, vec_semismooth_r]
@@ -209,7 +210,7 @@ class SemismoothNewton(Newton):
             if condition >= 0:
                 break
 
-            tt = time.clock()
+            timer.start()
 
             if not reuse_matrix:
                 mtx_jac = self.compute_jacobian(vec_x, fun_smooth_grad,
@@ -220,9 +221,9 @@ class SemismoothNewton(Newton):
             else:
                 reuse_matrix = False
 
-            time_stats['matrix'] = time.clock() - tt
+            time_stats['matrix'] = timer.stop()
 
-            tt = time.clock()
+            timer.start()
 
             if step_mode == 'regular':
                 vec_dx = lin_solver(vec_r, mtx=mtx_jac)
@@ -239,7 +240,7 @@ class SemismoothNewton(Newton):
             else:
                 vec_dx = mtx_jac.T * vec_r
 
-            time_stats['solve'] = time.clock() - tt
+            time_stats['solve'] = timer.stop()
 
             for kv in six.iteritems(time_stats):
                 output('%10s: %7.2f [s]' % kv)

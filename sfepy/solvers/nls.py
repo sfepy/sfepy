@@ -2,13 +2,13 @@
 Nonlinear solvers.
 """
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
+from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import NonlinearSolver
 import six
 from six.moves import range
@@ -49,14 +49,14 @@ def check_tangent_matrix(conf, vec_x0, fun, fun_grad):
 
     vec_r = fun(vec_x) # Restore.
 
-    tt = time.clock()
+    timer = Timer(start=True)
     output(mtx_a, '.. analytical')
     output(mtx_d, '.. difference')
     import sfepy.base.plotutils as plu
     plu.plot_matrix_diff(mtx_d, mtx_a, delta, ['difference', 'analytical'],
                          conf.check)
 
-    return time.clock() - tt
+    return timer.stop()
 
 def conv_test(conf, it, err, err0):
     """
@@ -228,6 +228,7 @@ class Newton(NonlinearSolver):
         eps_r = get_default(ls_eps_r, 1.0)
         lin_red = conf.eps_a * conf.lin_red
 
+        timer = Timer()
         time_stats_keys = ['residual', 'matrix', 'solve']
         time_stats = {key : 0.0 for key in time_stats_keys}
 
@@ -250,7 +251,7 @@ class Newton(NonlinearSolver):
             ls = 1.0
             vec_dx0 = vec_dx;
             while 1:
-                tt = time.clock()
+                timer.start()
 
                 try:
                     vec_r = fun(vec_x)
@@ -266,7 +267,7 @@ class Newton(NonlinearSolver):
                 else:
                     ok = True
 
-                time_stats['residual'] = time.clock() - tt
+                time_stats['residual'] = timer.stop()
                 if ok:
                     try:
                         err = nla.norm(vec_r)
@@ -318,19 +319,19 @@ class Newton(NonlinearSolver):
                 condition = 2
                 break
 
-            tt = time.clock()
+            timer.start()
             if not conf.is_linear:
                 mtx_a = fun_grad(vec_x)
 
             else:
                 mtx_a = fun_grad('linear')
 
-            time_stats['matrix'] = time.clock() - tt
+            time_stats['matrix'] = timer.stop()
 
             if conf.check:
-                tt = time.clock()
+                timer.start()
                 wt = check_tangent_matrix(conf, vec_x, fun, fun_grad)
-                time_stats['check'] = time.clock() - tt - wt
+                time_stats['check'] = timer.stop() - wt
 
             if conf.lin_precision is not None:
                 if ls_eps_a is not None:
@@ -344,12 +345,12 @@ class Newton(NonlinearSolver):
             if conf.verbose:
                 output('solving linear system...')
 
-            tt = time.clock()
+            timer.start()
             vec_dx = lin_solver(vec_r, x0=vec_x,
                                 eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                                 status=ls_status)
             ls_n_iter += ls_status['n_iter']
-            time_stats['solve'] = time.clock() - tt
+            time_stats['solve'] = timer.stop()
 
             if conf.verbose:
                 output('...done')
@@ -426,7 +427,7 @@ class ScipyBroyden(NonlinearSolver):
         fun = get_default(fun, self.fun)
         status = get_default(status, self.status)
 
-        tt = time.clock()
+        timer = Timer(start=True)
 
         kwargs = {'iter' : conf.i_max,
                   'alpha' : conf.alpha,
@@ -446,7 +447,7 @@ class ScipyBroyden(NonlinearSolver):
         vec_x = nm.asarray(vec_x)
 
         if status is not None:
-            status['time_stats'] = time.clock() - tt
+            status['time_stats'] = timer.stop()
 
         return vec_x
 
@@ -523,7 +524,7 @@ class PETScNonlinearSolver(NonlinearSolver):
         prhs = get_default(prhs, self.prhs)
         comm = get_default(comm, self.comm)
 
-        tt = time.clock()
+        timer = Timer(start=True)
 
         if isinstance(vec_x0, self.petsc.Vec):
             psol = vec_x0
@@ -556,7 +557,7 @@ class PETScNonlinearSolver(NonlinearSolver):
         snes.solve(prhs.duplicate(), psol)
 
         if status is not None:
-            status['time_stats'] = time.clock() - tt
+            status['time_stats'] = timer.stop()
 
         if snes.reason in self.converged_reasons:
             reason = 'snes: %s' % self.converged_reasons[snes.reason]

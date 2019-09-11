@@ -1,11 +1,11 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, pause, Struct
 from sfepy.base.log import Log, get_logging_conf
+from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import OptimizationSolver
 
 import scipy.optimize as sopt
@@ -43,14 +43,12 @@ def conv_test(conf, it, of, of0, ofg_norm=None):
 def wrap_function(function, args):
     ncalls = [0]
     times = []
+    timer = Timer()
     def function_wrapper(x):
         ncalls[0] += 1
-        tt = time.time()
+        timer.start()
         out = function(x, *args)
-        tt2 = time.time()
-        if tt2 < tt:
-            raise RuntimeError('%f >= %f' % (tt, tt2))
-        times.append(tt2 - tt)
+        times.append(timer.stop())
         return out
     return ncalls, times, function_wrapper
 
@@ -175,6 +173,7 @@ class FMinSteepestDescent(OptimizationSolver):
         nc_of, tt_of, fn_of = wrap_function(obj_fun, obj_args)
         nc_ofg, tt_ofg, fn_ofg = wrap_function(obj_fun_grad, obj_args)
 
+        timer = Timer()
         time_stats = {'of' : tt_of, 'ofg': tt_ofg, 'check' : []}
 
         ofg = None
@@ -193,9 +192,9 @@ class FMinSteepestDescent(OptimizationSolver):
                 ofg = fn_ofg(xit)
 
             if conf.check:
-                tt = time.clock()
+                timer.start()
                 check_gradient(xit, ofg, fn_of, conf.delta, conf.check)
-                time_stats['check'].append(time.clock() - tt)
+                time_stats['check'].append(timer.stop())
 
             ofg_norm = nla.norm(ofg, conf.norm)
 
@@ -366,7 +365,7 @@ class ScipyFMinSolver(OptimizationSolver):
         status = get_default(status, self.status)
         obj_args = get_default(obj_args, self.obj_args)
 
-        tt = time.clock()
+        timer = Timer(start=True)
 
         kwargs = {self._i_max_name[conf.method] : conf.i_max,
                   'args' : obj_args}
@@ -382,6 +381,6 @@ class ScipyFMinSolver(OptimizationSolver):
         out = self.solver(obj_fun, x0, **kwargs)
 
         if status is not None:
-            status['time_stats'] = time.clock() - tt
+            status['time_stats'] = timer.stop()
 
         return out

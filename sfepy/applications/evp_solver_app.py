@@ -3,11 +3,11 @@ Eigenvalue problem solver application.
 """
 from __future__ import absolute_import
 import os
-import time
 
 import numpy as nm
 
 from sfepy.base.base import Struct, output, get_default
+from sfepy.base.timing import Timer
 from sfepy.applications import PDESolverApp
 from sfepy.solvers import Solver
 from sfepy.discrete.fem.meshio import convert_complex_output
@@ -79,17 +79,17 @@ class EVPSolverApp(PDESolverApp):
         pb.time_update()
 
         output('assembling lhs...')
-        tt = time.clock()
+        timer = Timer(start=True)
         mtx_a = pb.evaluate(pb.conf.equations['lhs'], mode='weak',
                             auto_init=True, dw_mode='matrix')
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
         if 'rhs' in pb.conf.equations:
             output('assembling rhs...')
-            tt = time.clock()
+            timer.start()
             mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
                                 dw_mode='matrix')
-            output('...done in %.2f s' % (time.clock() - tt))
+            output('...done in %.2f s' % timer.stop())
 
         else:
             mtx_b = None

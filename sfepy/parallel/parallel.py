@@ -2,7 +2,6 @@
 Functions for a high-level PETSc-based parallelization.
 """
 from __future__ import absolute_import
-import time
 import os
 
 import numpy as nm
@@ -24,6 +23,7 @@ from petsc4py import PETSc
 from mpi4py import MPI
 
 from sfepy.base.base import assert_, output, ordered_iteritems, Struct
+from sfepy.base.timing import Timer
 from sfepy.discrete.common.region import Region
 from sfepy.discrete.fem.fe_surface import FESurface
 
@@ -33,7 +33,7 @@ def partition_mesh(mesh, n_parts, use_metis=True, verbose=False):
     available.
     """
     output('partitioning mesh into %d subdomains...' % n_parts, verbose=verbose)
-    tt = time.clock()
+    timer = Timer(start=True)
 
     if use_metis:
         try:
@@ -62,7 +62,7 @@ def partition_mesh(mesh, n_parts, use_metis=True, verbose=False):
         offs = nm.cumsum(nm.r_[0, n_cell_parts])
         cell_tasks = nm.digitize(nm.arange(offs[-1]), offs) - 1
 
-    output('...done in', time.clock() - tt, verbose=verbose)
+    output('...done in', timer.stop(), verbose=verbose)
 
     return cell_tasks
 
@@ -296,7 +296,7 @@ def verify_task_dof_maps(dof_maps, id_map, field, use_expand_dofs=False,
 
     Returns the vector with a task number for each DOF.
     """
-    tt = time.clock()
+    timer = Timer(start=True)
     if verbose:
         output('verifying...')
         output('total number of DOFs:', field.n_nod)
@@ -352,7 +352,7 @@ def verify_task_dof_maps(dof_maps, id_map, field, use_expand_dofs=False,
     assert_(n_dof == len(id_map))
     assert_(n_dof == len(nm.unique(id_map)))
 
-    output('...done in', time.clock() - tt, verbose=verbose)
+    output('...done in', timer.stop(), verbose=verbose)
 
     return vec
 
@@ -760,29 +760,30 @@ def assemble_rhs_to_petsc(prhs, rhs, pdofs, drange, is_overlap=True,
     if comm is None:
         comm = PETSc.COMM_WORLD
 
+    timer = Timer()
     if is_overlap:
         output('setting rhs values...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         rdofs = nm.where((pdofs < drange[0]) | (pdofs >= drange[1]), -1, pdofs)
         prhs.setOption(prhs.Option.IGNORE_NEGATIVE_INDICES, True)
         prhs.setValues(rdofs, rhs, PETSc.InsertMode.INSERT_VALUES)
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
         output('assembling rhs...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         prhs.assemble()
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
     else:
         output('setting rhs values...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         prhs.setValues(pdofs, rhs, PETSc.InsertMode.ADD_VALUES)
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
         output('assembling rhs...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         prhs.assemble()
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
 def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
                           comm=None, verbose=False):
@@ -792,11 +793,13 @@ def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
     if comm is None:
         comm = PETSc.COMM_WORLD
 
+    timer = Timer()
+
     lgmap = PETSc.LGMap().create(pdofs, comm=comm)
     pmtx.setLGMap(lgmap, lgmap)
     if is_overlap:
         output('setting matrix values...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         mask = (pdofs < drange[0]) | (pdofs >= drange[1])
         nnz_per_row = nm.diff(mtx.indptr)
         mtx2 = mtx.copy()
@@ -804,22 +807,22 @@ def assemble_mtx_to_petsc(pmtx, mtx, pdofs, drange, is_overlap=True,
         mtx2.eliminate_zeros()
         pmtx.setValuesLocalCSR(mtx2.indptr, mtx2.indices, mtx2.data,
                                PETSc.InsertMode.INSERT_VALUES)
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
         output('assembling matrix...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         pmtx.assemble()
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
 
     else:
         output('setting matrix values...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         pmtx.setValuesLocalCSR(mtx.indptr, mtx.indices, mtx.data,
                                PETSc.InsertMode.ADD_VALUES)
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)
 
         output('assembling matrix...', verbose=verbose)
-        tt = time.clock()
+        timer.start()
         pmtx.assemble()
-        output('...done in', time.clock() - tt, verbose=verbose)
+        output('...done in', timer.stop(), verbose=verbose)

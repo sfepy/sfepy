@@ -16,6 +16,7 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default, assert_
 from sfepy.base.base import Struct
+from sfepy.base.timing import Timer
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
@@ -885,8 +886,6 @@ class FEField(Field):
         cache : Struct instance
             The evaluate cache.
         """
-        import time
-
         try:
             from scipy.spatial import cKDTree as KDTree
         except ImportError:
@@ -897,7 +896,7 @@ class FEField(Field):
         if cache is None:
             cache = Struct(name='evaluate_cache')
 
-        tt = time.clock()
+        timer = Timer(start=True)
         if (cache.get('cmesh', None) is None) or not share_geometry:
             mesh = self.create_mesh(extra_nodes=False)
             cache.cmesh = cmesh = mesh.cmesh
@@ -917,13 +916,13 @@ class FEField(Field):
                 cache.normals0 = cmesh.get_facet_normals(0)
                 cache.normals1 = cmesh.get_facet_normals(1)
 
-        output('cmesh setup: %f s' % (time.clock()-tt), verbose=verbose)
+        output('cmesh setup: %f s' % timer.stop(), verbose=verbose)
 
-        tt = time.clock()
+        timer.start()
         if (cache.get('kdtree', None) is None) or not share_geometry:
             cache.kdtree = KDTree(cmesh.coors)
 
-        output('kdtree: %f s' % (time.clock()-tt), verbose=verbose)
+        output('kdtree: %f s' % timer.stop(), verbose=verbose)
 
         return cache
 

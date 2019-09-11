@@ -1,9 +1,9 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, Struct, basestr
+from sfepy.base.timing import Timer
 import six
 
 
@@ -338,7 +338,7 @@ class Field(Struct):
                                                  cache=cache,
                                                  verbose=verbose)
 
-        tt = time.clock()
+        timer = Timer(start=True)
 
         # Interpolate to the reference coordinates.
         source_dtype = nm.float64 if source_vals.dtype in complex_types\
@@ -369,7 +369,7 @@ class Field(Struct):
             evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
                            self.get_econn('volume', self.region), cmode, ctx)
 
-        output('interpolation: %f s' % (time.clock()-tt),verbose=verbose)
+        output('interpolation: %f s' % timer.stop(),verbose=verbose)
 
         output('...done',verbose=verbose)
 

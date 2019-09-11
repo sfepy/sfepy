@@ -1,10 +1,10 @@
 from __future__ import absolute_import
-import time
 import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import Struct, invert_dict, get_default, output,\
      assert_, is_sequence
+from sfepy.base.timing import Timer
 from .meshio import MeshIO, supported_cell_types
 import six
 from scipy.spatial import cKDTree
@@ -22,7 +22,7 @@ def find_map(x1, x2, allow_double=False, join=True):
     """
     kdtree = cKDTree(nm.vstack([x1, x2]))
     cmap = kdtree.query_pairs(eps, output_type='ndarray')
-    
+
     dns1 = nm.where(cmap[:, 1] < x1.shape[0])[0]
     dns2 = nm.where(cmap[:, 0] >= x1.shape[0])[0]
 
@@ -213,13 +213,13 @@ class Mesh(Struct):
 
         cell_types = ', '.join(supported_cell_types[io.format])
         output('reading mesh [%s] (%s)...' % (cell_types, io.filename))
-        tt = time.clock()
+        timer = Timer(start=True)
 
         trunk = io.get_filename_trunk()
         mesh = Mesh(trunk)
         mesh = io.read(mesh, omit_facets=omit_facets)
 
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
         mesh._set_shape_info()
 
@@ -504,12 +504,12 @@ class Mesh(Struct):
             return None
 
         output('assembling mesh graph...', verbose=verbose)
-        tt = time.clock()
+        timer = Timer(start=True)
 
         conn = self.get_conn(self.descs[0])
         nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
                                             1, [conn], [conn])
-        output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
+        output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('graph nonzeros: %d (%.2e%% fill)' \
                % (nnz, float(nnz) / nm.prod(shape)), verbose=verbose)
 

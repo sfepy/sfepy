@@ -1,15 +1,13 @@
 from __future__ import absolute_import
 import os
-import time
 
 import numpy as nm
-import numpy.linalg as nla
 import scipy as sc
 
 from sfepy.base.base import output, assert_, get_default, debug, Struct
+from sfepy.base.timing import Timer
 from sfepy.discrete.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
-from sfepy.discrete.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
 from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis
@@ -73,7 +71,7 @@ class MiniAppBase(Struct):
 
         if self.is_linear:
             output('linear problem, trying to presolve...')
-            tt = time.clock()
+            timer = Timer(start=True)
 
             ev = problem.get_evaluator()
 
@@ -87,7 +85,7 @@ class MiniAppBase(Struct):
             problem.set_linear(True)
             problem.try_presolve(mtx_a)
 
-            output('...done in %.2f s' % (time.clock() - tt))
+            output('...done in %.2f s' % timer.stop())
 
         else:
             problem.set_linear(False)
@@ -590,11 +588,11 @@ class PressureEigenvalueProblem(CorrMiniApp):
         ls = Solver.any_from_conf(self.problem.ls_conf
                                   + Struct(use_presolve=True), mtx=mtx_a)
         if self.mode == 'explicit':
-            tt = time.clock()
+            timer = Timer(start=True)
             mtx_aibt = nm.zeros(mtx_bt.shape, dtype=mtx_bt.dtype)
             for ic in range(mtx_bt.shape[1]):
                 mtx_aibt[:,ic] = ls(mtx_bt[:,ic].toarray().squeeze())
-            output('mtx_aibt: %.2f s' % (time.clock() - tt))
+            output('mtx_aibt: %.2f s' % timer.stop())
             action_aibt = MatrixAction.from_array(mtx_aibt)
         else:
             ##

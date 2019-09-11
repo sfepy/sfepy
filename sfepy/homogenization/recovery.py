@@ -1,12 +1,12 @@
 from __future__ import print_function
 from __future__ import absolute_import
 import os
-import time
 
 import numpy as nm
 
 from sfepy.base.base import get_default, Struct, output
 from sfepy.base.ioutils import get_print_info
+from sfepy.base.timing import Timer
 from sfepy.discrete.fem import extend_cell_data, Mesh
 from sfepy.homogenization.utils import coor_to_sym
 from sfepy.base.conf import get_standard_keywords
@@ -505,7 +505,7 @@ def recover_micro_hook(micro_filename, region, macro,
         format = get_print_info(pb.domain.mesh.n_el, fill='0')[1]
 
         output('recovering microsctructures...')
-        tt = time.clock()
+        timer = Timer(start=True)
         output_fun = output.output_function
         output_level = output.level
         for ii, iel in enumerate(region.cells):
@@ -543,7 +543,7 @@ def recover_micro_hook(micro_filename, region, macro,
                 pb.save_state(filename, out=out,
                               file_per_var=fpv)
 
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
         for jj in new_keys:
             lout = new_data[jj]
@@ -603,7 +603,7 @@ def recover_micro_hook_eps(micro_filename, region,
         evfield = eval_var.field
 
         output('recovering microsctructures...')
-        tt = time.clock()
+        timer = Timer(start=True)
         output_fun = output.output_function
         output_level = output.level
 
@@ -633,7 +633,7 @@ def recover_micro_hook_eps(micro_filename, region,
             conn.append(mesh.get_conn(mesh.descs[0]) + ndoffset)
             ndoffset += mesh.n_nod
 
-    output('...done in %.2f s' % (time.clock() - tt))
+    output('...done in %.2f s' % timer.stop())
 
     # Collect output variables
     outvars = {}

@@ -3,7 +3,6 @@ Classes of variables for equations/terms.
 """
 from __future__ import print_function
 from __future__ import absolute_import
-import time
 from collections import deque
 
 import numpy as nm
@@ -11,6 +10,7 @@ import numpy as nm
 from sfepy.base.base import (real_types, complex_types, assert_, get_default,
                              output, OneTypeList, Container, Struct, basestr,
                              iter_dict_of_lists)
+from sfepy.base.timing import Timer
 import sfepy.linalg as la
 from sfepy.discrete.functions import Function
 from sfepy.discrete.conditions import get_condition_value
@@ -83,7 +83,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
 
     if verbose:
         output('setting up dof connectivities...')
-        tt = time.clock()
+        timer = Timer(start=True)
 
     adof_conns = {}
 
@@ -108,7 +108,7 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             _assign(adof_conns, info, region, var, field, False)
 
     if verbose:
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
     return adof_conns
 

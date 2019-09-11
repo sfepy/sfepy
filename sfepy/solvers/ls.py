@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-import time
 import hashlib
 
 import numpy as nm
@@ -12,6 +11,7 @@ from six.moves import range
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
 from sfepy.base.base import output, get_default, assert_, try_imports
+from sfepy.base.timing import Timer
 from sfepy.solvers.solvers import LinearSolver
 
 def solve(mtx, rhs, solver_class=None, solver_conf=None):
@@ -69,7 +69,7 @@ def standard_call(call):
     def _standard_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                        i_max=None, mtx=None, status=None, context=None,
                        **kwargs):
-        tt = time.clock()
+        timer = Timer(start=True)
 
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
@@ -88,9 +88,9 @@ def standard_call(call):
         else:
             n_iter = -1 # Number of iterations is undefined/unavailable.
 
-        ttt = time.clock() - tt
+        elapsed = timer.stop()
         if status is not None:
-            status['time'] = ttt
+            status['time'] = elapsed
             status['n_iter'] = n_iter
 
         return result
@@ -105,7 +105,7 @@ def petsc_call(call):
     def _petsc_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                     i_max=None, mtx=None, status=None, comm=None,
                     context=None, **kwargs):
-        tt = time.clock()
+        timer = Timer(start=True)
 
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
@@ -124,9 +124,9 @@ def petsc_call(call):
         result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
                       comm, context=context, **kwargs)
 
-        ttt = time.clock() - tt
+        elapsed = timer.stop()
         if status is not None:
-            status['time'] = ttt
+            status['time'] = elapsed
             status['n_iter'] = self.ksp.getIterationNumber()
 
         return result

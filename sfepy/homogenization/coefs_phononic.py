@@ -1,11 +1,11 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import numpy.linalg as nla
 import scipy as sc
 
 from sfepy.base.base import output, get_default, dict_to_struct, assert_, Struct
+from sfepy.base.timing import Timer
 from sfepy.solvers import eig, Solver
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.discrete.evaluate import eval_equations
@@ -787,11 +787,11 @@ class Eigenmomenta(MiniAppBase):
         else:
             wrap_transform = None
 
-        tt = time.clock()
+        timer = Timer(start=True)
         eigenmomenta = compute_eigenmomenta(self.expression, opts.var_name,
                                             problem, evp.eig_vectors,
                                             wrap_transform)
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % timer.stop())
 
         n_eigs = evp.eigs.shape[0]
 

@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 
@@ -121,6 +120,8 @@ class Test(TestCommon):
         return d
 
     def test_eigenvalue_solvers(self):
+        from sfepy.base.base import IndexedStruct
+
         eig_confs = self._list_eigenvalue_solvers(self.conf.solvers)
 
         all_n_eigs = [5, 0]
@@ -141,11 +142,11 @@ class Test(TestCommon):
                     else:
                         raise
 
-                t0 = time.clock()
+                status = IndexedStruct()
                 eigs, vecs = eig_solver(self.mtx, n_eigs=n_eigs,
-                                        eigenvectors=True)
+                                        eigenvectors=True, status=status)
                 tt.append([' '.join((eig_conf.name, eig_conf.kind)),
-                           time.clock() - t0, n_eigs])
+                           status.time, n_eigs])
 
                 self.report(eigs)
 
