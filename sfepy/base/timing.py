@@ -7,10 +7,13 @@ from sfepy.base.base import PY3, Struct
 
 class Timer(Struct):
 
-    def __init__(self, name):
+    def __init__(self, name='timer', start=False):
         Struct.__init__(self, name=name)
         self.time_function = time.perf_counter if PY3 else time.clock
         self.reset()
+
+        if start:
+            self.start()
 
     def reset(self):
         self.t0 = self.t1 = None
@@ -24,7 +27,7 @@ class Timer(Struct):
 
     def stop(self):
         if self.t0 is None:
-            raise ValueError('timer %s was not started!' % self.name)
+            raise ValueError('timer "%s" was not started!' % self.name)
         self.t1 = self.time_function()
 
         self.dt = self.t1 - self.t0
