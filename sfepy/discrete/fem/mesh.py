@@ -3,7 +3,8 @@ import time
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import Struct, invert_dict, get_default, output, assert_
+from sfepy.base.base import Struct, invert_dict, get_default, output,\
+     assert_, is_sequence
 from .meshio import MeshIO, supported_cell_types
 import six
 from scipy.spatial import cKDTree
@@ -386,7 +387,9 @@ class Mesh(Struct):
         cmesh = self.cmesh
         conns, mat_ids = [], []
         if cell_dim_only is not None:
-            descs = [ii for ii in self.descs if int(ii[0]) == cell_dim_only]
+            if not is_sequence(cell_dim_only):
+                cell_dim_only = [cell_dim_only]
+            descs = [ii for ii in self.descs if int(ii[0]) in cell_dim_only]
         else:
             descs = self.descs
         for desc in descs:
