@@ -39,7 +39,8 @@ helps = {
     'tri-tetra' : 'convert elements: quad->tri, hexa->tetra',
     '2d' : 'force a 2D mesh by removing the z coordinates - assumes a 3D mesh'
     ' in the xy plane',
-    '3d' : 'force a 3D mesh by removing 1D and 2D cells',
+    'cell-dim' : 'write only cells of a given dimension,'
+    ' use a comma-separated list for several values',
     'save-per-mat': 'extract cells by material id and save them into'
     ' separate mesh files with a name based on filename_out and the id'
     ' numbers (preserves original mesh vertices)',
@@ -94,8 +95,9 @@ def main():
                         dest='tri_tetra', help=helps['tri-tetra'])
     parser.add_argument('-2', '--2d', action='store_true',
                         dest='force_2d', help=helps['2d'])
-    parser.add_argument('-3', '--3d', action='store_true',
-                        dest='force_3d', help=helps['3d'])
+    parser.add_argument('-d', '--cell-dim', metavar='cell_dim',
+                        action='store', dest='cell_dim',
+                        default=None, help=helps['cell-dim'])
     parser.add_argument('--save-per-mat', action='store_true',
                         dest='save_per_mat', help=helps['save-per-mat'])
     parser.add_argument('--remesh', metavar='options',
@@ -117,6 +119,7 @@ def main():
 
     scale = _parse_val_or_vec(options.scale, 'scale', parser)
     center = _parse_val_or_vec(options.center, 'center', parser)
+    cell_dim = _parse_val_or_vec(options.cell_dim, 'cell_dim', parser)
 
     filename_in = options.filename_in
     filename_out = options.filename_out
@@ -159,8 +162,9 @@ def main():
     else:
         mesh = Mesh.from_file(filename_in)
 
-    if options.force_3d:
-        data = list(mesh._get_io_data(cell_dim_only=3))
+    if cell_dim is not None:
+        cell_dim = [int(ii) for ii in cell_dim]
+        data = list(mesh._get_io_data(cell_dim_only=cell_dim))
         mesh = Mesh.from_data(mesh.name, *data)
 
     if options.force_2d:
