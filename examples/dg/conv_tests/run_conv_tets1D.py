@@ -7,14 +7,13 @@ from os.path import join as pjoin
 
 from my_utils.visualizer import reconstruct_legendre_dofs
 
-from examples.dg.example_dg_common import get_1Dmesh_hook, calculate_num_order
+from examples.dg.example_dg_common import get_1Dmesh_hook, calculate_num_order, plot_conv_results, build_attrs_string, output
 from examples.dg.conv_tests.fem_conv_test import SimpleExpression, define_functions, eval_expr
-from examples.dg.conv_tests.run_conv_test2D import plot_conv_results
 
 mstart = -1
 mend = 1
 
-from examples.dg.burgess.example_dg_burgess1D_Hesthaven import define
+# from examples.dg.burgess.example_dg_burgess1D_Hesthaven import define
 # from examples.dg.diffusion.example_dg_diffusion1D import define
 from examples.dg.advection.example_dg_advection1D import define, mstart, mend
 
@@ -22,16 +21,14 @@ def main():
     import sys
     import time
     from sfepy.base.ioutils import ensure_path
-    from sfepy.base.base import output
     from sfepy.base.conf import ProblemConf
     from sfepy.discrete import (Integral, Integrals, Material, Problem)
     from sfepy.discrete.common.mappings import get_jacobian
     from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
     from matplotlib import pyplot as plt
 
-
     n_nod = 5
-    n_refine = 6
+    n_refine = 8
     orders = [1, 2, 3, 4, 5]
     # orders = [1, 2]
 
@@ -43,9 +40,14 @@ def main():
     for ir, refine in enumerate(range(n_refine)):
         gen_mesh = get_1Dmesh_hook(mstart, mend, n_nod)
         for io, order in enumerate(orders):
+
+            conf = ProblemConf.from_dict(
+                define(gen_mesh, order, dt=None, CFL=0.002), mod, verbose=False)
+
+            output("----------------------------------------------------")
+            output(conf.example_name + ": " + time.asctime())
             output('n_nod:', n_nod, 'order:', order)
 
-            conf = ProblemConf.from_dict(define(gen_mesh, order, Cw=100, diffusion_coef=0.001), mod)
             try:
                 conf.options.save_times = 0
             except AttributeError:
@@ -68,7 +70,8 @@ def main():
             output_folder = pjoin(output_folder, "o" + str(order))
 
             output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}".format(n_nod, order, "vtk"))
-            output("Output set to {}, clearing ...".format(output_format))
+            output("Output set to {}, clearing.".format(output_format))
+            output("----------------------------------------------------\n\n")
 
             clear_folder(output_format, confirm=False)
             ensure_path(output_format)
@@ -79,26 +82,26 @@ def main():
 
             num_qp = pb.evaluate(
                 'ev_volume_integrate.idiff.Omega(u)',
-                integrals=Integrals([idiff]), mode='qp', copy_materials=False,
+                integrals=Integrals([idiff]), mode='qp', copy_materials=False, verbose=False
             )
 
             aux = Material('aux', function=conf.sol_fun)
             ana_qp = pb.evaluate(
                 'ev_volume_integrate_mat.idiff.Omega(aux.u, u)',
                 aux=aux, integrals=Integrals([idiff]), mode='qp',
-                copy_materials=False,
+                copy_materials=False, verbose=False
             )
 
             field = pb.fields['f']
             det = get_jacobian(field, idiff)
 
             diff_l2 = nm.sqrt((((num_qp - ana_qp)**2) * det).sum())
-            ana_l2 = nm.sqrt((((ana_qp)**2) * det).sum())
+            ana_l2 = nm.sqrt(((ana_qp ** 2) * det).sum())
             error = diff_l2 / ana_l2
 
             n_dof = field.n_nod
             sol_fig.suptitle(
-                "Numerical and exact solutions, Cw: {}, diffusion: {}".format(conf.Cw, conf.diffusion_coef))
+                "Numerical and exact solutions" + build_attrs_string(conf, remove_dots=False, sep=", "))
 
             # from sfepy.discrete.dg.my_utils.visualizer import plot_1D_legendre_dofs
             qps = pb.fields["f"].mapping.get_physical_qps(idiff.get_qp("1_2")[0])
@@ -122,22 +125,23 @@ def main():
             # if ir > 0:
             #     ax.set_yticks([])
 
-            result = (h, n_cell, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed)
+            result = (h, n_cell, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed,
+                      pb.ts_conf.cour, pb.ts_conf.dt)
 
             results.append(result)
 
         n_nod = n_nod + n_nod - 1
 
-    sol_fig.savefig(pjoin(base_output_folder, "err-sol-i20cw{}_d{}_t{}.jpg".format(conf.Cw, conf.diffusion_coef, 2)), dpi=100)
+    sol_fig.savefig(pjoin(base_output_folder, "err-sol-i20" + build_attrs_string(conf) + ".png"), dpi=100)
     results = nm.array(results)
     output(results)
 
     import pandas as pd
     err_df = pd.DataFrame(results,
                           columns=["h", "n_cells", "mean_vol", "order", "n_dof", "ana_l2", "diff_l2", "err_rel",
-                                   "elapsed"])
+                                   "elapsed", "cour", "dt"])
     err_df = calculate_num_order(err_df)
-    err_df.to_csv(pjoin(base_output_folder, conf.example_name + "results-cw{}_d{}.csv".format(conf.Cw, conf.diffusion_coef)))
+    err_df.to_csv(pjoin(base_output_folder, conf.example_name + "results" + build_attrs_string(conf) + ".csv"))
 
     plot_conv_results(base_output_folder, conf, err_df, save=True)
 

@@ -7,7 +7,8 @@ import pandas as pd
 
 from matplotlib import pyplot as plt
 
-from examples.dg.example_dg_common import get_1Dmesh_hook, get_gen_block_mesh_hook, calculate_num_order
+from examples.dg.example_dg_common import get_1Dmesh_hook, \
+    get_gen_block_mesh_hook, calculate_num_order, build_attrs_string, plot_conv_results
 from os.path import join as pjoin
 
 mesh_center = (0.5, 0.5)
@@ -21,53 +22,6 @@ from my_utils.visualizer import reconstruct_legendre_dofs
 from examples.dg.burgess.example_dg_kucera1 import define, mesh_center, mesh_size
 # from examples.dg.diffusion.example_dg_laplace1 import define
 # from examples.dg.advection.example_dg_advection2D import define
-
-def plot_conv_results(base_output_folder, conf, err_df, plot_title_attrs=None, save=False):
-    """
-
-    :param base_output_folder:
-    :param conf: conf structure defined in declarative mode, or object containing:
-        dt, CFL or diffusion_coef attributese, example_name
-    :plot_title_attrs: attributes to list in the figure sup title
-    :param err_df: pandas dataframe containing at least: "order", "num_order", "n_cells", "diff_l2" columns
-    :return:
-    """
-    if plot_title_attrs is None:
-        plot_title_attrs = ["Cw", "diffusion_coef", "dt", "CFL"]
-    fig_sup_title = "Convergence by order"
-    file_name = conf.example_name + "-cells"
-    attr_vals = []
-    for attr in plot_title_attrs:
-        attr_val = getattr(conf, attr, None)
-        if attr_val is not None:
-            fig_sup_title += ", " + attr + ": {}"
-            file_name += "_" + attr + "{}"
-            attr_vals += [attr_val]
-
-    conv_fig, ax = plt.subplots(1, 1)
-    conv_fig.suptitle(fig_sup_title.format(*attr_vals))
-
-    orders = sorted(err_df["order"].unique())
-    for o in orders:
-        curr_df = err_df[err_df["order"] == o]
-        co = ax.loglog(curr_df["n_cells"], curr_df["diff_l2"], 'o', label=str(int(o)))[0].get_color()
-        ax.loglog(curr_df["n_cells"], curr_df["diff_l2"], color=co, label="")
-        for i, r in curr_df.iloc[1:, :].iterrows():
-            ax.text(r["n_cells"], r["diff_l2"], "{:.2}".format(r["num_order"]))
-
-        ax.grid()
-        ax.set_xlabel("cells")
-        ax.set_ylabel("L^2 error")
-    ax.legend(title="Order")
-
-    if save:
-        file_name = file_name.format(*attr_vals).replace(".", "")
-        conv_fig.savefig(
-            pjoin(base_output_folder,
-                  file_name + ".png".format(conf.Cw, conf.diffusion_coef)),
-            dpi=200)
-
-    return conv_fig
 
 
 def refine_square_tens(filename, refine):

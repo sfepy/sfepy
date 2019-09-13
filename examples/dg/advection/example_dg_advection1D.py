@@ -13,7 +13,9 @@ from examples.dg.example_dg_common import *
 
 mstart = 0
 mend = 1
-def define(filename_mesh=None, approx_order=1, Cw=None, diffusion_coef=None, CFL=0.4,
+def define(filename_mesh=None, approx_order=1,
+           diffusion_coef=None, Cw=None,
+           CFL=0.4, dt=None,
            use_symbolic=False, transient=False):
     t0 = 0
     t1 = 1
@@ -25,7 +27,7 @@ def define(filename_mesh=None, approx_order=1, Cw=None, diffusion_coef=None, CFL
         filename_mesh = get_1Dmesh_hook(0, 1, 100)
 
     materials = {
-        'a': ({'val': 0.0, '.flux': 0.0},),
+        'a': ({'val': 1.0, '.flux': 0.0},),
 
     }
 
@@ -74,7 +76,7 @@ def define(filename_mesh=None, approx_order=1, Cw=None, diffusion_coef=None, CFL
                 {"t0"     : t0,
                  "t1"     : t1,
                  'limiter': IdentityLimiter,
-                 'verbose': True}),
+                 'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }
@@ -85,7 +87,7 @@ def define(filename_mesh=None, approx_order=1, Cw=None, diffusion_coef=None, CFL
         'ls'              : 'ls',
         'save_times'      : 100,
         'active_only'     : False,
-        'pre_process_hook': get_cfl_setup(dt=.1),
+        'pre_process_hook': get_cfl_setup(CFL) if dt is None else get_cfl_setup(dt=dt),
         'output_format'   : "vtk"
     }
 
