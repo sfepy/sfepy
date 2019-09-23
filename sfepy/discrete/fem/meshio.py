@@ -2899,7 +2899,7 @@ class Msh2MeshIO(MeshIO):
         if drop_z and nm.sum(coors[:, -1]) == 0.0:
             coors = coors[:, :-1]
 
-        mesh._set_io_data(coors[:,1:], nm.int32(coors[:,-1] * 0),
+        mesh._set_io_data(coors[:,1:], nm.int32(coors[:,-1] * 1),
                           conns0, mat_ids0, descs0)
 
         return mesh
@@ -3009,14 +3009,6 @@ class Msh2MeshIO(MeshIO):
             return mesh, [data], [time], [time_n], scheme
         return [data], [time], [time_n], scheme
 
-
-
-
-
-
-
-
-
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
         """
         Writes data into msh v2.0 file, handles cell_nodes data from DGField
@@ -3037,21 +3029,26 @@ class Msh2MeshIO(MeshIO):
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
             dim = mesh.dim
 
+            if len(descs) != 1:
+                raise ValueError("Different element types not supported.")
+
+            mat_ids = mat_ids[0]
+
             fd.write("$Nodes\n")
             fd.write(str(mesh.n_nod) + "\n")
-            s = "{}" + dim*" {:.3f}" + (3 - dim)*" 0.0" + "\n"
+            s = "{}" + dim*" {}" + (3 - dim)*" 0.0" + "\n"
             for i, node in enumerate(coors, 1):
                 fd.write(s.format(i, *node))
             fd.write("$EndNodes\n")
 
             fd.write("$Elements\n")
-            fd.write(str(sum( len(conn) for conn in conns)) + "\n")  # sum number ofelements acrcoss all conns
-            for desc, conn in zip(descs, conns):
+            fd.write(str(sum( len(conn) for conn in conns)) + "\n")  # sum number of elements acrcoss all conns
+            for desc, mat_id, conn in zip(descs, mat_ids, conns):
                 _, n_el_verts = [int(f) for f in desc.split("_")]
                 el_type = self.geo2msh_type[desc]
-                s = "{} {} 2 0 0" + n_el_verts * " {}" + "\n"
+                s = "{} {} 2 {} 0" + n_el_verts * " {}" + "\n"
                 for i, element in enumerate(conn, 1):
-                    fd.write(s.format(i, el_type, *nm.array(element) + 1))
+                    fd.write(s.format(i, el_type, mat_id, *nm.array(element) + 1))
             fd.write("$EndElements\n")
 
         def write_interpolation_scheme(fd, scheme):
@@ -3114,7 +3111,8 @@ class Msh2MeshIO(MeshIO):
         fd = open(filename, 'w')
         fd.writelines(self.msh20header)
         write_mesh(fd, mesh)
-        write_elementnodedata(fd, out, ts)
+        if out:
+            write_elementnodedata(fd, out, ts)
         fd.close()
         return
 
