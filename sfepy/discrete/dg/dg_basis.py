@@ -109,8 +109,8 @@ class LegendrePolySpace(PolySpace):
         if diff:
             diff = int(diff)
             values = nm.zeros((1,) + coors.shape[:-1] +  # (1,) for dummy axis used throughout sfepy
-                              (
-                              self.dim,) * diff +  # (dim,)*diff order is shape of derivation tensor, so far we support only first derivative
+                              (self.dim,) * diff +
+                              # (dim,) * diff order is shape of derivation tensor, we support only first derivative
                               (self.n_nod,))
             polyvals = nm.zeros(coors.shape + (porder,) + (diff + 1,))
             # diff + 1 is number of values of one dimensional base
@@ -183,13 +183,7 @@ class LegendrePolySpace(PolySpace):
     # --------------------- #
     # 1D legendre polyspace #
     # --------------------- #
-    funs = [lambda x: x - x + 1,  # we need constant prewerving shape and type of x
-            lambda x: 2 * x - 1,
-            lambda x: (6 * x ** 2 - 6 * x + 1),
-            lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
-            lambda x: (70 * x ** 4 - 140 * x ** 3 + 90 * x ** 2 - 20 * x + 1),
-            lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3 - 210 * x ** 2 + 30 * x - 1)
-            ]
+
 
     def legendreP(self, coors):
         """
@@ -205,6 +199,14 @@ class LegendrePolySpace(PolySpace):
         :return: values in coors of all the legendre polynomials up to self.order
         """
         return self.gradjacobiP(coors, 0, 0, diff=diff)
+
+    funs = [lambda x: x - x + 1,  # we need constant prewerving shape and type of x
+            lambda x: 2 * x - 1,
+            lambda x: (6 * x ** 2 - 6 * x + 1),
+            lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
+            lambda x: (70 * x ** 4 - 140 * x ** 3 + 90 * x ** 2 - 20 * x + 1),
+            lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3 - 210 * x ** 2 + 30 * x - 1)
+            ]
 
     def get_nth_fun(self, n):
         """
@@ -235,7 +237,7 @@ class LegendrePolySpace(PolySpace):
         polynomials formula on interval [0, 1]. Useful for testing.
         :param n:
         :param diff:
-        :return:
+        :return: derivative of n-th function of the legendre basis
         """
 
         def dfun(x):
@@ -279,9 +281,7 @@ class LegendrePolySpace(PolySpace):
         diff derivative of the jacobi polynomials on interval [-1, 1]
         up to self.order + 1 at coors
 
-        Warning
-        Computing values of high-order polynomials (around order > 20) using polynomial coefficients is numerically unstable.
-        To evaluate polynomial values, the eval_* functions should be used instead. - but how to get derivative?
+
         :param coors:
         :param alpha:
         :param beta:
@@ -298,6 +298,10 @@ class LegendrePolySpace(PolySpace):
         for i in range(self.order + 1):
             jacob_poly = jacobi(i, alpha, beta)
             values[..., i] = jacob_poly.deriv(m=diff)(coors)
+            # Warning
+            # Computing values of high-order polynomials (around order > 20) using polynomial coefficients is
+            # numerically unstable. To evaluate polynomial values, the eval_* functions should be used instead.
+            # jacob_poly.deriv seems to be stable
 
         return values
 

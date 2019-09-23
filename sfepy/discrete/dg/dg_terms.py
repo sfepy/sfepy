@@ -339,7 +339,6 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
         inner_facet_base, outer_facet_base, whs = field.get_both_facet_base_vals(state, region,
                                                                                  derivative=False)
         facet_vols = nm.sum(whs, axis=-1)
-        inv_facet_vols = 1. / nm.sum(whs, axis=-1)
 
         sigma = Cw * approx_order ** 2 / facet_vols
 
