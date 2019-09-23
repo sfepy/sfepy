@@ -498,7 +498,6 @@ class CorrSetBCS(CorrMiniApp):
         epbcs = Conditions.from_conf(conf_epbc, problem.domain.regions)
 
         conf_variables = select_by_names(problem.conf.variables, self.variable)
-        problem.set_variables(conf_variables)
         variables = Variables.from_conf(conf_variables, problem.fields)
         variables.equation_mapping(ebcs, epbcs, problem.ts, problem.functions)
         state = State(variables)
