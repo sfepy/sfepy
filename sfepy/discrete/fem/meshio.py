@@ -3029,11 +3029,6 @@ class Msh2MeshIO(MeshIO):
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
             dim = mesh.dim
 
-            if len(descs) != 1:
-                raise ValueError("Different element types not supported.")
-
-            mat_ids = mat_ids[0]
-
             fd.write("$Nodes\n")
             fd.write(str(mesh.n_nod) + "\n")
             s = "{}" + dim*" {}" + (3 - dim)*" 0.0" + "\n"
@@ -3047,8 +3042,8 @@ class Msh2MeshIO(MeshIO):
                 _, n_el_verts = [int(f) for f in desc.split("_")]
                 el_type = self.geo2msh_type[desc]
                 s = "{} {} 2 {} 0" + n_el_verts * " {}" + "\n"
-                for i, element in enumerate(conn, 1):
-                    fd.write(s.format(i, el_type, mat_id, *nm.array(element) + 1))
+                for (i, element), el_mat_id in zip(enumerate(conn, 1), mat_id):
+                    fd.write(s.format(i, el_type, el_mat_id, *nm.array(element) + 1))
             fd.write("$EndElements\n")
 
         def write_interpolation_scheme(fd, scheme):
