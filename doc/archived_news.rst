@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **19.06.2018** Version 2018.2 released (generalized-alpha and velocity Verlet
+  elastodynamics solvers, terms for dispersion in fluids, caching of reference
+  coordinates for faster repeated use of probes, new wrapper of MUMPS linear
+  solver for parallel runs, etc.), see :ref:`release notes <2018.1-2018.2>`.
+
 * **06.03.2018** Version 2018.1 released (major update of time-stepping solvers
   and solver handling, Newmark and Bathe elastodynamics solvers, interface to
   MUMPS linear solver, new examples: iron plate impact problem
