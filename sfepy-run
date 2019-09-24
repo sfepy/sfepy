@@ -78,8 +78,8 @@ def main():
         return
 
     options = parser.parse_args()
-
-    py_cmd = 'python' if not options.py_cmd else 'pythonw'
+    py_cmd = sys.executable if not options.py_cmd else 'pythonw'
+    if not py_cmd: py_cmd = 'python'
 
     args = [py_cmd, cmd_list[options.command]] + options.options
 
