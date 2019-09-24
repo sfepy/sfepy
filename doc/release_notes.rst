@@ -1,5 +1,123 @@
 # created: 20.07.2007 (-1)
 
+.. _2019.2-2019.3:
+
+from 2019.2 to 2019.3
+=====================
+
+- merge branch 'dispersion-brillouin-stepper'
+
+  - dispersion_analysis.py: update get_stepper() - new BrillouinStepper
+  - dispersion_analysis.py: allow passing wdir as argument to
+    assemble_matrices()
+  - dispersion_analysis.py: new --stepper option - update
+    process_evp_results(), main()
+
+- merge branch 'python3-fixes'
+
+  - fix enum() for Python 3
+  - fix load_library() for Python 3 - copy dec() from ioutils.py to avoid sfepy
+    modules dependence
+  - remove btrace_python
+  - get python version from site_cfg.py in Makefile
+
+- merge branch 'test-install-fixes'
+
+  - add '.' to sys.path in interactive examples
+  - test_install.py: update for changing numpy output - add match_numbers
+    argument to report() - clean up
+  - fix Python 3 string encoding problem in save_raw_bg_logs()
+  - fix band_gaps_rigid.py example for Python 3
+
+- merge pull request #545 from vlukes/fix_schur_mumps, closes #544
+
+  - fix ls.schurs_mumps: 'bloc' -> 'block', use active dof info
+
+- merge branch 'parallel-timing-stats'
+
+  - new sfepy/base/timing.py, new Timer
+  - store current dt in Timer
+  - use time.perf_counter() in Timer in Python 3
+  - use Timer in poisson_parallel_interactive.py example to gather timing stats
+  - new call_in_rank_order(), update view_petsc_local()
+  - update stats items in poisson_parallel_interactive.py example
+  - poisson_parallel_interactive.py: new --new-stats option - use
+    call_in_rank_order() to save stats - new save_stats()
+  - poisson_parallel_interactive.py: new --stats option
+  - poisson_parallel_interactive.py: fix save_stats() for Python 3
+  - fix partition_mesh() for Python 3
+  - biot_parallel_interactive.py: new --stats, --new-stats options - use Timer,
+    update analogously to poisson_parallel_interactive.py
+
+- merge branch 'fix-for-mayavi-4.7.1'
+
+  - fix get_data_ranges()
+
+- merge branch 'dispersion-define-kwargs'
+
+  - dispersion_analysis.py: new --define-kwargs option, update
+    assemble_matrices()
+  - dispersion_analysis.py: new mesh_eps argument in define(), update docstring
+
+- merge branch 'slepc-evp-solver'
+
+  - update EigenvalueSolver.__init__() to pass on additional arguments
+  - new SLEPcEigenvalueSolver, init_slepc_args()
+  - update tests/test_eigenvalue_solvers.py for eig.slepc
+  - update installation and development docs
+  - check slepc4py version in setup.py, update sfepy/version.py
+  - allow failing of eig.slepc in tests/test_eigenvalue_solvers.py (optional
+    dep.)
+
+- merge branch 'fix-for-numpydoc-0.9.1'
+
+  - fix See Also sections for numpydoc-0.9.1
+
+- merge branch 'python3-metaclass-update'
+
+  - remove Python 2 metaclass attributes from Solver subclasses
+  - add SolverMeta metaclass to Solver in Python 3 compatible way - add to base
+    class only
+
+- merge pull request #549 from rc/complex-mat-pars, closes #547
+
+  - update ConstantFunction, ConstantFunctionByRegion for complex dtype
+  - use previously set variables and materials in Problem.set_equations() -
+    initialize default .conf_variables, .conf_materials in .__init__()
+  - fix Region.get_cell_indices() for no common cells
+  - update tests/test_functions.py to test complex material parameters - update
+    test_material_functions()
+
+- merge pull request #554 from vlukes/update_convert_mesh, closes #553
+
+  - update convert_mesh.py: new '3d' option - write only cells of dimension 3
+
+- merge pull request #555 from rc/ci-fix-igakit-download
+
+  - CI: fix igakit download
+
+- merge pull request #550 from rc/fix-site-cfg-template-python-version
+
+  - fix default python_version in site_cfg_template.py to work with Makefile -
+    update Config.python_version()
+  - update Makefile to inform about site_cfg.py Python version setting
+  - report Python version in setup.py
+
+- merge pull request #556 from vlukes/update_convert_mesh
+
+  - update convert_mesh.py: new '--cell-dim' option, write only cells of a
+    given dim
+
+- merge pull request #557 from rc/use-timer, closes #548
+
+  - allow starting Timer on creation in .__init__(), improve .stop() message
+  - use Timer instead of time.clock(), clean up
+  - remove unused mark_time()
+
+- merge pull request #558 from rc/fix-set-bcs-corr, closes #551
+
+  - do not set problem variables in CorrSetBCS
+
 .. _2019.1-2019.2:
 
 from 2019.1 to 2019.2
