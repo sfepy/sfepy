@@ -48,10 +48,26 @@ def make_sfepy_function(fun_or_name=None):
     Convenience decorator to quickly create
     sfepy.discrete.functions.Function objects
 
-    Can be used directly without parameter.
+    Has two modes of use either without parameter:
 
-    :param fun_or_name: name saved within Function object, if None name of decorated function is used
-    :return:
+        @make_sfepy_function
+        def my_function(...):
+            ...
+
+        or with name
+
+        @make_sfepy_function("name_for_my_function")
+        def my_function(...):
+            ...
+    Parameters
+    ----------
+    fun_or_name: string, optional
+        name to be saved within Function object, if None name of decorated function is used
+
+    Returns
+    -------
+    sfepy_function : sfepy.discrete.functions.Function
+        with attribute name set to provided name or original function name
     """
     if callable(fun_or_name):
         return Function(fun_or_name.__name__, fun_or_name)
@@ -59,8 +75,14 @@ def make_sfepy_function(fun_or_name=None):
     def functionizer(fun):
         """
         Internal decorator
-        :param fun: callable to be converted to sfepy.siscrete.functions.Function
-        :return: sfepy.siscrete.functions.Function object
+
+        Parameters
+        ----------
+        fun: callable to be converted to sfepy.siscrete.functions.Function
+
+        Returns
+        -------
+        sfepy.siscrete.functions.Function object
         """
         if fun_or_name is not None:
             return Function(fun_or_name, fun)
