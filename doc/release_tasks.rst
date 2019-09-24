@@ -8,30 +8,30 @@ Things to check before a release
 
 #. synchronize module documentation (dry run)::
 
-     $ ./script/sync_module_docs.py doc/src/ . -n
+     $ python3 script/sync_module_docs.py doc/src/ . -n
 
 #. regenerate gallery page and examples::
 
-    $ script/gen_gallery.py -l ../doc-devel
+    $ python3 script/gen_gallery.py -l ../doc-devel
     $ rm -rf doc/examples/
     $ cp -a gallery/examples/ doc/
 
 #. create temporary/testing tarball::
 
-     $ python setup.py sdist
+     $ python3 setup.py sdist
 
 #. check in-place build::
 
      $ # unpack the tarball
      $ # cd into
 
-     $ python setup.py build_ext --inplace
-     $ ./test_install.py
+     $ python3 setup.py build_ext --inplace
+     $ python3 test_install.py
 
 #. check that documentation can be built::
 
      $ # copy site_cfg.py
-     $ python setup.py htmldocs
+     $ python3 setup.py htmldocs
      $ firefox doc/_build/html/index.html
 
    or use::
@@ -43,13 +43,13 @@ Things to check before a release
    try also::
 
      $ # copy gallery/images
-     $ python setup.py pdfdocs
+     $ python3 setup.py pdfdocs
 
 #. check installed build::
 
-     $ pip install . --user
+     $ python3 -m pip install . --user
      $ cd
-     $ sfepy-run run_tests
+     $ python3 sfepy-run run_tests
      $ rm -r output/
 
    then remove the installed files so that they do not interfere with
@@ -59,7 +59,7 @@ Things to check before a release
 
    * update doc/release_notes.rst, with the help of::
 
-     $ python script/gen_release_notes.py 2018.2
+     $ python3 script/gen_release_notes.py 2019.2
 
    * update doc/news.rst, doc/archived_news.rst
    * change version number (sfepy/version.py) so that previous release
@@ -67,11 +67,11 @@ Things to check before a release
    * set ``is_release = True`` in site_cfg.py
    * update pdfdocs::
 
-     $ python setup.py pdfdocs
+     $ python3 setup.py pdfdocs
 
    * create tarball::
 
-     $ python setup.py sdist
+     $ python3 setup.py sdist
 
 #. tag the release using::
 

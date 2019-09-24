@@ -1003,6 +1003,7 @@ sfepy.base package
    src/sfepy/base/reader
    src/sfepy/base/resolve_deps
    src/sfepy/base/testing
+   src/sfepy/base/timing
 
 sfepy.discrete package
 ^^^^^^^^^^^^^^^^^^^^^^

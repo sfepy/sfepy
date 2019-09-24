@@ -1,6 +1,10 @@
 News
 ====
 
+* **24.09.2019** Version 2019.3 released (interface to eigenvalue problem
+  solvers in SLEPc, new Python 3 enabled Timer class and other Python 3
+  compatibility fixes, etc.), see :ref:`release notes <2019.2-2019.3>`.
+
 * **02.07.2019** Version 2019.2 released (improved support for time-dependent
   homogenization problems, Python 3.7 compatibility, etc.), see :ref:`release
   notes <2019.1-2019.2>`.
@@ -17,10 +21,5 @@ News
   variables, new script for outline edge extraction, new example:
   homogenization of a piezoelectric heterogeneous structure, etc.), see
   :ref:`release notes <2018.2-2018.3>`.
-
-* **19.06.2018** Version 2018.2 released (generalized-alpha and velocity Verlet
-  elastodynamics solvers, terms for dispersion in fluids, caching of reference
-  coordinates for faster repeated use of probes, new wrapper of MUMPS linear
-  solver for parallel runs, etc.), see :ref:`release notes <2018.1-2018.2>`.
 
 For historians: see :ref:`archived_news`.
