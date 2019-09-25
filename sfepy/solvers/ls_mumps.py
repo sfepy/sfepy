@@ -253,7 +253,7 @@ class MumpsSolver(object):
         self.struct = None
 
         if not use_mpi:
-            raise AttributeError('No mpi4py found, required by MUMPS solver!')
+            raise AttributeError('No mpi4py found! Required by MUMPS solver.')
 
         if len(mumps_libs) == 0:
             load_mumps_libraries()
