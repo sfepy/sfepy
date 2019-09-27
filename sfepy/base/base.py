@@ -635,7 +635,7 @@ class Container(Struct):
         return out
 
     def remove_name(self, name):
-        ii = self.names.index[name]
+        ii = self.names.index(name)
         del self.names[ii]
         del self._objs[ii]
 
