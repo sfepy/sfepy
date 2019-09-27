@@ -199,16 +199,29 @@ class Equations(Container):
                                  msg_if_none='unknown variable! (%s)' % name)
         return var
 
-    def collect_conn_info(self):
+    def collect_conn_info(self, regions_changed=None):
         """
         Collect connectivity information as defined by the equations.
+
+        Params
+        ------
+        regions_changed: str or iterable of str or None
+            Name(s) of changed regions.
+            If None, collect new conn_info.
+            Otherwise, update already collected info, replacing all info belonging to
+            the changed regions.
         """
-        self.conn_info = {}
+        if regions_changed is None:
+            self.conn_info = {}
+            cond = None
+        else:
+            if isinstance(regions_changed, str):
+                cond = lambda term: term.region.name == regions_changed
+            else:
+                cond = lambda term: term.region.name in regions_changed
 
         for eq in self:
-            eq.collect_conn_info(self.conn_info)
-
-        return self.conn_info
+            eq.collect_conn_info(self.conn_info, condition = cond)
 
     def get_variable_names(self):
         """
@@ -261,7 +274,7 @@ class Equations(Container):
 
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, problem=None, active_only=True,
-                    verbose=True):
+                    regions_changed=None, verbose=True):
         """
         Update the equations for current time step.
 
@@ -288,6 +301,9 @@ class Equations(Container):
             If True, the active DOF connectivities and matrix graph have
             reduced size and are created with the reduced (active DOFs only)
             numbering.
+        regions_changed : str or iterable of str or None
+            Region name(s), that has been changed and needs its connectivity
+            to be recomputed.
         verbose : bool
             If False, reduce verbosity.
 
@@ -298,6 +314,9 @@ class Equations(Container):
             boundary conditions differs from the set of the previous
             time step.
         """
+        if regions_changed:
+            self.collect_conn_info(regions_changed)
+
         self.variables.time_update(ts, functions, verbose=verbose)
 
         active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions,
@@ -306,10 +325,13 @@ class Equations(Container):
         graph_changed = active_bcs != self.active_bcs
         self.active_bcs = active_bcs
 
-        if graph_changed or not self.variables.adof_conns:
+        if graph_changed or not self.variables.adof_conns or regions_changed:
+            if not self.variables.adof_conns:
+                regions_changed = None
             adcs = create_adof_conns(self.conn_info, self.variables.adi.indx,
-                                     active_only=active_only)
-            self.variables.set_adof_conns(adcs)
+                                     active_only=active_only,
+                                     regions_changed=regions_changed)
+            self.variables.set_adof_conns(adcs, regions_changed)
 
         self.variables.setup_lcbc_operators(lcbcs, ts, functions)
 
@@ -816,9 +838,12 @@ class Equation(Struct):
 
         return variables
 
-    def collect_conn_info(self, conn_info):
+    def collect_conn_info(self, conn_info, condition = None):
 
         for term in self.terms:
+            if condition and not condition(term):
+                continue
+
             key = (self.name,) + term.get_conn_key()
 
             conn_info[key] = term.get_conn_info()
