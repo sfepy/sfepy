@@ -83,7 +83,7 @@ def make_sfepy_function(fun_or_name=None):
 
         Returns
         -------
-        sfepy.siscrete.functions.Function
+        sfepy.discrete.functions.Function
         """
         if fun_or_name is not None:
             return Function(fun_or_name, fun)
