@@ -21,7 +21,8 @@ vertex_maps = {3 : [[0, 0, 0],
                     [1, 1],
                     [0, 1]],
                1 : [[0],
-                    [1]]}
+                    [1]],
+               0 : [[0]]}
 
 def transform_basis(transform, bf):
     """
@@ -248,6 +249,7 @@ class PolySpace(Struct):
     _all = None
 
     keys = {
+        (0, 1) : 'simplex',
         (1, 2) : 'simplex',
         (2, 3) : 'simplex',
         (3, 4) : 'simplex',
@@ -487,7 +489,10 @@ class LagrangeSimplexPolySpace(LagrangePolySpace):
             nodes[iseq:iseq+n_v,:] = aux
             iseq += n_v
 
-            if dim == 1:
+            if dim == 0:
+                pass
+
+            elif dim == 1:
                 iseq = LagrangeNodes.append_edges(nodes, nts, iseq, 3,
                                                   [[0, 1]], order)
             elif dim == 2:
@@ -732,7 +737,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
         else:
             c_min, c_max = self.bbox[:,0]
-            
+
             cr = nm.arange(2 * dim)
             node_coors = (nodes[:,cr[::2]] * c_min
                           + nodes[:,cr[1::2]] * c_max) / order
@@ -745,7 +750,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
         dim = self.geometry.dim
 
         ev = self.ps1d.eval_base
-        
+
         if diff:
             base = nm.ones((coors.shape[0], dim, self.n_nod), dtype=nm.float64)
 
@@ -759,7 +764,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
                                                 diff=True,
                                                 suppress_errors=suppress_errors,
                                                 eps=eps)
-                
+
                     else:
                         base[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
                                                 diff=False,
@@ -772,7 +777,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
             for ii in range(dim):
                 self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
                 self.ps1d.n_nod = self.n_nod
-                
+
                 base *= ev(coors[:,ii:ii+1].copy(),
                            diff=diff,
                            suppress_errors=suppress_errors,
