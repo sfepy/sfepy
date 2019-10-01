@@ -190,8 +190,8 @@ class DiffusionDGFluxTerm(DGTerm):
 
     """
     name = "dw_dg_diffusion_flux"
-    arg_types = (('material_diff_tensor', 'state', 'virtual'),
-                 ('material_diff_tensor', 'virtual', 'state')
+    arg_types = (('material_diffusion_tensor', 'state', 'virtual'),
+                 ('material_diffusion_tensor', 'virtual', 'state')
                  )
     arg_shapes = [{'material_diff_tensor': '1, 1',
                    'virtual/avg_state': (1, None),
@@ -409,7 +409,7 @@ class NonlinearHyperDGFluxTerm(DGTerm):
     alf = 0
     name = "dw_dg_nonlinear_laxfrie_flux"
     modes = ("weak",)
-    arg_types = ('opt_material', 'material_fun', 'material_fun_d', 'virtual', 'state')
+    arg_types = ('opt_material', 'fun', 'fun_d', 'virtual', 'state')
     arg_shapes = [{'opt_material'  : '.: 1',
                    'material_fun'  : '.: 1',
                    'material_fun_d': '.: 1',
@@ -510,8 +510,8 @@ class NonlinScalarDotGradTerm(Term):
         - virtual  : :math:`q`
     """
     name = 'dw_ns_dot_grad_s'
-    arg_types = (('material_fun', 'material_fun_d', 'virtual', 'state'),
-                 ('material_fun', 'material_fun_d', 'state', 'virtual'))
+    arg_types = (('fun', 'fun_d', 'virtual', 'state'),
+                 ('fun', 'fun_d', 'state', 'virtual'))
     arg_shapes = [{'material_fun'        : '.: 1',
                    'material_fun_d'      : '.: 1',
                    'virtual/grad_state'  : (1, None),

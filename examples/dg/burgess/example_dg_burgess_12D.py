@@ -4,7 +4,7 @@ from examples.dg.burgess.example_dg_burgess_diff_2D import *
 example_name = "burgess_12D"
 dim = int(example_name[example_name.index("D") - 1])
 
-filename_mesh = "../mesh/tens_12D_mesh.vtk"
+filename_mesh = "../mesh/mesh_tens_12D_20.vtk"
 
 approx_order = 1
 t0 = 0.
@@ -67,9 +67,6 @@ functions = {
 
 materials = {
     'a'     : ({'val': [velo], '.flux': 0.0},),
-    'nonlin': ({'.fun': adv_fun, '.dfun': adv_fun_d},),
-    'burg'  : ({'.fun': burg_fun, '.dfun': burg_fun_d},),
-
 }
 ics = {
     'ic': ('Omega', {'u.0': 'get_ic'}),
@@ -86,8 +83,8 @@ integrals = {
 
 equations = {
     'Advection': "dw_volume_dot.i.Omega(v, u)" +
-                 "+ dw_ns_dot_grad_s.i.Omega(burg.fun, burg.dfun, u[-1], v)" +
-                 "- dw_dg_nonlinear_laxfrie_flux.i.Omega(burg.fun, burg.dfun, v, u[-1]) = 0"
+                 "+ dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
+                 "- dw_dg_nonlinear_laxfrie_flux.i.Omega(burg_fun, burg_fun_d, v, u[-1]) = 0"
 }
 
 solvers = {
