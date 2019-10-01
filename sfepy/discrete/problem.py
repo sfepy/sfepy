@@ -520,7 +520,7 @@ class Problem(Struct):
 
         self.integrals = self.get_integrals()
 
-        default_user = vars(self.conf.funmod)
+        default_user = vars(self.conf)
         if user is not None:
             default_user.update(user)
         user = default_user
