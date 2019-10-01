@@ -318,7 +318,11 @@ cdef class CMesh:
         self.entities = {}
 
         for key, gel in gels.iteritems():
-            ii = self.key_to_index[key]
+            try:
+                ii = self.key_to_index[key]
+
+            except KeyError:
+                continue
 
             # Reference element edges.
             if gel.n_edge > 0:
