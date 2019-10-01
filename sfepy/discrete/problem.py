@@ -519,6 +519,11 @@ class Problem(Struct):
         materials = Materials.from_conf(self.conf_materials, self.functions)
 
         self.integrals = self.get_integrals()
+
+        default_user = vars(self.conf)
+        if user is not None:
+            default_user.update(user)
+        user = default_user
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         materials, self.integrals,

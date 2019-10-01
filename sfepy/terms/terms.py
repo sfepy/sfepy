@@ -595,6 +595,10 @@ class Term(Struct):
                     self.names.parameter.append(name)
 
             elif arg_kind.endswith('material'):
+                # This should be better checked already in create_arg_parser().
+                if not isinstance(name, tuple):
+                    raise ValueError('wrong material argument %s of term %s!'
+                                     % (name, self.get_str()))
                 names = self.names.material
 
             else:
