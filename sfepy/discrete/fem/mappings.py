@@ -118,7 +118,8 @@ class SurfaceMapping(FEMapping):
         coordinates.
         """
         bf = self.poly_space.eval_base(coors, diff=diff)
-        return nm.ascontiguousarray(bf[..., :self.dim-1:, self.indices])
+        ii = max(self.dim - 1, 1)
+        return nm.ascontiguousarray(bf[..., :ii:, self.indices])
 
     def get_mapping(self, qp_coors, weights, poly_space=None, mode='surface'):
         """
@@ -133,12 +134,15 @@ class SurfaceMapping(FEMapping):
         poly_space = get_default(poly_space, self.poly_space)
 
         bf_g = self.get_base(qp_coors, diff=True)
-
-        if nm.allclose(bf_g, 0.0):
+        if nm.allclose(bf_g, 0.0) and self.dim > 1:
             raise ValueError('zero base function gradient!')
 
         cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
                         poly_space.n_nod, mode=mode)
         cmap.describe(self.coors, self.conn, bf_g, None, weights)
+        if self.dim == 1:
+            # Fix normals.
+            ii = nm.where(self.conn == 0)[0]
+            cmap.normal[ii] *= -1.0
 
         return cmap

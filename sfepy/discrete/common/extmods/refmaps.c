@@ -177,25 +177,35 @@ int32 _s_describe( Mapping *obj,
   nQP = bfGR->nLev;
 
 /*    output( "%d %d %d %d\n", dim, nQP, nFP, nNod ); */
-  fmf_createAlloc( &faceCoor, 1, 1, nFP, dim );
-  fmf_createAlloc( &mtxRMS, 1, nQP, dim - 1, dim );
+  if (dim > 1) {
+    fmf_createAlloc( &faceCoor, 1, 1, nFP, dim );
+    fmf_createAlloc( &mtxRMS, 1, nQP, dim - 1, dim );
+  }
 
   for (ii = 0; ii < nFa; ii++) {
     FMF_SetCell( obj->normal, ii );
     FMF_SetCell( obj->det, ii );
     FMF_SetCell( obj->volume, ii );
 
-    for (inod = 0; inod < nFP; inod++) {
-      pos = dim*fconn[inod];
-      for (idim = 0; idim < dim; idim++ ) {
-        faceCoor->val[dim*inod+idim] = coorIn[idim+pos];
+    if (dim > 1) {
+      for (inod = 0; inod < nFP; inod++) {
+        pos = dim*fconn[inod];
+        for (idim = 0; idim < dim; idim++ ) {
+          faceCoor->val[dim*inod+idim] = coorIn[idim+pos];
+        }
       }
-    }
 
-    /* fmf_print( faceCoor, stdout, 0 ); */
-    fmf_mulAB_n1( mtxRMS, bfGR, faceCoor );
+      /* fmf_print( faceCoor, stdout, 0 ); */
+      fmf_mulAB_n1( mtxRMS, bfGR, faceCoor );
+    }
     /* Surface jacobian and normal. */
     switch (dim) {
+    case 1:
+      for (iqp = 0; iqp < nQP; iqp++) {
+        obj->det->val[iqp] = weight->val[iqp];
+        obj->normal->val[iqp] = 1.0; /* Needs to be corrected in Python... */
+      }
+      break;
     case 2:
       /* dl = \norma{dx} = sqrt( dx^2 + dy^2 ) */
       for (iqp = 0; iqp < nQP; iqp++) {
@@ -240,8 +250,10 @@ int32 _s_describe( Mapping *obj,
   }
 
  end_label:
-  fmf_freeDestroy( &faceCoor );
-  fmf_freeDestroy( &mtxRMS );
+  if (dim > 1) {
+    fmf_freeDestroy( &faceCoor );
+    fmf_freeDestroy( &mtxRMS );
+  }
 
   return( ret );
 }
