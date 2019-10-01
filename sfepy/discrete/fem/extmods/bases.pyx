@@ -139,7 +139,7 @@ cdef class CLagrangeContext:
         ctx.order = order
         ctx.is_bubble = is_bubble
 
-        ctx.tdim = tdim if tdim > 0 else ref_coors.shape[1]
+        ctx.tdim = tdim
 
         _e_coors_max = self.e_coors_max = np.zeros((8, 3), dtype=np.float64)
         _f.array2fmfield2(ctx.e_coors_max, _e_coors_max)
@@ -163,7 +163,7 @@ cdef class CLagrangeContext:
             _f.array2fmfield2(ctx.ref_coors, ref_coors)
 
             ctx.vmin = ref_coors[0, 0]
-            ctx.vmax = ref_coors[1, 0]
+            ctx.vmax = ref_coors[1, 0] if tdim > 0 else ctx.vmin
 
         else:
             raise ValueError('ref_coors argument is required!')

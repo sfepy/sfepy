@@ -355,7 +355,7 @@ int32 eval_basis_lagrange(FMField *out, FMField *coors, int32 diff,
 
   ctx->bc = bc;
 
-  if (n_v == (dim + 1)) {
+  if (n_v == (ctx->tdim + 1)) {
     fmf_pretend_nc(bc, 1, 1, 1, dim + 1, buf6);
 
     for (iqp = 0; iqp < out->nLev; iqp++) {

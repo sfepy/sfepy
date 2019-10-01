@@ -38,7 +38,7 @@ class FEDomain(Domain):
         for ig, desc in enumerate(mesh.descs):
             gel = GeometryElement(desc)
 
-            if gel.dim > 1:
+            if gel.dim > 0:
                 # Create geometry elements of dimension - 1.
                 gel.create_surface_facet()
 

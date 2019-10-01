@@ -239,6 +239,10 @@ class QuadraturePoints(Struct):
 
 _QP = QuadraturePoints
 quadrature_tables = {
+    '0_1' : {
+        1 : _QP([[0.0, 1.0]])
+    },
+
     '1_2' : {
         1 : _QP([[0.000000000000000e+00, 2.0]],
                 bounds=(-1.0, 1.0), symmetric=True),

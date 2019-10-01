@@ -95,7 +95,10 @@ class Test(TestCommon):
         for geometry, qps in ordered_iteritems(quadrature_tables):
             self.report('geometry:', geometry)
 
-            if geometry in tp_geometries:
+            if geometry == '0_1':
+                continue
+
+            elif geometry in tp_geometries:
                 iter_qp = range(1, 11)
 
             elif geometry == '2_3':

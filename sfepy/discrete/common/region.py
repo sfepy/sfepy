@@ -562,7 +562,7 @@ class Region(Struct):
         n_cell = self.cells.shape[0]
         n_edge = self.edges.shape[0] if self.tdim > 1 else 0
         n_face = self.faces.shape[0] if self.tdim == 3 else 0
-        n_facet = self.facets.shape[0] if self.tdim > 1 else 0
+        n_facet = self.facets.shape[0]
 
         self.shape = Struct(n_vertex=n_vertex,
                             n_edge=n_edge,
