@@ -14,6 +14,9 @@ import numpy as nm
 from sfepy.base.base import assert_, Struct
 from six.moves import range
 
+def _get_grid_0_1(n_nod):
+    return nm.array([0.0])
+
 def _get_grid_1_2(n_nod):
     return nm.linspace(0.0, 1.0, n_nod)
 
@@ -80,6 +83,15 @@ def _get_grid_3_8(n_nod):
     return nm.ascontiguousarray(coors)
 
 geometry_data = {
+    '0_1' : Struct(coors = [[0.0]],
+                   conn = [0],
+                   faces = None,
+                   edges = None,
+                   volume = 0.0,
+                   orientation = (0, (0,), 0, 0),
+                   get_grid = _get_grid_0_1,
+                   surface_facet_name = None),
+
     '1_2' : Struct(coors = [[0.0],
                             [1.0]],
                    conn = [0, 1],
@@ -88,7 +100,7 @@ geometry_data = {
                    volume = 1.0,
                    orientation = (0, (1,), 0, 1),
                    get_grid = _get_grid_1_2,
-                   surface_facet_name = None),
+                   surface_facet_name = '0_1'),
 
     '2_3' : Struct(coors = [[0.0, 0.0],
                             [1.0, 0.0],
@@ -233,6 +245,8 @@ class GeometryElement(Struct):
         self.conn = nm.array(gd.conn, dtype=nm.int32)
 
         self.n_vertex, self.dim = self.coors.shape
+        if self.name == '0_1': self.dim = 0
+
         self.is_simplex = self.n_vertex == (self.dim + 1)
 
         self.vertices = nm.arange(self.n_vertex, dtype=nm.int32)
@@ -276,8 +290,10 @@ class GeometryElement(Struct):
         """
         Return self.vertices in 1D, self.edges in 2D and self.faces in 3D.
         """
-        if self.dim == 1:
-            return self.vertices
+        if self.dim == 0:
+            return nm.array([])
+        elif self.dim == 1:
+            return self.vertices.reshape((-1, 1))
         elif self.dim == 2:
             return self.edges
         else:
