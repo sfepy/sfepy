@@ -193,7 +193,7 @@ class DiffusionDGFluxTerm(DGTerm):
     arg_types = (('material_diffusion_tensor', 'state', 'virtual'),
                  ('material_diffusion_tensor', 'virtual', 'state')
                  )
-    arg_shapes = [{'material_diff_tensor': '1, 1',
+    arg_shapes = [{'material_diffusion_tensor': '1, 1',
                    'virtual/avg_state': (1, None),
                    'state/avg_state' : 1,
                    'virtual/avg_virtual': (1, None),
