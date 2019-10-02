@@ -29,7 +29,7 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = "../mesh/mesh_simp_2D_11_350.vtk"
+        filename_mesh = "mesh/mesh_simpr_2D_11_722.vtk"
 
     t0 = 0.
     t1 = .1
@@ -143,22 +143,18 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
     def get_ic(x, ic=None):
         return gsmooth(x[..., 0:1] - .4) * gsmooth(x[..., 1:] - .4)
 
-    @local_register_function
     def adv_fun(u):
         vu = velo.T * u[..., None]
         return vu
 
-    @local_register_function
     def adv_fun_d(u):
         v1 = velo.T * nm.ones(u.shape + (1,))
         return v1
 
-    @local_register_function
     def burg_fun(u):
         vu = .5*burg_velo * u[..., None] ** 2
         return vu
 
-    @local_register_function
     def burg_fun_d(u):
         v1 = burg_velo * u[..., None]
         return v1
@@ -166,8 +162,6 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
 
     materials = {
         'a'     : ({'val': [velo], '.flux': flux},),
-        'nonlin': ({'.fun': adv_fun, '.dfun': adv_fun_d},),
-        'burg'  : ({'.fun': burg_fun, '.dfun': burg_fun_d},),
         'D'     : ({'val': [diffusion_coef], '.Cw': Cw},),
         'g'     : 'source_fun'
     }
@@ -188,8 +182,8 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
                      # temporal der
         'balance':   "dw_volume_dot.i.Omega(v, u)" +
                      #  non-linear "advection"
-                     " + dw_ns_dot_grad_s.i.Omega(burg.fun, burg.dfun, u[-1], v)" +
-                     " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg.fun, burg.dfun, v, u[-1])" +
+                     " + dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
+                     " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
                      #  diffusion
                      " - dw_laplace.i.Omega(D.val, v, u[-1])"
                      " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
