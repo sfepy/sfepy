@@ -23,6 +23,9 @@ def define(filename_mesh=None, approx_order=1,
     mstart = 0
     mend = 1
 
+    diffusion_coef = None
+    Cw = None
+
     example_name = "test_adv_1D"
     dim = 1
 

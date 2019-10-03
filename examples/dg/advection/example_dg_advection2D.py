@@ -3,11 +3,14 @@ from examples.dg.example_dg_common import *
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)
 
-def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0,
-           diffusion_coef=1, diff_scheme_name="symmetric", flux=0):
+def define(filename_mesh=None, approx_order=1, Cw=None, CFL=0.4, dt=None, angle=0,
+           diffusion_coef=None, diff_scheme_name="symmetric", flux=0):
 
     example_name = "adv__a0_2D"
     dim = 2
+
+    diffusion_coef = None
+    Cw = None
 
     if filename_mesh is None:
         filename_mesh = "mesh/mesh_tens_2D_01_20.vtk"

@@ -9,8 +9,11 @@ Numerical Methods for Hyperbolic Equations, 75–85. https://doi.org/10.1201/b14
 from examples.dg.example_dg_common import *
 
 
-def define(filename_mesh=None, approx_order=1, Cw=100,
+def define(filename_mesh=None, approx_order=1, Cw=100, CFL=None, dt=None,
            diffusion_coef=1, diff_scheme_name="symmetric", flux=0):
+
+    CFL=None
+    dt=None
 
     functions = {}
     def local_register_function(fun):

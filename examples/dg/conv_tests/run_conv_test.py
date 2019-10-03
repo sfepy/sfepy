@@ -68,8 +68,8 @@ def main(argv):
             conf = ProblemConf.from_dict(
                 problem_module.define(
                     gen_mesh, order,
-                    Cw=10,
-                    diffusion_coef=0.002,
+                    # Cw=10,
+                    # diffusion_coef=0.002,
                     # CFL=0.1,
                     dt=1,
                 ), mod, verbose=False)
@@ -113,28 +113,9 @@ def main(argv):
 
             pb.save_state(output_format.replace("*", "0"), state=pb.sol)
 
-            idiff = Integral('idiff', 20)
+            ana_l2, ana_qp, diff_l2, error, num_qp = compute_erros(conf, pb)
 
-            num_qp = pb.evaluate(
-                'ev_volume_integrate.idiff.Omega(u)',
-                integrals=Integrals([idiff]), mode='qp', copy_materials=False, verbose=False
-            )
-
-            aux = Material('aux', function=conf.sol_fun)
-            ana_qp = pb.evaluate(
-                'ev_volume_integrate_mat.idiff.Omega(aux.u, u)',
-                aux=aux, integrals=Integrals([idiff]), mode='qp',
-                copy_materials=False, verbose=False
-            )
-
-            field = pb.fields['f']
-            det = get_jacobian(field, idiff)
-
-            diff_l2 = nm.sqrt((((num_qp - ana_qp) ** 2) * det).sum())
-            ana_l2 = nm.sqrt(((ana_qp ** 2) * det).sum())
-            error = diff_l2 / ana_l2
-
-            n_dof = field.n_nod
+            n_dof = pb.fields["f"].n_nod
 
             result = (h, n_cells, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed,
                       pb.ts_conf.cour, pb.ts_conf.dt)
@@ -156,6 +137,32 @@ def main(argv):
     plot_conv_results(base_output_folder, conf, err_df, save=True)
 
     plt.show()
+
+
+def compute_erros(conf, pb):
+    """
+    Compute errors from analytical solution in conf.sol_fun and numerical solution saved in pb
+    :param conf:
+    :param pb:
+    :return:
+    """
+    idiff = Integral('idiff', 20)
+    num_qp = pb.evaluate(
+        'ev_volume_integrate.idiff.Omega(u)',
+        integrals=Integrals([idiff]), mode='qp', copy_materials=False, verbose=False
+    )
+    aux = Material('aux', function=conf.sol_fun)
+    ana_qp = pb.evaluate(
+        'ev_volume_integrate_mat.idiff.Omega(aux.u, u)',
+        aux=aux, integrals=Integrals([idiff]), mode='qp',
+        copy_materials=False, verbose=False
+    )
+    field = pb.fields['f']
+    det = get_jacobian(field, idiff)
+    diff_l2 = nm.sqrt((((num_qp - ana_qp) ** 2) * det).sum())
+    ana_l2 = nm.sqrt(((ana_qp ** 2) * det).sum())
+    error = diff_l2 / ana_l2
+    return ana_l2, ana_qp, diff_l2, error, num_qp
 
 
 def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
