@@ -452,9 +452,14 @@ class DGField(Field):
 
         :param region:
         :param eq_map: eq_map from state variable containing information on EPBC
-        :return: shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
+
+        Returns
+        -------
+         shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
         the second is index of the facet this nb. cell in said nb. cell
         """
+
+
         if region.name in self.facet_neighbour_index:
             return self.facet_neighbour_index[region.name]
 
@@ -508,13 +513,16 @@ class DGField(Field):
             facet_neighbours[
                 scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
 
-        # treat DG EPBC - these are definetly prefered
+        # treat DG EPBC - these are definitely preferred
         for master_bc2bfi, slave_bc2bfi in eq_map.dg_epbc:
+            if self.gel.name not in ["1_2", "2_4", "3_6"]:
+                raise ValueError("Periodic boundary conditions not supported for geometry {} elements.".format(self.gel.name))
+
             # set neighbours of periodic cells to one another
             facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 0] = slave_bc2bfi[:, 0]
             facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 0] = master_bc2bfi[:, 0]
 
-            # set neigbours facets
+            # set neighbours facets
             facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 1] = master_bc2bfi[:, 1]
             facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 1] = slave_bc2bfi[:, 1]
 
