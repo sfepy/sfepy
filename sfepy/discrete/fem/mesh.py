@@ -219,6 +219,7 @@ class Mesh(Struct):
         mesh = Mesh(trunk)
         mesh = io.read(mesh, omit_facets=omit_facets)
 
+        # FIXME - hot fix for reading 1D meshes
         if len(mesh.descs) == 1 and mesh.descs[0] == "1_2":
             output("forcing 1D")
             data = list(mesh._get_io_data(cell_dim_only=1))
