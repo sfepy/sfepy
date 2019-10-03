@@ -11,8 +11,8 @@ Simple example for first order ODE
 """
 from examples.dg.example_dg_common import *
 
-mstart = 0
-mend = 1
+dim = 1
+
 def define(filename_mesh=None, approx_order=1,
            diffusion_coef=None, Cw=None,
            CFL=0.4, dt=None,
@@ -20,14 +20,17 @@ def define(filename_mesh=None, approx_order=1,
     t0 = 0
     t1 = 1
 
-    example_name = "adv_1D"
+    mstart = 0
+    mend = 1
+
+    example_name = "test_adv_1D"
     dim = 1
 
     if filename_mesh is None:
         filename_mesh = get_1Dmesh_hook(0, 1, 100)
 
     materials = {
-        'a': ({'val': 1.0, '.flux': 0.0},),
+        'a': ({'val': 0.0, '.flux': 0.0},),
 
     }
 

@@ -219,6 +219,12 @@ class Mesh(Struct):
         mesh = Mesh(trunk)
         mesh = io.read(mesh, omit_facets=omit_facets)
 
+        if len(mesh.descs) == 1 and mesh.descs[0] == "1_2":
+            output("forcing 1D")
+            data = list(mesh._get_io_data(cell_dim_only=1))
+            data[0] = data[0][:, :1]
+            mesh = Mesh.from_data(mesh.name, *data)
+
         output('...done in %.2f s' % timer.stop())
 
         mesh._set_shape_info()

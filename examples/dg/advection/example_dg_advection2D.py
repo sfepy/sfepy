@@ -6,7 +6,7 @@ mesh_size = (1.0, 0.5)
 def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0,
            diffusion_coef=1, diff_scheme_name="symmetric", flux=0):
 
-    example_name = "adv_2Dt0"
+    example_name = "adv__a0_2D"
     dim = 2
 
     if filename_mesh is None:
@@ -15,10 +15,12 @@ def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0
     t0 = 0.
     t1 = 1.
 
+
+
     # get_common(approx_order, CFL, t0, t1, None, get_ic)
     rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                      [nm.sin(angle), nm.cos(angle)]])
-    velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
+    velo = nm.sum(rotm.T * nm.array([0., 0.]), axis=-1)[:, None]
     materials = {
         'a': ({'val': [velo], '.flux': 0.0},),
     }
@@ -74,12 +76,9 @@ def define(filename_mesh=None, approx_order=1, Cw=100, CFL=0.4, dt=None, angle=0
         'match': 'match_y_line',
     }
 
-
     integrals = {
         'i': 2 * approx_order,
     }
-
-
 
     equations = {
         'Advection': """
