@@ -3,8 +3,8 @@ from examples.dg.example_dg_common import *
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)
 
-def define(filename_mesh=None, approx_order=1, Cw=None, CFL=0.4, dt=None, angle=0,
-           diffusion_coef=None, diff_scheme_name="symmetric", flux=0):
+def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
+           Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
 
     example_name = "adv__a0_2D"
     dim = 2
@@ -19,7 +19,7 @@ def define(filename_mesh=None, approx_order=1, Cw=None, CFL=0.4, dt=None, angle=
     t1 = 1.
 
 
-
+    angle = 0
     # get_common(approx_order, CFL, t0, t1, None, get_ic)
     rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                      [nm.sin(angle), nm.cos(angle)]])

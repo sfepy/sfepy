@@ -26,7 +26,6 @@ from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 
 from examples.dg.example_dg_common import get_1Dmesh_hook, calculate_num_order, \
     plot_conv_results, build_attrs_string, output
-from examples.dg.conv_tests.fem_conv_test import SimpleExpression, define_functions, eval_expr
 
 
 parser = argparse.ArgumentParser(description='DG FEM convergence tests for 1D and 2D problems',
@@ -49,13 +48,13 @@ def main(argv):
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
 
-    problem_module_name = args.problem_file.replace("\\", ".").replace(".py", "")
+    problem_module_name = "dg."  + args.problem_file.replace(".py", "").replace("\\", ".").replace("/", ".")
     mesh = os.path.abspath(args.mesh_file)
 
     problem_module = importlib.import_module(problem_module_name)
 
-    refines = [3, 4]
-    orders = [4, 5]
+    refines = [0, 1, 2, 3, 4 ]
+    orders = [1,2,3,4, 5]
 
     if args.do1Dplot and problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
@@ -71,7 +70,7 @@ def main(argv):
                     # Cw=10,
                     # diffusion_coef=0.002,
                     # CFL=0.1,
-                    dt=1,
+                    # dt=1,
                 ), mod, verbose=False)
 
             output("----------------Running--------------------------")
@@ -104,7 +103,8 @@ def main(argv):
             output_folder = pjoin(base_output_folder, "h" + str(n_cells))
             output_folder = pjoin(output_folder, "o" + str(order))
 
-            output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}".format(n_cells, order, "vtk"))
+            output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}"
+                                  .format(n_cells, order, "vtk" if problem_module.dim == 1 else "msh"))
             output("Output set to {}, clearing.".format(output_format))
             output("------------------Finished------------------\n\n")
 
@@ -118,7 +118,7 @@ def main(argv):
             n_dof = pb.fields["f"].n_nod
 
             result = (h, n_cells, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed,
-                      pb.ts_conf.cour, pb.ts_conf.dt)
+                      getattr(pb.ts_conf, "cour", nm.NAN), getattr(pb.ts_conf, "dt", nm.NAN))
 
             results.append(result)
 

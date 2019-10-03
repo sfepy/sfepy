@@ -244,7 +244,7 @@ def plot_conv_results(base_output_folder, conf, err_df, plot_title_attrs=None, s
         for i, r in curr_df.iloc[1:, :].iterrows():
             ax.text(r["n_cells"], r["diff_l2"], "{:.2}".format(r["num_order"]))
 
-        ax.grid()
+        ax.grid(True)
         ax.set_xlabel("cells")
         ax.set_ylabel("L^2 error")
     ax.legend(title="Order")

@@ -9,9 +9,8 @@ Brown University, Jan.Hesthaven@Brown.edu
 
 from examples.dg.example_dg_common import *
 
-
-def define(filename_mesh=None, approx_order=1, Cw=1,
-           diffusion_coef=0.002, flux=0.0, CFL = .1, diff_scheme_name="symmetric"):
+def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
+           Cw=1, diffusion_coef=0.002, diff_scheme_name="symmetric"):
 
 
     functions = {}
@@ -30,6 +29,9 @@ def define(filename_mesh=None, approx_order=1, Cw=1,
 
     if filename_mesh is None:
         filename_mesh = get_1Dmesh_hook(-1, 1, 20)
+
+    mstart = -1
+    mend = 1
 
     t0 = 0.
     t1 = 1.
@@ -147,7 +149,7 @@ def define(filename_mesh=None, approx_order=1, Cw=1,
                 {"t0"     : t0,
                  "t1"     : t1,
                  # 'limiter': IdentityLimiter,
-                 'verbose': True}),
+                 'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }

@@ -11,8 +11,8 @@ with advection part removed
 from examples.dg.example_dg_common import *
 
 
-def define(filename_mesh=None, approx_order=1, Cw=100,
-           diffusion_coef=1, diff_scheme_name="symmetric", flux=0):
+def define(filename_mesh=None, approx_order=1, flux=None, CFL=None, dt=None,
+           Cw=100, diffusion_coef=1, diff_scheme_name="symmetric"):
 
     functions = {}
     def local_register_function(fun):

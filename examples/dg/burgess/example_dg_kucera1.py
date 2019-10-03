@@ -10,10 +10,8 @@ from examples.dg.example_dg_common import *
 mesh_center = (0, 0)
 mesh_size = (2, 2)
 
-def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=None,
+def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=1e-5,
            Cw=10, diffusion_coef=0.002,  diff_scheme_name="symmetric"):
-
-
     functions = {}
     def local_register_function(fun):
         try:

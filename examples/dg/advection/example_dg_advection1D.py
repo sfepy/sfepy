@@ -13,10 +13,8 @@ from examples.dg.example_dg_common import *
 
 dim = 1
 
-def define(filename_mesh=None, approx_order=1,
-           diffusion_coef=None, Cw=None,
-           CFL=0.4, dt=None,
-           use_symbolic=False, transient=False):
+def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
+           Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
     t0 = 0
     t1 = 1
 
