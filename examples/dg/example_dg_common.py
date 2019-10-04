@@ -43,18 +43,16 @@ register_solver(EulerStepSolver)
 functions = {}
 
 diffusion_schemes_implicit = {"symmetric" :  "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
-                                    "- dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+                                             "- dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
                      "non-symmetric": "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
                                       "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
                      "incomplete": " dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
 
 diffusion_schemes_explicit = {"symmetric" :  "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
-                                    "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+                                             "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
                      "non-symmetric": "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
                                       "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
                      "incomplete": " dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
-
-
 
 
 def local_register_function(fun):
@@ -69,6 +67,21 @@ def local_register_function(fun):
 
 
 def get_cfl_setup(CFL=None, dt=None):
+    """
+    Provide either CFL or dt to create preprocess hook that sets up
+
+
+    Params
+    ------
+    CFL : float, optional
+    dt: float, optional
+
+
+    Returns
+    -------
+    setup_cfl_condition(sfepy.discrete.problem)
+
+    """
 
     if CFL is None and dt is None:
         raise ValueError("Specifiy either CFL or dt in CFL setup")

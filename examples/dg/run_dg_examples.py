@@ -21,15 +21,14 @@ from sfepy.base.ioutils import ensure_path
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 
-
 from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
 from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
-
 
 parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',
                                  epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
 parser.add_argument("conf_file", help="""File containing problem configuration""")
 parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
+
 
 def main(argv):
     if argv is None:
@@ -53,9 +52,7 @@ def main(argv):
                                       if hasattr(pc.options, "output_format") else "vtk")
     output("Output set to {}, clearing ...".format(output_format))
 
-
     clear_folder(output_format, confirm=False)
-
 
     sa = PDESolverApp(pc, Struct(output_filename_trunk=output_name_trunk,
                                  save_ebc=False,
@@ -73,6 +70,7 @@ def main(argv):
 
         load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
                           pc.t0, pc.t1, load_times, pc.approx_order, pc.get_ic)
+
 
 if __name__ == '__main__':
     main(sys.argv[1:])
