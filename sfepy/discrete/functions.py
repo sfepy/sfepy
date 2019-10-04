@@ -46,7 +46,7 @@ class Function(Struct):
 def make_sfepy_function(fun_or_name=None):
     """
     Convenience decorator to quickly create
-    sfepy.discrete.functions.Function objects
+    :class:`sfepy.discrete.functions.Function` objects.
 
     Has two modes of use either without parameter::
 
@@ -56,19 +56,20 @@ def make_sfepy_function(fun_or_name=None):
 
     or with name::
 
-        @make_sfepy_function("name_for_my_function")
+        @make_sfepy_function("new_name_for_my_function")
         def my_function(...):
             ...
 
     Parameters
     ----------
     fun_or_name : string, optional
-        name to be saved within Function object, if None name of decorated function is used
+        Name to be saved within `Function` instance,
+        if None name of decorated function is used.
 
     Returns
     -------
-    sfepy.discrete.functions.Function
-        with attribute name set to provided name or original function name
+    `sfepy.discrete.functions.Function`
+        With attribute name set to provided name or original function name.
     """
     if callable(fun_or_name):
         return Function(fun_or_name.__name__, fun_or_name)
