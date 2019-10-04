@@ -7,6 +7,9 @@ import six
 
 # sfepy imports
 from sfepy.discrete.common.fields import parse_shape, Field
+
+from sfepy.discrete.fem.fields_base import FEField
+
 from sfepy.discrete import Integral, FieldVariable
 from six.moves import range
 from sfepy.discrete.fem import Mesh, Field
@@ -74,7 +77,7 @@ def get_gel(region):
                              ' reference geometries!'.format(region))
 
 
-class DGField(Field):
+class DGField(FEField):
     family_name = 'volume_DG_legendre_discontinuous'
     is_surface = False
 
@@ -221,79 +224,79 @@ class DGField(Field):
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim - 1, self.dim)
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
 
-    def clear_qp_base(self):
-        """
-        Remove cached quadrature points and base functions.
-        Used in __init__ to set empty qp_coors and bf.
-        """
-        self.qp_coors = {}
-        self.bf = {}
+    # def clear_qp_base(self):
+    #     """
+    #     Remove cached quadrature points and base functions.
+    #     Used in __init__ to set empty qp_coors and bf.
+    #     """
+    #     self.qp_coors = {}
+    #     self.bf = {}
 
-    def get_qp(self, key, integral):
-        """
-        Get quadrature points and weights corresponding to the given key
-        and integral. The key is 'v' or 's#', where # is the number of
-        face vertices.
-        """
-        qpkey = (integral.order, key)
+    # def get_qp(self, key, integral):
+    #     """
+    #     Get quadrature points and weights corresponding to the given key
+    #     and integral. The key is 'v' or 's#', where # is the number of
+    #     face vertices.
+    #     """
+    #     qpkey = (integral.order, key)
+    #
+    #     if qpkey not in self.qp_coors:
+    #         if (key[0] == 's') and not self.is_surface:
+    #             dim = self.gel.dim - 1
+    #             n_fp = self.gel.surface_facet.n_vertex
+    #             geometry = '%d_%d' % (dim, n_fp)
+    #
+    #         else:
+    #             geometry = self.gel.name
+    #
+    #         vals, weights = integral.get_qp(geometry)
+    #         self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
+    #
+    #     return self.qp_coors[qpkey]
 
-        if qpkey not in self.qp_coors:
-            if (key[0] == 's') and not self.is_surface:
-                dim = self.gel.dim - 1
-                n_fp = self.gel.surface_facet.n_vertex
-                geometry = '%d_%d' % (dim, n_fp)
-
-            else:
-                geometry = self.gel.name
-
-            vals, weights = integral.get_qp(geometry)
-            self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
-
-        return self.qp_coors[qpkey]
-
-    def get_base(self, key, derivative, integral, iels=None,
-                 from_geometry=False, base_only=True):
-        """
-        Return values of base functions at quadrature points of given integral
-        :param key: 'v' - volume, 's' - surface
-        :param derivative:
-        :param integral:
-        :param iels:
-        :param from_geometry:
-        :param base_only:
-        :return:
-        """
-        # from FEField
-        qp = integral.get_qp(self.gel.name)
-
-        if from_geometry:
-            ps = self.gel.poly_space
-
-        else:
-            ps = self.poly_space
-
-        _key = key if not from_geometry else 'g' + key
-        bf_key = (integral.order, _key, derivative)
-
-        if bf_key not in self.bf:
-            if (iels is not None) and (self.ori is not None):
-                ori = self.ori[iels]
-
-            else:
-                ori = self.ori
-
-            self.bf[bf_key] = ps.eval_base(qp[0], diff=derivative, ori=ori,
-                                           transform=self.basis_transform)
-
-        if base_only:
-            return self.bf[bf_key]
-        else:
-            return self.bf[bf_key], qp.weights
+    # def get_base(self, key, derivative, integral, iels=None,
+    #              from_geometry=False, base_only=True):
+    #     """
+    #     Return values of base functions at quadrature points of given integral
+    #     :param key: 'v' - volume, 's' - surface
+    #     :param derivative:
+    #     :param integral:
+    #     :param iels:
+    #     :param from_geometry:
+    #     :param base_only:
+    #     :return:
+    #     """
+    #     # from FEField
+    #     qp = integral.get_qp(self.gel.name)
+    #
+    #     if from_geometry:
+    #         ps = self.gel.poly_space
+    #
+    #     else:
+    #         ps = self.poly_space
+    #
+    #     _key = key if not from_geometry else 'g' + key
+    #     bf_key = (integral.order, _key, derivative)
+    #
+    #     if bf_key not in self.bf:
+    #         if (iels is not None) and (self.ori is not None):
+    #             ori = self.ori[iels]
+    #
+    #         else:
+    #             ori = self.ori
+    #
+    #         self.bf[bf_key] = ps.eval_base(qp[0], diff=derivative, ori=ori,
+    #                                        transform=self.basis_transform)
+    #
+    #     if base_only:
+    #         return self.bf[bf_key]
+    #     else:
+    #         return self.bf[bf_key], qp.weights
 
     def get_coor(self, nods=None):
         """
-        Returns coors for matching nodes, uses trick to deceive
-        EPBC implementation in sfepy
+        Returns coors for matching nodes
+        # TODO revise EPBC matching
         :param nods: if None use all nodes
         :return:
         """
@@ -608,8 +611,8 @@ class DGField(Field):
         """
         Returns values of the basis function in quadrature points on facets broadcasted to all
         cells inner to the element as well as outer ones along with weights for the qps broadcasted
-        and transformed to cells
-        to elements
+        and transformed to elements.
+
         :param state: used to get EPBC info
         :param region: for connectivity
         :param derivative: if u need derivative
@@ -796,7 +799,7 @@ class DGField(Field):
 
     def get_dofs_in_region(self, region, merge=True):
         """
-        Return indices of DOFs that belong to the given region and group.
+        Return indices of DOFs that belong to the given region.
 
         Not Used in BC treatment
 
@@ -1155,6 +1158,7 @@ class DGField(Field):
         out : dict
             The output dictionary.
         """
+        # TODO revise output dictionary structure and naming
         res = {}
         udofs = self.unravel_sol(dofs)
 
