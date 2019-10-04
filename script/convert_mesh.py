@@ -94,6 +94,8 @@ def main():
                         dest='tri_tetra', help=helps['tri-tetra'])
     parser.add_argument('-2', '--2d', action='store_true',
                         dest='force_2d', help=helps['2d'])
+    parser.add_argument('-1', '--1d', action='store_true',
+                        dest='force_1d', help=helps['1d'])
     parser.add_argument('-d', '--cell-dim', metavar='cell_dim',
                         action='store', dest='cell_dim',
                         default=None, help=helps['cell-dim'])
@@ -169,6 +171,11 @@ def main():
     if options.force_2d:
         data = list(mesh._get_io_data(cell_dim_only=2))
         data[0] = data[0][:, :2]
+        mesh = Mesh.from_data(mesh.name, *data)
+
+    if options.force_1d:
+        data = list(mesh._get_io_data(cell_dim_only=1))
+        data[0] = data[0][:, :1]
         mesh = Mesh.from_data(mesh.name, *data)
 
     if scale is not None:
