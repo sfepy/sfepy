@@ -458,8 +458,8 @@ class DGField(FEField):
 
         Returns
         -------
-         shape is (n_cell, n_el_facet, 2), first value in last axis is index of the neighbouring cell
-        the second is index of the facet this nb. cell in said nb. cell
+         shape is (n_cell, n_el_facet, 2), first value is index of the neighbouring cell
+        the second is index of the facet in said nb. cell
         """
 
 
@@ -1047,8 +1047,10 @@ class DGField(FEField):
         :param diff: derivative 0 or 1 supported
         :param fun: Function value or values to set qps values to
         :param region: boundary region
-        :param ret_coors: dafault False, return physical coors of qps
-        :return: vals.shape == (n_cell,) + (self.dim,) * diff + (n_qp,)
+        :param ret_coors: default False,
+                Return physical coors of qps in shape (n_cell, n_qp, dim).
+        vals
+            In shape (n_cell,) + (self.dim,) * diff + (n_qp,)
         """
         if region.has_cells():
             raise NotImplementedError("Region {} has cells and can't be used as boundary region".
