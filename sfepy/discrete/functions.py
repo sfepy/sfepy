@@ -68,7 +68,7 @@ def make_sfepy_function(fun_or_name=None):
 
     Returns
     -------
-    `sfepy.discrete.functions.Function`
+    new_fun : `sfepy.discrete.functions.Function`
         With attribute name set to provided name or original function name.
     """
     if callable(fun_or_name):
@@ -76,15 +76,18 @@ def make_sfepy_function(fun_or_name=None):
 
     def functionizer(fun):
         """
-        Internal decorator
+        Internal decorator.
 
         Parameters
         ----------
-        fun : callable to be converted to sfepy.discrete.functions.Function
+        fun : callable
+         Will be converted to sfepy.discrete.functions.Function.
 
         Returns
         -------
-        sfepy.discrete.functions.Function
+        new_fun : Function instance
+            The `sfepy.discrete.functions.Function` object.
+
         """
         if fun_or_name is not None:
             return Function(fun_or_name, fun)
