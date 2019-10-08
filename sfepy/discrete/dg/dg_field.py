@@ -436,8 +436,11 @@ class DGField(FEField):
     def clear_facet_neighbour_idx_cache(self, region=None):
         """
         If region is None clear all!
-        :param region:
-        :return:
+
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+            If None clear all.
         """
         if region is None:
             self.facet_neighbour_index = {}
@@ -447,21 +450,25 @@ class DGField(FEField):
     def get_facet_neighbor_idx(self, region, eq_map):
         """
         Returns index of cell neighbours sharing facet, along with local index
-        of the facet within neighbour also treats periodic boundary conditions i.e.,
-        plugs correct neighbours for cell on periodic boundary. Where there are no neighbours
-        specified puts -1.
+        of the facet within neighbour, also treats periodic boundary conditions i.e.,
+        plugs correct neighbours for cell on periodic boundary.
+        Where there are no neighbours specified puts -1.
 
         Cashes neighbour index in self.facet_neighbours
 
-        :param region:
-        :param eq_map: eq_map from state variable containing information on EPBC
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+            Main region, must contain cells.
+        eq_map :
+            eq_map from state variable containing information on EPBC and DG EPBC.
 
         Returns
         -------
-         shape is (n_cell, n_el_facet, 2), first value is index of the neighbouring cell
-        the second is index of the facet in said nb. cell
+        facet_neighbours : array
+             Shape is (n_cell, n_el_facet, 2), first value is index of the neighbouring cell
+             the second is index of the facet in said nb. cell.
         """
-
 
         if region.name in self.facet_neighbour_index:
             return self.facet_neighbour_index[region.name]
@@ -496,6 +503,68 @@ class DGField(FEField):
                         nbrs.append(fis[of1])
             facet_neighbours[ic, :, :] = nbrs
 
+        facet_neighbours = self._set_fem_periodic_facet_neighbours(facet_neighbours, eq_map)
+
+        facet_neighbours = self._set_dg_periodic_facet_neighbours(facet_neighbours, eq_map.dg_epbc)
+
+        # cache results
+        self.facet_neighbour_index[region.name] = facet_neighbours
+
+        return facet_neighbours
+
+    def _set_dg_periodic_facet_neighbours(self, facet_neighbours, dg_epbc):
+        """
+
+        Parameters
+        ----------
+        facet_neighbours : array
+            Shape is (n_cell, n_el_facet, 2), first value is index of the neighbouring cell
+            the second is index of the facet in said nb. cell.
+
+        dg_epbc : list
+            List with pairs of slave and master boundary cell boundary facet mapping
+
+        Returns
+        -------
+        facet_neighbours : array
+            Updated incidence array.
+
+        """
+
+        # treat DG EPBC - these are definitely preferred
+        for master_bc2bfi, slave_bc2bfi in dg_epbc:
+            if self.gel.name not in ["1_2", "2_4", "3_6"]:
+                raise ValueError(
+                    "Periodic boundary conditions not supported for geometry {} elements.".format(self.gel.name))
+
+            # set neighbours of periodic cells to one another
+            facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 0] = slave_bc2bfi[:, 0]
+            facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 0] = master_bc2bfi[:, 0]
+
+            # set neighbours facets
+            facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 1] = master_bc2bfi[:, 1]
+            facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 1] = slave_bc2bfi[:, 1]
+
+        return facet_neighbours
+
+    def _set_fem_periodic_facet_neighbours(self, facet_neighbours, eq_map):
+        """
+
+        Parameters
+        ----------
+        facet_neighbours : array
+            Shape is (n_cell, n_el_facet, 2), first value is index of the neighbouring cell
+            the second is index of the facet in said nb. cell.
+
+        eq_map :
+            eq_map from state variable containing information on EPBC and DG EPBC.
+
+        Returns
+        -------
+        facet_neighbours : array
+            Updated incidence array.
+        """
+
         # treat classical FEM EPBCs - we need to correct neighbours
         if eq_map.n_epbc > 0:
             # set neighbours of periodic cells to one another
@@ -504,8 +573,9 @@ class DGField(FEField):
             mcells_facets = nm.array(nm.where(facet_neighbours[mcells] == -1))[1, 0]  # facets of mcells
             scells_facets = nm.array(nm.where(facet_neighbours[scells] == -1))[1, 0]  # facets of scells
             [1, 0]  # above, first we need second axis to get axis on which facet indices are stored,
-            # second we drop axis with neighbour local facet index, for multiple s/mcells this will have to be something like
-            # 1 + 2*nm.arange(len(mcells)) - to skip double entries for -1 tags in neighbours and  neighbour local facet idx
+            # second we drop axis with neighbour local facet index, for multiple s/mcells this will have to be something
+            # like 1 + 2*nm.arange(len(mcells)) - to skip double entries for -1 tags in neighbours and  neighbour local
+            # facet idx
 
             facet_neighbours[mcells, mcells_facets, 0] = scells  # set neighbours of mcells to scells
             facet_neighbours[
@@ -516,29 +586,19 @@ class DGField(FEField):
             facet_neighbours[
                 scells, scells_facets, 1] = mcells_facets  # set neighbour facets to facets of mcell missing neighbour
 
-        # treat DG EPBC - these are definitely preferred
-        for master_bc2bfi, slave_bc2bfi in eq_map.dg_epbc:
-            if self.gel.name not in ["1_2", "2_4", "3_6"]:
-                raise ValueError("Periodic boundary conditions not supported for geometry {} elements.".format(self.gel.name))
-
-            # set neighbours of periodic cells to one another
-            facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 0] = slave_bc2bfi[:, 0]
-            facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 0] = master_bc2bfi[:, 0]
-
-            # set neighbours facets
-            facet_neighbours[slave_bc2bfi[:, 0], slave_bc2bfi[:, 1], 1] = master_bc2bfi[:, 1]
-            facet_neighbours[master_bc2bfi[:, 0], master_bc2bfi[:, 1], 1] = slave_bc2bfi[:, 1]
-
-            # cache results
-        self.facet_neighbour_index[region.name] = facet_neighbours
-
         return facet_neighbours
 
     def get_region_info(self, region):
         """
         Extracts information about region needed in various methods of DGField
-        :param region:
-        :return: dim, n_cell, n_el_facets
+
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+
+        Returns
+        -------
+            dim, n_cell, n_el_facets
         """
         if not region.has_cells():
             raise ValueError("Region {} has no cells".format(region.name))

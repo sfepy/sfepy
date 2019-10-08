@@ -166,11 +166,6 @@ def test_set_dofs_2D():
     assert vals.shape == rvals_shape
 
 
-def test_get_dofs_in_region():
-    # TODO test on primitive DOFs
-    assert False
-
-
 def test_get_facet_vols():
     # TODO should be easy
     assert False
@@ -182,7 +177,7 @@ def test_get_cell_normals_per_facet():
 
 
 def test_get_both_facet_base_vals():
-    #  probably not needed
+    #  TODO test this, used in
     assert True
 
 
@@ -205,6 +200,20 @@ def test_get_facet_neighbor_idx_1d():
     nmts.assert_equal(rnbr_idx, nbr_idx)
 
 
+    # periodic BCs
+    eq_map.dg_epbc = [(nm.array([[0, 0]], dtype=nm.int32),
+                       nm.array([[2, 1]], dtype=nm.int32))]
+    field.clear_facet_neighbour_idx_cache()
+    nbr_idx = field.get_facet_neighbor_idx(regions["omega"], eq_map)
+
+    rnbr_idx = [[[2, 1], [1, 0]],  # 0
+                [[0, 1], [2, 0]],  # 1
+                [[1, 1], [0, 0]],  # 2
+                ]
+    rnbr_idx = nm.array(rnbr_idx, dtype=nm.int32)
+    nmts.assert_equal(rnbr_idx, nbr_idx)
+
+
 def test_get_facet_neighbor_idx_2d():
     (field, regions), mesh = prepare_field_2D(3)
     eq_map = Struct()
@@ -221,6 +230,25 @@ def test_get_facet_neighbor_idx_2d():
                 [[-1, -1], [-1, -1], [7, 0], [3, 1]],  # 6
                 [ [6, 2],  [-1, -1], [8, 0], [4, 1]],  # 7
                 [[7, 2], [-1, -1], [-1, -1], [5, 1]],  # 8
+                ]
+    rnbr_idx = nm.array(rnbr_idx, dtype=nm.int32)
+    nmts.assert_equal(rnbr_idx, nbr_idx)
+
+    # periodic BCs
+    eq_map.dg_epbc = [(nm.array([[0, 3], [1, 3], [2, 3]], dtype=nm.int32),
+                       nm.array([[6, 1], [7, 1], [8, 1]], dtype=nm.int32))]
+    field.clear_facet_neighbour_idx_cache()
+    nbr_idx = field.get_facet_neighbor_idx(regions["omega"], eq_map)
+
+    rnbr_idx = [[[-1, -1], [3, 3], [1, 0], [6, 1]],  # 0
+                [[0, 2], [4, 3], [2, 0], [7, 1]],  # 1
+                [[1, 2], [5, 3], [-1, -1], [8, 1]],  # 2
+                [[-1, -1], [6, 3], [4, 0], [0, 1]],  # 3
+                [[3, 2], [7, 3], [5, 0], [1, 1]],  # 4
+                [[4, 2], [8, 3], [-1, -1], [2, 1]],  # 5
+                [[-1, -1], [0, 3], [7, 0], [3, 1]],  # 6
+                [[6, 2], [1, 3], [8, 0], [4, 1]],  # 7
+                [[7, 2], [2, 3], [-1, -1], [5, 1]],  # 8
                 ]
     rnbr_idx = nm.array(rnbr_idx, dtype=nm.int32)
     nmts.assert_equal(rnbr_idx, nbr_idx)
