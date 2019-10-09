@@ -81,13 +81,12 @@ def make_sfepy_function(fun_or_name=None):
         Parameters
         ----------
         fun : callable
-         Will be converted to sfepy.discrete.functions.Function.
+            Will be converted to sfepy.discrete.functions.Function.
 
         Returns
         -------
         new_fun : Function instance
             The `sfepy.discrete.functions.Function` object.
-
         """
         if fun_or_name is not None:
             return Function(fun_or_name, fun)
