@@ -21,7 +21,9 @@ filename_meshes = ['/meshes/3d/cylinder.mesh',
                    '/meshes/various_formats/med_2d_tri_quad.med',
                    '/meshes/various_formats/med_3d_tet_hex.med',
                    '/meshes/various_formats/msh_tri.msh',
-                   '/meshes/various_formats/msh_tetra.msh']
+                   '/meshes/various_formats/msh_tetra.msh',
+                   '/meshes/various_formats/xyz_quad.xyz',
+                   '/meshes/various_formats/xyz_tet.xyz']
 filename_meshes = [data_dir + name for name in filename_meshes]
 
 def mesh_hook(mesh, mode):
@@ -184,7 +186,7 @@ class Test(TestCommon):
 
         oks = []
         for suffix, format_ in six.iteritems(supported_formats):
-            if isinstance(format_, tuple):
+            if isinstance(format_, tuple) or (format_ == 'xyz'):
                 continue
             if 'w' not in supported_capabilities[format_]: continue
 
