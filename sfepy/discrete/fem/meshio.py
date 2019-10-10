@@ -2718,9 +2718,9 @@ class Msh2MeshIO(MeshIO):
     Used to read and write data from .msh format used by GMSH, format 2.0 is currently partially
     supported allowing: mesh and ElementNodeData with InterpolationScheme to be written and read.
 
-    For details on format see [1]_
+    For details on format see [1].
 
-    For details on representing and visualization of DG FEM data using gmsh see [2]_
+    For details on representing and visualization of DG FEM data using gmsh see [2].
 
     [1] http://gmsh.info/doc/texinfo/gmsh.html#File-formats
 
@@ -2901,10 +2901,6 @@ class Msh2MeshIO(MeshIO):
             elif line[0] == '#' or ls[:4] == '$End':
                 pass
 
-            else:
-                # output('skipping unknown entity: %s' % line)
-                continue
-
         fd.close()
 
         dim = nm.max(dims)
@@ -2986,7 +2982,7 @@ class Msh2MeshIO(MeshIO):
             contains :
                 name - name of the scheme,
                 F - coefficients matrix,
-                P - exponents matrix as defined in [1]_ and [2]_.
+                P - exponents matrix as defined in [1] and [2].
         """
         filename = get_default(filename, self.filename)
 
@@ -3116,7 +3112,7 @@ class Msh2MeshIO(MeshIO):
             contains :
                 name - name of the scheme,
                 F - coeficients matrix,
-                P - exponents matrix as defined in [1]_ and [2]_
+                P - exponents matrix as defined in [1] and [2].
         """
         fd.write('$InterpolationScheme\n')
         fd.write('"{}"\n'.format(scheme.name))
@@ -3149,7 +3145,7 @@ class Msh2MeshIO(MeshIO):
                 scheme is allowed, contains :
                     name - name of the scheme,
                     F - coefficients matrix,
-                    P - exponents matrix as defined in [1]_ and [2]_
+                    P - exponents matrix as defined in [1] and [2].
         ts : sfepy.solvers.ts.TimeStepper instance, optional
             Provides data to write time step.
         """
@@ -3198,7 +3194,7 @@ class Msh2MeshIO(MeshIO):
                 scheme is allowed, contains :
                     name - name of the scheme,
                     F - coefficients matrix,
-                    P - exponents matrix as defined in [1]_ and [2]_.
+                    P - exponents matrix as defined in [1] and [2].
         ts : sfepy.solvers.ts.TimeStepper instance, optional
             Provides data to write time step.
         **kwargs : ignored
