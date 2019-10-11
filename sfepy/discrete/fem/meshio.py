@@ -2969,22 +2969,27 @@ class Msh2MeshIO(MeshIO):
 
         Returns
         -------
+
         mesh : sfepy.discrete.fem.mesh.Mesh
             Computational mesh.
-        datas : list
-            Contains dictionaries with ElementNodeData as values and their names as keys.
-        times : list
-            Contains numpy arrays of times for each data in datas.
-        times_n : list
-            Contains numpy arrays of times step numbers for each data in datas.
-        scheme : Struct
-            Struct with interpolation scheme used in data, only one interpolation scheme is allowed,
-            contains :
-                name - name of the scheme,
-                F - coefficients matrix,
-                P - exponents matrix as defined in [1] and [2].
+        out : dictionary
+            Contains Structs:
+            data : list
+                Contains dictionaries with ElementNodeData as values and their names as keys.
+            time : list
+                Contains numpy arrays of times for each data in datas.
+            time_n : list
+                Contains numpy arrays of times step numbers for each data in datas.
+            scheme : Struct
+                Struct with interpolation scheme used in data, only one interpolation scheme is allowed,
+                contains :
+                    name - name of the scheme,
+                    F - coefficients matrix,
+                    P - exponents matrix as defined in [1] and [2].
         """
         filename = get_default(filename, self.filename)
+
+        out = {}
 
         if step in ["all", "last", "first"]:
             import glob
@@ -2997,31 +3002,38 @@ class Msh2MeshIO(MeshIO):
             times_ns = []
 
             for filename in filenames:
-                data, time, time_n, scheme = self.read_data(step=None, filename=filename, return_mesh=False)
+                name, data, time, time_n, scheme = self.read_data_file(filename=filename)
                 datas += data
                 times += time
                 times_ns += time_n
 
-            if return_mesh:
-                from sfepy.discrete.fem.mesh import Mesh
-                mesh = Mesh()
-                mesh = self.read(mesh, filename=filename, drop_z=drop_z)
-                return mesh, datas, times, times_ns, scheme
-            return datas, times, times_ns, scheme
-
         elif isinstance(step, int):
             filename_format = self.get_filename_format(filename)
             filename = filename_format.format(step)
+            try:
+                name, datas, times, times_ns, scheme = self.read_data_file(filename=filename)
+            except FileNotFoundError as e:
+                raise FileNotFoundError(str(e) +  " Maybe time step {} is not in output.".format(step))
         elif step is None:
-            pass
+            name, datas, times, times_ns, scheme = self.read_data_file(filename=filename)
         else:
             raise ValueError("Unsupported vaule for step : {}".format(step))
 
+        out[name] = Struct(name=name, data=datas, time=times, time_n=times_ns,
+                           scheme=scheme, mode="cell_modes")
+
+        if return_mesh:
+            from sfepy.discrete.fem.mesh import Mesh
+            mesh = Mesh()
+            mesh = self.read(mesh, filename=filename, drop_z=drop_z)
+            return  mesh, out
+        return out
+
+    def read_data_file(self, filename):
         try:
             fd = open(filename, "r")
         except FileNotFoundError:
-            raise FileNotFoundError("[Errno 2] No such file or directory: {}, maybe time step {} is not in output"
-                                    .format(filename, step))
+            raise FileNotFoundError("[Errno 2] No such file or directory: {}.".format(filename))
 
         scheme = Struct(name=None, desc=None, F=None, P=None)
         while 1:
@@ -3061,12 +3073,7 @@ class Msh2MeshIO(MeshIO):
                 pass
         fd.close()
 
-        if return_mesh:
-            from sfepy.discrete.fem.mesh import Mesh
-            mesh = Mesh()
-            mesh = self.read(mesh, filename=filename, drop_z=drop_z)
-            return mesh, [data], [time], [time_n], scheme
-        return [data], [time], [time_n], scheme
+        return data_name, [data], [time], [time_n], scheme
 
     def _write_mesh(self, fd, mesh):
         """
