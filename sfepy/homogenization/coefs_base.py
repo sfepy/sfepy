@@ -178,6 +178,7 @@ class CorrMiniApp(MiniAppBase):
         for key, sol in corr_sol.iter_solutions():
             for var_name in six.iterkeys(sol):
                 if var_name not in variables.ordered_state\
+                    and var_map is not None\
                     and var_name in var_map:
                     vname = var_map[var_name]
                 else:
@@ -1013,7 +1014,7 @@ class CoefOne(MiniAppBase):
     def set_variables_default(variables, set_var, data):
         for (var, req, comp) in set_var:
             if type(req) is tuple:
-                val = data[req[0]].state[comp]
+                val = data[req[0]].state[comp].copy()
                 for ii in req[1:]:
                     val += data[ii].state[comp]
 
