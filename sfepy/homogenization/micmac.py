@@ -104,6 +104,9 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
         app = problem.homogen_app
         multi_mpi = app.multi_mpi
 
+    if macro_data is not None:
+        macro_data['macro_time_step'] = ts.step
+
     app.setup_macro_data(macro_data)
 
     if multi_mpi is not None:
