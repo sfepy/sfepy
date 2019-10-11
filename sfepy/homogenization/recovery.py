@@ -628,7 +628,7 @@ def recover_micro_hook_eps(micro_filename, region,
                 continue
 
             output.level = output_level
-            output('micro: %d' % ii)
+            output('micro: %d / %d' % (ii, x0.shape[0]))
 
             for k, v in six.iteritems(nodal_values):
                 local_macro[k] = evfield.evaluate_at(local_coors, v)
