@@ -54,7 +54,7 @@ supported_capabilities = {
     'gambit' : ['r', 'rn'],
     'med' : ['r'],
     'ansys_cdb' : ['r'],
-    'msh_v2' : ['r'],
+    'msh_v2' : ['r', 'w'],
 }
 
 supported_cell_types = {
@@ -2712,8 +2712,40 @@ class ANSYSCDBMeshIO(MeshIO):
 
         return mesh
 
+
 class Msh2MeshIO(MeshIO):
+    """
+    Used to read and write data from .msh format used by GMSH, format 2.0 is
+    currently partially supported allowing: mesh and ElementNodeData with
+    InterpolationScheme to be written and read.
+
+    For details on format see [1].
+
+    For details on representing and visualization of DG FEM data using gmsh see [2].
+
+    [1] http://gmsh.info/doc/texinfo/gmsh.html#File-formats
+
+    [2] Remacle, J.-F., Chevaugeon, N., Marchandise, E., & Geuzaine, C. (2007).
+    Efficient visualization of high-order finite elements. International Journal
+    for Numerical Methods in Engineering, 69(4), 750-771.
+    https://doi.org/10.1002/nme.1787
+
+    Attributes
+    ----------
+    msh20header :
+        Header containing version number.
+
+    msh_cells : dictionary
+        Mapping from msh to sfepy geometry.
+
+    geo2msh_type : dictionary
+        Mapping from sfepy to msh geometry.
+    """
     format = 'msh_v2'
+
+    load_slices = {"all" : slice(0, None),
+                    "first": slice(0, 1),
+                    "last": slice(-1, None)}
 
     msh_cells = {
         1: (2, 2),
@@ -2723,7 +2755,37 @@ class Msh2MeshIO(MeshIO):
         5: (3, 8),
         6: (3, 6),
     }
+
+    geo2msh_type = {
+        "1_2" : 1, # ? but we will probably not need this
+        "2_3" : 2,
+        "2_4" : 3,
+        "3_4" : 4,
+        "3_8" : 5
+    }
+
     prism2hexa = nm.asarray([0, 1, 2, 2, 3, 4, 5, 5])
+
+    msh20header = ["$MeshFormat\n",
+                   "2.0 0 8\n"
+                   "$EndMeshFormat\n"]
+
+    def get_filename_format(self, filename):
+        try:
+            basename, step_num, extension = filename.split(".")
+        except ValueError:
+            raise ValueError("Filename of automatically loaded GMSH data must be:"
+                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
+        n_digits = len(step_num)
+        return basename + ".{:0"+str(n_digits)+"d}." + extension
+
+    def get_filename_wildcard(self, filename):
+        try:
+            basename, step_num, extension = filename.split(".")
+        except ValueError:
+            raise ValueError("Filename of automatically loaded GMSH data must be:"
+                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
+        return basename + ".*[0-9]." + extension
 
     def read_dimension(self, ret_fd=True):
         fd = open(self.filename, 'r')
@@ -2761,8 +2823,28 @@ class Msh2MeshIO(MeshIO):
         return _read_bounding_box(fd, dim, '$Nodes',
                                   c0=1, ret_fd=ret_fd, ret_dim=ret_dim)
 
-    def read(self, mesh, omit_facets=True, **kwargs):
-        fd = open(self.filename, 'r')
+    def read(self, mesh, omit_facets=True, filename=None, drop_z=False, **kwargs):
+        """
+        Reads mesh from msh v2.0 file returns it and also fills mesh parameter.
+
+        Parameters
+        ----------
+        mesh : Mesh instance
+            Empty sfepy.discrete.fem.mesh.Mesh instance to fill.
+        omit_facets : bool, ignored
+        filename : string, optional
+            Name of the file to use if None file from object is used.
+        drop_z : bool, optional, default False
+            Drop Z coordinate if zero and return 2D mesh, 2D meshes are stored
+            as 3D by msh
+
+        Returns
+        -------
+        mesh : Mesh instantce
+            Computational mesh.
+        """
+        filename = get_default(filename, self.filename)
+        fd = open(filename, 'r')
 
         conns = []
         descs = []
@@ -2821,10 +2903,6 @@ class Msh2MeshIO(MeshIO):
             elif line[0] == '#' or ls[:4] == '$End':
                 pass
 
-            else:
-                output('skipping unknown entity: %s' % line)
-                continue
-
         fd.close()
 
         dim = nm.max(dims)
@@ -2858,10 +2936,305 @@ class Msh2MeshIO(MeshIO):
                 mat_ids0.append(nm.asarray(mat_ids[ii], dtype=nm.int32))
                 descs0.append(descs[ii])
 
-        mesh._set_io_data(coors[:,1:], nm.int32(coors[:,-1] * 0),
+        # drop third coordinate if zero to get pretty 2D mesh
+        if drop_z and nm.sum(coors[:, -1]) == 0.0:
+            coors = coors[:, :-1]
+
+        mesh._set_io_data(coors[:,1:], nm.int32(coors[:,-1] * 1),
                           conns0, mat_ids0, descs0)
 
         return mesh
+
+    def read_data(self, step=None, filename=None, cache=None, return_mesh=False,
+                  drop_z=True):
+        """
+        Reads file or files with basename filename or self.filename, returns
+        lists containing data. Considers all files to contain data from time
+        steps of solution of single transient problem i.e. all data have the
+        same shape, mesh and same interpolation scheme, if any. For stationary
+        problems just reads one file with time 0.0 and time step 0.
+
+        Providing basename allows reading multiple files of format
+        `basename.*[0-9].msh`
+
+        Parameters
+        ----------
+        step : String, int,  optional
+            "all", "last", "first" or number of step to read:
+            if "all" read all files with the basename varying step,
+            if "last" read only last step of all files with the filename,
+            if "first" reads step=0,
+            if None reads file of filename provided or specified in object.
+        filename :string, optional
+             Basename of the files to use, if None file from object is used.
+        cache : has no effect
+        return_mesh : bool, optional, default True
+            Return mesh associated with data.
+
+        Returns
+        -------
+        mesh : sfepy.discrete.fem.mesh.Mesh
+            Computational mesh.
+        out : dictionary
+            Keys represent name of data, values are Structs:
+                data : array
+                    Contains ElementNodeData,
+                    shape is (len(time), n_cell, n_cell_dof).
+                time : array
+                    Contains times.
+                time_n : array
+                    Contains time step numbers.
+                scheme : Struct
+                    Interpolation scheme used in data, only one interpolation
+                    scheme is allowed, contains :
+                        name : string
+                            Name of the scheme.
+                        F : array
+                            Coefficients matrix.
+                        P : array
+                            Exponents matrix as defined in [1] and [2].
+        """
+        filename = get_default(filename, self.filename)
+
+        out = {}
+
+        if step in ["all", "last", "first"]:
+            import glob
+            from os.path import join as pjoin
+            filename_wildcard = self.get_filename_wildcard(filename)
+            filenames = glob.glob(filename_wildcard)[self.load_slices[step]]
+
+            data = []
+            time = []
+            time_n = []
+
+            for filename in filenames:
+                name, fdata, ftime, ftime_n, scheme = self._read_data_file(filename=filename)
+                data += fdata
+                time += ftime
+                time_n += ftime_n
+
+        elif isinstance(step, int):
+            filename_format = self.get_filename_format(filename)
+            filename = filename_format.format(step)
+            try:
+                name, data, time, time_n, scheme = self._read_data_file(filename=filename)
+            except FileNotFoundError as e:
+                raise FileNotFoundError(str(e) +  " Maybe time step {} is not in output.".format(step))
+        elif step is None:
+            name, data, time, time_n, scheme = self._read_data_file(filename=filename)
+        else:
+            raise ValueError("Unsupported vaule for step : {}".format(step))
+
+        out[name] = Struct(name=name,
+                           data=nm.array(data),
+                           time=nm.array(time),
+                           time_n=nm.array(time_n, dtype=nm.int32),
+                           scheme=scheme, mode="dg_cell_dofs")
+
+        if return_mesh:
+            from sfepy.discrete.fem.mesh import Mesh
+            mesh = Mesh()
+            mesh = self.read(mesh, filename=filename, drop_z=drop_z)
+            return  mesh, out
+        return out
+
+    def _read_data_file(self, filename):
+        try:
+            fd = open(filename, "r")
+        except FileNotFoundError:
+            raise FileNotFoundError("[Errno 2] No such file or directory: {}.".format(filename))
+
+        scheme = Struct(name=None, desc=None, F=None, P=None)
+        while 1:
+            line = skip_read_line(fd).split()
+            if not line:
+                break
+
+            ls = line[0]
+            if ls == "$InterpolationScheme":
+                scheme.name = skip_read_line(fd).strip('"\'')
+                n_int_tags = int(skip_read_line(fd))
+                scheme.desc = int(skip_read_line(fd))
+                n_matrices = int(skip_read_line(fd))
+                f_shape = [int(i) for i in skip_read_line(fd).split(" ")]
+                scheme.F = read_array(fd, f_shape[0], f_shape[1], nm.float64)
+                p_shape = [int(i) for i in skip_read_line(fd).split(" ")]
+                scheme.P = read_array(fd, p_shape[0], p_shape[1], nm.float64)
+            elif ls == "$ElementNodeData":
+                n_str_tags = int(skip_read_line(fd))
+                data_name = skip_read_line(fd).strip('"\'')
+                if n_str_tags == 2:
+                    interpolation_scheme_name = skip_read_line(fd).strip('"\'')
+                n_float_tags =  int(skip_read_line(fd))
+                time = float(skip_read_line(fd))
+                n_int_tags = int(skip_read_line(fd))
+                time_n = int(skip_read_line(fd))
+                comp = int(skip_read_line(fd))
+                n_el = int(skip_read_line(fd))
+
+                n_el_nod = int(look_ahead_line(fd).split()[1])
+                # read data including indexing
+                data = read_array(fd, n_el, n_el_nod + 2 , nm.float64)
+                # strip indexing columns
+                data = data[:, 2:]
+
+            elif line[0] == '#' or ls[:4] == '$End':
+                pass
+        fd.close()
+
+        return data_name, [data], [time], [time_n], scheme
+
+    def _write_mesh(self, fd, mesh):
+        """
+        Write mesh into opened file fd.
+
+        Parameters
+        ----------
+        fd :
+            File opened for writing.
+        mesh: sfepy.discrete.fem.mesh.Mesh
+            Computational mesh to write.
+        """
+        coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+        dim = mesh.dim
+
+        fd.write("$Nodes\n")
+        fd.write(str(mesh.n_nod) + "\n")
+        s = "{}" + dim*" {}" + (3 - dim)*" 0.0" + "\n"
+        for i, node in enumerate(coors, 1):
+            fd.write(s.format(i, *node))
+        fd.write("$EndNodes\n")
+
+        fd.write("$Elements\n")
+        fd.write(str(sum( len(conn) for conn in conns)) + "\n")  # sum number of elements acrcoss all conns
+        for desc, mat_id, conn in zip(descs, mat_ids, conns):
+            _, n_el_verts = [int(f) for f in desc.split("_")]
+            el_type = self.geo2msh_type[desc]
+            s = "{} {} 2 {} 0" + n_el_verts * " {}" + "\n"
+            for (i, element), el_mat_id in zip(enumerate(conn, 1), mat_id):
+                fd.write(s.format(i, el_type, el_mat_id, *nm.array(element) + 1))
+        fd.write("$EndElements\n")
+
+    def _write_interpolation_scheme(self, fd, scheme):
+        """
+        Unpacks matrices from scheme struct and writes them in correct format
+        for gmsh to read.
+
+        Parameters
+        ----------
+        fd :
+            File opened for writing.
+        scheme : Struct
+            Struct with interpolation scheme used in data, only one interpolation
+            scheme is allowed,
+            contains :
+                name - name of the scheme,
+                F - coeficients matrix,
+                P - exponents matrix as defined in [1] and [2].
+        """
+        fd.write('$InterpolationScheme\n')
+        fd.write('"{}"\n'.format(scheme.name))
+        fd.write("1\n")  # one int tag
+        fd.write("{}\n".format(scheme.desc[-1]))
+        fd.write("2\n")  # number of matrices
+        fd.write("{} {}\n".format(*scheme.F.shape))
+        sF = "{} " * scheme.F.shape[1] + "\n"
+        for row in scheme.F:
+            fd.write(sF.format(*row))
+        fd.write("{} {}\n".format(*scheme.P.shape))
+        sP = "{} " * scheme.P.shape[1] + "\n"
+        for row in scheme.P:
+            fd.write(sP.format(*row))
+        fd.write('$EndInterpolationScheme\n')
+
+    def _write_elementnodedata(self, fd, out, ts):
+        """
+        Writes dg_cell_dofs data as $ElementNodeData, including interpolation
+        scheme.
+
+        Parameters
+        ----------
+        out : dictionary, optional
+            dictionary containing data to write in format generated by
+            DGField.create_output:
+            key : name of data
+            value : Struct:
+                mode : so far only `dg_cell_dofs`, representing modal data in cells
+                is supported;
+                data : DOFs as defined in DG;
+                interpolation_scheme Struct with interpolation scheme used in data,
+                 only one interpolation
+                scheme is allowed, contains :
+                    name : name of the scheme,
+                    F : coefficients matrix,
+                    P : exponents matrix as defined in [1] and [2].
+        ts : sfepy.solvers.ts.TimeStepper instance, optional
+            Provides data to write time step.
+        """
+        for key, value in out.items():
+            if not value.mode == "dg_cell_dofs":
+                continue
+            if value.interpolation_scheme is not None:
+                self._write_interpolation_scheme(fd, value.interpolation_scheme)
+                interpolation_scheme_name = value.interpolation_scheme.name
+            data = value.data
+            n_el_nod = nm.shape(data)[1]
+            fd.write("$ElementNodeData\n")
+            fd.write("{}\n".format(1 if interpolation_scheme_name is None else 2))
+            fd.write('"{}"\n'.format(key))  # name
+            if interpolation_scheme_name is not None:
+                fd.write('"{}"\n'.format(interpolation_scheme_name))
+            fd.write("1\n")  # number of real tags
+            fd.write("{}\n".format(ts.time if ts is not None else 0.0))
+            fd.write("3\n")  # number of integer tags
+            fd.write("{}\n".format(ts.step if ts is not None else 0))
+            fd.write("1\n")  # number of components
+            fd.write("{}\n".format(data.shape[0]))
+            s = "{} {}" + n_el_nod * " {}" + "\n"
+            for i, el_node_vals in enumerate(data, 1):
+                fd.write(s.format(i, n_el_nod, *el_node_vals))
+            fd.write("$EndElementNodeData\n")
+
+    def write(self, filename, mesh, out=None, ts=None, **kwargs):
+        """
+        Writes mesh and data into msh v2.0 file, handles dg_cell_dofs data from
+        DGField if provided in out.
+
+        Parameters
+        ----------
+        filename : string
+            Path to file.
+        mesh : sfepy.discrete.fem.mesh.Mesh
+            Computational mesh to write.
+        out : dictionary, optional
+            Dictionary containing data to write, expected to be in format
+            generated by DGField.create_output, key is name of data,
+            value is Struct containing :
+                    mode : string
+                        So far only `dg_cell_dofs`, representing modal data in
+                        cells is supported.
+                    data : array
+                        DOFs as defined in DG Field.
+                    interpolation_scheme : Struct
+                        Interpolation scheme used in data, only one interpolation
+                        scheme is allowed, contains :
+                            name : string
+                                Name of the scheme.
+                            F : array
+                                Coefficients matrix.
+                            P : array
+                                Exponents matrix as defined in [1] and [2].
+        ts : sfepy.solvers.ts.TimeStepper instance, optional
+            Provides data to write time step.
+        """
+        fd = open(filename, 'w')
+        fd.writelines(self.msh20header)
+        self._write_mesh(fd, mesh)
+        if out:
+            self._write_elementnodedata(fd, out, ts)
+        fd.close()
+        return
 
 def guess_format(filename, ext, formats, io_table):
     """
