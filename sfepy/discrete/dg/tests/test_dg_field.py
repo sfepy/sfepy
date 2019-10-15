@@ -53,9 +53,11 @@ def prepare_field_1D(approx_order):
     mesh = gen_block_mesh((1,), (4,), (.5,))
     return prepare_field(approx_order, mesh), mesh
 
+
 def prepare_field_2D(approx_order):
     mesh = gen_block_mesh((1, 1), (4, 4), (.5, .5))
     return prepare_field(approx_order, mesh), mesh
+
 
 def test_get_facet_idx1D():
     mesh = gen_block_mesh((1,), (4,), (.5,))

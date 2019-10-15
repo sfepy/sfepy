@@ -114,11 +114,11 @@ class AdvectDGFluxTerm(DGTerm):
         if "DG" not in field.family_name:
             raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
 
-        fargs = (state, test, diff_var, field, region, advelo[:, 0, :, 0])
+        fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
         return fargs
 
     # noinspection PyUnreachableCode
-    def function(self, out, state, test, diff_var, field : DGField, region, advelo):
+    def function(self, out, state, diff_var, field : DGField, region, advelo):
 
         if diff_var is not None:
 
@@ -135,19 +135,24 @@ class AdvectDGFluxTerm(DGTerm):
             # compute values
             inner_diff = nm.einsum("nfk, nfk->nf",
                                    fc_n,
-                                   advelo[:, None, :] + nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
+                                   advelo[:, None, :]
+                                   + nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
             # FIXME broadcast advelo to facets - maybe somehow get values of advelo at them?
-
             outer_diff = nm.einsum("nfk, nfk->nf",
                                    fc_n,
-                                   advelo[:, None, :] - nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
+                                   advelo[:, None, :]
+                                   - nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
 
-            inner_vals = nm.einsum("nf, ndfq, nbfq, nfq -> ndb", inner_diff, in_fc_b, in_fc_b, whs)
+            inner_vals = nm.einsum("nf, ndfq, nbfq, nfq -> ndb",
+                                   inner_diff,
+                                   in_fc_b,
+                                   in_fc_b,
+                                   whs)
             outer_vals = nm.einsum("i, idq, ibq, iq -> idb",
-                                             outer_diff[active_cells, active_facets],
-                                             in_fc_b[active_cells, :, active_facets],
-                                             out_fc_b[active_cells, :, active_facets],
-                                             whs[active_cells, active_facets])
+                                   outer_diff[active_cells, active_facets],
+                                   in_fc_b[active_cells, :, active_facets],
+                                   out_fc_b[active_cells, :, active_facets],
+                                   whs[active_cells, active_facets])
 
             vals = nm.vstack((inner_vals, outer_vals))
             vals = vals.flatten()
@@ -190,8 +195,8 @@ class DiffusionDGFluxTerm(DGTerm):
 
     """
     name = "dw_dg_diffusion_flux"
-    arg_types = (('material_diffusion_tensor', 'state', 'virtual'),
-                 ('material_diffusion_tensor', 'virtual', 'state')
+    arg_types = (('material_diffusion_tensor', 'state', 'virtual'),  # left
+                 ('material_diffusion_tensor', 'virtual', 'state')   # right
                  )
     arg_shapes = [{'material_diffusion_tensor': '1, 1',
                    'virtual/avg_state': (1, None),

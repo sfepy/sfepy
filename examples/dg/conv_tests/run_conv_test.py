@@ -10,7 +10,11 @@ import sympy as sm
 import pandas as pd
 import importlib
 import argparse
+import matplotlib
+matplotlib.use("Qt5Agg")
 from matplotlib import pyplot as plt
+
+
 
 # sfepy imports
 from discrete.fem import Mesh
@@ -48,13 +52,14 @@ def main(argv):
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
 
-    problem_module_name = "dg."  + args.problem_file.replace(".py", "").replace("\\", ".").replace("/", ".")
+    problem_module_name = "dg." + args.problem_file.replace(".py", "")\
+        .replace("\\", ".").replace("/", ".")
     mesh = os.path.abspath(args.mesh_file)
 
     problem_module = importlib.import_module(problem_module_name)
 
-    refines = [0, 1, 2, 3, 4 ]
-    orders = [1,2,3,4, 5]
+    refines = [0, 1, 2, 3, 4]
+    orders = [1, 2, 3, 4, 5]
 
     if args.do1Dplot and problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
@@ -104,7 +109,8 @@ def main(argv):
             output_folder = pjoin(output_folder, "o" + str(order))
 
             output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}"
-                                  .format(n_cells, order, "vtk" if problem_module.dim == 1 else "msh"))
+                                  .format(n_cells, order,
+                                          "vtk" if problem_module.dim == 1 else "msh"))
             output("Output set to {}, clearing.".format(output_format))
             output("------------------Finished------------------\n\n")
 
@@ -117,22 +123,28 @@ def main(argv):
 
             n_dof = pb.fields["f"].n_nod
 
-            result = (h, n_cells, nm.mean(vols), order, n_dof, ana_l2, diff_l2, error, elapsed,
-                      getattr(pb.ts_conf, "cour", nm.NAN), getattr(pb.ts_conf, "dt", nm.NAN))
+            result = (h, n_cells, nm.mean(vols), order, n_dof,
+                      ana_l2, diff_l2, error, elapsed,
+                      getattr(pb.ts_conf, "cour", nm.NAN),
+                      getattr(pb.ts_conf, "dt", nm.NAN))
 
             results.append(result)
 
             if args.do1Dplot and problem_module.dim == 1:
-                plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs)
+                plot_1D_snr(conf, pb, ana_qp, num_qp,
+                            io, order, orders, ir,
+                            sol_fig, axs)
 
     results = nm.array(results)
     output(results)
 
     err_df = pd.DataFrame(results,
-                          columns=["h", "n_cells", "mean_vol", "order", "n_dof", "ana_l2", "diff_l2", "err_rel",
+                          columns=["h", "n_cells", "mean_vol", "order", "n_dof",
+                                   "ana_l2", "diff_l2", "err_rel",
                                    "elapsed", "cour", "dt"])
     err_df = calculate_num_order(err_df)
-    err_df.to_csv(pjoin(base_output_folder, conf.example_name + "results" + build_attrs_string(conf) + ".csv"))
+    err_df.to_csv(pjoin(base_output_folder,
+                        conf.example_name + "results" + build_attrs_string(conf) + ".csv"))
 
     plot_conv_results(base_output_folder, conf, err_df, save=True)
 
@@ -141,7 +153,8 @@ def main(argv):
 
 def compute_erros(conf, pb):
     """
-    Compute errors from analytical solution in conf.sol_fun and numerical solution saved in pb
+    Compute errors from analytical solution in conf.sol_fun and numerical
+    solution saved in pb
     :param conf:
     :param pb:
     :return:
@@ -149,7 +162,8 @@ def compute_erros(conf, pb):
     idiff = Integral('idiff', 20)
     num_qp = pb.evaluate(
         'ev_volume_integrate.idiff.Omega(u)',
-        integrals=Integrals([idiff]), mode='qp', copy_materials=False, verbose=False
+        integrals=Integrals([idiff]), mode='qp',
+        copy_materials=False, verbose=False
     )
     aux = Material('aux', function=conf.sol_fun)
     ana_qp = pb.evaluate(
@@ -183,7 +197,8 @@ def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
     """
     idiff = Integral('idiff', 20)
     sol_fig.suptitle(
-        "Numerical and exact solutions" + build_attrs_string(conf, remove_dots=False, sep=", "))
+        "Numerical and exact solutions" +
+        build_attrs_string(conf, remove_dots=False, sep=", "))
     n_cells = pb.domain.shape.n_el
 
     qps = pb.fields["f"].mapping.get_physical_qps(idiff.get_qp("1_2")[0])
