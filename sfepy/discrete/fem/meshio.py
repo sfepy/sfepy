@@ -11,6 +11,7 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
                                 read_array, read_list, pt, enc, dec,
+                                edit_filename,
                                 read_from_hdf5, write_to_hdf5,
                                 HDF5ContextManager, get_or_create_hdf5_group)
 import os.path as op
@@ -33,6 +34,7 @@ supported_formats = {
     '.med'  : 'med',
     '.cdb'  : 'ansys_cdb',
     '.msh'  : 'msh_v2',
+    '.xyz'  : 'xyz',
 }
 
 # Map mesh formats to read and write capabilities.
@@ -55,6 +57,7 @@ supported_capabilities = {
     'med' : ['r'],
     'ansys_cdb' : ['r'],
     'msh_v2' : ['r', 'w'],
+    'xyz' : ['r', 'w'],
 }
 
 supported_cell_types = {
@@ -72,6 +75,7 @@ supported_cell_types = {
     'med' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
     'ansys_cdb' : ['tetra4', 'hexa8'],
     'msh_v2' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
+    'xyz' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
     'function' : ['user'],
 }
 
@@ -3235,6 +3239,77 @@ class Msh2MeshIO(MeshIO):
             self._write_elementnodedata(fd, out, ts)
         fd.close()
         return
+
+class XYZMeshIO(MeshIO):
+    """
+    Trivial XYZ format working only with coordinates (in a .XYZ file) and the
+    connectivity stored in another file with the same base name and .IEN
+    suffix.
+    """
+    format = 'xyz'
+
+    def _read_coors(self):
+        coors = nm.loadtxt(self.filename)
+        if (coors[:, -1] == 0).all():
+            coors = coors[:, :-1].copy()
+
+        return coors
+
+    def read_dimension(self, ret_fd=False):
+        coors = self._read_coors()
+        dim = coors.shape[1]
+
+        if ret_fd:
+            fd = open(self.filename, 'r')
+            return dim, fd
+
+        else:
+            return dim
+
+    def read_bounding_box(self, ret_fd=False, ret_dim=False):
+        coors = self._read_coors()
+        bbox = nm.vstack((nm.amin(coors, 0), nm.amax(coors, 0)))
+
+        if ret_fd: fd = open(self.filename, 'r')
+        if ret_dim:
+            dim = coors.shape[1]
+            if ret_fd:
+                return bbox, dim, fd
+            else:
+                return bbox, dim
+        else:
+            if ret_fd:
+                return bbox, fd
+            else:
+                return bbox
+
+    def read(self, mesh, omit_facets=False, **kwargs):
+        coors = self._read_coors()
+        n_nod, dim = coors.shape
+
+        conn_ext = '.IEN' if op.splitext(self.filename)[1].isupper() else '.ien'
+        conn = nm.loadtxt(edit_filename(self.filename, new_ext=conn_ext),
+                          dtype=nm.int32) - 1
+        desc = '%d_%d' % (dim, conn.shape[1])
+
+        mesh._set_io_data(coors, nm.zeros(n_nod, dtype=nm.int32),
+                          [conn], [nm.zeros(conn.shape[0], dtype=nm.int32)],
+                          [desc])
+        return mesh
+
+    def write(self, filename, mesh, out=None, **kwargs):
+        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
+        n_nod, dim = coors.shape
+
+        zz = nm.zeros((n_nod, 3-dim))
+        nm.savetxt(filename, nm.c_[coors, zz])
+
+        conn_ext = '.IEN' if op.splitext(filename)[1].isupper() else '.ien'
+        nm.savetxt(edit_filename(self.filename, new_ext=conn_ext),
+                   conns[0] + 1)
+
+        if out is not None:
+            raise NotImplementedError
 
 def guess_format(filename, ext, formats, io_table):
     """
