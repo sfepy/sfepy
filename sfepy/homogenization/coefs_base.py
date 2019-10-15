@@ -10,7 +10,8 @@ from sfepy.discrete.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.solvers import Solver, eig
 from sfepy.linalg import MatrixAction
-from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis
+from .utils import iter_sym, iter_nonsym, create_pis, create_scalar_pis,\
+    rm_multi
 import six
 from six.moves import range
 
@@ -177,6 +178,7 @@ class CorrMiniApp(MiniAppBase):
         for key, sol in corr_sol.iter_solutions():
             for var_name in six.iterkeys(sol):
                 if var_name not in variables.ordered_state\
+                    and var_map is not None\
                     and var_name in var_map:
                     vname = var_map[var_name]
                 else:
@@ -300,31 +302,30 @@ class CorrEval(CorrMiniApp):
     def __call__(self, problem=None, data=None):
         problem = get_default(problem, self.problem)
         expr = self.expression
-        for i in range(len(self.requires)):
-            expr = expr.replace(self.requires[i],
-                                "data['%s']" % self.requires[i])
+        for req in map(rm_multi, self.requires):
+            expr = expr.replace(req, "data['%s']" % req)
 
         val = eval(expr)
 
-        clist = ['data']
 
         if type(val) is dict:
             corr_sol = CorrSolution(name=self.name,
-                                    state=val,
-                                    components=clist)
+                                    state=val)
         elif type(val) is nm.ndarray:
             if val.dtype == nm.object:
                 corr_sol = CorrSolution(name=self.name,
                                         states=val,
-                                        components=clist)
+                                        components=['data'])
             else:
                 ndof, ndim = val.shape
                 state = {self.variable: val.reshape((ndof * ndim,))}
                 corr_sol = CorrSolution(name=self.name,
-                                        state=state,
-                                        components=clist)
+                                        state=state)
         else:
             corr_sol = val
+
+        cvars = problem.create_variables([self.variable])
+        self.save(corr_sol, problem, variables=cvars)
 
         return corr_sol
 
@@ -1012,7 +1013,15 @@ class CoefOne(MiniAppBase):
 
     def set_variables_default(variables, set_var, data):
         for (var, req, comp) in set_var:
-            variables[var].set_data(data[req].state[comp])
+            if type(req) is tuple:
+                val = data[req[0]].state[comp].copy()
+                for ii in req[1:]:
+                    val += data[ii].state[comp]
+
+            else:
+                val = data[req].state[comp]
+
+            variables[var].set_data(val)
 
     set_variables_default = staticmethod(set_variables_default)
 
@@ -1023,11 +1032,12 @@ class CoefOne(MiniAppBase):
         equations, variables = problem.create_evaluable(self.expression,
                                                         term_mode=term_mode)
 
-        if isinstance(self.set_variables, list):
-            self.set_variables_default(variables, self.set_variables,
-                                       data)
-        else:
-            self.set_variables(variables, **data)
+        if hasattr(self, 'set_variables'):
+            if isinstance(self.set_variables, list):
+                self.set_variables_default(variables, self.set_variables,
+                                           data)
+            else:
+                self.set_variables(variables, **data)
 
         val = eval_equations(equations, variables,
                              term_mode=term_mode)
@@ -1040,10 +1050,9 @@ class CoefOne(MiniAppBase):
 class CoefSum(MiniAppBase):
 
     def __call__(self, volume, problem=None, data=None):
-
         coef = nm.zeros_like(data[self.requires[0]])
-        for i in range(len(self.requires)):
-            coef += data[self.requires[i]]
+        for req in map(rm_multi, self.requires):
+            coef += data[req]
 
         return coef
 
@@ -1052,11 +1061,9 @@ class CoefEval(MiniAppBase):
     Evaluate expression.
     """
     def __call__(self, volume, problem=None, data=None):
-
         expr = self.expression
-        for i in range(len(self.requires)):
-            expr = expr.replace(self.requires[i],
-                                "data['%s']" % self.requires[i])
+        for req in map(rm_multi, self.requires):
+            expr = expr.replace(req, "data['%s']" % req)
 
         coef = eval(expr)
 

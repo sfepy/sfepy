@@ -246,10 +246,10 @@ class Newton(NonlinearSolver):
         ls_n_iter = 0
         while 1:
             if iter_hook is not None:
-                iter_hook(self, vec_x, it, err, err0)
+                iter_hook(self.context, self, vec_x, it, err, err0)
 
             ls = 1.0
-            vec_dx0 = vec_dx;
+            vec_dx0 = vec_dx
             while 1:
                 timer.start()
 

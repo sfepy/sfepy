@@ -42,32 +42,29 @@ class Evaluator(Struct):
     def __init__(self, problem, matrix_hook=None):
         Struct.__init__(self, problem=problem, matrix_hook=matrix_hook)
 
-    def new_ulf_iteration(self, nls, vec, it, err, err0):
+    @staticmethod
+    def new_ulf_iteration(problem, nls, vec, it, err, err0):
+        vec = problem.equations.make_full_vec(vec)
+        problem.equations.set_variables_from_state(vec)
 
-        pb = self.problem
-
-        vec = self.make_full_vec(vec)
-        pb.equations.set_variables_from_state(vec)
-
-        upd_vars = pb.conf.options.get('mesh_update_variables', None)
+        upd_vars = problem.conf.options.get('mesh_update_variables', None)
         for varname in upd_vars:
             try:
-                state = pb.equations.variables[varname]
+                state = problem.equations.variables[varname]
             except IndexError:
                 msg = 'variable "%s" does not exist!' % varname
                 raise KeyError( msg )
 
         nods = state.field.get_dofs_in_region(state.field.region, merge=True)
-        coors = pb.domain.get_mesh_coors().copy()
-        vs = state()
-        coors[nods,:] = coors[nods,:] + vs.reshape(len(nods),
-                                                   state.n_components)
-        if pb.ts.step == 1 and it == 0:
+        coors = problem.domain.get_mesh_coors().copy()
+        coors[nods, :] += state().reshape(len(nods), state.n_components)
+
+        if len(state.field.mappings0) == 0:
             state.field.save_mappings()
 
         state.field.clear_mappings()
-        pb.set_mesh_coors(coors, update_fields=False, actual=True,
-                          clear_all=False)
+        problem.set_mesh_coors(coors, update_fields=False, actual=True,
+                               clear_all=False)
 
     def eval_residual(self, vec, is_full=False):
         if not is_full and self.problem.active_only:

@@ -20,6 +20,8 @@ from six.moves import range
 
 shared = Struct()
 
+cc_cache = {}
+
 #
 # TODO : interpolate fvars to macro times. ?mid-points?
 #
@@ -557,7 +559,7 @@ def recover_micro_hook(micro_filename, region, macro,
 def recover_micro_hook_eps(micro_filename, region,
                            eval_var, nodal_values, const_values, eps0,
                            recovery_file_tag='',
-                           define_args=None, verbose=False):
+                           define_args=None, verbose=False, use_cache=False):
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove('equations')
@@ -568,9 +570,16 @@ def recover_micro_hook_eps(micro_filename, region,
     output_dir = conf.options.get('output_dir', '.')
     coefs_filename = op.join(output_dir, coefs_filename) + '.h5'
 
+    if not use_cache:
+        cc_cache.clear()
+ 
     # Coefficients and correctors
-    coefs = Coefficients.from_file_hdf5(coefs_filename)
-    corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
+    if coefs_filename not in cc_cache:
+        coefs = Coefficients.from_file_hdf5(coefs_filename)
+        corrs = get_correctors_from_file_hdf5(dump_names=coefs.save_names)
+        cc_cache[coefs_filename] = coefs, corrs
+    else:
+        coefs, corrs = cc_cache[coefs_filename]
 
     recovery_hook = conf.options.get('recovery_hook', None)
 
@@ -619,7 +628,7 @@ def recover_micro_hook_eps(micro_filename, region,
                 continue
 
             output.level = output_level
-            output('micro: %d' % ii)
+            output('micro: %d / %d' % (ii, x0.shape[0]))
 
             for k, v in six.iteritems(nodal_values):
                 local_macro[k] = evfield.evaluate_at(local_coors, v)

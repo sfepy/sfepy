@@ -317,12 +317,6 @@ class Problem(Struct):
                     hook = self.conf.get_function(hook)
                     setattr(self, hook_name, hook)
 
-        iter_hook = self.nls_iter_hook
-        if iter_hook is not None:
-            self.nls_iter_hook = lambda *args, **kwargs: \
-                                 iter_hook(self, *args, **kwargs)
-
-
     def copy(self, name=None):
         """
         Make a copy of Problem.
@@ -717,8 +711,8 @@ class Problem(Struct):
     def create_state(self):
         return State(self.equations.variables)
 
-    def get_mesh_coors(self):
-        return self.domain.get_mesh_coors()
+    def get_mesh_coors(self, actual=False):
+        return self.domain.get_mesh_coors(actual=actual)
 
     def set_mesh_coors(self, coors, update_fields=False, actual=False,
                        clear_all=True, extra_dofs=False):

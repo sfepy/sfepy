@@ -12,6 +12,7 @@ from sfepy.applications import PDESolverApp
 import sfepy.discrete.fem.periodic as per
 import sfepy.linalg as la
 import sfepy.base.multiproc as multi
+import six
 from six.moves import range
 
 
@@ -37,9 +38,10 @@ class HomogenizationApp(HomogenizationEngine):
                       requirements=get('requirements', None,
                                        'missing "requirements" in options!'),
                       return_all=get('return_all', False),
-                      macro_deformation=get('macro_deformation', None),
                       mesh_update_variable=get('mesh_update_variable', None),
-                      mesh_update_corrector=get('mesh_update_corrector', None),
+                      macro_data=get('macro_data', None),
+                      micro_update=get('micro_update', {}),
+                      n_micro=get('n_micro', None),
                       multiprocessing=get('multiprocessing', True),
                       use_mpi=get('use_mpi', False),
                       store_micro_idxs=get('store_micro_idxs', []),
@@ -51,25 +53,29 @@ class HomogenizationApp(HomogenizationEngine):
                               init_equations=False)
 
         self.setup_options()
-        self.cached_coefs = None
-        self.n_micro = kwargs.get('n_micro', None)
-        self.macro_deformation = None
-        self.micro_coors = None
+        self.n_micro = kwargs.get('n_micro',
+                                  self.app_options.get('n_micro', None))
         self.updating_corrs = None
         self.micro_state_cache = {}
         self.multiproc_mode = None
+        self.micro_states = None if self.n_micro is None else {}
 
-        mac_def = self.app_options.macro_deformation
-        if mac_def is not None and isinstance(mac_def, nm.ndarray):
-            self.n_micro = mac_def.shape[0]
-            self.setup_macro_deformation(mac_def)
+        # macroscopic data given in problem options dict.
+        macro_data = self.app_options.macro_data
+        if macro_data is not None:
+            self.n_micro = macro_data[macro_data.keys()[0]].shape[0]
+            self.setup_macro_data(macro_data)
 
         if self.n_micro is not None:
+            for k in self.app_options.micro_update:
+               if not k == 'coors':
+                   self.micro_states[k] = None
+
             coors = self.problem.domain.get_mesh_coors()
-            self.micro_coors = nm.empty((self.n_micro,) + coors.shape,
-                                        dtype=nm.float64)
+            c_sh = (self.n_micro,) + coors.shape
+            self.micro_states['coors'] = nm.empty(c_sh, dtype=nm.float64)
             for im in range(self.n_micro):
-                self.micro_coors[im, ...] = coors
+                self.micro_states['coors'][im] = coors
 
         output_dir = self.problem.output_dir
 
@@ -84,35 +90,81 @@ class HomogenizationApp(HomogenizationEngine):
         if hasattr(self, 'he'):
             self.he.setup_options()
 
-    def setup_macro_deformation(self, mtx_F):
+    def setup_macro_data(self, data):
         """
         Setup macroscopic deformation gradient.
         """
-        self.macro_deformation = mtx_F
+        self.macro_data = data
+        self.problem.homogenization_macro_data = self.macro_data
 
     def get_micro_cache_key(self, key, icoor, itime):
         tt = '' if itime is None else '_t%03d' % itime
         return '%s_%d%s' % (key, icoor, tt)
 
-    def update_micro_coors(self, ret_val=False):
+    def update_micro_states(self):
         """
-        Update microstructures coordinates according to the deformation
-        gradient and corrector functions.
+        Update microstructures state according to the macroscopic data
+        and corrector functions.
         """
-        dim = self.macro_deformation.shape[1]
-        mtx_e = self.macro_deformation - nm.eye(dim)
-        ncoors = self.micro_coors
-        ncoors += la.dot_sequences(ncoors, mtx_e, 'ABT')
-        if self.updating_corrs is not None:
-            upd_var = self.app_options.mesh_update_variable
-            for ii, corr in enumerate(self.updating_corrs):
-                update_corr = nm.array(
-                    [corr.states[jj][upd_var] for jj in corr.components]).T
-                gg = mtx_e[ii, ...].reshape((dim**2, 1))
-                ncoors[ii] += nm.dot(update_corr, gg).reshape(ncoors[ii].shape)
+        def calculate_local_update(state, corrs, var, macro_vals):
+            for ic, corr in enumerate(corrs):
+                if state is None:
+                    sh = corr.states[corr.components[0]][var].shape \
+                        if hasattr(corr, 'states') else corr.state[var].shape
+                    state = nm.zeros((len(corrs),) + sh, dtype=nm.float64)
+                else:
+                    sh = state[ic].shape
 
-        if ret_val:
-            return ncoors
+                if hasattr(corr, 'states'):
+                    corr_arr = nm.array(
+                        [corr.states[jj][var] for jj in corr.components]).T
+                    mval = macro_vals[ic].reshape((corr_arr.shape[1], 1))
+                    state[ic] += nm.dot(corr_arr, mval).reshape(sh)
+                else:
+                    if macro_vals is None:
+                        state[ic] += corr.state[var].reshape(sh)
+                    else:
+                        state[ic] += \
+                            (corr.state[var] * macro_vals[ic]).reshape(sh)
+
+            return state
+
+        micro_update = self.app_options.micro_update
+        for key, upd_obj in six.iteritems(micro_update):
+            if '_prev' in key:
+                continue
+
+            state = self.micro_states[key]
+
+            if key + '_prev' in micro_update and state is not None:
+                self.micro_states[key + '_prev'] = state.copy()
+
+            if key == 'coors':
+                if hasattr(upd_obj, '__call__'):
+                    upd_obj(state, self.macro_data, self.problem)
+                else:
+                    # macro strain - in the first sequence of the list
+                    mtx_e = self.macro_data[upd_obj[0][2]]
+                    state += la.dot_sequences(state, mtx_e, 'ABT')
+
+            if hasattr(upd_obj, '__call__'):
+                upd_obj(state, self.macro_data, self.problem)
+            else:
+                if self.updating_corrs is not None:
+                    for cname, vname, mname in upd_obj:
+                        macro_data = None if mname is None \
+                            else self.macro_data[mname]
+                        print(cname, vname, mname)
+                        if cname is not None:
+                            corr_data = self.updating_corrs[cname]
+                            state0 = calculate_local_update(state, corr_data,
+                                                            vname, macro_data)
+                        else:
+                            state += macro_data[..., 0]
+
+                        if state0 is not state:
+                            self.micro_states[key] = state0
+                            state = state0
 
     def call(self, verbose=False, ret_all=None, itime=None, iiter=None):
         """
@@ -152,8 +204,9 @@ class HomogenizationApp(HomogenizationEngine):
             self.he = HomogenizationEngine(self.problem, self.options,
                                            volumes=volumes)
 
-        if self.micro_coors is not None:
-            self.he.set_micro_coors(self.update_micro_coors(ret_val=True))
+        if self.micro_states is not None:
+            self.update_micro_states()
+            self.he.set_micro_states(self.micro_states)
 
         multiproc_mode = None
         if opts.multiprocessing and multi.use_multiprocessing:
@@ -175,9 +228,12 @@ class HomogenizationApp(HomogenizationEngine):
         if ret_all:
             coefs, dependencies = aux
             # store correctors for coors update
-            if opts.mesh_update_corrector is not None:
-                self.updating_corrs =\
-                    dependencies[opts.mesh_update_corrector]
+            self.updating_corrs = {}
+            for v in six.itervalues(opts.micro_update):
+                if v is not None and not hasattr(v, '__call__'):
+                    for cr, _, _ in v:
+                        if cr is not None:
+                            self.updating_corrs[cr] = dependencies[cr]
         else:
             coefs = aux
 
@@ -193,8 +249,9 @@ class HomogenizationApp(HomogenizationEngine):
 
             ms_cache = self.micro_state_cache
             for ii in self.app_options.store_micro_idxs:
-                key = self.get_micro_cache_key('coors', ii, itime)
-                ms_cache[key] = self.micro_coors[ii, ...]
+                for k in self.micro_states.keys():
+                    key = self.get_micro_cache_key(k, ii, itime)
+                    ms_cache[key] = self.micro_states[k][ii]
 
             coef_save_name = op.join(opts.output_dir, opts.coefs_filename)
             coefs.to_file_hdf5(coef_save_name + '%s.h5' % time_tag)

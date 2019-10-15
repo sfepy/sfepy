@@ -143,8 +143,8 @@ options = {
     'coefs_filename': 'coefs_hyper_homog',
     'multiprocessing': True,
     'chunks_per_worker': 2,
+    'micro_update': {'coors': [('corrs_rs', 'u', 'mtx_e')]},
     'mesh_update_variable': 'u',
-    'mesh_update_corrector': 'corrs_rs',
     'recovery_hook': 'recovery_hook',
     'store_micro_idxs': [49, 81],
 }
@@ -202,7 +202,6 @@ coefs = {
     },
     'S': {
         'expression': 'ev_volume_integrate_mat.3.Y(mat_he.S, u)',
-        'set_variables': [],
         'class': cb.CoefOne,
     }
 }

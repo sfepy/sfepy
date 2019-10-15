@@ -242,7 +242,8 @@ class DeformationGradientTerm(Term):
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(parameter)
+        get_saved = False if term_mode == 'act_conf' else True
+        vg, _ = self.get_mapping(parameter, get_saved)
 
         vec = self.get_vector(parameter)
 

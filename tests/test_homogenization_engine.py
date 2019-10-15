@@ -76,7 +76,7 @@ class Test(TestCommon):
         num_workers, num_micro, chunks_per_worker = 5, 61, 2
         store_micro_idxs = [0, 1, 18, 20, 21]
         micro_chunk_tab, requirements, coefs = \
-            hwm.chunk_micro_coors(num_workers, num_micro, requirements, coefs,
+            hwm.chunk_micro_tasks(num_workers, num_micro, requirements, coefs,
                                   chunks_per_worker, store_micro_idxs)
 
         dep_names = hwm.get_sorted_dependencies(requirements, coefs, None)

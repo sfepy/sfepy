@@ -297,3 +297,7 @@ def set_nonlin_states(variables, nl_state, problem):
         states = var_fun(problem, pvar_names, variables)
         for ivar in pvar_names:
             variables[ivar].set_data(states[ivar])
+
+def rm_multi(s):
+    idx = s.rfind('|multiprocessing_')
+    return s[:idx] if idx > 0 else s

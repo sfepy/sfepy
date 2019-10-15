@@ -70,7 +70,7 @@ def get_homog_coefs_linear(ts, coor, mode,
 
     return out
 
-def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
+def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
                               term=None, problem=None,
                               iteration=None, **kwargs):
     if not (mode == 'qp'):
@@ -87,7 +87,7 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
                                      verbose=False)
         options = Struct(output_filename_trunk=None)
         app = HomogenizationApp(conf, options, 'micro:',
-                                n_micro=coor.shape[0], update_micro_coors=True)
+                                n_micro=coor.shape[0])
         problem.homogen_app = app
 
         if hasattr(app.app_options, 'use_mpi') and app.app_options.use_mpi:
@@ -104,19 +104,13 @@ def get_homog_coefs_nonlinear(ts, coor, mode, mtx_f=None,
         app = problem.homogen_app
         multi_mpi = app.multi_mpi
 
-    def_grad = mtx_f(problem, term) if callable(mtx_f) else mtx_f
-    if hasattr(problem, 'def_grad_prev'):
-        rel_def_grad = la.dot_sequences(def_grad,
-                                        nm.linalg.inv(problem.def_grad_prev),
-                                        'AB')
-    else:
-        rel_def_grad = def_grad.copy()
+    if macro_data is not None:
+        macro_data['macro_time_step'] = ts.step
 
-    problem.def_grad_prev = def_grad.copy()
-    app.setup_macro_deformation(rel_def_grad)
+    app.setup_macro_data(macro_data)
 
     if multi_mpi is not None:
-        multi_mpi.master_send_task('calculate', (rel_def_grad, ts, iteration))
+        multi_mpi.master_send_task('calculate', (macro_data, ts, iteration))
 
     coefs, deps = app(ret_all=True, itime=ts.step, iiter=iteration)
 
@@ -161,12 +155,30 @@ def get_correctors_from_file_hdf5(coefs_filename='coefs.h5',
             h5name, corr_name = val, op.split(val)[-1]
 
         io = HDF5MeshIO(h5name + '.h5')
-        data = io.read_data(0)
-        dkeys = list(data.keys())
-        corr = {}
-        for dk in dkeys:
-            corr[dk] = data[dk].data.reshape(data[dk].shape)
+        try:
+            ts = io.read_time_stepper()
+        except ValueError:
+            ts = None
 
-        out[corr_name] = corr
+        if ts is None:
+            data = io.read_data(0)
+            dkeys = list(data.keys())
+            corr = {}
+            for dk in dkeys:
+                corr[dk] = data[dk].data.reshape(data[dk].shape)
+
+            out[corr_name] = corr
+        else:
+            n_step = ts[3]
+            out[corr_name] = []
+            for step in range(n_step):
+                data = io.read_data(step)
+                dkeys = list(data.keys())
+                corr = {}
+                for dk in dkeys:
+                    corr[dk] = data[dk].data.reshape(data[dk].shape)
+
+                out[corr_name].append(corr)
+            out[corr_name + '_ts'] = ts
 
     return out
