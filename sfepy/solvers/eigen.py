@@ -373,6 +373,72 @@ class SLEPcEigenvalueSolver(EigenvalueSolver):
 
         return out
 
+class MatlabEigenvalueSolver(EigenvalueSolver):
+    """
+    Matlab eigenvalue problem solver using eig() or eigs() depending on the
+    call arguments.
+    """
+    name = 'eig.matlab'
+
+    _parameters = [
+        ('balance', """{'balance', 'nobalance'}""", 'balance', False,
+         'The balance option for eig().'),
+        ('algorithm', """{'chol', 'qz'}""", 'chol', False,
+         'The algorithm option for eig().'),
+        ('which',
+         """{'lm', 'sm', 'la', 'sa', 'be' 'lr', 'sr', 'li', 'si', sigma}""",
+         'lm', False,
+         'Which eigenvectors and eigenvalues to find with eigs().'),
+        ('*', '*', None, False,
+         'Additional parameters supported by eigs().'),
+    ]
+
+    def __init__(self, conf, comm=None, context=None, **kwargs):
+        import matlab.engine as me
+
+        EigenvalueSolver.__init__(self, conf, me=me, context=context,
+                                  **kwargs)
+
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+                 status=None, conf=None, comm=None, context=None):
+        import os
+        import shutil
+        import tempfile
+        import scipy.io as sio
+
+        solver_kwargs = self.build_solver_kwargs(conf)
+
+        dirname = tempfile.mkdtemp()
+        mtx_filename = os.path.join(dirname, 'matrices.mat')
+        eigs_filename = os.path.join(dirname, 'eigs.mat')
+        sio.savemat(mtx_filename, {
+            'A' : mtx_a,
+            'B' : mtx_b if mtx_b is not None else 'None',
+            'n_eigs' : n_eigs if n_eigs is not None else 'None',
+            'eigenvectors' : eigenvectors,
+            'balance' : conf.balance,
+            'algorithm' : conf.algorithm,
+            'which' : conf.which,
+            'verbose' : conf.verbose,
+            'eigs_options' : solver_kwargs,
+        })
+
+        eng = self.me.start_matlab()
+        eng.cd(os.path.dirname(__file__))
+        eng.matlab_eig(mtx_filename, eigs_filename)
+        eng.quit()
+
+        evp = sio.loadmat(eigs_filename)
+
+        shutil.rmtree(dirname)
+
+        out = evp['vals'][:, 0]
+        if eigenvectors:
+            out =  (out, evp['vecs'])
+
+        return out
+
 class PysparseEigenvalueSolver(EigenvalueSolver):
     """
     Pysparse-based eigenvalue solver for sparse symmetric problems.
