@@ -745,8 +745,9 @@ class DGField(FEField):
         cells = region.cells
 
         normals = cmesh.get_facet_normals()
-        if dim == 1:
-            normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0] / 2))
+        # if dim == 1:
+        #     pass
+            # normals[:, 0] = nm.tile([-1, 1], int(normals.shape[0] // 2))
         normals_out = nm.zeros((n_cell, n_el_facets, dim))
 
         c2f = cmesh.get_conn(dim, dim - 1)
