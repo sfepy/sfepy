@@ -78,6 +78,16 @@ def get_gel(region):
 
 
 class DGField(FEField):
+    """
+    Class for usage with DG terms, provides functionality fo  Discontinou
+    Galerkin method like neighbour look up, projection to discontinuous basis and
+    correct DOF treatment.
+
+    Notes
+    -----
+
+
+    """
     family_name = 'volume_DG_legendre_discontinuous'
     is_surface = False
 
@@ -843,7 +853,8 @@ class DGField(FEField):
 
     def setup_extra_data(self, geometry, info, is_trace):
         """
-        This is called in create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True)
+        This is called in create_adof_conns(conn_info, var_indx=None,
+                                                active_only=True, verbose=True)
         for each variable but has no effect.
         :param geometry:
         :param info:
@@ -906,6 +917,7 @@ class DGField(FEField):
     def create_mapping(self, region, integral, integration, return_mapping=True):
         """
         Creates and returns mapping
+
         :param return_mapping: default True
         :param region:
         :param integral:

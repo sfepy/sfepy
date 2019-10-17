@@ -60,26 +60,34 @@ class DGTerm(Term):
 
 class AdvectDGFluxTerm(DGTerm):
     r"""
-    Lax-Friedrichs flux term for advection of scalar quantity :math:`p` with the advection velocity
-    :math:`\ul{a}` given as a material parameter (a known function of space and time).
+    Lax-Friedrichs flux term for advection of scalar quantity :math:`p` with the
+    advection velocity :math:`\ul{a}` given as a material parameter (a known
+    function of space and time).
 
     :Definition:
 
     .. math::
+         \int_{\partial{T_K}} \ul{n} \cdot f^{*} (p_{in}, p_{out})q
 
-        \int_{\partial{T_K}} \vec{n} \cdot f^{*} (p_{in}, p_{out})q
+    where
 
-        where
+    .. math::
+        f^{*}(p_{in}, p_{out}) =  \ul{a}  \frac{p_{in} + p_{out}}{2}  +
+        (1 - \alpha) \ul{n} C \frac{ p_{in} - p_{out}}{2},
 
-            f^{*}(p_{in}, p_{out}) =  \vec{a}  \frac{p_{in} + p_{out}}{2}  + (1 - \alpha) \vec{n}
-            C \frac{ p_{in} - p_{out}}{2},
+    :math:`\alpha \in [0, 1]`; :math:`\alpha = 0` for upwind scheme,
+    :math:`\alpha = 1` for central scheme,  and
 
-        $\alpha \in [0, 1]$, $\alpha = 0$ for upwind scheme, $\alpha = 1$ for central scheme,  and
+    .. math::
+        C = \max_{p \in [?, ?]}\left\lvert n_x a_1 +
+        n_y a_2 \right\rvert =
+        \max_{p \in [?, ?]} \left\lvert  \ul{n} \cdot \ul{a} \right\rvert
 
-            C = \max_{u \in [?, ?]} \abs{n_x \pdiff{a_1}{u} + n_y \pdiff{a_2}{u}}
 
-        the $p_{in}$ resp. $p_{out}$ is solution on the boundary of the element provided
-        by element itself resp. its neighbor and a is advection velocity.
+    the :math:`p_{in}` resp. :math:`p_{out}`
+    is solution on the boundary of the element
+    provided by element itself resp. its
+    neighbor and :math:`\ul{a}` is advection velocity.
 
     :Arguments 1:
         - material : :math:`\ul{a}`
@@ -118,7 +126,8 @@ class AdvectDGFluxTerm(DGTerm):
         region = field.region
 
         if "DG" not in field.family_name:
-            raise ValueError("Used DG term with non DG field {} of family {}".format(field.name, field.family_name))
+            raise ValueError("Used DG term with non DG field {} of family {}"
+                             .format(field.name, field.family_name))
 
         fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
         return fargs
@@ -385,6 +394,7 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
             vals = vals.flatten()
 
             iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
+
             out = (vals, iels[:, 0], iels[:, 1], state, state)
 
             from scipy.sparse import coo_matrix
@@ -515,6 +525,7 @@ from sfepy.linalg import dot_sequences
 
 
 class NonlinScalarDotGradTerm(Term):
+
     r"""
     Volume dot product of a scalar gradient dotted with a material vector with
     a scalar.

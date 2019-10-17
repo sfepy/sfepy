@@ -1080,6 +1080,16 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/refine_hanging
    src/sfepy/discrete/fem/utils
 
+sfepy.discrete.dg sub-package
+"""""""""""""""""""""""""""""
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/discrete/dg/dg_field
+   src/sfepy/discrete/dg/dg_basis
+   src/sfepy/discrete/dg/dg_terms
+
+
 sfepy.discrete.iga sub-package
 """"""""""""""""""""""""""""""
 
