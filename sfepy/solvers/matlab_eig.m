@@ -7,15 +7,31 @@ function [vals, vecs] = matlab_eig(mtx_filename, eigs_filename)
         disp(data.eigs_options)
     end
 
-    if isequal(data.B, 'None') & isequal(data.n_eigs, 'None')
-        if data.eigenvectors
-            [vecs, vals] = eig(data.A, data.balance, data.algorithm);
-            vals = diag(vals);
+    if isequal(data.method, 'eig') & isequal(data.n_eigs, 'None')
+        if data.verbose
+            disp('using eig()')
+        end
+        if isequal(data.B, 'None')
+            if data.eigenvectors
+                [vecs, vals] = eig(data.A, data.balance, data.algorithm);
+                vals = diag(vals);
+            else
+                vals = eig(data.A, data.balance);
+                vecs = 'None';
+            end
         else
-            vals = eig(data.A, data.balance);
-            vecs = 'None';
+            if data.eigenvectors
+                [vecs, vals] = eig(data.A, data.B, data.algorithm);
+                vals = diag(vals);
+            else
+                vals = eig(data.A, data.B);
+                vecs = 'None';
+            end
         end
     else
+        if data.verbose
+            disp('using eigs()')
+        end
         if isequal(data.n_eigs, 'None')
             data.n_eigs = size(data.A, 1);
         end

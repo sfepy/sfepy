@@ -375,12 +375,15 @@ class SLEPcEigenvalueSolver(EigenvalueSolver):
 
 class MatlabEigenvalueSolver(EigenvalueSolver):
     """
-    Matlab eigenvalue problem solver using eig() or eigs() depending on the
-    call arguments.
+    Matlab eigenvalue problem solver.
     """
     name = 'eig.matlab'
 
     _parameters = [
+        ('method', """{'eig', 'eigs', None}""", 'eigs', False,
+         """The solution method. Note that eig() function cannot be used for
+         all inputs. If `n_eigs` is not None, eigs() is used regardless of
+         this parameter."""),
         ('balance', """{'balance', 'nobalance'}""", 'balance', False,
          'The balance option for eig().'),
         ('algorithm', """{'chol', 'qz'}""", 'chol', False,
@@ -417,6 +420,7 @@ class MatlabEigenvalueSolver(EigenvalueSolver):
             'B' : mtx_b if mtx_b is not None else 'None',
             'n_eigs' : n_eigs if n_eigs is not None else 'None',
             'eigenvectors' : eigenvectors,
+            'method' : conf.method,
             'balance' : conf.balance,
             'algorithm' : conf.algorithm,
             'which' : conf.which,
