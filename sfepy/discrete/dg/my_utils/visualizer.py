@@ -390,7 +390,7 @@ def plot1D_DG_sol(coors, t0, t1, u,
         # plt.plot(coors[1:], sic[1, :], label="IC-1", color=c1)
     if ic is not None:
         ics = ic(XS)
-        axs.plot(XS, ics, label="IC-ex")
+        axs.plot(nm.squeeze(XS), nm.squeeze(ics), label="IC-ex")
 
     # Animate sampled solution DOFs directly
     anim_dofs = animate1d(u_step.T, coors, T, axs, figs, ylims=[-1, 2], plott="step", delay=delay)
