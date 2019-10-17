@@ -23,6 +23,13 @@ from sfepy.discrete.dg.tests.test_dg_field import prepare_field_1D, \
 
 
 def prepare_variables(field):
+    """
+    Prepares state and test variable, adds empty
+    eq_map to state variable
+
+    :param field:
+    :return: state, test
+    """
     n_nod = field.n_nod
 
     u = DGFieldVariable('u', 'unknown', field, history=1)
@@ -68,28 +75,41 @@ class TestAdvectDGFluxTerm:
                       regions["omega"],
                       a.data
                       )
+        pass
 
 
 
     def test_function_implicit_1D(self):
         approx_order = 3
         (field, regions), mesh = prepare_field_1D(approx_order)
-        u = DGFieldVariable('u', 'unknown', field, history=1)
-        v = DGFieldVariable('v', 'test', field, primary_var_name='u')
+        u, v = prepare_variables(field)
         integral = Integral('i', order=approx_order * 2)
+
+        n_el_nod = field.n_el_nod
+        n_cell = field.n_cell
+        n_nod = n_cell * n_el_nod
+
         a = Material('a', val=[1.0])
+        a.data = nm.ones((n_cell, 1)) * a.function()["val"][0]
 
         term = AdvectDGFluxTerm("adv_stiff(a.val, u, v)",
                                 "a.val, u, v",
                                 integral, regions["omega"],
                                 u=u, v=v, a=a)
-        term.function([],  # out
-                      [],  # state
+
+        u.data = [(nm.ones(n_nod))]
+        out = nm.zeros((n_cell, 1, n_el_nod, 1))
+
+
+        out, _ = term.function(out,  # out
+                      u,  # state
                       "u",  # diff_var
                       field,
                       regions["omega"],
-                      [],  # advelo
+                      a.data,  # advelo
                       )
+
+        pass
 
 
 class TestDiffusionDGFluxTerm:
@@ -97,19 +117,32 @@ class TestDiffusionDGFluxTerm:
     def test_function_explicit_right_1D(self):
         approx_order = 3
         (field, regions), mesh = prepare_field_1D(approx_order)
-        u = DGFieldVariable('u', 'unknown', field, history=1)
-        v = DGFieldVariable('v', 'test', field, primary_var_name='u')
+        u, v = prepare_variables(field)
+
         integral = Integral('i', order=approx_order * 2)
+
+        n_el_nod = field.n_el_nod
+        n_cell = field.n_cell
+        n_nod = n_cell * n_el_nod
+
+        u.data = [(nm.ones(n_nod))]
+        out = nm.zeros((n_cell, 1, n_el_nod, 1))
+
 
         diffusion_tensor = .02
         D = Material('D', val=[diffusion_tensor])
+        D.data = nm.ones((n_cell, 1, 1)) * diffusion_tensor
+
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)",
                                    "D.val, v,  u[-1]",
                                    integral, regions["omega"], u=u, v=v, D=D)
-        term.function([],  # out
-                      [],  # state
+        term.mode = "avg_state"
+
+        out, _ = term.function(out,  # out
+                      u,  # state
                       None,  # diff_var, explicit
                       field,
                       regions["omega"],
-                      D,  # advelo
+                      D.data,  # advelo
                       )
+        pass
