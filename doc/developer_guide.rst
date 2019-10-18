@@ -1088,6 +1088,7 @@ sfepy.discrete.dg sub-package
    src/sfepy/discrete/dg/dg_field
    src/sfepy/discrete/dg/dg_basis
    src/sfepy/discrete/dg/dg_terms
+   src/sfepy/discrete/dg/dg_limiters
 
 
 sfepy.discrete.iga sub-package

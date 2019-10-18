@@ -98,7 +98,7 @@ class AdvectDGFluxTerm(DGTerm):
         - material    : :math:`\ul{a}`
         - virtual     : :math:`q`
         - state       : :math:`p`
-        - opt_material : :math: `\alpha`
+        - opt_material : :math:`\alpha`
     """
 
     alpha = 0
@@ -342,6 +342,16 @@ class DiffusionDGFluxTerm(DGTerm):
 
 
 class DiffusionInteriorPenaltyTerm(DGTerm):
+    r"""
+    Penalty term used to repair unsuitability and discontinuity arising when
+    modeling diffusion using discontinuous galerkin schemes.
+
+     :Definition:
+
+    .. math::
+         \nu\int_{\partial{T_K}} C_w \frac{Ord^2}{d(\partial{T_K})}[p][q]
+
+    """
     name = "dw_dg_interior_penal"
     modes = ("weak",)
     arg_types = ('material_Cw', 'virtual', 'state')
@@ -359,10 +369,10 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
             raise ValueError("Used DG term with non DG field {} of family {}"
                              .format(field.name, field.family_name))
 
-        fargs = (state, test, diff_var, field, region, Cw)
+        fargs = (state, diff_var, field, region, Cw)
         return fargs
 
-    def function(self, out, state, test, diff_var, field, region, Cw):
+    def function(self, out, state, diff_var, field, region, Cw):
 
         approx_order = field.approx_order
 
@@ -440,6 +450,57 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
 
 
 class NonlinearHyperDGFluxTerm(DGTerm):
+    r"""
+     Lax-Friedrichs flux term for nonlinear hyperpolic term of scalar quantity
+     :math:`p` with the vector function :math:`\ul{f}` given as a material
+     parameter.
+
+    :Definition:
+
+    .. math::
+         \int_{\partial{T_K}} \ul{n} \cdot f^{*} (p_{in}, p_{out})q
+
+    where
+
+    .. math::
+
+        f^{*}(p_{in}, p_{out}) =  \frac{\ul{f}(p_{in})
+            + \ul{f}(p_{out})}{2}  +
+        (1 - \alpha) \ul{n} C \frac{ p_{in} - p_{out}}{2},
+
+    :math:`\alpha \in [0, 1]`; :math:`\alpha = 0` for upwind scheme,
+    :math:`\alpha = 1` for central scheme,  and
+
+    .. math::
+        C =
+        \max_{p \in [?, ?]}\left\lvert
+        n_x \frac{d f_1}{d p} + n_y \frac{d f_2}{d p}
+        + \cdots
+        \right\rvert =
+
+        \max_{p \in [?, ?]} \left\lvert
+        \vec{n}\cdot\frac{d\ul{f}}{dp}(p)
+         \right\rvert
+
+
+    the :math:`p_{in}` resp. :math:`p_{out}`
+    is solution on the boundary of the element
+    provided by element itself resp. its
+    neighbor.
+
+    :Arguments 1:
+        - material : :math:`\ul{f}`
+        - material : :math:`\frac{d\ul{f}}{d p}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 3:
+        - material    : :math:`\ul{f}`
+        - material    : :math:`\frac{d\ul{f}}{d p}`
+        - virtual     : :math:`q`
+        - state       : :math:`p`
+        - opt_material : :math:`\alpha`
+    """
     alf = 0
     name = "dw_dg_nonlinear_laxfrie_flux"
     modes = ("weak",)
@@ -527,22 +588,23 @@ from sfepy.linalg import dot_sequences
 class NonlinScalarDotGradTerm(Term):
 
     r"""
-    Volume dot product of a scalar gradient dotted with a material vector with
-    a scalar.
+     Product of virtual and divergence of vector function of state or volume dot
+     product of vector function of state and scalar gradient of virtual.
 
     :Definition:
 
     .. math::
-        \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }
-        \int_{\Omega} p \ul{y} \cdot \nabla q
+        \int_{\Omega} q \cdot \nabla \cdot \ul{f}(p) = \int_{\Omega} q \cdot
+           \text{div} \ul{f}(p)  \mbox{ , }
+        \int_{\Omega} \ul{f}(p) \cdot \nabla q
 
     :Arguments 1:
-        - material : :math:`\ul{y}`
+        - function : :math:`\ul{f}`
         - virtual  : :math:`q`
         - state    : :math:`p`
 
     :Arguments 2:
-        - material : :math:`\ul{y}`
+        - function : :math:`\ul{f}`
         - state    : :math:`p`
         - virtual  : :math:`q`
     """
