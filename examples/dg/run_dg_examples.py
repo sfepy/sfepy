@@ -39,11 +39,13 @@ def main(argv):
 
     output("Processing conf file {}".format(conf_file_name))
     pc = ProblemConf.from_file(conf_file_name)
+    pc.verbose = False
 
     output("Running {}".format(pc.example_name))
 
     output_folder = "output"
-    output_name_trunk_folder = pjoin(output_folder, pc.example_name, str(pc.approx_order) + "/")
+    output_name_trunk_folder = pjoin(output_folder, pc.example_name,
+                                     str(pc.approx_order) + "/")
     output_name_trunk_name = pc.example_name + str(pc.approx_order)
     output_name_trunk = pjoin(output_name_trunk_folder, output_name_trunk_name)
     ensure_path(output_name_trunk_folder)

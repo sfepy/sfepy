@@ -37,7 +37,8 @@ class DGTerm(Term):
 
         return out, status
 
-    def _get_nbrhd_dof_indexes(self, active_cells, active_nrbhs, field):
+    @staticmethod
+    def _get_nbrhd_dof_indexes(active_cells, active_nrbhs, field):
         """
         Get indexes of DOFs of neighbouring cells, maybe move to DGField?
         :param active_cells:
@@ -251,10 +252,11 @@ class DiffusionDGFluxTerm(DGTerm):
                 field.get_both_facet_base_vals(state, region, derivative=True)
 
             if self.mode == 'avg_state':
-                inner_vals = nm.einsum("nkl, nfk, ndfq, nbfkq, nfq->ndb", D, fc_n,
-                                            inner_facet_base,  # test
-                                            inner_facet_base_d/2,  # state
-                                            whs)
+                inner_vals = nm.einsum("nkl, nfk, ndfq, nbfkq, nfq->ndb",
+                                       D, fc_n,
+                                       inner_facet_base,  # test
+                                       inner_facet_base_d/2,  # state
+                                       whs)
 
                 outer_vals = nm.einsum("ikl, ik, idq, ibkq, iq->idb",
                                   D[active_cells],
@@ -262,6 +264,7 @@ class DiffusionDGFluxTerm(DGTerm):
                                   inner_facet_base[active_cells, :, active_facets],  # test
                                   outer_facet_base_d[active_cells, :, active_facets]/2,  # state
                                   whs[active_cells, active_facets])
+
             elif self.mode == 'avg_virtual':
                 inner_vals = nm.einsum("nkl, nfk, ndfkq, nbfq, nfq->ndb", D, fc_n,
                                              inner_facet_base_d/2,  # test
@@ -319,16 +322,23 @@ class DiffusionDGFluxTerm(DGTerm):
             #     -inner_facet_state_d[bnd_cells, bnd_facets]
 
             if self.mode == 'avg_state':
-                avgDdState = (nm.einsum("ikl,ifkq->ifkq", D, inner_facet_state_d) +
-                              nm.einsum("ikl,ifkq->ifkq", D, outer_facet_state_d)) / 2.
-                jmpBase = inner_facet_base  # outer_facet_base is in DG zero - hence the jump is inner value
-                vals = nm.einsum("ifkq , ifk, idfq, ifq -> id", avgDdState, fc_n, jmpBase, weights)
+                avgDdState = (nm.einsum("ikl,ifkq->ifkq",
+                                        D, inner_facet_state_d) +
+                              nm.einsum("ikl,ifkq->ifkq",
+                                        D, outer_facet_state_d)) / 2.
+                jmpBase = inner_facet_base
+                # outer_facet_base is in DG zero - hence the jump is inner value
+                vals = nm.einsum("ifkq , ifk, idfq, ifq -> id",
+                                 avgDdState, fc_n, jmpBase, weights)
 
             elif self.mode == 'avg_virtual':
-                avgDdbase = (nm.einsum("ikl,idfkq->idfkq", D, inner_facet_base_d)) / 2.
-                            # in DG test function is non zero only inside element - hence we average with zero
+                avgDdbase = (nm.einsum("ikl,idfkq->idfkq",
+                                       D, inner_facet_base_d)) / 2.
+                # in DG test function is non zero only inside element
+                # - hence we average with zero
                 jmpState = inner_facet_state - outer_facet_state
-                vals = nm.einsum("idfkq, ifk, ifq , ifq -> id", avgDdbase, fc_n, jmpState, weights)
+                vals = nm.einsum("idfkq, ifk, ifq , ifq -> id",
+                                 avgDdbase, fc_n, jmpState, weights)
 
             cell_fluxes = vals
 
@@ -360,7 +370,8 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
                    'state'      : 1
                    }]
 
-    def get_fargs(self, Cw, test, state, mode=None, term_mode=None, diff_var=None, **kwargs):
+    def get_fargs(self, Cw, test, state, mode=None,
+                  term_mode=None, diff_var=None, **kwargs):
 
         field = state.field
         region = field.region
@@ -542,7 +553,6 @@ class NonlinearHyperDGFluxTerm(DGTerm):
             fargs = (state, field, region, fun, dfun)
             return fargs
 
-    # noinspection PyUnreachableCode
     def function(self, out, state, field, region, f, df):
         if state is None:
             out[:] = 0.0

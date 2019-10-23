@@ -13,7 +13,7 @@ from examples.dg.example_dg_common import *
 
 dim = 1
 
-def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
+def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.5, dt=None,
            Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
     t0 = 0
     t1 = 1
@@ -31,7 +31,7 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
         filename_mesh = get_1Dmesh_hook(0, 1, 100)
 
     materials = {
-        'a': ({'val': 0.0, '.flux': 0.0},),
+        'a': ({'val': 1.0, '.flux': 0.0},),
 
     }
 

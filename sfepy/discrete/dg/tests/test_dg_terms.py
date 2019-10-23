@@ -7,12 +7,10 @@ import numpy as nm
 import numpy.testing as nmts
 import scipy.sparse as sp
 
-
 from base.base import Struct
 from discrete.common.dof_info import EquationMap
 from sfepy.discrete import (DGFieldVariable, Material, Integral,
                             Function, Equation, Equations, Problem)
-
 
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_terms import DGTerm, \
@@ -73,11 +71,10 @@ class DGTermTestScope:
         self.burg_velo = velo.T / nm.linalg.norm(velo)
 
         self.nonlin = Material('nonlin',
-                          values={'.fun': self.burg_fun,
-                                  '.dfun': self.burg_fun_d})
+                               values={'.fun': self.burg_fun,
+                                       '.dfun': self.burg_fun_d})
 
         self.out = nm.zeros((self.n_cell, 1, self.n_el_nod, 1))
-
 
     def prepare_variables(self, field):
         """
@@ -141,12 +138,12 @@ class TestAdvectDGFluxTerm:
         result = nm.zeros(ts.out.shape)
 
         out, _ = term.function(ts.out,
-                      ts.u,
-                      None,  # diff_var
-                      ts.field,
-                      ts.regions["omega"],
-                      ts.a.data
-                      )
+                               ts.u,
+                               None,  # diff_var
+                               ts.field,
+                               ts.regions["omega"],
+                               ts.a.data
+                               )
 
         nmts.assert_almost_equal(out, result)
 
@@ -161,15 +158,15 @@ class TestAdvectDGFluxTerm:
         # ts.u.data[0][::ts.n_el_nod] = 1
         result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
 
-        (out, iel1, iel2, _, _),  _ = term.function(
-                      ts.out,  # out, note that for implicit mode the out
-                               # argument is ignored
-                      ts.u,  # state
-                      "u",  # diff_var
-                      ts.field,
-                      ts.regions["omega"],
-                      ts.a.data,  # advelo
-                      )
+        (out, iel1, iel2, _, _), _ = term.function(
+            ts.out,  # out, note that for implicit mode the out
+                     # argument is ignored
+            ts.u,  # state
+            "u",  # diff_var
+            ts.field,
+            ts.regions["omega"],
+            ts.a.data,  # advelo
+        )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
                             shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
@@ -183,9 +180,9 @@ class TestNonlinearHyperDGFluxTerm:
         ts = DGTermTestScope(dim=1, approx_order=3)
 
         term = NonlinearHyperDGFluxTerm("adv_stiff(f, df u, v)",
-                                "nonlin.f, nonlin.df, u[-1], v",
-                                ts.integral, ts.regions["omega"],
-                                u=ts.u, v=ts.v, nonlin=ts.nonlin)
+                                        "nonlin.f, nonlin.df, u[-1], v",
+                                        ts.integral, ts.regions["omega"],
+                                        u=ts.u, v=ts.v, nonlin=ts.nonlin)
 
         # ts.u.data[0][::ts.n_el_nod] = 1
         result = nm.zeros(ts.out.shape)
@@ -215,12 +212,12 @@ class TestDiffusionDGFluxTerm:
         result = nm.zeros(ts.out.shape)
 
         out, _ = term.function(ts.out,  # out
-                      ts.u,  # state
-                      None,  # diff_var, explicit
-                      ts.field,
-                      ts.regions["omega"],
-                      ts.D.data,  # advelo
-                      )
+                               ts.u,  # state
+                               None,  # diff_var, explicit
+                               ts.field,
+                               ts.regions["omega"],
+                               ts.D.data,  # advelo
+                               )
 
         nmts.assert_almost_equal(out, result)
 
@@ -257,13 +254,13 @@ class TestDiffusionDGFluxTerm:
         result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
 
         (out, iel1, iel2, _, _), _ = term.function(
-                      ts.out,  # out
-                      ts.u,  # state
-                      "u",  # diff_var, explicit
-                      ts.field,
-                      ts.regions["omega"],
-                      ts.D.data,  # advelo
-                      )
+            ts.out,  # out
+            ts.u,  # state
+            "u",  # diff_var, explicit
+            ts.field,
+            ts.regions["omega"],
+            ts.D.data,  # advelo
+        )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
                             shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
@@ -278,8 +275,6 @@ class TestDiffusionDGFluxTerm:
                                    ts.integral, ts.regions["omega"],
                                    u=ts.u, v=ts.v, D=ts.D)
         term.mode = "avg_virtual"
-
-        result = nm.zeros(ts.out.shape)
 
         result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
 
@@ -304,21 +299,21 @@ class TestDiffusionInteriorPenaltyTerm:
         ts = DGTermTestScope(dim=1, approx_order=3)
 
         term = DiffusionInteriorPenaltyTerm("adv_stiff(Cw.val, u, v)",
-                                "Cw.val, u[-1], v",
-                                ts.integral, ts.regions["omega"],
-                                u=ts.u, v=ts.v, a=ts.Cw)
+                                            "Cw.val, u[-1], v",
+                                            ts.integral, ts.regions["omega"],
+                                            u=ts.u, v=ts.v, a=ts.Cw)
 
         # ts.u.data[0][::ts.n_el_nod] = 1
 
         result = nm.zeros(ts.out.shape)
 
         out, _ = term.function(ts.out,
-                      ts.u,
-                      None,  # diff_var
-                      ts.field,
-                      ts.regions["omega"],
-                      ts.a.data
-                      )
+                               ts.u,
+                               None,  # diff_var
+                               ts.field,
+                               ts.regions["omega"],
+                               ts.a.data
+                               )
 
         nmts.assert_almost_equal(out, result)
 
@@ -326,23 +321,23 @@ class TestDiffusionInteriorPenaltyTerm:
         ts = DGTermTestScope(dim=1, approx_order=3)
 
         term = DiffusionInteriorPenaltyTerm("adv_stiff(a.val, u, v)",
-                                "Cw.val, u, v",
-                                ts.integral, ts.regions["omega"],
-                                u=ts.u, v=ts.v, a=ts.Cw)
+                                            "Cw.val, u, v",
+                                            ts.integral, ts.regions["omega"],
+                                            u=ts.u, v=ts.v, a=ts.Cw)
 
         # ts.u.data[0][::ts.n_el_nod] = 1
 
         result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
 
-        (out, iel1, iel2, _, _),  _ = term.function(
-                      ts.out,  # out, note that for implicit mode the out
-                               # argument is ignored
-                      ts.u,  # state
-                      "u",  # diff_var
-                      ts.field,
-                      ts.regions["omega"],
-                      ts.a.data,  # advelo
-                      )
+        (out, iel1, iel2, _, _), _ = term.function(
+            ts.out,  # out, note that for implicit mode the out
+            # argument is ignored
+            ts.u,  # state
+            "u",  # diff_var
+            ts.field,
+            ts.regions["omega"],
+            ts.a.data,  # advelo
+        )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
                             shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
@@ -357,19 +352,19 @@ class TestNonlinScalarDotGradTerm:
 
         # TODO initialize term properly
         term = NonlinScalarDotGradTerm("adv_stiff(f, df u, v)",
-                                "nonlin.f, nonlin.df, u[-1], v",
-                                ts.integral, ts.regions["omega"],
-                                u=ts.u, v=ts.v, nonlin=ts.nonlin)
+                                       "nonlin.f, nonlin.df, u[-1], v",
+                                       ts.integral, ts.regions["omega"],
+                                       u=ts.u, v=ts.v, nonlin=ts.nonlin)
 
         # ts.u.data[0][::ts.n_el_nod] = 1
         result = nm.zeros(ts.out.shape)
 
         fargs = term.get_fargs(
-                               ts.burg_fun,
-                               ts.burg_fun_d,
-                               ts.u,
-                               ts.v
-                               )
+            ts.burg_fun,
+            ts.burg_fun_d,
+            ts.u,
+            ts.v
+        )
         out, _ = term.function(*fargs)
 
         nmts.assert_almost_equal(out, result)

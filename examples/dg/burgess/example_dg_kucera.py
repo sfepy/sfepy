@@ -23,7 +23,7 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=1e-5,
 
         return fun
 
-    example_name = "kucera1dt_simp"
+    example_name = "kucera_dt_simp"
     dim = 2
 
     if filename_mesh is None:
@@ -178,18 +178,19 @@ def define(filename_mesh=None, approx_order=1, flux=0.0, CFL=None,  dt=1e-5,
 
     equations = {
                      # temporal der
-        'balance':   "dw_volume_dot.i.Omega(v, u)" +
-                     #  non-linear "advection"
-                     " + dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
-                     " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
-                     #  diffusion
-                     " - dw_laplace.i.Omega(D.val, v, u[-1])"
-                     " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
-                     " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
-                     " - " + str(diffusion_coef) + "*dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
-                     # source
-                     + " + dw_volume_lvf.i.Omega(g.val, v)"
-                     " = 0"
+        'balance':
+         "dw_volume_dot.i.Omega(v, u)" +
+         #  non-linear "advection"
+         " + dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
+         " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
+         #  diffusion
+         " - dw_laplace.i.Omega(D.val, v, u[-1])"
+         " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
+         " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
+         " - " + str(diffusion_coef) + "*dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
+         # source
+         + " + dw_volume_lvf.i.Omega(g.val, v)"
+         " = 0"
     }
 
     solvers = {

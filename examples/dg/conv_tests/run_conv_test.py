@@ -104,7 +104,7 @@ def main(argv):
             pb.sol = pb.solve()
             elapsed = time.clock() - tt
 
-            base_output_folder = pjoin("output", conf.example_name)
+            base_output_folder = pjoin("conv_tests_output", conf.example_name)
             output_folder = pjoin(base_output_folder, "h" + str(n_cells))
             output_folder = pjoin(output_folder, "o" + str(order))
 

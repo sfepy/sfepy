@@ -135,8 +135,6 @@ def define(filename_mesh=None, approx_order=1, flux=None, CFL=None, dt=None,
         'i': 2 * approx_order,
     }
 
-    diff_scheme_name = "symmetric"
-
     equations = {
         'Temperature':  " - dw_laplace.i.Omega(D.val, v, u) " +
                         " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
