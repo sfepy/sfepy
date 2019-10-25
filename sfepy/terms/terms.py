@@ -1226,7 +1226,7 @@ class Term(Struct):
 
                     prefix = ''
                     if isinstance(sh, basestr):
-                        aux = sh.split(':')
+                        aux = tuple(ii.strip() for ii in sh.split(':'))
                         if len(aux) == 2:
                             prefix, sh = aux
 
