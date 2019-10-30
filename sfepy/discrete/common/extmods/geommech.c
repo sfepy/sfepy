@@ -15,7 +15,7 @@ int32 geme_invert3x3( FMField *mtxI, FMField *mtx )
 {
   int32 il, dim;
   int32 tmp1;
-  float64 eps = 1e-15;
+  float64 eps = 1e-55;
   float64 idet, det, *jI, *j;
 
   dim = mtx->nRow;
