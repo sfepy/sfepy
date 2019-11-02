@@ -694,10 +694,11 @@ def main():
 
     n_eigs, options.n_eigs = setup_n_eigs(options, pb, mtxs)
 
-    get_color = lambda ii: plt.cm.viridis((float(ii) / (options.n_eigs - 1)))
+    get_color = lambda ii: plt.cm.viridis((float(ii)
+                                           / (max(options.n_eigs, 2) - 1)))
     plot_kwargs = [{'color' : get_color(ii), 'ls' : '', 'marker' : 'o'}
                   for ii in range(options.n_eigs)]
-    get_color_dim = lambda ii: plt.cm.viridis((float(ii) / (dim-1)))
+    get_color_dim = lambda ii: plt.cm.viridis((float(ii) / (max(dim, 2) -1)))
     plot_kwargs_dim = [{'color' : get_color_dim(ii), 'ls' : '', 'marker' : 'o'}
                        for ii in range(dim)]
 
