@@ -168,23 +168,18 @@ def test_set_dofs_2D():
     assert vals.shape == rvals_shape
 
 
-def test_get_facet_vols():
-    # TODO should be easy
-    assert False
+# def test_get_cell_normals_per_facet():
+#     # TODO do for whole region and at least one boundary
+#     assert False
 
 
-def test_get_cell_normals_per_facet():
-    # TODO do for whole region and at least one boundary
-    assert False
+# def test_get_both_facet_base_vals():
+#     #  TODO test this, used in
+#     assert True
 
 
-def test_get_both_facet_base_vals():
-    #  TODO test this, used in
-    assert True
-
-
-def test_get_both_facet_state_vals():
-    assert False
+# def test_get_both_facet_state_vals():
+#     assert False
 
 
 def test_get_facet_neighbor_idx_1d():
@@ -256,6 +251,6 @@ def test_get_facet_neighbor_idx_2d():
     nmts.assert_equal(rnbr_idx, nbr_idx)
 
 
-def test_get_facet_base():
-    # TODO test for simplex and tensor prod mesh
-    assert False
+# def test_get_facet_base():
+#     # TODO test for simplex and tensor prod mesh
+#     assert False

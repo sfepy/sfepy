@@ -1,6 +1,5 @@
 """
-
-Simple example for first order ODE
+Simple example for first order PDE
 
     du/dt - a * du/dx = 0
 
