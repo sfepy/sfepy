@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 
 from os.path import join as pjoin
 
-
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO
@@ -19,7 +18,6 @@ from sfepy.solvers import register_solver
 from sfepy.discrete.dg.my_utils.inits_consts import ghump, gsmooth, \
     left_par_q, left_cos, superic, three_step_u, sawtooth_q, const_q, quadr_cub
 
-
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, \
     EulerStepSolver
 
@@ -29,7 +27,6 @@ from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, \
     NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
 from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, \
     DiffusionInteriorPenaltyTerm
-
 
 configure_output({'output_screen': True, 'output_log_name': "last_run.txt"})
 
@@ -43,26 +40,28 @@ register_solver(TVDRK3StepSolver)
 register_solver(RK4StepSolver)
 register_solver(EulerStepSolver)
 
+
+diffusion_schemes_implicit = {
+    "symmetric":
+        "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
+        + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+    "non-symmetric":
+        "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
+        + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+    "incomplete":
+        " dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
+
+diffusion_schemes_explicit = {
+    "symmetric":
+        "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
+        + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+    "non-symmetric":
+        "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
+        + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+    "incomplete":
+        " dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
+
 functions = {}
-
-diffusion_schemes_implicit = {"symmetric" :
-                                  "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
-                                + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
-                     "non-symmetric":
-                         "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
-                       + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
-                     "incomplete": " dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
-
-diffusion_schemes_explicit = {"symmetric" :
-                              "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-                            + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
-                         "non-symmetric":
-                             "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-                           + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
-                     "incomplete":
-                            " dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
-
-
 def local_register_function(fun):
     try:
         functions.update({fun.__name__: (fun,)})
@@ -119,7 +118,7 @@ def get_cfl_setup(CFL=None, dt=None):
 
         if dt is None:
             _dt = dx / max_velo * CFL * order_corr
-            if not(nm.isfinite(_dt)):
+            if not (nm.isfinite(_dt)):
                 _dt = 1
         else:
             _dt = dt
@@ -140,7 +139,7 @@ def get_cfl_setup(CFL=None, dt=None):
                .format(tn - 1, tn, _dt))
         if dt is None:
             output("CFL coefficient was {0} and order correction 1/{1} = {2}"
-                   .format(CFL,  (2 * approx_order + 1), order_corr))
+                   .format(CFL, (2 * approx_order + 1), order_corr))
         else:
             output("CFL coefficient {0} was ignored, dt specified directly"
                    .format(CFL))
@@ -161,7 +160,7 @@ def get_1Dmesh_hook(XS, XE, n_nod):
 
             coors = nm.linspace(XS, XE, n_nod).reshape((n_nod, 1))
             conn = nm.arange(n_nod, dtype=nm.int32) \
-                        .repeat(2)[1:-1].reshape((-1, 2))
+                       .repeat(2)[1:-1].reshape((-1, 2))
             mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
             descs = ['1_2']
 
@@ -176,7 +175,7 @@ def get_1Dmesh_hook(XS, XE, n_nod):
 
 
 def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
-                   coors=None, verbose=True):
+                            coors=None, verbose=True):
     def mesh_hook(mesh, mode):
         """
         Generate the 1D mesh.
@@ -184,7 +183,7 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
         if mode == 'read':
 
             mesh = gen_block_mesh(dims, shape, centre, mat_id=mat_id, name=name,
-                   coors=coors, verbose=verbose)
+                                  coors=coors, verbose=verbose)
             return mesh
 
         elif mode == 'write':
@@ -194,7 +193,6 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
 
 
 def calculate_num_order(err_df):
-
     """
     Uses diff_l2 and n_rows columns of the dataframe to calculate num_order,
     splits dataframe on order clumn
@@ -212,7 +210,7 @@ def calculate_num_order(err_df):
         #         print(order_err_df.iloc[1:, :])
         for i, row in order_err_df.iloc[1:, :].iterrows():
             num_order = nm.log(row["diff_l2"] / last_err) \
-                        / nm.log( row["h"] / last_h)
+                        / nm.log(row["h"] / last_h)
             #             print(row["err_l2"] / last_err)
             #             print(row["n_rows] / last_h)
             #             print("-------------------")
@@ -224,6 +222,7 @@ def calculate_num_order(err_df):
         order_err_df["num_order"] = num_orders
         res_df = res_df.append(order_err_df)
     return res_df
+
 
 def build_attrs_string(conf, attrs=("Cw", "diffusion_coef", "dt", "CFL"),
                        sep="_", ret_form=False, remove_dots=True):
@@ -299,5 +298,3 @@ def plot_conv_results(base_output_folder, conf, err_df,
             dpi=200)
 
     return conv_fig
-
-

@@ -3,7 +3,6 @@
 """"
 Script for running DG conf files.
 """
-
 import sys
 import os
 from os.path import join as pjoin
@@ -52,8 +51,8 @@ def main(argv):
     output_format = "{}.*.{}".format(output_name_trunk,
                                       pc.options.output_format
                                       if hasattr(pc.options, "output_format") else "vtk")
-    output("Output set to {}, clearing ...".format(output_format))
 
+    output("Output set to {}, clearing ...".format(output_format))
     clear_folder(output_format, confirm=False)
 
     sa = PDESolverApp(pc, Struct(output_filename_trunk=output_name_trunk,
@@ -68,10 +67,17 @@ def main(argv):
     sa()
 
     if pc.dim == 1 and args.plot:
-        load_times = min(pc.options.save_times, sa.problem.ts.n_step)
+        if pc.transient:
+            load_times = min(pc.options.save_times, sa.problem.ts.n_step)
+            load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
+                              pc.t0, pc.t1, load_times, pc.approx_order,
+                              pc.get_ic, exact=getattr(pc, "analytic_sol", None))
+        else:
+            load_times = 1
+            load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
+                              pc.t0, pc.t1, load_times, pc.approx_order)
 
-        load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
-                          pc.t0, pc.t1, load_times, pc.approx_order, pc.get_ic)
+
 
 
 if __name__ == '__main__':

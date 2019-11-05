@@ -11,7 +11,8 @@ Simple example for second order ODE
 from examples.dg.example_dg_common import *
 
 
-def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4,
+
+def define(filename_mesh=None, approx_order=2, Cw=100, diffusion_coef=1, CFL=0.4,
            use_symbolic=False, transient=False):
     t0 = 0
     t1 = 2
@@ -20,7 +21,7 @@ def define(filename_mesh=None, approx_order=1, Cw=100, diffusion_coef=1, CFL=0.4
     dim = 1
 
     if filename_mesh is None:
-        filename_mesh = get_1Dmesh_hook(0, 1, 2)
+        filename_mesh = get_1Dmesh_hook(0, 1, 80)
 
 
     materials = {

@@ -121,10 +121,6 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.5, dt=None,
         if mode == "qp":
             return {"u": analytic_sol(coors, t)[..., None, None]}
 
-    functions = {
-        'get_ic': (get_ic,),
-    }
-
     ics = {
         'ic': ('Omega', {'u.0': 'get_ic'}),
     }

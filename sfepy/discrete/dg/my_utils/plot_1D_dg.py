@@ -32,7 +32,6 @@ from sfepy.discrete.dg.my_utils.visualizer import \
     load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
 
 
-
 def clear_folder(clear_format, confirm=False):
     """
     Deletes files matching the format
@@ -52,12 +51,13 @@ def clear_folder(clear_format, confirm=False):
             os.remove(file)
 
 
-
-def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order, ic_fun=None, compare=False, polar=False):
+def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order,
+                      ic_fun=None, exact=None,
+                      compare=False, polar=False):
 
     # load time data
     lmesh, u = load_1D_vtks(folder, filename, order=approx_order)
-    plot1D_DG_sol(lmesh, t0, t1, u, tn=tn, ic=ic_fun,
+    plot1D_DG_sol(lmesh, t0, t1, u, tn=tn, ic=ic_fun, exact=exact,
                   delay=100, polar=polar)
 
     if compare:
@@ -84,16 +84,25 @@ def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order, ic_fun=None, c
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Plotting of 1D DG data in VTK files',
-                                     epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
-    parser.add_argument("input_name", help="""Folder or name of the example in output folder with VTK data, file names 
-        in format <name>.[0-9]*.vtk. If not provided ask for the name of the example""", nargs="?")
-    parser.add_argument("-t0", "--start_time", type=float, default=0, help="Start time of the simulation")
-    parser.add_argument("-t1", "--end_time", type=float, default=1., help="End time of the simulation")
-    parser.add_argument("-o", "--order", type=int, default=None, help="""Order of the approximation, when example folder 
-        cantains more orders this chooses the one""")
-    parser.add_argument("-cf", "--compare-final", action="store_true", help="To compare starting and final time - " +
-                                                                            "usefull for periodic boundary problems")
-    parser.add_argument("-p", "--polar", help="Plot in polar projection", action="store_true")
+                                     epilog='(c) 2019 by T. Zitka , Man-machine'
+                                           +' Interaction at NTC UWB')
+    parser.add_argument("input_name", help="Folder or name of the example in "
+                                    + "output folder with VTK data, file names "
+                                    + "in format <name>.[0-9]*.vtk. If not "
+                                    + "provided ask for the name of the example"
+                        , nargs="?")
+    parser.add_argument("-t0", "--start_time", type=float, default=0,
+                        help="Start time of the simulation")
+    parser.add_argument("-t1", "--end_time", type=float, default=1.,
+                        help="End time of the simulation")
+    parser.add_argument("-o", "--order", type=int, default=None,
+                        help="Order of the approximation, when example folder"
+                             + " cantains more orders this chooses the one")
+    parser.add_argument("-cf", "--compare-final", action="store_true",
+                        help="To compare starting and final time - " +
+                             "usefull for periodic boundary problems")
+    parser.add_argument("-p", "--polar", help="Plot in polar projection",
+                        action="store_true")
 
     if argv is None:
         argv = sys.argv[1:]
@@ -104,7 +113,8 @@ def main(argv):
     cf = args.compare_final
     pol = args.polar
     if args.input_name is None:
-        input_name = str(input("Please provide name of the example in output/ folder or path to data: "))
+        input_name = str(input("Please provide name of the example in output/" +
+                               " folder or path to data: "))
     else:
         input_name = args.input_name
 

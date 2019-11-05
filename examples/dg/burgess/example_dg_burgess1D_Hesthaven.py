@@ -10,7 +10,7 @@ Brown University, Jan.Hesthaven@Brown.edu
 from examples.dg.example_dg_common import *
 
 def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
-           Cw=1, diffusion_coef=0.002, diff_scheme_name="symmetric"):
+           Cw=1, diffusion_coef=0.1, diff_scheme_name="symmetric"):
 
 
     functions = {}
@@ -44,7 +44,8 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
     }
 
     fields = {
-        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')  #
+        'f': ('real', 'scalar', 'Omega',
+              str(approx_order) + 'd', 'DG', 'legendre')
     }
 
     variables = {
@@ -125,8 +126,8 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
     }
 
     dgebcs = {
-        'u_left' : ('left', {'u.all': 'bc_fun', 'grad.u.all': 'bc_fun'}),
-        'u_right' : ('right', {'u.all': 'bc_fun', 'grad.u.all': 'bc_fun'}),
+        'u_left' : ('left', {'u.all': 'bc_fun', 'grad.u.all': 0}),
+        'u_right' : ('right', {'u.all': 'bc_fun', 'grad.u.all': 0}),
 
     }
 

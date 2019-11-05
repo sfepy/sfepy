@@ -17,10 +17,11 @@ from toolz import accumulate
 # TODO refactor this darn thing so it is more flexible
 __author__ = 'tomas_zitka'
 
-ffmpeg_path = 'C:\\Users\\tomas\\bin\\ffmpeg\\bin\\ffmpeg.exe'  # for saving animations
+ffmpeg_path = ''  # for saving animations
 
 
-def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None, plott=None, delay=None):
+def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None,
+              plott=None, delay=None):
     """
     Animates solution of 1D problem into current figure.
     Keep reference to returned animation object otherwise
@@ -285,7 +286,7 @@ def load_1D_vtks(fold, name, order, tns=None):
     :param fold: folder where to look for files
     :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
     :param tns: number of time steps, i.e. number of files to read
-    :param order: order of approximation used in u1, u1 ...u{order}
+    :param order: order of approximation used in u1, u2 ...u{order}
     :return: space coors, solution data
     """
 
@@ -294,9 +295,23 @@ def load_1D_vtks(fold, name, order, tns=None):
     from os.path import join as pjoin
     files = glob(pjoin(fold, name) + ".[0-9]*")
 
+
     if len(files) == 0:
-        print("No files for name {} found in {}".format(name, fold))
-        return
+        print("No files {} found in {}".format(pjoin(fold, name) + ".[0-9]*", fold))
+        print("Trying {}".format(pjoin(fold, name) + ".vtk"))
+        files = glob(pjoin(fold, name) + ".vtk")
+        if files:
+            io = VTKMeshIO(files[0])
+            coors = io.read_coors()[:, 0, None]
+            data = io.read_data(step=0)
+            u = nm.zeros((order + 1, coors.shape[0] - 1, 1, 1))
+            for ii in range(order + 1):
+                u[ii, :, 0, 0] = data['u_modal{}'.format(ii)].data
+            return coors, u
+        else:
+            print("Nothing found.")
+            return
+
     io = VTKMeshIO(files[0])
     coors = io.read_coors()[:, 0, None]
 
@@ -309,7 +324,8 @@ def load_1D_vtks(fold, name, order, tns=None):
     u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
     for i, nt in enumerate(nts):
         io = VTKMeshIO(full_name_form.format(nt))
-        data = io.read_data(step=0)  # parameter "step" does nothing for VTKMeshIO, but is obligatory
+        # parameter "step" does nothing for VTKMeshIO, but is obligatory
+        data = io.read_data(step=0)
         for ii in range(order + 1):
             u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
 
@@ -317,7 +333,9 @@ def load_1D_vtks(fold, name, order, tns=None):
 
 
 def plot1D_DG_sol(coors, t0, t1, u,
-                  tn=None, dt=None, ic=lambda x: 0.0, delay=None, polar=False):
+                  tn=None, dt=None,
+                  ic=lambda x: 0.0, exact=lambda x, t: 0,
+                  delay=None, polar=False):
     """
     Animates solution to 1D problem produced by DG:
         1. animates DOF values in elements as steps
@@ -422,8 +440,18 @@ def plot1D_DG_sol(coors, t0, t1, u,
     # plot reconstructed IC
     axr.plot(xx, ww[:, 0], label="IC")
 
+    # get exact solution values
+    if exact is not None:
+        exact_vals = exact(xx, T)[..., None]
+        labs = ["q{}(x,t)".format(i) for i in range(ww.shape[-1])] + ["exact"]
+        ww = nm.concatenate((ww, exact_vals), axis=-1)
+    else:
+        labs = None
+
     # Animate reconstructed solution
-    anim_recon = animate1d(ww[:, :, 0].T, xx, T, axr, figr, ylims=[-1, 2], delay=delay)
+    anim_recon = animate1d(ww.swapaxes(0, 1), xx, T, axr, figr, ylims=[-1, 2],
+                            labs=labs,
+                           delay=delay)
     if not polar:
         axr.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     axr.legend(loc="upper left")
