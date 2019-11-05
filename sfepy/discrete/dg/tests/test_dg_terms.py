@@ -101,8 +101,8 @@ class DGTermTestScope:
 
     def prepare_materials(self, field, velo=1.0, diffusion=0.1, penalty=100):
         """
-        Crates material objects with data attribute, containing properly shaped data
-        to pass to terms
+        Crates material objects with data attribute, containing properly shaped
+        data to pass to terms
 
         :param field: DGField
         :param velo: optional values for velocity a

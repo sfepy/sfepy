@@ -71,7 +71,8 @@ def get_raveler(n_el_nod, n_cell):
         # ur = as_strided(u, shape=(n_el_nod*n_cell, 1),
         #                     strides=(n_cell*ustride1, ustride1))
         ur = nm.ravel(u)[:, None]
-        # possibly use according to https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel.html
+        # possibly use according to
+        #  https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel.html
         # ur = u.reshape(-1)
         return ur
 

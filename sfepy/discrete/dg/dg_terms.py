@@ -10,6 +10,10 @@ from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler, DGField
 
 
 class DGTerm(Term):
+    r"""
+    Base class for DG terms, provides alternative call_function and eval_real
+    methods to accommodate returning iels and vals.
+    """
 
     def call_function(self, out, fargs):
         try:
@@ -121,7 +125,7 @@ class AdvectDGFluxTerm(DGTerm):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
 
         if alpha is not None:
-            self.alpha = alpha  # extract alpha value regardless of shape
+            self.alpha = alpha
 
         field = state.field
         region = field.region
@@ -133,7 +137,6 @@ class AdvectDGFluxTerm(DGTerm):
         fargs = (state, diff_var, field, region, advelo[:, 0, :, 0])
         return fargs
 
-    # noinspection PyUnreachableCode
     def function(self, out, state, diff_var, field : DGField, region, advelo):
 
         if diff_var is not None:
@@ -144,20 +147,22 @@ class AdvectDGFluxTerm(DGTerm):
             nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
             active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
             active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
-            active_nrbhs_facets = nbrhd_idx[active_cells, active_facets, 1]
 
             in_fc_b, out_fc_b, whs = field.get_both_facet_base_vals(state, region)
 
+            # FIXME broadcast advelo to facets
+            #  - maybe somehow get values of advelo at them?
             # compute values
             inner_diff = nm.einsum("nfk, nfk->nf",
                                    fc_n,
                                    advelo[:, None, :]
-                                   + nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
-            # FIXME broadcast advelo to facets - maybe somehow get values of advelo at them?
+                                   + nm.einsum("nfk, nf->nfk",
+                                               (1 - self.alpha) * fc_n, C)) / 2.
             outer_diff = nm.einsum("nfk, nfk->nf",
                                    fc_n,
                                    advelo[:, None, :]
-                                   - nm.einsum("nfk, nf->nfk", (1 - self.alpha) * fc_n, C)) / 2.
+                                   - nm.einsum("nfk, nf->nfk",
+                                               (1 - self.alpha) * fc_n, C)) / 2.
 
             inner_vals = nm.einsum("nf, ndfq, nbfq, nfq -> ndb",
                                    inner_diff,
@@ -179,21 +184,24 @@ class AdvectDGFluxTerm(DGTerm):
             out = (vals, iels[:, 0], iels[:, 1], state, state)
         else:
             fc_n = field.get_cell_normals_per_facet(region)
+            # get maximal wave speeds at facets
+            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+
             facet_base_vals = field.get_facet_base(base_only=True)
             in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
             # get sane facet base shape
-            fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
-
-            # get maximal wave speeds at facets
-            C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+            fc_b = facet_base_vals[:, 0, :, 0, :].T
+            # (n_el_nod, n_el_facet, n_qp)
 
             fc_v_avg = (in_fc_v + out_fc_v)/2.
             fc_v_jmp = in_fc_v - out_fc_v
 
             central = nm.einsum("ik,ifq->ifkq", advelo, fc_v_avg)
-            upwind = (1 - self.alpha) / 2. * nm.einsum("if,ifk,ifq->ifkq", C, fc_n, fc_v_jmp)
+            upwind = (1 - self.alpha) / 2. * nm.einsum("if,ifk,ifq->ifkq",
+                                                       C, fc_n, fc_v_jmp)
 
-            cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+            cell_fluxes = nm.einsum("ifk,ifkq,dfq,ifq->id",
+                                    fc_n, central + upwind, fc_b, weights)
 
             out[:] = 0.0
             n_el_nod = field.n_el_nod
@@ -207,7 +215,6 @@ class AdvectDGFluxTerm(DGTerm):
 class DiffusionDGFluxTerm(DGTerm):
     r"""
     Basic diffusion term for scalar quantity.
-
     """
     name = "dw_dg_diffusion_flux"
     arg_types = (('material_diffusion_tensor', 'state', 'virtual'),  # left
