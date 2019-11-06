@@ -23,9 +23,10 @@ from sfepy.base.base import (get_default, output, assert_,
 from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
 from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 
-parser = argparse.ArgumentParser(description='Run SfePy DG example conf python files',
-                                 epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
-parser.add_argument("conf_file", help="""File containing problem configuration""")
+parser = argparse.ArgumentParser(
+    description='Run SfePy DG example conf python files',
+    epilog='(c) 2019 by T. Zitka , Man-machine Interaction at NTC UWB')
+parser.add_argument("conf_file", help="File containing problem configuration")
 parser.add_argument('-p', '--plot', help="To plot 1D case", action="store_true")
 
 
@@ -50,7 +51,8 @@ def main(argv):
     ensure_path(output_name_trunk_folder)
     output_format = "{}.*.{}".format(output_name_trunk,
                                       pc.options.output_format
-                                      if hasattr(pc.options, "output_format") else "vtk")
+                                      if hasattr(pc.options, "output_format")
+                                      else "vtk")
 
     output("Output set to {}, clearing ...".format(output_format))
     clear_folder(output_format, confirm=False)
@@ -76,8 +78,6 @@ def main(argv):
             load_times = 1
             load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
                               pc.t0, pc.t1, load_times, pc.approx_order)
-
-
 
 
 if __name__ == '__main__':

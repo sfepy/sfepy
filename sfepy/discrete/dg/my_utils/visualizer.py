@@ -89,7 +89,9 @@ def setup_axis(X, Y, ax=None, fig=None, ylims=None):
         uppery = ylims[1]
     ax.set_ylim(lowery, uppery)
     ax.set_xlim(X[0], X[-1])
-    time_text = ax.text(X[0] + nm.sign(X[0]) * X[0] / 10, uppery - uppery / 10, 'empty', fontsize=15)
+    time_text = ax.text(X[0] + nm.sign(X[0]) * X[0] / 10,
+                        uppery - uppery / 10,
+                        'empty', fontsize=15)
     return ax, fig, time_text
 
 
@@ -137,8 +139,8 @@ def save_animation(anim, filename):
 
 def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=None):
     """
-    Creates snap of solution at specified time frame t0, basically gets one frame from animate1d,
-    but colors wont be the same :-(
+    Creates snap of solution at specified time frame t0, basically gets one
+    frame from animate1d, but colors wont be the same :-(
     :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
     :param X: space interval discetization
     :param T: time interval discretization
@@ -169,7 +171,8 @@ def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=No
     return fig
 
 
-def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None, ylims=None, labs=None, plott=None):
+def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None,
+                  ylims=None, labs=None, plott=None):
     """
     Wrapper for sol_frame, saves the frame to file specified.
     :param name: name of the solution e.g. name of the solver used
@@ -400,7 +403,9 @@ def plot1D_DG_sol(coors, t0, t1, u,
 
     # Plot IC and its sampling
     for i in range(n_el_nod):
-        c0 = axs.plot(X, u[i, :, 0, 0], label="IC-{}".format(i), marker=".", ls="")[0].get_color()
+        c0 = axs.plot(X, u[i, :, 0, 0],
+                      label="IC-{}".format(i),
+                      marker=".", ls="")[0].get_color()
         # c1 = plt.plot(X, u[1, :, 0, 0], label="IC-1", marker=".", ls="")[0].get_color()
         # # plt.plot(coors, .1*alones(n_nod), marker=".", ls="")
         axs.step(coors[1:], u[i, :, 0,  0], color=c0)
@@ -411,7 +416,10 @@ def plot1D_DG_sol(coors, t0, t1, u,
         axs.plot(nm.squeeze(XS), nm.squeeze(ics), label="IC-ex")
 
     # Animate sampled solution DOFs directly
-    anim_dofs = animate1d(u_step.T, coors, T, axs, figs, ylims=[-1, 2], plott="step", delay=delay)
+    anim_dofs = animate1d(u_step.T, coors, T, axs, figs,
+                          ylims=[-1, 2],
+                          plott="step",
+                          delay=delay)
     if not polar:
         axs.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     axs.legend(loc="upper left")
@@ -432,6 +440,7 @@ def plot1D_DG_sol(coors, t0, t1, u,
     axr.vlines(X, ymin=0, ymax=.3, colors="grey", linestyles="--")
 
     axr.plot([X1, XN], [1, 1], 'k')
+
     # Plot discontinuously!
     # (order, space_steps, t_steps, 1)
     ww, xx = reconstruct_legendre_dofs(coors, tn, u)
@@ -449,8 +458,9 @@ def plot1D_DG_sol(coors, t0, t1, u,
         labs = None
 
     # Animate reconstructed solution
-    anim_recon = animate1d(ww.swapaxes(0, 1), xx, T, axr, figr, ylims=[-1, 2],
-                            labs=labs,
+    anim_recon = animate1d(ww.swapaxes(0, 1), xx, T, axr, figr,
+                           ylims=[-1, 2],
+                           labs=labs,
                            delay=delay)
     if not polar:
         axr.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
@@ -497,12 +507,17 @@ def reconstruct_legendre_dofs(coors, tn, u):
     cell borders
 
     So far work only for order 1
-    # TODO reconstruct solution on finer mesh to display curvature in higher order -> different function
+    # TODO reconstruct solution on finer mesh to display curvature
+       in higher order -> different function
     :param coors: coors of nodes of the mesh
-    :param u: vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
-    :param tn: number of time steps to reconstruct, if None all steps are reconstructed
-    :return: ww - solution values vector, shape is (3 * nspace_steps - 1, ntime_steps, 1),
-             xx - corresponding coordinates vector, shape is (3 * nspace_steps - 1, 1)
+    :param u: vectors of DOFs, for each order one,
+        shape(u) = (order, nspace_steps, ntime_steps, 1)
+    :param tn: number of time steps to reconstruct,
+        if None all steps are reconstructed
+    :return: ww - solution values vector,
+        shape is (3 * nspace_steps - 1, ntime_steps, 1),
+        xx - corresponding coordinates vector,
+        shape is (3 * nspace_steps - 1, 1)
     """
 
     XN = coors[-1]
@@ -517,7 +532,8 @@ def reconstruct_legendre_dofs(coors, tn, u):
     for i in range(n_el_nod):
         ww[0:-1:3] = ww[0:-1:3] + (-1)**i * u[i, :, :]  # left edges of elements
         ww[1::3] = ww[1::3] + u[i, :, :]  # right edges of elements
-    ww[2::3, :] = nm.NaN  # NaNs ensure plotting of discontinuities at element borders
+    # NaNs ensure plotting of discontinuities at element borders
+    ww[2::3, :] = nm.NaN
 
     # nodes for plotting reconstructed solution
     xx = nm.zeros((3 * n_nod - 1, 1))
