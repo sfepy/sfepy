@@ -79,7 +79,8 @@ MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
 
 velo = 1.0
 a = Material('a', val=[velo])
-StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", integral, omega,
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v",
+                                  integral, omega,
                                   u=u, v=v, a=a)
 
 alpha = Material('alpha', val=[.0])

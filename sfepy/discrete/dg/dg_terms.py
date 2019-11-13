@@ -9,6 +9,75 @@ from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm
 from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler, DGField
 
 
+def laxfrie_linear_flux(in_fc_v, out_fc_v, advelo, fc_n, alpha=0.):
+    """
+    Calculates Lax-Friedrichs flux for linear advection of entity p with
+    velocity advelo across faces.
+
+    Hesthaven, J. S. (2008). Nodal Discontinuous Galerkin Methods. p. 32
+
+    :param in_fc_v: inner facet value, shape (n_cell, n_cell_facet)
+    :param out_fc_v: outer facet value, shape (n_cell, n_cell_facet)
+    :param advelo: advection velocity, shape (n_cell, dim)
+    :param fc_n: facet normals, shape (n_cell, n_cell_facet, dim)
+    :param alpha: flux coefficient, 0 - upwind, 1 - central
+    :return: flux per facet, shape (n_cell, n_cell_facet)
+    """
+
+    # get maximal orthogonal wave speeds at facets
+    C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
+
+    fc_v_avg = (in_fc_v + out_fc_v) / 2.
+    fc_v_jmp = in_fc_v - out_fc_v
+
+    central = nm.einsum("ik,if->ifk", advelo, fc_v_avg)
+    upwind = (1 - alpha) / 2. * nm.einsum("if,ifk,if->ifk",
+                                          C, fc_n, fc_v_jmp)
+    return central + upwind
+
+
+def central_linear_flux(in_fc_v, out_fc_v, advelo):
+    """
+
+    Hesthaven, J. S. (2008). Nodal Discontinuous Galerkin Methods. p. 246-247
+
+    :param in_fc_v: inner facet value, shape (n_cell, n_cell_facet)
+    :param out_fc_v: outer facet value, shape (n_cell, n_cell_facet)
+    :param advelo: advection velocity, shape (n_cell, dim) or (n_cell, 1)
+    :return:
+    """
+
+    fc_v_avg = (in_fc_v + out_fc_v) / 2.
+    central = nm.einsum("i...,if...->if...", advelo, fc_v_avg)
+    return central
+
+
+def central_discont_linear_flux(in_fc_v, out_fc_v,
+                                in_fc_advelo, out_fc_advelo, fc_n):
+    """
+
+    Hesthaven, J. S. (2008). Nodal Discontinuous Galerkin Methods. p. 247-248
+
+    :param in_fc_v: inner facet value, shape (n_cell, n_cell_facet)
+    :param out_fc_v: outer facet value, shape (n_cell, n_cell_facet)
+    :param in_fc_advelo: advection velocity, shape (n_cell, n_cell_facet, dim)
+                            or (n_cell, n_cell_facet, 1)
+    :param out_fc_advelo: advection velocity, shape (n_cell, n_cell_facet, dim)
+                            or (n_cell, n_cell_facet, 1)
+    :param fc_n: facet normals, shape (n_cell, n_cell_facet, dim)
+    :return:
+    """
+
+    advelo_jmp = in_fc_advelo - out_fc_advelo
+
+    central = (nm.einsum("if...,if->if...", in_fc_advelo, in_fc_v)
+                +
+               nm.einsum("if...,if->if...", out_fc_advelo, out_fc_v)) / 2.
+    upwind = 1 / 2. * nm.einsum("if...,if...->if...",
+                                          advelo_jmp, fc_n) * out_fc_v
+
+    return central + upwind
+
 class DGTerm(Term):
     r"""
     Base class for DG terms, provides alternative call_function and eval_real
@@ -188,7 +257,8 @@ class AdvectDGFluxTerm(DGTerm):
             C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
 
             facet_base_vals = field.get_facet_base(base_only=True)
-            in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state, region)
+            in_fc_v, out_fc_v, weights = field.get_both_facet_state_vals(state,
+                                                                         region)
             # get sane facet base shape
             fc_b = facet_base_vals[:, 0, :, 0, :].T
             # (n_el_nod, n_el_facet, n_qp)
@@ -245,7 +315,7 @@ class DiffusionDGFluxTerm(DGTerm):
         return fargs
 
     def function(self, out, state, diff_var, field, region, D):
-        if diff_var is not None:
+        if diff_var is not None:  # matrix mode
             fc_n = field.get_cell_normals_per_facet(region)
 
             nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
@@ -290,8 +360,9 @@ class DiffusionDGFluxTerm(DGTerm):
             vals = nm.vstack((inner_vals, outer_vals))
             vals = vals.flatten()
 
+            #               i           j
             out = (vals, iels[:, 0], iels[:, 1], state, state)
-        else:
+        else:  # residual mode
             fc_n = field.get_cell_normals_per_facet(region)
             inner_facet_base, outer_facet_base, _ = \
                 field.get_both_facet_base_vals(state, region,
@@ -358,10 +429,104 @@ class DiffusionDGFluxTerm(DGTerm):
         return out, status
 
 
+class DiffusionDGFluxTermHest1(DGTerm):
+    r"""
+    Basic diffusion term for scalar quantity. Rework based on
+
+    Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin M
+    ethods. Journal of Physics A: Mathematical and Theoretical (Vol. 54).
+    New York, NY: Springer New York. https://doi.org/10.1007/978-0-387-72067-8
+
+    p. 245 - 255
+    """
+    name = "dw_dg_diffusion_fluxHest1"
+    arg_types = ('material_diffusion_tensor', 'virtual', 'state')
+    arg_shapes = [{'material_diffusion_tensor': '1, 1',
+                   'virtual'    : (1, 'state'),
+                   'state'      : 1,
+                   }]
+    integration = 'volume'
+
+    def get_fargs(self, diff_tensor, test, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+
+        field = state.field
+        region = field.region
+
+        if diff_var is not None:
+            output("Diff var is not None residual only term {} ! "
+                    + " Skipping.".format(self.name))
+            return None, diff_var, None, None, 0, 0
+
+        if "DG" not in field.family_name:
+            raise ValueError("Used DG term with non DG field {} of family {}"
+                             .format(field.name, field.family_name))
+        if self.mode == "avg_state":
+            # put state where it is expected by the function
+            state = test
+
+        fargs = (state, test, diff_var, field, region, diff_tensor[:, 0, :, :])
+        return fargs
+
+    def function(self, out, state, test, diff_var, field, region, D):
+        if state is None:
+            out[:] = 0.0
+            return None
+
+        u = field.unravel_sol(state.data[0])[..., 0]
+
+        state_vg, _ = self.get_mapping(state)
+        test_vg, _ = self.get_mapping(test)
+
+        sD = nm.sqrt(D)
+
+        fc_n = field.get_cell_normals_per_facet(region)
+        facet_base_vals = field.get_facet_base(base_only=True)
+        fc_b = facet_base_vals[:, 0, :, 0, :].T  # get sane facet base shape
+
+        in_fc_u, out_fc_u, weights = \
+            field.get_both_facet_state_vals(state, region)
+
+        uflux = nm.einsum("ifk,ifkq,dfq,ifq->id",
+            fc_n,
+            central_linear_flux(in_fc_u, out_fc_u, sD),
+            fc_b,
+            weights)
+
+        # TODO stiff and mass matrix are not computed correctly -
+        #  the integration is of
+        stiff = nm.einsum("ibkq,idkq->ibd", state_vg.bf, test_vg.bfg)
+
+        mass = nm.einsum("ibkq,idkq->ibd", state_vg.bf, test_vg.bf)
+
+        # TODO stiff matrix is actually transposed in this equation
+        q = nm.einsum("ibd,ikl,ib->ib", stiff, sD, u) + uflux
+
+        stateq = state.copy()
+        stateq.data = [field.ravel_sol(q)]
+
+        in_fc_q, out_fc_q, weights = \
+            field.get_both_facet_state_vals(stateq, region)
+
+        qflux = nm.einsum("ifk,ifkq,dfq,ifq->id",
+            fc_n,
+            central_linear_flux(in_fc_q, out_fc_q, sD),
+            fc_b,
+            weights)
+
+        # TODO stiff matrix is actually transposed in this equation
+        u_out = nm.einsum("ibd,ikl,ib->ib", stiff, sD, q) + qflux
+
+        out[:] = 0.0
+        out[:, 0, :, 0] = u_out[:]
+
+        status = None
+        return out, status
+
 class DiffusionInteriorPenaltyTerm(DGTerm):
     r"""
     Penalty term used to repair unsuitability and discontinuity arising when
-    modeling diffusion using discontinuous galerkin schemes.
+    modeling diffusion using Discontinuous Galerkin schemes.
 
      :Definition:
 
@@ -429,7 +594,8 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
             extra = coo_matrix((vals, (iels[:, 0], iels[:, 1])),
                                shape=2 * (field.n_el_nod * field.n_cell,))
             fextra = extra.toarray()
-            Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell, field.n_el_nod))
+            Mu = nm.dot(fextra, state.data[0]).reshape((field.n_cell,
+                                                        field.n_el_nod))
 
         else:
             inner_facet_state, outer_facet_state, whs = \
@@ -450,7 +616,8 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
             #     + 2 * outer_facet_state[bnd_cells, bnd_facets]
 
             # Neuman
-            # outer_facet_state[bnd_cells, bnd_facets] = inner_facet_state[bnd_cells, bnd_facets]
+            # outer_facet_state[bnd_cells, bnd_facets] = \
+            #    inner_facet_state[bnd_cells, bnd_facets]
 
             jmp_state = inner_facet_state - outer_facet_state
             jmp_base = inner_facet_base  # - outer_facet_base
@@ -587,9 +754,11 @@ class NonlinearHyperDGFluxTerm(DGTerm):
         fc_v_jmp = in_fc_v - out_fc_v
 
         central = fc_f_avg
-        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifqk", C, fc_n, fc_v_jmp)
+        upwind = (1 - self.alf) / 2. * nm.einsum("if,ifk,ifq->ifqk",
+                                                 C, fc_n, fc_v_jmp)
 
-        cell_fluxes = nm.einsum("ifk,ifqk,dfq,ifq->id", fc_n, central + upwind, fc_b, weights)
+        cell_fluxes = nm.einsum("ifk,ifqk,dfq,ifq->id",
+                                fc_n, central + upwind, fc_b, weights)
 
         out[:] = 0.0
         for i in range(n_el_nod):

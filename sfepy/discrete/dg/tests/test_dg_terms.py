@@ -8,6 +8,7 @@ import numpy.testing as nmts
 import scipy.sparse as sp
 
 from base.base import Struct
+from discrete import Variables, Materials
 from discrete.common.dof_info import EquationMap
 from sfepy.discrete import (DGFieldVariable, Material, Integral,
                             Function, Equation, Equations, Problem)
@@ -15,7 +16,7 @@ from sfepy.discrete import (DGFieldVariable, Material, Integral,
 from sfepy.discrete.dg.dg_field import DGField
 from sfepy.discrete.dg.dg_terms import DGTerm, \
     AdvectDGFluxTerm, NonlinearHyperDGFluxTerm, NonlinScalarDotGradTerm, \
-    DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
+    DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm, DiffusionDGFluxTermHest1
 
 from sfepy.discrete.dg.tests.test_dg_field import prepare_field_1D, \
     prepare_field_2D
@@ -59,6 +60,7 @@ class DGTermTestScope:
 
         self.u, self.v = self.prepare_variables(field)
         self.u.data = [(nm.zeros(self.n_nod))]
+        self.variables = Variables([ self.u, self.v])
 
         self.integral = Integral('i', order=approx_order * 2)
         self.a, self.D, self.Cw = self.prepare_materials(field, **kwargs)
@@ -293,6 +295,30 @@ class TestDiffusionDGFluxTerm:
         nmts.assert_almost_equal(out, result)
 
 
+class TestDiffusionDGFluxTermHest1:
+
+    def test_function_explicit_right_1D(self):
+        ts = DGTermTestScope(dim=1, approx_order=3)
+
+        term = DiffusionDGFluxTermHest1("diff_lf_flux(D.val, v, u)",
+                                   "D.val, v,  u[-1]",
+                                   ts.integral, ts.regions["omega"],
+                                   u=ts.u, v=ts.v, D=ts.D)
+        term.setup()
+        term.assign_args(ts.variables, Materials([ts.D]))
+        result = nm.zeros(ts.out.shape)
+
+        out, _ = term.function(ts.out,  # out
+                               ts.u,  # state
+                               ts.v,
+                               None,  # diff_var, explicit
+                               ts.field,
+                               ts.regions["omega"],
+                               ts.D.data,  # advelo
+                               )
+
+        nmts.assert_almost_equal(out, result)
+
 class TestDiffusionInteriorPenaltyTerm:
 
     def test_function_explicit_1D(self):
@@ -301,7 +327,7 @@ class TestDiffusionInteriorPenaltyTerm:
         term = DiffusionInteriorPenaltyTerm("adv_stiff(Cw.val, u, v)",
                                             "Cw.val, u[-1], v",
                                             ts.integral, ts.regions["omega"],
-                                            u=ts.u, v=ts.v, a=ts.Cw)
+                                            u=ts.u, v=ts.v, Cw=ts.Cw)
 
         # ts.u.data[0][::ts.n_el_nod] = 1
 
@@ -312,7 +338,7 @@ class TestDiffusionInteriorPenaltyTerm:
                                None,  # diff_var
                                ts.field,
                                ts.regions["omega"],
-                               ts.a.data
+                               ts.Cw.data
                                )
 
         nmts.assert_almost_equal(out, result)
