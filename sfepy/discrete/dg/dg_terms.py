@@ -78,6 +78,26 @@ def central_discont_linear_flux(in_fc_v, out_fc_v,
 
     return central + upwind
 
+
+def ScalarDotGradScalar( state_vg, test_vg):
+
+    whs = state_vg.qp.weights
+    stiff = nm.einsum("iqkb,iqkb,iqkd,...q->ikbd",
+                     state_vg.volume, state_vg.bf, test_vg.bfg, whs)
+
+    return stiff
+
+
+def ScalarDotScalar(state_vg, test_vg):
+
+    whs = state_vg.qp.weights
+    mass = nm.einsum("iqkb,iqkb,iqkd,...q->ikbd",
+                     state_vg.volume, state_vg.bf, test_vg.bf, whs)
+
+    return mass
+
+
+
 class DGTerm(Term):
     r"""
     Base class for DG terms, provides alternative call_function and eval_real
@@ -493,14 +513,14 @@ class DiffusionDGFluxTermHest1(DGTerm):
             fc_b,
             weights)
 
-        # TODO stiff and mass matrix are not computed correctly -
-        #  the integration is of
-        stiff = nm.einsum("ibkq,idkq->ibd", state_vg.bf, test_vg.bfg)
+        stiff = ScalarDotGradScalar(state_vg, test_vg)
 
-        mass = nm.einsum("ibkq,idkq->ibd", state_vg.bf, test_vg.bf)
+        mass = ScalarDotScalar(state_vg, test_vg)
+        imass = nm.zeros(mass.shape)
+        imass[mass != 0] = 1./mass[mass != 0]
 
         # TODO stiff matrix is actually transposed in this equation
-        q = nm.einsum("ibd,ikl,ib->ib", stiff, sD, u) + uflux
+        q = nm.einsum("ikbd,ikdb,ikl,ib->ib", imass, stiff, sD, u) + uflux
 
         stateq = state.copy()
         stateq.data = [field.ravel_sol(q)]
@@ -515,7 +535,7 @@ class DiffusionDGFluxTermHest1(DGTerm):
             weights)
 
         # TODO stiff matrix is actually transposed in this equation
-        u_out = nm.einsum("ibd,ikl,ib->ib", stiff, sD, q) + qflux
+        u_out = nm.einsum("ikbd,ikl,ib->ib", stiff, sD, q) + qflux
 
         out[:] = 0.0
         out[:, 0, :, 0] = u_out[:]
