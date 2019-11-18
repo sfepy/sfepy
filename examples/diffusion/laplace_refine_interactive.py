@@ -213,7 +213,7 @@ def main():
 
     pb.set_solver(nls)
 
-    state = pb.solve()
+    state = pb.solve(save_results=False)
 
     if subs is not None:
         field.restore_dofs()
