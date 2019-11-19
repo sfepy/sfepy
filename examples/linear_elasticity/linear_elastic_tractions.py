@@ -18,6 +18,10 @@ where
 
 and :math:`\ull{\sigma} \cdot \ul{n} = \bar{p} \ull{I} \cdot \ul{n}`
 with given traction pressure :math:`\bar{p}`.
+
+The function :func:`verify_tractions()` is called after the solution to verify
+that the inner surface tractions correspond to the load applied to the external
+surface.
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -32,8 +36,8 @@ def linear_tension(ts, coor, mode=None, **kwargs):
 
 def verify_tractions(out, problem, state, extend=False):
     """
-    Verify that the inner surface tractions correspond to the tension applied
-    to the surface.
+    Verify that the inner surface tractions correspond to the load applied
+    to the external surface.
     """
     from sfepy.mechanics.tensors import get_full_indices
     from sfepy.discrete import Material, Function
