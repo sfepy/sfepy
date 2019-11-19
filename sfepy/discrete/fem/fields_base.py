@@ -631,19 +631,19 @@ class FEField(Field):
         bf_key = (integral.order, _key, derivative)
 
         if bf_key not in self.bf:
-            if (iels is not None) and (self.ori is not None):
-                ori = self.ori[iels]
-
-            else:
-                ori = self.ori
-
+            ori = self.ori
             self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori,
                                            transform=self.basis_transform)
 
+        bf = self.bf[bf_key]
+        if iels is not None and bf.ndim == 4:
+            bf = bf[iels]
+
         if base_only:
-            return self.bf[bf_key]
+            return bf
+
         else:
-            return self.bf[bf_key], qp.weights
+            return bf, qp.weights
 
     def create_bqp(self, region_name, integral):
         gel = self.gel

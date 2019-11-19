@@ -16,14 +16,16 @@ def collect_term(term_descs, lc):
     signs = {'+': 1.0, '-': -1.0}
 
     def append(str, loc, toks):
-        sign = signs[toks.sign] * signs[lc[0]]
         tp = TermParse()
+        if len(toks.mul):
+            tp.sign = eval(''.join(toks.mul)) * signs[lc[0]]
+        else:
+            tp.sign = signs[toks.sign] * signs[lc[0]]
         tp.integral = toks.term_desc.integral
         if not tp.integral:
             tp.integral = 'a'
         tp.region = toks.term_desc.region
         tp.flag = toks.term_desc.flag
-        tp.sign = sign * eval(''.join(toks.mul))
         tp.name = toks.term_desc.name
         tp.args = ', '.join(toks.args[0])
         term_descs.append(tp)
@@ -53,7 +55,7 @@ def create_bnf(term_descs):
     number = fnumber + Optional(Literal('j'), default='')
     add_op = oneOf('+ -')
     number_expr = Forward()
-    number_expr << ZeroOrMore('(') + number \
+    number_expr << Optional(add_op) + ZeroOrMore('(') + number \
                 + ZeroOrMore(add_op + number_expr) \
                 + ZeroOrMore(')')
 
@@ -79,16 +81,17 @@ def create_bnf(term_descs):
 
     flag = Literal('a')
 
-    term = Optional(Literal('+') | Literal('-'), default='+')("sign") \
-                    + Optional(number_expr + Literal('*').suppress(),
-                               default=['1.0', ''])("mul") \
-                    + Combine(ident("name") \
-                              + Optional("." + (integral + "."
-                              + ident("region") + "." + flag("flag") |
-                              integral + "." + ident("region") |
-                              ident("region")
-                              )))("term_desc") + "(" \
-                    + Optional(args, default=[''])("args") + ")"
+    term = ((Optional(Literal('+') | Literal('-'), default='+')("sign")
+             ^ Optional(number_expr + Literal('*').suppress(),
+                        default=['1.0', ''])("mul"))
+            + Combine(
+                ident("name") + Optional(
+                    "."
+                    + (integral + "." + ident("region") + "." + flag("flag")
+                       | integral + "." + ident("region")
+                       | ident("region"))
+                ))("term_desc") + "("
+            + Optional(args, default=[''])("args") + ")")
     term.setParseAction(collect_term(term_descs, lc))
 
     rhs1 = equal + OneOrMore(term)

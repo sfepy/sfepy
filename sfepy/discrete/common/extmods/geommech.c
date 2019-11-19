@@ -119,8 +119,8 @@ int32 geme_invert4x4( FMField *mtxI, FMField *mtx )
       + pm[4]*pm[2]*pm[9] + pm[8]*pm[1]*pm[6] - pm[8]*pm[2]*pm[5];
 
     det = pm[0]*buf[0] + pm[1]*buf[4] + pm[2]*buf[8] + pm[3]*buf[12];
-    if (fabs(det) < 1e-15) {
-      errput("singular matrix!\n");
+    if (fabs(det) < 1e-55) {
+      output("possibly singular matrix!\n");
     }
     det = 1.0 / det;
 

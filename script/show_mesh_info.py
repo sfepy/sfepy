@@ -3,6 +3,8 @@
 Print various information about a mesh.
 """
 from __future__ import absolute_import
+import sys
+sys.path.append('.')
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
 import numpy as nm
