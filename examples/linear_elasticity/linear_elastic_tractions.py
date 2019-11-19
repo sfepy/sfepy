@@ -21,6 +21,7 @@ with given traction pressure :math:`\bar{p}`.
 """
 from __future__ import absolute_import
 import numpy as nm
+from sfepy.base.base import output
 from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 def linear_tension(ts, coor, mode=None, **kwargs):
@@ -28,6 +29,48 @@ def linear_tension(ts, coor, mode=None, **kwargs):
         val = nm.tile(1.0, (coor.shape[0], 1, 1))
 
         return {'val' : val}
+
+def verify_tractions(out, problem, state, extend=False):
+    """
+    Verify that the inner surface tractions correspond to the tension applied
+    to the surface.
+    """
+    from sfepy.mechanics.tensors import get_full_indices
+    from sfepy.discrete import Material, Function
+
+    load_force = problem.evaluate(
+        'ev_surface_integrate_mat.2.Right(load.val, u)'
+    )
+    output('surface load force:', load_force)
+
+    normal = nm.array([1, 0, 0], dtype=nm.float64)
+    strain = problem.evaluate(
+        'ev_cauchy_strain_s.2.Middle(u)', mode='qp',
+        verbose=False,
+    )
+    D = problem.evaluate(
+        'ev_surface_integrate_mat.2.Middle(solid.D, u)', mode='qp',
+        verbose=False,
+    )
+
+    s2f = get_full_indices(len(normal))
+    stress = nm.einsum('cqij,cqjk->cqik', D, strain)
+    # Full (matrix) form of stress.
+    mstress = stress[..., s2f, 0]
+    force = nm.einsum('cqij,i,j->cq', mstress, normal, normal)
+
+    def get_force(ts, coors, mode=None, **kwargs):
+        if mode == 'qp':
+            return {'force' : force.reshape(coors.shape[0], 1, 1)}
+    aux = Material('aux', function=Function('get_force', get_force))
+
+    middle_force = problem.evaluate(
+        'ev_surface_integrate_mat.2.Middle(aux.force, u)', aux=aux,
+        verbose=False,
+    )
+    output('middle section axial force:', middle_force)
+
+    return out
 
 def define():
     """Define the problem to solve."""
@@ -38,6 +81,7 @@ def define():
     options = {
         'nls' : 'newton',
         'ls' : 'ls',
+        'post_process_hook' : 'verify_tractions',
     }
 
     functions = {
@@ -61,6 +105,11 @@ def define():
     regions = {
         'Omega' : 'all',
         'Left' : ('vertices in (x < -4.99)', 'facet'),
+        # Use a parent region to select only facets belonging to cells in the
+        # parent region. Otherwise, each facet is in the region two times, with
+        # opposite normals.
+        'Middle' : ('vertices in (x > -1e-10) & (x < 1e-10)', 'facet', 'Rhalf'),
+        'Rhalf' : 'vertices in x > -1e-10',
         'Right' : ('vertices in (x > 4.99)', 'facet'),
     }
 
