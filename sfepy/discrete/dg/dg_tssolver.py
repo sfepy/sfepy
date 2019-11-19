@@ -46,7 +46,7 @@ class DGMultiStageTS(TimeSteppingSolver):
 
         nd = self.ts.n_digit
         format = '\n\n====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
-        self.stage_format = '\n---- ' + self.name + ' stage {}: linear system sol error {} ----'
+        self.stage_format = '---- ' + self.name + ' stage {}: linear system sol error {} ----'
 
         self.format = format
         self.verbose = self.conf.verbose
@@ -272,6 +272,13 @@ class RK4StepSolver(DGMultiStageTS):
     name = 'ts.runge_kutta_4'
     __metaclass__ = SolverMeta
 
+    stage_updates = (
+        lambda u, k_, dt: u,
+        lambda u, k1, dt: u + 1. / 2. * dt * k1,
+        lambda u, k2, dt: u + 1. / 2. * dt * k2,
+        lambda u, k3, dt: u + dt * k3
+    )
+
     def solve_step(self, ts, nls, vec_x0, status=None,
                    prestep_fun=None, poststep_fun=None):
         if ts is None:
@@ -292,71 +299,40 @@ class RK4StepSolver(DGMultiStageTS):
         eps_r = get_default(ls_eps_r, 1.0)
         ls_status = {}
 
-        # ----1st stage----
-        vec_r = fun(vec_x0)
-        mtx_a = fun_grad(vec_x0)
-        vec_dx = lin_solver(vec_r, x0=vec_x0,
-                            eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                            status=ls_status)
+        dt = ts.dt
+        vec_x = None
+        vec_xs = []
 
-        vec_x1 = vec_dx - vec_x0
+        for stage, stage_update in enumerate(self.stage_updates):
+            stage_vec = stage_update(vec_x0, vec_x, dt)
+            vec_r = fun(stage_vec)
+            mtx_a = fun_grad(stage_vec)
+            vec_dx = lin_solver(vec_r,  # x0=stage_vec,
+                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
+                                status=ls_status)
 
-        # for debugging
-        full_mtx_a = mtx_a.toarray()
-        un_vec_r = unravel(vec_r)
-        un_vec_x1 = unravel(vec_x1)
-        un_vec_x0 = unravel(vec_x0)
+            vec_e = mtx_a * vec_dx - vec_r
+            lerr = nla.norm(vec_e)
+            if self.verbose:
+                output(self.stage_format.format(stage, lerr))
 
-        vec_x1 = self.post_stage_hook(vec_x1)
+            vec_x = vec_dx - stage_vec
 
-        un_vec_x1_lim = unravel(vec_x1)
+            # for debugging
+            full_mtx_a = mtx_a.toarray()
+            un_vec_r = unravel(vec_r)
+            un_vec_x1 = unravel(vec_x)
+            un_vec_x0 = unravel(stage_vec)
 
-        # ----2nd stage----
-        vec_r = fun(vec_x0 + 1. / 2. * ts.dt * vec_x1)
-        mtx_a = fun_grad(vec_x0 + 1. / 2. * ts.dt * vec_x1)
-        vec_dx = lin_solver(vec_r,  # x0=vec_x0 + 1./2. * ts.dt * vec_x1,
-                            eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                            status=ls_status)
+            vec_x = self.post_stage_hook(vec_x)
+            un_vec_x1_lim = unravel(vec_x)
 
-        vec_x2 = vec_dx - vec_x1
+            vec_xs.append(vec_x)
 
-        un_vec_x2 = unravel(vec_x2)
+        vec_fin = vec_x0 + \
+                  1. / 6. * ts.dt * (vec_xs[0] + 2 * vec_xs[1]
+                                     + 2 * vec_xs[2] + vec_xs[3])
 
-        vec_x2 = self.post_stage_hook(vec_x2)
-
-        un_vec_x2_lim = unravel(vec_x2)
-
-        # ----3rd stage-----
-
-        vec_r = fun(vec_x0 + 1. / 2. * ts.dt * vec_x2)
-        mtx_a = fun_grad(vec_x0 + 1. / 2. * ts.dt * vec_x2)
-        vec_dx = lin_solver(vec_r,  # x0=vec_x0 + 1./2. * ts.dt * vec_x2,
-                            eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                            status=ls_status)
-
-        vec_x3 = vec_dx - vec_x2
-
-        un_vec_x3 = unravel(vec_x3)
-
-        vec_x3 = self.post_stage_hook(vec_x3)
-
-        un_vec_x3_lim = unravel(vec_x3)
-
-        # ----4th stage-----
-        vec_r = fun(vec_x0 + ts.dt * vec_x3)
-        mtx_a = fun_grad(vec_x0 + ts.dt * vec_x3)
-        vec_dx = lin_solver(vec_r,  # x0=vec_x0 + ts.dt * vec_x3,
-                            eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                            status=ls_status)
-
-        vec_x4 = vec_dx - vec_x3
-
-        un_vec_x4 = unravel(vec_x4)
-
-        vec_x4 = self.post_stage_hook(vec_x4)
-
-        un_vec_x4_lim = unravel(vec_x4)
-
-        vec_fin = vec_x0 + 1. / 6. * ts.dt * (vec_x1 + 2 * vec_x2 + 2 * vec_x3 + vec_x4)
+        vec_fin = self.post_stage_hook(vec_fin)
 
         return vec_fin
