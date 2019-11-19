@@ -15,7 +15,7 @@ from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
 from sfepy.base.log import Log, get_logging_conf
 
 
-class DGMultiStageTS(TimeSteppingSolver):
+class DGMultiStageTSS(TimeSteppingSolver):
     """
     Explicit time stepping solver with multistage solve_step
     """
@@ -118,7 +118,7 @@ class DGMultiStageTS(TimeSteppingSolver):
         return vec
 
 
-class EulerStepSolver(DGMultiStageTS):
+class EulerStepSolver(DGMultiStageTSS):
     """
     Updates solution using euler method
     # - unify structure of __call__ method, something like:
@@ -170,7 +170,7 @@ class EulerStepSolver(DGMultiStageTS):
         return vec_x
 
 
-class TVDRK3StepSolver(DGMultiStageTS):
+class TVDRK3StepSolver(DGMultiStageTSS):
     """
     3rd order Total Variation Diminishing Runge-Kutta method
 
@@ -260,7 +260,7 @@ class TVDRK3StepSolver(DGMultiStageTS):
         return vec_x3
 
 
-class RK4StepSolver(DGMultiStageTS):
+class RK4StepSolver(DGMultiStageTSS):
     """
     Based on Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
     Journal of Physics A: Mathematical and Theoretical (Vol. 54). New York, NY: Springer New York.
