@@ -47,7 +47,6 @@ def verify_tractions(out, problem, state, extend=False):
     )
     output('surface load force:', load_force)
 
-    normal = nm.array([1, 0, 0], dtype=nm.float64)
     strain = problem.evaluate(
         'ev_cauchy_strain_s.2.Middle(u)', mode='qp',
         verbose=False,
@@ -57,10 +56,14 @@ def verify_tractions(out, problem, state, extend=False):
         verbose=False,
     )
 
+    normal = nm.array([1, 0, 0], dtype=nm.float64)
+
     s2f = get_full_indices(len(normal))
     stress = nm.einsum('cqij,cqjk->cqik', D, strain)
     # Full (matrix) form of stress.
     mstress = stress[..., s2f, 0]
+
+    # Force in normal direction.
     force = nm.einsum('cqij,i,j->cq', mstress, normal, normal)
 
     def get_force(ts, coors, mode=None, **kwargs):
@@ -68,7 +71,7 @@ def verify_tractions(out, problem, state, extend=False):
             return {'force' : force.reshape(coors.shape[0], 1, 1)}
     aux = Material('aux', function=Function('get_force', get_force))
 
-    middle_force = problem.evaluate(
+    middle_force = - problem.evaluate(
         'ev_surface_integrate_mat.2.Middle(aux.force, u)', aux=aux,
         verbose=False,
     )
