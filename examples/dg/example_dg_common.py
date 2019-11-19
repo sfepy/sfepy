@@ -76,13 +76,13 @@ def local_register_function(fun):
 def get_cfl_setup(CFL=None, dt=None):
     """
     Provide either CFL or dt to create preprocess hook that sets up
-
+    Courant-Friedrichs-Levi stability condition for either advection or
+    diffusion.
 
     Params
     ------
     CFL : float, optional
     dt: float, optional
-
 
     Returns
     -------
@@ -105,24 +105,40 @@ def get_cfl_setup(CFL=None, dt=None):
         first_field = list(problem.fields.values())[0]
         first_field_name = list(problem.fields.keys())[0]
         approx_order = first_field.approx_order
-        mats = problem.create_materials('a')
+        mats = problem.create_materials(['a', 'D'])
         try:
             # TODO make this more general,
-            #  maybe require velocity material name in parameters
+            #  maybe require material name in parameter
             velo = problem.conf_materials['material_a__0'].values["val"]
             max_velo = nm.max(nm.linalg.norm(velo))
         except KeyError:
             max_velo = 1
+
+        try:
+            # TODO make this more general,
+            #  maybe require material name in parameter
+            diffusion = problem.conf_materials['material_D__0'].values["val"]
+            max_diffusion = nm.max(nm.linalg.norm(diffusion))
+        except KeyError:
+            max_diffusion = 1
+
         dx = nm.min(problem.domain.mesh.cmesh.get_volumes(dim))
-        order_corr = 1. / (2 * approx_order + 1)
+
+        output("Preprocess hook - setup_cfl_condition:...")
+        output("Approximation order of field {}({}) is {}"
+               .format(first_field_name, first_field.family_name, approx_order))
+        output("Space divided into {0} cells, {1} steps, step size is {2}"
+               .format(mesh.n_el, len(mesh.coors), dx))
 
         if dt is None:
-            _dt = dx / max_velo * CFL * order_corr
-            if not (nm.isfinite(_dt)):
-                _dt = 1
+            adv_dt = get_cfl_advection(max_velo, dx, approx_order, CFL)
+            diff_dt = get_cfl_diffusion(max_diffusion, dx, approx_order, CFL)
+            _dt = min(adv_dt, diff_dt)
         else:
+            output("CFL coefficient {0} ignored, dt specified directly"
+                   .format(CFL))
             _dt = dt
-        # time_steps_N = int((tf - t0) / dt) * 2
+
         tn = int(nm.ceil((ts_conf.t1 - ts_conf.t0) / _dt))
         dtdx = _dt / dx
 
@@ -130,25 +146,46 @@ def get_cfl_setup(CFL=None, dt=None):
         ts_conf.n_step = tn
         ts_conf.cour = max_velo * dtdx
 
-        output("Preprocess hook - setup_cfl_condition:...")
-        output("Approximation order of field {}({}) is {}"
-               .format(first_field_name, first_field.family_name, approx_order))
-        output("Space divided into {0} cells, {1} steps, step size is {2}"
-               .format(mesh.n_el, len(mesh.coors), dx))
         output("Time divided into {0} nodes, {1} steps, step size is {2}"
                .format(tn - 1, tn, _dt))
-        if dt is None:
-            output("CFL coefficient was {0} and order correction 1/{1} = {2}"
-                   .format(CFL, (2 * approx_order + 1), order_corr))
-        else:
-            output("CFL coefficient {0} was ignored, dt specified directly"
-                   .format(CFL))
         output("Courant number c = max(norm(a)) * dt/dx = {0}"
                .format(ts_conf.cour))
         output("Time stepping solver is {}".format(ts_conf.kind))
-        output("... done.")
+        output("... CFL setup done.")
 
     return setup_cfl_condition
+
+
+def get_cfl_advection(max_velo, dx, approx_order, CFL):
+    order_corr = 1. / (2 * approx_order + 1)
+
+    dt = dx / max_velo * CFL * order_corr
+
+    if not (nm.isfinite(dt)):
+        dt = 1
+    output(("CFL advection: CFL coefficient was {0} " +
+           "and order correction 1/{1} = {2}")
+           .format(CFL, (2 * approx_order + 1), order_corr))
+    output("CFL advection: resulting dt={}".format((dt)))
+    return dt
+
+
+def get_cfl_diffusion(max_diffusion, dx, approx_order, CFL,
+                      do_order_corr=False):
+    if do_order_corr:
+        order_corr = 1. / (2 * approx_order + 1)
+    else:
+        order_corr = 1
+
+    dt = dx**2 / max_diffusion * CFL * order_corr
+
+    if not (nm.isfinite(dt)):
+        dt = 1
+    output(("CFL diffusion: CFL coefficient was {0} " +
+            "and order correction 1/{1} = {2}")
+           .format(CFL, (2 * approx_order + 1), order_corr))
+    output("CFL diffusion: resulting dt={}".format(dt))
+    return dt
 
 
 def get_1Dmesh_hook(XS, XE, n_nod):
