@@ -11,17 +11,17 @@ Simple example for second order ODE
 from examples.dg.example_dg_common import *
 
 
-mstart = 0
-mend = 2*nm.pi
-
-def define(filename_mesh=None, approx_order=2,
-           Cw=200, diffusion_coef=1, CFL=0.004,
+def define(filename_mesh=None, approx_order=3,
+           Cw=200, diffusion_coef=1., CFL=0.001,
            use_symbolic=False, transient=True):
     t0 = 0
-    t1 = 1
+    t1 = 0.1
 
     example_name = "hest_diff1"
     dim = 1
+
+    mstart = 0
+    mend = 2 * nm.pi
 
     if filename_mesh is None:
         filename_mesh = get_1Dmesh_hook(mstart, mend, 80)
@@ -29,13 +29,14 @@ def define(filename_mesh=None, approx_order=2,
 
     materials = {
         'D': ({'val': [diffusion_coef], '.Cw': Cw},),
+        'a': ({'val': 1.0, '.flux': 0.0},),
     }
 
     regions = {
         'Omega' : 'all',
         'Gamma' : ('vertices of surface', 'facet'),
         'left': ('vertices in x == 0', 'vertex'),
-        'right': ('vertices in x == {}'.format(mend), 'vertex')
+        'right': ('vertices in x > {}'.format(mend - 10e-5), 'vertex')
     }
 
     fields = {
@@ -43,7 +44,7 @@ def define(filename_mesh=None, approx_order=2,
     }
 
     variables = {
-        'u' : ('unknown field', 'f', 0),
+        'u' : ('unknown field', 'f', 0, 1),
         'v' : ('test field',    'f', 'u'),
     }
 
@@ -70,17 +71,19 @@ def define(filename_mesh=None, approx_order=2,
                      " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
                      " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
                      " - " + str(diffusion_coef) +
-                             "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
+                     "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
+
+                     # " - dw_dg_diffusion_fluxHest1.i.Omega(D.val, v, u[-1]) " +
 
                      " = 0"
     }
 
     solvers = {
-        "tss": ('ts.tvd_runge_kutta_3',
+        "tss": ('ts.runge_kutta_4',
                 {"t0": t0,
                  "t1": t1,
                  'limiter': IdentityLimiter,
-                 'verbose': True}),
+                 'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls': ('ls.scipy_direct', {})
     }
