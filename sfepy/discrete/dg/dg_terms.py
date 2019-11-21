@@ -1,3 +1,22 @@
+"""
+Discontinous Galekrin method specific terms
+
+Note
+----
+In einsum calls the following convention is used:
+    i represents iterating over all cells of a region;
+    n represents iterating over selected cells of a region, for example
+        over cells on boundary;
+    b represents iterating over basis functions of state variable;
+    d represents iterating over basis functions of test function;
+    k,l,m represent iterating over geometric dimensions, for example
+        coordinates of velocity or facet normal vector
+        or rows and columns of diffusion tensor;
+    q represents iterating over quadrature points;
+    f represents iterating over facets of cell;
+
+"""
+
 import numpy as nm
 
 # sfepy imports
