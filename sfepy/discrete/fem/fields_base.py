@@ -995,10 +995,13 @@ class FEField(Field):
         coors = domain.get_mesh_coors(actual=True)
         dconn = domain.get_conn()
 
+        tco = integration in ('volume', 'custom')
+        iels = region.get_cells(true_cells_only=tco)
+        transform = (self.basis_transform[iels] if self.basis_transform
+                     is not None else None)
+
         if integration == 'volume':
             qp = self.get_qp('v', integral)
-
-            iels = region.get_cells()
 
             geo_ps = self.gel.poly_space
             ps = self.poly_space
@@ -1007,8 +1010,7 @@ class FEField(Field):
             conn = nm.take(dconn, iels.astype(nm.int32), axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
-                                     ori=self.ori,
-                                     transform=self.basis_transform)
+                                     ori=self.ori, transform=transform)
 
             out = vg
 
@@ -1018,6 +1020,11 @@ class FEField(Field):
             if self.ori is not None:
                 msg = 'surface integrals do not work yet with the' \
                       ' hierarchical basis!'
+                raise ValueError(msg)
+
+            if self.basis_transform is not None:
+                msg = 'surface integrals do not work with the' \
+                      ' basis transform!'
                 raise ValueError(msg)
 
             sd = domain.surface_groups[region.name]
@@ -1033,7 +1040,7 @@ class FEField(Field):
                 self.create_bqp(region.name, integral)
                 qp = self.qp_coors[(integral.order, esd.bkey)]
 
-                abf = ps.eval_base(qp.vals[0], transform=self.basis_transform)
+                abf = ps.eval_base(qp.vals[0], transform=transform)
                 bf = abf[..., self.efaces[0]]
 
                 indx = self.gel.get_surface_entities()[0]
@@ -1054,9 +1061,14 @@ class FEField(Field):
                     sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, dconn)
 
             else:
+                if self.basis_transform is not None:
+                    msg = 'surface fields do not work with the' \
+                          ' basis transform!'
+                    raise ValueError(msg)
+
                 # Do not use BQP for surface fields.
                 qp = self.get_qp(sd.face_type, integral)
-                bf = ps.eval_base(qp.vals, transform=self.basis_transform)
+                bf = ps.eval_base(qp.vals, transform=transform)
 
                 sg = mapping.get_mapping(qp.vals, qp.weights,
                                          poly_space=Struct(n_nod=bf.shape[-1]),
