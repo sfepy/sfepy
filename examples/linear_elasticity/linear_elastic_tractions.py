@@ -21,7 +21,19 @@ with given traction pressure :math:`\bar{p}`.
 
 The function :func:`verify_tractions()` is called after the solution to verify
 that the inner surface tractions correspond to the load applied to the external
-surface.
+surface. Try running the example with different approximation orders and/or uniform refinement levels:
+
+- the default options::
+
+    python simple.py examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=1
+
+- refine once::
+
+    python simple.py examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=1 -d approx_order=1
+
+- use the tri-quadratic approximation (Q2)::
+
+    python simple.py examples/linear_elasticity/linear_elastic_tractions.py -O refinement_level=0 -d approx_order=2
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -47,39 +59,46 @@ def verify_tractions(out, problem, state, extend=False):
     )
     output('surface load force:', load_force)
 
-    strain = problem.evaluate(
-        'ev_cauchy_strain_s.2.Middle(u)', mode='qp',
-        verbose=False,
-    )
-    D = problem.evaluate(
-        'ev_surface_integrate_mat.2.Middle(solid.D, u)', mode='qp',
-        verbose=False,
-    )
+    def eval_force(region_name):
+        strain = problem.evaluate(
+            'ev_cauchy_strain_s.i.%s(u)' % region_name, mode='qp',
+            verbose=False,
+        )
+        D = problem.evaluate(
+            'ev_surface_integrate_mat.i.%s(solid.D, u)' % region_name,
+            mode='qp',
+            verbose=False,
+        )
 
-    normal = nm.array([1, 0, 0], dtype=nm.float64)
+        normal = nm.array([1, 0, 0], dtype=nm.float64)
 
-    s2f = get_full_indices(len(normal))
-    stress = nm.einsum('cqij,cqjk->cqik', D, strain)
-    # Full (matrix) form of stress.
-    mstress = stress[..., s2f, 0]
+        s2f = get_full_indices(len(normal))
+        stress = nm.einsum('cqij,cqjk->cqik', D, strain)
+        # Full (matrix) form of stress.
+        mstress = stress[..., s2f, 0]
 
-    # Force in normal direction.
-    force = nm.einsum('cqij,i,j->cq', mstress, normal, normal)
+        # Force in normal direction.
+        force = nm.einsum('cqij,i,j->cq', mstress, normal, normal)
 
-    def get_force(ts, coors, mode=None, **kwargs):
-        if mode == 'qp':
-            return {'force' : force.reshape(coors.shape[0], 1, 1)}
-    aux = Material('aux', function=Function('get_force', get_force))
+        def get_force(ts, coors, mode=None, **kwargs):
+            if mode == 'qp':
+                return {'force' : force.reshape(coors.shape[0], 1, 1)}
+        aux = Material('aux', function=Function('get_force', get_force))
 
-    middle_force = - problem.evaluate(
-        'ev_surface_integrate_mat.2.Middle(aux.force, u)', aux=aux,
-        verbose=False,
-    )
-    output('middle section axial force:', middle_force)
+        middle_force = - problem.evaluate(
+            'ev_surface_integrate_mat.i.%s(aux.force, u)' % region_name,
+            aux=aux,
+            verbose=False,
+        )
+        output('%s section axial force:' % region_name, middle_force)
+
+    eval_force('Left')
+    eval_force('Middle')
+    eval_force('Right')
 
     return out
 
-def define():
+def define(approx_order=1):
     """Define the problem to solve."""
     from sfepy import data_dir
 
@@ -96,7 +115,7 @@ def define():
     }
 
     fields = {
-        'displacement': ('real', 3, 'Omega', 1),
+        'displacement': ('real', 3, 'Omega', approx_order),
     }
 
     materials = {
@@ -125,18 +144,22 @@ def define():
         'fixt' : ('Right', {'u.[1,2]' : 0.0}),
     }
 
+    integrals = {
+        'i' : 2 * approx_order,
+    }
+
     ##
     # Balance of forces.
     equations = {
         'elasticity' :
-        """dw_lin_elastic.2.Omega( solid.D, v, u )
-         = - dw_surface_ltr.2.Right( load.val, v )""",
+        """dw_lin_elastic.i.Omega( solid.D, v, u )
+         = - dw_surface_ltr.i.Right( load.val, v )""",
     }
 
     ##
     # Solvers etc.
     solvers = {
-        'ls' : ('ls.scipy_direct', {}),
+        'ls' : ('ls.auto_direct', {}),
         'newton' : ('nls.newton',
                     { 'i_max'      : 1,
                       'eps_a'      : 1e-10,
