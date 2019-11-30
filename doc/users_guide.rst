@@ -1110,6 +1110,14 @@ Additional options (including solver selection)::
         # - mirror regions matching
         # - fixing of mesh doubled vertices
         'mesh_eps': 1e-7,
+
+        # bool, default: True. If True, the (tangent) matrices and residual
+        # vectors (right-hand sides) contain only active DOFs, otherwise all
+        # DOFs (including the ones fixed by the Dirichlet or periodic boundary
+        # conditions) are included. Note that the rows/columns corresponding to
+        # fixed DOFs are modified w.r.t. a problem without the boundary
+        # conditions.
+        'active_only' : False,
     }
 
 * ``post_process_hook`` enables computing derived quantities, like
