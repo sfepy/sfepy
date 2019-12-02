@@ -16,6 +16,7 @@ def draw_data(ax, xdata, ydata, label, plot_kwargs, swap_axes=False):
         alpha = lines[0].get_alpha()
         plot_kwargs['alpha'] = 0.5 if alpha is None else 0.5 * alpha
 
+    plot_kwargs = plot_kwargs.copy()
     if not swap_axes:
         if nm.isrealobj(ydata):
             ax.plot(xdata, ydata, label=label,
@@ -66,7 +67,7 @@ class LogPlotter(Struct):
             self.ip = command[1]
 
         elif command[0] == 'plot':
-            xd, yd, plot_kwargs = command[1:]
+            xd, yd = command[1:]
 
             ig, ip = self.ig, self.ip
 
@@ -74,11 +75,9 @@ class LogPlotter(Struct):
             ydata = self.ydata.setdefault((ig, ip), [])
             xdata.append(xd)
             ydata.append(yd)
-            self.plot_kwargs[(ig, ip)] = plot_kwargs
 
         elif command[0] == 'vline':
             x, kwargs = command[1:]
-
             self.vlines[self.ig].append((x, kwargs))
 
         elif command[0] == 'clear':
@@ -88,11 +87,12 @@ class LogPlotter(Struct):
             self.show_legends = True
 
         elif command[0] == 'add_axis':
-            ig, names, yscale, xlabel, ylabel = command[1:]
+            ig, names, yscale, xlabel, ylabel, plot_kwargs = command[1:]
             self.data_names[ig] = names
             self.yscales[ig] = yscale
             self.xlabels[ig] = xlabel
             self.ylabels[ig] = ylabel
+            self.plot_kwargs[ig] = plot_kwargs
             self.n_gr = len(self.data_names)
 
             self.make_axes()
@@ -104,8 +104,9 @@ class LogPlotter(Struct):
     def apply_commands(self):
         from matplotlib.ticker import LogLocator, AutoLocator
 
-        for key, plot_kwargs in self.plot_kwargs.items():
+        for key in self.ydata.keys():
             ig, ip = key
+
             xdata = nm.array(self.xdata[(ig, ip)])
             ydata = nm.array(self.ydata[(ig, ip)])
 
@@ -117,7 +118,7 @@ class LogPlotter(Struct):
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
             draw_data(ax, nm.array(xdata), nm.array(ydata),
-                      self.data_names[ig][ip], plot_kwargs)
+                      self.data_names[ig][ip], self.plot_kwargs[ig][ip])
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()
@@ -205,7 +206,8 @@ class LogPlotter(Struct):
             self.ax.append(self.fig.add_subplot(n_row, n_col, ii + 1))
             self.vlines.setdefault(ii, [])
 
-    def __call__(self, pipe, log_file, data_names, yscales, xlabels, ylabels):
+    def __call__(self, pipe, log_file, data_names, yscales, xlabels, ylabels,
+                 plot_kwargs):
         """
         Sets-up the plotting window, starts a thread calling self.poll_draw()
         that does the actual plotting, taking commands out of `pipe`.
@@ -226,6 +228,7 @@ class LogPlotter(Struct):
         self.yscales = yscales
         self.xlabels = xlabels
         self.ylabels = ylabels
+        self.plot_kwargs = plot_kwargs
         self.n_gr = len(data_names)
         self.vlines = {}
 
