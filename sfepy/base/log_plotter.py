@@ -54,7 +54,7 @@ class LogPlotter(Struct):
     def __init__(self, aggregate=100, sleep=1.0):
         Struct.__init__(self, aggregate=aggregate, sleep=sleep,
                         ig=0, ip=0, xdata={}, ydata={}, plot_kwargs={},
-                        show_legends=False)
+                        clear_axes={}, show_legends=False)
 
     def process_command(self, command):
         self.output(command[0])
@@ -82,7 +82,7 @@ class LogPlotter(Struct):
             self.vlines[self.ig].append((x, kwargs))
 
         elif command[0] == 'clear':
-            self.ax[self.ig].cla()
+            self.clear_axes[self.ig] = True
 
         elif command[0] == 'legends':
             self.show_legends = True
@@ -110,6 +110,10 @@ class LogPlotter(Struct):
             ydata = nm.array(self.ydata[(ig, ip)])
 
             ax = self.ax[ig]
+            if self.clear_axes[ig]:
+                ax.cla()
+                self.clear_axes[ig] = False
+
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
             draw_data(ax, nm.array(xdata), nm.array(ydata),
