@@ -53,7 +53,7 @@ class LogPlotter(Struct):
 
     def __init__(self, aggregate=100, sleep=1.0):
         Struct.__init__(self, aggregate=aggregate, sleep=sleep,
-                        ig=0, ip=0)
+                        ig=0, ip=0, xdata={}, ydata={})
 
     def process_command(self, command):
         from matplotlib.ticker import LogLocator, AutoLocator
@@ -67,13 +67,20 @@ class LogPlotter(Struct):
             self.ip = command[1]
 
         elif command[0] == 'plot':
-            xdata, ydata, plot_kwargs = command[1:]
+            xd, yd, plot_kwargs = command[1:]
 
             ig, ip = self.ig, self.ip
+
+            xdata = self.xdata.setdefault((ig, ip), [])
+            ydata = self.ydata.setdefault((ig, ip), [])
+            xdata.append(xd)
+            ydata.append(yd)
+
             ax = self.ax[ig]
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
-            draw_data(ax, xdata, ydata, self.data_names[ig][ip], plot_kwargs)
+            draw_data(ax, nm.array(xdata), nm.array(ydata),
+                      self.data_names[ig][ip], plot_kwargs)
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()

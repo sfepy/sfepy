@@ -557,8 +557,8 @@ class Log(Struct):
                     key = name_to_key(name, ii)
                     try:
                         send(['plot',
-                              nm.array(self.x_values[ig]),
-                              nm.array(self.data[key]),
+                              self.x_values[ig][-1],
+                              self.data[key][-1],
                               self.plot_kwargs[ig][ip]])
                     except:
                         msg = "send failed! (%s, %s, %s)!" \
