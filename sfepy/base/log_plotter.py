@@ -53,11 +53,10 @@ class LogPlotter(Struct):
 
     def __init__(self, aggregate=100, sleep=1.0):
         Struct.__init__(self, aggregate=aggregate, sleep=sleep,
-                        ig=0, ip=0, xdata={}, ydata={})
+                        ig=0, ip=0, xdata={}, ydata={}, plot_kwargs={},
+                        show_legends=False)
 
     def process_command(self, command):
-        from matplotlib.ticker import LogLocator, AutoLocator
-
         self.output(command[0])
 
         if command[0] == 'ig':
@@ -75,6 +74,40 @@ class LogPlotter(Struct):
             ydata = self.ydata.setdefault((ig, ip), [])
             xdata.append(xd)
             ydata.append(yd)
+            self.plot_kwargs[(ig, ip)] = plot_kwargs
+
+        elif command[0] == 'vline':
+            x, kwargs = command[1:]
+
+            self.vlines[self.ig].append((x, kwargs))
+
+        elif command[0] == 'clear':
+            self.ax[self.ig].cla()
+
+        elif command[0] == 'legends':
+            self.show_legends = True
+
+        elif command[0] == 'add_axis':
+            ig, names, yscale, xlabel, ylabel = command[1:]
+            self.data_names[ig] = names
+            self.yscales[ig] = yscale
+            self.xlabels[ig] = xlabel
+            self.ylabels[ig] = ylabel
+            self.n_gr = len(self.data_names)
+
+            self.make_axes()
+
+        elif command[0] == 'save':
+            self.fig.savefig(command[1])
+            self.pipe.send(True) # Acknowledge save.
+
+    def apply_commands(self):
+        from matplotlib.ticker import LogLocator, AutoLocator
+
+        for key, plot_kwargs in self.plot_kwargs.items():
+            ig, ip = key
+            xdata = nm.array(self.xdata[(ig, ip)])
+            ydata = nm.array(self.ydata[(ig, ip)])
 
             ax = self.ax[ig]
             ax.set_yscale(self.yscales[ig])
@@ -90,15 +123,7 @@ class LogPlotter(Struct):
                 yminor_locator = AutoLocator()
                 self.ax[ig].yaxis.set_minor_locator(yminor_locator)
 
-        elif command[0] == 'vline':
-            x, kwargs = command[1:]
-
-            self.vlines[self.ig].append((x, kwargs))
-
-        elif command[0] == 'clear':
-            self.ax[self.ig].cla()
-
-        elif command[0] == 'legends':
+        if self.show_legends:
             for ig, ax in enumerate(self.ax):
                 try:
                     ax.legend()
@@ -118,19 +143,6 @@ class LogPlotter(Struct):
 
             except:
                 pass
-
-        elif command[0] == 'add_axis':
-            ig, names, yscale, xlabel, ylabel = command[1:]
-            self.data_names[ig] = names
-            self.yscales[ig] = yscale
-            self.xlabels[ig] = xlabel
-            self.ylabels[ig] = ylabel
-            self.n_gr = len(self.data_names)
-            self.make_axes()
-
-        elif command[0] == 'save':
-            self.fig.savefig(command[1])
-            self.pipe.send(True) # Acknowledge save.
 
     def terminate(self):
         if self.ii:
@@ -164,6 +176,7 @@ class LogPlotter(Struct):
                 self.ii += 1
 
             if self.ii:
+                self.apply_commands()
                 self.fig.canvas.draw()
                 self.output('processed %d commands' % self.ii)
             time.sleep(self.sleep)
