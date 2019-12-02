@@ -15,11 +15,12 @@ def main():
     log = Log((['sin(x) + i sin(x**2)', 'cos(x)'], ['exp(x)']),
               yscales=['linear', 'log'],
               xlabels=['angle', None], ylabels=[None, 'a function'],
+              aggregate=1000, sleep=0.05,
               log_filename=os.path.join(cwd, 'live_plot.log'))
     log2 = Log([['x^3']],
                yscales=['linear'],
                xlabels=['x'], ylabels=['a cubic function'],
-               aggregate=50, sleep=0.05,
+               aggregate=1000, sleep=0.05,
                log_filename=os.path.join(cwd, 'live_plot2.log'),
                formats=[['{:.5e}']])
 
