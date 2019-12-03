@@ -16,19 +16,23 @@ class Test(TestCommon):
     def test_log_create(self):
         from sfepy.base.log import Log
 
-        log = Log([['x^3']],
-                  plot_kwargs = [{'color' : 'b', 'ls' : '', 'marker' : 'o'}],
-                  yscales=['linear'],
-                  xlabels=['x'], ylabels=['a cubic function'],
+        log = Log([['x'], ['x^2', 'x^3']],
+                  plot_kwargs = [{},
+                                 [{'color' : 'b', 'ls' : '', 'marker' : 'o'},
+                                  {'color' : 'g', 'ls' : ':', 'marker' : 'x'}]],
+                  yscales=['log', 'linear'],
+                  xlabels=['x', 'x'], ylabels=['x', 'x^p'],
                   is_plot=False,
                   aggregate=0, sleep=0.0,
                   log_filename=self.log_filename,
-                  formats=[['{:.5e}']])
+                  formats=[['{:.3e}'], ['{:.5e}'] * 2])
 
         for x in nm.linspace(0, 1, 11):
-            log(x**3, x=[x])
+            log(x, x**2, x**3, x=[x + 1, x])
             if nm.allclose(x, 0.5):
                 log.plot_vlines([0], color='g', linewidth=2)
+            if nm.allclose(x, 0.7):
+                log.plot_vlines([1], color='g', linewidth=2)
 
         log(finished=True)
 
@@ -40,12 +44,12 @@ class Test(TestCommon):
 
         log, info = read_log(self.log_filename)
 
-        output = Output('', filename=os.path.join(self.options.out_dir,
-                                                  'test_log2.txt'),
-                        quiet=True)
+        filename2 = os.path.join(self.options.out_dir, 'test_log2.txt')
+        output = Output('', filename=filename2, quiet=True)
+
         write_log(output, log, info)
 
-        log2, info2 = read_log(self.log_filename)
+        log2, info2 = read_log(filename2)
 
         ok = True
         _ok = info == info2

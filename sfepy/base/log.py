@@ -50,8 +50,17 @@ def get_logging_conf(conf, log_name='log'):
 
     return log
 
-def name_to_key(name, ii):
-    return name + (':%d' % ii)
+def iter_names(data_names, igs=None):
+    if igs is None:
+        igs = nm.arange(len(data_names))
+
+    ii = iseq = 0
+    for ig, names in ordered_iteritems(data_names):
+        for ip, name in enumerate(names):
+            if ig in igs:
+                yield ig, ip, ii, iseq, name
+                iseq += 1
+            ii += 1
 
 def read_log(filename):
     """
@@ -76,7 +85,6 @@ def read_log(filename):
 
     fd = open(filename, 'r')
 
-    last_xval = None
     for line in fd:
         if line[0] == '#':
             ls = line.split(':')
@@ -104,11 +112,11 @@ def read_log(filename):
 
         ls = line.split(':')
 
-        key = ls[0]
+        key = int(ls[0])
         xs, ys, vlines = log.setdefault(key, ([], [], []))
 
-        if (len(ls) == 2) and (last_xval is not None):
-            vlines.append(last_xval)
+        if (len(ls) == 2) and len(log[key][0]):
+            vlines.append(log[key][0][-1])
 
         else:
             try:
@@ -121,8 +129,6 @@ def read_log(filename):
             xs.append(xval)
             ys.append(yval)
 
-            last_xval = xval
-
     fd.close()
 
     for key, (xs, ys, vlines) in six.iteritems(log):
@@ -134,16 +140,19 @@ def write_log(output, log, info):
     xlabels, ylabels, yscales, names, plot_kwargs = zip(*info.values())
     _write_header(output, xlabels, ylabels, yscales, names, plot_kwargs)
 
-    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
+    offset = 0
+    for ig, (xlabel, ylabel, yscale, names, plot_kwargs) \
         in ordered_iteritems(info):
         for ip, name in enumerate(names):
-            xs, ys, vlines = log[name]
+            xs, ys, vlines = log[ip + offset]
 
             for ir, x in enumerate(xs):
-                output('{}: {}: {:.16e}'.format(name, x, ys[ir]))
+                output('{}: {}: {:.16e}'.format(ip + offset, x, ys[ir]))
 
                 if x in vlines:
-                    output(name + ': -----')
+                    output('%d: -----' % (ip + offset))
+
+        offset += len(names)
 
     output('# ended: %s' % time.asctime())
 
@@ -225,22 +234,23 @@ def plot_log(axs, log, info, xticks=None, yticks=None, xnbins=None, ynbins=None,
     if ynbins is None:
         ynbins = [None] * n_gr
 
-    isub = 0
-    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
-        if ii not in groups: continue
+    isub = offset = 0
+    for ig, (xlabel, ylabel, yscale, names, plot_kwargs) \
+        in ordered_iteritems(info):
+        if ig not in groups: continue
 
         if axs is None:
             ax = fig.add_subplot(n_row, n_col, isub + 1)
 
         else:
-            ax = axs[ii]
+            ax = axs[ig]
 
         if not swap_axes:
             xnb, ynb = xnbins[isub], ynbins[isub]
             xti, yti = xticks[isub], yticks[isub]
             ax.set_yscale(yscale)
             for ip, name in enumerate(names):
-                xs, ys, vlines = log[name]
+                xs, ys, vlines = log[ip + offset]
                 draw_data(ax, xs, ys, name, plot_kwargs[ip])
 
                 for x in vlines:
@@ -253,11 +263,13 @@ def plot_log(axs, log, info, xticks=None, yticks=None, xnbins=None, ynbins=None,
             ax.set_xscale(yscale)
 
             for ip, name in enumerate(names):
-                xs, ys, vlines = log[name]
+                xs, ys, vlines = log[ip + offset]
                 draw_data(ax, xs, ys, name, plot_kwargs[ip], swap_axes=True)
 
                 for x in vlines:
                     ax.axhline(x, color='k', alpha=0.3)
+
+        offset += len(names)
 
         if xti is not None:
             ax.set_xticks(xti)
@@ -410,16 +422,15 @@ class Log(Struct):
 
         ii = self.n_arg
         for iseq, name in enumerate(names):
-            key = name_to_key(name, ii)
-            self.data[key] = []
-            ii += 1
+            self.data[ii] = []
 
             if formats is not None:
-                self.formats[key] = formats[iseq]
+                self.formats[ii] = formats[iseq]
             else:
-                self.formats[key] = '{:.3e}'
+                self.formats[ii] = '{:.3e}'
 
-            self._format_styles[key] = 0 if '%' in self.formats[key] else 1
+            self._format_styles[ii] = 0 if '%' in self.formats[ii] else 1
+            ii += 1
 
         self.n_arg = ii
 
@@ -427,18 +438,6 @@ class Log(Struct):
             send = self.plot_pipe.send
             send(['add_axis', ig, names, yscale, xlabel, ylabel,
                   self.plot_kwargs[ig]])
-
-    def iter_names(self, igs=None):
-        if igs is None:
-            igs = nm.arange(self.n_gr)
-
-        ii = iseq = 0
-        for ig, names in ordered_iteritems(self.data_names):
-            for name in names:
-                if ig in igs:
-                    yield ig, ii, iseq, name
-                    iseq += 1
-                ii += 1
 
     def get_log_name(self):
         return os.path.join(sfepy_config_dir,
@@ -492,7 +491,7 @@ class Log(Struct):
                     ii = 0
                 self.x_values[ig].append(ii)
 
-        for ig, ii, iseq, name in self.iter_names(igs):
+        for ig, ip, ii, iseq, name in iter_names(self.data_names, igs):
             aux = args[iseq]
             if isinstance(aux, nm.ndarray):
                 aux = nm.array(aux, ndmin = 1)
@@ -500,17 +499,16 @@ class Log(Struct):
                     aux = aux[0]
                 else:
                     raise ValueError('can log only scalars (%s)' % aux)
-            key = name_to_key(name, ii)
-            self.data[key].append(aux)
+            self.data[ii].append(aux)
 
             if self.output:
-                if self._format_styles[key]:
-                    self.output(('{}: {}: %s' % self.formats[key])
-                                .format(name, self.x_values[ig][-1], aux))
+                if self._format_styles[ii]:
+                    self.output(('{}: {}: %s' % self.formats[ii])
+                                .format(ii, self.x_values[ig][-1], aux))
 
                 else:
-                    self.output(('%%s: %%s: %s' % self.formats[key])
-                                % (name, self.x_values[ig][-1], aux))
+                    self.output(('%%s: %%s: %s' % self.formats[ii])
+                                % (ii, self.x_values[ig][-1], aux))
 
         if self.is_plot and self.can_plot:
             if self.n_calls == 0:
@@ -549,26 +547,16 @@ class Log(Struct):
     def plot_data(self, igs):
         send = self.plot_pipe.send
 
-        ii = 0
-        for ig, names in ordered_iteritems(self.data_names):
-            if ig in igs:
-                send(['ig', ig])
-                send(['clear'])
-                for ip, name in enumerate(names):
-                    send(['ip', ip])
-                    key = name_to_key(name, ii)
-                    try:
-                        send(['plot',
-                              self.x_values[ig][-1],
-                              self.data[key][-1]])
-                    except:
-                        msg = "send failed! (%s, %s, %s)!" \
-                              % (ii, name, self.data[key])
-                        raise IOError(msg)
-                    ii += 1
+        for ig in igs:
+            send(['clear', ig])
 
-            else:
-                ii += len(names)
+        for ig, ip, ii, iseq, name in iter_names(self.data_names, igs):
+            try:
+                send(['plot', ig, ip, self.x_values[ig][-1],
+                      self.data[ii][-1]])
+            except:
+                msg = "send failed! (%s, %s, %s)!" % (ii, name, self.data[ii])
+                raise IOError(msg)
 
         if self.show_legends:
             send(['legends'])
@@ -589,12 +577,10 @@ class Log(Struct):
             for ig in igs:
                 x = self.x_values[ig]
                 if len(x):
-                    send(['ig', ig])
-                    send(['vline', x[-1], kwargs])
+                    send(['vline', ig, x[-1], kwargs])
 
             send(['continue'])
 
         if self.output:
-            for ig in igs:
-                for name in self.data_names[ig]:
-                    self.output(name + ': -----')
+            for ig, ip, ii, iseq, name in iter_names(self.data_names, igs):
+                self.output('%d: -----' % ii)

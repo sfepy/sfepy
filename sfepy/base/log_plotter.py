@@ -54,34 +54,26 @@ class LogPlotter(Struct):
 
     def __init__(self, aggregate=100, sleep=1.0):
         Struct.__init__(self, aggregate=aggregate, sleep=sleep,
-                        ig=0, ip=0, xdata={}, ydata={}, plot_kwargs={},
+                        xdata={}, ydata={}, plot_kwargs={},
                         clear_axes={}, show_legends=False)
 
     def process_command(self, command):
         self.output(command[0])
 
-        if command[0] == 'ig':
-            self.ig = command[1]
-
-        if command[0] == 'ip':
-            self.ip = command[1]
-
-        elif command[0] == 'plot':
-            xd, yd = command[1:]
-
-            ig, ip = self.ig, self.ip
-
+        if command[0] == 'plot':
+            ig, ip, xd, yd = command[1:]
             xdata = self.xdata.setdefault((ig, ip), [])
             ydata = self.ydata.setdefault((ig, ip), [])
             xdata.append(xd)
             ydata.append(yd)
 
         elif command[0] == 'vline':
-            x, kwargs = command[1:]
-            self.vlines[self.ig].append((x, kwargs))
+            ig, x, kwargs = command[1:]
+            self.vlines[ig].append((x, kwargs))
 
         elif command[0] == 'clear':
-            self.clear_axes[self.ig] = True
+            ig = command[1]
+            self.clear_axes[ig] = True
 
         elif command[0] == 'legends':
             self.show_legends = True
@@ -104,7 +96,7 @@ class LogPlotter(Struct):
     def apply_commands(self):
         from matplotlib.ticker import LogLocator, AutoLocator
 
-        for key in self.ydata.keys():
+        for key in sorted(self.ydata.keys()):
             ig, ip = key
 
             xdata = nm.array(self.xdata[(ig, ip)])
