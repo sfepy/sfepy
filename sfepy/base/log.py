@@ -425,7 +425,8 @@ class Log(Struct):
 
         if self.plot_pipe is not None:
             send = self.plot_pipe.send
-            send(['add_axis', ig, names, yscale, xlabel, ylabel])
+            send(['add_axis', ig, names, yscale, xlabel, ylabel,
+                  self.plot_kwargs[ig]])
 
     def iter_names(self, igs=None):
         if igs is None:
@@ -525,7 +526,8 @@ class Log(Struct):
                                                   self.data_names,
                                                   self.yscales,
                                                   self.xlabels,
-                                                  self.ylabels))
+                                                  self.ylabels,
+                                                  self.plot_kwargs))
                 self.plot_process.daemon = True
                 self.plot_process.start()
 
@@ -557,9 +559,8 @@ class Log(Struct):
                     key = name_to_key(name, ii)
                     try:
                         send(['plot',
-                              nm.array(self.x_values[ig]),
-                              nm.array(self.data[key]),
-                              self.plot_kwargs[ig][ip]])
+                              self.x_values[ig][-1],
+                              self.data[key][-1]])
                     except:
                         msg = "send failed! (%s, %s, %s)!" \
                               % (ii, name, self.data[key])
