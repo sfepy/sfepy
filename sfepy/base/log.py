@@ -85,7 +85,6 @@ def read_log(filename):
 
     fd = open(filename, 'r')
 
-    last_xval = None
     for line in fd:
         if line[0] == '#':
             ls = line.split(':')
@@ -113,11 +112,11 @@ def read_log(filename):
 
         ls = line.split(':')
 
-        key = ls[0]
+        key = int(ls[0])
         xs, ys, vlines = log.setdefault(key, ([], [], []))
 
-        if (len(ls) == 2) and (last_xval is not None):
-            vlines.append(last_xval)
+        if (len(ls) == 2) and len(log[key][0]):
+            vlines.append(log[key][0][-1])
 
         else:
             try:
@@ -130,8 +129,6 @@ def read_log(filename):
             xs.append(xval)
             ys.append(yval)
 
-            last_xval = xval
-
     fd.close()
 
     for key, (xs, ys, vlines) in six.iteritems(log):
@@ -143,16 +140,19 @@ def write_log(output, log, info):
     xlabels, ylabels, yscales, names, plot_kwargs = zip(*info.values())
     _write_header(output, xlabels, ylabels, yscales, names, plot_kwargs)
 
-    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) \
+    offset = 0
+    for ig, (xlabel, ylabel, yscale, names, plot_kwargs) \
         in ordered_iteritems(info):
         for ip, name in enumerate(names):
-            xs, ys, vlines = log[name]
+            xs, ys, vlines = log[ip + offset]
 
             for ir, x in enumerate(xs):
-                output('{}: {}: {:.16e}'.format(name, x, ys[ir]))
+                output('{}: {}: {:.16e}'.format(ip + offset, x, ys[ir]))
 
                 if x in vlines:
-                    output(name + ': -----')
+                    output('%d: -----' % (ip + offset))
+
+        offset += len(names)
 
     output('# ended: %s' % time.asctime())
 
@@ -234,22 +234,23 @@ def plot_log(axs, log, info, xticks=None, yticks=None, xnbins=None, ynbins=None,
     if ynbins is None:
         ynbins = [None] * n_gr
 
-    isub = 0
-    for ii, (xlabel, ylabel, yscale, names, plot_kwargs) in six.iteritems(info):
-        if ii not in groups: continue
+    isub = offset = 0
+    for ig, (xlabel, ylabel, yscale, names, plot_kwargs) \
+        in ordered_iteritems(info):
+        if ig not in groups: continue
 
         if axs is None:
             ax = fig.add_subplot(n_row, n_col, isub + 1)
 
         else:
-            ax = axs[ii]
+            ax = axs[ig]
 
         if not swap_axes:
             xnb, ynb = xnbins[isub], ynbins[isub]
             xti, yti = xticks[isub], yticks[isub]
             ax.set_yscale(yscale)
             for ip, name in enumerate(names):
-                xs, ys, vlines = log[name]
+                xs, ys, vlines = log[ip + offset]
                 draw_data(ax, xs, ys, name, plot_kwargs[ip])
 
                 for x in vlines:
@@ -262,11 +263,13 @@ def plot_log(axs, log, info, xticks=None, yticks=None, xnbins=None, ynbins=None,
             ax.set_xscale(yscale)
 
             for ip, name in enumerate(names):
-                xs, ys, vlines = log[name]
+                xs, ys, vlines = log[ip + offset]
                 draw_data(ax, xs, ys, name, plot_kwargs[ip], swap_axes=True)
 
                 for x in vlines:
                     ax.axhline(x, color='k', alpha=0.3)
+
+        offset += len(names)
 
         if xti is not None:
             ax.set_xticks(xti)
