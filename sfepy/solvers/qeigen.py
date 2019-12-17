@@ -2,12 +2,12 @@
 Quadratic eigenvalue problem solvers.
 """
 from __future__ import absolute_import
-import time
 
 import numpy as nm
 import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default
+from sfepy.base.timing import Timer
 from sfepy.linalg.utils import max_diff_csr
 from sfepy.solvers.solvers import QuadraticEVPSolver
 
