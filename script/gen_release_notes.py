@@ -5,6 +5,7 @@ Generate release notes using git log starting from the given version.
 from __future__ import print_function
 from argparse import ArgumentParser
 
+import sys
 import subprocess
 from textwrap import wrap
 
@@ -19,7 +20,11 @@ def main():
 
     print(cmd)
 
-    raw = subprocess.check_output(cmd.split())
+    if sys.version_info > (3, 0):
+        raw = subprocess.check_output(cmd.split(), encoding='utf-8')
+
+    else:
+        raw = subprocess.check_output(cmd.split())
 
     msgs = raw.split('\n\n')
 
@@ -44,8 +49,14 @@ def main():
         print()
 
         for msg in merge[1:]:
-            wmsg = '\n    '.join(wrap(msg[1:], 75))
+            submsgs = msg[1:].split('\n- ')
+
+            wmsg = '\n    '.join(wrap(submsgs[0].strip(), 75))
             print('  - ' + wmsg)
+            for submsg in submsgs[1:]:
+                wmsg = '\n    '.join(wrap(submsg.strip(), 73))
+                print('    - ' + wmsg)
+
         print()
 
 if __name__ == '__main__':
