@@ -2725,7 +2725,8 @@ class Msh2MeshIO(MeshIO):
 
     For details on format see [1].
 
-    For details on representing and visualization of DG FEM data using gmsh see [2].
+    For details on representing and visualization of DG FEM data using gmsh see
+    [2].
 
     [1] http://gmsh.info/doc/texinfo/gmsh.html#File-formats
 
@@ -2738,10 +2739,8 @@ class Msh2MeshIO(MeshIO):
     ----------
     msh20header :
         Header containing version number.
-
     msh_cells : dictionary
         Mapping from msh to sfepy geometry.
-
     geo2msh_type : dictionary
         Mapping from sfepy to msh geometry.
     """
@@ -2835,16 +2834,17 @@ class Msh2MeshIO(MeshIO):
         ----------
         mesh : Mesh instance
             Empty sfepy.discrete.fem.mesh.Mesh instance to fill.
-        omit_facets : bool, ignored
+        omit_facets : bool
+            Not used.
         filename : string, optional
             Name of the file to use if None file from object is used.
         drop_z : bool, optional, default False
             Drop Z coordinate if zero and return 2D mesh, 2D meshes are stored
-            as 3D by msh
+            as 3D by msh.
 
         Returns
         -------
-        mesh : Mesh instantce
+        mesh : Mesh instance
             Computational mesh.
         """
         filename = get_default(filename, self.filename)
@@ -2967,11 +2967,13 @@ class Msh2MeshIO(MeshIO):
             "all", "last", "first" or number of step to read:
             if "all" read all files with the basename varying step,
             if "last" read only last step of all files with the filename,
-            if "first" reads step=0,
+            if "first"
+            reads step=0,
             if None reads file of filename provided or specified in object.
         filename :string, optional
-             Basename of the files to use, if None file from object is used.
-        cache : has no effect
+            Basename of the files to use, if None file from object is used.
+        cache : object
+            Has no effect.
         return_mesh : bool, optional, default True
             Return mesh associated with data.
 
@@ -2980,23 +2982,15 @@ class Msh2MeshIO(MeshIO):
         mesh : sfepy.discrete.fem.mesh.Mesh
             Computational mesh.
         out : dictionary
-            Keys represent name of data, values are Structs:
-                data : array
-                    Contains ElementNodeData,
-                    shape is (len(time), n_cell, n_cell_dof).
-                time : array
-                    Contains times.
-                time_n : array
-                    Contains time step numbers.
-                scheme : Struct
-                    Interpolation scheme used in data, only one interpolation
-                    scheme is allowed, contains :
-                        name : string
-                            Name of the scheme.
-                        F : array
-                            Coefficients matrix.
-                        P : array
-                            Exponents matrix as defined in [1] and [2].
+            The output dictionary. Its keys represent name of data, values are
+            Struct instances with the following attributes:
+              - data : array, contains ElementNodeData, shape is (len(time),
+                n_cell, n_cell_dof).
+              - time : array, contains times.
+              - time_n : array, contains time step numbers.
+              - scheme : Struct, interpolation scheme used in data, only one
+                interpolation scheme is allowed. See
+                :func:`Msh2MeshIO._write_interpolation_scheme()`.
         """
         filename = get_default(filename, self.filename)
 
@@ -3095,7 +3089,7 @@ class Msh2MeshIO(MeshIO):
 
         Parameters
         ----------
-        fd :
+        fd : file descriptor
             File opened for writing.
         mesh: sfepy.discrete.fem.mesh.Mesh
             Computational mesh to write.
@@ -3127,15 +3121,14 @@ class Msh2MeshIO(MeshIO):
 
         Parameters
         ----------
-        fd :
+        fd : file descriptor
             File opened for writing.
         scheme : Struct
-            Struct with interpolation scheme used in data, only one interpolation
-            scheme is allowed,
-            contains :
-                name - name of the scheme,
-                F - coeficients matrix,
-                P - exponents matrix as defined in [1] and [2].
+            Struct with interpolation scheme used in data, only one
+            interpolation scheme is allowed, contains:
+              - name - name of the scheme,
+              - F - coefficients matrix,
+              - P - exponents matrix as defined in [1] and [2].
         """
         fd.write('$InterpolationScheme\n')
         fd.write('"{}"\n'.format(scheme.name))
@@ -3161,18 +3154,7 @@ class Msh2MeshIO(MeshIO):
         ----------
         out : dictionary, optional
             dictionary containing data to write in format generated by
-            DGField.create_output:
-            key : name of data
-            value : Struct:
-                mode : so far only `dg_cell_dofs`, representing modal data in cells
-                is supported;
-                data : DOFs as defined in DG;
-                interpolation_scheme Struct with interpolation scheme used in data,
-                 only one interpolation
-                scheme is allowed, contains :
-                    name : name of the scheme,
-                    F : coefficients matrix,
-                    P : exponents matrix as defined in [1] and [2].
+            DGField.create_output().
         ts : sfepy.solvers.ts.TimeStepper instance, optional
             Provides data to write time step.
         """
@@ -3213,22 +3195,15 @@ class Msh2MeshIO(MeshIO):
             Computational mesh to write.
         out : dictionary, optional
             Dictionary containing data to write, expected to be in format
-            generated by DGField.create_output, key is name of data,
-            value is Struct containing :
-                    mode : string
-                        So far only `dg_cell_dofs`, representing modal data in
-                        cells is supported.
-                    data : array
-                        DOFs as defined in DG Field.
-                    interpolation_scheme : Struct
-                        Interpolation scheme used in data, only one interpolation
-                        scheme is allowed, contains :
-                            name : string
-                                Name of the scheme.
-                            F : array
-                                Coefficients matrix.
-                            P : array
-                                Exponents matrix as defined in [1] and [2].
+            generated by DGField.create_output(), key is name of data,
+            value is Struct containing:
+              - mode : string, so far only `dg_cell_dofs`, representing modal
+                data in cells is supported.
+              - data : array, DOFs as defined in DG Field.
+              - interpolation_scheme : Struct, interpolation scheme used in
+                data, only one interpolation scheme is allowed. See
+                :func:`Msh2MeshIO._write_interpolation_scheme()`.
+
         ts : sfepy.solvers.ts.TimeStepper instance, optional
             Provides data to write time step.
         """
