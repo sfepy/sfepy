@@ -11,3 +11,4 @@ exclude sfepy/discrete/__config__.py
 include sfepy/discrete/common/extmods/version.h.in
 include sfepy/discrete/fem/extmods/lobatto1d_template.c
 include sfepy/discrete/fem/extmods/lobatto1d_template.h
+include sfepy/solvers/matlab_eig.m

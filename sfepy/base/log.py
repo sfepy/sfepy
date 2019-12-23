@@ -237,7 +237,9 @@ def plot_log(axs, log, info, xticks=None, yticks=None, xnbins=None, ynbins=None,
     isub = offset = 0
     for ig, (xlabel, ylabel, yscale, names, plot_kwargs) \
         in ordered_iteritems(info):
-        if ig not in groups: continue
+        if ig not in groups:
+            offset += len(names)
+            continue
 
         if axs is None:
             ax = fig.add_subplot(n_row, n_col, isub + 1)
