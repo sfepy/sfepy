@@ -1,5 +1,136 @@
 # created: 20.07.2007 (-1)
 
+.. _2019.3-2019.4:
+
+from 2019.3 to 2019.4
+=====================
+
+- merge pull request #562 from vlukes/fix_mumps, closes #561
+
+  - fix MUMPSSolver.__init__(): raise if no mpi4py found
+  - check material arguments in Term.classify_args()
+  - use conf.funmod for default user parameters of terms in
+    Problem.set_equations()
+  - use directly conf in Problem.set_equations() to support define()
+
+- merge branch '1d-surface-mapping'
+
+  - add 0_1 geometry to geometry_data, new _get_grid_0_1()
+  - skip 0_1 geometry in CMesh.set_local_entities()
+  - create surface facet also for 1D meshes in FEDomain.__init__()
+  - fix n_facet for 1D cells in Region.update_shape()
+  - update Lagrange polynomial spaces for 0_1 geometry
+  - add 0_1 geometry to quadrature_tables, skip it in test_quadratures()
+  - update SurfaceMapping.get_base(), .get_mapping(), _s_describe() for 0_1
+    geometry
+
+- merge pull request #559 from zitkat/misc-updates
+
+  - Add Functionize decorator Functionize decorator converts python function to
+    sfepy.discrete.functions.Function obejct
+  - Refactor - more descriptive name for Functionize - make_sfepy_function
+  - Add documentation.
+
+- merge pull request #560 from zitkat/gmsh-write
+
+  - Add write mesh method
+  - method for writing element node data.
+  - Add correct interpolation scheme output.
+  - Add msh output to problem ouput_modes.
+  - Update gmsh data reading
+  - Better dimensions treatment when loading meshes from gmsh format
+  - Format and extend documentation.
+
+- merge branch 'xyz-meshio'
+
+  - new XYZMeshIO
+  - new test meshes in xyz format (2_4, 3_4 cells)
+  - test XYZMeshIO, skip in test_write_read_meshes()
+
+- merge pull request #567 from vlukes/update_homog
+
+  - update homogenization: avoid reloading coefficients and correctors
+  - update CorrEval class: save corrector values
+  - update CoefOne: allow for "Corr1 + Corr2" as in CoefNN
+  - update get_mesh_coors(): add `actual` parameter which goes into
+    `domain.get_mesh_coors()`
+  - new updating procedure in nonlinear homogenization
+  - update nonlinear homog. example
+  - fix CorrEval, CoefSum, CoefEval for multiprocessing evaluation
+  - update CoefOne: make `set_variables` optional
+  - update 'nls_iter_hook': simplify hook management
+  - uppdate get_homog_coefs_nonlinear(): store the actual time step to
+    `macro_data`
+  - update recover_micro_hook_eps(): indicate the total number of recovered
+    microstructures
+  - fix CoefOne and CorrMiniApp classes
+  - update DeformationGradientTerm: allow to choose actual or undeformed
+    reference configuration
+
+- merge branch 'matlab-evp-solver'
+
+  - new MatlabEigenvalueSolver
+  - new matlab_eig() in sfepy/solvers/matlab_eig.m
+  - update tests/test_eigenvalue_solvers.py for eig.matlab
+
+- merge branch 'matlab-evp-solver-2'
+
+  - add method parameter to MatlabEigenvalueSolver
+  - update matlab_eig() for method parameter, simplify logic
+
+- merge branch 'misc-fixes'
+
+  - fix Term.check_shapes() for spaces in shape specifications
+  - fix geme_invert3x3() for very small cells - fixes zero basis gradient
+    (singular matrix) problem in reference mappings for meshes with very
+    small cells (about 1e-6 edge size in 3D and smaller)
+
+- merge branch 'misc-fixes-2'
+
+  - fix geme_invert4x4() for very small cells, do not throw error
+  - fix dispersion_analysis.py for single requested eigenvalue
+  - fix collect_term(), create_bnf() for leading minus complex term
+    coefficients - example: -1-1j was parsed as -(1-1j) => -1+1j
+  - fix FEField.get_base() for subdomains and basis transform (iels not in key)
+  - do not save results twice in laplace_refine_interactive.py example
+  - add '.' to sys.path in script/show_mesh_info.py
+
+- merge branch 'misc-fixes-3'
+
+  - fix FEField.create_mapping() for basis transform and subdomains - WIP -
+    raise exception for surface integration
+  - docs: describe active_only option in users guide
+
+- merge pull request #569 from rc/verify-tractions
+
+  - new verify_tractions() post-process hook in linear_elastic_tractions.py
+    example
+
+- merge branch 'speed-up-log-plotter'
+
+  - update Log, LogPlotter to send/receive last values only
+  - apply plotting commands in LogPlotter just before redrawing canvas
+  - clear axes in LogPlotter.apply_commands()
+  - pass plot_kwargs to LogPlotter.__call__() and in add_axis command
+  - update log parameters in live_plot.py example
+
+- merge branch 'int-log-labels'
+
+  - use int labels in Log, simplify LogPlotter by passing keys with commands
+  - test multiple groups and lines in test_log_create(), fix test_log_rw()
+
+- merge branch 'fix-qeigen'
+
+  - fix Timer import
+
+- merge branch 'misc-fixes-4'
+
+  - fix barycentric array shape in eval_basis_lagrange() for 0_1 geometry
+  - include matlab_eig.m in source tarball
+  - script/gen_release_notes.py: fix for Python 3, improve formatting
+  - update Msh2MeshIO docstrings, fixes PDF documentation build
+  - fix offset in plot_log() for given groups
+
 .. _2019.2-2019.3:
 
 from 2019.2 to 2019.3

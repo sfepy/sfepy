@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **17.09.2018** Version 2018.3 released (easier setting of values of
+  variables, new script for outline edge extraction, new example:
+  homogenization of a piezoelectric heterogeneous structure, etc.), see
+  :ref:`release notes <2018.2-2018.3>`.
+
 * **19.06.2018** Version 2018.2 released (generalized-alpha and velocity Verlet
   elastodynamics solvers, terms for dispersion in fluids, caching of reference
   coordinates for faster repeated use of probes, new wrapper of MUMPS linear
