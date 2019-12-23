@@ -49,7 +49,7 @@ Things to check before a release
 
      $ python3 -m pip install . --user
      $ cd
-     $ python3 sfepy-run run_tests
+     $ sfepy-run run_tests
      $ rm -r output/
 
    then remove the installed files so that they do not interfere with
