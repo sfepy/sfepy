@@ -633,6 +633,7 @@ def main():
     get_std_wave_fun = mod.get_std_wave_fun
     get_stepper = mod.get_stepper
     process_evp_results = mod.process_evp_results
+    save_eigenvectors = mod.save_eigenvectors
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
