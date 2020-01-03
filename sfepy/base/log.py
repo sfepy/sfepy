@@ -82,6 +82,7 @@ def read_log(filename):
 
     log = {}
     info = {}
+    name2key = {}
 
     fd = open(filename, 'r')
 
@@ -90,6 +91,7 @@ def read_log(filename):
             ls = line.split(':')
             if ls[0] == '# groups':
                 n_gr = int(ls[1])
+                offset = 0
                 for ig in range(n_gr):
                     next(fd)
                     line_info = next(fd)
@@ -97,7 +99,6 @@ def read_log(filename):
 
                     line_names = next(fd)
                     names = line_names.split(':')[1]
-
                     line_plot_kwargs = next(fd)
 
                     info[ig] = (xlabel.split(':')[1].strip().strip('"'),
@@ -108,11 +109,19 @@ def read_log(filename):
                                 eval(line_plot_kwargs[19:].strip().strip('"')
                                      + ','))
 
+                    name2key.update({name : ik + offset
+                                     for ik, name in enumerate(info[ig][3])})
+                    offset += len(info[ig][3])
             continue
 
         ls = line.split(':')
 
-        key = int(ls[0])
+        try:
+            key = int(ls[0])
+
+        except ValueError:
+            key = name2key[ls[0]] # Old style log.
+
         xs, ys, vlines = log.setdefault(key, ([], [], []))
 
         if (len(ls) == 2) and len(log[key][0]):
