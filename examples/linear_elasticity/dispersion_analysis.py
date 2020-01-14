@@ -633,6 +633,7 @@ def main():
     get_std_wave_fun = mod.get_std_wave_fun
     get_stepper = mod.get_stepper
     process_evp_results = mod.process_evp_results
+    save_eigenvectors = mod.save_eigenvectors
 
     options.pars = [float(ii) for ii in options.pars.split(',')]
     options.unit_multipliers = [float(ii)
@@ -723,8 +724,8 @@ def main():
                    [r'$\omega_{%d}$'
                     % ii for ii in range(options.n_eigs)] + log_names],
                   plot_kwargs=[plot_kwargs, plot_kwargs + log_plot_kwargs],
-                  formats=[['{:.5e}'] * options.n_eigs,
-                           ['{:.5e}'] * (options.n_eigs + len(log_names))],
+                  formats=[['{:.12e}'] * options.n_eigs,
+                           ['{:.12e}'] * (options.n_eigs + len(log_names))],
                   yscales=['linear', 'linear'],
                   xlabels=[r'$\kappa$', r'$\kappa$'],
                   ylabels=[r'eigenvalues $\lambda_i$',
@@ -740,8 +741,8 @@ def main():
                         % ii for ii in range(options.n_eigs)] + log_names],
                       plot_kwargs=[plot_kwargs_dim,
                                    plot_kwargs + log_plot_kwargs],
-                      formats=[['{:.5e}'] * dim,
-                               ['{:.5e}'] * (options.n_eigs + len(log_names))],
+                      formats=[['{:.12e}'] * dim,
+                               ['{:.12e}'] * (options.n_eigs + len(log_names))],
                       yscales=['linear', 'linear'],
                       xlabels=[r'', r''],
                       ylabels=[r'wave vector $\kappa$',
@@ -800,7 +801,7 @@ def main():
         log = Log([[r'$\kappa_{%d}$' % ii for ii in range(options.n_eigs)]
                    + log_names],
                   plot_kwargs=[plot_kwargs + log_plot_kwargs],
-                  formats=[['{:.5e}'] * (options.n_eigs + len(log_names))],
+                  formats=[['{:.12e}'] * (options.n_eigs + len(log_names))],
                   yscales=['linear'],
                   xlabels=[r'$\omega$'],
                   ylabels=[r'wave numbers $\kappa_i$'],
