@@ -142,7 +142,9 @@ class DotProductVolumeTerm(Term):
 class DotProductSurfaceTerm(DotProductVolumeTerm):
     r"""
     Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields.
+    fields. If either virtual or state variable is a vector, the orientation
+    of the normal vectors is outwards to the parent region of the virtual
+    variable.
 
     :Definition:
 

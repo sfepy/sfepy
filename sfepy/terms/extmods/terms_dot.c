@@ -29,17 +29,17 @@ int32 dw_surface_v_dot_n_s(FMField *out,
     FMF_SetCellX1(coef, ii);
     FMF_SetCell(rsg->det, ii);
     FMF_SetCellX1(rsg->bf, ii);
-    FMF_SetCell(csg->normal, ii);
+    FMF_SetCell(rsg->normal, ii);
 
     if (isDiff) {
       FMF_SetCellX1(csg->bf, ii);
-      bf_actt(aux1, rsg->bf, csg->normal);
+      bf_actt(aux1, rsg->bf, rsg->normal);
       fmf_mulAB_nn(aux2, aux1, csg->bf);
       fmf_mul(aux2, coef->val);
       fmf_sumLevelsMulF(out, aux2, rsg->det->val);
     } else {
       FMF_SetCell(val_qp, ii);
-      bf_actt(aux1, rsg->bf, csg->normal);
+      bf_actt(aux1, rsg->bf, rsg->normal);
       fmf_mulAB_nn(aux2, aux1, val_qp);
       fmf_mul(aux2, coef->val);
       fmf_sumLevelsMulF(out, aux2, rsg->det->val);
@@ -66,7 +66,7 @@ int32 dw_surface_s_v_dot_n(FMField *out,
   FMField *aux1 = 0, *aux2 = 0;
 
   nQP = rsg->det->nLev;
-  dim = csg->normal->nRow;
+  dim = rsg->normal->nRow;
   nEPR = rsg->bf->nCol;
   nEPC = csg->bf->nCol;
 
@@ -83,17 +83,17 @@ int32 dw_surface_s_v_dot_n(FMField *out,
     FMF_SetCellX1(coef, ii);
     FMF_SetCell(rsg->det, ii);
     FMF_SetCellX1(rsg->bf, ii);
-    FMF_SetCell(csg->normal, ii);
+    FMF_SetCell(rsg->normal, ii);
 
     if (isDiff) {
       FMF_SetCellX1(csg->bf, ii);
-      bf_actt(aux1, csg->bf, csg->normal);
+      bf_actt(aux1, csg->bf, rsg->normal);
       fmf_mulATBT_nn(aux2, rsg->bf, aux1);
       fmf_mul(aux2, coef->val);
       fmf_sumLevelsMulF(out, aux2, rsg->det->val);
     } else {
       FMF_SetCell(val_qp, ii);
-      fmf_mulATB_nn(aux1, csg->normal, val_qp);
+      fmf_mulATB_nn(aux1, rsg->normal, val_qp);
       fmf_mulATB_nn(aux2, rsg->bf, aux1);
       fmf_mul(aux2, coef->val);
       fmf_sumLevelsMulF(out, aux2, rsg->det->val);
