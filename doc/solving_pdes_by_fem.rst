@@ -107,10 +107,10 @@ term. To implement this we can take the function :math:`T \in V(\Omega)` and
 the test function :math:`s \in V_0(\Omega)`, where
 
 .. math::
-    V(\Omega) = \{f(x) \in H^1(\Omega)\},
+    V(\Omega) = \{v(x) \in H^1(\Omega)\},
 
 .. math::
-  V_0(\Omega) = \{f(x) \in H^1(\Omega); f(x) = 0, x \in \Gamma_D\}.
+  V_0(\Omega) = \{v(x) \in H^1(\Omega); v(x) = 0, x \in \Gamma_D\}.
 
 In other words the unknown function :math:`T` must be continuous together with
 its gradient in the domain. In contrast the test function :math:`s` must be
