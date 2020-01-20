@@ -394,7 +394,7 @@ class SplineRegion2D(SplineBox):
         bnd_poly = []
         bnd_cp = []
         for s in spl_bnd:
-            s.set_param_n(rho)
+            s.set_param_n(int(rho))
             bnd_poly.append(s.eval()[:-1])
             bnd_cp.append(s.get_control_points()[:-1, :])
 
