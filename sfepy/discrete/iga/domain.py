@@ -103,7 +103,7 @@ class NurbsPatch(Struct):
         nurbs : NurbsPatch instance
             Either `self` if `times` is zero, or a new instance.
         """
-        if times is 0: return self
+        if times == 0: return self
 
         aux = self._to_igakit()
         for ia in range(self.dim):
