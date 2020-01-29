@@ -10,13 +10,16 @@ except ImportError:
 try:
     import sys
     #
-    # Multiprocessing_proc implementation is currently broken on platforms using 'spawn' method as default.
+    # Multiprocessing_proc implementation is currently broken on platforms
+    # using 'spawn' method as default.
     #
-    # ToDo: we really need a real fix (Linux fork() method seems to be insecure/deprecated) !
+    # ToDo: we really need a real fix (Linux fork() method seems to be
+    #       insecure/deprecated) !
     #
     if sys.platform.startswith('win'):
         use_multiprocessing_proc = False
-    elif sys.platform == 'darwin' and sys.version_info.major == 3 and sys.version_info.minor == 8:
+    elif sys.platform == 'darwin' and \
+        sys.version_info.major == 3 and sys.version_info.minor == 8:
         use_multiprocessing_proc = False
     else:
         from multiprocessing import cpu_count
