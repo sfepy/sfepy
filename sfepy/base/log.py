@@ -99,15 +99,20 @@ def read_log(filename):
 
                     line_names = next(fd)
                     names = line_names.split(':')[1]
+                    names = [name.strip().strip('"')
+                             for name in names.split(',')]
+                    if len(names[0]) == 0:
+                        names = []
+
                     line_plot_kwargs = next(fd)
+                    aux = line_plot_kwargs[19:].strip().strip('"')
+                    plot_kwargs = eval(aux + ',') if len(aux) else ({},)
 
                     info[ig] = (xlabel.split(':')[1].strip().strip('"'),
                                 ylabel.split(':')[1].strip().strip('"'),
                                 yscales.split(':')[1].strip().strip('"'),
-                                [name.strip().strip('"')
-                                 for name in names.split(',')],
-                                eval(line_plot_kwargs[19:].strip().strip('"')
-                                     + ','))
+                                names,
+                                plot_kwargs)
 
                     name2key.update({name : ik + offset
                                      for ik, name in enumerate(info[ig][3])})
