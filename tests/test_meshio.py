@@ -84,7 +84,7 @@ class Test(TestCommon):
 
         return True
 
-    def _compare_meshes(self, mesh0, mesh1):
+    def _compare_meshes(self, mesh0, mesh1, flag='cv'):
         import numpy as nm
 
         oks = []
@@ -114,15 +114,17 @@ class Test(TestCommon):
             self.report('nodes failed!')
         oks.append(ok0)
 
-        ok0 = nm.all(mesh0.cmesh.vertex_groups == mesh1.cmesh.vertex_groups)
-        if not ok0:
-            self.report('node groups failed!')
-        oks.append(ok0)
+        if 'v' in flag:
+            ok0 = nm.all(mesh0.cmesh.vertex_groups == mesh1.cmesh.vertex_groups)
+            if not ok0:
+                self.report('node groups failed!')
+            oks.append(ok0)
 
-        ok0 = nm.all(mesh0.cmesh.cell_groups == mesh1.cmesh.cell_groups)
-        if not ok0:
-            self.report('material ids failed!')
-        oks.append(ok0)
+        if 'c' in flag:
+            ok0 = nm.all(mesh0.cmesh.cell_groups == mesh1.cmesh.cell_groups)
+            if not ok0:
+                self.report('material ids failed!')
+            oks.append(ok0)
 
         ok0 = (nm.all(mesh0.cmesh.get_cell_conn().indices ==
                       mesh1.cmesh.get_cell_conn().indices) and
@@ -175,20 +177,24 @@ class Test(TestCommon):
         """
         Try to write and then read all supported formats.
         """
+        import numpy as nm
         from sfepy.discrete.fem import Mesh
-        from sfepy.discrete.fem.meshio import (supported_formats,
-                                               supported_capabilities)
+        from sfepy.discrete.fem.meshio import supported_formats
 
         conf_dir = op.dirname(__file__)
         mesh0 = Mesh.from_file(data_dir
                                + '/meshes/various_formats/small3d.mesh',
                                prefix_dir=conf_dir)
 
+        mesh0.cmesh.vertex_groups[:] =\
+            nm.random.randint(1, 10, size=mesh0.cmesh.n_coor)
+
+        mesh0.cmesh.cell_groups[:] =\
+            nm.random.randint(1, 10, size=mesh0.cmesh.n_el)
+
         oks = []
-        for suffix, format_ in six.iteritems(supported_formats):
-            if isinstance(format_, tuple) or (format_ == 'xyz'):
-                continue
-            if 'w' not in supported_capabilities[format_]: continue
+        for suffix, (_, flag) in six.iteritems(supported_formats):
+            if 'w' not in flag: continue
 
             filename = op.join(self.options.out_dir, 'test_mesh_wr' + suffix)
             self.report('%s format: %s' % (suffix, filename))
@@ -196,7 +202,7 @@ class Test(TestCommon):
             mesh0.write(filename, io='auto')
             mesh1 = Mesh.from_file(filename)
 
-            oks.extend(self._compare_meshes(mesh0, mesh1))
+            oks.extend(self._compare_meshes(mesh0, mesh1, flag))
 
         return sum(oks) == len(oks)
 
