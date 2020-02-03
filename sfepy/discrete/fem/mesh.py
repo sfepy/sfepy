@@ -5,7 +5,7 @@ import scipy.sparse as sp
 from sfepy.base.base import Struct, invert_dict, get_default, output,\
      assert_, is_sequence
 from sfepy.base.timing import Timer
-from .meshio import MeshIO, supported_cell_types
+from .meshio import MeshIO
 import six
 from scipy.spatial import cKDTree
 
@@ -211,8 +211,7 @@ class Mesh(Struct):
             else:
                 io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
 
-        cell_types = ', '.join(supported_cell_types[io.format])
-        output('reading mesh [%s] (%s)...' % (cell_types, io.filename))
+        output('reading mesh (%s)...' % io.filename)
         timer = Timer(start=True)
 
         trunk = io.get_filename_trunk()

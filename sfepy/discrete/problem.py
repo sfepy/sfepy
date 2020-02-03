@@ -2010,7 +2010,7 @@ class Problem(Struct):
                    ' file discards higher order DOFs! Use with caution!')
 
             fd.close()
-            io = MeshIO.for_format(filename)
+            io = MeshIO.any_from_filename(filename)
 
             out = io.read_data(step=ts.step)
 
