@@ -482,7 +482,7 @@ class ComsolMeshIO(MeshIO):
                     if is_conn:
                         self._skip_comment()
                         mat_id = read_array(fd, n_domain, 1, nm.int32)
-                        mat_ids.append(mat_id)
+                        mat_ids.append(mat_id.squeeze())
                     else:
                         for ii in range(n_domain):
                             skip_read_line(fd)
