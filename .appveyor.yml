@@ -37,11 +37,6 @@ matrix:
 environment:
   matrix:
 
-    - PYTHON: "C:\\Python27_64"
-      PYTHON_VERSION: "2.7"
-      PYTHON_ARCH: "64"
-      CONDA_PY: "27"
-
     - PYTHON: "C:\\Python37_64"
       PYTHON_VERSION: "3.7"
       PYTHON_ARCH: "64"
