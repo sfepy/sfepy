@@ -55,7 +55,6 @@
 .. _medit: http://www.ann.jussieu.fr/~frey/software.html
 .. _python mesh viewer: http://labs.freehackers.org/projects/pythonmeshviewer
 .. _mayavi: http://code.enthought.com/projects/mayavi
-.. _pysparse: http://pysparse.sourceforge.net
 .. _matplotlib: http://matplotlib.sourceforge.net
 .. _igakit: https://bitbucket.org/dalcinl/igakit
 .. _petsc4py: https://bitbucket.org/petsc/petsc4py
