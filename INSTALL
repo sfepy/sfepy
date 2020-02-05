@@ -16,7 +16,7 @@ Requirements
 Installation prerequisites, required to build SfePy:
 
 - a C compiler suite (for example gcc)
-- Python 2.7 or 3
+- Python 3.x
 - NumPy
 - Cython
 
