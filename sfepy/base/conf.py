@@ -268,7 +268,7 @@ transforms = {
     'functions' : transform_functions,
 }
 
-def dict_from_string(string):
+def dict_from_string(string, allow_tuple=False, free_word=False):
     """
     Parse `string` and return a dictionary that can be used to
     construct/override a ProblemConf instance.
@@ -279,7 +279,7 @@ def dict_from_string(string):
     if isinstance(string, dict):
         return string
 
-    parser = create_bnf()
+    parser = create_bnf(allow_tuple=allow_tuple, free_word=free_word)
 
     out = {}
     for r in parser.parseString(string, parseAll=True):
