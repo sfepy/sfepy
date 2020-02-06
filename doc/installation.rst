@@ -13,7 +13,8 @@ Supported Platforms
 -------------------
 
 *SfePy* is known to work on various flavors of recent Linux, Intel-based MacOS
-and Windows. It can be used with both Python 2.7 and Python 3.x.
+and Windows. SfePy requires Python 3. The release 2019.4 was the last with
+Python 2.7 support.
 
 Note: Depending on Python installation and OS used, replacing ``python`` by
 ``python3`` might be required in all the commands below
@@ -26,7 +27,7 @@ Requirements
 Installation prerequisites, required to build *SfePy*:
 
 - a C compiler suite,
-- `Python`_ 2.7 or 3.x,
+- `Python`_ 3.x,
 - `NumPy`_,
 - `Cython`_.
 
@@ -39,8 +40,6 @@ Python packages required for using *SfePy*:
 - `PyTables`_ for storing results in HDF5 files,
 - `SymPy`_ for some tests and functions,
 - `Mayavi`_ for postproc.py,
-- `Pysparse`_ for additional eigenvalue problem solvers (currently available
-  for Python 2.7.x only),
 - `igakit`_ for script/gen_iga_patch.py - simple IGA domain generator,
 - `petsc4py`_ and `mpi4py`_ for running parallel examples and using parallel
   solvers from `PETSc`_,
@@ -76,7 +75,7 @@ Other dependencies/suggestions:
 Notes on selecting Python Distribution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-*SfePy* should work with any recent Python 2.7 or 3.x (in long-term view
+*SfePy* should work with any recent Python 3.x (in long-term view
 Python 3.6+ is recommended). It is only matter of taste to use either native OS
 Python installation or any other suitable distribution. We could recommend
 the following distributions to use:
@@ -302,9 +301,9 @@ Anaconda
 We highly recommend this scientific-oriented Python distribution.
 
 (Currently regularly tested by developers on *SfePy* releases
-with Python 2.7/3.6 64-bit on Ubuntu 16.04 LTS, Windows 8.1+ and macOS 10.12+.)
+with Python 3.6 64-bit on Ubuntu 16.04 LTS, Windows 8.1+ and macOS 10.12+.)
 
-Download appropriate `Anaconda`_ Python 2.7 or 3.x installer package and follow
+Download appropriate `Anaconda`_ Python 3.x installer package and follow
 install instructions. We recommend to choose *user-level* install option (no
 admin privileges required).
 

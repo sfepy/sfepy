@@ -181,8 +181,6 @@ def check_versions(show_only=False):
                   optional=True,
                   version_getter=_scikit_umfpack_version,
                   show_only=show_only)
-    package_check('pysparse', INFO.PYSPARSE_MIN_VERSION, optional=True,
-                  show_only=show_only)
 
 def setup_package():
     if not 'sdist' in sys.argv[1:]:
