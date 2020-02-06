@@ -359,13 +359,13 @@ class SLEPcEigenvalueSolver(EigenvalueSolver):
             for ii in range(n_converged):
                 val = es.getEigenpair(ii, vr, vi)
                 eigs.append(val if val.imag != 0 else val.real)
-                vrs.append(vr.getArray())
-                vis.append(vi.getArray())
+                vrs.append(vr.getArray().copy())
+                vis.append(vi.getArray().copy())
                 if is_real and nm.sum(nm.abs(vis[-1])) > 0.0:
                     is_real = False
 
             eigs = nm.array(eigs)
-            vecs = nm.array(vrs)
+            vecs = nm.array(vrs).T
             if not is_real:
                 vecs += 1j * nm.array(vis)
 
