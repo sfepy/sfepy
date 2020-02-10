@@ -19,62 +19,69 @@ import six
 from six.moves import range
 import meshio as meshiolib
 
-# r = read, w = write
-# c = test cell groups, v = test vertex groups
-imported_meshio_formats = [
-    ('abaqus', 'cv'),
-    # ('ansys', 'cv'),  # can not be identified by its suffix
-    ('exodus', 'v'),
-    ('gmsh', 'cv'),
-    ('medit', 'cv'),
-    ('nastran', 'cv'),
-    ('vtk', 'cv'),
-    ('vtu', 'cv'),
-    ('med', 'cv'),
-    ('xdmf', 'cv'),
-]
-
-extra_supported_formats = {
-    '.h5': ('hdf5', 'rwcv'),
-    '.xyz': ('xyz', 'rw'),
-    '.txt': ('comsol', 'rwc'),
-    '.hmascii': ('hmascii', 'r'),
-    '.neu': ('gambit', 'r'),
-    '.mesh3d': ('mesh3d', 'r'),
+_supported_formats = {
+    # format name: IO class, suffix, modes[, variants]
+    # modes: r = read, w = write, c = test cell groups, v = test vertex groups
+    'abaqus': ('meshio', None, 'cv'),
+    'exodus': ('meshio', None, 'v'),
+    # 'ansys': ('meshio', None, ''),
+    'gmsh': ('meshio', None, 'cv', ['gmsh4-binary', 'gmsh4-ascii',
+                                    'gmsh2-binary', 'gmsh2-ascii']),
+    'medit': ('meshio', None, 'cv'),
+    'nastran': ('meshio', None, 'cv'),
+    'vtk': ('meshio', None, 'cv', ['vtk-binnary', 'vtk-ascii']),
+    'vtu': ('meshio', None, 'cv'),
+    'med': ('meshio', None, 'cv'),
+    'xdmf': ('meshio', None, 'cv'),
+    'tetgen': ('meshio', None, ''),
+    'hdf5': ('hdf5', '.h5', 'rwcv'),
+    'xyz': ('xyz', '.xyz', 'rw'),
+    'comsol': ('comsol', '.txt', 'r'),
+    'hmascii': ('hmascii', '.hmascii', 'r'),
+    'gambit': ('gambit', '.neu', 'r'),
+    'mesh3d': ('mesh3d', '.mesh3d', 'r'),
 }
 
-
-def generate_formats_table(imported_formats, extra_formats):
+def update_supported_formats(formats):
     from meshio._helpers import reader_map, _writer_map,\
         _extension_to_filetype
 
-    f2e = {v: k for k, v in _extension_to_filetype.items()}
+    f2e = {}
+    for k, v in _extension_to_filetype.items():
+        f2e.setdefault(v, []).append(k)
+
     out = {}
-    for format, flag in imported_formats:
-        if format in _writer_map:
-            flag = 'w' + flag
-        if format in reader_map:
-            flag = 'r' + flag
+    for format, info in formats.items():
+        io, ext, _flag = info[:3]
+        variants = info[3] if len(info) >= 4 else []
+        for f in [format] + variants:
+            if io is 'meshio':
+                flag = _flag[:]
+                if ext is None:
+                    ext = f2e[format]
+                if f in _writer_map:
+                    flag = 'w' + flag
+                if format in reader_map:
+                    flag = 'r' + flag
+                if not f == format:
+                    flag = '*' + flag  # label format variants
+            else:
+                flag = _flag
 
-        out[f2e[format]] = (format, flag) 
+            if not isinstance(ext, list):
+                ext = [ext]
 
-    out.update(extra_formats)
+            out[f] = (io, ext, flag)
 
     return out  
 
-supported_formats = generate_formats_table(imported_meshio_formats,
-                                           extra_supported_formats)
-
+supported_formats = update_supported_formats(_supported_formats)
+del _supported_formats
 
 def output_mesh_formats(mode='r'):
     for key, vals in ordered_iteritems(supported_formats):
-        if isinstance(vals, basestr):
-            vals = [vals]
-
-        for val in vals:
-            caps = supported_formats[val][1]
-            if mode in caps:
-                output('%s (%s)' % (val, key))
+        if mode in vals[2]:
+            output('%s (%s)' % (key, vals[1]))
 
 
 def split_conns_mat_ids(conns_in):
@@ -244,8 +251,18 @@ class MeshioLibIO(MeshIO):
         ('line', 1): '1_2',
     }
 
+    def __init__(self, filename, file_format=None, **kwargs):
+        MeshIO.__init__(self, filename=filename, **kwargs)
+        from meshio._helpers import _filetype_from_path
+        import pathlib
+
+        if file_format is None:
+            file_format = _filetype_from_path(pathlib.Path(filename))
+
+        self.file_format = file_format
+
     def read_bounding_box(self, ret_dim=False):
-        m = meshiolib.read(self.filename)
+        m = meshiolib.read(self.filename, file_format=self.file_format)
 
         bbox = nm.vstack([nm.amin(m.points, 0), nm.amax(m.points, 0)])
 
@@ -255,14 +272,14 @@ class MeshioLibIO(MeshIO):
             return bbox
 
     def read_dimension(self):
-        m = meshiolib.read(self.filename)
+        m = meshiolib.read(self.filename, file_format=self.file_format)
         dim = nm.sum(nm.max(m.points, axis=0)\
             - nm.min(m.points, axis=0) > 1e-15)
 
         return dim
 
     def read(self, mesh, omit_facets=False, **kwargs):
-        m = meshiolib.read(self.filename)
+        m = meshiolib.read(self.filename, file_format=self.file_format)
 
         dim = nm.sum(nm.max(m.points, axis=0)\
             - nm.min(m.points, axis=0) > 1e-15)
@@ -337,10 +354,6 @@ class MeshioLibIO(MeshIO):
         return mesh
 
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
-        from meshio._helpers import _filetype_from_path
-        import pathlib
-
-        file_type = _filetype_from_path(pathlib.Path(filename))
         inv_cell_types = {v: k for k, v in self.cell_types.items()}
 
         coors, ngroups, conns, _, descs = mesh._get_io_data()
@@ -350,12 +363,12 @@ class MeshioLibIO(MeshIO):
         point_data = {k: v.data for k, v in out.items() if v.mode == 'vertex'}
         cell_data_keys = [k for k, v in out.items() if v.mode == 'cell']
 
-        if file_type in ['vtk', 'vtu']:
+        if self.file_format in ['vtk', 'vtu']:
             ngkey = 'node_groups'
             cgkey = 'mat_id'
         else:
-            ngkey = '%s:ref' % file_type
-            cgkey = '%s:ref' % file_type
+            ngkey = '%s:ref' % self.file_format
+            cgkey = '%s:ref' % self.file_format
 
         point_data[ngkey] = ngroups
         point_sets = {str(k): nm.where(ngroups == k)[0]
@@ -391,7 +404,7 @@ class MeshioLibIO(MeshIO):
                                      point_sets=point_sets,
                                      cell_data=cell_data,
                                      cell_sets=cell_sets,
-                                     file_format=file_type)
+                                     file_format=self.file_format)
 
 
 class ComsolMeshIO(MeshIO):
@@ -1434,7 +1447,7 @@ for key, var in var_dict:
         pass
 del var_dict
 
-def any_from_filename(filename, prefix_dir=None):
+def any_from_filename(filename, prefix_dir=None, file_format=None):
     """
     Create a MeshIO instance according to the kind of `filename`.
 
@@ -1463,10 +1476,23 @@ def any_from_filename(filename, prefix_dir=None):
     if prefix_dir is not None:
         filename = op.normpath(op.join(prefix_dir, filename))
 
-    ext = op.splitext(filename)[1].lower()
-    format = extra_supported_formats.get(ext, ('meshio',))[0]
+    kwargs = {}
+    if file_format is not None:
+        if file_format in supported_formats:
+            io_class = supported_formats[file_format][0]
+            # if io_class is 'meshio':
+            kwargs['file_format'] = file_format
+        else:
+            raise ValueError('unknown file format! (%s)' % file_format)
+    else:
+        ext2io = {e: (v[0], k) for k, v in supported_formats.items()
+            for e in v[1] if '*' not in v[2]}
+        ext = op.splitext(filename)[1].lower()
+        io_class = ext2io[ext][0]
+        kwargs['file_format'] = ext2io[ext][1]
 
-    return io_table[format](filename)
+    return io_table[io_class](filename, **kwargs)
+
 
 insert_static_method(MeshIO, any_from_filename)
 del any_from_filename

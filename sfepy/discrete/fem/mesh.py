@@ -182,7 +182,7 @@ class Mesh(Struct):
 
     @staticmethod
     def from_file(filename=None, io='auto', prefix_dir=None,
-                  omit_facets=False):
+                  omit_facets=False, file_format=None):
         """
         Read a mesh from a file.
 
@@ -209,7 +209,8 @@ class Mesh(Struct):
                 output('filename or io must be specified!')
                 raise ValueError
             else:
-                io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
+                io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir,
+                                              file_format=file_format)
 
         output('reading mesh (%s)...' % io.filename)
         timer = Timer(start=True)
@@ -403,7 +404,7 @@ class Mesh(Struct):
         return self.cmesh.coors
 
     def write(self, filename=None, io=None, out=None, float_format=None,
-              **kwargs):
+              file_format=None, **kwargs):
         """
         Write mesh + optional results in `out` to a file.
 
@@ -430,7 +431,7 @@ class Mesh(Struct):
                 io = 'auto'
 
         if io == 'auto':
-            io = MeshIO.any_from_filename(filename)
+            io = MeshIO.any_from_filename(filename, file_format=file_format)
 
         io.set_float_format(float_format)
         io.write(filename, self, out, **kwargs)

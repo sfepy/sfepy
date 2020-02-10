@@ -193,9 +193,10 @@ class Test(TestCommon):
             nm.random.randint(1, 10, size=mesh0.cmesh.n_el)
 
         oks = []
-        for suffix, (_, flag) in six.iteritems(supported_formats):
+        for name, (_, suffix, flag) in six.iteritems(supported_formats):
             if 'w' not in flag: continue
 
+            suffix = suffix[0]  # only the first of possible suffixes
             filename = op.join(self.options.out_dir, 'test_mesh_wr' + suffix)
             self.report('%s format: %s' % (suffix, filename))
 
