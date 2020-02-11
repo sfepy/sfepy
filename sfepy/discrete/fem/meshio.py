@@ -1240,7 +1240,7 @@ class NEUMeshIO(MeshIO):
             if (row[0] == 'NUMNP'):
                 row = fd.readline().split()
                 n_nod, n_el, dim = row[0], row[1], int(row[4])
-                break;
+                break
 
         if ret_fd:
             return dim, fd
@@ -1391,9 +1391,9 @@ class ANSYSCDBMeshIO(MeshIO):
 
     @staticmethod
     def make_format(format, nchar=1000):
-        idx = [];
-        dtype = [];
-        start = 0;
+        idx = []
+        dtype = []
+        start = 0
 
         for iform in format:
             ret = iform.partition('i')
