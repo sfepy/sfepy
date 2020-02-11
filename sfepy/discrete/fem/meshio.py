@@ -24,7 +24,6 @@ _supported_formats = {
     # modes: r = read, w = write, c = test cell groups, v = test vertex groups
     'abaqus': ('meshio', None, 'cv'),
     'exodus': ('meshio', None, 'v'),
-    # 'ansys': ('meshio', None, ''),
     'gmsh': ('meshio', None, 'cv', ['gmsh4-binary', 'gmsh4-ascii',
                                     'gmsh2-binary', 'gmsh2-ascii']),
     'medit': ('meshio', None, 'cv'),
@@ -34,6 +33,7 @@ _supported_formats = {
     'med': ('meshio', None, 'cv'),
     'xdmf': ('meshio', None, 'cv'),
     'tetgen': ('meshio', None, ''),
+    'ansys': ('ansys_cdb', '.cdb', 'r'),
     'hdf5': ('hdf5', '.h5', 'rwcv'),
     'xyz': ('xyz', '.xyz', 'rw'),
     'comsol': ('comsol', '.txt', 'r'),
@@ -1363,6 +1363,239 @@ class NEUMeshIO(MeshIO):
     def write(self, filename, mesh, out=None, **kwargs):
         raise NotImplementedError
 
+class ANSYSCDBMeshIO(MeshIO):
+    format = 'ansys_cdb'
+
+    @staticmethod
+    def guess(filename):
+        fd = open(filename, 'r')
+
+        for ii in range(1000):
+            row = fd.readline()
+            if not row: break
+            if len(row) == 0: continue
+
+            row = row.split(',')
+            kw = row[0].lower()
+
+            if (kw == 'nblock'):
+                ok = True
+                break
+
+        else:
+            ok = False
+
+        fd.close()
+
+        return ok
+
+    @staticmethod
+    def make_format(format, nchar=1000):
+        idx = [];
+        dtype = [];
+        start = 0;
+
+        for iform in format:
+            ret = iform.partition('i')
+            if not ret[1]:
+                ret = iform.partition('e')
+            if not ret[1]:
+                raise ValueError
+            aux = ret[2].partition('.')
+            step = int(aux[0])
+            for j in range(int(ret[0])):
+                if (start + step) > nchar:
+                    break
+                idx.append((start, start+step))
+                start += step
+                dtype.append(ret[1])
+
+        return idx, dtype
+
+    def write(self, filename, mesh, out=None, **kwargs):
+        raise NotImplementedError
+
+    def read_bounding_box(self):
+        raise NotImplementedError
+
+    def read_dimension(self, ret_fd=False):
+        return 3
+
+    def read(self, mesh, **kwargs):
+        ids = []
+        coors = []
+        tetras = []
+        hexas = []
+        qtetras = []
+        qhexas = []
+        nodal_bcs = {}
+
+        fd = open(self.filename, 'r')
+
+        while True:
+            row = fd.readline()
+            if not row: break
+            if len(row) == 0: continue
+
+            row = row.split(',')
+            kw = row[0].lower()
+
+            if (kw == 'nblock'):
+                # Solid keyword -> 3, otherwise 1 is the starting coors index.
+                ic = 3 if len(row) == 3 else 1
+                fmt = fd.readline()
+                fmt = fmt.strip()[1:-1].split(',')
+                row = look_ahead_line(fd)
+                nchar = len(row)
+                idx, dtype = self.make_format(fmt, nchar)
+                ii0, ii1 = idx[0]
+                while True:
+                    row = fd.readline()
+                    if ((row[0] == '!') or (row[:2] == '-1')
+                        or len(row) != nchar):
+                        break
+
+                    line = [float(row[i0:i1]) for i0, i1 in idx[ic:]]
+
+                    ids.append(int(row[ii0:ii1]))
+                    coors.append(line)
+
+            elif (kw == 'eblock'):
+                if (len(row) <= 2) or row[2].strip().lower() != 'solid':
+                    continue
+
+                fmt = fd.readline()
+                fmt = [fmt.strip()[1:-1]]
+                row = look_ahead_line(fd)
+                nchar = len(row)
+                idx, dtype = self.make_format(fmt, nchar)
+
+                imi0, imi1 = idx[0] # Material id.
+                inn0, inn1 = idx[8] # Number of nodes in line.
+                ien0, ien1 = idx[10] # Element number.
+                ic0 = 11
+                while True:
+                    row = fd.readline()
+                    if ((row[0] == '!') or (row[:2] == '-1')
+                        or (len(row) != nchar)):
+                        break
+
+                    line = [int(row[imi0:imi1])]
+                    n_nod = int(row[inn0:inn1])
+
+                    line.extend(int(row[i0:i1])
+                                for i0, i1 in idx[ic0 : ic0 + n_nod])
+                    if n_nod == 4:
+                        tetras.append(line)
+
+                    elif n_nod == 8:
+                        hexas.append(line)
+
+                    elif n_nod == 10:
+                        row = fd.readline()
+                        line.extend(int(row[i0:i1])
+                                    for i0, i1 in idx[:2])
+                        qtetras.append(line)
+
+                    elif n_nod == 20:
+                        row = fd.readline()
+                        line.extend(int(row[i0:i1])
+                                    for i0, i1 in idx[:12])
+                        qhexas.append(line)
+
+                    else:
+                        raise ValueError('unsupported element type! (%d nodes)'
+                                         % n_nod)
+
+            elif kw == 'cmblock':
+                if row[2].lower() != 'node': # Only node sets support.
+                    continue
+
+                n_nod = int(row[3].split('!')[0])
+                fd.readline() # Format line not needed.
+
+                nods = read_array(fd, n_nod, 1, nm.int32)
+                nodal_bcs[row[1].strip()] = nods.ravel()
+
+        fd.close()
+
+        coors = nm.array(coors, dtype=nm.float64)
+
+        tetras = nm.array(tetras, dtype=nm.int32)
+        if len(tetras):
+            mat_ids_tetras = tetras[:, 0]
+            tetras = tetras[:, 1:]
+
+        else:
+            tetras.shape = (0, 4)
+            mat_ids_tetras = nm.array([])
+
+        hexas = nm.array(hexas, dtype=nm.int32)
+        if len(hexas):
+            mat_ids_hexas = hexas[:, 0]
+            hexas = hexas[:, 1:]
+
+        else:
+            hexas.shape = (0, 8)
+            mat_ids_hexas = nm.array([])
+
+        if len(qtetras):
+            qtetras = nm.array(qtetras, dtype=nm.int32)
+            tetras.shape = (max(0, tetras.shape[0]), 4)
+            tetras = nm.r_[tetras, qtetras[:, 1:5]]
+            mat_ids_tetras = nm.r_[mat_ids_tetras, qtetras[:, 0]]
+
+        if len(qhexas):
+            qhexas = nm.array(qhexas, dtype=nm.int32)
+            hexas.shape = (max(0, hexas.shape[0]), 8)
+            hexas = nm.r_[hexas, qhexas[:, 1:9]]
+            mat_ids_hexas = nm.r_[mat_ids_hexas, qhexas[:, 0]]
+
+        if len(qtetras) or len(qhexas):
+            ii = nm.union1d(tetras.ravel(), hexas.ravel())
+            n_nod = len(ii)
+
+            remap = nm.zeros((ii.max()+1,), dtype=nm.int32)
+            remap[ii] = nm.arange(n_nod, dtype=nm.int32)
+
+            ic = nm.searchsorted(ids, ii)
+            coors = coors[ic]
+
+        else:
+            n_nod = coors.shape[0]
+            remap = nm.zeros((nm.array(ids).max() + 1,), dtype=nm.int32)
+            remap[ids] = nm.arange(n_nod, dtype=nm.int32)
+
+        # Convert tetras as degenerate hexas to true tetras.
+        ii = nm.where((hexas[:, 2] == hexas[:, 3])
+                      & (hexas[:, 4] == hexas[:, 5])
+                      & (hexas[:, 4] == hexas[:, 6])
+                      & (hexas[:, 4] == hexas[:, 7]))[0]
+
+        if len(ii) == len(hexas):
+            tetras = nm.r_[tetras, hexas[ii[:, None], [0, 1, 2, 4]]]
+            mat_ids_tetras = nm.r_[mat_ids_tetras, mat_ids_hexas[ii]]
+
+            hexas = nm.delete(hexas, ii, axis=0)
+            mat_ids_hexas = nm.delete(mat_ids_hexas, ii)
+
+        else:
+            output('WARNING: mesh "%s" has both tetrahedra and hexahedra!'
+                   % mesh.name)
+
+        ngroups = nm.zeros(len(coors), dtype=nm.int32)
+
+        mesh = mesh_from_groups(mesh, ids, coors, ngroups,
+                                [], [], [], [],
+                                tetras, mat_ids_tetras,
+                                hexas, mat_ids_hexas, remap=remap)
+
+        mesh.nodal_bcs = {}
+        for key, nods in six.iteritems(nodal_bcs):
+            nods = nods[nods < len(remap)]
+            mesh.nodal_bcs[key] = remap[nods]
+
+        return mesh
 
 class XYZMeshIO(MeshIO):
     """
