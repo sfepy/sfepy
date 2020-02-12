@@ -21,8 +21,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from sfepy.base.base import nm, output
 from sfepy.base.ioutils import remove_files
 from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.meshio import (output_mesh_formats, MeshIO,
-                                       supported_cell_types)
+from sfepy.discrete.fem.meshio import output_mesh_formats, MeshIO
 from sfepy.discrete.fem.mesh import fix_double_nodes
 from sfepy.mesh.mesh_tools import triangulate
 
@@ -226,18 +225,12 @@ def main():
 
             fbase, fext = op.splitext(filename_out)
             ifilename_out = '%s_matid_%d%s' % (fbase, mat_id, fext)
-            io = MeshIO.for_format(ifilename_out, format=options.format,
-                                   writable=True)
             output('writing %s...' % ifilename_out)
-            imesh.write(ifilename_out, io=io)
+            imesh.write(ifilename_out, file_format=options.format)
             output('...done')
 
-    io = MeshIO.for_format(filename_out, format=options.format,
-                           writable=True)
-
-    cell_types = ', '.join(supported_cell_types[io.format])
-    output('writing [%s] %s...' % (cell_types, filename_out))
-    mesh.write(filename_out, io=io)
+    output('writing %s...' % filename_out)
+    mesh.write(filename_out, file_format=options.format)
     output('...done')
 
 if __name__ == '__main__':

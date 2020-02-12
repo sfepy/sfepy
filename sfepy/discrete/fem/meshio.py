@@ -78,10 +78,12 @@ def update_supported_formats(formats):
 supported_formats = update_supported_formats(_supported_formats)
 del _supported_formats
 
+
 def output_mesh_formats(mode='r'):
     for key, vals in ordered_iteritems(supported_formats):
         if mode in vals[2]:
-            output('%s (%s)' % (key, vals[1]))
+            output('%s (%s)' % (key,
+                vals[1] if len(vals[1]) > 1 else vals[1][0]))
 
 
 def split_conns_mat_ids(conns_in):
@@ -1680,7 +1682,7 @@ for key, var in var_dict:
         pass
 del var_dict
 
-def any_from_filename(filename, prefix_dir=None, file_format=None):
+def any_from_filename(filename, prefix_dir=None, file_format=None, mode='r'):
     """
     Create a MeshIO instance according to the kind of `filename`.
 
@@ -1713,16 +1715,26 @@ def any_from_filename(filename, prefix_dir=None, file_format=None):
     if file_format is not None:
         if file_format in supported_formats:
             io_class = supported_formats[file_format][0]
-            # if io_class is 'meshio':
             kwargs['file_format'] = file_format
         else:
-            raise ValueError('unknown file format! (%s)' % file_format)
+            raise ValueError('unknown mesh format! (%s)' % file_format)
     else:
         ext2io = {e: (v[0], k) for k, v in supported_formats.items()
             for e in v[1] if '*' not in v[2]}
         ext = op.splitext(filename)[1].lower()
-        io_class = ext2io[ext][0]
-        kwargs['file_format'] = ext2io[ext][1]
+        if ext in ext2io:
+            io_class = ext2io[ext][0]
+            file_format = ext2io[ext][1]
+            kwargs['file_format'] = file_format
+        else:
+            raise ValueError('unknown mesh format! (%s)' % ext)
+
+    if mode == 'w' and 'w' not in supported_formats[file_format][2]:
+        output('writable mesh formats:')
+        output_mesh_formats('w')
+        msg = 'write support not implemented for output mesh format "%s",' \
+              ' see above!' % file_format
+        raise ValueError(msg)
 
     return io_table[io_class](filename, **kwargs)
 

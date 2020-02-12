@@ -431,7 +431,8 @@ class Mesh(Struct):
                 io = 'auto'
 
         if io == 'auto':
-            io = MeshIO.any_from_filename(filename, file_format=file_format)
+            io = MeshIO.any_from_filename(filename, file_format=file_format,
+                                          mode='w')
 
         io.set_float_format(float_format)
         io.write(filename, self, out, **kwargs)
