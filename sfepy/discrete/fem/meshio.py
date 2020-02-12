@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 from copy import copy
-
+import logging
 import numpy as nm
 
 from sfepy.base.base import (complex_types, dict_from_keys_init,
@@ -236,6 +236,29 @@ class UserMeshIO(MeshIO):
 
     def write(self, filename, mesh, *args, **kwargs):
         self.function(mesh, mode='write')
+
+
+def _suppress_meshio_warnings(f):
+    def __suppress_meshio_warnings(*args, **kwargs):
+        logger = logging.getLogger()
+        level = logger.level
+        logger.setLevel(logging.ERROR)
+        out = f(*args, **kwargs)
+        logger.setLevel(level)
+
+        return out
+
+    return __suppress_meshio_warnings
+
+def _decorate_all(module, decorator):
+    import types
+    for name in dir(module):
+        obj = getattr(module, name)
+        if isinstance(obj, types.FunctionType):
+            setattr(module, name, decorator(obj))
+
+_decorate_all(meshiolib, _suppress_meshio_warnings)
+del _decorate_all, _suppress_meshio_warnings
 
 
 class MeshioLibIO(MeshIO):
