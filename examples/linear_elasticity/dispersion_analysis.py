@@ -77,7 +77,7 @@ from sfepy.base.log import Log
 from sfepy.discrete.fem import MeshIO
 from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson as stiffness
 import sfepy.mechanics.matcoefs as mc
-from sfepy.mechanics.units import apply_unit_multipliers
+from sfepy.mechanics.units import apply_unit_multipliers, apply_units_to_pars
 import sfepy.discrete.fem.periodic as per
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.homogenization.utils import define_box_regions
@@ -86,13 +86,6 @@ from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy.solvers import Solver
 from sfepy.solvers.ts import get_print_info, TimeStepper
 from sfepy.linalg.utils import output_array_stats, max_diff_csr
-
-def apply_units(pars, unit_multipliers):
-    new_pars = apply_unit_multipliers(pars,
-                                      ['stress', 'one', 'density',
-                                       'stress', 'one' ,'density'],
-                                      unit_multipliers)
-    return new_pars
 
 def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
     """
@@ -124,14 +117,17 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
         'displacement': ('complex', dim, 'Omega', approx_order),
     }
 
-    young1, poisson1, density1, young2, poisson2, density2 = pars
     materials = {
         'm' : ({
-            'D' : {'Y1' : stiffness(dim, young=young1, poisson=poisson1,
+            'D' : {'Y1' : stiffness(dim,
+                                    young=pars.young1,
+                                    poisson=pars.poisson1,
                                     plane=plane),
-                   'Y2' : stiffness(dim, young=young2, poisson=poisson2,
+                   'Y2' : stiffness(dim,
+                                    young=pars.young2,
+                                    poisson=pars.poisson2,
                                     plane=plane)},
-            'density' : {'Y1' : density1, 'Y2' : density2},
+            'density' : {'Y1' : pars.density1, 'Y2' : pars.density2},
         },),
         'wave' : 'get_wdir',
     }
@@ -195,6 +191,15 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     solver_0['name'] = 'eig'
 
     return locals()
+
+pars_kinds = {
+    'young1' : 'stress',
+    'poisson1' : 'one',
+    'density1' : 'density',
+    'young2' : 'stress',
+    'poisson2' : 'one',
+    'density2' : 'density',
+}
 
 def get_wdir(ts, coors, mode=None,
              equations=None, term=None, problem=None, wdir=None, **kwargs):
@@ -475,7 +480,9 @@ def process_evp_results(eigs, svecs, val, wdir, bzone, pb, mtxs, options,
 
 helps = {
     'pars' :
-    'material parameters in Y1, Y2 subdomains in basic units'
+    'material parameters in Y1, Y2 subdomains in basic units.'
+    ' The default parameters are:'
+    ' young1, poisson1, density1, young2, poisson2, density2'
     ' [default: %(default)s]',
     'conf' :
     'if given, an alternative problem description file with apply_units() and'
@@ -528,14 +535,14 @@ helps = {
 
 def main():
     # Aluminium and epoxy.
-    default_pars = '70e9,0.35,2.799e3, 3.8e9,0.27,1.142e3'
+    default_pars = '70e9,0.35,2.799e3,3.8e9,0.27,1.142e3'
     default_solver_conf = ("kind='eig.scipy',method='eigsh',tol=1.0e-5,"
                            "maxiter=1000,which='LM',sigma=0.0")
 
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
-    parser.add_argument('--pars', metavar='young1,poisson1,density1'
-                        ',young2,poisson2,density2',
+    parser.add_argument('--pars', metavar='name1=value1,name2=value2,...'
+                        ' or value1,value2,...',
                         action='store', dest='pars',
                         default=default_pars, help=helps['pars'])
     parser.add_argument('--conf', metavar='filename',
@@ -624,7 +631,7 @@ def main():
     else:
         mod = sys.modules[__name__]
 
-    apply_units = mod.apply_units
+    pars_kinds = mod.pars_kinds
     define = mod.define
     set_wave_dir = mod.set_wave_dir
     setup_n_eigs = mod.setup_n_eigs
@@ -635,7 +642,14 @@ def main():
     process_evp_results = mod.process_evp_results
     save_eigenvectors = mod.save_eigenvectors
 
-    options.pars = [float(ii) for ii in options.pars.split(',')]
+    try:
+        options.pars = dict_from_string(options.pars)
+
+    except:
+        aux = [float(ii) for ii in options.pars.split(',')]
+        options.pars = {key : aux[ii]
+                        for ii, key in enumerate(pars_kinds.keys())}
+
     options.unit_multipliers = [float(ii)
                                 for ii in options.unit_multipliers.split(',')]
     options.wave_dir = [float(ii)
@@ -656,9 +670,14 @@ def main():
     save_options(filename, [('options', vars(options))],
                  quote_command_line=True)
 
-    pars = apply_units(options.pars, options.unit_multipliers)
+    pars = apply_units_to_pars(options.pars, pars_kinds,
+                               options.unit_multipliers)
+    output('material parameter names and kinds:')
+    output(pars_kinds)
     output('material parameters with applied unit multipliers:')
     output(pars)
+
+    pars = Struct(**pars)
 
     if options.mode == 'omega':
         rng = copy(options.range)
