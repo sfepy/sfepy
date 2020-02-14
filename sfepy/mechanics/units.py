@@ -291,3 +291,31 @@ def apply_unit_multipliers(values, unit_kinds, unit_multipliers):
     new_values = [coefs[unit_kind] * values[ii]
                   for ii, unit_kind in enumerate(unit_kinds)]
     return new_values
+
+def apply_units_to_pars(pars, pars_kinds, unit_multipliers):
+    """
+    Apply units in `unit_multipliers` to `pars` according to their kinds.
+
+    Parameters
+    ----------
+    pars : dict
+        The input parameters given as `name : value` items.
+    pars_kinds : dict
+        The kinds of the parameters given as `name : kind` items, with kinds
+        defined in :func:`apply_unit_multipliers()`.
+    unit_multipliers : tuple
+        The time, length and mass unit multipliers.
+
+    Returns
+    -------
+    new_pars : dict
+        The output parameters.
+    """
+    keys = pars.keys()
+    values = list(pars.values())
+    kinds = [pars_kinds[key] for key in keys]
+
+    new_values = apply_unit_multipliers(values, kinds, unit_multipliers)
+    new_pars = dict(zip(keys, new_values))
+
+    return new_pars
