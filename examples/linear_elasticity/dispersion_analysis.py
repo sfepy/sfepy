@@ -87,18 +87,14 @@ from sfepy.solvers import Solver
 from sfepy.solvers.ts import get_print_info, TimeStepper
 from sfepy.linalg.utils import output_array_stats, max_diff_csr
 
-def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
-    """
-    Calculate the von Mises stress.
-    """
-    stress = pb.evaluate('ev_cauchy_stress.i.Omega(m.D, u)', mode='el_avg')
-
-    vms = get_von_mises_stress(stress.squeeze())
-    vms.shape = (vms.shape[0], 1, 1, 1)
-    out['von_mises_stress'] = Struct(name='output_data', mode='cell',
-                                     data=vms)
-
-    return out
+pars_kinds = {
+    'young1' : 'stress',
+    'poisson1' : 'one',
+    'density1' : 'density',
+    'young2' : 'stress',
+    'poisson2' : 'one',
+    'density2' : 'density',
+}
 
 def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
            plane='strain', post_process=False, mesh_eps=1e-8):
@@ -191,15 +187,6 @@ def define(filename_mesh, pars, approx_order, refinement_level, solver_conf,
     solver_0['name'] = 'eig'
 
     return locals()
-
-pars_kinds = {
-    'young1' : 'stress',
-    'poisson1' : 'one',
-    'density1' : 'density',
-    'young2' : 'stress',
-    'poisson2' : 'one',
-    'density2' : 'density',
-}
 
 def get_wdir(ts, coors, mode=None,
              equations=None, term=None, problem=None, wdir=None, **kwargs):
@@ -303,6 +290,19 @@ def get_stepper(rng, pb, options):
     stepper = BrillouinStepper(0, 1, n_step=rng[2])
 
     return stepper
+
+def compute_von_mises(out, pb, state, extend=False, wmag=None, wdir=None):
+    """
+    Calculate the von Mises stress.
+    """
+    stress = pb.evaluate('ev_cauchy_stress.i.Omega(m.D, u)', mode='el_avg')
+
+    vms = get_von_mises_stress(stress.squeeze())
+    vms.shape = (vms.shape[0], 1, 1, 1)
+    out['von_mises_stress'] = Struct(name='output_data', mode='cell',
+                                     data=vms)
+
+    return out
 
 def save_eigenvectors(filename, svecs, wmag, wdir, pb):
     if svecs is None: return
