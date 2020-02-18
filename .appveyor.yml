@@ -73,6 +73,7 @@ install:
   #
   #- pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
   - pip install --global-option build_ext --global-option --compiler=mingw32 https://bitbucket.org/dalcinl/igakit/get/0a87ac7cbffb.zip
+  - pip install meshio
   #
   # Revert back to native MSVC build tools
   #

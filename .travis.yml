@@ -48,6 +48,7 @@ install:
 
   - pip install scikit-umfpack
   - pip install https://bitbucket.org/dalcinl/igakit/get/0a87ac7cbffb.zip
+  - pip install meshio
 
 script:
 
