@@ -797,6 +797,130 @@ class HDF5MeshIO(MeshIO):
     def read(self, mesh=None, **kwargs):
         return self.read_mesh_from_hdf5(self.filename, '/mesh', mesh=mesh)
 
+    @staticmethod
+    def write_xdmf_file(filename, **kwargs):
+        def get_path(node):
+            _, fname = op.split(filename)
+            return '%s:%s' % (fname, node._v_pathname)
+
+        def get_data_dim(shape):
+            if len(shape) == 4:
+               return shape[2]
+            if len(shape) == 2:
+               return shape[1]
+            else:
+               return 1
+
+        def data_item(data):
+            dtype = data.dtype
+            if nm.issubdtype(dtype, nm.integer):
+                data_type = 'Int'
+            elif nm.issubdtype(dtype, nm.floating):
+                data_type = 'Float'
+            else:
+                raise ValueError('wrong data type! (%s)' % dtype)
+
+            dim = get_data_dim(data.shape)
+            sh = (data.shape[0], dim)
+            ditem = et.Element('DataItem',
+                               attrib={'DataType': data_type,
+                                       'Dimensions': '%d %d' % sh,
+                                       'Format': 'HDF',
+                                       'Precision': str(dtype.itemsize)})
+            ditem.text = get_path(data)
+
+            return ditem
+
+        def attr_item(data, center=None, name=None):
+            if isinstance(data, pt.Group):
+                if center is None and 'mode' in data:
+                    mode = data.mode.read().decode('ascii')
+                    if mode == 'custom':
+                        return None
+                    center = {'vertex': 'Node',
+                              'cell': 'Cell'}[mode]
+                if name is None and 'dname' in data:
+                    name = data.dname.read().decode('ascii').lstrip('_')
+                data = data.data
+
+            dim = get_data_dim(data.shape)
+            atype = {1: 'Scalar', 3: 'Vector', 6: 'Tensor6', 9: 'Tensor'}[dim]
+
+            aitem = et.Element('Attribute',
+                               attrib={'AttributeType': atype,
+                                       'Center': center,
+                                       'Name': name})
+            aitem.append(data_item(data))
+
+            return aitem
+
+        import xml.etree.ElementTree as et
+        from xml.dom import minidom
+
+        topology_table = {
+            '2_2': 'Line',
+            '3_2': 'Line',
+            '2_3': 'Triangle',
+            '2_4': 'Quadrilateral',
+            '3_4': 'Tetrahedron',
+            '3_8': 'Hexahedron',
+        }
+
+        et_root = et.Element('Xdmf', attrib={'Version': '3.0'})
+        if 'extra_data' in kwargs:
+            for k, v in kwargs['extra_data'].items():
+                d = et.SubElement(et_root, 'Information', attrib={'Name': k})
+                d.text = str(v)
+
+        et_domain = et.SubElement(et_root, 'Domain')
+
+        with HDF5ContextManager(filename, mode='r') as fd:
+            root = fd.root
+            mesh = root.mesh
+            name = mesh.name.read().decode('ascii')
+            et_mesh = []
+            geom = et.Element('Geometry', attrib={'GeometryType': 'XYZ'})
+            geom.append(data_item(mesh.coors))
+            et_mesh.append(geom)
+            et_mesh.append(attr_item(mesh.ngroups, 'Node', 'node_groups'))
+
+            n_gr = mesh.n_gr.read()
+            for ig in range(n_gr):
+                gr_name = 'group%d' % ig
+                conn_group = mesh._f_get_child(gr_name)
+                nc, nnd = conn_group.conn.shape
+                ttype = topology_table[dec(conn_group.desc.read())]
+                et_conn = et.Element('Topology',
+                                     attrib={'NumberOfElements': str(nc),
+                                             'TopologyType': ttype})
+                et_conn.append(data_item(conn_group.conn))
+                et_mesh.append(et_conn)
+                et_mesh.append(attr_item(conn_group.mat_id, 'Cell', 'mat_id'))
+
+            steps = [k for k in root if k._v_name.startswith('step')]
+            et_ts = et.SubElement(et_domain, 'Grid',
+                                    attrib={'Name': 'TimeSeries',
+                                            'GridType': 'Collection',
+                                            'CollectionType': 'Temporal'})
+
+            for step in steps:
+                istep = int(step._v_name[4:])
+                et_grid = et.SubElement(et_ts, 'Grid',
+                                        attrib={'Name': 'grid%d' % istep,
+                                                'GridType': 'Uniform'})
+                et.SubElement(et_grid, 'Time', attrib={'Value': '%d' % istep})
+                et_grid.extend(et_mesh)
+
+                for val in filter(lambda x: x._v_name.startswith('__'), step):
+                    aitem = attr_item(val)
+                    if aitem is not None:
+                        et_grid.append(aitem)
+
+        out = minidom.parseString(et.tostring(et_root)).toprettyxml(indent="  ")
+        xdmf_filename = op.splitext(filename)[0] + '.xdmf'
+        with open(xdmf_filename, 'w') as f:
+            f.write(out[(out.find('\n') + 1):])
+
     def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
         from time import asctime
 
@@ -892,6 +1016,8 @@ class HDF5MeshIO(MeshIO):
             fd.create_array(fd.root.tstat, 'finished', enc(asctime()),
                             'file closing time')
             fd.close()
+
+        self.write_xdmf_file(filename, **kwargs)
 
     def read_last_step(self, filename=None):
         filename = get_default(filename, self.filename)
