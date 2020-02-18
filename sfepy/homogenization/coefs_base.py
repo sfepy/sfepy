@@ -855,7 +855,7 @@ class VolumeFractions(MiniAppBase):
 
 class CoefNN(MiniAppBase):
     @staticmethod
-    def set_variables_default(variables, ir, ic, mode, set_var, data):
+    def set_variables_default(variables, ir, ic, mode, set_var, data, dtype):
         def get_corr_state(corr, ir, ic):
             if hasattr(corr, 'states'):
                 if ir is None:
@@ -876,6 +876,7 @@ class CoefNN(MiniAppBase):
         for (var, req, comp) in act_set_var:
             if type(req) is tuple:
                 val = get_corr_state(data[req[0]], ir, ic)[comp].copy()
+                val = nm.asarray(val, dtype=dtype)
                 for ii in req[1:]:
                     val += get_corr_state(data[ii], ir, ic)[comp]
 
@@ -900,14 +901,16 @@ class CoefNN(MiniAppBase):
         for ir, (irr, icr) in enumerate(row):
             if isinstance(self.set_variables, list):
                 self.set_variables_default(variables, irr, icr, 'row',
-                                           self.set_variables, data)
+                                           self.set_variables, data,
+                                           self.dtype)
             else:
                 self.set_variables(variables, irr, icr, 'row', **data)
 
             for ic, (irc, icc) in enumerate(col):
                 if isinstance(self.set_variables, list):
                     self.set_variables_default(variables, irc, icc, 'col',
-                                               self.set_variables, data)
+                                               self.set_variables, data,
+                                               self.dtype)
                 else:
                     self.set_variables(variables, irc, icc, 'col', **data)
 
@@ -957,9 +960,10 @@ class CoefDimSym(CoefNN):
 
 class CoefN(CoefNN):
     @staticmethod
-    def set_variables_default(variables, ir, ic, mode, set_var, data):
+    def set_variables_default(variables, ir, ic, mode, set_var, data, dtype):
         mode = mode + '_only'
-        CoefNN.set_variables_default(variables, ir, ic, mode, set_var, data)
+        CoefNN.set_variables_default(variables, ir, ic, mode, set_var, data,
+                                     dtype)
 
     def get_coef(self, row, volume, problem, data):
         problem = get_default(problem, self.problem)
@@ -972,7 +976,7 @@ class CoefN(CoefNN):
         for ii, (ir, ic) in enumerate(row):
             if isinstance(self.set_variables, list):
                 self.set_variables_default(variables, ir, ic, 'row',
-                                           self.set_variables, data)
+                                           self.set_variables, data, self.dtype)
             else:
                 self.set_variables(variables, ir, ic, 'row', **data)
 
@@ -1011,10 +1015,11 @@ class CoefNonSym(CoefSym):
 
 class CoefOne(MiniAppBase):
 
-    def set_variables_default(variables, set_var, data):
+    def set_variables_default(variables, set_var, data, dtype):
         for (var, req, comp) in set_var:
             if type(req) is tuple:
                 val = data[req[0]].state[comp].copy()
+                val = nm.asarray(val, dtype=dtype)
                 for ii in req[1:]:
                     val += data[ii].state[comp]
 
@@ -1035,7 +1040,7 @@ class CoefOne(MiniAppBase):
         if hasattr(self, 'set_variables'):
             if isinstance(self.set_variables, list):
                 self.set_variables_default(variables, self.set_variables,
-                                           data)
+                                           data, self.dtype)
             else:
                 self.set_variables(variables, **data)
 
