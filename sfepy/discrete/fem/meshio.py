@@ -44,10 +44,10 @@ _supported_formats = {
 
 def update_supported_formats(formats):
     from meshio._helpers import reader_map, _writer_map,\
-        _extension_to_filetype
+        extension_to_filetype
 
     f2e = {}
-    for k, v in _extension_to_filetype.items():
+    for k, v in extension_to_filetype.items():
         f2e.setdefault(v, []).append(k)
 
     out = {}
