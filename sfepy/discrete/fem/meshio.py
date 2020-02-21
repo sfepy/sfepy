@@ -18,6 +18,10 @@ import os.path as op
 import six
 from six.moves import range
 import meshio as meshiolib
+try:
+    from meshio import CellBlock as meshio_Cells  # for meshio >= 4.0.3
+except:
+    from meshio import Cells as meshio_Cells  # for 4.0.3 > meshio > 4.0.0
 
 _supported_formats = {
     # format name: IO class, suffix, modes[, variants]
@@ -409,8 +413,8 @@ class MeshioLibIO(MeshIO):
         cell_data = {k: [] for k in cell_data_keys}
         cell_sets = {str(k): [] for k in cgrps}
         for ii, desc in enumerate(descs):
-            cells.append(meshiolib.Cells(type=inv_cell_types[desc][0],
-                                            data=conns[ii]))
+            cells.append(meshio_Cells(type=inv_cell_types[desc][0],
+                                      data=conns[ii]))
             cidxs = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
             cidxs = cidxs[0].astype(nm.uint32)
 
