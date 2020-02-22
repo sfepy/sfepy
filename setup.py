@@ -223,7 +223,7 @@ def setup_package():
               url="http://sfepy.org",
               download_url=DOWNLOAD_URL,
               license='BSD',
-              classifiers=filter(None, CLASSIFIERS.split('\n')),
+              classifiers=list(filter(None, CLASSIFIERS.split('\n'))),
               platforms=["Linux", "Mac OS-X", 'Windows'],
               scripts=['sfepy-run'],
               cmdclass=cmdclass,
