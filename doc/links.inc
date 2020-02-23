@@ -33,6 +33,7 @@
 .. _numpy documentation guide: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 .. _docstring example: https://github.com/numpy/numpy/blob/master/doc/example.py
 .. _numpydoc: http://pypi.python.org/pypi/numpydoc
+.. _meshio: https://github.com/nschloe/meshio
 
 .. _anaconda: https://store.continuum.io/cshop/anaconda/
 .. _continuum analytics: http://www.continuum.io/

@@ -24,6 +24,7 @@ Python packages required for using SfePy:
 
 - Pyparsing
 - SciPy
+- meshio, for reading and writing mesh files
 - scikit-umfpack, for enabling UMFPACK solver for SciPy >= 0.14.0
 - Matplotlib, for various plots; GTKAgg for live plotting via log.py
 - PyTables, for storing results in HDF5 files
@@ -33,7 +34,7 @@ Python packages required for using SfePy:
 - igakit, for script/gen_iga_patch.py - simple IGA domain generator
 - petsc4py and mpi4py, for running parallel examples and using parallel
   solvers from PETSc
-- slepc4py for eigenvalue problem solvers from SLEPc
+- slepc4py, for eigenvalue problem solvers from SLEPc
 - pymetis, for mesh partitioning using Metis
 
 Make sure the dependencies of those packages are also installed -

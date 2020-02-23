@@ -35,6 +35,7 @@ Python packages required for using *SfePy*:
 
 - `Pyparsing`_,
 - `SciPy`_,
+- `meshio`_ for reading and writing mesh files
 - `scikit-umfpack`_ for enabling `UMFPACK`_ solver for SciPy >= 0.14.0,
 - `Matplotlib`_ for various plots, GTKAgg for live plotting via log.py,
 - `PyTables`_ for storing results in HDF5 files,
