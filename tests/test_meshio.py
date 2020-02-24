@@ -193,17 +193,34 @@ class Test(TestCommon):
             nm.random.randint(1, 10, size=mesh0.cmesh.n_el)
 
         oks = []
-        for name, (_, suffix, flag) in six.iteritems(supported_formats):
+        for name, (cls, suffix, flag) in six.iteritems(supported_formats):
             if 'w' not in flag: continue
 
             suffix = suffix[0]  # only the first of possible suffixes
             filename = op.join(self.options.out_dir, 'test_mesh_wr' + suffix)
             self.report('%s format: %s' % (suffix, filename))
 
-            mesh0.write(filename, io='auto')
-            mesh1 = Mesh.from_file(filename)
+            try:
+                mesh0.write(filename, io='auto')
 
-            oks.extend(self._compare_meshes(mesh0, mesh1, flag))
+            except RuntimeError:
+                if cls == 'meshio':
+                    import traceback
+                    self.report('-> cannot write "%s" format into "%s",'
+                                ' skipping' % (name, filename))
+                    tb = traceback.format_exc()
+                    self.report('reason:\n', tb)
+                    continue
+
+                else:
+                    raise
+
+            else:
+                mesh1 = Mesh.from_file(filename)
+
+            ok = self._compare_meshes(mesh0, mesh1, flag)
+            self.report('->', sum(ok) == len(ok))
+            oks.extend(ok)
 
         return sum(oks) == len(oks)
 
