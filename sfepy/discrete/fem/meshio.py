@@ -39,6 +39,7 @@ _supported_formats = {
     'tetgen': ('meshio', None, ''),
     'ansys': ('ansys_cdb', '.cdb', 'r'),
     'hdf5': ('hdf5', '.h5', 'rwcv'),
+    'hdf5-xdmf': ('hdf5-xdmf', '.h5x', 'rwcv'),
     'xyz': ('xyz', '.xyz', 'rw'),
     'comsol': ('comsol', '.txt', 'r'),
     'hmascii': ('hmascii', '.hmascii', 'r'),
@@ -741,7 +742,7 @@ class HDF5MeshIO(MeshIO):
         return mesh
 
     @staticmethod
-    def write_mesh_to_hdf5(filename, group, mesh):
+    def write_mesh_to_hdf5(filename, group, mesh, force_3d=False):
         """
         Write mesh to a hdf5 file.
 
@@ -761,7 +762,8 @@ class HDF5MeshIO(MeshIO):
                 group = get_or_create_hdf5_group(fd, group)
 
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
-
+            if force_3d and coors.shape[1] == 2:
+                coors = nm.hstack([coors, nm.zeros((len(coors), 1))])
             fd.create_array(group, 'name', enc(mesh.name), 'name')
             fd.create_array(group, 'coors', coors, 'coors')
             fd.create_array(group, 'ngroups', ngroups, 'ngroups')
@@ -951,7 +953,24 @@ class HDF5MeshIO(MeshIO):
         with open(xdmf_filename, 'w') as f:
             f.write(out[(out.find('\n') + 1):])
 
-    def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
+    def write(self, filename, mesh, out=None, ts=None, cache=None,
+              xdmf=False, **kwargs):
+        def expand_data_3d(data):
+            expand_tab = {
+                2: (3, [0, 1]),
+                3: (6, [0, 1, 3]),
+                4: (9, [0, 1, 3, 4]),
+            }
+
+            n, dim = data.shape
+            if dim in expand_tab:
+                dim3, order = expand_tab[dim]
+                out = nm.zeros((n, dim3), dtype=data.dtype)
+                out[:, order] = data
+                return out
+            else:
+                return data
+
         from time import asctime
 
         if pt is None:
@@ -963,7 +982,7 @@ class HDF5MeshIO(MeshIO):
             with pt.open_file(filename, mode="w",
                               title="SfePy output file") as fd:
                 mesh_group = fd.create_group('/', 'mesh', 'mesh')
-                self.write_mesh_to_hdf5(fd, mesh_group, mesh)
+                self.write_mesh_to_hdf5(fd, mesh_group, mesh, force_3d=xdmf)
 
                 if ts is not None:
                     ts_group = fd.create_group('/', 'ts', 'time stepper')
@@ -1007,6 +1026,11 @@ class HDF5MeshIO(MeshIO):
 
             name_dict = {}
             for key, val in six.iteritems(out):
+                if xdmf and mesh.coors.shape[1] == 2:
+                    data = expand_data_3d(val.data)
+                else:
+                    data = val.data
+
                 group_name = '__' + key.translate(self._tr)
                 data_group = fd.create_group(step_group, group_name,
                                              '%s data' % key)
@@ -1015,19 +1039,19 @@ class HDF5MeshIO(MeshIO):
                 name = val.get('name', 'output_data')
                 fd.create_array(data_group, 'name', enc(name), 'object name')
                 if val.mode == 'custom':
-                    write_to_hdf5(fd, data_group, 'data', val.data,
+                    write_to_hdf5(fd, data_group, 'data', data,
                                   cache=cache,
                                   unpack_markers=getattr(val, 'unpack_markers',
                                                          False))
                     continue
 
-                shape = val.get('shape', val.data.shape)
+                shape = val.get('shape', data.shape)
                 dofs = val.get('dofs', None)
                 if dofs is None:
                     dofs = [''] * nm.squeeze(shape)[-1]
                 var_name = val.get('var_name', '')
 
-                fd.create_array(data_group, 'data', val.data, 'data')
+                fd.create_array(data_group, 'data', data, 'data')
                 fd.create_array(data_group, 'dofs', [enc(ic) for ic in dofs],
                                 'dofs')
                 fd.create_array(data_group, 'shape', shape, 'shape')
@@ -1047,7 +1071,8 @@ class HDF5MeshIO(MeshIO):
                             'file closing time')
             fd.close()
 
-        self.write_xdmf_file(filename, **kwargs)
+        if xdmf:
+            self.write_xdmf_file(filename, **kwargs)
 
     def read_last_step(self, filename=None):
         filename = get_default(filename, self.filename)
@@ -1232,6 +1257,14 @@ class HDF5MeshIO(MeshIO):
         fd.close()
 
         return ths
+
+
+class HDF5XdmfMeshIO(HDF5MeshIO):
+    format="hdf5-xdmf"
+
+    def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
+        HDF5MeshIO.write(self, filename, mesh, out=out, ts=ts, cache=cache,
+                         xdmf=True, **kwargs)
 
 
 class Mesh3DMeshIO(MeshIO):
