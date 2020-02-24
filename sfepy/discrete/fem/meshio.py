@@ -300,18 +300,21 @@ class MeshioLibIO(MeshIO):
         else:
             return bbox
 
+    @staticmethod
+    def _get_dimension(points):
+        dim = nm.sum(nm.max(points, axis=0)
+                     - nm.min(points, axis=0) > 1e-15)
+        return dim
+
     def read_dimension(self):
         m = meshiolib.read(self.filename, file_format=self.file_format)
-        dim = nm.sum(nm.max(m.points, axis=0)\
-            - nm.min(m.points, axis=0) > 1e-15)
+        dim = self._get_dimension(m.points)
 
         return dim
 
     def read(self, mesh, omit_facets=False, **kwargs):
         m = meshiolib.read(self.filename, file_format=self.file_format)
-
-        dim = nm.sum(nm.max(m.points, axis=0)\
-            - nm.min(m.points, axis=0) > 1e-15)
+        dim = self._get_dimension(m.points)
 
         ngkey = None
         for k in m.point_data.keys():
@@ -435,6 +438,29 @@ class MeshioLibIO(MeshIO):
                                      cell_sets=cell_sets,
                                      file_format=self.file_format)
 
+    def read_data(self, step, filename=None, cache=None):
+        m = meshiolib.read(self.filename, file_format=self.file_format)
+        dim = self._get_dimension(m.points)
+
+        def _fix_shape(data):
+            if data.ndim == 2:
+                data = data[:, :dim]
+
+            elif data.ndim == 3:
+                data = data[:, None, ...]
+
+            return data
+
+        out = {}
+        for key, data in m.point_data.items():
+            aux = _fix_shape(data).astype(nm.float64)
+            out[key] = Struct(name=key, mode='vertex', data=aux)
+
+        for key, data in m.cell_data.items():
+            aux = _fix_shape(data[0]).astype(nm.float64)
+            out[key] = Struct(name=key, mode='cell', data=aux)
+
+        return out
 
 class ComsolMeshIO(MeshIO):
     format = 'comsol'
