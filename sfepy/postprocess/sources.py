@@ -61,7 +61,7 @@ def create_file_source(filename, watch=False, offscreen=True):
         else:
             return VTKFileSource(filename, **kwargs)
 
-    elif fmt in list(supported_formats.keys()):
+    else:
         if is_sequence:
             if fmt == '.h5':
                 raise ValueError('format .h5 does not support file sequences!')
@@ -69,9 +69,6 @@ def create_file_source(filename, watch=False, offscreen=True):
                 return GenericSequenceFileSource(filename, **kwargs)
         else:
             return GenericFileSource(filename, **kwargs)
-
-    else:
-        raise ValueError('unknown file format! (%s)' % fmt)
 
 class FileSource(Struct):
     """General file source."""
