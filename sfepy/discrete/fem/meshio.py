@@ -10,7 +10,7 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
-                                read_array, read_list, pt, enc, dec,
+                                read_array, pt, enc, dec,
                                 edit_filename,
                                 read_from_hdf5, write_to_hdf5,
                                 HDF5ContextManager, get_or_create_hdf5_group)
@@ -59,7 +59,7 @@ def update_supported_formats(formats):
         io, ext, _flag = info[:3]
         variants = info[3] if len(info) >= 4 else []
         for f in [format] + variants:
-            if io is 'meshio':
+            if io == 'meshio':
                 flag = _flag[:]
                 if ext is None:
                     ext = f2e[format]
@@ -77,7 +77,7 @@ def update_supported_formats(formats):
 
             out[f] = (io, ext, flag)
 
-    return out  
+    return out
 
 supported_formats = update_supported_formats(_supported_formats)
 del _supported_formats
