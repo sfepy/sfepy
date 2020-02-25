@@ -397,6 +397,7 @@ options = {
     'coefs_filename': 'coefs_perf_' + pb_def['name'],
     'coefs_info': {'eps0': eps0},
     'recovery_hook': 'recovery_perf',
+    'multiprocessing': False,
 }
 
 for ipm in ['p', 'm']:

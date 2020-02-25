@@ -153,7 +153,7 @@ class EVPSolverApp(PDESolverApp):
 
         eig_results_name = get_default(eig_results_name,
                                        self.eig_results_name)
-        with open(eig_results_name, 'w') as fd:
+        with open(eig_results_name, 'wb') as fd:
             if nm.iscomplexobj(eigs):
                 nm.savetxt(fd, eigs, '% .18e % .18e')
 

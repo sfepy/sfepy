@@ -60,7 +60,7 @@ install:
 
   - cmd.exe /c conda init
 
-  - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy"
+  - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy h5py netCDF4"
   - conda activate sfepy-test
   #
   # Scikit UMFPACK (TBD)
@@ -73,6 +73,7 @@ install:
   #
   #- pip install https://bitbucket.org/dalcinl/igakit/get/default.tar.gz
   - pip install --global-option build_ext --global-option --compiler=mingw32 https://bitbucket.org/dalcinl/igakit/get/0a87ac7cbffb.zip
+  - pip install meshio
   #
   # Revert back to native MSVC build tools
   #

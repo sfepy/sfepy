@@ -48,7 +48,7 @@ class Test(TestCommon):
             ['vertices by get_vertices', 'cell'],
             ['vertex 0, 1, 2', 'vertex'],
             ['vertex in r.r6', 'vertex'],
-            ['cells of group 0', 'cell'],
+            ['cells of group 1', 'cell'],
             # ['cells of set 0', 'cell'], not implemented...
             ['cells by get_cells', 'cell'],
             ['cell 1, 4, 5', 'cell'],
@@ -65,7 +65,7 @@ class Test(TestCommon):
             [1,  2,  3,  4,  5,  9, 11],
             [0,  1,  2],
             [0],
-            [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12],
+            [0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10],
             [0,  1,  2,  3,  4,  5,  6,  9, 10, 11],
             [0,  1,  2,  3,  4,  5,  6,  8],
             [1,  2,  3,  4,  5,  9, 11],

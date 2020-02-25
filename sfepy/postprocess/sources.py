@@ -19,7 +19,10 @@ except:
 from sfepy.base.base import Struct, basestr
 from sfepy.postprocess.utils import mlab
 from sfepy.discrete.fem import Mesh
-from sfepy.discrete.fem.meshio import MeshIO, vtk_cell_types, supported_formats
+from sfepy.discrete.fem.meshio import MeshIO, supported_formats
+
+vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
+                  '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
 
 def create_file_source(filename, watch=False, offscreen=True):
     """Factory function to create a file source corresponding to the
@@ -58,7 +61,7 @@ def create_file_source(filename, watch=False, offscreen=True):
         else:
             return VTKFileSource(filename, **kwargs)
 
-    elif fmt in list(supported_formats.keys()):
+    else:
         if is_sequence:
             if fmt == '.h5':
                 raise ValueError('format .h5 does not support file sequences!')
@@ -66,9 +69,6 @@ def create_file_source(filename, watch=False, offscreen=True):
                 return GenericSequenceFileSource(filename, **kwargs)
         else:
             return GenericFileSource(filename, **kwargs)
-
-    else:
-        raise ValueError('unknown file format! (%s)' % fmt)
 
 class FileSource(Struct):
     """General file source."""

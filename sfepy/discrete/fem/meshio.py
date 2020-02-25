@@ -2,7 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 from copy import copy
-
+import logging
 import numpy as nm
 
 from sfepy.base.base import (complex_types, dict_from_keys_init,
@@ -10,85 +10,86 @@ from sfepy.base.base import (complex_types, dict_from_keys_init,
                              insert_static_method, output, get_default,
                              get_default_attr, Struct, basestr)
 from sfepy.base.ioutils import (skip_read_line, look_ahead_line, read_token,
-                                read_array, read_list, pt, enc, dec,
+                                read_array, pt, enc, dec,
                                 edit_filename,
                                 read_from_hdf5, write_to_hdf5,
                                 HDF5ContextManager, get_or_create_hdf5_group)
 import os.path as op
 import six
 from six.moves import range
+import meshio as meshiolib
+try:
+    from meshio import CellBlock as meshio_Cells  # for meshio >= 4.0.3
+except:
+    from meshio import Cells as meshio_Cells  # for 4.0.3 > meshio > 4.0.0
 
-supported_formats = {
-    '.mesh' : 'medit',
-    '.vtk'  : 'vtk',
-    '.node' : 'tetgen',
-    '.txt'  : 'comsol',
-    '.h5'   : 'hdf5',
-     # Order is important, avs_ucd does not guess -> it is the default.
-    '.inp'  : ('abaqus', 'ansys_cdb', 'avs_ucd'),
-    '.dat'  : 'ansys_cdb',
-    '.hmascii'  : 'hmascii',
-    '.mesh3d'   : 'mesh3d',
-    '.bdf'  : 'nastran',
-    '.neu'  : 'gambit',
-    '.med'  : 'med',
-    '.cdb'  : 'ansys_cdb',
-    '.msh'  : 'msh_v2',
-    '.xyz'  : 'xyz',
+_supported_formats = {
+    # format name: IO class, suffix, modes[, variants]
+    # modes: r = read, w = write, c = test cell groups, v = test vertex groups
+    'abaqus': ('meshio', None, 'cv'),
+    'exodus': ('meshio', None, 'v'),
+    'gmsh': ('meshio', None, 'cv', ['gmsh4-binary', 'gmsh4-ascii',
+                                    'gmsh2-binary', 'gmsh2-ascii']),
+    'medit': ('meshio', None, 'cv'),
+    'nastran': ('meshio', None, 'cv'),
+    'vtk': ('meshio', None, 'cv', ['vtk-binnary', 'vtk-ascii']),
+    'vtu': ('meshio', None, 'cv'),
+    'med': ('meshio', None, 'cv'),
+    'xdmf': ('meshio', None, 'cv'),
+    'tetgen': ('meshio', None, ''),
+    'ansys': ('ansys_cdb', '.cdb', 'r'),
+    'hdf5': ('hdf5', '.h5', 'rwcv'),
+    'hdf5-xdmf': ('hdf5-xdmf', '.h5x', 'rwcv'),
+    'xyz': ('xyz', '.xyz', 'rw'),
+    'comsol': ('comsol', '.txt', 'r'),
+    'hmascii': ('hmascii', '.hmascii', 'r'),
+    'gambit': ('gambit', '.neu', 'r'),
+    'mesh3d': ('mesh3d', '.mesh3d', 'r'),
 }
 
-# Map mesh formats to read and write capabilities.
-# 'r' ... read mesh
-# 'w' ... write mesh
-# 'rn' ... read nodes for boundary conditions
-# 'wn' ... write nodes for boundary conditions
-supported_capabilities = {
-    'medit' : ['r', 'w'],
-    'vtk' : ['r', 'w'],
-    'tetgen' : ['r'],
-    'comsol' : ['r', 'w'],
-    'hdf5' : ['r', 'w'],
-    'abaqus' : ['r'],
-    'avs_ucd' : ['r'],
-    'hmascii' : ['r'],
-    'mesh3d' : ['r'],
-    'nastran' : ['r', 'w'],
-    'gambit' : ['r', 'rn'],
-    'med' : ['r'],
-    'ansys_cdb' : ['r'],
-    'msh_v2' : ['r', 'w'],
-    'xyz' : ['r', 'w'],
-}
+def update_supported_formats(formats):
+    from meshio._helpers import reader_map, _writer_map,\
+        extension_to_filetype
 
-supported_cell_types = {
-    'medit' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
-    'vtk' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
-    'tetgen' : ['tetra4'],
-    'comsol' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
-    'hdf5' : ['user'],
-    'abaqus' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
-    'avs_ucd' : ['tetra4', 'hexa8'],
-    'hmascii' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
-    'mesh3d' : ['tetra4', 'hexa8'],
-    'nastran' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
-    'gambit' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
-    'med' : ['tri3', 'quad4', 'tetra4', 'hexa8'],
-    'ansys_cdb' : ['tetra4', 'hexa8'],
-    'msh_v2' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
-    'xyz' : ['line2', 'tri3', 'quad4', 'tetra4', 'hexa8'],
-    'function' : ['user'],
-}
+    f2e = {}
+    for k, v in extension_to_filetype.items():
+        f2e.setdefault(v, []).append(k)
+
+    out = {}
+    for format, info in formats.items():
+        io, ext, _flag = info[:3]
+        variants = info[3] if len(info) >= 4 else []
+        for f in [format] + variants:
+            if io == 'meshio':
+                flag = _flag[:]
+                if ext is None:
+                    ext = f2e[format]
+                if f in _writer_map:
+                    flag = 'w' + flag
+                if format in reader_map:
+                    flag = 'r' + flag
+                if not f == format:
+                    flag = '*' + flag  # label format variants
+            else:
+                flag = _flag
+
+            if not isinstance(ext, list):
+                ext = [ext]
+
+            out[f] = (io, ext, flag)
+
+    return out
+
+supported_formats = update_supported_formats(_supported_formats)
+del _supported_formats
+
 
 def output_mesh_formats(mode='r'):
     for key, vals in ordered_iteritems(supported_formats):
-        if isinstance(vals, basestr):
-            vals = [vals]
+        if mode in vals[2]:
+            output('%s (%s)' % (key,
+                vals[1] if len(vals[1]) > 1 else vals[1][0]))
 
-        for val in vals:
-            caps = supported_capabilities[val]
-            if mode in caps:
-                output('%s (%s), cell types: %s'
-                       % (val, key, supported_cell_types[val]))
 
 def split_conns_mat_ids(conns_in):
     """
@@ -102,6 +103,7 @@ def split_conns_mat_ids(conns_in):
         mat_ids.append(conn[:, -1])
 
     return conns, mat_ids
+
 
 def convert_complex_output(out_in):
     """
@@ -125,30 +127,6 @@ def convert_complex_output(out_in):
 
     return out
 
-def _read_bounding_box(fd, dim, node_key,
-                       c0=0, ndplus=1, ret_fd=False, ret_dim=False):
-    while 1:
-        line = skip_read_line(fd, no_eof=True).split()
-        if line[0] == node_key:
-            num = int(read_token(fd))
-            nod = read_array(fd, num, dim + ndplus, nm.float64)
-            break
-
-    bbox = nm.vstack((nm.amin(nod[:,c0:(dim + c0)], 0),
-                      nm.amax(nod[:,c0:(dim + c0)], 0)))
-
-    if ret_dim:
-        if ret_fd:
-            return bbox, dim, fd
-        else:
-            fd.close()
-            return bbox, dim
-    else:
-        if ret_fd:
-            return bbox, fd
-        else:
-            fd.close()
-            return bbox
 
 class MeshIO(Struct):
     """
@@ -174,10 +152,6 @@ class MeshIO(Struct):
     information from the mesh instance (e.g. nodes, conns, mat_ids and descs)
     to construct your specific format.
 
-    The methods read_dimension(), read_bounding_box() should be implemented in
-    subclasses, as it is often possible to get that kind of information without
-    reading the whole mesh file.
-
     Optionally, subclasses can implement read_data() to read also computation
     results. This concerns mainly the subclasses with implemented write()
     supporting the 'out' kwarg.
@@ -199,12 +173,6 @@ class MeshIO(Struct):
             trunk = 'from_descriptor'
 
         return trunk
-
-    def read_dimension(self, ret_fd=False):
-        raise ValueError(MeshIO.call_msg)
-
-    def read_bounding_box(self, ret_fd=False, ret_dim=False):
-        raise ValueError(MeshIO.call_msg)
 
     def read_last_step(self):
         """The default implementation: just return 0 as the last step."""
@@ -274,761 +242,226 @@ class UserMeshIO(MeshIO):
     def write(self, filename, mesh, *args, **kwargs):
         self.function(mesh, mode='write')
 
-class MeditMeshIO(MeshIO):
-    format = 'medit'
 
-    def read_dimension(self, ret_fd=False):
-        fd = open(self.filename, 'r')
-        while 1:
-            line = skip_read_line(fd, no_eof=True).split()
-            if line[0] == 'Dimension':
-                if len(line) == 2:
-                    dim = int(line[1])
-                else:
-                    dim = int(fd.readline())
-                break
+def _suppress_meshio_warnings(f):
+    def __suppress_meshio_warnings(*args, **kwargs):
+        logger = logging.getLogger()
+        level = logger.level
+        logger.setLevel(logging.ERROR)
+        out = f(*args, **kwargs)
+        logger.setLevel(level)
 
-        if ret_fd:
-            return dim, fd
-        else:
-            fd.close()
-            return dim
+        return out
 
-    def read_bounding_box(self, ret_fd=False, ret_dim=False):
-        fd = open(self.filename, 'r')
-        dim, fd  = self.read_dimension(ret_fd=True)
-        return _read_bounding_box(fd, dim, 'Vertices',
-                                  ret_fd=ret_fd, ret_dim=ret_dim)
+    return __suppress_meshio_warnings
 
-    def read(self, mesh, omit_facets=False, **kwargs):
-        dim, fd  = self.read_dimension(ret_fd=True)
+def _decorate_all(module, decorator):
+    import types
+    for name in dir(module):
+        obj = getattr(module, name)
+        if isinstance(obj, types.FunctionType):
+            setattr(module, name, decorator(obj))
 
-        conns_in = []
-        descs = []
-
-        def _read_cells(dimension, size, has_id=True):
-            num = int(read_token(fd))
-            data = read_array(fd, num, size + 1 * has_id, nm.int32)
-            if omit_facets and (dimension < dim): return
-
-            data[:, :-1] -= 1
-
-            conns_in.append(data)
-            descs.append('%i_%i' % (dimension, size))
-
-        while 1:
-            line = skip_read_line(fd).split()
-            if not line:
-                break
-
-            ls = line[0]
-            if (ls == 'Vertices'):
-                num = int(read_token(fd))
-                nod = read_array(fd, num, dim + 1, nm.float64)
-
-            elif (ls == 'Corners'):
-                _read_cells(1, 1, False)
-
-            elif (ls == 'Edges'):
-                _read_cells(1, 2)
-
-            elif (ls == 'Tetrahedra'):
-                _read_cells(3, 4)
-
-            elif (ls == 'Hexahedra'):
-                _read_cells(3, 8)
-
-            elif (ls == 'Triangles'):
-                _read_cells(2, 3)
-
-            elif (ls == 'Quadrilaterals'):
-                _read_cells(2, 4)
-
-            elif ls == 'End':
-                break
-
-            elif line[0] == '#':
-                continue
-
-            else:
-                output('skipping unknown entity: %s' % line)
-                continue
-
-        fd.close()
-
-        # Detect wedges and pyramides -> separate groups.
-        if ('3_8' in descs):
-            ic = descs.index('3_8')
-
-            conn_in = conns_in.pop(ic)
-
-            flag = nm.zeros((conn_in.shape[0],), nm.int32)
-            for ii, el in enumerate(conn_in):
-                if (el[4] == el[5]):
-                    if (el[5] == el[6]):
-                        flag[ii] = 2
-                    else:
-                        flag[ii] = 1
-
-            conn = []
-            desc = []
-
-            ib = nm.where(flag == 0)[0]
-            if (len(ib) > 0):
-                conn.append(conn_in[ib])
-                desc.append('3_8')
-
-            iw = nm.where(flag == 1)[0]
-            if (len(iw) > 0):
-                ar = nm.array([0,1,2,3,4,6], nm.int32)
-                conn.append(conn_in[iw[:, None], ar])
-                desc.append('3_6')
-
-            ip = nm.where(flag == 2)[0]
-            if (len(ip) > 0):
-                ar = nm.array([0,1,2,3,4], nm.int32)
-                conn.append(conn_in[ip[:, None], ar])
-                desc.append('3_5')
-
-            conns_in[ic:ic] = conn
-            del(descs[ic])
-            descs[ic:ic] = desc
-
-        conns, mat_ids = split_conns_mat_ids(conns_in)
-
-        mesh._set_io_data(nod[:,:-1], nod[:,-1], conns, mat_ids, descs)
-
-        return mesh
-
-    def write(self, filename, mesh, out=None, **kwargs):
-        fd = open(filename, 'w')
-
-        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
-        n_nod, dim = coors.shape
-
-        fd.write("MeshVersionFormatted 1\nDimension %d\n" % dim)
-
-        fd.write("Vertices\n%d\n" % n_nod)
-        format = self.get_vector_format(dim) + ' %d\n'
-        for ii in range(n_nod):
-            nn = tuple(coors[ii]) + (ngroups[ii],)
-            fd.write(format % tuple(nn))
-
-        for ig, conn in enumerate(conns):
-            ids = mat_ids[ig]
-            if (desc[ig] == "1_1"):
-                fd.write("Corners\n%d\n" % conn.shape[0])
-                for ii in range(conn.shape[0]):
-                    nn = conn[ii] + 1
-                    fd.write("%d\n"
-                             % nn[0])
-            elif (desc[ig] == "1_2"):
-                fd.write("Edges\n%d\n" % conn.shape[0])
-                for ii in range(conn.shape[0]):
-                    nn = conn[ii] + 1
-                    fd.write("%d %d %d\n"
-                             % (nn[0], nn[1], ids[ii]))
-            elif (desc[ig] == "2_4"):
-                fd.write("Quadrilaterals\n%d\n" % conn.shape[0])
-                for ii in range(conn.shape[0]):
-                    nn = conn[ii] + 1
-                    fd.write("%d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], ids[ii]))
-            elif (desc[ig] == "2_3"):
-                fd.write("Triangles\n%d\n" % conn.shape[0])
-                for ii in range(conn.shape[0]):
-                    nn = conn[ii] + 1
-                    fd.write("%d %d %d %d\n" % (nn[0], nn[1], nn[2], ids[ii]))
-            elif (desc[ig] == "3_4"):
-                fd.write("Tetrahedra\n%d\n" % conn.shape[0])
-                for ii in range(conn.shape[0]):
-                    nn = conn[ii] + 1
-                    fd.write("%d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], ids[ii]))
-            elif (desc[ig] == "3_8"):
-                fd.write("Hexahedra\n%d\n" % conn.shape[0])
-                for ii in range(conn.shape[0]):
-                    nn = conn[ii] + 1
-                    fd.write("%d %d %d %d %d %d %d %d %d\n"
-                             % (nn[0], nn[1], nn[2], nn[3], nn[4], nn[5],
-                                nn[6], nn[7], ids[ii]))
-            else:
-                raise ValueError('unknown element type! (%s)' % desc[ig])
-
-        fd.close()
-
-        if out is not None:
-            for key, val in six.iteritems(out):
-                raise NotImplementedError
+_decorate_all(meshiolib, _suppress_meshio_warnings)
+del _decorate_all, _suppress_meshio_warnings
 
 
-vtk_header = r"""x vtk DataFile Version 2.0
-step %d time %e normalized time %e, generated by %s
-ASCII
-DATASET UNSTRUCTURED_GRID
-"""
-vtk_cell_types = {'1_1' : 1, '1_2' : 3, '2_2' : 3, '3_2' : 3,
-                  '2_3' : 5, '2_4' : 9, '3_4' : 10, '3_8' : 12}
-vtk_dims = {1 : 1, 3 : 1, 5 : 2, 9 : 2, 10 : 3, 12 : 3}
-vtk_inverse_cell_types = {3 : '1_2', 5 : '2_3', 8 : '2_4', 9 : '2_4',
-                          10 : '3_4', 11 : '3_8', 12 : '3_8'}
-vtk_remap = {8 : nm.array([0, 1, 3, 2], dtype=nm.int32),
-             11 : nm.array([0, 1, 3, 2, 4, 5, 7, 6], dtype=nm.int32)}
-vtk_remap_keys = list(vtk_remap.keys())
+class MeshioLibIO(MeshIO):
+    format = 'meshio'
 
-class VTKMeshIO(MeshIO):
-    format = 'vtk'
+    cell_types = {
+        ('hexahedron', 3): '3_8',
+        ('tetra', 3): '3_4',
+        ('triangle', 3): '2_3',
+        ('triangle', 2): '2_3',
+        ('quad', 3): '2_4',
+        ('quad', 2): '2_4',
+        ('line', 3): '3_2',
+        ('line', 2): '2_2',
+        ('line', 1): '1_2',
+    }
 
-    def read_coors(self, ret_fd=False):
-        fd = open(self.filename, 'r')
-        while 1:
-            line = skip_read_line(fd, no_eof=True).split()
-            if line[0] == 'POINTS':
-                n_nod = int(line[1])
-                coors = read_array(fd, n_nod, 3, nm.float64)
-                break
+    def __init__(self, filename, file_format=None, **kwargs):
+        MeshIO.__init__(self, filename=filename, **kwargs)
+        from meshio._helpers import _filetype_from_path
+        import pathlib
 
-        if ret_fd:
-            return coors, fd
-        else:
-            fd.close()
-            return coors
+        if file_format is None:
+            file_format = _filetype_from_path(pathlib.Path(filename))
 
-    def get_dimension(self, coors):
-        dz = nm.diff(coors[:,2])
-        if nm.allclose(dz, 0.0):
-            dim = 2
-        else:
-            dim = 3
-        return dim
+        self.file_format = file_format
 
-    def read_dimension(self, ret_fd=False):
-        coors, fd = self.read_coors(ret_fd=True)
-        dim = self.get_dimension(coors)
-        if ret_fd:
-            return dim, fd
-        else:
-            fd.close()
-            return dim
+    def read_bounding_box(self, ret_dim=False):
+        m = meshiolib.read(self.filename, file_format=self.file_format)
 
-    def read_bounding_box(self, ret_fd=False, ret_dim=False):
-        coors, fd = self.read_coors(ret_fd=True)
-        dim = self.get_dimension(coors)
-
-        bbox = nm.vstack((nm.amin(coors[:,:dim], 0),
-                          nm.amax(coors[:,:dim], 0)))
+        bbox = nm.vstack([nm.amin(m.points, 0), nm.amax(m.points, 0)])
 
         if ret_dim:
-            if ret_fd:
-                return bbox, dim, fd
-            else:
-                fd.close()
-                return bbox, dim
+            return bbox, m.points.shape[1]
         else:
-            if ret_fd:
-                return bbox, fd
-            else:
-                fd.close()
-                return bbox
+            return bbox
 
-    def read(self, mesh, **kwargs):
-        fd = open(self.filename, 'r')
-        mode = 'header'
-        mode_status = 0
-        coors = conns = mat_id = node_grps = None
-        finished = 0
-        while 1:
-            line = skip_read_line(fd)
-            if not line:
+    @staticmethod
+    def _get_dimension(points):
+        dim = nm.sum(nm.max(points, axis=0)
+                     - nm.min(points, axis=0) > 1e-15)
+        return dim
+
+    def read_dimension(self):
+        m = meshiolib.read(self.filename, file_format=self.file_format)
+        dim = self._get_dimension(m.points)
+
+        return dim
+
+    def read(self, mesh, omit_facets=False, **kwargs):
+        m = meshiolib.read(self.filename, file_format=self.file_format)
+        dim = self._get_dimension(m.points)
+
+        ngkey = None
+        for k in m.point_data.keys():
+            if k == 'node_groups' or k.endswith(':ref'):
+                ngkey = k
                 break
 
-            if mode == 'header':
-                if mode_status == 0:
-                    if line.strip() == 'ASCII':
-                        mode_status = 1
-                elif mode_status == 1:
-                    if line.strip() == 'DATASET UNSTRUCTURED_GRID':
-                        mode_status = 0
-                        mode = 'points'
+        if ngkey is not None:
+            ngroups = nm.asarray(m.point_data[ngkey]).flatten()
+        elif hasattr(m, 'point_sets') and len(m.point_sets) > 0:
+            ngroups = nm.zeros((len(m.points),), dtype=nm.int32)
+            keys = list(m.point_sets.keys())
+            keys.sort()
+            try:
+                ngrps = [int(ii) for ii in keys]
+            except:
+                ngrps = nm.arange(len(keys)) + 1
 
-            elif mode == 'points':
-                line = line.split()
-                if line[0] == 'POINTS':
-                    n_nod = int(line[1])
-                    coors = read_array(fd, n_nod, 3, nm.float64)
-                    mode = 'cells'
+            for ik, k in enumerate(keys):
+                ngroups[m.point_sets[k]] = ngrps[ik]
+        else:
+            ngroups = None
 
-            elif mode == 'cells':
-                line = line.split()
-                if line[0] == 'CELLS':
-                    n_el, n_val = map(int, line[1:3])
-                    raw_conn = read_list(fd, n_val, int)
-                    mode = 'cell_types'
+        cells, cgroups, cell_types = [], [], []
 
-            elif mode == 'cell_types':
-                line = line.split()
-                if line[0] == 'CELL_TYPES':
-                    assert_(int(line[1]) == n_el)
-                    cell_types = read_array(fd, n_el, 1, nm.int32)
-                    mode = 'cp_data'
-
-            elif mode == 'cp_data':
-                line = line.split()
-                if line[0] == 'CELL_DATA':
-                    assert_(int(line[1]) == n_el)
-                    mode_status = 1
-                    mode = 'mat_id'
-                elif line[0] == 'POINT_DATA':
-                    assert_(int(line[1]) == n_nod)
-                    mode_status = 1
-                    mode = 'node_groups'
-
-            elif mode == 'mat_id':
-                if mode_status == 1:
-                    if 'SCALARS mat_id int' in line.strip():
-                        mode_status = 2
-                elif mode_status == 2:
-                    if line.strip() == 'LOOKUP_TABLE default':
-                        mat_id = read_list(fd, n_el, int)
-                        mode_status = 0
-                        mode = 'cp_data'
-                        finished += 1
-
-            elif mode == 'node_groups':
-                if mode_status == 1:
-                    if 'SCALARS node_groups int' in line.strip():
-                        mode_status = 2
-                elif mode_status == 2:
-                    if line.strip() == 'LOOKUP_TABLE default':
-                        node_grps = read_list(fd, n_nod, int)
-                        mode_status = 0
-                        mode = 'cp_data'
-                        finished += 1
-
-            elif finished >= 2:
+        # meshio.__version__ > 3.3.2
+        cgkey = None
+        for k in list(m.cell_data.keys()):
+            if k == 'mat_id' or k.endswith(':ref'):
+                cgkey = k
                 break
-        fd.close()
 
-        if mat_id is None:
-            mat_id = [[0]] * n_el
+        if cgkey is not None:
+            cgdata = m.cell_data[cgkey]
+        elif len(m.cell_sets) > 0:
+            cgdata = []
+            keys = list(m.cell_sets.keys())
+            keys.sort()
+            try:
+                cgrps = [int(ii) for ii in keys]
+            except:
+                cgrps = nm.arange(len(keys)) + 1
+
+            for ic, c in enumerate(m.cells):
+                cgdata0 = nm.zeros((len(c.data),), dtype=nm.int32)
+                for ik, k in enumerate(keys):
+                    cgdata0[m.cell_sets[k][ic]] = cgrps[ik]
+                cgdata.append(cgdata0)
         else:
-            if len(mat_id) < n_el:
-                mat_id = [[ii] for jj in mat_id for ii in jj]
+            cgdata = None
 
-        if node_grps is None:
-            node_grps = [0] * n_nod
-        else:
-            if len(node_grps) < n_nod:
-                node_grps = [ii for jj in node_grps for ii in jj]
+        for ic, c in enumerate(m.cells):
+            cells.append(c.data)
+            cell_types.append(self.cell_types[(c.type, dim)])
 
-        dim = self.get_dimension(coors)
-        if dim == 2:
-            coors = coors[:,:2]
-        coors = nm.ascontiguousarray(coors)
+            if cgdata is not None:
+                cgroups.append(nm.asarray(cgdata[ic]).flatten())
+            else:
+                cgroups.append(nm.ones((len(c.data),), dtype=nm.int32))
 
-        cell_types = cell_types.squeeze()
+        mesh._set_io_data(m.points[:,:dim], ngroups,
+                          cells, cgroups, cell_types)
 
-        dconns = {}
-        for iel, row in enumerate(raw_conn):
-            vct = cell_types[iel]
-            if vct not in vtk_inverse_cell_types:
-                continue
-            ct = vtk_inverse_cell_types[vct]
-            dconns.setdefault(vct, []).append(row[1:] + mat_id[iel])
-
-        descs = []
-        conns = []
-        mat_ids = []
-        for ct, conn in six.iteritems(dconns):
-            sct = vtk_inverse_cell_types[ct]
-            descs.append(sct)
-
-            aux = nm.array(conn, dtype=nm.int32)
-            aconn = aux[:, :-1]
-            if ct in vtk_remap_keys: # Remap pixels and voxels.
-                aconn[:] = aconn[:, vtk_remap[ct]]
-
-            conns.append(aconn)
-            mat_ids.append(aux[:, -1])
-
-        mesh._set_io_data(coors, node_grps, conns, mat_ids, descs)
+        output('number of vertices: %d' % m.points.shape[0])
+        output('number of cells:')
+        for ii, k in enumerate(cell_types):
+            output('  %s: %d' % (k, cells[ii].shape[0]))
 
         return mesh
 
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
-        def _reshape_tensors(data, dim, sym, nc):
-            if dim == 3:
-                if nc == sym:
-                    aux = data[:, [0,3,4,3,1,5,4,5,2]]
-                elif nc == (dim * dim):
-                    aux = data[:, [0,3,4,6,1,5,7,8,2]]
-                else:
-                    aux = data.reshape((data.shape[0], dim*dim))
+        inv_cell_types = {v: k for k, v in self.cell_types.items()}
 
-            else:
-                zz = nm.zeros((data.shape[0], 1), dtype=nm.float64)
-                if nc == sym:
-                    aux = nm.c_[data[:,[0,2]], zz, data[:,[2,1]],
-                                zz, zz, zz, zz]
-                elif nc == (dim * dim):
-                    aux = nm.c_[data[:,[0,2]], zz, data[:,[3,1]],
-                                zz, zz, zz, zz]
-                else:
-                    aux = nm.c_[data[:,0,[0,1]], zz, data[:,1,[0,1]],
-                                zz, zz, zz, zz]
+        coors, ngroups, conns, _, descs = mesh._get_io_data()
 
-            return aux
+        out = {} if out is None else out
 
-        def _write_tensors(data):
-            format = self.get_vector_format(3)
-            format = '\n'.join([format] * 3) + '\n\n'
-            for row in aux:
-                fd.write(format % tuple(row))
+        point_data = {k: v.data for k, v in out.items() if v.mode == 'vertex'}
+        cell_data_keys = [k for k, v in out.items() if v.mode == 'cell']
 
-        if ts is None:
-            step, time, nt  = 0, 0.0, 0.0
+        if self.file_format in ['vtk', 'vtu']:
+            ngkey = 'node_groups'
+            cgkey = 'mat_id'
         else:
-            step, time, nt = ts.step, ts.time, ts.nt
+            ngkey = '%s:ref' % self.file_format
+            cgkey = '%s:ref' % self.file_format
 
-        coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
+        point_data[ngkey] = ngroups
+        point_sets = {str(k): nm.where(ngroups == k)[0]
+            for k in nm.unique(ngroups)}
 
-        fd = open(filename, 'w')
-        fd.write(vtk_header % (step, time, nt, op.basename(sys.argv[0])))
+        cmesh = mesh.cmesh
+        cell_groups = cmesh.cell_groups
+        cgrps = nm.unique(cell_groups)
 
-        n_nod, dim = coors.shape
-        sym = (dim + 1) * dim // 2
+        # meshio.__version__ > 3.3.2
+        cells = []
+        cgroups = [ ]
+        cell_data = {k: [] for k in cell_data_keys}
+        cell_sets = {str(k): [] for k in cgrps}
+        for ii, desc in enumerate(descs):
+            cells.append(meshio_Cells(type=inv_cell_types[desc][0],
+                                      data=conns[ii]))
+            cidxs = nm.where(cmesh.cell_types == cmesh.key_to_index[desc])
+            cidxs = cidxs[0].astype(nm.uint32)
 
-        fd.write('\nPOINTS %d float\n' % n_nod)
+            cgroups.append(cell_groups[cidxs])
+            for k in cell_data_keys:
+                cell_data[k].append(out[k].data[cidxs, 0, :, 0])
 
-        aux = coors
+            for k in cgrps:
+                idxs = nm.where(cell_groups[cidxs] == k)[0]
+                cell_sets[str(k)].append(cidxs[idxs])
 
-        if dim < 3:
-            aux = nm.hstack((aux, nm.zeros((aux.shape[0], 3 - dim),
-                                           dtype=aux.dtype)))
+        cell_data[cgkey] = cgroups
 
-        format = self.get_vector_format(3) + '\n'
-        for row in aux:
-            fd.write(format % tuple(row))
-
-        n_el = mesh.n_el
-        n_els, n_e_ps = nm.array([conn.shape for conn in conns]).T
-        total_size = nm.dot(n_els, n_e_ps + 1)
-        fd.write('\nCELLS %d %d\n' % (n_el, total_size))
-
-        ct = []
-        for ig, conn in enumerate(conns):
-            nn = n_e_ps[ig] + 1
-            ct += [vtk_cell_types[descs[ig]]] * n_els[ig]
-            format = ' '.join(['%d'] * nn + ['\n'])
-
-            for row in conn:
-                fd.write(format % ((nn-1,) + tuple(row)))
-
-        fd.write('\nCELL_TYPES %d\n' % n_el)
-        fd.write(''.join(['%d\n' % ii for ii in ct]))
-
-        fd.write('\nPOINT_DATA %d\n' % n_nod)
-
-        # node groups
-        fd.write('\nSCALARS node_groups int 1\nLOOKUP_TABLE default\n')
-        fd.write(''.join(['%d\n' % ii for ii in ngroups]))
-
-        if out is not None:
-            point_keys = [key for key, val in six.iteritems(out)
-                          if val.mode == 'vertex']
-        else:
-            point_keys = {}
-
-        for key in point_keys:
-            val = out[key]
-            nr, nc = val.data.shape
-
-            if nc == 1:
-                fd.write('\nSCALARS %s float %d\n' % (key, nc))
-                fd.write('LOOKUP_TABLE default\n')
-
-                format = self.float_format + '\n'
-                for row in val.data:
-                    fd.write(format % row)
-
-            elif nc == dim:
-                fd.write('\nVECTORS %s float\n' % key)
-                if dim == 2:
-                    aux = nm.hstack((val.data,
-                                     nm.zeros((nr, 1), dtype=nm.float64)))
-                else:
-                    aux = val.data
-
-                format = self.get_vector_format(3) + '\n'
-                for row in aux:
-                    fd.write(format % tuple(row))
-
-            elif (nc == sym) or (nc == (dim * dim)):
-                fd.write('\nTENSORS %s float\n' % key)
-                aux = _reshape_tensors(val.data, dim, sym, nc)
-                _write_tensors(aux)
-
-            else:
-                raise NotImplementedError(nc)
-
-        if out is not None:
-            cell_keys = [key for key, val in six.iteritems(out)
-                         if val.mode == 'cell']
-        else:
-            cell_keys = {}
-
-        fd.write('\nCELL_DATA %d\n' % n_el)
-
-        # cells - mat_id
-        fd.write('SCALARS mat_id int 1\nLOOKUP_TABLE default\n')
-        aux = nm.hstack(mat_ids).tolist()
-        fd.write(''.join(['%d\n' % ii for ii in aux]))
-
-        for key in cell_keys:
-            val = out[key]
-            ne, aux, nr, nc = val.data.shape
-
-            if (nr == 1) and (nc == 1):
-                fd.write('\nSCALARS %s float %d\n' % (key, nc))
-                fd.write('LOOKUP_TABLE default\n')
-                format = self.float_format + '\n'
-                aux = val.data.squeeze()
-                if len(aux.shape) == 0:
-                    fd.write(format % aux)
-                else:
-                    for row in aux:
-                        fd.write(format % row)
-
-            elif (nr == dim) and (nc == 1):
-                fd.write('\nVECTORS %s float\n' % key)
-                if dim == 2:
-                    aux = nm.hstack((val.data.squeeze(),
-                                     nm.zeros((ne, 1), dtype=nm.float64)))
-                else:
-                    aux = val.data
-
-                format = self.get_vector_format(3) + '\n'
-                for row in aux:
-                    fd.write(format % tuple(row.squeeze()))
-
-            elif (((nr == sym) or (nr == (dim * dim))) and (nc == 1)) \
-                     or ((nr == dim) and (nc == dim)):
-                fd.write('\nTENSORS %s float\n' % key)
-                data = val.data[:, 0, ...]
-                if data.shape[-1] == 1:
-                    data.shape = (data.shape[0], -1)
-                aux = _reshape_tensors(data, dim, sym, nr)
-                _write_tensors(aux)
-
-            else:
-                raise NotImplementedError(nr, nc)
-
-        fd.close()
-
-        # Mark the write finished.
-        fd = open(filename, 'r+')
-        fd.write('#')
-        fd.close()
+        meshiolib.write_points_cells(filename, coors, cells,
+                                     point_data=point_data,
+                                     point_sets=point_sets,
+                                     cell_data=cell_data,
+                                     cell_sets=cell_sets,
+                                     file_format=self.file_format)
 
     def read_data(self, step, filename=None, cache=None):
-        filename = get_default(filename, self.filename)
+        m = meshiolib.read(self.filename, file_format=self.file_format)
+        dim = self._get_dimension(m.points)
+
+        def _fix_shape(data):
+            if data.ndim == 2:
+                data = data[:, :dim]
+
+            elif data.ndim == 3:
+                data = data[:, None, ...]
+
+            return data
 
         out = {}
+        for key, data in m.point_data.items():
+            aux = _fix_shape(data).astype(nm.float64)
+            out[key] = Struct(name=key, mode='vertex', data=aux)
 
-        dim, fd = self.read_dimension(ret_fd=True)
-
-        while 1:
-            line = skip_read_line(fd, no_eof=True).split()
-            if line[0] == 'POINT_DATA':
-                break
-
-        num = int(line[1])
-        mode = 'vertex'
-
-        while 1:
-            line = skip_read_line(fd)
-            if not line:
-                break
-
-            line = line.split()
-
-            if line[0] == 'SCALARS':
-                name, dtype, nc = line[1:]
-                assert_(int(nc) == 1)
-                fd.readline() # skip lookup table line
-
-                data = nm.empty((num,), dtype=nm.float64)
-                for ii in range(num):
-                    data[ii] = float(fd.readline())
-
-                out[name] = Struct(name=name, mode=mode, data=data,
-                                   dofs=None)
-
-            elif line[0] == 'VECTORS':
-                name, dtype = line[1:]
-
-                data = nm.empty((num, dim), dtype=nm.float64)
-                for ii in range(num):
-                    data[ii] = [float(val)
-                                for val in fd.readline().split()][:dim]
-
-                out[name] = Struct(name=name, mode=mode, data=data,
-                                   dofs=None)
-
-            elif line[0] == 'TENSORS':
-                name, dtype = line[1:]
-
-                data3 = nm.empty((3 * num, 3), dtype=nm.float64)
-                ii = 0
-                while ii < 3 * num:
-                    aux = [float(val) for val in fd.readline().split()]
-                    if not len(aux): continue
-
-                    data3[ii] = aux
-                    ii += 1
-
-                data = data3.reshape((-1, 1, 3, 3))[..., :dim, :dim]
-                out[name] = Struct(name=name, mode=mode, data=data,
-                                   dofs=None)
-
-            elif line[0] == 'CELL_DATA':
-                num = int(line[1])
-                mode = 'cell'
-
-            else:
-                line = fd.readline()
-
-        fd.close()
+        for key, data in m.cell_data.items():
+            aux = _fix_shape(data[0]).astype(nm.float64)
+            out[key] = Struct(name=key, mode='cell', data=aux)
 
         return out
-
-class TetgenMeshIO(MeshIO):
-    format = "tetgen"
-
-    def read(self, mesh, **kwargs):
-        import os
-        fname = os.path.splitext(self.filename)[0]
-        nodes = self.getnodes(fname+".node")
-        etype, elements, regions = self.getele(fname+".ele")
-        descs = []
-        conns = []
-        mat_ids = []
-        elements = nm.array(elements, dtype=nm.int32) - 1
-        for key, value in six.iteritems(regions):
-            descs.append(etype)
-            mat_ids.append(nm.ones_like(value) * key)
-            conns.append(elements[nm.array(value)-1].copy())
-
-        mesh._set_io_data(nodes, None, conns, mat_ids, descs)
-        return mesh
-
-    @staticmethod
-    def getnodes(fnods):
-        """
-        Reads t.1.nodes, returns a list of nodes.
-
-        Example:
-
-        >>> self.getnodes("t.1.node")
-        [(0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (0.0, 4.0, 0.0), (-4.0, 0.0, 0.0),
-        (0.0, 0.0, 4.0), (0.0, -4.0, 0.0), (0.0, -0.0, -4.0), (-2.0, 0.0,
-        -2.0), (-2.0, 2.0, 0.0), (0.0, 2.0, -2.0), (0.0, -2.0, -2.0), (2.0,
-        0.0, -2.0), (2.0, 2.0, 0.0), ... ]
-
-        """
-        f = open(fnods)
-        l = [int(x) for x in f.readline().split()]
-        npoints, dim, nattrib, nbound = l
-        if dim == 2:
-            ndapp = [0.0]
-        else:
-            ndapp = []
-
-        nodes = []
-        for line in f:
-            if line[0] == "#": continue
-            l = [float(x) for x in line.split()]
-            l = l[:(dim + 1)]
-            assert_(int(l[0]) == len(nodes)+1)
-            l = l[1:]
-            nodes.append(tuple(l + ndapp))
-        assert_(npoints == len(nodes))
-        return nodes
-
-    @staticmethod
-    def getele(fele):
-        """
-        Reads t.1.ele, returns a list of elements.
-
-        Example:
-
-        >>> elements, regions = self.getele("t.1.ele")
-        >>> elements
-        [(20, 154, 122, 258), (86, 186, 134, 238), (15, 309, 170, 310), (146,
-        229, 145, 285), (206, 207, 125, 211), (99, 193, 39, 194), (185, 197,
-        158, 225), (53, 76, 74, 6), (19, 138, 129, 313), (23, 60, 47, 96),
-        (119, 321, 1, 329), (188, 296, 122, 322), (30, 255, 177, 256), ...]
-        >>> regions
-        {100: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
-        37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-        55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 7, ...],
-        ...}
-
-        """
-        f = open(fele)
-        l = [int(x) for x in f.readline().split()]
-        ntetra,nnod,nattrib = l
-        #we have either linear or quadratic tetrahedra:
-        elem = None
-        if nnod in [4,10]:
-            elem = '3_4'
-            linear = (nnod == 4)
-        if nnod in [3, 7]:
-            elem = '2_3'
-            linear = (nnod == 3)
-        if elem is None or not linear:
-            raise ValueError("Only linear triangle and tetrahedra reader"
-                             " is implemented")
-
-        els = []
-        regions = {}
-        for line in f:
-            if line[0] == "#": continue
-            l = [int(x) for x in line.split()]
-            if elem == '2_3':
-                assert_((len(l) - 1 - nattrib) == 3)
-                els.append((l[1],l[2],l[3]))
-            if elem == '3_4':
-                assert_((len(l) - 1 - nattrib) == 4)
-                els.append((l[1],l[2],l[3],l[4]))
-            if nattrib == 1:
-                regionnum = l[-1]
-            else:
-                regionnum = 1
-
-            if regionnum == 0:
-                msg = "see %s, element # %d\n"%(fele,l[0])
-                msg += "there are elements not belonging to any physical entity"
-                raise ValueError(msg)
-
-            if regionnum in regions:
-                regions[regionnum].append(l[0])
-            else:
-                regions[regionnum]=[l[0]]
-            assert_(l[0] == len(els))
-
-        return elem, els, regions
-
-    def write(self, filename, mesh, out=None, **kwargs):
-        raise NotImplementedError
-
-    def read_dimension(self):
-        # TetGen only supports 3D mesh
-        return 3
-
-    def read_bounding_box(self):
-        raise NotImplementedError
 
 class ComsolMeshIO(MeshIO):
     format = 'comsol'
@@ -1118,7 +551,7 @@ class ComsolMeshIO(MeshIO):
                     if is_conn:
                         self._skip_comment()
                         mat_id = read_array(fd, n_domain, 1, nm.int32)
-                        mat_ids.append(mat_id)
+                        mat_ids.append(mat_id.squeeze())
                     else:
                         for ii in range(n_domain):
                             skip_read_line(fd)
@@ -1229,6 +662,7 @@ class ComsolMeshIO(MeshIO):
             for key, val in six.iteritems(out):
                 raise NotImplementedError
 
+
 class HDF5MeshIO(MeshIO):
     format = "hdf5"
 
@@ -1308,7 +742,7 @@ class HDF5MeshIO(MeshIO):
         return mesh
 
     @staticmethod
-    def write_mesh_to_hdf5(filename, group, mesh):
+    def write_mesh_to_hdf5(filename, group, mesh, force_3d=False):
         """
         Write mesh to a hdf5 file.
 
@@ -1328,7 +762,8 @@ class HDF5MeshIO(MeshIO):
                 group = get_or_create_hdf5_group(fd, group)
 
             coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
-
+            if force_3d and coors.shape[1] == 2:
+                coors = nm.hstack([coors, nm.zeros((len(coors), 1))])
             fd.create_array(group, 'name', enc(mesh.name), 'name')
             fd.create_array(group, 'coors', coors, 'coors')
             fd.create_array(group, 'ngroups', ngroups, 'ngroups')
@@ -1394,7 +829,148 @@ class HDF5MeshIO(MeshIO):
     def read(self, mesh=None, **kwargs):
         return self.read_mesh_from_hdf5(self.filename, '/mesh', mesh=mesh)
 
-    def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
+    @staticmethod
+    def write_xdmf_file(filename, **kwargs):
+        def get_path(node):
+            _, fname = op.split(filename)
+            return '%s:%s' % (fname, node._v_pathname)
+
+        def get_data_dim(shape):
+            if len(shape) == 4:
+               return shape[2]
+            if len(shape) == 2:
+               return shape[1]
+            else:
+               return 1
+
+        def data_item(data):
+            dtype = data.dtype
+            if nm.issubdtype(dtype, nm.integer):
+                data_type = 'Int'
+            elif nm.issubdtype(dtype, nm.floating):
+                data_type = 'Float'
+            else:
+                raise ValueError('wrong data type! (%s)' % dtype)
+
+            dim = get_data_dim(data.shape)
+            sh = (data.shape[0], dim)
+            ditem = et.Element('DataItem',
+                               attrib={'DataType': data_type,
+                                       'Dimensions': '%d %d' % sh,
+                                       'Format': 'HDF',
+                                       'Precision': str(dtype.itemsize)})
+            ditem.text = get_path(data)
+
+            return ditem
+
+        def attr_item(data, center=None, name=None):
+            if isinstance(data, pt.Group):
+                if center is None and 'mode' in data:
+                    mode = data.mode.read().decode('ascii')
+                    if mode == 'custom':
+                        return None
+                    center = {'vertex': 'Node',
+                              'cell': 'Cell'}[mode]
+                if name is None and 'dname' in data:
+                    name = data.dname.read().decode('ascii').lstrip('_')
+                data = data.data
+
+            dim = get_data_dim(data.shape)
+            atype = {1: 'Scalar', 3: 'Vector', 6: 'Tensor6', 9: 'Tensor'}[dim]
+
+            aitem = et.Element('Attribute',
+                               attrib={'AttributeType': atype,
+                                       'Center': center,
+                                       'Name': name})
+            aitem.append(data_item(data))
+
+            return aitem
+
+        import xml.etree.ElementTree as et
+        from xml.dom import minidom
+
+        topology_table = {
+            '2_2': 'Line',
+            '3_2': 'Line',
+            '2_3': 'Triangle',
+            '2_4': 'Quadrilateral',
+            '3_4': 'Tetrahedron',
+            '3_8': 'Hexahedron',
+        }
+
+        et_root = et.Element('Xdmf', attrib={'Version': '3.0'})
+        if 'extra_data' in kwargs:
+            for k, v in kwargs['extra_data'].items():
+                d = et.SubElement(et_root, 'Information', attrib={'Name': k})
+                d.text = str(v)
+
+        et_domain = et.SubElement(et_root, 'Domain')
+
+        with HDF5ContextManager(filename, mode='r') as fd:
+            root = fd.root
+            mesh = root.mesh
+            name = mesh.name.read().decode('ascii')
+            et_mesh = []
+            geom = et.Element('Geometry', attrib={'GeometryType': 'XYZ'})
+            geom.append(data_item(mesh.coors))
+            et_mesh.append(geom)
+            et_mesh.append(attr_item(mesh.ngroups, 'Node', 'node_groups'))
+
+            n_gr = mesh.n_gr.read()
+            for ig in range(n_gr):
+                gr_name = 'group%d' % ig
+                conn_group = mesh._f_get_child(gr_name)
+                nc, nnd = conn_group.conn.shape
+                ttype = topology_table[dec(conn_group.desc.read())]
+                et_conn = et.Element('Topology',
+                                     attrib={'NumberOfElements': str(nc),
+                                             'TopologyType': ttype})
+                et_conn.append(data_item(conn_group.conn))
+                et_mesh.append(et_conn)
+                et_mesh.append(attr_item(conn_group.mat_id, 'Cell', 'mat_id'))
+
+            steps = [k for k in root if k._v_name.startswith('step')]
+            et_ts = et.SubElement(et_domain, 'Grid',
+                                    attrib={'Name': 'TimeSeries',
+                                            'GridType': 'Collection',
+                                            'CollectionType': 'Temporal'})
+
+            for step in steps:
+                istep = int(step._v_name[4:])
+                et_grid = et.SubElement(et_ts, 'Grid',
+                                        attrib={'Name': 'grid%d' % istep,
+                                                'GridType': 'Uniform'})
+                et.SubElement(et_grid, 'Time', attrib={'Value': '%d' % istep})
+                et_grid.extend(et_mesh)
+
+                for val in filter(lambda x: x._v_name.startswith('__'), step):
+                    aitem = attr_item(val)
+                    if aitem is not None:
+                        et_grid.append(aitem)
+
+        out = minidom.parseString(et.tostring(et_root)).toprettyxml(indent="  ")
+        xdmf_filename = op.splitext(filename)[0] + '.xdmf'
+        with open(xdmf_filename, 'w') as f:
+            f.write(out[(out.find('\n') + 1):])
+
+    def write(self, filename, mesh, out=None, ts=None, cache=None,
+              xdmf=False, **kwargs):
+        def expand_data_3d(data):
+            expand_tab = {
+                2: (3, [0, 1]),
+                3: (6, [0, 1, 3]),
+                4: (9, [0, 1, 3, 4]),
+            }
+
+            n, dim = data.shape
+            if dim in expand_tab:
+                dim3, order = expand_tab[dim]
+                out = nm.zeros((n, dim3), dtype=data.dtype)
+                out[:, order] = data
+                return out
+            else:
+                return data
+
         from time import asctime
 
         if pt is None:
@@ -1406,7 +982,7 @@ class HDF5MeshIO(MeshIO):
             with pt.open_file(filename, mode="w",
                               title="SfePy output file") as fd:
                 mesh_group = fd.create_group('/', 'mesh', 'mesh')
-                self.write_mesh_to_hdf5(fd, mesh_group, mesh)
+                self.write_mesh_to_hdf5(fd, mesh_group, mesh, force_3d=xdmf)
 
                 if ts is not None:
                     ts_group = fd.create_group('/', 'ts', 'time stepper')
@@ -1450,6 +1026,11 @@ class HDF5MeshIO(MeshIO):
 
             name_dict = {}
             for key, val in six.iteritems(out):
+                if xdmf and mesh.coors.shape[1] == 2:
+                    data = expand_data_3d(val.data)
+                else:
+                    data = val.data
+
                 group_name = '__' + key.translate(self._tr)
                 data_group = fd.create_group(step_group, group_name,
                                              '%s data' % key)
@@ -1458,19 +1039,19 @@ class HDF5MeshIO(MeshIO):
                 name = val.get('name', 'output_data')
                 fd.create_array(data_group, 'name', enc(name), 'object name')
                 if val.mode == 'custom':
-                    write_to_hdf5(fd, data_group, 'data', val.data,
+                    write_to_hdf5(fd, data_group, 'data', data,
                                   cache=cache,
                                   unpack_markers=getattr(val, 'unpack_markers',
                                                          False))
                     continue
 
-                shape = val.get('shape', val.data.shape)
+                shape = val.get('shape', data.shape)
                 dofs = val.get('dofs', None)
                 if dofs is None:
                     dofs = [''] * nm.squeeze(shape)[-1]
                 var_name = val.get('var_name', '')
 
-                fd.create_array(data_group, 'data', val.data, 'data')
+                fd.create_array(data_group, 'data', data, 'data')
                 fd.create_array(data_group, 'dofs', [enc(ic) for ic in dofs],
                                 'dofs')
                 fd.create_array(data_group, 'shape', shape, 'shape')
@@ -1489,6 +1070,9 @@ class HDF5MeshIO(MeshIO):
             fd.create_array(fd.root.tstat, 'finished', enc(asctime()),
                             'file closing time')
             fd.close()
+
+        if xdmf:
+            self.write_xdmf_file(filename, **kwargs)
 
     def read_last_step(self, filename=None):
         filename = get_default(filename, self.filename)
@@ -1674,91 +1258,14 @@ class HDF5MeshIO(MeshIO):
 
         return ths
 
-class MEDMeshIO(MeshIO):
-    format = "med"
 
-    def read(self, mesh, **kwargs):
-        fd = pt.open_file(self.filename, mode="r")
+class HDF5XdmfMeshIO(HDF5MeshIO):
+    format="hdf5-xdmf"
 
-        mesh_root = fd.root.ENS_MAA
+    def write(self, filename, mesh, out=None, ts=None, cache=None, **kwargs):
+        HDF5MeshIO.write(self, filename, mesh, out=out, ts=ts, cache=cache,
+                         xdmf=True, **kwargs)
 
-        #TODO: Loop through multiple meshes?
-        mesh_group = mesh_root._f_get_child(list(mesh_root._v_groups.keys())[0])
-
-        if not ('NOE' in list(mesh_group._v_groups.keys())):
-            mesh_group = mesh_group._f_get_child(list(mesh_group._v_groups.keys())[0])
-
-        mesh.name = mesh_group._v_name
-
-        aux_coors = mesh_group.NOE.COO.read()
-        n_nodes = mesh_group.NOE.COO.get_attr('NBR')
-
-        # Unflatten the node coordinate array
-        dim = aux_coors.shape[0] // n_nodes
-        coors = nm.zeros((n_nodes,dim), dtype=nm.float64)
-        for ii in range(dim):
-            coors[:,ii] = aux_coors[n_nodes*ii:n_nodes*(ii+1)]
-
-        ngroups = mesh_group.NOE.FAM.read()
-        assert_((ngroups >= 0).all())
-
-        # Dict to map MED element names to SfePy descs
-        #NOTE: The commented lines are elements which
-        #      produce KeyError in SfePy
-        med_descs = {
-                      'TE4' : '3_4',
-                      #'T10' : '3_10',
-                      #'PY5' : '3_5',
-                      #'P13' : '3_13',
-                      'HE8' : '3_8',
-                      #'H20' : '3_20',
-                      #'PE6' : '3_6',
-                      #'P15' : '3_15',
-                      #TODO: Polyhedrons (POE) - need special handling
-                      'TR3' : '2_3',
-                      #'TR6' : '2_6',
-                      'QU4' : '2_4',
-                      #'QU8' : '2_8',
-                      #TODO: Polygons (POG) - need special handling
-                      #'SE2' : '1_2',
-                      #'SE3' : '1_3',
-                    }
-
-        conns = []
-        descs = []
-        mat_ids = []
-
-        for md, desc in six.iteritems(med_descs):
-            if int(desc[0]) != dim: continue
-
-            try:
-                group = mesh_group.MAI._f_get_child(md)
-
-                aux_conn = group.NOD.read()
-                n_conns = group.NOD.get_attr('NBR')
-
-                # (0 based indexing in numpy vs. 1 based in MED)
-                nne = aux_conn.shape[0] // n_conns
-                conn = nm.zeros((n_conns,nne), dtype=nm.int32)
-                for ii in range(nne):
-                    conn[:,ii] = aux_conn[n_conns*ii:n_conns*(ii+1)] - 1
-
-                conns.append(conn)
-
-                mat_id = group.FAM.read()
-                assert_((mat_id <= 0).all())
-                mat_id = nm.abs(mat_id)
-
-                mat_ids.append(mat_id)
-                descs.append(med_descs[md])
-
-            except pt.exceptions.NoSuchNodeError:
-                pass
-
-        fd.close()
-        mesh._set_io_data(coors, ngroups, conns, mat_ids, descs)
-
-        return mesh
 
 class Mesh3DMeshIO(MeshIO):
     format = "mesh3d"
@@ -1869,57 +1376,6 @@ def mesh_from_groups(mesh, ids, coors, ngroups,
     mesh._set_io_data(coors, ngroups, conns, mat_ids, descs)
     return mesh
 
-class AVSUCDMeshIO(MeshIO):
-    format = 'avs_ucd'
-
-    @staticmethod
-    def guess(filename):
-        return True
-
-    def read(self, mesh, **kwargs):
-        fd = open(self.filename, 'r')
-
-        # Skip all comments.
-        while 1:
-            line = fd.readline()
-            if line and (line[0] != '#'):
-                break
-
-        header = [int(ii) for ii in line.split()]
-        n_nod, n_el = header[0:2]
-
-        ids = nm.zeros((n_nod,), dtype=nm.int32)
-        dim = 3
-        coors = nm.zeros((n_nod, dim), dtype=nm.float64)
-        for ii in range(n_nod):
-            line = fd.readline().split()
-            ids[ii] = int(line[0])
-            coors[ii] = [float(coor) for coor in line[1:]]
-
-        mat_tetras = []
-        tetras = []
-        mat_hexas = []
-        hexas = []
-        for ii in range(n_el):
-            line = fd.readline().split()
-            if line[2] == 'tet':
-                mat_tetras.append(int(line[1]))
-                tetras.append([int(ic) for ic in line[3:]])
-            elif line[2] == 'hex':
-                mat_hexas.append(int(line[1]))
-                hexas.append([int(ic) for ic in line[3:]])
-        fd.close()
-
-        mesh = mesh_from_groups(mesh, ids, coors, None,
-                                [], [], [], [],
-                                tetras, mat_tetras, hexas, mat_hexas)
-        return mesh
-
-    def read_dimension(self):
-        return 3
-
-    def write(self, filename, mesh, out=None, **kwargs):
-        raise NotImplementedError
 
 class HypermeshAsciiMeshIO(MeshIO):
     format = 'hmascii'
@@ -1982,367 +1438,6 @@ class HypermeshAsciiMeshIO(MeshIO):
     def write(self, filename, mesh, out=None, **kwargs):
         raise NotImplementedError
 
-class AbaqusMeshIO(MeshIO):
-    format = 'abaqus'
-
-    @staticmethod
-    def guess(filename):
-        ok = False
-        fd = open(filename, 'r')
-        for ii in range(100):
-            try:
-                line = fd.readline().strip().split(',')
-            except:
-                break
-            if line[0].lower() == '*node':
-                ok = True
-                break
-        fd.close()
-
-        return ok
-
-    def read(self, mesh, **kwargs):
-        fd = open(self.filename, 'r')
-
-        ids = []
-        coors = []
-        tetras = []
-        mat_tetras = []
-        hexas = []
-        mat_hexas = []
-        tris = []
-        mat_tris = []
-        quads = []
-        mat_quads = []
-        nsets = {}
-        ing = 1
-        dim = 0
-
-        line = fd.readline().split(',')
-        while 1:
-            if not line[0]: break
-
-            token = line[0].strip().lower()
-            if token == '*node':
-                while 1:
-                    line = fd.readline().split(',')
-                    if (not line[0]) or (line[0][0] == '*'): break
-                    if dim == 0:
-                        dim = len(line) - 1
-                    ids.append(int(line[0]))
-                    if dim == 2:
-                        coors.append([float(coor) for coor in line[1:3]])
-                    else:
-                        coors.append([float(coor) for coor in line[1:4]])
-
-            elif token == '*element':
-
-                if line[1].find('C3D8') >= 0:
-                    while 1:
-                        line = fd.readline().split(',')
-                        if (not line[0]) or (line[0][0] == '*'): break
-                        mat_hexas.append(0)
-                        hexas.append([int(ic) for ic in line[1:9]])
-
-                elif line[1].find('C3D4') >= 0:
-                    while 1:
-                        line = fd.readline().split(',')
-                        if (not line[0]) or (line[0][0] == '*'): break
-                        mat_tetras.append(0)
-                        tetras.append([int(ic) for ic in line[1:5]])
-
-                elif (
-                        line[1].find('CPS') >= 0
-                        or line[1].find('CPE') >= 0
-                        or line[1].find('CAX') >= 0
-                ):
-                    if line[1].find('4') >= 0:
-                        while 1:
-                            line = fd.readline().split(',')
-                            if (not line[0]) or (line[0][0] == '*'): break
-                            mat_quads.append(0)
-                            quads.append([int(ic) for ic in line[1:5]])
-                    elif line[1].find('3') >= 0:
-                        while 1:
-                            line = fd.readline().split(',')
-                            if (not line[0]) or (line[0][0] == '*'): break
-                            mat_tris.append(0)
-                            tris.append([int(ic) for ic in line[1:4]])
-                    else:
-                        raise ValueError('unknown element type! (%s)' % line[1])
-                else:
-                    raise ValueError('unknown element type! (%s)' % line[1])
-
-            elif token == '*nset':
-
-                if line[-1].strip().lower() == 'generate':
-                    line = fd.readline()
-                    continue
-
-                while 1:
-                    line = fd.readline().strip().split(',')
-                    if (not line[0]) or (line[0][0] == '*'): break
-                    if not line[-1]: line = line[:-1]
-                    aux = [int(ic) for ic in line]
-                    nsets.setdefault(ing, []).extend(aux)
-                ing += 1
-
-            else:
-                line = fd.readline().split(',')
-
-        fd.close()
-
-        ngroups = nm.zeros((len(coors),), dtype=nm.int32)
-        for ing, ii in six.iteritems(nsets):
-            ngroups[nm.array(ii)-1] = ing
-
-        mesh = mesh_from_groups(mesh, ids, coors, ngroups,
-                                tris, mat_tris, quads, mat_quads,
-                                tetras, mat_tetras, hexas, mat_hexas)
-
-        return mesh
-
-    def read_dimension(self):
-        fd = open(self.filename, 'r')
-        line = fd.readline().split(',')
-        while 1:
-            if not line[0]: break
-
-            token = line[0].strip().lower()
-            if token == '*node':
-                while 1:
-                    line = fd.readline().split(',')
-                    if (not line[0]) or (line[0][0] == '*'): break
-                    dim = len(line) - 1
-
-        fd.close()
-        return dim
-
-    def write(self, filename, mesh, out=None, **kwargs):
-        raise NotImplementedError
-
-class BDFMeshIO(MeshIO):
-    format = 'nastran'
-
-    def read_dimension(self, ret_fd=False):
-        fd = open(self.filename, 'r')
-        el3d = 0
-        while 1:
-            try:
-                line = fd.readline()
-            except:
-                output("reading " + fd.name + " failed!")
-                raise
-            if len(line) == 1: continue
-            if line[0] == '$': continue
-            aux = line.split()
-
-            if aux[0] == 'CHEXA':
-                el3d += 1
-            elif aux[0] == 'CTETRA':
-                el3d += 1
-
-        if el3d > 0:
-            dim = 3
-        else:
-            dim = 2
-
-        if ret_fd:
-            return dim, fd
-        else:
-            fd.close()
-            return dim
-
-    def read(self, mesh, **kwargs):
-        def mfloat(s):
-            if len(s) > 3:
-                if s[-3] == '-':
-                    return float(s[:-3]+'e'+s[-3:])
-
-            return float(s)
-
-        import string
-        fd = open(self.filename, 'r')
-
-        el = {'3_8' : [], '3_4' : [], '2_4' : [], '2_3' : []}
-        nod = []
-        cmd = ''
-        dim = 2
-
-        conns_in = []
-        descs = []
-        node_grp = None
-        while 1:
-            try:
-                line = fd.readline()
-            except EOFError:
-                break
-            except:
-                output("reading " + fd.name + " failed!")
-                raise
-
-            if (len(line) == 0): break
-            if len(line) < 4: continue
-            if line[0] == '$': continue
-
-            row = line.strip().split()
-            if row[0] == 'GRID':
-                cs = line.strip()[-24:]
-                aux = [ cs[0:8], cs[8:16], cs[16:24] ]
-                nod.append([mfloat(ii) for ii in aux]);
-            elif row[0] == 'GRID*':
-                aux = row[1:4];
-                cmd = 'GRIDX';
-            elif row[0] == 'CHEXA':
-                aux = [int(ii)-1 for ii in row[3:9]]
-                aux2 = int(row[2])
-                aux3 = row[9]
-                cmd ='CHEXAX'
-            elif row[0] == 'CTETRA':
-                aux = [int(ii)-1 for ii in row[3:]]
-                aux.append(int(row[2]))
-                el['3_4'].append(aux)
-                dim = 3
-            elif row[0] == 'CQUAD4':
-                aux = [int(ii)-1 for ii in row[3:]]
-                aux.append(int(row[2]))
-                el['2_4'].append(aux)
-            elif row[0] == 'CTRIA3':
-                aux = [int(ii)-1 for ii in row[3:]]
-                aux.append(int(row[2]))
-                el['2_3'].append(aux)
-            elif cmd == 'GRIDX':
-                cmd = ''
-                aux2 = row[1]
-                if aux2[-1] == '0':
-                    aux2 = aux2[:-1]
-                    aux3 = aux[1:]
-                    aux3.append(aux2)
-                    nod.append([float(ii) for ii in aux3]);
-            elif cmd == 'CHEXAX':
-                cmd = ''
-                aux4 = row[0]
-                aux5 = aux4.find(aux3)
-                aux.append(int(aux4[(aux5+len(aux3)):])-1)
-                aux.extend([int(ii)-1 for ii in row[1:]])
-                aux.append(aux2)
-                el['3_8'].append(aux)
-                dim = 3
-
-            elif row[0] == 'SPC' or row[0] == 'SPC*':
-                if node_grp is None:
-                    node_grp = [0] * len(nod)
-
-                node_grp[int(row[2]) - 1] = int(row[1])
-
-        for elem in el.keys():
-            if len(el[elem]) > 0:
-                conns_in.append(el[elem])
-                descs.append(elem)
-
-        fd.close()
-
-        nod = nm.array(nod, nm.float64)
-        if dim == 2:
-            nod = nod[:,:2].copy()
-
-        conns, mat_ids = split_conns_mat_ids(conns_in)
-        mesh._set_io_data(nod, node_grp, conns, mat_ids, descs)
-
-        return mesh
-
-    @staticmethod
-    def format_str(str, idx, n=8):
-        out = ''
-        for ii, istr in enumerate(str):
-            aux = '%d' % istr
-            out += aux + ' ' * (n - len(aux))
-            if ii == 7:
-                out += '+%07d\n+%07d' % (idx, idx)
-
-        return out
-
-    def write(self, filename, mesh, out=None, **kwargs):
-        fd = open(filename, 'w')
-
-        coors, ngroups, conns, mat_ids, desc = mesh._get_io_data()
-
-        n_nod, dim = coors.shape
-
-        fd.write("$NASTRAN Bulk Data File created by SfePy\n")
-        fd.write("$\nBEGIN BULK\n")
-
-        fd.write("$\n$ ELEMENT CONNECTIVITY\n$\n")
-        iel = 0
-        mats = {}
-        for ig, conn in enumerate(conns):
-            ids = mat_ids[ig]
-            for ii in range(conn.shape[0]):
-                iel += 1
-                nn = conn[ii] + 1
-                mat = ids[ii]
-                if mat in mats:
-                    mats[mat] += 1
-                else:
-                    mats[mat] = 0
-
-                if (desc[ig] == "2_4"):
-                    fd.write("CQUAD4  %s\n" %\
-                             self.format_str([ii + 1, mat,
-                                              nn[0], nn[1], nn[2], nn[3]],
-                                             iel))
-                elif (desc[ig] == "2_3"):
-                    fd.write("CTRIA3  %s\n" %\
-                             self.format_str([ii + 1, mat,
-                                              nn[0], nn[1], nn[2]], iel))
-                elif (desc[ig] == "3_4"):
-                    fd.write("CTETRA  %s\n" %\
-                             self.format_str([ii + 1, mat,
-                                              nn[0], nn[1], nn[2], nn[3]],
-                                             iel))
-                elif (desc[ig] == "3_8"):
-                    fd.write("CHEXA   %s\n" %\
-                             self.format_str([ii + 1, mat, nn[0], nn[1], nn[2],
-                                              nn[3], nn[4], nn[5], nn[6],
-                                              nn[7]], iel))
-                else:
-                    raise ValueError('unknown element type! (%s)' % desc[ig])
-
-        fd.write("$\n$ NODAL COORDINATES\n$\n")
-        format = 'GRID*   %s                           % 08E   % 08E\n'
-        if coors.shape[1] == 3:
-            format += '*          % 08E0               \n'
-        else:
-            format += '*          % 08E0               \n' % 0.0
-        for ii in range(n_nod):
-            sii = str(ii + 1)
-            fd.write(format % ((sii + ' ' * (8 - len(sii)),)
-                               + tuple(coors[ii])))
-
-        fd.write("$\n$ GEOMETRY\n$\n1                                   ")
-        fd.write("0.000000E+00    0.000000E+00\n")
-        fd.write("*           0.000000E+00    0.000000E+00\n*       \n")
-
-        fd.write("$\n$ MATERIALS\n$\n")
-        matkeys = list(mats.keys())
-        matkeys.sort()
-        for ii, imat in enumerate(matkeys):
-            fd.write("$ material%d : Isotropic\n" % imat)
-            aux = str(imat)
-            fd.write("MAT1*   %s            " % (aux + ' ' * (8 - len(aux))))
-            fd.write("0.000000E+00                    0.000000E+00\n")
-            fd.write("*           0.000000E+00    0.000000E+00\n")
-
-        fd.write("$\n$ GEOMETRY\n$\n")
-        for ii, imat in enumerate(matkeys):
-            fd.write("$ material%d : solid%d\n" % (imat, imat))
-            fd.write("PSOLID* %s\n" % self.format_str([ii + 1, imat], 0, 16))
-            fd.write("*       \n")
-
-        fd.write("ENDDATA\n")
-
-        fd.close()
-
 
 class NEUMeshIO(MeshIO):
     format = 'gambit'
@@ -2359,7 +1454,7 @@ class NEUMeshIO(MeshIO):
             if (row[0] == 'NUMNP'):
                 row = fd.readline().split()
                 n_nod, n_el, dim = row[0], row[1], int(row[4])
-                break;
+                break
 
         if ret_fd:
             return dim, fd
@@ -2510,9 +1605,9 @@ class ANSYSCDBMeshIO(MeshIO):
 
     @staticmethod
     def make_format(format, nchar=1000):
-        idx = [];
-        dtype = [];
-        start = 0;
+        idx = []
+        dtype = []
+        start = 0
 
         for iform in format:
             ret = iform.partition('i')
@@ -2716,505 +1811,6 @@ class ANSYSCDBMeshIO(MeshIO):
 
         return mesh
 
-
-class Msh2MeshIO(MeshIO):
-    """
-    Used to read and write data from .msh format used by GMSH, format 2.0 is
-    currently partially supported allowing: mesh and ElementNodeData with
-    InterpolationScheme to be written and read.
-
-    For details on format see [1].
-
-    For details on representing and visualization of DG FEM data using gmsh see
-    [2].
-
-    [1] http://gmsh.info/doc/texinfo/gmsh.html#File-formats
-
-    [2] Remacle, J.-F., Chevaugeon, N., Marchandise, E., & Geuzaine, C. (2007).
-    Efficient visualization of high-order finite elements. International Journal
-    for Numerical Methods in Engineering, 69(4), 750-771.
-    https://doi.org/10.1002/nme.1787
-
-    Attributes
-    ----------
-    msh20header :
-        Header containing version number.
-    msh_cells : dictionary
-        Mapping from msh to sfepy geometry.
-    geo2msh_type : dictionary
-        Mapping from sfepy to msh geometry.
-    """
-    format = 'msh_v2'
-
-    load_slices = {"all" : slice(0, None),
-                    "first": slice(0, 1),
-                    "last": slice(-1, None)}
-
-    msh_cells = {
-        1: (2, 2),
-        2: (2, 3),
-        3: (2, 4),
-        4: (3, 4),
-        5: (3, 8),
-        6: (3, 6),
-    }
-
-    geo2msh_type = {
-        "1_2" : 1, # ? but we will probably not need this
-        "2_3" : 2,
-        "2_4" : 3,
-        "3_4" : 4,
-        "3_8" : 5
-    }
-
-    prism2hexa = nm.asarray([0, 1, 2, 2, 3, 4, 5, 5])
-
-    msh20header = ["$MeshFormat\n",
-                   "2.0 0 8\n"
-                   "$EndMeshFormat\n"]
-
-    def get_filename_format(self, filename):
-        try:
-            basename, step_num, extension = filename.split(".")
-        except ValueError:
-            raise ValueError("Filename of automatically loaded GMSH data must be:"
-                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
-        n_digits = len(step_num)
-        return basename + ".{:0"+str(n_digits)+"d}." + extension
-
-    def get_filename_wildcard(self, filename):
-        try:
-            basename, step_num, extension = filename.split(".")
-        except ValueError:
-            raise ValueError("Filename of automatically loaded GMSH data must be:"
-                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
-        return basename + ".*[0-9]." + extension
-
-    def read_dimension(self, ret_fd=True):
-        fd = open(self.filename, 'r')
-        while 1:
-            lastpos = fd.tell()
-            line = skip_read_line(fd).split()
-            if line[0] in ['$Nodes', '$Elements']:
-                num = int(read_token(fd))
-                coors = read_array(fd, num, 4, nm.float64)
-                fd.seek(lastpos)
-                if nm.sum(nm.abs(coors[:,3])) < 1e-16:
-                    dims = 2
-                else:
-                    dims = 3
-                break
-
-            if line[0] == '$PhysicalNames':
-                num = int(read_token(fd))
-                dims = []
-                for ii in range(num):
-                    dims.append(int(skip_read_line(fd, no_eof=True).split()[0]))
-
-                break
-
-        dim = nm.max(dims)
-        if ret_fd:
-            return dim, fd
-        else:
-            fd.close()
-            return dim
-
-    def read_bounding_box(self, ret_fd=False, ret_dim=False):
-        fd = open(self.filename, 'r')
-        dim, fd  = self.read_dimension(ret_fd=True)
-        return _read_bounding_box(fd, dim, '$Nodes',
-                                  c0=1, ret_fd=ret_fd, ret_dim=ret_dim)
-
-    def read(self, mesh, omit_facets=True, filename=None, drop_z=False, **kwargs):
-        """
-        Reads mesh from msh v2.0 file returns it and also fills mesh parameter.
-
-        Parameters
-        ----------
-        mesh : Mesh instance
-            Empty sfepy.discrete.fem.mesh.Mesh instance to fill.
-        omit_facets : bool
-            Not used.
-        filename : string, optional
-            Name of the file to use if None file from object is used.
-        drop_z : bool, optional, default False
-            Drop Z coordinate if zero and return 2D mesh, 2D meshes are stored
-            as 3D by msh.
-
-        Returns
-        -------
-        mesh : Mesh instance
-            Computational mesh.
-        """
-        filename = get_default(filename, self.filename)
-        fd = open(filename, 'r')
-
-        conns = []
-        descs = []
-        mat_ids = []
-        tags = []
-        dims = []
-
-        while 1:
-            line = skip_read_line(fd).split()
-            if not line:
-                break
-
-            ls = line[0]
-            if ls == '$MeshFormat':
-                skip_read_line(fd)
-            elif ls == '$PhysicalNames':
-                num = int(read_token(fd))
-                for ii in range(num):
-                    skip_read_line(fd)
-            elif ls == '$Nodes':
-                num = int(read_token(fd))
-                coors = read_array(fd, num, 4, nm.float64)
-
-            elif ls == '$Elements':
-                num = int(read_token(fd))
-                for ii in range(num):
-                    line = [int(jj) for jj in skip_read_line(fd).split()]
-                    if line[1] > 6:
-                        continue
-                    dimension, nc = self.msh_cells[line[1]]
-                    dims.append(dimension)
-                    ntag = line[2]
-                    mat_id = line[3]
-                    conn = line[(3 + ntag):]
-                    desc = '%d_%d' % (dimension, nc)
-                    if desc in descs:
-                        idx = descs.index(desc)
-                        conns[idx].append(conn)
-                        mat_ids[idx].append(mat_id)
-                        tags[idx].append(line[3:(3 + ntag)])
-                    else:
-                        descs.append(desc)
-                        conns.append([conn])
-                        mat_ids.append([mat_id])
-                        tags.append(line[3:(3 + ntag)])
-
-            elif ls == '$Periodic':
-                periodic = ''
-                while 1:
-                    pline = skip_read_line(fd)
-                    if '$EndPeriodic' in pline:
-                        break
-                    else:
-                        periodic += pline
-
-            elif line[0] == '#' or ls[:4] == '$End':
-                pass
-
-        fd.close()
-
-        dim = nm.max(dims)
-
-        if '2_2' in descs:
-            idx2 = descs.index('2_2')
-            descs.pop(idx2)
-            del(conns[idx2])
-            del(mat_ids[idx2])
-
-        if '3_6' in descs:
-            idx6 = descs.index('3_6')
-            c3_6as8 = nm.asarray(conns[idx6],
-                                 dtype=nm.int32)[:,self.prism2hexa]
-            if '3_8' in descs:
-                descs.pop(idx6)
-                c3_6m = nm.asarray(mat_ids.pop(idx6), type=nm.int32)
-                idx8 = descs.index('3_8')
-                c3_8 = nm.asarray(conns[idx8], type=nm.int32)
-                c3_8m = nm.asarray(mat_ids[idx8], type=nm.int32)
-                conns[idx8] = nm.vstack([c3_8, c3_6as8])
-                mat_ids[idx8] = nm.hstack([c3_8m, c3_6m])
-            else:
-                descs[idx6] = '3_8'
-                conns[idx6] = c3_6as8
-
-        descs0, mat_ids0, conns0 = [], [], []
-        for ii in range(len(descs)):
-            if int(descs[ii][0]) == dim:
-                conns0.append(nm.asarray(conns[ii], dtype=nm.int32) - 1)
-                mat_ids0.append(nm.asarray(mat_ids[ii], dtype=nm.int32))
-                descs0.append(descs[ii])
-
-        # drop third coordinate if zero to get pretty 2D mesh
-        if drop_z and nm.sum(coors[:, -1]) == 0.0:
-            coors = coors[:, :-1]
-
-        mesh._set_io_data(coors[:,1:], nm.int32(coors[:,-1] * 1),
-                          conns0, mat_ids0, descs0)
-
-        return mesh
-
-    def read_data(self, step=None, filename=None, cache=None, return_mesh=False,
-                  drop_z=True):
-        """
-        Reads file or files with basename filename or self.filename, returns
-        lists containing data. Considers all files to contain data from time
-        steps of solution of single transient problem i.e. all data have the
-        same shape, mesh and same interpolation scheme, if any. For stationary
-        problems just reads one file with time 0.0 and time step 0.
-
-        Providing basename allows reading multiple files of format
-        `basename.*[0-9].msh`
-
-        Parameters
-        ----------
-        step : String, int,  optional
-            "all", "last", "first" or number of step to read:
-            if "all" read all files with the basename varying step,
-            if "last" read only last step of all files with the filename,
-            if "first"
-            reads step=0,
-            if None reads file of filename provided or specified in object.
-        filename :string, optional
-            Basename of the files to use, if None file from object is used.
-        cache : object
-            Has no effect.
-        return_mesh : bool, optional, default True
-            Return mesh associated with data.
-
-        Returns
-        -------
-        mesh : sfepy.discrete.fem.mesh.Mesh
-            Computational mesh.
-        out : dictionary
-            The output dictionary. Its keys represent name of data, values are
-            Struct instances with the following attributes:
-              - data : array, contains ElementNodeData, shape is (len(time),
-                n_cell, n_cell_dof).
-              - time : array, contains times.
-              - time_n : array, contains time step numbers.
-              - scheme : Struct, interpolation scheme used in data, only one
-                interpolation scheme is allowed. See
-                :func:`Msh2MeshIO._write_interpolation_scheme()`.
-        """
-        filename = get_default(filename, self.filename)
-
-        out = {}
-
-        if step in ["all", "last", "first"]:
-            import glob
-            from os.path import join as pjoin
-            filename_wildcard = self.get_filename_wildcard(filename)
-            filenames = glob.glob(filename_wildcard)[self.load_slices[step]]
-
-            data = []
-            time = []
-            time_n = []
-
-            for filename in filenames:
-                name, fdata, ftime, ftime_n, scheme = self._read_data_file(filename=filename)
-                data += fdata
-                time += ftime
-                time_n += ftime_n
-
-        elif isinstance(step, int):
-            filename_format = self.get_filename_format(filename)
-            filename = filename_format.format(step)
-            try:
-                name, data, time, time_n, scheme = self._read_data_file(filename=filename)
-            except FileNotFoundError as e:
-                raise FileNotFoundError(str(e) +  " Maybe time step {} is not in output.".format(step))
-        elif step is None:
-            name, data, time, time_n, scheme = self._read_data_file(filename=filename)
-        else:
-            raise ValueError("Unsupported vaule for step : {}".format(step))
-
-        out[name] = Struct(name=name,
-                           data=nm.array(data),
-                           time=nm.array(time),
-                           time_n=nm.array(time_n, dtype=nm.int32),
-                           scheme=scheme, mode="dg_cell_dofs")
-
-        if return_mesh:
-            from sfepy.discrete.fem.mesh import Mesh
-            mesh = Mesh()
-            mesh = self.read(mesh, filename=filename, drop_z=drop_z)
-            return  mesh, out
-        return out
-
-    def _read_data_file(self, filename):
-        try:
-            fd = open(filename, "r")
-        except FileNotFoundError:
-            raise FileNotFoundError("[Errno 2] No such file or directory: {}.".format(filename))
-
-        scheme = Struct(name=None, desc=None, F=None, P=None)
-        while 1:
-            line = skip_read_line(fd).split()
-            if not line:
-                break
-
-            ls = line[0]
-            if ls == "$InterpolationScheme":
-                scheme.name = skip_read_line(fd).strip('"\'')
-                n_int_tags = int(skip_read_line(fd))
-                scheme.desc = int(skip_read_line(fd))
-                n_matrices = int(skip_read_line(fd))
-                f_shape = [int(i) for i in skip_read_line(fd).split(" ")]
-                scheme.F = read_array(fd, f_shape[0], f_shape[1], nm.float64)
-                p_shape = [int(i) for i in skip_read_line(fd).split(" ")]
-                scheme.P = read_array(fd, p_shape[0], p_shape[1], nm.float64)
-            elif ls == "$ElementNodeData":
-                n_str_tags = int(skip_read_line(fd))
-                data_name = skip_read_line(fd).strip('"\'')
-                if n_str_tags == 2:
-                    interpolation_scheme_name = skip_read_line(fd).strip('"\'')
-                n_float_tags =  int(skip_read_line(fd))
-                time = float(skip_read_line(fd))
-                n_int_tags = int(skip_read_line(fd))
-                time_n = int(skip_read_line(fd))
-                comp = int(skip_read_line(fd))
-                n_el = int(skip_read_line(fd))
-
-                n_el_nod = int(look_ahead_line(fd).split()[1])
-                # read data including indexing
-                data = read_array(fd, n_el, n_el_nod + 2 , nm.float64)
-                # strip indexing columns
-                data = data[:, 2:]
-
-            elif line[0] == '#' or ls[:4] == '$End':
-                pass
-        fd.close()
-
-        return data_name, [data], [time], [time_n], scheme
-
-    def _write_mesh(self, fd, mesh):
-        """
-        Write mesh into opened file fd.
-
-        Parameters
-        ----------
-        fd : file descriptor
-            File opened for writing.
-        mesh: sfepy.discrete.fem.mesh.Mesh
-            Computational mesh to write.
-        """
-        coors, ngroups, conns, mat_ids, descs = mesh._get_io_data()
-        dim = mesh.dim
-
-        fd.write("$Nodes\n")
-        fd.write(str(mesh.n_nod) + "\n")
-        s = "{}" + dim*" {}" + (3 - dim)*" 0.0" + "\n"
-        for i, node in enumerate(coors, 1):
-            fd.write(s.format(i, *node))
-        fd.write("$EndNodes\n")
-
-        fd.write("$Elements\n")
-        fd.write(str(sum( len(conn) for conn in conns)) + "\n")  # sum number of elements acrcoss all conns
-        for desc, mat_id, conn in zip(descs, mat_ids, conns):
-            _, n_el_verts = [int(f) for f in desc.split("_")]
-            el_type = self.geo2msh_type[desc]
-            s = "{} {} 2 {} 0" + n_el_verts * " {}" + "\n"
-            for (i, element), el_mat_id in zip(enumerate(conn, 1), mat_id):
-                fd.write(s.format(i, el_type, el_mat_id, *nm.array(element) + 1))
-        fd.write("$EndElements\n")
-
-    def _write_interpolation_scheme(self, fd, scheme):
-        """
-        Unpacks matrices from scheme struct and writes them in correct format
-        for gmsh to read.
-
-        Parameters
-        ----------
-        fd : file descriptor
-            File opened for writing.
-        scheme : Struct
-            Struct with interpolation scheme used in data, only one
-            interpolation scheme is allowed, contains:
-              - name - name of the scheme,
-              - F - coefficients matrix,
-              - P - exponents matrix as defined in [1] and [2].
-        """
-        fd.write('$InterpolationScheme\n')
-        fd.write('"{}"\n'.format(scheme.name))
-        fd.write("1\n")  # one int tag
-        fd.write("{}\n".format(scheme.desc[-1]))
-        fd.write("2\n")  # number of matrices
-        fd.write("{} {}\n".format(*scheme.F.shape))
-        sF = "{} " * scheme.F.shape[1] + "\n"
-        for row in scheme.F:
-            fd.write(sF.format(*row))
-        fd.write("{} {}\n".format(*scheme.P.shape))
-        sP = "{} " * scheme.P.shape[1] + "\n"
-        for row in scheme.P:
-            fd.write(sP.format(*row))
-        fd.write('$EndInterpolationScheme\n')
-
-    def _write_elementnodedata(self, fd, out, ts):
-        """
-        Writes dg_cell_dofs data as $ElementNodeData, including interpolation
-        scheme.
-
-        Parameters
-        ----------
-        out : dictionary, optional
-            dictionary containing data to write in format generated by
-            DGField.create_output().
-        ts : sfepy.solvers.ts.TimeStepper instance, optional
-            Provides data to write time step.
-        """
-        for key, value in out.items():
-            if not value.mode == "dg_cell_dofs":
-                continue
-            if value.interpolation_scheme is not None:
-                self._write_interpolation_scheme(fd, value.interpolation_scheme)
-                interpolation_scheme_name = value.interpolation_scheme.name
-            data = value.data
-            n_el_nod = nm.shape(data)[1]
-            fd.write("$ElementNodeData\n")
-            fd.write("{}\n".format(1 if interpolation_scheme_name is None else 2))
-            fd.write('"{}"\n'.format(key))  # name
-            if interpolation_scheme_name is not None:
-                fd.write('"{}"\n'.format(interpolation_scheme_name))
-            fd.write("1\n")  # number of real tags
-            fd.write("{}\n".format(ts.time if ts is not None else 0.0))
-            fd.write("3\n")  # number of integer tags
-            fd.write("{}\n".format(ts.step if ts is not None else 0))
-            fd.write("1\n")  # number of components
-            fd.write("{}\n".format(data.shape[0]))
-            s = "{} {}" + n_el_nod * " {}" + "\n"
-            for i, el_node_vals in enumerate(data, 1):
-                fd.write(s.format(i, n_el_nod, *el_node_vals))
-            fd.write("$EndElementNodeData\n")
-
-    def write(self, filename, mesh, out=None, ts=None, **kwargs):
-        """
-        Writes mesh and data into msh v2.0 file, handles dg_cell_dofs data from
-        DGField if provided in out.
-
-        Parameters
-        ----------
-        filename : string
-            Path to file.
-        mesh : sfepy.discrete.fem.mesh.Mesh
-            Computational mesh to write.
-        out : dictionary, optional
-            Dictionary containing data to write, expected to be in format
-            generated by DGField.create_output(), key is name of data,
-            value is Struct containing:
-              - mode : string, so far only `dg_cell_dofs`, representing modal
-                data in cells is supported.
-              - data : array, DOFs as defined in DG Field.
-              - interpolation_scheme : Struct, interpolation scheme used in
-                data, only one interpolation scheme is allowed. See
-                :func:`Msh2MeshIO._write_interpolation_scheme()`.
-
-        ts : sfepy.solvers.ts.TimeStepper instance, optional
-            Provides data to write time step.
-        """
-        fd = open(filename, 'w')
-        fd.writelines(self.msh20header)
-        self._write_mesh(fd, mesh)
-        if out:
-            self._write_elementnodedata(fd, out, ts)
-        fd.close()
-        return
-
 class XYZMeshIO(MeshIO):
     """
     Trivial XYZ format working only with coordinates (in a .XYZ file) and the
@@ -3286,23 +1882,6 @@ class XYZMeshIO(MeshIO):
         if out is not None:
             raise NotImplementedError
 
-def guess_format(filename, ext, formats, io_table):
-    """
-    Guess the format of filename, candidates are in formats.
-    """
-    ok = False
-    for format in formats:
-        output('guessing %s' % format)
-        try:
-            ok = io_table[format].guess(filename)
-        except AttributeError:
-            pass
-        if ok: break
-
-    else:
-        raise NotImplementedError('cannot guess format of a *%s file!' % ext)
-
-    return format
 
 var_dict = list(vars().items())
 io_table = {}
@@ -3315,7 +1894,7 @@ for key, var in var_dict:
         pass
 del var_dict
 
-def any_from_filename(filename, prefix_dir=None):
+def any_from_filename(filename, prefix_dir=None, file_format=None, mode='r'):
     """
     Create a MeshIO instance according to the kind of `filename`.
 
@@ -3341,75 +1920,36 @@ def any_from_filename(filename, prefix_dir=None):
         else:
             return UserMeshIO(filename)
 
-    ext = op.splitext(filename)[1].lower()
-    try:
-        format = supported_formats[ext]
-    except KeyError:
-        raise ValueError('unsupported mesh file suffix! (%s)' % ext)
-
-    if isinstance(format, tuple):
-        format = guess_format(filename, ext, format, io_table)
-
     if prefix_dir is not None:
         filename = op.normpath(op.join(prefix_dir, filename))
 
-    return io_table[format](filename)
+    kwargs = {}
+    if file_format is not None:
+        if file_format in supported_formats:
+            io_class = supported_formats[file_format][0]
+            kwargs['file_format'] = file_format
+        else:
+            raise ValueError('unknown mesh format! (%s)' % file_format)
+    else:
+        ext2io = {e: (v[0], k) for k, v in supported_formats.items()
+            for e in v[1] if '*' not in v[2]}
+        ext = op.splitext(filename)[1].lower()
+        if ext in ext2io:
+            io_class = ext2io[ext][0]
+            file_format = ext2io[ext][1]
+            kwargs['file_format'] = file_format
+        else:
+            raise ValueError('unknown mesh format! (%s)' % ext)
+
+    if mode == 'w' and 'w' not in supported_formats[file_format][2]:
+        output('writable mesh formats:')
+        output_mesh_formats('w')
+        msg = 'write support not implemented for output mesh format "%s",' \
+              ' see above!' % file_format
+        raise ValueError(msg)
+
+    return io_table[io_class](filename, **kwargs)
+
 
 insert_static_method(MeshIO, any_from_filename)
 del any_from_filename
-
-def for_format(filename, format=None, writable=False, prefix_dir=None):
-    """
-    Create a MeshIO instance for file `filename` with forced `format`.
-
-    Parameters
-    ----------
-    filename : str
-        The name of the mesh file.
-    format : str
-        One of supported formats. If None,
-        :func:`MeshIO.any_from_filename()` is called instead.
-    writable : bool
-        If True, verify that the mesh format is writable.
-    prefix_dir : str
-        The directory name to prepend to `filename`.
-
-    Returns
-    -------
-    io : MeshIO subclass instance
-        The MeshIO subclass instance corresponding to the `format`.
-    """
-    ext = op.splitext(filename)[1].lower()
-    try:
-        _format = supported_formats[ext]
-    except KeyError:
-        _format = None
-
-    format = get_default(format, _format)
-
-    if format is None:
-        io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
-
-    else:
-        if not isinstance(format, basestr):
-            raise ValueError('ambigous suffix! (%s -> %s)' % (ext, format))
-
-        if format not in io_table:
-            raise ValueError('unknown output mesh format! (%s)' % format)
-
-        if writable and ('w' not in supported_capabilities[format]):
-            output('writable mesh formats:')
-            output_mesh_formats('w')
-            msg = 'write support not implemented for output mesh format "%s",' \
-                  ' see above!' % format
-            raise ValueError(msg)
-
-        if prefix_dir is not None:
-            filename = op.normpath(op.join(prefix_dir, filename))
-
-        io = io_table[format](filename)
-
-    return io
-
-insert_static_method(MeshIO, for_format)
-del for_format

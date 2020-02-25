@@ -138,13 +138,12 @@ def post_process(out, problem, state, extend=False):
         plt.xlabel('probe %s' % label, fontsize=8)
         plt.legend(loc='best', prop=fm.FontProperties(size=10))
 
-        sym_indices = [0, 4, 8, 1, 2, 5]
         sym_labels = ['11', '22', '33', '12', '13', '23']
 
         plt.subplot(312)
         pars, vals = probe(probe_name, 'cauchy_strain')
-        for ii, ic in enumerate(sym_indices):
-            plt.plot(pars, vals[:,ic], label=r'$e_{%s}$' % sym_labels[ii],
+        for ii, lab in enumerate(sym_labels):
+            plt.plot(pars, vals[:,ii], label=r'$e_{%s}$' % lab,
                      lw=1, ls='-', marker='+', ms=3)
         plt.ylabel('Cauchy strain')
         plt.xlabel('probe %s' % label, fontsize=8)
@@ -152,8 +151,8 @@ def post_process(out, problem, state, extend=False):
 
         plt.subplot(313)
         pars, vals = probe(probe_name, 'cauchy_stress')
-        for ii, ic in enumerate(sym_indices):
-            plt.plot(pars, vals[:,ic], label=r'$\tau_{%s}$' % sym_labels[ii],
+        for ii, lab in enumerate(sym_labels):
+            plt.plot(pars, vals[:,ii], label=r'$\tau_{%s}$' % lab,
                      lw=1, ls='-', marker='+', ms=3)
         plt.ylabel('Cauchy stress')
         plt.xlabel('probe %s' % label, fontsize=8)
