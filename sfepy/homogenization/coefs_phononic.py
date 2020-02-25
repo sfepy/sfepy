@@ -129,7 +129,7 @@ def get_log_freqs(f0, f1, df, freq_eps, n_point_min, n_point_max):
     f_mid = 0.5 * (f0 + f1)
 
     if (f1 - f0) > (2.0 * freq_eps):
-        num = min(n_point_max, max(n_point_min, (f1 - f0) / df))
+        num = min(n_point_max, max(n_point_min, int((f1 - f0) / df)))
         a = nm.linspace(0., 1., num)
         log_freqs = f0 + freq_eps \
                     + 0.5 * (nm.sin((a - 0.5) * nm.pi) + 1.0) \
