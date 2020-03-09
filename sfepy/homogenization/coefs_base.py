@@ -287,13 +287,14 @@ class OnesDim(CorrMiniApp):
             aux = e00.copy()
             aux[:,ir] = e1
             ones[ir] = {var_name : nm.ascontiguousarray(aux)}
-            clist.append('pi_%d' % (ir,))
+            clist.append((ir,))
 
         corr_sol = CorrSolution(name=self.name,
                                 states=ones,
                                 components=clist)
 
-        self.save(corr_sol, problem)
+        self.save(corr_sol, problem,
+                  variables=problem.create_variables([self.variables[0]]))
 
         return corr_sol
 
