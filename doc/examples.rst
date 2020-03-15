@@ -19,8 +19,8 @@ generated list of the standard examples that come with SfePy.
 Example Applications
 --------------------
 
-(Note: the examples below were created around 2010 and do not reflect the
-current state of SfePy).
+- `Homogenization of piezoelectric porous media <http://sfepy.org/sfepy_examples/example_poropiezo/>`_ (2020)
+- `Fish heart model <https://sfepy.org/fish_heart>`_ (2010)
+- `Phononic materials <https://sfepy.org/phononic>`_ (2010)
 
-- Fish heart model: https://sfepy.org/fish_heart
-- Phononic materials: https://sfepy.org/phononic
+Note that older examples do not reflect the current state of SfePy.
