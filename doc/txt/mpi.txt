@@ -1,4 +1,0 @@
-# 29.08.2006, c
-
-mpirun -np 2 ./test.py
-mpirun -p4pg procgroup_test ./test.py
