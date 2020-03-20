@@ -1,223 +1,31 @@
-/**
- * Alternate Sphinx design
- * Originally created by Armin Ronacher for Werkzeug, adapted by Georg Brandl
- * adapted for SfePy by Vladimir Lukes.
- */
+@import url("css/theme.css");
 
-@import url("basic.css");
-
-body {
-    font-family: sans-serif;
-    font-size: 100%;
+.logo_zcu_container {
+    width: 240px;
     text-align: center;
-    background-color: #11303d;
-    color: black;
-    margin: 0px;
-    padding: 0px;
-    border: 1px solid #888;
-    margin: 0px 80px 0px 80px;
-    min-width: 740px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background: #343131;
+    z-index: 400;
 }
 
-div.document {
-    background-color: white;
-    text-align: left;
+.wy-nav-content{padding:1.618em 3.236em;;height:100%;max-width:900px;margin:auto;margin:0;background:#fcfcfc}
+.wy-nav-content-wrap{margin-left:240px;background:#fcfcfc;min-height:100%}
+.wy-nav-side{position:fixed;top:0;bottom:0;left:0;width:240px;padding-bottom:2em;overflow-x:hidden;overflow-y:hidden;min-height:100%;color:#9b9b9b;background:#343131;z-index:200}
+.wy-side-nav-search{display:block;width:240px;padding:.809em;margin-bottom:.809em;z-index:200;background-color:#2980B9;text-align:center;padding:.809em;display:block;color:#fcfcfc;margin-bottom:.809em}
+.wy-tray-container li{display:block;width:100%;background:transparent;color:#fff;text-align:center;box-shadow:0 5px 5px 0 rgba(0,0,0,0.1);padding:0 24px;min-width:20%;opacity:0;height:0;line-height:56px;overflow:hidden;-webkit-transition:all .3s ease-in;-moz-transition:all .3s ease-in;transition:all .3s ease-in}
+
+@media screen and (max-width: 768px){
+    .logo_zcu_container {left:-240px;}
+    .wy-nav-content{padding:1.618em}
+    .wy-nav-content-wrap{margin-left:0}
+    .wy-nav-side{left:-240px}
+    .wy-side-nav-search{width:auto}
+    .wy-tray-container li{width:100%}
 }
 
-div.related ul {
-    background-color: #f2f2f2;
-    height: 2em;
-    list-style: none;
-    border-top: 1px solid #ccc;
-    border-bottom: 1px solid #ccc;
-    margin: 0;
-    padding-left: 10px;
-}
-
-div.related ul li {
-    margin: 0;
-    padding: 0;
-    height: 2em;
-    float: left;
-}
-
-div.related ul li a {
-    margin: 0;
-    padding: 0 5px 0 5px;
-    line-height: 1.75em;
-}
-
-div.body {
-    margin: 0;
-    padding: 0.5em 20px 20px 20px;
-}
-
-div.bodywrapper {
-    margin: 0 240px 0 0;
-    border-right: 1px solid #ccc;
-}
-
-div.sphinxsidebar {
-    margin: 0;
-    padding: 0.5em 15px 15px 0;
-    width: 210px;
-    float: right;
-    text-align: left;
-}
-
-div.sphinxsidebar h4, div.sphinxsidebar h3 {
-    margin: 1em 0 0.5em 0;
-    font-size: 0.9em;
-    padding: 0.1em 0 0.1em 0.5em;
-    color: white;
-    background-color: #1c4e63;
-}
-
-div.sphinxsidebar ul {
-    padding-left: 1.5em;
-    margin-top: 7px;
-    list-style: none;
-    padding: 0;
-    line-height: 130%;
-}
-
-div.sphinxsidebar ul ul {
-    list-style: square;
-    margin-left: 20px;
-}
-
-a {
-    color: #355f7c;
-    text-decoration: none;
-}
-
-a:visited {
-    color: #355f7c;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-
-pre {
-    font-family: monospace;
-    font-size: 1.2em;
-    padding: 0.4em;
-    border: 1px solid #ccc;
-    background-color: #f8f8f8;
-}
-
-tt {
-    background-color: #ecf0f3;
-    padding: 0 1px 0 1px;
-    font-size: 0.95em;
-}
-
-.warning tt {
-    background: #efc2c2;
-}
-
-hr {
-    border: 1px solid #abc;
-    margin: 2em;
-}
-
-h1 {
-    margin: 0;
-    padding: 0.7em 0 0.3em 0;
-    font-size: 160%;
-    color: #11557c;
-}
-
-h2 {
-    margin: 1.3em 0 0.2em 0;
-    font-size: 140%;
-    padding: 0;
-}
-
-h3 {
-    margin: 1em 0 -0.3em 0;
-    font-size: 120%;
-}
-
-table {
-    border-collapse: collapse;
-    margin: 0 -0.5em 0 -0.5em;
-}
-
-table td, table th {
-    padding: 0.2em 0.5em 0.2em 0.5em;
-}
-
-div.footer {
-    background-color: #1c4e63;
-    color: white;
-    padding: 4px 8px 4px 0;
-    clear: both;
-    font-size: 75%;
-    text-align: right;
-}
-
-div.footer a {
-    color: #86989B;
-}
-
-div.admonition {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding: 7px;
-}
-
-div.admonition dt {
-    font-weight: bold;
-}
-
-div.admonition dl {
-    margin-bottom: 0;
-}
-
-p.admonition-title {
-    margin: 0px 10px 5px 0px;
-    font-weight: bold;
-}
-
-p.admonition-title {
-    display: inline;
-}
-
-p.admonition-title:after {
-    content: ":";
-}
-div.admonition p.admonition-title + p {
-    display: inline;
-}
-
-div.admonition p {
-    margin-bottom: 5px;
-}
-
-div.admonition pre {
-    margin-bottom: 5px;
-}
-
-div.admonition ul, div.admonition ol {
-    margin-bottom: 5px;
-}
-
-a.headerlink {
-    color: #c60f0f;
-    font-size: 0.8em;
-    padding: 0 4px 0 4px;
-    text-decoration: none;
-}
-
-a.headerlink:hover {
-    background-color: #c60f0f;
-    color: white;
-}
-
-img.inheritance {
-    border: 0px
+@media screen and (min-width: 1140px){
+    .wy-nav-content{margin:0;background:#fcfcfc}
+    .wy-nav-content-wrap{background:rgba(0,0,0,0.05)}
 }

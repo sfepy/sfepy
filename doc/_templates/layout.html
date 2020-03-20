@@ -1,24 +1,35 @@
+{# Import the theme's layout. #}
 {% extends "!layout.html" %}
 
-{% block rootrellink %}
-        <li><a href="{{ pathto('index') }}">home</a>|&nbsp;</li>
-        <li><a href="{{ pathto('news') }}">news</a>|&nbsp;</li>
-        <li><a href="{{ pathto('index.html#documentation', 1) }}">documentation</a>|&nbsp;</li>
-        <li><a href="{{ pathto('examples') }}">examples</a>|&nbsp;</li>
-        <li><a href="{{ pathto('development') }}">development</a>|&nbsp;</li>
-        <li><a href="{{ pathto('terms_overview') }}">term overview</a>|&nbsp;</li>
-        <li><a href="{{ pathto('downloads') }}">downloads</a></li>
-{% endblock %}
-
-{% block relbar1 %}
-<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
-  <a href="{{ pathto('index') }}"><img src="{{
-    pathto("_static/sfepy_logo_title_small.png", 1) }}" border="0" height="70px" alt="SfePy"/></a>
-  <a href="https://ntc.zcu.cz/en/"><img src="{{
-    pathto("_static/ntc_logo.png", 1) }}" align="right" border="0" height="80px" alt="NTC"/></a>
-</div>
+{% block extrahead %}
 {{ super() }}
+
+<meta name="description" content="SfePy - simple finite elements in Python">
+<meta name="author" content="SfePy Developers">
+<meta name="keywords" content="FEM, finite element method, Python">
+
 {% endblock %}
 
-{% block sidebar1 %}{{ sidebar() }}{% endblock %}
-{% block sidebar2 %}{% endblock %}
+{% block menu %}
+    {{ super() }}
+
+    {% if menu_links %}
+        <p class="caption">
+            <span class="caption-text">
+            {% if menu_links_name %}
+                {{ menu_links_name }}
+            {% else %}
+                External links
+            {% endif %}
+            </span>
+        </p>
+        <ul>
+            {% for text, link in menu_links %}
+                <li class="toctree-l1"><a href="{{ link }}">{{ text }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <div class="logo_zcu_container">
+      <a href="https://www.zcu.cz/en"><img src="./_static/uwb_logo.png"></a>
+    </div>
+{% endblock %}
