@@ -32,27 +32,6 @@
 
    **License:** :doc:`BSD <license>`
 
-   Links
-   -----
-
-      .. list-table::
-
-         * - Development version documentation
-           - https://sfepy.org/doc-devel
-         * - Latest release version documentation
-           - https://sfepy.org/doc
-         * - Automatically generated gallery
-           - https://sfepy.org/gallery
-         * - Mailing list (both user and developer)
-           - `sfepy(at)python.org
-             <https://mail.python.org/mm3/mailman3/lists/sfepy.python.org>`_
-         * - Github organization
-           - https://github.com/sfepy
-         * - Source code (main git repository)
-           - https://github.com/sfepy/sfepy
-         * - Bug/issue tracking
-           - https://github.com/sfepy/sfepy/issues
-
    Applications
    ------------
 
@@ -124,23 +103,6 @@
 
    See also :doc:`archived_support`.
 
-.. _documentation:
-
-Documentation
-=============
-
-.. toctree::
-   :maxdepth: 2
-
-   introduction
-   installation
-   tutorial
-   users_guide
-   examples
-   theory
-   developer_guide
-
-PDF version of the documentation: :download:`sfepy_manual.pdf`
 
 Indices and tables
 ==================
@@ -148,3 +110,10 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. toctree::
+   :hidden:
+
+   About <self>
+   documentation
+   development

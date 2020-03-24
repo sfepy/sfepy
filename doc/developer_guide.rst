@@ -8,10 +8,6 @@
 Developer Guide
 ===============
 
-.. contents:: Table of Contents
-   :local:
-   :backlinks: top
-
 This section purports to document the *SfePy* internals. It is mainly useful
 for those who wish to contribute to the development of  *SfePy* and understand
 the inner workings of the code.

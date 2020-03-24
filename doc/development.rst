@@ -76,3 +76,11 @@ cimrman3(at)ntc.zcu.cz, or on `our mailing list`_)
   - exploit lazy evaluation
 
 See also the `enhacement issues <https://github.com/sfepy/sfepy/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement>`_.
+
+Developer Guide
+---------------
+
+.. toctree::
+   :maxdepth: 2
+
+   developer_guide
