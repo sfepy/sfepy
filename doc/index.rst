@@ -72,6 +72,7 @@
 
    - Semi-automatic generation of finite element meshes from CT/MR scans stored
      in the DICOM file format: http://sfepy.org/dicom2fem
+   - PUCGen (Periodic Unit Cell Generator): https://github.com/sfepy/pucgen
 
    Citing
    ------
@@ -119,11 +120,7 @@
    - the European Regional Development Fund-Project "Application of Modern
      Technologies in Medicine and Industry"
      (No. CZ.02.1.01/0.0/0.0/17_048/0007280) of the Czech Ministry of
-     Education, Youth and Sports, since 2018;
-   - project GA17-12925S (Strength of materials and mechanical components based
-     on iron: Multi-scale approach) of Czech Science Foundation, since 2017;
-   - project GA17-01618S (Fluid Acoustics in Periodic Micro-Architectures) of
-     Czech Science Foundation, since 2017.
+     Education, Youth and Sports, since 2018.
 
    See also :doc:`archived_support`.
 
