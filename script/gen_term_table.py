@@ -116,14 +116,11 @@ def typeset_to_indent(txt, indent0, indent, width):
 def typeset_term_syntax(term_class):
     if ((len(term_class.arg_types) > 1) and not
         isinstance(term_class.arg_types[0], str)):
-        arg_types = [', '.join(['<%s>' % arg for arg in arg_type])
+        arg_types = [', '.join(['``<%s>``' % arg for arg in arg_type])
                      for arg_type in term_class.arg_types]
-        arg_types = [' ``%s``' % arg_type for arg_type in arg_types]
         text = '\n\n       '.join(arg_types)
-
     else:
-        text = ', '.join(['<%s>' % arg for arg in term_class.arg_types])
-        text = '``%s``' % text
+        text = ', '.join(['``<%s>``' % arg for arg in term_class.arg_types])
     return text
 
 def typeset_term_table(fd, keys, table, title):

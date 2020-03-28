@@ -15,6 +15,8 @@
 .wy-nav-side{position:fixed;top:0;bottom:0;left:0;width:240px;padding-bottom:2em;overflow-x:hidden;overflow-y:hidden;min-height:100%;color:#9b9b9b;background:#343131;z-index:200}
 .wy-side-nav-search{display:block;width:240px;padding:.809em;margin-bottom:.809em;z-index:200;background-color:#2980B9;text-align:center;padding:.809em;display:block;color:#fcfcfc;margin-bottom:.809em}
 .wy-tray-container li{display:block;width:100%;background:transparent;color:#fff;text-align:center;box-shadow:0 5px 5px 0 rgba(0,0,0,0.1);padding:0 24px;min-width:20%;opacity:0;height:0;line-height:56px;overflow:hidden;-webkit-transition:all .3s ease-in;-moz-transition:all .3s ease-in;transition:all .3s ease-in}
+.wy-table-responsive table td,.wy-table-responsive table th,.wy-table-responsive table code{white-space:normal !important}
+.wy-table-responsive {margin-bottom:24px;max-width:100%;overflow:visible !important}
 
 @media screen and (max-width: 768px){
     .logo_zcu_container {left:-240px;}
@@ -23,6 +25,9 @@
     .wy-nav-side{left:-240px}
     .wy-side-nav-search{width:auto}
     .wy-tray-container li{width:100%}
+    /* override table width restrictions */
+    .wy-table-responsive table td {white-space: normal !important;}
+    .wy-table-responsive {overflow: visible !important;}
 }
 
 @media screen and (min-width: 1140px){
