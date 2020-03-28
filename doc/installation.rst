@@ -47,6 +47,7 @@ Python packages required for using *SfePy*:
 - `slepc4py`_ for eigenvalue problem solvers from `SLEPc`_
 - `pymetis`_ for mesh partitioning using `Metis`_,
 - `wxPython`_ for better `IPython`_ integration.
+- `Read the Docs`_ `Sphinx`_ theme for building documentation
 
 Make sure the dependencies of those packages are also installed (e.g `igakit`_
 reguires FORTRAN compiler, `scikit-umfpack`_ does not work without UMFPACK,
