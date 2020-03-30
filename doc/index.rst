@@ -103,6 +103,10 @@
 
    See also :doc:`archived_support`.
 
+   Manual in PDF
+   --------------
+
+   PDF version of the documentation: :download:`sfepy_manual.pdf`
 
 Indices and tables
 ==================
@@ -113,7 +117,9 @@ Indices and tables
 
 .. toctree::
    :hidden:
+   :maxdepth: 3
 
    About <self>
+   Gallery <http://sfepy.org/gallery>
    documentation
    development

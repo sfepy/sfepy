@@ -9,6 +9,5 @@ Documentation
    tutorial
    users_guide
    examples
-   Gallery <http://sfepy.org/gallery>
    theory
    terms_overview
