@@ -20,6 +20,7 @@
 .. _sfepy/sfepy: https://github.com/sfepy/sfepy
 .. _sfepy tarball: https://github.com/sfepy/sfepy/tarball/master
 .. _our wiki: https://github.com/sfepy/sfepy/wiki
+.. _gallery: https://sfepy.org/gallery
 
 .. other links
 
