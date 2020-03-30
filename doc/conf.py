@@ -182,7 +182,9 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
-html_style = 'sfepy.css'
+import sphinx
+html_style = 'sfepy.css' if int(sphinx.__version__[0]) < 2 else\
+    'sfepy_sphinx2_fix.css'
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

@@ -1,0 +1,8 @@
+@import url("sfepy.css");
+
+/* fix for sphinx > 2, see spyder-ide/spyder#9888 */
+.classifier:before {
+    font-style: normal;
+    margin: 0.2em;
+    content: ": ";
+}
