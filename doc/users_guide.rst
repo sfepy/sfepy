@@ -3,9 +3,10 @@
 User's Guide
 ============
 
-.. contents:: Table of Contents
-   :local:
-   :backlinks: top
+.. only:: html
+   .. contents:: Table of Contents
+      :local:
+      :backlinks: top
 
 This manual provides reference documentation to *SfePy* from a user's
 perspective.
