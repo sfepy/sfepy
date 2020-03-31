@@ -1,5 +1,112 @@
 # created: 20.07.2007 (-1)
 
+.. _2019.4-2020.1:
+
+from 2019.4 to 2020.1
+=====================
+
+- merge branch 'dispersion-misc-updates'
+
+  - dispersion_analysis.py: allow custom save_eigenvectors()
+  - update read_log() for logs prior to int-log-labels branch merge
+  - dispersion_analysis.py: increase log precision to .12e
+
+- merge pull request #571 from vlukes/fix_trace_normals
+
+  - fix `dw_surface_dot` term: nvec orient. - outwards to the parent region of
+    the virtual variable
+
+- merge pull request #575 from rc/fix-splinebox-python-3.7
+
+  - fix argument type in SplineRegion2D.create_spb() - fixes Travis CI failure
+    for Python 3.7, numpy-1.18.1
+
+- merge pull request #574 from rc/docs-update-space-def, closes #572
+
+  - docs: update function space definition
+
+- merge branch 'fix-comparison'
+
+  - fix comparison operator in NurbsPatch.elevate()
+
+- merge pull request #577 from bubulk/multiprocessing-spawn
+
+  - Update dirty fix for multiprocessing with default 'spawn' method.
+
+- merge branch 'fix-read-log'
+
+  - fix read_log() for empty log group
+
+- merge pull request #579 from rc/drop-python-2.7-support
+
+  - CI: remove Python 2.7
+  - docs: update installation instructions (drop Python 2.7 support)
+  - remove PysparseEigenvalueSolver (Pytnon 2.7 only), update docs, tests,
+    setup.py
+
+- merge branch 'fix-slepc-eigenvectors'
+
+  - fix eigenvectors returned by eig.slepc - fix
+    SLEPcEigenvalueSolver.__call__()
+
+- merge branch 'dispersion-dict-pars'
+
+  - add allow_tuple, free_word arguments to dict_from_string()
+  - new apply_units_to_pars()
+  - dispersion_analysis.py: replace apply_units() by apply_units_to_pars()
+    - new pars_kinds dict
+    - update define() for parameters in Struct
+  - dispersion_analysis.py: reorder definitions
+
+- merge pull request #581 from rc/homogenized-coefs-dtype
+
+  - force dtype in {CoefNN, CoefN, CoefOne}.set_variables_default()
+    - fixes numpy casting TypeError when adding inplace a complex128 array to
+    a float64 one
+
+- merge pull request #580 from vlukes/meshio, closes #460
+
+  - use meshio to read/write mesh files
+  - meshio: update examples
+  - meshio: update tests
+  - fix numpy.savetxt() issue, see https://github.com/numpy/numpy/issues/10018
+  - fix meshes to pass meshio tests
+  - fix comsol writer: flatten mat_ids arrays
+  - update requirements: meshio
+  - update meshio: new handling with file formats
+  - put ansys_cdb back
+  - update script for mesh conversion and add checks to any_from_filename()
+  - new xdmf3 extension to h5 format
+  - CI: install h5py
+  - CI: install netCDF4
+  - CI: install meshio
+  - update installation instructions: add meshio to requirements
+  - fix vtk_cell_types in postprocessing code
+  - update create_file_source()
+  - new MeshioLibIO.read_data(), ._get_dimension()
+  - change format to double in all medit meshes, fixes precision issues
+  - skip meshio write-failed formats in test_write_read_meshes()
+  - hdf5 + xdmf -> hdf5-xdmf format with .h5x and .xdmf suffixes
+
+- merge branch 'misc-fixes'
+
+  - fix classifiers in setup.py for Python 3
+  - fix count type in get_log_freqs()
+
+- merge pull request #583 from rc/fix-ones-dim-saving
+
+  - fix saving correctors in OnesDim
+
+- merge pull request #586 from vlukes/example_poropiezo
+
+  - new poropiezo example
+
+- merge pull request #587 from rc/web-update-front-pages
+
+  - web: add PUCGen link
+  - web: update support
+  - web: add link to sfepy docker image
+
 .. _2019.3-2019.4:
 
 from 2019.3 to 2019.4
