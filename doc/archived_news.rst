@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **27.12.2018** Version 2018.4 released (better support for eigenvalue
+  problems, improved MUMPS solver interface, support for logging and plotting
+  of complex values, etc.), see :ref:`release notes <2018.3-2018.4>`.
+
 * **17.09.2018** Version 2018.3 released (easier setting of values of
   variables, new script for outline edge extraction, new example:
   homogenization of a piezoelectric heterogeneous structure, etc.), see
