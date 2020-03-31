@@ -4,6 +4,7 @@ User's Guide
 ============
 
 .. only:: html
+
    .. contents:: Table of Contents
       :local:
       :backlinks: top
