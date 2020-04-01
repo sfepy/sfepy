@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import edit_filename
 from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.meshio import VTKMeshIO
+from sfepy.discrete.fem.meshio import MeshioLibIO
 
 
 def merge_lines(mesh, eps=1e-18):
@@ -204,7 +204,7 @@ def main():
            % (mesh_out[0].shape[0], mesh_out[2][0].shape[0], filename_out))
 
     # hack to write '3_2' elements - edges
-    io = VTKMeshIO(None)
+    io = MeshioLibIO()
     aux_mesh = Struct()
     aux_mesh._get_io_data = lambda: mesh_out
     aux_mesh.n_el = mesh_out[2][0].shape[0]
