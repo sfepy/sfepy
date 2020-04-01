@@ -3,10 +3,10 @@ from examples.dg.example_dg_common import *
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)
 
-def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
+def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
            Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
 
-    example_name = "adv__a0_2D"
+    example_name = "adv__limt_2D"
     dim = 2
 
     diffusion_coef = None
@@ -23,7 +23,7 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
     # get_common(approx_order, CFL, t0, t1, None, get_ic)
     rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                      [nm.sin(angle), nm.cos(angle)]])
-    velo = nm.sum(rotm.T * nm.array([0., 0.]), axis=-1)[:, None]
+    velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
     materials = {
         'a': ({'val': [velo], '.flux': 0.0},),
     }
@@ -51,7 +51,7 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
         sin = nm.sin
         pi = nm.pi
         exp = nm.exp
-        res = gsmooth(x_1) * gsmooth(x_2)
+        res = four_step_u(x_1) * four_step_u(x_2)
         return res
 
     @local_register_function
@@ -61,7 +61,7 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
             return {"u": analytic_sol(coors, t)[..., None, None]}
 
     def get_ic(x, ic=None):
-        return gsmooth(x[..., 0:1]) * gsmooth(x[..., 1:])
+        return four_step_u(x[..., 0:1]) * four_step_u(x[..., 1:])
 
 
     functions = {
@@ -92,11 +92,11 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.4, dt=None,
     }
 
     solvers = {
-        "tss": ('ts.euler',
+        "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiter': IdentityLimiter,
-                 'verbose': True}),
+                 'limiters': {"f": MomentLimiter2D},
+                 'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }

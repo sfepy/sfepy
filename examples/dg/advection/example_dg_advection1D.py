@@ -12,10 +12,11 @@ from examples.dg.example_dg_common import *
 
 dim = 1
 
-def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.5, dt=None,
+def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.5, dt=None,
            Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
     t0 = 0
     t1 = 1
+    transient = True
 
     mstart = 0
     mend = 1
@@ -78,7 +79,7 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.5, dt=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiter': IdentityLimiter,
+                 'limiters': {"f": MomentLimiter1D},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
@@ -108,11 +109,11 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.5, dt=None,
 
     @local_register_function
     def get_ic(x, ic=None):
-        return ghump(x - .3)
+        return four_step_u(x)
 
     def analytic_sol(coors, t=0):
         x = coors[..., 0]
-        res = get_ic(x)
+        res = get_ic(x[..., None] - t[None, ...])
         return res
 
     @local_register_function

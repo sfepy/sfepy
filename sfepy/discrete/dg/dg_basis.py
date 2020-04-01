@@ -200,7 +200,7 @@ class LegendrePolySpace(PolySpace):
         """
         return self.gradjacobiP(coors, 0, 0, diff=diff)
 
-    funs = [lambda x: x - x + 1,  # we need constant prewerving shape and type of x
+    funs = [lambda x: x - x + 1,  # we need constant preserving shape and type of x
             lambda x: 2 * x - 1,
             lambda x: (6 * x ** 2 - 6 * x + 1),
             lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),

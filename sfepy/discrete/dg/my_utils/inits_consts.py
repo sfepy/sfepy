@@ -81,7 +81,7 @@ def four_step_u(x):
     :param x:
     :return:
     """
-    return nm.piecewise(x, [x <= a, x <= a + .4, a + .4 < x, a + .5 <= x], [0, 1, 1.5, 1])
+    return nm.piecewise(x, [x <= a, x <= a + .4, a + .4 < x, a + .5 <= x], [0, 0, .5, 0])
 
 
 def four_step_q(x):

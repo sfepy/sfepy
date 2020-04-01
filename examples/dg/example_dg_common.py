@@ -16,12 +16,14 @@ from sfepy.solvers import register_solver
 
 # import various ICs
 from sfepy.discrete.dg.my_utils.inits_consts import ghump, gsmooth, \
-    left_par_q, left_cos, superic, three_step_u, sawtooth_q, const_q, quadr_cub
+    left_par_q, left_cos, superic, three_step_u, sawtooth_q, const_q, quadr_cub,\
+    four_step_u, cos_const_q, quadr_cub
 
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, \
     EulerStepSolver
 
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
+from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D, \
+    MomentLimiter2D
 
 from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, \
     NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
@@ -120,7 +122,7 @@ def get_cfl_setup(CFL=None, dt=None):
             diffusion = problem.conf_materials['material_D__0'].values["val"]
             max_diffusion = nm.max(nm.linalg.norm(diffusion))
         except KeyError:
-            max_diffusion = 1
+            max_diffusion = None
 
         dx = nm.min(problem.domain.mesh.cmesh.get_volumes(dim))
 
@@ -172,6 +174,9 @@ def get_cfl_advection(max_velo, dx, approx_order, CFL):
 
 def get_cfl_diffusion(max_diffusion, dx, approx_order, CFL,
                       do_order_corr=False):
+    if max_diffusion is None:
+        return 1
+
     if do_order_corr:
         order_corr = 1. / (2 * approx_order + 1)
     else:

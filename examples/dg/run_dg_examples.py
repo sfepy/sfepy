@@ -73,7 +73,8 @@ def main(argv):
             load_times = min(pc.options.save_times, sa.problem.ts.n_step)
             load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
                               pc.t0, pc.t1, load_times, pc.approx_order,
-                              pc.get_ic, exact=getattr(pc, "analytic_sol", None))
+                              pc.get_ic, exact=getattr(pc, "analytic_sol", None),
+                              polar=True)
         else:
             load_times = 1
             load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,

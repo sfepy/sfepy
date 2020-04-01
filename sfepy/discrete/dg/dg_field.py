@@ -498,7 +498,7 @@ class DGField(FEField):
         else:
             self.facet_neighbour_index.remove(region.name)
 
-    def get_facet_neighbor_idx(self, region, eq_map):
+    def get_facet_neighbor_idx(self, region=None, eq_map=None):
         """
         Returns index of cell neighbours sharing facet, along with local index
         of the facet within neighbour, also treats periodic boundary conditions
@@ -523,9 +523,18 @@ class DGField(FEField):
              first value is index of the neighbouring cell,
              the second is index of the facet in said nb. cell.
         """
+        if region is None or eq_map is None:
+            # HOTFIX enabling limiter to obtain connectivity data
+            if self.region.name in self.facet_neighbour_index:
+                return self.facet_neighbour_index[self.region.name]
+            else:
+                raise ValueError("No facet neighbour mapping for main region {}".
+                                 format(self.region.name) +
+                                 "cached yet, call with region and eq_map first")
 
         if region.name in self.facet_neighbour_index:
             return self.facet_neighbour_index[region.name]
+
 
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
@@ -1333,7 +1342,7 @@ class DGField(FEField):
                                                 data=udofs[:, i, None, None])
 
         unravel = get_unraveler(self.n_el_nod, self.n_cell)
-        res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
+        res["u_modal_cell_nodes"] = Struct(mode="dg_cell_dofs",
                                            data=unravel(dofs)[..., 0],
                                            interpolation_scheme=self.poly_space.get_interpol_scheme())
         # TODO somehow choose nodal vs modal output

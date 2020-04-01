@@ -34,7 +34,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
         ('quasistatic', 'bool', False, False,
          """If True, assume a quasistatic time-stepping. Then the non-linear
             solver is invoked also for the initial time."""),
-        ('limiter', 'function', None, None,
+        ('limiters', 'dictionary', None, None,
          "Limiter for DG FEM"),
     ]
 
@@ -45,20 +45,20 @@ class DGMultiStageTSS(TimeSteppingSolver):
         self.ts = TimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
-        format = '\n\n====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
         self.stage_format = '---- ' + self.name + ' stage {}: linear system sol error {} ----'
 
+        format = '\n\n====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
         self.format = format
         self.verbose = self.conf.verbose
 
         self.post_stage_hook = lambda x: x
 
         try:
-            if self.conf.limiter is not None:
-                # FIXME - hot fix to get limiter working, maybe specify the field in options
-                n_cell = list(context.fields.values())[0].n_cell
-                n_el_nod = list(context.fields.values())[0].n_el_nod
-                self.post_stage_hook = self.conf.limiter(n_cell=n_cell, n_el_nod=n_el_nod, verbose=self.verbose)
+            if self.conf.limiters is not None:
+                # what if we have more fields?
+                for field_name, limiter in self.conf.limiters.items():
+                    self.post_stage_hook = limiter(context.fields[field_name],
+                                                   verbose=self.verbose)
             elif self.conf.post_stage_hook is not None:
                 self.post_stage_hook = self.conf.post_stage_hook
         except AttributeError:
