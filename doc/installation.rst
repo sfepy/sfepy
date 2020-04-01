@@ -5,9 +5,11 @@
 Installation
 ============
 
-.. contents:: Table of Contents
-   :local:
-   :backlinks: top
+.. only:: html
+
+   .. contents:: Table of Contents
+      :local:
+      :backlinks: top
 
 Supported Platforms
 -------------------

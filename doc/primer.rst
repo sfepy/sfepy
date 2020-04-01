@@ -5,9 +5,11 @@
 Primer
 ======
 
-.. contents:: Table of Contents
-   :local:
-   :backlinks: top
+.. only:: html
+
+   .. contents:: Table of Contents
+      :local:
+      :backlinks: top
 
 A beginner's tutorial highlighting the basics of *SfePy*.
 

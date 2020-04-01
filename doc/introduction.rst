@@ -3,9 +3,11 @@
 Introduction
 ============
 
-.. contents:: Table of Contents
-   :local:
-   :backlinks: top
+.. only:: html
+
+   .. contents:: Table of Contents
+      :local:
+      :backlinks: top
 
 *SfePy* (http://sfepy.org) is a software for solving systems of coupled partial
 differential equations (PDEs) by the finite element method in 1D, 2D and 3D. It
