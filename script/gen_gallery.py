@@ -5,32 +5,17 @@ Generate the images and rst files for gallery of SfePy examples.
 The following steps need to be made to regenerate the documentation with the
 updated example files:
 
-1. Generate the files:
+1. remove doc/examples/*::
 
-   - for sfepy.org deployment::
+   $ rm -rf doc/examples/*
 
-     $ ./script/gen_gallery.py -l ../doc-devel
+2. generate the files:
 
-   - for local test build run from ./::
+   $ ./script/gen_gallery.py
 
-     $ ./script/gen_gallery.py -l doc/_build/html/
-
-2. remove doc/examples/::
-
-   $ rm -rf doc/examples/
-
-3. copy gallery/examples/ to doc/::
-
-   $ cp -a gallery/examples/ doc/
-
-4. regenerate the documentation::
+3. regenerate the documentation::
 
    $ python setup.py htmldocs
-
-Additional steps for sfepy.org deployment:
-
-- copy doc/_build/html/ to <sfepy.org>/doc-devel/
-- copy gallery/index.html and gallery/images/ to <sfepy.org>/
 """
 from __future__ import absolute_import
 import sys
@@ -310,26 +295,27 @@ def _omit(filename):
 
     return omit
 
-def _get_fig_filenames(ebase, images_dir):
-    fig_base = os.path.splitext(ebase)[0].replace(os.path.sep, '-')
 
-    yield fig_base
+def ebase2fbase(ebase):
+    return os.path.splitext(ebase)[0].replace(os.path.sep, '-')
+
+
+def _get_fig_filenames(ebase, images_dir):
+    fig_base = ebase2fbase(ebase)
 
     if ebase in custom:
         suffixes = sorted(custom[ebase].keys())
         for suffix in suffixes:
-            fig_filename = os.path.join(images_dir, fig_base + suffix + '.png')
-            yield fig_filename
-
+            yield os.path.join(images_dir, fig_base + suffix + '.png')
     else:
-        fig_filename = os.path.join(images_dir, fig_base + '.png')
-        yield fig_filename
+        yield os.path.join(images_dir, fig_base + '.png')
+
 
 def _get_fig_filename(ebase, images_dir, suffix):
-    fig_base = os.path.splitext(ebase)[0].replace(os.path.sep, '-')
-    fig_filename = os.path.join(images_dir, fig_base + suffix + '.png')
+    fig_base = ebase2fbase(ebase)
 
-    return fig_filename
+    return os.path.join(images_dir, fig_base + suffix + '.png')
+
 
 def _make_sphinx_path(path, relative=False):
     if relative:
@@ -451,7 +437,7 @@ def generate_thumbnails(thumbnails_dir, images_dir, scale=0.3):
     output('...done')
 
 _index = """\
-.. _%s-gallery-examples-index:
+.. _%s-index:
 
 %s
 %s
@@ -501,49 +487,48 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
         ebase = ex_filename.replace(examples_dir, '')[1:]
         base_dir = os.path.dirname(ebase)
-
-        rst_filename = os.path.basename(ex_filename).replace('.py', '.rst')
-
+        rst_filename = ebase2fbase(ebase) + '.rst'
         dir_map.setdefault(base_dir, []).append((ex_filename, rst_filename))
 
     for dirname, filenames in six.iteritems(dir_map):
         filenames = sorted(filenames, key=lambda a: a[1])
-        dir_map[dirname ] = filenames
+        dir_map[dirname] = filenames
 
     # Main index.
     mfd = open(os.path.join(rst_dir, 'index.rst'), 'w')
-    mfd.write(_index % ('sfepy', 'Examples', '=' * 8))
+    mfd.write(_index % ('examples', 'Examples', '=' * 8))
 
     for dirname, filenames in ordered_iteritems(dir_map):
-        full_dirname = os.path.join(rst_dir, dirname)
-        ensure_path(full_dirname + os.path.sep)
-
         # Subdirectory index.
-        ifd = open(os.path.join(full_dirname, 'index.rst'), 'w')
-        ifd.write(_index % (dirname, dirname, '=' * len(dirname)))
+        ifd = open(os.path.join(rst_dir, '%s-index.rst' % dirname), 'w')
+        ifd.write(_index % (dirname + '-examples',
+                            dirname, '=' * len(dirname)))
 
         for ex_filename, rst_filename in filenames:
-            full_rst_filename = os.path.join(full_dirname, rst_filename)
-            output('"%s"' % full_rst_filename.replace(rst_dir, '')[1:])
-            rst_filename_ns = rst_filename.replace('.rst', '')
+            full_rst_filename = os.path.join(rst_dir, rst_filename)
+            output('"%s"' % rst_filename)
             ebase = ex_filename.replace(examples_dir, '')[1:]
+
+            rst_base = rst_filename.replace('.rst', '')
 
             rst_ex_filename = _make_sphinx_path(ex_filename)
             docstring = get_default(import_file(ex_filename).__doc__,
                                     'missing description!')
 
-            ifd.write('    %s\n' % rst_filename_ns)
+            ifd.write('    %s <%s>\n' % (os.path.basename(ebase),
+                                         rst_filename.replace('.rst', '')))
             fig_include = ''
-            fig_base = next(_get_fig_filenames(ebase, images_dir))
             for fig_filename in _get_fig_filenames(ebase, images_dir):
                 rst_fig_filename = _make_sphinx_path(fig_filename)
-
                 if os.path.exists(fig_filename):
                     fig_include += _image % rst_fig_filename + '\n'
+                else:
+                    output('   warning: figure "%s" not found' % fig_filename)
+ 
 
             # Example rst file.
             fd = open(full_rst_filename, 'w')
-            fd.write(_include % (fig_base, ebase, '=' * len(ebase),
+            fd.write(_include % (rst_base, ebase, '=' * len(ebase),
                                  docstring,
                                  fig_include,
                                  rst_ex_filename, rst_ex_filename))
@@ -551,7 +536,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
         ifd.close()
 
-        mfd.write('    %s/index\n' % dirname)
+        mfd.write('    %s-index\n' % dirname)
 
     mfd.close()
 
@@ -559,158 +544,143 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     return dir_map
 
-_gallery_template_file = os.path.join(sfepy.top_dir,
-                                      'doc/gallery_template.html')
+_rst_empty_item = """\
+      - .. 
+"""
 
-_link_template = """\
-<div class="figure">
-<a class="reference external image-reference" href="../%s">
-<img alt="%s" src="%s" />
-</a>
-<p class="caption">
-<a class="reference internal" href="../%s"><em>%s</em></a>
-</p>
-</div>
-<div class="toctree-wrapper compound">
-</div>
+_rst_item = """\
+    %s - .. figure:: %s
+           :target: %s
+
+           :ref:`%s <%s>`
 """
-_side_links="<li><a class='reference internal' href='#%s'>%s</a></li>"
-_div_line ="""\
-<div class="section" id="%s">
-<h2>%s<a class="headerlink" href="\#%s" title="Permalink to this headline">
-</a></h2>
-%s
-<div style="clear: both"></div></div>
+
+_gallery_table = """\
+.. list-table::
+    :align: center
+    :class: gallery
 """
-def generate_gallery_html(examples_dir, output_filename, gallery_dir,
-                          rst_dir, thumbnails_dir, dir_map, link_prefix):
+
+_gallery_head = """\
+.. _gallery-index:
+
+Gallery
+=======
+"""
+
+
+def generate_gallery(examples_dir, output_filename, doc_dir,
+                     rst_dir, thumbnails_dir, dir_map, n_col=3):
     """
-    Generate the gallery html file with thumbnail images and links to
+    Generate the gallery rst file with thumbnail images and links to
     examples.
 
     Parameters
     ----------
     output_filename : str
-        The output html file name.
-    gallery_dir : str
+        The output rst file name.
+    doc_dir : str
         The top level directory of gallery files.
     rst_dir : str
-        The full path to rst files of examples within `gallery_dir`.
+        The full path to rst files of examples within `doc_dir`.
     thumbnails_dir : str
-        The full path to thumbnail images within `gallery_dir`.
+        The full path to thumbnail images within `doc_dir`.
     dir_map : dict
         The directory mapping returned by `generate_rst_files()`
-    link_prefix : str, optional
-        The prefix to prepend to links to individual pages of examples.
+    n_col : int
+        The number of columns in the gallery table.
     """
     output('generating %s...' % output_filename)
+        
+    lines = [_gallery_head]
 
-    with open(_gallery_template_file, 'r') as fd:
-        gallery_template = fd.read()
-
-    div_lines=[]
-    sidebar = []
     for dirname, filenames in ordered_iteritems(dir_map):
-        full_dirname = os.path.join(rst_dir, dirname)
-        dirnamenew = dirname.replace("_"," ")
-        sidebarline = _side_links % (dirname, dirnamenew.title())
-        lines = []
+        title= ['%s' % dirname.title().replace('_', ' '),
+                len(dirname) * '^' + '',
+                _gallery_table]
+
+        llines = []
+        icol = 0
         for ex_filename, rst_filename in filenames:
-            full_rst_filename = os.path.join(full_dirname, rst_filename)
+            ebase = ex_filename.replace(examples_dir, '')[1:]
+            link = rst_filename.replace('.rst', '')
 
-            ebase = full_rst_filename.replace(rst_dir, '')[1:]
-            ebase = edit_filename(ebase, new_ext='.py')
+            thumbnail_filename = next(_get_fig_filenames(ebase,
+                                                         thumbnails_dir))
+            if not os.path.isfile(thumbnail_filename):
+                # Skip examples with no image (= failed examples).
+                output('warning: figure "%s" not found' % thumbnail_filename)
+                continue
 
-            link_base = full_rst_filename.replace(gallery_dir, '')[1:]
-            link = os.path.join(link_prefix,
-                                os.path.splitext(link_base)[0] + '.html')
+            thumbnail_name = thumbnail_filename.replace(doc_dir, '..')
+            path_to_file = os.path.join(examples_dir, ebase)
+            docstring = get_default(import_file(path_to_file).__doc__,
+                                    'missing description!')
+            docstring = docstring.replace('e.g.', 'eg:')
+            docstring = docstring.split('.')
+            label = docstring[0].strip()
+            label = label.replace('\n', ' ')
+            label = label.replace('  ', ' ')
 
-            next(_get_fig_filenames(ebase, thumbnails_dir))
-            for thumbnail_filename in _get_fig_filenames(ebase,
-                                                         thumbnails_dir):
-                if not os.path.isfile(thumbnail_filename):
-                    # Skip examples with no image (= failed examples).
-                    continue
+            llines.append(_rst_item % (' ' if icol else '*', thumbnail_name,
+                                       link + '.html', label, link))
+            icol = (icol + 1) % n_col
 
-                thumbnail_name = thumbnail_filename.replace(gallery_dir,
-                                                            '')[1:]
-                path_to_file = os.path.join(examples_dir,ebase)
-                docstring = get_default(import_file(path_to_file).__doc__,
-                                        'missing description!')
-                docstring = docstring.replace('e.g.', 'eg:')
-                docstring = docstring.split('.')
-                line = _link_template % (link,os.path.splitext(ebase)[0],
-                                         thumbnail_name,link,docstring[0]+'.')
-                lines.append(line)
+        if icol > 0:
+            for j in range(icol, n_col):
+                llines.append(_rst_empty_item)
 
-        if(len(lines)!=0):
-            div_lines.append(_div_line % (dirname, dirnamenew.title(),
-                                          dirname, '\n'.join(lines)))
-            sidebar.append(sidebarline)
+        if len(llines) > 0:
+            lines += title + llines
+        else:
+            output('warning: no figures in "%s"' % dirname)
 
-    fd = open(output_filename, 'w')
-    fd.write(gallery_template % ((link_prefix,) * 7
-                                 + ('\n'.join(sidebar), '\n'.join(div_lines))))
+    fd = open(output_filename, 'wt')
+    fd.write('\n'.join(lines))
     fd.close()
 
     output('...done')
 
 helps = {
-    'examples_dir' :
-    'directory containing examples [default: %(default)s]',
-    'images_dir' :
-    'directory where to store gallery images [default: gallery/images]',
-    'no_images' :
-    'do not (re)generate images and thumbnails',
-    'output_filename' :
-    'output file name [default: %(default)s]',
-    'link_prefix' :
-    'prefix to be prepended to links to examples pages in gallery '
-    '[default: %(default)s]',
+    'doc_dir': 'top level directory of gallery files',
+    'no_images': 'do not (re)generate images and thumbnails',
+    'output_filename': 'output file name [default: %(default)s]',
 }
 
 def main():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
     parser.add_argument('--version', action='version', version='%(prog)s')
-    parser.add_argument('-e', '--examples-dir', metavar='directory',
-                        action='store', dest='examples_dir',
-                        default='examples', help=helps['examples_dir'])
-    parser.add_argument('-i', '--images-dir', metavar='directory',
-                        action='store', dest='images_dir',
-                        default=None, help=helps['images_dir'])
+    parser.add_argument('-d', '--doc-dir', metavar='doc_dir',
+                        action='store', dest='doc_dir',
+                        default='doc', help=helps['doc_dir'])
     parser.add_argument('-n', '--no-images',
                         action='store_true', dest='no_images',
                         default=False, help=helps['no_images'])
     parser.add_argument('-o', '--output', metavar='output_filename',
                         action='store', dest='output_filename',
-                        default='gallery/index.html',
+                        default='gallery.rst',
                         help=helps['output_filename'])
-    parser.add_argument('-l', '--link-prefix', metavar='prefix',
-                        action='store', dest='link_prefix',
-                        default='http://sfepy.org/doc-devel',
-                        help=helps['link_prefix'])
     options = parser.parse_args()
 
-    examples_dir = os.path.realpath(options.examples_dir)
-
-    output_filename = os.path.realpath(options.output_filename)
-    gallery_dir = os.path.dirname(output_filename)
-
-    images_dir = get_default(options.images_dir,
-                             os.path.join(gallery_dir, 'images'))
-
+    rst_dir = 'examples'
+    doc_dir = os.path.realpath(options.doc_dir)
+    examples_dir = os.path.realpath('examples')
+    full_rst_dir = os.path.join(doc_dir, rst_dir)
+    images_dir = os.path.join(doc_dir, 'images/gallery')
     thumbnails_dir = os.path.join(images_dir, 'thumbnails')
-    rst_dir = os.path.join(gallery_dir, 'examples')
+
+    output_filename = os.path.join(full_rst_dir, options.output_filename)
+
     if not options.no_images:
         generate_images(images_dir, examples_dir)
         generate_thumbnails(thumbnails_dir, images_dir)
 
-    dir_map = generate_rst_files(rst_dir, examples_dir, images_dir)
+    dir_map = generate_rst_files(full_rst_dir, examples_dir, images_dir)
 
-    generate_gallery_html(examples_dir,output_filename, gallery_dir,
-                          rst_dir, thumbnails_dir, dir_map,
-                          link_prefix=options.link_prefix)
+    generate_gallery(examples_dir, output_filename, doc_dir,
+                     rst_dir, thumbnails_dir, dir_map)
+
 
 if __name__ == '__main__':
     main()

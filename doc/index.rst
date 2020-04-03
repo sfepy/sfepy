@@ -120,6 +120,6 @@ Indices and tables
    :maxdepth: 3
 
    About <self>
-   Gallery <http://sfepy.org/gallery>
    documentation
    development
+   examples/gallery

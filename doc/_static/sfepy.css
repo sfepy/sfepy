@@ -17,6 +17,8 @@
 .wy-tray-container li{display:block;width:100%;background:transparent;color:#fff;text-align:center;box-shadow:0 5px 5px 0 rgba(0,0,0,0.1);padding:0 24px;min-width:20%;opacity:0;height:0;line-height:56px;overflow:hidden;-webkit-transition:all .3s ease-in;-moz-transition:all .3s ease-in;transition:all .3s ease-in}
 .wy-table-responsive table td,.wy-table-responsive table th,.wy-table-responsive table code{white-space:normal !important}
 .wy-table-responsive {margin-bottom:24px;max-width:100%;overflow:visible !important}
+.rst-content table.gallery:not(.field-list) tr:nth-child(2n-1) td{background-color:transparent}
+.gallery img{padding-bottom:20px}
 
 @media screen and (max-width: 768px){
     .logo_zcu_container {left:-240px;}
