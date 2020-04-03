@@ -49,8 +49,8 @@ extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
               'sphinx.ext.viewcode', 'numpydoc',
               'gen_term_table', 'gen_solver_table',
               'IPython.sphinxext.ipython_console_highlighting',
-              'IPython.sphinxext.ipython_directive']
-#extensions = ['sphinx.ext.autodoc']
+              'IPython.sphinxext.ipython_directive',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -75,13 +75,14 @@ copyright = u'2020, Robert Cimrman and SfePy developers'
 doc_version = sfepy.__version__
 aux = doc_version.find('+git.')
 if aux >= 0:
-    doc_version_page = 'doc'
     doc_version = doc_version[:(aux + 13)]
-    doc_version2 = doc_version[:(aux)]
-    doc_version2 = 'latest release'
-else:
     doc_version_page = 'doc-devel'
+    doc_version2 = 'latest release'
+    doc_version_page2 = 'doc'
+else:
+    doc_version_page = 'doc'
     doc_version2 = 'development'
+    doc_version_page2 = 'doc-devel'
 
 # The short X.Y version.
 version = 'version: ' + doc_version
@@ -148,7 +149,7 @@ html_context = {
         ('<i class="fa fa-comment fa-fw"></i> Mailing list', 'https://mail.python.org/mailman3/lists/sfepy.python.org'),
         ('<i class="fa fa-bug fa-fw"></i> Bug/issue tracking', 'https://github.com/sfepy/sfepy/issues'),
         ('<i class="fa fa-file-text fa-fw"></i> The Paper', 'https://doi.org/10.1007/s10444-019-09666-0'),
-        ('<i class="fa fa-info-circle fa-fw"></i> Docs: %s' % doc_version2, 'https://sfepy.org/%s' % doc_version_page),
+        ('<i class="fa fa-info-circle fa-fw"></i> Docs: %s' % doc_version2, 'https://sfepy.org/%s' % doc_version_page2),
     ],
 }
 
