@@ -403,8 +403,12 @@ class Mesh(Struct):
             conn, cells = self.get_conn(desc, ret_cells=True)
             conns.append(conn)
             mat_ids.append(cmesh.cell_groups[cells])
+        # FIXME make point coordinates 3D
+        dim = cmesh.dim
+        iocoors = nm.zeros((cmesh.coors.shape[0], 3))
+        iocoors[:, :dim] = cmesh.coors
 
-        return cmesh.coors, cmesh.vertex_groups, conns, mat_ids, descs
+        return iocoors, cmesh.vertex_groups, conns, mat_ids, descs
 
     @property
     def coors(self):

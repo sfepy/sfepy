@@ -3,7 +3,7 @@ import numpy as nm
 from sfepy.discrete.equations import Equation, Equations
 from sfepy.discrete.variables import FieldVariable
 from sfepy.discrete.fem import FEDomain
-from sfepy.discrete.fem.meshio import Msh2MeshIO
+from sfepy.discrete.fem.meshio import GmeshIO
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.functions import make_sfepy_function, Function
 from sfepy.discrete.integrals import Integral, Integrals
@@ -25,7 +25,7 @@ data_path = "output\\{example_name}\\{approx_order}\\{example_name}{approx_order
 mesh_path = "mesh\\" + mesh_name
 
 
-gmsh_loader = Msh2MeshIO(data_path)
+gmsh_loader = GmeshIO(data_path)
 
 
 mesh = Mesh.from_file(mesh_path)
