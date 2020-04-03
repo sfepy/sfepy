@@ -10,7 +10,7 @@ from operator import mul
 import numpy as np
 
 from sfepy.base.ioutils import InDir
-from sfepy.discrete.dg.dg_basis import iter_by_order
+from sfepy.discrete.dg.dg_basis import iter_by_order, get_n_el_nod
 
 helps = {
     'max_order' :
@@ -25,23 +25,24 @@ def main():
     parser.add_argument('-m', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
                         default=10, help=helps['max_order'])
+    parser.add_argument("-e", "--extended", action="store_true", default=False)
     parser.add_argument('output_dir', help=helps['output_dir'])
     options = parser.parse_args()
 
+    extended = options.extended
     indir = InDir(options.output_dir)
 
     r, s = symbols("r, s")
     x, y = symbols("x, y")
     order = options.max_order
     dim = 2
-    n_el_nod = int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
-                   reduce(mul, range(1, dim + 1)))  # number of DOFs per element
+    n_el_nod = get_n_el_nod(order, dim, extended)
 
     tensorP = []
     exponentM = np.zeros((n_el_nod, 3), dtype=np.int32)
     coefM = np.zeros((n_el_nod, n_el_nod))
     exponentList = []
-    for m, idx in enumerate(iter_by_order(order, dim)):
+    for m, idx in enumerate(iter_by_order(order, dim, extended)):
         # print(m, idx)
         exponentM[m, :dim] = idx
         # print("P_{} = {}".format(m, pa*pb))
@@ -57,9 +58,9 @@ def main():
         print("P_{}{} = {}".format(m, idx, tensorP[m]))
         print()
 
-    np.savetxt(indir("legendre2D_tensor_expos.txt"), exponentM, fmt="%d")
+    np.savetxt(indir("legendre2D_tensor{}_expos.txt".format("_ext" if extended else "")), exponentM, fmt="%d")
     # TODO are coefs always integers?
-    np.savetxt(indir("legendre2D_tensor_coefs.txt"), coefM, fmt="%d")
+    np.savetxt(indir("legendre2D_tensor{}_coefs.txt".format("_ext" if extended else "")), coefM, fmt="%d")
 
 
 if __name__ == '__main__':

@@ -11,13 +11,15 @@ from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
 
 
-def iter_by_order(order, dim):
+def iter_by_order(order, dim, extended=True):
     """
     Iterates over all combinations of basis functions indexes
     needed to create multidimensional basis in a way that creates hierarchical basis
     :param order: desired order of multidimensional basis
     :param dim: dimension of the basis
-    :yields: tuple containing indexes, use in _combine_polyvals and combine_polyvals_der
+    :param extended
+
+    :yields: tuple containing indexes, use in _combine_polyvals and _combine_polyvals_der
     :return: None
     """
 
@@ -33,7 +35,14 @@ def iter_by_order(order, dim):
         for k in range(porder):
             for i in range(k + 1):
                 yield (i, k - i)
-        return
+        if not extended:
+            return
+        for k in range(1, porder):
+            for i in range(1, porder):
+                if i == 1 and k == 1:
+                    continue
+                yield (i, k)
+
     elif dim == 3:
         for k in range(porder):
             for j in range(k + 1):
@@ -42,7 +51,7 @@ def iter_by_order(order, dim):
         return
 
 
-def get_n_el_nod(order, dim):
+def get_n_el_nod(order, dim, extended=False):
     """
     Number of nodes per element for discontinuous legendre basis, i.e.
     number of iterations yielded by iter_by_order
@@ -54,8 +63,11 @@ def get_n_el_nod(order, dim):
 
     :param order:
     :param dim:
+    :param extended
     :return:
     """
+    if extended:
+        return (order + 1) ** dim
     return int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
                reduce(mul, range(1, dim + 1)))
 
@@ -309,16 +321,18 @@ class LegendrePolySpace(PolySpace):
 class LegendreTensorProductPolySpace(LegendrePolySpace):
     name = "legendre_tensor_product"
 
-    def __init__(self, name, geometry, order):
+    def __init__(self, name, geometry, order, extended=False):
         super().__init__(name, geometry, order)
+        self.extened = extended
+        self.n_nod = get_n_el_nod(self.order, self.dim, self.extened)
         if self.dim > 1:
             indir = InDir(__file__)
             try:
                 self.coefM = nm.loadtxt(
-                        indir("legendre2D_tensor_coefs.txt")
+                        indir("legendre2D_tensor{}_coefs.txt".format("_ext" if extended else ""))
                 )[:self.n_nod, :self.n_nod]
                 self.expoM = nm.loadtxt(
-                        indir("legendre2D_tensor_expos.txt")
+                        indir("legendre2D_tensor{}_expos.txt".format("_ext" if extended else ""))
                 )[:self.n_nod, :]
             except IOError as e:
                 raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
@@ -371,19 +385,19 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             return nm.concatenate(res)
 
         P = nm.zeros((self.n_nod, 3), dtype=nm.int32)
-        for m, idx in enumerate(iter_by_order(self.order, self.dim)):
+        for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extened)):
             P[m, :self.dim] = idx
 
         F = nm.zeros((self.n_nod, self.n_nod))
         Fa = nm.zeros((self.n_nod, self.n_nod))
 
-        for m, idx in enumerate(iter_by_order(self.order, self.dim)):
+        for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extened)):
             xcoefs = list(jacobi(idx[0], 0, 0).coef)[::-1]
             xcoefs = nm.array(xcoefs + [0] * (self.order + 1 - len(xcoefs)))
             ycoefs = list(jacobi(idx[1], 0, 0).coef)[::-1]
             ycoefs = nm.array(ycoefs + [0] * (self.order + 1 - len(ycoefs)))
             coef_mat = nm.outer(xcoefs, ycoefs)
-            F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim)]
+            F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim, self.extened)]
         return F, P
 
 
@@ -524,7 +538,7 @@ def plot_2Dtensor_basis_grad():
                       coors=gel_coors)
 
     order = 2
-    bs = LegendreTensorProductPolySpace('legb', geometry, order)
+    bs = LegendreTensorProductPolySpace('legb', geometry, order, extended=True)
 
     # Make data.
     X = nm.arange(0, 1, 0.025)
@@ -548,7 +562,7 @@ def plot_2Dtensor_basis_grad():
 
     # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
-    for i, idx in enumerate(iter_by_order(order, 2)):
+    for i, idx in enumerate(iter_by_order(order, 2, True)):
         fig = plt.figure("{}>{}".format(i, idx))
         ax = fig.gca(projection='3d')
         fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,

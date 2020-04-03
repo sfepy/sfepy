@@ -37,7 +37,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
     }
 
     fields = {
-        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')  #
+        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre_extended')  #
     }
 
     variables = {

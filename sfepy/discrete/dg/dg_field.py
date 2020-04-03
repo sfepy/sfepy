@@ -106,6 +106,8 @@ def get_gel(region):
                              ' reference geometries!'.format(region))
 
 
+
+
 class DGField(FEField):
     """
     Class for usage with DG terms, provides functionality for Discontinous
@@ -116,7 +118,7 @@ class DGField(FEField):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base=None, approx_order=1, integral=None):
+                 poly_space_base=None, approx_order=1, integral=None, extended=False):
         """
         Creates DGField, with Legendre polyspace and default integral
         corresponding to 2 * approx_order.
@@ -152,6 +154,7 @@ class DGField(FEField):
         self.n_el_facets = self.dim + 1 if self.gel.is_simplex else 2**self.dim
 
         # approximation space
+        self.extended = extended
         self.space = space
         self.poly_space_base = poly_space_base
         if poly_space_base is not None:
@@ -160,7 +163,7 @@ class DGField(FEField):
         elif self.gel.name in ["1_2", "2_4", "3_8"]:
             self.poly_space = LegendreTensorProductPolySpace(
                 self.gel.name + "_DG_legendre",
-                self.gel, self.approx_order)
+                self.gel, self.approx_order, extended=self.extended)
         else:
             self.poly_space = LegendreSimplexPolySpace(
                 self.gel.name + "_DG_legendre",
@@ -1349,3 +1352,10 @@ class DGField(FEField):
         # cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
         # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
         return res
+
+
+class DGFieldExtended(DGField):
+     family_name = 'volume_DG_legendre_extended_discontinuous'
+
+     def __init__(self, *args, **kwargs):
+         super(DGFieldExtended, self).__init__(*args, **kwargs, extended=True)

@@ -452,7 +452,7 @@ class DiffusionDGFluxTerm(DGTerm):
                 avgDdbase = (nm.einsum("ikl,idfkq->idfkq",
                                        D, inner_facet_base_d)) / 2.
                 # in DG test function is non zero only inside element
-                # - hence we average with zero
+                # - hence we average with zero TODO check againt Dolejší (2015)!?
                 jmpState = inner_facet_state - outer_facet_state
                 vals = nm.einsum("idfkq, ifk, ifq , ifq -> id",
                                  avgDdbase, fc_n, jmpState, weights)

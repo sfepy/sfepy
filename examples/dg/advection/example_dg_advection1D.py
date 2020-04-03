@@ -79,7 +79,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.5, dt=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiters': {"f": MomentLimiter1D},
+                 # 'limiters': {"f": MomentLimiter1D},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
