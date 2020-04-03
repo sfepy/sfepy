@@ -63,7 +63,11 @@ def update_supported_formats(formats):
             if io == 'meshio':
                 flag = _flag[:]
                 if ext is None:
-                    ext = f2e[format]
+                    if format in f2e:
+                        ext = f2e[format]
+                    else:
+                        continue
+
                 if f in _writer_map:
                     flag = 'w' + flag
                 if format in reader_map:

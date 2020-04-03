@@ -66,23 +66,36 @@ class Test(TestCommon):
         """Try to read all listed meshes."""
         from sfepy.discrete.fem import Mesh
 
+        ok = True
         conf_dir = op.dirname(__file__)
-        meshes = {}
+        self.meshes = {}
         for ii, filename in enumerate(filename_meshes):
             self.report('%d. mesh: %s' % (ii + 1, filename))
-            mesh = Mesh.from_file(filename, prefix_dir=conf_dir)
+            try:
+                mesh = Mesh.from_file(filename, prefix_dir=conf_dir)
 
-            assert_(mesh.dim == (mesh.coors.shape[1]))
-            assert_(mesh.n_nod == (mesh.coors.shape[0]))
-            assert_(mesh.n_nod == (mesh.cmesh.vertex_groups.shape[0]))
-            assert_(mesh.n_el == mesh.cmesh.num[mesh.cmesh.tdim])
+            except Exception as exc:
+                self.report(exc)
+                self.report('read failed!')
+                ok = False
+                continue
+
+            try:
+                assert_(mesh.dim == (mesh.coors.shape[1]))
+                assert_(mesh.n_nod == (mesh.coors.shape[0]))
+                assert_(mesh.n_nod == (mesh.cmesh.vertex_groups.shape[0]))
+                assert_(mesh.n_el == mesh.cmesh.num[mesh.cmesh.tdim])
+
+            except ValueError as exc:
+                self.report(exc)
+                self.report('read assertion failed!')
+                ok = False
+                continue
 
             self.report('read ok')
-            meshes[filename] = mesh
+            self.meshes[filename] = mesh
 
-        self.meshes = meshes
-
-        return True
+        return ok
 
     def _compare_meshes(self, mesh0, mesh1, flag='cv'):
         import numpy as nm
