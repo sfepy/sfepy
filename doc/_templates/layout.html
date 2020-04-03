@@ -25,11 +25,15 @@
         </p>
         <ul>
             {% for text, link in menu_links %}
-                <li class="toctree-l1"><a href="{{ link }}">{{ text }}</a></li>
+                {% if hasdoc(link) %}
+                    <li class="toctree-l1"><a href="{{ pathto(link) }}">{{ text }}</a></li>
+                {% else %}
+                    <li class="toctree-l1"><a href="{{ link }}">{{ text }}</a></li>
+                {% endif %}
             {% endfor %}
         </ul>
     {% endif %}
     <div class="logo_zcu_container">
-      <a href="https://www.zcu.cz/en"><img src="./_static/uwb_logo.png"></a>
+      <a href="https://www.zcu.cz/en"><img src="{{ pathto('_static/uwb_logo.png', 1) }}"></a>
     </div>
 {% endblock %}

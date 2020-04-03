@@ -143,8 +143,8 @@ html_context = {
     'github_version': 'master/doc/',
     'menu_links_name': 'Connections',
     'menu_links': [
-        ('<i class="fa fa-newspaper-o fa-fw"></i> News', 'news.html'),
-        ('<i class="fa fa-download fa-fw"></i> Downloads', 'downloads.html'),
+        ('<i class="fa fa-newspaper-o fa-fw"></i> News', 'news'),
+        ('<i class="fa fa-download fa-fw"></i> Downloads', 'downloads'),
         ('<i class="fa fa-github fa-fw"></i> Source Code', 'https://github.com/sfepy/sfepy'),
         ('<i class="fa fa-comment fa-fw"></i> Mailing list', 'https://mail.python.org/mailman3/lists/sfepy.python.org'),
         ('<i class="fa fa-bug fa-fw"></i> Bug/issue tracking', 'https://github.com/sfepy/sfepy/issues'),
