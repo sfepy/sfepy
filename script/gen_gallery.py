@@ -509,14 +509,13 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
             output('"%s"' % rst_filename)
             ebase = ex_filename.replace(examples_dir, '')[1:]
 
-            rst_base = rst_filename.replace('.rst', '')
+            rst_base = os.path.splitext(rst_filename)[0]
 
             rst_ex_filename = _make_sphinx_path(ex_filename)
             docstring = get_default(import_file(ex_filename).__doc__,
                                     'missing description!')
 
-            ifd.write('    %s <%s>\n' % (os.path.basename(ebase),
-                                         rst_filename.replace('.rst', '')))
+            ifd.write('    %s <%s>\n' % (os.path.basename(ebase), rst_base))
             fig_include = ''
             for fig_filename in _get_fig_filenames(ebase, images_dir):
                 rst_fig_filename = _make_sphinx_path(fig_filename)
@@ -603,7 +602,7 @@ def generate_gallery(examples_dir, output_filename, doc_dir,
         icol = 0
         for ex_filename, rst_filename in filenames:
             ebase = ex_filename.replace(examples_dir, '')[1:]
-            link = rst_filename.replace('.rst', '')
+            link = os.path.splitext(rst_filename)[0]
 
             thumbnail_filename = next(_get_fig_filenames(ebase,
                                                          thumbnails_dir))
