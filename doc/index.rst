@@ -18,7 +18,7 @@
 
    SfePy can use many terms to build the PDEs to be solved, see
    :ref:`term_overview`. SfePy comes also with a number of examples that can
-   get you started, check `Gallery`_, :doc:`examples` and
+   get you started, check :doc:`examples/gallery`, :doc:`examples` and
    :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
 
    SfePy can be used in parallel (work in progress), see
