@@ -49,8 +49,8 @@ extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
               'sphinx.ext.viewcode', 'numpydoc',
               'gen_term_table', 'gen_solver_table',
               'IPython.sphinxext.ipython_console_highlighting',
-              'IPython.sphinxext.ipython_directive']
-#extensions = ['sphinx.ext.autodoc']
+              'IPython.sphinxext.ipython_directive',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -66,14 +66,26 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'SfePy'
-copyright = u'2017, Robert Cimrman and SfePy developers'
+copyright = u'2020, Robert Cimrman and SfePy developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-#
+
+doc_version = sfepy.__version__
+aux = doc_version.find('+git.')
+if aux >= 0:
+    doc_version = doc_version[:(aux + 13)]
+    doc_version_page = 'doc-devel'
+    doc_version2 = 'latest release'
+    doc_version_page2 = 'doc'
+else:
+    doc_version_page = 'doc'
+    doc_version2 = 'development'
+    doc_version_page2 = 'doc-devel'
+
 # The short X.Y version.
-version = sfepy.__version__
+version = 'version: ' + doc_version
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -116,18 +128,40 @@ pygments_style = 'sphinx'
 
 
 # -- Options for HTML output ---------------------------------------------------
+html_logo = './_static/sfepy_logo.png'
 
-# The theme to use for HTML and HTML Help pages.  Major themes that come with
-# Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'sfepy_theme'
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-#html_theme_options = {}
+import sphinx_rtd_theme
+html_theme = 'sphinx_rtd_theme'
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_context = {
+    # Enable the "Edit in GitHub link within the header of each page.
+    'display_github': False,
+    # Set the following variables to generate the resulting github URL for each page.
+    # Format Template: https://{{ github_host|default("github.com") }}/{{ github_user }}/{{ github_repo }}/blob/{{ github_version }}{{ conf_py_path }}{{ pagename }}{{ suffix }}
+    'github_user': 'sfepy',
+    'github_repo': 'sfepy',
+    'github_version': 'master/doc/',
+    'menu_links_name': 'Connections',
+    'menu_links': [
+        ('<i class="fa fa-newspaper-o fa-fw"></i> News', 'news'),
+        ('<i class="fa fa-download fa-fw"></i> Downloads', 'downloads'),
+        ('<i class="fa fa-github fa-fw"></i> Source Code', 'https://github.com/sfepy/sfepy'),
+        ('<i class="fa fa-comment fa-fw"></i> Mailing list', 'https://mail.python.org/mailman3/lists/sfepy.python.org'),
+        ('<i class="fa fa-bug fa-fw"></i> Bug/issue tracking', 'https://github.com/sfepy/sfepy/issues'),
+        ('<i class="fa fa-file-text fa-fw"></i> The Paper', 'https://doi.org/10.1007/s10444-019-09666-0'),
+        ('<i class="fa fa-info-circle fa-fw"></i> Docs: %s' % doc_version2, 'https://sfepy.org/%s' % doc_version_page2),
+    ],
+}
 
-# Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = ["."]
-
+html_theme_options = {
+    'logo_only': True,
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 2,
+    'includehidden': True,
+    'titles_only': False,
+    'display_version': True,
+}
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 #html_title = None
@@ -148,6 +182,10 @@ html_theme_path = ["."]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+import sphinx
+html_style = 'sfepy.css' if int(sphinx.__version__[0]) < 2 else\
+    'sfepy_sphinx2_fix.css'
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -187,8 +225,6 @@ html_domain_indices = ["py-modindex"]
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SfePydoc'
-
 
 # -- Options for LaTeX output --------------------------------------------------
 

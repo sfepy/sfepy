@@ -18,7 +18,7 @@
 
    SfePy can use many terms to build the PDEs to be solved, see
    :ref:`term_overview`. SfePy comes also with a number of examples that can
-   get you started, check :ref:`sfepy-gallery-examples-index` and
+   get you started, check :doc:`examples/gallery`, :doc:`examples` and
    :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
 
    SfePy can be used in parallel (work in progress), see
@@ -31,27 +31,6 @@
    :ref:`introduction_installation`.
 
    **License:** :doc:`BSD <license>`
-
-   Links
-   -----
-
-      .. list-table::
-
-         * - Development version documentation
-           - https://sfepy.org/doc-devel
-         * - Latest release version documentation
-           - https://sfepy.org/doc
-         * - Automatically generated gallery
-           - https://sfepy.org/gallery
-         * - Mailing list (both user and developer)
-           - `sfepy(at)python.org
-             <https://mail.python.org/mm3/mailman3/lists/sfepy.python.org>`_
-         * - Github organization
-           - https://github.com/sfepy
-         * - Source code (main git repository)
-           - https://github.com/sfepy/sfepy
-         * - Bug/issue tracking
-           - https://github.com/sfepy/sfepy/issues
 
    Applications
    ------------
@@ -124,23 +103,10 @@
 
    See also :doc:`archived_support`.
 
-.. _documentation:
+   Manual in PDF
+   --------------
 
-Documentation
-=============
-
-.. toctree::
-   :maxdepth: 2
-
-   introduction
-   installation
-   tutorial
-   users_guide
-   examples
-   theory
-   developer_guide
-
-PDF version of the documentation: :download:`sfepy_manual.pdf`
+   PDF version of the documentation: :download:`sfepy_manual.pdf`
 
 Indices and tables
 ==================
@@ -148,3 +114,12 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. toctree::
+   :hidden:
+   :maxdepth: 3
+
+   About <self>
+   documentation
+   development
+   examples/gallery

@@ -14,12 +14,6 @@ Pre-built  packages
 
 - Experimental docker image: `<https://github.com/sfepy/sfepy-docker>`_.
 
-Sources
--------
-
-`Latest and previous releases <_static/downloads.php>`_.
-
-
 Git repository
 --------------
 
@@ -38,3 +32,7 @@ web access (fork the repository there if you wish to help):
 latest snapshot:
 
    https://github.com/sfepy/sfepy/archive/master.zip
+
+latest and previous releases:
+
+   https://github.com/sfepy/sfepy/releases

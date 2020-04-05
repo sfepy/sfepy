@@ -20,6 +20,7 @@
 .. _sfepy/sfepy: https://github.com/sfepy/sfepy
 .. _sfepy tarball: https://github.com/sfepy/sfepy/tarball/master
 .. _our wiki: https://github.com/sfepy/sfepy/wiki
+.. _gallery: https://sfepy.org/gallery
 
 .. other links
 
@@ -81,6 +82,7 @@
 .. _restructuredtext primer: http://sphinx.pocoo.org/rest.html
 .. _sphinx markup constructs: http://sphinx.pocoo.org/markup/index.html
 .. _docutils restructuredtext: http://docutils.sourceforge.net/rst.html
+.. _Read the Docs: https://readthedocs.org
 
 .. _tex live: http://www.tug.org/texlive
 .. _LaTeX: http://www.latex-project.org/
