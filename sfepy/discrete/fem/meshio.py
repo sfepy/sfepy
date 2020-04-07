@@ -1824,7 +1824,7 @@ class XYZMeshIO(MeshIO):
     format = 'xyz'
 
     def _read_coors(self):
-        coors = nm.loadtxt(self.filename)
+        coors = nm.loadtxt(self.filename, ndmin=2)
         if (coors[:, -1] == 0).all():
             coors = coors[:, :-1].copy()
 
@@ -1864,7 +1864,7 @@ class XYZMeshIO(MeshIO):
 
         conn_ext = '.IEN' if op.splitext(self.filename)[1].isupper() else '.ien'
         conn = nm.loadtxt(edit_filename(self.filename, new_ext=conn_ext),
-                          dtype=nm.int32) - 1
+                          dtype=nm.int32, ndmin=2) - 1
         desc = '%d_%d' % (dim, conn.shape[1])
 
         mesh._set_io_data(coors, nm.zeros(n_nod, dtype=nm.int32),
