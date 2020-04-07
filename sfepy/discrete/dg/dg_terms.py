@@ -98,11 +98,14 @@ def central_discont_linear_flux(in_fc_v, out_fc_v,
     return central + upwind
 
 
-def ScalarDotGradScalar( state_vg, test_vg):
+def ScalarDotGradScalar(state_vg, test_vg):
 
     whs = state_vg.qp.weights
-    stiff = nm.einsum("iqkb,iqkb,iqkd,...q->ikbd",
-                     state_vg.volume, state_vg.bf, test_vg.bfg, whs)
+    stiff = nm.einsum(
+                      "iqkb," +
+                      "iqkb,iqkd,...q->ikdb",
+                      state_vg.volume,
+                      state_vg.bf, test_vg.bfg, whs)
 
     return stiff
 
@@ -110,11 +113,13 @@ def ScalarDotGradScalar( state_vg, test_vg):
 def ScalarDotScalar(state_vg, test_vg):
 
     whs = state_vg.qp.weights
-    mass = nm.einsum("iqkb,iqkb,iqkd,...q->ikbd",
-                     state_vg.volume, state_vg.bf, test_vg.bf, whs)
+    mass = nm.einsum(
+                     "iqkb," +
+                     "iqkb,iqkd,...q->ikdb",
+                     state_vg.volume,
+                     state_vg.bf, test_vg.bf, whs)
 
     return mass
-
 
 
 class DGTerm(Term):
@@ -500,9 +505,6 @@ class DiffusionDGFluxTermHest1(DGTerm):
         if "DG" not in field.family_name:
             raise ValueError("Used DG term with non DG field {} of family {}"
                              .format(field.name, field.family_name))
-        if self.mode == "avg_state":
-            # put state where it is expected by the function
-            state = test
 
         fargs = (state, test, diff_var, field, region, diff_tensor[:, 0, :, :])
         return fargs
@@ -532,14 +534,20 @@ class DiffusionDGFluxTermHest1(DGTerm):
             fc_b,
             weights)
 
-        stiff = ScalarDotGradScalar(state_vg, test_vg)
+        # stiff matrix is actually transposed in the following equations
+        stiffT = ScalarDotGradScalar(state_vg, test_vg)  # .swapaxes(-1, -2)
 
         mass = ScalarDotScalar(state_vg, test_vg)
         imass = nm.zeros(mass.shape)
-        imass[mass != 0] = 1./mass[mass != 0]
+        imass[mass > 10e-15] = 1./mass[mass > 10e-15]
 
-        # TODO stiff matrix is actually transposed in this equation
-        q = nm.einsum("ikbd,ikdb,ikl,ib->ib", imass, stiff, sD, u) + uflux
+        iimass = nm.zeros(mass.shape)
+        iimass[:, :, :, :] = nm.linalg.inv(mass[0, 0, :, :])
+
+        q = nm.einsum("ikdb,ib->id", imass,
+                      - nm.einsum("ikdb,ikl,ib->id",
+                                  stiffT, sD, u)
+                      + uflux)
 
         stateq = state.copy()
         stateq.data = [field.ravel_sol(q)]
@@ -553,14 +561,14 @@ class DiffusionDGFluxTermHest1(DGTerm):
             fc_b,
             weights)
 
-        # TODO stiff matrix is actually transposed in this equation
-        u_out = nm.einsum("ikbd,ikl,ib->ib", stiff, sD, q) + qflux
+        u_out = - nm.einsum("ikdb,ikl,ib->id", stiffT, sD, q) + qflux
 
         out[:] = 0.0
         out[:, 0, :, 0] = u_out[:]
 
         status = None
         return out, status
+
 
 class DiffusionInteriorPenaltyTerm(DGTerm):
     r"""

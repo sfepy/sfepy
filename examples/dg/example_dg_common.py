@@ -28,7 +28,7 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D, \
 from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, \
     NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
 from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, \
-    DiffusionInteriorPenaltyTerm
+    DiffusionInteriorPenaltyTerm, DiffusionDGFluxTermHest1
 
 configure_output({'output_screen': True, 'output_log_name': "last_run.txt"})
 
@@ -36,6 +36,7 @@ register_term(AdvectDGFluxTerm)
 register_term(NonlinScalarDotGradTerm)
 register_term(NonlinearHyperDGFluxTerm)
 register_term(DiffusionDGFluxTerm)
+register_term(DiffusionDGFluxTermHest1)
 register_term(DiffusionInteriorPenaltyTerm)
 
 register_solver(TVDRK3StepSolver)

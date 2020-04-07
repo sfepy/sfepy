@@ -298,7 +298,7 @@ class TestDiffusionDGFluxTerm:
 class TestDiffusionDGFluxTermHest1:
 
     def test_function_explicit_right_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        ts = DGTermTestScope(dim=1, approx_order=4)
 
         term = DiffusionDGFluxTermHest1("diff_lf_flux(D.val, v, u)",
                                    "D.val, v,  u[-1]",
@@ -357,7 +357,7 @@ class TestDiffusionInteriorPenaltyTerm:
 
         (out, iel1, iel2, _, _), _ = term.function(
             ts.out,  # out, note that for implicit mode the out
-            # argument is ignored
+                     # argument is ignored
             ts.u,  # state
             "u",  # diff_var
             ts.field,
