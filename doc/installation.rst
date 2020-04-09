@@ -128,11 +128,11 @@ There are no further steps required to install/configure *SfePy*
 
 .. _running_sfepy_docker_images:
 
-Using SfePy Docker images
+Using SfePy Docker Images
 ---------------------------
 
-Beside classical installation we also provide experimental Docker images with
-ready-to-run Anaconda and *Sfepy* installation.
+Besides the classical installation we also provide experimental Docker images
+with ready-to-run Anaconda and *Sfepy* installation.
 
 Before you start using *SfePy* images, you need to first install and configure
 Docker on your computer. To do this follow official
