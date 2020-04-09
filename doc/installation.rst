@@ -125,6 +125,34 @@ pre-built *SfePy* packages are available. You may directly install them with:
 There are no further steps required to install/configure *SfePy*
 (see `Notes on Multi-platform Python Distributions`_ for additional notes).
 
+
+.. _running_sfepy_docker_images:
+
+Using SfePy Docker images
+---------------------------
+
+Beside classical installation we also provide experimental Docker images with
+ready-to-run Anaconda and *Sfepy* installation.
+
+Before you start using *SfePy* images, you need to first install and configure
+Docker on your computer. To do this follow official
+`Docker documentation <https://docs.docker.com/get-docker/>`__.
+
+Currently available images are:
+
+- `sfepy/sfepy-notebook <https://hub.docker.com/r/sfepy/sfepy-notebook>`__ -
+  basic command line interface and web browser access to
+  Jupyter notebook/JupyterLab interface,
+
+- `sfepy/sfepy-x11vnc-desktop
+  <https://hub.docker.com/r/sfepy/sfepy-x11vnc-desktop>`__ -
+  optimized Ubuntu desktop environment accessible via standard web browser
+  or VNC client.
+
+For available runtime options and further information see
+`sfepy-docker <https://github.com/sfepy/sfepy-docker>`__ project on Github.
+
+
 .. _installing_from_sources:
 
 Installing SfePy from Sources
@@ -418,3 +446,4 @@ installed, install it or try `apt-get install` instead)::
 Than *SfePy* can be installed with::
 
    apt-get install python-sfepy
+
