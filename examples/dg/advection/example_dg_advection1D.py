@@ -31,7 +31,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.5, dt=None,
         filename_mesh = get_1Dmesh_hook(0, 1, 100)
 
     materials = {
-        'a': ({'val': 1.0, '.flux': 0.0},),
+        'a': ({'val': [1.0], '.flux': 0.0},),
 
     }
 
@@ -113,8 +113,8 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.5, dt=None,
 
     def analytic_sol(coors, t=0):
         x = coors[..., 0]
-        res = get_ic(x[..., None] - t[None, ...])
-        return res
+        res = get_ic(x[..., None]) # - t[None, ...]) # for animating transient problem
+        return res[..., 0]
 
     @local_register_function
     def sol_fun(ts, coors, mode="qp", **kwargs):

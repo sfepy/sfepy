@@ -212,7 +212,7 @@ def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
     ax = axs[io][ir]
     xs = nm.linspace(conf.mstart, conf.mend, 500)[:, None]
     ax.set_title("o: {}, h: {}".format(order, n_cells))
-    ax.plot(xs, conf.analytic_sol(xs, t=1), label="fun-ex", color="grey")
+    ax.plot(xs, conf.analytic_sol(xs, t=nm.array(1)), label="fun-ex", color="grey")
     ax.plot(xx[:, 0], uu[:, 0, 0], alpha=.5)
     ax.plot(fqps, ana_qp.flatten(), "--", color="grey")
     ax.plot(fqps, num_qp.flatten())
