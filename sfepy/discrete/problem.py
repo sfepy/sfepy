@@ -7,7 +7,7 @@ import numpy as nm
 
 from sfepy.base.base import (
     dict_from_keys_init, select_by_names, is_string, is_integer, is_sequence,
-    output, get_default, Struct, IndexedStruct)
+    output, get_default, get_default_attr, Struct, IndexedStruct)
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials
@@ -621,7 +621,8 @@ class Problem(Struct):
         graph_changed = self.equations.time_update(self.ts,
                                                    ebcs, epbcs, lcbcs,
                                                    functions, self,
-                                                   active_only=ac)
+                                                   active_only=ac,
+                                                   verbose=get_default_attr(self.conf, 'verbose', False))
         self.graph_changed = graph_changed
 
         if (is_matrix
@@ -769,7 +770,7 @@ class Problem(Struct):
     def init_time(self, ts):
         self.update_time_stepper(ts)
         self.equations.init_time(ts)
-        self.update_materials(mode='force')
+        self.update_materials(mode='force', verbose=get_default_attr(self.conf, 'verbose', False))
 
         self._restart_filenames = []
 
@@ -1237,7 +1238,7 @@ class Problem(Struct):
                 state.apply_ebc()
 
             if update_materials:
-                self.update_materials()
+                self.update_materials(verbose=get_default_attr(self.conf, 'verbose', False))
 
         def poststep_fun(ts, vec):
             state = state0.copy(preserve_caches=True)
