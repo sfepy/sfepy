@@ -10,8 +10,10 @@ from sfepy.base.ioutils import InDir
 from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
 
+from scipy.special import jacobi as scp_jacobi
+from scipy.special import eval_jacobi as scp_eval_jacobi
 
-def iter_by_order(order, dim, extended=True):
+def iter_by_order(order, dim, extended=False):
     """
     Iterates over all combinations of basis functions indexes
     needed to create multidimensional basis in a way that creates hierarchical basis
@@ -29,25 +31,24 @@ def iter_by_order(order, dim, extended=True):
     porder = order + 1
     if dim == 1:
         for i in range(porder):
-            yield (i,)
+            yield i,
         return
     elif dim == 2:
         for k in range(porder):
             for i in range(k + 1):
-                yield (i, k - i)
-        if not extended:
-            return
+                yield i, k - i
+        if not extended: return
         for k in range(1, porder):
             for i in range(1, porder):
-                if i == 1 and k == 1:
+                if i + k <= porder - 1:
                     continue
-                yield (i, k)
+                yield i, k
 
     elif dim == 3:
         for k in range(porder):
             for j in range(k + 1):
                 for i in range(j + 1):
-                    yield (i, j - i, k - j)
+                    yield i, j - i, k - j
         return
 
 
@@ -77,7 +78,7 @@ class LegendrePolySpace(PolySpace):
     Legendre hierarchical polynomials basis, over [0, 1] domain.
     """
 
-    def __init__(self, name, geometry, order):
+    def __init__(self, name, geometry, order, extended):
         """
         :param name:
         :param geometry: geometry object
@@ -87,10 +88,10 @@ class LegendrePolySpace(PolySpace):
         from operator import add, mul
 
         PolySpace.__init__(self, name, geometry, order)
-
+        self.extended = extended # only tensor product polyspace is extended
         self.n_v = geometry.n_vertex,
         self.dim = geometry.dim
-        self.n_nod = get_n_el_nod(self.order, self.dim)
+        self.n_nod = get_n_el_nod(self.order, self.dim, self.extended)
 
         self.coefM = None
         self.expoM = None
@@ -129,7 +130,7 @@ class LegendrePolySpace(PolySpace):
             polyvals[..., 0] = self.legendreP(coors)
             polyvals[..., 1] = self.gradlegendreP(coors)
 
-            for m, idx in enumerate(iter_by_order(self.order, self.dim)):
+            for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extended)):
                 for d in range(self.dim):
                     values[..., d, m] = 2 * self._combine_polyvals_diff(coors, polyvals, d, idx)
                     # 2 is due to transformation from [0,1] to [-1,1]
@@ -137,7 +138,7 @@ class LegendrePolySpace(PolySpace):
             values = nm.zeros(coors.shape[:-1] + (1, self.n_nod,))
             # 1, because no matter the dimension functions have only one value
             polyvals = self.legendreP(coors)
-            for m, idx in enumerate(iter_by_order(self.order, self.dim)):
+            for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extended)):
                 values[..., 0, m] = self._combine_polyvals(coors, polyvals, idx)
 
         return values
@@ -146,14 +147,17 @@ class LegendrePolySpace(PolySpace):
         """
         For dim > 1 returns F and P matrices according to gmsh basis specification:
 
-        Let us assume that the approximation of the view's value over an element is written as a linear
-        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
-        list-of-values). Defining
+        Let us assume that the approximation of the view's value over an element
+        is written as a linear  combination of d basis functions
+        f[i], i=0, ..., d-1 (the coefficients being stored in list-of-values).
+
+        Defining
 
         f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
 
-        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
-        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the
+        coordinates in the element's parameter space), then val-coef-matrix
+        denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
         Expects matrices to be saved in atributes coefM and expoM!
 
@@ -195,8 +199,6 @@ class LegendrePolySpace(PolySpace):
     # --------------------- #
     # 1D legendre polyspace #
     # --------------------- #
-
-
     def legendreP(self, coors):
         """
         :param coors: coordinates, preferably in interval [-1, 1] for which this basis is intented
@@ -256,11 +258,13 @@ class LegendrePolySpace(PolySpace):
             from scipy.special import comb as comb, factorial
             val = x[:] * 0.0
             for k in range(diff, n + 1):
-                val += comb(n, k) * comb(n + k, k) * factorial(k) / factorial(k - diff) * (-x) ** (k - diff)
+                val += comb(n, k) * comb(n + k, k) * factorial(k) / \
+                       factorial(k - diff) * (-x) ** (k - diff)
             val *= -1 if (n - diff) % 2 else 1
             return val
 
         return dfun
+    # --------------------- #
 
     # --------------------- #
     #  1D jacobi polyspace  #
@@ -274,7 +278,6 @@ class LegendrePolySpace(PolySpace):
         :param beta:
         :return: output shape is shape(coor) + (self.order + 1,)
         """
-        from scipy.special import eval_jacobi
         if not isinstance(coors, nm.ndarray):
             sh = (1,)
         else:
@@ -282,9 +285,9 @@ class LegendrePolySpace(PolySpace):
         values = nm.ones(sh + (self.order + 1,))
 
         for i in range(self.order + 1):
-            values[..., i] = eval_jacobi(i, alpha, beta, coors)
-            # for some reason eval_jacobi consumes last dimension if it is one, when called
-            # with order array
+            values[..., i] = scp_eval_jacobi(i, alpha, beta, coors)
+            # for some reason eval_jacobi consumes last dimension if it is one,
+            # when called with order array
 
         return values
 
@@ -305,10 +308,9 @@ class LegendrePolySpace(PolySpace):
         else:
             sh = nm.shape(coors)
 
-        from scipy.special import jacobi
         values = nm.zeros(sh + (self.order + 1,))
         for i in range(self.order + 1):
-            jacob_poly = jacobi(i, alpha, beta)
+            jacob_poly = scp_jacobi(i, alpha, beta)
             values[..., i] = jacob_poly.deriv(m=diff)(coors)
             # Warning
             # Computing values of high-order polynomials (around order > 20) using polynomial coefficients is
@@ -316,26 +318,30 @@ class LegendrePolySpace(PolySpace):
             # jacob_poly.deriv seems to be stable
 
         return values
+    # --------------------- #
+
 
 
 class LegendreTensorProductPolySpace(LegendrePolySpace):
     name = "legendre_tensor_product"
 
-    def __init__(self, name, geometry, order, extended=False):
-        super().__init__(name, geometry, order)
-        self.extened = extended
-        self.n_nod = get_n_el_nod(self.order, self.dim, self.extened)
+    def __init__(self, name, geometry, order, ):
+        super().__init__(name, geometry, order, extended=True)
+        self.n_nod = get_n_el_nod(self.order, self.dim, self.extended)
         if self.dim > 1:
-            indir = InDir(__file__)
-            try:
-                self.coefM = nm.loadtxt(
-                        indir("legendre2D_tensor{}_coefs.txt".format("_ext" if extended else ""))
-                )[:self.n_nod, :self.n_nod]
-                self.expoM = nm.loadtxt(
-                        indir("legendre2D_tensor{}_expos.txt".format("_ext" if extended else ""))
-                )[:self.n_nod, :]
-            except IOError as e:
-                raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
+            # indir = InDir(__file__)
+            # try:
+            #     self.coefM = nm.loadtxt(
+            #             indir("legendre2D_tensor{}_coefs.txt".format("_ext" if extended else ""))
+            #     )[:self.n_nod, :self.n_nod]
+            #     self.expoM = nm.loadtxt(
+            #             indir("legendre2D_tensor{}_expos.txt".format("_ext" if extended else ""))
+            #     )[:self.n_nod, :]
+            # except IOError as e:
+            #     raise IOError("File {} not found, run gen_legendre_tensor_base.py to generate it.".format(e.args[0]))
+
+            self.coefM, self.expoM = self.build_interpol_scheme()
+        pass
 
     def _combine_polyvals(self, coors, polyvals, idx):
         return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
@@ -350,30 +356,37 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         """
         Builds F and P matrices according to gmsh basis specification:
 
-        Let us assume that the approximation of the view's value over an element is written as a linear
-        combination of d basis functions f[i], i=0, ..., d-1 (the coefficients being stored in
-        list-of-values). Defining
+        Let us assume that the approximation of the view's value over an element
+        is written as a linear  combination of d basis functions
+        f[i], i=0, ..., d-1 (the coefficients being stored in list-of-values).
+
+        Defining
 
         f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
 
-        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the coordinates in the element's parameter
-        space), then val-coef-matrix denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the
+        coordinates in the element's parameter space), then val-coef-matrix
+        denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
 
-        NOT USED, matrices are loaded from file.
+        Note that this function returns coeficients according to gmsh
+        parametrization of Quadrangle i.e. [-1, 1] x [-1, 1] and hence the form
+        of basis function is not the same as exhibited by the
+        LegendreTensorProductPolySpace object which acts on parametrization
+        [0, 1] x [0, 1].
 
         :return: F, P
         """
 
-        from scipy.special import jacobi
-
         def flattten_upper_left_triag(A):
             """
-            Returns flattened upper triangular part of the antidiagonal of the matrix
+            Returns flattened upper triangular part of the antidiagonal
+            of the matrix
             i.e. zeros in this case:
                 0 0 0
                 0 0 .
                 0 . .
-            If the matrix represents product of two polynomials this effectively gets rid of highest powers
+            If the matrix represents product of two polynomials this effectively
+            gets rid of highest powers
             x^2y, xy^2, x^2y^2
             :param A:
             :return:
@@ -385,27 +398,28 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
             return nm.concatenate(res)
 
         P = nm.zeros((self.n_nod, 3), dtype=nm.int32)
-        for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extened)):
+        for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extended)):
             P[m, :self.dim] = idx
 
         F = nm.zeros((self.n_nod, self.n_nod))
-        Fa = nm.zeros((self.n_nod, self.n_nod))
 
-        for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extened)):
-            xcoefs = list(jacobi(idx[0], 0, 0).coef)[::-1]
+        for m, idx in enumerate(iter_by_order(self.order, self.dim, self.extended)):
+            xcoefs = list(scp_jacobi(idx[0], 0, 0).coef)[::-1]
             xcoefs = nm.array(xcoefs + [0] * (self.order + 1 - len(xcoefs)))
-            ycoefs = list(jacobi(idx[1], 0, 0).coef)[::-1]
+            ycoefs = list(scp_jacobi(idx[1], 0, 0).coef)[::-1]
             ycoefs = nm.array(ycoefs + [0] * (self.order + 1 - len(ycoefs)))
             coef_mat = nm.outer(xcoefs, ycoefs)
-            F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim, self.extened)]
+            F[m, :] = [coef_mat[idx] for idx in iter_by_order(self.order, self.dim, self.extended)]
         return F, P
+
+
 
 
 class LegendreSimplexPolySpace(LegendrePolySpace):
     name = "legendre_simplex"
 
-    def __init__(self, name, geometry, order):
-        super().__init__(name, geometry, order)
+    def __init__(self, name, geometry, order, extended=False):
+        super().__init__(name, geometry, order, extended)
         if self.dim > 1:
             indir = InDir(__file__)
             try:
@@ -557,8 +571,8 @@ def plot_2Dtensor_basis_grad():
     Zndx = bs.eval_base(nm.array(nm.meshgrid(Xgrad + dx, Ygrad)).T, diff=False)
     Zndy = bs.eval_base(nm.array(nm.meshgrid(Xgrad, Ygrad + dy)).T, diff=False)
     Znumgrad = nm.zeros(Zgrad.shape)
-    Znumgrad[:, :, :1, :] = (Zndx - Zn) / dx
-    Znumgrad[:, :, 1:2, :] = (Zndy - Zn) / dy
+    Znumgrad[:, :, :1, :] = (Zndx - Zn) / dx / 50
+    Znumgrad[:, :, 1:2, :] = (Zndy - Zn) / dy / 50
 
     # Zgrad[:,:,:,1:] = Zgrad[:,:,:,1:]   # nm.sum(Zgrad[:,:,:,1:]**2, axis=2)[:,:, None, :]
 
@@ -567,7 +581,7 @@ def plot_2Dtensor_basis_grad():
         ax = fig.gca(projection='3d')
         fun_surf = ax.plot_surface(coors[:, :, 0], coors[:, :, 1], Z[:, :, 0, i], cmap=cm.coolwarm,
                                    linewidth=0, antialiased=False, alpha=.6)
-        grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1 * nm.ones((10, 10)),
+        grad_field = ax.quiver(coorsgrad[:, :, 0] , coorsgrad[:, :, 1], -1 * nm.ones((10, 10)) - .5,
                                Zgrad[:, :, 0, i] / 50, Zgrad[:, :, 1, i] / 50, nm.zeros((10, 10)), color='r')
         num_grad_field = ax.quiver(coorsgrad[:, :, 0], coorsgrad[:, :, 1], -1 * nm.ones((10, 10)),
                                    Znumgrad[:, :, 0, i], Znumgrad[:, :, 1, i], nm.zeros((10, 10)), color='g')

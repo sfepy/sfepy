@@ -43,7 +43,6 @@ def get_unraveler(n_el_nod, n_cell):
                         shape=(n_cell, n_el_nod, 1),
                         strides=(n_el_nod * ustride1, ustride1, ustride1),
                         writeable=False)
-        # FIXME writeable is not valid option for Python 2
         return ur
 
     return unravel
@@ -118,7 +117,7 @@ class DGField(FEField):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base=None, approx_order=1, integral=None, extended=False):
+                 poly_space_base=None, approx_order=1, integral=None):
         """
         Creates DGField, with Legendre polyspace and default integral
         corresponding to 2 * approx_order.
@@ -154,16 +153,16 @@ class DGField(FEField):
         self.n_el_facets = self.dim + 1 if self.gel.is_simplex else 2**self.dim
 
         # approximation space
-        self.extended = extended
         self.space = space
         self.poly_space_base = poly_space_base
         if poly_space_base is not None:
             self.poly_space = poly_space_base(self.gel.name + "H1_what?",
                                               self.gel, self.approx_order)
         elif self.gel.name in ["1_2", "2_4", "3_8"]:
+            self.extended = True
             self.poly_space = LegendreTensorProductPolySpace(
                 self.gel.name + "_DG_legendre",
-                self.gel, self.approx_order, extended=self.extended)
+                self.gel, self.approx_order)
         else:
             self.poly_space = LegendreSimplexPolySpace(
                 self.gel.name + "_DG_legendre",
@@ -185,7 +184,7 @@ class DGField(FEField):
         self.clear_qp_base()
         self.clear_facet_qp_base()
         if integral is None:
-            self.integral = Integral("dg_fi", order=2 * self.approx_order)
+            self.integral = Integral("dg_fi", order=3 * self.approx_order)
         else:
             self.integral = integral
 
@@ -1340,22 +1339,13 @@ class DGField(FEField):
         res = {}
         udofs = self.unravel_sol(dofs)
 
-        for i in range(self.n_el_nod):
-            res["u_modal{}".format(i)] = Struct(mode="cell",
-                                                data=udofs[:, i, None, None])
-
-        unravel = get_unraveler(self.n_el_nod, self.n_cell)
-        res["u_modal_cell_nodes"] = Struct(mode="dg_cell_dofs",
-                                           data=unravel(dofs)[..., 0],
-                                           interpolation_scheme=self.poly_space.get_interpol_scheme())
-        # TODO somehow choose nodal vs modal output
-        # cell_nodes, nodal_dofs = self.get_nodal_values(dofs, None, None)
-        # res["u_nodal"] = Struct(mode="cell_nodes", data=nodal_dofs)
+        if self.dim == 1:
+            for i in range(self.n_el_nod):
+                res["u_modal{}".format(i)] = Struct(mode="cell",
+                                                    data=udofs[:, i, None, None])
+        else:
+            unravel = get_unraveler(self.n_el_nod, self.n_cell)
+            res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
+                                               data=unravel(dofs)[..., 0],
+                                               interpolation_scheme=self.poly_space.get_interpol_scheme())
         return res
-
-
-class DGFieldExtended(DGField):
-     family_name = 'volume_DG_legendre_extended_discontinuous'
-
-     def __init__(self, *args, **kwargs):
-         super(DGFieldExtended, self).__init__(*args, **kwargs, extended=True)

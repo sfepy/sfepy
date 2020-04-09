@@ -21,6 +21,8 @@ helps = {
 
 
 def main():
+    print("WARNING! this script is deprecated and does not provide tensor basis"
+          + "coefficients and exponents truly used in sfepy.")
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('-m', '--max-order', metavar='order', type=int,
                         action='store', dest='max_order',
@@ -58,7 +60,7 @@ def main():
         print("P_{}{} = {}".format(m, idx, tensorP[m]))
         print()
 
-    np.savetxt(indir("legendre2D_tensor{}_expos.txt".format("_ext" if extended else "")), exponentM, fmt="%d")
+    np.savetxt(indir("legendre2D_tensor{}_expos.txt".format("_ext" if extended else "")), exponentM, fmt="%s")
     # TODO are coefs always integers?
     np.savetxt(indir("legendre2D_tensor{}_coefs.txt".format("_ext" if extended else "")), coefM, fmt="%d")
 

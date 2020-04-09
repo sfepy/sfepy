@@ -18,7 +18,6 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
     t0 = 0.
     t1 = 1.
 
-
     angle = 0
     # get_common(approx_order, CFL, t0, t1, None, get_ic)
     rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
@@ -37,7 +36,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
     }
 
     fields = {
-        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre_extended')  #
+        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')  #
     }
 
     variables = {
@@ -51,7 +50,8 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
         sin = nm.sin
         pi = nm.pi
         exp = nm.exp
-        res = four_step_u(x_1) * four_step_u(x_2)
+        # res = four_step_u(x_1) * four_step_u(x_2)
+        res = gsmooth(x_1) * gsmooth(x_2)
         return res
 
     @local_register_function
@@ -61,7 +61,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
             return {"u": analytic_sol(coors, t)[..., None, None]}
 
     def get_ic(x, ic=None):
-        return four_step_u(x[..., 0:1]) * four_step_u(x[..., 1:])
+        return gsmooth(x[..., 0:1]) * gsmooth(x[..., 1:])
 
 
     functions = {
@@ -80,7 +80,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
     }
 
     integrals = {
-        'i': 2 * approx_order,
+        'i': 3 * approx_order,
     }
 
     equations = {
@@ -95,7 +95,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiters': {"f": MomentLimiter2D},
+                 # 'limiters': {"f": MomentLimiter2D},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
