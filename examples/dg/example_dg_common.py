@@ -322,10 +322,13 @@ def plot_conv_results(base_output_folder, conf, err_df,
 
     orders = sorted(err_df["order"].unique())
     for o in orders:
+        ax.set_xscale('log', basex=2)
+        ax.set_yscale('log', basey=10)
         curr_df = err_df[err_df["order"] == o]
-        co = ax.loglog(curr_df["n_cells"], curr_df["diff_l2"], 'o',
+        co = ax.plot(curr_df["n_cells"], curr_df["diff_l2"], 'o',
                        label=str(int(o)))[0].get_color()
-        ax.loglog(curr_df["n_cells"], curr_df["diff_l2"], color=co, label="")
+
+        ax.plot(curr_df["n_cells"], curr_df["diff_l2"], color=co, label="")
         for i, r in curr_df.iloc[1:, :].iterrows():
             ax.text(r["n_cells"], r["diff_l2"], "{:.2}".format(r["num_order"]))
 

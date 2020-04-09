@@ -360,117 +360,128 @@ class DiffusionDGFluxTerm(DGTerm):
 
     def function(self, out, state, diff_var, field, region, D):
         if diff_var is not None:  # matrix mode
-            fc_n = field.get_cell_normals_per_facet(region)
-
-            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
-            active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
-            active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
-
-            inner_facet_base, outer_facet_base, whs = \
-                field.get_both_facet_base_vals(state, region, derivative=False)
-
-            inner_facet_base_d, outer_facet_base_d, _ = \
-                field.get_both_facet_base_vals(state, region, derivative=True)
-
-            if self.mode == 'avg_state':
-                inner_vals = nm.einsum("nkl, nfk, ndfq, nbfkq, nfq->ndb",
-                                       D, fc_n,
-                                       inner_facet_base,  # test
-                                       inner_facet_base_d/2,  # state
-                                       whs)
-
-                outer_vals = nm.einsum("ikl, ik, idq, ibkq, iq->idb",
-                                  D[active_cells],
-                                  fc_n[active_cells, active_facets],
-                                  inner_facet_base[active_cells, :, active_facets],  # test
-                                  outer_facet_base_d[active_cells, :, active_facets]/2,  # state
-                                  whs[active_cells, active_facets])
-
-            elif self.mode == 'avg_virtual':
-                inner_vals = nm.einsum("nkl, nfk, ndfkq, nbfq, nfq->ndb", D, fc_n,
-                                             inner_facet_base_d/2,  # test
-                                             inner_facet_base,  # state
-                                             whs)
-
-                outer_vals = nm.einsum("ikl, ik, idkq, ibq, iq->idb",
-                                  D[active_cells],
-                                  fc_n[active_cells, active_facets],
-                                  inner_facet_base_d[active_cells, :, active_facets]/2,  # test
-                                  - outer_facet_base[active_cells, :, active_facets],  # state
-                                  whs[active_cells, active_facets])
-
-            iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
-
-            vals = nm.vstack((inner_vals, outer_vals))
-            vals = vals.flatten()
-
-            #               i           j
-            out = (vals, iels[:, 0], iels[:, 1], state, state)
+            out = self.function_matrix_mode(out, state, diff_var, field, region, D)
         else:  # residual mode
-            fc_n = field.get_cell_normals_per_facet(region)
-            inner_facet_base, outer_facet_base, _ = \
-                field.get_both_facet_base_vals(state, region,
-                                               derivative=False
-                                               )
-            inner_facet_state_d, outer_facet_state_d, _ = \
-                field.get_both_facet_state_vals(state, region,
-                                                derivative=True
-                                                )
-            inner_facet_base_d, outer_facet_base_d, _ = \
-                field.get_both_facet_base_vals(state, region, derivative=True)
-
-            inner_facet_state, outer_facet_state, weights = \
-                field.get_both_facet_state_vals(state, region,
-                                                derivative=False
-                                                )
-
-            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
-            bnd_cells, bnd_facets = nm.where(nbrhd_idx[:, :, 0] < 0)
-            bnd_nrbhs = nbrhd_idx[bnd_cells, bnd_facets, 0]
-
-            # Dirichlet
-            # outer_facet_state[bnd_cells, bnd_facets] = \
-            #     - inner_facet_state[bnd_cells, bnd_facets] \
-            #     + 2*outer_facet_state[bnd_cells, bnd_facets]
-            #
-            # outer_facet_state_d[bnd_cells, bnd_facets] = \
-            #     inner_facet_state_d[bnd_cells, bnd_facets]
-
-            # Neuman
-            # outer_facet_state[bnd_cells, bnd_facets] = \
-            #     inner_facet_state[bnd_cells, bnd_facets]
-            #
-            # outer_facet_state_d[bnd_cells, bnd_facets] = \
-            #     -inner_facet_state_d[bnd_cells, bnd_facets]
-
-            if self.mode == 'avg_state':
-                avgDdState = (nm.einsum("ikl,ifkq->ifkq",
-                                        D, inner_facet_state_d) +
-                              nm.einsum("ikl,ifkq->ifkq",
-                                        D, outer_facet_state_d)) / 2.
-                jmpBase = inner_facet_base
-                # outer_facet_base is in DG zero - hence the jump is inner value
-                vals = nm.einsum("ifkq , ifk, idfq, ifq -> id",
-                                 avgDdState, fc_n, jmpBase, weights)
-
-            elif self.mode == 'avg_virtual':
-                avgDdbase = (nm.einsum("ikl,idfkq->idfkq",
-                                       D, inner_facet_base_d)) / 2.
-                # in DG test function is non zero only inside element
-                # - hence we average with zero TODO check againt Dolejší (2015)!?
-                jmpState = inner_facet_state - outer_facet_state
-                vals = nm.einsum("idfkq, ifk, ifq , ifq -> id",
-                                 avgDdbase, fc_n, jmpState, weights)
-
-            cell_fluxes = vals
-
-            out[:] = 0.0
-            n_el_nod = field.n_el_nod
-            for i in range(n_el_nod):
-                out[:, :, i, 0] = cell_fluxes[:, i, None]
+            out = self.function_residual_mode(out, state, diff_var, field, region, D)
 
         status = None
         return out, status
+
+
+    def function_matrix_mode(self, out, state, diff_var, field, region, D):
+        fc_n = field.get_cell_normals_per_facet(region)
+
+        nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+        active_cells, active_facets = nm.where(nbrhd_idx[:, :, 0] >= 0)
+        active_nrbhs = nbrhd_idx[active_cells, active_facets, 0]
+
+        inner_facet_base, outer_facet_base, whs = \
+            field.get_both_facet_base_vals(state, region, derivative=False)
+
+        inner_facet_base_d, outer_facet_base_d, _ = \
+            field.get_both_facet_base_vals(state, region, derivative=True)
+
+        if self.mode == 'avg_state':
+            # content of one cell
+            inner_vals = nm.einsum("nkl, nfk, ndfq, nbfkq, nfq->ndb",
+                                   D,
+                                   fc_n,
+                                   inner_facet_base,  # test
+                                   inner_facet_base_d / 2,  # state
+                                   whs)
+            # content of rows
+            outer_vals = nm.einsum(
+                "ikl, ik, idq, ibkq, iq->idb",
+                   D[active_cells],
+                   fc_n[active_cells, active_facets],
+                   - inner_facet_base[active_cells, :, active_facets],  # test
+                   outer_facet_base_d[active_cells, :, active_facets] / 2, # state
+                   whs[active_cells, active_facets])
+
+        elif self.mode == 'avg_virtual':
+            inner_vals = nm.einsum("nkl, nfk, ndfkq, nbfq, nfq->ndb",
+                                   D,
+                                   fc_n,
+                                   inner_facet_base_d / 2,  # test
+                                   inner_facet_base,  # state
+                                   whs)
+
+            outer_vals = nm.einsum(
+                "ikl, ik, idkq, ibq, iq->idb",
+                   D[active_cells],
+                   fc_n[active_cells, active_facets],
+                   inner_facet_base_d[active_cells, :, active_facets] / 2,  # test
+                   - outer_facet_base[active_cells, :, active_facets],  # state
+                   whs[active_cells, active_facets])
+
+        iels = self._get_nbrhd_dof_indexes(active_cells, active_nrbhs, field)
+
+        vals = nm.vstack((inner_vals, outer_vals))
+        vals = vals.flatten()
+
+        #               i           j
+        out = (vals, iels[:, 0], iels[:, 1], state, state)
+        return out
+
+    def function_residual_mode(self, out, state, diff_var, field, region, D):
+        fc_n = field.get_cell_normals_per_facet(region)
+        # get base values, isn't it strange to need values basically for node values 1?
+        inner_facet_base, outer_facet_base, _ = \
+            field.get_both_facet_base_vals(state, region, derivative=False)
+        inner_facet_base_d, outer_facet_base_d, _ = \
+            field.get_both_facet_base_vals(state, region, derivative=True)
+
+        # get state values
+        inner_facet_state_d, outer_facet_state_d, _ = \
+            field.get_both_facet_state_vals(state, region, derivative=True)
+        inner_facet_state, outer_facet_state, weights = \
+            field.get_both_facet_state_vals(state, region, derivative=False)
+
+        nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
+        bnd_cells, bnd_facets = nm.where(nbrhd_idx[:, :, 0] < 0)
+        bnd_nrbhs = nbrhd_idx[bnd_cells, bnd_facets, 0]
+
+        # Dirichlet
+        # outer_facet_state[bnd_cells, bnd_facets] = \
+        #     - inner_facet_state[bnd_cells, bnd_facets] \
+        #     + 2*outer_facet_state[bnd_cells, bnd_facets]
+        #
+        # outer_facet_state_d[bnd_cells, bnd_facets] = \
+        #     inner_facet_state_d[bnd_cells, bnd_facets]
+
+        # Neuman
+        # outer_facet_state[bnd_cells, bnd_facets] = \
+        #     inner_facet_state[bnd_cells, bnd_facets]
+        #
+        # outer_facet_state_d[bnd_cells, bnd_facets] = \
+        #     -inner_facet_state_d[bnd_cells, bnd_facets]
+
+        if self.mode == 'avg_state':
+            avgDdState = (nm.einsum("ikl,ifkq->ifkq",
+                                    D, inner_facet_state_d) +
+                          nm.einsum("ikl,ifkq->ifkq",
+                                    D, outer_facet_state_d)) / 2.
+            jmpBase = inner_facet_base
+            # outer_facet_base is in DG zero - hence the jump is inner value
+            vals = nm.einsum("ifkq , ifk, idfq, ifq -> id",
+                             avgDdState, fc_n, jmpBase, weights)
+
+        elif self.mode == 'avg_virtual':
+            avgDdbase = (nm.einsum("ikl,idfkq->idfkq",
+                                   D, inner_facet_base_d)) / 2.
+            # in DG test function is non zero only inside element
+            # - hence we average with zero TODO check againt Dolejší (2015)!?
+            jmpState = inner_facet_state - outer_facet_state
+            vals = nm.einsum("idfkq, ifk, ifq , ifq -> id",
+                             avgDdbase, fc_n, jmpState, weights)
+
+        cell_fluxes = vals
+
+        out[:] = 0.0
+        n_el_nod = field.n_el_nod
+        for i in range(n_el_nod):
+            out[:, :, i, 0] = cell_fluxes[:, i, None]
+        return out
 
 
 class DiffusionDGFluxTermHest1(DGTerm):

@@ -23,6 +23,8 @@ def define(filename_mesh=None, approx_order=2, Cw=100, diffusion_coef=1, CFL=0.4
     if filename_mesh is None:
         filename_mesh = get_1Dmesh_hook(0, 1, 80)
 
+    mstart = 0
+    mend = 1
 
     materials = {
         'D': ({'val': [diffusion_coef], '.Cw': Cw},),

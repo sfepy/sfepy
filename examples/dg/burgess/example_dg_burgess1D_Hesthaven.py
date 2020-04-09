@@ -10,7 +10,7 @@ Brown University, Jan.Hesthaven@Brown.edu
 from examples.dg.example_dg_common import *
 
 def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
-           Cw=1, diffusion_coef=0.1, diff_scheme_name="symmetric"):
+           Cw=1, diffusion_coef=0.001, diff_scheme_name="symmetric"):
 
 
     functions = {}
@@ -149,7 +149,7 @@ def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
         "tss": ('ts.euler',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 # 'limiter': IdentityLimiter,
+                 'limiters':{"f": MomentLimiter1D},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})

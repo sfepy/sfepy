@@ -17,7 +17,7 @@ from matplotlib import pyplot as plt
 
 
 # sfepy imports
-from discrete.fem import Mesh
+from sfepy.discrete.fem import Mesh
 from sfepy.base.ioutils import ensure_path
 from sfepy.base.conf import ProblemConf
 from sfepy.discrete import (Integral, Integrals, Material, Problem)
@@ -52,14 +52,14 @@ def main(argv):
         argv = sys.argv[1:]
     args = parser.parse_args(argv)
 
-    problem_module_name = "dg." + args.problem_file.replace(".py", "")\
+    problem_module_name = "examples.dg." + args.problem_file.replace(".py", "")\
         .replace("\\", ".").replace("/", ".")
     mesh = os.path.abspath(args.mesh_file)
 
     problem_module = importlib.import_module(problem_module_name)
 
-    refines = [0, 1, 2, 3, 4]
-    orders = [1, 2, 3, 4, 5]
+    refines = [1, 2, 3, 4]
+    orders = [1, 2, 3, 4]
 
     if args.do1Dplot and problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
@@ -134,6 +134,9 @@ def main(argv):
                 plot_1D_snr(conf, pb, ana_qp, num_qp,
                             io, order, orders, ir,
                             sol_fig, axs)
+                sol_fig.savefig(pjoin(base_output_folder,
+                                      "err-sol-i20" + build_attrs_string(
+                                          conf) + ".png"), dpi=100)
 
     results = nm.array(results)
     output(results)
