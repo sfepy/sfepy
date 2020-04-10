@@ -294,7 +294,6 @@ class MeshioLibIO(MeshIO):
 
         if file_format is None:
             file_format = _filetype_from_path(pathlib.Path(filename))
-        print(file_format)
 
         self.file_format = file_format
 
