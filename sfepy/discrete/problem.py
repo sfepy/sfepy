@@ -183,7 +183,7 @@ class Problem(Struct):
     @staticmethod
     def from_conf(conf, init_fields=True, init_equations=True,
                   init_solvers=True):
-        if conf.options.get('absolute_mesh_path', True):
+        if conf.options.get('absolute_mesh_path', False):
             conf_dir = None
         else:
             conf_dir = op.dirname(conf.funmod.__file__)

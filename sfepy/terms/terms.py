@@ -1256,7 +1256,7 @@ class Term(Struct):
                     elif (ls == 1) and (shape[0] == 1):
                         # Scalar constant or function
                         from numbers import Number
-                        # FIXME - fix for gettin functions as parameters for terms
+                        # fix for gettin functions as parameters for terms
                         n_ok += isinstance(arg, Number) or callable(arg)
 
                 else:
@@ -1588,8 +1588,7 @@ class Term(Struct):
 
                 extra = coo_matrix((sign * vals, (rows, cols)),
                                    shape=asm_obj.shape)
-                fextra = extra.toarray()
-                pass
+
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)
 

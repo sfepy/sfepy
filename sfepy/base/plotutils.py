@@ -87,33 +87,32 @@ def plot_matrix_diff(mtx1, mtx2, delta, legend, mode):
 
     epsilon = max(1e-5, 10 * delta)
 
-    # FIXME - hot fix to see results - findout why does not pause work
     print('epsilon:', epsilon)
-    # pause()
+    pause()
 
     ija = nm.where(mtx_da.data > epsilon)[0]
     print_matrix_diff('--- absolute diff', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ija)
-    # pause()
+    pause()
 
     iin = nm.where(nm.abs(mtx1.data) > epsilon)[0]
     ij = nm.where(nm.abs(mtx_dr.data[iin]) > epsilon)[0]
     ij = iin[ij]
     print_matrix_diff('--- relative diff', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ij)
-    # pause()
+    pause()
 
     ijb = nm.intersect1d(ija, ij)
     print_matrix_diff('--- a-r', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ijb)
-    # pause()
+    pause()
 
     ii = nm.argsort(mtx_dr.data[ijb])
     n_s = min(20, len(ii))
     ijbs = ijb[ii[-1:-n_s-1:-1]]
     print_matrix_diff('--- a-r 20 biggest (by r)', legend,
                      mtx1, mtx2, mtx_da, mtx_dr, ijbs)
-    # pause()
+    pause()
 
     if mode < 2: return
 

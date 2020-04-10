@@ -366,7 +366,6 @@ class Newton(NonlinearSolver):
                        % (lerr, lin_red))
 
             vec_x -= vec_dx
-            # TODO in DG vec_dx needs to be multiplied by dt, is this not needed in fem?
             it += 1
 
         if status is not None:

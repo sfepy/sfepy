@@ -40,13 +40,6 @@ def eval_real(vec, conn, geo, mode, shape, bf=None):
         sym = (dim + 1) * dim // 2
         out = nm.empty((n_el, n_qp, sym, 1), dtype=dtype)
         function(out, vec, geo, conn)
-    # TODO repair this ugly hotfix!
-    # in DG I dont see reason to get values of variable in qp points
-    # this is not used anymore as FluxTerm uses data from solver
-    elif mode == 'dg':
-        out = nm.empty(vec.shape, dtype=dtype)
-        out[:] = vec[:]
-
 
     else:
         raise ValueError('unsupported variable evaluation mode! (%s)'
