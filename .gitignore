@@ -57,3 +57,9 @@ MANIFEST
 #
 .idea
 #
+# ASV benchmarks
+#
+benchmarks-asv/*
+!benchmarks-asv/asv.conf.json
+!benchmarks-asv/benchmarks
+#
