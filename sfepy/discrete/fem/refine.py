@@ -26,9 +26,7 @@ def refine_1_2(mesh_in):
 
     new_conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
 
-    if not nm.all(cmesh.cell_groups[0] == cmesh.cell_groups):
-        raise Warning("Multiple mat ids not supported when refining, using cmesh.cell_groups[0] == {}".format(cmesh.cell_groups[0]))
-    new_mat_id = nm.zeros(n_nod - 1, dtype=nm.int32) + cmesh.cell_groups[0]
+    new_mat_id = cmesh.cell_groups.repeat(2)
 
     mesh = Mesh.from_data(mesh_in.name + '_r', new_coors, None, [new_conn],
                           [new_mat_id], mesh_in.descs)
