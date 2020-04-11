@@ -689,9 +689,11 @@ cdef class CMesh:
 
         out = np.empty((ccf.n_incident, self.dim), dtype=np.float64)
         if self.dim == 1:
-            # TODO quick fix for normals, relies on nice ordering of 1D mesh
-            # i.e. cell facets are indexed from left to right
-            out = np.tile(np.array([-1, 1], dtype=np.float64), ccf.n_incident//2)[:, None]
+            # fix for 1D normals, relies on nice ordering of 1D mesh
+            # i.e. cell facets are uniformly indexed from left to right
+            # globaly and localy
+            out = np.tile(np.array([-1, 1], dtype=np.float64),
+                          ccf.n_incident//2)[:, None]
         else:
             mesh_get_facet_normals(self.mesh, &out[0, 0], which)
 
