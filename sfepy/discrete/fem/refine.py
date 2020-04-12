@@ -7,6 +7,31 @@ import numpy as nm
 from sfepy.discrete.fem import Mesh
 from six.moves import range
 
+
+def refine_1_2(mesh_in):
+    """
+    Refines 1D mesh by cutting each element in half
+    """
+
+    if not nm.all(mesh_in.coors[:-1] <= mesh_in.coors[1:]):
+        raise ValueError("1D Mesh for refinement must have sorted coors array")
+
+    cmesh = mesh_in.cmesh
+    c_centres = cmesh.get_centroids(cmesh.dim)
+    new_coors = nm.zeros((2*mesh_in.n_nod - 1, 1))
+    new_coors[0::2] = mesh_in.coors
+    new_coors[1::2] = c_centres
+
+    n_nod = len(new_coors)
+
+    new_conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
+
+    new_mat_id = cmesh.cell_groups.repeat(2)
+
+    mesh = Mesh.from_data(mesh_in.name + '_r', new_coors, None, [new_conn],
+                          [new_mat_id], mesh_in.descs)
+    return mesh
+
 def refine_2_3(mesh_in):
     """
     Refines mesh out of triangles by cutting cutting each edge in half
