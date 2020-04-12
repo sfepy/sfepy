@@ -1,4 +1,5 @@
 from __future__ import absolute_import, division
+import gc
 from copy import copy
 
 from sfepy.base.base import output, get_default, Struct
@@ -103,6 +104,7 @@ class HomogenizationWorker(object):
                                      time_tag)
 
             dependencies[name] = val
+            gc.collect()
 
         return dependencies, save_names
 
@@ -165,7 +167,7 @@ class HomogenizationWorker(object):
             val = []
             if hasattr(mini_app, 'store_idxs') and mode == 'reqs':
                 save_name = mini_app.save_name
-            
+
             local_coors = local_state['coors']
             for im in range(len(local_coors)):
                 output('== micro %s%s-%d =='
