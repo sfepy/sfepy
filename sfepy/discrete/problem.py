@@ -7,7 +7,7 @@ import numpy as nm
 
 from sfepy.base.base import (
     dict_from_keys_init, select_by_names, is_string, is_integer, is_sequence,
-    output, get_default, get_default_attr, Struct, IndexedStruct)
+    output, get_default, Struct, IndexedStruct)
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.conf import transform_variables, transform_materials

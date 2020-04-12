@@ -691,7 +691,7 @@ cdef class CMesh:
         if self.dim == 1:
             # fix for 1D normals, relies on nice ordering of 1D mesh
             # i.e. cell facets are uniformly indexed from left to right
-            # globaly and localy
+            # globally and locally
             out = np.tile(np.array([-1, 1], dtype=np.float64),
                           ccf.n_incident//2)[:, None]
         else:
