@@ -22,7 +22,8 @@ _required = ['filename_mesh|filename_domain', 'field_[0-9]+|fields',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials',
              'solver_[0-9]+|solvers']
-_other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
+_other = ['dgebc_[0-9]+|dgebcs', 'epbc_[0-9]+|epbcs', 'dgepbc_[0-9]+|dgepbcs',
+          'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
           'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options',
           'integral_[0-9]+|integrals']
 
@@ -84,6 +85,9 @@ def transform_conditions(adict, prefix):
 
     return d2
 
+def transform_dgebcs(adict):
+    return transform_conditions(adict, "dgebcs")
+
 def transform_ebcs(adict):
     return transform_conditions(adict, 'ebc')
 
@@ -120,7 +124,7 @@ def transform_lcbcs(adict):
 
     return d2
 
-def transform_epbcs(adict):
+def transform_epbcs(adict, prefix="epbc"):
     d2 = {}
     for ii, (key, conf) in enumerate(six.iteritems(adict)):
         if isinstance(conf, tuple):
@@ -131,11 +135,14 @@ def transform_epbcs(adict):
                 c2 = tuple_to_conf(key, conf,
                                    ['region', 'times', 'dofs', 'match'])
 
-            d2['epbc_%s__%d' % (c2.name, ii)] = c2
+            d2['%s_%s__%d' % (prefix, c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1(conf)
-            d2['epbc_%s' % c2.name] = c2
+            d2['%s_%s' % (prefix, c2.name)] = c2
     return d2
+
+def transform_dgepbcs(adict):
+    return transform_epbcs(adict, "dgepbc")
 
 def transform_regions(adict):
     d2 = {}
@@ -261,6 +268,8 @@ transforms = {
     'variables' : transform_variables,
     'ebcs'      : transform_ebcs,
     'epbcs'     : transform_epbcs,
+    'dgebcs'    : transform_dgebcs,
+    'dgepbcs'   : transform_dgepbcs,
     'nbcs'      : transform_to_struct_01,
     'lcbcs'     : transform_lcbcs,
     'ics'       : transform_ics,
