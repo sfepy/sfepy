@@ -3,8 +3,17 @@ from examples.dg.example_dg_common import *
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)
 
-def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
-           Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
+def define(filename_mesh=None, approx_order=2,
+           flux=0,
+           limit=False,
+
+           Cw=None,
+           diffusion_coef=None,
+           diff_scheme_name="symmetric",
+
+           CFL=0.4,
+           dt=None,
+           ):
 
     example_name = "adv__limt_2D"
     dim = 2
@@ -95,7 +104,7 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.4, dt=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 # 'limiters': {"f": MomentLimiter2D},
+                 'limiters': {"f": MomentLimiter2D} if limit else {},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})

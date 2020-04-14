@@ -20,8 +20,7 @@ from matplotlib import pyplot as plt
 from sfepy.discrete.fem import Mesh
 from sfepy.base.ioutils import ensure_path
 from sfepy.base.conf import ProblemConf
-from sfepy.discrete import (Integral, Integrals, Material, Problem)
-from sfepy.discrete.common.mappings import get_jacobian
+from sfepy.discrete import Integral, Problem
 from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
 from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
 
@@ -29,27 +28,134 @@ from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
 from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 
 from examples.dg.example_dg_common import get_1Dmesh_hook, calculate_num_order, \
-    plot_conv_results, build_attrs_string, output
+    plot_conv_results, build_attrs_string, output, compute_erros, diffusion_schemes_explicit
 
 
-parser = argparse.ArgumentParser(description='DG FEM convergence tests for 1D and 2D problems',
-                                 epilog='(c) 2019  Man-machine Interaction at NTC UWB, ' +
-                                        '\nauthor: Tomas Zitka, email: zitkat@ntc.zcu.cz')
-parser.add_argument("problem_file",
-                    help="File containing specification for convergence test, must include "
-                         "define method and dim variable",
-                    metavar='path')
+def create_argument_parser():
+    parser = argparse.ArgumentParser(
+        description='DG FEM convergence tests for 1D and 2D problems',
+        epilog='(c) 2019  Man-machine Interaction at NTC UWB, ' +
+            '\nauthor: Tomas Zitka, email: zitkat@ntc.zcu.cz')
 
-parser.add_argument("-m", "--mesh", help="File with starting mesh to use",
-                    default=None, metavar='path', action='store', dest='mesh_file',)
+    parser.add_argument("problem_file",
+                        help="File containing specification for convergence test, "+
+                             "must include define method and dim variable",
+                        metavar='path')
 
-parser.add_argument("-ps", "--plot-solutions", help="Plot 1D solutions and errors",
-                    default=False, action='store_true', dest='do1Dplot',)
+    parser.add_argument("-o", "--output",
+                        help="Output directory, can contain {}, " +
+                             "exampe name is than plugged in.",
+                        dest="output_dir",
+                        metavar='path', type=str, default=None)
+
+    parser.add_argument("-m", "--mesh", help="File with starting mesh to use",
+                        default=None, metavar='path', action='store',
+                        dest='mesh_file',)
+
+    parser.add_argument("-ps", "--plot-solutions", help="Show interactive plots.",
+                        default=False, action='store_true', dest='do1Dplot',)
+
+    parser.add_argument("-v", "--verbose", help="To be verbose or",
+                        default=False, action='store_true', dest='verbose',)
+
+    parser.add_argument('--advelo', metavar='float', type=float,
+                        action='store', dest='advelo',
+                        default=1, help="Advection velocity")
+
+    parser.add_argument('--adflux', metavar='float', type=float,
+                        action='store', dest='adflux',
+                        default=0, help="Advection flux parameter, " +
+                                        "\n0 - upwind, " +
+                                        "\n1 - central")
+
+    parser.add_argument("--limit", help="Use 1D or 2D moment limiter",
+                        default=False, action='store_true', dest='limit',)
+
+    parser.add_argument('--cw', metavar='float', type=float,
+                        action='store', dest='cw',
+                        default=1, help="Diffusion penalty coefficient")
+
+    parser.add_argument('--diffcoef', metavar='float', type=float,
+                        action='store', dest='diffcoef',
+                        default=1, help="Diffusion coeffcient")
+
+    parser.add_argument('--diffscheme', type=str,
+                        choices=diffusion_schemes_explicit.keys(),
+                        action='store', dest='diffscheme',
+                        default="symmetric", help="Scheme to use for diffusion")
+
+    parser.add_argument('--cfl', metavar='float', type=float,
+                        action='store', dest='cfl',
+                        default=0.314, help="CFL coefficient")
+
+    parser.add_argument('--dt', metavar='float', type=float,
+                        action='store', dest='dt',
+                        default=None, help="Time step size, overrides CFL coefficient")
+
+    parser.add_argument('--orders', metavar="[1, 2, 3 ...]" ,default=None,
+                        help='List of orders to try', type=str)
+
+    parser.add_argument('--refines', metavar="[1, 2, 3 ...]", default=None,
+                        help='List of refinement degrees', type=str)
+
+
+    return parser
+
+def parse_str2tuple_default(l, default=(1, 2, 3, 4)):
+    if l is None:
+        return default
+    return tuple(int(x) for x in l.strip("()[],").split(","))
+
+
+# soops-run -o .\soops_tests\ "mesh='mesh/mesh_tensr_2D_01_2.vtk', problem_file='advection/example_dg_advection2D', output_dir='soops_tests/{}/%s', --cfl=[0.1, .5], --limit=[@defined, @undefined],
+# --orders='[1,2,3,4]'" .\conv_tests\run_conv_test.py
+
+
+# soops-run -o .\soops_tests\ "mesh='mesh/mesh_tensr_2D_01_2.vtk',
+# problem_file='advection/example_dg_advection2D', output_dir='soops_tests/adv2D/%s',
+# --adflux=[0.0, 0.5 ,1.0] ,--cfl=[0.01, 0.1, .5], --limit=[@defined, @undefined],
+# --orders='[1,2,3,4]', --refines='[1,2,3,4]'" .\conv_tests\run_conv_test.py
+
+def get_run_info():
+    """ Run info for soops """
+    run_cmd = """
+    python conv_tests/run_conv_test.py {problem_file}
+    --mesh={mesh} --output {output_dir}"""
+    run_cmd = ' '.join(run_cmd.split())
+
+    opt_args = {
+        # advection parameters
+        "--advelo": " --advelo={--advelo}",
+        "--adflux": " --adflux={--adflux}",
+        "--limit" : " --limit",
+
+        # diffusion parameters
+        "--cw"  : " --cw={--cw}",
+        "--diffcoef"   : " --diffcoef={--diffcoef}",
+        "--diffscheme" : " --diffscheme={--diffscheme}",
+
+        # time parameteres
+        "--cfl": " --cfl={--cfl}",
+        "--dt" : " --dt={--dt}",
+
+        # refining options
+        "--orders"  : " --orders={--orders}",
+        "--refines" : " --refines={--refines}",
+        
+        "--verbose" : " --verbose"
+    }
+
+    output_dir_key = "output_dir"
+    is_finished_basename = ""
+
+    return run_cmd, opt_args, output_dir_key, is_finished_basename
 
 
 def main(argv):
     if argv is None:
         argv = sys.argv[1:]
+
+    parser = create_argument_parser()
     args = parser.parse_args(argv)
 
     problem_module_name = "examples.dg." + args.problem_file.replace(".py", "")\
@@ -58,10 +164,10 @@ def main(argv):
 
     problem_module = importlib.import_module(problem_module_name)
 
-    refines = [1, 2, 3, 4]
-    orders = [1, 2, 3, 4]
+    refines = parse_str2tuple_default(args.refines, (1, 2, 3, 4)[:2])
+    orders = parse_str2tuple_default(args.orders, (1, 2, 3, 4)[:2])
 
-    if args.do1Dplot and problem_module.dim == 1:
+    if problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
 
     mod = sys.modules[__name__]
@@ -72,10 +178,16 @@ def main(argv):
             conf = ProblemConf.from_dict(
                 problem_module.define(
                     gen_mesh, order,
-                    # Cw=10,
-                    # diffusion_coef=0.002,
-                    # CFL=0.1,
-                    # dt=1,
+
+                    flux=args.adflux,
+                    limit=args.limit,
+
+                    Cw=args.cw,
+                    diffusion_coef=args.diffcoef,
+                    diff_scheme_name=args.diffscheme,
+
+                    CFL=args.cfl,
+                    dt=args.dt,
                 ), mod, verbose=False)
 
             output("----------------Running--------------------------")
@@ -104,7 +216,14 @@ def main(argv):
             pb.sol = pb.solve()
             elapsed = time.clock() - tt
 
-            base_output_folder = pjoin("conv_tests_output", conf.example_name)
+            if args.output_dir is None:
+                base_output_folder = pjoin("conv_tests_out", conf.example_name)
+            elif "{}" in args.output_dir:
+                base_output_folder = args.output_dir.format(conf.example_name)
+            else:
+                base_output_folder = pjoin(args.output_dir)
+
+
             output_folder = pjoin(base_output_folder, "h" + str(n_cells))
             output_folder = pjoin(output_folder, "o" + str(order))
 
@@ -119,27 +238,27 @@ def main(argv):
 
             pb.save_state(output_format.replace("*", "0"), state=pb.sol)
 
-            ana_l2, ana_qp, diff_l2, error, num_qp = compute_erros(conf, pb)
+            ana_l2, ana_qp, diff_l2, rel_l2, num_qp = compute_erros(conf.sol_fun, pb)
 
             n_dof = pb.fields["f"].n_nod
 
             result = (h, n_cells, nm.mean(vols), order, n_dof,
-                      ana_l2, diff_l2, error, elapsed,
+                      ana_l2, diff_l2, rel_l2, elapsed,
                       getattr(pb.ts_conf, "cour", nm.NAN),
                       getattr(pb.ts_conf, "dt", nm.NAN))
 
             results.append(result)
 
-            if args.do1Dplot and problem_module.dim == 1:
+            if  problem_module.dim == 1:
                 plot_1D_snr(conf, pb, ana_qp, num_qp,
                             io, order, orders, ir,
                             sol_fig, axs)
                 sol_fig.savefig(pjoin(base_output_folder,
-                                      "err-sol-i20" + build_attrs_string(
-                                          conf) + ".png"), dpi=100)
+                                      "err-sol-i20" + build_attrs_string(conf)
+                                      + ".png"), dpi=100)
 
     results = nm.array(results)
-    output(results)
+
 
     err_df = pd.DataFrame(results,
                           columns=["h", "n_cells", "mean_vol", "order", "n_dof",
@@ -147,39 +266,14 @@ def main(argv):
                                    "elapsed", "cour", "dt"])
     err_df = calculate_num_order(err_df)
     err_df.to_csv(pjoin(base_output_folder,
-                        conf.example_name + "results" + build_attrs_string(conf) + ".csv"))
+                        conf.example_name + "results" + build_attrs_string(conf)
+                        + ".csv"))
+    output(err_df)
 
     plot_conv_results(base_output_folder, conf, err_df, save=True)
 
-    plt.show()
-
-
-def compute_erros(conf, pb):
-    """
-    Compute errors from analytical solution in conf.sol_fun and numerical
-    solution saved in pb
-    :param conf:
-    :param pb:
-    :return:
-    """
-    idiff = Integral('idiff', 20)
-    num_qp = pb.evaluate(
-        'ev_volume_integrate.idiff.Omega(u)',
-        integrals=Integrals([idiff]), mode='qp',
-        copy_materials=False, verbose=False
-    )
-    aux = Material('aux', function=conf.sol_fun)
-    ana_qp = pb.evaluate(
-        'ev_volume_integrate_mat.idiff.Omega(aux.u, u)',
-        aux=aux, integrals=Integrals([idiff]), mode='qp',
-        copy_materials=False, verbose=False
-    )
-    field = pb.fields['f']
-    det = get_jacobian(field, idiff)
-    diff_l2 = nm.sqrt((((num_qp - ana_qp) ** 2) * det).sum())
-    ana_l2 = nm.sqrt(((ana_qp ** 2) * det).sum())
-    error = diff_l2 / ana_l2
-    return ana_l2, ana_qp, diff_l2, error, num_qp
+    if args.do1Dplot:
+        plt.show()
 
 
 def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
@@ -187,7 +281,8 @@ def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
     Plot 1D solutions and errors
 
     :param conf:
-    :param io:
+    :param io: index of order
+    :param ir: inder of refirement
     :param ana_qp:
     :param num_qp:
     :param order:

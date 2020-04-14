@@ -1,9 +1,17 @@
+"""
+Functions common to DG examples, as well as registration
+of DG terms and solvers
+"""
 import numpy as nm
 import pandas as pd
+
 from matplotlib import pyplot as plt
 
 from os.path import join as pjoin
 
+
+from sfepy.discrete import Integral, Material, Integrals
+from sfepy.discrete.common.mappings import get_jacobian
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem import Mesh
 from sfepy.discrete.fem.meshio import UserMeshIO
@@ -233,6 +241,37 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
             pass
 
     return mesh_hook
+
+def compute_erros(analytic_fun, pb):
+    """
+    Compute errors from analytical solution in conf.sol_fun and numerical
+    solution saved in pb
+    :param analytic_fun: analytic solution
+    :param pb: problem to with numerical solution
+    :return: analytic_fun L2 norm,
+              vaules of analytic_fun in qps
+              L2 norm of difference between analytic and numerical solution
+              relative difference
+              values of numerical solution in qps
+    """
+    idiff = Integral('idiff', 20)
+    num_qp = pb.evaluate(
+        'ev_volume_integrate.idiff.Omega(u)',
+        integrals=Integrals([idiff]), mode='qp',
+        copy_materials=False, verbose=False
+    )
+    aux = Material('aux', function=analytic_fun)
+    ana_qp = pb.evaluate(
+        'ev_volume_integrate_mat.idiff.Omega(aux.u, u)',
+        aux=aux, integrals=Integrals([idiff]), mode='qp',
+        copy_materials=False, verbose=False
+    )
+    field = pb.fields['f']
+    det = get_jacobian(field, idiff)
+    diff_l2 = nm.sqrt((((num_qp - ana_qp) ** 2) * det).sum())
+    ana_l2 = nm.sqrt(((ana_qp ** 2) * det).sum())
+    rel_l2 = diff_l2 / ana_l2
+    return ana_l2, ana_qp, diff_l2, rel_l2, num_qp
 
 
 def calculate_num_order(err_df):
