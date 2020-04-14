@@ -471,6 +471,11 @@ that have the ``cell`` kind. The desired kind is set to the final region,
 removing unneeded entities. Most entity selectors are defined in terms of
 vertices and cells - the other entities are computed as needed.
 
+.. _topological-entity-selection:
+
+Topological Entity Selection
+""""""""""""""""""""""""""""
+
 .. list-table::
    :widths: 50, 50
    :header-rows: 1
@@ -559,7 +564,27 @@ or::
           'Right' : ('vertices in (x > 0.99)', 'facet'),
           'Gamma1' : ("""(cells of group 1 *v cells of group 2)
                          +v r.Right""", 'facet', 'Omega'),
+          'Omega_B' : 'vertices by get_ball',
       }
+
+The ``Omega_B`` region illustrates the selection by a function (see
+:ref:`topological-entity-selection`). In this example, the function is::
+
+  import numpy as nm
+
+  def get_ball(coors, domain=None):
+      x, y, z = coors[:, 0], coors[:, 1], coors[:, 2]
+
+      r = nm.sqrt(x**2 + y**2 + z**2)
+      flag = nm.where((r < 0.1))[0]
+
+      return flag
+
+The function needs to be registered in `Functions`_::
+
+  functions = {
+      'get_ball' : (get_ball,),
+  }
 
 The mirror region can be defined explicitly as::
 
@@ -684,7 +709,34 @@ Dirichlet (essential) boundary conditions::
             'u1' : ('Left', {'u.all' : 0.0}),
             'u2' : ('Right', [(0.0, 1.0)], {'u.0' : 0.1}),
             'phi' : ('Surface', {'phi.all' : 0.0}),
+            'u_yz' : ('Gamma', {'u.[1,2]' : 'rotate_yz'}),
         }
+
+The ``u_yz`` condition illustrates calculating the condition value by a
+function. In this example, it is a function of coordinates `coors` of region
+nodes::
+
+  import numpy as nm
+
+  def rotate_yz(ts, coor, **kwargs):
+      from sfepy.linalg import rotation_matrix2d
+
+      vec = coor[:,1:3] - centre
+
+      angle = 10.0 * ts.step
+
+      mtx = rotation_matrix2d(angle)
+      vec_rotated = nm.dot(vec, mtx)
+
+      displacement = vec_rotated - vec
+
+      return displacement
+
+The function needs to be registered in `Functions`_::
+
+  functions = {
+      'rotate_yz' : (rotate_yz,),
+  }
 
 Periodic Boundary Conditions
 """"""""""""""""""""""""""""
@@ -789,6 +841,37 @@ elements, etc.
         },),
     }
 
+Defining Material Parameters by Functions
+"""""""""""""""""""""""""""""""""""""""""
+
+The functions for defining material parameters can work in two modes,
+distinguished by the `mode` argument. The two modes are 'qp' and 'special'. The
+first mode is used for usual functions that define parameters in quadrature
+points (hence 'qp'), while the second one can be used for special values like
+various flags.
+
+The shape and type of data returned in the 'special' mode can be arbitrary
+(depending on the term used). On the other hand, in the 'qp' mode all the data
+have to be numpy float64 arrays with shape `(n_coor, n_row, n_col)`, where
+`n_coor` is the number of quadrature points given by the `coors` argument,
+`n_coor = coors.shape[0]`, and `(n_row, n_col)` is the shape of a material
+parameter in each quadrature point. For example, for scalar parameters, the
+shape is `(n_coor, 1, 1)`. The shape is determined by each term.
+
+**Example**::
+
+  def get_pars(ts, coors, mode=None, **kwargs):
+      if mode == 'qp':
+          val = coors[:,0]
+          val.shape = (coors.shape[0], 1, 1)
+
+          return {'x_coor' : val}
+
+The function needs to be registered in `Functions`_::
+
+  functions = {
+      'get_pars' : (get_pars,),
+  }
 
 Equations and Terms
 ^^^^^^^^^^^^^^^^^^^
@@ -874,24 +957,8 @@ define material properties, boundary conditions, parametric sweeps, and other
 items in an arbitrary manner. Functions are normal Python functions declared in
 the Problem Definition file, so they can invoke the full power of Python. In
 order for *SfePy* to make use of the functions, they must be declared using the
-function keyword. See the examples below.
-
-Defining Material Parameters
-""""""""""""""""""""""""""""
-
-The functions for defining material parameters can work in two modes,
-distinguished by the `mode` argument. The two modes are 'qp' and 'special'. The
-first mode is used for usual functions that define parameters in quadrature
-points (hence 'qp'), while the second one can be used for special values like
-various flags.
-
-The shape and type of data returned in the 'special' mode can be arbitrary
-(depending on the term used). On the other hand, in the 'qp' mode all the data
-have to be numpy float64 arrays with shape `(n_coor, n_row, n_col)`, where
-`n_coor` is the number of quadrature points given by the `coors` argument,
-`n_coor = coors.shape[0]`, and `(n_row, n_col)` is the shape of a material
-parameter in each quadrature point. For example, for scalar parameters, the
-shape is `(n_coor, 1, 1)`.
+function keyword. See the examples below, and also the corresponding sections
+above.
 
 Examples
 """"""""
