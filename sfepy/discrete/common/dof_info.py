@@ -272,6 +272,15 @@ class EquationMap(Struct):
         self.dpn = len(self.dof_names)
         self.eq = nm.arange(var_di.n_dof, dtype=nm.int32)
 
+        self.n_dg_ebc = 0
+        self.dg_ebc_names = {}
+        self.dg_ebc = {}
+        self.dg_ebc_val = {}
+
+        self.n_dg_epbc = 0
+        self.dg_epbc_names = []
+        self.dg_epbc = []
+
     def _init_empty(self, field):
         self.val_ebc = nm.empty((0,), dtype=field.dtype)
 
@@ -291,15 +300,6 @@ class EquationMap(Struct):
         self.n_eq = self.eqi.shape[0]
         self.n_ebc = self.eq_ebc.shape[0]
         self.n_epbc = self.master.shape[0]
-
-        self.n_dg_ebc = 0
-        self.dg_ebc_names = {}
-        self.dg_ebc = {}
-        self.dg_ebc_val = {}
-
-        self.n_dg_epbc = 0
-        self.dg_epbc_names = []
-        self.dg_epbc = []
 
     def _mark_unused(self, field):
         unused_dofs = field.get('unused_dofs')
@@ -340,8 +340,8 @@ class EquationMap(Struct):
         - Periodic bc: master and slave DOFs must belong to the same
           field (variables can differ, though).
         """
-        self._init_empty(field)
         if bcs is None:
+            self._init_empty(field)
             return set()
 
         eq_ebc = nm.zeros((self.var_di.n_dof,), dtype=nm.int32)
