@@ -5,7 +5,7 @@ classes, as well as the initial condition class.
 from __future__ import absolute_import
 import numpy as nm
 
-from sfepy.base.base import basestr, Container, Struct
+from sfepy.base.base import basestr, Container, Struct, is_sequence
 from sfepy.discrete.functions import Function
 import six
 
@@ -29,6 +29,9 @@ def get_condition_value(val, functions, kind, name):
     elif (isinstance(val, Function) or nm.isscalar(val)
           or isinstance(val, nm.ndarray)):
         fun = val
+
+    elif is_sequence(val):
+        fun = nm.array(val)
 
     else:
         raise ValueError('unknown value type for %s %s!'
@@ -55,17 +58,19 @@ class Conditions(Container):
         for key, cc in six.iteritems(conf):
             times = cc.get('times', None)
 
-            if 'ebc' in key:
+
+
+            if key.startswith("ebc"):
                 region = _get_region(cc.region, regions, cc.name)
                 cond = EssentialBC(cc.name, region, cc.dofs, key=key,
                                    times=times)
 
-            elif 'epbc' in key:
+            elif key.startswith("epbc"):
                 rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
                 cond = PeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key,
                                    times=times)
 
-            elif 'lcbc' in key:
+            elif key.startswith('lcbc'):
                 if isinstance(cc.region, basestr):
                     rs = [_get_region(cc.region, regions, cc.name), None]
 
@@ -78,6 +83,16 @@ class Conditions(Container):
                                            key=key,
                                            times=times,
                                            arguments=cc.get('arguments', None))
+
+            elif key.startswith('dgebc'):
+                region = _get_region(cc.region, regions, cc.name)
+                cond = DGEssentialBC(cc.name, region, cc.dofs, key=key,
+                                     times=times)
+
+            elif key.startswith('dgepbc'):
+                rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
+                cond = DGPeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key,
+                                    times=times)
 
             elif 'ic' in key:
                 region = _get_region(cc.region, regions, cc.name)
@@ -177,6 +192,12 @@ class Condition(Struct):
         for dofs, val in six.iteritems(self.dofs):
             single_cond = self.copy(name=self.name)
             single_cond.is_single = True
+            if 'grad' in dofs:
+                # extract variable name from grad.<var-name>.all dofs
+                dofs = ".".join((dofs.split(".")[1:]))
+                # mark condition as diff
+                single_cond.diff = 1
+
             single_cond.dofs = [dofs, val]
             yield single_cond
 
@@ -261,6 +282,25 @@ class PeriodicBC(Condition):
         """
         self.dofs[0] = _canonize(self.dofs[0], dofs)
         self.dofs[1] = _canonize(self.dofs[1], dofs)
+
+class DGPeriodicBC(PeriodicBC):
+    """
+    This class is empty, it serves the same purpose
+    as PeriodicBC, and is created only for branching in
+    dof_info.py
+    """
+    pass
+
+class DGEssentialBC(EssentialBC):
+    """
+    This class is empty, it serves the same purpose
+    as EssentialBC, and is created only for branching in
+    dof_info.py
+    """
+
+    def __init__(self, *args, diff=0, **kwargs):
+        EssentialBC.__init__(self, *args, **kwargs)
+        self.diff = diff
 
 class LinearCombinationBC(Condition):
     """

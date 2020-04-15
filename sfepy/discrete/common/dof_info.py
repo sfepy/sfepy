@@ -9,7 +9,9 @@ import scipy.sparse as sp
 
 from sfepy.base.base import assert_, Struct, basestr
 from sfepy.discrete.functions import Function
-from sfepy.discrete.conditions import get_condition_value, EssentialBC
+from sfepy.discrete.conditions import get_condition_value, EssentialBC, \
+    PeriodicBC, DGPeriodicBC, DGEssentialBC
+
 
 def expand_nodes_to_dofs(nods, n_dof_per_node):
     """
@@ -270,6 +272,15 @@ class EquationMap(Struct):
         self.dpn = len(self.dof_names)
         self.eq = nm.arange(var_di.n_dof, dtype=nm.int32)
 
+        self.n_dg_ebc = 0
+        self.dg_ebc_names = {}
+        self.dg_ebc = {}
+        self.dg_ebc_val = {}
+
+        self.n_dg_epbc = 0
+        self.dg_epbc_names = []
+        self.dg_epbc = []
+
     def _init_empty(self, field):
         self.val_ebc = nm.empty((0,), dtype=field.dtype)
 
@@ -345,12 +356,16 @@ class EquationMap(Struct):
                 continue
 
             active_bcs.add(bc.key)
-
-            if isinstance(bc, EssentialBC):
+            if isinstance(bc, DGEssentialBC):
+                ntype = "DGEBC"
+                region = bc.region
+            elif isinstance(bc, DGPeriodicBC):
+                ntype = "DGEPBC"
+                region = bc.regions[0]
+            elif isinstance(bc, EssentialBC):
                 ntype = 'EBC'
                 region = bc.region
-
-            else:
+            elif isinstance(bc, PeriodicBC):
                 ntype = 'EPBC'
                 region = bc.regions[0]
 
@@ -381,6 +396,31 @@ class EquationMap(Struct):
                 # Duplicates removed here...
                 eq_ebc[eq] = 1
                 if vv is not None: val_ebc[eq] = nm.ravel(vv)
+            elif ntype == "DGEBC":
+
+                dofs, val = bc.dofs
+                ##
+                # Evaluate EBC values.
+                fun = get_condition_value(val, functions, 'EBC', bc.name)
+                if isinstance(fun, Function):
+                    aux = fun
+                    fun = lambda coors: aux(ts, coors,
+                                            bc=bc, problem=problem)
+
+                values = field.get_bc_facet_values(fun, region, diff=bc.diff)
+                bc2bfi = field.get_bc_facet_idx(region)
+
+                self.dg_ebc_val.setdefault(bc.diff, []).append(values)
+                self.dg_ebc.setdefault(bc.diff, []).append(bc2bfi)
+                self.n_dg_ebc += 1
+            elif ntype == "DGEPBC":
+
+                # ensure matching boundaries?
+                master_bc2bfi = field.get_bc_facet_idx(region)
+                slave_bc2bfi = field.get_bc_facet_idx(bc.regions[1])
+
+                self.dg_epbc.append((master_bc2bfi, slave_bc2bfi))
+                self.n_dg_epbc += 1
 
             else: # EPBC.
                 region = bc.regions[1]
@@ -459,7 +499,8 @@ class EquationMap(Struct):
         ii = nm.argwhere(eq_ebc == 1)
         self.eq_ebc = nm.atleast_1d(ii.squeeze())
         self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
-        self.master = nm.argwhere(master_slave > 0).squeeze()
+        # add axis in case we squeezed too hard
+        self.master = nm.atleast_1d(nm.argwhere(master_slave > 0).squeeze())
         self.slave = master_slave[self.master] - 1
 
         assert_((self.eq_ebc.shape == self.val_ebc.shape))

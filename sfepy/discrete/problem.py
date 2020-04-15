@@ -645,12 +645,20 @@ class Problem(Struct):
             conf_ebc = get_default(ebcs, self.conf.ebcs)
             self.ebcs = Conditions.from_conf(conf_ebc, self.domain.regions)
 
+            conf_dgebc = self.conf.get("dgebcs", {})
+            self.ebcs.extend(Conditions.from_conf(conf_dgebc,
+                                                  self.domain.regions))
+
         if isinstance(epbcs, Conditions):
             self.epbcs = epbcs
 
         else:
             conf_epbc = get_default(epbcs, self.conf.epbcs)
             self.epbcs = Conditions.from_conf(conf_epbc, self.domain.regions)
+
+            conf_dgepbc = self.conf.get("dgepbcs", {})
+            self.ebcs.extend(Conditions.from_conf(conf_dgepbc,
+                                                  self.domain.regions))
 
         if isinstance(lcbcs, Conditions):
             self.lcbcs = lcbcs
