@@ -403,6 +403,11 @@ class MeshioLibIO(MeshIO):
         if self.file_format in ['vtk', 'vtu']:
             ngkey = 'node_groups'
             cgkey = 'mat_id'
+            if coors.shape[1] != 3:
+                nnd, ndim = coors.shape
+                ndim = 3 - ndim
+                coors = nm.hstack([coors,
+                                   nm.zeros((nnd, ndim), dtype=nm.float64)])
         else:
             ngkey = '%s:ref' % self.file_format
             cgkey = '%s:ref' % self.file_format
