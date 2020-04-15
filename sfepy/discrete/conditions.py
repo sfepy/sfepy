@@ -5,7 +5,7 @@ classes, as well as the initial condition class.
 from __future__ import absolute_import
 import numpy as nm
 
-from sfepy.base.base import basestr, Container, Struct
+from sfepy.base.base import basestr, Container, Struct, is_sequence
 from sfepy.discrete.functions import Function
 import six
 
@@ -29,7 +29,8 @@ def get_condition_value(val, functions, kind, name):
     elif (isinstance(val, Function) or nm.isscalar(val)
           or isinstance(val, nm.ndarray)):
         fun = val
-    elif isinstance(val, tuple):
+
+    elif is_sequence(val):
         fun = nm.array(val)
 
     else:
@@ -57,26 +58,19 @@ class Conditions(Container):
         for key, cc in six.iteritems(conf):
             times = cc.get('times', None)
 
-            if 'dgebc' in key:
-                region = _get_region(cc.region, regions, cc.name)
-                cond = DGEssentialBC(cc.name, region, cc.dofs, key=key,
-                                   times=times)
-            elif 'dgepbc' in key:
-                rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
-                cond = DGPeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key,
-                                  times=times)
 
-            elif 'ebc' in key:
+
+            if key.startswith("ebc"):
                 region = _get_region(cc.region, regions, cc.name)
                 cond = EssentialBC(cc.name, region, cc.dofs, key=key,
                                    times=times)
 
-            elif 'epbc' in key:
+            elif key.startswith("epbc"):
                 rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
                 cond = PeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key,
                                    times=times)
 
-            elif 'lcbc' in key:
+            elif key.startswith('lcbc'):
                 if isinstance(cc.region, basestr):
                     rs = [_get_region(cc.region, regions, cc.name), None]
 
@@ -89,6 +83,16 @@ class Conditions(Container):
                                            key=key,
                                            times=times,
                                            arguments=cc.get('arguments', None))
+
+            elif key.startswith('dgebc'):
+                region = _get_region(cc.region, regions, cc.name)
+                cond = DGEssentialBC(cc.name, region, cc.dofs, key=key,
+                                     times=times)
+
+            elif key.startswith('dgepbc'):
+                rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
+                cond = DGPeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key,
+                                    times=times)
 
             elif 'ic' in key:
                 region = _get_region(cc.region, regions, cc.name)

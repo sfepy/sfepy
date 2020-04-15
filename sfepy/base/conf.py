@@ -86,7 +86,7 @@ def transform_conditions(adict, prefix):
     return d2
 
 def transform_dgebcs(adict):
-    return transform_conditions(adict, "dgebcs")
+    return transform_conditions(adict, "dgebc")
 
 def transform_ebcs(adict):
     return transform_conditions(adict, 'ebc')

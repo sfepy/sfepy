@@ -7,7 +7,7 @@ Helper functions for the equation mapping.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import assert_, Struct, basestr, output
+from sfepy.base.base import assert_, Struct, basestr
 from sfepy.discrete.functions import Function
 from sfepy.discrete.conditions import get_condition_value, EssentialBC, \
     PeriodicBC, DGPeriodicBC, DGEssentialBC
@@ -301,10 +301,6 @@ class EquationMap(Struct):
         self.dg_epbc_names = []
         self.dg_epbc = []
 
-
-
-
-
     def _mark_unused(self, field):
         unused_dofs = field.get('unused_dofs')
         if unused_dofs is not None:
@@ -360,21 +356,18 @@ class EquationMap(Struct):
                 continue
 
             active_bcs.add(bc.key)
-
             if isinstance(bc, DGEssentialBC):
                 ntype = "DGEBC"
                 region = bc.region
             elif isinstance(bc, DGPeriodicBC):
                 ntype = "DGEPBC"
-                region=bc.regions[0]
+                region = bc.regions[0]
             elif isinstance(bc, EssentialBC):
                 ntype = 'EBC'
                 region = bc.region
             elif isinstance(bc, PeriodicBC):
                 ntype = 'EPBC'
                 region = bc.regions[0]
-
-            # output("Treating {} {}".format(ntype, bc.name))
 
             if warn:
                 clean_msg = ('warning: ignoring nonexistent %s node (%s) in '
@@ -506,9 +499,8 @@ class EquationMap(Struct):
         ii = nm.argwhere(eq_ebc == 1)
         self.eq_ebc = nm.atleast_1d(ii.squeeze())
         self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
-        self.master = nm.argwhere(master_slave > 0).squeeze()
         # add axis in case we squeezed too hard
-        self.master = self.master if self.master.shape else self.master[None]
+        self.master = nm.atleast_1d(nm.argwhere(master_slave > 0).squeeze())
         self.slave = master_slave[self.master] - 1
 
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
