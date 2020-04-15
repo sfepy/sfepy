@@ -1041,7 +1041,6 @@ class DGField(FEField):
         dconn = domain.get_conn()
         # from FEField
         if integration == 'volume':
-            # TODO refactor with FEField
             qp = self.get_qp('v', integral)
             # qp = self.integral.get_qp(self.gel.name)
             iels = region.get_cells()
@@ -1163,7 +1162,8 @@ class DGField(FEField):
         """
         raise NotImplementedError(
             "Setting facet DOFs is not supported with DGField, " +
-            "use values at qp directly.")
+            "use values at qp directly. " +
+            "This is usually result of using ebc insted of dgebc")
 
         aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
