@@ -219,13 +219,6 @@ class Mesh(Struct):
         mesh = Mesh(trunk)
         mesh = io.read(mesh, omit_facets=omit_facets)
 
-        # FIXME - hot fix for reading 1D meshes
-        if len(mesh.descs) == 1 and mesh.descs[0] == "1_2":
-            output("forcing 1D")
-            data = list(mesh._get_io_data(cell_dim_only=1))
-            data[0] = data[0][:, :1]
-            mesh = Mesh.from_data(mesh.name, *data)
-
         output('...done in %.2f s' % timer.stop())
 
         mesh._set_shape_info()
@@ -403,12 +396,8 @@ class Mesh(Struct):
             conn, cells = self.get_conn(desc, ret_cells=True)
             conns.append(conn)
             mat_ids.append(cmesh.cell_groups[cells])
-        # FIXME make point coordinates 3D
-        dim = cmesh.dim
-        iocoors = nm.zeros((cmesh.coors.shape[0], 3))
-        iocoors[:, :dim] = cmesh.coors
 
-        return iocoors, cmesh.vertex_groups, conns, mat_ids, descs
+        return cmesh.coors, cmesh.vertex_groups, conns, mat_ids, descs
 
     @property
     def coors(self):
