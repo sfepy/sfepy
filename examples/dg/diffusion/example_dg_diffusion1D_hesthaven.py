@@ -11,9 +11,21 @@ Simple example for second order ODE
 from examples.dg.example_dg_common import *
 
 
-def define(filename_mesh=None, approx_order=3,
-           Cw=200, diffusion_coef=1., CFL=0.001,
-           use_symbolic=False, transient=True):
+def define(filename_mesh=None,
+           approx_order=2,
+
+           flux=None,
+           limit=False,
+
+           Cw=200,
+           diffusion_coef=1,
+           diff_scheme_name="symmetric",
+
+           CFL=0.001,
+           dt=None,
+           ):
+
+    transient = True
     t0 = 0
     t1 = 0.1
 

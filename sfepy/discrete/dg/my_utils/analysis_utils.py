@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Script for various function doing analysis of solutions, maybe also calculation of exact solution, hm?
+Script for various function doing analysis of solutions, maybe also calculation
+of exact solution, hm?
 """
 
 import numpy as np
@@ -98,7 +99,7 @@ def broadcast_sols_1dir(Ys, Ts):
     """
     Broadcasts solutions to
     match the finest time discretization,
-    use along with animate1d
+    use along with animate1D_dgsol
     :param Ys: list or tuple of solutions
     :param Ts: list or tuple of different time discretizations
     :return: bYs - broadcasted solutions, bTs - broadcasted times
@@ -126,7 +127,7 @@ def cast_sols(Ys, Xs, Ts, fit="min"):
     """
     Broadcasts solutions to
     match the finest time and space discretization,
-    use along with animate1d
+    use along with animate1D_dgsol
     :param Ys: list or tuple of solutions
     :param Xs: list or tuple of different space discretizations
     :param Ts: list or tuple of different time discretizations

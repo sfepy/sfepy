@@ -25,8 +25,20 @@ from examples.dg.example_dg_common import *
 
 from examples.dg.example_dg_common import *
 
-def define(filename_mesh=None, approx_order=1, flux=None, CFL=None, dt=None,
-           Cw=100, diffusion_coef=1, diff_scheme_name="symmetric"):
+def define(filename_mesh=None,
+           approx_order=2,
+
+           flux=None,
+           limit=False,
+
+           Cw=100,
+           diffusion_coef=1,
+           diff_scheme_name="symmetric",
+
+           CFL=None,
+           dt=None,
+           ):
+
     CFL = None
     dt = None
 

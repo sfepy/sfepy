@@ -1139,10 +1139,10 @@ class DGField(FEField):
             vals = (rhs_vec / lhs_diag)
 
             # plot for 1D
-            # from my_utils.visualizer import plot_1D_legendre_dofs, reconstruct
+            # from my_utils.visualizer import plot1D_legendre_dofs, reconstruct
             # _legendre_dofs
             # import matplotlib.pyplot as plt
-            # plot_1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
+            # plot1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
             # ww, xx = reconstruct_legendre_dofs(self.domain.mesh.coors, 1,
             # vals.T[..., None, None])
             # plt.plot(xx, ww[:, 0], label="reconstructed dofs")

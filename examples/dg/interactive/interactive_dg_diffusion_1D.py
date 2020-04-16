@@ -30,7 +30,7 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 from sfepy.discrete.dg.my_utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
-from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
+from run_dg_utils import clear_folder
 
 # vvvvvvvvvvvvvvvv#
 approx_order = 2
@@ -195,7 +195,7 @@ state_end = pb.solve()
 #
 # from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
 # from sfepy.discrete.dg.my_utils.visualizer import \
-#     load_state_1D_vtk, plot_1D_legendre_dofs, reconstruct_legendre_dofs
+#     load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
 # coors, u_end = load_state_1D_vtk("output/adv_1D/domain_1D_end.vtk", order=approx_order)
 #
 #
@@ -203,7 +203,7 @@ state_end = pb.solve()
 # # u_end = get_unraveler(field.n_el_nod, field.n_cell)(state_end.vec).swapaxes(0, 1)[..., None]
 #
 #
-# plot_1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
+# plot1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
 #
 # plt.figure("reconstructed")
 # ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)

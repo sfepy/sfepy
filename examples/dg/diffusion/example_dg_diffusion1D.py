@@ -12,8 +12,21 @@ from examples.dg.example_dg_common import *
 
 
 
-def define(filename_mesh=None, approx_order=2, Cw=100, diffusion_coef=1, CFL=0.4,
-           use_symbolic=False, transient=False):
+def define(filename_mesh=None,
+           approx_order=2,
+
+           flux=0,
+           limit=False,
+
+           Cw=100,
+           diffusion_coef=1,
+           diff_scheme_name="symmetric",
+
+           CFL=0.4,
+           dt=None,
+           transient=False):
+
+
     t0 = 0
     t1 = 2
 

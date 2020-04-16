@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Generate simplex DG basis data.
 """

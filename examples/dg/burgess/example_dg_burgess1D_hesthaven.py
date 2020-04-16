@@ -9,9 +9,19 @@ Brown University, Jan.Hesthaven@Brown.edu
 
 from examples.dg.example_dg_common import *
 
-def define(filename_mesh=None, approx_order=1, flux=0, CFL=0.01, dt=None,
-           Cw=1, diffusion_coef=0.001, diff_scheme_name="symmetric"):
+def define(filename_mesh=None,
+           approx_order=2,
 
+           flux=0,
+           limit=False,
+
+           Cw=1,
+           diffusion_coef=0.001,
+           diff_scheme_name="symmetric",
+
+           CFL=0.01,
+           dt=None,
+           ):
 
     functions = {}
     def local_register_function(fun):

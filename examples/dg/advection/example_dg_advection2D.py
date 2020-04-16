@@ -3,7 +3,9 @@ from examples.dg.example_dg_common import *
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)
 
-def define(filename_mesh=None, approx_order=2,
+def define(filename_mesh=None,
+           approx_order=2,
+
            flux=0,
            limit=False,
 

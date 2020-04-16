@@ -4,15 +4,17 @@ Module for animating solutions in 1D.
 Can also save them but requieres ffmpeg package
 see save_animation method.
 """
-
-import matplotlib.animation as animation
-from matplotlib import pyplot as plt
 import numpy as nm
-from numpy import newaxis as nax
-from matplotlib import pylab as plt
-from matplotlib import colors
 from os.path import join as pjoin
-from toolz import accumulate
+from glob import glob
+
+from matplotlib import animation
+from matplotlib import pyplot as plt
+from matplotlib import colors
+
+
+from sfepy.discrete.fem.meshio import MeshioLibIO
+from sfepy.discrete.fem.mesh import Mesh
 
 # TODO refactor this darn thing so it is more flexible
 __author__ = 'tomas_zitka'
@@ -20,8 +22,8 @@ __author__ = 'tomas_zitka'
 ffmpeg_path = ''  # for saving animations
 
 
-def animate1d(Y, X, T, ax=None, fig=None, ylims=None, labs=None,
-              plott=None, delay=None):
+def animate1D_dgsol(Y, X, T, ax=None, fig=None, ylims=None, labs=None,
+                    plott=None, delay=None):
     """
     Animates solution of 1D problem into current figure.
     Keep reference to returned animation object otherwise
@@ -140,7 +142,7 @@ def save_animation(anim, filename):
 def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=None):
     """
     Creates snap of solution at specified time frame t0, basically gets one
-    frame from animate1d, but colors wont be the same :-(
+    frame from animate1D_dgsol, but colors wont be the same :-(
     :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
     :param X: space interval discetization
     :param T: time interval discretization
@@ -211,11 +213,11 @@ def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None,
 def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     """
     Plots Y1 and Y2 to one axes and YE to the second axes,
-    Y1 and Y2 are presumed to two solution and YE their error - hence the names
-    :param Y1:
-    :param Y2:
-    :param YE:
-    :param extent:
+    Y1 and Y2 are presumed to be two solutions and YE their error
+    :param Y1: solution 1, shape = (space nodes, time nodes)
+    :param Y2: solution 2, shape = (space nodes, time nodes)
+    :param YE: ||soulutio 1 - soulution 2||
+    :param extent: imshow extent
     :return:
     """
 
@@ -263,12 +265,10 @@ def load_state_1D_vtk(name, order):
     :return:
     """
 
-    from sfepy.discrete.fem.meshio import VTKMeshIO
-    from glob import glob
-    from os.path import join as pjoin
-    io = VTKMeshIO(name)
+    from sfepy.discrete.fem.meshio import MeshioLibIO
+    io = MeshioLibIO(name)
+    coors = io.read(Mesh()).coors[:, 0, None]
     data = io.read_data(step=0)
-    coors = io.read_coors()[:, 0, None]
     u = nm.zeros((order + 1, coors.shape[0] - 1, 1, 1))
     for ii in range(order + 1):
         u[ii, :, 0, 0] = data['u_modal{}'.format(ii)].data
@@ -276,47 +276,38 @@ def load_state_1D_vtk(name, order):
     return coors, u
 
 
-def load_1D_vtks(fold, name, order, tns=None):
+def load_1D_vtks(fold, name, order):
     """
     Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
 
-    Attempts to read cell data for variables u0, u1 ...
+    Attempts to read modal cell data for variable u. i.e.
+
+    u_modal{i}, where i is number of modal DOF
 
     Resulting solution data have shape:
     (order, nspace_steps, ntime_steps, 1)
 
     :param fold: folder where to look for files
     :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
-    :param tns: number of time steps, i.e. number of files to read
     :param order: order of approximation used in u1, u2 ...u{order}
     :return: space coors, solution data
     """
 
-    from sfepy.discrete.fem.meshio import VTKMeshIO
-    from glob import glob
-    from os.path import join as pjoin
     files = glob(pjoin(fold, name) + ".[0-9]*")
 
-
-    if len(files) == 0:
+    if len(files) == 0: # no multiple time steps, try loading single file
         print("No files {} found in {}".format(pjoin(fold, name) + ".[0-9]*", fold))
         print("Trying {}".format(pjoin(fold, name) + ".vtk"))
         files = glob(pjoin(fold, name) + ".vtk")
         if files:
-            io = VTKMeshIO(files[0])
-            coors = io.read_coors()[:, 0, None]
-            data = io.read_data(step=0)
-            u = nm.zeros((order + 1, coors.shape[0] - 1, 1, 1))
-            for ii in range(order + 1):
-                u[ii, :, 0, 0] = data['u_modal{}'.format(ii)].data
-            return coors, u
+            return load_state_1D_vtk(files[0], order)
         else:
             print("Nothing found.")
             return
 
-    io = VTKMeshIO(files[0])
-    coors = io.read_coors()[:, 0, None]
+    io = MeshioLibIO(files[0])
+    coors = io.read(Mesh()).coors[:, 0, None]
 
     tn = len(files)
     nts = sorted([int(f.split(".")[-2]) for f in files])
@@ -326,8 +317,8 @@ def load_1D_vtks(fold, name, order, tns=None):
 
     u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
     for i, nt in enumerate(nts):
-        io = VTKMeshIO(full_name_form.format(nt))
-        # parameter "step" does nothing for VTKMeshIO, but is obligatory
+        io = MeshioLibIO(full_name_form.format(nt))
+        # parameter "step" does nothing, but is obligatory
         data = io.read_data(step=0)
         for ii in range(order + 1):
             u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
@@ -364,7 +355,7 @@ def plot1D_DG_sol(coors, t0, t1, u,
     X = (coors[1:] + coors[:-1]) / 2
     XS = nm.linspace(X1, XN, 500)[:, None]
 
-    if polar:
+    if polar: # setup polar coorinates
         coors *= 2*nm.pi
         X *= 2*nm.pi
         XS *= 2*nm.pi
@@ -382,7 +373,7 @@ def plot1D_DG_sol(coors, t0, t1, u,
 
     n_nod = len(coors)
     n_el_nod = nm.shape(u)[0]
-    # prepend u[:, 0, ...] to all time frames for plotting steps
+    # prepend u[:, 0, ...] to all time frames for plotting step in left corner
     u_step = nm.append(u[:, 0:1, :, 0], u[:, :, :, 0], axis=1)
 
     # Plot DOFs directly
@@ -416,10 +407,10 @@ def plot1D_DG_sol(coors, t0, t1, u,
         axs.plot(nm.squeeze(XS), nm.squeeze(ics), label="IC-ex")
 
     # Animate sampled solution DOFs directly
-    anim_dofs = animate1d(u_step.T, coors, T, axs, figs,
-                          ylims=[-1, 2],
-                          plott="step",
-                          delay=delay)
+    anim_dofs = animate1D_dgsol(u_step.T, coors, T, axs, figs,
+                                ylims=[-1, 2],
+                                plott="step",
+                                delay=delay)
     if not polar:
         axs.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     axs.legend(loc="upper left")
@@ -458,10 +449,10 @@ def plot1D_DG_sol(coors, t0, t1, u,
         labs = None
 
     # Animate reconstructed solution
-    anim_recon = animate1d(ww.swapaxes(0, 1), xx, T, axr, figr,
-                           ylims=[-1, 2],
-                           labs=labs,
-                           delay=delay)
+    anim_recon = animate1D_dgsol(ww.swapaxes(0, 1), xx, T, axr, figr,
+                                 ylims=[-1, 2],
+                                 labs=labs,
+                                 delay=delay)
     if not polar:
         axr.set_xlim(coors[0] - .1 * Xvol, coors[-1] + .1 * Xvol)
     axr.legend(loc="upper left")
@@ -472,7 +463,7 @@ def plot1D_DG_sol(coors, t0, t1, u,
     return anim_dofs, anim_recon
 
 
-def plot_1D_legendre_dofs(coors, dofss, fun=None):
+def plot1D_legendre_dofs(coors, dofss, fun=None):
     """
     Plots values of DOFs as steps
     :param coors: coordinates of nodes of the mesh

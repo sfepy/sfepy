@@ -3,7 +3,7 @@ from examples.dg.example_dg_common import *
 example_name = "adv_12D_simp"
 dim = int(example_name[example_name.index("D") - 1])
 
-filename_mesh = "mesh/simp_12D_mesh.vtk"
+filename_mesh = "..\mesh\mesh_simp_12D_01_20double.vtk"
 
 approx_order = 1
 t0 = 0.
@@ -52,17 +52,17 @@ ics = {
     'ic': ('Omega', {'u.0': 'get_ic'}),
 }
 #
-# ebcs = {
-#     'u_left' : ('Gamma_Left', {'u.all' : .5}),
-#     # 'u_righ' : ('Gamma_Right', {'u.all' : -0.3}),
-# }
-
-epbc_1 = {
-    'name'  : 'u_rl',
-    'region': ['Gamma_Right', 'Gamma_Left'],
-    'dofs'  : {'u.all': 'u.all'},
-    'match' : 'match_y_line',
+dgebcs = {
+    'u_left' : ('Gamma_Left', {'u.all' : .5}),
+    'u_right' : ('Gamma_Right', {'u.all' : -0.3}),
 }
+
+# dgepbc_1 = {
+#     'name'  : 'u_rl',
+#     'region': ['Gamma_Right', 'Gamma_Left'],
+#     'dofs'  : {'u.all': 'u.all'},
+#     'match' : 'match_y_line',
+# }
 
 integrals = {
     'i': 2 * approx_order,
@@ -80,7 +80,6 @@ solvers = {
     "tss": ('ts.tvd_runge_kutta_3',
             {"t0"     : t0,
              "t1"     : t1,
-             'limiter': IdentityLimiter,
              'verbose': True}),
     'nls': ('nls.newton', {}),
     'ls' : ('ls.scipy_direct', {})

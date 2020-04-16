@@ -12,8 +12,20 @@ from examples.dg.example_dg_common import *
 
 dim = 1
 
-def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.5, dt=None,
-           Cw=None, diffusion_coef=None, diff_scheme_name="symmetric"):
+def define(filename_mesh=None,
+           approx_order=2,
+
+           flux=0,
+           limit=False,
+
+           Cw=None,
+           diffusion_coef=None,
+           diff_scheme_name="symmetric",
+
+           CFL=0.4,
+           dt=None,
+           ):
+
     t0 = 0
     t1 = 1
     transient = True
@@ -111,9 +123,13 @@ def define(filename_mesh=None, approx_order=2, flux=0, CFL=0.5, dt=None,
     def get_ic(x, ic=None):
         return four_step_u(x)
 
-    def analytic_sol(coors, t=0):
+    def analytic_sol(coors, t=None):
         x = coors[..., 0]
-        res = get_ic(x[..., None]) # - t[None, ...]) # for animating transient problem
+        if t is not None:
+            res = get_ic(x[..., None] - t[None, ...])
+            return res # for animating transient problem
+
+        res = get_ic(x[..., None])
         return res[..., 0]
 
     @local_register_function

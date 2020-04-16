@@ -33,7 +33,7 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
 from sfepy.discrete.dg.my_utils.inits_consts \
     import left_par_q, gsmooth, const_u, ghump, superic
 
-from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
+from run_dg_utils import clear_folder
 
 # vvvvvvvvvvvvvvvv#
 approx_order = 2

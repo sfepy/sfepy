@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""
 DG FEM convergence tests for 1D and 2D problems
 """
@@ -6,7 +7,6 @@ import os
 from os.path import join as pjoin
 import time
 import numpy as nm
-import sympy as sm
 import pandas as pd
 import importlib
 import argparse
@@ -21,19 +21,21 @@ from sfepy.discrete.fem import Mesh
 from sfepy.base.ioutils import ensure_path
 from sfepy.base.conf import ProblemConf
 from sfepy.discrete import Integral, Problem
-from sfepy.discrete.dg.my_utils.plot_1D_dg import clear_folder
+from run_dg_utils import clear_folder
 from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
 
 # DG imports
 from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 
-from examples.dg.example_dg_common import get_1Dmesh_hook, calculate_num_order, \
-    plot_conv_results, build_attrs_string, output, compute_erros, diffusion_schemes_explicit
+from examples.dg.run_dg_utils import  calculate_num_order, outputs_folder,\
+    plot_conv_results, build_attrs_string, output, compute_erros, configure_output
+
+from examples.dg.example_dg_common import get_1Dmesh_hook, diffusion_schemes_explicit
 
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
-        description='DG FEM convergence tests for 1D and 2D problems',
+        description='DG FEM convergence tests for 1D and 2D parametrized problems',
         epilog='(c) 2019  Man-machine Interaction at NTC UWB, ' +
             '\nauthor: Tomas Zitka, email: zitkat@ntc.zcu.cz')
 
@@ -52,11 +54,18 @@ def create_argument_parser():
                         default=None, metavar='path', action='store',
                         dest='mesh_file',)
 
-    parser.add_argument("-ps", "--plot-solutions", help="Show interactive plots.",
-                        default=False, action='store_true', dest='do1Dplot',)
+    parser.add_argument("-dp", "--display-plots", help="Show interactive plots.",
+                        default=False, action='store_true', dest='doplot',)
 
     parser.add_argument("-v", "--verbose", help="To be verbose or",
                         default=False, action='store_true', dest='verbose',)
+
+    parser.add_argument("--noscreenlog", help="Do not print log to screen",
+                        default=False, action='store_true', dest='no_output_screen',)
+
+    parser.add_argument('--logfile', type=str,
+                        action='store', dest='output_log_name',
+                        default="last_run.txt", help="Path to log output file")
 
     parser.add_argument('--advelo', metavar='float', type=float,
                         action='store', dest='advelo',
@@ -101,6 +110,7 @@ def create_argument_parser():
 
     return parser
 
+
 def parse_str2tuple_default(l, default=(1, 2, 3, 4)):
     if l is None:
         return default
@@ -108,18 +118,18 @@ def parse_str2tuple_default(l, default=(1, 2, 3, 4)):
 
 
 # soops-run -o .\soops_tests\ "mesh='mesh/mesh_tensr_2D_01_2.vtk', problem_file='advection/example_dg_advection2D', output_dir='soops_tests/{}/%s', --cfl=[0.1, .5], --limit=[@defined, @undefined],
-# --orders='[1,2,3,4]'" .\conv_tests\run_conv_test.py
+# --orders='[1,2,3,4]'" .\conv_tests\run_dg_conv_study.py
 
 
 # soops-run -o .\soops_tests\ "mesh='mesh/mesh_tensr_2D_01_2.vtk',
 # problem_file='advection/example_dg_advection2D', output_dir='soops_tests/adv2D/%s',
 # --adflux=[0.0, 0.5 ,1.0] ,--cfl=[0.01, 0.1, .5], --limit=[@defined, @undefined],
-# --orders='[1,2,3,4]', --refines='[1,2,3,4]'" .\conv_tests\run_conv_test.py
+# --orders='[1,2,3,4]', --refines='[1,2,3,4]'" .\conv_tests\run_dg_conv_study.py
 
 def get_run_info():
     """ Run info for soops """
     run_cmd = """
-    python conv_tests/run_conv_test.py {problem_file}
+    python conv_tests/run_dg_conv_study.py {problem_file}
     --mesh={mesh} --output {output_dir}"""
     run_cmd = ' '.join(run_cmd.split())
 
@@ -158,6 +168,9 @@ def main(argv):
     parser = create_argument_parser()
     args = parser.parse_args(argv)
 
+    # configure_output({'output_screen': not args.no_output_screen,
+    #                   'output_log_name': "last_run.txt"})
+
     problem_module_name = "examples.dg." + args.problem_file.replace(".py", "")\
         .replace("\\", ".").replace("/", ".")
     mesh = os.path.abspath(args.mesh_file)
@@ -177,7 +190,8 @@ def main(argv):
         for io, order in enumerate(orders):
             conf = ProblemConf.from_dict(
                 problem_module.define(
-                    gen_mesh, order,
+                    filename_mesh=gen_mesh,
+                    approx_order=order,
 
                     flux=args.adflux,
                     limit=args.limit,
@@ -188,10 +202,10 @@ def main(argv):
 
                     CFL=args.cfl,
                     dt=args.dt,
-                ), mod, verbose=False)
+                ), mod, verbose=args.verbose)
 
             output("----------------Running--------------------------")
-            output(conf.example_name + ": " + time.asctime())
+            output("{}: {}".format(conf.example_name, time.asctime()))
             output('refine:', refine, 'order:', order)
 
             try:
@@ -217,12 +231,12 @@ def main(argv):
             elapsed = time.clock() - tt
 
             if args.output_dir is None:
-                base_output_folder = pjoin("conv_tests_out", conf.example_name)
+                base_output_folder = pjoin(outputs_folder, "conv_tests_out",
+                                           conf.example_name)
             elif "{}" in args.output_dir:
                 base_output_folder = args.output_dir.format(conf.example_name)
             else:
                 base_output_folder = pjoin(args.output_dir)
-
 
             output_folder = pjoin(base_output_folder, "h" + str(n_cells))
             output_folder = pjoin(output_folder, "o" + str(order))
@@ -231,12 +245,15 @@ def main(argv):
                                   .format(n_cells, order,
                                           "vtk" if problem_module.dim == 1 else "msh"))
             output("Output set to {}, clearing.".format(output_format))
-            output("------------------Finished------------------\n\n")
+
 
             clear_folder(output_format, confirm=False)
             ensure_path(output_format)
 
             pb.save_state(output_format.replace("*", "0"), state=pb.sol)
+            output(
+                "{}: {}".format(conf.example_name, time.asctime()))
+            output("------------------Finished------------------\n\n")
 
             ana_l2, ana_qp, diff_l2, rel_l2, num_qp = compute_erros(conf.sol_fun, pb)
 
@@ -272,7 +289,7 @@ def main(argv):
 
     plot_conv_results(base_output_folder, conf, err_df, save=True)
 
-    if args.do1Dplot:
+    if args.doplot:
         plt.show()
 
 
@@ -307,17 +324,22 @@ def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
     ax = axs[io][ir]
     xs = nm.linspace(conf.mstart, conf.mend, 500)[:, None]
     ax.set_title("o: {}, h: {}".format(order, n_cells))
-    ax.plot(xs, conf.analytic_sol(xs, t=nm.array(1)), label="fun-ex", color="grey")
-    ax.plot(xx[:, 0], uu[:, 0, 0], alpha=.5)
-    ax.plot(fqps, ana_qp.flatten(), "--", color="grey")
-    ax.plot(fqps, num_qp.flatten())
+    ax.plot(xs, conf.analytic_sol(xs, t=nm.array(1)), label="exact", color="grey")
+    ax.plot(xx[:, 0], uu[:, 0, 0], alpha=.5, label="num-lin")
+    ax.plot(fqps, ana_qp.flatten(), "--", color="grey", label="exact-qp")
+    ax.plot(fqps, num_qp.flatten(), label="num-qp")
     ax2 = ax.twinx()
-    ax2.plot(fqps, nm.abs(num_qp.flatten() - ana_qp.flatten()), color="red")
+    ax2.plot(fqps, nm.abs(num_qp.flatten() - ana_qp.flatten()), color="red",
+             label="error-qp")
+
     if io < len(orders) - 1:
         ax.set_xticks([])
-    # if ir > 0:
-    #     ax.set_yticks([])
-
+    else:
+        if ir == 0:  # put only one legend
+            lines, labels = ax.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            sol_fig.legend(lines + lines2, labels + labels2,
+                           loc='center right')
 
 if __name__ == '__main__':
     main(sys.argv[1:])
