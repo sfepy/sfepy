@@ -601,9 +601,9 @@ class DGField(FEField):
             Updated incidence array.
 
         """
-
+        # if eq_map.
         # treat DG EPBC - these are definitely preferred
-        if self.gel.name not in ["1_2", "2_4", "3_6"]:
+        if eq_map.n_dg_epbc > 0 and self.gel.name not in ["1_2", "2_4", "3_6"]:
             raise ValueError(
                 "Periodic boundary conditions not supported " +
                 "for geometry {} elements.".format(self.gel.name))
