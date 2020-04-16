@@ -1,6 +1,6 @@
 from examples.dg.example_dg_common import *
-from toolz import reduce
-from operator import mul
+
+from sfepy.discrete.dg.dg_basis import get_n_el_nod
 
 example_name = "adv_2D_mquad"
 dim = 2  # int(example_name[example_name.index("D") - 1])
@@ -12,8 +12,7 @@ t0 = 0.
 t1 = 1
 CFL = .4
 
-n_el_nod = int(reduce(mul, map(lambda i: approx_order + i + 1, range(dim))) /
-               reduce(mul, range(1, dim + 1)))  # number of DOFs per element
+n_el_nod = get_n_el_nod(approx_order, dim, extended="quad" in filename_mesh)
 
 # get_common(approx_order, CFL, t0, t1, None, get_ic)
 angle = - nm.pi / 5

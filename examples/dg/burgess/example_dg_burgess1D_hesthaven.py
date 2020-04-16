@@ -38,11 +38,12 @@ def define(filename_mesh=None,
     dim = 1
 
     if filename_mesh is None:
-        filename_mesh = get_1Dmesh_hook(-1, 1, 20)
+        filename_mesh = get_1Dmesh_hook(-1, 1, 100)
 
     mstart = -1
     mend = 1
 
+    transient = True
     t0 = 0.
     t1 = 1.
     velo = 1.
@@ -71,7 +72,10 @@ def define(filename_mesh=None,
         x = coors[..., 0]
         eps = diffusion_coef
         tanh = nm.tanh
-        res = -tanh(-1/4*(2*t - 2*x - 1)/eps) + 1
+        if t is None:
+            res = -tanh(-1/4*(2*t1 - 2*x - 1)/eps) + 1
+        else:
+            res = -tanh(-1 / 4 * (2 * t[None, ...] - 2 * x[..., None] - 1) / eps) + 1
         return res
 
     @local_register_function
@@ -170,7 +174,7 @@ def define(filename_mesh=None,
         'nls'             : 'newton',
         'ls'              : 'ls',
         'save_times'      : 100,
-        'output_format'   : 'msh',
+        'output_format'   : 'vtk',
         'pre_process_hook': get_cfl_setup(CFL)
     }
 

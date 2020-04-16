@@ -284,7 +284,7 @@ class RK4StepSolver(DGMultiStageTSS):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
-        from dg_field import get_unraveler, get_raveler
+        from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
         unravel = get_unraveler(3, 99)
 
         conf = nls.conf

@@ -28,7 +28,8 @@ from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
 from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 
 from examples.dg.run_dg_utils import  calculate_num_order, outputs_folder,\
-    plot_conv_results, build_attrs_string, output, compute_erros, configure_output
+    plot_conv_results, build_attrs_string, output, compute_erros, configure_output, \
+    add_dg_arguments
 
 from examples.dg.example_dg_common import get_1Dmesh_hook, diffusion_schemes_explicit
 
@@ -60,46 +61,12 @@ def create_argument_parser():
     parser.add_argument("-v", "--verbose", help="To be verbose or",
                         default=False, action='store_true', dest='verbose',)
 
-    parser.add_argument("--noscreenlog", help="Do not print log to screen",
-                        default=False, action='store_true', dest='no_output_screen',)
-
-    parser.add_argument('--logfile', type=str,
-                        action='store', dest='output_log_name',
-                        default="last_run.txt", help="Path to log output file")
-
-    parser.add_argument('--advelo', metavar='float', type=float,
-                        action='store', dest='advelo',
-                        default=1, help="Advection velocity")
-
-    parser.add_argument('--adflux', metavar='float', type=float,
-                        action='store', dest='adflux',
-                        default=0, help="Advection flux parameter, " +
-                                        "\n0 - upwind, " +
-                                        "\n1 - central")
-
-    parser.add_argument("--limit", help="Use 1D or 2D moment limiter",
-                        default=False, action='store_true', dest='limit',)
-
-    parser.add_argument('--cw', metavar='float', type=float,
-                        action='store', dest='cw',
-                        default=1, help="Diffusion penalty coefficient")
-
-    parser.add_argument('--diffcoef', metavar='float', type=float,
-                        action='store', dest='diffcoef',
-                        default=1, help="Diffusion coeffcient")
-
-    parser.add_argument('--diffscheme', type=str,
-                        choices=diffusion_schemes_explicit.keys(),
-                        action='store', dest='diffscheme',
-                        default="symmetric", help="Scheme to use for diffusion")
-
-    parser.add_argument('--cfl', metavar='float', type=float,
-                        action='store', dest='cfl',
-                        default=0.314, help="CFL coefficient")
-
-    parser.add_argument('--dt', metavar='float', type=float,
-                        action='store', dest='dt',
-                        default=None, help="Time step size, overrides CFL coefficient")
+    # parser.add_argument("--noscreenlog", help="Do not print log to screen",
+    #                     default=False, action='store_true', dest='no_output_screen',)
+    #
+    # parser.add_argument('--logfile', type=str,
+    #                     action='store', dest='output_log_name',
+    #                     default="last_run.txt", help="Path to log output file")
 
     parser.add_argument('--orders', metavar="[1, 2, 3 ...]" ,default=None,
                         help='List of orders to try', type=str)
@@ -107,6 +74,7 @@ def create_argument_parser():
     parser.add_argument('--refines', metavar="[1, 2, 3 ...]", default=None,
                         help='List of refinement degrees', type=str)
 
+    add_dg_arguments(parser)
 
     return parser
 

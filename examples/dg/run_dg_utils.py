@@ -11,17 +11,54 @@ import numpy as nm
 from os.path import join as pjoin
 
 
-from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.discrete import Integral, Material, Integrals
 from sfepy.discrete.common.mappings import get_jacobian
 from sfepy.base.base import (get_default, output, configure_output, assert_,
                              Struct, basestr, IndexedStruct)
 
+from examples.dg.example_dg_common import diffusion_schemes_explicit
+
 outputs_folder = "outputs"
 
-configure_output({'output_screen': True,
+configure_output({'output_screen': False,
                   'output_log_name': pjoin(outputs_folder, "last_run.txt")})
 
+
+def add_dg_arguments(parser):
+    parser.add_argument('--advelo', metavar='float', type=float,
+                        action='store', dest='advelo',
+                        default=1, help="Advection velocity")
+
+    parser.add_argument('--adflux', metavar='float', type=float,
+                        action='store', dest='adflux',
+                        default=0, help="Advection flux parameter, " +
+                                        "\n0 - upwind, " +
+                                        "\n1 - central")
+
+    parser.add_argument("--limit", help="Use 1D or 2D moment limiter",
+                        default=False, action='store_true', dest='limit', )
+
+    parser.add_argument('--cw', metavar='float', type=float,
+                        action='store', dest='cw',
+                        default=1, help="Diffusion penalty coefficient")
+
+    parser.add_argument('--diffcoef', metavar='float', type=float,
+                        action='store', dest='diffcoef',
+                        default=1, help="Diffusion coeffcient")
+
+    parser.add_argument('--diffscheme', type=str,
+                        choices=diffusion_schemes_explicit.keys(),
+                        action='store', dest='diffscheme',
+                        default="symmetric", help="Scheme to use for diffusion")
+
+    parser.add_argument('--cfl', metavar='float', type=float,
+                        action='store', dest='cfl',
+                        default=0.314, help="CFL coefficient")
+
+    parser.add_argument('--dt', metavar='float', type=float,
+                        action='store', dest='dt',
+                        default=None,
+                        help="Time step size, overrides CFL coefficient")
 
 def plot_conv_results(base_output_folder, conf, err_df,
                       plot_title_attrs=None, save=False):

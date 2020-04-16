@@ -24,7 +24,7 @@ def define(filename_mesh=None,
     Cw = None
 
     if filename_mesh is None:
-        filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
+        filename_mesh = "mesh/mesh_tens_2D_01_20.vtk"
 
     t0 = 0.
     t1 = 1.

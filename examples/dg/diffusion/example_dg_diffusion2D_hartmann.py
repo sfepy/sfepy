@@ -36,7 +36,7 @@ def define(filename_mesh=None,
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
+        filename_mesh = "mesh/mesh_tens_2D_01_20.vtk"
 
     regions = {
         'Omega'     : 'all',
