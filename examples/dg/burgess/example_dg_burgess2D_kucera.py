@@ -14,14 +14,14 @@ mesh_size = (2, 2)
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=0,
+           adflux=0,
            limit=False,
 
-           Cw=10,
-           diffusion_coef=0.002,
-           diff_scheme_name="symmetric",
+           cw=10,
+           diffcoef=0.002,
+           diffscheme="symmetric",
 
-           CFL=None,
+           cfl=None,
            dt=1e-5,
            ):
 
@@ -45,7 +45,7 @@ def define(filename_mesh=None,
 
     t0 = 0.
     t1 = .1
-    if dt is None and CFL is None:
+    if dt is None and cfl is None:
         dt = 1e-5
 
     velo = [1., 1.]
@@ -145,14 +145,10 @@ def define(filename_mesh=None,
                     + (5 * x_1 * cos(5 * x_1 * x_2) - 4 * (x_1 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
                     + (5 * x_2 * cos(5 * x_1 * x_2) - 4 * (x_2 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
                     - ((25 * x_1 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_1 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)
-                     + (25 * x_2 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_2 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)) * diffusion_coef
+                     + (25 * x_2 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_2 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)) * diffcoef
                     + (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * exp(-t)
             )
             return {"val": res[..., None, None]}
-
-    @local_register_function
-    def get_ic(x, ic=None):
-        return gsmooth(x[..., 0:1] - .4) * gsmooth(x[..., 1:] - .4)
 
     def adv_fun(u):
         vu = velo.T * u[..., None]
@@ -172,8 +168,8 @@ def define(filename_mesh=None,
 
 
     materials = {
-        'a'     : ({'val': [velo], '.flux': flux},),
-        'D'     : ({'val': [diffusion_coef], '.Cw': Cw},),
+        'a'     : ({'val': [velo], '.flux':adflux},),
+        'D'     : ({'val': [diffcoef], '.Cw': cw},),
         'g'     : 'source_fun'
     }
 
@@ -199,7 +195,7 @@ def define(filename_mesh=None,
          " - dw_laplace.i.Omega(D.val, v, u[-1])"
          " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
          " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
-         " - " + str(diffusion_coef) + "*dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
+         " - " + str(diffcoef) + "*dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])"
          # source
          + " + dw_volume_lvf.i.Omega(g.val, v)"
          " = 0"
@@ -209,7 +205,7 @@ def define(filename_mesh=None,
         "tss": ('ts.euler',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 # 'limiter': IdentityLimiter,
+                 'limiters': {"f": MomentLimiter2D} if limit else {},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
@@ -221,11 +217,8 @@ def define(filename_mesh=None,
         'ls'              : 'ls',
         'save_times'      : 100,
         'output_format'   : 'msh',
-        'pre_process_hook': get_cfl_setup(dt=dt) if CFL is None else get_cfl_setup(CFL)
+        'pre_process_hook': get_cfl_setup(CFL=cfl, dt=dt)
     }
-
-    if CFL is not None:
-        del dt
 
     return locals()
 

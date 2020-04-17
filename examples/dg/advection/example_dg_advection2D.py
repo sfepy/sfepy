@@ -6,22 +6,22 @@ mesh_size = (1.0, 0.5)
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=0,
+           adflux=0,
            limit=False,
 
-           Cw=None,
-           diffusion_coef=None,
-           diff_scheme_name="symmetric",
+           cw=None,
+           diffcoef=None,
+           diffscheme="symmetric",
 
-           CFL=0.4,
+           cfl=0.4,
            dt=None,
            ):
 
     example_name = "adv__limt_2D"
     dim = 2
 
-    diffusion_coef = None
-    Cw = None
+    diffcoef = None
+    cw = None
 
     if filename_mesh is None:
         filename_mesh = "mesh/mesh_tens_2D_01_20.vtk"
@@ -30,7 +30,7 @@ def define(filename_mesh=None,
     t1 = 1.
 
     angle = 0
-    # get_common(approx_order, CFL, t0, t1, None, get_ic)
+    # get_common(approx_order, cfl, t0, t1, None, get_ic)
     rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                      [nm.sin(angle), nm.cos(angle)]])
     velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
@@ -119,11 +119,8 @@ def define(filename_mesh=None,
         'save_times'      : 100,
         'active_only'     : False,
         'output_format'   : 'msh',
-        'pre_process_hook': get_cfl_setup(CFL) if dt is None else get_cfl_setup(dt=dt)
+        'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt)
     }
-
-    if dt is None:
-        del dt
 
     return locals()
 

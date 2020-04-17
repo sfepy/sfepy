@@ -12,19 +12,19 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=0,
+           adflux=0,
            limit=False,
 
-           Cw=100,
-           diffusion_coef=1,
-           diff_scheme_name="symmetric",
+           cw=100,
+           diffcoef=1,
+           diffscheme="symmetric",
 
-           CFL=None,
+           cfl=None,
            dt=None,
            ):
 
-    CFL=None
-    dt=None
+    cfl = None
+    dt = None
 
     functions = {}
     def local_register_function(fun):
@@ -118,7 +118,7 @@ def define(filename_mesh=None,
     @local_register_function
     def source_fun(ts, coors, mode="qp", **kwargs):
         # t = ts.dt * ts.step
-        eps = diffusion_coef
+        eps = diffcoef
         sin = nm.sin
         cos = nm.cos
         exp = nm.exp
@@ -157,8 +157,8 @@ def define(filename_mesh=None,
     }
 
     materials = {
-        'a'     : ({'val': [velo], '.flux': flux},),
-        'D'     : ({'val': [diffusion_coef], '.Cw': Cw},),
+        'a'     : ({'val': [velo], '.flux': adflux},),
+        'D'     : ({'val': [diffcoef], '.cw': cw},),
         'g'     : 'source_fun'
     }
 
@@ -171,7 +171,7 @@ def define(filename_mesh=None,
                    " - dw_laplace.i.Omega(D.val, v, u) " +
                    " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
                    " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                   " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                   " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.cw, v, u)" +
                    " + dw_volume_lvf.i.Omega(g.val, v) = 0"
 
     }
@@ -202,7 +202,7 @@ def define(filename_mesh=None,
         'nls'             : 'newton',
         'ls'              : 'ls',
         'output_format'   : 'msh',
-        # 'pre_process_hook': get_cfl_setup(CFL)
+        # 'pre_process_hook': get_cfl_setup(cfl)
     }
     return locals()
 

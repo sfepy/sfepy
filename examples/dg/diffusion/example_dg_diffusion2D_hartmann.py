@@ -10,14 +10,14 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=None,
+          adflux=None,
            limit=False,
 
-           Cw=100,
-           diffusion_coef=1,
-           diff_scheme_name="symmetric",
+           cw=100,
+           diffcoef=1,
+           diffscheme="symmetric",
 
-           CFL=0.4,
+           cfl=0.4,
            dt=None,
            ):
 
@@ -113,12 +113,12 @@ def define(filename_mesh=None,
             cos = nm.cos
             exp = nm.exp
             pi = nm.pi
-            eps = diffusion_coef
+            eps = diffcoef
             res = 1/2*pi**2*eps*sin(1/2*pi*x_1)*sin(1/2*pi*x_2)
             return {"val": res[..., None, None]}
 
     materials = {
-        'D'     : ({'val': [diffusion_coef], '.Cw': Cw},),
+        'D'     : ({'val': [diffcoef], '.Cw': cw},),
         'g'     : 'source_fun'
     }
 
@@ -142,7 +142,7 @@ def define(filename_mesh=None,
         'Advection':   " - dw_laplace.i.Omega(D.val, v, u) " +
                        " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
                        " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                       " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                       " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
                        " + dw_volume_lvf.i.Omega(g.val, v) = 0"
     }
 
@@ -174,7 +174,7 @@ def define(filename_mesh=None,
         'nls': 'newton',
         'ls': 'ls',
         'output_format': 'msh',
-        # 'pre_process_hook': get_cfl_setup(CFL)
+        # 'pre_process_hook': get_cfl_setup(cfl)
     }
     return locals()
 

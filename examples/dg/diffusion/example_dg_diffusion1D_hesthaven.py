@@ -14,14 +14,14 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=None,
+          adflux=None,
            limit=False,
 
-           Cw=200,
-           diffusion_coef=1,
-           diff_scheme_name="symmetric",
+           cw=200,
+           diffcoef=1,
+           diffscheme="symmetric",
 
-           CFL=0.001,
+           cfl=0.001,
            dt=None,
            ):
 
@@ -40,7 +40,7 @@ def define(filename_mesh=None,
 
 
     materials = {
-        'D': ({'val': [diffusion_coef], '.Cw': Cw},),
+        'D': ({'val': [diffcoef], '.Cw': cw},),
         'a': ({'val': 1.0, '.flux': 0.0},),
     }
 
@@ -82,7 +82,7 @@ def define(filename_mesh=None,
                      " - dw_laplace.i.Omega(D.val, v, u[-1]) " +
                      " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
                      " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
-                     " - " + str(diffusion_coef) +
+                     " - " + str(diffcoef) +
                      "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
 
                      # " - dw_dg_diffusion_fluxHest1.i.Omega(D.val, v, u[-1]) " +
@@ -107,7 +107,7 @@ def define(filename_mesh=None,
         'save_times': 100,
         'active_only': False,
         'output_format': 'vtk',
-        'pre_process_hook': get_cfl_setup(CFL)
+        'pre_process_hook': get_cfl_setup(cfl)
     }
 
 

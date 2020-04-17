@@ -82,14 +82,14 @@ def get_parametrized_conf(filename, args):
                 filename_mesh=args.mesh_file,
                 approx_order=args.order,
 
-                flux=args.adflux,
+                adflux=args.adflux,
                 limit=args.limit,
 
-                Cw=args.cw,
-                diffusion_coef=args.diffcoef,
-                diff_scheme_name=args.diffscheme,
+                cw=args.cw,
+                diffcoef=args.diffcoef,
+                diffscheme=args.diffscheme,
 
-                CFL=args.cfl,
+                cfl=args.cfl,
                 dt=args.dt,
             ), mod, verbose=args.verbose)
     else:

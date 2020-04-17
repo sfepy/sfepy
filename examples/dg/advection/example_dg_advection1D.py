@@ -15,14 +15,14 @@ dim = 1
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=0,
+           adflux=0,
            limit=False,
 
-           Cw=None,
-           diffusion_coef=None,
-           diff_scheme_name="symmetric",
+           cw=None,
+           diffcoef=None,
+           diffscheme="symmetric",
 
-           CFL=0.4,
+           cfl=0.4,
            dt=None,
            ):
 
@@ -33,8 +33,8 @@ def define(filename_mesh=None,
     mstart = 0
     mend = 1
 
-    diffusion_coef = None
-    Cw = None
+    diffcoef = None
+    cw = None
 
     example_name = "test_adv_1D"
     dim = 1
@@ -101,9 +101,10 @@ def define(filename_mesh=None,
         'ts'              : 'tss',
         'nls'             : 'newton',
         'ls'              : 'ls',
+        'limiters': {"f": MomentLimiter2D} if limit else {},
         'save_times'      : 100,
         'active_only'     : False,
-        'pre_process_hook': get_cfl_setup(CFL) if dt is None else get_cfl_setup(dt=dt),
+        'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt),
         'output_format'   : "vtk"
     }
 
@@ -123,9 +124,9 @@ def define(filename_mesh=None,
     def get_ic(x, ic=None):
         return four_step_u(x)
 
-    def analytic_sol(coors, t=None):
+    def analytic_sol(coors, t=None, uset=False):
         x = coors[..., 0]
-        if t is not None:
+        if uset:
             res = get_ic(x[..., None] - t[None, ...])
             return res # for animating transient problem
 

@@ -23,6 +23,8 @@ outputs_folder = "outputs"
 configure_output({'output_screen': False,
                   'output_log_name': pjoin(outputs_folder, "last_run.txt")})
 
+param_names = ["adflux", "limit", "cw", "diffcoef", "diffscheme", "cfl", "dt"]
+
 
 def add_dg_arguments(parser):
     parser.add_argument('--advelo', metavar='float', type=float,
@@ -77,10 +79,9 @@ def plot_conv_results(base_output_folder, conf, err_df,
     if plot_title_attrs is None:
         plot_title_attrs = ["Cw", "diffusion_coef", "dt", "CFL"]
     fig_sup_title = "Convergence by order"
-    file_name = conf.example_name + "-cells"
+
     fig_sup_title += build_attrs_string(conf, plot_title_attrs, sep=", ",
                                         remove_dots=False)
-    file_name += build_attrs_string(conf, plot_title_attrs)
 
     conv_fig, ax = plt.subplots(1, 1)
     conv_fig.suptitle(fig_sup_title)
@@ -101,12 +102,6 @@ def plot_conv_results(base_output_folder, conf, err_df,
         ax.set_xlabel("cells")
         ax.set_ylabel("L^2 error")
     ax.legend(title="Order")
-
-    if save:
-        conv_fig.savefig(
-            pjoin(base_output_folder,
-                  file_name + ".png"),
-            dpi=200)
 
     return conv_fig
 

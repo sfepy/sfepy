@@ -28,18 +28,18 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=None,
+          adflux=None,
            limit=False,
 
-           Cw=100,
-           diffusion_coef=1,
-           diff_scheme_name="symmetric",
+           cw=100,
+           diffcoef=1,
+           diffscheme="symmetric",
 
-           CFL=None,
+           cfl=None,
            dt=None,
            ):
 
-    CFL = None
+    cfl = None
     dt = None
 
     functions = {}
@@ -112,7 +112,7 @@ def define(filename_mesh=None,
         return res
 
     materials = {
-        'D'     : ({'val': [diffusion_coef], '.Cw': Cw},),
+        'D'     : ({'val': [diffcoef], '.Cw': cw},),
     }
 
     dgebcs = {
@@ -129,8 +129,8 @@ def define(filename_mesh=None,
 
     equations = {
         'laplace': "dw_laplace.i.Omega(D.val, v, u) " +
-                     diffusion_schemes_implicit[diff_scheme_name] +
-                     " - " + str(diffusion_coef) + " * dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                     diffusion_schemes_implicit[diffscheme] +
+                     " - " + str(diffcoef) + " * dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
                      " = 0"
     }
 
@@ -160,7 +160,7 @@ def define(filename_mesh=None,
         'nls'             : 'newton',
         'ls'              : 'ls',
         'output_format'   : 'msh',
-        # 'pre_process_hook': get_cfl_setup(CFL)
+        # 'pre_process_hook': get_cfl_setup(cfl)
     }
     return locals()
 

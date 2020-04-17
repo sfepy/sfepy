@@ -15,14 +15,14 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=0,
+          adflux=0,
            limit=False,
 
-           Cw=100,
-           diffusion_coef=1,
-           diff_scheme_name="symmetric",
+           cw=100,
+           diffcoef=1,
+           diffscheme="symmetric",
 
-           CFL=0.4,
+           cfl=0.4,
            dt=None,
            transient=False):
 
@@ -40,7 +40,7 @@ def define(filename_mesh=None,
     mend = 1
 
     materials = {
-        'D': ({'val': [diffusion_coef], '.Cw': Cw},),
+        'D': ({'val': [diffcoef], '.Cw': cw},),
         'g': 'source_fun'
     }
 
@@ -83,7 +83,7 @@ def define(filename_mesh=None,
                          " - dw_laplace.i.Omega(D.val, v, u[-1]) " +
                          " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
                          " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                         " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
+                         " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
 
                          " + dw_volume_lvf.i.Omega(g.val, v)"
                          " = 0"
@@ -93,7 +93,6 @@ def define(filename_mesh=None,
             "tss": ('ts.tvd_runge_kutta_3',
                     {"t0": t0,
                      "t1": t1,
-                     'limiter': IdentityLimiter,
                      'verbose': True}),
             'nls': ('nls.newton', {}),
             'ls': ('ls.scipy_direct', {})
@@ -106,14 +105,14 @@ def define(filename_mesh=None,
             'save_times': 100,
             'active_only': False,
             'output_format': 'vtk',
-            'pre_process_hook': get_cfl_setup(CFL)
+            'pre_process_hook': get_cfl_setup(cfl)
         }
     else:
         equations = {
             'Temperature': " - dw_laplace.i.Omega(D.val, v, u) " +
                            " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
                            " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                           " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                           " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
                            " + dw_volume_lvf.i.Omega(g.val, v) = 0"
         }
         solvers = {
@@ -130,6 +129,8 @@ def define(filename_mesh=None,
             'output_format': 'vtk',
 
         }
+        cfl = None
+        dt = None
 
 
 
@@ -163,7 +164,7 @@ def define(filename_mesh=None,
     @local_register_function
     def source_fun(ts, coors, mode="qp", **kwargs):
         # t = ts.dt * ts.step
-        eps = diffusion_coef
+        eps = diffcoef
         sin = nm.sin
         cos = nm.cos
         pi = nm.pi

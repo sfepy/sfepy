@@ -5,6 +5,7 @@ DG FEM convergence tests for 1D and 2D problems
 import sys
 import os
 from os.path import join as pjoin
+from pathlib import Path
 import time
 import numpy as nm
 import pandas as pd
@@ -21,7 +22,7 @@ from sfepy.discrete.fem import Mesh
 from sfepy.base.ioutils import ensure_path
 from sfepy.base.conf import ProblemConf
 from sfepy.discrete import Integral, Problem
-from run_dg_utils import clear_folder
+from run_dg_utils import clear_folder, param_names
 from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
 
 # DG imports
@@ -30,9 +31,6 @@ from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 from examples.dg.run_dg_utils import  calculate_num_order, outputs_folder,\
     plot_conv_results, build_attrs_string, output, compute_erros, configure_output, \
     add_dg_arguments
-
-from examples.dg.example_dg_common import get_1Dmesh_hook, diffusion_schemes_explicit
-
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
@@ -61,8 +59,8 @@ def create_argument_parser():
     parser.add_argument("-v", "--verbose", help="To be verbose or",
                         default=False, action='store_true', dest='verbose',)
 
-    # parser.add_argument("--noscreenlog", help="Do not print log to screen",
-    #                     default=False, action='store_true', dest='no_output_screen',)
+    parser.add_argument("--noscreenlog", help="Do not print log to screen",
+                        default=True, action='store_true', dest='no_output_screen',)
     #
     # parser.add_argument('--logfile', type=str,
     #                     action='store', dest='output_log_name',
@@ -97,7 +95,7 @@ def parse_str2tuple_default(l, default=(1, 2, 3, 4)):
 def get_run_info():
     """ Run info for soops """
     run_cmd = """
-    python conv_tests/run_dg_conv_study.py {problem_file}
+    python run_dg_conv_study.py {problem_file}
     --mesh={mesh} --output {output_dir}"""
     run_cmd = ' '.join(run_cmd.split())
 
@@ -124,7 +122,7 @@ def get_run_info():
     }
 
     output_dir_key = "output_dir"
-    is_finished_basename = ""
+    is_finished_basename = "results.csv"
 
     return run_cmd, opt_args, output_dir_key, is_finished_basename
 
@@ -141,9 +139,9 @@ def main(argv):
 
     problem_module_name = "examples.dg." + args.problem_file.replace(".py", "")\
         .replace("\\", ".").replace("/", ".")
-    mesh = os.path.abspath(args.mesh_file)
-
     problem_module = importlib.import_module(problem_module_name)
+
+    mesh = str(Path(args.mesh_file))
 
     refines = parse_str2tuple_default(args.refines, (1, 2, 3, 4)[:2])
     orders = parse_str2tuple_default(args.orders, (1, 2, 3, 4)[:2])
@@ -161,16 +159,32 @@ def main(argv):
                     filename_mesh=gen_mesh,
                     approx_order=order,
 
-                    flux=args.adflux,
+                    adflux=args.adflux,
                     limit=args.limit,
 
-                    Cw=args.cw,
-                    diffusion_coef=args.diffcoef,
-                    diff_scheme_name=args.diffscheme,
+                    cw=args.cw,
+                    diffcoef=args.diffcoef,
+                    diffscheme=args.diffscheme,
 
-                    CFL=args.cfl,
+                    cfl=args.cfl,
                     dt=args.dt,
                 ), mod, verbose=args.verbose)
+
+
+            if args.output_dir is None:
+                base_output_folder = Path(outputs_folder) / "conv_tests_out" /\
+                                           conf.example_name
+            elif "{}" in args.output_dir:
+                base_output_folder = Path(args.output_dir.format(conf.example_name))
+            else:
+                base_output_folder = Path(args.output_dir)
+
+            output_folder = base_output_folder / ("h" + str(refine))
+            output_folder = output_folder / ("o" + str(order))
+
+            configure_output({'output_screen': not args.no_output_screen,
+                              'output_log_name': str(output_folder / "last_run.txt")})
+
 
             output("----------------Running--------------------------")
             output("{}: {}".format(conf.example_name, time.asctime()))
@@ -198,22 +212,10 @@ def main(argv):
             pb.sol = pb.solve()
             elapsed = time.clock() - tt
 
-            if args.output_dir is None:
-                base_output_folder = pjoin(outputs_folder, "conv_tests_out",
-                                           conf.example_name)
-            elif "{}" in args.output_dir:
-                base_output_folder = args.output_dir.format(conf.example_name)
-            else:
-                base_output_folder = pjoin(args.output_dir)
-
-            output_folder = pjoin(base_output_folder, "h" + str(n_cells))
-            output_folder = pjoin(output_folder, "o" + str(order))
-
-            output_format = pjoin(output_folder, "sol-h{:02d}o{:02d}.*.{}"
+            output_format = pjoin(str(output_folder), "sol-h{:02d}o{:02d}.*.{}"
                                   .format(n_cells, order,
                                           "vtk" if problem_module.dim == 1 else "msh"))
             output("Output set to {}, clearing.".format(output_format))
-
 
             clear_folder(output_format, confirm=False)
             ensure_path(output_format)
@@ -238,9 +240,9 @@ def main(argv):
                 plot_1D_snr(conf, pb, ana_qp, num_qp,
                             io, order, orders, ir,
                             sol_fig, axs)
-                sol_fig.savefig(pjoin(base_output_folder,
-                                      "err-sol-i20" + build_attrs_string(conf)
-                                      + ".png"), dpi=100)
+                sol_fig.savefig(base_output_folder /
+                                ("err-sol-i20" + build_attrs_string(conf) + ".png"),
+                                dpi=100)
 
     results = nm.array(results)
 
@@ -248,14 +250,23 @@ def main(argv):
     err_df = pd.DataFrame(results,
                           columns=["h", "n_cells", "mean_vol", "order", "n_dof",
                                    "ana_l2", "diff_l2", "err_rel",
-                                   "elapsed", "cour", "dt"])
+                                   "elapsed", "cour", "actual_dt"])
     err_df = calculate_num_order(err_df)
-    err_df.to_csv(pjoin(base_output_folder,
-                        conf.example_name + "results" + build_attrs_string(conf)
-                        + ".csv"))
+    for name in param_names:
+        err_df[name] = conf.__dict__[name]
+    err_df["gel"] = pb.domain.mesh.descs[0]
+
+    err_df.to_csv(base_output_folder / "results.csv")
+
+    err_df.to_csv(base_output_folder.parent / ( base_output_folder.name + "_results.csv"))
+
+        # pjoin("..", base_output_folder,
+        #                 "results_"+base_output_folder.split("/")[-1]
+        #                 + ".csv"))
     output(err_df)
 
-    plot_conv_results(base_output_folder, conf, err_df, save=True)
+    conv_fig = plot_conv_results(base_output_folder, conf, err_df, save=True)
+    conv_fig.savefig(base_output_folder / "results.png", dpi=200)
 
     if args.doplot:
         plt.show()

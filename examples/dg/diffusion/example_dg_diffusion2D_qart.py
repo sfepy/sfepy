@@ -14,16 +14,18 @@ from examples.dg.example_dg_common import *
 def define(filename_mesh=None,
            approx_order=2,
 
-           flux=0,
+          adflux=0,
            limit=False,
 
-           Cw=100,
-           diffusion_coef=1,
-           diff_scheme_name="symmetric",
+           cw=100,
+           diffcoef=1,
+           diffscheme="symmetric",
 
-           CFL=None,
+           cfl=None,
            dt=None,
            ):
+    cfl = None
+    dt = None
 
     functions = {}
     def local_register_function(fun):
@@ -42,7 +44,7 @@ def define(filename_mesh=None,
         filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
     materials = {
-        'D': ({'val': [diffusion_coef], '.Cw': Cw},),
+        'D': ({'val': [diffcoef], '.Cw': cw},),
         'g': 'source_fun'
     }
 
@@ -109,7 +111,7 @@ def define(filename_mesh=None,
     @local_register_function
     def source_fun(ts, coors, mode="qp", **kwargs):
         # t = ts.dt * ts.step
-        eps = diffusion_coef
+        eps = diffcoef
         sin = nm.sin
         cos = nm.cos
         pi = nm.pi
@@ -150,7 +152,7 @@ def define(filename_mesh=None,
         'Temperature':  " - dw_laplace.i.Omega(D.val, v, u) " +
                         " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
                         " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                        " - " + str(diffusion_coef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                        " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
                         " + dw_volume_lvf.i.Omega(g.val, v) = 0"
     }
 

@@ -10,11 +10,11 @@ filename_mesh = "../mesh/messedquad2_diamond.vtk"
 approx_order = 1
 t0 = 0.
 t1 = 1
-CFL = .4
+cfl = .4
 
 n_el_nod = get_n_el_nod(approx_order, dim, extended="quad" in filename_mesh)
 
-# get_common(approx_order, CFL, t0, t1, None, get_ic)
+# get_common(approx_order, cfl, t0, t1, None, get_ic)
 angle = - nm.pi / 5
 rotm = nm.array([[nm.cos(angle), -nm.sin(angle)],
                  [nm.sin(angle), nm.cos(angle)]])
@@ -97,5 +97,5 @@ options = {
     'save_times'      : 100,
     'active_only'     : False,
     'output_format'   : 'msh',
-    'pre_process_hook': get_cfl_setup(CFL)
+    'pre_process_hook': get_cfl_setup(cfl)
 }
