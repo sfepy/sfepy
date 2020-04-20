@@ -42,13 +42,14 @@ class Test(TestCommon):
         selectors = [
             ['all', 'cell'],
             ['vertices of surface', 'facet'],
-            ['vertices of group 0', 'facet'],
+            ['vertices of group %d' % self.domain.cmesh.vertex_groups[0],
+             'facet'],
             ['vertices of set set0', 'vertex'],
             ['vertices in (z < 0.1) & (x < 0.1)', 'facet'],
             ['vertices by get_vertices', 'cell'],
             ['vertex 0, 1, 2', 'vertex'],
             ['vertex in r.r6', 'vertex'],
-            ['cells of group 1', 'cell'],
+            ['cells of group %d' % self.domain.cmesh.cell_groups[0], 'cell'],
             # ['cells of set 0', 'cell'], not implemented...
             ['cells by get_cells', 'cell'],
             ['cell 1, 4, 5', 'cell'],
