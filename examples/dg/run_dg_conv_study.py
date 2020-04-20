@@ -16,7 +16,6 @@ matplotlib.use("Qt5Agg")
 from matplotlib import pyplot as plt
 
 
-
 # sfepy imports
 from sfepy.discrete.fem import Mesh
 from sfepy.base.ioutils import ensure_path
@@ -83,15 +82,6 @@ def parse_str2tuple_default(l, default=(1, 2, 3, 4)):
     return tuple(int(x) for x in l.strip("()[],").split(","))
 
 
-# soops-run -o .\soops_tests\ "mesh='mesh/mesh_tensr_2D_01_2.vtk', problem_file='advection/example_dg_advection2D', output_dir='soops_tests/{}/%s', --cfl=[0.1, .5], --limit=[@defined, @undefined],
-# --orders='[1,2,3,4]'" .\conv_tests\run_dg_conv_study.py
-
-
-# soops-run -o .\soops_tests\ "mesh='mesh/mesh_tensr_2D_01_2.vtk',
-# problem_file='advection/example_dg_advection2D', output_dir='soops_tests/adv2D/%s',
-# --adflux=[0.0, 0.5 ,1.0] ,--cfl=[0.01, 0.1, .5], --limit=[@defined, @undefined],
-# --orders='[1,2,3,4]', --refines='[1,2,3,4]'" .\conv_tests\run_dg_conv_study.py
-
 def get_run_info():
     """ Run info for soops """
     run_cmd = """
@@ -143,8 +133,8 @@ def main(argv):
 
     mesh = str(Path(args.mesh_file))
 
-    refines = parse_str2tuple_default(args.refines, (1, 2, 3, 4)[:2])
-    orders = parse_str2tuple_default(args.orders, (1, 2, 3, 4)[:2])
+    refines = parse_str2tuple_default(args.refines, (1, 2, 3, 4))
+    orders = parse_str2tuple_default(args.orders, (1, 2, 3, 4))
 
     if problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
@@ -260,9 +250,6 @@ def main(argv):
 
     err_df.to_csv(base_output_folder.parent / ( base_output_folder.name + "_results.csv"))
 
-        # pjoin("..", base_output_folder,
-        #                 "results_"+base_output_folder.split("/")[-1]
-        #                 + ".csv"))
     output(err_df)
 
     conv_fig = plot_conv_results(base_output_folder, conf, err_df, save=True)
