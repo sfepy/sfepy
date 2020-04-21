@@ -478,20 +478,16 @@ class MeshioLibIO(MeshIO):
             return data
 
         out = {}
-        # if there are cell and vertex data with the same name only cell
-        # data are returned, this can be seen when loading data written
-        # by write method which attaches "gmsh:ref" data to both vertex data
-        # and cell data
         for key, data in m.point_data.items():
             aux = _fix_shape(data).astype(nm.float64)
             if key.endswith(':ref'):
-                key = 'v:' + key
+                key = 'node_groups'
             out[key] = Struct(name=key, mode='vertex', data=aux)
 
         for key, data in m.cell_data.items():
             aux = _fix_shape(data[0]).astype(nm.float64)
             if key.endswith(':ref'):
-                key = 'c:' + key
+                key = 'mat_id'
             out[key] = Struct(name=key, mode='cell', data=aux)
 
         return out
