@@ -1878,6 +1878,11 @@ class GmshIO(MeshioLibIO):
     load_slices = {"all" : slice(0, None),
                     "first": slice(0, 1),
                     "last": slice(-1, None)}
+
+    def __init__(self, filename, file_format=None, **kwargs):
+        MeshioLibIO.__init__(self, filename=filename, file_format=None,
+                             **kwargs)
+
     def get_filename_format(self, filename):
         try:
             basename, step_num, extension = filename.split(".")
