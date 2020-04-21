@@ -1983,7 +1983,7 @@ class GmshIO(MeshioLibIO):
                 vertex_cell_out = super(GmshIO, self).read_data(step, filename=filename)
                 out.update(vertex_cell_out)
 
-        elif isinstance(step, int):
+        elif isinstance(step, int) and not op.exists(filename):
             filename_format = self.get_filename_format(filename)
             filename = filename_format.format(step)
             try:
@@ -1996,7 +1996,7 @@ class GmshIO(MeshioLibIO):
             except FileNotFoundError as e:
                 raise FileNotFoundError(str(e) +
                                         " Maybe time step {} is not in output.".format(step))
-        elif step is None:
+        elif step is None or op.exists(filename):
             element_node_out = self._read_element_node_data(filename=filename)
             out.update(element_node_out)
 
@@ -2188,8 +2188,7 @@ class GmshIO(MeshioLibIO):
          cell_data,
          cell_sets) = self._create_out_data(mesh, out)
 
-        # gmsh:ref result in annoying junk
-        # written into gmh, why are they aded?
+        # gmsh:ref not needed in DG post-processing
         point_data.pop("gmsh:ref", None)
         cell_data.pop("gmsh:ref", None)
 
