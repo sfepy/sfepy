@@ -74,7 +74,7 @@ def update_supported_formats(formats):
                     else:
                         continue
 
-                if f in _writer_map:
+                if format in _writer_map:
                     flag = 'w' + flag
                 if format in reader_map:
                     flag = 'r' + flag
