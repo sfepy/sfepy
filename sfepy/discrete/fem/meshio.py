@@ -29,12 +29,16 @@ _supported_formats = {
     # modes: r = read, w = write, c = test cell groups, v = test vertex groups
     'abaqus': ('meshio', None, 'cv'),
     'exodus': ('meshio', None, 'v'),
-    # 'gmsh': ('meshio', None, 'cv', ['gmsh4-binary', 'gmsh4-ascii',
-    #                                 'gmsh2-binary', 'gmsh2-ascii']),
-    'gmsh': ('gmshio', ".msh", 'rw'),
+    # If file_format is not provided explicitly: in Python 3.5, the dict order
+    # is not guaranteed, so a gmsh file can be read, either by 'meshio' or
+    # 'gmshio' in a random way, in Python 3.6+, meshio is always preferred.
+    # Variants do not work with the exception of 'gmsh-dg'.
+    'gmsh': ('meshio', None, 'cv', ['gmsh4-binary', 'gmsh4-ascii',
+                                    'gmsh2-binary', 'gmsh2-ascii']),
+    'gmsh-dg': ('gmshio', '.msh', 'rw', ['gmsh-dg']),
     'medit': ('meshio', None, 'cv'),
     'nastran': ('meshio', None, 'cv'),
-    'vtk': ('meshio', None, 'cv', ['vtk-binnary', 'vtk-ascii']),
+    'vtk': ('meshio', None, 'cv', ['vtk-binary', 'vtk-ascii']),
     'vtu': ('meshio', None, 'cv'),
     'med': ('meshio', None, 'cv'),
     'xdmf': ('meshio', None, 'cv'),
