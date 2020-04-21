@@ -464,10 +464,14 @@ class MeshioLibIO(MeshIO):
         out = {}
         for key, data in m.point_data.items():
             aux = _fix_shape(data).astype(nm.float64)
+            if key.endswith(':ref'):
+                key = 'v:' + key
             out[key] = Struct(name=key, mode='vertex', data=aux)
 
         for key, data in m.cell_data.items():
             aux = _fix_shape(data[0]).astype(nm.float64)
+            if key.endswith(':ref'):
+                key = 'c:' + key
             out[key] = Struct(name=key, mode='cell', data=aux)
 
         return out
