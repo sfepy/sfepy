@@ -35,7 +35,9 @@ _supported_formats = {
     # Variants do not work with the exception of 'gmsh-dg'.
     'gmsh': ('meshio', None, 'cv', ['gmsh4-binary', 'gmsh4-ascii',
                                     'gmsh2-binary', 'gmsh2-ascii']),
-    'gmsh-dg': ('gmshio', '.msh', 'rw', ['gmsh-dg']),
+    # The '*' prevents overriding meshio in ext2io dict, see
+    # any_from_filename().
+    'gmsh-dg': ('gmshio', '.msh', '*rw', ['gmsh-dg']),
     'medit': ('meshio', None, 'cv'),
     'nastran': ('meshio', None, 'cv'),
     'vtk': ('meshio', None, 'cv', ['vtk-binary', 'vtk-ascii']),
