@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import sys
 import os
 import os.path as op
+import gc
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import sfepy
@@ -147,6 +148,8 @@ def wrap_run_tests(options):
             stats[1] += n_fail
             stats[2] += n_total
             stats[3] += test_time
+
+            gc.collect()
 
     return run_tests
 
