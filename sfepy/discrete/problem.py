@@ -338,7 +338,7 @@ class Problem(Struct):
         obj.setup_output(output_filename_trunk=self.ofn_trunk,
                          output_dir=self.output_dir,
                          output_format=self.output_format,
-                         format_variant=self.format_variant,
+                         file_format=self.file_format,
                          file_per_var=self.file_per_var,
                          linearization=self.linearization)
 
@@ -394,7 +394,7 @@ class Problem(Struct):
         else:
             default_output_format = conf.options.get('output_format', None)
 
-        default_format_variant = conf.options.get('format_variant', None)
+        default_file_format = conf.options.get('file_format', None)
         default_file_per_var = conf.options.get('file_per_var', None)
         default_float_format = conf.options.get('float_format', None)
         default_linearization = Struct(kind='strip')
@@ -402,13 +402,13 @@ class Problem(Struct):
         self.setup_output(output_filename_trunk=default_trunk,
                           output_dir=default_output_dir,
                           output_format=default_output_format,
-                          format_variant=default_format_variant,
+                          file_format=default_file_format,
                           float_format=default_float_format,
                           file_per_var=default_file_per_var,
                           linearization=default_linearization)
 
     def setup_output(self, output_filename_trunk=None, output_dir=None,
-                     output_format=None, format_variant=None, float_format=None,
+                     output_format=None, file_format=None, float_format=None,
                      file_per_var=None, linearization=None):
         """
         Sets output options to given values, or uses the defaults for
@@ -423,19 +423,19 @@ class Problem(Struct):
         self.set_output_dir(output_dir)
 
         self.output_format = get_default(output_format, 'vtk')
-        self.format_variant = format_variant
-        if self.format_variant is not None:
+        self.file_format = file_format
+        if self.file_format is not None:
             from sfepy.discrete.fem.meshio import supported_formats
             try:
-                suffixes = supported_formats[self.format_variant][1]
+                suffixes = supported_formats[self.file_format][1]
 
             except KeyError:
-                raise ValueError('unknown format variant! (%s)'
-                                 % self.format_variant)
+                raise ValueError('unknown file format! (%s)'
+                                 % self.file_format)
 
             if ('.' + self.output_format) not in suffixes:
-                raise ValueError('%s variant is not compatible with %s format!'
-                                 % (self.format_variant, self.output_format))
+                raise ValueError('%s format is not compatible with .%s suffix!'
+                                 % (self.file_format, self.output_format))
 
         self.float_format = get_default(float_format, None)
         self.file_per_var = get_default(file_per_var, False)
@@ -1290,7 +1290,7 @@ class Problem(Struct):
                                 post_process_hook=post_process_hook,
                                 file_per_var=None,
                                 ts=ts,
-                                file_format=self.format_variant)
+                                file_format=self.file_format)
 
             self.advance(ts)
 
