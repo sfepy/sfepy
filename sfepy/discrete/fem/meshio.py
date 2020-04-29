@@ -432,7 +432,6 @@ class MeshioLibIO(MeshIO):
 
             ngkey = '%s:ref' % self.file_format
             cgkey = '%s:ref' % self.file_format
-        # TODO what is this for??
         point_data[ngkey] = ngroups
         point_sets = {str(k): nm.where(ngroups == k)[0]
                       for k in nm.unique(ngroups)}
@@ -462,6 +461,16 @@ class MeshioLibIO(MeshIO):
         return  coors, cells, point_data, point_sets, cell_data, cell_sets
 
     def read_data(self, step, filename=None, cache=None):
+        """
+        Renames cell resp. vertex data with name "*:ref"
+        to mat_id resp. node_groups
+
+        :param step: has no effect
+        :param filename: filename to use insted of self.filname
+        :param cache: has no effect
+        :return:
+        """
+
         filename = get_default(filename, self.filename)
         m = meshiolib.read(filename, file_format=self.file_format)
         dim = self._get_dimension(m.points)
@@ -1841,9 +1850,10 @@ class ANSYSCDBMeshIO(MeshIO):
 
 class GmshIO(MeshioLibIO):
     """
-    Used to read and write data from .msh format used by GMSH, format 2.0 is
-    currently partially supported allowing: mesh and ElementNodeData with
-    InterpolationScheme to be written and read.
+    Used to read and write data in .msh format when file_format gmsh-dg is
+    specified. Tailored for use with Discontinous galerking methods, mesh and
+    ElementNodeData with InterpolationScheme can be written and read.
+    It however omits mat_ids and node_groups.
 
     For details on format see [1].
 
@@ -1856,16 +1866,6 @@ class GmshIO(MeshioLibIO):
     for Numerical Methods in Engineering, 69(4), 750-771.
     https://doi.org/10.1002/nme.1787
 
-    Attributes
-    ----------
-    msh20header :
-        Header containing version number.
-
-    msh_cells : dictionary
-        Mapping from msh to sfepy geometry.
-
-    geo2msh_type : dictionary
-        Mapping from sfepy to msh geometry.
     """
     format = 'gmshio'
 
@@ -1877,55 +1877,61 @@ class GmshIO(MeshioLibIO):
         MeshioLibIO.__init__(self, filename=filename, file_format=None,
                              **kwargs)
 
-    def get_filename_format(self, filename):
+    def _get_filename_format(self, filename):
         try:
             basename, step_num, extension = filename.split(".")
         except ValueError:
             raise ValueError("Filename of automatically loaded GMSH data must be:"
-                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
+                             + "<base name>.<step number>.msh, {} does to "
+                             + "correspond to that"
+                             .format(filename))
         n_digits = len(step_num)
         return basename + ".{:0"+str(n_digits)+"d}." + extension
 
-    def get_filename_wildcard(self, filename):
+    def _get_filename_wildcard(self, filename):
         try:
             basename, step_num, extension = filename.split(".")
         except ValueError:
             raise ValueError("Filename of automatically loaded GMSH data must be:"
-                             "<base name>.<step number>.msh, {} does to correspond to that".format(filename))
+                              + "<base name>.<step number>.msh, {} does to "
+                              + "correspond to that"
+                             .format(filename))
         return basename + ".*[0-9]." + extension
 
     def read_data(self, step=None, filename=None, cache=None):
         """
-        Reads file or files with basename filename or self.filename, returns
-        lists containing data. Considers all files to contain data from time
-        steps of solution of single transient problem i.e. all data have the
-        same shape, mesh and same interpolation scheme, if any. For stationary
-        problems just reads one file with time 0.0 and time step 0.
+        Reads file or files with basename filename or self.filename. Considers
+        all files to contain data from time steps of solution of single transient
+        problem i.e. all data have the same shape, mesh and same interpolation
+        scheme in case of ElementNodeData. Does not read mulitple
+        NodeData or ElementData. For stationary problems just reads one file
+        with time 0.0 and time step 0.
 
-        Providing basename allows reading multiple files of format
+        Providing filename allows reading multiple files of format
         `basename.*[0-9].msh`
 
         Parameters
         ----------
         step : String, int,  optional
             "all", "last", "first" or number of step to read:
-            if "all" read all files with the basename varying step,
+            if "all" read all files with the basename and varying step,
             if "last" read only last step of all files with the filename,
             if "first" reads step=0,
-            if None reads file of filename provided or specified in object.
-        filename :string, optional
-             Basename of the files to use, if None file from object is used.
+            if None reads file with filename provided or specified in object.
+        filename : string, optional
+             Filename of the files to use, if None filename from object is used.
+             Basename is extracted as `basename.*[0-9].msh`
         cache : has no effect
 
         Returns
         -------
-        mesh : sfepy.discrete.fem.mesh.Mesh
-            Computational mesh.
         out : dictionary
-            Keys represent name of data, values are Structs:
-                data : list
-                    Contains list of ElementNodeData´shape (n_cell, n_cell_dof).
-                    in time steps saved in time
+                Keys represent name of data, values are Structs with attributes:
+
+                data : list, array
+                    For ElementNodeData with shape (n_cell, n_cell_dof) contains
+                    for each time step.
+                    For other contains array of data from last time step.
                 time : list
                     Contains times.
                 time_n : list
@@ -1936,16 +1942,15 @@ class GmshIO(MeshioLibIO):
                         name : string
                             Name of the scheme.
                         F : array
-                            Coefficients matrix.
+                            Coefficients matrix as defined in [1] and [2].
                         P : array
                             Exponents matrix as defined in [1] and [2].
-                sheme_name : str
-                    Repeated name of the interpolation scheme.
+                scheme_name : str
+                    Name of the interpolation scheme, repeated fo convenience.
                 mode : str
-                    Represents of type of data:
-                        cell_node : for element node data
-                        vertex or cell : Note that for vertex and cell data reading
-                        multiple time steps does not work yet.
+                     Represents of type of data. cell_nodes : for ElementNodeData;
+                     vertex or cell : Note that for vertex and cell data reading
+                     multiple time steps does not work yet.
         """
         filename = get_default(filename, self.filename)
 
@@ -1964,39 +1969,44 @@ class GmshIO(MeshioLibIO):
         if step in ["all", "last", "first"]:
             import glob
             from os.path import join as pjoin
-            filename_wildcard = self.get_filename_wildcard(filename)
+            filename_wildcard = self._get_filename_wildcard(filename)
             filenames = glob.glob(filename_wildcard)[self.load_slices[step]]
 
             for filename in filenames:
-                element_node_out = self._read_element_node_data(filename=filename)
+                element_node_out = self._read_element_node_data(filename)
                 for key, val in element_node_out.items():
                     out[key] = append_data_structs(
-                        out.setdefault(key, Struct(data=[], time=[], time_n=[])), val)
+                        out.setdefault(key, Struct(data=[],
+                                                   time=[],
+                                                   time_n=[])), val)
 
                 # read vertex or cell data
-                vertex_cell_out = super(GmshIO, self).read_data(step, filename=filename)
+                vertex_cell_out = super(GmshIO, self).read_data(step, filename)
                 out.update(vertex_cell_out)
 
         elif isinstance(step, int) and not op.exists(filename):
-            filename_format = self.get_filename_format(filename)
+            filename_format = self._get_filename_format(filename)
             filename = filename_format.format(step)
             try:
-                element_node_out = self._read_element_node_data(filename=filename)
+                element_node_out = self._read_element_node_data(filename)
                 out.update(element_node_out)
 
                 # read vertex or cell data
-                vertex_cell_out = super(GmshIO, self).read_data(step, filename=filename)
+                vertex_cell_out = super(GmshIO, self).read_data(step, filename)
                 out.update(vertex_cell_out)
             except FileNotFoundError as e:
                 raise FileNotFoundError(str(e) +
-                                        " Maybe time step {} is not in output.".format(step))
+                                        " Maybe time step {} is not in output."
+                                        .format(step))
+
         elif step is None or op.exists(filename):
-            element_node_out = self._read_element_node_data(filename=filename)
+            element_node_out = self._read_element_node_data(filename)
             out.update(element_node_out)
 
             # read vertex or cell data
-            vertex_cell_out = super(GmshIO, self).read_data(step, filename=filename)
+            vertex_cell_out = super(GmshIO, self).read_data(step, filename)
             out.update(vertex_cell_out)
+
         else:
             raise ValueError("Unsupported vaule for step : {}".format(step))
         return out
@@ -2005,7 +2015,8 @@ class GmshIO(MeshioLibIO):
         try:
             fd = open(filename, "r")
         except FileNotFoundError:
-            raise FileNotFoundError("[Errno 2] No such file or directory: {}.".format(filename))
+            raise FileNotFoundError("[Errno 2] No such file or directory: {}."
+                                    .format(filename))
 
         out = {}
         schemes = {}
@@ -2030,7 +2041,7 @@ class GmshIO(MeshioLibIO):
                 n_str_tags = int(skip_read_line(fd))
                 data_name = skip_read_line(fd).strip('"\'')
                 if n_str_tags == 2:
-                    interpolation_scheme_name = skip_read_line(fd).strip('"\'')
+                    scheme_name = skip_read_line(fd).strip('"\'')
                 n_float_tags =  int(skip_read_line(fd))
                 time = float(skip_read_line(fd))
                 n_int_tags = int(skip_read_line(fd))
@@ -2048,8 +2059,8 @@ class GmshIO(MeshioLibIO):
                                         data=[data],
                                         time=[time],
                                         time_n=[time_n],
-                                        scheme_name=interpolation_scheme_name,
-                                        scheme=schemes.get(interpolation_scheme_name),
+                                        scheme_name=scheme_name,
+                                        scheme=schemes.get(scheme_name),
                                         mode="cell_nodes")
             elif line[0] == '#' or ls[:4] == '$End':
                 pass
@@ -2098,39 +2109,20 @@ class GmshIO(MeshioLibIO):
         """
         Writes "cell_nodes" data in out as $ElementNodeData,
         including interpolation scheme.
-
-        Parameters
-        ----------
-        out : dictionary, optional
-            dictionary containing data to write in format generated by
-            DGField.create_output:
-            key : name of data
-            value : Struct:
-                mode : so far only `dg_cell_dofs`, representing modal data in cells
-                is supported;
-                data : DOFs as defined in DG;
-                interpolation_scheme Struct with interpolation scheme used in data,
-                 only one interpolation
-                scheme is allowed, contains :
-                    name : name of the scheme,
-                    F : coefficients matrix,
-                    P : exponents matrix as defined in [1] and [2].
-        ts : sfepy.solvers.ts.TimeStepper instance, optional
-            Provides data to write time step.
         """
         for key, value in out.items():
             if not value.mode == "cell_nodes":
                 continue
-            if value.interpolation_scheme is not None:
-                self._write_interpolation_scheme(fd, value.interpolation_scheme)
-                interpolation_scheme_name = value.interpolation_scheme.name
+            if value.scheme is not None:
+                self._write_interpolation_scheme(fd, value.scheme)
+                scheme_name = value.interpolation_scheme.name
             data = value.data
             n_el_nod = nm.shape(data)[1]
             fd.write("$ElementNodeData\n")
-            fd.write("{}\n".format(1 if interpolation_scheme_name is None else 2))
+            fd.write("{}\n".format(1 if scheme_name is None else 2))
             fd.write('"{}"\n'.format(key))  # name
-            if interpolation_scheme_name is not None:
-                fd.write('"{}"\n'.format(interpolation_scheme_name))
+            if scheme_name is not None:
+                fd.write('"{}"\n'.format(scheme_name))
             fd.write("1\n")  # number of real tags
             fd.write("{}\n".format(ts.time if ts is not None else 0.0))
             fd.write("3\n")  # number of integer tags
@@ -2144,8 +2136,11 @@ class GmshIO(MeshioLibIO):
 
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
         """
-        Writes mesh and data into msh v2.0 file, handles dg_cell_dofs data from
-        DGField if provided in out.
+        Writes mesh and data, handles cell DOFs data from DGField
+        as ElementNodeData.
+
+        Omits gmsh:ref for cells and vertices i.e. mat_ids and
+        node_groups to prevent cluttering the GMSH postprocessing.
 
         Parameters
         ----------
@@ -2153,24 +2148,27 @@ class GmshIO(MeshioLibIO):
             Path to file.
         mesh : sfepy.discrete.fem.mesh.Mesh
             Computational mesh to write.
-        out : dictionary, optional
-            Dictionary containing data to write, expected to be in format
-            generated by DGField.create_output, key is name of data,
-            value is Struct containing :
-                    mode : string
-                        So far only `dg_cell_dofs`, representing modal data in
-                        cells is supported.
-                    data : array
-                        DOFs as defined in DG Field.
-                    interpolation_scheme : Struct
-                        Interpolation scheme used in data, only one interpolation
-                        scheme is allowed, contains :
-                            name : string
-                                Name of the scheme.
-                            F : array
-                                Coefficients matrix.
-                            P : array
-                                Exponents matrix as defined in [1] and [2].
+        out : dictionary
+           Keys represent name of the data, values are Structs with attributes:
+
+                data : array
+                 For ElementNodeData shape is (n_cell, n_cell_dof)
+                mode : str
+                 Represents type of data, cell_nodes for ElementNodeData.
+            For ElementNodeData
+                scheme : Struct
+                    Interpolation scheme used in data, only one interpolation
+                    scheme is allowed, contains :
+                        name : string
+                            Name of the scheme.
+                        F : array
+                            Coefficients matrix as defined in [1] and [2].
+                        P : array
+                            Exponents matrix as defined in [1] and [2].
+                scheme_name : str
+                    Name of the interpolation scheme, associated with data,
+                     repeated fo convenience.
+
         ts : sfepy.solvers.ts.TimeStepper instance, optional
             Provides data to write time step.
         """
@@ -2182,7 +2180,7 @@ class GmshIO(MeshioLibIO):
          cell_data,
          cell_sets) = self._create_out_data(mesh, out)
 
-        # gmsh:ref not needed in DG post-processing
+        # gmsh:ref creates clutter in GMSH, especially for transient problems
         point_data.pop("gmsh:ref", None)
         cell_data.pop("gmsh:ref", None)
 
