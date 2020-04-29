@@ -2115,7 +2115,7 @@ class GmshIO(MeshioLibIO):
                 continue
             if value.scheme is not None:
                 self._write_interpolation_scheme(fd, value.scheme)
-                scheme_name = value.interpolation_scheme.name
+                scheme_name = value.scheme.name
             data = value.data
             n_el_nod = nm.shape(data)[1]
             fd.write("$ElementNodeData\n")
