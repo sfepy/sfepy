@@ -91,7 +91,7 @@ def define(filename_mesh=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 # 'limiters': {"f": MomentLimiter1D},
+                 'limiters': {"f": MomentLimiter1D} if limit else {},
                  'verbose': False}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
@@ -101,12 +101,12 @@ def define(filename_mesh=None,
         'ts'              : 'tss',
         'nls'             : 'newton',
         'ls'              : 'ls',
-        'limiters': {"f": MomentLimiter2D} if limit else {},
         'save_times'      : 100,
         'active_only'     : False,
         'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt),
         'output_format'   : "vtk"
     }
+
 
     functions = {}
 
