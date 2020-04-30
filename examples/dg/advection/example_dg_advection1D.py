@@ -15,7 +15,7 @@ dim = 1
 def define(filename_mesh=None,
            approx_order=2,
 
-           adflux=0,
+           adflux=0.0,
            limit=False,
 
            cw=None,
@@ -43,7 +43,7 @@ def define(filename_mesh=None,
         filename_mesh = get_1Dmesh_hook(0, 1, 100)
 
     materials = {
-        'a': ({'val': [1.0], '.flux': 0.0},),
+        'a': ({'val': [1.0], '.flux': adflux},),
 
     }
 
@@ -83,7 +83,7 @@ def define(filename_mesh=None,
         'Advection': """
                        dw_volume_dot.i.Omega(v, u)
                        + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
-                       - dw_dg_advect_laxfrie_flux.i.Omega(a.val, v, u[-1]) = 0
+                       - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u[-1]) = 0
                       """
     }
 
