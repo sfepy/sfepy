@@ -383,20 +383,20 @@ class DiffusionDGFluxTerm(DGTerm):
 
         if self.mode == 'avg_state':
             # content of one cell
-            inner_vals = nm.einsum("nkl, nfk, ndfq, nbfkq, nfq->ndb",
+            inner_vals = nm.einsum("nkl, nbfkq, nfk, ndfq, nfq->ndb",
                                    D,
+                                   inner_facet_base_d / 2,  # state
                                    fc_n,
                                    inner_facet_base,  # test
-                                   inner_facet_base_d / 2,  # state
                                    whs)
-            # content of rows
+
             outer_vals = nm.einsum(
-                "ikl, ik, idq, ibkq, iq->idb",
-                   D[active_cells],
-                   fc_n[active_cells, active_facets],
-                   - inner_facet_base[active_cells, :, active_facets],  # test
-                   outer_facet_base_d[active_cells, :, active_facets] / 2, # state
-                   whs[active_cells, active_facets])
+                "ikl, ibkq, ik, idq, iq->idb",
+                D[active_cells],
+                outer_facet_base_d[active_cells, :, active_facets] / 2,  # state
+                fc_n[active_cells, active_facets],
+                inner_facet_base[active_cells, :, active_facets],  # test
+                whs[active_cells, active_facets])
 
         elif self.mode == 'avg_virtual':
             inner_vals = nm.einsum("nkl, nfk, ndfkq, nbfq, nfq->ndb",
