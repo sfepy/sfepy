@@ -27,14 +27,13 @@ from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D, \
 from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, \
     NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
 from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, \
-    DiffusionInteriorPenaltyTerm, DiffusionDGFluxTermHest1
+    DiffusionInteriorPenaltyTerm
 
 
 register_term(AdvectDGFluxTerm)
 register_term(NonlinScalarDotGradTerm)
 register_term(NonlinearHyperDGFluxTerm)
 register_term(DiffusionDGFluxTerm)
-register_term(DiffusionDGFluxTermHest1)
 register_term(DiffusionInteriorPenaltyTerm)
 
 register_solver(TVDRK3StepSolver)
@@ -44,23 +43,23 @@ register_solver(EulerStepSolver)
 
 diffusion_schemes_implicit = {
     "symmetric":
-        "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
-        + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+          " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
+        + " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
     "non-symmetric":
-        "- dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
-        + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+          " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
+        + " - dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
     "incomplete":
-        " dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
+        " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
 
 diffusion_schemes_explicit = {
     "symmetric":
-        "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-        + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
-    "non-symmetric":
-        "- dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
+          "+ dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
         + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+    "non-symmetric":
+          "+ dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
+        + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
     "incomplete":
-        " dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
+        "+ dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
 
 functions = {}
 def local_register_function(fun):

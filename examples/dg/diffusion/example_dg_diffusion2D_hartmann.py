@@ -140,9 +140,8 @@ def define(filename_mesh=None,
 
     equations = {
         'Advection':   " - dw_laplace.i.Omega(D.val, v, u) " +
-                       " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
-                       " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                       " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.Cw, v, u)" +
+                       diffusion_schemes_implicit[diffscheme] +
+                       " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u)" +
                        " + dw_volume_lvf.i.Omega(g.val, v) = 0"
     }
 

@@ -114,9 +114,7 @@ equations = {
                  " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
                  #  diffusion
                  " - dw_laplace.i.Omega(D.val, v, u[-1]) + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])"
-                 " - "
-                 + str(diffusion_coef) + "*"
-                 + "dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
+                 " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])" +
                  " = 0"
 }
 

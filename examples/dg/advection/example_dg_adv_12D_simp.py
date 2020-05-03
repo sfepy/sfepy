@@ -72,7 +72,7 @@ equations = {
     'Advection': """
                    dw_volume_dot.i.Omega(v, u)
                    + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
-                   - dw_dg_advect_laxfrie_flux.i.Omega(a.val, v, u[-1]) = 0
+                   - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u[-1]) = 0
                   """
 }
 

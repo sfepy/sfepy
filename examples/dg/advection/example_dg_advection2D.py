@@ -35,7 +35,7 @@ def define(filename_mesh=None,
                      [nm.sin(angle), nm.cos(angle)]])
     velo = nm.sum(rotm.T * nm.array([1., 0.]), axis=-1)[:, None]
     materials = {
-        'a': ({'val': [velo], '.flux': 0.0},),
+        'a': ({'val': [velo], '.flux': adflux},),
     }
 
     regions = {

@@ -10,12 +10,12 @@ from examples.dg.example_dg_common import *
 
 
 def define(filename_mesh=None,
-           approx_order=2,
+           approx_order=3,
 
            adflux=0,
            limit=False,
 
-           cw=100,
+           cw=1000,
            diffcoef=1,
            diffscheme="symmetric",
 
@@ -164,16 +164,16 @@ def define(filename_mesh=None,
 
     equations = {
         'balance': """
-                    + dw_s_dot_mgrad_s.i.Omega(a.val, u, v)
-                    - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
+                   - dw_s_dot_mgrad_s.i.Omega(a.val, u, v)
+                   + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
                    """
                    +
-                   " - dw_laplace.i.Omega(D.val, v, u) " +
-                   " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
-                   " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
-                   " - " + str(diffcoef) + "* dw_dg_interior_penal.i.Omega(D.cw, v, u)" +
-                   " + dw_volume_lvf.i.Omega(g.val, v) = 0"
-
+                   " + dw_laplace.i.Omega(D.val, v, u) " +
+                   " - dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
+                   " - dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
+                   " + dw_dg_interior_penalty.i.Omega(D.val, D.cw, v, u)" +
+                   " - dw_volume_lvf.i.Omega(g.val, v)" +
+                   "= 0"
     }
 
     solver_0 = {
@@ -202,7 +202,6 @@ def define(filename_mesh=None,
         'nls'             : 'newton',
         'ls'              : 'ls',
         'output_format'   : 'msh',
-        # 'pre_process_hook': get_cfl_setup(cfl)
     }
     return locals()
 

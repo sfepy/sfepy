@@ -82,8 +82,7 @@ def define(filename_mesh=None,
                      " - dw_laplace.i.Omega(D.val, v, u[-1]) " +
                      " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
                      " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
-                     " - " + str(diffcoef) +
-                     "* dw_dg_interior_penal.i.Omega(D.Cw, v, u[-1])" +
+                     " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])" +
 
                      # " - dw_dg_diffusion_fluxHest1.i.Omega(D.val, v, u[-1]) " +
 
