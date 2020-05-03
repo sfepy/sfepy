@@ -39,6 +39,8 @@ def load_library(libname):
         from ctypes.util import find_library
 
         lib_fname = find_library(libname)
+        if lib_fname is None:
+            lib_fname = find_library('lib' + libname)
 
     else:  # Linux system
         lib_fname = 'lib' + libname + '.so'
