@@ -20,7 +20,7 @@ from examples.dg.example_dg_common import diffusion_schemes_explicit
 
 outputs_folder = "outputs"
 
-configure_output({'output_screen': False,
+configure_output({'output_screen': True,
                   'output_log_name': pjoin(outputs_folder, "last_run.txt")})
 
 param_names = ["adflux", "limit", "cw", "diffcoef", "diffscheme", "cfl", "dt"]
@@ -197,15 +197,15 @@ def build_attrs_string(conf, attrs=("Cw", "diffusion_coef", "dt", "CFL"),
         return res
 
 
-def clear_folder(clear_format, confirm=False):
+def clear_folder(clear_format, confirm=False, doit=True):
     """
     Deletes files matching the format
     :param clear_format:
     :param confirm:
-    :return:
+    :param doit: if False do not delete anything no matter the confirmation
+    :return: True if there was somethng to delete
     """
     files = glob(clear_format)
-    doit = True
     if confirm:
         for file in files:
             output("Will delete file {}".format(file))
@@ -214,3 +214,4 @@ def clear_folder(clear_format, confirm=False):
     if doit:
         for file in files:
             os.remove(file)
+    return bool(files)

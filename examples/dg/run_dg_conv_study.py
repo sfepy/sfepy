@@ -12,6 +12,8 @@ import pandas as pd
 import importlib
 import argparse
 import matplotlib
+from sfepy.discrete.fem.meshio import GmshIO
+
 matplotlib.use("Qt5Agg")
 from matplotlib import pyplot as plt
 
@@ -55,11 +57,16 @@ def create_argument_parser():
     parser.add_argument("-dp", "--display-plots", help="Show interactive plots.",
                         default=False, action='store_true', dest='doplot',)
 
+    parser.add_argument("-nr", "--dot-not-recalculate",
+                        help="Force racalcualting, note that loading previous" +
+                             " results destroys detailed information about run",
+                        default=False, action='store_true', dest='no_recalc', )
+
     parser.add_argument("-v", "--verbose", help="To be verbose or",
                         default=False, action='store_true', dest='verbose',)
 
     parser.add_argument("--noscreenlog", help="Do not print log to screen",
-                        default=True, action='store_true', dest='no_output_screen',)
+                        default=False, action='store_true', dest='no_output_screen',)
     #
     # parser.add_argument('--logfile', type=str,
     #                     action='store', dest='output_log_name',
@@ -124,9 +131,6 @@ def main(argv):
     parser = create_argument_parser()
     args = parser.parse_args(argv)
 
-    # configure_output({'output_screen': not args.no_output_screen,
-    #                   'output_log_name': "last_run.txt"})
-
     problem_module_name = "examples.dg." + args.problem_file.replace(".py", "")\
         .replace("\\", ".").replace("/", ".")
     problem_module = importlib.import_module(problem_module_name)
@@ -134,7 +138,7 @@ def main(argv):
     mesh = str(Path(args.mesh_file))
 
     refines = parse_str2tuple_default(args.refines, (1, 2, 3, 4))
-    orders = parse_str2tuple_default(args.orders, (1, 2, 3, 4))
+    orders = parse_str2tuple_default(args.orders, (0, 1, 2, 3, 4))
 
     if problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
@@ -175,32 +179,11 @@ def main(argv):
             configure_output({'output_screen': not args.no_output_screen,
                               'output_log_name': str(output_folder / "last_run.txt")})
 
-
             output("----------------Running--------------------------")
             output("{}: {}".format(conf.example_name, time.asctime()))
             output('refine:', refine, 'order:', order)
 
-            try:
-                conf.options.save_times = 0
-            except AttributeError:
-                pass
-            pb = Problem.from_conf(conf)
-            try:
-                conf.options.pre_process_hook(pb)
-            except AttributeError:
-                pass
-
-            n_cells = pb.domain.shape.n_el
-            vols = pb.domain.cmesh.get_volumes(1)
-            h = nm.mean(vols)
-            if "2_3" in pb.domain.geom_els:
-                h = nm.mean(nm.sqrt(4 * vols))
-            elif "2_4" in pb.domain.geom_els:
-                h = nm.mean(nm.sqrt(2 * vols))
-
-            tt = time.clock()
-            pb.sol = pb.solve()
-            elapsed = time.clock() - tt
+            h, n_cells, pb, vols = create_problem(conf)
 
             output_format = pjoin(str(output_folder), "sol-h{:02d}o{:02d}.*.{}"
                                   .format(n_cells, order,
@@ -210,9 +193,9 @@ def main(argv):
             clear_folder(output_format, confirm=False)
             ensure_path(output_format)
 
-            pb.save_state(output_format.replace("*", "0"), state=pb.sol)
-            output(
-                "{}: {}".format(conf.example_name, time.asctime()))
+            pb, elapsed = run_calc(pb, conf, output_format)
+
+            output("{}: {}".format(conf.example_name, time.asctime()))
             output("------------------Finished------------------\n\n")
 
             ana_l2, ana_qp, diff_l2, rel_l2, num_qp = compute_erros(conf.sol_fun, pb)
@@ -222,7 +205,10 @@ def main(argv):
             result = (h, n_cells, nm.mean(vols), order, n_dof,
                       ana_l2, diff_l2, rel_l2, elapsed,
                       getattr(pb.ts_conf, "cour", nm.NAN),
-                      getattr(pb.ts_conf, "dt", nm.NAN))
+                      getattr(pb.ts_conf, "dt", nm.NAN),
+                      getattr(pb.solver.status.nls_status, "err", nm.NAN),
+                      getattr(pb.solver.status.nls_status, "n_iter", nm.NAN)
+                      )
 
             results.append(result)
 
@@ -234,21 +220,12 @@ def main(argv):
                                 ("err-sol-i20" + build_attrs_string(conf) + ".png"),
                                 dpi=100)
 
-    results = nm.array(results)
-
-
-    err_df = pd.DataFrame(results,
-                          columns=["h", "n_cells", "mean_vol", "order", "n_dof",
-                                   "ana_l2", "diff_l2", "err_rel",
-                                   "elapsed", "cour", "actual_dt"])
-    err_df = calculate_num_order(err_df)
-    for name in param_names:
-        err_df[name] = conf.__dict__[name]
-    err_df["gel"] = pb.domain.mesh.descs[0]
+    err_df = create_error_df(conf, pb, results)
 
     err_df.to_csv(base_output_folder / "results.csv")
 
-    err_df.to_csv(base_output_folder.parent / ( base_output_folder.name + "_results.csv"))
+    err_df.to_csv(base_output_folder.parent /
+                  ( base_output_folder.name + "_results.csv"))
 
     output(err_df)
 
@@ -257,6 +234,66 @@ def main(argv):
 
     if args.doplot:
         plt.show()
+
+
+def create_error_df(conf, pb, results):
+    results = nm.array(results)
+    err_df = pd.DataFrame(results,
+                          columns=["h", "n_cells", "mean_vol", "order", "n_dof",
+                                   "ana_l2", "diff_l2", "err_rel",
+                                   "elapsed", "cour", "actual_dt",
+                                   "nls_error", "nls_iter"])
+    err_df = calculate_num_order(err_df)
+    for name in param_names:
+        err_df[name] = conf.__dict__[name]
+    err_df["gel"] = pb.domain.mesh.descs[0]
+    return err_df
+
+
+def create_problem(conf):
+    try:
+        conf.options.save_times = 0
+    except AttributeError:
+        pass
+    pb = Problem.from_conf(conf)
+    try:
+        conf.options.pre_process_hook(pb)
+    except AttributeError:
+        pass
+    n_cells = pb.domain.shape.n_el
+    vols = pb.domain.cmesh.get_volumes(1)
+    h = nm.mean(vols)
+    if "2_3" in pb.domain.geom_els:
+        h = nm.mean(nm.sqrt(4 * vols))
+    elif "2_4" in pb.domain.geom_els:
+        h = nm.mean(nm.sqrt(2 * vols))
+    return h, n_cells, pb, vols
+
+
+def run_calc(pb, conf, output_format):
+    tt = time.clock()
+    pb.sol = pb.solve()
+    elapsed = time.clock() - tt
+    pb.save_state(output_format.replace("*", "0"), state=pb.sol)
+    return pb, elapsed
+
+
+def load_result(pb, conf, output_format):
+    """
+    NOT used, loading results instead of calculating is not supported
+    :param pb:
+    :param conf:
+    :param output_format:
+    :return:
+    """
+    tt = time.clock()
+    gmsh_loader = GmshIO(output_format.replace("*", "0"))
+    out = gmsh_loader.read_data(step="last")
+
+    pb.sol = out["u_modal_cell_nodes"].data
+    pb.get_variables()["u"].set_data(out["u_modal_cell_nodes"].data[0])
+    elapsed = time.clock() - tt
+    return pb, elapsed
 
 
 def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):
