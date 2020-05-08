@@ -53,13 +53,13 @@ diffusion_schemes_implicit = {
 
 diffusion_schemes_explicit = {
     "symmetric":
-          "+ dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-        + "+ dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+          " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
+        + " - dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
     "non-symmetric":
-          "+ dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-        + "- dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+          " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
+        + " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
     "incomplete":
-        "+ dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
+        " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
 
 functions = {}
 def local_register_function(fun):

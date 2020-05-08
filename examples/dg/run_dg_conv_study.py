@@ -190,7 +190,7 @@ def main(argv):
                                           "vtk" if problem_module.dim == 1 else "msh"))
             output("Output set to {}, clearing.".format(output_format))
 
-            clear_folder(output_format, confirm=False)
+            clear_folder(output_format, confirm=False, doit=True)
             ensure_path(output_format)
 
             pb, elapsed = run_calc(pb, conf, output_format)

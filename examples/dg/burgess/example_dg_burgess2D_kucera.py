@@ -189,19 +189,25 @@ def define(filename_mesh=None,
       'balance':
          "dw_volume_dot.i.Omega(v, u)" +
          #  non-linear "advection"
-         " + dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
-         " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
+         " - dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
+         " + dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
          #  diffusion
-         " - dw_laplace.i.Omega(D.val, v, u[-1])" +
+         " + dw_laplace.i.Omega(D.val, v, u[-1])" +
          diffusion_schemes_explicit[diffscheme] +
-         " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])"
+         " + dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])"
          # source
-         + " + dw_volume_lvf.i.Omega(g.val, v)"
+         + " - dw_volume_lvf.i.Omega(g.val, v)"
          " = 0"
     }
 
     solvers = {
-        "tss": ('ts.euler',
+        "tss.tvd_runge_kutta_3": ('ts.tvd_runge_kutta_3',
+                                  {"t0": t0,
+                                   "t1": t1,
+                                   'limiters': {
+                                       "f": MomentLimiter2D} if limit else {},
+                                   'verbose': False}),
+        "tss.euler": ('ts.euler',
                 {"t0"     : t0,
                  "t1"     : t1,
                  'limiters': {"f": MomentLimiter2D} if limit else {},
@@ -211,9 +217,9 @@ def define(filename_mesh=None,
     }
 
     options = {
-        'ts'              : 'tss',
-        'nls'             : 'newton',
-        'ls'              : 'ls',
+        'ts'              : 'tss.euler',
+        'nls'             : 'nls.newton',
+        'ls'              : 'ls.mumps',
         'save_times'      : 100,
         'output_format'   : 'msh',
         'pre_process_hook': get_cfl_setup(CFL=cfl, dt=dt)

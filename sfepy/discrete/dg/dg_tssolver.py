@@ -155,7 +155,7 @@ class EulerStepSolver(DGMultiStageTSS):
 
         vec_dx = lin_solver(vec_r, x0=vec_x,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
-                            status=ls_status) - vec_x
+                            status=ls_status)
 
         vec_e = mtx_a * vec_dx - vec_r
         lerr = nla.norm(vec_e)
@@ -164,7 +164,7 @@ class EulerStepSolver(DGMultiStageTSS):
             output(self.name + ' mtx max {}, min {}, trace {}'
                    .format(mtx_a.max(), mtx_a.min(), nm.sum(mtx_a.diagonal())))
 
-        vec_x = vec_x + ts.dt * vec_dx
+        vec_x = vec_x - ts.dt * (vec_dx - vec_x)
         vec_x = self.post_stage_hook(vec_x)
 
         return vec_x
@@ -205,12 +205,12 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
         vec_r = fun(vec_x)
         mtx_a = fun_grad(vec_x)
-        full_mtx_a = mtx_a.toarray()
+        # full_mtx_a = mtx_a.toarray()
         vec_dx = lin_solver(vec_r, x0=vec_x,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x1 = vec_x + ts.dt * (vec_dx - vec_x)
+        vec_x1 = vec_x - ts.dt * (vec_dx - vec_x)
 
         vec_e = mtx_a * vec_dx - vec_r
         lerr = nla.norm(vec_e)
@@ -228,7 +228,7 @@ class TVDRK3StepSolver(DGMultiStageTSS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x2 = (3 * vec_x + vec_x1 + ts.dt * (vec_dx - vec_x1)) / 4
+        vec_x2 = (3 * vec_x + vec_x1 - ts.dt * (vec_dx - vec_x1)) / 4
 
         vec_e = mtx_a * vec_dx - vec_r
         lerr = nla.norm(vec_e)
@@ -248,7 +248,7 @@ class TVDRK3StepSolver(DGMultiStageTSS):
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
 
-        vec_x3 = (vec_x + 2 * vec_x2 + 2 * ts.dt * (vec_dx - vec_x2)) / 3
+        vec_x3 = (vec_x + 2 * vec_x2 - 2 * ts.dt * (vec_dx - vec_x2)) / 3
 
         vec_e = mtx_a * vec_dx - vec_r
         lerr = nla.norm(vec_e)
@@ -316,7 +316,7 @@ class RK4StepSolver(DGMultiStageTSS):
             if self.verbose:
                 output(self.stage_format.format(stage, lerr))
 
-            vec_x = vec_dx - stage_vec
+            vec_x = - vec_dx - stage_vec
 
             # for debugging
             full_mtx_a = mtx_a.toarray()

@@ -149,12 +149,12 @@ def define(filename_mesh=None,
                      # temporal der
         'balance':   "dw_volume_dot.i.Omega(v, u)" +
                      #  non-linear "advection"
-                     " + dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
-                     " - dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
+                     " - dw_ns_dot_grad_s.i.Omega(burg_fun, burg_fun_d, u[-1], v)" +
+                     " + dw_dg_nonlinear_laxfrie_flux.i.Omega(a.flux, burg_fun, burg_fun_d, v, u[-1])" +
                      #  diffusion
-                     " - dw_laplace.i.Omega(D.val, v, u[-1])" +
+                     " + dw_laplace.i.Omega(D.val, v, u[-1])" +
                      diffusion_schemes_explicit[diffscheme] +
-                     " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])"
+                     " + dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])"
                      " = 0"
     }
 

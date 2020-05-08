@@ -179,14 +179,14 @@ def define(filename_mesh=None,
 
     equations = {
         'balance': """
-                    + dw_s_dot_mgrad_s.i.Omega(a.val, u, v)
-                    - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
+                    - dw_s_dot_mgrad_s.i.Omega(a.val, u, v)
+                    + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
                    """
                    +
-                   " - dw_laplace.i.Omega(D.val, v, u) " +
+                   " + dw_laplace.i.Omega(D.val, v, u) " +
                    diffusion_schemes_implicit[diffscheme] +
-                   " - dw_dg_interior_penalty.i.Omega(D.val, D.cw, v, u)" +
-                   " + dw_volume_lvf.i.Omega(g.val, v) = 0"
+                   " + dw_dg_interior_penalty.i.Omega(D.val, D.cw, v, u)" +
+                   " - dw_volume_lvf.i.Omega(g.val, v) = 0"
 
     }
 

@@ -36,7 +36,7 @@ def define(filename_mesh=None,
     diffcoef = None
     cw = None
 
-    example_name = "test_adv_1D"
+    example_name = "advection_1D"
     dim = 1
 
     if filename_mesh is None:
@@ -82,8 +82,8 @@ def define(filename_mesh=None,
     equations = {
         'Advection': """
                        dw_volume_dot.i.Omega(v, u)
-                       + dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
-                       - dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u[-1]) = 0
+                       - dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
+                       + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u[-1]) = 0
                       """
     }
 
@@ -123,7 +123,7 @@ def define(filename_mesh=None,
     @local_register_function
     def get_ic(x, ic=None):
         return four_step_u(x)
-        # return ghump(x)
+        # return ghump(x - .3)
 
     def analytic_sol(coors, t=None, uset=False):
         x = coors[..., 0]

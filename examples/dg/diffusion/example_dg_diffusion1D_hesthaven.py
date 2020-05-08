@@ -79,10 +79,10 @@ def define(filename_mesh=None,
     equations = {
         'diffusion': " dw_volume_dot.i.Omega(v, u) " +
 
-                     " - dw_laplace.i.Omega(D.val, v, u[-1]) " +
-                     " + dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
-                     " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
-                     " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])" +
+                     " + dw_laplace.i.Omega(D.val, v, u[-1]) " +
+                     " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)" +
+                     " - dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])" +
+                     " + dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])" +
 
                      # " - dw_dg_diffusion_fluxHest1.i.Omega(D.val, v, u[-1]) " +
 

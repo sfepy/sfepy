@@ -128,9 +128,9 @@ def define(filename_mesh=None,
     }
 
     equations = {
-        'laplace': "dw_laplace.i.Omega(D.val, v, u) " +
+        'laplace': " dw_laplace.i.Omega(D.val, v, u) " +
                      diffusion_schemes_implicit[diffscheme] +
-                     " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u)" +
+                     " + dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u)" +
                      " = 0"
     }
 

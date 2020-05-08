@@ -80,11 +80,11 @@ def define(filename_mesh=None,
         equations = {
             'Advection': " dw_volume_dot.i.Omega(v, u) " +
 
-                         " - dw_laplace.i.Omega(D.val, v, u[-1]) " +
+                         " + dw_laplace.i.Omega(D.val, v, u[-1]) " +
                          diffusion_schemes_implicit[diffscheme] +
-                         " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])" +
+                         " + dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u[-1])" +
 
-                         " + dw_volume_lvf.i.Omega(g.val, v)"
+                         " - dw_volume_lvf.i.Omega(g.val, v)"
                          " = 0"
         }
 
@@ -108,10 +108,10 @@ def define(filename_mesh=None,
         }
     else:
         equations = {
-            'Temperature': " - dw_laplace.i.Omega(D.val, v, u) " +
+            'Temperature': " + dw_laplace.i.Omega(D.val, v, u) " +
                            diffusion_schemes_implicit[diffscheme] +
-                           " - dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u)" +
-                           " + dw_volume_lvf.i.Omega(g.val, v) = 0"
+                           " + dw_dg_interior_penalty.i.Omega(D.val, D.Cw, v, u)" +
+                           " - dw_volume_lvf.i.Omega(g.val, v) = 0"
         }
         solvers = {
             'ls': ('ls.auto_direct', {}),
