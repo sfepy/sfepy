@@ -463,7 +463,8 @@ class Equations(Container):
         shape = get_default(shape, self.variables.get_matrix_shape())
 
         output('matrix shape:', shape, verbose=verbose)
-        if nm.prod(shape, dtype=nm.int64) == 0:
+        size = nm.prod(shape, dtype=nm.int64)
+        if size == 0:
             output('no matrix (zero size)!')
             return None
 
@@ -483,7 +484,7 @@ class Equations(Container):
 
         output('...done in %.2f s' % timer.stop(), verbose=verbose)
         output('matrix structural nonzeros: %d (%.2e%% fill)' \
-               % (nnz, float(nnz) / nm.prod(shape, dtype=nm.int64)), verbose=verbose)
+               % (nnz, float(nnz) / size), verbose=verbose)
 
         data = nm.zeros((nnz,), dtype=self.variables.dtype)
         matrix = sp.csr_matrix((data, icol, prow), shape)
