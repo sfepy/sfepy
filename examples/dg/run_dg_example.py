@@ -11,6 +11,7 @@ from os.path import join as pjoin
 import argparse
 import numpy as nm
 
+sys.path.append('.')
 from sfepy.applications.pde_solver_app import PDESolverApp
 from sfepy.base.conf import ProblemConf
 from sfepy.base.ioutils import ensure_path
@@ -18,12 +19,10 @@ from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 
 from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
-from run_dg_utils import clear_folder, add_dg_arguments
+from examples.dg.run_dg_utils import clear_folder, add_dg_arguments
 
-from examples.dg.run_dg_utils import  calculate_num_order, outputs_folder, \
+from examples.dg.run_dg_utils import calculate_num_order, outputs_folder, \
     plot_conv_results, build_attrs_string, output, compute_erros, configure_output
-
-from examples.dg.example_dg_common import get_1Dmesh_hook, diffusion_schemes_explicit
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
@@ -70,12 +69,17 @@ def create_argument_parser():
 
 def get_parametrized_conf(filename, args):
     import importlib
-    problem_module_name = "examples.dg." + filename.replace(".py", "").strip("\\.") \
+    prefix = "examples.dg."
+
+    problem_module_name = filename.replace(".py", "").strip("\\.") \
         .replace("\\", ".").replace("/", ".")
+    if not problem_module_name.startswith(prefix):
+        problem_module_name = prefix + problem_module_name
+
     problem_module = importlib.import_module(problem_module_name)
 
     if hasattr(problem_module, "define"):
-        mod = sys.modules[__name__]
+        mod = sys.modules[problem_module_name]
         # noinspection PyCallingNonCallable
         problem_conf = ProblemConf.from_dict(
             problem_module.define(

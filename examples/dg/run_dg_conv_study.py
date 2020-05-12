@@ -12,19 +12,20 @@ import pandas as pd
 import importlib
 import argparse
 import matplotlib
-from sfepy.discrete.fem.meshio import GmshIO
 
 matplotlib.use("Qt5Agg")
 from matplotlib import pyplot as plt
 
 
 # sfepy imports
+sys.path.append('.')
 from sfepy.discrete.fem import Mesh
 from sfepy.base.ioutils import ensure_path
 from sfepy.base.conf import ProblemConf
 from sfepy.discrete import Integral, Problem
-from run_dg_utils import clear_folder, param_names
+from examples.dg.run_dg_utils import clear_folder, param_names
 from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
+from sfepy.discrete.fem.meshio import GmshIO
 
 # DG imports
 from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
@@ -32,6 +33,7 @@ from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 from examples.dg.run_dg_utils import  calculate_num_order, outputs_folder,\
     plot_conv_results, build_attrs_string, output, compute_erros, configure_output, \
     add_dg_arguments
+
 
 def create_argument_parser():
     parser = argparse.ArgumentParser(
@@ -131,8 +133,13 @@ def main(argv):
     parser = create_argument_parser()
     args = parser.parse_args(argv)
 
-    problem_module_name = "examples.dg." + args.problem_file.replace(".py", "")\
+    prefix = "examples.dg."
+
+    problem_module_name = args.problem_file.replace(".py", "").strip("\\.") \
         .replace("\\", ".").replace("/", ".")
+    if not problem_module_name.startswith(prefix):
+        problem_module_name = prefix + problem_module_name
+
     problem_module = importlib.import_module(problem_module_name)
 
     mesh = str(Path(args.mesh_file))
@@ -143,7 +150,7 @@ def main(argv):
     if problem_module.dim == 1:
         sol_fig, axs = plt.subplots(len(orders), len(refines), figsize=(18, 10))
 
-    mod = sys.modules[__name__]
+    mod = sys.modules[problem_module_name]
     results = []
     for ir, refine in enumerate(refines):
         gen_mesh = refine_mesh(mesh, refine)
@@ -163,15 +170,14 @@ def main(argv):
                     cfl=args.cfl,
                     dt=args.dt,
                 ), mod, verbose=args.verbose)
+            conf.options.absolute_mesh_path = True
 
-
+            base_output_folder = Path(args.output_dir)
             if args.output_dir is None:
                 base_output_folder = Path(outputs_folder) / "conv_tests_out" /\
                                            conf.example_name
             elif "{}" in args.output_dir:
                 base_output_folder = Path(args.output_dir.format(conf.example_name))
-            else:
-                base_output_folder = Path(args.output_dir)
 
             output_folder = base_output_folder / ("h" + str(refine))
             output_folder = output_folder / ("o" + str(order))
@@ -193,7 +199,7 @@ def main(argv):
             clear_folder(output_format, confirm=False, doit=True)
             ensure_path(output_format)
 
-            pb, elapsed = run_calc(pb, conf, output_format)
+            pb, elapsed = run_calc(pb, output_format)
 
             output("{}: {}".format(conf.example_name, time.asctime()))
             output("------------------Finished------------------\n\n")
@@ -212,7 +218,7 @@ def main(argv):
 
             results.append(result)
 
-            if  problem_module.dim == 1:
+            if problem_module.dim == 1:
                 plot_1D_snr(conf, pb, ana_qp, num_qp,
                             io, order, orders, ir,
                             sol_fig, axs)
@@ -225,7 +231,7 @@ def main(argv):
     err_df.to_csv(base_output_folder / "results.csv")
 
     err_df.to_csv(base_output_folder.parent /
-                  ( base_output_folder.name + "_results.csv"))
+                  (base_output_folder.name + "_results.csv"))
 
     output(err_df)
 
@@ -270,29 +276,11 @@ def create_problem(conf):
     return h, n_cells, pb, vols
 
 
-def run_calc(pb, conf, output_format):
+def run_calc(pb, output_format):
     tt = time.clock()
     pb.sol = pb.solve()
     elapsed = time.clock() - tt
     pb.save_state(output_format.replace("*", "0"), state=pb.sol)
-    return pb, elapsed
-
-
-def load_result(pb, conf, output_format):
-    """
-    NOT used, loading results instead of calculating is not supported
-    :param pb:
-    :param conf:
-    :param output_format:
-    :return:
-    """
-    tt = time.clock()
-    gmsh_loader = GmshIO(output_format.replace("*", "0"))
-    out = gmsh_loader.read_data(step="last")
-
-    pb.sol = out["u_modal_cell_nodes"].data
-    pb.get_variables()["u"].set_data(out["u_modal_cell_nodes"].data[0])
-    elapsed = time.clock() - tt
     return pb, elapsed
 
 
