@@ -1,5 +1,4 @@
 """
-
 Problem specs for
 
             div(grad u) = 0
@@ -19,9 +18,6 @@ u = 0    |                           | u = 0
 
 solution to this is 1/2*x**2 - 1/2*y**2 - a*x + b*y
 """
-
-from examples.dg.example_dg_common import *
-
 
 from examples.dg.example_dg_common import *
 
@@ -143,17 +139,17 @@ def define(filename_mesh=None,
         'name' : 'newton',
         'kind' : 'nls.newton',
 
-        'i_max'      : 5,
-        'eps_a'      : 1e-8,
-        'eps_r'      : 1.0,
-        'macheps'   : 1e-16,
-        'lin_red'    : 1e-2,  # Linear system error < (eps_a * lin_red).
-        'ls_red'     : 0.1,
-        'ls_red_warp' : 0.001,
-        'ls_on'      : 0.99999,
-        'ls_min'     : 1e-5,
-        'check'     : 0,
-        'delta'     : 1e-6,
+        # 'i_max'      : 5,
+        # 'eps_a'      : 1e-8,
+        # 'eps_r'      : 1.0,
+        # 'macheps'   : 1e-16,
+        # 'lin_red'    : 1e-2,  # Linear system error < (eps_a * lin_red).
+        # 'ls_red'     : 0.1,
+        # 'ls_red_warp' : 0.001,
+        # 'ls_on'      : 0.99999,
+        # 'ls_min'     : 1e-5,
+        # 'check'     : 0,
+        # 'delta'     : 1e-6,
     }
 
     options = {
