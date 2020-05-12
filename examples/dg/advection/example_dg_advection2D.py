@@ -24,10 +24,10 @@ def define(filename_mesh=None,
     cw = None
 
     if filename_mesh is None:
-        filename_mesh = "mesh/mesh_tens_2D_01_20.vtk"
+        filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
 
     t0 = 0.
-    t1 = 1.
+    t1 = 0.1
 
     angle = 0
     # get_common(approx_order, cfl, t0, t1, None, get_ic)
@@ -108,7 +108,7 @@ def define(filename_mesh=None,
                  "t1"     : t1,
                  'limiters': {"f": MomentLimiter2D} if limit else {},
                  'verbose': False}),
-        'nls': ('nls.newton', {}),
+        'nls': ('nls.newton',{}),
         'ls' : ('ls.scipy_direct', {})
     }
 

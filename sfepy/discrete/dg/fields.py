@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Fields for Discontinous Galerkin
+Fields for Discontinous Galerkin method
 """
 import numpy as nm
 from numpy.lib.stride_tricks import as_strided
@@ -8,6 +8,7 @@ import six
 from six.moves import range
 
 # sfepy imports
+from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 from sfepy.discrete.fem.fields_base import FEField
@@ -16,8 +17,8 @@ from sfepy.discrete.fem.mappings import VolumeMapping
 from sfepy.discrete.common.fields import parse_shape
 
 # local imports
-from sfepy.discrete.dg.dg_basis import LegendreSimplexPolySpace
-from sfepy.discrete.dg.dg_basis import LegendreTensorProductPolySpace
+from sfepy.discrete.dg.dg_poly_spaces import LegendreSimplexPolySpace
+from sfepy.discrete.dg.dg_poly_spaces import LegendreTensorProductPolySpace
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -92,7 +93,7 @@ cell_facet_gel_name = {
 
 def get_gel(region):
     """
-    :param region: sfepy region
+    region : sfepy.discrete.common.region.Region
     :return: base geometry element of the region
     """
     cmesh = region.domain.cmesh
@@ -105,8 +106,6 @@ def get_gel(region):
                              ' reference geometries!'.format(region))
 
 
-
-
 class DGField(FEField):
     """
     Class for usage with DG terms, provides functionality for Discontinous
@@ -117,7 +116,7 @@ class DGField(FEField):
     is_surface = False
 
     def __init__(self, name, dtype, shape, region, space="H1",
-                 poly_space_base=None, approx_order=1, integral=None):
+                 poly_space_base="legendre", approx_order=1, integral=None):
         """
         Creates DGField, with Legendre polyspace and default integral
         corresponding to 2 * approx_order.
@@ -125,16 +124,13 @@ class DGField(FEField):
         :param name:
         :param dtype:
         :param shape:  'vector', 'scalar' or something else
-        :param region:
+        :param region : sfepy.discrete.common.region.Region
         :param space: default "H1"
         :param poly_space_base: optionally force polyspace
         :param approx_order: 0 for FVM, default 1
         :param integral: if None integral of order 2*approx_order is created
         """
         shape = parse_shape(shape, region.domain.shape.dim)
-        # if not self._check_region(region):
-        #     raise ValueError('unsuitable region for field %s! (%s)' %
-        #                      (name, region.name))
         Struct.__init__(self, name=name, dtype=dtype, shape=shape,
                         region=region)
 
@@ -149,16 +145,14 @@ class DGField(FEField):
         self.dim = region.tdim
         self._setup_geometry()
         self._setup_connectivity()
-        # FIXME treat domains embedded into higher dimensional spaces?
+        # TODO treat domains embedded into higher dimensional spaces?
         self.n_el_facets = self.dim + 1 if self.gel.is_simplex else 2**self.dim
 
         # approximation space
         self.space = space
         self.poly_space_base = poly_space_base
-        if poly_space_base is not None:
-            self.poly_space = poly_space_base(self.gel.name + "H1_what?",
-                                              self.gel, self.approx_order)
-        elif self.gel.name in ["1_2", "2_4", "3_8"]:
+        self.force_bubble = False
+        if self.gel.name in ["1_2", "2_4", "3_8"]:
             self.extended = True
             self.poly_space = LegendreTensorProductPolySpace(
                 self.gel.name + "_DG_legendre",
@@ -168,10 +162,11 @@ class DGField(FEField):
                 self.gel.name + "_DG_legendre",
                 self.gel, self.approx_order)
 
-        # TODO put LegendrePolySpace into table in PolySpace any_from_args, or
+        # TODO make LegendrePolySpace work through PolySpace any_from_args, or
         #  use only Legendre for DG?
         # poly_space = PolySpace.any_from_args("legendre", self.gel,
         #                                   base="legendre", order=approx_order)
+        self._create_interpolant()
 
         # DOFs
         self._setup_shape()
@@ -197,17 +192,25 @@ class DGField(FEField):
                                            return_mapping=True)[1]
         self.mappings0 = {}
 
-        # neighbour facet mapping and data
+        # neighbour facet mapping and data caches
+        # TODO use lru cache or different method?
         self.clear_facet_neighbour_idx_cache()
         self.clear_normals_cache()
         self.clear_facet_vols_cache()
         self.boundary_facet_local_idx = {}
 
+    def _create_interpolant(self):
+        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
+                                  self.poly_space_base, self.approx_order,
+                                  'B' * self.force_bubble)
+        ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
+                                     base=self.poly_space_base,
+                                     force_bubble=self.force_bubble)
+        self.poly_space = ps
 
     def _setup_all_dofs(self):
         """
         Sets up all the differet kinds of DOFs, for DG only bubble DOFs
-        originaly called _setup_global_base
         """
         self.n_el_nod = self.poly_space.n_nod
         self.n_vertex_dof = 0  # in DG we will propably never need vertex DOFs
@@ -223,12 +226,13 @@ class DGField(FEField):
 
     def _setup_bubble_dofs(self):
         """
-        Creates DOF information for  so called element, cell or bubble DOFs
+        Creates DOF information for so called element, cell or bubble DOFs
         - the only DOFs used in DG
-        n_dof is set as n_cells * n_el_nod
-        remap is setup to map (order) DOFs to each cell
-        dofs is ???
-        :return:
+        n_dof = n_cells * n_el_nod
+        remap optional remapping between cells
+        dofs is mapping between dofs and cells
+
+        :return: n_dof, remap, dofs
         """
         self.n_cell = self.region.get_n_cells(self.is_surface)
         n_dof = self.n_cell * self.n_el_nod
@@ -245,7 +249,6 @@ class DGField(FEField):
         """
         What is shape used for and what it really means.
         Does it represent shape of the problem?
-        :return:
         """
         self.n_components = nm.prod(self.shape)
         self.val_shape = self.shape
@@ -253,96 +256,26 @@ class DGField(FEField):
     def _setup_geometry(self):
         """
         Setup the field region geometry.
-        Somehow pulls the highet dimension geometry from self.region
+        Somehow
         """
-        # from VolumeField
+        # get_gel extracts the highest dimension geometry from self.region
         self.gel = get_gel(self.region)
 
     def _setup_connectivity(self):
         """
-        Forces self.domain.mesh to build neccesary conectivities
-        so the are available in self.get_nbrhd_dofs
-        :return:
+        Forces self.domain.mesh to build necessary conductivities
+        so they are available in self.get_nbrhd_dofs
         """
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim)
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim - 1, self.dim)
         self.region.domain.mesh.cmesh.setup_connectivity(self.dim, self.dim - 1)
-
-    # def clear_qp_base(self):
-    #     """
-    #     Remove cached quadrature points and base functions.
-    #     Used in __init__ to set empty qp_coors and bf.
-    #     """
-    #     self.qp_coors = {}
-    #     self.bf = {}
-
-    # def get_qp(self, key, integral):
-    #     """
-    #     Get quadrature points and weights corresponding to the given key
-    #     and integral. The key is 'v' or 's#', where # is the number of
-    #     face vertices.
-    #     """
-    #     qpkey = (integral.order, key)
-    #
-    #     if qpkey not in self.qp_coors:
-    #         if (key[0] == 's') and not self.is_surface:
-    #             dim = self.gel.dim - 1
-    #             n_fp = self.gel.surface_facet.n_vertex
-    #             geometry = '%d_%d' % (dim, n_fp)
-    #
-    #         else:
-    #             geometry = self.gel.name
-    #
-    #         vals, weights = integral.get_qp(geometry)
-    #         self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
-    #
-    #     return self.qp_coors[qpkey]
-
-    # def get_base(self, key, derivative, integral, iels=None,
-    #              from_geometry=False, base_only=True):
-    #     """
-    #     Return values of base functions at quadrature points of given integral
-    #     :param key: 'v' - volume, 's' - surface
-    #     :param derivative:
-    #     :param integral:
-    #     :param iels:
-    #     :param from_geometry:
-    #     :param base_only:
-    #     :return:
-    #     """
-    #     # from FEField
-    #     qp = integral.get_qp(self.gel.name)
-    #
-    #     if from_geometry:
-    #         ps = self.gel.poly_space
-    #
-    #     else:
-    #         ps = self.poly_space
-    #
-    #     _key = key if not from_geometry else 'g' + key
-    #     bf_key = (integral.order, _key, derivative)
-    #
-    #     if bf_key not in self.bf:
-    #         if (iels is not None) and (self.ori is not None):
-    #             ori = self.ori[iels]
-    #
-    #         else:
-    #             ori = self.ori
-    #
-    #         self.bf[bf_key] = ps.eval_base(qp[0], diff=derivative, ori=ori,
-    #                                        transform=self.basis_transform)
-    #
-    #     if base_only:
-    #         return self.bf[bf_key]
-    #     else:
-    #         return self.bf[bf_key], qp.weights
 
     def get_coor(self, nods=None):
         """
         Returns coors for matching nodes
         # TODO revise DG_EPBC and EPBC matching
         :param nods: if None use all nodes
-        :return:
+        :return: coors on surface
         """
 
         if nods is None:
@@ -356,7 +289,7 @@ class DGField(FEField):
             extended_coors[:, 0] = coors[:, 0]
             coors = extended_coors
         # shift centroid coors to lie within cells but be different for each dof
-        # TODO use coors of facet QPs?
+        # use coors of facet QPs?
         coors += eps * nm.repeat(nm.arange(self.n_el_nod),
                                  len(nm.unique(cells)))[:, None]
         return coors
@@ -373,8 +306,8 @@ class DGField(FEField):
         """
         Transforms points given in qps to all facets of the reference element
         with geometry geo_name.
-        :param qps:
-        :param geo_name:
+        :param qps: qps corresponding to facet dimension to be transformed
+        :param geo_name: element type
         :return: tqps is of shape shape(qps) + (n_el_facets, geo dim)
         """
         if geo_name == "1_2":
@@ -423,7 +356,13 @@ class DGField(FEField):
         """
         Returns quadrature points on all facets of the reference element in
         array of shape (n_qp, 1 , n_el_facets, dim)
-        :return: qp, weights - need to be transformed to actual facets!
+
+        Returns
+        -------
+        qps : array
+            quadrature points
+        weights : array
+            Still needs to be transformed to actual facets!
         """
 
         if self.dim == 1:
@@ -449,14 +388,22 @@ class DGField(FEField):
     def get_facet_base(self, derivative=False, base_only=False):
         """
         Returns values of base in facets quadrature points, data shape is a bit
-        crazy right now
-            (number of qps, 1, n_el_facets, 1, n_el_nod).
-        This is because base eval preserves qp shape and adds dimension of the
-        value - in case of derivative this will be (dim,) * derivative order and
-        all basis values i.e. n_el_nod values
-        :param derivative:
-        :param base_only:
-        :return:
+        crazy right now:
+            (number of qps, 1, n_el_facets, 1, n_el_nod)
+        end for derivatine:
+            (1, number of qps, (dim,) * derivative, n_el_facets, 1, n_el_nod)
+
+        Parameters
+        ----------
+        derivative: truthy of integer
+        base_only: do not return weights
+
+        Returns
+        -------
+        facet_bf : array
+            values of basis functions in facet qps
+        weights : array, optionally
+            weights of qps
         """
         if derivative:
             diff = int(derivative)
@@ -498,14 +445,15 @@ class DGField(FEField):
         if region is None:
             self.facet_neighbour_index = {}
         else:
-            self.facet_neighbour_index.remove(region.name)
+            self.facet_neighbour_index.pop(region.name)
 
     def get_facet_neighbor_idx(self, region=None, eq_map=None):
         """
         Returns index of cell neighbours sharing facet, along with local index
         of the facet within neighbour, also treats periodic boundary conditions
         i.e. plugs correct neighbours for cell on periodic boundary.
-        Where there are no neighbours specified puts -1.
+        Where there are no neighbours specified puts -1  instead of neighbour
+        and facet id
 
         Cashes neighbour index in self.facet_neighbours
 
@@ -526,7 +474,8 @@ class DGField(FEField):
              the second is index of the facet in said nb. cell.
         """
         if region is None or eq_map is None:
-            # HOTFIX enabling limiter to obtain connectivity data
+            # HOTFIX enabling limiter to obtain connectivity data without
+            # knowing eq_map or region
             if self.region.name in self.facet_neighbour_index:
                 return self.facet_neighbour_index[self.region.name]
             else:
@@ -536,7 +485,6 @@ class DGField(FEField):
 
         if region.name in self.facet_neighbour_index:
             return self.facet_neighbour_index[region.name]
-
 
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
@@ -627,7 +575,7 @@ class DGField(FEField):
 
     def _set_fem_periodic_facet_neighbours(self, facet_neighbours, eq_map):
         """
-
+        TODO maybe remove after DG EPBC revision in self.get_coor
         Parameters
         ----------
         facet_neighbours : ndarray
@@ -704,12 +652,17 @@ class DGField(FEField):
         Computes values of the variable represented by dofs in
         quadrature points located at facets, returns both values -
         inner and outer, along with weights.
-        :param state: state variable containing BC info
-        :param region:
-        :param derivative: compute derivative if truthy,
+        Parameters
+        ---------
+        state: state variable containing BC info
+        region : sfepy.discrete.common.region.Region
+        derivative: compute derivative if truthy,
                            compute n-th derivative if a number
-        :param reduce_nod: if False DOES NOT sum nodes into values at QPs
-        :return: inner_facet_values (n_cell, n_el_facets, n_qp),
+        reduce_nod: if False DOES NOT sum nodes into values at QPs
+
+        Returns
+        -------
+        inner_facet_values (n_cell, n_el_facets, n_qp),
                  outer facet values (n_cell, n_el_facets, n_qp),
                  weights,
                  if derivative is True:
@@ -783,14 +736,23 @@ class DGField(FEField):
         broadcasted to all cells inner to the element as well as outer ones
         along with weights for the qps broadcasted and transformed to elements.
 
-        :param state: used to get EPBC info
-        :param region: for connectivity
-        :param derivative: if u need derivative
-        :return: inner and outer base vals,
-                     shape: (n_cell, n_el_nod, n_el_facet, n_qp) or
-                            (n_cell, n_el_nod, n_el_facet, dim, n_qp)
-                     when derivative is True or 1
-                 whs, shape: (n_cell, n_el_facet, n_qp)
+        Contains quick fix to flip facet QPs for right integration order.
+
+
+        Parameters
+        ----------
+        state: used to get EPBC info
+        region : sfepy.discrete.common.region.Region for connectivity
+        derivative: if u need derivative
+
+        Returns
+        -------
+        outer_facet_base_vals:
+        inner_facet_base_vals:
+                 shape (n_cell, n_el_nod, n_el_facet, n_qp) or
+                       (n_cell, n_el_nod, n_el_facet, dim, n_qp)
+                 when derivative is True or 1
+        whs: shape (n_cell, n_el_facet, n_qp)
         """
         if derivative:
             diff = int(derivative)
@@ -828,22 +790,32 @@ class DGField(FEField):
     def clear_normals_cache(self, region=None):
         """
         Clears normals cache for given region or all regions.
-        :param region: region to clear cache or None to clear all
+
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+            region to clear cache or None to clear all
         """
         if region is None:
             self.normals_cache = {}
         else:
             if isinstance(region, str):
-                self.normals_cache.remove(region)
+                self.normals_cache.pop(region)
             else:
-                self.normals_cache.remove(region.name)
+                self.normals_cache.pop(region.name)
 
     def get_cell_normals_per_facet(self, region):
         """
         Caches results, use clear_normals_cache to clear the cache.
 
-        :param region:
-        :return: normals of facets in array of shape (n_cell, n_el_facets, dim)
+        Parameters
+        ----------
+        region: sfepy.discrete.common.region.Region
+            Main region, must contain cells.
+        Returns
+        -------
+        normals: array
+            normals of facets in array of shape (n_cell, n_el_facets, dim)
         """
 
         if region.name in self.normals_cache:
@@ -852,10 +824,7 @@ class DGField(FEField):
         dim, n_cell, n_el_facets = self.get_region_info(region)
 
         cmesh = region.domain.mesh.cmesh
-        cells = region.cells
-
         normals = cmesh.get_facet_normals()
-
         normals_out = nm.zeros((n_cell, n_el_facets, dim))
 
         c2f = cmesh.get_conn(dim, dim - 1)
@@ -871,22 +840,32 @@ class DGField(FEField):
     def clear_facet_vols_cache(self, region=None):
         """
         Clears facet volume cache for given region or all regions.
-        :param region: region to clear cache or None to clear all
+
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+            region to clear cache or None to clear all
         """
         if region is None:
             self.facet_vols_cache = {}
         else:
             if isinstance(region, str):
-                self.facet_vols_cache.remove(region)
+                self.facet_vols_cache.pop(region)
             else:
-                self.facet_vols_cache.remove(region.name)
+                self.facet_vols_cache.pop(region.name)
 
     def get_facet_vols(self, region):
         """
         Caches results, use clear_facet_vols_cache to clear the cache
 
-        :param region:
-        :return: volumes of the facets by cells shape (n_cell, n_el_facets, 1)
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+
+        Returns
+        -------
+        vols_out: array
+            volumes of the facets by cells shape (n_cell, n_el_facets, 1)
         """
 
         if region.name in self.facet_vols_cache:
@@ -919,10 +898,16 @@ class DGField(FEField):
         Returns data shape
         (n_nod, n_qp, self.gel.dim, self.n_el_nod)
 
-        :param integral: integral used
-        :param integration:
-        :param region_name: not used
-        :return:
+        Parameters
+        ----------
+        integral: integral used
+        integration:
+            'volume' is only supported value
+        region_name: not used
+
+        Returns
+        -------
+        data_shape : tuple
         """
 
         if integration in ('volume',):
@@ -932,9 +917,7 @@ class DGField(FEField):
 
             data_shape = (self.n_cell, n_qp, self.gel.dim, self.n_el_nod)
             # econn.shape[1] == n_el_nod i.e. number nod in element
-
         else:
-            # what bout other integrations? do they make sense for DG?
             raise NotImplementedError('unsupported integration! (%s)'
                                       % integration)
 
@@ -943,11 +926,17 @@ class DGField(FEField):
     def get_econn(self, conn_type, region, is_trace=False, integration=None):
         """
         Getter for econn
-        :param conn_type:
-        :param region:
-        :param is_trace:
-        :param integration: 'volume' is only supported value
-        :return:
+        Parameters
+        ----------
+        conn_type: string or Struct
+            'volume' is only supported
+        region : sfepy.discrete.common.region.Region
+        is_trace: ignored
+        integration: ignored
+
+        Returns
+        -------
+        connectivity
         """
 
         ct = conn_type.type if isinstance(conn_type, Struct) else conn_type
@@ -967,10 +956,6 @@ class DGField(FEField):
         This is called in create_adof_conns(conn_info, var_indx=None,
                                                 active_only=True, verbose=True)
         for each variable but has no effect.
-        :param geometry:
-        :param info:
-        :param is_trace:
-        :return:
         """
         # placeholder, what is this used for?
 
@@ -985,9 +970,15 @@ class DGField(FEField):
 
         Not Used in BC treatment
 
-        :param region:
-        :param merge: merge dof tuple into one numpy array
-        :return:
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+        merge: bool
+            merge dof tuple into one numpy array, default True
+
+        Returns
+        -------
+        dofs : array
         """
 
         dofs = []
@@ -1013,8 +1004,15 @@ class DGField(FEField):
 
         Caches results in self.boundary_facet_local_idx
 
-        :param region: surface region defining BCs
-        :return: index of cells on boundary along with corresponding facets
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+            surface region defining BCs
+
+        Returns
+        -------
+        bc2bfi : array
+            index of cells on boundary along with corresponding facets
         """
 
         if region.name in self.boundary_facet_local_idx:
@@ -1030,11 +1028,16 @@ class DGField(FEField):
         """
         Creates and returns mapping
 
-        :param return_mapping: default True
-        :param region:
-        :param integral:
-        :param integration: 'volume' is so far only accepted option
-        :return:
+        Parameters
+        ----------
+        region : sfepy.discrete.common.region.Region
+        integral:
+        integration: 'volume' is only accepted option
+        return_mapping: default True
+
+        Returns
+        -------
+        mapping
         """
         domain = self.domain
         coors = domain.get_mesh_coors(actual=True)
@@ -1079,13 +1082,18 @@ class DGField(FEField):
         directly to provided value or values either in main volume region
         or in boundary region.
 
-        :param fun: callable, scalar or array corresponding to dofs
-        :param region: region to set DOFs on
-        :param dpn: number of dofs per element
-        :param warn: not used
-        :return: nods, vals
+        Parameters
+        ----------
+        fun: callable, scalar or array corresponding to dofs
+        region : sfepy.discrete.common.region.Region
+            region to set DOFs on
+        dpn: number of dofs per element
+        warn: not used
+        Returns
+        -------
+        nods : array
+        vals : array
         """
-
         if region is None:
             region = self.region
             return self.set_cell_dofs(fun, region, dpn, warn)
@@ -1099,11 +1107,19 @@ class DGField(FEField):
         """
         Compute projection of fun onto the basis, in main region, alternatively
         set DOFs directly to provided value or values
-        :param fun: callable, scallar or array corresponding to dofs
-        :param region: region to set DOFs on
-        :param dpn: number of dofs per element
-        :param warn: not used
-        :return: nods, vals
+
+        Parameters
+        ----------
+        fun: callable, scallar or array corresponding to dofs
+        region : sfepy.discrete.common.region.Region
+        region to set DOFs on
+        dpn: number of dofs per element
+        warn: not used
+
+        Returns
+        -------
+        nods
+        vals
         """
 
         aux = self.get_dofs_in_region(region)
@@ -1154,16 +1170,24 @@ class DGField(FEField):
         """
         Compute projection of fun onto the basis on facets, alternatively
         set DOFs directly to provided value or values
-        :param fun: callable, scalar or array corresponding to dofs
-        :param region: region to set DOFs on
-        :param dpn: number of dofs per element
-        :param warn: not used
-        :return: nods, vals
+
+        Parameters
+        ----------
+        fun: callable, scalar or array corresponding to dofs
+        region : sfepy.discrete.common.region.Region
+        region to set DOFs on
+        dpn: number of dofs per element
+        warn: not used
+
+        Returns
+        -------
+        nods
+        vals
         """
         raise NotImplementedError(
             "Setting facet DOFs is not supported with DGField, " +
             "use values at qp directly. " +
-            "This is usually result of using ebc insted of dgebc")
+            "This is usually result of using ebc instead of dgebc")
 
         aux = self.get_dofs_in_region(region)
         nods = nm.unique(nm.hstack(aux))
@@ -1213,12 +1237,18 @@ class DGField(FEField):
         """
         Returns values of fun in facet QPs of the region
 
-        :param diff: derivative 0 or 1 supported
-        :param fun: Function value or values to set qps values to
-        :param region: boundary region
-        :param ret_coors: default False,
+        Parameter
+        ---------
+        diff: derivative 0 or 1 supported
+        fun: Function value or values to set qps values to
+        region : sfepy.discrete.common.region.Region
+            boundary region
+        ret_coors: default False,
                 Return physical coors of qps in shape (n_cell, n_qp, dim).
-        :returns: vals
+
+        Returns
+        -------
+        vals
             In shape (n_cell,) + (self.dim,) * diff + (n_qp,)
         """
         if region.has_cells():
@@ -1276,10 +1306,19 @@ class DGField(FEField):
     def get_nodal_values(self, dofs, region, ref_nodes=None):
         """
         Computes nodal representation of the DOFs
-        :param dofs:
-        :param region: will we use this?
-        :param ref_nodes:
-        :return:
+
+        Parameter
+        ---------
+        dofs : array
+            dofs to transform to nodes
+        region : ignored
+        ref_nodes:
+            reference node to use instead of default qps
+
+        Returns
+        -------
+        nodes
+        nodal_vals
         """
         if ref_nodes is None:
             # TODO poly_space should provide special nodes
@@ -1301,7 +1340,7 @@ class DGField(FEField):
                       key=None, extend=True, fill_value=None,
                       linearization=None):
         """
-        Convert the DOFs corresponding to the field to a dictionary of
+        Converts the DOFs corresponding to the field to a dictionary of
         output data usable by Mesh.write().
 
         Puts DOFs into vairables u0 ... un, where n = approx_order and marks

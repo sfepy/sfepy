@@ -14,7 +14,7 @@ from operator import mul
 import numpy as np
 
 from sfepy.base.ioutils import InDir
-from sfepy.discrete.dg.dg_basis import iter_by_order
+from sfepy.discrete.dg.dg_poly_spaces import iter_by_order
 
 helps = {
     'max_order' :

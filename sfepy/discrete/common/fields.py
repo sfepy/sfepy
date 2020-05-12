@@ -133,7 +133,7 @@ class Field(Struct):
                            if 'fields_base.py' not in ii]
             field_files += get_paths('sfepy/discrete/iga/fields*.py')
             field_files += get_paths('sfepy/discrete/structural/fields*.py')
-            field_files += get_paths('sfepy/discrete/dg/dg_field.py')
+            field_files += get_paths('sfepy/discrete/dg/fields.py')
             Field._all = load_classes(field_files, [Field], ignore_errors=True,
                                       name_attr='family_name')
         table = Field._all

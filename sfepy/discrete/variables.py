@@ -1932,7 +1932,7 @@ class DGFieldVariable(FieldVariable):
         FieldVariable.__init__(self, name, kind, field, order=order, primary_var_name=primary_var_name,
                  special=special, flags=flags, history=history, **kwargs)
 
-        from sfepy.discrete.dg.dg_field import DGField
+        from sfepy.discrete.dg.fields import DGField
         if isinstance(field, DGField):
             pass
         else:

@@ -268,6 +268,10 @@ class PolySpace(Struct):
             name = PolySpace.suggest_name(geometry, order, base, force_bubble)
 
         if PolySpace._all is None:
+            # TODO how to get polyspaces from sfepy.discrete.dg.dg_poly_spaces
+            #  import LegendreSimplexPolySpace, LegendreTensorProductPolySpace
+            #  to have available here in globals, there is cyclic import in the
+            #  way :-(
             PolySpace._all = find_subclasses(globals(), [PolySpace])
         table = PolySpace._all
 

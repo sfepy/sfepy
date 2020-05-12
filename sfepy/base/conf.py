@@ -17,12 +17,15 @@ from sfepy.base.base import (Struct, IndexedStruct, dict_to_struct,
 from sfepy.base.parse_conf import create_bnf
 import six
 
+# TODO this requires EBC to be specified but in some examples only
+#   EPBCs specified is valid
 _required = ['filename_mesh|filename_domain', 'field_[0-9]+|fields',
-             'ebc_[0-9]+|ebcs', 'equations',
+             '(ebc_[0-9]+|ebcs|dgebc_[0-9]+|dgebcs)', 'equations',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials',
              'solver_[0-9]+|solvers']
-_other = ['dgebc_[0-9]+|dgebcs', 'epbc_[0-9]+|epbcs', 'dgepbc_[0-9]+|dgepbcs',
+
+_other = ['epbc_[0-9]+|epbcs', 'dgepbc_[0-9]+|dgepbcs',
           'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
           'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options',
           'integral_[0-9]+|integrals']

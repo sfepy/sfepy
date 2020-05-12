@@ -1,18 +1,20 @@
+"""
+Limiters for high order DG methods
+"""
 import numpy as nm
 
-from sfepy.discrete.dg.dg_basis import iter_by_order
-from sfepy.discrete.dg.dg_field import get_raveler, get_unraveler
-from sfepy.base.base import (get_default, output, assert_,
-                             Struct, IndexedStruct)
-from functools import  reduce
+from sfepy.discrete.dg.dg_poly_spaces import iter_by_order
+from sfepy.discrete.dg.fields import get_raveler, get_unraveler
+from sfepy.base.base import output
+
 MACHINE_EPS = 1e-30
 
 
 def minmod(a, b, c):
     """
-    Minmod function of three variables, returns:
-     _/ 0           , where sign(a) != sign(b) != sign(c)
-      \ min(a,b,c)  , elsewhere
+    Minmod function of three variables, returns
+     _ ┌ 0           , where sign(a) != sign(b) != sign(c)
+       └ min(a,b,c)  , elsewhere
     :param a:
     :param b:
     :param c:
@@ -27,8 +29,9 @@ def minmod(a, b, c):
 
     return res
 
+
 def minmod_seq(abc):
-    seq =  nm.hstack([nm.sign(x) for x in abc])
+    seq = nm.hstack([nm.sign(x) for x in abc])
     seq = seq[:, 0, None] == seq
     seq = seq.prod(axis=1).astype(bool)
     res = nm.zeros(nm.shape(abc[0]))
@@ -65,7 +68,7 @@ class IdentityLimiter(DGLimiter):
 
 class MomentLimiter1D(DGLimiter):
     """
-    Krivodonova(2007): Limiters for high-order discontinuous Galerkin methods
+    Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods
     """
     name = "moment_1D_limiter"
 
@@ -80,37 +83,25 @@ class MomentLimiter1D(DGLimiter):
             if self.verbose: output(self.name + " no limiting for FV.")
             return u
         u = self.unravel(u).swapaxes(0, 1)
-        nbrhd_idx = self.field.get_facet_neighbor_idx()
-        lidx = nbrhd_idx[:, 0, 0]
-        ridx = nbrhd_idx[:, 1, 0]
         idx = nm.arange(nm.shape(u[0, 1:-1])[0])
         idx_bc = nm.arange(nm.shape(u[0, :])[0])
 
         nu = nm.copy(u)
         tilu = nm.zeros(u.shape[1:])
-        for l in range(self.n_el_nod - 1, 0, -1):
-            tilu[idx] = minmod(nu[l, 1:-1][idx],
-                          nu[l - 1, 2:][idx] - nu[l - 1, 1:-1][idx],
-                          nu[l - 1, 1:-1][idx] - nu[l - 1, :-2][idx])
+        for ll in range(self.n_el_nod - 1, 0, -1):
+            tilu[idx] = minmod(nu[ll, 1:-1][idx],
+                               nu[ll - 1, 2:][idx] - nu[ll - 1, 1:-1][idx],
+                               nu[ll - 1, 1:-1][idx] - nu[ll - 1, :-2][idx])
 
-            # tilu_bc = minmod(nu[l, :][idx_bc],
-            #               nu[l - 1, :][ridx] - nu[l - 1, :][idx_bc],
-            #               nu[l - 1, :][idx_bc] - nu[l - 1, :][lidx])
-
-
-            # idx_bc = nm.where(abs(tilu_bc - nu[l, :][idx_bc]) > MACHINE_EPS)[0]
-            # lidx = lidx[idx_bc]
-            # ridx = ridx[idx_bc]
-
-            idx = idx[nm.where(abs(tilu[idx] - nu[l, 1:-1][idx]) > MACHINE_EPS)[0]]
+            idx = idx[nm.where(abs(tilu[idx] - nu[ll, 1:-1][idx])
+                               > MACHINE_EPS)[0]]
             if self.verbose:
                 output("{} limiting in {} cells out of {} :".
                        format(self.name, len(idx_bc), self.n_cell))
                 output(idx_bc)
             if len(idx_bc) == 0:
                 break
-            nu[l, 1:-1][idx] = tilu[idx]
-            # nu[l][idx_bc] = tilu_bc[idx_bc]
+            nu[ll, 1:-1][idx] = tilu[idx]
 
         return self.ravel(nu.swapaxes(0, 1))[:, 0]
 
@@ -135,10 +126,12 @@ class MomentLimiter2D(DGLimiter):
         u = self.unravel(u).swapaxes(0, 1)
         nu = nm.zeros((self.field.approx_order + 1,) * 2 + u.shape[1:])
         tilu = nm.zeros(u.shape[1:])
-        for l, (ii, jj) in enumerate(iter_by_order(self.field.approx_order, 2, extended=ex)):
-            nu[ii, jj, ...] = u[l]
+        for ll, (ii, jj) in enumerate(iter_by_order(self.field.approx_order, 2,
+                                                    extended=ex)):
+            nu[ii, jj, ...] = u[ll]
 
-        for ii, jj in reversed(list(iter_by_order(self.field.approx_order, 2, extended=ex))):
+        for ii, jj in reversed(list(iter_by_order(self.field.approx_order, 2,
+                                                  extended=ex))):
             minmod_args = [nu[ii, jj, idx]]
             nbrhs = nbrhd_idx[idx]
             if ii - 1 >= 0:
@@ -151,7 +144,7 @@ class MomentLimiter2D(DGLimiter):
             if jj - 1 >= 0:
                 alf = nm.sqrt((2 * jj - 1) / (2 * jj + 1))
                 # right i.e. element "up" difference in y axis
-                dy_up = alf * (nu[ii, jj - 1, nbrhs[:, 2]] - nu[ii, jj - 1 ,  idx])
+                dy_up = alf * (nu[ii, jj - 1, nbrhs[:, 2]] - nu[ii, jj - 1,  idx])
                 # left i.e. element "down" difference in y axis
                 dy_dn = alf * (nu[ii, jj - 1,  idx] - nu[ii, jj - 1,  nbrhs[:, 0]])
                 minmod_args += [dy_up, dy_dn]
@@ -160,16 +153,15 @@ class MomentLimiter2D(DGLimiter):
             idx = idx[nm.where(abs(tilu[idx] - nu[ii, jj, idx]) > MACHINE_EPS)[0]]
             if self.verbose:
                 output("{} limiting {} in {} cells out of {} :".
-                       format(self.name, (ii, jj) ,len(idx), self.n_cell))
+                       format(self.name, (ii, jj), len(idx), self.n_cell))
                 output(idx)
             if len(idx) == 0:
                 break
             nu[ii, jj, idx] = tilu[idx]
 
         resu = nm.zeros(u.shape)
-        for l, (ii, jj) in enumerate(iter_by_order(self.field.approx_order, 2, extended=ex)):
-            resu[l] = nu[ii, jj]
+        for ll, (ii, jj) in enumerate(iter_by_order(self.field.approx_order, 2,
+                                                    extended=ex)):
+            resu[ll] = nu[ii, jj]
 
         return self.ravel(resu.swapaxes(0, 1))[:, 0]
-
-

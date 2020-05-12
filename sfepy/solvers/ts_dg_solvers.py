@@ -1,6 +1,7 @@
+"""
+Explicit time stepping solvers for use with DG FEM
+"""
 import numpy as nm
-from numpy import dot
-import matplotlib.pyplot as plt
 import numpy.linalg as nla
 
 
@@ -17,7 +18,7 @@ from sfepy.base.log import Log, get_logging_conf
 
 class DGMultiStageTSS(TimeSteppingSolver):
     """
-    Explicit time stepping solver with multistage solve_step
+    Explicit time stepping solver with multistage solve_step method
     """
     __metaclass__ = SolverMeta
     name = "ts.multistaged"
@@ -121,11 +122,6 @@ class DGMultiStageTSS(TimeSteppingSolver):
 class EulerStepSolver(DGMultiStageTSS):
     """
     Updates solution using euler method
-    # - unify structure of __call__ method, something like:
-    #  1. prepare data
-    #  2. call method computing all the stages
-    #  3. provide stats for status, outputs
-    #  4. return
     """
     name = 'ts.euler'
     __metaclass__ = SolverMeta
@@ -284,7 +280,7 @@ class RK4StepSolver(DGMultiStageTSS):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
-        from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
+        from sfepy.discrete.dg.fields import get_unraveler, get_raveler
         unravel = get_unraveler(3, 99)
 
         conf = nls.conf

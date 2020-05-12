@@ -41,7 +41,7 @@ def define(filename_mesh=None,
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
+        filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
 
     velo = [1., 1.]
 
@@ -169,8 +169,7 @@ def define(filename_mesh=None,
                    """
                    +
                    " + dw_laplace.i.Omega(D.val, v, u) " +
-                   " - dw_dg_diffusion_flux.i.Omega(D.val, u, v)" +
-                   " - dw_dg_diffusion_flux.i.Omega(D.val, v, u)" +
+                   diffusion_schemes_implicit[diffscheme] +
                    " + dw_dg_interior_penalty.i.Omega(D.val, D.cw, v, u)" +
                    " - dw_volume_lvf.i.Omega(g.val, v)" +
                    "= 0"

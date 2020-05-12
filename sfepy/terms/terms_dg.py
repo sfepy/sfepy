@@ -23,103 +23,9 @@ from sfepy.terms.terms import Term, terms
 from sfepy.base.base import output
 
 
-def laxfrie_linear_flux(in_fc_v, out_fc_v, advelo, fc_n, alpha=0.):
-    """
-    Calculates Lax-Friedrichs flux for linear advection of entity p with
-    velocity advelo across faces.
-
-    Hesthaven, J. S. (2008). Nodal Discontinuous Galerkin Methods. p. 32
-
-    :param in_fc_v: inner facet value, shape (n_cell, n_cell_facet)
-    :param out_fc_v: outer facet value, shape (n_cell, n_cell_facet)
-    :param advelo: advection velocity, shape (n_cell, dim)
-    :param fc_n: facet normals, shape (n_cell, n_cell_facet, dim)
-    :param alpha: flux coefficient, 0 - upwind, 1 - central
-    :return: flux per facet, shape (n_cell, n_cell_facet)
-    """
-
-    # get maximal orthogonal wave speeds at facets
-    C = nm.abs(nm.einsum("ifk,ik->if", fc_n, advelo))
-
-    fc_v_avg = (in_fc_v + out_fc_v) / 2.
-    fc_v_jmp = in_fc_v - out_fc_v
-
-    central = nm.einsum("ik,if->ifk", advelo, fc_v_avg)
-    upwind = (1 - alpha) / 2. * nm.einsum("if,ifk,if->ifk",
-                                          C, fc_n, fc_v_jmp)
-    return central + upwind
-
-
-def central_linear_flux(in_fc_v, out_fc_v, advelo):
-    """
-
-    Hesthaven, J. S. (2008). Nodal Discontinuous Galerkin Methods. p. 246-247
-
-    :param in_fc_v: inner facet value, shape (n_cell, n_cell_facet)
-    :param out_fc_v: outer facet value, shape (n_cell, n_cell_facet)
-    :param advelo: advection velocity, shape (n_cell, dim) or (n_cell, 1)
-    :return:
-    """
-
-    fc_v_avg = (in_fc_v + out_fc_v) / 2.
-    central = nm.einsum("i...,if...->if...", advelo, fc_v_avg)
-    return central
-
-
-def central_discont_linear_flux(in_fc_v, out_fc_v,
-                                in_fc_advelo, out_fc_advelo, fc_n):
-    """
-
-    Hesthaven, J. S. (2008). Nodal Discontinuous Galerkin Methods. p. 247-248
-
-    :param in_fc_v: inner facet value, shape (n_cell, n_cell_facet)
-    :param out_fc_v: outer facet value, shape (n_cell, n_cell_facet)
-    :param in_fc_advelo: advection velocity, shape (n_cell, n_cell_facet, dim)
-                            or (n_cell, n_cell_facet, 1)
-    :param out_fc_advelo: advection velocity, shape (n_cell, n_cell_facet, dim)
-                            or (n_cell, n_cell_facet, 1)
-    :param fc_n: facet normals, shape (n_cell, n_cell_facet, dim)
-    :return:
-    """
-
-    advelo_jmp = in_fc_advelo - out_fc_advelo
-
-    central = (nm.einsum("if...,if->if...", in_fc_advelo, in_fc_v)
-                +
-               nm.einsum("if...,if->if...", out_fc_advelo, out_fc_v)) / 2.
-    upwind = 1 / 2. * nm.einsum("if...,if...->if...",
-                                          advelo_jmp, fc_n) * out_fc_v
-
-    return central + upwind
-
-
-def ScalarDotGradScalar(state_vg, test_vg):
-
-    whs = state_vg.qp.weights
-    stiff = nm.einsum(
-                      "iqkb," +
-                      "iqkb,iqkd,...q->ikdb",
-                      state_vg.volume,
-                      state_vg.bf, test_vg.bfg, whs)
-
-    return stiff
-
-
-def ScalarDotScalar(state_vg, test_vg):
-
-    whs = state_vg.qp.weights
-    mass = nm.einsum(
-                     "iqkb," +
-                     "iqkb,iqkd,...q->ikdb",
-                     state_vg.volume,
-                     state_vg.bf, test_vg.bf, whs)
-
-    return mass
-
-
 class DGTerm(Term):
     r"""
-    Base class for DG terms, provides alternative call_function and eval_real
+    Abstract base class for DG terms, provides alternative call_function and eval_real
     methods to accommodate returning iels and vals.
     """
 
@@ -171,7 +77,8 @@ class DGTerm(Term):
         iels = nm.vstack((inner_iels, outer_iels))
         return iels
 
-class AdvectDGFluxTerm(DGTerm):
+
+class AdvectionDGFluxTerm(DGTerm):
     r"""
     Lax-Friedrichs flux term for advection of scalar quantity :math:`p` with the
     advection velocity :math:`\ul{a}` given as a material parameter (a known
@@ -576,7 +483,7 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
         return out, status
 
 
-class NonlinearHyperDGFluxTerm(DGTerm):
+class NonlinearHyperbolicDGFluxTerm(DGTerm):
     r"""
      Lax-Friedrichs flux term for nonlinear hyperpolic term of scalar quantity
      :math:`p` with the vector function :math:`\ul{f}` given as a material
@@ -713,7 +620,7 @@ class NonlinearHyperDGFluxTerm(DGTerm):
 from sfepy.linalg import dot_sequences
 
 
-class NonlinScalarDotGradTerm(Term):
+class NonlinearScalarDotGradTerm(Term):
     r"""
      Product of virtual and divergence of vector function of state or volume dot
      product of vector function of state and scalar gradient of virtual.
