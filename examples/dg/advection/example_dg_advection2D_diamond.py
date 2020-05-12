@@ -1,6 +1,6 @@
 from examples.dg.example_dg_common import *
 
-from sfepy.discrete.dg.dg_basis import get_n_el_nod
+from sfepy.discrete.dg.dg_poly_spaces import get_n_el_nod
 
 example_name = "adv_2D_mquad"
 dim = 2  # int(example_name[example_name.index("D") - 1])

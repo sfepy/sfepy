@@ -19,10 +19,10 @@ from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, NonlinearHyperDGFluxTerm, NonlinScalarDotGradTerm
+from sfepy.discrete.dg.dg_terms import AdvectionDGFluxTerm, NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
-from sfepy.discrete.dg.dg_field import DGField
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
+from sfepy.discrete.dg.fields import DGField
+from sfepy.discrete.dg.limiters import IdentityLimiter, MomentLimiter1D
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
@@ -107,15 +107,15 @@ def burg_fun_d(u):
 a = Material('a', val=[velo])
 # nonlin = Material('nonlin', values={'.fun' : adv_fun, '.dfun' : adv_fun_d})
 nonlin = Material('nonlin', values={'.fun': burg_fun, '.dfun': burg_fun_d})
-StiffT = NonlinScalarDotGradTerm("burgess_stiff(f, df, u, v)", "nonlin.fun , nonlin.dfun, u[-1], v",
-                                 integral, omega, u=u, v=v, nonlin=nonlin)
+StiffT = NonlinearScalarDotGradTerm("burgess_stiff(f, df, u, v)", "nonlin.fun , nonlin.dfun, u[-1], v",
+                                    integral, omega, u=u, v=v, nonlin=nonlin)
 
 alpha = Material('alpha', val=[.0])
 # FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
 #                          integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-FluxT = NonlinearHyperDGFluxTerm("burgess_lf_flux(f, df, u, v)", "nonlin.fun , nonlin.dfun, v, u[-1]",
-                                 integral, omega, u=u, v=v, nonlin=nonlin)
+FluxT = NonlinearHyperbolicDGFluxTerm("burgess_lf_flux(f, df, u, v)", "nonlin.fun , nonlin.dfun, v, u[-1]",
+                                      integral, omega, u=u, v=v, nonlin=nonlin)
 
 eq = Equation('balance', MassT + StiffT - FluxT)
 eqs = Equations([eq])

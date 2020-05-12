@@ -22,10 +22,10 @@ from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
 
 # local imports
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
+from sfepy.discrete.dg.dg_terms import AdvectionDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
-from sfepy.discrete.dg.dg_field import DGField
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter, MomentLimiter1D
+from sfepy.discrete.dg.fields import DGField
+from sfepy.discrete.dg.limiters import IdentityLimiter, MomentLimiter1D
 
 from sfepy.discrete.dg.my_utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
@@ -87,8 +87,8 @@ StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", i
                                   u=u, v=v, a=a)
 
 alpha = Material('alpha', val=[.0])
-AdvFluxT = AdvectDGFluxTerm("adv_lf_flux(alpha.val, a.val, v, u)", "a.val, v, u[-1]",
-                            integral, omega, u=u, v=v, a=a, alpha=alpha)
+AdvFluxT = AdvectionDGFluxTerm("adv_lf_flux(alpha.val, a.val, v, u)", "a.val, v, u[-1]",
+                               integral, omega, u=u, v=v, a=a, alpha=alpha)
 
 diffusion_tensor = .02
 D = Material('D', val=[diffusion_tensor])

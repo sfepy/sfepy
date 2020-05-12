@@ -2,14 +2,6 @@ from examples.dg.example_dg_common import *
 from toolz import reduce
 from operator import mul
 
-from sfepy.discrete.dg.dg_terms import NonlinScalarDotGradTerm, NonlinearHyperDGFluxTerm
-from sfepy.discrete.dg.dg_terms import DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
-
-register_term(NonlinScalarDotGradTerm)
-register_term(NonlinearHyperDGFluxTerm)
-register_term(DiffusionDGFluxTerm)
-register_term(DiffusionInteriorPenaltyTerm)
-
 example_name = "burgess_2D"
 dim = 2  # int(example_name[example_name.index("D") - 1])
 

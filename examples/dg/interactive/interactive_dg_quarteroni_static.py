@@ -30,10 +30,10 @@ from terms.terms_volume import LinearVolumeForceTerm
 # local imports
 from sfepy.discrete.variables import DGFieldVariable
 
-from sfepy.discrete.dg.dg_terms import AdvectDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
+from sfepy.discrete.dg.dg_terms import AdvectionDGFluxTerm, DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 from sfepy.discrete.dg.dg_tssolver import EulerStepSolver, TVDRK3StepSolver
-from sfepy.discrete.dg.dg_field import DGField
-from sfepy.discrete.dg.dg_limiters import IdentityLimiter
+from sfepy.discrete.dg.fields import DGField
+from sfepy.discrete.dg.limiters import IdentityLimiter
 
 
 from sfepy.discrete.dg.my_utils.inits_consts \
@@ -117,8 +117,8 @@ StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v", i
                                   u=u, v=v, a=a)
 
 alpha = Material('alpha', val=[.0])
-FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
-                         integral, omega, u=u, v=v, a=a, alpha=alpha)
+FluxT = AdvectionDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
+                            integral, omega, u=u, v=v, a=a, alpha=alpha)
 
 
 # ┌----------------------------┐
