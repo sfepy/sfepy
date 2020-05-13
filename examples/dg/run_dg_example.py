@@ -96,6 +96,8 @@ def get_parametrized_conf(filename, args):
                 cfl=args.cfl,
                 dt=args.dt,
             ), mod, verbose=args.verbose)
+        if args.mesh_file is not None:
+            problem_conf.options.absolute_mesh_path = True
     else:
         output("Problem file is not parametrized, arguments ignored")
         problem_conf = ProblemConf.from_file(filename, verbose=False)
@@ -163,7 +165,8 @@ def main(argv):
             load_times = min(pc.options.save_times, sa.problem.ts.n_step)
             load_and_plot_fun(output_name_trunk_folder, output_name_trunk_name,
                               pc.t0, pc.t1, load_times, pc.approx_order,
-                              pc.get_ic, exact=getattr(pc, "analytic_sol", None),
+                              pc.get_ic,
+                              # exact=getattr(pc, "analytic_sol", None),
                               polar=False, compare=False)
         else:
             load_times = 1

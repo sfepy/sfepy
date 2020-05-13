@@ -41,7 +41,7 @@ def define(filename_mesh=None,
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = "mesh/mesh_simp_2D_11_750.vtk"
+        filename_mesh = "../mesh/mesh_simp_2D_11_750.vtk"
 
     t0 = 0.
     t1 = .1
