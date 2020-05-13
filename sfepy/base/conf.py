@@ -20,12 +20,13 @@ import six
 # TODO this requires EBC to be specified but in some examples only
 #   EPBCs specified is valid
 _required = ['filename_mesh|filename_domain', 'field_[0-9]+|fields',
-             '(ebc_[0-9]+|ebcs|dgebc_[0-9]+|dgebcs)', 'equations',
+             '(ebc_[0-9]+|ebcs|dgebc_[0-9]+|dgebcs|dgepbc_[0-9]+|dgepbcs)',
+             'equations',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials',
              'solver_[0-9]+|solvers']
 
-_other = ['epbc_[0-9]+|epbcs', 'dgepbc_[0-9]+|dgepbcs',
+_other = ['epbc_[0-9]+|epbcs',
           'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
           'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options',
           'integral_[0-9]+|integrals']
