@@ -257,7 +257,7 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
     fig.colorbar(c3, ax=[ax1, ax2, ax3])
 
 
-def load_state_1D_vtk(name, order):
+def load_state_1D_vtk(name):
     """
     Load one VTK file containing state in time
     :param name:
@@ -269,14 +269,17 @@ def load_state_1D_vtk(name, order):
     io = MeshioLibIO(name)
     coors = io.read(Mesh()).coors[:, 0, None]
     data = io.read_data(step=0)
-    u = nm.zeros((order + 1, coors.shape[0] - 1, 1, 1))
-    for ii in range(order + 1):
+    porder = len([k for k in data.keys() if "u_modal" in k])
+
+
+    u = nm.zeros((porder, coors.shape[0] - 1, 1, 1))
+    for ii in range(porder):
         u[ii, :, 0, 0] = data['u_modal{}'.format(ii)].data
 
     return coors, u
 
 
-def load_1D_vtks(fold, name, order):
+def load_1D_vtks(fold, name):
     """
     Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
@@ -290,7 +293,6 @@ def load_1D_vtks(fold, name, order):
 
     :param fold: folder where to look for files
     :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
-    :param order: order of approximation used in u1, u2 ...u{order}
     :return: space coors, solution data
     """
 
@@ -301,13 +303,15 @@ def load_1D_vtks(fold, name, order):
         print("Trying {}".format(pjoin(fold, name) + ".vtk"))
         files = glob(pjoin(fold, name) + ".vtk")
         if files:
-            return load_state_1D_vtk(files[0], order)
+            return load_state_1D_vtk(files[0])
         else:
             print("Nothing found.")
             return
 
     io = MeshioLibIO(files[0])
     coors = io.read(Mesh()).coors[:, 0, None]
+    data = io.read_data(step=0)
+    porder = len([k for k in data.keys() if "u_modal" in k])
 
     tn = len(files)
     nts = sorted([int(f.split(".")[-2]) for f in files])
@@ -315,12 +319,12 @@ def load_1D_vtks(fold, name, order):
     digs = len(files[0].split(".")[-2])
     full_name_form = ".".join((pjoin(fold, name), ("{:0" + str(digs) + "d}"), "vtk"))
 
-    u = nm.zeros((order + 1, coors.shape[0] - 1, tn, 1))
+    u = nm.zeros((porder, coors.shape[0] - 1, tn, 1))
     for i, nt in enumerate(nts):
         io = MeshioLibIO(full_name_form.format(nt))
         # parameter "step" does nothing, but is obligatory
         data = io.read_data(step=0)
-        for ii in range(order + 1):
+        for ii in range(porder):
             u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
 
     return coors, u

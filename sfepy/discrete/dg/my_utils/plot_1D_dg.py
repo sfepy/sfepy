@@ -21,12 +21,12 @@ from sfepy.discrete.dg.my_utils.visualizer import \
     load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
 
 
-def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order,
+def load_and_plot_fun(folder, filename, t0, t1, tn,
                       ic_fun=None, exact=None,
                       compare=False, polar=False):
 
     # load time data
-    lmesh, u = load_1D_vtks(folder, filename, order=approx_order)
+    lmesh, u = load_1D_vtks(folder, filename)
     plot1D_DG_sol(lmesh, t0, t1, u, tn=tn, ic=ic_fun, exact=exact,
                   delay=100, polar=polar)
 
@@ -38,8 +38,8 @@ def load_and_plot_fun(folder, filename, t0, t1, tn, approx_order,
 
         print("Plotting files {} and {} to compare first and last".format(n_first, n_last))
 
-        coors, u_end = load_state_1D_vtk(pjoin(folder, filename + "." + n_last + ".vtk"), order=approx_order)
-        coors, u_start = load_state_1D_vtk(pjoin(folder, filename + "." + n_first + ".vtk"), order=approx_order)
+        coors, u_end = load_state_1D_vtk(pjoin(folder, filename + "." + n_last + ".vtk"))
+        coors, u_start = load_state_1D_vtk(pjoin(folder, filename + "." + n_first + ".vtk"))
 
         plot1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
 
@@ -61,6 +61,9 @@ def main(argv):
                                     + "in format <name>.[0-9]*.vtk. If not "
                                     + "provided ask for the name of the example"
                         , nargs="?")
+
+    parser.add_argument("-s", "--search", help="Search for different orders in provided folder",
+                        action="store_true", default=False)
     parser.add_argument("-t0", "--start_time", type=float, default=0,
                         help="Start time of the simulation")
     parser.add_argument("-t1", "--end_time", type=float, default=1.,
@@ -99,36 +102,40 @@ def main(argv):
             return
 
     print("Input folder found: {}".format(full_infolder_path))
-    print("Input folder contains results for orders {}"
-          .format([os.path.basename(fol) for fol in glob(pjoin(full_infolder_path, "[0-9]*"))]))
+    if args.search:
+        print("Input folder contains results for orders {}"
+              .format([os.path.basename(fol) for fol in glob(pjoin(full_infolder_path, "[0-9]*"))]))
 
-    if args.order is None:
-        order = str(input("Please provide order of approximation, default is 1: "))
-        if len(order) == 0:
-            order = 1
+        if args.order is None:
+            order = str(input("Please provide order of approximation, default is 1: "))
+            if len(order) == 0:
+                order = 1
+            else:
+                try:
+                    order = int(order)
+                except ValueError:
+                    print("Value {} for order not understood!".format(order))
+                    return
         else:
-            try:
-                order = int(order)
-            except ValueError:
-                print("Value {} for order not understood!".format(order))
-                return
+            order = args.order
+        print("Looking for results of order {}".format(order))
+        full_infolder_path = pjoin(full_infolder_path, str(order))
+        if not os.path.isdir(full_infolder_path):
+            print("Input folder with order {} not found".format(full_infolder_path))
+            return
     else:
         order = args.order
-    print("Looking for results of order {}".format(order))
-    full_infolder_path = pjoin(full_infolder_path, str(order))
-    if not os.path.isdir(full_infolder_path):
-        print("Input folder with order {} not found".format(full_infolder_path))
-        return
 
     contents = glob(pjoin(full_infolder_path, "*.vtk"))
+    print()
     tn = len(contents)  # we assume ll th contents are time step data files
     if tn == 0:
         print("Input folder {} is empty!".format(full_infolder_path))
         return
     base_name = os.path.basename(contents[0]).split(".")[0]
-    print("Found {} filse, basename is {}".format(tn, base_name))
+    print("Found {} files, basename is {}".format(tn, base_name))
     print("Plotting ...")
-    load_and_plot_fun(full_infolder_path, base_name, t0, t1, tn, order, compare=cf, polar=pol)
+    load_and_plot_fun(full_infolder_path, base_name, t0, t1, tn, compare=cf, polar=pol)
 
 
 if __name__ == '__main__':
