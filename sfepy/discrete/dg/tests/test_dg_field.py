@@ -98,7 +98,6 @@ def test_create_output1D():
 
 
 def test_get_bc_facet_values_1D():
-    # TODO write tests for this for sure
     (field, regions), mesh = prepare_field_1D(3)
     fun = 42
     coor, val = field.get_bc_facet_values(fun, regions["left"], ret_coors=True)
@@ -168,20 +167,6 @@ def test_set_dofs_2D():
     assert vals.shape == rvals_shape
 
 
-# def test_get_cell_normals_per_facet():
-#     # TODO do for whole region and at least one boundary
-#     assert False
-
-
-# def test_get_both_facet_base_vals():
-#     #  TODO test this, used in
-#     assert True
-
-
-# def test_get_both_facet_state_vals():
-#     assert False
-
-
 def test_get_facet_neighbor_idx_1d():
     (field, regions), mesh = prepare_field_1D(3)
     eq_map = Struct()
@@ -249,8 +234,3 @@ def test_get_facet_neighbor_idx_2d():
                 ]
     rnbr_idx = nm.array(rnbr_idx, dtype=nm.int32)
     nmts.assert_equal(rnbr_idx, nbr_idx)
-
-
-# def test_get_facet_base():
-#     # TODO test for simplex and tensor prod mesh
-#     assert False

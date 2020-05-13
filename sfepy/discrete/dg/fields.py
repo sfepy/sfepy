@@ -166,7 +166,7 @@ class DGField(FEField):
         #  use only Legendre for DG?
         # poly_space = PolySpace.any_from_args("legendre", self.gel,
         #                                   base="legendre", order=approx_order)
-        self._create_interpolant()
+        # self._create_interpolant()
 
         # DOFs
         self._setup_shape()
@@ -723,8 +723,8 @@ class DGField(FEField):
             else:
                 # FIXME contains quick fix flipping qp order to accomodate for
                 #  opposite facet orientation of neighbours
-                # this is partially taken care of in get_both_facet_base_vals,
-                # but needs to be repeated here
+                #  this is partially taken care of in get_both_facet_base_vals,
+                #  but needs to be repeated here
                 outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = ebc_vals[:, ::-1]
 
         # flip outer_facet_vals moved to get_both_facet_base_vals
@@ -1321,7 +1321,7 @@ class DGField(FEField):
         nodal_vals
         """
         if ref_nodes is None:
-            # TODO poly_space should provide special nodes
+            # poly_space could provide special nodes
             ref_nodes = self.get_qp('v', Integral("I", order=self.approx_order + 1)).vals
             # ref_nodes = nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64)
         base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]
@@ -1372,7 +1372,6 @@ class DGField(FEField):
         out : dict
             The output dictionary.
         """
-        # TODO revise output dictionary structure and naming
         res = {}
         udofs = self.unravel_sol(dofs)
 

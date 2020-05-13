@@ -352,7 +352,6 @@ class TestNonlinScalarDotGradTerm:
     def test_function_explicit_1D(self):
         ts = DGTermTestScope(dim=1, approx_order=3)
 
-        # TODO initialize term properly
         term = NonlinearScalarDotGradTerm("adv_stiff(f, df u, v)",
                                        "nonlin.f, nonlin.df, u[-1], v",
                                           ts.integral, ts.regions["omega"],

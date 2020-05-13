@@ -511,7 +511,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 dmodeds = dmodeds + fa * tmp
                 return 2 ** di * dmodeds
         elif len(idx) == 3:  # 3D
-            # TODO test
+            #  untested!
             r = coors[..., 0]
             s = coors[..., 1]
             t = coors[..., 2]
