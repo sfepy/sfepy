@@ -1,19 +1,27 @@
-"""
+r"""
 Discontinous Galekrin method specific terms
 
 Note
 ----
+
 In einsum calls the following convention is used:
-    i represents iterating over all cells of a region;
-    n represents iterating over selected cells of a region, for example
-        over cells on boundary;
-    b represents iterating over basis functions of state variable;
-    d represents iterating over basis functions of test variable;
-    k,l,m represent iterating over geometric dimensions, for example
-        coordinates of velocity or facet normal vector
-        or rows and columns of diffusion tensor;
-    q represents iterating over quadrature points;
-    f represents iterating over facets of cell;
+
+ `i` represents iterating over all cells of a region;
+
+ `n` represents iterating over selected cells of a region, for example
+ over cells on boundary;
+
+ `b` represents iterating over basis functions of state variable;
+
+ `d` represents iterating over basis functions of test variable;
+
+ `k`, `l` , `m` represent iterating over geometric dimensions, for example
+ coordinates of velocity or facet normal vector or rows and columns of diffusion
+ tensor;
+
+ `q` represents iterating over quadrature points;
+
+ `f` represents iterating over facets of cell;
 
 """
 import numpy as nm
@@ -87,12 +95,12 @@ class AdvectionDGFluxTerm(DGTerm):
     :Definition:
 
     .. math::
-         \int_{\partial{T_K}} \ul{n} \cdot f^{*} (p_{in}, p_{out})q
+         \int_{\partial{T_K}} \ul{n} \cdot \ul{f}^{*} (p_{in}, p_{out})q
 
     where
 
     .. math::
-        f^{*}(p_{in}, p_{out}) =  \ul{a}  \frac{p_{in} + p_{out}}{2}  +
+        \ul{f}^{*}(p_{in}, p_{out}) =  \ul{a}  \frac{p_{in} + p_{out}}{2}  +
         (1 - \alpha) \ul{n} C \frac{ p_{in} - p_{out}}{2},
 
     :math:`\alpha \in [0, 1]`; :math:`\alpha = 0` for upwind scheme,
@@ -230,7 +238,40 @@ class AdvectionDGFluxTerm(DGTerm):
 
 class DiffusionDGFluxTerm(DGTerm):
     r"""
-    Basic diffusion term for scalar quantity.
+    Basic DG diffusion flux term for scalar quantity.
+
+
+     :Definition:
+
+    .. math::
+         \int_{\partial{T_K}} D \langle \nabla p \rangle [q] \mbox{ , }
+         \int_{\partial{T_K}} D \langle \nabla q \rangle [p]
+
+    where
+
+    .. math::
+        \langle \nabla \phi \rangle = \frac{\nabla\phi_{in} + \nabla\phi_{out}}{2}
+
+    .. math::
+        [\phi] = \phi_{in} - \phi_{out}
+    :math:
+
+
+    The :math:`p_{in}` resp. :math:`p_{out}`
+    is solution on the boundary of the element
+    provided by element itself resp. its neighbour.
+
+    :Arguments 1:
+        - material    : :math:`D`
+        - state       : :math:`p`
+        - virtual     : :math:`q`
+
+    :Arguments 2:
+        - material : :math:`D`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+
     """
     name = "dw_dg_diffusion_flux"
     arg_types = (('material_diffusion_tensor', 'state', 'virtual'),  # left
@@ -390,13 +431,29 @@ class DiffusionDGFluxTerm(DGTerm):
 
 class DiffusionInteriorPenaltyTerm(DGTerm):
     r"""
-    Penalty term used to counteract and discontinuity arising when
+    Penalty term used to counteract discontinuity arising when
     modeling diffusion using Discontinuous Galerkin schemes.
 
      :Definition:
 
     .. math::
-         \int_{\partial{T_K}} \nu C_w \frac{Ord^2}{d(\partial{T_K})}[p][q]
+         \int_{\partial{T_K}} \bar{D} C_w \frac{Ord^2}{d(\partial{T_K})}[p][q]
+
+    where
+
+    .. math::
+        [\phi] = \phi_{in} - \phi_{out}
+    :math:
+
+    the :math:`p_{in}` resp. :math:`p_{out}`
+    is solution on the boundary of the element
+    provided by element itself resp. its neighbour.
+
+    :Arguments:
+        - material    : :math:`D`
+        - material    : :math:`C_w`
+        - state       : :math:`p`
+        - virtual     : :math:`q`
     """
     name = "dw_dg_interior_penalty"
     modes = ("weak",)
@@ -497,8 +554,7 @@ class NonlinearHyperbolicDGFluxTerm(DGTerm):
     where
 
     .. math::
-
-        f^{*}(p_{in}, p_{out}) =  \frac{\ul{f}(p_{in})
+        \ul{f}^{*}(p_{in}, p_{out}) =  \frac{\ul{f}(p_{in})
             + \ul{f}(p_{out})}{2}  +
         (1 - \alpha) \ul{n} C \frac{ p_{in} - p_{out}}{2},
 
