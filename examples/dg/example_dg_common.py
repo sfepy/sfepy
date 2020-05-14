@@ -168,7 +168,7 @@ def get_cfl_diffusion(max_diffusion, dx, approx_order, CFL,
     return dt
 
 
-def get_1Dmesh_hook(XS, XE, n_nod):
+def get_gen_1D_mesh_hook(XS, XE, n_nod):
     def mesh_hook(mesh, mode):
         """
         Generate the 1D mesh.

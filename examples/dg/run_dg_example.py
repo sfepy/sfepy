@@ -51,13 +51,9 @@ def create_argument_parser():
     parser.add_argument("-v", "--verbose", help="To be verbose or",
                         default=False, action='store_true', dest='verbose',)
 
-    # parser.add_argument("--noscreenlog", help="Do not print log to screen",
-    #                     default=False, action='store_true',
-    #                     dest='no_output_screen', )
-    #
-    # parser.add_argument('--logfile', type=str,
-    #                     action='store', dest='output_log_name',
-    #                     default=None, help="Path to log output file.")
+    parser.add_argument("--noscreenlog", help="Do not print log to screen",
+                        default=False, action='store_true',
+                        dest='no_output_screen', )
 
 
     parser.add_argument('--order', metavar="int" , default=1,
@@ -113,26 +109,26 @@ def main(argv):
     parser = create_argument_parser()
     args = parser.parse_args(argv)
 
-    # configure_output({'output_screen': not args.no_output_screen,
-    #                   'output_log_name': "last_run.txt"})
-
     conf_file_name = args.problem_file
 
-    output("Processing conf file {}".format(conf_file_name))
     pc = get_parametrized_conf(conf_file_name, args)
 
-    output("----------------Running--------------------------")
-    output("{}: {}".format(pc.example_name, time.asctime()))
-
     if args.output_dir is None:
-        output_folder = pjoin(outputs_folder, "output")
+        output_folder = pjoin(outputs_folder, "output", pc.example_name)
     elif "{}" in args.output_dir:
         output_folder = args.output_dir.format(pc.example_name)
     else:
         output_folder = args.output_dir
 
-    output_name_trunk_folder = pjoin(output_folder, pc.example_name,
-                                     str(pc.approx_order) + "/")
+    output_name_trunk_folder = pjoin(output_folder, str(pc.approx_order) + "/")
+
+    configure_output({'output_screen': not args.no_output_screen,
+                      'output_log_name': pjoin(output_name_trunk_folder,
+                                               "last_run.txt")})
+
+    output("Processing conf file {}".format(conf_file_name))
+    output("----------------Running--------------------------")
+    output("{}: {}".format(pc.example_name, time.asctime()))
 
     output_name_trunk_name = pc.example_name + str(pc.approx_order)
     output_name_trunk = pjoin(output_name_trunk_folder, output_name_trunk_name)

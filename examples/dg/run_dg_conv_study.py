@@ -172,12 +172,13 @@ def main(argv):
                 ), mod, verbose=args.verbose)
             conf.options.absolute_mesh_path = True
 
-            base_output_folder = Path(args.output_dir)
             if args.output_dir is None:
                 base_output_folder = Path(outputs_folder) / "conv_tests_out" /\
                                            conf.example_name
             elif "{}" in args.output_dir:
                 base_output_folder = Path(args.output_dir.format(conf.example_name))
+            else:
+                base_output_folder = Path(args.output_dir)
 
             output_folder = base_output_folder / ("h" + str(refine))
             output_folder = output_folder / ("o" + str(order))

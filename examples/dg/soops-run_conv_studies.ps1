@@ -1,5 +1,8 @@
 $env:PYTHONPATH = "C:\Users\tomas\PycharmProjects\Numerics\sfepy\;C:\Users\tomas\PycharmProjects\Numerics\meshio"
 
+# $env:PYTHONPATH = "C:\Users\tomas\PycharmProjects\Numerics\meshio"
+
+
 $mt2D01_4="'mesh/mesh_tensr_2D_01_4.vtk'"
 $mt2D11_4="'mesh/mesh_tensr_2D_11_4.vtk'"
 
