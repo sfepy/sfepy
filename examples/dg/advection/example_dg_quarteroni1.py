@@ -41,7 +41,7 @@ def define(filename_mesh=None,
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = "../mesh/mesh_tens_2D_01_20.vtk"
+        filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
     velo = [1., 1.]
 

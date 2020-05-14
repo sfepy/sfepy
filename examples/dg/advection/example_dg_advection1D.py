@@ -40,7 +40,7 @@ def define(filename_mesh=None,
     dim = 1
 
     if filename_mesh is None:
-        filename_mesh = get_1Dmesh_hook(0, 1, 100)
+        filename_mesh = get_gen_1D_mesh_hook(0, 1, 100)
 
     materials = {
         'a': ({'val': [1.0], '.flux': adflux},),
@@ -104,7 +104,8 @@ def define(filename_mesh=None,
         'save_times'      : 100,
         'active_only'     : False,
         'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt),
-        'output_format'   : "vtk"
+        'output_format'   : "vtk",
+        'verbose' : False
     }
 
 

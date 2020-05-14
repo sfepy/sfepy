@@ -36,7 +36,7 @@ def define(filename_mesh=None,
     mend = 2 * nm.pi
 
     if filename_mesh is None:
-        filename_mesh = get_1Dmesh_hook(mstart, mend, 80)
+        filename_mesh = get_gen_1D_mesh_hook(mstart, mend, 80)
 
 
     materials = {

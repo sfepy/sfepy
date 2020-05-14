@@ -7,6 +7,9 @@ Charles University. p. 21 eq. (1.39)
 
 
 from examples.dg.example_dg_common import *
+from sfepy import data_dir
+
+
 
 mesh_center = (0, 0)
 mesh_size = (2, 2)
@@ -41,7 +44,7 @@ def define(filename_mesh=None,
     dim = 2
 
     if filename_mesh is None:
-        filename_mesh = "../mesh/mesh_simp_2D_11_750.vtk"
+        filename_mesh = data_dir + "/meshes/2d/square_tri2.mesh"
 
     t0 = 0.
     t1 = .1

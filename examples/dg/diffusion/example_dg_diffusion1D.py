@@ -34,7 +34,7 @@ def define(filename_mesh=None,
     dim = 1
 
     if filename_mesh is None:
-        filename_mesh = get_1Dmesh_hook(0, 1, 80)
+        filename_mesh = get_gen_1D_mesh_hook(0, 1, 80)
 
     mstart = 0
     mend = 1
