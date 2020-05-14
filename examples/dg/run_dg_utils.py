@@ -20,8 +20,8 @@ from examples.dg.example_dg_common import diffusion_schemes_explicit
 
 outputs_folder = "outputs"
 
-configure_output({'output_screen': True,
-                  'output_log_name': pjoin(outputs_folder, "last_run.txt")})
+# configure_output({'output_screen': True,
+#                   'output_log_name': pjoin(outputs_folder, "last_run.txt")})
 
 param_names = ["adflux", "limit", "cw", "diffcoef", "diffscheme", "cfl", "dt"]
 

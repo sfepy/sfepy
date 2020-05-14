@@ -5,7 +5,7 @@ from os.path import join as pjoin
 # sfepy imports
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.discrete.fem.meshio import UserMeshIO
-from sfepy.base.base import Struct
+from sfepy.base.base import Struct, configure_output, output
 from sfepy.base.base import IndexedStruct
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
@@ -15,12 +15,11 @@ from sfepy.solvers.nls import Newton
 from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
 
 from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
-from sfepy.discrete.fem.meshio import VTKMeshIO
 from sfepy.base.ioutils import ensure_path
 
-# local imports
-from sfepy.discrete.dg.dg_terms import AdvectionDGFluxTerm, NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm
-from sfepy.discrete.dg.dg_tssolver import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
+# DG imports
+from sfepy.terms.terms_dg import AdvectionDGFluxTerm
+from sfepy.solvers.ts_dg_solvers import TVDRK3StepSolver, RK4StepSolver, EulerStepSolver
 from sfepy.discrete.dg.fields import DGField
 from sfepy.discrete.dg.limiters import IdentityLimiter, MomentLimiter1D
 
@@ -29,18 +28,22 @@ from sfepy.discrete.dg.my_utils.inits_consts import \
 from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
 from run_dg_utils import clear_folder
 
-# vvvvvvvvvvvvvvvv #
+# vvvvvvvvvvvvvvvv#
 approx_order = 1
-# ^^^^^^^^^^^^^^^^ #
+# ^^^^^^^^^^^^^^^^#
+# Setup  names
+outputs_folder = "../outputs"
 
-# Setup output names
 domain_name = "domain_1D"
-problem_name = "iburgess_1D"
-output_folder = pjoin("output", problem_name, str(approx_order))
+problem_name = "iadv_1D"
+output_folder = pjoin(outputs_folder, problem_name, str(approx_order))
 output_format = "vtk"
-mesh_output_folder = "output/mesh"
+mesh_output_folder = "../mesh"
 save_timestn = 100
-clear_folder(pjoin(output_folder, "*." + output_format))
+clear_folder(pjoin(output_folder, "*" + output_format))
+configure_output({'output_screen': True,
+                  'output_log_name':
+                      pjoin(output_folder, f"last_run_{problem_name}_{approx_order}.txt")})
 
 # ------------
 # | Get mesh |
@@ -78,46 +81,17 @@ v = FieldVariable('v', 'test', field, primary_var_name='u')
 MassT = DotProductVolumeTerm("adv_vol(v, u)", "v, u",
                              integral, omega, u=u, v=v)
 
-velo = nm.array(1.0)
-
-
-def adv_fun(u):
-    vu = velo.T * u[..., None]
-    return vu
-
-
-def adv_fun_d(u):
-    v1 = velo.T * nm.ones(u.shape + (1,))
-    return v1
-
-
-burg_velo = velo.T / nm.linalg.norm(velo)
-
-
-def burg_fun(u):
-    vu = burg_velo * u[..., None] ** 2
-    return vu
-
-
-def burg_fun_d(u):
-    v1 = 2 * burg_velo * u[..., None]
-    return v1
-
-
+velo = 1.0
 a = Material('a', val=[velo])
-# nonlin = Material('nonlin', values={'.fun' : adv_fun, '.dfun' : adv_fun_d})
-nonlin = Material('nonlin', values={'.fun': burg_fun, '.dfun': burg_fun_d})
-StiffT = NonlinearScalarDotGradTerm("burgess_stiff(f, df, u, v)", "nonlin.fun , nonlin.dfun, u[-1], v",
-                                    integral, omega, u=u, v=v, nonlin=nonlin)
+StiffT = ScalarDotMGradScalarTerm("adv_stiff(a.val, u, v)", "a.val, u[-1], v",
+                                  integral, omega,
+                                  u=u, v=v, a=a)
 
 alpha = Material('alpha', val=[.0])
-# FluxT = AdvectDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
-#                          integral, omega, u=u, v=v, a=a, alpha=alpha)
+FluxT = AdvectionDGFluxTerm("adv_lf_flux(a.val, v, u)", "a.val, v,  u[-1]",
+                            integral, omega, u=u, v=v, a=a, alpha=alpha)
 
-FluxT = NonlinearHyperbolicDGFluxTerm("burgess_lf_flux(f, df, u, v)", "nonlin.fun , nonlin.dfun, v, u[-1]",
-                                      integral, omega, u=u, v=v, nonlin=nonlin)
-
-eq = Equation('balance', MassT + StiffT - FluxT)
+eq = Equation('balance', MassT - StiffT + FluxT)
 eqs = Equations([eq])
 
 # ------------------------------
@@ -149,15 +123,15 @@ pb.set_ics(Conditions([ics]))
 # ------------------
 # | Create limiter |
 # ------------------
-limiter = MomentLimiter1D
+limiter = IdentityLimiter
 
 # ---------------------------
 # | Set time discretization |
 # ---------------------------
-CFL = .2
+CFL = .1
 max_velo = nm.max(nm.abs(velo))
 t0 = 0
-t1 = .2
+t1 = 1
 dx = nm.min(mesh.cmesh.get_volumes(1))
 dt = dx / max_velo * CFL / (2 * approx_order + 1)
 tn = int(nm.ceil((t1 - t0) / dt))
@@ -173,28 +147,30 @@ nls = Newton({'is_linear': True}, lin_solver=ls, status=nls_status)
 tss_conf = {'t0'     : t0,
             't1'     : t1,
             'n_step' : tn,
-            "limiter": limiter}
+            'limiters': {"dgfu": limiter}}
 
-tss = TVDRK3StepSolver(tss_conf,
-                       nls=nls, context=pb, verbose=True)
+tss = EulerStepSolver(tss_conf,
+                      nls=nls, context=pb, verbose=True)
 
 # ---------
 # | Solve |
 # ---------
-print("Solving equation \n\n\t\t u_t - div(au)) = 0\n")
-print("With IC: {}".format(ic_fun.name))
-# print("and EBCs: {}".format(pb.ebcs.names))
-# print("and EPBCS: {}".format(pb.epbcs.names))
-print("-------------------------------------")
-print("Approximation order is {}".format(approx_order))
-print("Space divided into {0} cells, {1} steps, step size is {2}".format(mesh.n_el, len(mesh.coors), dx))
-print("Time divided into {0} nodes, {1} steps, step size is {2}".format(tn - 1, tn, dt))
-print("CFL coefficient was {0} and order correction {1}".format(CFL, 1 / (2 * approx_order + 1)))
-print("Courant number c = max(abs(u)) * dt/dx = {0}".format(max_velo * dtdx))
-print("------------------------------------------")
-print("Time stepping solver is {}".format(tss.name))
-print("Limiter used: {}".format(limiter.name))
-print("======================================")
+output("Solved equation \n\n\t\t u_t - div(f(u))) = 0\n")
+output(f"With IC: {ic_fun.name}")
+# output("and EBCs: {}".format(pb.ebcs.names))
+# output("and EPBCS: {}".format(pb.epbcs.names))
+output("-------------------------------------")
+output(f"Approximation order is {approx_order}")
+output(f"Space divided into {mesh.n_el} cells, " +
+      f"{len(mesh.coors)} steps, step size is {dx}")
+output(f"Time divided into {tn - 1} nodes, {tn} steps, step size is {dt}")
+output(f"CFL coefficient was {CFL} and " +
+      f"order correction {1 / (2 * approx_order + 1)}")
+output(f"Courant number c = max(abs(u)) * dt/dx = {max_velo * dtdx}")
+output("------------------------------------------")
+output(f"Time stepping solver is {tss.name}")
+output(f"Limiter used: {limiter.name}")
+output("======================================")
 
 pb.set_solver(tss)
 state_end = pb.solve()
@@ -202,29 +178,6 @@ state_end = pb.solve()
 # ----------
 # | Plot 1D|
 # ----------
-# lmesh, u = load_1D_vtks("./output/adv_1D", "domain_1D", order=approx_order)
-# plot1D_DG_sol(lmesh, t0, t1, u, tn=30, ic=ic_wrap,
-#               delay=100, polar=False)
-#
-# from sfepy.discrete.dg.dg_field import get_unraveler, get_raveler
-# from sfepy.discrete.dg.my_utils.visualizer import \
-#     load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
-# coors, u_end = load_state_1D_vtk("output/adv_1D/domain_1D_end.vtk", order=approx_order)
-#
-#
-# u_start = get_unraveler(field.n_el_nod, field.n_cell)(state0.vec).swapaxes(0, 1)[..., None]
-# # u_end = get_unraveler(field.n_el_nod, field.n_cell)(state_end.vec).swapaxes(0, 1)[..., None]
-#
-#
-# plot1D_legendre_dofs(coors, [u_start.swapaxes(0, 1)[:, :, 0], u_end.swapaxes(0, 1)[:, :, 0]])
-#
-# plt.figure("reconstructed")
-# ww_s, xx = reconstruct_legendre_dofs(coors, None, u_end)
-# ww_e, _ = reconstruct_legendre_dofs(coors, None, u_start)
-#
-# plt.plot(xx, ww_s[:, 0])
-# plt.plot(xx, ww_e[:, 0])
-# plt.show()
 from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
 
-load_and_plot_fun(output_folder, domain_name, t0, t1, min(tn, save_timestn), approx_order, ic_fun)
+load_and_plot_fun(output_folder, domain_name, t0, t1, min(tn, save_timestn), ic_fun)
