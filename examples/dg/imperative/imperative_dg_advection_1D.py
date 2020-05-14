@@ -23,9 +23,9 @@ from sfepy.solvers.ts_dg_solvers import TVDRK3StepSolver, RK4StepSolver, EulerSt
 from sfepy.discrete.dg.fields import DGField
 from sfepy.discrete.dg.limiters import IdentityLimiter, MomentLimiter1D
 
-from sfepy.discrete.dg.my_utils.inits_consts import \
+from sfepy.discrete.dg.utils.inits_consts import \
     left_par_q, gsmooth, const_u, ghump, superic
-from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
+from sfepy.discrete.dg.utils.visualizer import load_1D_vtks, plot1D_DG_sol
 from run_dg_utils import clear_folder
 
 # vvvvvvvvvvvvvvvv#
@@ -178,6 +178,6 @@ output("======================================")
 # ----------
 # | Plot 1D|
 # ----------
-from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
+from sfepy.discrete.dg.utils.plot_1D_dg import load_and_plot_fun
 
 load_and_plot_fun(output_folder, domain_name, t0, t1, min(tn, save_timestn), ic_fun)

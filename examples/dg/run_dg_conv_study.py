@@ -28,7 +28,7 @@ from sfepy.discrete.fem.utils import refine_mesh as refine_mesh
 from sfepy.discrete.fem.meshio import GmshIO
 
 # DG imports
-from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
+from sfepy.discrete.dg.utils.visualizer import reconstruct_legendre_dofs
 
 from examples.dg.run_dg_utils import outputs_folder,\
     plot_conv_results, build_attrs_string, output, compute_erros, configure_output, \

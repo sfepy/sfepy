@@ -12,7 +12,7 @@ from sfepy.base.base import (get_default, output, configure_output, assert_,
                              Struct, basestr, IndexedStruct)
 
 # import various ICs
-from sfepy.discrete.dg.my_utils.inits_consts import ghump, gsmooth, \
+from sfepy.discrete.dg.utils.inits_consts import ghump, gsmooth, \
     left_par_q, left_cos, superic, three_step_u, sawtooth_q, const_q, quadr_cub,\
     four_step_u, cos_const_q, quadr_cub
 

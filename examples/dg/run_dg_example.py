@@ -18,7 +18,7 @@ from sfepy.base.ioutils import ensure_path
 from sfepy.base.base import (get_default, output, assert_,
                              Struct, basestr, IndexedStruct)
 
-from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
+from sfepy.discrete.dg.utils.plot_1D_dg import load_and_plot_fun
 from examples.dg.run_dg_utils import clear_folder, add_dg_arguments
 
 from examples.dg.run_dg_utils import outputs_folder, \

@@ -16,8 +16,8 @@ import os
 import sys
 from glob import glob
 
-from sfepy.discrete.dg.my_utils.visualizer import load_1D_vtks, plot1D_DG_sol
-from sfepy.discrete.dg.my_utils.visualizer import \
+from sfepy.discrete.dg.utils.visualizer import load_1D_vtks, plot1D_DG_sol
+from sfepy.discrete.dg.utils.visualizer import \
     load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
 
 

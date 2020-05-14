@@ -1155,7 +1155,7 @@ class DGField(FEField):
             vals = (rhs_vec / lhs_diag)
 
             # plot for 1D
-            # from my_utils.visualizer import plot1D_legendre_dofs, reconstruct
+            # from utils.visualizer import plot1D_legendre_dofs, reconstruct
             # _legendre_dofs
             # import matplotlib.pyplot as plt
             # plot1D_legendre_dofs(self.domain.mesh.coors, (vals,), fun)
