@@ -159,8 +159,7 @@ def main():
 
     conf = ProblemConf.from_file_and_options(filename_in, options,
                                              required, other,
-                                             define_args=options.define_args,
-                                             verbose=False)
+                                             define_args=options.define_args)
 
     opts = conf.options
     output_prefix = opts.get('output_prefix', 'sfepy:')
