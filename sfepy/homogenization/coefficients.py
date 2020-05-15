@@ -162,7 +162,7 @@ class Coefficients(Struct):
         toremove = []
         adict_complex = {}
         for key, val in ordered_iteritems(adict):
-            if type(val) is nm.ndarray and \
+            if hasattr(val, 'dtype') and \
                     nm.issubdtype(val.dtype, nm.complexfloating):
                 adict_complex[key + '_real'] = val.real
                 adict_complex[key + '_imag'] = val.imag
