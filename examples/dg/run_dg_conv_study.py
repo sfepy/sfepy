@@ -30,7 +30,7 @@ from sfepy.discrete.fem.meshio import GmshIO
 # DG imports
 from sfepy.discrete.dg.my_utils.visualizer import reconstruct_legendre_dofs
 
-from examples.dg.run_dg_utils import  calculate_num_order, outputs_folder,\
+from examples.dg.run_dg_utils import outputs_folder,\
     plot_conv_results, build_attrs_string, output, compute_erros, configure_output, \
     add_dg_arguments
 
@@ -278,11 +278,43 @@ def create_problem(conf):
 
 
 def run_calc(pb, output_format):
-    tt = time.clock()
+    tt = time.process_time()
     pb.sol = pb.solve()
-    elapsed = time.clock() - tt
+    elapsed = time.process_time() - tt
     pb.save_state(output_format.replace("*", "0"), state=pb.sol)
     return pb, elapsed
+
+
+def calculate_num_order(err_df):
+    """
+    Uses diff_l2 and n_rows columns of the dataframe to calculate num_order,
+    splits dataframe on order clumn
+    :param err_df: dataframe, columns: ["n_rows", "order", diff_l2]
+    :return:
+    """
+    res_df = pd.DataFrame()
+    for order in err_df["order"].unique():
+        order_err_df = err_df[err_df["order"] == order].sort_values("n_cells")
+
+        num_orders = [nm.NAN]
+
+        last_err = order_err_df.iloc[0]["diff_l2"]
+        last_h = order_err_df.iloc[0]["h"]
+        #         print(order_err_df.iloc[1:, :])
+        for i, row in order_err_df.iloc[1:, :].iterrows():
+            num_order = nm.log(row["diff_l2"] / last_err) \
+                        / nm.log(row["h"] / last_h)
+            #             print(row["err_l2"] / last_err)
+            #             print(row["n_rows] / last_h)
+            #             print("-------------------")
+
+            last_err = row["diff_l2"]
+            last_h = row["h"]
+            num_orders.append(num_order)
+
+        order_err_df["num_order"] = num_orders
+        res_df = res_df.append(order_err_df)
+    return res_df
 
 
 def plot_1D_snr(conf, pb, ana_qp, num_qp, io, order, orders, ir, sol_fig, axs):

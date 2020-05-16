@@ -4,18 +4,14 @@ Script with utility functions for running DG examples and convergence studies
 from glob import glob
 import os
 
-import pandas as pd
 
 from matplotlib import pyplot as plt
 import numpy as nm
-from os.path import join as pjoin
 
 
 from sfepy.discrete import Integral, Material, Integrals
 from sfepy.discrete.common.mappings import get_jacobian
-from sfepy.base.base import (get_default, output, configure_output, assert_,
-                             Struct, basestr, IndexedStruct)
-
+from sfepy.base.base import output, configure_output
 from examples.dg.example_dg_common import diffusion_schemes_explicit
 
 outputs_folder = "outputs"
@@ -135,38 +131,6 @@ def compute_erros(analytic_fun, pb):
     ana_l2 = nm.sqrt(((ana_qp ** 2) * det).sum())
     rel_l2 = diff_l2 / ana_l2
     return ana_l2, ana_qp, diff_l2, rel_l2, num_qp
-
-
-def calculate_num_order(err_df):
-    """
-    Uses diff_l2 and n_rows columns of the dataframe to calculate num_order,
-    splits dataframe on order clumn
-    :param err_df: dataframe, columns: ["n_rows", "order", diff_l2]
-    :return:
-    """
-    res_df = pd.DataFrame()
-    for order in err_df["order"].unique():
-        order_err_df = err_df[err_df["order"] == order].sort_values("n_cells")
-
-        num_orders = [nm.NAN]
-
-        last_err = order_err_df.iloc[0]["diff_l2"]
-        last_h = order_err_df.iloc[0]["h"]
-        #         print(order_err_df.iloc[1:, :])
-        for i, row in order_err_df.iloc[1:, :].iterrows():
-            num_order = nm.log(row["diff_l2"] / last_err) \
-                        / nm.log(row["h"] / last_h)
-            #             print(row["err_l2"] / last_err)
-            #             print(row["n_rows] / last_h)
-            #             print("-------------------")
-
-            last_err = row["diff_l2"]
-            last_h = row["h"]
-            num_orders.append(num_order)
-
-        order_err_df["num_order"] = num_orders
-        res_df = res_df.append(order_err_df)
-    return res_df
 
 
 def build_attrs_string(conf, attrs=("Cw", "diffusion_coef", "dt", "CFL"),

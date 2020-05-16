@@ -21,7 +21,7 @@ from sfepy.base.base import (get_default, output, assert_,
 from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
 from examples.dg.run_dg_utils import clear_folder, add_dg_arguments
 
-from examples.dg.run_dg_utils import calculate_num_order, outputs_folder, \
+from examples.dg.run_dg_utils import outputs_folder, \
     plot_conv_results, build_attrs_string, output, compute_erros, configure_output
 
 def create_argument_parser():
@@ -149,9 +149,9 @@ def main(argv):
                                  save_regions_as_groups=False,
                                  save_field_meshes=False,
                                  solve_not=False), "sfepy")
-    tt = time.clock()
+    tt = time.process_time()
     sa()
-    elapsed = time.clock() - tt
+    elapsed = time.process_time() - tt
     output("{}: {}".format(pc.example_name, time.asctime()))
     output("------------------Finished------------------\n\n")
 
