@@ -63,10 +63,10 @@ def define(filename_mesh=None,
         'v': ('test field', 'f', 'u'),
     }
 
-    # dgebcs = {
-    #     'u_left': ('left', {'u.all': 0}),
-    #     'u_righ': ('right', {'u.all': 0}),
-    # }
+    dgebcs = {
+        'u_left': ('left', {'u.all': 0}),
+        'u_righ': ('right', {'u.all': 0}),
+    }
 
     dgepbc_1 = {
         'name'  : 'u_rl',
