@@ -1926,11 +1926,19 @@ class FieldVariable(Variable):
 
 
 class DGFieldVariable(FieldVariable):
+    """
+    Fieald variable specificaly intended for use with DGFields, bypasses
+    application of EBC and EPBC as this is done in DGField.
+
+    Is instance checked in create_adof_conns.
+    """
 
     def __init__(self, name, kind, field, order=None, primary_var_name=None,
                  special=None, flags=None, history=None, **kwargs):
-        FieldVariable.__init__(self, name, kind, field, order=order, primary_var_name=primary_var_name,
-                 special=special, flags=flags, history=history, **kwargs)
+        FieldVariable.__init__(self, name, kind, field, order=order,
+                               primary_var_name=primary_var_name,
+                               special=special, flags=flags,
+                               history=history, **kwargs)
 
         from sfepy.discrete.dg.fields import DGField
         if isinstance(field, DGField):
@@ -1963,11 +1971,12 @@ class DGFieldVariable(FieldVariable):
         eq_map = self.eq_map
         r_vec = r_vec[r_offset:r_offset+eq_map.n_eq]
 
-        # FIXME overide to hotfix second application of EBCs, will we ever need it?
+        # overide to hotfix second application of EBCs
         # # EBC.
         # vec[eq_map.eq_ebc] = get_default(force_value, eq_map.val_ebc)
 
-        # Reduced vector values.
+        # Reduced vector values, for DG this is full vector as eq_map.eq
+        # contains all dofs, cf. create_adof_conns
         vec[eq_map.eqi] = r_vec
 
         # EPBC.

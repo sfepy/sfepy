@@ -273,7 +273,7 @@ class DGField(FEField):
     def get_coor(self, nods=None):
         """
         Returns coors for matching nodes
-        # TODO revise DG_EPBC and EPBC matching
+        # TODO revise DG_EPBC and EPBC matching?
         :param nods: if None use all nodes
         :return: coors on surface
         """
@@ -575,7 +575,7 @@ class DGField(FEField):
 
     def _set_fem_periodic_facet_neighbours(self, facet_neighbours, eq_map):
         """
-        TODO maybe remove after DG EPBC revision in self.get_coor
+        maybe remove after DG EPBC revision in self.get_coor
         Parameters
         ----------
         facet_neighbours : ndarray
@@ -711,7 +711,7 @@ class DGField(FEField):
 
         boundary_cells = nm.array(nm.where(per_facet_neighbours[:, :, 0] < 0)).T
         outer_facet_vals[boundary_cells[:, 0], boundary_cells[:, 1]] = 0.0
-        # TODO detect and print boundary cells without defined BCs
+        # TODO detect and print boundary cells without defined BCs?
         for ebc, ebc_vals in zip(state.eq_map.dg_ebc.get(diff, []),
                                  state.eq_map.dg_ebc_val.get(diff, [])):
             if unreduce_nod:
@@ -721,10 +721,8 @@ class DGField(FEField):
                     nm.einsum("id,id...->id...",
                               ebc_vals, inner_base_vals[0, :, ebc[:, 1]])
             else:
-                # FIXME contains quick fix flipping qp order to accomodate for
+                #  fix flipping qp order to accomodate for
                 #  opposite facet orientation of neighbours
-                #  this is partially taken care of in get_both_facet_base_vals,
-                #  but needs to be repeated here
                 outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = ebc_vals[:, ::-1]
 
         # flip outer_facet_vals moved to get_both_facet_base_vals
@@ -784,7 +782,7 @@ class DGField(FEField):
         else:
             outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-2, -3)
 
-        # FIXME quick fix to flip facet QPs for right integration order
+        # fix to flip facet QPs for right integration order
         return inner_facet_base_vals, outer_facet_base_vals[..., ::-1], whs
 
     def clear_normals_cache(self, region=None):

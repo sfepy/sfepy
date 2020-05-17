@@ -66,7 +66,7 @@ def main():
         print()
 
     np.savetxt(indir("legendre2D_simplex_expos.txt"), exponentM, fmt="%d")
-    # TODO are coefs always integers?
+    # are coefs always integers?
     np.savetxt(indir("legendre2D_simplex_coefs.txt"), coefM, fmt="%d")
 
 

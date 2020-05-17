@@ -86,7 +86,7 @@ def get_cfl_setup(CFL=None, dt=None):
         approx_order = first_field.approx_order
         mats = problem.create_materials(['a', 'D'])
         try:
-            # TODO make this more general,
+            # make this more general?
             #  maybe require material name in parameter
             velo = problem.conf_materials['material_a__0'].values["val"]
             max_velo = nm.max(nm.linalg.norm(velo))
@@ -94,7 +94,7 @@ def get_cfl_setup(CFL=None, dt=None):
             max_velo = 1
 
         try:
-            # TODO make this more general,
+            # make this more general?
             #  maybe require material name in parameter
             diffusion = problem.conf_materials['material_D__0'].values["val"]
             max_diffusion = nm.max(nm.linalg.norm(diffusion))

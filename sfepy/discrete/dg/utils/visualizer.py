@@ -16,7 +16,7 @@ from matplotlib import colors
 from sfepy.discrete.fem.meshio import MeshioLibIO
 from sfepy.discrete.fem.mesh import Mesh
 
-# TODO refactor this darn thing so it is more flexible
+# This would still use some refactoring so it is more flexible
 __author__ = 'tomas_zitka'
 
 ffmpeg_path = ''  # for saving animations
@@ -494,16 +494,15 @@ def plot1D_legendre_dofs(coors, dofss, fun=None):
 
 def reconstruct_legendre_dofs(coors, tn, u):
     """
-    Creates solution and coordinates vector which when plotted by as
+    Creates solution and coordinates vector which when plotted as
 
         plot(xx, ww)
 
     represent solution reconstructed from DOFs in Legendre poly space at
-    cell borders
+    cell borders.
 
-    So far work only for order 1
-    # TODO reconstruct solution on finer mesh to display curvature
-       in higher order -> different function
+    Works only as linear interpolation between cell boundary points
+
     :param coors: coors of nodes of the mesh
     :param u: vectors of DOFs, for each order one,
         shape(u) = (order, nspace_steps, ntime_steps, 1)

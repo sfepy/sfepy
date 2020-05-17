@@ -413,8 +413,6 @@ class DiffusionDGFluxTerm(DGTerm):
                              avgDdState, fc_n, jmpBase, weights)
 
         elif self.mode == 'avg_virtual':
-            # in DG test function is non zero only inside element
-            # - hence we average with zero TODO check against Dolejší (2015)!?
             avgDdbase = (nm.einsum("ikl,idfkq->idfkq",
                                    D, inner_facet_base_d)) / 2.
 
@@ -679,7 +677,7 @@ from sfepy.linalg import dot_sequences
 class NonlinearScalarDotGradTerm(Term):
     r"""
      Product of virtual and divergence of vector function of state or volume dot
-     product of vector function of state and scalar gradient of virtual.
+     product of vector function of state and gradient of scalar virtual.
 
     :Definition:
 
@@ -697,6 +695,8 @@ class NonlinearScalarDotGradTerm(Term):
         - function : :math:`\ul{f}`
         - state    : :math:`p`
         - virtual  : :math:`q`
+
+    TODO maybe this term would fit better to terms_dot?
     """
     name = 'dw_ns_dot_grad_s'
     arg_types = (('fun', 'fun_d', 'virtual', 'state'),
@@ -721,8 +721,7 @@ class NonlinearScalarDotGradTerm(Term):
 
         if diff_var is None:
             if self.mode == 'grad_state':
-                # TODO check correct shapes for integration
-                # TODO rewrite using einsum
+                # TODO rewrite using einsum?
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
                 val_qp = dfun(self.get(var2, 'val')[..., 0])
@@ -738,7 +737,9 @@ class NonlinearScalarDotGradTerm(Term):
             fmode = 0
 
         else:
-            # TODO what in matrix mode?
+            raise ValueError("Matrix mode not supported for {}"
+                             .format(self.name))
+            # however it could be with use of dfun
             if self.mode == 'grad_state':
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
