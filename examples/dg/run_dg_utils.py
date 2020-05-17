@@ -12,7 +12,7 @@ import numpy as nm
 from sfepy.discrete import Integral, Material, Integrals
 from sfepy.discrete.common.mappings import get_jacobian
 from sfepy.base.base import output, configure_output
-from examples.dg.example_dg_common import diffusion_schemes_explicit
+from examples.dg.example_dg_common import diffusion_schemes_explicit, clear_folder
 
 outputs_folder = "outputs"
 
@@ -159,23 +159,3 @@ def build_attrs_string(conf, attrs=("Cw", "diffusion_coef", "dt", "CFL"),
         return res, form, attr_vals
     else:
         return res
-
-
-def clear_folder(clear_format, confirm=False, doit=True):
-    """
-    Deletes files matching the format
-    :param clear_format:
-    :param confirm:
-    :param doit: if False do not delete anything no matter the confirmation
-    :return: True if there was somethng to delete
-    """
-    files = glob(clear_format)
-    if confirm:
-        for file in files:
-            output("Will delete file {}".format(file))
-        doit = input("--------------\nDelete files [Y/n]? ").strip() == "Y"
-
-    if doit:
-        for file in files:
-            os.remove(file)
-    return bool(files)

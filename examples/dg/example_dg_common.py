@@ -2,6 +2,8 @@
 Functions common to DG examples
 """
 import numpy as nm
+from glob import glob
+import os
 
 from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.discrete.fem import Mesh
@@ -209,6 +211,23 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
     return mesh_hook
 
 
+def clear_folder(clear_format, confirm=False, doit=True):
+    """
+    Deletes files matching the format
+    :param clear_format:
+    :param confirm:
+    :param doit: if False do not delete anything no matter the confirmation
+    :return: True if there was somethng to delete
+    """
+    files = glob(clear_format)
+    if confirm:
+        for file in files:
+            output("Will delete file {}".format(file))
+        doit = input("--------------\nDelete files [Y/n]? ").strip() == "Y"
 
+    if doit:
+        for file in files:
+            os.remove(file)
+    return bool(files)
 
 
