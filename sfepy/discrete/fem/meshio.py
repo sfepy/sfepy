@@ -465,10 +465,18 @@ class MeshioLibIO(MeshIO):
         Renames cell resp. vertex data with name "*:ref"
         to mat_id resp. node_groups
 
-        :param step: has no effect
-        :param filename: filename to use insted of self.filname
-        :param cache: has no effect
-        :return:
+        Parameters
+        ----------
+        step: has no effect
+        filename: filename to use instead of self.filname
+        cache: has no effect
+
+
+        Returns
+        -------
+        out : dictionary
+            Data loaded from file, keys are names. values are Structs with
+            name repeated, mode ('vertex' or 'cell') and the data itself.
         """
 
         filename = get_default(filename, self.filename)
