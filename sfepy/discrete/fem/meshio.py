@@ -280,8 +280,8 @@ class MeshioLibIO(MeshIO):
         ('triangle', 2): '2_3',
         ('quad', 3): '2_4',
         ('quad', 2): '2_4',
-        ('line', 3): '3_2',
-        ('line', 2): '2_2',
+        ('line', 3): '1_2',
+        ('line', 2): '1_2',
         ('line', 1): '1_2',
     }
 
@@ -372,6 +372,12 @@ class MeshioLibIO(MeshIO):
             cgdata = None
 
         for ic, c in enumerate(m.cells):
+            if (c.type, dim) not in self.cell_types:
+                output('warning: unknown cell type %s with dimension %d'\
+                    % (c.type, dim))
+
+                continue
+
             cells.append(c.data)
             cell_types.append(self.cell_types[(c.type, dim)])
 
