@@ -245,7 +245,7 @@ surface and volumetric elements are stored::
 By converting the *MSH* file into the *VTK* format using
 ``script/convert_mesh.py``::
 
-  script/convert_mesh.py screwdriver_handle.msh screwdriver_handle.vtk
+  script/convert_mesh.py -d 3 screwdriver_handle.msh screwdriver_handle.vtk
 
 the surface elements are discarded and only the volumetric mesh is preserved.
 
