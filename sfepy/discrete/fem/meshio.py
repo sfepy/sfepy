@@ -468,7 +468,8 @@ class MeshioLibIO(MeshIO):
         Parameters
         ----------
         step: has no effect
-        filename: filename to use instead of self.filname
+        filename : string, optional
+            The file name to use instead of self.filename.
         cache: has no effect
 
 
