@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Test all terms in dg_terms. Performs numerical test on simple meshes with
-hand calculated values.
+Test all terms in terms_dg. Performs numerical test on simple mesh.
 """
+import functools
+import inspect
+
 import numpy as nm
 import numpy.testing as nmts
 import scipy.sparse as sp
 
 from base.base import Struct
+from base.testing import TestCommon
 from discrete import Variables, Materials
 from discrete.common.dof_info import EquationMap
 from sfepy.discrete import (DGFieldVariable, Material, Integral,
@@ -22,7 +25,39 @@ from sfepy.discrete.dg.tests.test_dg_field import prepare_field_1D, \
     prepare_field_2D
 
 
-class DGTermTestScope:
+class Test(TestCommon):
+
+    def capture_assertion_decorator(self, method):
+
+        @functools.wraps(method)
+        def captured_assertion_method(_):
+            try:
+                method()
+            except AssertionError:
+                return False
+            return True
+
+        return captured_assertion_method.__get__(self, self.__class__)
+
+    @staticmethod
+    def from_conf(conf, options):
+        """
+        Filters out terms test classes and gathers their test methods in
+        resulting object.
+        """
+        term_test_classes = [(key, var) for key, var in dict(globals()).items()
+                   if (key.startswith("Test") and key.endswith("Term"))]
+
+        all_test = Test()
+        for cname, term_test_cls in term_test_classes:
+            term_test = term_test_cls()
+            methods = inspect.getmembers(term_test, inspect.ismethod)
+            all_test.update({f"{mname}_{cname[4:]}":
+                             all_test.capture_assertion_decorator(meth)
+                         for mname, meth in methods})
+        return all_test
+
+class DGTermTestEnvornment:
     """
     Class for  easy creation of all the data needed for testing terms.
     """
@@ -128,244 +163,283 @@ class DGTermTestScope:
 class TestAdvectDGFluxTerm:
 
     def test_function_explicit_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = AdvectionDGFluxTerm("adv_stiff(a.val, u, v)",
                                 "a.val, u[-1], v",
-                                   ts.integral, ts.regions["omega"],
-                                   u=ts.u, v=ts.v, a=ts.a)
+                                   te.integral, te.regions["omega"],
+                                   u=te.u, v=te.v, a=te.a)
 
-        # ts.u.data[0][::ts.n_el_nod] = 1
+        # te.u.data[0][::te.n_el_nod] = 1
 
-        result = nm.zeros(ts.out.shape)
+        result = nm.zeros(te.out.shape)
 
-        out, _ = term.function(ts.out,
-                               ts.u,
+        out, _ = term.function(te.out,
+                               te.u,
                                None,  # diff_var
-                               ts.field,
-                               ts.regions["omega"],
-                               ts.a.data
+                               te.field,
+                               te.regions["omega"],
+                               te.a.data
                                )
 
         nmts.assert_almost_equal(out, result)
 
+        return True
+
     def test_function_implicit_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = AdvectionDGFluxTerm("adv_stiff(a.val, u, v)",
                                 "a.val, u, v",
-                                   ts.integral, ts.regions["omega"],
-                                   u=ts.u, v=ts.v, a=ts.a)
+                                   te.integral, te.regions["omega"],
+                                   u=te.u, v=te.v, a=te.a)
 
-        # ts.u.data[0][::ts.n_el_nod] = 1
-        result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
+        # te.u.data[0][::ts.n_el_nod] = 1
+        expected = nm.zeros(((te.n_cell * te.n_el_nod),) * 2)
 
         (out, iel1, iel2, _, _), _ = term.function(
-            ts.out,  # out, note that for implicit mode the out
+            te.out,  # out, note that for implicit mode the out
                      # argument is ignored
-            ts.u,  # state
+            te.u,  # state
             "u",  # diff_var
-            ts.field,
-            ts.regions["omega"],
-            ts.a.data,  # advelo
+            te.field,
+            te.regions["omega"],
+            te.a.data,  # advelo
         )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
+                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
 
-        nmts.assert_almost_equal(out, result)
+        assert expected.shape == out.shape
+
+        return True
+
 
 
 class TestNonlinearHyperDGFluxTerm:
 
     def test_function_explicit_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = NonlinearHyperbolicDGFluxTerm("adv_stiff(f, df u, v)",
                                         "nonlin.f, nonlin.df, u[-1], v",
-                                             ts.integral, ts.regions["omega"],
-                                             u=ts.u, v=ts.v, nonlin=ts.nonlin)
+                                             te.integral, te.regions["omega"],
+                                             u=te.u, v=te.v, nonlin=te.nonlin)
 
-        # ts.u.data[0][::ts.n_el_nod] = 1
-        result = nm.zeros(ts.out.shape)
+        # te.u.data[0][::ts.n_el_nod] = 1
+        result = nm.zeros(te.out.shape)
 
-        out, _ = term.function(ts.out,
-                               ts.u,
-                               ts.field,
-                               ts.regions["omega"],
-                               ts.burg_fun,
-                               ts.burg_fun_d
+        out, _ = term.function(te.out,
+                               te.u,
+                               te.field,
+                               te.regions["omega"],
+                               te.burg_fun,
+                               te.burg_fun_d
                                )
 
         nmts.assert_almost_equal(out, result)
+
+        return True
+
 
 
 class TestDiffusionDGFluxTerm:
 
     def test_function_explicit_right_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)",
                                    "D.val, v,  u[-1]",
-                                   ts.integral, ts.regions["omega"],
-                                   u=ts.u, v=ts.v, D=ts.D)
+                                   te.integral, te.regions["omega"],
+                                   u=te.u, v=te.v, D=te.D)
         term.mode = "avg_state"
 
-        result = nm.zeros(ts.out.shape)
+        result = nm.zeros(te.out.shape)
 
-        out, _ = term.function(ts.out,  # out
-                               ts.u,  # state
+        out, _ = term.function(te.out,  # out
+                               te.u,  # state
                                None,  # diff_var, explicit
-                               ts.field,
-                               ts.regions["omega"],
-                               ts.D.data,  # advelo
+                               te.field,
+                               te.regions["omega"],
+                               te.D.data,  # advelo
                                )
 
         nmts.assert_almost_equal(out, result)
 
+        return True
+
+
     def test_function_explicit_left_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, u, v)",
                                    "D.val,  u[-1], v",
-                                   ts.integral, ts.regions["omega"],
-                                   u=ts.u, v=ts.v, D=ts.D)
+                                   te.integral, te.regions["omega"],
+                                   u=te.u, v=te.v, D=te.D)
         term.mode = "avg_virtual"
 
-        result = nm.zeros(ts.out.shape)
+        result = nm.zeros(te.out.shape)
 
-        out, _ = term.function(ts.out,  # out
-                               ts.u,  # state
+        out, _ = term.function(te.out,  # out
+                               te.u,  # state
                                None,  # diff_var, explicit
-                               ts.field,
-                               ts.regions["omega"],
-                               ts.D.data,  # advelo
+                               te.field,
+                               te.regions["omega"],
+                               te.D.data,  # advelo
                                )
 
         nmts.assert_almost_equal(out, result)
 
+        return True
+
+
     def test_function_implicit_right_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, v, u)",
                                    "D.val, v,  u",
-                                   ts.integral, ts.regions["omega"],
-                                   u=ts.u, v=ts.v, D=ts.D)
+                                   te.integral, te.regions["omega"],
+                                   u=te.u, v=te.v, D=te.D)
         term.mode = "avg_state"
 
-        result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
+        expected = nm.zeros(((te.n_cell * te.n_el_nod),) * 2)
 
         (out, iel1, iel2, _, _), _ = term.function(
-            ts.out,  # out
-            ts.u,  # state
+            te.out,  # out
+            te.u,  # state
             "u",  # diff_var, explicit
-            ts.field,
-            ts.regions["omega"],
-            ts.D.data,  # advelo
+            te.field,
+            te.regions["omega"],
+            te.D.data,  # advelo
         )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
+                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
 
-        nmts.assert_almost_equal(out, result)
+        assert expected.shape == out.shape
+
+        return True
+
 
     def test_function_implicit_left_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = DiffusionDGFluxTerm("diff_lf_flux(D.val, u, v)",
                                    "D.val,  u[-1], v",
-                                   ts.integral, ts.regions["omega"],
-                                   u=ts.u, v=ts.v, D=ts.D)
+                                   te.integral, te.regions["omega"],
+                                   u=te.u, v=te.v, D=te.D)
         term.mode = "avg_virtual"
 
-        result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
+        expected = nm.zeros(((te.n_cell * te.n_el_nod),) * 2)
 
         (out, iel1, iel2, _, _), _ = term.function(
-            ts.out,  # out
-            ts.u,  # state
+            te.out,  # out
+            te.u,  # state
             "u",  # diff_var, explicit
-            ts.field,
-            ts.regions["omega"],
-            ts.D.data,  # advelo
+            te.field,
+            te.regions["omega"],
+            te.D.data,  # advelo
         )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
+                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
 
-        nmts.assert_almost_equal(out, result)
+        assert expected.shape == out.shape
+
+        return True
+
 
 
 class TestDiffusionInteriorPenaltyTerm:
 
     def test_function_explicit_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = DiffusionInteriorPenaltyTerm("adv_stiff(Cw.val, u, v)",
                                             "Cw.val, u[-1], v",
-                                            ts.integral, ts.regions["omega"],
-                                            u=ts.u, v=ts.v, Cw=ts.Cw)
+                                            te.integral, te.regions["omega"],
+                                            u=te.u, v=te.v, Cw=te.Cw)
 
-        # ts.u.data[0][::ts.n_el_nod] = 1
+        # te.u.data[0][::ts.n_el_nod] = 1
 
-        result = nm.zeros(ts.out.shape)
+        result = nm.zeros(te.out.shape)
 
-        out, _ = term.function(ts.out,
-                               ts.u,
+        out, _ = term.function(te.out,
+                               te.u,
                                None,  # diff_var
-                               ts.field,
-                               ts.regions["omega"],
-                               ts.Cw.data
+                               te.field,
+                               te.regions["omega"],
+                               te.Cw.data,
+                               te.D.data
                                )
 
         nmts.assert_almost_equal(out, result)
 
+        return True
+
+
     def test_function_implicit_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
-        term = DiffusionInteriorPenaltyTerm("adv_stiff(a.val, u, v)",
+        term = DiffusionInteriorPenaltyTerm("adv_stiff(D.val, a.val, u, v)",
                                             "Cw.val, u, v",
-                                            ts.integral, ts.regions["omega"],
-                                            u=ts.u, v=ts.v, a=ts.Cw)
+                                            te.integral, te.regions["omega"],
+                                            u=te.u, v=te.v, a=te.Cw)
 
-        # ts.u.data[0][::ts.n_el_nod] = 1
+        # te.u.data[0][::ts.n_el_nod] = 1
 
-        result = nm.zeros(((ts.n_cell * ts.n_el_nod),) * 2)
+
+        expected = nm.zeros(((te.n_cell * te.n_el_nod),) * 2)
 
         (out, iel1, iel2, _, _), _ = term.function(
-            ts.out,  # out, note that for implicit mode the out
+            te.out,  # out, note that for implicit mode the out
                      # argument is ignored
-            ts.u,  # state
+            te.u,  # state
             "u",  # diff_var
-            ts.field,
-            ts.regions["omega"],
-            ts.a.data,  # advelo
+            te.field,
+            te.regions["omega"],
+            te.Cw.data,
+            te.D.data,
         )
 
         out = sp.csr_matrix((out, (iel1, iel2)),
-                            shape=((ts.n_cell * ts.n_el_nod),) * 2).toarray()
+                            shape=((te.n_cell * te.n_el_nod),) * 2).toarray()
+        assert expected.shape == out.shape
 
-        nmts.assert_almost_equal(out, result)
+        return True
+
 
 
 class TestNonlinScalarDotGradTerm:
 
     def test_function_explicit_1D(self):
-        ts = DGTermTestScope(dim=1, approx_order=3)
+        te = DGTermTestEnvornment(dim=1, approx_order=3)
 
         term = NonlinearScalarDotGradTerm("adv_stiff(f, df u, v)",
                                        "nonlin.f, nonlin.df, u[-1], v",
-                                          ts.integral, ts.regions["omega"],
-                                          u=ts.u, v=ts.v, nonlin=ts.nonlin)
+                                          te.integral, te.regions["omega"],
+                                          u=te.u, v=te.v, nonlin=te.nonlin)
+        term.setup()
 
-        # ts.u.data[0][::ts.n_el_nod] = 1
-        result = nm.zeros(ts.out.shape)
+        # te.u.data[0][::ts.n_el_nod] = 1
+        expected = nm.zeros(te.out.shape)
+
+        out = nm.zeros(te.out.shape)
 
         fargs = term.get_fargs(
-            ts.burg_fun,
-            ts.burg_fun_d,
-            ts.u,
-            ts.v
+            te.burg_fun,
+            te.burg_fun_d,
+            te.u,
+            te.v
         )
-        out, _ = term.function(*fargs)
+        fargs = (out,) + fargs
+        out = term.function(*fargs)
 
-        nmts.assert_almost_equal(out, result)
+        nmts.assert_almost_equal(out, expected)
+
+        return True
+
+
+if __name__ == '__main__':
+    t = Test()
+    t.test_dg_term_calls()
