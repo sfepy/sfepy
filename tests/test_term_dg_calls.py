@@ -21,8 +21,7 @@ from sfepy.terms.terms_dg import DGTerm, \
     AdvectionDGFluxTerm, NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm, \
     DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
 
-from sfepy.discrete.dg.tests.test_dg_field import prepare_field_1D, \
-    prepare_field_2D
+from test_field_dg import prepare_dgfield_1D, prepare_field_2D
 
 
 class Test(TestCommon):
@@ -81,7 +80,7 @@ class DGTermTestEnvornment:
         """
 
         if dim == 1:
-            (field, regions), mesh = prepare_field_1D(approx_order)
+            (field, regions), mesh = prepare_dgfield_1D(approx_order)
         elif dim == 2:
             (field, regions), mesh = prepare_field_2D(approx_order)
 
