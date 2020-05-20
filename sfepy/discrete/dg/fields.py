@@ -481,7 +481,7 @@ class DGField(FEField):
             else:
                 raise ValueError("No facet neighbour mapping for main region {}".
                                  format(self.region.name) +
-                                 "cached yet, call with region and eq_map first")
+                                 " cached yet, call with region and eq_map first.")
 
         if region.name in self.facet_neighbour_index:
             return self.facet_neighbour_index[region.name]

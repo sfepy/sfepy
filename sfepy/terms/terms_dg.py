@@ -36,7 +36,7 @@ class DGTerm(Term):
     Abstract base class for DG terms, provides alternative call_function and eval_real
     methods to accommodate returning iels and vals.
     """
-
+    poly_space_base = "legendre"
     def call_function(self, out, fargs):
         try:
             out, status = self.function(out, *fargs)
