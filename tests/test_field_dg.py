@@ -4,8 +4,8 @@ import inspect
 import numpy as nm
 import numpy.testing as nmts
 
-from base.base import Struct
-from base.testing import TestCommon
+from sfepy.base.base import Struct
+from sfepy.base.testing import TestCommon
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.fem import Mesh, FEDomain

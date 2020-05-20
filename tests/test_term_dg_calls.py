@@ -9,10 +9,10 @@ import numpy as nm
 import numpy.testing as nmts
 import scipy.sparse as sp
 
-from base.base import Struct
-from base.testing import TestCommon
-from discrete import Variables, Materials
-from discrete.common.dof_info import EquationMap
+from sfepy.base.base import Struct
+from sfepy.base.testing import TestCommon
+from sfepy.discrete import Variables, Materials
+from sfepy.discrete.common.dof_info import EquationMap
 from sfepy.discrete import (DGFieldVariable, Material, Integral,
                             Function, Equation, Equations, Problem)
 
