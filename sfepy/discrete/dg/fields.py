@@ -179,7 +179,7 @@ class DGField(FEField):
         self.clear_qp_base()
         self.clear_facet_qp_base()
         if integral is None:
-            self.integral = Integral("dg_fi", order=3 * self.approx_order)
+            self.integral = Integral("dg_fi", order = 2 * self.approx_order)
         else:
             self.integral = integral
 

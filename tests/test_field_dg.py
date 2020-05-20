@@ -197,10 +197,10 @@ class TestDGField:
         fun = lambda x: nm.sum(x ** 2, axis=-1)[..., None]
 
         nods, vals = field.set_dofs(fun, regions["omega"])
-        n_el_nod = get_n_el_nod(3, 2)
-        rnods = nm.arange(n_el_nod * 9)
+        n_el_nod = get_n_el_nod(3, 2, extended=True)
+        epxected_nods = nm.arange(n_el_nod * 9)
         rvals_shape = (9, n_el_nod)
-        nmts.assert_equal(nods, rnods)
+        nmts.assert_equal(nods, epxected_nods)
         assert vals.shape == rvals_shape
 
 
