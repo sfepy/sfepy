@@ -218,8 +218,6 @@ output(f"Time stepping solver is {tss.name}")
 output(f"Limiter used: {limiter.name}")
 output("======================================")
 
-
-
 # ----------
 # | Plot 1D|
 # ----------

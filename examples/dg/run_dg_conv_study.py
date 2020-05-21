@@ -281,7 +281,8 @@ def run_calc(pb, output_format):
     tt = time.process_time()
     pb.sol = pb.solve()
     elapsed = time.process_time() - tt
-    pb.save_state(output_format.replace("*", "0"), state=pb.sol)
+    pb.save_state(output_format.replace("*", "0"), state=pb.sol,
+                  file_format="gmsh-dg")
     return pb, elapsed
 
 

@@ -119,6 +119,7 @@ def define(filename_mesh=None,
         'save_times'      : 100,
         'active_only'     : False,
         'output_format'   : 'msh',
+        'file_format'     : 'gmsh-dg',
         'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt)
     }
 

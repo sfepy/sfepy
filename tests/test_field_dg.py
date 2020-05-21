@@ -117,10 +117,10 @@ class TestDGField:
         n_cell_nod = 9
         field, regions = prepare_dgfield(approx_order, mesh)
         dofs = nm.zeros((n_cell_nod * 9, 1))
-        output = field.create_output(dofs, "")
-        assert output["u_modal_cell_nodes"].mode == "cell_nodes"
-        assert nm.allclose(output["u_modal_cell_nodes"].data, nm.zeros((9, n_cell_nod)))
-        assert output["u_modal_cell_nodes"].interpolation_scheme is not None
+        output = field.create_output(dofs, "u")
+        assert output["u_cell_nodes"].mode == "cell_nodes"
+        assert nm.allclose(output["u_cell_nodes"].data, nm.zeros((9, n_cell_nod)))
+        assert output["u_cell_nodes"].scheme is not None
 
 
     def test_create_output1D(self):
@@ -129,7 +129,7 @@ class TestDGField:
         n_cell_nod = approx_order + 1
         field, regions = prepare_dgfield(approx_order, mesh)
         dofs = nm.zeros((n_cell_nod * 3, 1))
-        output = field.create_output(dofs, "")
+        output = field.create_output(dofs, "u")
         for i in range(n_cell_nod):
             assert output["u_modal{}".format(i)].mode == "cell"
             assert nm.allclose(output["u_modal{}".format(i)].data, nm.zeros((3, 1)))

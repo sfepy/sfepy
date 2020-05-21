@@ -1343,8 +1343,12 @@ class DGField(FEField):
         Converts the DOFs corresponding to the field to a dictionary of
         output data usable by Mesh.write().
 
-        Puts DOFs into vairables u0 ... un, where n = approx_order and marks
-        them for writing as cell data.
+        For 1D puts DOFs into vairables u_modal{0} ... u_modal{n}, where
+        n = approx_order and marks them for writing as cell data.
+
+        For 2+D puts dofs into name_cell_nodes and creates sturct with:
+        mode = "cell_nodes", data and iterpolation scheme.
+
 
         Also get node values and adds them to dictionary as cell_nodes
 
@@ -1360,11 +1364,11 @@ class DGField(FEField):
         key : str, optional
             The key to be used in the output dictionary instead of the
             variable name.
-        extend : bool
+        extend : bool, not used
             Extend the DOF values to cover the whole domain.
-        fill_value : float or complex
+        fill_value : float or complex, not used
            The value used to fill the missing DOF values if `extend` is True.
-        linearization : Struct or None
+        linearization : Struct or None, not used
             The linearization configuration for higher order approximations.
 
         Returns
@@ -1375,13 +1379,17 @@ class DGField(FEField):
         res = {}
         udofs = self.unravel_sol(dofs)
 
+        name = var_name if key is None else key
+
         if self.dim == 1:
             for i in range(self.n_el_nod):
-                res["u_modal{}".format(i)] = Struct(mode="cell",
-                                                    data=udofs[:, i, None, None])
+                res[name + "_modal{}".format(i)] = \
+                    Struct(mode="cell", data=udofs[:, i, None, None])
         else:
+            interpolation_scheme = self.poly_space.get_interpol_scheme()
             unravel = get_unraveler(self.n_el_nod, self.n_cell)
-            res["u_modal_cell_nodes"] = Struct(mode="cell_nodes",
+            res[name + "_cell_nodes"] = Struct(mode="cell_nodes",
                                                data=unravel(dofs)[..., 0],
-                                               interpolation_scheme=self.poly_space.get_interpol_scheme())
+                                               scheme=interpolation_scheme)
+
         return res

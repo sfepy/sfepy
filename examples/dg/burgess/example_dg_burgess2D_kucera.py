@@ -225,6 +225,7 @@ def define(filename_mesh=None,
         'ls'              : 'ls.mumps',
         'save_times'      : 100,
         'output_format'   : 'msh',
+		'file_format'     : 'gmsh-dg',
         'pre_process_hook': get_cfl_setup(CFL=cfl, dt=dt)
     }
 

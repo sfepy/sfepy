@@ -155,6 +155,9 @@ tss = EulerStepSolver(tss_conf,
 # ---------
 # | Solve |
 # ---------
+pb.set_solver(tss)
+state_end = pb.solve()
+
 output("Solved equation \n\n\t\t u_t - div(f(u))) = 0\n")
 output(f"With IC: {ic_fun.name}")
 # output("and EBCs: {}".format(pb.ebcs.names))
@@ -171,9 +174,6 @@ output("------------------------------------------")
 output(f"Time stepping solver is {tss.name}")
 output(f"Limiter used: {limiter.name}")
 output("======================================")
-
-pb.set_solver(tss)
-state_end = pb.solve()
 
 # ----------
 # | Plot 1D|

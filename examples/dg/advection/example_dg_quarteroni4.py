@@ -114,7 +114,8 @@ def define(filename_mesh=None,
         'nls'             : 'newton',
         'ls'              : 'ls',
         'output_format'   : 'msh',
-        # 'pre_process_hook': get_cfl_setup(cfl)
+		'file_format'     : 'gmsh-dg',
+		
     }
     return locals()
 
