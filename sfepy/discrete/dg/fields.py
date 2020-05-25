@@ -3,22 +3,18 @@
 Fields for Discontinous Galerkin method
 """
 import numpy as nm
-from numpy.lib.stride_tricks import as_strided
 import six
+from numpy.lib.stride_tricks import as_strided
 from six.moves import range
 
-# sfepy imports
-from sfepy.discrete.fem.poly_spaces import PolySpace
-from sfepy.base.base import (get_default, output, assert_,
-                             Struct, basestr, IndexedStruct)
-from sfepy.discrete.fem.fields_base import FEField
-from sfepy.discrete import Integral, FieldVariable
-from sfepy.discrete.fem.mappings import VolumeMapping
+from sfepy.base.base import (output, assert_, Struct)
+from sfepy.discrete import Integral
 from sfepy.discrete.common.fields import parse_shape
-
-# local imports
 from sfepy.discrete.dg.dg_poly_spaces import LegendreSimplexPolySpace
 from sfepy.discrete.dg.dg_poly_spaces import LegendreTensorProductPolySpace
+from sfepy.discrete.fem.fields_base import FEField
+from sfepy.discrete.fem.mappings import VolumeMapping
+from sfepy.discrete.fem.poly_spaces import PolySpace
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -373,16 +369,6 @@ class DGField(FEField):
             weights = weights[None, :, None]
             facet_qps = self._transform_qps_to_facets(qps, self.gel.name)
 
-        # from postprocess.plot_facets import plot_geometry
-        # from postprocess.plot_quadrature import plot_weighted_points
-        # import matplotlib.pyplot as plt
-        # fig, ax = plt.subplots()
-        # plot_geometry(ax, self.gel)
-        # facet_qps_flat = nm.concatenate([facet_qps[..., i,:] for i in range(self.n_el_facets)])
-        # facet_weights_flat = nm.concatenate([weights] * self.n_el_facets)[:, 0]
-        # ax.scatter(facet_qps_flat[..., 0, 0], facet_qps_flat[..., 0, 1])
-        # plt.show()
-
         return facet_qps, weights
 
     def get_facet_base(self, derivative=False, base_only=False):
@@ -419,7 +405,8 @@ class DGField(FEField):
             self.facet_qp = qps
             self.facet_whs = whs
             if derivative:
-                facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] + (self.dim,) * diff + (self.n_el_nod,))
+                facet_bf = nm.zeros((1,) + nm.shape(qps)[:-1] +
+                                    (self.dim,) * diff + (self.n_el_nod,))
             else:
                 facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod,))
 
@@ -479,9 +466,10 @@ class DGField(FEField):
             if self.region.name in self.facet_neighbour_index:
                 return self.facet_neighbour_index[self.region.name]
             else:
-                raise ValueError("No facet neighbour mapping for main region {}".
-                                 format(self.region.name) +
-                                 " cached yet, call with region and eq_map first.")
+                raise ValueError("No facet neighbour mapping for main " +
+                                 "region {}".format(self.region.name) +
+                                 " cached yet, call with region and " +
+                                 "eq_map first.")
 
         if region.name in self.facet_neighbour_index:
             return self.facet_neighbour_index[region.name]
@@ -575,7 +563,7 @@ class DGField(FEField):
 
     def _set_fem_periodic_facet_neighbours(self, facet_neighbours, eq_map):
         """
-        maybe remove after DG EPBC revision in self.get_coor
+        Maybe remove after DG EPBC revision in self.get_coor
         Parameters
         ----------
         facet_neighbours : ndarray
@@ -715,8 +703,9 @@ class DGField(FEField):
         for ebc, ebc_vals in zip(state.eq_map.dg_ebc.get(diff, []),
                                  state.eq_map.dg_ebc_val.get(diff, [])):
             if unreduce_nod:
-                raise NotImplementedError("Unreduced DOFs are not available " +
-                                          "for boundary outer facets")
+                raise NotImplementedError(
+                    "Unreduced DOFs are not available for boundary " +
+                    "outerfacets")
                 outer_facet_vals[ebc[:, 0], ebc[:, 1], :] = \
                     nm.einsum("id,id...->id...",
                               ebc_vals, inner_base_vals[0, :, ebc[:, 1]])
@@ -778,9 +767,13 @@ class DGField(FEField):
         # numpy prepends shape resulting from multiple
         # indexing before remaining shape
         if derivative:
-            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-3, -4)
+            outer_facet_base_vals[:] = \
+                inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]]\
+                    .swapaxes(-3, -4)
         else:
-            outer_facet_base_vals[:] = inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]].swapaxes(-2, -3)
+            outer_facet_base_vals[:] = \
+                inner_facet_base_vals[0, :, per_facet_neighbours[:, :, 1]]\
+                    .swapaxes(-2, -3)
 
         # fix to flip facet QPs for right integration order
         return inner_facet_base_vals, outer_facet_base_vals[..., ::-1], whs
@@ -1280,8 +1273,8 @@ class DGField(FEField):
 
         if nm.isscalar(fun):
             if sum(diff_shape) > 1:
-                output("Warning: Setting gradient of shape {} in region {} " +
-                       "with scalar value {}"
+                output(("Warning: Setting gradient of shape {} "
+                       "in region {} with scalar value {}")
                               .format(diff_shape, region.name, fun))
             vals[:] = fun
 
@@ -1289,9 +1282,10 @@ class DGField(FEField):
             try:
                 vals[:] = fun[:, None]
             except ValueError:
-                raise ValueError("Provided values of shape {} could not be used"
-                                 + " to set BC qps of shape {} in region {}"
-                    .format(fun.shape, vals.shape, region.name))
+                raise ValueError(("Provided values of shape {} could not" +
+                                 " be used to set BC qps of shape {} in " +
+                                 "region {}")
+                                    .format(fun.shape, vals.shape, region.name))
 
         elif callable(fun):
             # get boundary values
@@ -1320,8 +1314,7 @@ class DGField(FEField):
         """
         if ref_nodes is None:
             # poly_space could provide special nodes
-            ref_nodes = self.get_qp('v', Integral("I", order=self.approx_order + 1)).vals
-            # ref_nodes = nm.array([[0, 0], [1, 0], [1, 1], [0, 1]], dtype=nm.float64)
+            ref_nodes = self.get_qp('v', self.integral).vals
         base_vals_node = self.poly_space.eval_base(ref_nodes)[:, 0, :]
         dofs = self.unravel_sol(dofs[:, 0])
 

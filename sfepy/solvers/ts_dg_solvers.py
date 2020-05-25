@@ -4,16 +4,12 @@ Explicit time stepping solvers for use with DG FEM
 import numpy as nm
 import numpy.linalg as nla
 
-
-
 # sfepy imports
-from sfepy.base.base import (get_default, output, assert_,
-                             Struct, IndexedStruct)
-from sfepy.solvers import SolverMeta, TimeSteppingSolver
-from sfepy.solvers.ts import TimeStepper, VariableTimeStepper
+from sfepy.base.base import get_default, output
+from sfepy.solvers import TimeSteppingSolver
+from sfepy.solvers.solvers import SolverMeta
+from sfepy.solvers.ts import TimeStepper
 from sfepy.solvers.ts_solvers import standard_ts_call
-from sfepy.solvers.solvers import SolverMeta, NonlinearSolver
-from sfepy.base.log import Log, get_logging_conf
 
 
 class DGMultiStageTSS(TimeSteppingSolver):
@@ -32,6 +28,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
          'The time step. Used if `n_step` is not given.'),
         ('n_step', 'int', 10, False,
          'The number of time steps. Has precedence over `dt`.'),
+        # this option is required by TimeSteppingSolver constructor
         ('quasistatic', 'bool', False, False,
          """If True, assume a quasistatic time-stepping. Then the non-linear
             solver is invoked also for the initial time."""),
@@ -46,7 +43,9 @@ class DGMultiStageTSS(TimeSteppingSolver):
         self.ts = TimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
-        self.stage_format = '---- ' + self.name + ' stage {}: linear system sol error {} ----'
+        self.stage_format =  '---- ' + \
+            self.name + ' stage {}: linear system sol error {}'+ \
+                             ' ----'
 
         format = '\n\n====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
         self.format = format
@@ -75,7 +74,8 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
         return vec
 
-    def solve_step(self, ts, nls, vec, prestep_fun=None, poststep_fun=None, status=None):
+    def solve_step(self, ts, nls, vec, prestep_fun=None, poststep_fun=None,
+                   status=None):
         raise NotImplementedError("Called abstract solver, call subclass.")
 
     def output_step_info(self, ts):
@@ -110,7 +110,8 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
             prestep_fun(ts, vec)
 
-            vect = self.solve_step(ts, nls, vec, prestep_fun, poststep_fun, status)
+            vect = self.solve_step(ts, nls, vec, prestep_fun, poststep_fun,
+                                   status)
 
             poststep_fun(ts, vect)
 
@@ -131,12 +132,9 @@ class EulerStepSolver(DGMultiStageTSS):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Euler solver")
 
-        conf = nls.conf
         fun = nls.fun
         fun_grad = nls.fun_grad
         lin_solver = nls.lin_solver
-        iter_hook = nls.iter_hook
-        status = get_default(status, nls.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -184,12 +182,9 @@ class TVDRK3StepSolver(DGMultiStageTSS):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
-        conf = nls.conf
         fun = nls.fun
         fun_grad = nls.fun_grad
         lin_solver = nls.lin_solver
-        iter_hook = nls.iter_hook
-        status = get_default(status, nls.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -201,7 +196,6 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
         vec_r = fun(vec_x)
         mtx_a = fun_grad(vec_x)
-        # full_mtx_a = mtx_a.toarray()
         vec_dx = lin_solver(vec_r, x0=vec_x,
                             eps_a=eps_a, eps_r=eps_r, mtx=mtx_a,
                             status=ls_status)
@@ -216,8 +210,6 @@ class TVDRK3StepSolver(DGMultiStageTSS):
         vec_x1 = self.post_stage_hook(vec_x1)
 
         # ----2nd stage----
-        # ts.set_substep_time(time + 1./2. * ts.dt)
-        # prestep_fun(ts, vec_x1)
         vec_r = fun(vec_x1)
         mtx_a = fun_grad(vec_x1)
         vec_dx = lin_solver(vec_r, x0=vec_x1,
@@ -234,8 +226,6 @@ class TVDRK3StepSolver(DGMultiStageTSS):
         vec_x2 = self.post_stage_hook(vec_x2)
 
         # ----3rd stage-----
-        # ts.set_substep_time(time + 1./2. * ts.dt)
-        # prestep_fun(ts, vec_x1)
         ts.set_substep_time(1. / 2. * ts.dt)
         prestep_fun(ts, vec_x2)
         vec_r = fun(vec_x2)
@@ -280,15 +270,9 @@ class RK4StepSolver(DGMultiStageTSS):
         if ts is None:
             raise ValueError("Provide TimeStepper to explicit Runge-Kutta solver")
 
-        from sfepy.discrete.dg.fields import get_unraveler, get_raveler
-        unravel = get_unraveler(3, 99)
-
-        conf = nls.conf
         fun = nls.fun
         fun_grad = nls.fun_grad
         lin_solver = nls.lin_solver
-        iter_hook = nls.iter_hook
-        status = get_default(status, self.status)
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
         eps_a = get_default(ls_eps_a, 1.0)
@@ -314,14 +298,7 @@ class RK4StepSolver(DGMultiStageTSS):
 
             vec_x = - vec_dx - stage_vec
 
-            # for debugging
-            full_mtx_a = mtx_a.toarray()
-            un_vec_r = unravel(vec_r)
-            un_vec_x1 = unravel(vec_x)
-            un_vec_x0 = unravel(stage_vec)
-
             vec_x = self.post_stage_hook(vec_x)
-            un_vec_x1_lim = unravel(vec_x)
 
             vec_xs.append(vec_x)
 

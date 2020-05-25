@@ -1,36 +1,24 @@
-import numpy as nm
-import matplotlib.pyplot as plt
 from os.path import join as pjoin
 
+import numpy as nm
+
+from examples.dg.example_dg_common import clear_folder, get_gen_1D_mesh_hook
 # sfepy imports
-from sfepy.discrete.fem import Mesh, FEDomain
-from sfepy.discrete.fem.meshio import UserMeshIO
-from sfepy.base.base import Struct, configure_output, output
 from sfepy.base.base import IndexedStruct
+from sfepy.base.base import Struct, configure_output, output
 from sfepy.discrete import (FieldVariable, Material, Integral, Function,
                             Equation, Equations, Problem)
 from sfepy.discrete.conditions import InitialCondition, EssentialBC, Conditions
+from sfepy.discrete.dg.fields import DGField
+from sfepy.discrete.dg.limiters import MomentLimiter1D
+from sfepy.discrete.dg.utils.inits_consts import ghump
+from sfepy.discrete.fem import FEDomain
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
-from sfepy.solvers.ts_solvers import SimpleTimeSteppingSolver
-
-from sfepy.terms.terms_dot import ScalarDotMGradScalarTerm, DotProductVolumeTerm
-from sfepy.base.ioutils import ensure_path
-
-# local imports
-from sfepy.discrete.dg.fields import DGField
-
-from sfepy.terms.terms_dg import AdvectionDGFluxTerm, \
-    NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm
-from sfepy.solvers.ts_dg_solvers import TVDRK3StepSolver, \
-    RK4StepSolver, EulerStepSolver
-
-from sfepy.discrete.dg.limiters import IdentityLimiter, MomentLimiter1D
-
-from sfepy.discrete.dg.utils.inits_consts import \
-    left_par_q, gsmooth, const_u, ghump, superic
-from sfepy.discrete.dg.utils.visualizer import load_1D_vtks, plot1D_DG_sol
-from examples.dg.example_dg_common import clear_folder
+from sfepy.solvers.ts_dg_solvers import TVDRK3StepSolver
+from sfepy.terms.terms_dg import NonlinearHyperbolicDGFluxTerm, \
+    NonlinearScalarDotGradTerm
+from sfepy.terms.terms_dot import DotProductVolumeTerm
 
 # vvvvvvvvvvvvvvvv #
 approx_order = 1
@@ -48,7 +36,8 @@ save_timestn = 100
 clear_folder(pjoin(output_folder, "*." + output_format))
 configure_output({'output_screen': True,
                   'output_log_name':
-                      pjoin(output_folder, f"last_run_{problem_name}_{approx_order}.txt")})
+                   pjoin(output_folder,
+                         f"last_run_{problem_name}_{approx_order}.txt")})
 
 # ------------
 # | Get mesh |
@@ -57,12 +46,7 @@ X1 = 0.
 XN = 1.
 n_nod = 100
 n_el = n_nod - 1
-coors = nm.linspace(X1, XN, n_nod).reshape((n_nod, 1))
-conn = nm.arange(n_nod, dtype=nm.int32).repeat(2)[1:-1].reshape((-1, 2))
-mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
-descs = ['1_2']
-mesh = Mesh.from_data('uniform_1D{}'.format(n_nod), coors, None,
-                      [conn], [mat_ids], descs)
+mesh = get_gen_1D_mesh_hook(X1, XN, n_nod)(None, "read")
 
 # -----------------------------
 # | Create problem components |
@@ -208,7 +192,7 @@ output(f"With IC: {ic_fun.name}")
 output("-------------------------------------")
 output(f"Approximation order is {approx_order}")
 output(f"Space divided into {mesh.n_el} cells, " +
-      f"{len(mesh.coors)} steps, step size is {dx}")
+       f"{len(mesh.coors)} steps, step size is {dx}")
 output(f"Time divided into {tn - 1} nodes, {tn} steps, step size is {dt}")
 output(f"CFL coefficient was {CFL} and " +
       f"order correction {1 / (2 * approx_order + 1)}")
@@ -221,6 +205,6 @@ output("======================================")
 # ----------
 # | Plot 1D|
 # ----------
-from sfepy.discrete.dg.my_utils.plot_1D_dg import load_and_plot_fun
+from sfepy.discrete.dg.utils.plot_1D_dg import load_and_plot_fun
 
 load_and_plot_fun(output_folder, domain_name, t0, t1, min(tn, save_timestn), ic_fun)

@@ -1,24 +1,15 @@
 """
 Functions common to DG examples
 """
-import numpy as nm
-from glob import glob
 import os
+from glob import glob
 
-from sfepy.mesh.mesh_generators import gen_block_mesh
+import numpy as nm
+
+from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh
+from sfepy.mesh.mesh_generators import gen_block_mesh
 
-from sfepy.base.base import (get_default, output, configure_output, assert_,
-                             Struct, basestr, IndexedStruct)
-
-# import various ICs
-from sfepy.discrete.dg.utils.inits_consts import ghump, gsmooth, \
-    left_par_q, left_cos, superic, three_step_u, sawtooth_q, const_q, quadr_cub,\
-    four_step_u, cos_const_q, quadr_cub
-
-
-from sfepy.discrete.dg.limiters import IdentityLimiter, MomentLimiter1D, \
-    MomentLimiter2D
 
 diffusion_schemes_implicit = {
     "symmetric":
@@ -106,7 +97,7 @@ def get_cfl_setup(CFL=None, dt=None):
         output("Preprocess hook - setup_cfl_condition:...")
         output("Approximation order of field {}({}) is {}"
                .format(first_field_name, first_field.family_name, approx_order))
-        output("Space divided into {0} cells, {1} steps, step size is {2}"
+        output("Space divided into {0} cells, {1} steps, step size {2}"
                .format(mesh.n_el, len(mesh.coors), dx))
 
         if dt is None:
@@ -183,7 +174,7 @@ def get_gen_1D_mesh_hook(XS, XE, n_nod):
             mat_ids = nm.zeros(n_nod - 1, dtype=nm.int32)
             descs = ['1_2']
 
-            mesh = Mesh.from_data('laplace_1d', coors, None,
+            mesh = Mesh.from_data('uniform_1D{}'.format(n_nod), coors, None,
                                   [conn], [mat_ids], descs)
             return mesh
 

@@ -11,16 +11,12 @@ import scipy.sparse as sp
 
 from sfepy.base.base import Struct
 from sfepy.base.testing import TestCommon
-from sfepy.discrete import Variables, Materials
+from sfepy.discrete import DGFieldVariable, Material, Integral
+from sfepy.discrete import Variables
 from sfepy.discrete.common.dof_info import EquationMap
-from sfepy.discrete import (DGFieldVariable, Material, Integral,
-                            Function, Equation, Equations, Problem)
-
-from sfepy.discrete.dg.fields import DGField
-from sfepy.terms.terms_dg import DGTerm, \
-    AdvectionDGFluxTerm, NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm, \
+from sfepy.terms.terms_dg import AdvectionDGFluxTerm, \
+    NonlinearHyperbolicDGFluxTerm, NonlinearScalarDotGradTerm, \
     DiffusionDGFluxTerm, DiffusionInteriorPenaltyTerm
-
 from test_field_dg import prepare_dgfield_1D, prepare_field_2D
 
 

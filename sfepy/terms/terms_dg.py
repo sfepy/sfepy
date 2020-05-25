@@ -33,8 +33,8 @@ from sfepy.base.base import output
 
 class DGTerm(Term):
     r"""
-    Abstract base class for DG terms, provides alternative call_function and eval_real
-    methods to accommodate returning iels and vals.
+    Abstract base class for DG terms, provides alternative call_function and
+    eval_real methods to accommodate returning iels and vals.
     """
     poly_space_base = "legendre"
     def call_function(self, out, fargs):
@@ -135,13 +135,13 @@ class AdvectionDGFluxTerm(DGTerm):
     arg_types = ('opt_material', 'material_advelo', 'virtual', 'state')
     arg_shapes = [{'opt_material'   : '.: 1',
                    'material_advelo': 'D, 1',
-                   'virtual'        : (1, 'state'),
-                   'state'          : 1
+                   'virtual'         : (1, 'state'),
+                   'state'           : 1
                    },
                   {'opt_material': None}]
     integration = 'volume'
     symbolic = {'expression': 'div(a*u)*w',
-                'map'       : {'u': 'state', 'a': 'material', 'v': 'virtual'}
+                'map' : {'u': 'state', 'a': 'material', 'v': 'virtual'}
                 }
 
     def get_fargs(self, alpha, advelo, test, state,
@@ -274,8 +274,8 @@ class DiffusionDGFluxTerm(DGTerm):
 
     """
     name = "dw_dg_diffusion_flux"
-    arg_types = (('material_diffusion_tensor', 'state', 'virtual'),  # left
-                 ('material_diffusion_tensor', 'virtual', 'state')   # right
+    arg_types = (('material_diffusion_tensor', 'state', 'virtual'), # left
+                 ('material_diffusion_tensor', 'virtual', 'state') # right
                  )
     arg_shapes = [{'material_diffusion_tensor': '1, 1',
                    'virtual/avg_state': (1, None),
@@ -455,7 +455,8 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
     """
     name = "dw_dg_interior_penalty"
     modes = ("weak",)
-    arg_types = ('material_diffusion_tensor', 'material_Cw', 'virtual', 'state')
+    arg_types = ('material_diffusion_tensor', 'material_Cw',
+                 'virtual', 'state')
     arg_shapes = [{'material_diffusion_tensor': '1, 1',
                    'material_Cw': '.: 1',
                    'virtual'    : (1, 'state'),
@@ -483,8 +484,9 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
             field.get_both_facet_base_vals(state, region, derivative=False)
         facet_vols = nm.sum(whs, axis=-1)
 
-        # nu characterizes diffusion tensor, so far we user diagonal average
-        nu = nm.trace(diff_tensor, axis1=-2, axis2=-1)[..., None] / diff_tensor.shape[1]
+        # nu characterizes diffusion tensor, so far we use diagonal average
+        nu = nm.trace(diff_tensor, axis1=-2, axis2=-1)[..., None] / \
+             diff_tensor.shape[1]
         sigma = nu * Cw * approx_order ** 2 / facet_vols
 
         if diff_var is not None:
@@ -521,8 +523,6 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
                 field.get_both_facet_base_vals(state, region,
                                                derivative=False
                                                )
-            nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
-
             jmp_state = inner_facet_state - outer_facet_state
             jmp_base = inner_facet_base  # - outer_facet_base
 
@@ -615,8 +615,8 @@ class NonlinearHyperbolicDGFluxTerm(DGTerm):
         self.dfun = dfun
 
         if diff_var is not None:
-            output("Diff var is not None in nonlinear, residual only term {} ! "
-                    + " Skipping.".format(self.name))
+            output("Diff var is not None in nonlinear, residual only " +
+                   "term"" {} !  Skipping.".format(self.name))
             return None, None, None, 0, 0
         else:
             field = state.field
@@ -641,9 +641,7 @@ class NonlinearHyperbolicDGFluxTerm(DGTerm):
 
         fc_b = facet_base_vals[:, 0, :, 0, :].T  # (n_el_nod, n_el_facet, n_qp)
 
-        n_cell = field.n_cell
         n_el_nod = field.n_el_nod
-        n_el_facets = field.n_el_facets
 
         # get maximal wave speeds at facets
         df_in = df(in_fc_v)
@@ -724,9 +722,7 @@ class NonlinearScalarDotGradTerm(Term):
                 # TODO rewrite using einsum?
                 geo = vg1
                 bf_t = vg1.bf.transpose((0, 1, 3, 2))
-                val_qp = dfun(self.get(var2, 'val')[..., 0])
                 val_grad_qp = self.get(var2, 'grad')
-                val = dot_sequences(val_qp, val_grad_qp, 'ATB')
                 out_qp = dot_sequences(bf_t, val_grad_qp, 'ATB')
 
             else:

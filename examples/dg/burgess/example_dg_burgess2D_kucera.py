@@ -9,7 +9,7 @@ Charles University. p. 21 eq. (1.39)
 from examples.dg.example_dg_common import *
 from sfepy import data_dir
 
-
+from sfepy.discrete.dg.limiters import MomentLimiter2D, IdentityLimiter
 
 mesh_center = (0, 0)
 mesh_size = (2, 2)
@@ -68,7 +68,8 @@ def define(filename_mesh=None,
     }
 
     fields = {
-        'f': ('real', 'scalar', 'Omega', str(approx_order) + 'd', 'DG', 'legendre')
+        'f': ('real', 'scalar', 'Omega',
+              str(approx_order) + 'd', 'DG', 'legendre')
     }
 
     variables = {
@@ -116,21 +117,25 @@ def define(filename_mesh=None,
 
         elif bc.diff == 1:
             if "left" in bc.name:
-                res = nm.stack(((4*(x_2 - 1)*cos(4) - 5*x_2*cos(5*x_2))*(exp(-t) - 1),
+                res = nm.stack(((4*(x_2 - 1)*cos(4) - 5*x_2*cos(5*x_2))*
+                                 (exp(-t) - 1),
                                     -5*(exp(-t) - 1)*cos(5*x_2)),
                                axis=-2)
             elif "bottom" in bc.name:
                 res = nm.stack(((5*cos(-5*x_1) - 8*cos(8*x_1 - 4))*(exp(-t) - 1),
-                                -(5*x_1*cos(-5*x_1) - 4*(x_1 - 1)*cos(8*x_1 - 4))*(exp(-t) - 1)),
+                                -(5*x_1*cos(-5*x_1) - 4*(x_1 - 1)*cos(8*x_1 - 4))*
+                                 (exp(-t) - 1)),
                                axis=-2)
 
             elif "right" in bc.name:
-                res = nm.stack(((4*(x_2 - 1)*cos(4) - 5*x_2*cos(5*x_2))*(exp(-t) - 1),
+                res = nm.stack(((4*(x_2 - 1)*cos(4) - 5*x_2*cos(5*x_2))*
+                                 (exp(-t) - 1),
                                 -5*(exp(-t) - 1)*cos(5*x_2)),
                                axis=-2)
             elif "top" in bc.name:
                 res = nm.stack((-5*(exp(-t) - 1)*cos(5*x_1),
-                                (4*(x_1 - 1)*cos(4) - 5*x_1*cos(5*x_1))*(exp(-t) - 1)),
+                                (4*(x_1 - 1)*cos(4) - 5*x_1*cos(5*x_1))*
+                                 (exp(-t) - 1)),
                                axis=-2)
 
         return res
@@ -145,11 +150,21 @@ def define(filename_mesh=None,
             cos = nm.cos
             exp = nm.exp
             res = (
-                    + (5 * x_1 * cos(5 * x_1 * x_2) - 4 * (x_1 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
-                    + (5 * x_2 * cos(5 * x_1 * x_2) - 4 * (x_2 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
-                    - ((25 * x_1 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_1 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)
-                     + (25 * x_2 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_2 - 1) ** 2 * sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)) * diffcoef
-                    + (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * exp(-t)
+                + (5 * x_1 * cos(5 * x_1 * x_2)
+                   - 4 * (x_1 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) *
+                  (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2)
+                                        - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
+                + (5 * x_2 * cos(5 * x_1 * x_2)
+                   - 4 * (x_2 - 1) * cos(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) *
+                  (exp(-t) - 1) ** 2 * (sin(5 * x_1 * x_2)
+                                        - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))
+                - diffcoef *
+                  ((25 * x_1 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_1 - 1) ** 2 *
+                    sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1)
+                 + (25 * x_2 ** 2 * sin(5 * x_1 * x_2) - 16 * (x_2 - 1) ** 2 *
+                    sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2)) * (exp(-t) - 1))
+                + (sin(5 * x_1 * x_2) - sin(4 * x_1 * x_2 - 4 * x_1 - 4 * x_2))*
+                  exp(-t)
             )
             return {"val": res[..., None, None]}
 
@@ -225,7 +240,7 @@ def define(filename_mesh=None,
         'ls'              : 'ls.mumps',
         'save_times'      : 100,
         'output_format'   : 'msh',
-		'file_format'     : 'gmsh-dg',
+        'file_format'     : 'gmsh-dg',
         'pre_process_hook': get_cfl_setup(CFL=cfl, dt=dt)
     }
 
