@@ -64,13 +64,23 @@ class DGTerm(Term):
         return out, status
 
     @staticmethod
-    def _get_nbrhd_dof_indexes(active_cells, active_nrbhs, field):
-        """
-        Get indexes of DOFs of neighbouring cells, maybe move to DGField?
-        :param active_cells:
-        :param active_nrbhs:
-        :param field:
-        :return:
+    def _get_nbrhd_dof_indexes(cells, nrbhs, field):
+        """Get indexes of DOFs for active and of active neighbouring cells
+
+        Parameters
+        ----------
+        cells : array_like
+            cells indicies
+        nrbhs : array_like
+            cell - nbrhd indicies
+        field : DGField
+
+        Returns
+        -------
+        iels : ndarray
+            inner and outer DOF indicies, i.e. diagonal indicies and then their
+            corresponding neighbour indicies
+
         """
         inner_iels = field.bubble_dofs
         inner_iels = nm.stack((nm.repeat(inner_iels, field.n_el_nod),
@@ -78,8 +88,8 @@ class DGTerm(Term):
                               axis=-1)
 
         outer_iels = nm.stack(
-            (nm.repeat(field.bubble_dofs[active_cells], field.n_el_nod),
-             nm.tile(field.bubble_dofs[active_nrbhs], field.n_el_nod).flatten()),
+            (nm.repeat(field.bubble_dofs[cells], field.n_el_nod),
+             nm.tile(field.bubble_dofs[nrbhs], field.n_el_nod).flatten()),
              axis=-1)
 
         iels = nm.vstack((inner_iels, outer_iels))
@@ -240,7 +250,6 @@ class DiffusionDGFluxTerm(DGTerm):
     r"""
     Basic DG diffusion flux term for scalar quantity.
 
-
      :Definition:
 
     .. math::
@@ -304,7 +313,7 @@ class DiffusionDGFluxTerm(DGTerm):
     def function(self, out, state, diff_var, field, region, D):
         if diff_var is not None:  # matrix mode
             # outR = out.copy()[..., 0:1]
-            out = self.function_matrix(out, state, diff_var, field, region, D)
+            out = self._function_matrix(out, state, diff_var, field, region, D)
 
             # vals, ielsi, ielsj = out[:3]
             # from scipy.sparse import coo_matrix
@@ -314,7 +323,7 @@ class DiffusionDGFluxTerm(DGTerm):
             # u = state.data[0]
             # Mu = nm.dot(M, u).reshape((field.n_cell, field.n_el_nod))
             #
-            # outR = self.function_residual(outR, state, diff_var, field,
+            # outR = self._function_residual(outR, state, diff_var, field,
             #                                   region, D).squeeze()
             # from matplotlib import pyplot as plt
             # plt.imshow((Mu - outR).T, aspect="auto")
@@ -326,13 +335,13 @@ class DiffusionDGFluxTerm(DGTerm):
             # plt.show()
 
         else:  # residual mode
-            out = self.function_residual(out, state, diff_var, field, region, D)
+            out = self._function_residual(out, state, diff_var, field, region, D)
 
         status = None
         return out, status
 
 
-    def function_matrix(self, out, state, diff_var, field, region, D):
+    def _function_matrix(self, out, state, diff_var, field, region, D):
         fc_n = field.get_cell_normals_per_facet(region)
 
         nbrhd_idx = field.get_facet_neighbor_idx(region, state.eq_map)
@@ -386,7 +395,7 @@ class DiffusionDGFluxTerm(DGTerm):
         out = (vals, iels[:, 0], iels[:, 1], state, state)
         return out
 
-    def function_residual(self, out, state, diff_var, field, region, D):
+    def _function_residual(self, out, state, diff_var, field, region, D):
         fc_n = field.get_cell_normals_per_facet(region)
 
         # get base values

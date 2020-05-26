@@ -13,9 +13,7 @@ from sfepy.solvers.ts_solvers import standard_ts_call
 
 
 class DGMultiStageTSS(TimeSteppingSolver):
-    """
-    Explicit time stepping solver with multistage solve_step method
-    """
+    """Explicit time stepping solver with multistage solve_step method"""
     __metaclass__ = SolverMeta
     name = "ts.multistaged"
 
@@ -76,7 +74,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
     def solve_step(self, ts, nls, vec, prestep_fun=None, poststep_fun=None,
                    status=None):
-        raise NotImplementedError("Called abstract solver, call subclass.")
+        raise NotImplementedError("Called abstract solver, use subclass.")
 
     def output_step_info(self, ts):
         output(self.format % (ts.time, ts.step + 1, ts.n_step),
@@ -121,9 +119,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
 
 class EulerStepSolver(DGMultiStageTSS):
-    """
-    Updates solution using euler method
-    """
+    """Updates solution using forward euler method"""
     name = 'ts.euler'
     __metaclass__ = SolverMeta
 
@@ -165,9 +161,12 @@ class EulerStepSolver(DGMultiStageTSS):
 
 
 class TVDRK3StepSolver(DGMultiStageTSS):
-    """
-    3rd order Total Variation Diminishing Runge-Kutta method
-
+    """3rd order Total Variation Diminishing Runge-Kutta method based on
+    Gottlieb, S., & Shu, C.-W. (2002).
+    Total variation diminishing Runge-Kutta schemes. Mathematics of Computation
+    of the American Mathematical Society, 67(221), 73–85.
+    https://doi.org/10.1090/s0025-5718-98-00913-2
+    
     math::
         u^{(1)} &= u^n + \Delta t \mathcal{L}(u^n) \\
         u^{(2)} &= \frac{3}{4}u^n +\frac{1}{4}u^{(1)} + \frac{1}{4}\Delta t \mathcal{L}(u^{(1)})\\
@@ -247,13 +246,10 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
 
 class RK4StepSolver(DGMultiStageTSS):
-    """
-    Based on Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
-    Journal of Physics A: Mathematical and Theoretical (Vol. 54). New York, NY: Springer New York.
-    http://doi.org/10.1007/978-0-387-72067-8
-
-    p. 63
-
+    """Based on
+    Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
+    Journal of Physics A: Mathematical and Theoretical (Vol. 54). New York,
+    NY: Springer New York. http://doi.org/10.1007/978-0-387-72067-8, p. 63
     """
     name = 'ts.runge_kutta_4'
     __metaclass__ = SolverMeta

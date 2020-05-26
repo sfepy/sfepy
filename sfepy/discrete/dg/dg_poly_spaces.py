@@ -12,15 +12,24 @@ from scipy.special import eval_jacobi as scp_eval_jacobi
 
 
 def iter_by_order(order, dim, extended=False):
-    """
-    Iterates over all combinations of basis functions indexes
+    """Iterates over all combinations of basis functions indexes
     needed to create multidimensional basis in a way that creates hierarchical basis
-    :param order: desired order of multidimensional basis
-    :param dim: dimension of the basis
-    :param extended
 
-    :yields: tuple containing indexes, use in _combine_polyvals and _combine_polyvals_der
-    :return: None
+    Parameters
+    ----------
+    order : int
+        desired order of multidimensional basis
+    dim : int
+        dimension of the basis
+    extended : bool
+        iterate over extended tensor product basis
+        (Default value = False)
+
+    Yields
+    ------
+    idx : tuple
+        containing basis function indexes, used in
+        _combine_polyvals and _combine_polyvals_der
     """
 
     # nth(iter(map(lambda x: x + (order - reduce(add,x),)), range(order)), dim)
@@ -51,19 +60,29 @@ def iter_by_order(order, dim, extended=False):
 
 
 def get_n_el_nod(order, dim, extended=False):
-    """
-    Number of nodes per element for discontinuous legendre basis, i.e.
+    """Number of nodes per element for discontinuous legendre basis, i.e.
     number of iterations yielded by iter_by_order
-
+    
     math::
         N_p =  \frac{(n + 1) \cdot (n + 2) \cdot ... \cdot (n + d)}{d!}
-
+    
         where n is the order and d the dimension
 
-    :param order:
-    :param dim:
-    :param extended
-    :return:
+    Parameters
+    ----------
+    order : int
+        desired order of multidimensional basis
+    dim : int
+        dimension of the basis
+    extended : bool
+        iterate over extended tensor product basis
+        (Default value = False)
+
+
+    Returns
+    -------
+    n_el_nod : int
+        number of basis functions in basis
     """
     if extended:
         return (order + 1) ** dim
@@ -72,17 +91,20 @@ def get_n_el_nod(order, dim, extended=False):
 
 
 class LegendrePolySpace(PolySpace):
-    """
-    Legendre hierarchical polynomials basis, over [0, 1] domain.
-    """
+    """Legendre hierarchical polynomials basis, over [0, 1] domain."""
 
     def __init__(self, name, geometry, order, extended):
         """
-        :param name:
-        :param geometry: geometry object
-        :param order: approximation order, 0 for constant functions, 1 for linear etc.
-        """
 
+        Parameters
+        ----------
+        name
+        geometry
+        order : int
+            approximation order, 0 for constant functions, 1 for linear etc.
+        extended : bool
+            for extended tensor product space
+        """
         PolySpace.__init__(self, name, geometry, order)
         self.extended = extended  # only tensor product polyspace is extended
         self.n_v = geometry.n_vertex,
@@ -94,22 +116,30 @@ class LegendrePolySpace(PolySpace):
 
     def _eval_base(self, coors, diff=0, ori=None,
                    suppress_errors=False, eps=1e-15):
-        """
-        Calls _combine_polyvals or _combine_polyvals_diff to build multidimensional basis
-        implement these methods in subclasses to get different basis.
-        expects coors to be in shape
+        """Calls _combine_polyvals or _combine_polyvals_diff to build
+        multidimensional basis implemented in subclasses to get basis for
+        different geometries expects coors to be in shape
             (..., dim),
         Returns values of the basis in shape
             (coors.shape[:-1], 1, n_el_nod)
         or values of the gradient in shape
             (1, coors.shape[:-1], dim, n_el_nod)
 
-        :param coors:
-        :param diff:
-        :param ori: we do not need ori, because the basis is discontinous across elements
-        :param suppress_errors:
-        :param eps:
-        :return:
+        Parameters
+        ----------
+        coors : array_like
+        ori : unused
+            we do not need ori, because the basis is discontinous across
+            elements this is treated in DGField(Default value = None)
+        suppress_errors : has no effect
+        diff : int or truthy
+             (Default value = 0)
+        eps : unused
+             (Default value = 1e-15)
+
+        Returns
+        -------
+        values : ndarray
         """
         coors = 2 * coors - 1  # transofrm from [0, 1] to [-1, 1]
         porder = self.order + 1
@@ -144,24 +174,31 @@ class LegendrePolySpace(PolySpace):
         return values
 
     def get_interpol_scheme(self):
-        """
-        For dim > 1 returns F and P matrices according to gmsh basis specification:
-
+        """For dim > 1 returns F and P matrices according to gmsh basis specification:
+        
         Let us assume that the approximation of the view's value over an element
         is written as a linear  combination of d basis functions
         f[i], i=0, ..., d-1 (the coefficients being stored in list-of-values).
-
+        
         Defining
-
+        
         f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
-
+        
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the
         coordinates in the element's parameter space), then val-coef-matrix
         denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
-
+        
         Expects matrices to be saved in atributes coefM and expoM!
+        
+        :return:
 
-        :return: Struct with name of the scheme, geometry desc and P and F
+        Parameters
+        ----------
+
+        Returns
+        -------
+        interp_scheme_struct : Struct
+            Struct with name of the scheme, geometry desc and P and F
         """
         interp_scheme_struct = None
         if self.dim > 1:
@@ -172,29 +209,42 @@ class LegendrePolySpace(PolySpace):
 
     @abstractmethod
     def _combine_polyvals(self, coors, polyvals, idx):
-        """
-        Combines Legendre or Jacobi polynomials to get muldidimensional
+        """Combines Legendre or Jacobi polynomials to get muldidimensional
         basis values according to element topolgy
 
+        Parameters
+        ----------
+        coors : array_like
+            coordinates of evaluation points
+        polyvals : array_like
+            values of legendre polynomials precomputed in _eval_base
+        idx : tuple
+            function index, for tensor-product correspond to orders of polynomials in variables
 
-        :param coors: coordinates of evaluation points
-        :param polyvals: values of legendre polynomials precomputed in _eval_base
-        :param idx: function index, for tensor-product correspond to orders of polynomials in variables
-        :return:
+        Returns
+        -------
+        values : ndarray
         """
 
     @abstractmethod
     def _combine_polyvals_diff(self, coors, polyvals, der, idx):
-        """
-        Combines Legendre or Jacobi polynomials to get muldidimensional
+        """Combines Legendre or Jacobi polynomials to get muldidimensional
         basis derivative values according to element topolgy.
 
+        Parameters
+        ----------
+        coors : array_like
+            coordinates of evaluation points
+        polyvals : array_like
+            values of legendre polynomials precomputed in _eval_base
+        der : int
+            derivative variable
+        idx : tuple
+            function index, for tensor-product correspond to orders of polynomials in variables
 
-        :param coors: coordinates of evaluation points
-        :param polyvals: values of legendre polynomials precomputed in _eval_base
-        :param der: derivative variable
-        :param idx: function index, for tensor-product correspond to orders of polynomials in variables
-        :return:
+        Returns
+        -------
+        values : ndarray
         """
 
     # --------------------- #
@@ -202,39 +252,63 @@ class LegendrePolySpace(PolySpace):
     # --------------------- #
     def legendreP(self, coors):
         """
-        :param coors: coordinates, preferably in interval [-1, 1] for which this basis is intented
-        :return: values in coors of all the legendre polynomials up to self.order
+        Parameters
+        ----------
+        coors : array_like
+            coordinates, preferably in interval [-1, 1] for which this basis is intented
+
+        Returns
+        -------
+        values : ndarray
+            values at coors of all the legendre polynomials up to self.order
+
         """
         return self.jacobiP(coors, alpha=0, beta=0)
 
     def gradlegendreP(self, coors, diff=1):
         """
-        :param diff: default 1
-        :param coors: coordinates, preferably in interval [-1, 1] for which this basis is intented
-        :return: values in coors of all the legendre polynomials up to self.order
+
+        Parameters
+        ----------
+        diff : int
+            default 1
+        coors : array_like
+            coordinates, preferably in interval [-1, 1] for which this basis is intented
+
+        Returns
+        -------
+        values : ndarray
+            values at coors of all the legendre polynomials up to self.order
+
         """
         return self.gradjacobiP(coors, 0, 0, diff=diff)
 
-    funs = [lambda x: x - x + 1,
-            # we need constant preserving shape and type of x
-            lambda x: 2 * x - 1,
-            lambda x: (6 * x ** 2 - 6 * x + 1),
-            lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
-            lambda x: (70 * x ** 4 - 140 * x ** 3 + 90 * x ** 2 - 20 * x + 1),
-            lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3 - 210 * x ** 2 + 30 * x - 1)
-            ]
+    legendre_funs = [lambda x: 0 * x + 1,
+                     # we need constant preserving shape and type of x
+                     lambda x: 2 * x - 1,
+                     lambda x: (6 * x ** 2 - 6 * x + 1),
+                     lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
+                     lambda x: (70 * x ** 4 - 140 * x ** 3 + 90 * x ** 2 - 20 * x + 1),
+                     lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3 - 210 * x ** 2 + 30 * x - 1)
+                     ]
 
     def get_nth_fun(self, n):
-        """
-        Uses shifted Legendre
-        polynomials formula on interval [0, 1].
+        """Uses shifted Legendre polynomials formula on interval [0, 1].
+
         Convenience function for testing
-        :param n: 0,1 , 2, 3, ...
-        :return: n-th function of the legendre basis
+
+        Parameters
+        ----------
+        n : int
+
+        Returns
+        -------
+        fun : callable
+            n-th function of the legendre basis
         """
 
         if n < 6:
-            return self.funs[n]
+            return self.legendre_funs[n]
         else:
             from scipy.special import comb as comb
 
@@ -248,15 +322,36 @@ class LegendrePolySpace(PolySpace):
             return fun
 
     def get_nth_fun_der(self, n, diff=1):
-        """
-        Returns diff derivative of nth function. Uses shifted legendre
-        polynomials formula on interval [0, 1]. Useful for testing.
-        :param n:
-        :param diff:
-        :return: derivative of n-th function of the legendre basis
+        """Returns diff derivative of nth function. Uses shifted legendre
+        polynomials formula on interval [0, 1].
+
+        Useful for testing.
+
+        Parameters
+        ----------
+        n : int
+        diff : int
+             (Default value = 1)
+
+        Returns
+        -------
+        fun : callable
+            derivative of n-th function of the 1D legendre basis
+
         """
 
         def dfun(x):
+            """
+
+            Parameters
+            ----------
+            x :
+                
+
+            Returns
+            -------
+
+            """
             from scipy.special import comb as comb, factorial
             val = x[:] * 0.0
             for k in range(diff, n + 1):
@@ -272,13 +367,21 @@ class LegendrePolySpace(PolySpace):
     #  1D jacobi polyspace  #
     # --------------------- #
     def jacobiP(self, coors, alpha, beta):
-        """
-        Values of the jacobi polynomials on interval [-1, 1]
+        """Values of the jacobi polynomials on interval [-1, 1]
         up to self.order + 1 at coors
-        :param coors:
-        :param alpha:
-        :param beta:
-        :return: output shape is shape(coor) + (self.order + 1,)
+
+        Parameters
+        ----------
+        coors : array_like
+        beta : float
+        alpha : float
+            
+
+        Returns
+        -------
+        values : ndarray
+            output shape is shape(coor) + (self.order + 1,)
+
         """
         if not isinstance(coors, nm.ndarray):
             sh = (1,)
@@ -294,16 +397,25 @@ class LegendrePolySpace(PolySpace):
         return values
 
     def gradjacobiP(self, coors, alpha, beta, diff=1):
-        """
-        diff derivative of the jacobi polynomials on interval [-1, 1]
+        """diff derivative of the jacobi polynomials on interval [-1, 1]
         up to self.order + 1 at coors
 
+        Parameters
+        ----------
+        coors :
 
-        :param coors:
-        :param alpha:
-        :param beta:
-        :param diff:
-        :return: output shape is shape(coor) + (self.order + 1,)
+        alpha : float
+
+        beta : float
+
+        diff : int
+             (Default value = 1)
+
+        Returns
+        -------
+        values : ndarray
+            output shape is shape(coor) + (self.order + 1,)
+
         """
         if isinstance(coors, (int, float)):
             sh = (1,)
@@ -343,57 +455,40 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def build_interpol_scheme(self):
-        """
-        Builds F and P matrices according to gmsh basis specification:
-
+        """Builds F and P matrices according to gmsh basis specification:
+        
         Let us assume that the approximation of the view's value over an element
         is written as a linear  combination of d basis functions
         f[i], i=0, ..., d-1 (the coefficients being stored in list-of-values).
-
+        
         Defining
-
+        
         f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
-
+        
         with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the
         coordinates in the element's parameter space), then val-coef-matrix
         denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
-
+        
         Note that this function returns coeficients according to gmsh
         parametrization of Quadrangle i.e. [-1, 1] x [-1, 1] and hence the form
         of basis function is not the same as exhibited by the
         LegendreTensorProductPolySpace object which acts on parametrization
         [0, 1] x [0, 1].
 
-        :return: F, P
+
+        Returns
+        -------
+        F : ndarray
+            coefficient matrix
+        P : ndarray
+            exponent matrix
         """
-
-        def flattten_upper_left_triag(A):
-            """
-            Returns flattened upper triangular part of the antidiagonal
-            of the matrix
-            i.e. zeros in this case:
-                0 0 0
-                0 0 .
-                0 . .
-            If the matrix represents product of two polynomials this effectively
-            gets rid of highest powers
-            x^2y, xy^2, x^2y^2
-            :param A:
-            :return:
-            """
-            # Antidiagonal
-            res = []
-            for i, row in enumerate(A):
-                res.append(row[:A.shape[1] - i])
-            return nm.concatenate(res)
-
         P = nm.zeros((self.n_nod, 3), dtype=nm.int32)
         for m, idx in enumerate(
                 iter_by_order(self.order, self.dim, self.extended)):
             P[m, :self.dim] = idx
 
         F = nm.zeros((self.n_nod, self.n_nod))
-
         for m, idx in enumerate(
                 iter_by_order(self.order, self.dim, self.extended)):
             xcoefs = list(scp_jacobi(idx[0], 0, 0).coef)[::-1]
@@ -436,10 +531,8 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             a = 2 * (1 + r) / (1 - s) - 1
             a[nm.isnan(a)] = -1.
             b = s
-            return eval_jacobi(idx[0], 0, 0, a) * eval_jacobi(idx[1],
-                                                              2 * idx[0] + 1, 0,
-                                                              b) * (1 - b) ** \
-                   idx[0]
+            return eval_jacobi(idx[0], 0, 0, a) \
+                   * eval_jacobi(idx[1],2 * idx[0] + 1, 0,b) * (1 - b) ** idx[0]
         elif len(idx) == 3:  # 3D
             r = coors[..., 0]
             s = coors[..., 1]
@@ -455,7 +548,8 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                                                     (1 - c) ** (idx[0] + idx[1])
 
     def _combine_polyvals_diff(self, coors, polyvals, dvar, idx):
-        if len(idx) == 1:  # D
+
+        if len(idx) == 1:  # 1D
             dimz = range(len(idx))
             derz = nm.zeros(len(idx), dtype=nm.int32)
             derz[dvar] = 1

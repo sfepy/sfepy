@@ -49,14 +49,15 @@ def get_cfl_setup(CFL=None, dt=None):
     Courant-Friedrichs-Levi stability condition for either advection or
     diffusion.
 
-    Params
-    ------
+    Parameters
+    ----------
     CFL : float, optional
     dt: float, optional
 
     Returns
     -------
-    setup_cfl_condition(sfepy.discrete.problem)
+    setup_cfl_condition : callable
+        expects sfepy.discrete.problem as argument
 
     """
 
@@ -66,8 +67,10 @@ def get_cfl_setup(CFL=None, dt=None):
     def setup_cfl_condition(problem):
         """
         Sets up CFL condition for problem ts_conf in problem
-        :param problem: discrete.problem.Problem
-        :return:
+
+        Parameters
+        ----------
+            problem : discrete.problem.Problem
         """
         ts_conf = problem.ts_conf
         mesh = problem.domain.mesh
@@ -127,7 +130,21 @@ def get_cfl_setup(CFL=None, dt=None):
 
 
 def get_cfl_advection(max_velo, dx, approx_order, CFL):
+    """
+
+    Parameters
+    ----------
+    max_velo : float
+    dx : float
+    approx_order : int
+    CFL : CFL
+
+    Returns
+    -------
+    dt : float
+    """
     order_corr = 1. / (2 * approx_order + 1)
+
 
     dt = dx / max_velo * CFL * order_corr
 
@@ -142,6 +159,21 @@ def get_cfl_advection(max_velo, dx, approx_order, CFL):
 
 def get_cfl_diffusion(max_diffusion, dx, approx_order, CFL,
                       do_order_corr=False):
+    """
+
+    Parameters
+    ----------
+    max_diffusion : float
+    dx : float
+    approx_order : int
+    CFL : float
+    do_order_corr : bool
+
+
+    Returns
+    -------
+    dt : float
+    """
     if max_diffusion is None:
         return 1
 
@@ -162,6 +194,21 @@ def get_cfl_diffusion(max_diffusion, dx, approx_order, CFL,
 
 
 def get_gen_1D_mesh_hook(XS, XE, n_nod):
+    """
+
+    Parameters
+    ----------
+    XS : float
+        leftmost coordinate
+    XE : float
+        rightmost coordinate
+    n_nod : int
+        number of nodes, number of cells is then n_nod - 1
+
+    Returns
+    -------
+    mesh_hook : callable
+    """
     def mesh_hook(mesh, mode):
         """
         Generate the 1D mesh.
@@ -186,6 +233,27 @@ def get_gen_1D_mesh_hook(XS, XE, n_nod):
 
 def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
                             coors=None, verbose=True):
+    """
+
+    Parameters
+    ----------
+    dims : array of 2 or 3 floats
+        Dimensions of the block.
+    shape : array of 2 or 3 ints
+        Shape (counts of nodes in x, y, z) of the block mesh.
+    centre : array of 2 or 3 floats
+        Centre of the block.
+    mat_id : int, optional
+        The material id of all elements.
+    name : string
+        Mesh name.
+    verbose : bool
+        If True, show progress of the mesh generation.
+
+    Returns
+    -------
+    mesh_hook : callable
+    """
     def mesh_hook(mesh, mode):
         """
         Generate the 1D mesh.
@@ -205,10 +273,18 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
 def clear_folder(clear_format, confirm=False, doit=True):
     """
     Deletes files matching the format
-    :param clear_format:
-    :param confirm:
-    :param doit: if False do not delete anything no matter the confirmation
-    :return: True if there was somethng to delete
+
+    Parameters
+    ----------
+    clear_format : str
+    confirm : bool
+    doit : bool
+        if False do not delete anything no matter the confirmation
+
+    Returns
+    -------
+    deleted_anything :
+        True if there was something to delete
     """
     files = glob(clear_format)
     if confirm:

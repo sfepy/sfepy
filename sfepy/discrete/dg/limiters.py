@@ -11,14 +11,23 @@ MACHINE_EPS = 1e-30
 
 
 def minmod(a, b, c):
-    """
-    Minmod function of three variables, returns
-     _ ┌ 0           , where sign(a) != sign(b) != sign(c)
-       └ min(a,b,c)  , elsewhere
-    :param a:
-    :param b:
-    :param c:
-    :return:
+    """Minmod function of three variables, returns:
+
+    0           , where sign(a) != sign(b) != sign(c)
+
+    min(a,b,c)  , elsewhere
+
+    Parameters
+    ----------
+    a : array_like
+
+    c : array_like
+
+    b : array_like
+
+    Returns
+    -------
+    out : ndarray
     """
     seq = (nm.sign(a) == nm.sign(b)) & (nm.sign(b) == nm.sign(c))
 
@@ -26,11 +35,25 @@ def minmod(a, b, c):
     res[seq] = nm.sign(a[seq]) * nm.minimum.reduce([nm.abs(b[seq]),
                                                     nm.abs(a[seq]),
                                                     nm.abs(c[seq])])
-
     return res
 
 
 def minmod_seq(abc):
+    """Minmod function of n variables, returns:
+
+    0           , where sign(a_1) != sign(a_2) != ... != sign(a_n)
+
+    min(a_1, a_2, a_3, ... , a_n)  , elsewhere
+
+    Parameters
+    ----------
+    abc : sequence of array_like
+        
+
+    Returns
+    -------
+    out : ndarray
+    """
     seq = nm.hstack([nm.sign(x) for x in abc])
     seq = seq[:, 0, None] == seq
     seq = seq.prod(axis=1).astype(bool)
@@ -59,6 +82,7 @@ class DGLimiter:
 
 
 class IdentityLimiter(DGLimiter):
+    """Neutral limiter returning unchanged solution."""
     name = "identity"
 
     def __call__(self, u):
@@ -67,16 +91,20 @@ class IdentityLimiter(DGLimiter):
 
 
 class MomentLimiter1D(DGLimiter):
-    """
-    Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods
-    """
+    """ Moment limiter for 1D based on
+    Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
     name = "moment_1D_limiter"
 
     def __call__(self, u):
         """"
-        :param u: solution at time step n in shape
-        (order, n_space_nod)
-        :return: limited solution
+        Parameters
+        ----------
+        u : array_like
+            raveled solution at time step n in shape (order * n_space_nod, ...)
+        Returns
+        -------
+        u : ndarray
+            unraveled limited solution
         """
         # for convenience do not try to limit FV
         if self.n_el_nod == 1:
@@ -107,12 +135,22 @@ class MomentLimiter1D(DGLimiter):
 
 
 class MomentLimiter2D(DGLimiter):
-    """
-    Krivodonova(2007): Limiters for high-order discontinuous Galerkin methods
-    """
+    """ Moment limiter for 2D based on
+    Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
     name = "moment_limiter_2D"
 
     def __call__(self, u):
+        """
+        Parameters
+        ----------
+        u : array_like
+            raveled solution at time step n in shape (order * n_space_nod, ...)
+
+        Returns
+        -------
+        u : ndarray
+            unraveled limited solution
+        """
         if self.n_el_nod == 1:
             if self.verbose: output(self.name + " no limiting for FV.")
             return u
