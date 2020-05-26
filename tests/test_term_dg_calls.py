@@ -47,7 +47,7 @@ class Test(TestCommon):
         for cname, term_test_cls in term_test_classes:
             term_test = term_test_cls()
             methods = inspect.getmembers(term_test, inspect.ismethod)
-            all_test.update({f"{mname}_{cname[4:]}":
+            all_test.update({"{}_{}".format(mname, cname[4:]):
                              all_test.capture_assertion_decorator(meth)
                          for mname, meth in methods})
         return all_test
