@@ -64,7 +64,7 @@ def main():
     if not options.analyze_dispersion:
         required.remove('solver_[0-9]+|solvers')
     if options.phase_velocity:
-        required.remove('ebc_[0-9]+|ebcs')
+        required = [ii for ii in required if 'ebc' not in ii]
     conf = ProblemConf.from_file(options.filename_in, required, other)
 
     app = AcousticBandGapsApp(conf, options, 'phonon:')
