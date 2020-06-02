@@ -538,7 +538,7 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
 
         from scipy.special import eval_jacobi
         if len(idx) == 1:  # 1D
-            nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
+            return nm.prod(polyvals[..., range(len(idx)), idx], axis=-1)
         elif len(idx) == 2:  # 2D
             r = coors[..., 0]
             s = coors[..., 1]
