@@ -14,6 +14,7 @@ from sfepy.base.conf import transform_variables, transform_materials
 from sfepy.base.timing import Timer
 from .functions import Functions
 from sfepy.discrete.fem.mesh import Mesh
+from sfepy.discrete.fem.meshio import check_format_suffix
 from sfepy.discrete.fem.fields_base import set_mesh_coors
 from sfepy.discrete.common.fields import fields_from_conf
 from .variables import Variables, Variable
@@ -425,17 +426,7 @@ class Problem(Struct):
         self.output_format = get_default(output_format, 'vtk')
         self.file_format = file_format
         if self.file_format is not None:
-            from sfepy.discrete.fem.meshio import supported_formats
-            try:
-                suffixes = supported_formats[self.file_format][1]
-
-            except KeyError:
-                raise ValueError('unknown file format! (%s)'
-                                 % self.file_format)
-
-            if ('.' + self.output_format) not in suffixes:
-                raise ValueError('%s format is not compatible with .%s suffix!'
-                                 % (self.file_format, self.output_format))
+            check_format_suffix(self.file_format, self.output_format)
 
         self.float_format = get_default(float_format, None)
         self.file_per_var = get_default(file_per_var, False)

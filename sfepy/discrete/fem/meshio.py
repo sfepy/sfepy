@@ -135,6 +135,25 @@ def convert_complex_output(out_in):
 
     return out
 
+def check_format_suffix(file_format, suffix):
+    """
+    Check compatibility of a mesh file format and a mesh file suffix.
+    """
+    if file_format is None: return
+
+    try:
+        suffixes = supported_formats[file_format][1]
+
+    except KeyError:
+        raise ValueError('unknown file format! (%s)'
+                         % file_format)
+
+    if suffix is None: return
+
+    suffix = suffix if suffix.startswith('.') else '.' + suffix
+    if suffix not in suffixes:
+        raise ValueError('"%s" format is not compatible with "%s" suffix!'
+                         % (file_format, suffix))
 
 class MeshIO(Struct):
     """
