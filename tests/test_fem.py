@@ -226,7 +226,7 @@ class Test(TestCommon):
         data. Also test that sum of values over all element nodes gives one.
         """
         from sfepy.base.base import ordered_iteritems
-        from sfepy.discrete.fem.poly_spaces import PolySpace
+        from sfepy.discrete import PolySpace
 
         ok = True
 
@@ -264,7 +264,7 @@ class Test(TestCommon):
         reference element nodes.
         """
         from sfepy.base.base import ordered_iteritems
-        from sfepy.discrete.fem.poly_spaces import PolySpace
+        from sfepy.discrete import PolySpace
 
         ok = True
 

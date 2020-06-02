@@ -13,10 +13,9 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import get_print_info, ensure_path
-from sfepy.discrete import FieldVariable, Variables
+from sfepy.discrete import FieldVariable, Variables, PolySpace
 from sfepy.discrete.fem import Mesh, FEDomain, Field
 from sfepy.discrete.fem.geometry_element import GeometryElement
-from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.linearizer import create_output
 from sfepy.discrete.fem.fields_base import create_expression_output
 

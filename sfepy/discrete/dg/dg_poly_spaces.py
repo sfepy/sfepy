@@ -6,8 +6,8 @@ from operator import mul
 import numpy as nm
 
 from sfepy.base.ioutils import InDir
-from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.base.base import Struct
+from sfepy.discrete import PolySpace
 from scipy.special import jacobi as scp_jacobi
 from scipy.special import eval_jacobi as scp_eval_jacobi
 

@@ -34,9 +34,8 @@ class Test(TestCommon):
         Check orientations of surface normals on the reference elements.
         """
         import sfepy
-        from sfepy.discrete import Integral
+        from sfepy.discrete import Integral, PolySpace
         from sfepy.discrete.fem import Mesh, FEDomain
-        from sfepy.discrete.fem.poly_spaces import PolySpace
         from sfepy.discrete.fem.mappings import SurfaceMapping
         from sfepy.linalg import normalize_vectors
 
