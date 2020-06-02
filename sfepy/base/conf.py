@@ -20,7 +20,7 @@ import six
 _required = ['filename_mesh|filename_domain', 'field_[0-9]+|fields',
             # TODO originaly EBC were required to be specified but in some examples
             #  (especially 1D) only EPBCs specified is valid
-             '(ebc_[0-9]+|ebcs|dgebc_[0-9]+|dgebcs|dgepbc_[0-9]+|dgepbcs)',
+             'ebc_[0-9]+|ebcs|dgebc_[0-9]+|dgebcs|dgepbc_[0-9]+|dgepbcs',
              'equations',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials',
