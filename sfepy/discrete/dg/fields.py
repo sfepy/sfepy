@@ -8,13 +8,10 @@ from numpy.lib.stride_tricks import as_strided
 from six.moves import range
 
 from sfepy.base.base import (output, assert_, Struct)
-from sfepy.discrete import Integral
+from sfepy.discrete import Integral, PolySpace
 from sfepy.discrete.common.fields import parse_shape
-from sfepy.discrete.dg.dg_poly_spaces import LegendreSimplexPolySpace
-from sfepy.discrete.dg.dg_poly_spaces import LegendreTensorProductPolySpace
 from sfepy.discrete.fem.fields_base import FEField
 from sfepy.discrete.fem.mappings import VolumeMapping
-from sfepy.discrete.fem.poly_spaces import PolySpace
 
 
 def get_unraveler(n_el_nod, n_cell):
@@ -194,21 +191,7 @@ class DGField(FEField):
         self.space = space
         self.poly_space_base = poly_space_base
         self.force_bubble = False
-        if self.gel.name in ["1_2", "2_4", "3_8"]:
-            self.extended = True
-            self.poly_space = LegendreTensorProductPolySpace(
-                self.gel.name + "_DG_legendre",
-                self.gel, self.approx_order)
-        else:
-            self.poly_space = LegendreSimplexPolySpace(
-                self.gel.name + "_DG_legendre",
-                self.gel, self.approx_order)
-
-        # TODO make LegendrePolySpace work through PolySpace any_from_args, or
-        #  use only Legendre for DG?
-        # poly_space = PolySpace.any_from_args("legendre", self.gel,
-        #                                   base="legendre", order=approx_order)
-        # self._create_interpolant()
+        self._create_interpolant()
 
         # DOFs
         self._setup_shape()
@@ -242,13 +225,14 @@ class DGField(FEField):
         self.boundary_facet_local_idx = {}
 
     def _create_interpolant(self):
-        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
-                                  self.poly_space_base, self.approx_order,
-                                  'B' * self.force_bubble)
+        name = self.gel.name + '_DG_legendre'
         ps = PolySpace.any_from_args(name, self.gel, self.approx_order,
                                      base=self.poly_space_base,
-                                     force_bubble=self.force_bubble)
+                                     force_bubble=False)
         self.poly_space = ps
+        # 'legendre_simplex' is created for '1_2'.
+        if self.gel.name in ["2_4", "3_8"]:
+            self.extended = True
 
     def _setup_all_dofs(self):
         """Sets up all the differet kinds of DOFs, for DG only bubble DOFs"""
