@@ -2,13 +2,16 @@
 """
 Cylinder mesh generator.
 """
-from __future__ import print_function
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser
+import os.path as op
+
+import numpy as nm
+
+from sfepy.base.base import output
 from sfepy.mesh.mesh_generators import gen_cylinder_mesh
-from sfepy.discrete.fem.meshio import MeshIO
+from sfepy.discrete.fem.meshio import check_format_suffix, MeshIO
 
 helps = {
     'filename' :
@@ -72,14 +75,18 @@ def main():
                         default = False, help = helps['non_uniform'])
     options = parser.parse_args()
 
-    import numpy as nm
-    dims = eval("nm.array(%s, dtype = nm.float64)" % options.dims)
-    shape = eval("nm.array(%s, dtype = nm.int32)" % options.shape)
-    centre = eval("nm.array(%s, dtype = nm.float64)" % options.centre)
+    dims = nm.array(eval(options.dims), dtype=nm.float64)
+    shape = nm.array(eval(options.shape), dtype=nm.int32)
+    centre = nm.array(eval(options.centre), dtype=nm.float64)
 
-    print(dims)
-    print(shape)
-    print(centre)
+    output.prefix = 'cylindergen:'
+    output('dimensions:', dims)
+    output('shape:', shape)
+    output('centre:', centre)
+    output('output file:', options.output_filename)
+
+    check_format_suffix(options.format,
+                        op.splitext(options.output_filename)[1][1:])
 
     mesh = gen_cylinder_mesh(dims, shape, centre,
                              axis=options.axis,
@@ -89,8 +96,8 @@ def main():
                              non_uniform=options.non_uniform,
                              name=options.output_filename)
 
-    io = MeshIO.for_format(options.output_filename, format=options.format,
-                           writable=True)
+    io = MeshIO.any_from_filename(options.output_filename,
+                                  file_format=options.format, mode='w')
 
     mesh.write(options.output_filename, io=io)
 
