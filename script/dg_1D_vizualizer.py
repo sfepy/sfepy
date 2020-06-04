@@ -24,21 +24,35 @@ ffmpeg_path = ''  # for saving animations
 
 def animate1D_dgsol(Y, X, T, ax=None, fig=None, ylims=None, labs=None,
                     plott=None, delay=None):
-    """
-    Animates solution of 1D problem into current figure.
+    """Animates solution of 1D problem into current figure.
     Keep reference to returned animation object otherwise
     it is discarded
 
-    :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
-    :param X: space interval discetization
-    :param T: time interval discretization
-    :param ax: specify axes to plot to
-    :param fig: specifiy figure to plot to
-    :param ylims: limits for y axis, default are 10% offsets of Y extremes
-    :param labs: labels to use for parts of the solution
-    :param plott: plot type - how to plot data: tested plot, step
+    Parameters
+    ----------
+    Y :
+        solution, array |T| x |X| x n, where n is dimension of the solution
+    X :
+        space interval discetization
+    T :
+        time interval discretization
+    ax :
+        specify axes to plot to (Default value = None)
+    fig :
+        specifiy figure to plot to (Default value = None)
+    ylims :
+        limits for y axis, default are 10% offsets of Y extremes
+    labs :
+        labels to use for parts of the solution (Default value = None)
+    plott :
+        plot type - how to plot data: tested plot, step (Default value = None)
+    delay :
+         (Default value = None)
 
-    :return: the animation object, keep it to see the animation, used for savig too
+    Returns
+    -------
+    anim
+        the animation object, keep it to see the animation, used for savig too
     """
 
     ax, fig, time_text = setup_axis(X, Y, ax, fig, ylims)
@@ -71,14 +85,30 @@ def animate1D_dgsol(Y, X, T, ax=None, fig=None, ylims=None, labs=None,
 
 
 def setup_axis(X, Y, ax=None, fig=None, ylims=None):
-    """
-    Setup axis, including timer for animation or snaps
-    :param X: space disctretization to get limits
-    :param Y: solution to get limits
-    :param ax: ax where to put everything, if None current axes are used
-    :param fig: fig where to put everything, if None current figure is used
-    :param ylims: custom ylims, if None y axis limits are calculated from Y
-    :return: ax, fig, time_text object to fill in text
+    """Setup axis, including timer for animation or snaps
+
+    Parameters
+    ----------
+    X :
+        space disctretization to get limits
+    Y :
+        solution to get limits
+    ax :
+        ax where to put everything, if None current axes are used (Default value = None)
+    fig :
+        fig where to put everything, if None current figure is used (Default value = None)
+    ylims :
+        custom ylims, if None y axis limits are calculated from Y (Default value = None)
+
+    Returns
+    -------
+    ax
+
+    fig
+
+    time_text
+        object to fill in text
+
     """
     if ax is None:
         fig = plt.gcf()
@@ -98,13 +128,23 @@ def setup_axis(X, Y, ax=None, fig=None, ylims=None):
 
 
 def setup_lines(ax, Yshape, labs, plott):
-    """
-    Sets up artist for animation or solution snaps
-    :param ax: axes to use for artist
-    :param Yshape: shape of the solution array
-    :param labs: labels for the solution
-    :param plott: type of plot to use i.e. steps or plot
-    :return:
+    """Sets up artist for animation or solution snaps
+
+    Parameters
+    ----------
+    ax :
+        axes to use for artist
+    Yshape : tuple
+        shape of the solution array
+    labs : list
+        labels for the solution
+    plott : str ("steps" or "plot")
+        type of plot to use
+
+    Returns
+    -------
+
+    lines
     """
     if plott is None:
         plott = ax.plot
@@ -128,11 +168,14 @@ def setup_lines(ax, Yshape, labs, plott):
 
 
 def save_animation(anim, filename):
-    """
-    Saves animation as .mp4, requires ffmeg package
-    :param anim: animation object
-    :param filename: name of the file, without the .mp4 ending
-    :return: None
+    """Saves animation as .mp4, requires ffmeg package
+
+    Parameters
+    ----------
+    anim :
+        animation object
+    filename :
+        name of the file, without the .mp4 ending
     """
     plt.rcParams['animation.ffmpeg_path'] = ffmpeg_path
     writer = animation.FFMpegWriter(fps=24)
@@ -140,18 +183,33 @@ def save_animation(anim, filename):
 
 
 def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=None):
-    """
-    Creates snap of solution at specified time frame t0, basically gets one
+    """Creates snap of solution at specified time frame t0, basically gets one
     frame from animate1D_dgsol, but colors wont be the same :-(
-    :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
-    :param X: space interval discetization
-    :param T: time interval discretization
-    :param t0: time to take snap at
-    :param ax: specify axes to plot to
-    :param fig: specifiy figure to plot to
-    :param ylims: limits for y axis, default are 10% offsets of Y extremes
-    :param labs: labels to use for parts of the solution
-    :param plott: plot type - how to plot data: tested plot, step
+
+    Parameters
+    ----------
+    Y :
+        solution, array |T| x |X| x n, where n is dimension of the solution
+    X :
+        space interval discetization
+    T :
+        time interval discretization
+    t0 :
+        time to take snap at (Default value = .5)
+    ax :
+        specify axes to plot to (Default value = None)
+    fig :
+        specifiy figure to plot to (Default value = None)
+    ylims :
+        limits for y axis, default are 10% offsets of Y extremes
+    labs :
+        labels to use for parts of the solution (Default value = None)
+    plott :
+        plot type - how to plot data: tested plot, step (Default value = None)
+
+    Returns
+    -------
+    fig
     """
 
     ax, fig, time_text = setup_axis(X, Y, ax, fig, ylims)
@@ -175,17 +233,32 @@ def sol_frame(Y, X, T, t0=.5, ax=None, fig=None, ylims=None, labs=None, plott=No
 
 def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None,
                   ylims=None, labs=None, plott=None):
-    """
-    Wrapper for sol_frame, saves the frame to file specified.
-    :param name: name of the solution e.g. name of the solver used
-    :param filename: name of the file, overrides automatic generation
-    :param Y: solution, array |T| x |X| x n, where n is dimension of the solution
-    :param X: space interval discetization
-    :param T: time interval discretization
-    :param t0: time to take snap at
-    :param ylims: limits for y axis, default are 10% offsets of Y extremes
-    :param labs: labels to use for parts of the solution
-    :param plott: plot type - how to plot data: tested plot, step
+    """Wrapper for sol_frame, saves the frame to file specified.
+
+    Parameters
+    ----------
+    name :
+        name of the solution e.g. name of the solver used (Default value = None)
+    filename :
+        name of the file, overrides automatic generation (Default value = None)
+    Y :
+        solution, array |T| x |X| x n, where n is dimension of the solution
+    X :
+        space interval discetization
+    T :
+        time interval discretization
+    t0 :
+        time to take snap at (Default value = .5)
+    ylims :
+        limits for y axis, default are 10% offsets of Y extremes
+    labs :
+        labels to use for parts of the solution (Default value = None)
+    plott :
+        plot type - how to plot data: tested plot, step (Default value = None)
+
+    Returns
+    -------
+    fig
     """
 
     if filename is None:
@@ -211,14 +284,25 @@ def save_sol_snap(Y, X, T, t0=.5, filename=None, name=None,
 
 
 def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
-    """
-    Plots Y1 and Y2 to one axes and YE to the second axes,
+    """Plots Y1 and Y2 to one axes and YE to the second axes,
     Y1 and Y2 are presumed to be two solutions and YE their error
-    :param Y1: solution 1, shape = (space nodes, time nodes)
-    :param Y2: solution 2, shape = (space nodes, time nodes)
-    :param YE: ||soulutio 1 - soulution 2||
-    :param extent: imshow extent
-    :return:
+
+    Parameters
+    ----------
+    Y1 :
+        solution 1, shape = (space nodes, time nodes)
+    Y2 :
+        solution 2, shape = (space nodes, time nodes)
+    YE :
+        soulutio 1 - soulution 2||
+    extent :
+        imshow extent
+    lab1 :
+         (Default value = None)
+    lab2 :
+         (Default value = None)
+    lab3 :
+         (Default value = None)
     """
 
     # >> Plot contours
@@ -258,11 +342,16 @@ def plotsXT(Y1, Y2, YE, extent, lab1=None, lab2=None, lab3=None):
 
 
 def load_state_1D_vtk(name):
-    """
-    Load one VTK file containing state in time
-    :param name:
-    :param order:
-    :return:
+    """Load one VTK file containing state in time
+
+    Parameters
+    ----------
+    name : str
+
+    Returns
+    -------
+    coors : ndarray
+    u : ndarray
     """
 
     from sfepy.discrete.fem.meshio import MeshioLibIO
@@ -280,20 +369,29 @@ def load_state_1D_vtk(name):
 
 
 def load_1D_vtks(fold, name):
-    """
-    Reads series of .vtk files and crunches them into form
+    """Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
-
+    
     Attempts to read modal cell data for variable u. i.e.
-
-    u_modal{i}, where i is number of modal DOF
-
+    
+    ``u_modal{i}``, where i is number of modal DOF
+    
     Resulting solution data have shape:
     ``(order, nspace_steps, ntime_steps, 1)``
 
-    :param fold: folder where to look for files
-    :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
-    :return: space coors, solution data
+    Parameters
+    ----------
+    fold :
+        folder where to look for files
+    name :
+        used in ``{name}.i.vtk, i = 0,1, ... tns - 1``
+
+    Returns
+    -------
+    coors : ndarray
+    u : ndarray
+        solution data
+
     """
 
     files = glob(pjoin(fold, name) + ".[0-9]*")
@@ -338,16 +436,37 @@ def animate_1D_DG_sol(coors, t0, t1, u,
         1. animates DOF values in elements as steps
         2. animates reconstructed solution with discontinuities
 
-    :param coors: coordinates of the mesh
-    :param t0: starting time
-    :param t1: final time
-    :param u: vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
-    :param ic: analytical initial condition, optional
-    :param tn: number of time steps to plot, starting at 0, if None and dt is not None run animation through
-        all time steps, spaced dt within [t0, tn]
-    :param dt: time step size, if None and tn is not None computed as (t1- t0) / tn otherwise set to 1
-        if dt and tn are both None, t0 and t1 are ignored and solution is animated as if in time 0 ... ntime_steps
-    :return: anim object of DOFs, anim object of reconstruction
+    Parameters
+    ----------
+    coors :
+        coordinates of the mesh
+    t0 : float
+        starting time
+    t1 : float
+        final time
+    u :
+        vectors of DOFs, for each order one, shape(u) = (order, nspace_steps, ntime_steps, 1)
+    ic :
+        analytical initial condition, optional (Default value = lambda x: 0.0)
+    tn :
+        number of time steps to plot, starting at 0, if None and dt is not None run animation through
+        all time steps, spaced dt within [t0, tn] (Default value = None)
+    dt :
+        time step size, if None and tn is not None computed as (t1- t0) / tn otherwise set to 1
+        if dt and tn are both None, t0 and t1 are ignored and solution is animated as if in time 0 ... ntime_steps (Default value = None)
+    exact :
+         (Default value = lambda x)
+    t: 0 :
+        
+    delay :
+         (Default value = None)
+    polar :
+         (Default value = False)
+
+    Returns
+    -------
+    anim_dofs : animation object of DOFs,
+    anim_recon : animation object of reconstructed solution
     """
 
 
@@ -467,12 +586,16 @@ def animate_1D_DG_sol(coors, t0, t1, u,
 
 
 def plot1D_legendre_dofs(coors, dofss, fun=None):
-    """
-    Plots values of DOFs as steps
-    :param coors: coordinates of nodes of the mesh
-    :param dofss: iterable of different projections' DOFs into legendre space
-    :param fun: analytical function to plot
-    :return:
+    """Plots values of DOFs as steps
+
+    Parameters
+    ----------
+    coors :
+        coordinates of nodes of the mesh
+    dofss :
+        iterable of different projections' DOFs into legendre space
+    fun :
+        analytical function to plot (Default value = None)
     """
     X = (coors[1:] + coors[:-1]) / 2
     plt.figure("DOFs for function fun")
@@ -492,25 +615,32 @@ def plot1D_legendre_dofs(coors, dofss, fun=None):
 
 
 def reconstruct_legendre_dofs(coors, tn, u):
-    """
-    Creates solution and coordinates vector which when plotted as
-
+    """Creates solution and coordinates vector which when plotted as
+    
         plot(xx, ww)
-
+    
     represent solution reconstructed from DOFs in Legendre poly space at
     cell borders.
-
+    
     Works only as linear interpolation between cell boundary points
 
-    :param coors: coors of nodes of the mesh
-    :param u: vectors of DOFs, for each order one,
+    Parameters
+    ----------
+    coors :
+        coors of nodes of the mesh
+    u :
+        vectors of DOFs, for each order one,
         shape(u) = (order, nspace_steps, ntime_steps, 1)
-    :param tn: number of time steps to reconstruct,
+    tn :
+        number of time steps to reconstruct,
         if None all steps are reconstructed
-    :return: ww - solution values vector,
-        shape is (3 * nspace_steps - 1, ntime_steps, 1),
-        xx - corresponding coordinates vector,
-        shape is (3 * nspace_steps - 1, 1)
+
+    Returns
+    -------
+    ww : ndarray
+        solution values vector, shape is (3 * nspace_steps - 1, ntime_steps, 1),
+    xx : ndarray
+        corresponding coordinates vector, shape is (3 * nspace_steps - 1, 1)
     """
 
     XN = coors[-1]
