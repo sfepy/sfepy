@@ -2,16 +2,16 @@
 """
 Block mesh generator.
 """
-from __future__ import absolute_import
 import sys
 sys.path.append('.')
 from argparse import ArgumentParser
+import os.path as op
 
 import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.mesh.mesh_generators import gen_block_mesh
-from sfepy.discrete.fem.meshio import MeshIO
+from sfepy.discrete.fem.meshio import check_format_suffix, MeshIO
 
 helps = {
     'filename' :
@@ -61,11 +61,15 @@ def main():
     output('dimensions:', dims)
     output('shape:', shape)
     output('centre:', centre)
+    output('output file:', options.output_filename)
+
+    check_format_suffix(options.format,
+                        op.splitext(options.output_filename)[1][1:])
 
     mesh = gen_block_mesh(dims, shape, centre, name=options.output_filename)
 
-    io = MeshIO.for_format(options.output_filename, format=options.format,
-                           writable=True)
+    io = MeshIO.any_from_filename(options.output_filename,
+                                  file_format=options.format, mode='w')
 
     mesh.write(options.output_filename, io=io)
 
