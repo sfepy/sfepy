@@ -1,5 +1,5 @@
 """
-Simple example for first order PDE
+Transient advection equation in 1D solved using discontinous galerkin method.
 
     du/dt - a * du/dx = 0
 
@@ -9,8 +9,8 @@ Simple example for first order PDE
 
 """
 from examples.dg.example_dg_common import *
-from sfepy.discrete.dg.limiters import MomentLimiter1D, IdentityLimiter
-from sfepy.discrete.dg.utils.inits_consts import four_step_u
+from sfepy.discrete.dg.limiters import MomentLimiter1D
+from examples.dg.inits_consts import four_step_u
 
 dim = 1
 

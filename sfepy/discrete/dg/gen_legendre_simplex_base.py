@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Generate simplex DG basis data.
+Generate simplex legendre 2D basis coffecients and exponenets matrices and
+save them to legendre2D_simplex_coefs.txt and legendre2D_simplex_expos.txt
 """
 from argparse import ArgumentParser
 from sympy import symbols

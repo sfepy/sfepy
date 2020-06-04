@@ -1,7 +1,6 @@
-sfepy.dicrete.dg.dg_limiters module
-===================================
+sfepy.discrete.dg.limiters module
+=================================
 
 .. automodule:: sfepy.discrete.dg.limiters
    :members:
    :undoc-members:
-   

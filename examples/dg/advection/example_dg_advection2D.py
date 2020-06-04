@@ -1,6 +1,9 @@
+"""
+Transient advection equation in 2D solved by discontinous galerkin method.
+"""
 from examples.dg.example_dg_common import *
-from sfepy.discrete.dg.limiters import MomentLimiter2D, IdentityLimiter
-from sfepy.discrete.dg.utils.inits_consts import gsmooth
+from sfepy.discrete.dg.limiters import MomentLimiter2D
+from examples.dg.inits_consts import gsmooth
 
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)

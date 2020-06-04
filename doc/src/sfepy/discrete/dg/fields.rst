@@ -1,5 +1,5 @@
-sfepy.dicrete.dg.dg_field module
-================================
+sfepy.discrete.dg.fields module
+===============================
 
 .. automodule:: sfepy.discrete.dg.fields
    :members:

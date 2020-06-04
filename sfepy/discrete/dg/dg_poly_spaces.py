@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from abc import abstractmethod
 from functools import reduce
 from operator import mul
@@ -13,7 +14,8 @@ from scipy.special import eval_jacobi as scp_eval_jacobi
 
 def iter_by_order(order, dim, extended=False):
     """Iterates over all combinations of basis functions indexes
-    needed to create multidimensional basis in a way that creates hierarchical basis
+    needed to create multidimensional basis in a way that creates hierarchical
+    basis
 
     Parameters
     ----------
@@ -29,12 +31,14 @@ def iter_by_order(order, dim, extended=False):
     ------
     idx : tuple
         containing basis function indexes, used in
-        _combine_polyvals and _combine_polyvals_der
+        ``_combine_polyvals`` and ``_combine_polyvals_der``
     """
 
     # nth(iter(map(lambda x: x + (order - reduce(add,x),)), range(order)), dim)
-    # nth(dim, iterate(map(lambda x: x + (order - reduce(add,x),)), map(tuple, range(order))))
-    # nth(2, iterate(map(lambda x: x + (order - reduce(add,x),)), map(lambda x: (x,), range(order))))
+    # nth(dim, iterate(map(lambda x: x + (order - reduce(add,x),)),
+    #                  map(tuple, range(order))))
+    # nth(2, iterate(map(lambda x: x + (order - reduce(add,x),)),
+    #                map(lambda x: (x,), range(order))))
     porder = order + 1
     if dim == 1:
         for i in range(porder):
@@ -60,13 +64,22 @@ def iter_by_order(order, dim, extended=False):
 
 
 def get_n_el_nod(order, dim, extended=False):
-    """Number of nodes per element for discontinuous legendre basis, i.e.
+    r"""Number of nodes per element for discontinuous legendre basis, i.e.
     number of iterations yielded by iter_by_order
-    
-    math::
+
+    When extended is False
+
+    .. math::
         N_p =  \frac{(n + 1) \cdot (n + 2) \cdot ... \cdot (n + d)}{d!}
     
-        where n is the order and d the dimension
+
+    where `n` is the order and `d` the dimension.
+    When extended is True
+
+    .. math::
+        N_p = (n + 1) ^ d
+
+    where `n` is the order and `d` the dimension.
 
     Parameters
     ----------
@@ -174,26 +187,32 @@ class LegendrePolySpace(PolySpace):
         return values
 
     def get_interpol_scheme(self):
-        """For dim > 1 returns F and P matrices according to gmsh basis specification:
-        
+        r"""For dim > 1 returns F and P matrices according to gmsh basis
+        specification [1]_:
         Let us assume that the approximation of the view's value over an element
         is written as a linear  combination of d basis functions
-        f[i], i=0, ..., d-1 (the coefficients being stored in list-of-values).
+        :math:`f_i, i=0, ..., n-1` (the coefficients being stored
+        in list-of-values).
         
         Defining
-        
-        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
-        
-        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the
+
+        .. math ::
+            f_i = \sum\limits_{j=0}^{d-1} F_{ij}\cdot p_j,
+
+        with
+
+        :math:`p_j = u^{P_j^{(0)}}\cdot v^{P_(j)^1}\cdot w^{P_j^{(2)}}`
+        (`u`, `v` and `w` being the
         coordinates in the element's parameter space), then val-coef-matrix
-        denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
+        denotes the n x n matrix F and val-exp-matrix denotes the n x 3 matrix P
+        where n is number of basis functions as calculated by ``get_n_el_nod``.
         
         Expects matrices to be saved in atributes coefM and expoM!
-        
-        :return:
 
-        Parameters
-        ----------
+        .. [1] Remacle, J.-F., Chevaugeon, N., Marchandise, E., & Geuzaine, C.
+           (2007). Efficient visualization of high-order finite elements.
+           International Journal for Numerical Methods in Engineering, 69(4),
+           750-771. https://doi.org/10.1002/nme.1787
 
         Returns
         -------
@@ -255,7 +274,8 @@ class LegendrePolySpace(PolySpace):
         Parameters
         ----------
         coors : array_like
-            coordinates, preferably in interval [-1, 1] for which this basis is intented
+            coordinates, preferably in interval [-1, 1] for which this basis is
+            intented
 
         Returns
         -------
@@ -267,13 +287,13 @@ class LegendrePolySpace(PolySpace):
 
     def gradlegendreP(self, coors, diff=1):
         """
-
         Parameters
         ----------
         diff : int
             default 1
         coors : array_like
-            coordinates, preferably in interval [-1, 1] for which this basis is intented
+            coordinates, preferably in interval [-1, 1] for which this basis is
+            intented
 
         Returns
         -------
@@ -283,13 +303,18 @@ class LegendrePolySpace(PolySpace):
         """
         return self.gradjacobiP(coors, 0, 0, diff=diff)
 
+    """
+    Explict legendre polynomials up to order 5
+    """
     legendre_funs = [lambda x: 0 * x + 1,
                      # we need constant preserving shape and type of x
                      lambda x: 2 * x - 1,
                      lambda x: (6 * x ** 2 - 6 * x + 1),
                      lambda x: (20 * x ** 3 - 30 * x ** 2 + 12 * x - 1),
-                     lambda x: (70 * x ** 4 - 140 * x ** 3 + 90 * x ** 2 - 20 * x + 1),
-                     lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3 - 210 * x ** 2 + 30 * x - 1)
+                     lambda x: (70 * x ** 4 - 140 * x ** 3
+                                + 90 * x ** 2 - 20 * x + 1),
+                     lambda x: (252 * x ** 5 - 630 * x ** 4 + 560 * x ** 3
+                                - 210 * x ** 2 + 30 * x - 1)
                      ]
 
     def get_nth_fun(self, n):
@@ -455,20 +480,8 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
         return nm.prod(polyvals[..., dimz, idx, derz], axis=-1)
 
     def build_interpol_scheme(self):
-        """Builds F and P matrices according to gmsh basis specification:
-        
-        Let us assume that the approximation of the view's value over an element
-        is written as a linear  combination of d basis functions
-        f[i], i=0, ..., d-1 (the coefficients being stored in list-of-values).
-        
-        Defining
-        
-        f[i] = Sum(j=0, ..., d-1) F[i][j]*p[j],
-        
-        with p[j] = u^P[j][0]*v^P[j][1]*w^P[j][2] (u, v and w being the
-        coordinates in the element's parameter space), then val-coef-matrix
-        denotes the d x d matrix F and val-exp-matrix denotes the d x 3 matrix P.
-        
+        """Builds F and P matrices returned by self.get_interpol_scheme.
+
         Note that this function returns coeficients according to gmsh
         parametrization of Quadrangle i.e. [-1, 1] x [-1, 1] and hence the form
         of basis function is not the same as exhibited by the
@@ -518,7 +531,8 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
             except IOError as e:
                 raise IOError(
                     ("File {} not found, run gen_legendre_simplex_base.py"
-                     + " to generate it.").format(e.args[0]))
+                     + " to generate it.")
+                        .format(e.args[0]))
 
     def _combine_polyvals(self, coors, polyvals, idx):
 

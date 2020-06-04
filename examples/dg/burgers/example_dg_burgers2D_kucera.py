@@ -1,4 +1,7 @@
 """
+Burgers equation in 2D solved using discontinous galerkin method
+
+
 Based on
 
 Kučera, V. (n.d.). Higher order methods for the solution of compressible flows.

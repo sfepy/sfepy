@@ -1,5 +1,7 @@
 """
-Problem specs for
+Laplace equation solved in 2d by discontinous galerkin method
+
+
 
             div(grad u) = 0
 

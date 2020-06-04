@@ -119,7 +119,6 @@ def get_gel(region):
     Parameters
     ----------
     region : sfepy.discrete.common.region.Region
-        
 
     Returns
     -------
@@ -470,8 +469,9 @@ class DGField(FEField):
                 facet_bf = nm.zeros(nm.shape(qps)[:-1] + (1, self.n_el_nod,))
 
             for i in range(self.n_el_facets):
-                facet_bf[..., i, :, :] = ps.eval_base(qps[..., i, :], diff=diff,
-                                                      transform=self.basis_transform)
+                facet_bf[..., i, :, :] = \
+                    ps.eval_base(qps[..., i, :], diff=diff,
+                                 transform=self.basis_transform)
             self.facet_bf[diff] = facet_bf
 
         if base_only:
@@ -494,7 +494,8 @@ class DGField(FEField):
             self.facet_neighbour_index.pop(region.name)
 
     def get_facet_neighbor_idx(self, region=None, eq_map=None):
-        """Returns index of cell neighbours sharing facet, along with local index
+        """
+        Returns index of cell neighbours sharing facet, along with local index
         of the facet within neighbour, also treats periodic boundary conditions
         i.e. plugs correct neighbours for cell on periodic boundary.
         Where there are no neighbours specified puts -1  instead of neighbour
@@ -672,7 +673,8 @@ class DGField(FEField):
 
     @staticmethod
     def get_region_info(region):
-        """Extracts information about region needed in various methods of DGField
+        """
+        Extracts information about region needed in various methods of DGField
 
         Parameters
         ----------
@@ -820,7 +822,8 @@ class DGField(FEField):
         outer_facet_base_vals = nm.zeros(base_shape)
 
         if derivative:
-            inner_facet_base_vals[:] = facet_bf[0, :, 0, :, :, :].swapaxes(-2, -3).T
+            inner_facet_base_vals[:] = facet_bf[0, :, 0, :, :, :]\
+                                                            .swapaxes(-2, -3).T
         else:
             inner_facet_base_vals[:] = facet_bf[:, 0, :, 0, :].T
 
@@ -863,6 +866,7 @@ class DGField(FEField):
         ----------
         region: sfepy.discrete.common.region.Region
             Main region, must contain cells.
+
         Returns
         -------
         normals: ndarray
@@ -1177,7 +1181,8 @@ class DGField(FEField):
             return nods, vals
 
     def set_cell_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
-        """Compute projection of fun onto the basis, in main region, alternatively
+        """
+        Compute projection of fun onto the basis, in main region, alternatively
         set DOFs directly to provided value or values
 
         Parameters
@@ -1394,7 +1399,9 @@ class DGField(FEField):
         ---------
         dofs : array_like
             dofs to transform to nodes
+
         region : ignored
+
         ref_nodes:
             reference node to use instead of default qps
 
@@ -1456,11 +1463,14 @@ class DGField(FEField):
             The key to be used in the output dictionary instead of the
             variable name. (Default value = None)
         extend : bool, not used
-            Extend the DOF values to cover the whole domain. (Default value = True)
+            Extend the DOF values to cover the whole domain.
+            (Default value = True)
         fill_value : float or complex, not used
-            The value used to fill the missing DOF values if `extend` is True. (Default value = None)
+            The value used to fill the missing DOF values if `extend` is True.
+            (Default value = None)
         linearization : Struct or None, not used
-            The linearization configuration for higher order approximations. (Default value = None)
+            The linearization configuration for higher order approximations.
+            (Default value = None)
 
         Returns
         -------

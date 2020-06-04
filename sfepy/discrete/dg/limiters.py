@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Limiters for high order DG methods
 """
@@ -48,7 +49,6 @@ def minmod_seq(abc):
     Parameters
     ----------
     abc : sequence of array_like
-        
 
     Returns
     -------
@@ -91,8 +91,9 @@ class IdentityLimiter(DGLimiter):
 
 
 class MomentLimiter1D(DGLimiter):
-    """ Moment limiter for 1D based on
-    Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
+    """ Moment limiter for 1D based on [1]_
+
+    .. [1] Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
     name = "moment_1D_limiter"
 
     def __call__(self, u):
@@ -135,8 +136,8 @@ class MomentLimiter1D(DGLimiter):
 
 
 class MomentLimiter2D(DGLimiter):
-    """ Moment limiter for 2D based on
-    Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
+    """ Moment limiter for 2D based on [1]_
+    .. [1] Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
     name = "moment_limiter_2D"
 
     def __call__(self, u):

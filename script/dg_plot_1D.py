@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
-""""
+"""
 Script for plotting 1D DG FEM data stored in VTK files
 """
 
@@ -16,19 +16,40 @@ import os
 import sys
 from glob import glob
 
-from sfepy.discrete.dg.utils.visualizer import load_1D_vtks, plot1D_DG_sol
-from sfepy.discrete.dg.utils.visualizer import \
+from script.dg_1D_vizualizer import load_1D_vtks, \
+    animate_1D_DG_sol
+from script.dg_1D_vizualizer import \
     load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
 
 
 def load_and_plot_fun(folder, filename, t0, t1, tn,
                       ic_fun=None, exact=None,
                       compare=False, polar=False):
+    """
+    Parameters
+    ----------
+    folder : str
+        folder where to look for files
+    filename : str
+        used in {name}.i.vtk, i = 0,1, ... tns - 1
+    t0 : float
+        starting time
+    t1 : int
+        final time
+    tn : int
+        number of time steps
+    ic_fun : callable
+        initital condition
+    exact : callable
+        exact solution, for transient problems function of space ant time
+    compare : bool
+    polar : bool
+    """
 
     # load time data
     lmesh, u = load_1D_vtks(folder, filename)
-    plot1D_DG_sol(lmesh, t0, t1, u, tn=tn, ic=ic_fun, exact=exact,
-                  delay=100, polar=polar)
+    animate_1D_DG_sol(lmesh, t0, t1, u, tn=tn, ic=ic_fun, exact=exact,
+                      delay=100, polar=polar)
 
     if compare:
         files = glob(pjoin(folder, "*.vtk"))
@@ -139,5 +160,4 @@ def main(argv):
 
 
 if __name__ == '__main__':
-
     main(sys.argv[1:])

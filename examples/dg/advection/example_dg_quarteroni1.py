@@ -1,4 +1,6 @@
 """
+Static advection-diffusion equation in 2D solved by discontinous galerkin method.
+
 Based on
 
 Antonietti, P., & Quarteroni, A. (2013). Numerical performance of discontinuous and stabilized

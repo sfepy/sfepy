@@ -31,7 +31,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
          """If True, assume a quasistatic time-stepping. Then the non-linear
             solver is invoked also for the initial time."""),
         ('limiters', 'dictionary', None, None,
-         "Limiter for DG FEM"),
+         "Limiters for DGFields, key: field name, value: limiter class"),
     ]
 
     def __init__(self, conf, nls=None, context=None, **kwargs):
@@ -119,7 +119,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
 
 class EulerStepSolver(DGMultiStageTSS):
-    """Updates solution using forward euler method"""
+    """Simple forward euler method"""
     name = 'ts.euler'
     __metaclass__ = SolverMeta
 
@@ -161,16 +161,24 @@ class EulerStepSolver(DGMultiStageTSS):
 
 
 class TVDRK3StepSolver(DGMultiStageTSS):
-    """3rd order Total Variation Diminishing Runge-Kutta method based on
-    Gottlieb, S., & Shu, C.-W. (2002).
-    Total variation diminishing Runge-Kutta schemes. Mathematics of Computation
-    of the American Mathematical Society, 67(221), 73–85.
-    https://doi.org/10.1090/s0025-5718-98-00913-2
+    r"""3rd order Total Variation Diminishing Runge-Kutta method based on [1]_
+
     
-    math::
-        u^{(1)} &= u^n + \Delta t \mathcal{L}(u^n) \\
-        u^{(2)} &= \frac{3}{4}u^n +\frac{1}{4}u^{(1)} + \frac{1}{4}\Delta t \mathcal{L}(u^{(1)})\\
-        u^{n+1} &= \frac{1}{3}u^n +\frac{2}{3}u^{(2)} + \frac{2}{3}\Delta t \mathcal{L}(u^{(2)})
+    .. math::
+        \begin{aligned}
+            \mathbf{p}^{(1)} &= \mathbf{p}^n - \Delta t
+            \bar{\mathcal{L}}(\mathbf{p}^n),\\
+            \mathbf{\mathbf{p}}^{(2)} &= \frac{3}{4}\mathbf{p}^n
+            +\frac{1}{4}\mathbf{p}^{(1)} - \frac{1}{4}\Delta t
+             \bar{\mathcal{L}}(\mathbf{p}^{(1)}),\\
+            \mathbf{p}^{(n+1)} &= \frac{1}{3}\mathbf{p}^n
+            +\frac{2}{3}\mathbf{p}^{(2)} - \frac{2}{3}\Delta t
+             \bar{\mathcal{L}}(\mathbf{p}^{(2)}).
+       \end{aligned}
+
+    .. [1] Gottlieb, S., & Shu, C.-W. (2002). Total variation diminishing Runge-Kutta
+       schemes. Mathematics of Computation of the American Mathematical Society,
+       67(221), 73–85. https://doi.org/10.1090/s0025-5718-98-00913-2
     """
 
     name = 'ts.tvd_runge_kutta_3'
@@ -246,10 +254,14 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
 
 class RK4StepSolver(DGMultiStageTSS):
-    """Based on
-    Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
-    Journal of Physics A: Mathematical and Theoretical (Vol. 54). New York,
-    NY: Springer New York. http://doi.org/10.1007/978-0-387-72067-8, p. 63
+    """Classical 4th order Runge-Kutta method, implemetantions is based on [1]_
+
+
+    .. [1] Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
+       Journal of Physics A: Mathematical and Theoretical (Vol. 54). New York,
+       NY: Springer New York. http://doi.org/10.1007/978-0-387-72067-8, p. 63
+
+
     """
     name = 'ts.runge_kutta_4'
     __metaclass__ = SolverMeta

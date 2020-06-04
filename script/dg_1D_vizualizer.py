@@ -289,7 +289,7 @@ def load_1D_vtks(fold, name):
     u_modal{i}, where i is number of modal DOF
 
     Resulting solution data have shape:
-    (order, nspace_steps, ntime_steps, 1)
+    ``(order, nspace_steps, ntime_steps, 1)``
 
     :param fold: folder where to look for files
     :param name: used in {name}.i.vtk, i = 0,1, ... tns - 1
@@ -330,12 +330,11 @@ def load_1D_vtks(fold, name):
     return coors, u
 
 
-def plot1D_DG_sol(coors, t0, t1, u,
-                  tn=None, dt=None,
-                  ic=lambda x: 0.0, exact=lambda x, t: 0,
-                  delay=None, polar=False):
-    """
-    Animates solution to 1D problem produced by DG:
+def animate_1D_DG_sol(coors, t0, t1, u,
+                      tn=None, dt=None,
+                      ic=lambda x: 0.0, exact=lambda x, t: 0,
+                      delay=None, polar=False):
+    """Animates solution to 1D problem produced by DG:
         1. animates DOF values in elements as steps
         2. animates reconstructed solution with discontinuities
 
