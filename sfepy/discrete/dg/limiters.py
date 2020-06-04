@@ -4,7 +4,7 @@ Limiters for high order DG methods
 """
 import numpy as nm
 
-from sfepy.discrete.dg.dg_poly_spaces import iter_by_order
+from sfepy.discrete.dg.poly_spaces import iter_by_order
 from sfepy.discrete.dg.fields import get_raveler, get_unraveler
 from sfepy.base.base import output
 

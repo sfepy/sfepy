@@ -11,7 +11,7 @@ from sfepy.discrete import (FieldVariable, Material, Integral, Function,
 from sfepy.discrete.fem import Mesh, FEDomain
 from sfepy.mesh.mesh_generators import gen_block_mesh
 
-from sfepy.discrete.dg.dg_poly_spaces import get_n_el_nod
+from sfepy.discrete.dg.poly_spaces import get_n_el_nod
 
 
 from sfepy.discrete.dg.fields import DGField

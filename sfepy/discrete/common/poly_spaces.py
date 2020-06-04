@@ -49,7 +49,7 @@ class PolySpace(Struct):
 
         if PolySpace._all is None:
             ps_files = get_paths('sfepy/discrete/fem/poly_spaces.py')
-            ps_files += get_paths('sfepy/discrete/dg/dg_poly_spaces.py')
+            ps_files += get_paths('sfepy/discrete/dg/poly_spaces.py')
             PolySpace._all = load_classes(ps_files, [PolySpace],
                                           ignore_errors=True,
                                           name_attr='name')
