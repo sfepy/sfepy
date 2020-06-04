@@ -533,12 +533,13 @@ class SimpleEVP(CorrMiniApp):
         problem = get_default(problem, self.problem)
         opts = self.app_options
 
-        problem.set_equations(self.equations)
-        problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
-                           lcbc_names=self.get('lcbcs', []))
-        problem.update_materials(problem.ts)
+        if self.equations is not None:
+            problem.set_equations(self.equations)
+            problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
+                            lcbc_names=self.get('lcbcs', []))
+            problem.update_materials(problem.ts)
 
-        self.init_solvers(problem)
+            self.init_solvers(problem)
 
         mtx_a, mtx_m, data = self.prepare_matrices(problem)
 
@@ -710,7 +711,6 @@ class DensityVolumeInfo(MiniAppBase):
             total_volume += vol
 
         true_volume = self._get_volume(volume)
-        assert_(abs(total_volume - true_volume) / true_volume < 1e-12)
 
         output('total volume:', true_volume)
 
