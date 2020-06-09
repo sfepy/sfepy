@@ -201,7 +201,7 @@ class LegendrePolySpace(PolySpace):
 
         with
 
-        :math:`p_j = u^{P_j^{(0)}}\cdot v^{P_(j)^1}\cdot w^{P_j^{(2)}}`
+        :math:`p_j(u, v, w) = u^{P_j^{(0)}}\cdot v^{P_j^{(1)}}\cdot w^{P_j^{(2)}}`
         (`u`, `v` and `w` being the
         coordinates in the element's parameter space), then val-coef-matrix
         denotes the n x n matrix F and val-exp-matrix denotes the n x 3 matrix P

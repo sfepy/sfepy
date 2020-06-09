@@ -1086,7 +1086,7 @@ sfepy.discrete.dg sub-package
    :maxdepth: 2
 
    src/sfepy/discrete/dg/fields
-   src/sfepy/discrete/dg/dg_poly_spaces
+   src/sfepy/discrete/dg/poly_spaces
    src/sfepy/discrete/dg/limiters
    src/sfepy/discrete/dg/gen_legendre_simplex_base
    src/script/dg_plot_1D
