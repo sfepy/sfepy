@@ -161,7 +161,8 @@ class EulerStepSolver(DGMultiStageTSS):
 
 
 class TVDRK3StepSolver(DGMultiStageTSS):
-    r"""3rd order Total Variation Diminishing Runge-Kutta method based on [1]_
+    r"""3rd order Total Variation Diminishing Runge-Kutta method
+    based on [1]_
 
     
     .. math::
@@ -254,7 +255,8 @@ class TVDRK3StepSolver(DGMultiStageTSS):
 
 
 class RK4StepSolver(DGMultiStageTSS):
-    """Classical 4th order Runge-Kutta method, implemetantions is based on [1]_
+    """Classical 4th order Runge-Kutta method,
+    implemetantions is based on [1]_
 
 
     .. [1] Hesthaven, J. S., & Warburton, T. (2008). Nodal Discontinuous Galerkin Methods.
