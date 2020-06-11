@@ -12,7 +12,7 @@ def define(filename_mesh=None,
            approx_order=2,
 
            adflux=0,
-           limit=False,
+           limit=True,
 
            cw=None,
            diffcoef=None,
@@ -20,9 +20,11 @@ def define(filename_mesh=None,
 
            cfl=0.4,
            dt=None,
+           t1=0.01
+
            ):
 
-    example_name = "adv__limt_2D"
+    example_name = "advection_2D"
     dim = 2
 
     diffcoef = None
@@ -32,7 +34,6 @@ def define(filename_mesh=None,
         filename_mesh = get_gen_block_mesh_hook((1., 1.), (20, 20), (.5, .5))
 
     t0 = 0.
-    t1 = 0.1
 
     angle = 0
     # get_common(approx_order, cfl, t0, t1, None, get_ic)
@@ -111,8 +112,7 @@ def define(filename_mesh=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiters': {"f": MomentLimiter2D} if limit else {},
-                 'verbose': False}),
+                 'limiters': {"f": MomentLimiter2D} if limit else {}}),
         'nls': ('nls.newton',{}),
         'ls' : ('ls.scipy_direct', {})
     }
@@ -123,6 +123,7 @@ def define(filename_mesh=None,
         'ls'              : 'ls',
         'save_times'      : 100,
         'active_only'     : False,
+        'output_dir'      : 'output/dg/' + example_name,
         'output_format'   : 'msh',
         'file_format'     : 'gmsh-dg',
         'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt)

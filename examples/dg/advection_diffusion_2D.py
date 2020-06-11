@@ -38,7 +38,7 @@ def define(filename_mesh=None,
 
         return fun
 
-    example_name = "quart1"
+    example_name = "advection_diffusion_2D"
     dim = 2
 
     if filename_mesh is None:
@@ -201,6 +201,7 @@ def define(filename_mesh=None,
     options = {
         'nls'             : 'newton',
         'ls'              : 'ls',
+        'output_dir'      : 'output/dg/' + example_name,
         'output_format'   : 'msh',
         'file_format'     : 'gmsh-dg'
     }

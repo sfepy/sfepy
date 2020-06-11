@@ -29,6 +29,7 @@ def define(filename_mesh=None,
 
            cfl=None,
            dt=1e-5,
+           t1=0.01
            ):
 
 
@@ -43,14 +44,13 @@ def define(filename_mesh=None,
 
         return fun
 
-    example_name = "kucera_dt_simp"
+    example_name = "burgers_2D"
     dim = 2
 
     if filename_mesh is None:
         filename_mesh = data_dir + "/meshes/2d/square_tri2.mesh"
 
     t0 = 0.
-    t1 = .1
     if dt is None and cfl is None:
         dt = 1e-5
 
@@ -239,6 +239,7 @@ def define(filename_mesh=None,
         'nls'             : 'nls.newton',
         'ls'              : 'ls.mumps',
         'save_times'      : 100,
+        'output_dir'      : 'output/dg/' + example_name,
         'output_format'   : 'msh',
         'file_format'     : 'gmsh-dg',
         'pre_process_hook': get_cfl_setup(CFL=cfl, dt=dt)

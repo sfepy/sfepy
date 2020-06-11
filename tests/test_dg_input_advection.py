@@ -1,6 +1,6 @@
 from __future__ import absolute_import
-input_name = '../examples/dg/advection/example_dg_quarteroni1.py'
-output_name = 'quarteroni1_sol.msh'
+input_name = '../examples/dg/advection_2D.py'
+output_name = 'advection_sol.msh'
 
 from tests_basic import TestInput
 class Test( TestInput ):

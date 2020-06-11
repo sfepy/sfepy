@@ -8,6 +8,7 @@ import numpy as nm
 
 from examples.dg.example_dg_common import clear_folder, get_gen_1D_mesh_hook
 from examples.dg.inits_consts import ghump
+from script.dg_plot_1D import load_and_plot_fun
 
 # sfepy imports
 from sfepy.base.base import IndexedStruct
@@ -37,7 +38,6 @@ def main():
     problem_name = "iburgers_1D"
     output_folder = pjoin(outputs_folder, problem_name, str(approx_order))
     output_format = "vtk"
-    mesh_output_folder = "output/mesh"
     save_timestn = 100
     clear_folder(pjoin(output_folder, "*." + output_format))
     configure_output({'output_screen': True,
@@ -52,7 +52,7 @@ def main():
     XN = 1.
     n_nod = 100
     n_el = n_nod - 1
-    mesh = get_gen_1D_mesh_hook(X1, XN, n_nod)(None, "read")
+    mesh = get_gen_1D_mesh_hook(X1, XN, n_nod).read(None)
 
     # -----------------------------
     # | Create problem components |
@@ -208,8 +208,6 @@ def main():
     # ----------
     # | Plot 1D|
     # ----------
-    from script.dg_plot_1D import load_and_plot_fun
-
     load_and_plot_fun(output_folder, domain_name,
                       t0, t1, min(tn, save_timestn),
                       ic_fun)

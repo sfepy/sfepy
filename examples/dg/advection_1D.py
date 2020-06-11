@@ -26,10 +26,10 @@ def define(filename_mesh=None,
 
            cfl=0.4,
            dt=None,
+           t1=0.1
            ):
 
     t0 = 0
-    t1 = 1
     transient = True
 
     mstart = 0
@@ -93,8 +93,7 @@ def define(filename_mesh=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiters': {"f": MomentLimiter1D} if limit else {},
-                 'verbose': False}),
+                 'limiters': {"f": MomentLimiter1D} if limit else {}}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }
@@ -106,8 +105,8 @@ def define(filename_mesh=None,
         'save_times'      : 100,
         'active_only'     : False,
         'pre_process_hook': get_cfl_setup(cfl) if dt is None else get_cfl_setup(dt=dt),
+        'output_dir': 'output/dg/' + example_name,
         'output_format'   : "vtk",
-        'verbose' : False
     }
 
 

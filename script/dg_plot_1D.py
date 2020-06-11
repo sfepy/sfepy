@@ -16,10 +16,9 @@ import os
 import sys
 from glob import glob
 
-from dg_1D_vizualizer import load_1D_vtks, \
-    animate_1D_DG_sol
-from dg_1D_vizualizer import \
-    load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
+from sfepy.discrete.dg.dg_1D_vizualizer import \
+    (load_1D_vtks, animate_1D_DG_sol, load_state_1D_vtk, plot1D_legendre_dofs,
+    reconstruct_legendre_dofs)
 
 
 def load_and_plot_fun(folder, filename, t0, t1, tn,
