@@ -8,6 +8,7 @@ import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.discrete.fem import Mesh
+from sfepy.discrete.fem.meshio import UserMeshIO
 from sfepy.mesh.mesh_generators import gen_block_mesh
 
 
@@ -207,7 +208,7 @@ def get_gen_1D_mesh_hook(XS, XE, n_nod):
 
     Returns
     -------
-    mesh_hook : callable
+    mio : UserMeshIO instance
     """
     def mesh_hook(mesh, mode):
         """
@@ -228,8 +229,8 @@ def get_gen_1D_mesh_hook(XS, XE, n_nod):
         elif mode == 'write':
             pass
 
-    return mesh_hook
-
+    mio = UserMeshIO(mesh_hook)
+    return mio
 
 def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
                             coors=None, verbose=True):
@@ -252,7 +253,7 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
 
     Returns
     -------
-    mesh_hook : callable
+    mio : UserMeshIO instance
     """
     def mesh_hook(mesh, mode):
         """
@@ -267,8 +268,8 @@ def get_gen_block_mesh_hook(dims, shape, centre, mat_id=0, name='block',
         elif mode == 'write':
             pass
 
-    return mesh_hook
-
+    mio = UserMeshIO(mesh_hook)
+    return mio
 
 def clear_folder(clear_format, confirm=False, doit=True):
     """
@@ -296,5 +297,3 @@ def clear_folder(clear_format, confirm=False, doit=True):
         for file in files:
             os.remove(file)
     return bool(files)
-
-
