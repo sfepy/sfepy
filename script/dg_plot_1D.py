@@ -16,9 +16,9 @@ import os
 import sys
 from glob import glob
 
-from script.dg_1D_vizualizer import load_1D_vtks, \
+from dg_1D_vizualizer import load_1D_vtks, \
     animate_1D_DG_sol
-from script.dg_1D_vizualizer import \
+from dg_1D_vizualizer import \
     load_state_1D_vtk, plot1D_legendre_dofs, reconstruct_legendre_dofs
 
 

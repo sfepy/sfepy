@@ -203,7 +203,6 @@ def define(filename_mesh=None,
         'u_right' : ('right', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),
         'u_bottom' : ('bottom', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),
         'u_top' : ('top', {'u.all': 'bc_funs', 'grad.u.all': 'bc_funs'}),
-
     }
 
     equations = {
@@ -223,16 +222,14 @@ def define(filename_mesh=None,
 
     solvers = {
         "tss.tvd_runge_kutta_3": ('ts.tvd_runge_kutta_3',
-                                  {"t0": t0,
-                                   "t1": t1,
-                                   'limiters': {
-                                       "f": MomentLimiter2D} if limit else {},
-                                   'verbose': False}),
+              {"t0": t0,
+               "t1": t1,
+               'limiters': {
+                   "f": MomentLimiter2D} if limit else {}}),
         "tss.euler": ('ts.euler',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiters': {"f": MomentLimiter2D} if limit else {},
-                 'verbose': False}),
+                 'limiters': {"f": MomentLimiter2D} if limit else {}}),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }
