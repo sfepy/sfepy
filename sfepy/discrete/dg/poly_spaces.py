@@ -464,6 +464,7 @@ class LegendrePolySpace(PolySpace):
 class LegendreTensorProductPolySpace(LegendrePolySpace):
     name = "legendre_tensor_product"
 
+
     def __init__(self, name, geometry, order, ):
         super().__init__(name, geometry, order, extended=True)
         self.n_nod = get_n_el_nod(self.order, self.dim, self.extended)
@@ -517,22 +518,29 @@ class LegendreTensorProductPolySpace(LegendrePolySpace):
 class LegendreSimplexPolySpace(LegendrePolySpace):
     name = "legendre_simplex"
 
+
     def __init__(self, name, geometry, order, extended=False):
         super().__init__(name, geometry, order, extended)
-        if self.dim > 1:
-            indir = InDir(__file__)
-            try:
-                self.coefM = nm.loadtxt(
-                        indir("legendre2D_simplex_coefs.txt")
-                )[:self.n_nod, :self.n_nod]
-                self.expoM = nm.loadtxt(
-                        indir("legendre2D_simplex_expos.txt")
-                )[:self.n_nod, :]
-            except IOError as e:
-                raise IOError(
-                    ("File {} not found, run gen_legendre_simplex_base.py"
-                     + " to generate it.")
-                        .format(e.args[0]))
+        if self.dim == 1:
+            return
+        if order <= 5:
+            self.coefM = simplex_coefM5[:self.n_nod, :self.n_nod]
+            self.expoM = simplex_expoM5[:self.n_nod, :]
+            return
+
+        indir = InDir(__file__)
+        try:
+            self.coefM = nm.loadtxt(
+                    indir("legendre2D_simplex_coefs.txt")
+            )[:self.n_nod, :self.n_nod]
+            self.expoM = nm.loadtxt(
+                    indir("legendre2D_simplex_expos.txt")
+            )[:self.n_nod, :]
+        except IOError as e:
+            raise IOError(
+                ("File {} not found, run gen_legendre_simplex_base.py"
+                 + " to generate it. This is needed approx order > 5.")
+                    .format(e.args[0]))
 
     def _combine_polyvals(self, coors, polyvals, idx):
 
@@ -651,3 +659,52 @@ class LegendreSimplexPolySpace(LegendrePolySpace):
                 tmp = tmp * ((0.5 * (1 - b)) ** di)
                 V3Dt = V3Dt + tmp
                 return V3Dt * (2 ** (2 * di + dj + 1))
+
+
+simplex_coefM5 = nm.array([
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    -1,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    -2,2,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    1,-8,0,10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    2,-12,-4,10,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    4,-8,-24,4,24,24,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    -1,15,0,-45,0,0,35,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    -2,26,4,-66,-48,0,42,84,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    -4,36,24,-60,-192,-24,28,168,168,0,0,0,0,0,0,0,0,0,0,0,0,
+    -8,24,96,-24,-192,-240,8,96,240,160,0,0,0,0,0,0,0,0,0,0,0,
+    1,-24,0,126,0,0,-224,0,0,0,126,0,0,0,0,0,0,0,0,0,0,
+    2,-44,-4,210,84,0,-336,-336,0,0,168,336,0,0,0,0,0,0,0,0,0,
+    4,-72,-24,276,408,24,-352,-1248,-384,0,144,864,864,0,0,0,0,0,0,0,0,
+    8,-96,-96,240,1056,240,-224,-1824,-2400,-160,72,864,2160,1440,0,0,0,0,0,0,0,
+    16,-64,-320,96,960,1440,-64,-960,-2880,-2240,16,320,1440,2240,1120,0,0,0,0,0,0,
+    -1,35,0,-280,0,0,840,0,0,0,-1050,0,0,0,0,462,0,0,0,0,0,
+    -2,66,4,-496,-128,0,1392,864,0,0,-1620,-1920,0,0,0,660,1320,0,0,0,0,
+    -4,116,24,-760,-672,-24,1848,3888,648,0,-1860,-7200,-3240,0,0,660,3960,3960,0,0,0,
+    -8,184,96,-944,-2112,-240,1808,9216,5040,160,-1480,-12480,-18000,-3200,0,440,5280,13200,8800,0,0,
+    -16,240,320,-800,-4480,-1440,1120,11520,18720,2240,-720,-10880,-33120,-26880,-1120,176,3520,15840,24640,12320,0,
+    -32,160,960,-320,-3840,-6720,320,5760,20160,17920,-160,-3840,-20160,-35840,-20160,32,960,6720,17920,20160,8064],
+    dtype=nm.int64).reshape(21, 21)
+
+simplex_expoM5 = nm.array([
+    0,0,0,
+    0,1,0,
+    1,0,0,
+    0,2,0,
+    1,1,0,
+    2,0,0,
+    0,3,0,
+    1,2,0,
+    2,1,0,
+    3,0,0,
+    0,4,0,
+    1,3,0,
+    2,2,0,
+    3,1,0,
+    4,0,0,
+    0,5,0,
+    1,4,0,
+    2,3,0,
+    3,2,0,
+    4,1,0,
+    5,0,0],
+    dtype=nm.int64).reshape(21, 3)

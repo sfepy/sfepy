@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Generate simplex legendre 2D basis coffecients and exponenets matrices and
+Generate simplex legendre 2D basis coffecients and exponents matrices and
 save them to legendre2D_simplex_coefs.txt and legendre2D_simplex_expos.txt
 """
 from argparse import ArgumentParser
@@ -9,13 +9,10 @@ from sympy import jacobi_poly as jacobi_P
 from sympy import expand_mul as expand
 from sympy import cancel, simplify
 
-from toolz import reduce, map
-from operator import mul
-
 import numpy as np
 
 from sfepy.base.ioutils import InDir
-from sfepy.discrete.dg.poly_spaces import iter_by_order
+from sfepy.discrete.dg.poly_spaces import iter_by_order, get_n_el_nod
 
 helps = {
     'max_order' :
@@ -40,8 +37,7 @@ def main():
     x, y = symbols("x, y")
     order = options.max_order
     dim = 2
-    n_el_nod = int(reduce(mul, map(lambda i: order + i + 1, range(dim))) /
-                   reduce(mul, range(1, dim + 1)))  # number of DOFs per element
+    n_el_nod = get_n_el_nod(order, dim)  # number of DOFs per element
 
     simplexP = []
     exponentM = np.zeros((n_el_nod, 3), dtype=np.int32)
