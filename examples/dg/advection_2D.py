@@ -3,7 +3,6 @@ Transient advection equation in 2D solved by discontinous galerkin method.
 """
 from examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter2D
-from examples.dg.inits_consts import gsmooth
 
 mesh_center = (0.5, 0.25)
 mesh_size = (1.0, 0.5)
@@ -60,6 +59,15 @@ def define(filename_mesh=None,
         'u': ('unknown field', 'f', 0, 1),
         'v': ('test field', 'f', 'u'),
     }
+
+    def gsmooth(x):
+        """
+        .. :math: C_0^{\inf}
+        """
+        return .3 * nm.piecewise(x, [x <= 0.1, x >= 0.1, .3 < x],
+                                    [0, lambda x:
+                                     nm.exp(1 / ((10 * (x - .2)) ** 2 - 1) + 1),
+                                     0])
 
     def analytic_sol(coors, t):
         x_1 = coors[..., 0]

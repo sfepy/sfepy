@@ -7,7 +7,6 @@ from os.path import join as pjoin
 import numpy as nm
 
 from examples.dg.example_dg_common import clear_folder, get_gen_1D_mesh_hook
-from examples.dg.inits_consts import ghump
 from script.dg_plot_1D import load_and_plot_fun
 
 # sfepy imports
@@ -131,6 +130,12 @@ def main():
     # ----------------------------
     # | Create initial condition |
     # ----------------------------
+    def ghump(x):
+        """
+        Nice gaussian.
+        """
+        return nm.exp(-200 * x ** 2)
+
     def ic_wrap(x, ic=None):
         return ghump(x - .3)
 

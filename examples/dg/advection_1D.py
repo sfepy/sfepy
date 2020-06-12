@@ -10,7 +10,6 @@ Transient advection equation in 1D solved using discontinous galerkin method.
 """
 from examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter1D
-from examples.dg.inits_consts import four_step_u
 
 dim = 1
 
@@ -122,10 +121,19 @@ def define(filename_mesh=None,
 
         return fun
 
+    def four_step_q(x):
+        """
+        Rectangle signal
+        """
+        return nm.piecewise(x, [x <= mstart,
+                                x <= mstart + .4,
+                                mstart + .4 < x,
+                                mstart + .5 <= x],
+                            [0, 0, 1, 0])
+
     @local_register_function
     def get_ic(x, ic=None):
         return four_step_u(x)
-        # return ghump(x - .3)
 
     def analytic_sol(coors, t=None, uset=False):
         x = coors[..., 0]
