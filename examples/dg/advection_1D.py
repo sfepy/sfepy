@@ -5,8 +5,6 @@ Transient advection equation in 1D solved using discontinous galerkin method.
 
     u(t,0) = u(t,1)
 
-    u(0, x) = ghump
-
 """
 from examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter1D
@@ -121,15 +119,16 @@ def define(filename_mesh=None,
 
         return fun
 
-    def four_step_q(x):
+    def four_step_u(x):
         """
-        Rectangle signal
+        piecewise constant (-inf, 1.8],(1.8, a + 4](a+4, a + 5](a + 5, inf)
         """
-        return nm.piecewise(x, [x <= mstart,
-                                x <= mstart + .4,
-                                mstart + .4 < x,
-                                mstart + .5 <= x],
-                            [0, 0, 1, 0])
+        return nm.piecewise(x,
+                            [x <= mstart,
+                             x <= mstart + .4,
+                             mstart + .4 < x,
+                             mstart + .5 <= x],
+                            [0, 0, .5, 0])
 
     @local_register_function
     def get_ic(x, ic=None):
