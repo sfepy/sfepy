@@ -4,6 +4,7 @@ Finite element reference mappings.
 import numpy as nm
 
 from sfepy.base.base import get_default, output
+from sfepy.base.mem_usage import raise_if_too_large
 from sfepy.discrete.common.mappings import Mapping
 from sfepy.discrete.common.extmods.mappings import CMapping
 from sfepy.discrete.fem.poly_spaces import PolySpace
@@ -92,6 +93,9 @@ class VolumeMapping(FEMapping):
 
         ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
                                      force_axis=True, transform=transform)
+        size = ebf_g.nbytes * self.n_el
+        raise_if_too_large(size, 2)
+
         flag = (ori is not None) or (ebf_g.shape[0] > 1)
 
         cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
