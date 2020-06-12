@@ -426,12 +426,12 @@ class EquationMap(Struct):
                 region = bc.regions[1]
                 slave_nod_list = field.get_dofs_in_region(region)
 
-                nmaster = nm.unique(nm.hstack(master_nod_list))
+                nmaster = nm.unique(master_nod_list)
                 # Treat fields not covering the whole domain.
                 if nmaster[0] == -1:
                     nmaster = nmaster[1:]
 
-                nslave = nm.unique(nm.hstack(slave_nod_list))
+                nslave = nm.unique(slave_nod_list)
                 # Treat fields not covering the whole domain.
                 if nslave[0] == -1:
                     nslave = nslave[1:]

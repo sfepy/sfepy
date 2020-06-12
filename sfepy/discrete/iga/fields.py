@@ -231,7 +231,7 @@ class IGField(Field):
         vals = []
 
         aux = self.get_dofs_in_region(region)
-        nods = nm.unique(nm.hstack(aux))
+        nods = nm.unique(aux)
 
         if nm.isscalar(fun):
             vals = nm.repeat([fun], nods.shape[0] * dpn)
