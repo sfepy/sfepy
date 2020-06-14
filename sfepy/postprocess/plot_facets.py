@@ -32,6 +32,8 @@ def plot_edges(ax, gel, length):
     dim = gel.dim
     ax = _get_axes(ax, dim)
 
+    if gel.edges is None: return ax
+
     l2 = 0.5 * length
     for ii, edge in enumerate(gel.edges):
         cc = gel.coors[edge]
