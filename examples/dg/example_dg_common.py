@@ -14,23 +14,23 @@ from sfepy.mesh.mesh_generators import gen_block_mesh
 
 diffusion_schemes_implicit = {
     "symmetric":
-          " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
-        + " + dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+          " + dw_dg_diffusion_flux.i.Omega(D.val, p, v)"
+        + " + dw_dg_diffusion_flux.i.Omega(D.val, v, p)",
     "non-symmetric":
-          " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)"
-        + " - dw_dg_diffusion_flux.i.Omega(D.val, v, u)",
+          " + dw_dg_diffusion_flux.i.Omega(D.val, p, v)"
+        + " - dw_dg_diffusion_flux.i.Omega(D.val, v, p)",
     "incomplete":
-        " + dw_dg_diffusion_flux.i.Omega(D.val, u, v)"}
+        " + dw_dg_diffusion_flux.i.Omega(D.val, p, v)"}
 
 diffusion_schemes_explicit = {
     "symmetric":
-          " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-        + " - dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+          " - dw_dg_diffusion_flux.i.Omega(D.val, p[-1], v)"
+        + " - dw_dg_diffusion_flux.i.Omega(D.val, v, p[-1])",
     "non-symmetric":
-          " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"
-        + " + dw_dg_diffusion_flux.i.Omega(D.val, v, u[-1])",
+          " - dw_dg_diffusion_flux.i.Omega(D.val, p[-1], v)"
+        + " + dw_dg_diffusion_flux.i.Omega(D.val, v, p[-1])",
     "incomplete":
-        " - dw_dg_diffusion_flux.i.Omega(D.val, u[-1], v)"}
+        " - dw_dg_diffusion_flux.i.Omega(D.val, p[-1], v)"}
 
 functions = {}
 def local_register_function(fun):

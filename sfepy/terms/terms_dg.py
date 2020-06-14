@@ -150,8 +150,8 @@ class AdvectionDGFluxTerm(DGTerm):
                    },
                   {'opt_material': None}]
     integration = 'volume'
-    symbolic = {'expression': 'div(a*u)*w',
-                'map' : {'u': 'state', 'a': 'material', 'v': 'virtual'}
+    symbolic = {'expression': 'div(a*p)*w',
+                'map' : {'p': 'state', 'a': 'material', 'v': 'virtual'}
                 }
 
     def get_fargs(self, alpha, advelo, test, state,
@@ -610,8 +610,8 @@ class NonlinearHyperbolicDGFluxTerm(DGTerm):
                    },
                   {'opt_material': None}]
     integration = 'volume'
-    symbolic = {'expression': 'div(f(u))*w',
-                'map'       : {'u': 'state', 'v': 'virtual', 'f': 'function'}
+    symbolic = {'expression': 'div(f(p))*w',
+                'map'       : {'p': 'state', 'v': 'virtual', 'f': 'function'}
                 }
 
     def get_fargs(self, alpha, fun, dfun, test, state,

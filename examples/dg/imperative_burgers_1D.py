@@ -1,7 +1,10 @@
+#!/usr/bin/env python
 """
-Burgers equation in 2D solved using discontinous galerkin method
+Burgers equation in 1D solved using discontinous Galerkin method
 """
-
+import argparse
+import sys
+sys.path.append('.')
 from os.path import join as pjoin
 
 import numpy as nm
@@ -25,9 +28,19 @@ from sfepy.terms.terms_dg import NonlinearHyperbolicDGFluxTerm, \
     NonlinearScalarDotGradTerm
 from sfepy.terms.terms_dot import DotProductVolumeTerm
 
-def main():
+parser = argparse.ArgumentParser(
+    description='Solve Burgers equation and display animated results, '
+                'change script code to modify the problem.',
+    epilog='(c) 2019 T. Zitka , Man-machine Interaction at NTC UWB')
+
+
+def main(argv):
+    if argv is None:
+        argv = sys.argv[1:]
+    args = parser.parse_args(argv)
+
     # vvvvvvvvvvvvvvvv #
-    approx_order = 1
+    approx_order = 2
     # ^^^^^^^^^^^^^^^^ #
 
     # Setup output names
@@ -219,4 +232,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])

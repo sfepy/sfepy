@@ -1,5 +1,18 @@
 """
-Transient advection equation in 2D solved by discontinous galerkin method.
+Transient advection equation in 2D solved by discontinous Galerkin method.
+
+Usage Examples
+--------------
+
+Run with simple.py script::
+
+    python simple.py examples/dg/advection_2D.py
+
+Results are saved to output/ folder by default as ``.msh`` files, best way to
+view them is throught GMSH (http://gmsh.info/) version 4.6 or newer. Start GMSH
+and use ``File | Open`` menu or Crtl + O shortcut, navigate to output folder,
+select all ``.msh`` files and hit Open, all files should load as one item in
+Post-processing named p_cell_nodes.
 """
 from examples.dg.example_dg_common import *
 from sfepy.discrete.dg.limiters import MomentLimiter2D
@@ -56,8 +69,8 @@ def define(filename_mesh=None,
     }
 
     variables = {
-        'u': ('unknown field', 'f', 0, 1),
-        'v': ('test field', 'f', 'u'),
+        'p': ('unknown field', 'f', 0, 1),
+        'v': ('test field', 'f', 'p'),
     }
 
     def gsmooth(x):
@@ -83,7 +96,7 @@ def define(filename_mesh=None,
     def sol_fun(ts, coors, mode="qp", **kwargs):
         t = ts.time
         if mode == "qp":
-            return {"u": analytic_sol(coors, t)[..., None, None]}
+            return {"p": analytic_sol(coors, t)[..., None, None]}
 
     def get_ic(x, ic=None):
         return gsmooth(x[..., 0:1]) * gsmooth(x[..., 1:])
@@ -94,13 +107,13 @@ def define(filename_mesh=None,
     }
 
     ics = {
-        'ic': ('Omega', {'u.0': 'get_ic'}),
+        'ic': ('Omega', {'p.0': 'get_ic'}),
     }
 
     dgepbc_1 = {
         'name': 'u_rl',
         'region': ['right', 'left'],
-        'dofs': {'u.all': 'u.all'},
+        'dofs': {'p.all': 'p.all'},
         'match': 'match_y_line',
     }
 
@@ -110,9 +123,9 @@ def define(filename_mesh=None,
 
     equations = {
         'Advection': """
-                       dw_volume_dot.i.Omega(v, u)
-                       - dw_s_dot_mgrad_s.i.Omega(a.val, u[-1], v)
-                       + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u[-1]) = 0
+                       dw_volume_dot.i.Omega(v, p)
+                       - dw_s_dot_mgrad_s.i.Omega(a.val, p[-1], v)
+                       + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, p[-1]) = 0
                       """
     }
 

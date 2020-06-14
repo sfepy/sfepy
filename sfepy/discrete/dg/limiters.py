@@ -58,7 +58,8 @@ def minmod_seq(abc):
     seq = seq[:, 0, None] == seq
     seq = seq.prod(axis=1).astype(bool)
     res = nm.zeros(nm.shape(abc[0]))
-    res[seq] = nm.sign(abc[0][seq]) * nm.minimum.reduce([nm.abs(x[seq]) for x in abc])
+    res[seq] = nm.sign(abc[0][seq]) * \
+               nm.minimum.reduce([nm.abs(x[seq]) for x in abc])
     return res
 
 
@@ -93,7 +94,8 @@ class IdentityLimiter(DGLimiter):
 class MomentLimiter1D(DGLimiter):
     """ Moment limiter for 1D based on [1]_
 
-    .. [1] Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
+    .. [1] Krivodonova (2007):
+        Limiters for high-order discontinuous Galerkin methods"""
     name = "moment_1D_limiter"
 
     def __call__(self, u):
@@ -137,7 +139,8 @@ class MomentLimiter1D(DGLimiter):
 
 class MomentLimiter2D(DGLimiter):
     """ Moment limiter for 2D based on [1]_
-    .. [1] Krivodonova (2007): Limiters for high-order discontinuous Galerkin methods"""
+    .. [1] Krivodonova (2007):
+        Limiters for high-order discontinuous Galerkin methods"""
     name = "moment_limiter_2D"
 
     def __call__(self, u):

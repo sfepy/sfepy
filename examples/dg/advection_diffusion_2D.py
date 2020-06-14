@@ -1,10 +1,24 @@
 """
-Static advection-diffusion equation in 2D solved by discontinous galerkin method.
+Static advection-diffusion equation in 2D solved by discontinous Galerkin method.
 
 Based on
 
-Antonietti, P., & Quarteroni, A. (2013). Numerical performance of discontinuous and stabilized
-    continuous Galerkin methods for convection–diffusion problems.
+Antonietti, P., & Quarteroni, A. (2013). Numerical performance of discontinuous
+    and stabilized continuous Galerkin methods for convection–diffusion problems.
+
+
+Usage Examples
+--------------
+
+Run with simple.py script::
+
+    python simple.py examples/dg/advection_2D.py
+
+Results are saved to output/ folder by default in as ``.msh`` files best way to
+view them is throught GMSH (http://gmsh.info/) version 4.6 or newer. Start GMSH
+and use ``File | Open`` menu or Crtl + O shortcut, navigate o output folder,
+select all ``.msh`` files and hit Open, all files should load as one item in
+Post-processing named p_cell_nodes.
 """
 
 from examples.dg.example_dg_common import *
@@ -64,8 +78,8 @@ def define(filename_mesh=None,
     }
 
     variables = {
-        'u': ('unknown field', 'f', 0),
-        'v': ('test field', 'f', 'u'),
+        'p': ('unknown field', 'f', 0),
+        'v': ('test field', 'f', 'p'),
     }
 
     integrals = {
@@ -147,14 +161,14 @@ def define(filename_mesh=None,
     def sol_fun(ts, coors, mode="qp", **kwargs):
         t = ts.time
         if mode == "qp":
-            return {"u": analytic_sol(coors, t)[..., None, None]}
+            return {"p": analytic_sol(coors, t)[..., None, None]}
 
 
     dgebcs = {
-        'u_left' : ('left', {'u.all': "bc_funs", 'grad.u.all' : "bc_funs"}),
-        'u_top'  : ('top', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),
-        'u_bot'  : ('bottom', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),
-        'u_right': ('right', {'u.all': "bc_funs", 'grad.u.all' :  "bc_funs"}),
+        'u_left' : ('left', {'p.all': "bc_funs", 'grad.p.all' : "bc_funs"}),
+        'u_top'  : ('top', {'p.all': "bc_funs", 'grad.p.all' :  "bc_funs"}),
+        'u_bot'  : ('bottom', {'p.all': "bc_funs", 'grad.p.all' :  "bc_funs"}),
+        'u_right': ('right', {'p.all': "bc_funs", 'grad.p.all' :  "bc_funs"}),
     }
 
     materials = {
@@ -165,13 +179,13 @@ def define(filename_mesh=None,
 
     equations = {
         'balance': """
-                   - dw_s_dot_mgrad_s.i.Omega(a.val, u, v)
-                   + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, u)
+                   - dw_s_dot_mgrad_s.i.Omega(a.val, p, v)
+                   + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, p)
                    """
                    +
-                   " + dw_laplace.i.Omega(D.val, v, u) " +
+                   " + dw_laplace.i.Omega(D.val, v, p) " +
                    diffusion_schemes_implicit[diffscheme] +
-                   " + dw_dg_interior_penalty.i.Omega(D.val, D.cw, v, u)" +
+                   " + dw_dg_interior_penalty.i.Omega(D.val, D.cw, v, p)" +
                    " - dw_volume_lvf.i.Omega(g.val, v)" +
                    "= 0"
     }

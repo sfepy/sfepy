@@ -74,15 +74,16 @@ def load_and_plot_fun(folder, filename, t0, t1, tn,
 
 def main(argv):
     parser = argparse.ArgumentParser(description='Plotting of 1D DG data in VTK files',
-                                     epilog='(c) 2019 by T. Zitka , Man-machine'
+                                     epilog='(c) 2019 T. Zitka , Man-machine'
                                            +' Interaction at NTC UWB')
     parser.add_argument("input_name", help="Folder or name of the example in "
                                     + "output folder with VTK data, file names "
                                     + "in format <name>.[0-9]*.vtk. If not "
-                                    + "provided ask for the name of the example"
+                                    + "provided asks for the name of the example"
                         , nargs="?")
 
-    parser.add_argument("-s", "--search", help="Search for different orders in provided folder",
+    parser.add_argument("-s", "--search", help="Search for different orders in "
+                                               "provided folder",
                         action="store_true", default=False)
     parser.add_argument("-t0", "--start_time", type=float, default=0,
                         help="Start time of the simulation")
@@ -107,7 +108,7 @@ def main(argv):
     pol = args.polar
     if args.input_name is None:
         input_name = str(input("Please provide name of the example in output/" +
-                               " folder or path to data: "))
+                               " folder or full path to data: "))
     else:
         input_name = args.input_name
 
@@ -118,13 +119,16 @@ def main(argv):
         if os.path.isdir(input_name):
             full_infolder_path = os.path.abspath(input_name)
         else:
-            print("Example {} not found in {}".format(input_name, os.path.abspath("output")))
+            print("Example {} not found in {}".format(input_name,
+                                                      os.path.abspath("output")))
             return
 
     print("Input folder found: {}".format(full_infolder_path))
     if args.search:
         print("Input folder contains results for orders {}"
-              .format([os.path.basename(fol) for fol in glob(pjoin(full_infolder_path, "[0-9]*"))]))
+              .format([os.path.basename(fol)
+                            for fol in
+                                    glob(pjoin(full_infolder_path, "[0-9]*"))]))
 
         if args.order is None:
             order = str(input("Please provide order of approximation, default is 1: "))
@@ -148,14 +152,15 @@ def main(argv):
 
     contents = glob(pjoin(full_infolder_path, "*.vtk"))
     print()
-    tn = len(contents)  # we assume ll th contents are time step data files
+    tn = len(contents)  # we assume the contents are time step data files
     if tn == 0:
         print("Input folder {} is empty!".format(full_infolder_path))
         return
     base_name = os.path.basename(contents[0]).split(".")[0]
     print("Found {} files, basename is {}".format(tn, base_name))
     print("Plotting ...")
-    load_and_plot_fun(full_infolder_path, base_name, t0, t1, tn, compare=cf, polar=pol)
+    load_and_plot_fun(full_infolder_path, base_name, t0, t1, tn,
+                      compare=cf, polar=pol)
 
 
 if __name__ == '__main__':
