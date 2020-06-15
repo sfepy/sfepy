@@ -32,5 +32,6 @@ is_release = False
 # Tetgen executable path.
 tetgen_path = '/usr/bin/tetgen'
 
-# Reference mapping memory allocation safety factor.
-refmap_memory_factor = 1
+# Reference mapping memory allocation safety factor (float), requires psutil
+# installed. Use None for skipping the memory check.
+refmap_memory_factor = None

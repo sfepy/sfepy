@@ -106,4 +106,4 @@ class Config(object):
         if has_attr(site_cfg, 'refmap_memory_factor'):
             return site_cfg.refmap_memory_factor
         else:
-            return 1
+            return None
