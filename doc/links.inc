@@ -68,6 +68,7 @@
 .. _pymetis: http://mathema.tician.de/software/pymetis
 .. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
 .. _wxPython: https://wxpython.org/
+.. _psutil: https://github.com/giampaolo/psutil
 
 .. _git: http://git-scm.com
 .. _github: http://github.com
