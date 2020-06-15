@@ -3,6 +3,7 @@ Finite element reference mappings.
 """
 import numpy as nm
 
+from sfepy import Config
 from sfepy.base.base import get_default, output
 from sfepy.base.mem_usage import raise_if_too_large
 from sfepy.discrete.common.mappings import Mapping
@@ -94,7 +95,8 @@ class VolumeMapping(FEMapping):
         ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
                                      force_axis=True, transform=transform)
         size = ebf_g.nbytes * self.n_el
-        raise_if_too_large(size, 2)
+        site_config = Config()
+        raise_if_too_large(size, site_config.refmap_memory_factor())
 
         flag = (ori is not None) or (ebf_g.shape[0] > 1)
 
