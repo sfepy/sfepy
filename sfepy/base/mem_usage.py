@@ -145,3 +145,18 @@ def print_mem_usage(usage, order_by='usage', direction='up', print_key=False):
         else:
             output(fmt % (record.usage, record.name, record.kind, record.nrefs,
                           record.traversal_order, record.level))
+
+def raise_if_too_large(size, factor=1.0):
+    """
+    Raise MemoryError if the total system memory is lower than `size` times
+    safety `factor`. Use `factor=None` for skipping the memory check.
+    """
+    if factor is None: return
+
+    import psutil
+    mem = psutil.virtual_memory()
+    if factor * size > mem.total:
+        mb = 1000**2
+        raise MemoryError('insufficent memory {} MB to allocate {} MB'
+                          ' with safety factor {}'
+                          .format(mem.total/mb, size/mb, factor))

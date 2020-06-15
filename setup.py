@@ -183,6 +183,8 @@ def check_versions(show_only=False):
                   show_only=show_only)
     package_check('meshio', INFO.MESHIO_MIN_VERSION,
                   show_only=show_only)
+    package_check('psutil', INFO.PSUTIL_MIN_VERSION, optional=True,
+                  show_only=show_only)
 
 def setup_package():
     if not 'sdist' in sys.argv[1:]:

@@ -101,3 +101,9 @@ class Config(object):
             return site_cfg.tetgen_path
         else:
             return '/usr/bin/tetgen'
+
+    def refmap_memory_factor(self):
+        if has_attr(site_cfg, 'refmap_memory_factor'):
+            return site_cfg.refmap_memory_factor
+        else:
+            return None
