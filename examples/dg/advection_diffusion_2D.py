@@ -12,13 +12,28 @@ Usage Examples
 
 Run with simple.py script::
 
-    python simple.py examples/dg/advection_2D.py
+    python simple.py examples/dg/advection_diffusion_2D.py
 
-Results are saved to output/ folder by default in as ``.msh`` files best way to
-view them is throught GMSH (http://gmsh.info/) version 4.6 or newer. Start GMSH
-and use ``File | Open`` menu or Crtl + O shortcut, navigate o output folder,
-select all ``.msh`` files and hit Open, all files should load as one item in
-Post-processing named p_cell_nodes.
+Results are saved to output/ folder by default as ``.msh`` files, the best way
+to view them is through GMSH (http://gmsh.info/) version 4.6 or newer. Start
+GMSH and use ``File | Open`` menu or Crtl + O shortcut, navigate to the output
+folder, select all ``.msh`` files and hit Open, all files should load as one
+item in Post-processing named p_cell_nodes.
+
+GMSH is capable of rendering high order approximations in individual element, to
+modify fidelity of rendering, double click the displayed mesh, quick options
+menu should pop up, click on ``All view options...``. This brings up the Options
+window with ``View [n]`` selected, under the tab ``General`` ensure that
+``Adapt visualization grid`` is ticked, then you can adjust
+``Maximum recursion depth`` and ```Target visualization error`` to tune the
+visualization. To see visualization elements (as opposed to mesh elements) go to
+``Visibility`` tab and tick ``Draw element outlines``, this option is also
+available from quick options menu as ``View element outlines`` or under shortcut
+``Alt+E``. In the quick options menu, you can also modify normal raise by
+clicking ``View Normal Raise`` to see solution rendered as surface above the
+mesh. Note that for triangular meshes normal raise -1 produces expected raise
+above the mesh. This is due to the opposite orientation of the reference
+elements in GMSH and Sfepy and might get patched in the future.
 """
 
 from examples.dg.example_dg_common import *
