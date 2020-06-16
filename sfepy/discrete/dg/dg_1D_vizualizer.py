@@ -21,6 +21,23 @@ __author__ = 'tomas_zitka'
 
 ffmpeg_path = ''  # for saving animations
 
+def head(l):
+    """
+    Maybe get head of the list.
+
+    Parameters
+    ----------
+    l : indexable
+
+    Returns
+    -------
+    head : first element in l or None is l is empty
+    """
+    if l:
+        return l[0]
+    else:
+        return None
+
 
 def animate1D_dgsol(Y, X, T, ax=None, fig=None, ylims=None, labs=None,
                     plott=None, delay=None):
@@ -358,12 +375,16 @@ def load_state_1D_vtk(name):
     io = MeshioLibIO(name)
     coors = io.read(Mesh()).coors[:, 0, None]
     data = io.read_data(step=0)
-    porder = len([k for k in data.keys() if "u_modal" in k])
+    var_name = head([k for k in data.keys() if "_modal" in k])[:-1]
+    if var_name is None:
+        print("File {} does not contain modal data.".format(name))
+        return
+    porder = len([k for k in data.keys() if var_name in k])
 
 
     u = nm.zeros((porder, coors.shape[0] - 1, 1, 1))
     for ii in range(porder):
-        u[ii, :, 0, 0] = data['u_modal{}'.format(ii)].data
+        u[ii, :, 0, 0] = data[var_name+'{}'.format(ii)].data
 
     return coors, u
 
@@ -372,9 +393,9 @@ def load_1D_vtks(fold, name):
     """Reads series of .vtk files and crunches them into form
     suitable for plot10_DG_sol.
     
-    Attempts to read modal cell data for variable u. i.e.
+    Attempts to read modal cell data for variable mod_data. i.e.
     
-    ``u_modal{i}``, where i is number of modal DOF
+    ``?_modal{i}``, where i is number of modal DOF
     
     Resulting solution data have shape:
     ``(order, nspace_steps, ntime_steps, 1)``
@@ -389,7 +410,7 @@ def load_1D_vtks(fold, name):
     Returns
     -------
     coors : ndarray
-    u : ndarray
+    mod_data : ndarray
         solution data
 
     """
@@ -409,7 +430,11 @@ def load_1D_vtks(fold, name):
     io = MeshioLibIO(files[0])
     coors = io.read(Mesh()).coors[:, 0, None]
     data = io.read_data(step=0)
-    porder = len([k for k in data.keys() if "u_modal" in k])
+    var_name = head([k for k in data.keys() if "_modal" in k])[:-1]
+    if var_name is None:
+        print("File {} does not contain modal data.".format(files[0]))
+        return
+    porder = len([k for k in data.keys() if var_name in k])
 
     tn = len(files)
     nts = sorted([int(f.split(".")[-2]) for f in files])
@@ -417,15 +442,15 @@ def load_1D_vtks(fold, name):
     digs = len(files[0].split(".")[-2])
     full_name_form = ".".join((pjoin(fold, name), ("{:0" + str(digs) + "d}"), "vtk"))
 
-    u = nm.zeros((porder, coors.shape[0] - 1, tn, 1))
+    mod_data = nm.zeros((porder, coors.shape[0] - 1, tn, 1))
     for i, nt in enumerate(nts):
         io = MeshioLibIO(full_name_form.format(nt))
         # parameter "step" does nothing, but is obligatory
         data = io.read_data(step=0)
         for ii in range(porder):
-            u[ii, :, i, 0] = data['u_modal{}'.format(ii)].data
+            mod_data[ii, :, i, 0] = data[var_name+'{}'.format(ii)].data
 
-    return coors, u
+    return coors, mod_data
 
 
 def animate_1D_DG_sol(coors, t0, t1, u,

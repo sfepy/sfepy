@@ -13,13 +13,13 @@ Run with simple.py script::
     python simple.py examples/dg/advection_1D.py
 
 To view animated results use ``script/dg_plot_1D.py`` specifing name of the
-output in ``output/`` folder, default is ``dg\advection_1D``::
+output in ``output/`` folder, default is ``dg/advection_1D``::
 
-    python simple.py script/dg_plot_1D.py dg\advection_1D
+    python simple.py script/dg_plot_1D.py dg/advection_1D
 
 ``script/dg_plot_1D.py`` also accepts full and relative paths::
 
-    python .\script\dg_plot_1D.py output/dg/advection_1D
+    python ./script/dg_plot_1D.py output/dg/advection_1D
 
 
 """
