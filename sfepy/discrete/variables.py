@@ -1253,7 +1253,7 @@ class FieldVariable(Variable):
 
         region = self.field.region
         nod_list = self.field.get_dofs_in_region(region)
-        nods = nm.unique(nm.hstack(nod_list))
+        nods = nm.unique(nod_list)
 
         coors = self.field.get_coor(nods)
 

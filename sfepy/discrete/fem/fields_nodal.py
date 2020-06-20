@@ -321,7 +321,7 @@ class H1NodalMixin(H1Mixin):
             dpn = self.n_components
 
         aux = self.get_dofs_in_region(region)
-        nods = nm.unique(nm.hstack(aux))
+        nods = nm.unique(aux)
 
         if callable(fun):
             vals = nm.asarray(fun(self.get_coor(nods)))
