@@ -75,8 +75,8 @@ class DGLimiter:
         self.unravel = get_unraveler(self.n_el_nod, self.n_cell)
         self.verbose = verbose
 
-        output("Setting up limiter {} for {}.".format(self.name,
-                                                      self.field.family_name))
+        output("Setting up limiter: {} for {}.".format(self.name,
+                                                       self.field.family_name))
 
     def __call__(self, u):
         raise NotImplementedError("Called abstract limiter")

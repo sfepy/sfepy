@@ -233,6 +233,8 @@ class DGField(FEField):
         # 'legendre_simplex' is created for '1_2'.
         if self.gel.name in ["2_4", "3_8"]:
             self.extended = True
+        else:
+            self.extended = False
 
     def _setup_all_dofs(self):
         """Sets up all the differet kinds of DOFs, for DG only bubble DOFs"""

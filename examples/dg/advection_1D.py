@@ -32,7 +32,7 @@ def define(filename_mesh=None,
            approx_order=2,
 
            adflux=0.0,
-           limit=False,
+           limit=True,
 
            cw=None,
            diffcoef=None,
@@ -107,7 +107,8 @@ def define(filename_mesh=None,
         "tss": ('ts.tvd_runge_kutta_3',
                 {"t0"     : t0,
                  "t1"     : t1,
-                 'limiters': {"f": MomentLimiter1D} if limit else {}}),
+                 'limiters': {"f": MomentLimiter1D} if limit else {}
+                 }),
         'nls': ('nls.newton', {}),
         'ls' : ('ls.scipy_direct', {})
     }

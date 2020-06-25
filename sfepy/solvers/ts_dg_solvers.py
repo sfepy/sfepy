@@ -31,7 +31,7 @@ class DGMultiStageTSS(TimeSteppingSolver):
          """If True, assume a quasistatic time-stepping. Then the non-linear
             solver is invoked also for the initial time."""),
         ('limiters', 'dictionary', None, None,
-         "Limiters for DGFields, key: field name, value: limiter class"),
+         "Limiters for DGFields, keys: field name, values: limiter class"),
     ]
 
     def __init__(self, conf, nls=None, context=None, **kwargs):
@@ -51,18 +51,13 @@ class DGMultiStageTSS(TimeSteppingSolver):
 
         self.post_stage_hook = lambda x: x
 
-        try:
-            if self.conf.limiters is not None:
-                # what if we have more fields?
-                for field_name, limiter in self.conf.limiters.items():
-                    self.post_stage_hook = limiter(context.fields[field_name],
-                                                   verbose=self.verbose)
-            elif self.conf.post_stage_hook is not None:
-                self.post_stage_hook = self.conf.post_stage_hook
-        except AttributeError:
-            "There is no hook defined."
-            pass
-
+        limiters = {}
+        if self.conf.limiters is not None:
+            limiters = self.conf.limiters
+        # what if we have more fields or limiters?
+        for field_name, limiter in limiters.items():
+            self.post_stage_hook = limiter(context.fields[field_name],
+                                           verbose=self.verbose)
 
     def solve_step0(self, nls, vec0):
         res = nls.fun(vec0)
