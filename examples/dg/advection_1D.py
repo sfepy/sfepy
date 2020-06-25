@@ -1,7 +1,7 @@
-"""
+r"""
 Transient advection equation in 1D solved using discontinous galerkin method.
 
-.. math:: dp/dt - a * dp/dx = 0
+.. math:: \frac{dp}{dt} + a \cdot dp/dx = 0
 
     p(t,0) = p(t,1)
 
