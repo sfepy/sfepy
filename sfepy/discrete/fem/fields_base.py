@@ -18,12 +18,12 @@ from sfepy.base.base import output, get_default, assert_
 from sfepy.base.base import Struct
 from sfepy.base.timing import Timer
 from sfepy.discrete.common.fields import parse_shape, Field
+from sfepy.discrete import PolySpace
 from sfepy.discrete.fem.mesh import Mesh
 from sfepy.discrete.fem.meshio import convert_complex_output
 from sfepy.discrete.fem.utils import (extend_cell_data, prepare_remap,
                                       invert_remap, get_min_value)
 from sfepy.discrete.fem.mappings import VolumeMapping, SurfaceMapping
-from sfepy.discrete.fem.poly_spaces import PolySpace
 from sfepy.discrete.fem.fe_surface import FESurface
 from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.linearizer import (get_eval_dofs, get_eval_coors,

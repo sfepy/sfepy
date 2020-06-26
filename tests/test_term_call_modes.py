@@ -196,7 +196,9 @@ class Test(TestCommon):
                 domain_geometry = '%d_%s' % (domain.shape.dim, domain_geometry)
 
             for _, term_cls in ordered_iteritems(term_table):
-                if not domain_geometry in term_cls.geometries:
+                if (domain_geometry not in term_cls.geometries) \
+                   or ("dg" in term_cls.name) \
+                   or (term_cls.name == "dw_ns_dot_grad_s"):
                     continue
 
                 vint = ('volume', 'point', 'custom')

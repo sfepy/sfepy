@@ -71,8 +71,8 @@ def plot_matrix_diff(mtx1, mtx2, delta, legend, mode):
 
     eps = 1e-16
 
-    print(nm.amin(mtx1.data), nm.amin(mtx2.data))
-    print(nm.amax(mtx1.data), nm.amax(mtx2.data))
+    print("min", legend[0] , legend[1], ":", nm.amin(mtx1.data), nm.amin(mtx2.data))
+    print("max", legend[0] , legend[1], ":", nm.amax(mtx1.data), nm.amax(mtx2.data))
 
     mtx_da = mtx1.copy() # To preserve structure of mtx1.
     mtx_da.data[:] = nm.abs(mtx1.data - mtx2.data)
@@ -82,8 +82,8 @@ def plot_matrix_diff(mtx1, mtx2, delta, legend, mode):
     iin = nm.where(nm.abs(mtx1.data) > eps)[0]
     mtx_dr.data[iin] = mtx_da.data[iin] / nm.abs(mtx1.data[iin])
 
-    print(nm.amin(mtx_da.data), nm.amax(mtx_da.data))
-    print(nm.amin(mtx_dr.data), nm.amax(mtx_dr.data))
+    print("err abs min max:", nm.amin(mtx_da.data), nm.amax(mtx_da.data))
+    print("err rel min max:", nm.amin(mtx_dr.data), nm.amax(mtx_dr.data))
 
     epsilon = max(1e-5, 10 * delta)
 

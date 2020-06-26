@@ -3,7 +3,7 @@ import numpy as nm
 
 import sfepy.linalg as la
 from sfepy.discrete.integrals import Integral
-from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete import PolySpace
 from six.moves import range
 
 def prepare_remap(indices, n_full):

@@ -48,8 +48,9 @@ class TestInput(TestCommon):
         assign_standard_hooks(test, test_conf.options.get, test_conf)
 
         name = test.get_output_name_trunk()
+        ext = test.get_output_name_ext()
         test.solver_options = Struct(output_filename_trunk=name,
-                                     output_format='vtk',
+                                     output_format=ext if ext != '' else "vtk",
                                      save_ebc=False, save_ebc_nodes=False,
                                      save_regions=False,
                                      save_regions_as_groups=False,
@@ -60,6 +61,10 @@ class TestInput(TestCommon):
 
     def get_output_name_trunk(self):
         return op.splitext(op.split(self.conf.output_name)[1])[0]
+
+    def get_output_name_ext(self):
+        return op.splitext(op.split(self.conf.output_name)[1])[1].replace(".", "")
+
 
     def check_conditions(self, conditions):
         ok = (conditions == 0).all()
@@ -100,6 +105,9 @@ class TestInputEvolutionary(TestInput):
 
     def get_output_name_trunk(self):
         return self.conf.output_name_trunk
+
+    def get_output_name_ext(self):
+        return ""
 
 class TestLCBC(TestCommon):
     """Test linear combination BC. See test_lcbc_*.py files."""

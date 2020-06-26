@@ -4,7 +4,7 @@ Fields corresponding to structural elements.
 from sfepy.base.base import Struct
 from sfepy.discrete.fem.fields_nodal import H1NodalMixin, VolumeField
 from sfepy.discrete.structural.mappings import Shell10XMapping
-from sfepy.discrete.fem.poly_spaces import PolySpace
+from sfepy.discrete import PolySpace
 
 class Shell10XField(H1NodalMixin, VolumeField):
     """

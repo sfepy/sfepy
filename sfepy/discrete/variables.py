@@ -54,13 +54,15 @@ def create_adof_conns(conn_info, var_indx=None, active_only=True, verbose=True):
             eq = nm.arange(var.n_dof, dtype=nm.int32)
 
         else:
-            if active_only:
-                eq = var.eq_map.eq
-
-            else:
+            if isinstance(var, DGFieldVariable):
                 eq = nm.arange(var.n_dof, dtype=nm.int32)
-                eq[var.eq_map.eq_ebc] = -1 - (var.eq_map.eq_ebc + offset)
-                eq[var.eq_map.master] = eq[var.eq_map.slave]
+            else:
+                if active_only:
+                    eq = var.eq_map.eq
+                else:
+                    eq = nm.arange(var.n_dof, dtype=nm.int32)
+                    eq[var.eq_map.eq_ebc] = -1 - (var.eq_map.eq_ebc + offset)
+                    eq[var.eq_map.master] = eq[var.eq_map.slave]
 
         adc = create_adof_conn(eq, econn, var.n_components, offset)
 
@@ -865,8 +867,12 @@ class Variable(Struct):
                 msg = 'field "%s" does not exist!' % conf.field
                 raise KeyError(msg)
 
-            obj = FieldVariable(conf.name, kind, fld, order, primary_var_name,
+            if "DG" in fld.family_name:
+                obj = DGFieldVariable(conf.name, kind, fld, order, primary_var_name,
                                 special=special, key=key, history=history)
+            else:
+                obj = FieldVariable(conf.name, kind, fld, order, primary_var_name,
+                                    special=special, key=key, history=history)
 
         else:
             raise ValueError('unknown variable family! (%s)' % family)
@@ -1239,6 +1245,7 @@ class FieldVariable(Variable):
         self.dtype = field.dtype
 
         self.dim = field.domain.shape.dim
+
 
     def _get_setter(self, kind, functions, **kwargs):
         """
@@ -1916,3 +1923,67 @@ class FieldVariable(Variable):
 
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
+
+
+class DGFieldVariable(FieldVariable):
+    """
+    Fieald variable specificaly intended for use with DGFields, bypasses
+    application of EBC and EPBC as this is done in DGField.
+
+    Is instance checked in create_adof_conns.
+    """
+
+    def __init__(self, name, kind, field, order=None, primary_var_name=None,
+                 special=None, flags=None, history=None, **kwargs):
+        FieldVariable.__init__(self, name, kind, field, order=order,
+                               primary_var_name=primary_var_name,
+                               special=special, flags=flags,
+                               history=history, **kwargs)
+
+        from sfepy.discrete.dg.fields import DGField
+        if isinstance(field, DGField):
+            pass
+        else:
+            raise ValueError("Attempted to use DGFieldVariable with non DGField!")
+
+    def apply_ebc(self, vec, offset=0, force_values=None):
+        pass
+
+    def get_full(self, r_vec, r_offset=0, force_value=None,
+                 vec=None, offset=0):
+        """
+        Get the full DOF vector satisfying E(P)BCs from a reduced DOF
+        vector.
+
+        Notes
+        -----
+        The reduced vector starts in `r_vec` at `r_offset`.
+        Passing a `force_value` overrides the EBC values. Optionally,
+        `vec` argument can be provided to store the full vector (in
+        place) starting at `offset`.
+        """
+        if vec is None:
+            vec = nm.empty(self.n_dof, dtype=r_vec.dtype)
+
+        else:
+            vec = vec[offset:offset+self.n_dof]
+
+        eq_map = self.eq_map
+        r_vec = r_vec[r_offset:r_offset+eq_map.n_eq]
+
+        # overide to hotfix second application of EBCs
+        # # EBC.
+        # vec[eq_map.eq_ebc] = get_default(force_value, eq_map.val_ebc)
+
+        # Reduced vector values, for DG this is full vector as eq_map.eq
+        # contains all dofs, cf. create_adof_conns
+        vec[eq_map.eqi] = r_vec
+
+        # EPBC.
+        # vec[eq_map.master] = vec[eq_map.slave]
+
+        unused_dofs = self.field.get('unused_dofs')
+        if unused_dofs is not None:
+            vec[:] = self.field.restore_substituted(vec)
+
+        return vec

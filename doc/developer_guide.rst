@@ -1080,6 +1080,20 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/refine_hanging
    src/sfepy/discrete/fem/utils
 
+sfepy.discrete.dg sub-package
+"""""""""""""""""""""""""""""
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/discrete/dg/fields
+   src/sfepy/discrete/dg/poly_spaces
+   src/sfepy/discrete/dg/limiters
+   src/sfepy/discrete/dg/gen_legendre_simplex_base
+   src/script/dg_plot_1D
+   src/script/dg_1D_vizualizer
+   src/sfepy/solvers/ts_dg_solvers
+
+
 sfepy.discrete.iga sub-package
 """"""""""""""""""""""""""""""
 

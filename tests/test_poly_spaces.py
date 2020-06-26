@@ -256,8 +256,7 @@ class Test(TestCommon):
         differences.
         """
         from sfepy.linalg import combine
-        from sfepy.discrete import Integral
-        from sfepy.discrete.fem.poly_spaces import PolySpace
+        from sfepy.discrete import Integral, PolySpace
 
         ok = True
         orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
