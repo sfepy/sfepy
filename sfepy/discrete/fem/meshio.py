@@ -1954,31 +1954,35 @@ class GmshIO(MeshioLibIO):
         Returns
         -------
         out : dictionary
-                Keys represent name of data, values are Structs with attributes:
+            Keys represent name of data, values are Structs with attributes:
 
-                data : list, array
-                    For ElementNodeData with shape (n_cell, n_cell_dof) contains
-                    for each time step.
-                    For other contains array of data from last time step.
-                time : list
-                    Contains times.
-                time_n : list
-                    Contains time step numbers.
-                scheme : Struct
-                    Interpolation scheme used in data, only one interpolation
-                    scheme is allowed, contains :
-                        name : string
-                            Name of the scheme.
-                        F : array
-                            Coefficients matrix as defined in [1] and [2].
-                        P : array
-                            Exponents matrix as defined in [1] and [2].
-                scheme_name : str
-                    Name of the interpolation scheme, repeated fo convenience.
-                mode : str
-                     Represents of type of data. cell_nodes : for ElementNodeData;
-                     vertex or cell : Note that for vertex and cell data reading
-                     multiple time steps does not work yet.
+            data : list, array
+                For ElementNodeData with shape (n_cell, n_cell_dof) contains
+                for each time step.
+                For other contains array of data from last time step.
+            time : list
+                Contains times.
+            time_n : list
+                Contains time step numbers.
+            scheme : Struct
+                Interpolation scheme used in data, only one interpolation
+                scheme is allowed.
+            scheme_name : str
+                Name of the interpolation scheme, repeated fo convenience.
+            mode : str
+                 Represents of type of data. cell_nodes : for ElementNodeData;
+                 vertex or cell : Note that for vertex and cell data reading
+                 multiple time steps does not work yet.
+
+        Notes
+        -----
+        The interpolation scheme `Struct` contains the following items:
+            name : string
+                Name of the scheme.
+            F : array
+                Coefficients matrix as defined in [1] and [2].
+            P : array
+                Exponents matrix as defined in [1] and [2].
         """
         filename = get_default(filename, self.filename)
 
@@ -2179,26 +2183,32 @@ class GmshIO(MeshioLibIO):
         out : dictionary
            Keys represent name of the data, values are Structs with attributes:
 
-                data : array
-                 For ElementNodeData shape is (n_cell, n_cell_dof)
-                mode : str
-                 Represents type of data, cell_nodes for ElementNodeData.
-            For ElementNodeData
-                scheme : Struct
-                    Interpolation scheme used in data, only one interpolation
-                    scheme is allowed, contains :
-                        name : string
-                            Name of the scheme.
-                        F : array
-                            Coefficients matrix as defined in [1] and [2].
-                        P : array
-                            Exponents matrix as defined in [1] and [2].
-                scheme_name : str
-                    Name of the interpolation scheme, associated with data,
-                     repeated fo convenience.
+           data : array
+             For ElementNodeData shape is (n_cell, n_cell_dof)
+           mode : str
+             Represents type of data, cell_nodes for ElementNodeData.
+
+           For ElementNodeData:
+
+           scheme : Struct
+             Interpolation scheme used in data, only one interpolation
+             scheme is allowed.
+           scheme_name : str
+             Name of the interpolation scheme, associated with data,
+             repeated fo convenience.
 
         ts : sfepy.solvers.ts.TimeStepper instance, optional
             Provides data to write time step.
+
+        Notes
+        -----
+        The interpolation scheme `Struct` contains the following items:
+            name : string
+                Name of the scheme.
+            F : array
+                Coefficients matrix as defined in [1] and [2].
+            P : array
+                Exponents matrix as defined in [1] and [2].
         """
         # fd.writelines(self.msh20header)
         # self._write_mesh(fd, mesh)
