@@ -12,9 +12,8 @@ Things to check before a release
 
 #. regenerate gallery page and examples::
 
-    $ python3 script/gen_gallery.py -l ../doc-devel
     $ rm -rf doc/examples/
-    $ cp -a gallery/examples/ doc/
+    $ python3 script/gen_gallery.py
 
 #. create temporary/testing tarball::
 
@@ -42,7 +41,6 @@ Things to check before a release
 
    try also::
 
-     $ # copy gallery/images
      $ python3 setup.py pdfdocs
 
 #. check installed build::
@@ -100,8 +98,6 @@ Useful Git commands
 
 Web update and file uploading
 -----------------------------
-
-* upload the tarball to https://sfepy.org/doc-devel/downloads.html
 
 * make a pull request with the updated version in
   ``sfepy-feedstock/recipe/meta.yaml`` from a fork
