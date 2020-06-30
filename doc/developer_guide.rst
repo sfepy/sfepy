@@ -941,6 +941,7 @@ Utility scripts
    src/script/blockgen
    src/script/convert_mesh
    src/script/cylindergen
+   src/script/dg_plot_1D
    src/script/edit_identifiers
    src/script/eval_ns_forms
    src/script/eval_tl_forms
@@ -948,6 +949,7 @@ Utility scripts
    src/script/extract_surface
    src/script/gen_gallery
    src/script/gen_iga_patch
+   src/script/gen_legendre_simplex_base
    src/script/gen_lobatto1d_c
    src/script/gen_mesh_prev
    src/script/gen_release_notes
@@ -1051,6 +1053,7 @@ Common lower-level code and parent classes for FEM and IGA.
    src/sfepy/discrete/common/fields
    src/sfepy/discrete/common/global_interp
    src/sfepy/discrete/common/mappings
+   src/sfepy/discrete/common/poly_spaces
    src/sfepy/discrete/common/region
 
 sfepy.discrete.fem sub-package
@@ -1085,14 +1088,11 @@ sfepy.discrete.dg sub-package
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/discrete/dg/dg_1D_vizualizer
    src/sfepy/discrete/dg/fields
    src/sfepy/discrete/dg/poly_spaces
    src/sfepy/discrete/dg/limiters
-   src/sfepy/discrete/dg/gen_legendre_simplex_base
-   src/script/dg_plot_1D
-   src/script/dg_1D_vizualizer
    src/sfepy/solvers/ts_dg_solvers
-
 
 sfepy.discrete.iga sub-package
 """"""""""""""""""""""""""""""
@@ -1242,6 +1242,7 @@ sfepy.terms package
    src/sfepy/terms/terms_biot
    src/sfepy/terms/terms_constraints
    src/sfepy/terms/terms_contact
+   src/sfepy/terms/terms_dg
    src/sfepy/terms/terms_diffusion
    src/sfepy/terms/terms_dot
    src/sfepy/terms/terms_elastic

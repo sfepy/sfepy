@@ -1,5 +1,150 @@
 # created: 20.07.2007 (-1)
 
+.. _2020.1-2020.2:
+
+from 2020.1 to 2020.2
+=====================
+
+- merge pull request #589 from heczis/fix_meshio_import
+
+  - Fix import from meshio
+
+- merge pull request #590 from rc/fix-meshio-optional-formats
+
+  - fix update_supported_formats() to skip optional meshio formats
+  - fix test_read_meshes() to initialize self.meshes and catch read failures
+  - docs: mention installation of meshio dependencies
+
+- merge pull request #588 from vlukes/new_web_look
+
+  - update doc web pages: use sphinx-rtd-theme
+  - drop `download.php`, link to github releases
+  - use new sfepy logo
+  - web: update gen_gallery.py, use os.path.splitext() to remove suffix
+
+- merge branch 'fix-xyz-mesh-io'
+
+  - fix xyzmeshio.read() for single entity meshes
+
+- merge pull request #591 from vlukes/update_web
+
+  - web: fix css file
+  - new example application
+
+- merge pull request #592 from bubulk/docker-doc
+
+  - Add simple mention of docker images to installation doc.
+
+- merge pull request #594 from zitkat/dg-sfepy-integration
+
+  - Allow term arguments to be callables.
+  - Add refine for 1D meshes to FEDomain
+  - Ensure propagation of verbose parameter to: * materials update * equation
+    time_update
+  - Override C implementation of mesh_get_facet_normals for 1D mesh.
+  - Rework propagating verbose flag in problem.py: * use self.conf.get instead
+    of get_default_attr * use default values of called methods
+  - Add cell groups treatment to refine for 1D mesh.
+
+- merge pull request #599 from rc/docs-problem-description-functions
+
+  - docs: add problem description functions examples to users guide
+
+- merge pull request #596 from zitkat/dg-sfepy-bc-integration
+
+  - Add mechanism for treating DG BC conditions:
+
+    - new syntax dgebc and dgepbc for problem description file
+    - new classes and mechanism for parsing BCs including  gradient
+    - specific evaluation in map_equations method
+
+- merge pull request #600 from vlukes/fix_vtk_1d
+
+  - fix saving 1D meshes in vtk and vtu formats
+
+- merge pull request #595 from rc/gc-hom-engine
+
+  - force garbage collection (free memory) in HomogenizationWorker.__call__()
+
+- merge pull request #602 from vlukes/fix_test_region
+
+  - fix test_regions: test only existing cell and vertex groups
+
+- merge pull request #603 from vlukes/fix_meshio_read_data, closes #601
+
+  - fix meshio read_data()
+
+- merge pull request #604 from rc/gc-run-tests
+
+  - force garbage collection (free memory) after each test file in run_tests()
+
+- merge pull request #611 from zitkat/i610, closes #610
+
+  - Force nm.int64 in nm.prod in Equations.create_matrix_graph to prevent
+    overflow on win64 platform.
+
+- merge pull request #606 from rc/simplify-gitignore
+
+  - simplify .gitignore - add new non-python files with 'git add -f'
+
+- merge pull request #609 from zitkat/mumps-libname, closes #608
+
+  - Add fallback to lib*.dll name for loading mumps on win32.
+
+- merge pull request #613 from vlukes/fix_coefs
+
+  - fix saving coefficients
+
+- merge pull request #614 from vlukes/fix_meshio_cell_types, closes #607
+
+  - fix meshio cell_types
+  - update documentation of Preprocessing
+
+- merge pull request #593 from zitkat/gmshio-thesecond
+
+  - Add custom GmshIO class to enable reading and writing of ElementNodeData: *
+    includes reading multiple time steps * omits "gmsh:ref" data to make
+    working with gmsh comfortable
+  - new file_format application option
+  - add gmsh-dg variant description to _supported_formats
+  - use standard vertex and cell group names in MeshioLibIO.read_data()
+
+- merge pull request #616 from rc/fix-mesh-generator-scripts
+
+  - move suffix check from Problem.setup_output() to new check_format_suffix()
+  - script/blockgen.py: check format and suffix, update, fix for current MeshIO
+  - script/cylindergen.py: check format and suffix, update, fix for current
+    MeshIO
+
+- merge pull request #618 from vlukes/update_ceofs_phonoic
+
+  - update coefs_phononic: allow for more general usage
+
+- merge pull request #620 from rc/misc-fixes
+
+  - fix plot_edges() for 1D
+  - move time stamping in Timer.start(), .stop() closer to measured code
+
+- merge pull request #621 from rc/guard-memory-fem-mapping
+
+  - new raise_if_too_large()
+  - guard memory use in VolumeMapping.get_mapping()
+  - CI: add psutil to test environments
+  - new Config.refmap_memory_factor(), update site_cfg_template.py
+  - new PSUTIL_MIN_VERSION in sfepy/version.py, add psutil as optional to
+    setup.py
+  - docs: document optional psutil requirement
+
+- merge pull request #619 from rc/speed-up-set-dofs
+
+  - major speed up by not calling hstack() on Field.get_dofs_in_region()
+    results - update EquationMap.map_equations(), H1NodalMixin.set_dofs(),
+    IGField.set_dofs(), FieldVariable._get_setter()
+
+- merge pull request #612 from zitkat/dg-method-main
+
+  - discontinuous Galerkin method implementation and examples (see git log)
+
 .. _2019.4-2020.1:
 
 from 2019.4 to 2020.1

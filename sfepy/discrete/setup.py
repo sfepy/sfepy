@@ -7,6 +7,7 @@ def configuration(parent_package='',top_path=None):
 
     subdirs = [
         'common',
+        'dg',
         'fem',
         'iga',
         'structural',

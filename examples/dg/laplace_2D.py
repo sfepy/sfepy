@@ -6,13 +6,13 @@ Laplace equation solved in 2d by discontinous Galerkin method
 on rectangle
                     p = 0
                     p_y = 0
-    [0,b]┌---------------------------┐[a, b]
+    [0,b]-----------------------------[a, b]
          |                           |
          |                           |
 p_x = -a |         p(x,y)            | p_x = 0
 p = 0    |                           | p = 0
          |                           |
-    [0,0]└---------------------------┘[a, 0]
+    [0,0]-----------------------------[a, 0]
                     p_y = b
                     p = 0
 
