@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **26.03.2019** Version 2019.1 released (automatic fallback for linear
+  solvers, quadratic eigenvalue problem solver, etc.), see :ref:`release notes
+  <2018.4-2019.1>`.
+
 * **27.12.2018** Version 2018.4 released (better support for eigenvalue
   problems, improved MUMPS solver interface, support for logging and plotting
   of complex values, etc.), see :ref:`release notes <2018.3-2018.4>`.

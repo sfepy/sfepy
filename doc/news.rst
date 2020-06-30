@@ -1,6 +1,10 @@
 News
 ====
 
+* **30.06.2020** Version 2020.2 released (discontinuous Galerkin method
+  implementation and examples, new website look, memory usage
+  improvements, etc.), see :ref:`release notes <2020.1-2020.2>`.
+
 * **31.03.2020** Version 2020.1 released (reading/writing of additional mesh
   formats by using `meshio <https://github.com/nschloe/meshio>`_), Python 3
   only from now on, etc.), see :ref:`release notes <2019.4-2020.1>`.
@@ -17,9 +21,5 @@ News
 * **02.07.2019** Version 2019.2 released (improved support for time-dependent
   homogenization problems, Python 3.7 compatibility, etc.), see :ref:`release
   notes <2019.1-2019.2>`.
-
-* **26.03.2019** Version 2019.1 released (automatic fallback for linear
-  solvers, quadratic eigenvalue problem solver, etc.), see :ref:`release notes
-  <2018.4-2019.1>`.
 
 For historians: see :ref:`archived_news`.
