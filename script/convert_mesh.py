@@ -230,7 +230,7 @@ def main():
             output('...done')
 
     output('writing %s...' % filename_out)
-    mesh.write(filename_out, file_format=options.format)
+    mesh.write(filename_out, file_format=options.format, binary=False)
     output('...done')
 
 if __name__ == '__main__':
