@@ -426,12 +426,17 @@ class MeshioLibIO(MeshIO):
          cell_data,
          cell_sets) = self._create_out_data(mesh, out)
 
-        meshiolib.write_points_cells(filename, coors, cells,
-                                     point_data=point_data,
-                                     point_sets=point_sets,
-                                     cell_data=cell_data,
-                                     cell_sets=cell_sets,
-                                     file_format=self.file_format)
+        args0 = {'point_data': point_data, 'point_sets': point_sets,
+                 'cell_data': cell_data, 'cell_sets': cell_sets,
+                 'file_format': self.file_format}
+        args = args0.copy()
+        args.update(kwargs)
+        try:
+            meshiolib.write_points_cells(filename, coors, cells,
+                                         **args)
+        except TypeError:
+            meshiolib.write_points_cells(filename, coors, cells,
+                                         **args0)
 
     def _create_out_data(self, mesh, out):
         inv_cell_types = {v: k for k, v in self.cell_types.items()}
