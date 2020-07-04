@@ -160,3 +160,17 @@ class ELaplaceTerm(ETermBase, Term):
         return expr
 
 register_term(ELaplaceTerm)
+
+class EConvectTerm(ETermBase, Term):
+    name = 'dw_econvect'
+    arg_types = ('virtual', 'state')
+    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
+
+    def expression(self, mat, virtual, state, mode=None, term_mode=None,
+                   diff_var=None, **kwargs):
+        expr = self.einsum('i,j.i,j', virtual, state, state,
+                           diff_var=diff_var)
+
+        return expr
+
+register_term(EConvectTerm)
