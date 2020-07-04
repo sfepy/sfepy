@@ -1,3 +1,4 @@
+import numpy as nm
 import opt_einsum as oe
 
 from sfepy.base.base import Struct
@@ -11,26 +12,39 @@ class ETermBase(Struct):
 
         vvar = args[0]
         uvars = args[1:]
+
+        if diff_var is not None:
+            n_add = len([var.name for var in uvars if var.name == diff_var])
+
+        else:
+            n_add = 1
+
         vg, _ = self.get_mapping(vvar)
 
         dets = vg.det
         qsb = vg.bf
         qsbg = vg.bfg
 
-        expr = ['cqab']
-        eargs = [dets]
+        exprs = [['cqab']] * n_add
+        eargss = [[dets]] * n_add
+        def append_all(seqs, item):
+            for seq in seqs:
+                seq.append(item)
 
         eins = sexpr.split(',')
         letters = 'defgh'
-        out_expr = 'c'
+        out_expr = ['c'] * n_add
+        ia = 0
         for ii, ein in enumerate(eins):
             arg = args[ii]
+
             if arg.is_virtual():
                 if arg.n_components == 1:
                     if '.' in ein: # derivative
-                        expr.append('cq{}{}'.format(ein[2], letters[ii]))
-                        eargs.append(qsbg)
-                        out_expr += letters[ii]
+                        append_all(exprs, 'cq{}{}'.format(ein[2], letters[ii]))
+                        append_all(eargss, qsbg)
+                        for iia in range(n_add):
+                            out_expr[iia] += letters[ii]
 
                     else:
                         raise NotImplementedError
@@ -40,38 +54,73 @@ class ETermBase(Struct):
             else:
                 if arg.n_components == 1:
                     if '.' in ein: # derivative
-                        expr.append('cq{}{}'.format(ein[2], letters[ii]))
-                        eargs.append(qsbg)
+                        eterm = 'cq{}{}'.format(ein[2], letters[ii])
+                        earg = qsbg
                     else:
                         raise NotImplementedError
 
-                    if diff_var != arg.name:
+                    append_all(exprs, eterm)
+                    append_all(eargss, earg)
+                    if (diff_var != arg.name) or (n_add > 1):
                         # Assumes no E(P)BCs are present!
                         adc = arg.get_dof_conn(dc_type)
                         dofs = arg()[adc]
 
-                        expr.append('c{}'.format(letters[ii]))
-                        eargs.append(dofs)
+                        determ = 'c{}'.format(letters[ii])
+
+                    if (diff_var != arg.name):
+                        append_all(exprs, determ)
+                        append_all(eargss, dofs)
 
                     else:
-                        out_expr += letters[ii]
+                        for iia in range(n_add):
+                            if iia != ia:
+                                exprs[iia].append(determ)
+
+                        out_expr[ia] += letters[ii]
+                        ia += 1
 
                 else:
                     raise NotImplementedError
 
-        self.parsed_expression = ','.join(expr) + '->' + out_expr
-        self.path, self.path_info = oe.contract_path(
-            self.parsed_expression, *eargs
-        )
-        if diff_var is not None:
-            def eval_einsum(out):
-                return oe.contract(self.parsed_expression, *eargs,
-                                   out=out[:, 0, ...], optimize=self.path)
+        self.parsed_expressions = [','.join(exprs[ia]) + '->' + out_expr[ia]
+                                   for ia in range(n_add)]
+        self.paths, self.path_infos = zip(*[oe.contract_path(
+            self.parsed_expressions[ia], *eargss[ia], optimize='auto',
+        ) for ia in range(n_add)])
+        print(self.parsed_expressions)
+
+        if n_add == 1:
+            if diff_var is not None:
+                def eval_einsum(out):
+                    oe.contract(self.parsed_expressions[0], *eargss[0],
+                                out=out[:, 0, ...],
+                                optimize=self.paths[0])
+
+            else:
+                def eval_einsum(out):
+                    oe.contract(self.parsed_expressions[0], *eargss[0],
+                                out=out[:, 0, :, 0],
+                                optimize=self.paths[0])
 
         else:
-            def eval_einsum(out):
-                return oe.contract(self.parsed_expression, *eargs,
-                                   out=out[:, 0, :, 0], optimize=self.path)
+            if diff_var is not None:
+                def eval_einsum(out):
+                    aux = nm.empty_like(out)
+                    for ia in range(n_add):
+                        oe.contract(self.parsed_expressions[ia], *eargss[ia],
+                                    out=aux[:, 0, ...],
+                                    optimize=self.paths[ia])
+                        out[:] += aux
+
+            else:
+                def eval_einsum(out):
+                    aux = nm.empty_like(out)
+                    for ia in range(n_add):
+                        oe.contract(self.parsed_expressions[ia], *eargss[ia],
+                                    out=out[:, 0, :, 0],
+                                    optimize=self.paths[ia])
+                        out[:] += aux
 
         return eval_einsum
 
@@ -81,6 +130,7 @@ class ETermBase(Struct):
         return 0
 
     def get_fargs(self, *args, **kwargs):
+        # This should be called on construction?
         eval_einsum = self.expression(*args, **kwargs)
 
         return eval_einsum,
