@@ -4,7 +4,7 @@ The linear elastodynamics solution of an iron plate impact problem.
 Find :math:`\ul{u}` such that:
 
 .. math::
-    \int_{\Omega} \rho \ul{v} \pddiff{\ul{u}}{\ul{v}}
+    \int_{\Omega} \rho \ul{v} \pddiff{\ul{u}}{t}
     + \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
     = 0
     \;, \quad \forall \ul{v} \;,
