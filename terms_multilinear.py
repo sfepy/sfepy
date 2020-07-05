@@ -161,6 +161,32 @@ class ELaplaceTerm(ETermBase, Term):
 
 register_term(ELaplaceTerm)
 
+class EVolumeDotTerm(ETermBase, Term):
+    name = 'dw_evolume_dot'
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
+                   'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
+                  {'opt_material' : None},
+                  {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : 'D, D'},
+                  {'opt_material' : None}]
+
+    def expression(self, mat, virtual, state, mode=None, term_mode=None,
+                   diff_var=None, **kwargs):
+        if mat is None:
+            expr = self.einsum('i,i', virtual, state,
+                               diff_var=diff_var)
+
+        else:
+            expr = self.einsum('ij,i,j', mat, virtual, state,
+                               diff_var=diff_var)
+
+        return expr
+
+register_term(EVolumeDotTerm)
+
 class EConvectTerm(ETermBase, Term):
     name = 'dw_econvect'
     arg_types = ('virtual', 'state')
