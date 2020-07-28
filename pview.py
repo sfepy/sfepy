@@ -468,7 +468,7 @@ def main():
                         default=1., help=helps['opacity'])
     parser.add_argument('--color-map', metavar='cmap',
                         action='store', dest='color_map',
-                        default='coolwarm', help=helps['color_map'])
+                        default='viridis', help=helps['color_map'])
     parser.add_argument('--axes-options', metavar='options',
                         action=OptsToListAction, nargs="+", dest='axes_options',
                         default=[], help=helps['axes_options'])
