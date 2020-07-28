@@ -69,6 +69,7 @@
 .. _BDDCML: http://users.math.cas.cz/sistek/software/bddcml.html
 .. _wxPython: https://wxpython.org/
 .. _psutil: https://github.com/giampaolo/psutil
+.. _PyVista: https://docs.pyvista.org
 
 .. _git: http://git-scm.com
 .. _github: http://github.com

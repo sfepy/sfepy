@@ -244,6 +244,137 @@ Common Tasks
 Visualization of Results
 ------------------------
 
+pview.py -- PyVista
+^^^^^^^^^^^^^^^^^^^
+
+Quick visualisation of the *SfePy* results can be done by ``pview.py`` script,
+which uses `PyVista`_ visualisation toolkit (need to be installed).
+
+The help message of the script is::
+
+    usage: pview.py [-h] [-f field_spec [field_spec ...]]
+                    [--fields-map map [map ...]] [-s step] [-l] [-e] [-w field]
+                    [--factor factor] [--opacity opacity] [--color-map cmap]
+                    [--axes-options options [options ...]] [--no-axes]
+                    [--position-vector position_vector] [--no-labels]
+                    [--label-position position] [--no-scalar-bars] [-v position]
+                    [-a output_file] [-r rate] [-o output_file] [--off-screen]
+                    filenames [filenames ...]
+
+    This is a script for quick VTK-based visualizations of finite element
+    computations results.
+
+    Examples
+    --------
+      The examples assume that run_tests.py has been run successfully and the
+      resulting data files are present.
+
+      - view data in output-tests/test_navier_stokes.vtk
+
+        $ python pview.py output-tests/test_navier_stokes.vtk
+
+      - customize the above output,
+        plot0: field "p", switch on edges
+        plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2
+
+        $ python pview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+
+      - view data and take a screenshot
+
+        $ python pview.py output-tests/test_poisson.vtk -o image.png
+
+      - take a screenshot without a window popping up
+
+        $ python postproc.py output-tests/test_poisson.vtk -o image.png --no-offscreen
+
+      - create animation from output-tests/test_time_poisson.*.vtk
+
+        $ python pview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
+
+      - create animation from output-tests/test_hyperelastic.*.vtk,
+        set frame rate to 3, plot displacements and mooney_rivlin_stress
+
+        $ python pview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
+
+    positional arguments:
+      filenames
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f field_spec [field_spec ...], --fields field_spec [field_spec ...]
+                            fields to plot, options separated by ":" are possible:
+                            "cX" - plot only Xth field component; "e" - print
+                            edges; "fX" - scale factor for warp/glyphs; "g -
+                            glyphs (for vector fields only), scale by factor; "mX"
+                            - plot cells with mat_id=X; "oX" - set opacity to X;
+                            "pX" - plot in slot X; "r" - recalculate cell data to
+                            point data; "sX" - plot data in step X; "vX" -
+                            plotting style: s=surface, w=wireframe, p=points; "wX"
+                            - warp mesh by vector field X, scale by factor
+      --fields-map map [map ...]
+                            map fields and cell groups, e.g. 1:u1,p1 2:u2,p2
+      -s step, --step step  select data in a given time step
+      -l, --outline         plot mesh outline
+      -e, --edges           plot cell edges
+      -w field, --warp field
+                            warp mesh by vector field
+      --factor factor       scaling factor for mesh warp and glyphs
+      --opacity opacity     set opacity [default: 1.0]
+      --color-map cmap      set color_map, e.g. hot, cool, bone, etc. [default:
+                            coolwarm]
+      --axes-options options [options ...]
+                            options for directional axes, e.g. xlabel="z1"
+                            ylabel="z2", zlabel="z3"
+      --no-axes             hide orientation axes
+      --position-vector position_vector
+                            define positions of plots [default: "0,0,1.6"]
+      --no-labels           hide plot labels
+      --label-position position
+                            define position of plot labels [default: "225,75,0.9"]
+      --no-scalar-bars      hide scalar bars
+      -v position, --view position
+                            camera azimuth, elevation angles, and optionally zoom
+                            factor [default: "225,75,0.9"]
+      -a output_file, --animation output_file
+                            create animation, mp4 file type supported
+      -r rate, --frame-rate rate
+                            set framerate for animation
+      -o output_file, --screenshot output_file
+                            save screenshot to file
+      --off-screen          off screen plots, e.g. when screenshotting
+
+The first example in the above help::
+
+  ./pview.py output-tests/test_navier_stokes.vtk
+
+produces:
+
+.. image:: images/pview/pview_shot1.png
+
+Using ``-f p:e:p0 u:o.4:p1 u:g:f2e-2:p1`` arguments::
+
+  ./pview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+
+
+the output is split into plots ``plot:0`` and ``plot:1``, where these plots
+contain:
+
+- ``plot:0``: field ``p``, mesh edges are switched on
+- ``plot:1``: magnitude of vector field ``u`` displayed as the surface with opacity set to 0.4;
+  glyphs related to field ``u`` and scaled by factor 2e-2
+
+.. image:: images/pview/pview_shot2.png
+
+The argument ``-o filename.png`` takes the screenshot of the produced view::
+
+  ./pview.py output-tests/test_poisson.vtk -o image.png
+
+.. image:: images/pview/pview_shot3.png
+
+
+postproc.py -- Mayavi2
+^^^^^^^^^^^^^^^^^^^^^^
+
 The ``postproc.py`` script can be used for quick postprocessing and
 visualization of the *SfePy* results. It requires mayavi2 installed on your
 system. Running ``postproc.py`` without arguments produces::
