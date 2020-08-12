@@ -26,7 +26,7 @@ Examples
 
   - take a screenshot without a window popping up
 
-    $ python esview.py output-tests/test_poisson.vtk -o image.png --off-screen
+    $ python resview.py output-tests/test_poisson.vtk -o image.png --off-screen
 
   - create animation from output-tests/test_time_poisson.*.vtk
 
