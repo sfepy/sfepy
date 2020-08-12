@@ -189,7 +189,7 @@ def read_mesh(filenames, step=None, print_info=True, ret_n_steps=False):
 
 
 def pv_plot(filenames, options, plotter=None, step=None,
-            scalar_bars=None, ret_scalar_bars=False):
+            scalar_bars=None, ret_scalar_bars=False, step_inc=None):
     _scalar_bars = {}
     plots = {}
     color = None
@@ -197,8 +197,20 @@ def pv_plot(filenames, options, plotter=None, step=None,
     if plotter is None:
         plotter = pv.Plotter()
 
-    fstep = step if step is not None else options.step
-    steps = {fstep: read_mesh(filenames, fstep)}
+    fstep = (step if step is not None else options.step)
+    if step_inc is not None:
+        plotter.clear()
+        fstep += step_inc
+    if fstep < 0:
+        fstep = 0
+    if hasattr(plotter, 'resview_n_steps'):
+        if fstep >= plotter.resview_n_steps:
+            fstep = plotter.resview_n_steps - 1
+
+    mesh, n_steps = read_mesh(filenames, fstep, ret_n_steps=True)
+    steps = {fstep: mesh}
+
+    plotter.resview_step, plotter.resview_n_steps = fstep, n_steps
 
     fields_map = {}
     if len(options.fields_map) > 0:
@@ -312,7 +324,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
             plots[position] = []
 
         plot_info = ':' + ','.join(plot_info) if len(plot_info) > 0 else ''
-        plot_info = '%s(%d)%s' % (scalar, fstep, plot_info)
+        plot_info = '%s(step %d)%s' % (scalar, fstep, plot_info)
         plots[position].append(((bnds[::2], bnds[1::2]), plot_info))
 
         if options.show_scalar_bars and scalar:
@@ -569,6 +581,16 @@ def main():
         else:
             cpos = None
 
+        plotter.add_key_event('Prior', lambda: pv_plot(options.filenames,
+                                                       options,
+                                                       step=plotter.resview_step,
+                                                       step_inc=-1,
+                                                       plotter=plotter))
+        plotter.add_key_event('Next', lambda: pv_plot(options.filenames,
+                                                      options,
+                                                      step=plotter.resview_step,
+                                                      step_inc=1,
+                                                      plotter=plotter))
         plotter.show(cpos=cpos, screenshot=options.screenshot)
 
 
