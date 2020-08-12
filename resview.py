@@ -44,10 +44,8 @@ from argparse import ArgumentParser, Action, RawDescriptionHelpFormatter
 from ast import literal_eval
 import numpy as nm
 import os.path as osp
-import vtk
 
 import pyvista as pv
-from pyvista.utilities import assert_empty_kwargs, get_array
 from vtk.util.numpy_support import numpy_to_vtk
 
 
@@ -245,7 +243,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
         if 's' in opts and step is None:  # plot data from a given step
             fstep = opts['s']
-            
+
         if fstep not in steps:
             steps[fstep] = read_mesh(filenames, step=fstep)
 
@@ -273,7 +271,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
         style = {'s': 'surface',
                  'w': 'wireframe',
                  'p': 'points'}[opts.get('v', 's')]  # set style
-        
+
         warp = opts.get('w', options.warp)  # warp mesh
         factor = opts.get('f', options.factor)
         if warp:
@@ -332,7 +330,7 @@ def pv_plot(filenames, options, plotter=None, step=None,
                 _scalar_bars[scalar] = []
 
             field_data = pipe[-1][scalar]
-            limits = (nm.min(field_data), nm.max(field_data))      
+            limits = (nm.min(field_data), nm.max(field_data))
             _scalar_bars[scalar].append((limits, plotter.mapper, position))
 
         plot_id += 1
@@ -427,7 +425,8 @@ helps = {
     'color_map':
         'set color_map, e.g. hot, cool, bone, etc. [default: %(default)s]',
     'axes_options':
-        'options for directional axes, e.g. xlabel="z1" ylabel="z2", zlabel="z3"',
+        'options for directional axes, e.g. xlabel="z1" ylabel="z2",'
+        ' zlabel="z3"',
     'no_axes':
         'hide orientation axes',
     'no_scalar_bars':
@@ -461,7 +460,8 @@ def main():
                         action=FieldOptsToListAction, nargs="+", dest='fields',
                         default=[], help=helps['fields'])
     parser.add_argument('--fields-map', metavar='map',
-                        action=FieldOptsToListAction, nargs="+", dest='fields_map',
+                        action=FieldOptsToListAction, nargs="+",
+                        dest='fields_map',
                         default=[], help=helps['fields_map'])
     parser.add_argument('-s', '--step', metavar='step',
                         action=StoreNumberAction, dest='step',
@@ -567,7 +567,7 @@ def main():
                 plotter.add_axes(**dict(options.axes_options))
 
             plotter.write_frame()
-       
+
         plotter.close()
     else:
         plotter = pv_plot(options.filenames, options, plotter=plotter)
@@ -581,16 +581,20 @@ def main():
         else:
             cpos = None
 
-        plotter.add_key_event('Prior', lambda: pv_plot(options.filenames,
-                                                       options,
-                                                       step=plotter.resview_step,
-                                                       step_inc=-1,
-                                                       plotter=plotter))
-        plotter.add_key_event('Next', lambda: pv_plot(options.filenames,
-                                                      options,
-                                                      step=plotter.resview_step,
-                                                      step_inc=1,
-                                                      plotter=plotter))
+        plotter.add_key_event(
+            'Prior', lambda: pv_plot(options.filenames,
+                                     options,
+                                     step=plotter.resview_step,
+                                     step_inc=-1,
+                                     plotter=plotter)
+        )
+        plotter.add_key_event(
+            'Next', lambda: pv_plot(options.filenames,
+                                    options,
+                                    step=plotter.resview_step,
+                                    step_inc=1,
+                                    plotter=plotter)
+        )
         plotter.show(cpos=cpos, screenshot=options.screenshot)
 
 
