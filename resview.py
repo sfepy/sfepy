@@ -11,18 +11,18 @@ Examples
 
   - view data in output-tests/test_navier_stokes.vtk
 
-    $ python pview.py output-tests/test_navier_stokes.vtk
+    $ python resview.py output-tests/test_navier_stokes.vtk
 
   - customize the above output,
     plot0: field "p", switch on edges
     plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2
 
-    $ python pview.py output-tests/test_navier_stokes.vtk -f p:e:p0\
+    $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0\
  u:o.4:p1 u:g:f2e-2:p1
 
   - view data and take a screenshot
 
-    $ python pview.py output-tests/test_poisson.vtk -o image.png
+    $ python resview.py output-tests/test_poisson.vtk -o image.png
 
   - take a screenshot without a window popping up
 
@@ -31,12 +31,12 @@ Examples
 
   - create animation from output-tests/test_time_poisson.*.vtk
 
-    $ python pview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
+    $ python resview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
 
   - create animation from output-tests/test_hyperelastic.*.vtk,
     set frame rate to 3, plot displacements and mooney_rivlin_stress
 
-    $ python pview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0\
+    $ python resview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0\
  mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 
 """

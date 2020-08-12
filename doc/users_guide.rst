@@ -244,22 +244,22 @@ Common Tasks
 Visualization of Results
 ------------------------
 
-pview.py -- PyVista
+resview.py -- PyVista
 ^^^^^^^^^^^^^^^^^^^
 
-Quick visualisation of the *SfePy* results can be done by ``pview.py`` script,
+Quick visualisation of the *SfePy* results can be done by ``resview.py`` script,
 which uses `PyVista`_ visualisation toolkit (need to be installed).
 
 The help message of the script is::
 
-    usage: pview.py [-h] [-f field_spec [field_spec ...]]
-                    [--fields-map map [map ...]] [-s step] [-l] [-e] [-w field]
-                    [--factor factor] [--opacity opacity] [--color-map cmap]
-                    [--axes-options options [options ...]] [--no-axes]
-                    [--position-vector position_vector] [--no-labels]
-                    [--label-position position] [--no-scalar-bars] [-v position]
-                    [-a output_file] [-r rate] [-o output_file] [--off-screen]
-                    filenames [filenames ...]
+    usage: resview.py [-h] [-f field_spec [field_spec ...]]
+                      [--fields-map map [map ...]] [-s step] [-l] [-e] [-w field]
+                      [--factor factor] [--opacity opacity] [--color-map cmap]
+                      [--axes-options options [options ...]] [--no-axes]
+                      [--position-vector position_vector] [--no-labels]
+                      [--label-position position] [--no-scalar-bars] [-v position]
+                      [-a output_file] [-r rate] [-o output_file] [--off-screen]
+                      filenames [filenames ...]
 
     This is a script for quick VTK-based visualizations of finite element
     computations results.
@@ -271,17 +271,17 @@ The help message of the script is::
 
       - view data in output-tests/test_navier_stokes.vtk
 
-        $ python pview.py output-tests/test_navier_stokes.vtk
+        $ python resview.py output-tests/test_navier_stokes.vtk
 
       - customize the above output,
         plot0: field "p", switch on edges
         plot1: field "u", surface with opacity 0.4, glyphs scaled by factor 2e-2
 
-        $ python pview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+        $ python resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
 
       - view data and take a screenshot
 
-        $ python pview.py output-tests/test_poisson.vtk -o image.png
+        $ python resview.py output-tests/test_poisson.vtk -o image.png
 
       - take a screenshot without a window popping up
 
@@ -289,12 +289,12 @@ The help message of the script is::
 
       - create animation from output-tests/test_time_poisson.*.vtk
 
-        $ python pview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
+        $ python resview.py output-tests/test_time_poisson.*.vtk -a mov.mp4
 
       - create animation from output-tests/test_hyperelastic.*.vtk,
         set frame rate to 3, plot displacements and mooney_rivlin_stress
 
-        $ python pview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
+        $ python resview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0 mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 
     positional arguments:
       filenames
@@ -345,15 +345,15 @@ The help message of the script is::
 
 The first example in the above help::
 
-  ./pview.py output-tests/test_navier_stokes.vtk
+  ./resview.py output-tests/test_navier_stokes.vtk
 
 produces:
 
-.. image:: images/pview/pview_shot1.png
+.. image:: images/resview/resview_shot1.png
 
 Using ``-f p:e:p0 u:o.4:p1 u:g:f2e-2:p1`` arguments::
 
-  ./pview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
+  ./resview.py output-tests/test_navier_stokes.vtk -f p:e:p0 u:o.4:p1 u:g:f2e-2:p1
 
 
 the output is split into plots ``plot:0`` and ``plot:1``, where these plots
@@ -363,13 +363,13 @@ contain:
 - ``plot:1``: magnitude of vector field ``u`` displayed as the surface with opacity set to 0.4;
   glyphs related to field ``u`` and scaled by factor 2e-2
 
-.. image:: images/pview/pview_shot2.png
+.. image:: images/resview/resview_shot2.png
 
 The argument ``-o filename.png`` takes the screenshot of the produced view::
 
-  ./pview.py output-tests/test_poisson.vtk -o image.png
+  ./resview.py output-tests/test_poisson.vtk -o image.png
 
-.. image:: images/pview/pview_shot3.png
+.. image:: images/resview/resview_shot3.png
 
 
 postproc.py -- Mayavi2
