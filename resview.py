@@ -215,6 +215,9 @@ def pv_plot(filenames, options, plotter=None, step=None,
 
             fields.append((field, 'p%d' % position))
             position += 1
+
+        if len(fields) == 0:
+            fields.append(('mat_id', 'p0'))
     else:
         fields = options.fields
 
