@@ -26,8 +26,7 @@ Examples
 
   - take a screenshot without a window popping up
 
-    $ python postproc.py output-tests/test_poisson.vtk -o image.png\
- --no-offscreen
+    $ python esview.py output-tests/test_poisson.vtk -o image.png --off-screen
 
   - create animation from output-tests/test_time_poisson.*.vtk
 
@@ -36,7 +35,7 @@ Examples
   - create animation from output-tests/test_hyperelastic.*.vtk,
     set frame rate to 3, plot displacements and mooney_rivlin_stress
 
-    $ python resview.py output-tests/test_hyperelastic.*.vtk -f u:wu:e:p0\
+    $ python resview.py output-tests/test_hyperelastic_TL.*.vtk -f u:wu:e:p0\
  mooney_rivlin_stress:p1 -a mov.mp4 -r 3
 
 """
