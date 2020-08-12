@@ -51,7 +51,7 @@ Python packages required for using *SfePy*:
 - `wxPython`_ for better `IPython`_ integration.
 - `Read the Docs`_ `Sphinx`_ theme for building documentation
 - `psutil`_ for memory requirements checking
-- `PyVista`_ for post-processing via `pview.py`
+- `PyVista`_ for post-processing via `resview.py`
 
 Make sure the dependencies of those packages are also installed (e.g `igakit`_
 reguires FORTRAN compiler, `scikit-umfpack`_ does not work without UMFPACK,

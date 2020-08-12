@@ -37,7 +37,7 @@ Python packages required for using SfePy:
 - slepc4py, for eigenvalue problem solvers from SLEPc
 - pymetis, for mesh partitioning using Metis
 - psutil, for memory requirements checking
-- PyVista, for post-processing via pview.py
+- PyVista, for post-processing via resview.py
 
 Make sure the dependencies of those packages are also installed -
 scikit-umfpack does not work without UMFPACK, petsc4py without PETSc, etc.
