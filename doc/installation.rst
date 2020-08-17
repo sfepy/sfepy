@@ -445,6 +445,19 @@ installed, install it or try `apt-get install` instead)::
 
     sudo apt-get install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools mayavi2 python-dev ipython python-sympy cython python-sparse
 
+
+(Tested on Ubuntu 20.04.1 LTS.)
+
+After converting python to python3 as previously stated::
+
+    sudo apt-get install python3-scipy python3-matplotlib python3-tables python3-pyparsing libsuitesparse-dev python3-setuptools mayavi2 python3-dev ipython3 python3-sympy cython python3-sparse
+
+If you have problems like python 2 interpreter running even you use `python3`, add alternative using `update-alternatives` (You don't need to change default version)::
+
+    sudo update-alternatives --list python
+    sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+    sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 2
+
 Than *SfePy* can be installed with::
 
    apt-get install python-sfepy
