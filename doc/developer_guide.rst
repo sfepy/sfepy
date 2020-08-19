@@ -45,7 +45,7 @@ On Unix-like systems, you can simply type ``make`` in the top-level folder to
 build in-place.
 
 After the initial compilation, or after making changes, do not forget to run
-the tests, see :ref:`testing`.
+the tests, see :ref:`testing_installation`.
 
 SfePy Directory Structure
 -------------------------
@@ -1215,7 +1215,7 @@ sfepy.solvers package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/solvers/auto_fallback.py
+   src/sfepy/solvers/auto_fallback
    src/sfepy/solvers/eigen
    src/sfepy/solvers/ls
    src/sfepy/solvers/ls_mumps

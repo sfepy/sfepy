@@ -32,5 +32,5 @@ and test the mathematical models developed during our various research
 projects. It has evolved, however, to a rather full-featured (yet small) finite
 element code. Many terms have been implemented that can be used to build the
 PDEs, see :ref:`term_overview`. SfePy comes also with a number of examples that
-can get you started, check :ref:`sfepy-gallery-examples-index` and
+can get you started, check :ref:`examples`, :ref:`gallery-index` and
 :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
