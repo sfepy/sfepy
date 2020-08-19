@@ -245,7 +245,7 @@ Visualization of Results
 ------------------------
 
 resview.py -- PyVista
-^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 Quick visualisation of the *SfePy* results can be done by ``resview.py`` script,
 which uses `PyVista`_ visualisation toolkit (need to be installed).
@@ -1566,7 +1566,7 @@ The following postprocessing functions based on the *VTK* filters are available:
 - 'get_vtk_edges': extract mesh edges
 - 'get_vtk_by_group': extract domain by a material ID
 - 'tetrahedralize_vtk_mesh': 3D cells are converted to tetrahedral meshes, 2D
-cells to triangles
+  cells to triangles
 
 The following code demonstrates the use of the postprocessing filters::
 
