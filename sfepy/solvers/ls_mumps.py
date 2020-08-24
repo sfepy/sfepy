@@ -82,153 +82,370 @@ def coo_is_symmetric(mtx, tol=1e-6):
     return False
 
 
-mumps_fields_part1 = [
-    ('sym', mumps_int),
-    ('par', mumps_int),
-    ('job', mumps_int),
-    ('comm_fortran', mumps_int),
-    ('icntl', mumps_int * 40)]
-
-mumps_fields_part2a = [
-    ('n', mumps_int),
-    #
-    ('nz_alloc', mumps_int),
-    # /* Assembled entry */
-    ('nz', mumps_int)]
-
-mumps_fields_part2b = [
-    ('irn', mumps_pint),
-    ('jcn', mumps_pint),
-    ('a', mumps_pcomplex),
-    # /* Distributed entry */
-    ('nz_loc', mumps_int)]
-
-mumps_fields_part2c = [
-    ('irn_loc', mumps_pint),
-    ('jcn_loc', mumps_pint),
-    ('a_loc', mumps_pcomplex),
-    # /* Element entry */
-    ('nelt', mumps_int),
-    ('eltptr', mumps_pint),
-    ('eltvar', mumps_pint),
-    ('a_elt', mumps_pcomplex),
-    # /* Ordering, if given by user */
-    ('perm_in', mumps_pint),
-    # /* Orderings returned to user */
-    ('sym_perm', mumps_pint),
-    ('uns_perm', mumps_pint),
-    # /* Scaling (input only in this version) */
-    ('colsca', mumps_preal),
-    ('rowsca', mumps_preal)]
-
-mumps_fields_part2d = [
-    # /* RHS, solution, ouptput data and statistics */
-    ('rhs', mumps_pcomplex),
-    ('redrhs', mumps_pcomplex),
-    ('rhs_sparse', mumps_pcomplex),
-    ('sol_loc', mumps_pcomplex),
-    ('irhs_sparse', mumps_pint),
-    ('irhs_ptr', mumps_pint),
-    ('isol_loc', mumps_pint),
-    ('nrhs', mumps_int),
-    ('lrhs', mumps_int),
-    ('lredrhs', mumps_int),
-    ('nz_rhs', mumps_int),
-    ('isol_loc', mumps_int),
-    ('schur_mloc', mumps_int),
-    ('schur_nloc', mumps_int),
-    ('schur_lld', mumps_int),
-    ('mblock', mumps_int),
-    ('nblock', mumps_int),
-    ('nprow', mumps_int),
-    ('npcol', mumps_int),
-    ('info', mumps_int * 40),
-    ('infog', mumps_int * 40),
-    ('rinfo', mumps_real * 40),
-    ('rinfog', mumps_real * 40),
-    # /* Null space */
-    ('deficiency', mumps_int),
-    ('pivnul_list', mumps_pint),
-    ('mapping', mumps_pint),
-    # /* Schur */
-    ('size_schur', mumps_int),
-    ('listvar_schur', mumps_pint),
-    ('schur', mumps_pcomplex),
-    # /* Internal parameters */
-    ('instance_number', mumps_int),
-    ('wk_user', mumps_pcomplex)]
-
-mumps_fields_part3 = [
-    # /* For out-of-core */
-    ('ooc_tmpdir', ctypes.c_char * 256),
-    ('ooc_prefix', ctypes.c_char * 64),
-    # /* To save the matrix in matrix market format */
-    ('write_problem', ctypes.c_char * 256),
-    ('lwk_user', mumps_int)]
-
-mumps_fields_part4 = [
-    # /* For save/restore feature */
-    ('save_dir', ctypes.c_char * 256),
-    ('save_prefix', ctypes.c_char * 256)]
-
-
 class mumps_struc_c_x(ctypes.Structure):
-    _fields_ = mumps_fields_part1 + [
-        ('aux', ctypes.c_uint8 * AUX_LENGTH)]
+    _fields_ = [
+        ('sym', mumps_int),
+        ('par', mumps_int),
+        ('job', mumps_int),
+        ('comm_fortran', mumps_int),
+        ('icntl', mumps_int * 40),
+        ('aux', ctypes.c_uint8 * AUX_LENGTH)
+    ]
 
 
 class mumps_struc_c_4(ctypes.Structure):  # MUMPS 4.10.0
-    _fields_ = \
-        mumps_fields_part1 + [
-            ('cntl', mumps_real * 15)] +\
-        mumps_fields_part2a +\
-        mumps_fields_part2b +\
-        mumps_fields_part2c +\
-        mumps_fields_part2d + [
-            # /* Version number:
-            #  length=14 in FORTRAN + 1 for final \0 + 1 for alignment */
-            ('version_number',
-             ctypes.c_char * (14 + 1 + 1))] +\
-        mumps_fields_part3
+    _fields_ = [
+        ('sym', mumps_int),
+        ('par', mumps_int),
+        ('job', mumps_int),
+        ('comm_fortran', mumps_int),
+        ('icntl', mumps_int * 40),
+        ('cntl', mumps_real * 15),
+        ('n', mumps_int),
+        #
+        ('nz_alloc', mumps_int),
+        # /* Assembled entry */
+        ('nz', mumps_int),
+        ('irn', mumps_pint),
+        ('jcn', mumps_pint),
+        ('a', mumps_pcomplex),
+        # /* Distributed entry */
+        ('nz_loc', mumps_int),
+        ('irn_loc', mumps_pint),
+        ('jcn_loc', mumps_pint),
+        ('a_loc', mumps_pcomplex),
+        # /* Element entry */
+        ('nelt', mumps_int),
+        ('eltptr', mumps_pint),
+        ('eltvar', mumps_pint),
+        ('a_elt', mumps_pcomplex),
+        # /* Ordering, if given by user */
+        ('perm_in', mumps_pint),
+        # /* Orderings returned to user */
+        ('sym_perm', mumps_pint),
+        ('uns_perm', mumps_pint),
+        # /* Scaling (input only in this version) */
+        ('colsca', mumps_preal),
+        ('rowsca', mumps_preal),
+        # /* RHS, solution, ouptput data and statistics */
+        ('rhs', mumps_pcomplex),
+        ('redrhs', mumps_pcomplex),
+        ('rhs_sparse', mumps_pcomplex),
+        ('sol_loc', mumps_pcomplex),
+        ('irhs_sparse', mumps_pint),
+        ('irhs_ptr', mumps_pint),
+        ('isol_loc', mumps_pint),
+        ('nrhs', mumps_int),
+        ('lrhs', mumps_int),
+        ('lredrhs', mumps_int),
+        ('nz_rhs', mumps_int),
+        ('lsol_loc', mumps_int),
+        ('schur_mloc', mumps_int),
+        ('schur_nloc', mumps_int),
+        ('schur_lld', mumps_int),
+        ('mblock', mumps_int),
+        ('nblock', mumps_int),
+        ('nprow', mumps_int),
+        ('npcol', mumps_int),
+        ('info', mumps_int * 40),
+        ('infog', mumps_int * 40),
+        ('rinfo', mumps_real * 40),
+        ('rinfog', mumps_real * 40),
+        # /* Null space */
+        ('deficiency', mumps_int),
+        ('pivnul_list', mumps_pint),
+        ('mapping', mumps_pint),
+        # /* Schur */
+        ('size_schur', mumps_int),
+        ('listvar_schur', mumps_pint),
+        ('schur', mumps_pcomplex),
+        # /* Internal parameters */
+        ('instance_number', mumps_int),
+        ('wk_user', mumps_pcomplex),
+        # /* Version number:
+        #  length=14 in FORTRAN + 1 for final \0 + 1 for alignment */
+        ('version_number', ctypes.c_char * (14 + 1 + 1)),
+        # /* For out-of-core */
+        ('ooc_tmpdir', ctypes.c_char * 256),
+        ('ooc_prefix', ctypes.c_char * 64),
+        # /* To save the matrix in matrix market format */
+        ('write_problem', ctypes.c_char * 256),
+        ('lwk_user', mumps_int),
+    ]
 
 
 class mumps_struc_c_5_0(ctypes.Structure):  # MUMPS 5.0.x
-    _fields_ = mumps_fields_part1 + [
+    _fields_ = [
+        ('sym', mumps_int),
+        ('par', mumps_int),
+        ('job', mumps_int),
+        ('comm_fortran', mumps_int),
+        ('icntl', mumps_int * 40),
         ('keep', mumps_int * 500),
         ('cntl', mumps_real * 15),
         ('dkeep', mumps_real * 130),
-        ('keep8', mumps_int8 * 150)] +\
-        mumps_fields_part2a +\
-        mumps_fields_part2b +\
-        mumps_fields_part2c + [
-            ('colsca_from_mumps', mumps_int),
-            ('rowsca_from_mumps', mumps_int)] +\
-        mumps_fields_part2d + [
-            # /* Version number:
-            #  length=25 in FORTRAN + 1 for final \0 + 1 for alignment */
-            ('version_number', ctypes.c_char * (25 + 1 + 1))] +\
-        mumps_fields_part3
+        ('keep8', mumps_int8 * 150),
+        ('n', mumps_int),
+        #
+        ('nz_alloc', mumps_int),
+        # /* Assembled entry */
+        ('nz', mumps_int),
+        ('irn', mumps_pint),
+        ('jcn', mumps_pint),
+        ('a', mumps_pcomplex),
+        # /* Distributed entry */
+        ('nz_loc', mumps_int),
+        ('irn_loc', mumps_pint),
+        ('jcn_loc', mumps_pint),
+        ('a_loc', mumps_pcomplex),
+        # /* Element entry */
+        ('nelt', mumps_int),
+        ('eltptr', mumps_pint),
+        ('eltvar', mumps_pint),
+        ('a_elt', mumps_pcomplex),
+        # /* Ordering, if given by user */
+        ('perm_in', mumps_pint),
+        # /* Orderings returned to user */
+        ('sym_perm', mumps_pint),
+        ('uns_perm', mumps_pint),
+        # /* Scaling (input only in this version) */
+        ('colsca', mumps_preal),
+        ('rowsca', mumps_preal),
+        ('colsca_from_mumps', mumps_int),
+        ('rowsca_from_mumps', mumps_int),
+        # /* RHS, solution, ouptput data and statistics */
+        ('rhs', mumps_pcomplex),
+        ('redrhs', mumps_pcomplex),
+        ('rhs_sparse', mumps_pcomplex),
+        ('sol_loc', mumps_pcomplex),
+        ('irhs_sparse', mumps_pint),
+        ('irhs_ptr', mumps_pint),
+        ('isol_loc', mumps_pint),
+        ('nrhs', mumps_int),
+        ('lrhs', mumps_int),
+        ('lredrhs', mumps_int),
+        ('nz_rhs', mumps_int),
+        ('lsol_loc', mumps_int),
+        ('schur_mloc', mumps_int),
+        ('schur_nloc', mumps_int),
+        ('schur_lld', mumps_int),
+        ('mblock', mumps_int),
+        ('nblock', mumps_int),
+        ('nprow', mumps_int),
+        ('npcol', mumps_int),
+        ('info', mumps_int * 40),
+        ('infog', mumps_int * 40),
+        ('rinfo', mumps_real * 40),
+        ('rinfog', mumps_real * 40),
+        # /* Null space */
+        ('deficiency', mumps_int),
+        ('pivnul_list', mumps_pint),
+        ('mapping', mumps_pint),
+        # /* Schur */
+        ('size_schur', mumps_int),
+        ('listvar_schur', mumps_pint),
+        ('schur', mumps_pcomplex),
+        # /* Internal parameters */
+        ('instance_number', mumps_int),
+        ('wk_user', mumps_pcomplex),
+        # /* Version number:
+        #  length=25 in FORTRAN + 1 for final \0 + 1 for alignment */
+        ('version_number', ctypes.c_char * (25 + 1 + 1)),
+        # /* For out-of-core */
+        ('ooc_tmpdir', ctypes.c_char * 256),
+        ('ooc_prefix', ctypes.c_char * 64),
+        # /* To save the matrix in matrix market format */
+        ('write_problem', ctypes.c_char * 256),
+        ('lwk_user', mumps_int),
+    ]
 
 
 class mumps_struc_c_5_1(ctypes.Structure):  # MUMPS 5.1.x
-    _fields_ = mumps_fields_part1 + [
+    _fields_ = [
+        ('sym', mumps_int),
+        ('par', mumps_int),
+        ('job', mumps_int),
+        ('comm_fortran', mumps_int),
+        ('icntl', mumps_int * 40),
         ('keep', mumps_int * 500),
         ('cntl', mumps_real * 15),
         ('dkeep', mumps_real * 230),
-        ('keep8', mumps_int8 * 150)] +\
-        mumps_fields_part2a + [
-            ('nnz', mumps_int8)] +\
-        mumps_fields_part2b + [
-           ('nnz_loc', mumps_int8)] +\
-        mumps_fields_part2c + [
-            ('colsca_from_mumps', mumps_int),
-            ('rowsca_from_mumps', mumps_int)] +\
-        mumps_fields_part2d + [
-            # /* Version number:
-            #  length=30 in FORTRAN + 1 for final \0 + 1 for alignment */
-            ('version_number', ctypes.c_char * (30 + 1 + 1))] +\
-        mumps_fields_part3 +\
-        mumps_fields_part4
+        ('keep8', mumps_int8 * 150),
+        ('n', mumps_int),
+        #
+        ('nz_alloc', mumps_int),
+        # /* Assembled entry */
+        ('nz', mumps_int),
+        ('nnz', mumps_int8),
+        ('irn', mumps_pint),
+        ('jcn', mumps_pint),
+        ('a', mumps_pcomplex),
+        # /* Distributed entry */
+        ('nz_loc', mumps_int),
+        ('nnz_loc', mumps_int8),
+        ('irn_loc', mumps_pint),
+        ('jcn_loc', mumps_pint),
+        ('a_loc', mumps_pcomplex),
+        # /* Element entry */
+        ('nelt', mumps_int),
+        ('eltptr', mumps_pint),
+        ('eltvar', mumps_pint),
+        ('a_elt', mumps_pcomplex),
+        # /* Ordering, if given by user */
+        ('perm_in', mumps_pint),
+        # /* Orderings returned to user */
+        ('sym_perm', mumps_pint),
+        ('uns_perm', mumps_pint),
+        # /* Scaling (input only in this version) */
+        ('colsca', mumps_preal),
+        ('rowsca', mumps_preal),
+        ('colsca_from_mumps', mumps_int),
+        ('rowsca_from_mumps', mumps_int),
+        # /* RHS, solution, ouptput data and statistics */
+        ('rhs', mumps_pcomplex),
+        ('redrhs', mumps_pcomplex),
+        ('rhs_sparse', mumps_pcomplex),
+        ('sol_loc', mumps_pcomplex),
+        ('irhs_sparse', mumps_pint),
+        ('irhs_ptr', mumps_pint),
+        ('isol_loc', mumps_pint),
+        ('nrhs', mumps_int),
+        ('lrhs', mumps_int),
+        ('lredrhs', mumps_int),
+        ('nz_rhs', mumps_int),
+        ('lsol_loc', mumps_int),
+        ('schur_mloc', mumps_int),
+        ('schur_nloc', mumps_int),
+        ('schur_lld', mumps_int),
+        ('mblock', mumps_int),
+        ('nblock', mumps_int),
+        ('nprow', mumps_int),
+        ('npcol', mumps_int),
+        ('info', mumps_int * 40),
+        ('infog', mumps_int * 40),
+        ('rinfo', mumps_real * 40),
+        ('rinfog', mumps_real * 40),
+        # /* Null space */
+        ('deficiency', mumps_int),
+        ('pivnul_list', mumps_pint),
+        ('mapping', mumps_pint),
+        # /* Schur */
+        ('size_schur', mumps_int),
+        ('listvar_schur', mumps_pint),
+        ('schur', mumps_pcomplex),
+        # /* Internal parameters */
+        ('instance_number', mumps_int),
+        ('wk_user', mumps_pcomplex),
+        # /* Version number:
+        #  length=30 in FORTRAN + 1 for final \0 + 1 for alignment */
+        ('version_number', ctypes.c_char * (30 + 1 + 1)),
+        # /* For out-of-core */
+        ('ooc_tmpdir', ctypes.c_char * 256),
+        ('ooc_prefix', ctypes.c_char * 64),
+        # /* To save the matrix in matrix market format */
+        ('write_problem', ctypes.c_char * 256),
+        ('lwk_user', mumps_int),
+        # /* For save/restore feature */
+        ('save_dir', ctypes.c_char * 256),
+        ('save_prefix', ctypes.c_char * 256)
+    ]
+
+
+class mumps_struc_c_5_2(ctypes.Structure):  # MUMPS 5.2.x
+    _fields_ = [
+        ('sym', mumps_int),
+        ('par', mumps_int),
+        ('job', mumps_int),
+        ('comm_fortran', mumps_int),
+        ('icntl', mumps_int * 60),
+        ('keep', mumps_int * 500),
+        ('cntl', mumps_real * 15),
+        ('dkeep', mumps_real * 230),
+        ('keep8', mumps_int8 * 150),
+        ('n', mumps_int),
+        #
+        ('nz_alloc', mumps_int),
+        # /* Assembled entry */
+        ('nz', mumps_int),
+        ('nnz', mumps_int8),
+        ('irn', mumps_pint),
+        ('jcn', mumps_pint),
+        ('a', mumps_pcomplex),
+        # /* Distributed entry */
+        ('nz_loc', mumps_int),
+        ('nnz_loc', mumps_int8),
+        ('irn_loc', mumps_pint),
+        ('jcn_loc', mumps_pint),
+        ('a_loc', mumps_pcomplex),
+        # /* Element entry */
+        ('nelt', mumps_int),
+        ('eltptr', mumps_pint),
+        ('eltvar', mumps_pint),
+        ('a_elt', mumps_pcomplex),
+        # /* Ordering, if given by user */
+        ('perm_in', mumps_pint),
+        # /* Orderings returned to user */
+        ('sym_perm', mumps_pint),
+        ('uns_perm', mumps_pint),
+        # /* Scaling (input only in this version) */
+        ('colsca', mumps_preal),
+        ('rowsca', mumps_preal),
+        ('colsca_from_mumps', mumps_int),
+        ('rowsca_from_mumps', mumps_int),
+        # /* RHS, solution, ouptput data and statistics */
+        ('rhs', mumps_pcomplex),
+        ('redrhs', mumps_pcomplex),
+        ('rhs_sparse', mumps_pcomplex),
+        ('sol_loc', mumps_pcomplex),
+        ('rhs_loc', mumps_pcomplex),
+        ('irhs_sparse', mumps_pint),
+        ('irhs_ptr', mumps_pint),
+        ('isol_loc', mumps_pint),
+        ('irhs_loc', mumps_pint),
+        ('nrhs', mumps_int),
+        ('lrhs', mumps_int),
+        ('lredrhs', mumps_int),
+        ('nz_rhs', mumps_int),
+        ('lsol_loc', mumps_int),
+        ('nloc_rhs', mumps_int),
+        ('lrhs_loc', mumps_int),
+        ('schur_mloc', mumps_int),
+        ('schur_nloc', mumps_int),
+        ('schur_lld', mumps_int),
+        ('mblock', mumps_int),
+        ('nblock', mumps_int),
+        ('nprow', mumps_int),
+        ('npcol', mumps_int),
+        ('info', mumps_int * 80),
+        ('infog', mumps_int * 80),
+        ('rinfo', mumps_real * 40),
+        ('rinfog', mumps_real * 40),
+        # /* Null space */
+        ('deficiency', mumps_int),
+        ('pivnul_list', mumps_pint),
+        ('mapping', mumps_pint),
+        # /* Schur */
+        ('size_schur', mumps_int),
+        ('listvar_schur', mumps_pint),
+        ('schur', mumps_pcomplex),
+        # /* Internal parameters */
+        ('instance_number', mumps_int),
+        ('wk_user', mumps_pcomplex),
+        # /* Version number:
+        #  length=30 in FORTRAN + 1 for final \0 + 1 for alignment */
+        ('version_number', ctypes.c_char * (30 + 1 + 1)),
+        # /* For out-of-core */
+        ('ooc_tmpdir', ctypes.c_char * 256),
+        ('ooc_prefix', ctypes.c_char * 64),
+        # /* To save the matrix in matrix market format */
+        ('write_problem', ctypes.c_char * 256),
+        ('lwk_user', mumps_int),
+        # /* For save/restore feature */
+        ('save_dir', ctypes.c_char * 256),
+        ('save_prefix', ctypes.c_char * 256),
+        # /* Metis options */
+        ('metis_options', mumps_int * 40),
+    ]
 
 
 class MumpsSolver(object):
@@ -288,8 +505,10 @@ class MumpsSolver(object):
             mumps_struc_c = mumps_struc_c_4
         elif version >= 5 and version < 5.01:
             mumps_struc_c = mumps_struc_c_5_0
-        elif version >= 5.01:
+        elif version >= 5.01 and version < 5.02:
             mumps_struc_c = mumps_struc_c_5_1
+        elif version >= 5.02:
+            mumps_struc_c = mumps_struc_c_5_2
 
         self.struct.job = -2
 
