@@ -1,6 +1,8 @@
+from __future__ import absolute_import
+
 import numpy as nm
 from mpi4py import MPI
-import ls_mumps as mumps
+import sfepy.solvers.ls_mumps as mumps
 from tempfile import gettempdir
 import os.path as op
 
