@@ -19,6 +19,7 @@ generated list of the standard examples that come with SfePy.
 Example Applications
 --------------------
 
+- `Multiscale numerical modelling of perfusion in deformable double porous media described by the Biot-Darcy-Brinkman model <http://sfepy.org/sfepy_examples/example_perfusion_BD2B/>`_ (2020)
 - `Homogenization of piezoelectric porous media <http://sfepy.org/sfepy_examples/example_poropiezo/>`_ (2020)
 - `Numerical simulation of viscous flow in deformable double porous media <http://sfepy.org/sfepy_examples/example_perfusion_BDB/>`_ (2020)
 - `Fish heart model <https://sfepy.org/fish_heart>`_ (2010)
