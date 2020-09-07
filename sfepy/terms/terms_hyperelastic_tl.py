@@ -52,6 +52,134 @@ class NeoHookeanTLTerm(HyperElasticTLBase):
     stress_function = staticmethod(terms.dq_tl_he_stress_neohook)
     tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_neohook)
 
+class GenYeohTLTerm(HyperElasticTLBase):
+    r"""
+    Hyperelastic generalized Yeoh term [1]. Effective stress
+    :math:`S_{ij} = 2 p K (I_1 - 3)^{p-1} J^{-\frac{2}{3}}(\delta{ij} -
+    \frac{1}{3}C_{kk}C{ij}^{-1})`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`p, K`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    [1] Travis W. Hohenberger, Richard J. Windslow, Nicola M. Pugno,
+    James J. C. Busfield. Aconstitutive Model For Both Lowand High
+    Strain Nonlinearities In Highly Filled Elastomers And
+    Implementation With User-Defined Material Subroutines In
+    Abaqus. Rubber Chemistry And Technology, Vol. 92, No. 4,
+    Pp. 653-686 (2019)
+    """
+    name = 'dw_tl_he_genyeoh'
+    family_data_names = ['det_f', 'tr_c', 'sym_inv_c']
+    arg_shapes = {'material' : '1, 2',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
+
+    @staticmethod
+    def _get_single_stress(i_1, i_3, c_inv, coef, exp):
+        _bracket = (i_3**(-1 / 3) * i_1 - 3.)
+        _bracket_pow = _bracket**(exp - 1) \
+            if (_bracket > 0. or exp >= 1.) else 1.
+        out = 2 * exp * coef * _bracket_pow \
+            * i_3**(-1 / 3) * (nm.eye(3) - i_1 * c_inv / 3)
+        return out
+
+    def stress_function(self, out, mat, *fargs, **kwargs):
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
+        det_f, tr_c, inv_c = fargs
+
+        i_3 = det_f**2
+        ident = nm.array([1., 1, 1, 0, 0, 0])
+
+        n_cells, n_qps, _, _ = out.shape
+        for cell in range(n_cells):
+            for qp in range(n_qps):
+                _inv_c = inv_c[cell, qp]
+                _c_inv = nm.array([
+                    [_inv_c[0], _inv_c[3], _inv_c[4]],
+                    [_inv_c[3], _inv_c[1], _inv_c[5]],
+                    [_inv_c[4], _inv_c[5], _inv_c[2]],
+                ])[:, :, 0]
+
+                _val = self._get_single_stress(
+                    tr_c[cell, qp, 0, 0], det_f[cell, qp, 0, 0]**2, _c_inv,
+                    coef[cell, qp, 0, 0], exp[cell, qp, 0, 0])
+                out[cell, qp, :, 0] = [
+                    _val[0, 0], _val[1, 1], _val[2, 2],
+                    _val[0, 1], _val[0, 2], _val[1, 2]]
+        return out
+
+    @staticmethod
+    def _get_single_tan_mod(i_1, i_3, c_inv, coef, exp):
+        krond = nm.eye(3)
+        _bracket = i_3**(-1/3) * i_1 - 3
+        _bracket_p1 = _bracket**(exp - 1) \
+            if (_bracket > 0. or exp >= 1.) else 1.
+        _bracket_p2 = _bracket**(exp - 2) \
+            if (_bracket > 0. or exp >=  2.) else 0.
+
+        tan_mod = nm.zeros((3, 3, 3, 3))
+        for ii, jj, kk, ll in zip(*[ind.flatten()
+                                    for ind in nm.indices(tan_mod.shape)]):
+            tan_mod[ii, jj, kk, ll] = 4 / 3 * exp * coef * (
+                3 * (exp - 1) * _bracket_p2 * i_3**(-2/3)
+                *krond[ii, jj] * krond[kk, ll]
+                -(
+                    (exp - 1) * _bracket_p2 * i_1 * i_3**(-2/3)
+                    +_bracket_p1 * i_3**(-1/3)
+                ) * (krond[ii, jj] * c_inv[kk, ll]
+                     +c_inv[ii, jj] * krond[kk, ll])
+                +(
+                    (exp - 1) * _bracket_p2 * i_1**2 * i_3**(-2/3)
+                    +_bracket_p1 * i_3**(-1/3) * i_1
+                ) / 3 * c_inv[ii, jj] * c_inv[kk, ll]
+                +.5 * _bracket_p1 * i_3**(-1/3) * i_1 * (
+                    c_inv[ii, kk] * c_inv[jj, ll]
+                    +c_inv[ii, ll] * c_inv[jj, kk])
+            )
+
+        return tan_mod
+
+    def tan_mod_function(self, out, mat, *fargs, **kwargs):
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
+        det_f, tr_c, inv_c = fargs
+
+        n_cells, n_qps, _, _ = out.shape
+        for cell in range(n_cells):
+            for qp in range(n_qps):
+                _inv_c = inv_c[cell, qp]
+                _c_inv = nm.array([
+                    [_inv_c[0], _inv_c[3], _inv_c[4]],
+                    [_inv_c[3], _inv_c[1], _inv_c[5]],
+                    [_inv_c[4], _inv_c[5], _inv_c[2]],
+                ])
+
+                _dh = self._get_single_tan_mod(
+                    tr_c[cell, qp, 0, 0], det_f[cell, qp, 0, 0]**2, _c_inv,
+                    coef[cell, qp, 0, 0], exp[cell, qp, 0, 0],
+                )
+
+                out[cell, qp] = nm.array([
+                    [_dh[0, 0, 0, 0], _dh[0, 0, 1, 1], _dh[0, 0, 2, 2],
+                     _dh[0, 0, 0, 1], _dh[0, 0, 0, 2], _dh[0, 0, 1, 2]],
+                    [_dh[1, 1, 0, 0], _dh[1, 1, 1, 1], _dh[1, 1, 2, 2],
+                     _dh[1, 1, 0, 1], _dh[1, 1, 0, 2], _dh[1, 1, 1, 2]],
+                    [_dh[2, 2, 0, 0], _dh[2, 2, 1, 1], _dh[2, 2, 2, 2],
+                     _dh[2, 2, 0, 1], _dh[2, 2, 0, 2], _dh[2, 2, 1, 2]],
+                    [_dh[0, 1, 0, 0], _dh[0, 1, 1, 1], _dh[0, 1, 2, 2],
+                     _dh[0, 1, 0, 1], _dh[0, 1, 0, 2], _dh[0, 1, 1, 2]],
+                    [_dh[0, 2, 0, 0], _dh[0, 2, 1, 1], _dh[0, 2, 2, 2],
+                     _dh[0, 2, 0, 1], _dh[0, 2, 0, 2], _dh[0, 2, 1, 2]],
+                    [_dh[1, 2, 0, 0], _dh[1, 2, 1, 1], _dh[1, 2, 2, 2],
+                     _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
+                ])
+
 class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic Mooney-Rivlin term. Effective stress
