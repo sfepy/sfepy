@@ -4,6 +4,7 @@ import sys
 from copy import copy
 import logging
 import numpy as nm
+from distutils.version import LooseVersion
 
 from sfepy.base.base import (complex_types, dict_from_keys_init,
                              assert_, is_derived_class, ordered_iteritems,
@@ -426,7 +427,8 @@ class MeshioLibIO(MeshIO):
          cell_data,
          cell_sets) = self._create_out_data(mesh, out)
 
-        if '-ascii' in self.file_format or '-binary' in self.file_format:
+        if LooseVersion(meshiolib.__version__) >= LooseVersion('4.0.3') and\
+           '-ascii' in self.file_format or '-binary' in self.file_format:
             self.file_format, ab_str = self.file_format.split('-')
             kwargs['binary'] = True if 'binary' in ab_str else False
 
