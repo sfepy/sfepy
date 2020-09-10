@@ -426,6 +426,10 @@ class MeshioLibIO(MeshIO):
          cell_data,
          cell_sets) = self._create_out_data(mesh, out)
 
+        if '-ascii' in self.file_format or '-binary' in self.file_format:
+            self.file_format, ab_str = self.file_format.split('-')
+            kwargs['binary'] = True if 'binary' in ab_str else False
+
         args0 = {'point_data': point_data, 'point_sets': point_sets,
                  'cell_data': cell_data, 'cell_sets': cell_sets,
                  'file_format': self.file_format}
@@ -444,7 +448,7 @@ class MeshioLibIO(MeshIO):
         out = {} if out is None else out
         point_data = {k: v.data for k, v in out.items() if v.mode == 'vertex'}
         cell_data_keys = [k for k, v in out.items() if v.mode == 'cell']
-        if self.file_format in ['vtk', 'vtu']:
+        if self.file_format in ['vtk', 'vtk-ascii', 'vtk-binary', 'vtu']:
             ngkey = 'node_groups'
             cgkey = 'mat_id'
             if coors.shape[1] != 3:
