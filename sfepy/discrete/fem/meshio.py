@@ -428,7 +428,7 @@ class MeshioLibIO(MeshIO):
          cell_sets) = self._create_out_data(mesh, out)
 
         if LooseVersion(meshiolib.__version__) >= LooseVersion('4.0.3') and\
-           '-ascii' in self.file_format or '-binary' in self.file_format:
+           ('-ascii' in self.file_format or '-binary' in self.file_format):
             self.file_format, ab_str = self.file_format.split('-')
             kwargs['binary'] = True if 'binary' in ab_str else False
 
