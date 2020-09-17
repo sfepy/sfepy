@@ -43,11 +43,14 @@ class ETermBase(Struct):
                     if '.' in ein: # derivative
                         append_all(exprs, 'cq{}{}'.format(ein[2], letters[ii]))
                         append_all(eargss, qsbg)
-                        for iia in range(n_add):
-                            out_expr[iia] += letters[ii]
 
                     else:
-                        raise NotImplementedError
+                        append_all(exprs, 'cq{}{}'.format(ein[0], letters[ii]))
+                        append_all(eargss, qsb)
+
+                    for iia in range(n_add):
+                        out_expr[iia] += letters[ii]
+
                 else:
                     raise NotImplementedError
 
@@ -56,8 +59,10 @@ class ETermBase(Struct):
                     if '.' in ein: # derivative
                         eterm = 'cq{}{}'.format(ein[2], letters[ii])
                         earg = qsbg
+
                     else:
-                        raise NotImplementedError
+                        eterm = 'cq{}{}'.format(ein[0], letters[ii])
+                        earg = qsb
 
                     append_all(exprs, eterm)
                     append_all(eargss, earg)
