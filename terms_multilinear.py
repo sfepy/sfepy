@@ -172,6 +172,7 @@ class EVolumeDotTerm(ETermBase, Term):
                    'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
                   {'opt_material' : 'D, D'},
                   {'opt_material' : None}]
+    modes = ('weak', 'eval')
 
     def expression(self, mat, virtual, state, mode=None, term_mode=None,
                    diff_var=None, **kwargs):
@@ -192,7 +193,7 @@ class EConvectTerm(ETermBase, Term):
     arg_types = ('virtual', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
 
-    def expression(self, mat, virtual, state, mode=None, term_mode=None,
+    def expression(self, virtual, state, mode=None, term_mode=None,
                    diff_var=None, **kwargs):
         expr = self.einsum('i,j.i,j', virtual, state, state,
                            diff_var=diff_var)
