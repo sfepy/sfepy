@@ -200,7 +200,7 @@ class EConvectTerm(ETermBase, Term):
 
     def expression(self, virtual, state, mode=None, term_mode=None,
                    diff_var=None, **kwargs):
-        expr = self.einsum('i,j.i,j', virtual, state, state,
+        expr = self.einsum('i,i.j,j', virtual, state, state,
                            diff_var=diff_var)
 
         return expr
