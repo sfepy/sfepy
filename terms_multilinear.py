@@ -2,12 +2,38 @@ import numpy as nm
 import opt_einsum as oe
 
 from sfepy.base.base import Struct
+from sfepy.base.timing import Timer
 from sfepy.terms.terms import Term
 from sfepy.terms import register_term
 
+def _get_char_map(c1, c2):
+    mm = {}
+    for ic, char in enumerate(c1):
+        if char in mm:
+            print(char, '->eq?', mm[char], c2[ic])
+            if mm[char] != c2[ic]:
+                mm[char] += c2[ic]
+        else:
+            mm[char] = c2[ic]
+
+    return mm
+
 class ETermBase(Struct):
 
+    """
+    Reserved letters:
+
+    c .. cells
+    q .. quadrature points
+    d-h .. DOFs axes
+    r-z .. auxiliary axes
+    """
+
     def einsum(self, sexpr, *args, diff_var=None):
+
+        timer = Timer('')
+        timer.start()
+
         dc_type = self.get_dof_conn_type()
 
         vvar = args[0]
@@ -25,16 +51,22 @@ class ETermBase(Struct):
         qsb = vg.bf
         qsbg = vg.bfg
 
-        exprs = [['cqab']] * n_add
-        eargss = [[dets]] * n_add
+        exprs = [['cqab'] for ii in range(n_add)]
+        eargss = [[dets] for ii in range(n_add)]
         def append_all(seqs, item):
             for seq in seqs:
                 seq.append(item)
+        used_dofs = {}
 
         eins = sexpr.split(',')
         letters = 'defgh'
+        aux_letters = iter('rstuvwxyz')
         out_expr = ['c'] * n_add
         ia = 0
+
+        n_cell, n_qp, dim, n_ed = qsbg.shape
+        ee = nm.eye(dim)
+
         for ii, ein in enumerate(eins):
             arg = args[ii]
 
@@ -45,14 +77,27 @@ class ETermBase(Struct):
                         append_all(eargss, qsbg)
 
                     else:
-                        append_all(exprs, 'cq{}{}'.format(ein[0], letters[ii]))
-                        append_all(eargss, qsb)
+                        append_all(exprs, 'q{}{}'.format(ein[0], letters[ii]))
+                        append_all(eargss, qsb[0])
 
                     for iia in range(n_add):
                         out_expr[iia] += letters[ii]
 
                 else:
-                    raise NotImplementedError
+                    if '.' in ein: # derivative
+                        raise NotImplementedError
+
+                    else:
+                        aux = next(aux_letters)
+                        iin = letters[ii] # node (qs basis index)
+                        iic = next(aux_letters) # component
+                        append_all(exprs, 'q{}{}'.format(aux, iin))
+                        append_all(exprs, '{}{}'.format(ein[0], iic))
+                        append_all(eargss, qsb[0])
+                        append_all(eargss, ee)
+
+                    for iia in range(n_add):
+                        out_expr[iia] += (iic + iin)
 
             else:
                 if arg.n_components == 1:
@@ -61,8 +106,8 @@ class ETermBase(Struct):
                         earg = qsbg
 
                     else:
-                        eterm = 'cq{}{}'.format(ein[0], letters[ii])
-                        earg = qsb
+                        eterm = 'q{}{}'.format(ein[0], letters[ii])
+                        earg = qsb[0]
 
                     append_all(exprs, eterm)
                     append_all(eargss, earg)
@@ -86,14 +131,62 @@ class ETermBase(Struct):
                         ia += 1
 
                 else:
-                    raise NotImplementedError
+                    aux = next(aux_letters)
+                    iin = letters[ii] # node (qs basis index)
+                    iic = next(aux_letters) # component
+
+                    # append_all(exprs, 'q{}{}'.format(aux, iy))
+                    # append_all(exprs, '{}{}'.format(ein[0], ix))
+                    # append_all(eargss, qsb[0])
+                    # append_all(eargss, ee)
+
+                    if '.' in ein: # derivative
+                        eterm = 'cq{}{}'.format(ein[2], iin)
+                        earg = qsbg
+
+                    else:
+                        eterm = 'q{}{}'.format(aux, iin)
+                        earg = qsb[0]
+
+                    append_all(exprs, eterm)
+                    append_all(eargss, earg)
+                    if (diff_var != arg.name) or (n_add > 1):
+                        dofs = used_dofs.get(arg.name)
+                        if dofs is None:
+                            # Assumes no E(P)BCs are present!
+                            adc = arg.get_dof_conn(dc_type)
+                            dofs = arg()[adc]
+                            dofs.shape = (dets.shape[0], -1, qsb.shape[-1])
+                            used_dofs[arg.name] = dofs
+
+                        determ = 'c{}{}'.format(ein[0], iin)
+
+                    if (diff_var != arg.name):
+                        append_all(exprs, determ)
+                        append_all(eargss, dofs)
+
+                    else:
+                        for iia in range(n_add):
+                            if iia != ia:
+                                exprs[iia].append(determ)
+                                eargss[iia].append(dofs)
+
+                            else:
+                                eeterm = '{}{}'.format(ein[0], iic)
+                                exprs[iia].append(eeterm)
+                                eargss[iia].append(ee)
+
+                        out_letters = (iic + iin)
+                        out_expr[ia] += out_letters
+                        ia += 1
 
         self.parsed_expressions = [','.join(exprs[ia]) + '->' + out_expr[ia]
                                    for ia in range(n_add)]
-        self.paths, self.path_infos = zip(*[oe.contract_path(
-            self.parsed_expressions[ia], *eargss[ia], optimize='auto',
-        ) for ia in range(n_add)])
         print(self.parsed_expressions)
+        self.paths, self.path_infos = zip(*[oe.contract_path(
+            self.parsed_expressions[ia], *eargss[ia], optimize='greedy',
+        ) for ia in range(n_add)])
+        print(self.paths)
 
         if n_add == 1:
             if diff_var is not None:
@@ -104,29 +197,63 @@ class ETermBase(Struct):
 
             else:
                 def eval_einsum(out):
+                    # !!! 3 -> n_components of correct arg
+                    tt = Timer('')
+                    tt.start()
+                    vout = out.reshape((out.shape[0], 3, -1))
                     oe.contract(self.parsed_expressions[0], *eargss[0],
-                                out=out[:, 0, :, 0],
+                                out=vout,
                                 optimize=self.paths[0])
+                    # Below is faster, due to repeated 'z' (of size 1)!
+                    # oe.contract('cqab,qzy,jx,cqkl,cjl,qzn,ckn->cxy',
+                    #             *eargss[0],
+                    #             out=vout,
+                    #             optimize=self.paths[0])
+                    print(tt.stop())
+                    # mm = _get_char_map(self.parsed_expressions[0],
+                    #                    'cqab,qzy,jx,cqkl,cjl,qzn,ckn->cxy')
+                    # for key, val in mm.items():
+                    #     print(key, val)
+                    # print(len(mm), len(set(mm.values())))
+                    # from sfepy.base.base import debug; debug()
 
         else:
             if diff_var is not None:
                 def eval_einsum(out):
+
+                    # mm = _get_char_map(self.parsed_expressions[0],
+                    #                    'cqab,qzy,jx,cqkY,jX,qzn,ckn->cxyXY')
+                    # for key, val in mm.items():
+                    #     print(key, val)
+                    # print(len(mm), len(set(mm.values())))
+
+                    # mm = _get_char_map(self.parsed_expressions[1],
+                    #                    'cqab,qzy,jx,cqkl,cjl,qzY,kX->cxyXY')
+                    # for key, val in mm.items():
+                    #     print(key, val)
+                    # print(len(mm), len(set(mm.values())))
+                    # from sfepy.base.base import debug; debug()
+                    tt = Timer('')
+                    tt.start()
+
+                    # !!! fix shapes
+                    vout = out.reshape((out.shape[0], 3, 8, 3, 8))
+                    oe.contract(self.parsed_expressions[0], *eargss[0],
+                                out=vout,
+                                optimize=self.paths[0])
                     aux = nm.empty_like(out)
-                    for ia in range(n_add):
+                    vaux = aux.reshape((out.shape[0], 3, 8, 3, 8))
+                    for ia in range(1, n_add):
                         oe.contract(self.parsed_expressions[ia], *eargss[ia],
-                                    out=aux[:, 0, ...],
+                                    out=vaux,
                                     optimize=self.paths[ia])
                         out[:] += aux
+                    print(tt.stop())
 
-            else:
-                def eval_einsum(out):
-                    aux = nm.empty_like(out)
-                    for ia in range(n_add):
-                        oe.contract(self.parsed_expressions[ia], *eargss[ia],
-                                    out=out[:, 0, :, 0],
-                                    optimize=self.paths[ia])
-                        out[:] += aux
+            else: # This never happens?
+                raise RuntimeError('Impossible code path!')
 
+        print(timer.stop())
         return eval_einsum
 
     @staticmethod
