@@ -234,7 +234,7 @@ class ETermBase(Struct):
                                 out=vout,
                                 optimize=self.paths[0])
                     aux = nm.empty_like(out)
-                    vaux = out.reshape(eshape)
+                    vaux = aux.reshape(eshape)
                     for ia in range(1, n_add):
                         oe.contract(self.parsed_expressions[ia], *operands[ia],
                                     out=vaux,
