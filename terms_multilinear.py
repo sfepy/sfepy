@@ -39,11 +39,22 @@ class ETermBase(Struct):
         vvar = args[0]
         uvars = args[1:]
 
+        n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(vvar)
+
         if diff_var is not None:
             n_add = len([var.name for var in uvars if var.name == diff_var])
 
+            varc = self.get_variables(as_list=False)[diff_var]
+            n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
+            eshape = tuple([n_elr]
+                           + ([n_cr] if n_cr > 1 else [])
+                           + [n_enr]
+                           + ([n_cc] if n_cc > 1 else [])
+                           + [n_enc])
+
         else:
             n_add = 1
+            eshape = (n_elr, n_cr, n_enr) if n_cr > 1 else (n_elr, n_enr)
 
         vg, _ = self.get_mapping(vvar)
 
@@ -51,8 +62,8 @@ class ETermBase(Struct):
         qsb = vg.bf
         qsbg = vg.bfg
 
-        exprs = [['cqab'] for ii in range(n_add)]
-        eargss = [[dets] for ii in range(n_add)]
+        exprs = [['cq'] for ii in range(n_add)]
+        eargss = [[dets[..., 0, 0]] for ii in range(n_add)]
         def append_all(seqs, item):
             for seq in seqs:
                 seq.append(item)
@@ -135,11 +146,6 @@ class ETermBase(Struct):
                     iin = letters[ii] # node (qs basis index)
                     iic = next(aux_letters) # component
 
-                    # append_all(exprs, 'q{}{}'.format(aux, iy))
-                    # append_all(exprs, '{}{}'.format(ein[0], ix))
-                    # append_all(eargss, qsb[0])
-                    # append_all(eargss, ee)
-
                     if '.' in ein: # derivative
                         eterm = 'cq{}{}'.format(ein[2], iin)
                         earg = qsbg
@@ -187,20 +193,22 @@ class ETermBase(Struct):
             self.parsed_expressions[ia], *eargss[ia], optimize='greedy',
         ) for ia in range(n_add)])
         print(self.paths)
+        print(self.path_infos)
 
         if n_add == 1:
             if diff_var is not None:
                 def eval_einsum(out):
+                    vout = out.reshape(eshape)
                     oe.contract(self.parsed_expressions[0], *eargss[0],
-                                out=out[:, 0, ...],
+                                out=vout,
                                 optimize=self.paths[0])
 
             else:
                 def eval_einsum(out):
-                    # !!! 3 -> n_components of correct arg
                     tt = Timer('')
                     tt.start()
-                    vout = out.reshape((out.shape[0], 3, -1))
+
+                    vout = out.reshape(eshape)
                     oe.contract(self.parsed_expressions[0], *eargss[0],
                                 out=vout,
                                 optimize=self.paths[0])
@@ -236,18 +244,18 @@ class ETermBase(Struct):
                     tt = Timer('')
                     tt.start()
 
-                    # !!! fix shapes
-                    vout = out.reshape((out.shape[0], 3, 8, 3, 8))
+                    vout = out.reshape(eshape)
                     oe.contract(self.parsed_expressions[0], *eargss[0],
                                 out=vout,
                                 optimize=self.paths[0])
                     aux = nm.empty_like(out)
-                    vaux = aux.reshape((out.shape[0], 3, 8, 3, 8))
+                    vaux = out.reshape(eshape)
                     for ia in range(1, n_add):
                         oe.contract(self.parsed_expressions[ia], *eargss[ia],
                                     out=vaux,
                                     optimize=self.paths[ia])
                         out[:] += aux
+
                     print(tt.stop())
 
             else: # This never happens?
