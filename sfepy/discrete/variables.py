@@ -1303,7 +1303,9 @@ class FieldVariable(Variable):
         The primary and dual variables must have the same Region.
         """
         if self.is_virtual():
-            var_name = self.get_primary().name
+            var = self.get_primary()
+            # No primary variable can occur in single term evaluations.
+            var_name = var.name if var is not None else self.name
 
         else:
             var_name = self.name
