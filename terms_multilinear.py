@@ -327,3 +327,23 @@ class EConvectTerm(ETermBase, Term):
         return expr
 
 register_term(EConvectTerm)
+
+class EDivTerm(ETermBase, Term):
+    name = 'dw_ediv'
+    arg_types = ('opt_material', 'virtual')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None)},
+                  {'opt_material' : None}]
+
+    def expression(self, mat, virtual, mode=None, term_mode=None,
+                   diff_var=None, **kwargs):
+        if mat is None:
+            expr = self.einsum('i.i', virtual,
+                               diff_var=diff_var)
+
+        else:
+            expr = self.einsum('0,i.i', mat, virtual,
+                               diff_var=diff_var)
+
+        return expr
+
+register_term(EDivTerm)
