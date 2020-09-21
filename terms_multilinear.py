@@ -99,12 +99,11 @@ class ETermBase(Struct):
                         raise NotImplementedError
 
                     else:
-                        aux = next(aux_letters)
                         iin = letters[ii] # node (qs basis index)
                         iic = next(aux_letters) # component
-                        append_all(exprs, 'q{}{}'.format(aux, iin))
+                        append_all(exprs, 'q{}'.format(iin))
                         append_all(exprs, '{}{}'.format(ein[0], iic))
-                        append_all(eargss, qsb[0])
+                        append_all(eargss, qsb[0, 0])
                         append_all(eargss, ee)
 
                     for iia in range(n_add):
@@ -142,7 +141,6 @@ class ETermBase(Struct):
                         ia += 1
 
                 else:
-                    aux = next(aux_letters)
                     iin = letters[ii] # node (qs basis index)
                     iic = next(aux_letters) # component
 
@@ -151,8 +149,8 @@ class ETermBase(Struct):
                         earg = qsbg
 
                     else:
-                        eterm = 'q{}{}'.format(aux, iin)
-                        earg = qsb[0]
+                        eterm = 'q{}'.format(iin)
+                        earg = qsb[0, 0]
 
                     append_all(exprs, eterm)
                     append_all(eargss, earg)
