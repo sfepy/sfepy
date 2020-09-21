@@ -96,12 +96,15 @@ class ETermBase(Struct):
                         out_expr[iia] += letters[ii]
 
                 else:
+                    iin = letters[ii] # node (qs basis index)
+                    iic = next(aux_letters) # component
                     if '.' in ein: # derivative
-                        raise NotImplementedError
+                        append_all(exprs, 'cq{}{}'.format(ein[2], iin))
+                        append_all(exprs, '{}{}'.format(ein[0], iic))
+                        append_all(eargss, qsbg)
+                        append_all(eargss, ee)
 
                     else:
-                        iin = letters[ii] # node (qs basis index)
-                        iic = next(aux_letters) # component
                         append_all(exprs, 'q{}'.format(iin))
                         append_all(exprs, '{}{}'.format(ein[0], iic))
                         append_all(eargss, qsb[0, 0])
