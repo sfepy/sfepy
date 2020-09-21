@@ -28,6 +28,7 @@ class ETermBase(Struct):
     d-h .. DOFs axes
     r-z .. auxiliary axes
     """
+    optimize = 'dynamic-programming'
 
     def einsum(self, sexpr, *args, diff_var=None):
 
@@ -188,7 +189,8 @@ class ETermBase(Struct):
                                    for ia in range(n_add)]
         print(self.parsed_expressions)
         self.paths, self.path_infos = zip(*[oe.contract_path(
-            self.parsed_expressions[ia], *eargss[ia], optimize='greedy',
+            self.parsed_expressions[ia], *eargss[ia],
+            optimize=self.optimize,
         ) for ia in range(n_add)])
         print(self.paths)
         print(self.path_infos)
