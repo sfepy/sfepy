@@ -89,8 +89,8 @@ class ETermBase(Struct):
                         append_all(eargss, qsbg)
 
                     else:
-                        append_all(exprs, 'q{}{}'.format(ein[0], letters[ii]))
-                        append_all(eargss, qsb[0])
+                        append_all(exprs, 'q{}'.format(letters[ii]))
+                        append_all(eargss, qsb[0, :, 0])
 
                     for iia in range(n_add):
                         out_expr[iia] += letters[ii]
@@ -107,7 +107,7 @@ class ETermBase(Struct):
                     else:
                         append_all(exprs, 'q{}'.format(iin))
                         append_all(exprs, '{}{}'.format(ein[0], iic))
-                        append_all(eargss, qsb[0, 0])
+                        append_all(eargss, qsb[0, :, 0])
                         append_all(eargss, ee)
 
                     for iia in range(n_add):
@@ -120,8 +120,8 @@ class ETermBase(Struct):
                         earg = qsbg
 
                     else:
-                        eterm = 'q{}{}'.format(ein[0], letters[ii])
-                        earg = qsb[0]
+                        eterm = 'q{}'.format(letters[ii])
+                        earg = qsb[0, :, 0]
 
                     append_all(exprs, eterm)
                     append_all(eargss, earg)
@@ -154,7 +154,7 @@ class ETermBase(Struct):
 
                     else:
                         eterm = 'q{}'.format(iin)
-                        earg = qsb[0, 0]
+                        earg = qsb[0, :, 0]
 
                     append_all(exprs, eterm)
                     append_all(eargss, earg)
