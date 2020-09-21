@@ -1,7 +1,7 @@
 import numpy as nm
 import opt_einsum as oe
 
-from sfepy.base.base import Struct
+from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
 from sfepy.terms.terms import Term
 from sfepy.terms import register_term
@@ -187,21 +187,26 @@ class ETermBase(Struct):
 
         self.parsed_expressions = [','.join(exprs[ia]) + '->' + out_expr[ia]
                                    for ia in range(n_add)]
-        print(self.parsed_expressions)
+        output(self.parsed_expressions)
         self.paths, self.path_infos = zip(*[oe.contract_path(
             self.parsed_expressions[ia], *eargss[ia],
             optimize=self.optimize,
         ) for ia in range(n_add)])
-        print(self.paths)
-        print(self.path_infos)
+        output(self.paths)
+        output(self.path_infos)
 
         if n_add == 1:
             if diff_var is not None:
                 def eval_einsum(out):
+                    tt = Timer('')
+                    tt.start()
+
                     vout = out.reshape(eshape)
                     oe.contract(self.parsed_expressions[0], *eargss[0],
                                 out=vout,
                                 optimize=self.paths[0])
+
+                    output('eval_einsum 1M: {} s'.format(tt.stop()))
 
             else:
                 def eval_einsum(out):
@@ -212,35 +217,12 @@ class ETermBase(Struct):
                     oe.contract(self.parsed_expressions[0], *eargss[0],
                                 out=vout,
                                 optimize=self.paths[0])
-                    # Below is faster, due to repeated 'z' (of size 1)!
-                    # oe.contract('cqab,qzy,jx,cqkl,cjl,qzn,ckn->cxy',
-                    #             *eargss[0],
-                    #             out=vout,
-                    #             optimize=self.paths[0])
-                    print(tt.stop())
-                    # mm = _get_char_map(self.parsed_expressions[0],
-                    #                    'cqab,qzy,jx,cqkl,cjl,qzn,ckn->cxy')
-                    # for key, val in mm.items():
-                    #     print(key, val)
-                    # print(len(mm), len(set(mm.values())))
-                    # from sfepy.base.base import debug; debug()
+
+                    output('eval_einsum 1V: {} s'.format(tt.stop()))
 
         else:
             if diff_var is not None:
                 def eval_einsum(out):
-
-                    # mm = _get_char_map(self.parsed_expressions[0],
-                    #                    'cqab,qzy,jx,cqkY,jX,qzn,ckn->cxyXY')
-                    # for key, val in mm.items():
-                    #     print(key, val)
-                    # print(len(mm), len(set(mm.values())))
-
-                    # mm = _get_char_map(self.parsed_expressions[1],
-                    #                    'cqab,qzy,jx,cqkl,cjl,qzY,kX->cxyXY')
-                    # for key, val in mm.items():
-                    #     print(key, val)
-                    # print(len(mm), len(set(mm.values())))
-                    # from sfepy.base.base import debug; debug()
                     tt = Timer('')
                     tt.start()
 
@@ -256,12 +238,13 @@ class ETermBase(Struct):
                                     optimize=self.paths[ia])
                         out[:] += aux
 
-                    print(tt.stop())
+                    output('eval_einsum NM: {} s'.format(tt.stop()))
 
             else: # This never happens?
                 raise RuntimeError('Impossible code path!')
 
-        print(timer.stop())
+        output('einsum setup: {} s'.format(timer.stop()))
+
         return eval_einsum
 
     @staticmethod
