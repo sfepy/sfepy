@@ -18,8 +18,119 @@ def _get_char_map(c1, c2):
 
     return mm
 
-class ETermBase(Struct):
+def append_all(seqs, item, ii=None):
+    if ii is None:
+        for seq in seqs:
+            seq.append(item)
 
+    else:
+        seqs[ii].append(item)
+
+class ExpressionBuilder(Struct):
+    letters = 'defgh'
+    aux_letters = iter('rstuvwxyz')
+
+    def __init__(self, n_add, dc_type, dofs_cache):
+        self.n_add = n_add
+        self.subscripts = [[] for ia in range(n_add)]
+        self.operands = [[] for ia in range(n_add)]
+        self.out_subscripts = ['c' for ia in range(n_add)]
+        self.ia = 0
+        self.dc_type = dc_type
+        self.dofs_cache = dofs_cache
+
+    def add_constant(self, val):
+        append_all(self.subscripts, 'cq')
+        append_all(self.operands, val)
+
+    def add_bfg(self, iin, ein, qsbg):
+        append_all(self.subscripts, 'cq{}{}'.format(ein[2], iin))
+        append_all(self.operands, qsbg)
+
+    def add_bf(self, iin, ein, qsb):
+        append_all(self.subscripts, 'q{}'.format(iin))
+        append_all(self.operands, qsb[0, :, 0])
+
+    def add_eye(self, iic, ein, eye, iia=None):
+        append_all(self.subscripts, '{}{}'.format(ein[0], iic), ii=iia)
+        append_all(self.operands, eye, ii=iia)
+
+    def add_arg_dofs(self, iin, ein, arg, iia=None):
+        dofs = self.dofs_cache.get(arg.name)
+        if dofs is None:
+            # Assumes no E(P)BCs are present!
+            adc = arg.get_dof_conn(self.dc_type)
+            dofs = arg()[adc]
+            self.dofs_cache[arg.name] = dofs
+
+        if arg.n_components > 1:
+            dofs.shape = (dofs.shape[0], arg.n_components, -1)
+            term = 'c{}{}'.format(ein[0], iin)
+
+        else:
+            term = 'c{}'.format(iin)
+
+        append_all(self.subscripts, term, ii=iia)
+        append_all(self.operands, dofs, ii=iia)
+
+    def add_virtual_arg(self, arg, ii, ein, qsb, qsbg):
+        iin = self.letters[ii] # node (qs basis index)
+        if '.' in ein: # derivative
+            self.add_bfg(iin, ein, qsbg)
+
+        else:
+            self.add_bf(iin, ein, qsb)
+
+        out_letters = iin
+
+        if arg.n_components > 1:
+            iic = next(self.aux_letters) # component
+            ee = nm.eye(arg.n_components)
+            self.add_eye(iic, ein, ee)
+
+            out_letters = iic + out_letters
+
+        for iia in range(self.n_add):
+            self.out_subscripts[iia] += out_letters
+
+    def add_state_arg(self, arg, ii, ein, qsb, qsbg, diff_var):
+        iin = self.letters[ii] # node (qs basis index)
+        if '.' in ein: # derivative
+            self.add_bfg(iin, ein, qsbg)
+
+        else:
+            self.add_bf(iin, ein, qsb)
+
+        out_letters = iin
+
+        if (diff_var != arg.name):
+            self.add_arg_dofs(iin, ein, arg)
+
+        else:
+            if arg.n_components > 1:
+                iic = next(self.aux_letters) # component
+                ee = nm.eye(arg.n_components)
+
+                out_letters = iic + out_letters
+
+            for iia in range(self.n_add):
+                if iia != self.ia:
+                    self.add_arg_dofs(iin, ein, arg, iia)
+
+                elif arg.n_components > 1:
+                    self.add_eye(iic, ein, ee, iia)
+
+            self.out_subscripts[self.ia] += out_letters
+            self.ia += 1
+
+    def get_expressions(self):
+        expressions = [','.join(self.subscripts[ia]) +
+                       '->' +
+                       self.out_subscripts[ia]
+                       for ia in range(self.n_add)]
+        return expressions
+
+class ETermBase(Struct):
     """
     Reserved letters:
 
@@ -63,136 +174,25 @@ class ETermBase(Struct):
         qsb = vg.bf
         qsbg = vg.bfg
 
-        exprs = [['cq'] for ii in range(n_add)]
-        eargss = [[dets[..., 0, 0]] for ii in range(n_add)]
-        def append_all(seqs, item):
-            for seq in seqs:
-                seq.append(item)
-        used_dofs = {}
+        dofs_cache = {}
+        self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
+        self.ebuilder.add_constant(dets[..., 0, 0])
 
         eins = sexpr.split(',')
-        letters = 'defgh'
-        aux_letters = iter('rstuvwxyz')
-        out_expr = ['c'] * n_add
-        ia = 0
-
-        n_cell, n_qp, dim, n_ed = qsbg.shape
-        ee = nm.eye(dim)
-
         for ii, ein in enumerate(eins):
             arg = args[ii]
 
             if arg.is_virtual():
-                if arg.n_components == 1:
-                    if '.' in ein: # derivative
-                        append_all(exprs, 'cq{}{}'.format(ein[2], letters[ii]))
-                        append_all(eargss, qsbg)
-
-                    else:
-                        append_all(exprs, 'q{}'.format(letters[ii]))
-                        append_all(eargss, qsb[0, :, 0])
-
-                    for iia in range(n_add):
-                        out_expr[iia] += letters[ii]
-
-                else:
-                    iin = letters[ii] # node (qs basis index)
-                    iic = next(aux_letters) # component
-                    if '.' in ein: # derivative
-                        append_all(exprs, 'cq{}{}'.format(ein[2], iin))
-                        append_all(exprs, '{}{}'.format(ein[0], iic))
-                        append_all(eargss, qsbg)
-                        append_all(eargss, ee)
-
-                    else:
-                        append_all(exprs, 'q{}'.format(iin))
-                        append_all(exprs, '{}{}'.format(ein[0], iic))
-                        append_all(eargss, qsb[0, :, 0])
-                        append_all(eargss, ee)
-
-                    for iia in range(n_add):
-                        out_expr[iia] += (iic + iin)
+                self.ebuilder.add_virtual_arg(arg, ii, ein, qsb, qsbg)
 
             else:
-                if arg.n_components == 1:
-                    if '.' in ein: # derivative
-                        eterm = 'cq{}{}'.format(ein[2], letters[ii])
-                        earg = qsbg
+                self.ebuilder.add_state_arg(arg, ii, ein, qsb, qsbg, diff_var)
 
-                    else:
-                        eterm = 'q{}'.format(letters[ii])
-                        earg = qsb[0, :, 0]
-
-                    append_all(exprs, eterm)
-                    append_all(eargss, earg)
-                    if (diff_var != arg.name) or (n_add > 1):
-                        # Assumes no E(P)BCs are present!
-                        adc = arg.get_dof_conn(dc_type)
-                        dofs = arg()[adc]
-
-                        determ = 'c{}'.format(letters[ii])
-
-                    if (diff_var != arg.name):
-                        append_all(exprs, determ)
-                        append_all(eargss, dofs)
-
-                    else:
-                        for iia in range(n_add):
-                            if iia != ia:
-                                exprs[iia].append(determ)
-
-                        out_expr[ia] += letters[ii]
-                        ia += 1
-
-                else:
-                    iin = letters[ii] # node (qs basis index)
-                    iic = next(aux_letters) # component
-
-                    if '.' in ein: # derivative
-                        eterm = 'cq{}{}'.format(ein[2], iin)
-                        earg = qsbg
-
-                    else:
-                        eterm = 'q{}'.format(iin)
-                        earg = qsb[0, :, 0]
-
-                    append_all(exprs, eterm)
-                    append_all(eargss, earg)
-                    if (diff_var != arg.name) or (n_add > 1):
-                        dofs = used_dofs.get(arg.name)
-                        if dofs is None:
-                            # Assumes no E(P)BCs are present!
-                            adc = arg.get_dof_conn(dc_type)
-                            dofs = arg()[adc]
-                            dofs.shape = (dets.shape[0], -1, qsb.shape[-1])
-                            used_dofs[arg.name] = dofs
-
-                        determ = 'c{}{}'.format(ein[0], iin)
-
-                    if (diff_var != arg.name):
-                        append_all(exprs, determ)
-                        append_all(eargss, dofs)
-
-                    else:
-                        for iia in range(n_add):
-                            if iia != ia:
-                                exprs[iia].append(determ)
-                                eargss[iia].append(dofs)
-
-                            else:
-                                eeterm = '{}{}'.format(ein[0], iic)
-                                exprs[iia].append(eeterm)
-                                eargss[iia].append(ee)
-
-                        out_letters = (iic + iin)
-                        out_expr[ia] += out_letters
-                        ia += 1
-
-        self.parsed_expressions = [','.join(exprs[ia]) + '->' + out_expr[ia]
-                                   for ia in range(n_add)]
+        self.parsed_expressions = self.ebuilder.get_expressions()
         output(self.parsed_expressions)
+        operands = self.ebuilder.operands
         self.paths, self.path_infos = zip(*[oe.contract_path(
-            self.parsed_expressions[ia], *eargss[ia],
+            self.parsed_expressions[ia], *operands[ia],
             optimize=self.optimize,
         ) for ia in range(n_add)])
         output(self.paths)
@@ -205,7 +205,7 @@ class ETermBase(Struct):
                     tt.start()
 
                     vout = out.reshape(eshape)
-                    oe.contract(self.parsed_expressions[0], *eargss[0],
+                    oe.contract(self.parsed_expressions[0], *operands[0],
                                 out=vout,
                                 optimize=self.paths[0])
 
@@ -217,7 +217,7 @@ class ETermBase(Struct):
                     tt.start()
 
                     vout = out.reshape(eshape)
-                    oe.contract(self.parsed_expressions[0], *eargss[0],
+                    oe.contract(self.parsed_expressions[0], *operands[0],
                                 out=vout,
                                 optimize=self.paths[0])
 
@@ -230,13 +230,13 @@ class ETermBase(Struct):
                     tt.start()
 
                     vout = out.reshape(eshape)
-                    oe.contract(self.parsed_expressions[0], *eargss[0],
+                    oe.contract(self.parsed_expressions[0], *operands[0],
                                 out=vout,
                                 optimize=self.paths[0])
                     aux = nm.empty_like(out)
                     vaux = out.reshape(eshape)
                     for ia in range(1, n_add):
-                        oe.contract(self.parsed_expressions[ia], *eargss[ia],
+                        oe.contract(self.parsed_expressions[ia], *operands[ia],
                                     out=vaux,
                                     optimize=self.paths[ia])
                         out[:] += aux
