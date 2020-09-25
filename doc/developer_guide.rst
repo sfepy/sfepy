@@ -925,6 +925,7 @@ Main scripts
    src/phonon
    src/postproc
    src/probe
+   src/resview
    src/run_tests
    src/simple
    src/simple_homog_mpi
