@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **02.07.2019** Version 2019.2 released (improved support for time-dependent
+  homogenization problems, Python 3.7 compatibility, etc.), see :ref:`release
+  notes <2019.1-2019.2>`.
+
 * **26.03.2019** Version 2019.1 released (automatic fallback for linear
   solvers, quadratic eigenvalue problem solver, etc.), see :ref:`release notes
   <2018.4-2019.1>`.
