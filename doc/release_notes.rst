@@ -1,5 +1,62 @@
 # created: 20.07.2007 (-1)
 
+.. _2020.2-2020.3:
+
+from 2020.2 to 2020.3
+=====================
+
+- merge pull request #625 from vlukes/mesh_write_binary
+
+  - update meshio: pass options in kwargs to meshio library
+  - update mesh conversion script: write mesh in ascii format
+
+- merge pull request #626 from rc/fix-elastodynamics-docstring, closes #598
+
+  - fix equation in docstring of elastodynamic.py example
+
+- merge pull request #582 from vlukes/pyvista
+
+  - new script for visualisations using pyvista
+  - update requirements: pyvista
+  - update users_guide
+  - add pyvista to instalation requirements
+  - update names in installation docs
+
+- merge pull request #634 from vlukes/fix_web
+
+  - various fixes in web doc
+
+- merge pull request #635 from vlukes/mumps5.2
+
+  - update mumps_struc_c for v5.2
+  - absolute import
+
+- merge pull request #637 from vlukes/example_bd2b
+
+  - new example application
+
+- merge pull request #638 from vlukes/update_web
+
+  - links to sfepy_examples: http --> https
+
+- merge pull request #639 from heczis/add_gen_yeoh_term
+
+  - Add generalized Yeoh hyperelastic term (total Lagrangian formulation)
+  - Add example for generalized Yeoh term
+
+- merge pull request #640 from vlukes/meshio_file_format_variants
+
+  - fix meshio interface to accept ascii/binary file format variants
+  - check meshio version, 'binary' argument in write() function from v4.0.3
+
+- merge pull request #641 from vlukes/fix_meshio
+
+  - fix #640
+
+- merge pull request #643 from rc/get-virtual-dof-conn
+
+  - update fieldvariable.get_dof_conn() for no primary variable
+
 .. _2020.1-2020.2:
 
 from 2020.1 to 2020.2
