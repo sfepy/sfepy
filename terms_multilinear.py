@@ -186,7 +186,9 @@ class ETermBase(Struct):
                 self.ebuilder.add_virtual_arg(arg, ii, ein, qsb, qsbg)
 
             else:
-                self.ebuilder.add_state_arg(arg, ii, ein, qsb, qsbg, diff_var)
+                ag, _ = self.get_mapping(arg)
+                self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
+                                            diff_var)
 
         self.parsed_expressions = self.ebuilder.get_expressions()
         output(self.parsed_expressions)
@@ -347,3 +349,39 @@ class EDivTerm(ETermBase, Term):
         return expr
 
 register_term(EDivTerm)
+
+class EStokesTerm(ETermBase, Term):
+    name = 'dw_estokes'
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'state', 'virtual'),
+                 ('opt_material', 'parameter_v', 'parameter_s'))
+    arg_shapes = [{'opt_material' : '1, 1',
+                   'virtual/grad' : ('D', None), 'state/grad' : 1,
+                   'virtual/div' : (1, None), 'state/div' : 'D',
+                   'parameter_v' : 'D', 'parameter_s' : 1},
+                  {'opt_material' : None}]
+    modes = ('grad', 'div', 'eval')
+
+    def expression(self, coef, vvar, svar, mode=None, term_mode=None,
+                   diff_var=None, **kwargs):
+        if coef is None:
+            if self.mode == 'grad':
+                expr = self.einsum('i.i,0', vvar, svar,
+                                   diff_var=diff_var)
+
+            else:
+                expr = self.einsum('0,i.i', svar, vvar,
+                                   diff_var=diff_var)
+
+        else:
+            if self.mode == 'grad':
+                expr = self.einsum('0,i.i,0', coef, virtual, state,
+                                   diff_var=diff_var)
+
+            else:
+                expr = self.einsum('0,0,i.i', coef, virtual, state,
+                                   diff_var=diff_var)
+
+        return expr
+
+register_term(EStokesTerm)
