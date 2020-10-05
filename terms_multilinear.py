@@ -26,6 +26,15 @@ def append_all(seqs, item, ii=None):
     else:
         seqs[ii].append(item)
 
+def get_sizes(indices, operands):
+    sizes = {}
+
+    for iis, op in zip(indices, operands):
+        for ii, size in zip(iis, op.shape):
+            sizes[ii] = size
+
+    return sizes
+
 class ExpressionBuilder(Struct):
     letters = 'defgh'
     aux_letters = iter('rstuvwxyz')
@@ -34,26 +43,31 @@ class ExpressionBuilder(Struct):
         self.n_add = n_add
         self.subscripts = [[] for ia in range(n_add)]
         self.operands = [[] for ia in range(n_add)]
+        self.operand_names = [[] for ia in range(n_add)]
         self.out_subscripts = ['c' for ia in range(n_add)]
         self.ia = 0
         self.dc_type = dc_type
         self.dofs_cache = dofs_cache
 
-    def add_constant(self, val):
+    def add_constant(self, val, name):
         append_all(self.subscripts, 'cq')
         append_all(self.operands, val)
+        append_all(self.operand_names, name)
 
-    def add_bfg(self, iin, ein, qsbg):
+    def add_bfg(self, iin, ein, qsbg, name):
         append_all(self.subscripts, 'cq{}{}'.format(ein[2], iin))
         append_all(self.operands, qsbg)
+        append_all(self.operand_names, name)
 
-    def add_bf(self, iin, ein, qsb):
+    def add_bf(self, iin, ein, qsb, name):
         append_all(self.subscripts, 'q{}'.format(iin))
         append_all(self.operands, qsb[0, :, 0])
+        append_all(self.operand_names, name)
 
     def add_eye(self, iic, ein, eye, iia=None):
         append_all(self.subscripts, '{}{}'.format(ein[0], iic), ii=iia)
         append_all(self.operands, eye, ii=iia)
+        append_all(self.operand_names, 'I', ii=iia)
 
     def add_arg_dofs(self, iin, ein, arg, iia=None):
         dofs = self.dofs_cache.get(arg.name)
@@ -72,14 +86,15 @@ class ExpressionBuilder(Struct):
 
         append_all(self.subscripts, term, ii=iia)
         append_all(self.operands, dofs, ii=iia)
+        append_all(self.operand_names, arg.name + '.dofs', ii=iia)
 
     def add_virtual_arg(self, arg, ii, ein, qsb, qsbg):
         iin = self.letters[ii] # node (qs basis index)
         if '.' in ein: # derivative
-            self.add_bfg(iin, ein, qsbg)
+            self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
 
         else:
-            self.add_bf(iin, ein, qsb)
+            self.add_bf(iin, ein, qsb, arg.name + '.bf')
 
         out_letters = iin
 
@@ -96,10 +111,10 @@ class ExpressionBuilder(Struct):
     def add_state_arg(self, arg, ii, ein, qsb, qsbg, diff_var):
         iin = self.letters[ii] # node (qs basis index)
         if '.' in ein: # derivative
-            self.add_bfg(iin, ein, qsbg)
+            self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
 
         else:
-            self.add_bf(iin, ein, qsb)
+            self.add_bf(iin, ein, qsb, arg.name + '.bf')
 
         out_letters = iin
 
@@ -129,6 +144,18 @@ class ExpressionBuilder(Struct):
                        self.out_subscripts[ia]
                        for ia in range(self.n_add)]
         return expressions
+
+    def print_shapes(self):
+        for ia in range(self.n_add):
+            sizes = get_sizes(self.subscripts[ia], self.operands[ia])
+            out_shape = tuple(sizes[ii] for ii in self.out_subscripts[ia])
+            output(sizes)
+            output(self.out_subscripts[ia], out_shape, '=')
+
+            for name, ii, op in zip(self.operand_names[ia],
+                                    self.subscripts[ia],
+                                    self.operands[ia]):
+                output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
 class ETermBase(Struct):
     """
@@ -176,7 +203,7 @@ class ETermBase(Struct):
 
         dofs_cache = {}
         self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
-        self.ebuilder.add_constant(dets[..., 0, 0])
+        self.ebuilder.add_constant(dets[..., 0, 0], 'J')
 
         eins = sexpr.split(',')
         for ii, ein in enumerate(eins):
@@ -192,6 +219,7 @@ class ETermBase(Struct):
 
         self.parsed_expressions = self.ebuilder.get_expressions()
         output(self.parsed_expressions)
+        self.ebuilder.print_shapes()
         operands = self.ebuilder.operands
         self.paths, self.path_infos = zip(*[oe.contract_path(
             self.parsed_expressions[ia], *operands[ia],
