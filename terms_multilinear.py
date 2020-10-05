@@ -175,8 +175,8 @@ class ETermBase(Struct):
 
         dc_type = self.get_dof_conn_type()
 
-        vvar = args[0]
-        uvars = args[1:]
+        vvar = self.get_virtual_variable()
+        uvars = self.get_state_variables()
 
         n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(vvar)
 
@@ -206,13 +206,14 @@ class ETermBase(Struct):
         self.ebuilder.add_constant(dets[..., 0, 0], 'J')
 
         eins = sexpr.split(',')
+        # Virtual variable must be the first variable.
+        iv = args.index(vvar)
+        self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg)
         for ii, ein in enumerate(eins):
+            if ii == iv: continue
             arg = args[ii]
 
-            if arg.is_virtual():
-                self.ebuilder.add_virtual_arg(arg, ii, ein, qsb, qsbg)
-
-            else:
+            if arg.is_state():
                 ag, _ = self.get_mapping(arg)
                 self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
                                             diff_var)
@@ -390,25 +391,15 @@ class EStokesTerm(ETermBase, Term):
                   {'opt_material' : None}]
     modes = ('grad', 'div', 'eval')
 
-    def expression(self, coef, vvar, svar, mode=None, term_mode=None,
+    def expression(self, coef, var_v, var_s, mode=None, term_mode=None,
                    diff_var=None, **kwargs):
         if coef is None:
-            if self.mode == 'grad':
-                expr = self.einsum('i.i,0', vvar, svar,
-                                   diff_var=diff_var)
-
-            else:
-                expr = self.einsum('0,i.i', svar, vvar,
-                                   diff_var=diff_var)
+            expr = self.einsum('i.i,0', var_v, var_s,
+                               diff_var=diff_var)
 
         else:
-            if self.mode == 'grad':
-                expr = self.einsum('0,i.i,0', coef, virtual, state,
-                                   diff_var=diff_var)
-
-            else:
-                expr = self.einsum('0,0,i.i', coef, virtual, state,
-                                   diff_var=diff_var)
+            expr = self.einsum('0,i.i,0', coef, var_v, var_s,
+                               diff_var=diff_var)
 
         return expr
 
