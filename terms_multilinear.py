@@ -69,6 +69,12 @@ class ExpressionBuilder(Struct):
         append_all(self.operands, eye, ii=iia)
         append_all(self.operand_names, 'I', ii=iia)
 
+    def add_psg(self, iic, ein, psg, iia=None):
+        append_all(self.subscripts, '{}{}{}'.format(iic, ein[2], ein[0]),
+                   ii=iia)
+        append_all(self.operands, psg, ii=iia)
+        append_all(self.operand_names, 'Psg', ii=iia)
+
     def add_arg_dofs(self, iin, ein, arg, iia=None):
         dofs = self.dofs_cache.get(arg.name)
         if dofs is None:
@@ -90,7 +96,7 @@ class ExpressionBuilder(Struct):
 
     def add_virtual_arg(self, arg, ii, ein, qsb, qsbg):
         iin = self.letters[ii] # node (qs basis index)
-        if '.' in ein: # derivative
+        if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
             self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
 
         else:
@@ -100,8 +106,17 @@ class ExpressionBuilder(Struct):
 
         if arg.n_components > 1:
             iic = next(self.aux_letters) # component
-            ee = nm.eye(arg.n_components)
-            self.add_eye(iic, ein, ee)
+            if ':' not in ein:
+                ee = nm.eye(arg.n_components)
+                self.add_eye(iic, ein, ee)
+
+            else: # symmetric gradient
+                # if modifier == 's'....
+                psg = nm.zeros((3, 3, 6))
+                psg[0, [0,1,2], [0,3,4]] = 1
+                psg[1, [0,1,2], [3,1,5]] = 1
+                psg[2, [0,1,2], [4,5,2]] = 1
+                self.add_psg(iic, ein, psg)
 
             out_letters = iic + out_letters
 
@@ -110,7 +125,7 @@ class ExpressionBuilder(Struct):
 
     def add_state_arg(self, arg, ii, ein, qsb, qsbg, diff_var):
         iin = self.letters[ii] # node (qs basis index)
-        if '.' in ein: # derivative
+        if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
             self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
 
         else:
@@ -124,7 +139,14 @@ class ExpressionBuilder(Struct):
         else:
             if arg.n_components > 1:
                 iic = next(self.aux_letters) # component
-                ee = nm.eye(arg.n_components)
+                if ':' not in ein:
+                    ee = nm.eye(arg.n_components)
+
+                else:
+                    psg = nm.zeros((3, 3, 6))
+                    psg[0, [0,1,2], [0,3,4]] = 1
+                    psg[1, [0,1,2], [3,1,5]] = 1
+                    psg[2, [0,1,2], [4,5,2]] = 1
 
                 out_letters = iic + out_letters
 
@@ -133,7 +155,11 @@ class ExpressionBuilder(Struct):
                     self.add_arg_dofs(iin, ein, arg, iia)
 
                 elif arg.n_components > 1:
-                    self.add_eye(iic, ein, ee, iia)
+                    if ':' not in ein:
+                        self.add_eye(iic, ein, ee, iia)
+
+                    else:
+                        self.add_psg(iic, ein, psg, iia)
 
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
@@ -161,6 +187,39 @@ class ExpressionBuilder(Struct):
                                     self.subscripts[ia],
                                     self.operands[ia]):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
+
+def collect_modifiers(modifiers):
+    def _collect_modifiers(toks):
+        if len(toks) > 1:
+            out = []
+            modifiers.append([])
+            for ii, mod in enumerate(toks[::2]):
+                tok = toks[2*ii+1]
+                modifiers[-1].append((mod, tok))
+                out.append(tok)
+            return out
+
+        else:
+            modifiers.append(None)
+            return toks
+    return _collect_modifiers
+
+def parse_sexpr(sexpr):
+    from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
+                           Combine, alphas)
+
+    lparen, rparen = map(Suppress, '()')
+    mods = 's'
+    simple_arg = Word(alphas + '.:')
+    mod_arg = oneOf(mods) + lparen + simple_arg + rparen
+    arg = OneOrMore(simple_arg ^ mod_arg)
+    modifiers = []
+    arg.setParseAction(collect_modifiers(modifiers))
+
+    parser = delimitedList(Combine(arg))
+    eins = parser.parseString(sexpr, parseAll=True)
+
+    return eins
 
 class ETermBase(Struct):
     """
@@ -210,7 +269,7 @@ class ETermBase(Struct):
         self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
         self.ebuilder.add_constant(dets[..., 0, 0], 'J')
 
-        eins = sexpr.split(',')
+        eins = parse_sexpr(sexpr)
         # Virtual variable must be the first variable.
         iv = self.ats.index('virtual')
         self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg)
@@ -413,3 +472,24 @@ class EStokesTerm(ETermBase, Term):
         return expr
 
 register_term(EStokesTerm)
+
+class ELinearElasticTerm(ETermBase, Term):
+    name = 'dw_elin_elastic'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_shapes = {'material' : 'S, S', 'virtual' : ('D', 'state'),
+                  'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
+    modes = ('weak', 'eval')
+
+    def expression(self, mat, virtual, state, mode=None, term_mode=None,
+                   diff_var=None, **kwargs):
+        # expr = self.einsum('(ij)_s(kl)_s,(i:j)_s,(k:l)_s', mat, virtual, state,
+        #                    diff_var=diff_var)
+        # expr = self.einsum('s(ij)s(kl),s(i:j),s(k:l)', mat, virtual, state,
+        #                    diff_var=diff_var)
+        expr = self.einsum('ik,s(i:j),s(k:l)', mat, virtual, state,
+                           diff_var=diff_var)
+
+        return expr
+
+register_term(ELinearElasticTerm)
