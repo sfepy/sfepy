@@ -138,6 +138,11 @@ class ExpressionBuilder(Struct):
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
 
+    def add_material_arg(self, arg, ii, ein, name):
+        append_all(self.subscripts, 'cq{}'.format(ein))
+        append_all(self.operands, arg)
+        append_all(self.operand_names, name)
+
     def get_expressions(self):
         expressions = [','.join(self.subscripts[ia]) +
                        '->' +
@@ -207,16 +212,20 @@ class ETermBase(Struct):
 
         eins = sexpr.split(',')
         # Virtual variable must be the first variable.
-        iv = args.index(vvar)
+        iv = self.ats.index('virtual')
         self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg)
         for ii, ein in enumerate(eins):
             if ii == iv: continue
             arg = args[ii]
 
-            if arg.is_state():
+            if self.ats[ii] == 'state':
                 ag, _ = self.get_mapping(arg)
                 self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
                                             diff_var)
+
+            elif 'material' in self.ats[ii]:
+                self.ebuilder.add_material_arg(arg, ii, ein,
+                                               '.'.join(self.arg_names[ii]))
 
         self.parsed_expressions = self.ebuilder.get_expressions()
         output(self.parsed_expressions)
