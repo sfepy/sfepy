@@ -3,6 +3,7 @@ import opt_einsum as oe
 
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
+from sfepy.mechanics.tensors import dim2sym
 from sfepy.terms.terms import Term
 from sfepy.terms import register_term
 
@@ -49,6 +50,21 @@ class ExpressionBuilder(Struct):
         self.dc_type = dc_type
         self.dofs_cache = dofs_cache
         self.aux_letters = iter(self._aux_letters)
+
+    @staticmethod
+    def make_psg(dim):
+        sym = dim2sym(dim)
+        psg = nm.zeros((dim, dim, sym))
+        if dim == 3:
+            psg[0, [0,1,2], [0,3,4]] = 1
+            psg[1, [0,1,2], [3,1,5]] = 1
+            psg[2, [0,1,2], [4,5,2]] = 1
+
+        elif dim == 2:
+            psg[0, [0,1], [0,2]] = 1
+            psg[1, [0,1], [2,1]] = 1
+
+        return psg
 
     def add_constant(self, val, name):
         append_all(self.subscripts, 'cq')
@@ -113,10 +129,7 @@ class ExpressionBuilder(Struct):
 
             else: # symmetric gradient
                 # if modifier == 's'....
-                psg = nm.zeros((3, 3, 6))
-                psg[0, [0,1,2], [0,3,4]] = 1
-                psg[1, [0,1,2], [3,1,5]] = 1
-                psg[2, [0,1,2], [4,5,2]] = 1
+                psg = self.make_psg(arg.dim)
                 self.add_psg(iic, ein, psg)
 
             out_letters = iic + out_letters
@@ -135,7 +148,14 @@ class ExpressionBuilder(Struct):
         out_letters = iin
 
         if (diff_var != arg.name):
-            self.add_arg_dofs(iin, ein, arg)
+            if ':' not in ein:
+                self.add_arg_dofs(iin, ein, arg)
+
+            else:
+                iic = next(self.aux_letters) # component
+                psg = self.make_psg(arg.dim)
+                self.add_psg(iic, ein, psg)
+                self.add_arg_dofs(iin, [iic], arg)
 
         else:
             if arg.n_components > 1:
@@ -144,10 +164,7 @@ class ExpressionBuilder(Struct):
                     ee = nm.eye(arg.n_components)
 
                 else:
-                    psg = nm.zeros((3, 3, 6))
-                    psg[0, [0,1,2], [0,3,4]] = 1
-                    psg[1, [0,1,2], [3,1,5]] = 1
-                    psg[2, [0,1,2], [4,5,2]] = 1
+                    psg = self.make_psg(arg.dim)
 
                 out_letters = iic + out_letters
 
