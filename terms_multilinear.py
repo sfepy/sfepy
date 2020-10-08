@@ -6,6 +6,7 @@ from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
 
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
+from sfepy.discrete import FieldVariable
 from sfepy.mechanics.tensors import dim2sym
 from sfepy.terms.terms import Term
 from sfepy.terms import register_term
@@ -273,45 +274,39 @@ class ETermBase(Struct):
 
         dc_type = self.get_dof_conn_type()
 
-        vvar = self.get_virtual_variable()
-        uvars = self.get_state_variables()
-
-        n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(vvar)
-
         if diff_var is not None:
-            n_add = len([var.name for var in uvars if var.name == diff_var])
-
-            varc = self.get_variables(as_list=False)[diff_var]
-            n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
-            eshape = tuple([n_elr]
-                           + ([n_cr] if n_cr > 1 else [])
-                           + [n_enr]
-                           + ([n_cc] if n_cc > 1 else [])
-                           + [n_enc])
+            n_add = len([arg.name for arg in args
+                         if (isinstance(arg, FieldVariable)
+                             and (arg.name == diff_var))])
 
         else:
             n_add = 1
-            eshape = (n_elr, n_cr, n_enr) if n_cr > 1 else (n_elr, n_enr)
-
-        vg, _ = self.get_mapping(vvar)
-
-        dets = vg.det
-        qsb = vg.bf
-        qsbg = vg.bfg
 
         eins, modifiers = parse_sexpr(sexpr)
 
         dofs_cache = {}
         self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
-        self.ebuilder.add_constant(dets[..., 0, 0], 'J')
 
         # Virtual variable must be the first variable.
         # Numpy arrays cannot be compared -> use a loop.
         for iv, arg in enumerate(args):
-            if isinstance(arg, type(vvar)):
-                self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg,
-                                              modifiers[iv])
+            if isinstance(arg, FieldVariable) and arg.is_virtual():
+                ag, _ = self.get_mapping(arg)
+                self.ebuilder.add_constant(ag.det[..., 0, 0], 'J')
+                self.ebuilder.add_virtual_arg(arg, iv, eins[iv], ag.bf,
+                                              ag.bfg, modifiers[iv])
                 break
+        else:
+            iv = -1
+            for ip, arg in enumerate(args):
+                if (isinstance(arg, FieldVariable)
+                    and arg.is_state_or_parameter()):
+                    ag, _ = self.get_mapping(arg)
+                    self.ebuilder.add_constant(ag.det[..., 0, 0], 'J')
+                    break
+            else:
+                raise ValueError('no FieldVariable in arguments!')
+
         for ii, ein in enumerate(eins):
             if ii == iv: continue
             arg = args[ii]
@@ -320,7 +315,7 @@ class ETermBase(Struct):
                 self.ebuilder.add_material_arg(arg, ii, ein,
                                                '.'.join(self.arg_names[ii]))
 
-            elif isinstance(arg, type(vvar)) and arg.is_state():
+            elif isinstance(arg, FieldVariable) and arg.is_state():
                 ag, _ = self.get_mapping(arg)
                 self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
                                             modifiers[ii], diff_var)
@@ -342,7 +337,7 @@ class ETermBase(Struct):
 
         if n_add == 1:
             if diff_var is not None:
-                def eval_einsum(out):
+                def eval_einsum(out, eshape):
                     tt = Timer('')
                     tt.start()
 
@@ -354,7 +349,7 @@ class ETermBase(Struct):
                     output('eval_einsum 1M: {} s'.format(tt.stop()))
 
             else:
-                def eval_einsum(out):
+                def eval_einsum(out, eshape):
                     tt = Timer('')
                     tt.start()
 
@@ -367,7 +362,7 @@ class ETermBase(Struct):
 
         else:
             if diff_var is not None:
-                def eval_einsum(out):
+                def eval_einsum(out, eshape):
                     tt = Timer('')
                     tt.start()
 
@@ -393,15 +388,37 @@ class ETermBase(Struct):
         return eval_einsum
 
     @staticmethod
-    def function(out, eval_einsum):
-        eval_einsum(out)
+    def function(out, eval_einsum, eshape):
+        eval_einsum(out, eshape)
         return 0
 
     def get_fargs(self, *args, **kwargs):
+        mode, term_mode, diff_var = args[-3:]
+
+        if mode == 'weak':
+            vvar = self.get_virtual_variable()
+            n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(vvar)
+
+            if diff_var is not None:
+                varc = self.get_variables(as_list=False)[diff_var]
+                n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
+                eshape = tuple([n_elr]
+                               + ([n_cr] if n_cr > 1 else [])
+                               + [n_enr]
+                               + ([n_cc] if n_cc > 1 else [])
+                               + [n_enc])
+
+            else:
+                eshape = (n_elr, n_cr, n_enr) if n_cr > 1 else (n_elr, n_enr)
+
+        else:
+            # Hack!
+            eshape = (self.region.shape.n_cell,)
+
         # This should be called on construction?
         eval_einsum = self.expression(*args, **kwargs)
 
-        return eval_einsum,
+        return eval_einsum, eshape
 
 class ELaplaceTerm(ETermBase, Term):
     name = 'dw_elaplace'
@@ -514,6 +531,12 @@ class EStokesTerm(ETermBase, Term):
 
         return expr
 
+    def get_eval_shape(self, coef, var_v, var_s,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(var_v)
+
+        return (n_el, 1, 1, 1), var_v.dtype
+
 register_term(EStokesTerm)
 
 class ELinearElasticTerm(ETermBase, Term):
@@ -530,5 +553,11 @@ class ELinearElasticTerm(ETermBase, Term):
                            diff_var=diff_var)
 
         return expr
+
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
 
 register_term(ELinearElasticTerm)
