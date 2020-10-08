@@ -1,6 +1,9 @@
 import numpy as nm
 import opt_einsum as oe
 
+from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
+                       Combine, alphas, Literal)
+
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
 from sfepy.mechanics.tensors import dim2sym
@@ -111,7 +114,7 @@ class ExpressionBuilder(Struct):
         append_all(self.operands, dofs, ii=iia)
         append_all(self.operand_names, arg.name + '.dofs', ii=iia)
 
-    def add_virtual_arg(self, arg, ii, ein, qsb, qsbg):
+    def add_virtual_arg(self, arg, ii, ein, qsb, qsbg, modifier):
         iin = self.letters[ii] # node (qs basis index)
         if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
             self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
@@ -128,16 +131,20 @@ class ExpressionBuilder(Struct):
                 self.add_eye(iic, ein, ee)
 
             else: # symmetric gradient
-                # if modifier == 's'....
-                psg = self.make_psg(arg.dim)
-                self.add_psg(iic, ein, psg)
+                if modifier[0][0] == 's': # vector storage
+                    psg = self.make_psg(arg.dim)
+                    self.add_psg(iic, ein, psg)
+
+                else:
+                    raise ValueError('unknown argument modifier! ({})'
+                                     .format(modifier))
 
             out_letters = iic + out_letters
 
         for iia in range(self.n_add):
             self.out_subscripts[iia] += out_letters
 
-    def add_state_arg(self, arg, ii, ein, qsb, qsbg, diff_var):
+    def add_state_arg(self, arg, ii, ein, qsb, qsbg, modifier, diff_var):
         iin = self.letters[ii] # node (qs basis index)
         if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
             self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
@@ -151,11 +158,16 @@ class ExpressionBuilder(Struct):
             if ':' not in ein:
                 self.add_arg_dofs(iin, ein, arg)
 
-            else:
-                iic = next(self.aux_letters) # component
-                psg = self.make_psg(arg.dim)
-                self.add_psg(iic, ein, psg)
-                self.add_arg_dofs(iin, [iic], arg)
+            else: # symmetric gradient
+                if modifier[0][0] == 's': # vector storage
+                    iic = next(self.aux_letters) # component
+                    psg = self.make_psg(arg.dim)
+                    self.add_psg(iic, ein, psg)
+                    self.add_arg_dofs(iin, [iic], arg)
+
+                else:
+                    raise ValueError('unknown argument modifier! ({})'
+                                     .format(modifier))
 
         else:
             if arg.n_components > 1:
@@ -163,8 +175,13 @@ class ExpressionBuilder(Struct):
                 if ':' not in ein:
                     ee = nm.eye(arg.n_components)
 
-                else:
-                    psg = self.make_psg(arg.dim)
+                else: # symmetric gradient
+                    if modifier[0][0] == 's': # vector storage
+                        psg = self.make_psg(arg.dim)
+
+                    else:
+                        raise ValueError('unknown argument modifier! ({})'
+                                         .format(modifier))
 
                 out_letters = iic + out_letters
 
@@ -211,9 +228,10 @@ def collect_modifiers(modifiers):
         if len(toks) > 1:
             out = []
             modifiers.append([])
-            for ii, mod in enumerate(toks[::2]):
-                tok = toks[2*ii+1]
-                modifiers[-1].append((mod, tok))
+            for ii, mod in enumerate(toks[::3]):
+                tok = toks[3*ii+1]
+                tok = tok.replace(tok[0], toks[2])
+                modifiers[-1].append(list(toks))
                 out.append(tok)
             return out
 
@@ -223,21 +241,19 @@ def collect_modifiers(modifiers):
     return _collect_modifiers
 
 def parse_sexpr(sexpr):
-    from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
-                           Combine, alphas)
-
-    lparen, rparen = map(Suppress, '()')
     mods = 's'
+    lparen, rparen = map(Suppress, '()')
     simple_arg = Word(alphas + '.:0')
-    mod_arg = oneOf(mods) + lparen + simple_arg + rparen
+    arrow = Literal('->').suppress()
+    letter = Word(alphas, exact=1)
+    mod_arg = oneOf(mods) + lparen + simple_arg + rparen + arrow + letter
     arg = OneOrMore(simple_arg ^ mod_arg)
     modifiers = []
     arg.setParseAction(collect_modifiers(modifiers))
 
     parser = delimitedList(Combine(arg))
     eins = parser.parseString(sexpr, parseAll=True)
-
-    return eins
+    return eins, modifiers
 
 class ETermBase(Struct):
     """
@@ -283,17 +299,18 @@ class ETermBase(Struct):
         qsb = vg.bf
         qsbg = vg.bfg
 
+        eins, modifiers = parse_sexpr(sexpr)
+
         dofs_cache = {}
         self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
         self.ebuilder.add_constant(dets[..., 0, 0], 'J')
-
-        eins = parse_sexpr(sexpr)
 
         # Virtual variable must be the first variable.
         # Numpy arrays cannot be compared -> use a loop.
         for iv, arg in enumerate(args):
             if isinstance(arg, type(vvar)):
-                self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg)
+                self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg,
+                                              modifiers[iv])
                 break
         for ii, ein in enumerate(eins):
             if ii == iv: continue
@@ -306,7 +323,7 @@ class ETermBase(Struct):
             elif isinstance(arg, type(vvar)) and arg.is_state():
                 ag, _ = self.get_mapping(arg)
                 self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
-                                            diff_var)
+                                            modifiers[ii], diff_var)
 
             else:
                 raise ValueError('unknown argument type! ({})'
@@ -509,11 +526,7 @@ class ELinearElasticTerm(ETermBase, Term):
 
     def expression(self, mat, virtual, state, mode=None, term_mode=None,
                    diff_var=None, **kwargs):
-        # expr = self.einsum('(ij)_s(kl)_s,(i:j)_s,(k:l)_s', mat, virtual, state,
-        #                    diff_var=diff_var)
-        # expr = self.einsum('s(ij)s(kl),s(i:j),s(k:l)', mat, virtual, state,
-        #                    diff_var=diff_var)
-        expr = self.einsum('ik,s(i:j),s(k:l)', mat, virtual, state,
+        expr = self.einsum('IK,s(i:j)->I,s(k:l)->K', mat, virtual, state,
                            diff_var=diff_var)
 
         return expr
