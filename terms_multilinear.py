@@ -288,21 +288,29 @@ class ETermBase(Struct):
         self.ebuilder.add_constant(dets[..., 0, 0], 'J')
 
         eins = parse_sexpr(sexpr)
+
         # Virtual variable must be the first variable.
-        iv = self.ats.index('virtual')
-        self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg)
+        # Numpy arrays cannot be compared -> use a loop.
+        for iv, arg in enumerate(args):
+            if isinstance(arg, type(vvar)):
+                self.ebuilder.add_virtual_arg(vvar, iv, eins[iv], qsb, qsbg)
+                break
         for ii, ein in enumerate(eins):
             if ii == iv: continue
             arg = args[ii]
 
-            if self.ats[ii] == 'state':
+            if isinstance(arg, nm.ndarray):
+                self.ebuilder.add_material_arg(arg, ii, ein,
+                                               '.'.join(self.arg_names[ii]))
+
+            elif isinstance(arg, type(vvar)) and arg.is_state():
                 ag, _ = self.get_mapping(arg)
                 self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
                                             diff_var)
 
-            elif 'material' in self.ats[ii]:
-                self.ebuilder.add_material_arg(arg, ii, ein,
-                                               '.'.join(self.arg_names[ii]))
+            else:
+                raise ValueError('unknown argument type! ({})'
+                                 .format(type(arg)))
 
         self.parsed_expressions = self.ebuilder.get_expressions()
         output(self.parsed_expressions)
