@@ -37,7 +37,7 @@ def get_sizes(indices, operands):
 
 class ExpressionBuilder(Struct):
     letters = 'defgh'
-    aux_letters = iter('rstuvwxyz')
+    _aux_letters = 'rstuvwxyz'
 
     def __init__(self, n_add, dc_type, dofs_cache):
         self.n_add = n_add
@@ -48,6 +48,7 @@ class ExpressionBuilder(Struct):
         self.ia = 0
         self.dc_type = dc_type
         self.dofs_cache = dofs_cache
+        self.aux_letters = iter(self._aux_letters)
 
     def add_constant(self, val, name):
         append_all(self.subscripts, 'cq')
