@@ -228,7 +228,7 @@ def parse_sexpr(sexpr):
 
     lparen, rparen = map(Suppress, '()')
     mods = 's'
-    simple_arg = Word(alphas + '.:')
+    simple_arg = Word(alphas + '.:0')
     mod_arg = oneOf(mods) + lparen + simple_arg + rparen
     arg = OneOrMore(simple_arg ^ mod_arg)
     modifiers = []
