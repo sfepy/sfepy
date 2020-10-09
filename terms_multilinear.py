@@ -267,8 +267,7 @@ class ETermBase(Struct):
     """
     optimize = 'dynamic-programming'
 
-    def einsum(self, texpr, *args, diff_var=None):
-
+    def build_expression(self, texpr, *args, diff_var=None):
         timer = Timer('')
         timer.start()
 
@@ -333,7 +332,22 @@ class ETermBase(Struct):
             optimize=self.optimize,
         ) for ia in range(n_add)])
         output(self.paths)
-        output(self.path_infos)
+        # output(self.path_infos)
+
+        output('build expression: {} s'.format(timer.stop()))
+
+    def einsum(self, texpr, *args, diff_var=None, einsum_mode='get_fargs'):
+        timer = Timer('')
+        timer.start()
+
+        if not hasattr(self, 'ebuilder'):
+            self.build_expression(texpr, *args, diff_var=diff_var)
+
+        if einsum_mode == 'eval_shape':
+            return self.ebuilder
+
+        operands = self.ebuilder.operands
+        n_add = len(operands)
 
         if n_add == 1:
             if diff_var is not None:
@@ -412,6 +426,10 @@ class ETermBase(Struct):
                 eshape = (n_elr, n_cr, n_enr) if n_cr > 1 else (n_elr, n_enr)
 
         else:
+            if diff_var is not None:
+                raise ValueError('cannot differentiate in {} mode!'
+                                 .format(mode))
+
             # Hack!
             eshape = (self.region.shape.n_cell,)
 
@@ -419,6 +437,19 @@ class ETermBase(Struct):
         eval_einsum = self.expression(*args, **kwargs)
 
         return eval_einsum, eshape
+
+    def get_eval_shape(self, *args, **kwargs):
+        self.expression(*args, einsum_mode='eval_shape', **kwargs)
+
+        out_subscripts = self.ebuilder.out_subscripts[0]
+        operands = self.ebuilder.operands[0]
+
+        sizes = get_sizes(out_subscripts, operands)
+        out_shape = tuple(sizes[ii] for ii in out_subscripts)
+
+        dtype = nm.find_common_type([op.dtype for op in operands], [])
+
+        return out_shape, dtype
 
 class ELaplaceTerm(ETermBase, Term):
     name = 'dw_elaplace'
@@ -531,12 +562,6 @@ class EStokesTerm(ETermBase, Term):
 
         return expr
 
-    def get_eval_shape(self, coef, var_v, var_s,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(var_v)
-
-        return (n_el, 1, 1, 1), var_v.dtype
-
 register_term(EStokesTerm)
 
 class ELinearElasticTerm(ETermBase, Term):
@@ -553,11 +578,5 @@ class ELinearElasticTerm(ETermBase, Term):
                            diff_var=diff_var)
 
         return expr
-
-    def get_eval_shape(self, mat, virtual, state,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        return (n_el, 1, 1, 1), state.dtype
 
 register_term(ELinearElasticTerm)
