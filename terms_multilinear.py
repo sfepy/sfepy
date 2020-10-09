@@ -441,6 +441,11 @@ class ETermBase(Struct):
         return eval_einsum, eshape
 
     def get_eval_shape(self, *args, **kwargs):
+        mode, term_mode, diff_var = args[-3:]
+        if diff_var is not None:
+            raise ValueError('cannot differentiate in {} mode!'
+                             .format(mode))
+
         self.get_function(*args, **kwargs)
 
         out_shape = self.ebuilder.get_output_shape(0)
