@@ -44,7 +44,7 @@ class ExpressionBuilder(Struct):
     letters = 'defgh'
     _aux_letters = 'rstuvwxyz'
 
-    def __init__(self, n_add, dc_type, dofs_cache):
+    def __init__(self, n_add, dc_type, region, dofs_cache):
         self.n_add = n_add
         self.subscripts = [[] for ia in range(n_add)]
         self.operands = [[] for ia in range(n_add)]
@@ -52,6 +52,7 @@ class ExpressionBuilder(Struct):
         self.out_subscripts = ['c' for ia in range(n_add)]
         self.ia = 0
         self.dc_type = dc_type
+        self.region = region
         self.dofs_cache = dofs_cache
         self.aux_letters = iter(self._aux_letters)
 
@@ -99,16 +100,17 @@ class ExpressionBuilder(Struct):
     def add_arg_dofs(self, iin, ein, arg, iia=None):
         dofs = self.dofs_cache.get(arg.name)
         if dofs is None:
-            # Assumes no E(P)BCs are present!
-            adc = arg.get_dof_conn(self.dc_type)
-            dofs = arg()[adc]
+            conn = arg.field.get_econn(self.dc_type, self.region)
+            dofs_vec = arg().reshape((-1, arg.n_components))
+            # axis 0: cells, axis 1: node, axis 2: component
+            dofs = dofs_vec[conn]
             self.dofs_cache[arg.name] = dofs
 
         if arg.n_components > 1:
-            dofs.shape = (dofs.shape[0], arg.n_components, -1)
-            term = 'c{}{}'.format(ein[0], iin)
+            term = 'c{}{}'.format(iin, ein[0])
 
         else:
+            dofs.shape = (dofs.shape[0], -1)
             term = 'c{}'.format(iin)
 
         append_all(self.subscripts, term, ii=iia)
@@ -277,8 +279,6 @@ class ETermBase(Struct):
         timer = Timer('')
         timer.start()
 
-        dc_type = self.get_dof_conn_type()
-
         if diff_var is not None:
             n_add = len([arg.name for arg in args
                          if (isinstance(arg, FieldVariable)
@@ -290,7 +290,9 @@ class ETermBase(Struct):
         eins, modifiers = parse_term_expression(texpr)
 
         dofs_cache = {}
-        self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
+        self.ebuilder = ExpressionBuilder(
+            n_add, self.get_dof_conn_type(), self.region, dofs_cache,
+        )
 
         # Virtual variable must be the first variable.
         # Numpy arrays cannot be compared -> use a loop.
