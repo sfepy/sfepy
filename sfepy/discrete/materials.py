@@ -143,9 +143,9 @@ class Material(Struct):
                 self.is_constant = True
 
         else: # => both values and function are None
-            msg = 'material %s: neither function nor values given! (%s)' \
-                  % self.name
-            raise ValueError(msg)
+            raise ValueError('material %s: neither "function" nor "values"'
+                             ' arguments (or keyword arguments) given!'
+                             % self.name)
 
         self.reset()
 
