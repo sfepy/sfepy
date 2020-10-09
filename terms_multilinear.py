@@ -433,8 +433,8 @@ class ETermBase(Struct):
                 raise ValueError('cannot differentiate in {} mode!'
                                  .format(mode))
 
-            # Hack!
-            eshape = (self.region.shape.n_cell,)
+            # self.ebuilder is created in self.get_eval_shape() call by Term.
+            eshape = self.ebuilder.get_output_shape(0)
 
         eval_einsum = self.get_function(*args, **kwargs)
 
@@ -443,12 +443,9 @@ class ETermBase(Struct):
     def get_eval_shape(self, *args, **kwargs):
         self.get_function(*args, **kwargs)
 
-        out_subscripts = self.ebuilder.out_subscripts[0]
+        out_shape = self.ebuilder.get_output_shape(0)
+
         operands = self.ebuilder.operands[0]
-
-        sizes = get_sizes(out_subscripts, operands)
-        out_shape = tuple(sizes[ii] for ii in out_subscripts)
-
         dtype = nm.find_common_type([op.dtype for op in operands], [])
 
         return out_shape, dtype
