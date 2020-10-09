@@ -241,7 +241,7 @@ def collect_modifiers(modifiers):
             return toks
     return _collect_modifiers
 
-def parse_sexpr(sexpr):
+def parse_term_expression(texpr):
     mods = 's'
     lparen, rparen = map(Suppress, '()')
     simple_arg = Word(alphas + '.:0')
@@ -253,7 +253,7 @@ def parse_sexpr(sexpr):
     arg.setParseAction(collect_modifiers(modifiers))
 
     parser = delimitedList(Combine(arg))
-    eins = parser.parseString(sexpr, parseAll=True)
+    eins = parser.parseString(texpr, parseAll=True)
     return eins, modifiers
 
 class ETermBase(Struct):
@@ -267,7 +267,7 @@ class ETermBase(Struct):
     """
     optimize = 'dynamic-programming'
 
-    def einsum(self, sexpr, *args, diff_var=None):
+    def einsum(self, texpr, *args, diff_var=None):
 
         timer = Timer('')
         timer.start()
@@ -282,7 +282,7 @@ class ETermBase(Struct):
         else:
             n_add = 1
 
-        eins, modifiers = parse_sexpr(sexpr)
+        eins, modifiers = parse_term_expression(texpr)
 
         dofs_cache = {}
         self.ebuilder = ExpressionBuilder(n_add, dc_type, dofs_cache)
