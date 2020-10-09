@@ -336,15 +336,12 @@ class ETermBase(Struct):
 
         output('build expression: {} s'.format(timer.stop()))
 
-    def einsum(self, texpr, *args, diff_var=None, einsum_mode='get_fargs'):
+    def make_function(self, texpr, *args, diff_var=None):
         timer = Timer('')
         timer.start()
 
         if not hasattr(self, 'ebuilder'):
             self.build_expression(texpr, *args, diff_var=diff_var)
-
-        if einsum_mode == 'eval_shape':
-            return self.ebuilder
 
         operands = self.ebuilder.operands
         n_add = len(operands)
@@ -433,13 +430,12 @@ class ETermBase(Struct):
             # Hack!
             eshape = (self.region.shape.n_cell,)
 
-        # This should be called on construction?
-        eval_einsum = self.expression(*args, **kwargs)
+        eval_einsum = self.get_function(*args, **kwargs)
 
         return eval_einsum, eshape
 
     def get_eval_shape(self, *args, **kwargs):
-        self.expression(*args, einsum_mode='eval_shape', **kwargs)
+        self.get_function(*args, **kwargs)
 
         out_subscripts = self.ebuilder.out_subscripts[0]
         operands = self.ebuilder.operands[0]
@@ -460,20 +456,22 @@ class ELaplaceTerm(ETermBase, Term):
                   {'opt_material' : None}]
     modes = ('weak', 'eval')
 
-    def expression(self, mat, virtual, state, mode=None, term_mode=None,
-                   diff_var=None, **kwargs):
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
         """
         diff_var not needed here(?), but Term passes it in *args.
         """
         if mat is None:
-            expr = self.einsum('0.j,0.j', virtual, state,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                '0.j,0.j', virtual, state, diff_var=diff_var,
+            )
 
         else:
-            expr = self.einsum('jk,0.j,0.k', mat, virtual, state,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                'jk,0.j,0.k', mat, virtual, state, diff_var=diff_var,
+            )
 
-        return expr
+        return fun
 
 register_term(ELaplaceTerm)
 
@@ -490,17 +488,19 @@ class EVolumeDotTerm(ETermBase, Term):
                   {'opt_material' : None}]
     modes = ('weak', 'eval')
 
-    def expression(self, mat, virtual, state, mode=None, term_mode=None,
-                   diff_var=None, **kwargs):
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
         if mat is None:
-            expr = self.einsum('i,i', virtual, state,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                'i,i', virtual, state, diff_var=diff_var,
+            )
 
         else:
-            expr = self.einsum('ij,i,j', mat, virtual, state,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                'ij,i,j', mat, virtual, state, diff_var=diff_var,
+            )
 
-        return expr
+        return fun
 
 register_term(EVolumeDotTerm)
 
@@ -509,12 +509,11 @@ class EConvectTerm(ETermBase, Term):
     arg_types = ('virtual', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
 
-    def expression(self, virtual, state, mode=None, term_mode=None,
-                   diff_var=None, **kwargs):
-        expr = self.einsum('i,i.j,j', virtual, state, state,
-                           diff_var=diff_var)
-
-        return expr
+    def get_function(self, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        return self.make_function(
+            'i,i.j,j', virtual, state, state, diff_var=diff_var,
+        )
 
 register_term(EConvectTerm)
 
@@ -524,17 +523,19 @@ class EDivTerm(ETermBase, Term):
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None)},
                   {'opt_material' : None}]
 
-    def expression(self, mat, virtual, mode=None, term_mode=None,
-                   diff_var=None, **kwargs):
+    def get_function(self, mat, virtual, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
         if mat is None:
-            expr = self.einsum('i.i', virtual,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                'i.i', virtual, diff_var=diff_var,
+            )
 
         else:
-            expr = self.einsum('0,i.i', mat, virtual,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                '0,i.i', mat, virtual, diff_var=diff_var,
+            )
 
-        return expr
+        return fun
 
 register_term(EDivTerm)
 
@@ -550,17 +551,19 @@ class EStokesTerm(ETermBase, Term):
                   {'opt_material' : None}]
     modes = ('grad', 'div', 'eval')
 
-    def expression(self, coef, var_v, var_s, mode=None, term_mode=None,
-                   diff_var=None, **kwargs):
+    def get_function(self, coef, var_v, var_s, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
         if coef is None:
-            expr = self.einsum('i.i,0', var_v, var_s,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                'i.i,0', var_v, var_s, diff_var=diff_var,
+            )
 
         else:
-            expr = self.einsum('0,i.i,0', coef, var_v, var_s,
-                               diff_var=diff_var)
+            fun = self.make_function(
+                '0,i.i,0', coef, var_v, var_s, diff_var=diff_var,
+            )
 
-        return expr
+        return fun
 
 register_term(EStokesTerm)
 
@@ -572,11 +575,10 @@ class ELinearElasticTerm(ETermBase, Term):
                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'}
     modes = ('weak', 'eval')
 
-    def expression(self, mat, virtual, state, mode=None, term_mode=None,
-                   diff_var=None, **kwargs):
-        expr = self.einsum('IK,s(i:j)->I,s(k:l)->K', mat, virtual, state,
-                           diff_var=diff_var)
-
-        return expr
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        return self.make_function(
+            'IK,s(i:j)->I,s(k:l)->K', mat, virtual, state, diff_var=diff_var,
+        )
 
 register_term(ELinearElasticTerm)
