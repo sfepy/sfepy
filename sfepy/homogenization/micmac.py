@@ -72,7 +72,7 @@ def get_homog_coefs_linear(ts, coor, mode,
 
 def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
                               term=None, problem=None,
-                              iteration=None, **kwargs):
+                              iteration=None, define_args=None, **kwargs):
     if not (mode == 'qp'):
         return
 
@@ -84,7 +84,7 @@ def get_homog_coefs_nonlinear(ts, coor, mode, macro_data=None,
         required.remove('equations')
         micro_file = problem.conf.options.micro_filename
         conf = ProblemConf.from_file(micro_file, required, other,
-                                     verbose=False)
+                                     verbose=False, define_args=define_args)
         options = Struct(output_filename_trunk=None)
         app = HomogenizationApp(conf, options, 'micro:',
                                 n_micro=coor.shape[0])
