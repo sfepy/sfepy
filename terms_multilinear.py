@@ -355,52 +355,25 @@ class ETermBase(Struct):
         n_add = len(operands)
 
         if n_add == 1:
-            if diff_var is not None:
-                def eval_einsum(out, eshape):
-                    tt = Timer('')
-                    tt.start()
-
-                    vout = out.reshape(eshape)
-                    oe.contract(self.parsed_expressions[0], *operands[0],
-                                out=vout,
-                                optimize=self.paths[0])
-
-                    output('eval_einsum 1M: {} s'.format(tt.stop()))
-
-            else:
-                def eval_einsum(out, eshape):
-                    tt = Timer('')
-                    tt.start()
-
-                    vout = out.reshape(eshape)
-                    oe.contract(self.parsed_expressions[0], *operands[0],
-                                out=vout,
-                                optimize=self.paths[0])
-
-                    output('eval_einsum 1V: {} s'.format(tt.stop()))
+            def eval_einsum(out, eshape):
+                vout = out.reshape(eshape)
+                oe.contract(self.parsed_expressions[0], *operands[0],
+                            out=vout,
+                            optimize=self.paths[0])
 
         else:
-            if diff_var is not None:
-                def eval_einsum(out, eshape):
-                    tt = Timer('')
-                    tt.start()
-
-                    vout = out.reshape(eshape)
-                    oe.contract(self.parsed_expressions[0], *operands[0],
-                                out=vout,
-                                optimize=self.paths[0])
-                    aux = nm.empty_like(out)
-                    vaux = aux.reshape(eshape)
-                    for ia in range(1, n_add):
-                        oe.contract(self.parsed_expressions[ia], *operands[ia],
-                                    out=vaux,
-                                    optimize=self.paths[ia])
-                        out[:] += aux
-
-                    output('eval_einsum NM: {} s'.format(tt.stop()))
-
-            else: # This never happens?
-                raise RuntimeError('Impossible code path!')
+            def eval_einsum(out, eshape):
+                vout = out.reshape(eshape)
+                oe.contract(self.parsed_expressions[0], *operands[0],
+                            out=vout,
+                            optimize=self.paths[0])
+                aux = nm.empty_like(out)
+                vaux = aux.reshape(eshape)
+                for ia in range(1, n_add):
+                    oe.contract(self.parsed_expressions[ia], *operands[ia],
+                                out=vaux,
+                                optimize=self.paths[ia])
+                    out[:] += aux
 
         output('einsum setup: {} s'.format(timer.stop()))
 
@@ -408,7 +381,10 @@ class ETermBase(Struct):
 
     @staticmethod
     def function(out, eval_einsum, eshape):
+        tt = Timer('')
+        tt.start()
         eval_einsum(out, eshape)
+        output('eval_einsum: {} s'.format(tt.stop()))
         return 0
 
     def get_fargs(self, *args, **kwargs):
