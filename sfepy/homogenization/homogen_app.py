@@ -74,8 +74,14 @@ class HomogenizationApp(HomogenizationEngine):
             coors = self.problem.domain.get_mesh_coors()
             c_sh = (self.n_micro,) + coors.shape
             self.micro_states['coors'] = nm.empty(c_sh, dtype=nm.float64)
+
+            mac_ids = kwargs.get('mac_ids',
+                                  self.app_options.get('mac_ids', None))
+            self.micro_states['id'] = []
             for im in range(self.n_micro):
                 self.micro_states['coors'][im] = coors
+                self.micro_states['id'].append(
+                    mac_ids[im] if mac_ids is not None else im)
 
         output_dir = self.problem.output_dir
 
@@ -106,7 +112,7 @@ class HomogenizationApp(HomogenizationEngine):
         Update microstructures state according to the macroscopic data
         and corrector functions.
         """
-        def calculate_local_update(state, corrs, var, macro_vals, mul):
+        def calculate_local_update(state, corrs, var, macro_vals, mul=1):
             for ic, corr in enumerate(corrs):
                 if state is None:
                     sh = corr.states[corr.components[0]][var].shape \
