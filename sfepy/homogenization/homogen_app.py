@@ -106,7 +106,7 @@ class HomogenizationApp(HomogenizationEngine):
         Update microstructures state according to the macroscopic data
         and corrector functions.
         """
-        def calculate_local_update(state, corrs, var, macro_vals):
+        def calculate_local_update(state, corrs, var, macro_vals, mul):
             for ic, corr in enumerate(corrs):
                 if state is None:
                     sh = corr.states[corr.components[0]][var].shape \
@@ -119,13 +119,13 @@ class HomogenizationApp(HomogenizationEngine):
                     corr_arr = nm.array(
                         [corr.states[jj][var] for jj in corr.components]).T
                     mval = macro_vals[ic].reshape((corr_arr.shape[1], 1))
-                    state[ic] += nm.dot(corr_arr, mval).reshape(sh)
+                    state[ic] += mul * nm.dot(corr_arr, mval).reshape(sh)
                 else:
                     if macro_vals is None:
-                        state[ic] += corr.state[var].reshape(sh)
+                        state[ic] += mul * corr.state[var].reshape(sh)
                     else:
-                        state[ic] += \
-                            (corr.state[var] * macro_vals[ic]).reshape(sh)
+                        state[ic] += mul\
+                            * (corr.state[var] * macro_vals[ic]).reshape(sh)
 
             return state
 
@@ -151,14 +151,19 @@ class HomogenizationApp(HomogenizationEngine):
                 upd_obj(state, self.macro_data, self.problem)
             else:
                 if self.updating_corrs is not None:
-                    for cname, vname, mname in upd_obj:
+                    for v in upd_obj:
+                        if len(v) == 4:
+                            cname, vname, mname, mul = v
+                        else:
+                            cname, vname, mname = v
+                            mul = 1
+
                         macro_data = None if mname is None \
                             else self.macro_data[mname]
-                        print(cname, vname, mname)
                         if cname is not None:
-                            corr_data = self.updating_corrs[cname]
-                            state0 = calculate_local_update(state, corr_data,
-                                                            vname, macro_data)
+                            state0 = calculate_local_update(
+                                state, self.updating_corrs[cname],
+                                vname, macro_data, mul)
                         else:
                             state += macro_data[..., 0]
 
@@ -229,9 +234,10 @@ class HomogenizationApp(HomogenizationEngine):
             coefs, dependencies = aux
             # store correctors for coors update
             self.updating_corrs = {}
-            for v in six.itervalues(opts.micro_update):
-                if v is not None and not hasattr(v, '__call__'):
-                    for cr, _, _ in v:
+            for upd_obj in six.itervalues(opts.micro_update):
+                if upd_obj is not None and not hasattr(upd_obj, '__call__'):
+                    for v in upd_obj:
+                        cr = v[0]
                         if cr is not None:
                             self.updating_corrs[cr] = dependencies[cr]
         else:
