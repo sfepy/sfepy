@@ -1,5 +1,16 @@
 import numpy as nm
-import opt_einsum as oe
+
+try:
+    import dask.array as da
+
+except ImportError:
+    da = None
+
+try:
+    import opt_einsum as oe
+
+except ImportError:
+    oe = None
 
 from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
                        Combine, alphas, Literal)
@@ -273,7 +284,32 @@ class ETermBase(Struct):
     d-h .. DOFs axes
     r-z .. auxiliary axes
     """
-    optimize = 'dynamic-programming'
+    verbose = 0
+
+    can_backend = {
+        'numpy' : nm,
+        'numpy_loop' : nm,
+        'opt_einsum' : oe,
+        'opt_einsum_loop' : oe,
+        'dask_single' : da,
+        'dask_threaded' : da,
+        'opt_einsum_dask_single' : oe and da,
+        'opt_einsum_dask_threaded' : oe and da,
+    }
+
+    def set_backend(self, backend='numpy', optimize=True,
+                    scheduler='single-threaded'):
+        if backend not in self.can_backend.keys():
+            raise ValueError('backend {} not in {}!'
+                             .format(self.backend, self.can_backend.keys()))
+
+        if not self.can_backend[backend]:
+            raise ValueError('backend {} is not available!'.format(backend))
+
+        self.backend = backend
+        self.optimize = optimize
+        self.scheduler = scheduler
+        self.paths, self.path_infos = None, None
 
     def build_expression(self, texpr, *args, diff_var=None):
         timer = Timer('')
@@ -331,18 +367,26 @@ class ETermBase(Struct):
                 raise ValueError('unknown argument type! ({})'
                                  .format(type(arg)))
 
-        self.parsed_expressions = self.ebuilder.get_expressions()
-        output(self.parsed_expressions)
-        self.ebuilder.print_shapes()
-        operands = self.ebuilder.operands
-        self.paths, self.path_infos = zip(*[oe.contract_path(
-            self.parsed_expressions[ia], *operands[ia],
-            optimize=self.optimize,
-        ) for ia in range(n_add)])
-        output(self.paths)
-        # output(self.path_infos)
+        if self.verbose:
+            output('build expression: {} s'.format(timer.stop()))
 
-        output('build expression: {} s'.format(timer.stop()))
+    def get_paths(self, expressions, operands):
+        if 'numpy' in self.backend:
+            paths, path_infos = zip(*[nm.einsum_path(
+                expressions[ia], *operands[ia],
+                optimize=self.optimize,
+            ) for ia in range(len(operands))])
+
+        elif 'opt_einsum' in self.backend:
+            paths, path_infos = zip(*[oe.contract_path(
+                expressions[ia], *operands[ia],
+                optimize=self.optimize,
+            ) for ia in range(len(operands))])
+
+        else:
+            raise ValueError('unsupported backend! ({})'.format(self.backend))
+
+        return paths, path_infos
 
     def make_function(self, texpr, *args, diff_var=None):
         timer = Timer('')
@@ -351,20 +395,54 @@ class ETermBase(Struct):
         if not hasattr(self, 'ebuilder'):
             self.build_expression(texpr, *args, diff_var=diff_var)
 
+        if not hasattr(self, 'paths') or (self.paths is None):
+            self.parsed_expressions = self.ebuilder.get_expressions()
+            if self.verbose:
+                output(self.parsed_expressions)
+            if self.verbose > 1:
+                self.ebuilder.print_shapes()
+
+            self.paths, self.path_infos = self.get_paths(
+                self.parsed_expressions,
+                self.ebuilder.operands,
+            )
+            if self.verbose > 2:
+                for path, path_info in zip(*(self.paths, self.path_infos)):
+                    output(path)
+                    output(path_info)
+
         operands = self.ebuilder.operands
         n_add = len(operands)
 
-        def eval_einsum(out, eshape):
-            vout = out.reshape(eshape)
-            oe.contract(self.parsed_expressions[0], *operands[0],
-                        out=vout,
-                        optimize=self.paths[0])
-            for ia in range(1, n_add):
-                aux = oe.contract(self.parsed_expressions[ia], *operands[ia],
-                                  optimize=self.paths[ia])
-                out[:] += aux.reshape(out.shape)
+        if 'numpy' in self.backend:
+            def eval_einsum(out, eshape):
+                vout = out.reshape(eshape)
+                nm.einsum(self.parsed_expressions[0], *operands[0],
+                          out=vout,
+                          optimize=self.paths[0])
+                for ia in range(1, n_add):
+                    aux = nm.einsum(self.parsed_expressions[ia],
+                                    *operands[ia],
+                                    optimize=self.paths[ia])
+                    out[:] += aux.reshape(out.shape)
 
-        output('einsum setup: {} s'.format(timer.stop()))
+        elif 'opt_einsum' in self.backend:
+            def eval_einsum(out, eshape):
+                vout = out.reshape(eshape)
+                oe.contract(self.parsed_expressions[0], *operands[0],
+                            out=vout,
+                            optimize=self.paths[0])
+                for ia in range(1, n_add):
+                    aux = oe.contract(self.parsed_expressions[ia],
+                                      *operands[ia],
+                                      optimize=self.paths[ia])
+                    out[:] += aux.reshape(out.shape)
+
+        else:
+            raise ValueError('unsupported backend! ({})'.format(self.backend))
+
+        if self.verbose:
+            output('einsum setup: {} s'.format(timer.stop()))
 
         return eval_einsum
 
