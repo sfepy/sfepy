@@ -354,26 +354,15 @@ class ETermBase(Struct):
         operands = self.ebuilder.operands
         n_add = len(operands)
 
-        if n_add == 1:
-            def eval_einsum(out, eshape):
-                vout = out.reshape(eshape)
-                oe.contract(self.parsed_expressions[0], *operands[0],
-                            out=vout,
-                            optimize=self.paths[0])
-
-        else:
-            def eval_einsum(out, eshape):
-                vout = out.reshape(eshape)
-                oe.contract(self.parsed_expressions[0], *operands[0],
-                            out=vout,
-                            optimize=self.paths[0])
-                aux = nm.empty_like(out)
-                vaux = aux.reshape(eshape)
-                for ia in range(1, n_add):
-                    oe.contract(self.parsed_expressions[ia], *operands[ia],
-                                out=vaux,
-                                optimize=self.paths[ia])
-                    out[:] += aux
+        def eval_einsum(out, eshape):
+            vout = out.reshape(eshape)
+            oe.contract(self.parsed_expressions[0], *operands[0],
+                        out=vout,
+                        optimize=self.paths[0])
+            for ia in range(1, n_add):
+                aux = oe.contract(self.parsed_expressions[ia], *operands[ia],
+                                  optimize=self.paths[ia])
+                out[:] += aux.reshape(out.shape)
 
         output('einsum setup: {} s'.format(timer.stop()))
 
