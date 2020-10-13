@@ -292,13 +292,12 @@ class ETermBase(Struct):
         'opt_einsum' : oe,
         'opt_einsum_loop' : oe,
         'dask_single' : da,
-        'dask_threaded' : da,
+        'dask_threads' : da,
         'opt_einsum_dask_single' : oe and da,
-        'opt_einsum_dask_threaded' : oe and da,
+        'opt_einsum_dask_threads' : oe and da,
     }
 
-    def set_backend(self, backend='numpy', optimize=True,
-                    scheduler='single-threaded'):
+    def set_backend(self, backend='numpy', optimize=True):
         if backend not in self.can_backend.keys():
             raise ValueError('backend {} not in {}!'
                              .format(self.backend, self.can_backend.keys()))
@@ -308,7 +307,6 @@ class ETermBase(Struct):
 
         self.backend = backend
         self.optimize = optimize
-        self.scheduler = scheduler
         self.paths, self.path_infos = None, None
 
     def build_expression(self, texpr, *args, diff_var=None):
@@ -371,7 +369,7 @@ class ETermBase(Struct):
             output('build expression: {} s'.format(timer.stop()))
 
     def get_paths(self, expressions, operands):
-        if 'numpy' in self.backend:
+        if ('numpy' in self.backend) or self.backend.startswith('dask'):
             paths, path_infos = zip(*[nm.einsum_path(
                 expressions[ia], *operands[ia],
                 optimize=self.optimize,
@@ -437,6 +435,22 @@ class ETermBase(Struct):
                                       *operands[ia],
                                       optimize=self.paths[ia])
                     out[:] += aux.reshape(out.shape)
+
+        elif self.backend.startswith('dask'):
+            scheduler = {'dask_single' : 'single-threaded',
+                         'dask_threads' : 'threads'}[self.backend]
+            def eval_einsum(out, eshape):
+                vout = out.reshape(eshape)
+                _out = da.einsum(self.parsed_expressions[0], *operands[0],
+                                 out=vout,
+                                 optimize=self.paths[0])
+                for ia in range(1, n_add):
+                    aux = da.einsum(self.parsed_expressions[ia],
+                                    *operands[ia],
+                                    optimize=self.paths[ia])
+                    _out += aux
+
+                _out.compute(scheduler=scheduler)
 
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
