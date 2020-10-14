@@ -218,10 +218,13 @@ class ExpressionBuilder(Struct):
         append_all(self.operands, arg)
         append_all(self.operand_names, name)
 
+    @staticmethod
+    def join_subscripts(subscripts, out_subscripts):
+        return ','.join(subscripts) + '->' + out_subscripts
+
     def get_expressions(self):
-        expressions = [','.join(self.subscripts[ia]) +
-                       '->' +
-                       self.out_subscripts[ia]
+        expressions = [self.join_subscripts(self.subscripts[ia],
+                                            self.out_subscripts[ia])
                        for ia in range(self.n_add)]
         return expressions
 
