@@ -246,6 +246,32 @@ class ExpressionBuilder(Struct):
                                     self.operands[ia]):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
+    def transform(self, transformation='loop'):
+        if transformation == 'loop':
+            expressions, poperands, liis = [], [], []
+
+            for subscripts, out_subscripts, operands in zip(
+                    self.subscripts, self.out_subscripts, self.operands
+            ):
+                lii = [ii for ii, subs in enumerate(subscripts)
+                       if subs.startswith('c')]
+                tsubs = [subs[1:] if ii in lii else subs
+                         for ii, subs in enumerate(subscripts)]
+                tout_subs = out_subscripts[1:]
+                expr = self.join_subscripts(tsubs, tout_subs)
+                pops = [op[0] if ii in lii else op
+                        for ii, op in enumerate(operands)]
+
+                expressions.append(expr)
+                poperands.append(pops)
+                liis.append(lii)
+
+            return expressions, poperands, liis
+
+        else:
+            raise ValueError('unknown transformation! ({})'
+                             .format(transformation))
+
 def collect_modifiers(modifiers):
     def _collect_modifiers(toks):
         if len(toks) > 1:
@@ -415,29 +441,50 @@ class ETermBase(Struct):
         operands = self.ebuilder.operands
         n_add = len(operands)
 
-        if 'numpy' in self.backend:
+        if self.backend in ('numpy', 'opt_einsum'):
+            contract = {'numpy' : nm.einsum,
+                        'opt_einsum' : oe.contract}[self.backend]
             def eval_einsum(out, eshape):
                 vout = out.reshape(eshape)
-                nm.einsum(self.parsed_expressions[0], *operands[0],
-                          out=vout,
-                          optimize=self.paths[0])
+                contract(self.parsed_expressions[0], *operands[0],
+                         out=vout,
+                         optimize=self.paths[0])
                 for ia in range(1, n_add):
-                    aux = nm.einsum(self.parsed_expressions[ia],
-                                    *operands[ia],
-                                    optimize=self.paths[ia])
+                    aux = contract(self.parsed_expressions[ia],
+                                   *operands[ia],
+                                   optimize=self.paths[ia])
                     out[:] += aux.reshape(out.shape)
 
-        elif 'opt_einsum' in self.backend:
+        elif self.backend in ('numpy_loop', 'opt_einsum_loop'):
+            expressions, poperands, liis = self.ebuilder.transform('loop')
+            paths, path_infos = self.get_paths(expressions, poperands)
+            n_cell = self.ebuilder.get_sizes(0)['c']
+            transforms = lambda ia: lambda ic: [op[ic] if ii in liis[ia]
+                                                else op
+                                                for ii, op
+                                                in enumerate(operands[ia])]
+            if self.verbose > 2:
+                for path, path_info in zip(paths, path_infos):
+                    output(path)
+                    output(path_info)
+
+            contract = {'numpy_loop' : nm.einsum,
+                        'opt_einsum_loop' : oe.contract}[self.backend]
             def eval_einsum(out, eshape):
                 vout = out.reshape(eshape)
-                oe.contract(self.parsed_expressions[0], *operands[0],
-                            out=vout,
-                            optimize=self.paths[0])
+                shape0 = out.shape[1:]
+                get_ops = transforms(0)
+                for ic in range(n_cell):
+                    ops = get_ops(ic)
+                    contract(expressions[0], *ops, out=vout[ic],
+                             optimize=paths[0])
                 for ia in range(1, n_add):
-                    aux = oe.contract(self.parsed_expressions[ia],
-                                      *operands[ia],
-                                      optimize=self.paths[ia])
-                    out[:] += aux.reshape(out.shape)
+                    get_ops = transforms(ia)
+                    for ic in range(n_cell):
+                        ops = get_ops(ic)
+                        aux = contract(expressions[ia], *ops,
+                                       optimize=paths[ia])
+                        out[ic] += aux.reshape(shape0)
 
         elif self.backend.startswith('dask'):
             scheduler = {'dask_single' : 'single-threaded',
