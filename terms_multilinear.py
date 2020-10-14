@@ -405,7 +405,7 @@ class ETermBase(Struct):
                 self.ebuilder.operands,
             )
             if self.verbose > 2:
-                for path, path_info in zip(*(self.paths, self.path_infos)):
+                for path, path_info in zip(self.paths, self.path_infos):
                     output(path)
                     output(path_info)
 
