@@ -445,10 +445,19 @@ class ETermBase(Struct):
             contract = {'numpy' : nm.einsum,
                         'opt_einsum' : oe.contract}[self.backend]
             def eval_einsum(out, eshape):
-                vout = out.reshape(eshape)
-                contract(self.parsed_expressions[0], *operands[0],
-                         out=vout,
-                         optimize=self.paths[0])
+                if operands[0][0].flags.c_contiguous:
+                    # This is very slow if vout layout differs from operands
+                    # layout.
+                    vout = out.reshape(eshape)
+                    contract(self.parsed_expressions[0], *operands[0],
+                             out=vout,
+                             optimize=self.paths[0])
+
+                else:
+                    aux = contract(self.parsed_expressions[0], *operands[0],
+                                   optimize=self.paths[0])
+                    out[:] = aux.reshape(out.shape)
+
                 for ia in range(1, n_add):
                     aux = contract(self.parsed_expressions[ia],
                                    *operands[ia],
