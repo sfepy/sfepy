@@ -326,7 +326,7 @@ class ETermBase(Struct):
         'opt_einsum_dask_threads' : oe and da,
     }
 
-    def set_backend(self, backend='numpy', optimize=True):
+    def set_backend(self, backend='numpy', optimize=True, **kwargs):
         if backend not in self.can_backend.keys():
             raise ValueError('backend {} not in {}!'
                              .format(self.backend, self.can_backend.keys()))
@@ -336,6 +336,7 @@ class ETermBase(Struct):
 
         self.backend = backend
         self.optimize = optimize
+        self.backend_kwargs = kwargs
         self.paths, self.path_infos = None, None
 
     def build_expression(self, texpr, *args, diff_var=None):
@@ -510,6 +511,47 @@ class ETermBase(Struct):
                     _out += aux
 
                 _out.compute(scheduler=scheduler)
+
+        elif self.backend.startswith('opt_einsum_dask'):
+            scheduler = {'opt_einsum_dask_single' : 'single-threaded',
+                         'opt_einsum_dask_threads' : 'threads'}[self.backend]
+
+            da_operands = []
+            c_chunk_size = self.backend_kwargs.get('c_chunk_size')
+            memory_limit = self.backend_kwargs.get('memory_limit')
+            for ia in range(self.ebuilder.n_add):
+                da_ops = []
+                for name, ii, op in zip(self.ebuilder.operand_names[ia],
+                                        self.ebuilder.subscripts[ia],
+                                        operands[ia]):
+                    if 'c' in ii:
+                        if c_chunk_size is None:
+                            chunks = 'auto'
+
+                        else:
+                            chunks = (c_chunk_size,) + op.shape[1:]
+                            da_op = da.from_array(op, chunks=chunks, name=name)
+
+                    else:
+                        da_op = op
+
+                    da_ops.append(da_op)
+                da_operands.append(da_ops)
+
+            def eval_einsum(out, eshape):
+                _out = oe.contract(self.parsed_expressions[0], *da_operands[0],
+                                   optimize=self.paths[0],
+                                   memory_limit=memory_limit,
+                                   backend='dask')
+                for ia in range(1, n_add):
+                    aux = oe.contract(self.parsed_expressions[ia],
+                                      *da_operands[ia],
+                                      optimize=self.paths[ia],
+                                      memory_limit=memory_limit,
+                                      backend='dask')
+                    _out += aux
+
+                out[:] = _out.compute(scheduler=scheduler).reshape(out.shape)
 
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
