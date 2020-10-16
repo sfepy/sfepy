@@ -500,9 +500,7 @@ class ETermBase(Struct):
             scheduler = {'dask_single' : 'single-threaded',
                          'dask_threads' : 'threads'}[self.backend]
             def eval_einsum(out, eshape):
-                vout = out.reshape(eshape)
                 _out = da.einsum(self.parsed_expressions[0], *operands[0],
-                                 out=vout,
                                  optimize=self.paths[0])
                 for ia in range(1, n_add):
                     aux = da.einsum(self.parsed_expressions[ia],
@@ -510,7 +508,7 @@ class ETermBase(Struct):
                                     optimize=self.paths[ia])
                     _out += aux
 
-                _out.compute(scheduler=scheduler)
+                out[:] = _out.compute(scheduler=scheduler).reshape(out.shape)
 
         elif self.backend.startswith('opt_einsum_dask'):
             scheduler = {'opt_einsum_dask_single' : 'single-threaded',
