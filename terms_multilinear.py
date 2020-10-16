@@ -313,7 +313,7 @@ class ETermBase(Struct):
     d-h .. DOFs axes
     r-z .. auxiliary axes
     """
-    verbose = 0
+    verbosity = 0
 
     can_backend = {
         'numpy' : nm,
@@ -395,7 +395,7 @@ class ETermBase(Struct):
                 raise ValueError('unknown argument type! ({})'
                                  .format(type(arg)))
 
-        if self.verbose:
+        if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
 
     def get_paths(self, expressions, operands):
@@ -425,16 +425,16 @@ class ETermBase(Struct):
 
         if not hasattr(self, 'paths') or (self.paths is None):
             self.parsed_expressions = self.ebuilder.get_expressions()
-            if self.verbose:
+            if self.verbosity:
                 output(self.parsed_expressions)
-            if self.verbose > 1:
+            if self.verbosity > 1:
                 self.ebuilder.print_shapes()
 
             self.paths, self.path_infos = self.get_paths(
                 self.parsed_expressions,
                 self.ebuilder.operands,
             )
-            if self.verbose > 2:
+            if self.verbosity > 2:
                 for path, path_info in zip(self.paths, self.path_infos):
                     output(path)
                     output(path_info)
@@ -473,7 +473,7 @@ class ETermBase(Struct):
                                                 else op
                                                 for ii, op
                                                 in enumerate(operands[ia])]
-            if self.verbose > 2:
+            if self.verbosity > 2:
                 for path, path_info in zip(paths, path_infos):
                     output(path)
                     output(path_info)
@@ -554,7 +554,7 @@ class ETermBase(Struct):
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
 
-        if self.verbose:
+        if self.verbosity:
             output('einsum setup: {} s'.format(timer.stop()))
 
         return eval_einsum
