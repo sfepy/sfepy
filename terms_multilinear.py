@@ -93,8 +93,14 @@ class ExpressionBuilder(Struct):
         append_all(self.operand_names, name)
 
     def add_bf(self, iin, ein, qsb, name):
-        append_all(self.subscripts, 'q{}'.format(iin))
-        append_all(self.operands, qsb[0, :, 0])
+        if qsb.shape[0] > 1: # cell-depending basis.
+            append_all(self.subscripts, 'cq{}'.format(iin))
+            append_all(self.operands, qsb[:, :, 0])
+
+        else:
+            append_all(self.subscripts, 'q{}'.format(iin))
+            append_all(self.operands, qsb[0, :, 0])
+
         append_all(self.operand_names, name)
 
     def add_eye(self, iic, ein, eye, iia=None):
