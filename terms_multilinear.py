@@ -405,16 +405,21 @@ class ETermBase(Struct):
             output('build expression: {} s'.format(timer.stop()))
 
     def get_paths(self, expressions, operands):
+        memory_limit = self.backend_kwargs.get('memory_limit')
+
         if ('numpy' in self.backend) or self.backend.startswith('dask'):
+            optimize = (self.optimize if memory_limit is None
+                        else (self.optimize, memory_limit))
             paths, path_infos = zip(*[nm.einsum_path(
                 expressions[ia], *operands[ia],
-                optimize=self.optimize,
+                optimize=optimize,
             ) for ia in range(len(operands))])
 
         elif 'opt_einsum' in self.backend:
             paths, path_infos = zip(*[oe.contract_path(
                 expressions[ia], *operands[ia],
                 optimize=self.optimize,
+                memory_limit=memory_limit,
             ) for ia in range(len(operands))])
 
         else:
@@ -522,7 +527,6 @@ class ETermBase(Struct):
 
             da_operands = []
             c_chunk_size = self.backend_kwargs.get('c_chunk_size')
-            memory_limit = self.backend_kwargs.get('memory_limit')
             for ia in range(self.ebuilder.n_add):
                 da_ops = []
                 for name, ii, op in zip(self.ebuilder.operand_names[ia],
@@ -545,13 +549,11 @@ class ETermBase(Struct):
             def eval_einsum(out, eshape):
                 _out = oe.contract(self.parsed_expressions[0], *da_operands[0],
                                    optimize=self.paths[0],
-                                   memory_limit=memory_limit,
                                    backend='dask')
                 for ia in range(1, n_add):
                     aux = oe.contract(self.parsed_expressions[ia],
                                       *da_operands[ia],
                                       optimize=self.paths[ia],
-                                      memory_limit=memory_limit,
                                       backend='dask')
                     _out += aux
 
