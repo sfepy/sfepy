@@ -493,7 +493,6 @@ class ETermBase(Struct):
                         'opt_einsum_loop' : oe.contract}[self.backend]
             def eval_einsum(out, eshape):
                 vout = out.reshape(eshape)
-                shape0 = out.shape[1:]
                 get_ops = transforms(0)
                 for ic in range(n_cell):
                     ops = get_ops(ic)
@@ -503,9 +502,8 @@ class ETermBase(Struct):
                     get_ops = transforms(ia)
                     for ic in range(n_cell):
                         ops = get_ops(ic)
-                        aux = contract(expressions[ia], *ops,
-                                       optimize=paths[ia])
-                        out[ic] += aux.reshape(shape0)
+                        vout[ic] += contract(expressions[ia], *ops,
+                                             optimize=paths[ia])
 
         elif self.backend.startswith('dask'):
             scheduler = {'dask_single' : 'single-threaded',
