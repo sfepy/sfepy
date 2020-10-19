@@ -910,13 +910,13 @@ int32 mesh_get_centroids(Mesh *mesh, float64 *ccoors, int32 dim)
   return(RET_OK);
 }
 
-inline float64 _det3x3(float64 j[9])
+static inline float64 _det3x3(float64 j[9])
 {
   return (j[0]*j[4]*j[8] + j[3]*j[7]*j[2] + j[1]*j[5]*j[6]
           - j[2]*j[4]*j[6] - j[5]*j[7]*j[0] - j[1]*j[3]*j[8]);
 }
 
-inline float64 _tri_area(float64 *coors, uint32 *indices, uint32 nc)
+static inline float64 _tri_area(float64 *coors, uint32 *indices, uint32 nc)
 {
 #define VS(ic, id) (coors[nc*indices[ic] + id])
 
@@ -945,8 +945,8 @@ inline float64 _tri_area(float64 *coors, uint32 *indices, uint32 nc)
 #undef VS
 }
 
-inline float64 _aux_hex(float64 *coors, uint32 *indices, uint32 nc,
-                        int32 h, int32 i, int32 j, int32 k)
+static inline float64 _aux_hex(float64 *coors, uint32 *indices, uint32 nc,
+                               int32 h, int32 i, int32 j, int32 k)
 {
 #define VS(ic, id) (coors[nc*indices[ic] + id])
 
