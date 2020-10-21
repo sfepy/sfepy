@@ -340,10 +340,15 @@ class ETermBase(Struct):
         if not self.can_backend[backend]:
             raise ValueError('backend {} is not available!'.format(backend))
 
+        if (hasattr(self, 'backend')
+            and (backend == self.backend) and (optimize == self.optimize)):
+            return
+
         self.backend = backend
         self.optimize = optimize
         self.backend_kwargs = kwargs
         self.paths, self.path_infos = None, None
+        self.eval_einsum = None
 
     def build_expression(self, texpr, *args, diff_var=None):
         timer = Timer('')
@@ -430,6 +435,10 @@ class ETermBase(Struct):
     def make_function(self, texpr, *args, diff_var=None):
         timer = Timer('')
         timer.start()
+        if hasattr(self, 'eval_einsum') and (self.eval_einsum is not None):
+            if self.verbosity:
+                output('einsum setup: {} s'.format(timer.stop()))
+            return self.eval_einsum
 
         if not hasattr(self, 'ebuilder'):
             self.build_expression(texpr, *args, diff_var=diff_var)
@@ -559,6 +568,8 @@ class ETermBase(Struct):
 
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
+
+        self.eval_einsum = eval_einsum
 
         if self.verbosity:
             output('einsum setup: {} s'.format(timer.stop()))
