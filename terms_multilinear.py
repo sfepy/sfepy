@@ -12,6 +12,15 @@ try:
 except ImportError:
     oe = None
 
+try:
+    from jax.config import config
+    config.update("jax_enable_x64", True)
+    import jax
+    import jax.numpy as jnp
+
+except ImportError:
+    jnp = jax = None
+
 from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
                        Combine, alphas, Literal)
 
@@ -346,6 +355,7 @@ class ETermBase(Struct):
         'numpy_loop' : nm,
         'opt_einsum' : oe,
         'opt_einsum_loop' : oe,
+        'jax' : jnp,
         'dask_single' : da,
         'dask_threads' : da,
         'opt_einsum_dask_single' : oe and da,
@@ -447,6 +457,12 @@ class ETermBase(Struct):
                 memory_limit=memory_limit,
             ) for ia in range(len(operands))])
 
+        elif 'jax' in self.backend:
+            paths, path_infos = zip(*[jnp.einsum_path(
+                expressions[ia], *operands[ia],
+                optimize=self.optimize,
+            ) for ia in range(len(operands))])
+
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
 
@@ -533,6 +549,21 @@ class ETermBase(Struct):
                         ops = get_ops(ic)
                         vout[ic] += contract(expressions[ia], *ops,
                                              optimize=paths[ia])
+
+        elif self.backend == 'jax':
+            @jax.partial(jax.jit, static_argnums=(0, 1, 2))
+            def _eval_einsum(expressions, paths, n_add, operands):
+                val = jnp.einsum(expressions[0], *operands[0],
+                                 optimize=paths[0])
+                for ia in range(1, n_add):
+                    val += jnp.einsum(expressions[ia], *operands[ia],
+                                      optimize=paths[ia])
+                return val
+
+            def eval_einsum(out, eshape):
+                aux = _eval_einsum(self.parsed_expressions, self.paths, n_add,
+                                   operands)
+                out[:] = nm.asarray(aux.reshape(out.shape))
 
         elif self.backend.startswith('dask'):
             scheduler = {'dask_single' : 'single-threaded',
