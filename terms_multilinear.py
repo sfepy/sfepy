@@ -55,7 +55,7 @@ class ExpressionBuilder(Struct):
     letters = 'defgh'
     _aux_letters = 'rstuvwxyz'
 
-    def __init__(self, n_add, dc_type, region, dofs_cache):
+    def __init__(self, n_add, dc_type, region, cache):
         self.n_add = n_add
         self.subscripts = [[] for ia in range(n_add)]
         self.operands = [[] for ia in range(n_add)]
@@ -64,21 +64,34 @@ class ExpressionBuilder(Struct):
         self.ia = 0
         self.dc_type = dc_type
         self.region = region
-        self.dofs_cache = dofs_cache
+        self.cache = cache
         self.aux_letters = iter(self._aux_letters)
 
-    @staticmethod
-    def make_psg(dim):
-        sym = dim2sym(dim)
-        psg = nm.zeros((dim, dim, sym))
-        if dim == 3:
-            psg[0, [0,1,2], [0,3,4]] = 1
-            psg[1, [0,1,2], [3,1,5]] = 1
-            psg[2, [0,1,2], [4,5,2]] = 1
+    def make_eye(self, size):
+        key = 'I{}'.format(size)
+        ee = self.cache.get(key)
+        if ee is None:
+            ee = nm.eye(size)
+            self.cache[key] = ee
 
-        elif dim == 2:
-            psg[0, [0,1], [0,2]] = 1
-            psg[1, [0,1], [2,1]] = 1
+        return ee
+
+    def make_psg(self, dim):
+        key = 'Psg{}'.format(dim)
+        psg = self.cache.get(key)
+        if psg is None:
+            sym = dim2sym(dim)
+            psg = nm.zeros((dim, dim, sym))
+            if dim == 3:
+                psg[0, [0,1,2], [0,3,4]] = 1
+                psg[1, [0,1,2], [3,1,5]] = 1
+                psg[2, [0,1,2], [4,5,2]] = 1
+
+            elif dim == 2:
+                psg[0, [0,1], [0,2]] = 1
+                psg[1, [0,1], [2,1]] = 1
+
+            self.cache[key] = psg
 
         return psg
 
@@ -93,14 +106,21 @@ class ExpressionBuilder(Struct):
         append_all(self.operand_names, name)
 
     def add_bf(self, iin, ein, qsb, name):
+        key = 'qsb{}'.format(id(qsb))
+        _qsb  = self.cache.get(key)
         if qsb.shape[0] > 1: # cell-depending basis.
             append_all(self.subscripts, 'cq{}'.format(iin))
-            append_all(self.operands, qsb[:, :, 0])
+            if _qsb is None:
+                _qsb = qsb[:, :, 0]
+                self.cache[key] = _qsb
 
         else:
             append_all(self.subscripts, 'q{}'.format(iin))
-            append_all(self.operands, qsb[0, :, 0])
+            if _qsb is None:
+                _qsb = qsb[0, :, 0]
+                self.cache[key] = _qsb
 
+        append_all(self.operands, _qsb)
         append_all(self.operand_names, name)
 
     def add_eye(self, iic, ein, eye, iia=None):
@@ -115,13 +135,13 @@ class ExpressionBuilder(Struct):
         append_all(self.operand_names, 'Psg', ii=iia)
 
     def add_arg_dofs(self, iin, ein, arg, iia=None):
-        dofs = self.dofs_cache.get(arg.name)
+        dofs = self.cache.get(arg.name)
         if dofs is None:
             conn = arg.field.get_econn(self.dc_type, self.region)
             dofs_vec = arg().reshape((-1, arg.n_components))
             # axis 0: cells, axis 1: node, axis 2: component
             dofs = dofs_vec[conn]
-            self.dofs_cache[arg.name] = dofs
+            self.cache[arg.name] = dofs
 
         if arg.n_components > 1:
             term = 'c{}{}'.format(iin, ein[0])
@@ -147,7 +167,7 @@ class ExpressionBuilder(Struct):
         if arg.n_components > 1:
             iic = next(self.aux_letters) # component
             if ':' not in ein:
-                ee = nm.eye(arg.n_components)
+                ee = self.make_eye(arg.n_components)
                 self.add_eye(iic, ein, ee)
 
             else: # symmetric gradient
@@ -193,7 +213,7 @@ class ExpressionBuilder(Struct):
             if arg.n_components > 1:
                 iic = next(self.aux_letters) # component
                 if ':' not in ein:
-                    ee = nm.eye(arg.n_components)
+                    ee = self.make_eye(arg.n_components)
 
                 else: # symmetric gradient
                     if modifier[0][0] == 's': # vector storage
@@ -364,9 +384,9 @@ class ETermBase(Struct):
 
         eins, modifiers = parse_term_expression(texpr)
 
-        dofs_cache = {}
+        expr_cache = {}
         self.ebuilder = ExpressionBuilder(
-            n_add, self.get_dof_conn_type(), self.region, dofs_cache,
+            n_add, self.get_dof_conn_type(), self.region, expr_cache,
         )
 
         # Virtual variable must be the first variable.
