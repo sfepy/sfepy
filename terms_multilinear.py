@@ -148,12 +148,15 @@ class ExpressionBuilder(Struct):
         if dofs is None:
             conn = arg.field.get_econn(self.dc_type, self.region)
             dofs_vec = arg().reshape((-1, arg.n_components))
-            # axis 0: cells, axis 1: node, axis 2: component
-            dofs = dofs_vec[conn]
+            # # axis 0: cells, axis 1: node, axis 2: component
+            # dofs = dofs_vec[conn]
+            # axis 0: cells, axis 1: component, axis 2: node
+            dofs = dofs_vec[conn].transpose((0, 2, 1))
             self.cache[arg.name] = dofs
 
         if arg.n_components > 1:
-            term = 'c{}{}'.format(iin, ein[0])
+            #term = 'c{}{}'.format(iin, ein[0])
+            term = 'c{}{}'.format(ein[0], iin)
 
         else:
             dofs.shape = (dofs.shape[0], -1)
