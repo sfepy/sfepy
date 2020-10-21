@@ -359,6 +359,7 @@ class ETermBase(Struct):
         'opt_einsum' : oe,
         'opt_einsum_loop' : oe,
         'jax' : jnp,
+        'jax_vmap' : jnp,
         'dask_single' : da,
         'dask_threads' : da,
         'opt_einsum_dask_single' : oe and da,
@@ -565,6 +566,33 @@ class ETermBase(Struct):
 
             def eval_einsum(out, eshape):
                 aux = _eval_einsum(self.parsed_expressions, self.paths, n_add,
+                                   operands)
+                out[:] = nm.asarray(aux.reshape(out.shape))
+
+        elif self.backend == 'jax_vmap':
+            expressions, poperands, liis = self.ebuilder.transform('loop')
+            paths, path_infos = self.get_paths(expressions, poperands)
+            if self.verbosity > 2:
+                for path, path_info in zip(paths, path_infos):
+                    output(path)
+                    output(path_info)
+
+            def _eval_einsum_cell(expressions, paths, n_add, operands):
+                val = jnp.einsum(expressions[0], *operands[0],
+                                 optimize=paths[0])
+                for ia in range(1, n_add):
+                    val += jnp.einsum(expressions[ia], *operands[ia],
+                                      optimize=paths[ia])
+                return val
+
+            vm = [[0 if ii in iis else None for ii in range(len(ops))]
+                  for ops, iis in zip(operands, liis)]
+            vms = (None, None, None, vm)
+            _eval_einsum = jax.jit(jax.vmap(_eval_einsum_cell, vms, 0),
+                                   static_argnums=(0, 1, 2))
+
+            def eval_einsum(out, eshape):
+                aux = _eval_einsum(expressions, paths, n_add,
                                    operands)
                 out[:] = nm.asarray(aux.reshape(out.shape))
 
