@@ -60,19 +60,52 @@ def get_sizes(indices, operands):
 
     return sizes
 
+class ExpressionArg(Struct):
+
+    @staticmethod
+    def from_term_arg(arg, term, cache):
+        if isinstance(arg, FieldVariable) and arg.is_virtual():
+            ag, _ = term.get_mapping(arg)
+            obj = ExpressionArg(name=arg.name, qsb=ag.bf, qsbg=ag.bfg,
+                                det=ag.det[..., 0, 0],
+                                n_components=arg.n_components,
+                                dim=arg.dim,
+                                kind='virtual')
+
+        elif isinstance(arg, FieldVariable) and arg.is_state_or_parameter():
+            dofs = cache.get(arg.name)
+            if dofs is None:
+                conn = arg.field.get_econn(term.get_dof_conn_type(),
+                                           term.region)
+                dofs_vec = arg().reshape((-1, arg.n_components))
+                # # axis 0: cells, axis 1: node, axis 2: component
+                # dofs = dofs_vec[conn]
+                # axis 0: cells, axis 1: component, axis 2: node
+                dofs = dofs_vec[conn].transpose((0, 2, 1))
+                if arg.n_components == 1:
+                    dofs.shape = (dofs.shape[0], -1)
+                cache[arg.name] = dofs
+
+            ag, _ = term.get_mapping(arg)
+            obj = ExpressionArg(name=arg.name, qsb=ag.bf, qsbg=ag.bfg,
+                                det=ag.det[..., 0, 0], dofs=dofs,
+                                n_components=arg.n_components,
+                                dim=arg.dim,
+                                kind='state')
+
+        return obj
+
 class ExpressionBuilder(Struct):
     letters = 'defgh'
     _aux_letters = 'rstuvwxyz'
 
-    def __init__(self, n_add, dc_type, region, cache):
+    def __init__(self, n_add, cache):
         self.n_add = n_add
         self.subscripts = [[] for ia in range(n_add)]
         self.operands = [[] for ia in range(n_add)]
         self.operand_names = [[] for ia in range(n_add)]
         self.out_subscripts = ['c' for ia in range(n_add)]
         self.ia = 0
-        self.dc_type = dc_type
-        self.region = region
         self.cache = cache
         self.aux_letters = iter(self._aux_letters)
 
@@ -144,35 +177,24 @@ class ExpressionBuilder(Struct):
         append_all(self.operand_names, 'Psg', ii=iia)
 
     def add_arg_dofs(self, iin, ein, arg, iia=None):
-        dofs = self.cache.get(arg.name)
-        if dofs is None:
-            conn = arg.field.get_econn(self.dc_type, self.region)
-            dofs_vec = arg().reshape((-1, arg.n_components))
-            # # axis 0: cells, axis 1: node, axis 2: component
-            # dofs = dofs_vec[conn]
-            # axis 0: cells, axis 1: component, axis 2: node
-            dofs = dofs_vec[conn].transpose((0, 2, 1))
-            self.cache[arg.name] = dofs
-
         if arg.n_components > 1:
             #term = 'c{}{}'.format(iin, ein[0])
             term = 'c{}{}'.format(ein[0], iin)
 
         else:
-            dofs.shape = (dofs.shape[0], -1)
             term = 'c{}'.format(iin)
 
         append_all(self.subscripts, term, ii=iia)
-        append_all(self.operands, dofs, ii=iia)
+        append_all(self.operands, arg.dofs, ii=iia)
         append_all(self.operand_names, arg.name + '.dofs', ii=iia)
 
-    def add_virtual_arg(self, arg, ii, ein, qsb, qsbg, modifier):
+    def add_virtual_arg(self, arg, ii, ein, modifier):
         iin = self.letters[ii] # node (qs basis index)
         if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
-            self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
+            self.add_bfg(iin, ein, arg.qsbg, arg.name + '.bfg')
 
         else:
-            self.add_bf(iin, ein, qsb, arg.name + '.bf')
+            self.add_bf(iin, ein, arg.qsb, arg.name + '.bf')
 
         out_letters = iin
 
@@ -196,13 +218,13 @@ class ExpressionBuilder(Struct):
         for iia in range(self.n_add):
             self.out_subscripts[iia] += out_letters
 
-    def add_state_arg(self, arg, ii, ein, qsb, qsbg, modifier, diff_var):
+    def add_state_arg(self, arg, ii, ein, modifier, diff_var):
         iin = self.letters[ii] # node (qs basis index)
         if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
-            self.add_bfg(iin, ein, qsbg, arg.name + '.bfg')
+            self.add_bfg(iin, ein, arg.qsbg, arg.name + '.bfg')
 
         else:
-            self.add_bf(iin, ein, qsb, arg.name + '.bf')
+            self.add_bf(iin, ein, arg.qsb, arg.name + '.bf')
 
         out_letters = iin
 
@@ -255,6 +277,40 @@ class ExpressionBuilder(Struct):
         append_all(self.subscripts, 'cq{}'.format(ein))
         append_all(self.operands, arg)
         append_all(self.operand_names, name)
+
+    def build(self, texpr, *args, diff_var=None):
+        eins, modifiers = parse_term_expression(texpr)
+
+        # Virtual variable must be the first variable.
+        # Numpy arrays cannot be compared -> use a loop.
+        for iv, arg in enumerate(args):
+            if arg.kind == 'virtual':
+                self.add_constant(arg.det, 'J')
+                self.add_virtual_arg(arg, iv, eins[iv], modifiers[iv])
+                break
+        else:
+            iv = -1
+            for ip, arg in enumerate(args):
+                if arg.is_state_or_parameter:
+                    self.add_constant(arg.det, 'J')
+                    break
+            else:
+                raise ValueError('no FieldVariable in arguments!')
+
+        for ii, ein in enumerate(eins):
+            if ii == iv: continue
+            arg = args[ii]
+
+            if arg.kind == 'ndarray':
+                self.add_material_arg(arg, ii, ein,
+                                      '.'.join(self.arg_names[ii]))
+
+            elif arg.kind == 'state':
+                self.add_state_arg(arg, ii, ein, modifiers[ii], diff_var)
+
+            else:
+                raise ValueError('unknown argument type! ({})'
+                                 .format(type(arg)))
 
     @staticmethod
     def join_subscripts(subscripts, out_subscripts):
@@ -396,49 +452,11 @@ class ETermBase(Struct):
         else:
             n_add = 1
 
-        eins, modifiers = parse_term_expression(texpr)
-
         expr_cache = {}
-        self.ebuilder = ExpressionBuilder(
-            n_add, self.get_dof_conn_type(), self.region, expr_cache,
-        )
-
-        # Virtual variable must be the first variable.
-        # Numpy arrays cannot be compared -> use a loop.
-        for iv, arg in enumerate(args):
-            if isinstance(arg, FieldVariable) and arg.is_virtual():
-                ag, _ = self.get_mapping(arg)
-                self.ebuilder.add_constant(ag.det[..., 0, 0], 'J')
-                self.ebuilder.add_virtual_arg(arg, iv, eins[iv], ag.bf,
-                                              ag.bfg, modifiers[iv])
-                break
-        else:
-            iv = -1
-            for ip, arg in enumerate(args):
-                if (isinstance(arg, FieldVariable)
-                    and arg.is_state_or_parameter()):
-                    ag, _ = self.get_mapping(arg)
-                    self.ebuilder.add_constant(ag.det[..., 0, 0], 'J')
-                    break
-            else:
-                raise ValueError('no FieldVariable in arguments!')
-
-        for ii, ein in enumerate(eins):
-            if ii == iv: continue
-            arg = args[ii]
-
-            if isinstance(arg, nm.ndarray):
-                self.ebuilder.add_material_arg(arg, ii, ein,
-                                               '.'.join(self.arg_names[ii]))
-
-            elif isinstance(arg, FieldVariable) and arg.is_state():
-                ag, _ = self.get_mapping(arg)
-                self.ebuilder.add_state_arg(arg, ii, ein, ag.bf, ag.bfg,
-                                            modifiers[ii], diff_var)
-
-            else:
-                raise ValueError('unknown argument type! ({})'
-                                 .format(type(arg)))
+        self.ebuilder = ExpressionBuilder(n_add, expr_cache)
+        eargs = [ExpressionArg.from_term_arg(arg, self, expr_cache)
+                 for arg in args]
+        self.ebuilder.build(texpr, *eargs, diff_var=diff_var)
 
         if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
