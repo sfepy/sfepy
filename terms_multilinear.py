@@ -93,6 +93,18 @@ class ExpressionArg(Struct):
                                 dim=arg.dim,
                                 kind='state')
 
+        elif isinstance(arg, nm.ndarray):
+            aux = term.get_args()
+            # Find arg in term arguments using a loop (numpy arrays cannot be
+            # compared) to get its name.
+            ii = [ii for ii in range(len(term.args)) if aux[ii] is arg][0]
+            obj = ExpressionArg(name='.'.join(term.arg_names[ii]), val=arg,
+                                kind='ndarray')
+
+        else:
+            raise ValueError('unknown argument type! ({})'
+                             .format(type(arg)))
+
         return obj
 
 class ExpressionBuilder(Struct):
@@ -273,10 +285,10 @@ class ExpressionBuilder(Struct):
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
 
-    def add_material_arg(self, arg, ii, ein, name):
+    def add_material_arg(self, arg, ii, ein):
         append_all(self.subscripts, 'cq{}'.format(ein))
-        append_all(self.operands, arg)
-        append_all(self.operand_names, name)
+        append_all(self.operands, arg.val)
+        append_all(self.operand_names, arg.name)
 
     def build(self, texpr, *args, diff_var=None):
         eins, modifiers = parse_term_expression(texpr)
@@ -302,8 +314,7 @@ class ExpressionBuilder(Struct):
             arg = args[ii]
 
             if arg.kind == 'ndarray':
-                self.add_material_arg(arg, ii, ein,
-                                      '.'.join(self.arg_names[ii]))
+                self.add_material_arg(arg, ii, ein)
 
             elif arg.kind == 'state':
                 self.add_state_arg(arg, ii, ein, modifiers[ii], diff_var)
