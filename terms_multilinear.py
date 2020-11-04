@@ -351,6 +351,62 @@ class ExpressionBuilder(Struct):
                                     self.operands[ia]):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
+    def apply_layout(self, layout, inplace=False):
+        if layout == 'cqijd0': return self
+
+        bld = self if inplace else self.copy()
+
+        defaults = {
+            'J' : 'cq',
+            'bf' : 'cqd',
+            'bfg' : 'cqjd',
+            'dofs' : 'cid',
+            'mat' : 'cq',
+        }
+        mat_range = ''.join([str(ii) for ii in range(10)])
+        for ia in range(self.n_add):
+            for io, (name, subs, op) in enumerate(zip(self.operand_names[ia],
+                                                      self.subscripts[ia],
+                                                      self.operands[ia])):
+                if name == 'J':
+                    default = defaults[name]
+
+                elif (name.endswith('.bf') or name.endswith('.bfg')
+                      or name.endswith('.dofs')):
+                    key = name.split('.')[-1]
+                    default = defaults[key]
+
+                elif name in ('I', 'Psg'):
+                    default = layout.replace('0', '')
+
+                else:
+                    default = defaults['mat'] + mat_range[:(len(subs) - 2)]
+
+                if '0' in default: # Material
+                    inew = nm.array([default.find(il)
+                                     for il in layout.replace('0', default[2:])
+                                     if il in default])
+
+                else:
+                    inew = nm.array([default.find(il)
+                                     for il in layout if il in default])
+
+                new = ''.join([default[ii] for ii in inew])
+                print(name, subs, default, op.shape, layout)
+                print(inew, new)
+                if new == default:
+                    bld.subscripts[ia][io] = subs
+                    bld.operands[ia][io] = op
+
+                else:
+                    new_subs = ''.join([subs[ii] for ii in inew])
+                    new_op = op.transpose(inew).copy()
+
+                    bld.subscripts[ia][io] = new_subs
+                    bld.operands[ia][io] = new_op
+
+                print('->', bld.subscripts[ia][io])
+
     def transform(self, transformation='loop'):
         if transformation == 'loop':
             expressions, poperands, liis = [], [], []
@@ -417,6 +473,14 @@ class ETermBase(Struct):
     q .. quadrature points
     d-h .. DOFs axes
     r-z .. auxiliary axes
+
+    Layout specification letters:
+
+    c .. cells
+    q .. quadrature points
+    i .. solution component
+    j .. gradient component
+    d .. local DOF (basis, node)
     """
     verbosity = 0
 
@@ -433,7 +497,10 @@ class ETermBase(Struct):
         'opt_einsum_dask_threads' : oe and da,
     }
 
-    def set_backend(self, backend='numpy', optimize=True, **kwargs):
+    layouts = ['cqijd0', 'cqdij0', 'ijd0cq', 'dji0cq', 'ijd0qc', 'dji0qc']
+
+    def set_backend(self, backend='numpy', optimize=True, layout=None,
+                    **kwargs):
         if backend not in self.can_backend.keys():
             raise ValueError('backend {} not in {}!'
                              .format(self.backend, self.can_backend.keys()))
@@ -444,6 +511,14 @@ class ETermBase(Struct):
         if (hasattr(self, 'backend')
             and (backend == self.backend) and (optimize == self.optimize)):
             return
+
+        if layout is not None:
+            if layout not in self.layouts:
+                raise ValueError('unknown layout! ({})'.format(layout))
+            self.layout = layout
+
+        else:
+            self.layout = self.layouts[0]
 
         self.backend = backend
         self.optimize = optimize
@@ -468,6 +543,8 @@ class ETermBase(Struct):
         eargs = [ExpressionArg.from_term_arg(arg, self, expr_cache)
                  for arg in args]
         self.ebuilder.build(texpr, *eargs, diff_var=diff_var)
+
+        self.ebuilder.apply_layout(self.layout, inplace=True)
 
         if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
