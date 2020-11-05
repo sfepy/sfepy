@@ -409,27 +409,46 @@ class ExpressionBuilder(Struct):
 
                 print('->', bld.subscripts[ia][io])
 
+    def get_slice_ops(self, ia):
+        subscripts = self.subscripts[ia]
+        operands = self.operands[ia]
+
+        icols = [subs.index('c') if 'c' in subs else None
+               for subs in subscripts]
+        def slice_ops(ic):
+            ops = []
+            for ii, icol in enumerate(icols):
+                op = operands[ii]
+                if icol is not None:
+                    slices = tuple(slice(None, None) if isub != icol else ic
+                                   for isub in range(op.ndim))
+                    ops.append(op[slices])
+
+                else:
+                    ops.append(op)
+
+            return ops
+
+        return slice_ops, icols
+
     def transform(self, transformation='loop'):
         if transformation == 'loop':
-            expressions, poperands, liis = [], [], []
+            expressions, poperands, all_slice_ops, all_icols = [], [], [], []
 
-            for subscripts, out_subscripts, operands in zip(
+            for ia, (subscripts, out_subscripts, operands) in enumerate(zip(
                     self.subscripts, self.out_subscripts, self.operands
-            ):
-                lii = [ii for ii, subs in enumerate(subscripts)
-                       if subs.startswith('c')]
-                tsubs = [subs[1:] if ii in lii else subs
-                         for ii, subs in enumerate(subscripts)]
+            )):
+                slice_ops, icols = self.get_slice_ops(ia)
+                tsubs = [subs.replace('c', '') for subs in subscripts]
                 tout_subs = out_subscripts[1:]
                 expr = self.join_subscripts(tsubs, tout_subs)
-                pops = [op[0] if ii in lii else op
-                        for ii, op in enumerate(operands)]
-
+                pops = slice_ops(0)
                 expressions.append(expr)
                 poperands.append(pops)
-                liis.append(lii)
+                all_slice_ops.append(slice_ops)
+                all_icols.append(icols)
 
-            return expressions, poperands, liis
+            return expressions, poperands, all_slice_ops, all_icols
 
         else:
             raise ValueError('unknown transformation! ({})'
@@ -635,14 +654,15 @@ class ETermBase(Struct):
                     out[:] += aux.reshape(out.shape)
 
         elif self.backend in ('numpy_loop', 'opt_einsum_loop'):
-            expressions, poperands, liis = self.ebuilder.transform('loop')
+            transform = self.ebuilder.transform('loop')
+            expressions, poperands, all_slice_ops, all_icols = transform
             paths, path_infos = self.get_paths(expressions, poperands)
             n_cell = self.ebuilder.get_sizes(0)['c']
-            transforms = lambda ia: lambda ic: [op[ic] if ii in liis[ia]
-                                                else op
-                                                for ii, op
-                                                in enumerate(operands[ia])]
+            if self.verbosity > 1:
+                output(expressions)
+
             if self.verbosity > 2:
+                output(all_icols)
                 for path, path_info in zip(paths, path_infos):
                     output(path)
                     output(path_info)
@@ -651,15 +671,15 @@ class ETermBase(Struct):
                         'opt_einsum_loop' : oe.contract}[self.backend]
             def eval_einsum(out, eshape):
                 vout = out.reshape(eshape)
-                get_ops = transforms(0)
+                slice_ops = all_slice_ops[0]
                 for ic in range(n_cell):
-                    ops = get_ops(ic)
+                    ops = slice_ops(ic)
                     contract(expressions[0], *ops, out=vout[ic],
                              optimize=paths[0])
                 for ia in range(1, n_add):
-                    get_ops = transforms(ia)
+                    slice_ops = all_slice_ops[ia]
                     for ic in range(n_cell):
-                        ops = get_ops(ic)
+                        ops = slice_ops(ic)
                         vout[ic] += contract(expressions[ia], *ops,
                                              optimize=paths[ia])
 
@@ -679,7 +699,8 @@ class ETermBase(Struct):
                 out[:] = nm.asarray(aux.reshape(out.shape))
 
         elif self.backend == 'jax_vmap':
-            expressions, poperands, liis = self.ebuilder.transform('loop')
+            transform = self.ebuilder.transform('loop')
+            expressions, poperands, _, all_icols = transform
             paths, path_infos = self.get_paths(expressions, poperands)
             if self.verbosity > 2:
                 for path, path_info in zip(paths, path_infos):
@@ -694,9 +715,7 @@ class ETermBase(Struct):
                                       optimize=paths[ia])
                 return val
 
-            vm = [[0 if ii in iis else None for ii in range(len(ops))]
-                  for ops, iis in zip(operands, liis)]
-            vms = (None, None, None, vm)
+            vms = (None, None, None, all_icols)
             _eval_einsum = jax.jit(jax.vmap(_eval_einsum_cell, vms, 0),
                                    static_argnums=(0, 1, 2))
 
