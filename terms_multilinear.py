@@ -509,7 +509,8 @@ class ETermBase(Struct):
             raise ValueError('backend {} is not available!'.format(backend))
 
         if (hasattr(self, 'backend')
-            and (backend == self.backend) and (optimize == self.optimize)):
+            and (backend == self.backend) and (optimize == self.optimize)
+            and (layout == self.layout)):
             return
 
         if layout is not None:
