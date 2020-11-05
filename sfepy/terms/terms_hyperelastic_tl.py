@@ -180,6 +180,186 @@ class GenYeohTLTerm(HyperElasticTLBase):
                      _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
                 ])
 
+class OgdenTLTerm(HyperElasticTLBase):
+    r"""
+    Single term of the hyperelastic Ogden model [1] with the strain energy
+    density
+
+    .. math::
+        W = \frac{\mu}{\alpha} \, \left(
+            \lambda_1^{\alpha} + \lambda_2^{\alpha} + \lambda_3^{\alpha}
+            - 3 \right) \; ,
+
+    where :math:`\lambda_k, k=1, 2, 3` are the principal stretches, whose
+    squares are the principal values of the right Cauchy-Green deformation
+    tensor :math:`\mathbf{C}`.
+
+    Effective stress (2nd Piola-Kirchhoff) is [2]
+
+    .. math::
+        S_{ij} = 2 \, \frac{\partial W}{\partial C_{ij}} =
+        \sum_{k=1}^3 S^{(k)} \, N^{(k)}_i \, N^{(k)}_j \; ,
+
+    where the principal stresses are
+
+    .. math::
+        S^{(k)} = J^{-2/3} \, \left(
+            \mu \, \bar\lambda^{\alpha - 2}
+            -\sum_{j=1}^3 \frac{\mu}{3}
+            \frac{\lambda_j^{\alpha}}{\lambda_k^2} \right) \; ,
+        \quad k = 1, 2, 3 \; .
+
+    and :math:`\mathbf{N}^{(k)}`, :math:`k=1, 2, 3` are the eigenvectors of
+    :math:`\mathbf{C}`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        - material : :math:`p, K`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    [1] Ogden, R. W. Large deformation isotropic elasticity - on the
+    correlation of theory and experiment for incompressible rubberlike solids.
+    Proceedings of the Royal Society A, Vol. 326, No. 1567, Pp. 565-584 (1972),
+    DOI `10.1098/rspa.1972.0026 <https://doi.org/10.1098/rspa.1972.0026>`_.
+
+    [2] Steinmann, P., Hossain, M., Possart, G. Hyperelastic models for
+    rubber-like materials: Consistent tangent operators and suitability for
+    Treloar's data. Archive of Applied Mechanics, Vol. 82, No. 9, Pp. 1183-1217
+    (2012), DOI `10.1007/s00419-012-0610-z
+    <https://dx.doi.org/10.1007/s00419-012-0610-z>`_.
+    """
+    name = 'dw_tl_he_ogden'
+    family_data_names = ['det_f', 'sym_c', 'tr_c', 'sym_inv_c']
+    arg_shapes = {'material' : '1, 2',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    geometries = ['3_4', '3_8']
+
+    @staticmethod
+    def _get_single_stress(lbds, nks, det_f, coef, exp):
+        a_p = sum(lbds**exp)
+        s_k = [
+            coef * det_f**(-2. / 3) *(
+                lbdi**(exp - 2) - a_p / lbdi**2 / 3)
+            for lbdi, ni in zip(lbds, nks.T)]
+        out = nm.sum(
+            [ski * nm.outer(nki, nki) for ski, nki in zip(s_k, nks.T)], axis=0)
+        return out
+
+    def stress_function(self, out, mat, *fargs, **kwargs):
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
+        det_f, sym_c, _, _ = fargs
+
+        # compute principal stretches and directions
+        c_mats = sym_c[:, :, [[0, 3, 4], [3, 1, 5], [4, 5, 2]], 0]
+        lbds, nks = nm.linalg.eigh(c_mats)
+        lbds = lbds**.5
+
+        # evaluate stress
+        n_cells, n_qps, _, _ = out.shape
+        for cell in range(n_cells):
+            for qp in range(n_qps):
+                _val = self._get_single_stress(
+                    lbds[cell, qp], nks[cell, qp], det_f[cell, qp, 0, 0],
+                    coef[cell, qp, 0, 0], exp[cell, qp, 0, 0])
+                out[cell, qp, :, 0] = [
+                    _val[0, 0], _val[1, 1], _val[2, 2],
+                    _val[0, 1], _val[0, 2], _val[1, 2]]
+        return out
+
+    @staticmethod
+    def _get_single_tan_mod(total_lbds, nks, det_f, coef, exp):
+        lbds = det_f**(-1/3) * total_lbds
+        _bracket = [
+            (det_f**(-1 / 3) * lbdi)**(exp - 2)
+            -sum([1. / 3 * lbdj**exp / lbdi**2 for lbdj in lbds])
+            for lbdi in lbds]
+        s_k = nm.array([
+            coef * det_f**(-2 / 3) * _bracket_ii
+            for lbdi, _bracket_ii in zip(lbds, _bracket)])
+
+        dj_dlbd = [det_f / lbdj for lbdj in lbds]
+
+        dlbd_dlbd = det_f**(-1/3) * nm.array([[
+            nm.eye(3)[ii, jj] - lbds[ii] / lbds[jj] / 3
+            for jj in range(3)] for ii, dj_dlbdi in enumerate(dj_dlbd)])
+
+        dsk_dlbd_1 = coef * nm.array([[
+            -2 / 3 * det_f**(-5 / 3) * dj_dlbd[ii] * lbds[kk]**(exp - 2)
+            +det_f**(-2/3) * (exp - 2) * lbds[kk]**(exp - 3) * dlbd_dlbd[kk, ii]
+            for ii in range(3)] for kk in range(3)])
+
+        dsk_dlbd_2 = coef / 3 * nm.array([[
+            -2 / 3 * det_f**(-5 / 3) * dj_dlbd[ii] * nm.sum([
+                lbds[jj]**exp / lbds[kk]**2
+                for jj in range(3)])
+            +det_f**(-2/3) * nm.sum([
+                exp * lbds[jj]**(exp - 1) / lbds[kk]**2 * dlbd_dlbd[jj, ii]
+                -2 * lbds[jj]**exp / lbds[kk]**3 * dlbd_dlbd[kk, ii]
+                for jj in range(3)])
+            for ii in range(3)] for kk in range(3)])
+        dsk_dlbd = dsk_dlbd_1 - dsk_dlbd_2
+
+        tan_mod = nm.zeros((3, 3, 3, 3))
+        for mm, nn, pp, qq in zip(*[ind.flatten()
+                                    for ind in nm.indices(tan_mod.shape)]):
+            for ii, jj in zip(*[ind.flatten() for ind in nm.indices((3, 3))]):
+                tan_mod[mm, nn, pp, qq] += 1. / lbds[jj] * dsk_dlbd[ii, jj] * (
+                    nks[ii, mm] * nks[ii, nn] * nks[jj, pp] * nks[jj, qq])
+                if ii != jj:
+                    if lbds[ii] != lbds[jj]:
+                        tan_mod[mm, nn, pp, qq] += (s_k[jj] - s_k[ii]) / \
+                            (lbds[jj]**2 - lbds[ii]**2) * (
+                                nks[ii, mm] * nks[jj, nn] * nks[ii, pp]
+                                *nks[jj, qq]
+                                +nks[ii, mm] * nks[jj, nn] * nks[jj, pp]
+                                *nks[ii, qq])
+                    else:
+                        _val = 0.5 * (
+                            dsk_dlbd[ii, ii] - dsk_dlbd[jj, ii]) / lbds[ii]
+                        tan_mod[mm, nn, pp, qq] += _val * (
+                                nks[ii, mm] * nks[jj, nn] * nks[ii, pp]
+                                *nks[jj, qq]
+                                +nks[ii, mm] * nks[jj, nn] * nks[jj, pp]
+                                *nks[ii, qq])
+        return tan_mod
+
+    def tan_mod_function(self, out, mat, *fargs, **kwargs):
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
+        det_f, sym_c, tr_c, inv_c = fargs
+
+        # compute principal stretches and directions
+        c_mats = sym_c[:, :, [[0, 3, 4], [3, 1, 5], [4, 5, 2]], 0]
+        lbds, nks = nm.linalg.eigh(c_mats)
+        lbds = lbds**.5
+
+        n_cells, n_qps, _, _ = out.shape
+        for cell in range(n_cells):
+            for qp in range(n_qps):
+                _dh = self._get_single_tan_mod(
+                    lbds[cell, qp], nks[cell, qp].T, det_f[cell, qp, 0, 0],
+                    coef[cell, qp, 0, 0], exp[cell, qp, 0, 0],
+                )
+
+                out[cell, qp] = nm.array([
+                    [_dh[0, 0, 0, 0], _dh[0, 0, 1, 1], _dh[0, 0, 2, 2],
+                     _dh[0, 0, 0, 1], _dh[0, 0, 0, 2], _dh[0, 0, 1, 2]],
+                    [_dh[1, 1, 0, 0], _dh[1, 1, 1, 1], _dh[1, 1, 2, 2],
+                     _dh[1, 1, 0, 1], _dh[1, 1, 0, 2], _dh[1, 1, 1, 2]],
+                    [_dh[2, 2, 0, 0], _dh[2, 2, 1, 1], _dh[2, 2, 2, 2],
+                     _dh[2, 2, 0, 1], _dh[2, 2, 0, 2], _dh[2, 2, 1, 2]],
+                    [_dh[0, 1, 0, 0], _dh[0, 1, 1, 1], _dh[0, 1, 2, 2],
+                     _dh[0, 1, 0, 1], _dh[0, 1, 0, 2], _dh[0, 1, 1, 2]],
+                    [_dh[0, 2, 0, 0], _dh[0, 2, 1, 1], _dh[0, 2, 2, 2],
+                     _dh[0, 2, 0, 1], _dh[0, 2, 0, 2], _dh[0, 2, 1, 2]],
+                    [_dh[1, 2, 0, 0], _dh[1, 2, 1, 1], _dh[1, 2, 2, 2],
+                     _dh[1, 2, 0, 1], _dh[1, 2, 0, 2], _dh[1, 2, 1, 2]],
+                ])
+
 class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
     Hyperelastic Mooney-Rivlin term. Effective stress
