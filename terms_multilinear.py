@@ -375,6 +375,8 @@ class ExpressionBuilder(Struct):
                       or name.endswith('.dofs')):
                     key = name.split('.')[-1]
                     default = defaults[key]
+                    if name.endswith('.bf') and len(subs) == 2:
+                        default = default[1:]
 
                 elif name in ('I', 'Psg'):
                     default = layout.replace('0', '')
