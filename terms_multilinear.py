@@ -502,6 +502,7 @@ class ETermBase(Struct):
     i .. solution component
     j .. gradient component
     d .. local DOF (basis, node)
+    0 .. all material axes
     """
     verbosity = 0
 
@@ -518,7 +519,7 @@ class ETermBase(Struct):
         'opt_einsum_dask_threads' : oe and da,
     }
 
-    layouts = ['cqijd0', 'cqdij0', 'ijd0cq', 'dji0cq', 'ijd0qc', 'dji0qc']
+    layout_letters = 'cqijd0'
 
     def set_backend(self, backend='numpy', optimize=True, layout=None,
                     **kwargs):
@@ -535,8 +536,9 @@ class ETermBase(Struct):
             return
 
         if layout is not None:
-            if layout not in self.layouts:
-                raise ValueError('unknown layout! ({})'.format(layout))
+            if set(layout) != set(self.layout_letters):
+                raise ValueError('layout can contain only "{}" letters! ({})'
+                                 .format(self.layout_letters, layout))
             self.layout = layout
 
         else:
