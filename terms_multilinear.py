@@ -542,7 +542,7 @@ class ETermBase(Struct):
             self.layout = layout
 
         else:
-            self.layout = self.layouts[0]
+            self.layout = self.layout_letters[0]
 
         self.backend = backend
         self.optimize = optimize
