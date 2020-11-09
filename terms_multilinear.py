@@ -547,6 +547,7 @@ class ETermBase(Struct):
         self.backend = backend
         self.optimize = optimize
         self.backend_kwargs = kwargs
+        self.ebuilder = None
         self.paths, self.path_infos = None, None
         self.eval_einsum = None
 
@@ -610,7 +611,7 @@ class ETermBase(Struct):
                 output('einsum setup: {} s'.format(timer.stop()))
             return self.eval_einsum
 
-        if not hasattr(self, 'ebuilder'):
+        if not hasattr(self, 'ebuilder') or (self.ebuilder is None):
             self.build_expression(texpr, *args, diff_var=diff_var)
 
         if not hasattr(self, 'paths') or (self.paths is None):
