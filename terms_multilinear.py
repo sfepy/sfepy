@@ -340,6 +340,7 @@ class ExpressionBuilder(Struct):
         return tuple(self.get_sizes(ia)[ii] for ii in self.out_subscripts[ia])
 
     def print_shapes(self):
+        output('number of expressions:', self.n_add)
         for ia in range(self.n_add):
             sizes = self.get_sizes(ia)
             output(sizes)
@@ -617,7 +618,7 @@ class ETermBase(Struct):
         if not hasattr(self, 'paths') or (self.paths is None):
             self.parsed_expressions = self.ebuilder.get_expressions()
             if self.verbosity:
-                output(self.parsed_expressions)
+                output('parsed expressions:', self.parsed_expressions)
             if self.verbosity > 1:
                 self.ebuilder.print_shapes()
 
@@ -627,7 +628,7 @@ class ETermBase(Struct):
             )
             if self.verbosity > 2:
                 for path, path_info in zip(self.paths, self.path_infos):
-                    output(path)
+                    output('path:', path)
                     output(path_info)
 
         operands = self.ebuilder.operands
@@ -662,12 +663,12 @@ class ETermBase(Struct):
             paths, path_infos = self.get_paths(expressions, poperands)
             n_cell = self.ebuilder.get_sizes(0)['c']
             if self.verbosity > 1:
-                output(expressions)
+                output('parsed expressions (loop):', expressions)
 
             if self.verbosity > 2:
                 output(all_icols)
                 for path, path_info in zip(paths, path_infos):
-                    output(path)
+                    output('path (loop):', path)
                     output(path_info)
 
             contract = {'numpy_loop' : nm.einsum,
@@ -707,7 +708,7 @@ class ETermBase(Struct):
             paths, path_infos = self.get_paths(expressions, poperands)
             if self.verbosity > 2:
                 for path, path_info in zip(paths, path_infos):
-                    output(path)
+                    output('path (jax_vmap):', path)
                     output(path_info)
 
             def _eval_einsum_cell(expressions, paths, n_add, operands):
