@@ -275,10 +275,19 @@ def pv_plot(filenames, options, plotter=None, step=None,
         factor = opts.get('f', options.factor)
         if warp:
             field_data = pipe[-1][warp]
-            if field_data.shape[1] != 3:
-                raise ValueError('warp mesh: vector field required!')
-            pipe.append(pipe[-1].copy())
-            pipe[-1].points += field_data * factor
+            if field_data.ndim == 1: field_data.shape = (-1, 1)
+            nc = field_data.shape[1]
+            if nc == 1: # Warp by scalar.
+                pipe.append(pipe[-1].copy())
+                pipe[-1].points[:, 2] += field_data[:, 0] * factor
+
+            elif nc == 3:
+                pipe.append(pipe[-1].copy())
+                pipe[-1].points += field_data * factor
+
+            else:
+                raise ValueError('warp mesh: scalar or vector field required!')
+
             plot_info.append('warp=%s' % warp)
 
         position = opts.get('p', 0)  # determine plotting slot
