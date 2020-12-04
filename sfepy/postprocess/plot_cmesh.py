@@ -61,6 +61,7 @@ def label_local_entities(ax, cmesh, edim, color='b', fontsize=10, **kwargs):
     coors = _to2d(coors)
     dim = cmesh.dim
     centres = cmesh.get_centroids(dim)
+    centres = _to2d(centres)
 
     cmesh.setup_connectivity(dim, edim)
     conn = cmesh.get_conn(dim, edim)
@@ -70,6 +71,8 @@ def label_local_entities(ax, cmesh, edim, color='b', fontsize=10, **kwargs):
 
     eps = 0.015 * fontsize
     oeps = 1.0 - eps
+    if dim == 1:
+        centres[:, 1] -= eps
     for ii in range(conn.num):
         for ic, ie in enumerate(conn.indices[off[ii]:off[ii+1]]):
             # Shift labels towards the cell centre.
