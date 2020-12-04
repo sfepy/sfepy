@@ -128,6 +128,39 @@ class Test(TestCommon):
 
         return Test(conf=conf, options=options, gels=gels)
 
+    def test_partition_of_unity(self):
+        from sfepy.linalg import combine
+        from sfepy.discrete import Integral, PolySpace
+
+        ok = True
+        orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
+        bases = (
+            [ii for ii in combine(
+                [['2_4', '3_8'], ['lagrange', 'serendipity']]
+            )]
+            + [ii for ii in combine([['2_3', '3_4'], ['lagrange']])]
+        )
+
+        for geom, poly_space_base in bases:
+            max_order = orders[geom]
+            for order in range(max_order + 1):
+                if (poly_space_base == 'serendipity') and not (0 < order < 4):
+                    continue
+                self.report('geometry: %s, base: %s, order: %d'
+                            % (geom, poly_space_base, order))
+
+                integral = Integral('i', order=2 * order)
+                coors, _ = integral.get_qp(geom)
+
+                ps = PolySpace.any_from_args('ps', self.gels[geom], order,
+                                             base=poly_space_base)
+                vals = ps.eval_base(coors)
+                _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
+                self.report('partition of unity:', _ok)
+                ok = ok and _ok
+
+        return ok
+
     def test_continuity(self):
         ok = True
         orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
