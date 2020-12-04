@@ -691,7 +691,7 @@ class SerendipityTensorProductPolySpace(FEPolySpace):
        assembling.
     """
     name = 'serendipity_tensor_product'
-    supported_orders = {1, 2}
+    supported_orders = {1, 2, 3}
 
     def __init__(self, name, geometry, order):
         import sympy as sm
@@ -727,23 +727,34 @@ class SerendipityTensorProductPolySpace(FEPolySpace):
                     0.5 * (1 - x) * (1 - y**2),
                 ],
                 3 : [
-    #                (1/32) * (x - 1) * (y - 1) * (9 * ),
+                    0.03125 * (x - 1) * (y - 1) * (9 * (x**2 + y**2) - 10),
+                    -0.03125 * (x + 1) * (y - 1) * (9 * (x**2 + y**2) - 10),
+                    0.03125 * (x + 1) * (y + 1) * (9 * (x**2 + y**2) - 10),
+                    -0.03125 * (x - 1) * (y + 1) * (9 * (x**2 + y**2) - 10),
+                    0.28125 * (y - 1) * (-3 * x**3 + x**2 + 3 * x - 1),
+                    -0.28125 * (y - 1) * (-3 * x**3 - x**2 + 3 * x + 1),
+                    -0.28125 * (x + 1) * (-3 * y**3 + y**2 + 3 * y - 1),
+                    0.28125 * (x + 1) * (-3 * y**3 - y**2 + 3 * y + 1),
+                    0.28125 * (y + 1) * (-3 * x**3 - x**2 + 3 * x + 1),
+                    -0.28125 * (y + 1) * (-3 * x**3 + x**2 + 3 * x - 1),
+                    -0.28125 * (x - 1) * (-3 * y**3 - y**2 + 3 * y + 1),
+                    0.28125 * (x - 1) * (-3 * y**3 + y**2 + 3 * y - 1),
                 ],
             }
-            vs = [x, y, z][:geometry.dim]
-            self.bfs = [sm.simplify(bf.subs({x : -1 + 2 * x, y : -1 + 2 * y}))
-                        for bf in self.all_bfs[self.order]]
 
-            self.bfgs = [[sm.simplify(bf.diff(v))
-                          for v in [x, y]] for bf in self.bfs]
-
-
-            self._bfs = [sm.lambdify(vs, bf) for bf in self.bfs]
-            self._bfgs = [[sm.lambdify(vs, bfg) for bfg in bfgs]
-                          for bfgs in self.bfgs]
-
-        else:
+        else: # geometry.dim == 3:
             raise NotImplementedError
+
+        vs = [x, y, z][:geometry.dim]
+        self.bfs = [sm.simplify(bf.subs({x : -1 + 2 * x, y : -1 + 2 * y,
+                                         z : -1 + 2 * z}))
+                    for bf in self.all_bfs[self.order]]
+
+        self.bfgs = [[sm.simplify(bf.diff(v))
+                      for v in vs] for bf in self.bfs]
+        self._bfs = [sm.lambdify(vs, bf) for bf in self.bfs]
+        self._bfgs = [[sm.lambdify(vs, bfg) for bfg in bfgs]
+                      for bfgs in self.bfgs]
 
     def create_context(self, cmesh, eps, check_errors, i_max, newton_eps,
                        tdim=None):
