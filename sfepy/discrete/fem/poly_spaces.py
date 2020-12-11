@@ -104,7 +104,7 @@ class LagrangeNodes(Struct):
     @staticmethod
     def append_tp_faces(nodes, nts, iseq, nt, faces, ao):
         delta = 1.0 / (float(ao) ** 2)
-        for ii, face in enumerate( faces ):
+        for ii, face in enumerate(faces):
             n1 = nodes[face[0],:].copy()
             n2 = nodes[face[1],:].copy()
             n3 = nodes[face[2],:].copy()
@@ -535,8 +535,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
             # Vertex nodes.
             nts[0:n_v,0] = 0
-            nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
-            order * nm.identity( n_v, dtype = nm.int32 )
+            nts[0:n_v,1] = nm.arange(n_v, dtype=nm.int32)
             if dim == 3:
                 for ii in range(n_v):
                     i1, i2, i3 = vertex_map[ii]
