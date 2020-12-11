@@ -308,7 +308,7 @@ class SplineBox(Struct):
         for ival in range(self.cp_values.shape[1]):
             f.write("\nSCALARS cp_value_%d float 1\n" % (ival + 1))
             f.write("LOOKUP_TABLE default\n")
-            f.write('\n'.join(self.cp_values[:, ival].astype('|S10')) + '\n')
+            f.write(str(b'\n'.join(self.cp_values[:, ival].astype('|S10'))) + '\n')
 
         f.close()
 
