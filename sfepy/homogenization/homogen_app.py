@@ -63,7 +63,7 @@ class HomogenizationApp(HomogenizationEngine):
         # macroscopic data given in problem options dict.
         macro_data = self.app_options.macro_data
         if macro_data is not None:
-            self.n_micro = macro_data[macro_data.keys()[0]].shape[0]
+            self.n_micro = macro_data[list(macro_data.keys())[0]].shape[0]
             self.setup_macro_data(macro_data)
 
         if self.n_micro is not None:
