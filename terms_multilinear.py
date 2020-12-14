@@ -60,6 +60,11 @@ def get_sizes(indices, operands):
 
     return sizes
 
+def find_free_indices(indices):
+    ii = ''.join(indices)
+    ifree = [c for c in set(ii) if ii.count(c) == 1]
+    return ifree
+
 class ExpressionArg(Struct):
 
     @staticmethod
@@ -322,6 +327,11 @@ class ExpressionBuilder(Struct):
             else:
                 raise ValueError('unknown argument type! ({})'
                                  .format(type(arg)))
+
+        for ia, subscripts in enumerate(self.subscripts):
+            ifree = find_free_indices(subscripts)
+            if ifree:
+                self.out_subscripts[ia] += ''.join(ifree)
 
     @staticmethod
     def join_subscripts(subscripts, out_subscripts):
