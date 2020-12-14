@@ -303,7 +303,7 @@ class ExpressionBuilder(Struct):
         else:
             iv = -1
             for ip, arg in enumerate(args):
-                if arg.is_state_or_parameter:
+                if arg.kind == 'state':
                     self.add_constant(arg.det, 'J')
                     break
             else:
