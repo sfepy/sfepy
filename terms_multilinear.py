@@ -989,3 +989,16 @@ class ELinearElasticTerm(ETermBase, Term):
         )
 
 register_term(ELinearElasticTerm)
+
+class ECauchyStressTerm(ETermBase, Term):
+    name = 'ev_ecauchy_stress'
+    arg_types = ('material', 'parameter')
+    arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
+
+    def get_function(self, mat, parameter, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        return self.make_function(
+            'IK,s(k:l)->K', mat, parameter, diff_var=diff_var,
+        )
+
+register_term(ECauchyStressTerm)
