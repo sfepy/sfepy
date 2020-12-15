@@ -801,10 +801,10 @@ class ETermBase(Struct):
         return eval_einsum
 
     @staticmethod
-    def function(out, eval_einsum, eshape):
+    def function(out, eval_einsum, *args):
         tt = Timer('')
         tt.start()
-        eval_einsum(out, eshape)
+        eval_einsum(out, *args)
         output('eval_einsum: {} s'.format(tt.stop()))
         return 0
 
