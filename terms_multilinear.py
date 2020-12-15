@@ -119,7 +119,6 @@ class ExpressionBuilder(Struct):
     def __init__(self, n_add, cache):
         self.n_add = n_add
         self.subscripts = [[] for ia in range(n_add)]
-        self.operands = [[] for ia in range(n_add)]
         self.operand_names = [[] for ia in range(n_add)]
         self.out_subscripts = ['c' for ia in range(n_add)]
         self.ia = 0
@@ -154,47 +153,34 @@ class ExpressionBuilder(Struct):
 
         return psg
 
-    def add_constant(self, val, name):
+    def add_constant(self, name, cname):
         append_all(self.subscripts, 'cq')
-        append_all(self.operands, val)
-        append_all(self.operand_names, name)
+        append_all(self.operand_names, '.'.join((name, cname)))
 
-    def add_bfg(self, iin, ein, qsbg, name):
+    def add_bfg(self, iin, ein, name):
         append_all(self.subscripts, 'cq{}{}'.format(ein[2], iin))
-        append_all(self.operands, qsbg)
-        append_all(self.operand_names, name)
+        append_all(self.operand_names, name + '.bfg')
 
-    def add_bf(self, iin, ein, qsb, name):
-        key = 'qsb{}'.format(id(qsb))
-        _qsb  = self.cache.get(key)
-        if qsb.shape[0] > 1: # cell-depending basis.
+    def add_bf(self, iin, ein, name, cell_dependent=False):
+        if cell_dependent:
             append_all(self.subscripts, 'cq{}'.format(iin))
-            if _qsb is None:
-                _qsb = qsb[:, :, 0]
-                self.cache[key] = _qsb
 
         else:
             append_all(self.subscripts, 'q{}'.format(iin))
-            if _qsb is None:
-                _qsb = qsb[0, :, 0]
-                self.cache[key] = _qsb
 
-        append_all(self.operands, _qsb)
-        append_all(self.operand_names, name)
+        append_all(self.operand_names, name + '.bf')
 
-    def add_eye(self, iic, ein, eye, iia=None):
+    def add_eye(self, iic, ein, name, iia=None):
         append_all(self.subscripts, '{}{}'.format(ein[0], iic), ii=iia)
-        append_all(self.operands, eye, ii=iia)
-        append_all(self.operand_names, 'I', ii=iia)
+        append_all(self.operand_names, '{}.I'.format(name), ii=iia)
 
-    def add_psg(self, iic, ein, psg, iia=None):
+    def add_psg(self, iic, ein, name, iia=None):
         append_all(self.subscripts, '{}{}{}'.format(iic, ein[2], ein[0]),
                    ii=iia)
-        append_all(self.operands, psg, ii=iia)
-        append_all(self.operand_names, 'Psg', ii=iia)
+        append_all(self.operand_names, name + '.Psg', ii=iia)
 
-    def add_arg_dofs(self, iin, ein, arg, iia=None):
-        if arg.n_components > 1:
+    def add_arg_dofs(self, iin, ein, name, n_components, iia=None):
+        if n_components > 1:
             #term = 'c{}{}'.format(iin, ein[0])
             term = 'c{}{}'.format(ein[0], iin)
 
@@ -202,29 +188,26 @@ class ExpressionBuilder(Struct):
             term = 'c{}'.format(iin)
 
         append_all(self.subscripts, term, ii=iia)
-        append_all(self.operands, arg.dofs, ii=iia)
-        append_all(self.operand_names, arg.name + '.dofs', ii=iia)
+        append_all(self.operand_names, name + '.dofs', ii=iia)
 
     def add_virtual_arg(self, arg, ii, ein, modifier):
         iin = self.letters[ii] # node (qs basis index)
         if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
-            self.add_bfg(iin, ein, arg.qsbg, arg.name + '.bfg')
+            self.add_bfg(iin, ein, arg.name)
 
         else:
-            self.add_bf(iin, ein, arg.qsb, arg.name + '.bf')
+            self.add_bf(iin, ein, arg.name)
 
         out_letters = iin
 
         if arg.n_components > 1:
             iic = next(self.aux_letters) # component
             if ':' not in ein:
-                ee = self.make_eye(arg.n_components)
-                self.add_eye(iic, ein, ee)
+                self.add_eye(iic, ein, arg.name)
 
             else: # symmetric gradient
                 if modifier[0][0] == 's': # vector storage
-                    psg = self.make_psg(arg.dim)
-                    self.add_psg(iic, ein, psg)
+                    self.add_psg(iic, ein, arg.name)
 
                 else:
                     raise ValueError('unknown argument modifier! ({})'
@@ -238,23 +221,22 @@ class ExpressionBuilder(Struct):
     def add_state_arg(self, arg, ii, ein, modifier, diff_var):
         iin = self.letters[ii] # node (qs basis index)
         if ('.' in ein) or (':' in ein): # derivative, symmetric gradient
-            self.add_bfg(iin, ein, arg.qsbg, arg.name + '.bfg')
+            self.add_bfg(iin, ein, arg.name)
 
         else:
-            self.add_bf(iin, ein, arg.qsb, arg.name + '.bf')
+            self.add_bf(iin, ein, arg.name)
 
         out_letters = iin
 
         if (diff_var != arg.name):
             if ':' not in ein:
-                self.add_arg_dofs(iin, ein, arg)
+                self.add_arg_dofs(iin, ein, arg.name, arg.n_components)
 
             else: # symmetric gradient
                 if modifier[0][0] == 's': # vector storage
                     iic = next(self.aux_letters) # component
-                    psg = self.make_psg(arg.dim)
-                    self.add_psg(iic, ein, psg)
-                    self.add_arg_dofs(iin, [iic], arg)
+                    self.add_psg(iic, ein, arg.name)
+                    self.add_arg_dofs(iin, [iic], arg.name, arg.n_components)
 
                 else:
                     raise ValueError('unknown argument modifier! ({})'
@@ -263,14 +245,8 @@ class ExpressionBuilder(Struct):
         else:
             if arg.n_components > 1:
                 iic = next(self.aux_letters) # component
-                if ':' not in ein:
-                    ee = self.make_eye(arg.n_components)
-
-                else: # symmetric gradient
-                    if modifier[0][0] == 's': # vector storage
-                        psg = self.make_psg(arg.dim)
-
-                    else:
+                if ':' in ein: # symmetric gradient
+                    if modifier[0][0] != 's': # vector storage
                         raise ValueError('unknown argument modifier! ({})'
                                          .format(modifier))
 
@@ -282,18 +258,17 @@ class ExpressionBuilder(Struct):
 
                 elif arg.n_components > 1:
                     if ':' not in ein:
-                        self.add_eye(iic, ein, ee, iia)
+                        self.add_eye(iic, ein, arg.name, iia)
 
                     else:
-                        self.add_psg(iic, ein, psg, iia)
+                        self.add_psg(iic, ein, arg.name, iia)
 
             self.out_subscripts[self.ia] += out_letters
             self.ia += 1
 
     def add_material_arg(self, arg, ii, ein):
         append_all(self.subscripts, 'cq{}'.format(ein))
-        append_all(self.operands, arg.val)
-        append_all(self.operand_names, arg.name)
+        append_all(self.operand_names, arg.name + '.arg')
 
     def build(self, texpr, *args, diff_var=None):
         eins, modifiers = parse_term_expression(texpr)
@@ -302,14 +277,14 @@ class ExpressionBuilder(Struct):
         # Numpy arrays cannot be compared -> use a loop.
         for iv, arg in enumerate(args):
             if arg.kind == 'virtual':
-                self.add_constant(arg.det, 'J')
+                self.add_constant(arg.name, 'det')
                 self.add_virtual_arg(arg, iv, eins[iv], modifiers[iv])
                 break
         else:
             iv = -1
             for ip, arg in enumerate(args):
                 if arg.kind == 'state':
-                    self.add_constant(arg.det, 'J')
+                    self.add_constant(arg.name, 'det')
                     break
             else:
                 raise ValueError('no FieldVariable in arguments!')
