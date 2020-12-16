@@ -69,31 +69,37 @@ class ExpressionArg(Struct):
 
     @staticmethod
     def from_term_arg(arg, term, cache):
+        if isinstance(arg, FieldVariable):
+            ag, _ = term.get_mapping(arg)
+            bf = ag.bf
+            key = 'bf{}'.format(id(bf))
+            _bf  = cache.get(key)
+            if bf.shape[0] > 1: # cell-depending basis.
+                if _bf is None:
+                    _bf = bf[:, :, 0]
+                    cache[key] = _bf
+
+            else:
+                if _bf is None:
+                    _bf = bf[0, :, 0]
+                    cache[key] = _bf
+
         if isinstance(arg, FieldVariable) and arg.is_virtual():
             ag, _ = term.get_mapping(arg)
-            obj = ExpressionArg(name=arg.name, qsb=ag.bf, qsbg=ag.bfg,
+            obj = ExpressionArg(name=arg.name, arg=arg, bf=_bf, bfg=ag.bfg,
                                 det=ag.det[..., 0, 0],
                                 n_components=arg.n_components,
                                 dim=arg.dim,
                                 kind='virtual')
 
         elif isinstance(arg, FieldVariable) and arg.is_state_or_parameter():
-            dofs = cache.get(arg.name)
-            if dofs is None:
-                conn = arg.field.get_econn(term.get_dof_conn_type(),
-                                           term.region)
-                dofs_vec = arg().reshape((-1, arg.n_components))
-                # # axis 0: cells, axis 1: node, axis 2: component
-                # dofs = dofs_vec[conn]
-                # axis 0: cells, axis 1: component, axis 2: node
-                dofs = dofs_vec[conn].transpose((0, 2, 1))
-                if arg.n_components == 1:
-                    dofs.shape = (dofs.shape[0], -1)
-                cache[arg.name] = dofs
-
             ag, _ = term.get_mapping(arg)
-            obj = ExpressionArg(name=arg.name, qsb=ag.bf, qsbg=ag.bfg,
-                                det=ag.det[..., 0, 0], dofs=dofs,
+            conn = arg.field.get_econn(term.get_dof_conn_type(),
+                                       term.region)
+            shape = (ag.n_el, arg.n_components, ag.bf.shape[-1])
+            obj = ExpressionArg(name=arg.name, arg=arg, bf=_bf, bfg=ag.bfg,
+                                det=ag.det[..., 0, 0],
+                                conn=conn, shape=shape,
                                 n_components=arg.n_components,
                                 dim=arg.dim,
                                 kind='state')
@@ -103,7 +109,7 @@ class ExpressionArg(Struct):
             # Find arg in term arguments using a loop (numpy arrays cannot be
             # compared) to get its name.
             ii = [ii for ii in range(len(term.args)) if aux[ii] is arg][0]
-            obj = ExpressionArg(name='.'.join(term.arg_names[ii]), val=arg,
+            obj = ExpressionArg(name='_'.join(term.arg_names[ii]), arg=arg,
                                 kind='ndarray')
 
         else:
@@ -111,6 +117,23 @@ class ExpressionArg(Struct):
                              .format(type(arg)))
 
         return obj
+
+    def get_dofs(self, cache):
+        if self.kind != 'state': return
+
+        dofs = cache.get(self.name)
+        if dofs is None:
+            arg = self.arg
+            dofs_vec = self.arg().reshape((-1, arg.n_components))
+            # # axis 0: cells, axis 1: node, axis 2: component
+            # dofs = dofs_vec[conn]
+            # axis 0: cells, axis 1: component, axis 2: node
+            dofs = dofs_vec[self.conn].transpose((0, 2, 1))
+            if arg.n_components == 1:
+                dofs.shape = (dofs.shape[0], -1)
+            cache[arg.name] = dofs
+
+        return dofs
 
 class ExpressionBuilder(Struct):
     letters = 'defgh'
