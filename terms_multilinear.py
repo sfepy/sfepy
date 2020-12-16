@@ -557,26 +557,28 @@ class ETermBase(Struct):
         self.backend = backend
         self.optimize = optimize
         self.backend_kwargs = kwargs
+        self.eargs = None
         self.ebuilder = None
         self.paths, self.path_infos = None, None
         self.eval_einsum = None
+        self.clear_cache()
 
-    def build_expression(self, texpr, *args, diff_var=None):
+    def clear_cache(self):
+        self.expr_cache = {}
+
+    def build_expression(self, texpr, *eargs, diff_var=None):
         timer = Timer('')
         timer.start()
 
         if diff_var is not None:
-            n_add = len([arg.name for arg in args
-                         if (isinstance(arg, FieldVariable)
-                             and (arg.name == diff_var))])
+            n_add = len([arg.name for arg in eargs
+                         if (arg.kind == 'state')
+                         and (arg.name == diff_var)])
 
         else:
             n_add = 1
 
-        expr_cache = {}
-        self.ebuilder = ExpressionBuilder(n_add, expr_cache)
-        eargs = [ExpressionArg.from_term_arg(arg, self, expr_cache)
-                 for arg in args]
+        self.ebuilder = ExpressionBuilder(n_add, self.expr_cache)
         self.ebuilder.build(texpr, *eargs, diff_var=diff_var)
 
         self.ebuilder.apply_layout(self.layout, inplace=True)
@@ -621,8 +623,12 @@ class ETermBase(Struct):
                 output('einsum setup: {} s'.format(timer.stop()))
             return self.eval_einsum
 
+        if not hasattr(self, 'eargs') or (self.eargs is None):
+            self.eargs = [ExpressionArg.from_term_arg(arg, self, self.expr_cache)
+                          for arg in args]
+
         if not hasattr(self, 'ebuilder') or (self.ebuilder is None):
-            self.build_expression(texpr, *args, diff_var=diff_var)
+            self.build_expression(texpr, *self.eargs, diff_var=diff_var)
 
         if not hasattr(self, 'paths') or (self.paths is None):
             self.parsed_expressions = self.ebuilder.get_expressions()
