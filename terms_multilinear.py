@@ -304,7 +304,8 @@ class ExpressionBuilder(Struct):
                                  .format(type(arg)))
 
         for ia, subscripts in enumerate(self.subscripts):
-            ifree = find_free_indices(subscripts)
+            ifree = [ii for ii in find_free_indices(subscripts)
+                     if ii not in self.out_subscripts[ia]]
             if ifree:
                 self.out_subscripts[ia] += ''.join(ifree)
 
