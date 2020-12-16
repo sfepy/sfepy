@@ -336,8 +336,11 @@ class ExpressionBuilder(Struct):
     def join_subscripts(subscripts, out_subscripts):
         return ','.join(subscripts) + '->' + out_subscripts
 
-    def get_expressions(self):
-        expressions = [self.join_subscripts(self.subscripts[ia],
+    def get_expressions(self, subscripts=None):
+        if subscripts is None:
+            subscripts = self.subscripts
+
+        expressions = [self.join_subscripts(subscripts[ia],
                                             self.out_subscripts[ia])
                        for ia in range(self.n_add)]
         return expressions
