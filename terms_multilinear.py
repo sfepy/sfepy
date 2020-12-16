@@ -342,23 +342,24 @@ class ExpressionBuilder(Struct):
                        for ia in range(self.n_add)]
         return expressions
 
-    def get_sizes(self, ia):
-        return get_sizes(self.subscripts[ia], self.operands[ia])
+    def get_sizes(self, ia, operands):
+        return get_sizes(self.subscripts[ia], operands[ia])
 
-    def get_output_shape(self, ia):
-        return tuple(self.get_sizes(ia)[ii] for ii in self.out_subscripts[ia])
+    def get_output_shape(self, ia, operands):
+        return tuple(self.get_sizes(ia, operands)[ii]
+                     for ii in self.out_subscripts[ia])
 
-    def print_shapes(self):
+    def print_shapes(self, operands):
         output('number of expressions:', self.n_add)
         for ia in range(self.n_add):
-            sizes = self.get_sizes(ia)
+            sizes = self.get_sizes(ia, operands)
             output(sizes)
-            out_shape = self.get_output_shape(ia)
+            out_shape = self.get_output_shape(ia, operands)
             output(self.out_subscripts[ia], out_shape, '=')
 
             for name, ii, op in zip(self.operand_names[ia],
                                     self.subscripts[ia],
-                                    self.operands[ia]):
+                                    operands[ia]):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
     def apply_layout(self, layout, inplace=False):
