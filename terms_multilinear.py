@@ -805,6 +805,36 @@ class ETermBase(Struct):
 
         return eval_einsum
 
+    def get_operands(self):
+        ebuilder = self.ebuilder
+        dargs = {arg.name : arg for arg in self.eargs}
+
+        operands = [[] for ia in range(ebuilder.n_add)]
+        for ia in range(ebuilder.n_add):
+            for oname in ebuilder.operand_names[ia]:
+                arg_name, val_name = oname.split('.')
+                arg = dargs[arg_name]
+                if val_name == 'dofs':
+                    step_cache = arg.arg.evaluate_cache.setdefault('dofs', {})
+                    cache = step_cache.setdefault(0, {})
+                    op = arg.get_dofs(cache)
+
+                elif val_name == 'I':
+                    op = ebuilder.make_eye(arg.n_components)
+
+                elif val_name == 'Psg':
+                    op = ebuilder.make_psg(arg.dim)
+
+                else:
+                    op = dargs[arg_name].get(
+                        val_name,
+                        msg_if_none='{} has no attribute {}!'
+                        .format(arg_name, val_name)
+                    )
+                operands[ia].append(op)
+
+        return operands
+
     @staticmethod
     def function(out, eval_einsum, *args):
         tt = Timer('')
