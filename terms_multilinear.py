@@ -362,34 +362,34 @@ class ExpressionBuilder(Struct):
                                     operands[ia]):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
-    def apply_layout(self, layout, inplace=False):
-        if layout == 'cqijd0': return self
+    def apply_layout(self, layout, operands, defaults=None, verbosity=0):
+        if layout == 'cqijd0':
+            return self.subscripts, operands
 
-        bld = self if inplace else self.copy()
+        if defaults is None:
+            defaults = {
+                'det' : 'cq',
+                'bf' : 'cqd',
+                'bfg' : 'cqjd',
+                'dofs' : 'cid',
+                'mat' : 'cq',
+            }
 
-        defaults = {
-            'J' : 'cq',
-            'bf' : 'cqd',
-            'bfg' : 'cqjd',
-            'dofs' : 'cid',
-            'mat' : 'cq',
-        }
         mat_range = ''.join([str(ii) for ii in range(10)])
+        new_subscripts = [subs.copy() for subs in self.subscripts]
+        new_operands = [ops.copy() for ops in operands]
         for ia in range(self.n_add):
-            for io, (name, subs, op) in enumerate(zip(self.operand_names[ia],
+            for io, (oname, subs, op) in enumerate(zip(self.operand_names[ia],
                                                       self.subscripts[ia],
-                                                      self.operands[ia])):
-                if name == 'J':
-                    default = defaults[name]
+                                                      operands[ia])):
+                arg_name, val_name = oname.split('.')
 
-                elif (name.endswith('.bf') or name.endswith('.bfg')
-                      or name.endswith('.dofs')):
-                    key = name.split('.')[-1]
-                    default = defaults[key]
-                    if name.endswith('.bf') and len(subs) == 2:
+                if val_name in ('det', 'bf', 'bfg', 'dofs'):
+                    default = defaults[val_name]
+                    if val_name == '.bf' and len(subs) == 2:
                         default = default[1:]
 
-                elif name in ('I', 'Psg'):
+                elif val_name in ('I', 'Psg'):
                     default = layout.replace('0', '')
 
                 else:
@@ -405,20 +405,25 @@ class ExpressionBuilder(Struct):
                                      for il in layout if il in default])
 
                 new = ''.join([default[ii] for ii in inew])
-                print(name, subs, default, op.shape, layout)
-                print(inew, new)
+                if verbosity > 2:
+                    output(arg_name, val_name, subs, default, op.shape, layout)
+                    output(inew, new)
+
                 if new == default:
-                    bld.subscripts[ia][io] = subs
-                    bld.operands[ia][io] = op
+                    new_subscripts[ia][io] = subs
+                    new_operands[ia][io] = op
 
                 else:
                     new_subs = ''.join([subs[ii] for ii in inew])
                     new_op = op.transpose(inew).copy()
 
-                    bld.subscripts[ia][io] = new_subs
-                    bld.operands[ia][io] = new_op
+                    new_subscripts[ia][io] = new_subs
+                    new_operands[ia][io] = new_op
 
-                print('->', bld.subscripts[ia][io])
+                if verbosity > 2:
+                    output('->', new_subscripts[ia][io])
+
+        return new_subscripts, new_operands
 
     def get_slice_ops(self, ia):
         subscripts = self.subscripts[ia]
