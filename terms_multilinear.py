@@ -428,16 +428,14 @@ class ExpressionBuilder(Struct):
 
         return new_subscripts, new_operands
 
-    def get_slice_ops(self, ia):
-        subscripts = self.subscripts[ia]
-        operands = self.operands[ia]
-
-        icols = [subs.index('c') if 'c' in subs else None
-               for subs in subscripts]
+    @staticmethod
+    def get_slice_ops(subs, ops):
+        icols = [item.index('c') if 'c' in item else None
+                 for item in subs]
         def slice_ops(ic):
             ops = []
             for ii, icol in enumerate(icols):
-                op = operands[ii]
+                op = ops[ii]
                 if icol is not None:
                     slices = tuple(slice(None, None) if isub != icol else ic
                                    for isub in range(op.ndim))
@@ -450,15 +448,15 @@ class ExpressionBuilder(Struct):
 
         return slice_ops, icols
 
-    def transform(self, transformation='loop'):
+    def transform(self, subscripts, operands, transformation='loop'):
         if transformation == 'loop':
             expressions, poperands, all_slice_ops, all_icols = [], [], [], []
 
-            for ia, (subscripts, out_subscripts, operands) in enumerate(zip(
-                    self.subscripts, self.out_subscripts, self.operands
+            for ia, (subs, out_subscripts, ops) in enumerate(zip(
+                    subscripts, self.out_subscripts, operands
             )):
-                slice_ops, icols = self.get_slice_ops(ia)
-                tsubs = [subs.replace('c', '') for subs in subscripts]
+                slice_ops, icols = self.get_slice_ops(subs, ops)
+                tsubs = [ii.replace('c', '') for ii in subs]
                 tout_subs = out_subscripts[1:]
                 expr = self.join_subscripts(tsubs, tout_subs)
                 pops = slice_ops(0)
