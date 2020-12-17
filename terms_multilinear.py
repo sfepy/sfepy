@@ -564,6 +564,14 @@ class ETermBase(Struct):
 
     layout_letters = 'cqijd0'
 
+    @staticmethod
+    def function(out, eval_einsum, *args):
+        tt = Timer('')
+        tt.start()
+        eval_einsum(out, *args)
+        output('eval_einsum: {} s'.format(tt.stop()))
+        return 0
+
     def set_backend(self, backend='numpy', optimize=True, layout=None,
                     **kwargs):
         if backend not in self.can_backend.keys():
@@ -615,35 +623,6 @@ class ETermBase(Struct):
         self.ebuilder.build(texpr, *eargs, diff_var=diff_var)
         if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
-
-    def get_paths(self, expressions, operands):
-        memory_limit = self.backend_kwargs.get('memory_limit')
-
-        if ('numpy' in self.backend) or self.backend.startswith('dask'):
-            optimize = (self.optimize if memory_limit is None
-                        else (self.optimize, memory_limit))
-            paths, path_infos = zip(*[nm.einsum_path(
-                expressions[ia], *operands[ia],
-                optimize=optimize,
-            ) for ia in range(len(operands))])
-
-        elif 'opt_einsum' in self.backend:
-            paths, path_infos = zip(*[oe.contract_path(
-                expressions[ia], *operands[ia],
-                optimize=self.optimize,
-                memory_limit=memory_limit,
-            ) for ia in range(len(operands))])
-
-        elif 'jax' in self.backend:
-            paths, path_infos = zip(*[jnp.einsum_path(
-                expressions[ia], *operands[ia],
-                optimize=self.optimize,
-            ) for ia in range(len(operands))])
-
-        else:
-            raise ValueError('unsupported backend! ({})'.format(self.backend))
-
-        return paths, path_infos
 
     def make_function(self, texpr, *args, diff_var=None):
         timer = Timer('')
@@ -811,13 +790,34 @@ class ETermBase(Struct):
 
         return operands
 
-    @staticmethod
-    def function(out, eval_einsum, *args):
-        tt = Timer('')
-        tt.start()
-        eval_einsum(out, *args)
-        output('eval_einsum: {} s'.format(tt.stop()))
-        return 0
+    def get_paths(self, expressions, operands):
+        memory_limit = self.backend_kwargs.get('memory_limit')
+
+        if ('numpy' in self.backend) or self.backend.startswith('dask'):
+            optimize = (self.optimize if memory_limit is None
+                        else (self.optimize, memory_limit))
+            paths, path_infos = zip(*[nm.einsum_path(
+                expressions[ia], *operands[ia],
+                optimize=optimize,
+            ) for ia in range(len(operands))])
+
+        elif 'opt_einsum' in self.backend:
+            paths, path_infos = zip(*[oe.contract_path(
+                expressions[ia], *operands[ia],
+                optimize=self.optimize,
+                memory_limit=memory_limit,
+            ) for ia in range(len(operands))])
+
+        elif 'jax' in self.backend:
+            paths, path_infos = zip(*[jnp.einsum_path(
+                expressions[ia], *operands[ia],
+                optimize=self.optimize,
+            ) for ia in range(len(operands))])
+
+        else:
+            raise ValueError('unsupported backend! ({})'.format(self.backend))
+
+        return paths, path_infos
 
     def get_fargs(self, *args, **kwargs):
         mode, term_mode, diff_var = args[-3:]
