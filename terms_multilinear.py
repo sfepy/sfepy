@@ -65,6 +65,28 @@ def find_free_indices(indices):
     ifree = [c for c in set(ii) if ii.count(c) == 1]
     return ifree
 
+def get_cell_indices(subs):
+    return [indices.index('c') if 'c' in indices else None for indices in subs]
+
+def get_slice_ops(subs, ops):
+    ics = get_cell_indices(subs)
+
+    def slice_ops(ic):
+        sops = []
+        for ii, icol in enumerate(ics):
+            op = ops[ii]
+            if icol is not None:
+                slices = tuple(slice(None, None) if isub != icol else ic
+                               for isub in range(op.ndim))
+                sops.append(op[slices])
+
+            else:
+                sops.append(op)
+
+        return sops
+
+    return slice_ops
+
 class ExpressionArg(Struct):
 
     @staticmethod
@@ -428,34 +450,14 @@ class ExpressionBuilder(Struct):
 
         return new_subscripts, new_operands
 
-    @staticmethod
-    def get_slice_ops(subs, ops):
-        icols = [item.index('c') if 'c' in item else None
-                 for item in subs]
-        def slice_ops(ic):
-            ops = []
-            for ii, icol in enumerate(icols):
-                op = ops[ii]
-                if icol is not None:
-                    slices = tuple(slice(None, None) if isub != icol else ic
-                                   for isub in range(op.ndim))
-                    ops.append(op[slices])
-
-                else:
-                    ops.append(op)
-
-            return ops
-
-        return slice_ops, icols
-
     def transform(self, subscripts, operands, transformation='loop'):
         if transformation == 'loop':
-            expressions, poperands, all_slice_ops, all_icols = [], [], [], []
+            expressions, poperands, all_slice_ops = [], [], []
 
             for ia, (subs, out_subscripts, ops) in enumerate(zip(
                     subscripts, self.out_subscripts, operands
             )):
-                slice_ops, icols = self.get_slice_ops(subs, ops)
+                slice_ops = get_slice_ops(subs, ops)
                 tsubs = [ii.replace('c', '') for ii in subs]
                 tout_subs = out_subscripts[1:]
                 expr = self.join_subscripts(tsubs, tout_subs)
@@ -463,9 +465,8 @@ class ExpressionBuilder(Struct):
                 expressions.append(expr)
                 poperands.append(pops)
                 all_slice_ops.append(slice_ops)
-                all_icols.append(icols)
 
-            return expressions, poperands, all_slice_ops, all_icols
+            return expressions, poperands, all_slice_ops
 
         else:
             raise ValueError('unknown transformation! ({})'
