@@ -450,7 +450,7 @@ class ExpressionBuilder(Struct):
 
         return new_subscripts, new_operands
 
-    def transform(self, subscripts, operands, transformation='loop'):
+    def transform(self, subscripts, operands, transformation='loop', **kwargs):
         if transformation == 'loop':
             expressions, poperands, all_slice_ops = [], [], []
 
@@ -467,6 +467,31 @@ class ExpressionBuilder(Struct):
                 all_slice_ops.append(slice_ops)
 
             return expressions, poperands, all_slice_ops
+
+        elif transformation == 'dask':
+            da_operands = []
+            c_chunk_size = kwargs.get('c_chunk_size')
+            for ia in range(len(operands)):
+                da_ops = []
+                for name, ii, op in zip(self.operand_names[ia],
+                                        subscripts[ia],
+                                        operands[ia]):
+                    if 'c' in ii:
+                        if c_chunk_size is None:
+                            chunks = 'auto'
+
+                        else:
+                            chunks = (c_chunk_size,) + op.shape[1:]
+
+                        da_op = da.from_array(op, chunks=chunks, name=name)
+
+                    else:
+                        da_op = op
+
+                    da_ops.append(da_op)
+                da_operands.append(da_ops)
+
+            return da_operands
 
         else:
             raise ValueError('unknown transformation! ({})'
