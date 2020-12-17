@@ -440,7 +440,11 @@ class ExpressionBuilder(Struct):
 
                 else:
                     new_subs = ''.join([subs[ii] for ii in inew])
-                    new_op = op.transpose(inew).copy()
+                    key = (id(op),) + tuple(inew)
+                    new_op = self.cache.get(key)
+                    if new_op is None:
+                        new_op = op.transpose(inew).copy()
+                        self.cache[key] = new_op
 
                     new_subscripts[ia][io] = new_subs
                     new_operands[ia][io] = new_op
