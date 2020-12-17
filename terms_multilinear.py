@@ -613,9 +613,6 @@ class ETermBase(Struct):
 
         self.ebuilder = ExpressionBuilder(n_add, self.expr_cache)
         self.ebuilder.build(texpr, *eargs, diff_var=diff_var)
-
-        self.ebuilder.apply_layout(self.layout, inplace=True)
-
         if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
 
@@ -663,71 +660,48 @@ class ETermBase(Struct):
         if not hasattr(self, 'ebuilder') or (self.ebuilder is None):
             self.build_expression(texpr, *self.eargs, diff_var=diff_var)
 
-        if not hasattr(self, 'paths') or (self.paths is None):
-            self.parsed_expressions = self.ebuilder.get_expressions()
-            if self.verbosity:
-                output('parsed expressions:', self.parsed_expressions)
-            if self.verbosity > 1:
-                self.ebuilder.print_shapes()
-
-            self.paths, self.path_infos = self.get_paths(
-                self.parsed_expressions,
-                self.ebuilder.operands,
-            )
-            if self.verbosity > 2:
-                for path, path_info in zip(self.paths, self.path_infos):
-                    output('path:', path)
-                    output(path_info)
-
-        operands = self.ebuilder.operands
-        n_add = len(operands)
+        n_add = self.ebuilder.n_add
 
         if self.backend in ('numpy', 'opt_einsum'):
             contract = {'numpy' : nm.einsum,
                         'opt_einsum' : oe.contract}[self.backend]
-            def eval_einsum(out, eshape):
+            def eval_einsum(out, eshape, expressions, operands, paths):
                 if operands[0][0].flags.c_contiguous:
                     # This is very slow if vout layout differs from operands
                     # layout.
                     vout = out.reshape(eshape)
-                    contract(self.parsed_expressions[0], *operands[0],
-                             out=vout,
-                             optimize=self.paths[0])
+                    contract(expressions[0], *operands[0], out=vout,
+                             optimize=paths[0])
 
                 else:
-                    aux = contract(self.parsed_expressions[0], *operands[0],
-                                   optimize=self.paths[0])
+                    aux = contract(expressions[0], *operands[0],
+                                   optimize=paths[0])
                     out[:] = aux.reshape(out.shape)
 
                 for ia in range(1, n_add):
-                    aux = contract(self.parsed_expressions[ia],
-                                   *operands[ia],
-                                   optimize=self.paths[ia])
+                    aux = contract(expressions[ia], *operands[ia],
+                                   optimize=paths[ia])
                     out[:] += aux.reshape(out.shape)
 
         elif self.backend in ('numpy_loop', 'opt_einsum_loop'):
-            transform = self.ebuilder.transform('loop')
-            expressions, poperands, all_slice_ops, all_icols = transform
-            paths, path_infos = self.get_paths(expressions, poperands)
-            n_cell = self.ebuilder.get_sizes(0)['c']
-            if self.verbosity > 1:
-                output('parsed expressions (loop):', expressions)
-
-            if self.verbosity > 2:
-                output(all_icols)
-                for path, path_info in zip(paths, path_infos):
-                    output('path (loop):', path)
-                    output(path_info)
-
             contract = {'numpy_loop' : nm.einsum,
                         'opt_einsum_loop' : oe.contract}[self.backend]
-            def eval_einsum(out, eshape):
+            def eval_einsum(out, eshape, expressions, all_slice_ops, paths):
+                n_cell = out.shape[0]
                 vout = out.reshape(eshape)
                 slice_ops = all_slice_ops[0]
-                for ic in range(n_cell):
-                    ops = slice_ops(ic)
-                    contract(expressions[0], *ops, out=vout[ic],
-                             optimize=paths[0])
+                if vout.ndim > 1:
+                    for ic in range(n_cell):
+                        ops = slice_ops(ic)
+                        contract(expressions[0], *ops, out=vout[ic],
+                                 optimize=paths[0])
+
+                else: # vout[ic] can be scalar in eval mode.
+                    for ic in range(n_cell):
+                        ops = slice_ops(ic)
+                        vout[ic] = contract(expressions[0], *ops,
+                                            optimize=paths[0])
+
                 for ia in range(1, n_add):
                     slice_ops = all_slice_ops[ia]
                     for ic in range(n_cell):
@@ -745,20 +719,11 @@ class ETermBase(Struct):
                                       optimize=paths[ia])
                 return val
 
-            def eval_einsum(out, eshape):
-                aux = _eval_einsum(self.parsed_expressions, self.paths, n_add,
-                                   operands)
+            def eval_einsum(out, eshape, expressions, operands, paths):
+                aux = _eval_einsum(expressions, paths, n_add, operands)
                 out[:] = nm.asarray(aux.reshape(out.shape))
 
         elif self.backend == 'jax_vmap':
-            transform = self.ebuilder.transform('loop')
-            expressions, poperands, _, all_icols = transform
-            paths, path_infos = self.get_paths(expressions, poperands)
-            if self.verbosity > 2:
-                for path, path_info in zip(paths, path_infos):
-                    output('path (jax_vmap):', path)
-                    output(path_info)
-
             def _eval_einsum_cell(expressions, paths, n_add, operands):
                 val = jnp.einsum(expressions[0], *operands[0],
                                  optimize=paths[0])
@@ -767,19 +732,18 @@ class ETermBase(Struct):
                                       optimize=paths[ia])
                 return val
 
-            vms = (None, None, None, all_icols)
-            _eval_einsum = jax.jit(jax.vmap(_eval_einsum_cell, vms, 0),
-                                   static_argnums=(0, 1, 2))
-
-            def eval_einsum(out, eshape):
-                aux = _eval_einsum(expressions, paths, n_add,
-                                   operands)
+            def eval_einsum(out, vmap_eval_cell, eshape, expressions, operands,
+                            paths):
+                aux = vmap_eval_cell(expressions, paths, n_add,
+                                     operands)
                 out[:] = nm.asarray(aux.reshape(out.shape))
+
+            eval_einsum = (eval_einsum, _eval_einsum_cell)
 
         elif self.backend.startswith('dask'):
             scheduler = {'dask_single' : 'single-threaded',
                          'dask_threads' : 'threads'}[self.backend]
-            def eval_einsum(out, eshape):
+            def eval_einsum(out, eshape, expressions, operands, paths):
                 _out = da.einsum(self.parsed_expressions[0], *operands[0],
                                  optimize=self.paths[0])
                 for ia in range(1, n_add):
@@ -794,28 +758,7 @@ class ETermBase(Struct):
             scheduler = {'opt_einsum_dask_single' : 'single-threaded',
                          'opt_einsum_dask_threads' : 'threads'}[self.backend]
 
-            da_operands = []
-            c_chunk_size = self.backend_kwargs.get('c_chunk_size')
-            for ia in range(self.ebuilder.n_add):
-                da_ops = []
-                for name, ii, op in zip(self.ebuilder.operand_names[ia],
-                                        self.ebuilder.subscripts[ia],
-                                        operands[ia]):
-                    if 'c' in ii:
-                        if c_chunk_size is None:
-                            chunks = 'auto'
-
-                        else:
-                            chunks = (c_chunk_size,) + op.shape[1:]
-                            da_op = da.from_array(op, chunks=chunks, name=name)
-
-                    else:
-                        da_op = op
-
-                    da_ops.append(da_op)
-                da_operands.append(da_ops)
-
-            def eval_einsum(out, eshape):
+            def eval_einsum(out, eshape, expressions, da_operands, paths):
                 _out = oe.contract(self.parsed_expressions[0], *da_operands[0],
                                    optimize=self.paths[0],
                                    backend='dask')
@@ -879,33 +822,68 @@ class ETermBase(Struct):
     def get_fargs(self, *args, **kwargs):
         mode, term_mode, diff_var = args[-3:]
 
-        if mode == 'weak':
-            vvar = self.get_virtual_variable()
-            n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(vvar)
+        eval_einsum = self.get_function(*args, **kwargs)
+        operands = self.get_operands()
 
-            if diff_var is not None:
-                varc = self.get_variables(as_list=False)[diff_var]
-                n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
-                eshape = tuple([n_elr]
-                               + ([n_cr] if n_cr > 1 else [])
-                               + [n_enr]
-                               + ([n_cc] if n_cc > 1 else [])
-                               + [n_enc])
+        ebuilder = self.ebuilder
+        eshape = ebuilder.get_output_shape(0, operands)
+
+        out = [eval_einsum, eshape]
+
+        subscripts, operands = ebuilder.apply_layout(
+            self.layout, operands, verbosity=self.verbosity,
+        )
+
+        self.parsed_expressions = ebuilder.get_expressions(subscripts)
+        if self.verbosity:
+            output('parsed expressions:', self.parsed_expressions)
+
+        if self.backend in ('numpy_loop', 'opt_einsum_loop', 'jax_vmap'):
+            transform = ebuilder.transform(subscripts, operands,
+                                           transformation='loop')
+            expressions, poperands, all_slice_ops = transform
+
+            if self.backend == 'jax_vmap':
+                all_ics = [get_cell_indices(subs) for subs in subscripts]
+                vms = (None, None, None, all_ics)
+                vmap_eval_cell = jax.jit(jax.vmap(eval_einsum[1], vms, 0),
+                                         static_argnums=(0, 1, 2))
+                out += [expressions, operands]
+                out[:1] = [eval_einsum[0], vmap_eval_cell]
 
             else:
-                eshape = (n_elr, n_cr, n_enr) if n_cr > 1 else (n_elr, n_enr)
+                out += [expressions, all_slice_ops]
+
+        elif self.backend.startswith('opt_einsum_dask'):
+            c_chunk_size = self.backend_kwargs.get('c_chunk_size')
+            da_operands = ebuilder.transform(subscripts, operands,
+                                             transformation='dask',
+                                             c_chunk_size=c_chunk_size)
+            poperands = operands
+            expressions = self.parsed_expressions
+            out += [expressions, da_operands]
 
         else:
-            if diff_var is not None:
-                raise ValueError('cannot differentiate in {} mode!'
-                                 .format(mode))
+            poperands = operands
+            expressions = self.parsed_expressions
+            out += [expressions, operands]
 
-            # self.ebuilder is created in self.get_eval_shape() call by Term.
-            eshape = self.ebuilder.get_output_shape(0)
+        if not hasattr(self, 'paths') or (self.paths is None):
+            if self.verbosity > 1:
+                self.ebuilder.print_shapes(poperands)
 
-        eval_einsum = self.get_function(*args, **kwargs)
+            self.paths, self.path_infos = self.get_paths(
+                expressions,
+                poperands,
+            )
+            if self.verbosity > 2:
+                for path, path_info in zip(self.paths, self.path_infos):
+                    output('path:', path)
+                    output(path_info)
 
-        return eval_einsum, eshape
+        out += [self.paths]
+
+        return out
 
     def get_eval_shape(self, *args, **kwargs):
         mode, term_mode, diff_var = args[-3:]
@@ -915,10 +893,10 @@ class ETermBase(Struct):
 
         self.get_function(*args, **kwargs)
 
-        out_shape = self.ebuilder.get_output_shape(0)
+        operands = self.get_operands()
+        out_shape = self.ebuilder.get_output_shape(0, operands)
 
-        operands = self.ebuilder.operands[0]
-        dtype = nm.find_common_type([op.dtype for op in operands], [])
+        dtype = nm.find_common_type([op.dtype for op in operands[0]], [])
 
         return out_shape, dtype
 
