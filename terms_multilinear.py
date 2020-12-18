@@ -388,7 +388,7 @@ class ExpressionBuilder(Struct):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
     def apply_layout(self, layout, operands, defaults=None, verbosity=0):
-        if layout == 'cqijd0':
+        if layout in ('cq0ijd', 'cqi0jd', 'cqij0d', 'cqijd0'):
             return self.subscripts, operands
 
         if defaults is None:
