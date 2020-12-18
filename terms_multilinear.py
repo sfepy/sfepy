@@ -485,7 +485,10 @@ class ExpressionBuilder(Struct):
                             chunks = 'auto'
 
                         else:
-                            chunks = (c_chunk_size,) + op.shape[1:]
+                            ic = ii.index('c')
+                            chunks = (op.shape[:ic]
+                                      + (c_chunk_size,)
+                                      + op.shape[ic + 1:])
 
                         da_op = da.from_array(op, chunks=chunks, name=name)
 
