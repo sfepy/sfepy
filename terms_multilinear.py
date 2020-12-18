@@ -140,7 +140,7 @@ class ExpressionArg(Struct):
 
         return obj
 
-    def get_dofs(self, cache):
+    def get_dofs(self, cache, expr_cache, oname):
         if self.kind != 'state': return
 
         dofs = cache.get(self.name)
@@ -154,6 +154,11 @@ class ExpressionArg(Struct):
             if arg.n_components == 1:
                 dofs.shape = (dofs.shape[0], -1)
             cache[arg.name] = dofs
+
+            # New dofs -> clear dofs from expression cache.
+            for key in list(expr_cache.keys()):
+                if isinstance(key, tuple) and (key[0] == oname):
+                    expr_cache.pop(key)
 
         return dofs
 
@@ -440,7 +445,13 @@ class ExpressionBuilder(Struct):
 
                 else:
                     new_subs = ''.join([subs[ii] for ii in inew])
-                    key = (id(op),) + tuple(inew)
+                    if val_name == 'dofs':
+                        key = (oname,) + tuple(inew)
+
+                    else:
+                        # id is unique only during object lifetime!
+                        key = (id(op),) + tuple(inew)
+
                     new_op = self.cache.get(key)
                     if new_op is None:
                         new_op = op.transpose(inew).copy()
@@ -780,7 +791,7 @@ class ETermBase(Struct):
                 if val_name == 'dofs':
                     step_cache = arg.arg.evaluate_cache.setdefault('dofs', {})
                     cache = step_cache.setdefault(0, {})
-                    op = arg.get_dofs(cache)
+                    op = arg.get_dofs(cache, self.expr_cache, oname)
 
                 elif val_name == 'I':
                     op = ebuilder.make_eye(arg.n_components)
