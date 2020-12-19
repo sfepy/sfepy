@@ -399,9 +399,9 @@ class ExpressionBuilder(Struct):
         if defaults is None:
             defaults = {
                 'det' : 'cq',
-                'bf' : 'cqd',
+                'bf' : ('cq', 'cqd'),
                 'bfg' : 'cqjd',
-                'dofs' : 'ckd',
+                'dofs' : ('cd', 'ckd'),
                 'mat' : 'cq',
             }
 
@@ -414,10 +414,11 @@ class ExpressionBuilder(Struct):
                                                       operands[ia])):
                 arg_name, val_name = oname.split('.')
 
-                if val_name in ('det', 'bf', 'bfg', 'dofs'):
+                if val_name in ('det','bfg'):
                     default = defaults[val_name]
-                    if val_name == '.bf' and len(subs) == 2:
-                        default = default[1:]
+
+                elif val_name in ('bf', 'dofs'):
+                    default = defaults[val_name][op.ndim - 2]
 
                 elif val_name in ('I', 'Psg'):
                     default = layout.replace('0', '') # -> Do nothing.
