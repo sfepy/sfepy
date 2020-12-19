@@ -304,7 +304,7 @@ class ExpressionBuilder(Struct):
 
             for iia in range(self.n_add):
                 if iia != self.ia:
-                    self.add_arg_dofs(iin, ein, arg, iia)
+                    self.add_arg_dofs(iin, ein, arg.name, arg.n_components, iia)
 
                 elif arg.n_components > 1:
                     if ':' not in ein:
