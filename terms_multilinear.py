@@ -664,7 +664,34 @@ class ETermBase(Struct):
         if self.backend in ('numpy', 'opt_einsum'):
             contract = {'numpy' : nm.einsum,
                         'opt_einsum' : oe.contract}[self.backend]
-            def eval_einsum(out, eshape, expressions, operands, paths):
+            def eval_einsum_orig(out, eshape, expressions, operands, paths):
+                if operands[0][0].flags.c_contiguous:
+                    # This is very slow if vout layout differs from operands
+                    # layout.
+                    vout = out.reshape(eshape)
+                    contract(expressions[0], *operands[0], out=vout,
+                             optimize=paths[0])
+
+                else:
+                    aux = contract(expressions[0], *operands[0],
+                                   optimize=paths[0])
+                    out[:] += aux.reshape(out.shape)
+
+                for ia in range(1, n_add):
+                    aux = contract(expressions[ia], *operands[ia],
+                                   optimize=paths[ia])
+                    out[:] += aux.reshape(out.shape)
+
+            def eval_einsum0(out, eshape, expressions, operands, paths):
+                aux = contract(expressions[0], *operands[0],
+                               optimize=paths[0])
+                out[:] = aux.reshape(out.shape)
+                for ia in range(1, n_add):
+                    aux = contract(expressions[ia], *operands[ia],
+                                   optimize=paths[ia])
+                    out[:] += aux.reshape(out.shape)
+
+            def eval_einsum1(out, eshape, expressions, operands, paths):
                 out.reshape(-1)[:] = contract(
                     expressions[0], *operands[0], optimize=paths[0],
                 ).reshape(-1)
@@ -672,6 +699,36 @@ class ETermBase(Struct):
                     out.reshape(-1)[:] += contract(
                         expressions[ia], *operands[ia], optimize=paths[ia],
                     ).reshape(-1)
+
+            def eval_einsum2(out, eshape, expressions, operands, paths):
+                out.flat = contract(
+                    expressions[0], *operands[0], optimize=paths[0],
+                )
+                for ia in range(1, n_add):
+                    out.ravel()[...] += contract(
+                        expressions[ia], *operands[ia], optimize=paths[ia],
+                    )
+
+            def eval_einsum3(out, eshape, expressions, operands, paths):
+                out.ravel()[:] = contract(
+                    expressions[0], *operands[0], optimize=paths[0],
+                ).ravel()
+                for ia in range(1, n_add):
+                    out.ravel()[:] += contract(
+                        expressions[ia], *operands[ia], optimize=paths[ia],
+                    ).ravel()
+
+            def eval_einsum4(out, eshape, expressions, operands, paths):
+                vout = out[:, 0, :, :]
+                contract(expressions[0], *operands[0], out=vout,
+                         optimize=paths[0])
+                for ia in range(1, n_add):
+                    aux = contract(expressions[ia], *operands[ia],
+                                   optimize=paths[ia])
+                    out[:] += aux.reshape(out.shape)
+
+            eval_fun = self.backend_kwargs.get('eval_fun', 'eval_einsum0')
+            eval_einsum = locals()[eval_fun]
 
         elif self.backend in ('numpy_loop', 'opt_einsum_loop'):
             contract = {'numpy_loop' : nm.einsum,
