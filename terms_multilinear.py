@@ -399,7 +399,7 @@ class ExpressionBuilder(Struct):
         if defaults is None:
             defaults = {
                 'det' : 'cq',
-                'bf' : ('cq', 'cqd'),
+                'bf' : ('qd', 'cqd'),
                 'bfg' : 'cqjd',
                 'dofs' : ('cd', 'ckd'),
                 'mat' : 'cq',
