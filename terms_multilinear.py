@@ -393,15 +393,15 @@ class ExpressionBuilder(Struct):
                 output('  {:10}{:8}{}'.format(name, ii, op.shape))
 
     def apply_layout(self, layout, operands, defaults=None, verbosity=0):
-        if layout in ('cq0ijkd', 'cqi0jkd', 'cqij0kd', 'cqijkd0'):
+        if layout == 'cqgvd0':
             return self.subscripts, operands
 
         if defaults is None:
             defaults = {
                 'det' : 'cq',
                 'bf' : ('qd', 'cqd'),
-                'bfg' : 'cqjd',
-                'dofs' : ('cd', 'ckd'),
+                'bfg' : 'cqgd',
+                'dofs' : ('cd', 'cvd'),
                 'mat' : 'cq',
             }
 
@@ -561,9 +561,8 @@ class ETermBase(Struct):
 
     c .. cells
     q .. quadrature points
-    i .. solution component
-    j .. gradient component
-    k .. DOF component - matrix form (k, d) -> vector k*d
+    v .. variable component - matrix form (v, d) -> vector v*d
+    g .. gradient component
     d .. local DOF (basis, node)
     0 .. all material axes
     """
@@ -582,7 +581,7 @@ class ETermBase(Struct):
         'opt_einsum_dask_threads' : oe and da,
     }
 
-    layout_letters = 'cqijkd0'
+    layout_letters = 'cqgvd0'
 
     @staticmethod
     def function(out, eval_einsum, *args):
