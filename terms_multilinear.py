@@ -370,7 +370,7 @@ class ExpressionBuilder(Struct):
         expressions = [self.join_subscripts(subscripts[ia],
                                             self.out_subscripts[ia])
                        for ia in range(self.n_add)]
-        return expressions
+        return tuple(expressions)
 
     def get_sizes(self, ia, operands):
         return get_sizes(self.subscripts[ia], operands[ia])
