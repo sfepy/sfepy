@@ -937,7 +937,7 @@ class ETermBase(Struct):
 
         if not hasattr(self, 'paths') or (self.paths is None):
             if self.verbosity > 1:
-                self.ebuilder.print_shapes(poperands)
+                self.ebuilder.print_shapes(operands)
 
             self.paths, self.path_infos = self.get_paths(
                 expressions,
