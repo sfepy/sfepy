@@ -706,7 +706,7 @@ class ETermBase(Struct):
                 for ia in range(1, n_add):
                     out.ravel()[...] += contract(
                         expressions[ia], *operands[ia], optimize=paths[ia],
-                    )
+                    ).ravel()
 
             def eval_einsum3(out, eshape, expressions, operands, paths):
                 out.ravel()[:] = contract(
@@ -718,7 +718,7 @@ class ETermBase(Struct):
                     ).ravel()
 
             def eval_einsum4(out, eshape, expressions, operands, paths):
-                vout = out[:, 0, :, :]
+                vout = out.reshape(eshape)
                 contract(expressions[0], *operands[0], out=vout,
                          optimize=paths[0])
                 for ia in range(1, n_add):
