@@ -12,8 +12,9 @@ and the bottom element.
 
 All connectivity permutations of the two elements are tested.
 
-WARNING: Lagrange basis on 3_8 elements fails the test for order >= 3 for many
-connectivity permutations!
+The serendipity basis implementation is a pure python proof-of-concept. Its
+order in continuity tests is limited to 2 on 3_8 elements to decrease the tests
+run time.
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -50,9 +51,13 @@ def _gen_common_data(orders, gels, report):
              + [ii for ii in combine([['2_3', '3_4'],
                                       ['lagrange']])])
     for geom, poly_space_base in bases:
-        report('geometry: %s, base: %s' % (geom, poly_space_base))
-
         order = orders[geom]
+        if (geom == '3_8') and (poly_space_base == 'serendipity'):
+            order = 2
+
+        report('geometry: %s, base: %s, order: %d'
+               % (geom, poly_space_base, order))
+
         integral = Integral('i', order=order)
 
         aux = '' if geom in ['2_4', '3_8'] else 'z'
