@@ -405,6 +405,24 @@ class H1NodalVolumeField(H1NodalMixin, VolumeField):
 
         return enod_vol_val
 
+class H1SNodalVolumeField(H1NodalVolumeField):
+    family_name = 'volume_H1_serendipity'
+
+    def create_basis_context(self):
+        """
+        Create the context required for evaluating the field basis.
+        """
+        # Hack for tests to pass - the reference coordinates are determined
+        # from vertices only - we can use the Lagrange basis context for the
+        # moment. The true context for Field.evaluate_at() is not implemented.
+        gps = self.gel.poly_space
+        mesh = self.create_mesh(extra_nodes=False)
+
+        ctx = geo_ctx = gps.create_context(mesh.cmesh, 0, 1e-15, 100, 1e-8)
+        ctx.geo_ctx = geo_ctx
+
+        return ctx
+
 class H1DiscontinuousField(H1NodalMixin, VolumeField):
     family_name = 'volume_H1_lagrange_discontinuous'
 
@@ -487,3 +505,6 @@ class H1NodalSurfaceField(H1NodalMixin, SurfaceField):
             raise NotImplementedError(msg)
 
         return enod_vol_val
+
+class H1SNodalSurfaceField(H1NodalSurfaceField):
+    family_name = 'surface_H1_serendipity'

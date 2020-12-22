@@ -104,7 +104,7 @@ class LagrangeNodes(Struct):
     @staticmethod
     def append_tp_faces(nodes, nts, iseq, nt, faces, ao):
         delta = 1.0 / (float(ao) ** 2)
-        for ii, face in enumerate( faces ):
+        for ii, face in enumerate(faces):
             n1 = nodes[face[0],:].copy()
             n2 = nodes[face[1],:].copy()
             n3 = nodes[face[2],:].copy()
@@ -535,8 +535,7 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
             # Vertex nodes.
             nts[0:n_v,0] = 0
-            nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
-            order * nm.identity( n_v, dtype = nm.int32 )
+            nts[0:n_v,1] = nm.arange(n_v, dtype=nm.int32)
             if dim == 3:
                 for ii in range(n_v):
                     i1, i2, i3 = vertex_map[ii]
@@ -678,6 +677,142 @@ class LagrangeTensorProductPolySpace(LagrangePolySpace):
 
     def get_mtx_i(self):
         return self.ps1d.mtx_i
+
+class SerendipityTensorProductPolySpace(FEPolySpace):
+    """
+    Serendipity polynomial space using Lagrange functions.
+
+    Notes
+    -----
+    - Orders >= 4 (with bubble functions) are not supported.
+    - Does not use CLagrangeContext, basis functions are hardcoded.
+    - `self.nodes`, `self.node_coors` are not used for basis evaluation and
+       assembling.
+    """
+    name = 'serendipity_tensor_product'
+    supported_orders = {1, 2, 3}
+
+    from sfepy.discrete.fem._serendipity import all_bfs
+
+    def __init__(self, name, geometry, order):
+        import sympy as sm
+
+        if geometry.dim < 2:
+            raise ValueError('serendipity elements need dimension 2 or 3! (%d)'
+                             % geometry.dim)
+        if order not in self.supported_orders:
+            raise ValueError('serendipity elements support only orders %s! (%d)'
+                             % (self.supported_orders, order))
+        PolySpace.__init__(self, name, geometry, order)
+
+        self.nodes, self.nts, self.node_coors = self._define_nodes()
+        self.n_nod = self.nodes.shape[0]
+
+        bfs = self.all_bfs[geometry.dim][order]
+        self.bfs = bfs[0]
+        self.bfgs = bfs[1]
+
+        x, y, z = sm.symbols('x y z')
+        vs = [x, y, z][:geometry.dim]
+
+        self._bfs = [sm.lambdify(vs, bf) for bf in self.bfs]
+        self._bfgs = [[sm.lambdify(vs, bfg) for bfg in bfgs]
+                      for bfgs in self.bfgs]
+
+    def create_context(self, cmesh, eps, check_errors, i_max, newton_eps,
+                       tdim=None):
+        pass
+
+    def _define_nodes(self):
+        geometry = self.geometry
+        order = self.order
+
+        n_v, dim = geometry.n_vertex, geometry.dim
+
+        vertex_map = order * nm.array(vertex_maps[dim], dtype=nm.int32)
+
+        # Only for orders 1, 2, 3!
+        if dim == 2:
+            n_nod = 4 * self.order
+
+        else:
+            n_nod = 8 + 12 * (self.order - 1)
+
+        nodes = nm.zeros((n_nod, 2 * dim), nm.int32)
+        nts = nm.zeros((n_nod, 2), nm.int32)
+
+        if order == 0:
+            nts[0, :] = [3, 0]
+            nodes[0, :] = nm.zeros((n_nod,), nm.int32)
+
+        else:
+            iseq = 0
+
+            # Vertex nodes.
+            nts[0:n_v, 0] = 0
+            nts[0:n_v, 1] = nm.arange(n_v, dtype=nm.int32)
+
+            if dim == 3:
+                for ii in range(n_v):
+                    i1, i2, i3 = vertex_map[ii]
+                    nodes[iseq, :] = [order - i1, i1,
+                                      order - i2, i2,
+                                      order - i3, i3]
+                    iseq += 1
+
+            else: # dim == 2:
+                for ii in range(n_v):
+                    i1, i2 = vertex_map[ii]
+                    nodes[iseq, :] = [order - i1, i1, order - i2, i2]
+                    iseq += 1
+
+            if dim == 2:
+                iseq = LagrangeNodes.append_tp_edges(nodes, nts, iseq, 1,
+                                                     geometry.edges, order)
+
+            elif dim == 3:
+                iseq = LagrangeNodes.append_tp_edges(nodes, nts, iseq, 1,
+                                                     geometry.edges, order)
+
+            else:
+                raise NotImplementedError
+
+        # Coordinates of the nodes.
+        c_min, c_max = self.bbox[:, 0]
+
+        cr = nm.arange(2 * dim)
+        node_coors = (nodes[:, cr[::2]] * c_min
+                      + nodes[:, cr[1::2]] * c_max) / order
+
+        return nodes, nts, nm.ascontiguousarray(node_coors)
+
+    def _eval_base(self, coors, diff=0, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        """
+        See :func:`PolySpace.eval_base()`.
+        """
+        dim = self.geometry.dim
+        if diff:
+            bdim = dim
+
+        else:
+            bdim = 1
+
+        base = nm.empty((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+
+        if diff == 0:
+            for ib, bf in enumerate(self._bfs):
+                base[:, 0, ib] = bf(*coors.T)
+
+        elif diff == 1:
+            for ib, bfg in enumerate(self._bfgs):
+                for ig in range(dim):
+                    base[:, ig, ib] = bfg[ig](*coors.T)
+
+        else:
+            raise NotImplementedError
+
+        return base
 
 class LobattoTensorProductPolySpace(FEPolySpace):
     """

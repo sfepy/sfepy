@@ -12,8 +12,9 @@ and the bottom element.
 
 All connectivity permutations of the two elements are tested.
 
-WARNING: Lagrange basis on 3_8 elements fails the test for order >= 3 for many
-connectivity permutations!
+The serendipity basis implementation is a pure python proof-of-concept. Its
+order in continuity tests is limited to 2 on 3_8 elements to decrease the tests
+run time.
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -46,13 +47,17 @@ def _gen_common_data(orders, gels, report):
     from sfepy.discrete.common.global_interp import get_ref_coors
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
-                                    ['lagrange', 'lobatto']])]
+                                    ['lagrange', 'serendipity', 'lobatto']])]
              + [ii for ii in combine([['2_3', '3_4'],
                                       ['lagrange']])])
     for geom, poly_space_base in bases:
-        report('geometry: %s, base: %s' % (geom, poly_space_base))
-
         order = orders[geom]
+        if (geom == '3_8') and (poly_space_base == 'serendipity'):
+            order = 2
+
+        report('geometry: %s, base: %s, order: %d'
+               % (geom, poly_space_base, order))
+
         integral = Integral('i', order=order)
 
         aux = '' if geom in ['2_4', '3_8'] else 'z'
@@ -128,6 +133,39 @@ class Test(TestCommon):
 
         return Test(conf=conf, options=options, gels=gels)
 
+    def test_partition_of_unity(self):
+        from sfepy.linalg import combine
+        from sfepy.discrete import Integral, PolySpace
+
+        ok = True
+        orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
+        bases = (
+            [ii for ii in combine(
+                [['2_4', '3_8'], ['lagrange', 'serendipity']]
+            )]
+            + [ii for ii in combine([['2_3', '3_4'], ['lagrange']])]
+        )
+
+        for geom, poly_space_base in bases:
+            max_order = orders[geom]
+            for order in range(max_order + 1):
+                if (poly_space_base == 'serendipity') and not (0 < order < 4):
+                    continue
+                self.report('geometry: %s, base: %s, order: %d'
+                            % (geom, poly_space_base, order))
+
+                integral = Integral('i', order=2 * order)
+                coors, _ = integral.get_qp(geom)
+
+                ps = PolySpace.any_from_args('ps', self.gels[geom], order,
+                                             base=poly_space_base)
+                vals = ps.eval_base(coors)
+                _ok = nm.allclose(vals.sum(axis=-1), 1, atol=1e-14, rtol=0.0)
+                self.report('partition of unity:', _ok)
+                ok = ok and _ok
+
+        return ok
+
     def test_continuity(self):
         ok = True
         orders = {'2_3' : 3, '2_4' : 3, '3_4' : 4, '3_8' : 3}
@@ -138,7 +176,7 @@ class Test(TestCommon):
              field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
-            if poly_space_base == 'lagrange':
+            if poly_space_base in ('lagrange', 'serendipity'):
                 rbf = ps.eval_base(rrc)
                 cbf = ps.eval_base(crc)
 
