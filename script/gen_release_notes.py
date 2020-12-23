@@ -26,7 +26,7 @@ def main():
     else:
         raw = subprocess.check_output(cmd.split())
 
-    msgs = raw.split('\n\n')
+    msgs = raw.split('\n"\n')
 
     merges = []
     ims = [0]
