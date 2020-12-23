@@ -954,6 +954,7 @@ Utility scripts
    src/script/gen_lobatto1d_c
    src/script/gen_mesh_prev
    src/script/gen_release_notes
+   src/script/gen_serendipity_basis
    src/script/gen_solver_table
    src/script/gen_term_table
    src/script/plot_condition_numbers
@@ -1082,6 +1083,7 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/poly_spaces
    src/sfepy/discrete/fem/refine
    src/sfepy/discrete/fem/refine_hanging
+   src/sfepy/discrete/fem/_serendipity
    src/sfepy/discrete/fem/utils
 
 sfepy.discrete.dg sub-package
