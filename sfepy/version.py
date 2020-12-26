@@ -1,5 +1,5 @@
 # SfePy version
-__version__ = '2020.3'
+__version__ = '2020.4'
 
 # "Minimal" supported versions.
 NUMPY_MIN_VERSION = '1.3'
