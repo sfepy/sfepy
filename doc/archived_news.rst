@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **24.09.2019** Version 2019.3 released (interface to eigenvalue problem
+  solvers in SLEPc, new Python 3 enabled Timer class and other Python 3
+  compatibility fixes, etc.), see :ref:`release notes <2019.2-2019.3>`.
+
 * **02.07.2019** Version 2019.2 released (improved support for time-dependent
   homogenization problems, Python 3.7 compatibility, etc.), see :ref:`release
   notes <2019.1-2019.2>`.
