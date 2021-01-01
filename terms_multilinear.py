@@ -43,6 +43,38 @@ def _get_char_map(c1, c2):
 
     return mm
 
+def collect_modifiers(modifiers):
+    def _collect_modifiers(toks):
+        if len(toks) > 1:
+            out = []
+            modifiers.append([])
+            for ii, mod in enumerate(toks[::3]):
+                tok = toks[3*ii+1]
+                tok = tok.replace(tok[0], toks[2])
+                modifiers[-1].append(list(toks))
+                out.append(tok)
+            return out
+
+        else:
+            modifiers.append(None)
+            return toks
+    return _collect_modifiers
+
+def parse_term_expression(texpr):
+    mods = 's'
+    lparen, rparen = map(Suppress, '()')
+    simple_arg = Word(alphas + '.:0')
+    arrow = Literal('->').suppress()
+    letter = Word(alphas, exact=1)
+    mod_arg = oneOf(mods) + lparen + simple_arg + rparen + arrow + letter
+    arg = OneOrMore(simple_arg ^ mod_arg)
+    modifiers = []
+    arg.setParseAction(collect_modifiers(modifiers))
+
+    parser = delimitedList(Combine(arg))
+    eins = parser.parseString(texpr, parseAll=True)
+    return eins, modifiers
+
 def append_all(seqs, item, ii=None):
     if ii is None:
         for seq in seqs:
@@ -515,38 +547,6 @@ class ExpressionBuilder(Struct):
         else:
             raise ValueError('unknown transformation! ({})'
                              .format(transformation))
-
-def collect_modifiers(modifiers):
-    def _collect_modifiers(toks):
-        if len(toks) > 1:
-            out = []
-            modifiers.append([])
-            for ii, mod in enumerate(toks[::3]):
-                tok = toks[3*ii+1]
-                tok = tok.replace(tok[0], toks[2])
-                modifiers[-1].append(list(toks))
-                out.append(tok)
-            return out
-
-        else:
-            modifiers.append(None)
-            return toks
-    return _collect_modifiers
-
-def parse_term_expression(texpr):
-    mods = 's'
-    lparen, rparen = map(Suppress, '()')
-    simple_arg = Word(alphas + '.:0')
-    arrow = Literal('->').suppress()
-    letter = Word(alphas, exact=1)
-    mod_arg = oneOf(mods) + lparen + simple_arg + rparen + arrow + letter
-    arg = OneOrMore(simple_arg ^ mod_arg)
-    modifiers = []
-    arg.setParseAction(collect_modifiers(modifiers))
-
-    parser = delimitedList(Combine(arg))
-    eins = parser.parseString(texpr, parseAll=True)
-    return eins, modifiers
 
 class ETermBase(Struct):
     """
