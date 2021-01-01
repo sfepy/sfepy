@@ -100,6 +100,35 @@ def find_free_indices(indices):
 def get_cell_indices(subs):
     return [indices.index('c') if 'c' in indices else None for indices in subs]
 
+def get_einsum_ops(eargs, ebuilder, expr_cache):
+    dargs = {arg.name : arg for arg in eargs}
+
+    operands = [[] for ia in range(ebuilder.n_add)]
+    for ia in range(ebuilder.n_add):
+        for oname in ebuilder.operand_names[ia]:
+            arg_name, val_name = oname.split('.')
+            arg = dargs[arg_name]
+            if val_name == 'dofs':
+                step_cache = arg.arg.evaluate_cache.setdefault('dofs', {})
+                cache = step_cache.setdefault(0, {})
+                op = arg.get_dofs(cache, expr_cache, oname)
+
+            elif val_name == 'I':
+                op = ebuilder.make_eye(arg.n_components)
+
+            elif val_name == 'Psg':
+                op = ebuilder.make_psg(arg.dim)
+
+            else:
+                op = dargs[arg_name].get(
+                    val_name,
+                    msg_if_none='{} has no attribute {}!'
+                    .format(arg_name, val_name)
+                )
+            operands[ia].append(op)
+
+    return operands
+
 def get_slice_ops(subs, ops):
     ics = get_cell_indices(subs)
 
@@ -828,34 +857,7 @@ class ETermBase(Struct):
         return eval_einsum
 
     def get_operands(self):
-        ebuilder = self.ebuilder
-        dargs = {arg.name : arg for arg in self.eargs}
-
-        operands = [[] for ia in range(ebuilder.n_add)]
-        for ia in range(ebuilder.n_add):
-            for oname in ebuilder.operand_names[ia]:
-                arg_name, val_name = oname.split('.')
-                arg = dargs[arg_name]
-                if val_name == 'dofs':
-                    step_cache = arg.arg.evaluate_cache.setdefault('dofs', {})
-                    cache = step_cache.setdefault(0, {})
-                    op = arg.get_dofs(cache, self.expr_cache, oname)
-
-                elif val_name == 'I':
-                    op = ebuilder.make_eye(arg.n_components)
-
-                elif val_name == 'Psg':
-                    op = ebuilder.make_psg(arg.dim)
-
-                else:
-                    op = dargs[arg_name].get(
-                        val_name,
-                        msg_if_none='{} has no attribute {}!'
-                        .format(arg_name, val_name)
-                    )
-                operands[ia].append(op)
-
-        return operands
+        return get_einsum_ops(self.eargs, self.ebuilder, self.expr_cache)
 
     def get_paths(self, expressions, operands):
         memory_limit = self.backend_kwargs.get('memory_limit')
