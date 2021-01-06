@@ -631,7 +631,7 @@ class ETermBase(Struct):
 
         if (hasattr(self, 'backend')
             and (backend == self.backend) and (optimize == self.optimize)
-            and (layout == self.layout)):
+            and (layout == self.layout) and (kwargs == self.backend_kwargs)):
             return
 
         if layout is not None:
