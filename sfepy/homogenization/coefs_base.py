@@ -3,6 +3,7 @@ import os
 
 import numpy as nm
 import scipy as sc
+from collections.abc import Iterable
 
 from sfepy.base.base import output, assert_, get_default, debug, Struct
 from sfepy.base.timing import Timer
@@ -854,7 +855,7 @@ class VolumeFractions(MiniAppBase):
         return vf
 
 
-class CoefNN(MiniAppBase):
+class CoefMN(MiniAppBase):
     @staticmethod
     def set_variables_default(variables, ir, ic, mode, set_var, data, dtype):
         def get_corr_state(corr, ir, ic):
@@ -923,17 +924,22 @@ class CoefNN(MiniAppBase):
         return coef
 
     def __call__(self, volume, problem=None, data=None):
-        row = [(ii, None) for ii in range(self.dim)]
-        col = [(None, ii) for ii in range(self.dim)]
+        if isinstance(self.dim, Iterable) and len(self.dim) >= 2:
+            dim1, dim2 = self.dim[:2]
+        else:
+            dim1 = dim2 = self.dim
+
+        row = [(ii, None) for ii in range(dim1)]
+        col = [(None, ii) for ii in range(dim2)]
 
         return self.get_coef(row, col, volume, problem, data)
 
 
-class CoefDimDim(CoefNN):
+class CoefDimDim(CoefMN):
     pass
 
 
-class CoefSymSym(CoefNN):
+class CoefSymSym(CoefMN):
     iter_sym = staticmethod(iter_sym)
     is_sym = True
 
@@ -949,7 +955,7 @@ class CoefNonSymNonSym(CoefSymSym):
     is_sym = False
 
 
-class CoefDimSym(CoefNN):
+class CoefDimSym(CoefMN):
     def __call__(self, volume, problem=None, data=None):
         problem = get_default(problem, self.problem)
         dim = problem.get_dim()
@@ -959,11 +965,11 @@ class CoefDimSym(CoefNN):
         return self.get_coef(row, col, volume, problem, data)
 
 
-class CoefN(CoefNN):
+class CoefN(CoefMN):
     @staticmethod
     def set_variables_default(variables, ir, ic, mode, set_var, data, dtype):
         mode = mode + '_only'
-        CoefNN.set_variables_default(variables, ir, ic, mode, set_var, data,
+        CoefMN.set_variables_default(variables, ir, ic, mode, set_var, data,
                                      dtype)
 
     def get_coef(self, row, volume, problem, data):
