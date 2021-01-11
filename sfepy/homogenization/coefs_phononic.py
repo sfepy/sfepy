@@ -718,7 +718,7 @@ class DensityVolumeInfo(MiniAppBase):
 
         return Struct(name='density_volume_info',
                       average_density=average_density,
-                      total_volume=total_volume,
+                      total_volume=true_volume,
                       volumes=volumes,
                       densities=densities,
                       to_file_txt=self.to_file_txt)
