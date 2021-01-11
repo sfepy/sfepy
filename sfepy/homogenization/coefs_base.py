@@ -3,6 +3,7 @@ import os
 
 import numpy as nm
 import scipy as sc
+from collections.abc import Iterable
 
 from sfepy.base.base import output, assert_, get_default, debug, Struct
 from sfepy.base.timing import Timer
@@ -923,8 +924,13 @@ class CoefNN(MiniAppBase):
         return coef
 
     def __call__(self, volume, problem=None, data=None):
-        row = [(ii, None) for ii in range(self.dim)]
-        col = [(None, ii) for ii in range(self.dim)]
+        if isinstance(self.dim, Iterable) and len(self.dim) >= 2:
+            dim1, dim2 = self.dim[:2]
+        else:
+            dim1 = dim2 = self.dim
+
+        row = [(ii, None) for ii in range(dim1)]
+        col = [(None, ii) for ii in range(dim2)]
 
         return self.get_coef(row, col, volume, problem, data)
 
