@@ -651,10 +651,7 @@ class ETermBase(Term):
         self.backend = backend
         self.optimize = optimize
         self.backend_kwargs = kwargs
-        self.eargs = None
-        self.ebuilder = None
-        self.paths, self.path_infos = None, None
-        self.eval_einsum = None
+        self.einfos = {}
         self.clear_cache()
 
     def clear_cache(self):
@@ -672,27 +669,41 @@ class ETermBase(Term):
         else:
             n_add = 1
 
-        self.ebuilder = ExpressionBuilder(n_add, self.expr_cache)
-        self.ebuilder.build(texpr, *eargs, diff_var=diff_var)
+        ebuilder = ExpressionBuilder(n_add, self.expr_cache)
+        ebuilder.build(texpr, *eargs, diff_var=diff_var)
         if self.verbosity:
             output('build expression: {} s'.format(timer.stop()))
+
+        return ebuilder
 
     def make_function(self, texpr, *args, diff_var=None):
         timer = Timer('')
         timer.start()
-        if hasattr(self, 'eval_einsum') and (self.eval_einsum is not None):
+
+        einfo = self.einfos.setdefault(diff_var, Struct(
+            eargs=None,
+            ebuilder=None,
+            paths=None,
+            path_infos=None,
+            eval_einsum=None,
+        ))
+
+        if einfo.eval_einsum is not None:
             if self.verbosity:
                 output('einsum setup: {} s'.format(timer.stop()))
-            return self.eval_einsum
+            return einfo.eval_einsum
 
-        if not hasattr(self, 'eargs') or (self.eargs is None):
-            self.eargs = [ExpressionArg.from_term_arg(arg, self, self.expr_cache)
-                          for arg in args]
+        if einfo.eargs is None:
+            einfo.eargs = [
+                ExpressionArg.from_term_arg(arg, self, self.expr_cache)
+                for arg in args
+            ]
 
-        if not hasattr(self, 'ebuilder') or (self.ebuilder is None):
-            self.build_expression(texpr, *self.eargs, diff_var=diff_var)
+        if einfo.ebuilder is None:
+            einfo.ebuilder = self.build_expression(texpr, *einfo.eargs,
+                                                   diff_var=diff_var)
 
-        n_add = self.ebuilder.n_add
+        n_add = einfo.ebuilder.n_add
 
         if self.backend in ('numpy', 'opt_einsum'):
             contract = {'numpy' : nm.einsum,
@@ -854,15 +865,16 @@ class ETermBase(Term):
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
 
-        self.eval_einsum = eval_einsum
+        einfo.eval_einsum = eval_einsum
 
         if self.verbosity:
             output('einsum setup: {} s'.format(timer.stop()))
 
         return eval_einsum
 
-    def get_operands(self):
-        return get_einsum_ops(self.eargs, self.ebuilder, self.expr_cache)
+    def get_operands(self, diff_var):
+        einfo = self.einfos[diff_var]
+        return get_einsum_ops(einfo.eargs, einfo.ebuilder, self.expr_cache)
 
     def get_paths(self, expressions, operands):
         memory_limit = self.backend_kwargs.get('memory_limit')
@@ -897,9 +909,10 @@ class ETermBase(Term):
         mode, term_mode, diff_var = args[-3:]
 
         eval_einsum = self.get_function(*args, **kwargs)
-        operands = self.get_operands()
+        operands = self.get_operands(diff_var)
 
-        ebuilder = self.ebuilder
+        einfo = self.einfos[diff_var]
+        ebuilder = einfo.ebuilder
         eshape = ebuilder.get_output_shape(0, operands)
 
         out = [eval_einsum, eshape]
@@ -942,20 +955,20 @@ class ETermBase(Term):
             expressions = self.parsed_expressions
             out += [expressions, operands]
 
-        if not hasattr(self, 'paths') or (self.paths is None):
+        if einfo.paths is None:
             if self.verbosity > 1:
-                self.ebuilder.print_shapes(operands)
+                ebuilder.print_shapes(operands)
 
-            self.paths, self.path_infos = self.get_paths(
+            einfo.paths, einfo.path_infos = self.get_paths(
                 expressions,
                 poperands,
             )
             if self.verbosity > 2:
-                for path, path_info in zip(self.paths, self.path_infos):
+                for path, path_info in zip(einfo.paths, einfo.path_infos):
                     output('path:', path)
                     output(path_info)
 
-        out += [self.paths]
+        out += [einfo.paths]
 
         return out
 
@@ -967,8 +980,9 @@ class ETermBase(Term):
 
         self.get_function(*args, **kwargs)
 
-        operands = self.get_operands()
-        out_shape = self.ebuilder.get_output_shape(0, operands)
+        operands = self.get_operands(diff_var)
+        ebuilder = self.einfos[diff_var].ebuilder
+        out_shape = ebuilder.get_output_shape(0, operands)
 
         dtype = nm.find_common_type([op.dtype for op in operands[0]], [])
 
