@@ -577,7 +577,7 @@ class ExpressionBuilder(Struct):
             raise ValueError('unknown transformation! ({})'
                              .format(transformation))
 
-class ETermBase(Struct):
+class ETermBase(Term):
     """
     Reserved letters:
 
@@ -611,6 +611,11 @@ class ETermBase(Struct):
     }
 
     layout_letters = 'cqgvd0'
+
+    def __init__(self, *args, **kwargs):
+        Term.__init__(self, *args, **kwargs)
+
+        self.set_backend(**kwargs)
 
     @staticmethod
     def function(out, eval_einsum, *args):
@@ -969,7 +974,7 @@ class ETermBase(Struct):
 
         return out_shape, dtype
 
-class ELaplaceTerm(ETermBase, Term):
+class ELaplaceTerm(ETermBase):
     name = 'dw_elaplace'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
@@ -995,7 +1000,7 @@ class ELaplaceTerm(ETermBase, Term):
 
         return fun
 
-class EVolumeDotTerm(ETermBase, Term):
+class EVolumeDotTerm(ETermBase):
     name = 'dw_evolume_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
@@ -1022,7 +1027,7 @@ class EVolumeDotTerm(ETermBase, Term):
 
         return fun
 
-class EConvectTerm(ETermBase, Term):
+class EConvectTerm(ETermBase):
     name = 'dw_econvect'
     arg_types = ('virtual', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
@@ -1033,7 +1038,7 @@ class EConvectTerm(ETermBase, Term):
             'i,i.j,j', virtual, state, state, diff_var=diff_var,
         )
 
-class EDivTerm(ETermBase, Term):
+class EDivTerm(ETermBase):
     name = 'dw_ediv'
     arg_types = ('opt_material', 'virtual')
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None)},
@@ -1053,7 +1058,7 @@ class EDivTerm(ETermBase, Term):
 
         return fun
 
-class EStokesTerm(ETermBase, Term):
+class EStokesTerm(ETermBase):
     name = 'dw_estokes'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'state', 'virtual'),
@@ -1079,7 +1084,7 @@ class EStokesTerm(ETermBase, Term):
 
         return fun
 
-class ELinearElasticTerm(ETermBase, Term):
+class ELinearElasticTerm(ETermBase):
     name = 'dw_elin_elastic'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
@@ -1093,7 +1098,7 @@ class ELinearElasticTerm(ETermBase, Term):
             'IK,s(i:j)->I,s(k:l)->K', mat, virtual, state, diff_var=diff_var,
         )
 
-class ECauchyStressTerm(ETermBase, Term):
+class ECauchyStressTerm(ETermBase):
     name = 'ev_ecauchy_stress'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
