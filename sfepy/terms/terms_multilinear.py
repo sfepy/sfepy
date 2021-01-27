@@ -26,10 +26,8 @@ from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
 
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
-from sfepy.discrete import FieldVariable
 from sfepy.mechanics.tensors import dim2sym
 from sfepy.terms.terms import Term
-from sfepy.terms import register_term
 
 def _get_char_map(c1, c2):
     mm = {}
@@ -152,6 +150,8 @@ class ExpressionArg(Struct):
 
     @staticmethod
     def from_term_arg(arg, term, cache):
+        from sfepy.discrete import FieldVariable
+
         if isinstance(arg, FieldVariable):
             ag, _ = term.get_mapping(arg)
             bf = ag.bf
@@ -995,8 +995,6 @@ class ELaplaceTerm(ETermBase, Term):
 
         return fun
 
-register_term(ELaplaceTerm)
-
 class EVolumeDotTerm(ETermBase, Term):
     name = 'dw_evolume_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -1024,8 +1022,6 @@ class EVolumeDotTerm(ETermBase, Term):
 
         return fun
 
-register_term(EVolumeDotTerm)
-
 class EConvectTerm(ETermBase, Term):
     name = 'dw_econvect'
     arg_types = ('virtual', 'state')
@@ -1036,8 +1032,6 @@ class EConvectTerm(ETermBase, Term):
         return self.make_function(
             'i,i.j,j', virtual, state, state, diff_var=diff_var,
         )
-
-register_term(EConvectTerm)
 
 class EDivTerm(ETermBase, Term):
     name = 'dw_ediv'
@@ -1058,8 +1052,6 @@ class EDivTerm(ETermBase, Term):
             )
 
         return fun
-
-register_term(EDivTerm)
 
 class EStokesTerm(ETermBase, Term):
     name = 'dw_estokes'
@@ -1087,8 +1079,6 @@ class EStokesTerm(ETermBase, Term):
 
         return fun
 
-register_term(EStokesTerm)
-
 class ELinearElasticTerm(ETermBase, Term):
     name = 'dw_elin_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -1103,8 +1093,6 @@ class ELinearElasticTerm(ETermBase, Term):
             'IK,s(i:j)->I,s(k:l)->K', mat, virtual, state, diff_var=diff_var,
         )
 
-register_term(ELinearElasticTerm)
-
 class ECauchyStressTerm(ETermBase, Term):
     name = 'ev_ecauchy_stress'
     arg_types = ('material', 'parameter')
@@ -1115,5 +1103,3 @@ class ECauchyStressTerm(ETermBase, Term):
         return self.make_function(
             'IK,s(k:l)->K', mat, parameter, diff_var=diff_var,
         )
-
-register_term(ECauchyStressTerm)
