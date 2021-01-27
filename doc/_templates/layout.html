@@ -1,0 +1,39 @@
+{# Import the theme's layout. #}
+{% extends "!layout.html" %}
+
+{% block extrahead %}
+{{ super() }}
+
+<meta name="description" content="SfePy - simple finite elements in Python">
+<meta name="author" content="SfePy Developers">
+<meta name="keywords" content="FEM, finite element method, Python">
+
+{% endblock %}
+
+{% block menu %}
+    {{ super() }}
+
+    {% if menu_links %}
+        <p class="caption">
+            <span class="caption-text">
+            {% if menu_links_name %}
+                {{ menu_links_name }}
+            {% else %}
+                External links
+            {% endif %}
+            </span>
+        </p>
+        <ul>
+            {% for text, link in menu_links %}
+                {% if hasdoc(link) %}
+                    <li class="toctree-l1"><a href="{{ pathto(link) }}">{{ text }}</a></li>
+                {% else %}
+                    <li class="toctree-l1"><a href="{{ link }}">{{ text }}</a></li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <div class="logo_zcu_container">
+      <a href="https://www.zcu.cz/en"><img src="{{ pathto('_static/uwb_logo.png', 1) }}"></a>
+    </div>
+{% endblock %}
