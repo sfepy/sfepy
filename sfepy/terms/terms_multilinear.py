@@ -103,7 +103,7 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
 
     operands = [[] for ia in range(ebuilder.n_add)]
     for ia in range(ebuilder.n_add):
-        for oname in ebuilder.operand_names[ia]:
+        for io, oname in enumerate(ebuilder.operand_names[ia]):
             arg_name, val_name = oname.split('.')
             arg = dargs[arg_name]
             if val_name == 'dofs':
@@ -123,6 +123,12 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
                     msg_if_none='{} has no attribute {}!'
                     .format(arg_name, val_name)
                 )
+                ics = ebuilder.components[ia][io]
+                if len(ics):
+                    iis = [slice(None)] * 2
+                    iis += [slice(None) if ic is None else ic for ic in ics]
+                    op = op[iis]
+
             operands[ia].append(op)
 
     return operands
@@ -231,6 +237,7 @@ class ExpressionBuilder(Struct):
         self.n_add = n_add
         self.subscripts = [[] for ia in range(n_add)]
         self.operand_names = [[] for ia in range(n_add)]
+        self.components = [[] for ia in range(n_add)]
         self.out_subscripts = ['c' for ia in range(n_add)]
         self.ia = 0
         self.cache = cache
@@ -267,10 +274,12 @@ class ExpressionBuilder(Struct):
     def add_constant(self, name, cname):
         append_all(self.subscripts, 'cq')
         append_all(self.operand_names, '.'.join((name, cname)))
+        append_all(self.components, [])
 
     def add_bfg(self, iin, ein, name):
         append_all(self.subscripts, 'cq{}{}'.format(ein[2], iin))
         append_all(self.operand_names, name + '.bfg')
+        append_all(self.components, [])
 
     def add_bf(self, iin, ein, name, cell_dependent=False):
         if cell_dependent:
@@ -280,15 +289,18 @@ class ExpressionBuilder(Struct):
             append_all(self.subscripts, 'q{}'.format(iin))
 
         append_all(self.operand_names, name + '.bf')
+        append_all(self.components, [])
 
     def add_eye(self, iic, ein, name, iia=None):
         append_all(self.subscripts, '{}{}'.format(ein[0], iic), ii=iia)
         append_all(self.operand_names, '{}.I'.format(name), ii=iia)
+        append_all(self.components, [])
 
     def add_psg(self, iic, ein, name, iia=None):
         append_all(self.subscripts, '{}{}{}'.format(iic, ein[2], ein[0]),
                    ii=iia)
         append_all(self.operand_names, name + '.Psg', ii=iia)
+        append_all(self.components, [])
 
     def add_arg_dofs(self, iin, ein, name, n_components, iia=None):
         if n_components > 1:
@@ -300,6 +312,7 @@ class ExpressionBuilder(Struct):
 
         append_all(self.subscripts, term, ii=iia)
         append_all(self.operand_names, name + '.dofs', ii=iia)
+        append_all(self.components, [])
 
     def add_virtual_arg(self, arg, ii, ein, modifier):
         iin = self.letters[ii] # node (qs basis index)
@@ -378,7 +391,20 @@ class ExpressionBuilder(Struct):
             self.ia += 1
 
     def add_material_arg(self, arg, ii, ein):
-        append_all(self.subscripts, 'cq{}'.format(ein))
+        append_all(self.components, [])
+        rein = []
+        for ii, ie in enumerate(ein):
+            if str.isnumeric(ie):
+                for comp in self.components:
+                    comp[-1].append(int(ie))
+
+            else:
+                for comp in self.components:
+                    comp[-1].append(None)
+                rein.append(ie)
+        rein = ''.join(rein)
+
+        append_all(self.subscripts, 'cq{}'.format(rein))
         append_all(self.operand_names, arg.name + '.arg')
 
     def build(self, texpr, *args, diff_var=None):
