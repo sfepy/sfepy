@@ -22,7 +22,7 @@ except ImportError:
     jnp = jax = None
 
 from pyparsing import (Word, Suppress, oneOf, OneOrMore, delimitedList,
-                       Combine, alphas, Literal)
+                       Combine, alphas, alphanums, Literal)
 
 from sfepy.base.base import output, Struct
 from sfepy.base.timing import Timer
@@ -61,7 +61,7 @@ def collect_modifiers(modifiers):
 def parse_term_expression(texpr):
     mods = 's'
     lparen, rparen = map(Suppress, '()')
-    simple_arg = Word(alphas + '.:0')
+    simple_arg = Word(alphanums + '.:')
     arrow = Literal('->').suppress()
     letter = Word(alphas, exact=1)
     mod_arg = oneOf(mods) + lparen + simple_arg + rparen + arrow + letter
