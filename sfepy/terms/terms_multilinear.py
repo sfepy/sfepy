@@ -1035,7 +1035,7 @@ class ELaplaceTerm(ETermBase):
 
         else:
             fun = self.make_function(
-                'jk,0.j,0.k', mat, virtual, state, diff_var=diff_var,
+                '00,0.j,0.j', mat, virtual, state, diff_var=diff_var,
             )
 
         return fun
@@ -1093,7 +1093,7 @@ class EDivTerm(ETermBase):
 
         else:
             fun = self.make_function(
-                '0,i.i', mat, virtual, diff_var=diff_var,
+                '00,i.i', mat, virtual, diff_var=diff_var,
             )
 
         return fun
@@ -1119,7 +1119,7 @@ class EStokesTerm(ETermBase):
 
         else:
             fun = self.make_function(
-                '0,i.i,0', coef, var_v, var_s, diff_var=diff_var,
+                '00,i.i,0', coef, var_v, var_s, diff_var=diff_var,
             )
 
         return fun
