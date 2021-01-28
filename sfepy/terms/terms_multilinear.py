@@ -127,7 +127,7 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
                 if len(ics):
                     iis = [slice(None)] * 2
                     iis += [slice(None) if ic is None else ic for ic in ics]
-                    op = op[iis]
+                    op = op[tuple(iis)]
 
             operands[ia].append(op)
 
