@@ -732,8 +732,7 @@ class ETermBase(Term):
         n_add = einfo.ebuilder.n_add
 
         if self.backend in ('numpy', 'opt_einsum'):
-            contract = {'numpy' : nm.einsum,
-                        'opt_einsum' : oe.contract}[self.backend]
+            contract = nm.einsum if self.backend == 'numpy' else oe.contract
             def eval_einsum_orig(out, eshape, expressions, operands, paths):
                 if operands[0][0].flags.c_contiguous:
                     # This is very slow if vout layout differs from operands
@@ -801,8 +800,7 @@ class ETermBase(Term):
             eval_einsum = locals()[eval_fun]
 
         elif self.backend in ('numpy_loop', 'opt_einsum_loop'):
-            contract = {'numpy_loop' : nm.einsum,
-                        'opt_einsum_loop' : oe.contract}[self.backend]
+            contract = nm.einsum if self.backend == 'numpy_loop' else oe.contract
             def eval_einsum(out, eshape, expressions, all_slice_ops, paths):
                 n_cell = out.shape[0]
                 vout = out.reshape(eshape)
