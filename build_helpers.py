@@ -19,9 +19,9 @@ import fnmatch
 from distutils.cmd import Command
 from os.path import join as pjoin, dirname
 from distutils.command.clean import clean
-from distutils.version import LooseVersion
 from distutils.dep_util import newer_group
 from distutils.errors import DistutilsError
+from pkg_resources import parse_version
 
 from numpy.distutils.misc_util import appendpath
 from numpy.distutils import log
@@ -193,7 +193,7 @@ def have_good_cython():
         from Cython.Compiler.Version import version
     except ImportError:
         return False
-    return LooseVersion(version) >= LooseVersion(CYTHON_MIN_VERSION)
+    return parse_version(version) >= parse_version(CYTHON_MIN_VERSION)
 
 def generate_a_pyrex_source(self, base, ext_name, source, extension):
     '''
@@ -241,7 +241,7 @@ def generate_a_pyrex_source(self, base, ext_name, source, extension):
                                  (CYTHON_MIN_VERSION, source))
     return target_file
 
-def package_check(pkg_name, version=None, optional=False, checker=LooseVersion,
+def package_check(pkg_name, version=None, optional=False, checker=parse_version,
                   version_getter=None, messages=None, show_only=False):
     """
     Check if package `pkg_name` is present, and in correct version.
@@ -259,7 +259,7 @@ def package_check(pkg_name, version=None, optional=False, checker=LooseVersion,
        otherwise warn
     checker : callable, optional
        If given, the callable with which to return a comparable thing from a
-       version string. The default is ``distutils.version.LooseVersion``.
+       version string. The default is ``pkg_resources.parse_version``.
     version_getter : callable, optional:
        If given, the callable that takes `pkg_name` as argument, and returns
        the package version string - as in::
