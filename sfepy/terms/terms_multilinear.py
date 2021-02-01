@@ -1023,9 +1023,6 @@ class ELaplaceTerm(ETermBase):
 
     def get_function(self, mat, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
-        """
-        diff_var not needed here(?), but Term passes it in *args.
-        """
         if mat is None:
             fun = self.make_function(
                 '0.j,0.j', virtual, state, diff_var=diff_var,
