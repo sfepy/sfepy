@@ -965,7 +965,8 @@ class ETermBase(Term):
             else:
                 out += [expressions, all_slice_ops]
 
-        elif self.backend.startswith('opt_einsum_dask'):
+        elif (self.backend.startswith('dask')
+              or self.backend.startswith('opt_einsum_dask')):
             c_chunk_size = self.backend_kwargs.get('c_chunk_size')
             da_operands = ebuilder.transform(subscripts, operands,
                                              transformation='dask',
