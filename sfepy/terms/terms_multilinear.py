@@ -859,12 +859,12 @@ class ETermBase(Term):
             scheduler = {'dask_single' : 'single-threaded',
                          'dask_threads' : 'threads'}[self.backend]
             def eval_einsum(out, eshape, expressions, operands, paths):
-                _out = da.einsum(self.parsed_expressions[0], *operands[0],
-                                 optimize=self.paths[0])
+                _out = da.einsum(expressions[0], *operands[0],
+                                 optimize=paths[0])
                 for ia in range(1, n_add):
-                    aux = da.einsum(self.parsed_expressions[ia],
+                    aux = da.einsum(expressions[ia],
                                     *operands[ia],
-                                    optimize=self.paths[ia])
+                                    optimize=paths[ia])
                     _out += aux
 
                 out[:] = _out.compute(scheduler=scheduler).reshape(out.shape)
@@ -873,14 +873,14 @@ class ETermBase(Term):
             scheduler = {'opt_einsum_dask_single' : 'single-threaded',
                          'opt_einsum_dask_threads' : 'threads'}[self.backend]
 
-            def eval_einsum(out, eshape, expressions, da_operands, paths):
-                _out = oe.contract(self.parsed_expressions[0], *da_operands[0],
-                                   optimize=self.paths[0],
+            def eval_einsum(out, eshape, expressions, operands, paths):
+                _out = oe.contract(expressions[0], *operands[0],
+                                   optimize=paths[0],
                                    backend='dask')
                 for ia in range(1, n_add):
-                    aux = oe.contract(self.parsed_expressions[ia],
-                                      *da_operands[ia],
-                                      optimize=self.paths[ia],
+                    aux = oe.contract(expressions[ia],
+                                      *operands[ia],
+                                      optimize=paths[ia],
                                       backend='dask')
                     _out += aux
 
