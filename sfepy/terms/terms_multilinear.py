@@ -1063,6 +1063,29 @@ class EVolumeDotTerm(ETermBase):
 
         return fun
 
+class EDivGradTerm(ETermBase):
+    name = 'dw_ediv_grad'
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                  {'opt_material' : None}]
+    modes = ('weak', 'eval')
+
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        if mat is None:
+            fun = self.make_function(
+                'i.j,i.j', virtual, state, diff_var=diff_var,
+            )
+
+        else:
+            fun = self.make_function(
+                '00,i.j,i.j', mat, virtual, state, diff_var=diff_var,
+            )
+
+        return fun
+
 class EConvectTerm(ETermBase):
     name = 'dw_econvect'
     arg_types = ('virtual', 'state')
