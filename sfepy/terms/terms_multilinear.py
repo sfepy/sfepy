@@ -1063,6 +1063,10 @@ class EVolumeDotTerm(ETermBase):
 
         return fun
 
+class ESurfaceDotTerm(EVolumeDotTerm):
+    name = 'dw_esurface_dot'
+    integration = 'surface'
+
 class EDivGradTerm(ETermBase):
     name = 'dw_ediv_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
