@@ -13,6 +13,7 @@ from sfepy.base.timing import Timer
 from sfepy.discrete import Materials, Variables, create_adof_conns
 from sfepy.discrete.common.extmods.cmesh import create_mesh_graph
 from sfepy.terms import Terms, Term
+from sfepy.terms.terms_multilinear import ETermBase
 import six
 
 def parse_definition(equation_def):
@@ -51,7 +52,7 @@ class Equations(Container):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  user=None, verbose=True):
+                  user=None, eterm_options=None, verbose=True):
 
         objs = OneTypeList(Equation)
 
@@ -63,7 +64,8 @@ class Equations(Container):
                 output('equation "%s":' %  name)
                 output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
-                                    materials, integrals, user=user)
+                                    materials, integrals, user=user,
+                                    eterm_options=eterm_options)
             objs.append(eq)
             ii += 1
 
@@ -765,12 +767,18 @@ class Equation(Struct):
 
     @staticmethod
     def from_desc(name, desc, variables, regions, materials, integrals,
-                  user=None):
+                  user=None, eterm_options=None):
         term_descs = parse_definition(desc)
         terms = Terms.from_desc(term_descs, regions, integrals)
 
         terms.setup()
         terms.assign_args(variables, materials, user)
+
+        if eterm_options is not None:
+            for term in terms:
+                if isinstance(term, ETermBase):
+                    term.verbosity = eterm_options.get('verbosity', 0)
+                    term.set_backend(**eterm_options.get('backend_args', {}))
 
         obj = Equation(name, terms)
 

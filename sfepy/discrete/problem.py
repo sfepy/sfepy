@@ -527,10 +527,12 @@ class Problem(Struct):
         if user is not None:
             default_user.update(user)
         user = default_user
+        eterm_options = self.conf.options.get('eterm', {})
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         materials, self.integrals,
-                                        user=user)
+                                        user=user,
+                                        eterm_options=eterm_options)
 
         self.equations = equations
 
