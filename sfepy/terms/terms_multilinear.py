@@ -477,7 +477,7 @@ class ExpressionBuilder(Struct):
             for name, ii, op in zip(self.operand_names[ia],
                                     self.subscripts[ia],
                                     operands[ia]):
-                output('  {:10}{:8}{}'.format(name, ii, op.shape))
+                output('  {:10} {:8} {}'.format(name, ii, op.shape))
 
     def apply_layout(self, layout, operands, defaults=None, verbosity=0):
         if layout == 'cqgvd0':
