@@ -1057,9 +1057,15 @@ class EVolumeDotTerm(ETermBase):
             )
 
         else:
-            fun = self.make_function(
-                'ij,i,j', mat, virtual, state, diff_var=diff_var,
-            )
+            if mat.shape[-1] > 1:
+                fun = self.make_function(
+                    'ij,i,j', mat, virtual, state, diff_var=diff_var,
+                )
+
+            else:
+                fun = self.make_function(
+                    '00,i,i', mat, virtual, state, diff_var=diff_var,
+                )
 
         return fun
 
