@@ -188,6 +188,7 @@ class ExpressionArg(Struct):
             shape = (ag.n_el, arg.n_components, ag.bf.shape[-1])
             obj = ExpressionArg(name=arg.name, arg=arg, bf=_bf, bfg=ag.bfg,
                                 det=ag.det[..., 0, 0],
+                                region_name=term.region.name,
                                 conn=conn, shape=shape,
                                 n_components=arg.n_components,
                                 dim=arg.dim,
@@ -210,7 +211,8 @@ class ExpressionArg(Struct):
     def get_dofs(self, cache, expr_cache, oname):
         if self.kind != 'state': return
 
-        dofs = cache.get(self.name)
+        key = (self.name, self.region_name)
+        dofs = cache.get(key)
         if dofs is None:
             arg = self.arg
             dofs_vec = self.arg().reshape((-1, arg.n_components))
@@ -220,7 +222,7 @@ class ExpressionArg(Struct):
             dofs = dofs_vec[self.conn].transpose((0, 2, 1))
             if arg.n_components == 1:
                 dofs.shape = (dofs.shape[0], -1)
-            cache[arg.name] = dofs
+            cache[key] = dofs
 
             # New dofs -> clear dofs from expression cache.
             for key in list(expr_cache.keys()):
