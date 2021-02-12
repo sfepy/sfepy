@@ -571,7 +571,7 @@ class ExpressionBuilder(Struct):
                 poperands.append(pops)
                 all_slice_ops.append(slice_ops)
 
-            return expressions, poperands, all_slice_ops
+            return tuple(expressions), poperands, all_slice_ops
 
         elif transformation == 'dask':
             da_operands = []
@@ -921,10 +921,16 @@ class ETermBase(Term):
             ) for ia in range(len(operands))])
 
         elif 'jax' in self.backend:
-            paths, path_infos = zip(*[jnp.einsum_path(
-                expressions[ia], *operands[ia],
-                optimize=self.optimize,
-            ) for ia in range(len(operands))])
+            paths, path_infos = [], []
+            for ia in range(len(operands)):
+                path, info = jnp.einsum_path(
+                    expressions[ia], *operands[ia],
+                    optimize=self.optimize,
+                )
+                paths.append(tuple(path))
+                path_infos.append(info)
+            paths = tuple(paths)
+            path_infos = tuple(path_infos)
 
         else:
             raise ValueError('unsupported backend! ({})'.format(self.backend))
