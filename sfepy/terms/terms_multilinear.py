@@ -95,8 +95,9 @@ def find_free_indices(indices):
     ifree = [c for c in set(ii) if ii.count(c) == 1]
     return ifree
 
-def get_cell_indices(subs):
-    return [indices.index('c') if 'c' in indices else None for indices in subs]
+def get_loop_indices(subs, loop_index):
+    return [indices.index(loop_index) if loop_index in indices else None
+            for indices in subs]
 
 def get_einsum_ops(eargs, ebuilder, expr_cache):
     dargs = {arg.name : arg for arg in eargs}
@@ -133,8 +134,8 @@ def get_einsum_ops(eargs, ebuilder, expr_cache):
 
     return operands
 
-def get_slice_ops(subs, ops):
-    ics = get_cell_indices(subs)
+def get_slice_ops(subs, ops, loop_index):
+    ics = get_loop_indices(subs, loop_index)
 
     def slice_ops(ic):
         sops = []
@@ -558,13 +559,14 @@ class ExpressionBuilder(Struct):
     def transform(self, subscripts, operands, transformation='loop', **kwargs):
         if transformation == 'loop':
             expressions, poperands, all_slice_ops = [], [], []
+            loop_index = kwargs.get('loop_index', 'c')
 
             for ia, (subs, out_subscripts, ops) in enumerate(zip(
                     subscripts, self.out_subscripts, operands
             )):
-                slice_ops = get_slice_ops(subs, ops)
-                tsubs = [ii.replace('c', '') for ii in subs]
-                tout_subs = out_subscripts[1:]
+                slice_ops = get_slice_ops(subs, ops, loop_index)
+                tsubs = [ii.replace(loop_index, '') for ii in subs]
+                tout_subs = out_subscripts.replace(loop_index, '')
                 expr = self.join_subscripts(tsubs, tout_subs)
                 pops = slice_ops(0)
                 expressions.append(expr)
@@ -576,17 +578,18 @@ class ExpressionBuilder(Struct):
         elif transformation == 'dask':
             da_operands = []
             c_chunk_size = kwargs.get('c_chunk_size')
+            loop_index = kwargs.get('loop_index', 'c')
             for ia in range(len(operands)):
                 da_ops = []
                 for name, ii, op in zip(self.operand_names[ia],
                                         subscripts[ia],
                                         operands[ia]):
-                    if 'c' in ii:
+                    if loop_index in ii:
                         if c_chunk_size is None:
                             chunks = 'auto'
 
                         else:
-                            ic = ii.index('c')
+                            ic = ii.index(loop_index)
                             chunks = (op.shape[:ic]
                                       + (c_chunk_size,)
                                       + op.shape[ic + 1:])
@@ -958,12 +961,15 @@ class ETermBase(Term):
             output('parsed expressions:', self.parsed_expressions)
 
         if self.backend in ('numpy_loop', 'opt_einsum_loop', 'jax_vmap'):
+            loop_index = 'c'
             transform = ebuilder.transform(subscripts, operands,
-                                           transformation='loop')
+                                           transformation='loop',
+                                           loop_index=loop_index)
             expressions, poperands, all_slice_ops = transform
 
             if self.backend == 'jax_vmap':
-                all_ics = [get_cell_indices(subs) for subs in subscripts]
+                all_ics = [get_loop_indices(subs, loop_index)
+                           for subs in subscripts]
                 vms = (None, None, None, all_ics)
                 vmap_eval_cell = jax.jit(jax.vmap(eval_einsum[1], vms, 0),
                                          static_argnums=(0, 1, 2))
