@@ -558,7 +558,7 @@ class ExpressionBuilder(Struct):
 
     def transform(self, subscripts, operands, transformation='loop', **kwargs):
         if transformation == 'loop':
-            expressions, poperands, all_slice_ops = [], [], []
+            expressions, poperands, all_slice_ops, loop_sizes = [], [], [], []
             loop_index = kwargs.get('loop_index', 'c')
 
             for ia, (subs, out_subscripts, ops) in enumerate(zip(
@@ -572,8 +572,9 @@ class ExpressionBuilder(Struct):
                 expressions.append(expr)
                 poperands.append(pops)
                 all_slice_ops.append(slice_ops)
+                loop_sizes.append(get_sizes(subs, ops)[loop_index])
 
-            return tuple(expressions), poperands, all_slice_ops
+            return tuple(expressions), poperands, all_slice_ops, loop_sizes
 
         elif transformation == 'dask':
             da_operands = []
@@ -631,8 +632,10 @@ class ETermBase(Term):
     can_backend = {
         'numpy' : nm,
         'numpy_loop' : nm,
+        'numpy_qloop' : nm,
         'opt_einsum' : oe,
         'opt_einsum_loop' : oe,
+        'opt_einsum_qloop' : oe,
         'jax' : jnp,
         'jax_vmap' : jnp,
         'dask_single' : da,
@@ -829,6 +832,31 @@ class ETermBase(Term):
                         vout[ic] += contract(expressions[ia], *ops,
                                              optimize=paths[ia])
 
+        elif self.backend in ('numpy_qloop', 'opt_einsum_qloop'):
+            contract = (nm.einsum if self.backend == 'numpy_qloop'
+                        else oe.contract)
+            def eval_einsum(out, eshape, expressions, all_slice_ops,
+                            loop_sizes, paths):
+                n_qp = loop_sizes[0]
+                vout = out.reshape(eshape)
+                slice_ops = all_slice_ops[0]
+
+                ops = slice_ops(0)
+                vout[:] = contract(expressions[0], *ops,
+                                   optimize=paths[0])
+                for iq in range(1, n_qp):
+                    ops = slice_ops(iq)
+                    vout[:] += contract(expressions[0], *ops,
+                                        optimize=paths[0])
+
+                for ia in range(1, n_add):
+                    n_qp = loop_sizes[ia]
+                    slice_ops = all_slice_ops[ia]
+                    for iq in range(n_qp):
+                        ops = slice_ops(iq)
+                        vout[:] += contract(expressions[ia], *ops,
+                                            optimize=paths[ia])
+
         elif self.backend == 'jax':
             @jax.partial(jax.jit, static_argnums=(0, 1, 2))
             def _eval_einsum(expressions, paths, n_add, operands):
@@ -960,12 +988,14 @@ class ETermBase(Term):
         if self.verbosity:
             output('parsed expressions:', self.parsed_expressions)
 
-        if self.backend in ('numpy_loop', 'opt_einsum_loop', 'jax_vmap'):
-            loop_index = 'c'
+        cloop = self.backend in ('numpy_loop', 'opt_einsum_loop', 'jax_vmap')
+        qloop = self.backend in ('numpy_qloop', 'opt_einsum_qloop')
+        if cloop or qloop:
+            loop_index = 'c' if cloop else 'q'
             transform = ebuilder.transform(subscripts, operands,
                                            transformation='loop',
                                            loop_index=loop_index)
-            expressions, poperands, all_slice_ops = transform
+            expressions, poperands, all_slice_ops, loop_sizes = transform
 
             if self.backend == 'jax_vmap':
                 all_ics = [get_loop_indices(subs, loop_index)
@@ -978,6 +1008,8 @@ class ETermBase(Term):
 
             else:
                 out += [expressions, all_slice_ops]
+                if qloop:
+                    out.append(loop_sizes)
 
         elif (self.backend.startswith('dask')
               or self.backend.startswith('opt_einsum_dask')):
