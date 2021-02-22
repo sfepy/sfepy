@@ -90,6 +90,9 @@ def get_sizes(indices, operands):
 
     return sizes
 
+def get_output_shape(out_subscripts, subscripts, operands):
+    return tuple(get_sizes(subscripts, operands)[ii] for ii in out_subscripts)
+
 def find_free_indices(indices):
     ii = ''.join(indices)
     ifree = [c for c in set(ii) if ii.count(c) == 1]
@@ -462,24 +465,19 @@ class ExpressionBuilder(Struct):
                        for ia in range(self.n_add)]
         return tuple(expressions)
 
-    def get_sizes(self, ia, operands):
-        return get_sizes(self.subscripts[ia], operands[ia])
-
-    def get_output_shape(self, ia, operands):
-        return tuple(self.get_sizes(ia, operands)[ii]
-                     for ii in self.out_subscripts[ia])
-
-    def print_shapes(self, operands):
+    def print_shapes(self, subscripts, operands):
+        if subscripts is None:
+            subscripts = self.subscripts
         output('number of expressions:', self.n_add)
-        for ia in range(self.n_add):
-            sizes = self.get_sizes(ia, operands)
+        for onames, outs, subs, ops in zip(
+            self.operand_names, self.out_subscripts, subscripts, operands,
+        ):
+            sizes = get_sizes(subs, ops)
             output(sizes)
-            out_shape = self.get_output_shape(ia, operands)
-            output(self.out_subscripts[ia], out_shape, '=')
+            out_shape = get_output_shape(outs, subs, ops)
+            output(outs, out_shape, '=')
 
-            for name, ii, op in zip(self.operand_names[ia],
-                                    self.subscripts[ia],
-                                    operands[ia]):
+            for name, ii, op in zip(onames, subs, ops):
                 output('  {:10} {:8} {}'.format(name, ii, op.shape))
 
     def apply_layout(self, layout, operands, defaults=None, verbosity=0):
@@ -976,7 +974,8 @@ class ETermBase(Term):
 
         einfo = self.einfos[diff_var]
         ebuilder = einfo.ebuilder
-        eshape = ebuilder.get_output_shape(0, operands)
+        eshape = get_output_shape(ebuilder.out_subscripts[0],
+                                  ebuilder.subscripts[0], operands[0])
 
         out = [eval_einsum, eshape]
 
@@ -1028,7 +1027,7 @@ class ETermBase(Term):
 
         if einfo.paths is None:
             if self.verbosity > 1:
-                ebuilder.print_shapes(operands)
+                ebuilder.print_shapes(subscripts, operands)
 
             einfo.paths, einfo.path_infos = self.get_paths(
                 expressions,
@@ -1053,7 +1052,8 @@ class ETermBase(Term):
 
         operands = self.get_operands(diff_var)
         ebuilder = self.einfos[diff_var].ebuilder
-        out_shape = ebuilder.get_output_shape(0, operands)
+        out_shape = get_output_shape(ebuilder.out_subscripts[0],
+                                     ebuilder.subscripts[0], operands[0])
 
         dtype = nm.find_common_type([op.dtype for op in operands[0]], [])
 
