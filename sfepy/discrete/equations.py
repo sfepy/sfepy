@@ -777,7 +777,7 @@ class Equation(Struct):
         if eterm_options is not None:
             for term in terms:
                 if isinstance(term, ETermBase):
-                    term.verbosity = eterm_options.get('verbosity', 0)
+                    term.set_verbosity(eterm_options.get('verbosity', 0))
                     term.set_backend(**eterm_options.get('backend_args', {}))
 
         obj = Equation(name, terms)
