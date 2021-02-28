@@ -650,12 +650,27 @@ class ETermBase(Term):
         self.set_backend(**kwargs)
 
     @staticmethod
-    def function(out, eval_einsum, *args):
+    def function_timer(out, eval_einsum, *args):
         tt = Timer('')
         tt.start()
         eval_einsum(out, *args)
         output('eval_einsum: {} s'.format(tt.stop()))
         return 0
+
+    @staticmethod
+    def function_silent(out, eval_einsum, *args):
+        eval_einsum(out, *args)
+        return 0
+
+    def set_verbosity(self, verbosity=None):
+        if verbosity is not None:
+            self.verbosity = verbosity
+
+        if self.verbosity > 0:
+            self.function = self.function_timer
+
+        else:
+            self.function = self.function_silent
 
     def set_backend(self, backend='numpy', optimize=True, layout=None,
                     **kwargs):
