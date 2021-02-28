@@ -647,6 +647,7 @@ class ETermBase(Term):
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
 
+        self.set_verbosity(kwargs.get('verbosity', 0))
         self.set_backend(**kwargs)
 
     @staticmethod
