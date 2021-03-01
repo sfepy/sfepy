@@ -162,6 +162,9 @@ class ExpressionArg(Struct):
     def from_term_arg(arg, term, cache):
         from sfepy.discrete import FieldVariable
 
+        if isinstance(arg, ExpressionArg):
+            return arg
+
         if isinstance(arg, FieldVariable):
             ag, _ = term.get_mapping(arg)
             bf = ag.bf
