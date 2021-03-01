@@ -1201,16 +1201,16 @@ class EStokesTerm(ETermBase):
                   {'opt_material' : None}]
     modes = ('grad', 'div', 'eval')
 
-    def get_function(self, coef, var_v, var_s, mode=None, term_mode=None,
+    def get_function(self, coef, vvar, svar, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
         if coef is None:
             fun = self.make_function(
-                'i.i,0', var_v, var_s, diff_var=diff_var,
+                'i.i,0', vvar, svar, diff_var=diff_var,
             )
 
         else:
             fun = self.make_function(
-                '00,i.i,0', coef, var_v, var_s, diff_var=diff_var,
+                '00,i.i,0', coef, vvar, svar, diff_var=diff_var,
             )
 
         return fun
