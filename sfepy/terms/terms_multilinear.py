@@ -1078,6 +1078,14 @@ class ETermBase(Term):
 
         return out_shape, dtype
 
+    def get_normals(self, arg):
+        normals = self.get_mapping(arg)[0].normal
+        if normals is not None:
+            normals = ExpressionArg(name='n({})'.format(arg.name),
+                                    arg=normals[..., 0],
+                                    kind='ndarray')
+        return normals
+
 class ELaplaceTerm(ETermBase):
     name = 'dw_elaplace'
     arg_types = (('opt_material', 'virtual', 'state'),
