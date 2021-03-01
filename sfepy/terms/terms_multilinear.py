@@ -1146,6 +1146,21 @@ class ESurfaceDotTerm(EVolumeDotTerm):
     name = 'dw_esurface_dot'
     integration = 'surface'
 
+class ENonPenetrationPenaltyTerm(ETermBase):
+    name = 'dw_enon_penetration_p'
+    arg_types = ('material', 'virtual', 'state')
+    arg_shapes = {'material' : '1, 1',
+                  'virtual' : ('D', 'state'), 'state' : 'D'}
+    integration = 'surface'
+
+    def get_function(self, mat, virtual, state, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        normals = self.get_normals(state)
+        return self.make_function(
+            '00,i,i,j,j',
+            mat, virtual, normals, state, normals, diff_var=diff_var,
+        )
+
 class EDivGradTerm(ETermBase):
     name = 'dw_ediv_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
