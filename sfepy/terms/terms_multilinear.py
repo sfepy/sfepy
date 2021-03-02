@@ -1179,6 +1179,43 @@ class ESurfaceDotTerm(EVolumeDotTerm):
     name = 'dw_esurface_dot'
     integration = 'surface'
 
+class EScalarDotMGradScalarTerm(ETermBase):
+    r"""
+    Volume dot product of a scalar gradient dotted with a material vector with
+    a scalar.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }
+        \int_{\Omega} p \ul{y} \cdot \nabla q
+
+    :Arguments 1:
+        - material : :math:`\ul{y}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material : :math:`\ul{y}`
+        - state    : :math:`p`
+        - virtual  : :math:`q`
+    """
+    name = 'dw_es_dot_mgrad_s'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'))
+    arg_shapes = [{'material' : 'D, 1',
+                   'virtual/grad_state' : (1, None),
+                   'state/grad_state' : 1,
+                   'virtual/grad_virtual' : (1, None),
+                   'state/grad_virtual' : 1}]
+    modes = ('grad_state', 'grad_virtual')
+
+    def get_function(self, mat, var1, var2, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        return self.make_function(
+            'i0,0,0.i', mat, var1, var2, diff_var=diff_var,
+        )
+
 class ENonPenetrationPenaltyTerm(ETermBase):
     name = 'dw_enon_penetration_p'
     arg_types = ('material', 'virtual', 'state')
