@@ -1086,6 +1086,39 @@ class ETermBase(Term):
                                     kind='ndarray')
         return normals
 
+class EIntegrateVolumeOperatorTerm(ETermBase):
+    r"""
+    Volume integral of a test function weighted by a scalar function
+    :math:`c`.
+
+    :Definition:
+
+    .. math::
+        \int_\Omega q \mbox{ or } \int_\Omega c q
+
+    :Arguments:
+        - material : :math:`c` (optional)
+        - virtual  : :math:`q`
+    """
+    name = 'dw_evolume_integrate'
+    arg_types = ('opt_material', 'virtual')
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
+                  {'opt_material' : None}]
+
+    def get_function(self, mat, virtual, mode=None, term_mode=None,
+                     diff_var=None, **kwargs):
+        if mat is None:
+            fun = self.make_function(
+                '0', virtual, diff_var=diff_var,
+            )
+
+        else:
+            fun = self.make_function(
+                '00,0', mat, virtual, diff_var=diff_var,
+            )
+
+        return fun
+
 class ELaplaceTerm(ETermBase):
     name = 'dw_elaplace'
     arg_types = (('opt_material', 'virtual', 'state'),
