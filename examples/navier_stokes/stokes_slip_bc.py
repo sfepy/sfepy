@@ -235,15 +235,15 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
         else:
             equations = {
                 'balance' :
-                """dw_ediv_grad.5.Omega(m.nu, v, u)
-                 - dw_estokes.5.Omega(v, p)
-                 + dw_esurface_dot.5.Gamma1_f(m.beta, v, u)
-                 + dw_esurface_dot.5.Gamma2_f(m.beta, v, u)
+                """de_div_grad.5.Omega(m.nu, v, u)
+                 - de_stokes.5.Omega(v, p)
+                 + de_surface_dot.5.Gamma1_f(m.beta, v, u)
+                 + de_surface_dot.5.Gamma2_f(m.beta, v, u)
                  =
-                 + dw_esurface_dot.5.Gamma1_f(m.beta, v, u_d)""",
+                 + de_surface_dot.5.Gamma1_f(m.beta, v, u_d)""",
                 'incompressibility' :
-                """dw_elaplace.5.Omega(m.mu, q, p)
-                 + dw_estokes.5.Omega(u, q) = 0""",
+                """de_laplace.5.Omega(m.mu, q, p)
+                 + de_stokes.5.Omega(u, q) = 0""",
             }
 
     else:
@@ -268,17 +268,17 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
         else:
             equations = {
                 'balance' :
-                """dw_ediv_grad.5.Omega(m.nu, v, u)
-                 - dw_estokes.5.Omega(v, p)
-                 + dw_esurface_dot.5.Gamma1_f(m.beta, v, u)
-                 + dw_esurface_dot.5.Gamma2_f(m.beta, v, u)
-                 + dw_enon_penetration_p.5.Gamma1_f(m.np_eps, v, u)
-                 + dw_enon_penetration_p.5.Gamma2_f(m.np_eps, v, u)
+                """de_div_grad.5.Omega(m.nu, v, u)
+                 - de_stokes.5.Omega(v, p)
+                 + de_surface_dot.5.Gamma1_f(m.beta, v, u)
+                 + de_surface_dot.5.Gamma2_f(m.beta, v, u)
+                 + de_non_penetration_p.5.Gamma1_f(m.np_eps, v, u)
+                 + de_non_penetration_p.5.Gamma2_f(m.np_eps, v, u)
                  =
-                 + dw_esurface_dot.5.Gamma1_f(m.beta, v, u_d)""",
+                 + de_surface_dot.5.Gamma1_f(m.beta, v, u_d)""",
                 'incompressibility' :
-                """dw_elaplace.5.Omega(m.mu, q, p)
-                 + dw_estokes.5.Omega(u, q) = 0""",
+                """de_laplace.5.Omega(m.mu, q, p)
+                 + de_stokes.5.Omega(u, q) = 0""",
             }
 
     solvers = {
