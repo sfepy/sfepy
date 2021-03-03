@@ -17,7 +17,7 @@ class Test(TestCommon):
         from sfepy.discrete import Problem
         import examples.navier_stokes.stokes_slip_bc as ssb
 
-        conf = ProblemConf.from_module(ssb)
+        conf = ProblemConf.from_dict(ssb.define(), ssb)
         pb = Problem.from_conf(conf, init_solvers=False)
         pb.time_update()
         variables = pb.get_variables()
