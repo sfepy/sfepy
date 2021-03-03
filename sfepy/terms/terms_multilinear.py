@@ -1100,7 +1100,7 @@ class EIntegrateVolumeOperatorTerm(ETermBase):
         - material : :math:`c` (optional)
         - virtual  : :math:`q`
     """
-    name = 'dw_evolume_integrate'
+    name = 'de_volume_integrate'
     arg_types = ('opt_material', 'virtual')
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                   {'opt_material' : None}]
@@ -1120,7 +1120,7 @@ class EIntegrateVolumeOperatorTerm(ETermBase):
         return fun
 
 class ELaplaceTerm(ETermBase):
-    name = 'dw_elaplace'
+    name = 'de_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
@@ -1143,7 +1143,7 @@ class ELaplaceTerm(ETermBase):
         return fun
 
 class EVolumeDotTerm(ETermBase):
-    name = 'dw_evolume_dot'
+    name = 'de_volume_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
@@ -1176,7 +1176,7 @@ class EVolumeDotTerm(ETermBase):
         return fun
 
 class ESurfaceDotTerm(EVolumeDotTerm):
-    name = 'dw_esurface_dot'
+    name = 'de_surface_dot'
     integration = 'surface'
 
 class EScalarDotMGradScalarTerm(ETermBase):
@@ -1200,7 +1200,7 @@ class EScalarDotMGradScalarTerm(ETermBase):
         - state    : :math:`p`
         - virtual  : :math:`q`
     """
-    name = 'dw_es_dot_mgrad_s'
+    name = 'de_s_dot_mgrad_s'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'))
     arg_shapes = [{'material' : 'D, 1',
@@ -1217,7 +1217,7 @@ class EScalarDotMGradScalarTerm(ETermBase):
         )
 
 class ENonPenetrationPenaltyTerm(ETermBase):
-    name = 'dw_enon_penetration_p'
+    name = 'de_non_penetration_p'
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '1, 1',
                   'virtual' : ('D', 'state'), 'state' : 'D'}
@@ -1232,7 +1232,7 @@ class ENonPenetrationPenaltyTerm(ETermBase):
         )
 
 class EDivGradTerm(ETermBase):
-    name = 'dw_ediv_grad'
+    name = 'de_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
@@ -1255,7 +1255,7 @@ class EDivGradTerm(ETermBase):
         return fun
 
 class EConvectTerm(ETermBase):
-    name = 'dw_econvect'
+    name = 'de_convect'
     arg_types = ('virtual', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
 
@@ -1266,7 +1266,7 @@ class EConvectTerm(ETermBase):
         )
 
 class EDivTerm(ETermBase):
-    name = 'dw_ediv'
+    name = 'de_div'
     arg_types = (('opt_material', 'virtual'),
                  ('opt_material', 'parameter'),)
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None),
@@ -1289,7 +1289,7 @@ class EDivTerm(ETermBase):
         return fun
 
 class EStokesTerm(ETermBase):
-    name = 'dw_estokes'
+    name = 'de_stokes'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'state', 'virtual'),
                  ('opt_material', 'parameter_v', 'parameter_s'))
@@ -1315,7 +1315,7 @@ class EStokesTerm(ETermBase):
         return fun
 
 class ELinearElasticTerm(ETermBase):
-    name = 'dw_elin_elastic'
+    name = 'de_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
     arg_shapes = {'material' : 'S, S', 'virtual' : ('D', 'state'),
@@ -1329,7 +1329,7 @@ class ELinearElasticTerm(ETermBase):
         )
 
 class ECauchyStressTerm(ETermBase):
-    name = 'ev_ecauchy_stress'
+    name = 'de_cauchy_stress'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
 
