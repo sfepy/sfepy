@@ -951,7 +951,7 @@ the original :ref:`original_term_examples`, using
 Examples
 ^^^^^^^^
 
-- `dw_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is
+- `de_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is
   a weight (material parameter) and :math:`q` is a virtual variable::
 
     class EIntegrateVolumeOperatorTerm(ETermBase):
@@ -968,7 +968,7 @@ Examples
             - material : :math:`c` (optional)
             - virtual  : :math:`q`
         """
-        name = 'dw_evolume_integrate'
+        name = 'de_volume_integrate'
         arg_types = ('opt_material', 'virtual')
         arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                       {'opt_material' : None}]
@@ -987,7 +987,7 @@ Examples
 
             return fun
 
-- `dw_s_dot_mgrad_s` defined as :math:`\int_{\Omega} q \ul{y} \cdot \nabla p`
+- `de_s_dot_mgrad_s` defined as :math:`\int_{\Omega} q \ul{y} \cdot \nabla p`
   in the`'grad_state'` mode or :math:`\int_{\Omega} p \ul{y} \cdot \nabla q` in
   the `'grad_virtual'` mode, where :math:`\ul{y}` is a vector material
   parameter, :math:`q` is a virtual variable, and :math:`p` is a state
@@ -1014,7 +1014,7 @@ Examples
             - state    : :math:`p`
             - virtual  : :math:`q`
         """
-        name = 'dw_es_dot_mgrad_s'
+        name = 'de_s_dot_mgrad_s'
         arg_types = (('material', 'virtual', 'state'),
                      ('material', 'state', 'virtual'))
         arg_shapes = [{'material' : 'D, 1',
