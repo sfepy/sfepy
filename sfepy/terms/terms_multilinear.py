@@ -1120,6 +1120,26 @@ class EIntegrateVolumeOperatorTerm(ETermBase):
         return fun
 
 class ELaplaceTerm(ETermBase):
+    r"""
+    Laplace term with :math:`c` coefficient. Can be
+    evaluated. Can use derivatives.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} c \nabla q \cdot \nabla p \mbox{ , } \int_{\Omega}
+        c \nabla \bar{p} \cdot \nabla r
+
+    :Arguments 1:
+        - material : :math:`c`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material    : :math:`c`
+        - parameter_1 : :math:`\bar{p}`
+        - parameter_2 : :math:`r`
+    """
     name = 'de_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
@@ -1143,6 +1163,33 @@ class ELaplaceTerm(ETermBase):
         return fun
 
 class EVolumeDotTerm(ETermBase):
+    r"""
+    Volume :math:`L^2(\Omega)` weighted dot product for both scalar and vector
+    fields. Can be evaluated. Can use derivatives.
+
+    :Definition:
+
+    .. math::
+        \int_\Omega q p \mbox{ , } \int_\Omega \ul{v} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w} \\
+        \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w} \\
+        \int_\Omega \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Omega \ul{u} \cdot \ull{M} \cdot \ul{w}
+
+    :Arguments 1:
+        - material : :math:`c` or :math:`\ull{M}` (optional)
+        - virtual  : :math:`q` or :math:`\ul{v}`
+        - state    : :math:`p` or :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`c` or :math:`\ull{M}` (optional)
+        - parameter_1 : :math:`p` or :math:`\ul{u}`
+        - parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
     name = 'de_volume_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
@@ -1176,6 +1223,33 @@ class EVolumeDotTerm(ETermBase):
         return fun
 
 class ESurfaceDotTerm(EVolumeDotTerm):
+    r"""
+    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+
+    .. math::
+        \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w} \\
+        \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w} \\
+        \int_\Gamma \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Gamma \ul{u} \cdot \ull{M} \cdot \ul{w}
+
+    :Arguments 1:
+        - material : :math:`c` or :math:`\ull{M}` (optional)
+        - virtual  : :math:`q` or :math:`\ul{v}`
+        - state    : :math:`p` or :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`c` or :math:`\ull{M}` (optional)
+        - parameter_1 : :math:`p` or :math:`\ul{u}`
+        - parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
     name = 'de_surface_dot'
     integration = 'surface'
 
@@ -1217,6 +1291,19 @@ class EScalarDotMGradScalarTerm(ETermBase):
         )
 
 class ENonPenetrationPenaltyTerm(ETermBase):
+    r"""
+    Non-penetration condition in the weak sense using a penalty.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} c (\ul{n} \cdot \ul{v}) (\ul{n} \cdot \ul{u})
+
+    :Arguments:
+        - material : :math:`c`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+    """
     name = 'de_non_penetration_p'
     arg_types = ('material', 'virtual', 'state')
     arg_shapes = {'material' : '1, 1',
@@ -1232,6 +1319,27 @@ class ENonPenetrationPenaltyTerm(ETermBase):
         )
 
 class EDivGradTerm(ETermBase):
+    r"""
+    Vector field diffusion term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
+        \int_{\Omega} \nu\ \nabla \ul{u} : \nabla \ul{w} \\
+        \int_{\Omega} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
+        \int_{\Omega} \nabla \ul{u} : \nabla \ul{w}
+
+    :Arguments 1:
+        - material : :math:`\nu` (viscosity, optional)
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`\nu` (viscosity, optional)
+        - parameter_1 : :math:`\ul{u}`
+        - parameter_2 : :math:`\ul{w}`
+    """
     name = 'de_div_grad'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
@@ -1255,6 +1363,18 @@ class EDivGradTerm(ETermBase):
         return fun
 
 class EConvectTerm(ETermBase):
+    r"""
+    Nonlinear convective term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
+
+    :Arguments:
+        - virtual : :math:`\ul{v}`
+        - state   : :math:`\ul{u}`
+    """
     name = 'de_convect'
     arg_types = ('virtual', 'state')
     arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
@@ -1266,6 +1386,25 @@ class EConvectTerm(ETermBase):
         )
 
 class EDivTerm(ETermBase):
+    r"""
+    Weighted divergence term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \nabla \cdot \ul{v} \mbox { , } \int_{\Omega} \nabla
+        \cdot \ul{u} \\
+        \int_{\Omega} c \nabla \cdot \ul{v} \mbox { , } \int_{\Omega} c \nabla
+        \cdot \ul{u}
+
+    :Arguments 1:
+        - material : :math:`c` (optional)
+        - virtual  : :math:`\ul{v}`
+
+    :Arguments 2:
+        - material  : :math:`c` (optional)
+        - parameter : :math:`\ul{u}`
+    """
     name = 'de_div'
     arg_types = (('opt_material', 'virtual'),
                  ('opt_material', 'parameter'),)
@@ -1289,6 +1428,36 @@ class EDivTerm(ETermBase):
         return fun
 
 class EStokesTerm(ETermBase):
+    r"""
+    Stokes problem coupling term. Corresponds to weak forms of gradient and
+    divergence terms.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} q\ \nabla \cdot \ul{u}
+        \mbox{ or }
+        \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} c\ q\ \nabla \cdot \ul{u} \\
+        \int_{\Omega} r\ \nabla \cdot \ul{w} \mbox{ , }
+        \int_{\Omega} c r\ \nabla \cdot \ul{w}
+
+    :Arguments 1:
+        - material : :math:`c` (optional)
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`p`
+
+    :Arguments 2:
+        - material : :math:`c` (optional)
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`q`
+
+    :Arguments 3:
+        - material    : :math:`c` (optional)
+        - parameter_v : :math:`\ul{u}`
+        - parameter_s : :math:`p`
+    """
     name = 'de_stokes'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'state', 'virtual'),
@@ -1315,6 +1484,29 @@ class EStokesTerm(ETermBase):
         return fun
 
 class ELinearElasticTerm(ETermBase):
+    r"""
+    General linear elasticity term, with :math:`D_{ijkl}` given in
+    the usual matrix form exploiting symmetry: in 3D it is :math:`6\times6`
+    with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
+    :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+        \mbox{ , }
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{w}) e_{kl}(\ul{u})
+
+    :Arguments 1:
+        - material : :math:`D_{ijkl}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`D_{ijkl}`
+        - parameter_1 : :math:`\ul{w}`
+        - parameter_2 : :math:`\ul{u}`
+    """
     name = 'de_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
@@ -1329,6 +1521,22 @@ class ELinearElasticTerm(ETermBase):
         )
 
 class ECauchyStressTerm(ETermBase):
+    r"""
+    Evaluate Cauchy stress tensor.
+
+    It is given in the usual vector form exploiting symmetry: in 3D it has 6
+    components with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in
+    2D it has 3 components with the indices ordered as :math:`[11, 22, 12]`.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} D_{ijkl} e_{kl}(\ul{w})
+
+    :Arguments:
+        - material  : :math:`D_{ijkl}`
+        - parameter : :math:`\ul{w}`
+    """
     name = 'de_cauchy_stress'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
