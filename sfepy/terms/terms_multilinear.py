@@ -1267,9 +1267,12 @@ class EConvectTerm(ETermBase):
 
 class EDivTerm(ETermBase):
     name = 'dw_ediv'
-    arg_types = ('opt_material', 'virtual')
-    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None)},
+    arg_types = (('opt_material', 'virtual'),
+                 ('opt_material', 'parameter'),)
+    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : ('D', None),
+                   'parameter' : 'D'},
                   {'opt_material' : None}]
+    modes = ('weak', 'eval')
 
     def get_function(self, mat, virtual, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
