@@ -1381,6 +1381,7 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_tl
    src/sfepy/terms/terms_hyperelastic_ul
    src/sfepy/terms/terms_membrane
+   src/sfepy/terms/terms_multilinear
    src/sfepy/terms/terms_navier_stokes
    src/sfepy/terms/terms_piezo
    src/sfepy/terms/terms_point
