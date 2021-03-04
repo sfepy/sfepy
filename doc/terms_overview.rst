@@ -112,6 +112,10 @@ Term names are (usually) prefixed according to the following conventions:
      - `'eval'`, `'el_eval'`, `'el_avg'`, `'qp'`
      - terms having all arguments known and supporting all evaluation modes
        except `'weak'` (no virtual variables in arguments, no FE assembling)
+   * - de
+     - discrete einsum
+     - any (work in progress)
+     - multi-linear terms defined using an enriched einsum notation
 
 .. _term_table:
 
@@ -130,6 +134,8 @@ following tables:
 * `Table of sensitivity terms`_
 
 * `Table of special terms`_
+
+* `Table of multi-linear terms`_
 
 The notation ``<virtual>`` corresponds to a test function,
 ``<state>`` to a unknown function and ``<parameter>`` to a known function. By

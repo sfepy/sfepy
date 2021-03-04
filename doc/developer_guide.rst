@@ -545,11 +545,14 @@ The following steps summarize how to regenerate this documentation.
 
 How to Implement a New Term
 ---------------------------
-*tentative documentation*
 
 **Warning** Implementing a new term usually involves C. As Cython is now
 supported by our build system, it should not be that
 difficult. Python-only terms are possible as well.
+
+**Note** There is an experimental way (newly from version 2021.1) of
+implementing multi-linear terms that is much easier than what is described
+here, see :ref:`multi-linear_terms`.
 
 Notes on terminology
 ^^^^^^^^^^^^^^^^^^^^
@@ -735,6 +738,8 @@ The default that most terms use is a list of all the geometries::
 
 In that case, the attribute needs not to be define explicitly.
 
+.. _original_term_examples:
+
 Examples
 ^^^^^^^^
 
@@ -903,6 +908,127 @@ Concluding remarks
 This is just a very basic introduction to the topic of new term
 implementation. Do not hesitate to ask the `SfePy mailing list`_, and look at
 the source code of the already implemented terms.
+
+.. _multi-linear_terms:
+
+Multi-linear Terms
+------------------
+
+*tentative documentation, the enriched einsum notation is still in flux*
+
+Multi-linear terms can be implemented simply by using the following enriched
+einsum notation:
+
+.. list-table:: The enriched einsum notation for defining multi-linear terms.
+   :widths: 10 55 35
+   :header-rows: 1
+
+   * - symbol
+     - meaning
+     - example
+   * - ``0``
+     - scalar
+     - :math:`p`
+   * - ``i``
+     - :math:`i`-th vector component
+     - :math:`u_i`
+   * - ``i.j``
+     - gradient: derivative of :math:`i`-th vector component w.r.t.
+       :math:`j`-th coordinate component
+     - :math:`\pdiff{u_i}{x_j}`
+   * - ``i:j``
+     - symmetric gradient
+     - :math:`\frac{1}{2} (\pdiff{u_i}{x_j} + \pdiff{u_j}{x_i})`
+   * - ``s(i:j)->I``
+     - vector storage of symmetric second order tensor, :math:`I` is the vector
+       component
+     - Cauchy strain tensor :math:`e_{ij}(\ul{u})`
+
+The examples below present the new way of implementing the terms shown in
+the original :ref:`original_term_examples`, using
+:class:`sfepy.terms.terms_multilinear.ETermBase`.
+
+Examples
+^^^^^^^^
+
+- `de_volume_integrate` defined as :math:`\int_\Omega c q`, where :math:`c` is
+  a weight (material parameter) and :math:`q` is a virtual variable::
+
+    class EIntegrateVolumeOperatorTerm(ETermBase):
+        r"""
+        Volume integral of a test function weighted by a scalar function
+        :math:`c`.
+
+        :Definition:
+
+        .. math::
+            \int_\Omega q \mbox{ or } \int_\Omega c q
+
+        :Arguments:
+            - material : :math:`c` (optional)
+            - virtual  : :math:`q`
+        """
+        name = 'de_volume_integrate'
+        arg_types = ('opt_material', 'virtual')
+        arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
+                      {'opt_material' : None}]
+
+        def get_function(self, mat, virtual, mode=None, term_mode=None,
+                         diff_var=None, **kwargs):
+            if mat is None:
+                fun = self.make_function(
+                    '0', virtual, diff_var=diff_var,
+                )
+
+            else:
+                fun = self.make_function(
+                    '00,0', mat, virtual, diff_var=diff_var,
+                )
+
+            return fun
+
+- `de_s_dot_mgrad_s` defined as :math:`\int_{\Omega} q \ul{y} \cdot \nabla p`
+  in the`'grad_state'` mode or :math:`\int_{\Omega} p \ul{y} \cdot \nabla q` in
+  the `'grad_virtual'` mode, where :math:`\ul{y}` is a vector material
+  parameter, :math:`q` is a virtual variable, and :math:`p` is a state
+  variable::
+
+    class EScalarDotMGradScalarTerm(ETermBase):
+        r"""
+        Volume dot product of a scalar gradient dotted with a material vector with
+        a scalar.
+
+        :Definition:
+
+        .. math::
+            \int_{\Omega} q \ul{y} \cdot \nabla p \mbox{ , }
+            \int_{\Omega} p \ul{y} \cdot \nabla q
+
+        :Arguments 1:
+            - material : :math:`\ul{y}`
+            - virtual  : :math:`q`
+            - state    : :math:`p`
+
+        :Arguments 2:
+            - material : :math:`\ul{y}`
+            - state    : :math:`p`
+            - virtual  : :math:`q`
+        """
+        name = 'de_s_dot_mgrad_s'
+        arg_types = (('material', 'virtual', 'state'),
+                     ('material', 'state', 'virtual'))
+        arg_shapes = [{'material' : 'D, 1',
+                       'virtual/grad_state' : (1, None),
+                       'state/grad_state' : 1,
+                       'virtual/grad_virtual' : (1, None),
+                       'state/grad_virtual' : 1}]
+        modes = ('grad_state', 'grad_virtual')
+
+        def get_function(self, mat, var1, var2, mode=None, term_mode=None,
+                         diff_var=None, **kwargs):
+            return self.make_function(
+                'i0,0,0.i', mat, var1, var2, diff_var=diff_var,
+            )
 
 How To Make a Release
 ---------------------
@@ -1255,6 +1381,7 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_tl
    src/sfepy/terms/terms_hyperelastic_ul
    src/sfepy/terms/terms_membrane
+   src/sfepy/terms/terms_multilinear
    src/sfepy/terms/terms_navier_stokes
    src/sfepy/terms/terms_piezo
    src/sfepy/terms/terms_point

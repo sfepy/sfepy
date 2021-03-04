@@ -174,9 +174,10 @@ def typeset_term_tables(fd, table):
         ('_ul_', 1),
         ('_th', 2),
         ('_eth', 2),
-        ('_of_', 2)]
+        ('_of_', 2),
+        ('de_', 3)]
 
-    new_tabs = [[],[],[]]
+    new_tabs = [[],[],[],[]]
     for term_name in six.iterkeys(table):
         for term_tag, tab_id in scattab:
             if term_tag in term_name:
@@ -189,6 +190,7 @@ def typeset_term_tables(fd, table):
     typeset_term_table(fd, new_tabs[0], table, 'sensitivity')
     typeset_term_table(fd, new_tabs[1], table, 'large deformation')
     typeset_term_table(fd, new_tabs[2], table, 'special')
+    typeset_term_table(fd, new_tabs[3], table, 'multi-linear')
     fd.write(newpage)
 
 def typeset(filename):
