@@ -496,8 +496,7 @@ class EquationMap(Struct):
         chains = group_chains(chains)
         resolve_chains(master_slave, chains)
 
-        # add axis in case we squeezed too hard
-        self.master = nm.atleast_1d(nm.argwhere(master_slave > 0).squeeze())
+        self.master = nm.nonzero(master_slave > 0)[0]
         self.slave = master_slave[self.master] - 1
 
         # Propagate EBCs via PBCs.
@@ -512,9 +511,8 @@ class EquationMap(Struct):
         val_ebc[is1] = val_ebc[is0]
         eq_ebc[is1] = eq_ebc[is0]
 
-        ii = nm.argwhere(eq_ebc > 0)
-        self.eq_ebc = nm.atleast_1d(ii.squeeze())
-        self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
+        self.eq_ebc = nm.nonzero(eq_ebc > 0)[0]
+        self.val_ebc = val_ebc[self.eq_ebc]
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
 
         self.eq[self.eq_ebc] = -2
@@ -522,7 +520,7 @@ class EquationMap(Struct):
 
         self._mark_unused(field)
 
-        self.eqi = nm.compress(self.eq >= 0, self.eq)
+        self.eqi = self.eq[self.eq >= 0]
         self.eq[self.eqi] = nm.arange(self.eqi.shape[0], dtype=nm.int32)
         self.eq[self.master] = self.eq[self.slave]
         self.n_eq = self.eqi.shape[0]
