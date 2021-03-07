@@ -501,7 +501,17 @@ class EquationMap(Struct):
         self.slave = master_slave[self.master] - 1
 
         # Propagate EBCs via PBCs.
-        eq_ebc[self.slave] += eq_ebc[self.master]
+        mask = eq_ebc[self.master] > 0
+        im0 = self.master[mask]
+        im1 = self.slave[mask]
+        mask = eq_ebc[self.slave] > 0
+        is0 = self.slave[mask]
+        is1 = self.master[mask]
+        val_ebc[im1] = val_ebc[im0]
+        eq_ebc[im1] = eq_ebc[im0]
+        val_ebc[is1] = val_ebc[is0]
+        eq_ebc[is1] = eq_ebc[is0]
+
         ii = nm.argwhere(eq_ebc > 0)
         self.eq_ebc = nm.atleast_1d(ii.squeeze())
         self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
