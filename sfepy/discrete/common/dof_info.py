@@ -496,14 +496,17 @@ class EquationMap(Struct):
         chains = group_chains(chains)
         resolve_chains(master_slave, chains)
 
-        ii = nm.argwhere(eq_ebc == 1)
-        self.eq_ebc = nm.atleast_1d(ii.squeeze())
-        self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
         # add axis in case we squeezed too hard
         self.master = nm.atleast_1d(nm.argwhere(master_slave > 0).squeeze())
         self.slave = master_slave[self.master] - 1
 
+        # Propagate EBCs via PBCs.
+        eq_ebc[self.slave] += eq_ebc[self.master]
+        ii = nm.argwhere(eq_ebc > 0)
+        self.eq_ebc = nm.atleast_1d(ii.squeeze())
+        self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
+
         self.eq[self.eq_ebc] = -2
         self.eq[self.master] = -1
 
