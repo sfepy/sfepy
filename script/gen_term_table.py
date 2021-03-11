@@ -184,8 +184,9 @@ def typeset_term_tables(fd, table):
                 new_tabs[tab_id].append(term_name)
                 break
 
-    basic_keys = list(set(table.keys())\
-        - set(new_tabs[0]) - set(new_tabs[1]) - set(new_tabs[2]))
+    basic_keys = list(set(table.keys())
+                      - set(new_tabs[0]) - set(new_tabs[1])
+                      - set(new_tabs[2]) - set(new_tabs[3]))
     typeset_term_table(fd, basic_keys, table, 'basic')
     typeset_term_table(fd, new_tabs[0], table, 'sensitivity')
     typeset_term_table(fd, new_tabs[1], table, 'large deformation')
