@@ -67,14 +67,14 @@ header = """
      - arguments
      - definition
 """
-
+# TODO add additional column
 table_row = """   * - %s
 
        :class:`%s <%s.%s>`
      - %s
      - %s
 """
-
+# TODO add additional %s 
 def format_next(text, new_text, pos, can_newline, width, ispaces):
     new_len = len(new_text)
 
@@ -125,6 +125,7 @@ def typeset_term_syntax(term_class):
 
 def typeset_term_table(fd, keys, table, title):
     """Terms are sorted by name without the d*_ prefix."""
+    #TODO add somehow list of term used in examples
     sec_list = []
     current_section = ['']
     parser = create_parser(sec_list, current_section)
@@ -151,7 +152,7 @@ def typeset_term_table(fd, keys, table, title):
                 dd = dd[0]
             else:
                 dd = ''
-
+            # TODO add new column
             dds = dd.strip().split('\n\n')
             definition = '\n\n'.join(typeset_to_indent(dd, 7, 11, 65)
                                      for dd in dds)[7:]
