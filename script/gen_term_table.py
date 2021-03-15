@@ -133,7 +133,6 @@ def typeset_term_syntax(term_class):
 link_example = ':doc:`%s<examples/%s>`'
 
 def typeset_examples(term_class, term_use):
-    print(len(term_use[term_class.name]))
     link_list = [(link_example % (exmpl, exmpl)) for exmpl in term_use[term_class.name]]
     return ', '.join(link_list)
 
