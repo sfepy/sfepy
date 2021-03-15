@@ -21,7 +21,6 @@ helps = {
 }
 
 def main():
-    # TODO add return value
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--version', action='version', version='%(prog)s')
     parser.add_argument('-c', '--counts',

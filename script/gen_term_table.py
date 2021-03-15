@@ -4,6 +4,11 @@ Generate the table of all terms for the sphinx documentation.
 """
 from __future__ import absolute_import
 import os
+from sfepy.base.base import dict_from_keys_init
+from sfepy.discrete.equations import parse_definition
+from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.base.ioutils import locate_files
+from sfepy import get_paths
 import sys
 from argparse import ArgumentParser
 import pyparsing as pp
@@ -57,24 +62,26 @@ newpage = r"""
 """
 
 header = """
-.. tabularcolumns:: |p{0.2\linewidth}|p{0.2\linewidth}|p{0.6\linewidth}|
+.. tabularcolumns:: |p{0.17\linewidth}|p{0.17\linewidth}|p{0.5\linewidth}|p{0.16\linewidth}|
 .. list-table:: %s terms
-   :widths: 20 20 60
+   :widths: 17 17 50 16
    :header-rows: 1
    :class: longtable
 
    * - name/class
      - arguments
      - definition
+     - examples
 """
-# TODO add additional column
+
 table_row = """   * - %s
 
        :class:`%s <%s.%s>`
      - %s
      - %s
+     - %s
 """
-# TODO add additional %s 
+
 def format_next(text, new_text, pos, can_newline, width, ispaces):
     new_len = len(new_text)
 
@@ -123,9 +130,37 @@ def typeset_term_syntax(term_class):
         text = ', '.join(['``<%s>``' % arg for arg in term_class.arg_types])
     return text
 
+link_example = ':doc:`%s<examples/%s>`'
+
+def typeset_examples(term_class, term_use):
+    print(len(term_use[term_class.name]))
+    link_list = [(link_example % (exmpl, exmpl)) for exmpl in term_use[term_class.name]]
+    return ', '.join(link_list)
+
+def get_examples(table):
+    
+    term_use = dict_from_keys_init(table.keys(), set)
+    required, other = get_standard_keywords()
+
+    for filename in locate_files('*py', get_paths('examples/')[0]):
+        try:
+            conf = ProblemConf.from_file(filename, required, other,
+                                         verbose=False)
+        except:
+            continue
+        
+        example_name = filename.split('/')[-2]
+        use = conf.options.get('use_equations', 'equations')
+        eqs_conf = getattr(conf, use)
+        for key, eq_conf in six.iteritems(eqs_conf):
+            term_descs = parse_definition(eq_conf)
+            for td in term_descs:
+                term_use[td.name].add(example_name)
+
+    return term_use
+
 def typeset_term_table(fd, keys, table, title):
     """Terms are sorted by name without the d*_ prefix."""
-    #TODO add somehow list of term used in examples
     sec_list = []
     current_section = ['']
     parser = create_parser(sec_list, current_section)
@@ -134,6 +169,8 @@ def typeset_term_table(fd, keys, table, title):
     label = 'Table of %s terms' % title
     fd.write(''.join([newpage, label, '\n', '"' * len(label), '\n']))
     fd.write(header % (title[0].upper() + title[1:]))
+
+    term_use = get_examples(table)
 
     sort_keys = [key[key.find('_'):] for key in keys]
     iis = nm.argsort(sort_keys)
@@ -152,7 +189,6 @@ def typeset_term_table(fd, keys, table, title):
                 dd = dd[0]
             else:
                 dd = ''
-            # TODO add new column
             dds = dd.strip().split('\n\n')
             definition = '\n\n'.join(typeset_to_indent(dd, 7, 11, 65)
                                      for dd in dds)[7:]
@@ -161,7 +197,8 @@ def typeset_term_table(fd, keys, table, title):
                                   item_class.__module__,
                                   item_class.__name__,
                                   typeset_term_syntax(item_class),
-                                  definition))
+                                  definition,
+                                  typeset_examples(item_class, term_use)))
 
     fd.write('\n')
 
