@@ -130,10 +130,17 @@ def typeset_term_syntax(term_class):
         text = ', '.join(['``<%s>``' % arg for arg in term_class.arg_types])
     return text
 
-link_example = ':doc:`%s<examples/%s>`'
+link_example = ':ref:`%s <%s>`'
+
+omits = [
+    'vibro_acoustic3d_mid.py',
+    'its2D_5.py',
+    'linear_elastic_probes.py',
+    '__init__.py',
+]
 
 def typeset_examples(term_class, term_use):
-    link_list = [(link_example % (exmpl, exmpl)) for exmpl in term_use[term_class.name]]
+    link_list = [(link_example % (exmpl.split('-')[-1], exmpl)) for exmpl in term_use[term_class.name]]
     return ', '.join(link_list)
 
 def get_examples(table):
@@ -148,13 +155,20 @@ def get_examples(table):
         except:
             continue
         
-        example_name = filename.split('/')[-2]
+        ebase = filename.split('examples/')[1]
+        lbase = os.path.splitext(ebase)[0]
+        label = lbase.replace('/', '-')
+
+        pyfile_name = ebase.split('/')[1]
+        if pyfile_name in omits:
+            continue
+
         use = conf.options.get('use_equations', 'equations')
         eqs_conf = getattr(conf, use)
         for key, eq_conf in six.iteritems(eqs_conf):
             term_descs = parse_definition(eq_conf)
             for td in term_descs:
-                term_use[td.name].add(example_name)
+                term_use[td.name].add(label)
 
     return term_use
 
