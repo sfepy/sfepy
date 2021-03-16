@@ -496,20 +496,31 @@ class EquationMap(Struct):
         chains = group_chains(chains)
         resolve_chains(master_slave, chains)
 
-        ii = nm.argwhere(eq_ebc == 1)
-        self.eq_ebc = nm.atleast_1d(ii.squeeze())
-        self.val_ebc = nm.atleast_1d(val_ebc[ii].squeeze())
-        # add axis in case we squeezed too hard
-        self.master = nm.atleast_1d(nm.argwhere(master_slave > 0).squeeze())
+        self.master = nm.nonzero(master_slave > 0)[0]
         self.slave = master_slave[self.master] - 1
 
+        # Propagate EBCs via PBCs.
+        mask = eq_ebc[self.master] > 0
+        im0 = self.master[mask]
+        im1 = self.slave[mask]
+        mask = eq_ebc[self.slave] > 0
+        is0 = self.slave[mask]
+        is1 = self.master[mask]
+        val_ebc[im1] = val_ebc[im0]
+        eq_ebc[im1] = eq_ebc[im0]
+        val_ebc[is1] = val_ebc[is0]
+        eq_ebc[is1] = eq_ebc[is0]
+
+        self.eq_ebc = nm.nonzero(eq_ebc > 0)[0]
+        self.val_ebc = val_ebc[self.eq_ebc]
         assert_((self.eq_ebc.shape == self.val_ebc.shape))
+
         self.eq[self.eq_ebc] = -2
         self.eq[self.master] = -1
 
         self._mark_unused(field)
 
-        self.eqi = nm.compress(self.eq >= 0, self.eq)
+        self.eqi = self.eq[self.eq >= 0]
         self.eq[self.eqi] = nm.arange(self.eqi.shape[0], dtype=nm.int32)
         self.eq[self.master] = self.eq[self.slave]
         self.n_eq = self.eqi.shape[0]
