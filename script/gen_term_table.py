@@ -62,9 +62,9 @@ newpage = r"""
 """
 
 header = """
-.. tabularcolumns:: |p{0.17\linewidth}|p{0.17\linewidth}|p{0.5\linewidth}|p{0.16\linewidth}|
+.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.6\linewidth}|p{0.15\linewidth}|
 .. list-table:: %s terms
-   :widths: 17 17 50 16
+   :widths: 15 10 60 15
    :header-rows: 1
    :class: longtable
 
@@ -140,7 +140,9 @@ omits = [
 ]
 
 def typeset_examples(term_class, term_use):
-    link_list = [(link_example % (exmpl.split('-')[-1], exmpl)) for exmpl in term_use[term_class.name]]
+    # e.g. fem-time_advection_diffusion -> tim.adv.dif.
+    to_shorter_name = lambda st: '.'.join([s[:3] for s in st.split('-')[-1].split('_')])
+    link_list = [(link_example % (to_shorter_name(exmpl), exmpl)) for exmpl in term_use[term_class.name]]
     return ', '.join(link_list)
 
 def get_examples(table):
