@@ -227,12 +227,12 @@ class SDDotVolumeTerm(Term):
     :Arguments:
         - parameter_1 : :math:`p` or :math:`\ul{u}`
         - parameter_2 : :math:`q` or :math:`\ul{w}`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'd_sd_volume_dot'
-    arg_types = ('parameter_1', 'parameter_2', 'parameter_mesh_velocity')
+    arg_types = ('parameter_1', 'parameter_2', 'parameter_mv')
     arg_shapes = [{'parameter_1' : 'D', 'parameter_2' : 'D',
-                   'parameter_mesh_velocity' : 'D'},
+                   'parameter_mv' : 'D'},
                   {'parameter_1' : 1, 'parameter_2' : 1}]
 
     function = staticmethod(terms.d_sd_volume_dot)
@@ -268,12 +268,12 @@ class SDDivTerm(Term):
     :Arguments:
         - parameter_u : :math:`\ul{u}`
         - parameter_p : :math:`p`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'd_sd_div'
-    arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity')
+    arg_types = ('parameter_u', 'parameter_p', 'parameter_mv')
     arg_shapes = {'parameter_u' : 'D', 'parameter_p' : 1,
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_div)
 
@@ -315,14 +315,14 @@ class SDDivGradTerm(Term):
         - material_2  : :math:`\nu` (viscosity)
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'd_sd_div_grad'
     arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
-                 'parameter_mesh_velocity')
+                 'parameter_mv')
     arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
                   'parameter_u' : 'D', 'parameter_w' : 'D',
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_div_grad)
 
@@ -359,12 +359,12 @@ class SDConvectTerm(Term):
     :Arguments:
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'd_sd_convect'
-    arg_types = ('parameter_u', 'parameter_w', 'parameter_mesh_velocity')
+    arg_types = ('parameter_u', 'parameter_w', 'parameter_mv')
     arg_shapes = {'parameter_u' : 'D', 'parameter_w' : 'D',
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_convect)
 
@@ -483,15 +483,15 @@ class SDGradDivStabilizationTerm(Term):
         - material    : :math:`\gamma`
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_grad_div'
     arg_types = ('material', 'parameter_u', 'parameter_w',
-                 'parameter_mesh_velocity')
+                 'parameter_mv')
     arg_shapes = {'material' : '1, 1',
                   'parameter_u' : 'D', 'parameter_w' : 'D',
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_st_grad_div)
 
@@ -532,15 +532,15 @@ class SDSUPGCStabilizationTerm(Term):
         - parameter_b : :math:`\ul{b}`
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_supg_c'
     arg_types = ('material', 'parameter_b', 'parameter_u', 'parameter_w',
-                'parameter_mesh_velocity')
+                'parameter_mv')
     arg_shapes = {'material' : '1, 1',
                   'parameter_b' : 'D', 'parameter_u' : 'D', 'parameter_w' : 'D',
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_st_supg_c)
 
@@ -580,15 +580,15 @@ class SDPSPGCStabilizationTerm(Term):
         - parameter_b : :math:`\ul{b}`
         - parameter_u : :math:`\ul{u}`
         - parameter_r : :math:`r`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_pspg_c'
     arg_types = ('material', 'parameter_b', 'parameter_u', 'parameter_r',
-                'parameter_mesh_velocity')
+                'parameter_mv')
     arg_shapes = {'material' : '1, 1',
                   'parameter_b' : 'D', 'parameter_u' : 'D', 'parameter_r' : 1,
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_st_pspg_c)
 
@@ -625,15 +625,15 @@ class SDPSPGPStabilizationTerm(Term):
         - material    : :math:`\tau_K`
         - parameter_r : :math:`r`
         - parameter_p : :math:`p`
-        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - parameter_mv : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',
-                'parameter_mesh_velocity')
+                'parameter_mv')
     arg_shapes = {'material' : '1, 1',
                   'parameter_r' : 1, 'parameter_p' : 1,
-                  'parameter_mesh_velocity' : 'D'}
+                  'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_st_pspg_p)
 
