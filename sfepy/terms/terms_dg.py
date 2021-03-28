@@ -283,10 +283,10 @@ class DiffusionDGFluxTerm(DGTerm):
 
     """
     name = "dw_dg_diffusion_flux"
-    arg_types = (('material_diffusion_tensor', 'state', 'virtual'), # left
-                 ('material_diffusion_tensor', 'virtual', 'state') # right
+    arg_types = (('material', 'state', 'virtual'), # left
+                 ('material', 'virtual', 'state') # right
                  )
-    arg_shapes = [{'material_diffusion_tensor': '1, 1',
+    arg_shapes = [{'material': '1, 1',
                    'virtual/avg_state': (1, None),
                    'state/avg_state' : 1,
                    'virtual/avg_virtual': (1, None),
@@ -464,9 +464,9 @@ class DiffusionInteriorPenaltyTerm(DGTerm):
     """
     name = "dw_dg_interior_penalty"
     modes = ("weak",)
-    arg_types = ('material_diffusion_tensor', 'material_Cw',
+    arg_types = ('material', 'material_Cw',
                  'virtual', 'state')
-    arg_shapes = [{'material_diffusion_tensor': '1, 1',
+    arg_shapes = [{'material': '1, 1',
                    'material_Cw': '.: 1',
                    'virtual'    : (1, 'state'),
                    'state'      : 1
