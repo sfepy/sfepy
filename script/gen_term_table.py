@@ -141,12 +141,14 @@ omits = [
 
 def typeset_examples(term_class, term_use):
     # e.g. fem-time_advection_diffusion -> tim.adv.dif.
-    to_shorter_name = lambda st: '.'.join([s[:3] for s in st.split('-')[-1].split('_')])
-    link_list = [(link_example % (to_shorter_name(exmpl), exmpl)) for exmpl in term_use[term_class.name]]
+    to_shorter_name = lambda st: '.'.join(
+                    [s[:3] for s in st.split('-')[-1].split('_')])
+    link_list = [(link_example % (to_shorter_name(exmpl), exmpl))
+                    for exmpl in term_use[term_class.name]]
     return ', '.join(link_list)
 
 def get_examples(table):
-    
+
     term_use = dict_from_keys_init(table.keys(), set)
     required, other = get_standard_keywords()
 
@@ -156,7 +158,7 @@ def get_examples(table):
                                          verbose=False)
         except:
             continue
-        
+
         ebase = filename.split('examples/')[1]
         lbase = os.path.splitext(ebase)[0]
         label = lbase.replace('/', '-')
