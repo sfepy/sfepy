@@ -1,5 +1,52 @@
 # created: 20.07.2007 (-1)
 
+.. _2020.4-2021.1:
+
+from 2020.4 to 2021.1
+=====================
+
+- merge pull request #664 from vlukes/update_coefs_base
+
+  - update CoefNN: allow different dimensions for row and column
+  - rename CoefNN to CoefMN
+
+- merge pull request #665 from vlukes/update_coefs_phono
+
+  - fix volumes in DensityVolumeInfo class
+
+- merge pull request #668 from rc/multilinear-terms, closes #666
+
+- new sfepy/terms/terms_multilinear.py with ETermBase and multilinear terms
+  (see git log)
+
+  - implemented terms: de_volume_integrate, de_laplace, de_volume_dot,
+    de_surface_dot, de_s_dot_mgrad_s, de_non_penetration_p, de_div_grad,
+    de_convect, de_div, de_stokes, de_lin_elastic, de_cauchy_stress
+  - docs: add multi-linear terms section to developer guide (WIP)
+  - remove tests/test_input_stokes_slip_bc_penalty.py
+  - script/gen_gallery.py: remove stokes_slip_bc_penalty.py custom
+    visualization
+  - script/gen_term_table.py: make new section for multi-linear terms - update
+    typeset_term_tables()
+  - docs: add multi-linear terms section to terms overview, explain de prefix
+  - sync test_stokes_slip_bc() with stokes_slip_bc.py example
+
+- merge pull request #675 from rc/fix-term-table
+
+  - script/gen_term_table.py: fix typeset_term_tables() (de_* terms twice)
+
+- merge pull request #671 from rc/propagate-ebcs-via-epbcs
+
+  - propagate ebcs via epbcs in EquationMap.map_equations()
+  - simplify some expressions in EquationMap.map_equations()
+
+- merge pull request #676 from antonykamp/374-doc-link-terms-example - closes
+  #374
+
+  - get term-example dict, generate links
+  - Added omits, edited reference style
+  - shorten long term argument names to allow line breaks in term table
+
 .. _2020.3-2020.4:
 
 from 2020.3 to 2020.4
