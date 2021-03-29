@@ -3,6 +3,11 @@
 Archived News
 =============
 
+* **23.12.2019** Version 2019.4 released (support surface terms in 1D problems,
+  improved Gmsh mesh format support (write .msh files), new updating procedure
+  in nonlinear homogenization, improved/faster log plotter, etc.), see
+  :ref:`release notes <2019.3-2019.4>`.
+
 * **24.09.2019** Version 2019.3 released (interface to eigenvalue problem
   solvers in SLEPc, new Python 3 enabled Timer class and other Python 3
   compatibility fixes, etc.), see :ref:`release notes <2019.2-2019.3>`.

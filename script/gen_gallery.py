@@ -396,7 +396,7 @@ def generate_images(images_dir, examples_dir):
                 output('to "%s"...' % disp_name.lstrip(os.path.sep))
 
                 view.filename = fname
-                view(scene=view.scene, show=False, **kwargs)
+                view(scene=view.scene, show=False, colormap='viridis', **kwargs)
                 view.save_image(fig_filename)
                 mlab.clf()
 
