@@ -60,7 +60,7 @@ install:
 
   - cmd.exe /c conda init
 
-  - "conda create -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy meshio importlib_metadata h5py netCDF4 psutil"
+  - "conda create -c conda-forge -q -n sfepy-test python=%PYTHON_VERSION% numpy scipy cython matplotlib pytables pyparsing sympy meshio importlib_metadata h5py netCDF4 psutil"
   - conda activate sfepy-test
   #
   # Scikit UMFPACK (TBD)
