@@ -311,22 +311,21 @@ class SDDivGradTerm(Term):
         - \pdiff{u_i}{x_k} \pdiff{\Vcal_l}{x_k} \pdiff{w_i}{x_k} ]
 
     :Arguments:
-        - material_1  : :math:`w` (weight)
-        - material_2  : :math:`\nu` (viscosity)
+        - material  : :math:`\nu` (viscosity, optional)
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
         - parameter_mv : :math:`\ul{\Vcal}`
     """
     name = 'd_sd_div_grad'
-    arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
+    arg_types = ('opt_material', 'parameter_u', 'parameter_w',
                  'parameter_mv')
-    arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
+    arg_shapes = {'opt_material' : '1, 1',
                   'parameter_u' : 'D', 'parameter_w' : 'D',
                   'parameter_mv' : 'D'}
 
     function = staticmethod(terms.d_sd_div_grad)
 
-    def get_fargs(self, mat1, mat2, par_u, par_w, par_mv,
+    def get_fargs(self, mat, par_u, par_w, par_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(par_u)
 
@@ -335,10 +334,10 @@ class SDDivGradTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        return (grad_u, grad_w, div_mv, grad_mv, mat1 * mat2, vg,
+        return (grad_u, grad_w, div_mv, grad_mv, mat, vg,
                 get_default(term_mode, 1))
 
-    def get_eval_shape(self, mat1, mat2, par_u, par_w, par_mv,
+    def get_eval_shape(self, mat, par_u, par_w, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
         return (n_el, 1, 1, 1), par_u.dtype
