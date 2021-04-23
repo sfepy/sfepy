@@ -209,9 +209,11 @@ class ExpressionArg(Struct):
             obj = ExpressionArg(name='_'.join(term.arg_names[ii]), arg=arg,
                                 kind='ndarray')
 
+        elif isinstance(arg, tuple) and isinstance(arg[0], nm.ndarray):
+            obj = ExpressionArg(name=arg[1], arg=arg[0], kind='ndarray')
+
         else:
-            raise ValueError('unknown argument type! ({})'
-                             .format(type(arg)))
+            raise ValueError('unknown argument type! ({})'.format(type(arg)))
 
         return obj
 
