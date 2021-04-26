@@ -2,6 +2,7 @@ import numpy as nm
 
 from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
+from sfepy.terms.terms_multilinear import ETermBase
 
 class PiezoCouplingTerm(Term):
     r"""
@@ -90,6 +91,53 @@ class PiezoCouplingTerm(Term):
             'div' : terms.dw_piezo_coupling,
             'eval' : terms.d_piezo_coupling,
         }[self.mode]
+
+class SDPiezoCouplingTerm(ETermBase):
+    r"""
+    Sensitivity (shape derivative) of the piezoelectric coupling term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{g}_{kij}\ e_{ij}(\ul{u}) \nabla_k p
+
+    .. math::
+        \hat{g}_{kij} = g_{kij}(\nabla \cdot \ul{\Vcal})
+        - g_{kil}{\partial \Vcal_j \over \partial x_l}
+        - g_{lij}{\partial \Vcal_k \over \partial x_l}
+
+    :Arguments:
+        - material    : :math:`g_{kij}`
+        - parameter_u : :math:`\ul{u}`
+        - parameter_p : :math:`p`
+        - parameter_mv : :math:`\ul{\Vcal}`
+    """
+    name = 'd_sd_piezo_coupling'
+    arg_types = ('material', 'parameter_u', 'parameter_p', 'parameter_mv')
+    arg_shapes = {'material': 'D, S', 'parameter_u': 'D', 'parameter_p': 1,
+                  'parameter_mv': 'D'}
+    geometries = ['2_3', '2_4', '3_4', '3_8']
+
+    def get_function(self, mat, par_u, par_p, par_mv,
+                     mode=None, term_mode=None, diff_var=None, **kwargs):
+        grad_mv = self.get(par_mv, 'grad')
+        div_mv = self.get(par_mv, 'div')
+
+        nel, nqp, dim, _ = mat.shape
+        remap = nm.array([0, 2, 2, 1] if dim == 2 else [0, 3, 4, 3, 1, 5, 4, 5, 2])
+        mat_f = mat[:, :, :, remap].reshape((nel, nqp, dim, dim, dim))
+
+        ## grad_mv = [v11, v21; v12, v22]
+        sa_mat_f = mat_f * div_mv[..., nm.newaxis]
+        sa_mat_f -= nm.einsum('qpkil,qplj->qpkij', mat_f, grad_mv,
+                              optimize='greedy')
+        sa_mat_f -= nm.einsum('qplij,qplk->qpkij', mat_f, grad_mv,
+                              optimize='greedy')
+
+        return self.make_function(
+            'kij,i.j,0.k', (sa_mat_f, 'material'), par_u, par_p,
+            diff_var=diff_var
+        )
 
 class PiezoStressTerm(Term):
     r"""
