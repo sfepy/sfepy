@@ -1371,14 +1371,15 @@ class EConvectTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} ((\ul{w} \cdot \nabla) \ul{w}) \cdot \bar{\ul{u}}
 
     :Arguments 1:
         - virtual : :math:`\ul{v}`
         - state   : :math:`\ul{u}`
 
     :Arguments 2:
-        - parameter_1 : :math:`\ul{u}`
+        - parameter_1 : :math:`\bar{\ul{u}}`
         - parameter_2 : :math:`\ul{w}`
 
     """
