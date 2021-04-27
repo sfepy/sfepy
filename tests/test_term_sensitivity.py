@@ -55,8 +55,7 @@ test_terms = [
     ('d_sd_div', 'dw_stokes', None, 'U1', 'P1'),
     ('d_sd_div_grad', 'dw_div_grad', 'mat.c', 'U1', 'U2'),
     ('d_sd_piezo_coupling', 'dw_piezo_coupling', 'mat.g', 'U1', 'P1'),
-    # dw_convect can not be evaluated
-    # ('d_sd_convect', 'dw_convect', None, 'U1', 'U2'),
+    ('d_sd_convect', 'de_convect', None, 'U1', 'U2'),
 ]
 
 

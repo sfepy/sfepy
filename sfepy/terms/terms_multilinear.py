@@ -1371,15 +1371,24 @@ class EConvectTerm(ETermBase):
     :Definition:
 
     .. math::
-        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} ((\ul{w} \cdot \nabla) \ul{w}) \cdot \bar{\ul{u}}
 
-    :Arguments:
+    :Arguments 1:
         - virtual : :math:`\ul{v}`
         - state   : :math:`\ul{u}`
+
+    :Arguments 2:
+        - parameter_1 : :math:`\bar{\ul{u}}`
+        - parameter_2 : :math:`\ul{w}`
+
     """
     name = 'de_convect'
-    arg_types = ('virtual', 'state')
-    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D'}
+    arg_types = (('virtual', 'state'),
+                 ('parameter_1', 'parameter_2'))
+    arg_shapes = {'virtual' : ('D', 'state'), 'state' : 'D',
+                  'parameter_1' : 'D', 'parameter_2' : 'D'}
+    modes = ('weak', 'eval')
 
     def get_function(self, virtual, state, mode=None, term_mode=None,
                      diff_var=None, **kwargs):
