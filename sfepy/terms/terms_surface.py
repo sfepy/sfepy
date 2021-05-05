@@ -116,12 +116,13 @@ class SDLinearTractionTerm(Term):
         - material  : :math:`\ull{\sigma}`
         - parameter : :math:`\ul{v}`
     """
+
     name = 'd_sd_surface_ltr'
     arg_types = ('opt_material', 'parameter', 'parameter_mv')
     arg_shapes = [{'opt_material': 'S, 1', 'parameter': 'D',
-                   'parameter_mv': 'D'}, {'opt_material' : '1, 1'},
-                  {'opt_material' : 'D, 1'}, {'opt_material' : 'D, D'},
-                  {'opt_material' : None}]
+                   'parameter_mv': 'D'}, {'opt_material': '1, 1'},
+                  {'opt_material': 'D, 1'}, {'opt_material': 'D, D'},
+                  {'opt_material': None}]
     integration = 'surface'
 
     @staticmethod
@@ -140,14 +141,14 @@ class SDLinearTractionTerm(Term):
         elif tdim == 1:
             trac = nm.tile(nm.eye(dim), (nel, nqp, 1, 1)) * traction
 
-        elif tdim == dim and tdim2 == 1: # Traction vector
+        elif tdim == dim and tdim2 == 1:  # Traction vector
             trac = nm.tile(nm.eye(dim), (nel, nqp, 1, 1))
             val2 = traction
 
-        elif tdim == dim and tdim2 == dim: # Traction tensor - nonsymmetric
+        elif tdim == dim and tdim2 == dim:  # Traction tensor - nonsymmetric
             trac = traction
 
-        elif tdim == sym: # Traction tensor
+        elif tdim == sym:  # Traction tensor
             remap = nm.array(get_full_indices(dim)).flatten()
             trac = traction[..., remap, :].reshape((nel, nqp, dim, dim))
 
@@ -159,7 +160,6 @@ class SDLinearTractionTerm(Term):
         aux = dot_sequences(aux, val2, 'AB')
         status = sg.integrate(out, aux)
         return status
-
 
     def get_fargs(self, traction, par_u, par_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
