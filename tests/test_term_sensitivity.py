@@ -24,15 +24,16 @@ regions = {
     'Omega': 'all',
     'Omega1': 'cells of group 1',
     'Omega2': 'cells of group 2',
+    'Interface': ('r.Omega1 *v r.Omega2', 'facet', 'Omega1'),
 }
 
 integrals = {
     'i': 2,
 }
 
-piezo_g =  nm.array([[0, 0, 0, 0, 10, 0],
-                     [0, 0, 0, 0, 0, 10],
-                     [-5, -5, 15, 0, 0, 0]])
+piezo_g = nm.array([[0, 0, 0, 0, 10, 0],
+                    [0, 0, 0, 0, 0, 10],
+                    [-5, -5, 15, 0, 0, 0]])
 
 materials = {
     'mat': ({
@@ -43,19 +44,24 @@ materials = {
         'K': {'Omega1': nm.eye(3), 'Omega2': nm.eye(3) * 1e-3},
         'c': {'Omega1': 1, 'Omega2': 1000},
         'g': {'Omega1': piezo_g * 1e2, 'Omega2': piezo_g},
-    },),      
+        's': {
+            'Omega1': nm.array([[1, 2, 3, 0, 0, 0]]).T,
+            'Omega2': nm.array([[8, 4, 2, 0, 0, 0]]).T,
+        }
+    },),
 }
 
 equations = {}
 
 test_terms = [
-    ('d_sd_lin_elastic', 'dw_lin_elastic', 'mat.D', 'U1', 'U2'),
-    ('d_sd_volume_dot', 'dw_volume_dot', None, 'U1', 'U2'),
-    ('d_sd_diffusion', 'dw_diffusion', 'mat.K', 'P1', 'P2'),
-    ('d_sd_div', 'dw_stokes', None, 'U1', 'P1'),
-    ('d_sd_div_grad', 'dw_div_grad', 'mat.c', 'U1', 'U2'),
-    ('d_sd_piezo_coupling', 'dw_piezo_coupling', 'mat.g', 'U1', 'P1'),
-    ('d_sd_convect', 'de_convect', None, 'U1', 'U2'),
+    ('d_sd_lin_elastic', 'dw_lin_elastic', 'Omega', 'mat.D', 'U1', 'U2'),
+    ('d_sd_volume_dot', 'dw_volume_dot', 'Omega', None, 'U1', 'U2'),
+    ('d_sd_diffusion', 'dw_diffusion', 'Omega', 'mat.K', 'P1', 'P2'),
+    ('d_sd_div', 'dw_stokes', 'Omega', None, 'U1', 'P1'),
+    ('d_sd_div_grad', 'dw_div_grad', 'Omega', 'mat.c', 'U1', 'U2'),
+    ('d_sd_piezo_coupling', 'dw_piezo_coupling', 'Omega', 'mat.g', 'U1', 'P1'),
+    ('d_sd_convect', 'de_convect', 'Omega', None, 'U1', 'U2'),
+    ('d_sd_surface_ltr', 'dw_surface_ltr', 'Interface', 'mat.s', 'U1', None),
 ]
 
 
@@ -129,17 +135,18 @@ class Test(TestCommon):
                     dvel += spbox.evaluate_derivative(cp_pos[pt], dir)
             dvels.append(dvel)
 
-        for tname_sa, tname, mat, var1, var2 in test_terms:
+        for tname_sa, tname, rname, mat, var1, var2 in test_terms:
             args = [] if mat is None else [mat]
-            args += [var1, var2]
-            term = '%s.i.Omega(%s)' % (tname, ', '.join(args))
-            term_sa = '%s.i.Omega(%s)' % (tname_sa, ', '.join(args + ['V']))
+            args += [var1] if var2 is None else [var1, var2]
+            term = '%s.i.%s(%s)' % (tname, rname, ', '.join(args))
+            term_sa = '%s.i.%s(%s)' % (tname_sa, rname, ', '.join(args + ['V']))
 
             val = pb.evaluate(term, var_dict=variables.as_dict())
             self.report('%s: %s' % (tname, val))
 
             dt = 1e-6
             for ii, dvel in enumerate(dvels):
+                val = pb.evaluate(term, var_dict=variables.as_dict())
                 variables['V'].set_data(dvel)
                 val_sa = pb.evaluate(term_sa, var_dict=variables.as_dict())
                 self.report('%s - mesh_velocity mode %d' % (tname_sa, ii))
@@ -155,9 +162,10 @@ class Test(TestCommon):
 
                 val_fd = (val1 - val2) / dt
                 err = nm.abs(val_sa - val_fd) / nm.linalg.norm(val_sa)
+                self.report('term:               %s' % val)
                 self.report('sensitivity term:   %s' % val_sa)
                 self.report('finite differences: %s' % val_fd)
-                self.report('relative error: %s' % err)
+                self.report('relative error:     %s' % err)
 
                 _ok = err < tolerance
 

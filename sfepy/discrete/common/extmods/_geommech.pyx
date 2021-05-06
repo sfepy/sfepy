@@ -7,7 +7,8 @@ cimport cython
 cimport sfepy.discrete.common.extmods._geommech as gmch
 from types cimport int32
 
-from sfepy.discrete.common.extmods._fmfield cimport (FMField, array2fmfield4)
+from sfepy.discrete.common.extmods._fmfield cimport\
+    (FMField, FMF_SetCell, array2fmfield4)
 
 cimport numpy as np
 import numpy as np
@@ -22,6 +23,12 @@ def geme_mulAVSB3py(np.ndarray vs not None,
     array2fmfield4(_vs, vs)
     array2fmfield4(_inp, inp)
 
-    ret = gmch.geme_mulAVSB3(_out, _vs, _inp)
+    ret = 0
+    for ii in range(out.shape[0]):
+        FMF_SetCell(_out, ii);
+        FMF_SetCell(_vs, ii);
+        FMF_SetCell(_inp, ii);
+        _ret = gmch.geme_mulAVSB3(_out, _vs, _inp)
+        ret = ret and _ret
 
     return out, ret

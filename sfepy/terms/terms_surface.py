@@ -5,6 +5,7 @@ from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
+from sfepy.mechanics.tensors import get_full_indices
 from sfepy.discrete.common.extmods._geommech import geme_mulAVSB3py
 from six.moves import range
 
@@ -18,9 +19,10 @@ class LinearTractionTerm(Term):
     :math:`\ul{f}` for a traction vector, and itself for a stress tensor.
 
     The material parameter can have one of the following shapes: 1 or (1, 1),
-    (D, 1), (S, 1). The symmetric tensor storage is used in the last case: in
-    3D S = 6 and the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D
-    S = 3 and the indices ordered as :math:`[11, 22, 12]`.
+    (D, 1), (S, 1) in all modes, or (D, D) in the `eval` mode only.
+    The symmetric tensor storage (S, 1) is as follows: in 3D S = 6
+    and the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`,
+    in 2D S = 3 and the indices ordered as :math:`[11, 22, 12]`.
 
     :Definition:
 
@@ -38,13 +40,13 @@ class LinearTractionTerm(Term):
     arg_shapes = [{'opt_material' : 'S, 1', 'virtual' : ('D', None),
                    'parameter' : 'D'},
                   {'opt_material' : 'D, 1'}, {'opt_material' : '1, 1'},
-                  {'opt_material' : None}]
+                  {'opt_material' : 'D, D'}, {'opt_material' : None}]
     modes = ('weak', 'eval')
     integration = 'surface'
 
     @staticmethod
     def d_fun(out, traction, val, sg):
-        tdim = traction.shape[2]
+        tdim, tdim2 = traction.shape[2:]
         dim = val.shape[2]
         sym = (dim + 1) * dim // 2
 
@@ -54,8 +56,12 @@ class LinearTractionTerm(Term):
         elif tdim == 1: # Pressure
             aux = dot_sequences(val, traction * sg.normal, 'ATB')
 
-        elif tdim == dim: # Traction vector
+        elif tdim == dim and tdim2 == 1: # Traction vector
             aux = dot_sequences(val, traction, 'ATB')
+
+        elif tdim == dim and tdim2 == dim: # Traction tensor - nonsymmetric
+            trn = dot_sequences(traction, sg.normal, 'ATB')
+            aux = dot_sequences(val, trn, 'ATB')
 
         elif tdim == sym: # Traction tensor
             trn, ret = geme_mulAVSB3py(traction, sg.normal)
@@ -94,6 +100,86 @@ class LinearTractionTerm(Term):
 
         else:
             self.function = self.d_fun
+
+
+class SDLinearTractionTerm(Term):
+    r"""
+    Sensitivity of the linear traction term.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n},
+        \int_{\Gamma} \ul{v} \cdot \ul{n},
+
+    :Arguments:
+        - material  : :math:`\ull{\sigma}`
+        - parameter : :math:`\ul{v}`
+    """
+
+    name = 'd_sd_surface_ltr'
+    arg_types = ('opt_material', 'parameter', 'parameter_mv')
+    arg_shapes = [{'opt_material': 'S, 1', 'parameter': 'D',
+                   'parameter_mv': 'D'}, {'opt_material': '1, 1'},
+                  {'opt_material': 'D, 1'}, {'opt_material': 'D, D'},
+                  {'opt_material': None}]
+    integration = 'surface'
+
+    @staticmethod
+    def d_fun(out, traction, val, grad_mv, div_mv, sg):
+
+        tdim, tdim2 = (None, None) if traction is None else traction.shape[2:]
+        dim = val.shape[2]
+        sym = (dim + 1) * dim // 2
+        n_el, n_qp = div_mv.shape[:2]
+
+        val2 = sg.normal
+
+        if tdim is None:
+            trac = nm.tile(nm.eye(dim), (n_el, n_qp, 1, 1))
+
+        elif tdim == 1:
+            trac = nm.tile(nm.eye(dim), (n_el, n_qp, 1, 1)) * traction
+
+        elif tdim == dim and tdim2 == 1:  # Traction vector
+            trac = nm.tile(nm.eye(dim), (n_el, n_qp, 1, 1))
+            val2 = traction
+
+        elif tdim == dim and tdim2 == dim:  # Traction tensor - nonsymmetric
+            trac = traction
+
+        elif tdim == sym:  # Traction tensor
+            remap = nm.array(get_full_indices(dim)).flatten()
+            trac = traction[..., remap, :].reshape((n_el, n_qp, dim, dim))
+
+        sa_trac = trac * div_mv
+        sa_trac -= nm.einsum('qpik,qpkj->qpij', trac, grad_mv,
+                             optimize='greedy')
+
+        aux = dot_sequences(val, sa_trac, 'ATB')
+        aux = dot_sequences(aux, val2, 'AB')
+        status = sg.integrate(out, aux)
+        return status
+
+    def get_fargs(self, traction, par_u, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(par_u)
+
+        val = self.get(par_u, 'val')
+        grad_mv = self.get(par_mv, 'grad', integration='surface_extra')
+        div_mv = self.get(par_mv, 'div', integration='surface_extra')
+
+        return traction, val, grad_mv, div_mv, sg
+
+    def get_eval_shape(self, traction, par_u, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+
+        return (n_el, 1, 1, 1), par_u.dtype
+
+    def set_arg_types(self):
+        self.function = self.d_fun
+
 
 class ContactPlaneTerm(Term):
     r"""
