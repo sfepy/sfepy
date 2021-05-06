@@ -19,10 +19,10 @@ class LinearTractionTerm(Term):
     :math:`\ul{f}` for a traction vector, and itself for a stress tensor.
 
     The material parameter can have one of the following shapes: 1 or (1, 1),
-    (D, 1), (S, 1), or (D, D) in the `eval` mode. The symmetric tensor storage
-    is used in the last case: in 3D S = 6 and the indices ordered as
-    :math:`[11, 22, 33, 12, 13, 23]`, in 2D S = 3 and the indices ordered as
-    :math:`[11, 22, 12]`.
+    (D, 1), (S, 1) in all modes, or (D, D) in the `eval` mode only.
+    The symmetric tensor storage (S, 1) is as follows: in 3D S = 6
+    and the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`,
+    in 2D S = 3 and the indices ordered as :math:`[11, 22, 12]`.
 
     :Definition:
 
@@ -131,18 +131,18 @@ class SDLinearTractionTerm(Term):
         tdim, tdim2 = (None, None) if traction is None else traction.shape[2:]
         dim = val.shape[2]
         sym = (dim + 1) * dim // 2
-        nel, nqp = div_mv.shape[:2]
+        n_el, n_qp = div_mv.shape[:2]
 
         val2 = sg.normal
 
         if tdim is None:
-            trac = nm.tile(nm.eye(dim), (nel, nqp, 1, 1))
+            trac = nm.tile(nm.eye(dim), (n_el, n_qp, 1, 1))
 
         elif tdim == 1:
-            trac = nm.tile(nm.eye(dim), (nel, nqp, 1, 1)) * traction
+            trac = nm.tile(nm.eye(dim), (n_el, n_qp, 1, 1)) * traction
 
         elif tdim == dim and tdim2 == 1:  # Traction vector
-            trac = nm.tile(nm.eye(dim), (nel, nqp, 1, 1))
+            trac = nm.tile(nm.eye(dim), (n_el, n_qp, 1, 1))
             val2 = traction
 
         elif tdim == dim and tdim2 == dim:  # Traction tensor - nonsymmetric
@@ -150,7 +150,7 @@ class SDLinearTractionTerm(Term):
 
         elif tdim == sym:  # Traction tensor
             remap = nm.array(get_full_indices(dim)).flatten()
-            trac = traction[..., remap, :].reshape((nel, nqp, dim, dim))
+            trac = traction[..., remap, :].reshape((n_el, n_qp, dim, dim))
 
         sa_trac = trac * div_mv
         sa_trac -= nm.einsum('qpik,qpkj->qpij', trac, grad_mv,
