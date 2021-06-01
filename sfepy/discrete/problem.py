@@ -790,8 +790,6 @@ class Problem(Struct):
     def init_time(self, ts):
         self.update_time_stepper(ts)
         self.equations.init_time(ts)
-        self.update_materials(mode='force',
-                              verbose=self.conf.get('verbose', True))
 
         self._restart_filenames = []
 
@@ -1416,12 +1414,12 @@ class Problem(Struct):
                                      verbose=verbose)
 
         else:
-            self.time_update(tss.ts) # Only having adi is required here(?)
+            self.time_update(tss.ts)
 
             state0.apply_ebc(force_values=force_values)
 
             if self.is_linear():
-                mtx = prepare_matrix(self, state0)
+                mtx = prepare_matrix(self, state0) # Updates materials.
                 self.try_presolve(mtx)
 
             init_fun, prestep_fun, poststep_fun = self.get_tss_functions(
