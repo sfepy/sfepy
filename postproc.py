@@ -19,8 +19,7 @@ Examples
 
   - save a snapshot image without off-screen rendering and exit
 
-    $ python postproc.py output-tests/test_poisson.vtk -o image.png \
-                         -n --no-offscreen
+    $ python postproc.py output-tests/test_poisson.vtk -o image.png -n --no-offscreen
 
   - create animation (forces offscreen rendering) from
     output-tests/test_time_poisson.*.vtk
@@ -34,13 +33,11 @@ Examples
     output-tests/test_hyperelastic.00.vtk contains only zero
     displacements which leads to invisible glyph size.
 
-    $ python postproc.py output-tests/test_hyperelastic.*.vtk \
-                         --ranges=u,0,0.02 -a mov
+    $ python postproc.py output-tests/test_hyperelastic.*.vtk --ranges=u,0,0.02 -a mov
 
   - same as above, but slower frame rate
 
-    $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk \
-                         --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
+    $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov --ffmpeg-options="-framerate 2"
 """
 from __future__ import print_function
 from __future__ import absolute_import
@@ -314,7 +311,7 @@ def main():
                        help=helps['anim_format'])
     group.add_argument('--ffmpeg-options', metavar='<ffmpeg options>',
                        action='store', dest='ffmpeg_options',
-                       default='-r 10 -sameq',
+                       default='-framerate 10',
                        help=helps['ffmpeg_options'])
 
     group = parser.add_argument_group('Data Options')

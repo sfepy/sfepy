@@ -377,10 +377,27 @@ postproc.py -- Mayavi2
 
 The ``postproc.py`` script can be used for quick postprocessing and
 visualization of the *SfePy* results. It requires mayavi2 installed on your
-system. Running ``postproc.py`` without arguments produces::
+system.
 
-    $ ./postproc.py
-    Usage: postproc.py [options] filename
+The help message of the script is::
+
+    usage: postproc.py [-h] [--version] [--debug] [-o filename]
+                       [--output-dir directory] [-n] [--no-offscreen]
+                       [-a <ffmpeg-supported format>]
+                       [--ffmpeg-options <ffmpeg options>] [--step step]
+                       [--time time] [-w] [--all] [--only-names list of names]
+                       [-l] [--ranges name1,min1,max1:name2,min2,max2:...]
+                       [-r resolution] [--layout layout] [--3d]
+                       [--view angle,angle[,distance[,focal_point]]]
+                       [--roll angle] [--parallel-projection] [--fgcolor R,G,B]
+                       [--bgcolor R,G,B] [--colormap colormap]
+                       [--anti-aliasing value] [-b] [--wireframe]
+                       [--group-names name1,...,nameN:...]
+                       [--subdomains mat_id_name,threshold_limits,single_color]
+                       [-d "var_name0,function_name0,par0=val0,par1=val1,...:var_name1,..."]
+                       [--scalar-mode mode] [--vector-mode mode] [-s scale]
+                       [--clamping] [--opacity opacity] [--rel-text-width width]
+                       filenames [filenames ...]
 
     This is a script for quick Mayavi-based visualizations of finite element
     computations results.
@@ -395,6 +412,14 @@ system. Running ``postproc.py`` without arguments produces::
         $ python postproc.py output-tests/test_navier_stokes.vtk
         $ python postproc.py output-tests/test_navier_stokes.vtk --3d
 
+      - save a snapshot image and exit
+
+        $ python postproc.py output-tests/test_poisson.vtk -o image.png -n
+
+      - save a snapshot image without off-screen rendering and exit
+
+        $ python postproc.py output-tests/test_poisson.vtk -o image.png -n --no-offscreen
+
       - create animation (forces offscreen rendering) from
         output-tests/test_time_poisson.*.vtk
 
@@ -407,82 +432,108 @@ system. Running ``postproc.py`` without arguments produces::
         output-tests/test_hyperelastic.00.vtk contains only zero
         displacements which leads to invisible glyph size.
 
-        $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov
+        $ python postproc.py output-tests/test_hyperelastic.*.vtk --ranges=u,0,0.02 -a mov
 
       - same as above, but slower frame rate
 
-        $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
+        $ python postproc.py output-tests/test_hyperelastic_TL.*.vtk --ranges=u,0,0.02 -a mov --ffmpeg-options="-framerate 2"
 
+    positional arguments:
+      filenames
 
-
-    Options:
-      --version             show program's version number and exit
+    optional arguments:
       -h, --help            show this help message and exit
-      -l, --list-ranges     do not plot, only list names and ranges of all data
-      -n, --no-show         do not call mlab.show()
-      --no-offscreen        force no offscreen rendering for --no-show
-      --3d                  3d plot mode
-      --view=angle,angle[,distance[,focal_point]]
-                            camera azimuth, elevation angles, and optionally also
-                            distance and focal point coordinates (without []) as
-                            in `mlab.view()` [default: if --3d is True: "45,45",
-                            else: "0,0"]
-      --roll=angle          camera roll angle [default: 0.0]
-      --fgcolor=R,G,B       foreground color, that is the color of all text
-                            annotation labels (axes, orientation axes, scalar bar
-                            labels) [default: 0.0,0.0,0.0]
-      --bgcolor=R,G,B       background color [default: 1.0,1.0,1.0]
-      --layout=layout       layout for multi-field plots, one of: rowcol, colrow,
-                            row, col [default: rowcol]
-      --scalar-mode=mode    mode for plotting scalars with --3d, one of:
-                            cut_plane, iso_surface, both [default: iso_surface]
-      --vector-mode=mode    mode for plotting vectors, one of: arrows, norm,
-                            arrows_norm, warp_norm [default: arrows_norm]
-      -s scale, --scale-glyphs=scale
-                            relative scaling of glyphs (vector field
-                            visualization) [default: 0.05]
-      --clamping            glyph clamping mode
-      --ranges=name1,min1,max1:name2,min2,max2:...
-                            force data ranges [default: automatic from data]
-      -b, --scalar-bar      show scalar bar for each data
-      --wireframe           show wireframe of mesh surface for each data
-      --opacity=opacity     global surface and wireframe opacity in [0.0, 1.0]
-                            [default: 1.0]
-      --rel-text-width=width
-                            relative text annotation width [default: 0.02]
-      -w, --watch           watch the results file for changes (single file mode
-                            only)
-      -o filename, --output=filename
-                            view image file name [default: 'view.png']
-      --output-dir=directory
+      --version             show program's version number and exit
+      --debug               automatically start debugger when an exception is
+                            raised
+
+    Output Options:
+      -o filename, --output filename
+                            view image file name [default: "view.png"]
+      --output-dir directory
                             output directory for saving view images; ignored when
                             -o option is given, as the directory part of the
-                            filename is taken instead [default: '.']
-      -a <ffmpeg-supported format>, --animation=<ffmpeg-supported format>
+                            filename is taken instead [default: "."]
+      -n, --no-show         do not call mlab.show()
+      --no-offscreen        force no offscreen rendering for --no-show
+      -a <ffmpeg-supported format>, --animation <ffmpeg-supported format>
                             if set to a ffmpeg-supported format (e.g. mov, avi,
                             mpg), ffmpeg is installed and results of multiple time
                             steps are given, an animation is created in the same
                             directory as the view images
-      --ffmpeg-options="<ffmpeg options>"
-                            ffmpeg animation encoding options (enclose in "")
-                            [default: -r 10 -sameq]
-      -r resolution, --resolution=resolution
-                            image resolution in NxN format [default: shorter axis:
-                            600; depends on layout: for rowcol it is 800x600]
+      --ffmpeg-options <ffmpeg options>
+                            ffmpeg animation encoding options (enclose in
+                            "")[default: "-framerate 10"]
+
+    Data Options:
+      --step step           set the time step. Negative indices are allowed, -1
+                            means the last step. The closest higher step is used
+                            if the desired one is not available. Has precedence
+                            over --time. [default: the first step]
+      --time time           set the time. The closest higher time is used if the
+                            desired one is not available. [default: None]
+      -w, --watch           watch the results file for changes (single file mode
+                            only)
       --all                 draw all data (normally, node_groups and mat_id are
                             omitted)
-      --only-names=list of names
+      --only-names list of names
                             draw only named data
-      --group-names=name1,...,nameN:...
+      -l, --list-ranges     do not plot, only list names and ranges of all data
+      --ranges name1,min1,max1:name2,min2,max2:...
+                            force data ranges [default: automatic from data]
+
+    View Options:
+      -r resolution, --resolution resolution
+                            image resolution in NxN format [default: shorter axis:
+                            600; depends on layout: for rowcol it is 800x600]
+      --layout layout       layout for multi-field plots, one of: rowcol, colrow,
+                            row, col, row#n,col#n, where #n is the number of plots
+                            in the specified direction [default: rowcol]
+      --3d                  3d plot mode
+      --view angle,angle[,distance[,focal_point]]
+                            camera azimuth, elevation angles, and optionally also
+                            distance and focal point coordinates (without []) as
+                            in `mlab.view()` [default: if --3d is True: "45,45",
+                            else: "0,0"]
+      --roll angle          camera roll angle [default: 0.0]
+      --parallel-projection
+                            use parallel projection
+      --fgcolor R,G,B       foreground color, that is the color of all text
+                            annotation labels (axes, orientation axes, scalar bar
+                            labels) [default: 0.0,0.0,0.0]
+      --bgcolor R,G,B       background color [default: 1.0,1.0,1.0]
+      --colormap colormap   mayavi2 colormap name [default: blue-red]
+      --anti-aliasing value
+                            value of anti-aliasing [default: mayavi2 default]
+
+    Custom Plots Options:
+      -b, --scalar-bar      show scalar bar for each data
+      --wireframe           show wireframe of mesh surface for each data
+      --group-names name1,...,nameN:...
                             superimpose plots of data in each group
-      --subdomains=mat_id_name,threshold_limits,single_color
+      --subdomains mat_id_name,threshold_limits,single_color
                             superimpose surfaces of subdomains over each data;
                             example value: mat_id,0,None,True
-      --step=step           set the time step [default: 0]
-      --anti-aliasing=value
-                            value of anti-aliasing [default: mayavi2 default]
-      -d 'var_name0,function_name0,par0=val0,par1=val1,...:var_name1,...', --domain-specific='var_name0,function_name0,par0=val0,par1=val1,...:var_name1,...'
+      -d "var_name0,function_name0,par0=val0,par1=val1,...:var_name1,...", --domain-specific "var_name0,function_name0,par0=val0,par1=val1,...:var_name1,..."
                             domain specific drawing functions and configurations
+
+    Mayavi Options:
+      --scalar-mode mode    mode for plotting scalars with --3d, one of:
+                            cut_plane, iso_surface, both [default: iso_surface]
+      --vector-mode mode    mode for plotting vectors, one of: arrows, norm,
+                            arrows_norm, warp_norm [default: arrows_norm]
+      -s scale, --scale-glyphs scale
+                            relative scaling of glyphs (vector field
+                            visualization) [default: 0.05]
+      --clamping            glyph clamping mode
+      --opacity opacity     opacity in [0.0, 1.0]. Can be given either globally as
+                            a single float, or per module, e.g.
+                            "wireframe=0.1,scalar_cut_plane=0.5". Possible
+                            keywords are: wireframe, scalar_cut_plane,
+                            vector_cut_plane, surface, iso_surface,
+                            arrows_surface, glyphs. [default: 1.0]
+      --rel-text-width width
+                            relative text annotation width [default: 0.02]
 
 As a simple example, try::
 
