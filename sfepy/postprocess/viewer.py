@@ -347,12 +347,12 @@ class Viewer(Struct):
 
     def encode_animation(self, filename, format, ffmpeg_options=None):
         if ffmpeg_options is None:
-            ffmpeg_options = '-r 10 -sameq'
+            ffmpeg_options = '-framerate 10'
 
         base, _, ext = self.get_animation_info(filename)
         anim_name = '.'.join((base, format))
-        cmd = 'ffmpeg %s -i %s %s' \
-              % (ffmpeg_options, '.'.join((base, '%*', ext[1:])), anim_name)
+        cmd = 'ffmpeg %s -pattern_type glob -i "%s" -q:v 0 %s' \
+              % (ffmpeg_options, '.'.join((base, '*', ext[1:])), anim_name)
         output('creating animation "%s"...' % anim_name)
         output('using command:')
         output(cmd)
