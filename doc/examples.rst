@@ -16,6 +16,8 @@ generated list of the standard examples that come with SfePy.
    splinebox
    examples/index
 
+.. _example_applications:
+
 Example Applications
 --------------------
 

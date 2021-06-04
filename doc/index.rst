@@ -20,6 +20,8 @@
    :ref:`term_overview`. SfePy comes also with a number of examples that can
    get you started, check :doc:`examples/gallery`, :doc:`examples` and
    :doc:`tutorial`. Some more advanced features are discussed in :doc:`primer`.
+   Examples of scientific results obtained with the help of SfePy are listed in
+   :ref:`example_applications`.
 
    SfePy can be used in parallel (work in progress), see
    :ref:`solving_problems_in_parallel`.
@@ -31,20 +33,6 @@
    :ref:`introduction_installation`.
 
    **License:** :doc:`BSD <license>`
-
-   Applications
-   ------------
-
-   Here we list some of the applications SfePy is/was developed for.
-
-   - homogenization of porous media - parallel flows in a deformable porous
-     medium
-   - acoustic band gaps, homogenization of a strongly heterogenous
-     elastic structure: phononic materials
-   - acoustic waves in thin perforated layers
-   - finite element formulation of Schroedinger equation
-   - flow of a two-phase non-Newtonian fluid medium in a general domain - oil
-     expression in screw presses/extruders
 
    Related Projects
    ----------------
@@ -76,6 +64,8 @@
          author =       {Cimrman, Robert and Lukeš, Vladimír and Rohan, Eduard},
          year =         2019,
        }
+
+   - :ref:`example_applications` have links to related scientific articles.
 
    - Other references:
 
