@@ -382,36 +382,36 @@ class TransformToPlane(Struct):
         """
         mg = nm.meshgrid
 
-        cs = c3[mg(self.i_ss, self.i_ss)]
-        cm = c3[mg(self.i_ss, self.i_ms)].T
+        cs = c3[tuple(mg(self.i_ss, self.i_ss))]
+        cm = c3[tuple(mg(self.i_ss, self.i_ms))].T
         if d3 is None: # elasticity only.
             A = cs
             Feps = cm
 
             Ainv = nm.linalg.inv(A)
-            c2 = c3[mg(self.i_ms, self.i_ms)] \
+            c2 = c3[tuple(mg(self.i_ms, self.i_ms))] \
                  - nm.dot(Feps.T, nm.dot(Ainv, Feps))
 
             return c2
 
         else:
-            dm = d3[mg(self.i_s, self.i_m)].T
-            ds = d3[mg(self.i_s, self.i_s)]
+            dm = d3[tuple(mg(self.i_s, self.i_m))].T
+            ds = d3[tuple(mg(self.i_s, self.i_s))]
 
-            ii = mg(self.i_s, self.i_ss)
+            ii = tuple(mg(self.i_s, self.i_ss))
             A = nm.r_[nm.c_[cs, b3[ii]],
                       nm.c_[b3[ii].T, -ds]] #=> sym !!!
-            F = nm.r_[nm.c_[cm, b3[mg(self.i_m, self.i_ss)]],
-                      nm.c_[b3[mg(self.i_s, self.i_ms)].T, -dm]]
+            F = nm.r_[nm.c_[cm, b3[tuple(mg(self.i_m, self.i_ss))]],
+                      nm.c_[b3[tuple(mg(self.i_s, self.i_ms))].T, -dm]]
 
             Feps = F[:, :3]
             FE = F[:, 3:]
             Ainv = nm.linalg.inv(A)
-            c2 = c3[mg(self.i_ms, self.i_ms)] \
+            c2 = c3[tuple(mg(self.i_ms, self.i_ms))] \
                  - nm.dot(Feps.T, nm.dot(Ainv, Feps))
-            d2 = d3[mg(self.i_m, self.i_m)] \
+            d2 = d3[tuple(mg(self.i_m, self.i_m))] \
                  - nm.dot(FE.T, nm.dot(Ainv, FE))
-            b2 = b3[mg(self.i_m, self.i_ms)].T \
+            b2 = b3[tuple(mg(self.i_m, self.i_ms))].T \
                  - nm.dot(FE.T, nm.dot(Ainv, Feps))
 
             return c2, d2, b2
