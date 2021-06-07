@@ -17,6 +17,7 @@ order in continuity tests is limited to 2 on 3_8 elements to decrease the tests
 run time.
 """
 from __future__ import absolute_import
+from itertools import product
 import numpy as nm
 
 from sfepy.base.testing import TestCommon
@@ -62,6 +63,23 @@ def _permute_quad_face(mesh0):
 
     return meshes
 
+def _get_possible_oris(geom):
+    import sfepy.discrete.fem.facets as facets
+
+    if geom in ('2_3', '2_4'):
+        oris = facets.ori_line_to_iter.keys()
+
+    elif geom == '3_4':
+        oris = facets.ori_triangle_to_iter.keys()
+
+    elif geom == '3_8':
+        oris = facets._quad_ori_groups.keys() # Not ori_square_to_iter!
+
+    else:
+        oris = []
+
+    return set(oris)
+
 def _gen_common_data(orders, gels, report):
     import sfepy
     from sfepy.base.base import Struct
@@ -87,7 +105,7 @@ def _gen_common_data(orders, gels, report):
         aux = '' if geom in ['2_4', '3_8'] else 'z'
         mesh0 = Mesh.from_file('meshes/elements/%s_2%s.mesh' % (geom, aux),
                                prefix_dir=sfepy.data_dir)
-        if (geom == '3_8') and (poly_space_base != 'serendipity'):
+        if (geom == '3_8'):
             meshes = _permute_quad_face(mesh0)
 
         else:
@@ -107,48 +125,60 @@ def _gen_common_data(orders, gels, report):
         ccoors = nm.ascontiguousarray(qps
                                       + shift[:1, :] + shift[1:, :])
 
-        for im, mesh0 in enumerate(meshes):
-            for ir, pr in enumerate(perms):
-                for ic, pc in enumerate(perms):
-                    report('im: %d, ir: %d, ic: %d' % (im, ir, ic))
-                    report('pr: %s, pc: %s' % (pr, pc))
+        all_oris = _get_possible_oris(geom)
+        oris = set()
 
-                    mesh = mesh0.copy()
-                    conn = mesh.cmesh.get_conn(mesh0.cmesh.tdim, 0).indices
-                    conn = conn.reshape((mesh0.n_el, -1))
-                    conn[0, :] = conn[0, pr]
-                    conn[1, :] = conn[1, pc]
+        for (ir, pr), (ic, pc), (im, mesh0) in product(
+                enumerate(perms), enumerate(perms), enumerate(meshes),
+        ):
+            report('im: %d, ir: %d, ic: %d' % (im, ir, ic))
+            report('pr: %s, pc: %s' % (pr, pc))
 
-                    conn2 = mesh.get_conn(gel.name)
-                    assert_((conn == conn2).all())
+            mesh = mesh0.copy()
+            conn = mesh.cmesh.get_conn(mesh0.cmesh.tdim, 0).indices
+            conn = conn.reshape((mesh0.n_el, -1))
+            conn[0, :] = conn[0, pr]
+            conn[1, :] = conn[1, pc]
 
-                    cache = Struct(mesh=mesh)
+            conn2 = mesh.get_conn(gel.name)
+            assert_((conn == conn2).all())
 
-                    domain = FEDomain('domain', mesh)
-                    omega = domain.create_region('Omega', 'all')
-                    region = domain.create_region('Facet', rsels[geom], 'facet')
-                    field = Field.from_args('f', nm.float64, shape=1,
-                                            region=omega, approx_order=order,
-                                            poly_space_base=poly_space_base)
-                    var = FieldVariable('u', 'unknown', field)
-                    report('# dofs: %d' % var.n_dof)
+            cache = Struct(mesh=mesh)
 
-                    vec = nm.empty(var.n_dof, dtype=var.dtype)
+            domain = FEDomain('domain', mesh)
+            omega = domain.create_region('Omega', 'all')
+            region = domain.create_region('Facet', rsels[geom], 'facet')
+            field = Field.from_args('f', nm.float64, shape=1,
+                                    region=omega, approx_order=order,
+                                    poly_space_base=poly_space_base)
+            fis = region.get_facet_indices()
+            conn = mesh.cmesh.get_conn_as_graph(region.dim,
+                                                region.dim - 1)
+            _oris = mesh.cmesh.facet_oris[conn.indptr[fis[:, 0]]
+                                          + fis[:, 1]]
+            oris |= set(_oris)
+            if oris == all_oris:
+                break
 
-                    ps = field.poly_space
+            var = FieldVariable('u', 'unknown', field)
+            report('# dofs: %d' % var.n_dof)
 
-                    dofs = field.get_dofs_in_region(region, merge=False)
-                    edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
+            vec = nm.empty(var.n_dof, dtype=var.dtype)
 
-                    rrc, rcells, rstatus = get_ref_coors(field, rcoors,
-                                                         cache=cache)
-                    crc, ccells, cstatus = get_ref_coors(field, ccoors,
-                                                         cache=cache)
-                    assert_((rstatus == 0).all() and (cstatus == 0).all())
+            ps = field.poly_space
 
-                    yield (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
-                           field, ps, rrc, rcells[0], crc, ccells[0],
-                           vec, edofs, fdofs)
+            dofs = field.get_dofs_in_region(region, merge=False)
+            edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
+
+            rrc, rcells, rstatus = get_ref_coors(field, rcoors,
+                                                 cache=cache)
+            crc, ccells, cstatus = get_ref_coors(field, ccoors,
+                                                 cache=cache)
+            assert_((rstatus == 0).all() and (cstatus == 0).all())
+
+            yield (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+                   field, ps, rrc, rcells[0], crc, ccells[0],
+                   vec, edofs, fdofs)
 
 class Test(TestCommon):
 
