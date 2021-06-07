@@ -38,6 +38,30 @@ shifts = {
     '3_8' : nm.array([[0.0, 0.0, 1.0], [0.0, 0.0, eps]], dtype=nm.float64),
 }
 
+def _permute_quad_face(mesh0):
+    from sfepy.discrete.fem import Mesh
+
+    coors0, ngroups0, conns0, mat_ids0, desc0 = mesh0._get_io_data()
+    im = nm.arange(4, 8)
+    cperms = [[0, 1, 2, 3],
+              [0, 2, 1, 3],
+              [0, 1, 3, 2]]
+    meshes = []
+    for ip, cperm in enumerate(cperms):
+        tr = nm.arange(12)
+        tr[im] = tr[im[cperm]]
+
+        coors = coors0.copy()
+        coors[im] = coors0[im[cperm]]
+        conn = conns0[0].copy()
+        conn = tr[conn]
+
+        mesh = Mesh.from_data(mesh0.name + str(ip), coors, ngroups0,
+                              [conn], mat_ids0, desc0)
+        meshes.append(mesh)
+
+    return meshes
+
 def _gen_common_data(orders, gels, report):
     import sfepy
     from sfepy.base.base import Struct
@@ -63,6 +87,12 @@ def _gen_common_data(orders, gels, report):
         aux = '' if geom in ['2_4', '3_8'] else 'z'
         mesh0 = Mesh.from_file('meshes/elements/%s_2%s.mesh' % (geom, aux),
                                prefix_dir=sfepy.data_dir)
+        if (geom == '3_8') and (poly_space_base != 'serendipity'):
+            meshes = _permute_quad_face(mesh0)
+
+        else:
+            meshes = [mesh0]
+
         gel = gels[geom]
 
         perms = gel.get_conn_permutations()
@@ -77,47 +107,48 @@ def _gen_common_data(orders, gels, report):
         ccoors = nm.ascontiguousarray(qps
                                       + shift[:1, :] + shift[1:, :])
 
-        for ir, pr in enumerate(perms):
-            for ic, pc in enumerate(perms):
-                report('ir: %d, ic: %d' % (ir, ic))
-                report('pr: %s, pc: %s' % (pr, pc))
+        for im, mesh0 in enumerate(meshes):
+            for ir, pr in enumerate(perms):
+                for ic, pc in enumerate(perms):
+                    report('im: %d, ir: %d, ic: %d' % (im, ir, ic))
+                    report('pr: %s, pc: %s' % (pr, pc))
 
-                mesh = mesh0.copy()
-                conn = mesh.cmesh.get_conn(mesh0.cmesh.tdim, 0).indices
-                conn = conn.reshape((mesh0.n_el, -1))
-                conn[0, :] = conn[0, pr]
-                conn[1, :] = conn[1, pc]
+                    mesh = mesh0.copy()
+                    conn = mesh.cmesh.get_conn(mesh0.cmesh.tdim, 0).indices
+                    conn = conn.reshape((mesh0.n_el, -1))
+                    conn[0, :] = conn[0, pr]
+                    conn[1, :] = conn[1, pc]
 
-                conn2 = mesh.get_conn(gel.name)
-                assert_((conn == conn2).all())
+                    conn2 = mesh.get_conn(gel.name)
+                    assert_((conn == conn2).all())
 
-                cache = Struct(mesh=mesh)
+                    cache = Struct(mesh=mesh)
 
-                domain = FEDomain('domain', mesh)
-                omega = domain.create_region('Omega', 'all')
-                region = domain.create_region('Facet', rsels[geom], 'facet')
-                field = Field.from_args('f', nm.float64, shape=1,
-                                        region=omega, approx_order=order,
-                                        poly_space_base=poly_space_base)
-                var = FieldVariable('u', 'unknown', field)
-                report('# dofs: %d' % var.n_dof)
+                    domain = FEDomain('domain', mesh)
+                    omega = domain.create_region('Omega', 'all')
+                    region = domain.create_region('Facet', rsels[geom], 'facet')
+                    field = Field.from_args('f', nm.float64, shape=1,
+                                            region=omega, approx_order=order,
+                                            poly_space_base=poly_space_base)
+                    var = FieldVariable('u', 'unknown', field)
+                    report('# dofs: %d' % var.n_dof)
 
-                vec = nm.empty(var.n_dof, dtype=var.dtype)
+                    vec = nm.empty(var.n_dof, dtype=var.dtype)
 
-                ps = field.poly_space
+                    ps = field.poly_space
 
-                dofs = field.get_dofs_in_region(region, merge=False)
-                edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
+                    dofs = field.get_dofs_in_region(region, merge=False)
+                    edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
 
-                rrc, rcells, rstatus = get_ref_coors(field, rcoors,
-                                                     cache=cache)
-                crc, ccells, cstatus = get_ref_coors(field, ccoors,
-                                                     cache=cache)
-                assert_((rstatus == 0).all() and (cstatus == 0).all())
+                    rrc, rcells, rstatus = get_ref_coors(field, rcoors,
+                                                         cache=cache)
+                    crc, ccells, cstatus = get_ref_coors(field, ccoors,
+                                                         cache=cache)
+                    assert_((rstatus == 0).all() and (cstatus == 0).all())
 
-                yield (geom, poly_space_base, qp_weights, mesh, ir, ic,
-                       field, ps, rrc, rcells[0], crc, ccells[0],
-                       vec, edofs, fdofs)
+                    yield (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
+                           field, ps, rrc, rcells[0], crc, ccells[0],
+                           vec, edofs, fdofs)
 
 class Test(TestCommon):
 
@@ -172,7 +203,7 @@ class Test(TestCommon):
 
         bads = []
         bad_families = set()
-        for (geom, poly_space_base, qp_weights, mesh, ir, ic,
+        for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
              field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
@@ -200,7 +231,7 @@ class Test(TestCommon):
                 _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
                 res[1, ii] = _ok
                 if not _ok:
-                    bads.append([geom, poly_space_base, ir, ic, ip])
+                    bads.append([geom, poly_space_base, im, ir, ic, ip])
                     bad_families.add((geom, poly_space_base))
 
                 ok = ok and _ok
@@ -223,7 +254,7 @@ class Test(TestCommon):
 
         bads = []
         bad_families = set()
-        for (geom, poly_space_base, qp_weights, mesh, ir, ic,
+        for (geom, poly_space_base, qp_weights, mesh, im, ir, ic,
              field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
             gel = self.gels[geom]
@@ -273,7 +304,7 @@ class Test(TestCommon):
 
                 res[1, ii] = _ok
                 if not _ok:
-                    bads.append([geom, poly_space_base, ir, ic, ip])
+                    bads.append([geom, poly_space_base, im, ir, ic, ip])
                     bad_families.add((geom, poly_space_base))
 
                 ok = ok and _ok
