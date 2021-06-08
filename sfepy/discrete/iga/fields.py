@@ -98,7 +98,8 @@ class IGField(Field):
         """
         return (self.nurbs.degrees > 1).any()
 
-    def get_econn(self, conn_type, region, is_trace=False, integration=None):
+    def get_econn(self, conn_type, region, is_trace=False, integration=None,
+                  local=False):
         """
         Get DOF connectivity of the given type in the given region.
         """
@@ -122,6 +123,13 @@ class IGField(Field):
             conn = []
             for ii, fi in enumerate(fis):
                 conn.append(nconn[fi[0], facets[fi[1]]])
+
+            if local:
+                from sfepy.discrete.fem.utils import prepare_remap
+
+                nods = nm.unique(conn)
+                remap = prepare_remap(nods, nods.max() + 1)
+                conn = [remap[ii] for ii in conn]
 
         else:
             raise ValueError('unsupported connectivity type! (%s)' % ct)
