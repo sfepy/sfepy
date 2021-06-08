@@ -1235,7 +1235,8 @@ class VolumeField(FEField):
 
         return self.surface_data[region.name]
 
-    def get_econn(self, conn_type, region, is_trace=False, integration=None):
+    def get_econn(self, conn_type, region, is_trace=False, integration=None,
+                  local=False):
         """
         Get extended connectivity of the given type in the given region.
         """
@@ -1252,8 +1253,12 @@ class VolumeField(FEField):
                 conn = nm.take(self.econn, ii, axis=0)
 
         elif ct == 'surface':
+            if region.name not in self.surface_data:
+                self.domain.create_surface_group(region)
+                self.setup_surface_data(region)
+
             sd = self.surface_data[region.name]
-            conn = sd.get_connectivity(is_trace=is_trace)
+            conn = sd.get_connectivity(local=local, is_trace=is_trace)
 
         elif ct == 'edge':
             raise NotImplementedError('connectivity type %s' % ct)
