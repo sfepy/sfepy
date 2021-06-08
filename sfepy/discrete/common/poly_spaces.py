@@ -134,6 +134,11 @@ class PolySpace(Struct):
             raise ValueError('coordinates must have 2 or 3 dimensions! (%d)'
                              % coors.ndim)
 
+        if coors.shape[-1] != self.geometry.dim:
+            raise ValueError('PolySpace geometry dimension %d does not agree'
+                             ' with quadrature coordinates dimension %d!'
+                             % (self.geometry.dim, coors.shape[-1]))
+
         if (coors.ndim == 2):
             base = self._eval_base(coors, diff=diff, ori=ori,
                                    suppress_errors=suppress_errors,
