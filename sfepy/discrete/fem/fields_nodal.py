@@ -338,7 +338,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
-        Set the values of DOFs in a given region using a function of space
+        Set the values of DOFs in a given `region` using a function of space
         coordinates or value `fun`.
         """
         if region is None:
@@ -351,18 +351,12 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         nods = nm.unique(aux)
 
         if callable(fun):
-            vals = nm.asarray(fun(self.get_coor(nods)))
-
-            try:
-                assert_(vals.size == nods.size * dpn)
-
-            except (TypeError, ValueError):
-                msg = ('wrong function return value shape for setting'
-                       ' DOFs of "%s" field!'
-                       ' (shape %s should be reshapable to %s)'
-                       % (self.name, vals.shape, (nods.size, dpn)))
-
-                raise ValueError(msg)
+            coors = self.get_coor(nods)
+            vals = nm.asarray(fun(coors))
+            if (vals.ndim > 1) and (vals.shape != (len(coors), dpn)):
+                raise ValueError('The projected function return value should be'
+                                 ' (n_point, dpn) == %s, instead of %s!'
+                                 % ((len(coors), dpn), vals.shape))
 
         elif nm.isscalar(fun):
             vals = nm.repeat([fun], nods.shape[0] * dpn)
@@ -383,7 +377,7 @@ class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
 
-        vals.shape = (nods.size, -1)
+        vals.shape = (len(nods), -1)
 
         return nods, vals
 
