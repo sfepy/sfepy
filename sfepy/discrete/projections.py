@@ -3,15 +3,15 @@ Construct projections between FE spaces.
 """
 from __future__ import absolute_import
 import numpy as nm
+import scipy.sparse as sps
 
 from sfepy.base.base import output, IndexedStruct
 from sfepy.discrete import (FieldVariable, Integral,
                             Equation, Equations, Material)
 from sfepy.discrete import Problem
 from sfepy.terms import Term
-from sfepy.solvers.ls import ScipyDirect
+from sfepy.solvers.ls import ScipyDirect, solve
 from sfepy.solvers.nls import Newton
-from six.moves import range
 
 def create_mass_matrix(field):
     """
@@ -172,3 +172,69 @@ def make_h1_projection_data(target, eval_data):
 
     if nls_status.condition != 0:
         output('H1 projection: solver did not converge!')
+
+def project_to_facets(region, fun, dpn, field):
+    """
+    Project a function `fun` to the `field` in facets of the given `region`.
+    """
+    aux = field.get_dofs_in_region(region)
+    nods = nm.unique(aux)
+    n_dof = len(nods)
+
+    # Region facet connectivity.
+    lconn = field.get_econn('surface', region, local=True)
+
+    # Cell and face(cell) ids for each facet.
+    fis = region.get_facet_indices()
+
+    all_qps, all_fbfs, all_dets = field.get_surface_basis(region)
+
+    # DOF values in the physical BQP.
+    all_qps = nm.concatenate(all_qps)
+    vals = nm.asarray(fun(all_qps))
+    if (vals.ndim > 1) and (vals.shape != (len(all_qps), dpn)):
+        raise ValueError('The projected function return value should be'
+                         ' (n_point, dpn) == %s, instead of %s!'
+                         % ((len(all_qps), dpn), vals.shape))
+    vals.shape = (len(all_qps), dpn)
+
+    n_qp_face = all_dets[0].shape[0]
+
+    # Assemble l2 projection system.
+    rhs = nm.zeros((dpn, n_dof), dtype=nm.float64)
+    rows, cols, mvals = [], [], []
+    for ii, (ie, ifa) in enumerate(fis):
+        # Assembling indices.
+        elc = lconn[ii]
+
+        fvals = vals[n_qp_face * ii : n_qp_face * (ii + 1)]
+
+        fbfs = all_fbfs[ii]
+        dets = all_dets[ii]
+
+        # Local projection system.
+        for idof in range(dpn):
+            lrhs = (fbfs * (fvals[:, idof, None] * dets)).sum(0)
+            rhs[idof, elc] += lrhs
+
+        lmtx = ((fbfs[..., None] * fbfs[:, None, :])
+                * dets[..., None]).sum(0)
+
+        er, ec = nm.meshgrid(elc, elc)
+        rows.append(er.ravel())
+        cols.append(ec.ravel())
+        mvals.append(lmtx.ravel())
+
+    rows = nm.concatenate(rows)
+    cols = nm.concatenate(cols)
+    mvals = nm.concatenate(mvals)
+    mtx = sps.coo_matrix((mvals, (rows, cols)), shape=(n_dof, n_dof))
+
+    vals = nm.zeros((n_dof, dpn), dtype=nm.float64)
+
+    # Solve l2 projection system.
+    for idof in range(dpn):
+        dofs = solve(mtx, rhs[idof, :])
+        vals[:, idof] = dofs
+
+    return vals

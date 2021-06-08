@@ -4,11 +4,10 @@ Fields for isogeometric analysis.
 from __future__ import absolute_import
 import numpy as nm
 
-from sfepy.base.base import assert_, basestr, Struct
+from sfepy.base.base import basestr, Struct
 from sfepy.discrete.common.fields import parse_shape, Field
 from sfepy.discrete.iga.mappings import IGMapping
 from sfepy.discrete.iga.iga import get_bezier_element_entities
-from six.moves import range
 
 def parse_approx_order(approx_order):
     if (approx_order is None): return 0
@@ -196,167 +195,55 @@ class IGField(Field):
 
         return dofs
 
-    def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
-        """
-        Set the values of DOFs given by the `region` using a function of space
-        coordinates or value `fun`.
+    def get_surface_basis(self, region):
+        from sfepy.discrete.integrals import Integral
+        import sfepy.discrete.iga as iga
+        from sfepy.discrete.iga.extmods.igac import eval_mapping_data_in_qp
 
-        If `fun` is a function, the l2 projection that is global for all region
-        facets is used to set the DOFs.
+        nurbs = self.nurbs
+        facets = self._get_facets(region.kind_tdim)
 
-        If `dpn > 1`, and `fun` is a function, it has to return the values
-        DOF-by-DOF, i.e. a single one-dimensional vector with all values of the
-        first component, then of the second one etc. concatenated
-        together.
+        # Cell and face(cell) ids for each facet.
+        fis = region.get_facet_indices()
 
-        Parameters
-        ----------
-        fun : float or array of length dpn or callable
-            The DOF values.
-        region : Region
-            The region containing the DOFs.
-        dpn : int, optional
-            The DOF-per-node count. If not given, the number of field
-            components is used.
-        warn : str, optional
-            The warning message printed when the region selects no DOFs.
+        # Integral given by max. NURBS surface degree.
+        fdegrees = iga.get_surface_degrees(nurbs.degrees)
+        order = fdegrees.max()
+        integral = Integral('i', order=2*order)
+        vals, weights = integral.get_qp(self.domain.gel.surface_facet_name)
 
-        Returns
-        -------
-        nods : array, shape (n_dof,)
-            The field DOFs (or node indices) given by the region.
-        vals : array, shape (dpn, n_dof)
-            The values of the DOFs, DOF-by-DOF when raveled in C (row-major)
-            order.
-        """
-        if region is None:
-            region = self.region
+        # Boundary QP - use tensor product structure.
+        bvals = iga.create_boundary_qp(vals, region.tdim)
 
-        if dpn is None:
-            dpn = self.n_components
+        # Compute facet basis, jacobians and physical BQP.
+        all_qp = []
+        all_fbfs = []
+        all_dets = []
+        for ii, (ie, ifa) in enumerate(fis):
+            qp_coors = bvals[ifa]
 
-        nods = []
-        vals = []
+            bfs, _, dets = eval_mapping_data_in_qp(qp_coors, nurbs.cps,
+                                                   nurbs.weights,
+                                                   nurbs.degrees,
+                                                   nurbs.cs,
+                                                   nurbs.conn,
+                                                   nm.array([ie]))
+            # Facet basis.
+            fbfs = bfs[..., facets[ifa]][0, :, 0, :]
 
-        aux = self.get_dofs_in_region(region)
-        nods = nm.unique(aux)
+            # Weight Jacobians by quadrature point weights.
+            dets = nm.abs(dets) * weights[None, :, None, None]
+            dets = dets[0, :, 0, :]
 
-        if nm.isscalar(fun):
-            vals = nm.repeat([fun], nods.shape[0] * dpn)
+            # Physical BQP.
+            fcps = nurbs.cps[nurbs.conn[ie, facets[ifa]]]
+            qp = nm.dot(fbfs, fcps)
 
-        elif isinstance(fun, nm.ndarray):
-            assert_(len(fun) == dpn)
-            vals = nm.repeat(fun, nods.shape[0])
+            all_qp.append(qp)
+            all_fbfs.append(fbfs)
+            all_dets.append(dets)
 
-        elif callable(fun):
-            import scipy.sparse as sps
-            from sfepy.solvers.ls import solve
-            from sfepy.discrete.integrals import Integral
-            from sfepy.discrete.fem.utils import prepare_remap
-            import sfepy.discrete.iga as iga
-            from sfepy.discrete.iga.extmods.igac import eval_mapping_data_in_qp
-
-            nurbs = self.nurbs
-            facets = self._get_facets(region.kind_tdim)
-
-            # Region facet connectivity.
-            rconn = self.get_econn('surface', region)
-
-            # Local connectivity.
-            remap = prepare_remap(nods, nods.max() + 1)
-            lconn = [remap[ii] for ii in rconn]
-
-            # Cell and face(cell) ids for each facet.
-            fis = region.get_facet_indices()
-
-            # Integral given by max. NURBS surface degree.
-            fdegrees = iga.get_surface_degrees(nurbs.degrees)
-            order = fdegrees.max()
-            integral = Integral('i', order=2*order)
-            vals, weights = integral.get_qp(self.domain.gel.surface_facet_name)
-
-            # Boundary QP - use tensor product structure.
-            bvals = iga.create_boundary_qp(vals, region.tdim)
-
-            # Compute facet basis, jacobians and physical BQP.
-            n_dof = len(nods)
-            rhs = nm.zeros((dpn, n_dof), dtype=nm.float64)
-            rows, cols, mvals = [], [], []
-            all_qp = []
-            all_fbfs = []
-            all_dets = []
-            for ii, (ie, ifa) in enumerate(fis):
-                qp_coors = bvals[ifa]
-
-                bfs, _, dets = eval_mapping_data_in_qp(qp_coors, nurbs.cps,
-                                                       nurbs.weights,
-                                                       nurbs.degrees,
-                                                       nurbs.cs,
-                                                       nurbs.conn,
-                                                       nm.array([ie]))
-                # Facet basis.
-                fbfs = bfs[..., facets[ifa]][0, :, 0, :]
-
-                # Weight Jacobians by quadrature point weights.
-                dets = nm.abs(dets) * weights[None, :, None, None]
-                dets = dets[0, :, 0, :]
-
-                # Physical BQP.
-                fcps = nurbs.cps[nurbs.conn[ie, facets[ifa]]]
-                qp = nm.dot(fbfs, fcps)
-
-                all_qp.append(qp)
-                all_fbfs.append(fbfs)
-                all_dets.append(dets)
-
-            # DOF values in the physical BQP.
-            qps = nm.concatenate(all_qp)
-            vals = nm.asarray(fun(qps))
-            vals.shape = (dpn, qps.shape[0])
-
-            n_qp_face = len(bvals[0])
-
-            # Assemble l2 projection system.
-            for ii, (ie, ifa) in enumerate(fis):
-                # Assembling indices.
-                elc = lconn[ii]
-
-                fvals = vals[:, n_qp_face * ii : n_qp_face * (ii + 1)]
-
-                fbfs = all_fbfs[ii]
-                dets = all_dets[ii]
-
-                # Local projection system.
-                for idof in range(dpn):
-                    lrhs = (fbfs * (fvals[idof, :, None] * dets)).sum(0)
-                    rhs[idof, elc] += lrhs
-
-                lmtx = ((fbfs[..., None] * fbfs[:, None, :])
-                        * dets[..., None]).sum(0)
-
-                er, ec = nm.meshgrid(elc, elc)
-                rows.append(er.ravel())
-                cols.append(ec.ravel())
-                mvals.append(lmtx.ravel())
-
-            rows = nm.concatenate(rows)
-            cols = nm.concatenate(cols)
-            mvals = nm.concatenate(mvals)
-            mtx = sps.coo_matrix((mvals, (rows, cols)), shape=(n_dof, n_dof))
-
-            vals = nm.zeros((n_dof, dpn), dtype=nm.float64)
-
-            # Solve l2 projection system.
-            for idof in range(dpn):
-                dofs = solve(mtx, rhs[idof, :])
-                vals[remap[nods], idof] = dofs
-
-        else:
-            raise ValueError('unknown function/value type! (%s)' % type(fun))
-
-        vals.shape = (len(nods), -1)
-
-        return nods, vals
+        return all_qp, all_fbfs, all_dets
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
