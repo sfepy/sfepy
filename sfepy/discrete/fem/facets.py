@@ -33,6 +33,47 @@ Square: ori - iter:
 Possible couples:
 
 7, 33, 52, 63 <-> 0, 11, 30, 56
+
+_quad_ori_groups:
+
+i < j < k < l
+
+all faces are permuted to
+
+l --- k
+|     |
+|     |
+i --- j
+
+ijkl
+
+which is the same as
+
+l --- j
+|     |
+|     |
+i --- k
+
+ikjl
+
+k --- l
+|     |
+|     |
+i --- j
+
+ijlk
+
+- start at one vertex and go around clock-wise or anticlock-wise
+-> 8 groups of 3
+-> same face nodes order in
+ijkl (63), ikjl (59), ijlk (31)
+ilkj (11), iklj (15), iljk (43)
+jkli ( 7), jlki ( 3), kjli ( 6)
+kjil (56), jkil (57), ljik (48)
+lijk (52), likj (20), kijl (60)
+lkji ( 0), ljki ( 4), klji ( 1)
+klij (33), lkij (32), jlik (41)
+jilk (30), kilj (22), jikl (62)
 """
 from __future__ import print_function
 from __future__ import absolute_import
