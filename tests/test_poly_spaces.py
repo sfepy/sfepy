@@ -89,7 +89,8 @@ def _gen_common_data(orders, gels, report):
     from sfepy.discrete.common.global_interp import get_ref_coors
 
     bases = ([ii for ii in combine([['2_4', '3_8'],
-                                    ['lagrange', 'serendipity', 'lobatto']])]
+                                    ['lagrange', 'serendipity', 'bernstein',
+                                     'lobatto']])]
              + [ii for ii in combine([['2_3', '3_4'],
                                       ['lagrange']])])
     for geom, poly_space_base in bases:
@@ -202,7 +203,7 @@ class Test(TestCommon):
         orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
         bases = (
             [ii for ii in combine(
-                [['2_4', '3_8'], ['lagrange', 'serendipity']]
+                [['2_4', '3_8'], ['lagrange', 'serendipity', 'bernstein']]
             )]
             + [ii for ii in combine([['2_3', '3_4'], ['lagrange']])]
         )
@@ -237,7 +238,7 @@ class Test(TestCommon):
              field, ps, rrc, rcell, crc, ccell, vec,
              edofs, fdofs) in _gen_common_data(orders, self.gels, self.report):
 
-            if poly_space_base in ('lagrange', 'serendipity'):
+            if poly_space_base in ('lagrange', 'serendipity', 'bernstein'):
                 rbf = ps.eval_base(rrc)
                 cbf = ps.eval_base(crc)
 
