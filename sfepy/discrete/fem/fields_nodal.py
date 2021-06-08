@@ -14,8 +14,10 @@ region-local field connectivity.
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
+from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
+from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
 from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
                                             H1Mixin)
@@ -135,6 +137,29 @@ class GlobalNodalLikeBasis(Struct):
         self.econn[:,iep:] = all_dofs
 
         return n_dof, all_dofs, remap
+
+    def get_surface_basis(self, region):
+        """
+        Get basis for projections to region's facets.
+
+        Notes
+        -----
+        Cannot be uses for all fields because IGA does not support surface
+        mappings.
+        """
+        order = self.approx_order
+
+        integral = Integral('i', order=2*order)
+        geo, mapping = self.get_mapping(region, integral, 'surface')
+        pqps = get_physical_qps(region, integral)
+        qps = pqps.values.reshape(pqps.shape)
+
+        bfs = nm.broadcast_to(
+            geo.bf[..., 0, :],
+            (qps.shape[0], qps.shape[1], geo.bf.shape[3]),
+        )
+
+        return qps, bfs, geo.det[..., 0]
 
 class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
 
