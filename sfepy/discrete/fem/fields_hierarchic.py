@@ -184,8 +184,8 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
-        Set the values of given DOFs using a function of space coordinates or
-        value `fun`.
+        Set the values of DOFs in a given `region` using a function of space
+        coordinates or value `fun`.
         """
         if region is None:
             region = self.region
@@ -202,15 +202,19 @@ class H1HierarchicVolumeField(H1Mixin, VolumeField):
             vals = nm.zeros(n_dof, dtype=nm.dtype(type(fun)))
             vals[:gnods[0].shape[0] * dpn] = fun
 
-
         elif callable(fun):
-            vv = nm.asarray(fun(self.get_coor(gnods[0])))
+            coors = self.get_coor(gnods[0])
+            vv = nm.asarray(fun(coors))
+            if (vv.ndim > 1) and (vv.shape != (len(coors), dpn)):
+                raise ValueError('The projected function return value should be'
+                                 ' (n_point, dpn) == %s, instead of %s!'
+                                 % ((len(coors), dpn), vv.shape))
 
             vals = nm.zeros(n_dof, dtype=vv.dtype)
-            vals[:gnods[0].shape[0] * dpn] = vv
+            vals[:gnods[0].shape[0] * dpn] = vv.ravel()
 
         else:
-            raise NotImplementedError
+            raise ValueError('unknown function/value type! (%s)' % type(fun))
 
         nods, indx = nm.unique(nods, return_index=True)
         ii = (nm.tile(dpn * indx, dpn)

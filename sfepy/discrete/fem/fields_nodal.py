@@ -13,14 +13,16 @@ region-local field connectivity.
 """
 import numpy as nm
 
-from sfepy.base.base import assert_
+from sfepy.base.base import assert_, Struct
+from sfepy.discrete.integrals import Integral
 from sfepy.discrete.fem.utils import prepare_remap
 from sfepy.discrete.common.dof_info import expand_nodes_to_dofs
+from sfepy.discrete.common.mappings import get_physical_qps
 from sfepy.discrete.fem.facets import get_facet_dof_permutations
 from sfepy.discrete.fem.fields_base import (FEField, VolumeField, SurfaceField,
                                             H1Mixin)
 
-class H1NodalMixin(H1Mixin):
+class GlobalNodalLikeBasis(Struct):
 
     def _setup_facet_orientations(self):
         order = self.approx_order
@@ -135,6 +137,31 @@ class H1NodalMixin(H1Mixin):
         self.econn[:,iep:] = all_dofs
 
         return n_dof, all_dofs, remap
+
+    def get_surface_basis(self, region):
+        """
+        Get basis for projections to region's facets.
+
+        Notes
+        -----
+        Cannot be uses for all fields because IGA does not support surface
+        mappings.
+        """
+        order = self.approx_order
+
+        integral = Integral('i', order=2*order)
+        geo, mapping = self.get_mapping(region, integral, 'surface')
+        pqps = get_physical_qps(region, integral)
+        qps = pqps.values.reshape(pqps.shape)
+
+        bfs = nm.broadcast_to(
+            geo.bf[..., 0, :],
+            (qps.shape[0], qps.shape[1], geo.bf.shape[3]),
+        )
+
+        return qps, bfs, geo.det[..., 0]
+
+class H1NodalMixin(H1Mixin, GlobalNodalLikeBasis):
 
     def _substitute_dofs(self, subs):
         """
@@ -311,7 +338,7 @@ class H1NodalMixin(H1Mixin):
 
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
-        Set the values of DOFs in a given region using a function of space
+        Set the values of DOFs in a given `region` using a function of space
         coordinates or value `fun`.
         """
         if region is None:
@@ -324,18 +351,12 @@ class H1NodalMixin(H1Mixin):
         nods = nm.unique(aux)
 
         if callable(fun):
-            vals = nm.asarray(fun(self.get_coor(nods)))
-
-            try:
-                assert_(vals.size == nods.size * dpn)
-
-            except (TypeError, ValueError):
-                msg = ('wrong function return value shape for setting'
-                       ' DOFs of "%s" field!'
-                       ' (shape %s should be reshapable to %s)'
-                       % (self.name, vals.shape, (nods.size, dpn)))
-
-                raise ValueError(msg)
+            coors = self.get_coor(nods)
+            vals = nm.asarray(fun(coors))
+            if (vals.ndim > 1) and (vals.shape != (len(coors), dpn)):
+                raise ValueError('The projected function return value should be'
+                                 ' (n_point, dpn) == %s, instead of %s!'
+                                 % ((len(coors), dpn), vals.shape))
 
         elif nm.isscalar(fun):
             vals = nm.repeat([fun], nods.shape[0] * dpn)
@@ -356,7 +377,7 @@ class H1NodalMixin(H1Mixin):
         else:
             raise ValueError('unknown function/value type! (%s)' % type(fun))
 
-        vals.shape = (nods.size, -1)
+        vals.shape = (len(nods), -1)
 
         return nods, vals
 

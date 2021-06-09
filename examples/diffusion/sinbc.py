@@ -9,18 +9,32 @@ Find :math:`t` such that:
     = 0
     \;, \quad \forall s \;.
 
-This example demonstrates how to use a hierarchical basis approximation - it
-uses the fifth order Lobatto polynomial space for the solution. The adaptive
-linearization is applied in order to save viewable results, see both the
-options keyword and the ``post_process()`` function that computes the solution
-gradient. Use the following commands to view the results (assuming default
-output directory and names)::
+The :class:`sfepy.discrete.fem.meshio.UserMeshIO` class is used to refine the
+original two-element mesh before the actual solution.
 
-  $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' 2_4_2_refined_t.vtk --wireframe
-  $ ./postproc.py -b 2_4_2_refined_grad.vtk
+The FE polynomial basis and the approximation order can be chosen on the
+command-line. By default, the fifth order Lagrange polynomial space is used,
+see ``define()`` arguments.
 
-The :class:`sfepy.discrete.fem.meshio.UserMeshIO` class is used to refine the original
-two-element mesh before the actual solution.
+This example demonstrates how to visualize higher order approximations of the
+continuous solution. The adaptive linearization is applied in order to save
+viewable results, see both the options keyword and the ``post_process()``
+function that computes the solution gradient. The linearization parameters can
+also be specified on the command line.
+
+The Lagrange or Bernstein polynomial bases support higher order
+DOFs in the Dirichlet boundary conditions, unlike the hierarchical Lobatto
+basis implementation, compare the results of::
+
+  python simple.py examples/diffusion/sinbc.py -d basis=lagrange
+  python simple.py examples/diffusion/sinbc.py -d basis=bernstein
+  python simple.py examples/diffusion/sinbc.py -d basis=lobatto
+
+Use the following commands to view each of the results of the above commands
+(assuming default output directory and names)::
+
+  python postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' 2_4_2_refined_t.vtk --wireframe
+  python postproc.py -b 2_4_2_refined_grad.vtk
 """
 from __future__ import absolute_import
 import numpy as nm
@@ -71,68 +85,70 @@ def post_process(out, pb, state, extend=False):
 
     return out
 
-filename_mesh = UserMeshIO(mesh_hook)
+def define(order=5, basis='lagrange', min_level=0, max_level=5, eps=1e-3):
 
-# Get the mesh bounding box.
-io = MeshIO.any_from_filename(base_mesh)
-bbox, dim = io.read_bounding_box(ret_dim=True)
+    filename_mesh = UserMeshIO(mesh_hook)
 
-options = {
-    'nls' : 'newton',
-    'ls' : 'ls',
-    'post_process_hook' : 'post_process',
-    'linearization' : {
-        'kind' : 'adaptive',
-        'min_level' : 0, # Min. refinement level to achieve everywhere.
-        'max_level' : 5, # Max. refinement level.
-        'eps' : 1e-3, # Relative error tolerance.
-    },
-}
+    # Get the mesh bounding box.
+    io = MeshIO.any_from_filename(base_mesh)
+    bbox, dim = io.read_bounding_box(ret_dim=True)
 
-materials = {
-    'coef' : ({'val' : 1.0},),
-}
+    options = {
+        'nls' : 'newton',
+        'ls' : 'ls',
+        'post_process_hook' : 'post_process',
+        'linearization' : {
+            'kind' : 'adaptive',
+            'min_level' : min_level, # Min. refinement level applied everywhere.
+            'max_level' : max_level, # Max. refinement level.
+            'eps' : eps, # Relative error tolerance.
+        },
+    }
 
-regions = {
-    'Omega' : 'all',
-}
-regions.update(define_box_regions(dim, bbox[0], bbox[1], 1e-5))
+    materials = {
+        'coef' : ({'val' : 1.0},),
+    }
 
-fields = {
-    'temperature' : ('real', 1, 'Omega', 5, 'H1', 'lobatto'),
-    # Compare with the Lagrange basis.
-    ## 'temperature' : ('real', 1, 'Omega', 5, 'H1', 'lagrange'),
-}
+    regions = {
+        'Omega' : 'all',
+    }
+    regions.update(define_box_regions(dim, bbox[0], bbox[1], 1e-5))
 
-variables = {
-    't' : ('unknown field', 'temperature', 0),
-    's' : ('test field',    'temperature', 't'),
-}
+    fields = {
+        'temperature' : ('real', 1, 'Omega', order, 'H1', basis),
+    }
 
-amplitude = 1.0
-def ebc_sin(ts, coor, **kwargs):
-    x0 = 0.5 * (coor[:, 1].min() + coor[:, 1].max())
-    val = amplitude * nm.sin( (coor[:, 1] - x0) * 2. * nm.pi )
-    return val
+    variables = {
+        't' : ('unknown field', 'temperature', 0),
+        's' : ('test field',    'temperature', 't'),
+    }
 
-ebcs = {
-    't1' : ('Left', {'t.0' : 'ebc_sin'}),
-    't2' : ('Right', {'t.0' : -0.5}),
-    't3' : ('Top', {'t.0' : 1.0}),
-}
+    amplitude = 1.0
+    def ebc_sin(ts, coor, **kwargs):
+        x0 = 0.5 * (coor[:, 1].min() + coor[:, 1].max())
+        val = amplitude * nm.sin( (coor[:, 1] - x0) * 2. * nm.pi )
+        return val
 
-functions = {
-    'ebc_sin' : (ebc_sin,),
-}
+    ebcs = {
+        't1' : ('Left', {'t.0' : 'ebc_sin'}),
+        't2' : ('Right', {'t.0' : -0.5}),
+        't3' : ('Top', {'t.0' : 1.0}),
+    }
 
-equations = {
-    'Temperature' : """dw_laplace.10.Omega( coef.val, s, t ) = 0"""
-}
+    functions = {
+        'ebc_sin' : (ebc_sin,),
+    }
 
-solvers = {
-    'ls' : ('ls.scipy_direct', {}),
-    'newton' : ('nls.newton', {
-        'i_max'      : 1,
-        'eps_a'      : 1e-10,
-    }),
-}
+    equations = {
+        'Temperature' : """dw_laplace.10.Omega(coef.val, s, t) = 0"""
+    }
+
+    solvers = {
+        'ls' : ('ls.scipy_direct', {}),
+        'newton' : ('nls.newton', {
+            'i_max'      : 1,
+            'eps_a'      : 1e-10,
+        }),
+    }
+
+    return locals()

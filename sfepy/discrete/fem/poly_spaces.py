@@ -1008,3 +1008,68 @@ class LobattoTensorProductPolySpace(FEPolySpace):
             base = ebase
 
         return base
+
+class BernsteinTensorProductPolySpace(FEPolySpace):
+    """
+    Bernstein polynomial space.
+
+    Each row of the `nodes` attribute defines indices of 1D Bernstein basis
+    functions that need to be multiplied together to evaluate the corresponding
+    shape function. This defines the ordering of basis functions on the
+    reference element.
+    """
+    name = 'bernstein_tensor_product'
+    def __init__(self, name, geometry, order):
+        PolySpace.__init__(self, name, geometry, order)
+
+        self.nodes, self.nts, self.node_coors = self._define_nodes()
+        self.n_nod = self.nodes.shape[0]
+        self.eval_ctx = None
+
+    def _define_nodes(self):
+        nn, nts, node_coors = LagrangeTensorProductPolySpace._define_nodes(self)
+        nodes = nn[:, 1::2]
+
+        return nodes, nts, node_coors
+
+    def _eval_base(self, coors, diff=False, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        """
+        See PolySpace.eval_base().
+        """
+        from sfepy.discrete.iga.extmods.igac import eval_bernstein_basis as ev
+
+        dim = self.geometry.dim
+        if diff:
+            bdim = dim
+
+        else:
+            bdim = 1
+
+        base = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+        degree = self.order
+        degrees = nm.array([degree] * dim)
+        n_efuns = degrees + 1
+        n_efun = nm.prod(n_efuns)
+        n_efuns_max = degree + 1
+
+        for iq, qp in enumerate(coors):
+            B = nm.empty((dim, n_efuns_max), dtype=nm.float64)
+            dB_dxi = nm.empty((dim, n_efuns_max), dtype=nm.float64)
+            for ii in range(dim):
+                ev(B[ii, :], dB_dxi[ii, :], qp[ii], degree)
+
+            if not diff:
+                for ii, ni in enumerate(self.nodes.T):
+                    base[iq, 0, :] *= B[ii, ni]
+
+            else:
+                for ii, ni in enumerate(self.nodes.T):
+                    for iv in range(bdim):
+                        if ii == iv:
+                            base[iq, iv, :] *= dB_dxi[ii, ni]
+
+                        else:
+                            base[iq, iv, :] *= B[ii, ni]
+
+        return base

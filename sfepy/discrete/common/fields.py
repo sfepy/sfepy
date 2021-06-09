@@ -250,6 +250,84 @@ class Field(Struct):
 
         return out
 
+    def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+        """
+        Set the values of DOFs in a given `region` using a function of space
+        coordinates or value `fun`.
+
+        If `fun` is a function, the l2 projection that is global for all region
+        facets is used to set the DOFs.
+
+        If `dpn > 1`, and `fun` is a function, it has to return the values
+        point-by-point, i.e. all components in the first point, in the second
+        point etc., concatenated to an array that is reshapable to the shape
+        `(n_point, dpn)`.
+
+        Parameters
+        ----------
+        fun : float or array of length dpn or callable
+            The DOF values.
+        region : Region
+            The region containing the DOFs.
+        dpn : int, optional
+            The DOF-per-node count. If not given, the number of field
+            components is used.
+        warn : str, optional
+            The warning message printed when the region selects no DOFs.
+
+        Returns
+        -------
+        nods : array, shape (n_dof,)
+            The field DOFs (or node indices) given by the region.
+        vals : array, shape (n_dof, dpn)
+            The values of the DOFs, node-by-node when raveled in C (row-major)
+            order.
+
+        Notes
+        -----
+        The nodal basis fields (lagrange) reimplement this function to set DOFs
+        directly.
+
+        The hierarchical basis field (lobatto) do not support surface mappings,
+        so also reimplement this function.
+        """
+        if region is None:
+            region = self.region
+
+        if dpn is None:
+            dpn = self.n_components
+
+        aux = self.get_dofs_in_region(region)
+        nods = nm.unique(aux)
+
+        if nm.isscalar(fun):
+            vals = nm.repeat([fun], nods.shape[0] * dpn)
+
+        elif isinstance(fun, nm.ndarray):
+            try:
+                assert_(len(fun) == dpn)
+
+            except (TypeError, ValueError):
+                msg = ('wrong array value shape for setting'
+                       ' DOFs of "%s" field!'
+                       ' (shape %s should be %s)'
+                       % (self.name, fun.shape, (dpn,)))
+                raise ValueError(msg)
+
+            vals = nm.repeat(fun, nods.shape[0])
+
+        elif callable(fun):
+            from sfepy.discrete.projections import project_to_facets
+
+            vals = project_to_facets(region, fun, dpn, self)
+
+        else:
+            raise ValueError('unknown function/value type! (%s)' % type(fun))
+
+        vals.shape = (len(nods), -1)
+
+        return nods, vals
+
     def create_eval_mesh(self):
         """
         Create a mesh for evaluating the field. The default implementation
