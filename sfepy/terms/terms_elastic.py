@@ -400,7 +400,7 @@ class CauchyStrainTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} \ull{e}(\ul{w})
+        \int_{R} \ull{e}(\ul{w}) \mbox{, where } R \in \{\Omega, \Gamma\}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
@@ -415,6 +415,8 @@ class CauchyStrainTerm(Term):
     name = 'ev_cauchy_strain'
     arg_types = ('parameter',)
     arg_shapes = {'parameter' : 'D'}
+    integration = 'by_region'
+    surface_integration = 'surface_extra'
 
     @staticmethod
     def function(out, strain, vg, fmode):
@@ -446,32 +448,6 @@ class CauchyStrainTerm(Term):
 
         return (n_el, n_qp, dim * (dim + 1) // 2, 1), parameter.dtype
 
-class CauchyStrainSTerm(CauchyStrainTerm):
-    r"""
-    Evaluate Cauchy strain tensor on a surface region.
-
-    See :class:`CauchyStrainTerm`.
-
-    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
-
-    :Definition:
-
-    .. math::
-        \int_{\Gamma} \ull{e}(\ul{w})
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
-        \int_{T_K} 1
-
-    .. math::
-        \ull{e}(\ul{w})|_{qp}
-
-    :Arguments:
-        - parameter : :math:`\ul{w}`
-    """
-    name = 'ev_cauchy_strain_s'
-    arg_types = ('parameter',)
-    integration = 'surface_extra'
 
 class CauchyStressTerm(Term):
     r"""
@@ -486,7 +462,8 @@ class CauchyStressTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} D_{ijkl} e_{kl}(\ul{w})
+        \int_{R} D_{ijkl} e_{kl}(\ul{w})
+        \mbox{, where } R \in \{\Omega, \Gamma\}
 
     .. math::
         \mbox{vector for } K \from \Ical_h:
@@ -502,6 +479,8 @@ class CauchyStressTerm(Term):
     name = 'ev_cauchy_stress'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'S, S', 'parameter' : 'D'}
+    integration = 'by_region'
+    surface_integration = 'surface_extra'
 
     @staticmethod
     def function(out, coef, strain, mat, vg, fmode):

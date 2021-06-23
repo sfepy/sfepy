@@ -295,7 +295,8 @@ class DiffusionVelocityTerm( Term ):
     :Definition:
 
     .. math::
-        - \int_{\Omega} K_{ij} \nabla_j \bar{p}
+        - \int_{R} K_{ij} \nabla_j \bar{p}
+        \mbox{, where } R \in \{\Omega, \Gamma\}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: - \int_{T_K} K_{ij} \nabla_j \bar{p}
@@ -311,6 +312,8 @@ class DiffusionVelocityTerm( Term ):
     name = 'ev_diffusion_velocity'
     arg_types = ('material', 'parameter')
     arg_shapes = {'material' : 'D, D', 'parameter' : 1}
+    integration = 'by_region'
+    surface_integration = 'surface_extra'
 
     @staticmethod
     def function(out, grad, mat, vg, fmode):

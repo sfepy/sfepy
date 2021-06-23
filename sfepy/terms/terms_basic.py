@@ -32,94 +32,27 @@ class ZeroTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         return ()
 
-class IntegrateVolumeTerm(Term):
-    r"""
-    Evaluate (weighted) variable in a volume region.
 
-    Depending on evaluation mode, integrate a variable over a volume region
-    ('eval'), average it in elements ('el_avg') or interpolate it into volume
-    quadrature points ('qp').
+class IntegrateTerm(Term):
+    r"""
+    Evaluate (weighted) variable in a region.
+
+    Depending on evaluation mode, integrate a variable over a region
+    ('eval'), average it in elements ('el_avg') or interpolate it into
+    quadrature points ('qp'). For a surface region and vector variables,
+    setting `term_mode` to `'flux'` leads to computing corresponding fluxes
+    for the three modes instead.
 
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
 
     .. math::
-        \int_\Omega y \mbox{ , } \int_\Omega \ul{y} \\
-        \int_\Omega c y \mbox{ , } \int_\Omega c \ul{y}
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} y / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} \ul{y} / \int_{T_K} 1 \\
-        \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} c y / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} c \ul{y} / \int_{T_K} 1
-
-    .. math::
-        y|_{qp} \mbox{ , } \ul{y}|_{qp} \\
-        c y|_{qp} \mbox{ , } c \ul{y}|_{qp}
-
-    :Arguments:
-        - material : :math:`c` (optional)
-        - parameter : :math:`y` or :math:`\ul{y}`
-    """
-    name = 'ev_volume_integrate'
-    arg_types = ('opt_material', 'parameter')
-    arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 'N'},
-                  {'opt_material' : None}]
-
-    @staticmethod
-    def function(out, val_qp, vg, fmode):
-        if fmode == 2:
-            out[:] = val_qp
-            status = 0
-
-        else:
-            status = vg.integrate(out, val_qp, fmode)
-
-        return status
-
-    def get_fargs(self, material, parameter,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(parameter)
-
-        val_qp = self.get(parameter, 'val')
-        if material is not None:
-            val_qp *= material
-
-        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
-
-        return val_qp, vg, fmode
-
-    def get_eval_shape(self, material, parameter,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        if mode != 'qp':
-            n_qp = 1
-
-        return (n_el, n_qp, n_c, 1), parameter.dtype
-
-class IntegrateSurfaceTerm(Term):
-    r"""
-    Evaluate (weighted) variable in a surface region.
-
-    Depending on evaluation mode, integrate a variable over a surface region
-    ('eval'), average it in element faces ('el_avg') or interpolate it into
-    surface quadrature points ('qp'). For vector variables, setting `term_mode`
-    to `'flux'` leads to computing corresponding fluxes for the three modes
-    instead.
-
-    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
-
-    :Definition:
-
-    .. math::
-        \int_\Gamma y \mbox{ , } \int_\Gamma \ul{y}
-        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \\
-        \int_\Gamma c y \mbox{ , } \int_\Gamma c \ul{y}
+        \int_{R} y \mbox{ , } \int_{R} \ul{y}
+        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n}\\
+        \int_{R} c y \mbox{ , } \int_{R} c \ul{y}
         \mbox{ , } \int_\Gamma c \ul{y} \cdot \ul{n} \mbox{ flux }
+        \mbox{, where } R \in \{\Omega, \Gamma\}
 
     .. math::
         \mbox{vector for } K \from \Ical_h:
@@ -141,31 +74,31 @@ class IntegrateSurfaceTerm(Term):
         - material : :math:`c` (optional)
         - parameter : :math:`y` or :math:`\ul{y}`
     """
-    name = 'ev_surface_integrate'
+    name = 'ev_integrate'
     arg_types = ('opt_material', 'parameter')
     arg_shapes = [{'opt_material' : '1, 1', 'parameter' : 'N'},
                   {'opt_material' : None}]
-    integration = 'surface'
+    integration = 'by_region'
 
     @staticmethod
-    def function(out, val_qp, sg, fmode):
+    def function(out, val_qp, vg, fmode):
         if fmode == 2:
             out[:] = val_qp
             status = 0
 
         elif fmode == 5:
-            normal = sg.normal
+            normal = vg.normal
             out[:] = dot_sequences(val_qp, normal)
             status = 0
 
         else:
-            status = sg.integrate(out, val_qp, fmode)
+            status = vg.integrate(out, val_qp, fmode)
 
         return status
 
     def get_fargs(self, material, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        sg, _ = self.get_mapping(parameter)
+        vg, _ = self.get_mapping(parameter)
 
         val_qp = self.get(parameter, 'val')
         if material is not None:
@@ -177,11 +110,11 @@ class IntegrateSurfaceTerm(Term):
             if n_c == dim:
                 fmode += 3
 
-        return val_qp, sg, fmode
+        return val_qp, vg, fmode
 
     def get_eval_shape(self, material, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
         if mode != 'qp':
             n_qp = 1
@@ -189,26 +122,29 @@ class IntegrateSurfaceTerm(Term):
         if term_mode == 'flux':
             n_c = 1
 
-        return (n_fa, n_qp, n_c, 1), parameter.dtype
+        return (n_el, n_qp, n_c, 1), parameter.dtype
 
-class IntegrateVolumeOperatorTerm(Term):
+
+class IntegrateOperatorTerm(Term):
     r"""
-    Volume integral of a test function weighted by a scalar function
+    Integral of a test function weighted by a scalar function
     :math:`c`.
 
     :Definition:
 
     .. math::
-        \int_\Omega q \mbox{ or } \int_\Omega c q
+        \int_{R} q \mbox{ or } \int_\Omega c q
+        \mbox{, where } R \in \{\Omega, \Gamma\}
 
     :Arguments:
         - material : :math:`c` (optional)
         - virtual  : :math:`q`
     """
-    name = 'dw_volume_integrate'
+    name = 'dw_integrate'
     arg_types = ('opt_material', 'virtual')
     arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
                   {'opt_material' : None}]
+    integration = 'by_region'
 
     @staticmethod
     def function(out, material, bf, geo):
@@ -227,41 +163,23 @@ class IntegrateVolumeOperatorTerm(Term):
 
         return material, geo.bf, geo
 
-class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
-    r"""
-    Surface integral of a test function weighted by a scalar function
-    :math:`c`.
-
-    :Definition:
-
-    .. math::
-        \int_{\Gamma} q \mbox{ or } \int_\Gamma c q
-
-    :Arguments:
-        - material : :math:`c` (optional)
-        - virtual  : :math:`q`
-    """
-    name = 'dw_surface_integrate'
-    arg_types = ('opt_material', 'virtual')
-    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, None)},
-                  {'opt_material' : None}]
-    integration = 'surface'
 
 class VolumeTerm(Term):
     r"""
-    Volume of a domain. Uses approximation of the parameter variable.
+    Volume or surface of a domain. Uses approximation of the parameter variable.
 
     :Definition:
 
     .. math::
-        \int_\Omega 1
+        \int_{R} 1 \mbox{, where } R \in \{\Omega, \Gamma\}
 
     :Arguments:
         - parameter : any variable
     """
-    name = 'd_volume'
+    name = 'd_region'
     arg_types = ('parameter',)
     arg_shapes = [{'parameter' : 'N'}]
+    integration = 'by_region'
 
     @staticmethod
     def function(out, geo):
@@ -281,22 +199,6 @@ class VolumeTerm(Term):
 
         return (n_cell, 1, 1, 1), parameter.dtype
 
-class SurfaceTerm(VolumeTerm):
-    r"""
-    Surface of a domain. Uses approximation of the parameter variable.
-
-    :Definition:
-
-    .. math::
-        \int_\Gamma 1
-
-    :Arguments:
-        - parameter : any variable
-    """
-    name = 'd_surface'
-    arg_types = ('parameter',)
-    arg_shapes = {'parameter' : 'N'}
-    integration = 'surface'
 
 class VolumeSurfaceTerm(Term):
     r"""
@@ -370,7 +272,7 @@ class SurfaceMomentTerm(Term):
 
         return (n_fa, 1, dim, dim), parameter.dtype
 
-class IntegrateVolumeMatTerm(Term):
+class IntegrateMatTerm(Term):
     r"""
     Evaluate material parameter :math:`m` in a volume region.
 
@@ -385,7 +287,8 @@ class IntegrateVolumeMatTerm(Term):
     :Definition:
 
     .. math::
-        \int_\Omega m
+        \int_{R} m
+        \mbox{, where } R \in \{\Omega, \Gamma\}
 
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
@@ -397,9 +300,10 @@ class IntegrateVolumeMatTerm(Term):
         - material  : :math:`m` (can have up to two dimensions)
         - parameter : :math:`y`
     """
-    name = 'ev_volume_integrate_mat'
+    name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
     arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
+    integration = 'by_region'
 
     @staticmethod
     def function(out, mat, geo, fmode):
@@ -430,37 +334,6 @@ class IntegrateVolumeMatTerm(Term):
 
         return (n_el, n_qp, n_row, n_col), mat.dtype
 
-class IntegrateSurfaceMatTerm(IntegrateVolumeMatTerm):
-    r"""
-    Evaluate material parameter :math:`m` in a surface region.
-
-    Depending on evaluation mode, integrate a material parameter over a
-    surface region ('eval'), average it in faces ('el_avg') or
-    interpolate it into surface quadrature points ('qp').
-
-    Uses reference mapping of :math:`y` variable.
-
-    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
-
-    :Definition:
-
-    .. math::
-        \int_\Gamma m
-
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
-
-    .. math::
-        m|_{qp}
-
-    :Arguments:
-        - material  : :math:`m` (can have up to two dimensions)
-        - parameter : :math:`y`
-    """
-    name = 'ev_surface_integrate_mat'
-    arg_types = ('material', 'parameter')
-    arg_shapes = [{'material' : 'N, N', 'parameter' : 'N'}]
-    integration = 'surface'
 
 class SumNodalValuesTerm(Term):
     r"""
