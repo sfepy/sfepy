@@ -201,29 +201,35 @@ class Test(TestCommon):
                    or (term_cls.name == "dw_ns_dot_grad_s"):
                     continue
 
-                vint = ('volume', 'point', 'custom')
-                rname = 'Omega' if term_cls.integration in vint else 'Gamma'
-
-                self.report('<-- %s ...' % term_cls.name)
-
-                if rname == 'Gamma' and domain.mesh.dim == 1:
-                    self.report('--> 1D Gamma region: not tested!')
-
-                elif term_cls.arg_shapes:
-                    try:
-                        _ok = self._test_single_term(term_cls, domain, rname)
-
-                    except:
-                        _ok = False
-
-                    if not _ok:
-                        failed.append((domain.name, term_cls.name))
-
-                    ok = ok and _ok
-                    self.report('--> ok: %s' % _ok)
-
+                if term_cls.integration == 'by_region':
+                    rnames = ['Omega', 'Gamma']
                 else:
-                    self.report('--> not tested!')
+                    vint = ('volume', 'point', 'custom')
+                    rnames = ['Omega'] if term_cls.integration in vint\
+                        else ['Gamma']
+
+                for rname in rnames:
+                    self.report('<-- %s.%s ...' % (term_cls.name, rname))
+
+                    if rname == 'Gamma' and domain.mesh.dim == 1:
+                        self.report('--> 1D Gamma region: not tested!')
+
+                    elif term_cls.arg_shapes:
+                        try:
+                            _ok = self._test_single_term(term_cls, domain,
+                                                         rname)
+
+                        except:
+                            _ok = False
+
+                        if not _ok:
+                            failed.append((domain.name, term_cls.name))
+
+                        ok = ok and _ok
+                        self.report('--> ok: %s' % _ok)
+
+                    else:
+                        self.report('--> not tested!')
 
         self.report('failed:', failed)
 
