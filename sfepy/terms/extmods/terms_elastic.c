@@ -27,8 +27,8 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
 
   if (sym == 6) {
     for (iell = 0; iell < stress->nCell; iell++) {
-      FMF_SetCell( lam, iell );
-      FMF_SetCell( mu, iell );
+      FMF_SetCellX1( lam, iell );
+      FMF_SetCellX1( mu, iell );
       pstress = FMF_PtrCell( stress, iell );
       pstrain = FMF_PtrCell( strain, iell );
       if ((1)) {
@@ -64,8 +64,8 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
     }
   } else if (sym == 3) {
     for (iell = 0; iell < stress->nCell; iell++) {
-      FMF_SetCell( lam, iell );
-      FMF_SetCell( mu, iell );
+      FMF_SetCellX1( lam, iell );
+      FMF_SetCellX1( mu, iell );
       pstress = FMF_PtrCell( stress, iell );
       pstrain = FMF_PtrCell( strain, iell );
       if ((1)) {
@@ -126,7 +126,7 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( mtxD, ii );
+      FMF_SetCellX1( mtxD, ii );
       FMF_SetCell( vg->bfGM, ii );
       FMF_SetCell( vg->det, ii );
 
@@ -142,7 +142,7 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( mtxD, ii );
+      FMF_SetCellX1( mtxD, ii );
       FMF_SetCell( vg->bfGM, ii );
       FMF_SetCell( vg->det, ii );
       FMF_SetCell( strain, ii );
@@ -189,7 +189,7 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( strainV, ii );
     FMF_SetCell( strainU, ii );
@@ -242,7 +242,7 @@ int32 d_sd_lin_elastic(FMField *out, float64 coef, FMField *gradV,
 
   for (ii = 0; ii < nEL; ii++) {
     FMF_SetCell(out, ii);
-    FMF_SetCell(mtxD, ii);
+    FMF_SetCellX1(mtxD, ii);
     FMF_SetCell(vg->det, ii);
     FMF_SetCell(gradv, ii);
     FMF_SetCell(gradu, ii);
@@ -355,7 +355,7 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, Mapping *vg )
       FMF_SetCell( out, ii );
       FMF_SetCell( vg->bfGM, ii );
       FMF_SetCell( vg->det, ii );
-      FMF_SetCell( stress, ii );
+      FMF_SetCellX1( stress, ii );
 
       if ((stress->nRow == (dim * dim)) && (dim != 1)) {
         build_nonsym_grad(ng, vg->bfGM);
@@ -392,8 +392,8 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
-    FMF_SetCell( mat, ii );
+    FMF_SetCellX1( mtxD, ii );
+    FMF_SetCellX1( mat, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
 
@@ -459,7 +459,7 @@ int32 de_cauchy_stress( FMField *out, FMField *strain,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( strain, ii );
     FMF_SetCell( vg->det, ii );
 
@@ -538,7 +538,7 @@ int32 dw_nonsym_elastic(FMField *out, FMField *grad, FMField *mtxD,
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell(out, ii);
-      FMF_SetCell(mtxD, ii );
+      FMF_SetCellX1(mtxD, ii );
       FMF_SetCell(vg->bfGM, ii);
       FMF_SetCell(vg->det, ii);
 
@@ -555,7 +555,7 @@ int32 dw_nonsym_elastic(FMField *out, FMField *grad, FMField *mtxD,
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell(out, ii);
-      FMF_SetCell(mtxD, ii);
+      FMF_SetCellX1(mtxD, ii);
       FMF_SetCell(vg->bfGM, ii);
       FMF_SetCell(vg->det, ii);
       FMF_SetCell(grad, ii);
