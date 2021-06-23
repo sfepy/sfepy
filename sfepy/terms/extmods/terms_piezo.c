@@ -35,7 +35,7 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxG, ii );
+    FMF_SetCellX1( mtxG, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
 
@@ -96,7 +96,7 @@ int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxG, ii );
+    FMF_SetCellX1( mtxG, ii );
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( strain, ii );
     FMF_SetCell( charge_grad, ii );
