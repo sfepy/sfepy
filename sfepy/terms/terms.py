@@ -370,7 +370,6 @@ class Term(Struct):
         self.arg_str = arg_str
         self.region = region
         self._kwargs = kwargs
-        self._integration = self.integration
         self.sign = 1.0
 
         self.set_integral(integral)
@@ -924,6 +923,15 @@ class Term(Struct):
         self.has_geometry = True
 
         self.geometry_types = {}
+        if self.integration == 'by_region':
+            reg = self.region
+            if reg.kind == 'cell':
+                integration = 'volume'
+            elif reg.kind == 'face' or reg.kind == 'facet':
+                integration = getattr(self, 'surface_integration', 'surface')
+
+            self.integration = integration
+
         if isinstance(self.integration, basestr):
             for var in self.get_variables():
                 self.geometry_types[var.name] = self.integration
