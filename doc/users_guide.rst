@@ -1055,6 +1055,10 @@ The function needs to be registered in `Functions`_::
       'get_pars' : (get_pars,),
   }
 
+If a material parameter has the same value in all quadrature points, than it is
+not necessary to repeat the constant and the array can be with shape
+`(1, n_row, n_col)`.
+
 Equations and Terms
 ^^^^^^^^^^^^^^^^^^^
 
