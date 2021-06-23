@@ -98,7 +98,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( vvg->bfGM, ii );
     FMF_SetCell( vvg->det, ii );
 
@@ -178,7 +178,7 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( vvg->bfGM, ii );
     FMF_SetCell( vvg->det, ii );
     FMF_SetCellX1( svg->bf, ii );
@@ -237,7 +237,7 @@ int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( state, ii );
     FMF_SetCell( strain, ii );

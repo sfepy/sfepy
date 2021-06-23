@@ -369,9 +369,7 @@ int32 dw_diffusion( FMField *out, FMField *grad,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, ii );
-    }
+    FMF_SetCellX1( mtxD, ii );
 
     if (isDiff) {
       fmf_mulATB_nn( gtd, vg->bfGM, mtxD );
@@ -422,9 +420,7 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( gradP1, ii );
     FMF_SetCell( gradP2, ii );
-    if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, ii );
-    }
+    FMF_SetCellX1( mtxD, ii );
 
     fmf_mulAB_nn( dgp2, mtxD, gradP2 );
     fmf_mulATB_nn( gp1tdgp2, gradP1, dgp2 );
@@ -463,7 +459,7 @@ int32 d_sd_diffusion(FMField *out,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( grad_q, ii );
     FMF_SetCell( grad_p, ii );
     FMF_SetCell( grad_w, ii );
@@ -521,9 +517,7 @@ int32 dw_diffusion_r( FMField *out, FMField *mtxD, Mapping *vg )
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, ii );
-    }
+    FMF_SetCellX1( mtxD, ii );
 
     fmf_mulATB_nn( gtd, vg->bfGM, mtxD );
     fmf_sumLevelsMulF( out, gtd, vg->det->val );
@@ -553,7 +547,7 @@ int32 d_surface_flux( FMField *out, FMField *grad,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( grad, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( sg->normal, ii );
     FMF_SetCell( sg->det, ii );
 

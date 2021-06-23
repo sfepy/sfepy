@@ -591,7 +591,7 @@ int32 d_sd_div_grad( FMField *out, FMField *gradU, FMField *gradW,
     FMF_SetCell( out, ii );
     FMF_SetCell( gradU, ii );
     FMF_SetCell( gradW, ii );
-    FMF_SetCell( viscosity, ii );
+    FMF_SetCellX1( viscosity, ii );
     FMF_SetCell( vg_u->det, ii );
 
     // (gu:gw)
