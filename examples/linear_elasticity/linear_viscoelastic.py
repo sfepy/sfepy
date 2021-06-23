@@ -106,11 +106,8 @@ def get_th_pars(ts, coors, mode=None, times=None, kernel=None, **kwargs):
         out['H'] = interp_conv_mat(kernel, ts, times)
 
     elif mode == 'qp':
-        out['H0'] = kernel[0]
-        out['Hd'] = kernel[1, 0, 0] / kernel[0, 0, 0]
-
-        for key, val in six.iteritems(out):
-            out[key] = nm.tile(val, (coors.shape[0], 1, 1))
+        out['H0'] = kernel[0][None, ...]
+        out['Hd'] = nm.array([[[kernel[1, 0, 0] / kernel[0, 0, 0]]]])
 
     return out
 

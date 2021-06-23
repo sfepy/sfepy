@@ -75,17 +75,14 @@ def get_pars(ts, coor, mode, **kwargs):
         n_nod, dim = coor.shape
 
         out = {}
-        out['D'] = nm.tile(stiffness_from_lame(dim, lam=1.7, mu=0.3),
-                           (coor.shape[0], 1, 1))
+        out['D'] = stiffness_from_lame(dim, lam=1.7, mu=0.3)[None, ...]
 
-        alpha = [[0.132, 0.092],
-                 [0.052, 0.132]]
-        out['alpha'] = nm.tile(alpha, (coor.shape[0], 1, 1))
+        out['alpha'] = nm.array([[[0.132, 0.092],
+                                  [0.052, 0.132]]])
 
-        perm = nm.eye(dim, dtype=nm.float64)
-        out['K'] = nm.tile(perm, (coor.shape[0], 1, 1))
+        out['K'] = nm.eye(dim, dtype=nm.float64)[None, ...]
 
-        out['np_eps'] = nm.tile(1e5, (coor.shape[0], 1, 1))
+        out['np_eps'] = nm.array([[[1e5]]])
 
         return out
 

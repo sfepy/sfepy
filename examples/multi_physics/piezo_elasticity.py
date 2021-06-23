@@ -114,7 +114,7 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
     """TODO: implement proper 3D -> 2D transformation of constitutive
     matrices."""
     if mode == 'qp':
-        n_nod, dim = coor.shape
+        _, dim = coor.shape
         sym = (dim + 1) * dim // 2
 
         dielectric = nm.eye(dim, dtype=nm.float64)
@@ -129,11 +129,12 @@ def get_inclusion_pars(ts, coor, mode=None, **kwargs):
             'dielectric' : dielectric,
             # piezoelectric coupling
             'coupling' : coupling,
-            'density' : 0.1142, # in 1e4 kg/m3
+            'density' : nm.array([[0.1142]]), # in 1e4 kg/m3
         }
 
         for key, val in six.iteritems(out):
-            out[key] = nm.tile(val, (coor.shape[0], 1, 1))
+            out[key] = val[None, ...]
+
         return out
 
 materials = {
