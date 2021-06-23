@@ -5,7 +5,7 @@ from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
 from sfepy.base.timing import Timer
 from .functions import ConstantFunction, ConstantFunctionByRegion
 import six
-
+import numpy as nm
 
 class Materials(Container):
 
@@ -190,7 +190,11 @@ class Material(Struct):
                     raise ValueError('material parameter array must have'
                                      " three dimensions! ('%s' has %d)"
                                      % (dkey, val.ndim))
-                new_data[dkey] = val.reshape(qps.get_shape(val.shape))
+                qps_shape = qps.get_shape(val.shape)
+                if qps_shape[0] == 0:
+                    new_data[dkey] = nm.tile(val, (1, qps_shape[1], 1, 1))
+                else:
+                    new_data[dkey] = val.reshape(qps_shape)
 
         self.datas[key] = new_data
 
