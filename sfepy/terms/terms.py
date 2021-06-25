@@ -173,6 +173,14 @@ def create_arg_parser():
 
     return args
 
+
+def make_full_mat_array(mat, nel):
+    if mat.shape[0] == 1 and nel > 1:
+        return nm.tile(mat, (nel, 1, 1, 1))
+    else:
+        return mat
+
+
 class ConnInfo(Struct):
 
     def get_region(self, can_trace=True):
