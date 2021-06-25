@@ -2,7 +2,7 @@ import numpy as nm
 
 from sfepy.linalg import dot_sequences
 from sfepy.homogenization.utils import iter_sym
-from sfepy.terms.terms import Term, terms, make_full_mat_array
+from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
 
 ## expr = """
@@ -807,7 +807,7 @@ class ElasticWaveTerm(Term):
 
         ebf = expand_basis(geo.bf, dim)
 
-        mat = make_full_mat_array(mat, n_el)
+        mat = Term.tile_mat(mat, n_el)
         gmat = _build_wave_strain_op(kappa, ebf)
 
         if diff_var is None:
@@ -877,7 +877,7 @@ class ElasticWaveCauchyTerm(Term):
 
         ebf = expand_basis(geo.bf, dim)
 
-        mat = make_full_mat_array(mat, n_el)
+        mat = Term.tile_mat(mat, n_el)
         gmat = _build_wave_strain_op(kappa, ebf)
         emat = _build_cauchy_strain_op(geo.bfg)
 

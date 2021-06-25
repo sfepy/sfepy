@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_, Struct
-from sfepy.terms.terms import terms, make_full_mat_array
+from sfepy.terms.terms import terms
 from sfepy.terms.terms_hyperelastic_base import\
     HyperElasticBase, HyperElasticFamilyData
 
@@ -92,7 +92,7 @@ class GenYeohTLTerm(HyperElasticTLBase):
 
     def stress_function(self, out, mat, *fargs, **kwargs):
         det_f, tr_c, inv_c = fargs
-        mat = make_full_mat_array(mat, det_f.shape[0])
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
         coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         i_3 = det_f**2
@@ -149,7 +149,7 @@ class GenYeohTLTerm(HyperElasticTLBase):
 
     def tan_mod_function(self, out, mat, *fargs, **kwargs):
         det_f, tr_c, inv_c = fargs
-        mat = make_full_mat_array(mat, det_f.shape[0])
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
         coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         n_cells, n_qps, _, _ = out.shape
@@ -254,7 +254,7 @@ class OgdenTLTerm(HyperElasticTLBase):
 
     def stress_function(self, out, mat, *fargs, **kwargs):
         det_f, sym_c, _, _ = fargs
-        mat = make_full_mat_array(mat, det_f.shape[0])
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
         coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         # compute principal stretches and directions
@@ -333,7 +333,7 @@ class OgdenTLTerm(HyperElasticTLBase):
 
     def tan_mod_function(self, out, mat, *fargs, **kwargs):
         det_f, sym_c, tr_c, inv_c = fargs
-        mat = make_full_mat_array(mat, det_f.shape[0])
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
         coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         # compute principal stretches and directions

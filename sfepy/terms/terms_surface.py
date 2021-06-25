@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.terms.terms import Term, terms, make_full_mat_array
+from sfepy.terms.terms import Term, terms
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
 from sfepy.mechanics.tensors import get_full_indices
@@ -76,7 +76,7 @@ class LinearTractionTerm(Term):
 
         if traction is not None:
             n_el, _, _, _, _ = self.get_data_shape(virtual)
-            traction = make_full_mat_array(traction, n_el)
+            traction = Term.tile_mat(traction, n_el)
 
         if traction is None:
             traction = nm.zeros((0,0,0,0), dtype=nm.float64)
@@ -433,7 +433,7 @@ class ContactSphereTerm(ContactPlaneTerm):
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
 
-        force_pars = make_full_mat_array(force_pars, sg.shape[0])
+        force_pars = Term.tile_mat(force_pars, sg.shape[0])
 
         if self.cs is None:
             self.cs = ContactSphere(centre, radius)

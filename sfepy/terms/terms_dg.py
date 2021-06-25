@@ -27,7 +27,7 @@ In einsum calls the following convention is used:
 import numpy as nm
 
 # sfepy imports
-from sfepy.terms.terms import Term, terms, make_full_mat_array
+from sfepy.terms.terms import Term, terms
 from sfepy.base.base import output
 
 
@@ -311,7 +311,7 @@ class DiffusionDGFluxTerm(DGTerm):
         return fargs
 
     def function(self, out, state, diff_var, field, region, D):
-        D = make_full_mat_array(D, out.shape[0])
+        D = Term.tile_mat(D, out.shape[0])
 
         if diff_var is not None:  # matrix mode
             # outR = out.copy()[..., 0:1]
