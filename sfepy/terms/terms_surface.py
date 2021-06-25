@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.terms.terms import Term, terms
+from sfepy.terms.terms import Term, terms, make_full_mat_array
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.contact_bodies import ContactPlane, ContactSphere
 from sfepy.mechanics.tensors import get_full_indices
@@ -73,6 +73,10 @@ class LinearTractionTerm(Term):
     def get_fargs(self, traction, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
+
+        if traction is not None:
+            n_el, _, _, _, _ = self.get_data_shape(virtual)
+            traction = make_full_mat_array(traction, n_el)
 
         if traction is None:
             traction = nm.zeros((0,0,0,0), dtype=nm.float64)
@@ -150,7 +154,7 @@ class SDLinearTractionTerm(Term):
 
         elif tdim == sym:  # Traction tensor
             remap = nm.array(get_full_indices(dim)).flatten()
-            trac = traction[..., remap, :].reshape((n_el, n_qp, dim, dim))
+            trac = traction[..., remap, :].reshape((-1, n_qp, dim, dim))
 
         sa_trac = trac * div_mv
         sa_trac -= nm.einsum('qpik,qpkj->qpij', trac, grad_mv,
@@ -295,6 +299,8 @@ class ContactPlaneTerm(Term):
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
 
+        force_pars = Term.tile_mat(force_pars, sg.shape[0])
+
         if self.cp is None:
             self.cp = ContactPlane(anchor, normal, bounds)
 
@@ -426,6 +432,8 @@ class ContactSphereTerm(ContactPlaneTerm):
 
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
+
+        force_pars = make_full_mat_array(force_pars, sg.shape[0])
 
         if self.cs is None:
             self.cs = ContactSphere(centre, radius)

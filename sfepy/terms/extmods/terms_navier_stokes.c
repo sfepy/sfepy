@@ -582,9 +582,7 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    if (viscosity->nCell > 1) {
-      FMF_SetCell( viscosity, ii );
-    }
+    FMF_SetCellX1( viscosity, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
 
@@ -710,7 +708,7 @@ int32 dw_lin_convect( FMField *out, FMField *grad, FMField *stateB,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( stateB, ii );
+    FMF_SetCellX1( stateB, ii );
     FMF_SetCell( grad, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
@@ -900,7 +898,7 @@ int32 dw_st_pspg_c( FMField *out,
     FMF_SetCell( vg_u->bfGM, ii );
     FMF_SetCell( vg_p->bfGM, ii );
     FMF_SetCell( vg_u->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
 
     convect_build_vtg( btg, vg_u->bfGM, stateB );
 
@@ -966,7 +964,7 @@ int32 dw_st_supg_p( FMField *out,
     FMF_SetCell( vg_u->bfGM, ii );
     FMF_SetCell( vg_p->bfGM, ii );
     FMF_SetCell( vg_u->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCell( stateB, ii );
 
     convect_build_vtg( btg, vg_u->bfGM, stateB );
@@ -1034,7 +1032,7 @@ int32 dw_st_supg_c( FMField *out,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCell( stateB, ii );
 
     convect_build_vtg( btg, vg->bfGM, stateB );

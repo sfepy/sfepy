@@ -20,7 +20,7 @@ int32 dw_electric_source( FMField *out, FMField *grad, FMField *coef,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCell( grad, ii );
     FMF_SetCellX1( vg->bf, ii );
 

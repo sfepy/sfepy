@@ -6,6 +6,7 @@ from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
 from sfepy.mechanics.tensors import dim2sym
 from sfepy.homogenization.utils import iter_sym
 from six.moves import range
+from sfepy.terms.terms import make_full_mat_array
 
 def create_omega(fdir):
     r"""
@@ -82,6 +83,13 @@ class FibresActiveTLTerm(HyperElasticTLBase):
     def get_fargs(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         fibre_data = _setdefault_fibre_data(self, state)
+
+        n_el, _, _, _, _ = self.get_data_shape(state)
+        mat1 = make_full_mat_array(mat1, n_el)
+        mat2 = make_full_mat_array(mat2, n_el)
+        mat3 = make_full_mat_array(mat3, n_el)
+        mat4 = make_full_mat_array(mat4, n_el)
+        mat5 = make_full_mat_array(mat5, n_el)
 
         fargs = HyperElasticTLBase.get_fargs(self,
                                              (mat1, mat2, mat3, mat4, mat5),
