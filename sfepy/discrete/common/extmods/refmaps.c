@@ -279,7 +279,7 @@ int32 map_integrate( Mapping *obj, FMField *out, FMField *in,
   if ((obj->mode == MM_Volume) || (mode < 3) || (in->nRow == 1)) {
     for (iel = 0; iel < obj->det->nCell; iel++) {
       FMF_SetCell( obj->det, iel );
-      FMF_SetCell( in, iel );
+      FMF_SetCellX1( in, iel );
       FMF_SetCell( out, iel );
       fmf_sumLevelsMulF( out, in, obj->det->val );
       if (mode == 1) {
@@ -296,7 +296,7 @@ int32 map_integrate( Mapping *obj, FMField *out, FMField *in,
     for (iel = 0; iel < obj->det->nCell; iel++) {
       FMF_SetCell( obj->normal, iel );
       FMF_SetCell( obj->det, iel );
-      FMF_SetCell( in, iel );
+      FMF_SetCellX1( in, iel );
       FMF_SetCell( out, iel );
 
       fmf_mulATB_nn( vn, in, obj->normal );

@@ -122,7 +122,7 @@ cdef class CMapping:
                         ((mode >= 3) and (out.shape[2] == 1)
                          and (arr.shape[2] == self.dim)))
 
-        if not ((out.shape[0] == arr.shape[0])
+        if not (((out.shape[0] == arr.shape[0]) or (arr.shape[0] == 1))
                 and (out.shape[1] == 1)
                 and n_row_ok
                 and (out.shape[3] == arr.shape[3])
