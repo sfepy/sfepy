@@ -96,10 +96,10 @@ def make_sfepy_function(fun_or_name=None):
 class ConstantFunction(Function):
     """Function with constant values."""
 
-    def __init__(self, values):
+    def __init__(self, values, mat_constant=False):
         """Make a function out of a dictionary of constant values. When
         called with coors argument, the values are repeated for each
-        coordinate."""
+        coordinate. Not repeated if `mat_constant` is True."""
 
         name = '_'.join(['get_constants'] + list(values.keys()))
 
@@ -117,7 +117,8 @@ class ConstantFunction(Function):
 
                     dtype = nm.float64 if nm.isrealobj(val) else nm.complex128
                     val = nm.array(val, dtype=dtype, ndmin=3)
-                    out[key] = nm.tile(val, (coors.shape[0], 1, 1))
+                    nc = 1 if mat_constant else coors.shape[0]
+                    out[key] = nm.tile(val, (nc, 1, 1))
 
             elif (mode == 'special_constant') or (mode is None):
                 for key, val in six.iteritems(values):

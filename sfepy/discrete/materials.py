@@ -139,7 +139,7 @@ class Material(Struct):
                     all_values.update(values)
                 all_values.update(kwargs)
 
-                self.function = ConstantFunction(all_values)
+                self.function = ConstantFunction(all_values, mat_constant=True)
                 self.is_constant = True
 
         else: # => both values and function are None
