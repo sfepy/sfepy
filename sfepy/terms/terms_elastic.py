@@ -807,6 +807,7 @@ class ElasticWaveTerm(Term):
 
         ebf = expand_basis(geo.bf, dim)
 
+        mat = Term.tile_mat(mat, n_el)
         gmat = _build_wave_strain_op(kappa, ebf)
 
         if diff_var is None:
@@ -876,6 +877,7 @@ class ElasticWaveCauchyTerm(Term):
 
         ebf = expand_basis(geo.bf, dim)
 
+        mat = Term.tile_mat(mat, n_el)
         gmat = _build_wave_strain_op(kappa, ebf)
         emat = _build_cauchy_strain_op(geo.bfg)
 

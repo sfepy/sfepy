@@ -42,6 +42,8 @@ typedef struct FMField {
 #define FMF_PtrFirst( obj ) ((obj)->val0)
 #define FMF_PtrCurrent( obj ) ((obj)->val)
 #define FMF_PtrCell( obj, n ) ((obj)->val0 + (n) * (obj)->cellSize)
+#define FMF_PtrCellX1( obj, n ) ((obj)->nCell > 1 \
+  ? (obj)->val0 + (n) * (obj)->cellSize : (obj)->val0)
 #define FMF_SetFirst( obj ) ((obj)->val = (obj)->val0)
 #define FMF_SetCell( obj, n ) ((obj)->val = (obj)->val0 + (n) * (obj)->cellSize)
 #define FMF_SetCellX1( obj, n ) do {\

@@ -23,7 +23,7 @@ int32 dw_volume_lvf( FMField *out, FMField *forceQP, Mapping *vg )
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( forceQP, ii );
+    FMF_SetCellX1( forceQP, ii );
     FMF_SetCell( vg->det, ii );
     FMF_SetCellX1( vg->bf, ii );
 

@@ -74,6 +74,10 @@ class LinearTractionTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
 
+        if traction is not None:
+            n_el, _, _, _, _ = self.get_data_shape(virtual)
+            traction = Term.tile_mat(traction, n_el)
+
         if traction is None:
             traction = nm.zeros((0,0,0,0), dtype=nm.float64)
 
@@ -150,7 +154,7 @@ class SDLinearTractionTerm(Term):
 
         elif tdim == sym:  # Traction tensor
             remap = nm.array(get_full_indices(dim)).flatten()
-            trac = traction[..., remap, :].reshape((n_el, n_qp, dim, dim))
+            trac = traction[..., remap, :].reshape((-1, n_qp, dim, dim))
 
         sa_trac = trac * div_mv
         sa_trac -= nm.einsum('qpik,qpkj->qpij', trac, grad_mv,
@@ -295,6 +299,8 @@ class ContactPlaneTerm(Term):
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
 
+        force_pars = Term.tile_mat(force_pars, sg.shape[0])
+
         if self.cp is None:
             self.cp = ContactPlane(anchor, normal, bounds)
 
@@ -426,6 +432,8 @@ class ContactSphereTerm(ContactPlaneTerm):
 
         assert_((force_pars >= 0.0).all(),
                 'force parameters must be non-negative!')
+
+        force_pars = Term.tile_mat(force_pars, sg.shape[0])
 
         if self.cs is None:
             self.cs = ContactSphere(centre, radius)

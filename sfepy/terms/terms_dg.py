@@ -311,6 +311,8 @@ class DiffusionDGFluxTerm(DGTerm):
         return fargs
 
     def function(self, out, state, diff_var, field, region, D):
+        D = Term.tile_mat(D, out.shape[0])
+
         if diff_var is not None:  # matrix mode
             # outR = out.copy()[..., 0:1]
             out = self._function_matrix(out, state, diff_var, field, region, D)

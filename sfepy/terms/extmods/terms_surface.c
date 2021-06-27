@@ -38,7 +38,7 @@ int32 dw_surface_ltr( FMField *out, FMField *traction, Mapping *sg )
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( traction, ii );
+      FMF_SetCellX1( traction, ii );
       FMF_SetCell( sg->normal, ii );
       FMF_SetCell( sg->det, ii );
       FMF_SetCellX1( sg->bf, ii );
@@ -54,7 +54,7 @@ int32 dw_surface_ltr( FMField *out, FMField *traction, Mapping *sg )
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( traction, ii );
+      FMF_SetCellX1( traction, ii );
       FMF_SetCell( sg->normal, ii );
       FMF_SetCell( sg->det, ii );
       FMF_SetCellX1( sg->bf, ii );
@@ -69,7 +69,7 @@ int32 dw_surface_ltr( FMField *out, FMField *traction, Mapping *sg )
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( traction, ii );
+      FMF_SetCellX1( traction, ii );
       FMF_SetCell( sg->normal, ii );
       FMF_SetCell( sg->det, ii );
       FMF_SetCellX1( sg->bf, ii );

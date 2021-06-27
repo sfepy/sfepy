@@ -278,8 +278,7 @@ int32 dw_laplace( FMField *out, FMField *grad,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    if (coef->nCell > 1)
-      FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
 
     if (isDiff) {
       laplace_build_gtg( gtg, vg->bfGM );
@@ -323,8 +322,7 @@ int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( gradP1, ii );
     FMF_SetCell( gradP2, ii );
-    if (coef->nCell > 1)
-      FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
 
     fmf_mulAF( dgp2, gradP2, coef->val );
     fmf_mulATB_nn( gp1tdgp2, gradP1, dgp2 );

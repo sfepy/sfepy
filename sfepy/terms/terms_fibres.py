@@ -83,6 +83,13 @@ class FibresActiveTLTerm(HyperElasticTLBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         fibre_data = _setdefault_fibre_data(self, state)
 
+        n_el, _, _, _, _ = self.get_data_shape(state)
+        mat1 = HyperElasticTLBase.tile_mat(mat1, n_el)
+        mat2 = HyperElasticTLBase.tile_mat(mat2, n_el)
+        mat3 = HyperElasticTLBase.tile_mat(mat3, n_el)
+        mat4 = HyperElasticTLBase.tile_mat(mat4, n_el)
+        mat5 = HyperElasticTLBase.tile_mat(mat5, n_el)
+
         fargs = HyperElasticTLBase.get_fargs(self,
                                              (mat1, mat2, mat3, mat4, mat5),
                                              virtual, state,

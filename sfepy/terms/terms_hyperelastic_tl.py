@@ -91,8 +91,9 @@ class GenYeohTLTerm(HyperElasticTLBase):
         return out
 
     def stress_function(self, out, mat, *fargs, **kwargs):
-        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
         det_f, tr_c, inv_c = fargs
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         i_3 = det_f**2
         ident = nm.array([1., 1, 1, 0, 0, 0])
@@ -147,8 +148,9 @@ class GenYeohTLTerm(HyperElasticTLBase):
         return tan_mod
 
     def tan_mod_function(self, out, mat, *fargs, **kwargs):
-        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
         det_f, tr_c, inv_c = fargs
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         n_cells, n_qps, _, _ = out.shape
         for cell in range(n_cells):
@@ -251,8 +253,9 @@ class OgdenTLTerm(HyperElasticTLBase):
         return out
 
     def stress_function(self, out, mat, *fargs, **kwargs):
-        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
         det_f, sym_c, _, _ = fargs
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         # compute principal stretches and directions
         c_mats = sym_c[:, :, [[0, 3, 4], [3, 1, 5], [4, 5, 2]], 0]
@@ -329,8 +332,9 @@ class OgdenTLTerm(HyperElasticTLBase):
         return tan_mod
 
     def tan_mod_function(self, out, mat, *fargs, **kwargs):
-        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
         det_f, sym_c, tr_c, inv_c = fargs
+        mat = HyperElasticBase.tile_mat(mat, det_f.shape[0])
+        coef, exp = mat[:, :, :, :1], mat[:, :, :, 1:]
 
         # compute principal stretches and directions
         c_mats = sym_c[:, :, [[0, 3, 4], [3, 1, 5], [4, 5, 2]], 0]

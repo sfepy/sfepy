@@ -173,6 +173,7 @@ def create_arg_parser():
 
     return args
 
+
 class ConnInfo(Struct):
 
     def get_region(self, can_trace=True):
@@ -356,6 +357,13 @@ class Term(Struct):
         obj.sign = desc.sign
 
         return obj
+
+    @staticmethod
+    def tile_mat(mat, nel):
+        if mat.shape[0] == 1 and nel > 1:
+            return nm.tile(mat, (nel,) + (mat.ndim - 1) * (1,))
+        else:
+            return mat
 
     def __init__(self, name, arg_str, integral, region, **kwargs):
         self.name = name

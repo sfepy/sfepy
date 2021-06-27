@@ -201,7 +201,7 @@ int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
     FMF_SetCell( gradU, ii );
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCellX1( vg->bf, ii );
 
     // u grad u.
@@ -295,7 +295,7 @@ int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
     FMF_SetCell( gradP, ii );
     FMF_SetCell( vg_w->bfGM, ii );
     FMF_SetCell( vg_w->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCellX1( vg_w->bf, ii );
 
     // (grad p, grad).
@@ -367,7 +367,7 @@ int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
     FMF_SetCell( gradU, ii );
     FMF_SetCell( vg_r->bfGM, ii );
     FMF_SetCell( vg_u->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCellX1( vg_u->bf, ii );
 
     // (grad u, grad).
@@ -778,7 +778,7 @@ int32 d_sd_st_grad_div( FMField *out, FMField *divU, FMField *gradU,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCell( divU, ii );
     FMF_SetCell( divW, ii );
     FMF_SetCell( vg_u->det, ii );
@@ -857,7 +857,7 @@ int32 d_sd_st_supg_c( FMField *out, FMField *stateB, FMField *gradU,
     FMF_SetCell( stateB, ii );
     FMF_SetCell( gradW, ii );
     FMF_SetCell( vg_u->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
 
     // b grad u.
     fmf_mulATBT_nn( fBgU, stateB, gradU );
@@ -948,7 +948,7 @@ int32 d_sd_st_pspg_c( FMField *out, FMField *stateB, FMField *gradU,
     FMF_SetCell( gradU, ii );
     FMF_SetCell( gradR, ii );
     FMF_SetCell( vg_u->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
 
     // b grad u.
     fmf_mulATBT_nn( fBgU, stateB, gradU );
@@ -1032,7 +1032,7 @@ int32 d_sd_st_pspg_p( FMField *out, FMField *gradR, FMField *gradP,
     FMF_SetCell( gradR, ii );
     FMF_SetCell( gradP, ii );
     FMF_SetCell( vg_p->det, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
 
     // (grad r, grad p).
     fmf_mulATB_nn( scalar1, gradR, gradP );

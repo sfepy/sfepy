@@ -629,7 +629,7 @@ int32 de_he_rtm( FMField *out,
 
 #undef __FUNC__
 #define __FUNC__ "dq_he_stress_bulk"
-int32 dq_he_stress_bulk( FMField *out,FMField *mat,
+int32 dq_he_stress_bulk( FMField *out, FMField *mat,
                          FMField *detF, FMField *vecCG,
                          int32 mode_ul )
 {
@@ -644,7 +644,7 @@ int32 dq_he_stress_bulk( FMField *out,FMField *mat,
     pdetF = FMF_PtrCell( detF, ii );
 
     pstress = FMF_PtrCell( out, ii );
-    pbulk = FMF_PtrCell( mat, ii );
+    pbulk = FMF_PtrCellX1( mat, ii );
 
     if (mode_ul) {
       /* ULF */
@@ -710,7 +710,7 @@ int32 dq_tl_he_stress_bulk_active( FMField *out,FMField *mat,
     pdetF = FMF_PtrCell( detF, ii );
 
     pstress = FMF_PtrCell( out, ii );
-    pmat = FMF_PtrCell( mat, ii );
+    pmat = FMF_PtrCellX1( mat, ii );
 
     pCG = FMF_PtrCell( vecCG, ii );
     for (iqp = 0; iqp < nQP; iqp++) {
@@ -749,7 +749,7 @@ int32 dq_he_stress_neohook( FMField *out, FMField *mat,
     pCG = FMF_PtrCell( vecCG, ii );
 
     pstress = FMF_PtrCell( out, ii );
-    pmu = FMF_PtrCell( mat, ii );
+    pmu = FMF_PtrCellX1( mat, ii );
 
     if (mode_ul) {
       /* ULF */
@@ -826,7 +826,7 @@ int32 dq_tl_he_stress_mooney_rivlin( FMField *out, FMField *mat,
     pin2C = FMF_PtrCell( in2C, ii );
 
     pstress = FMF_PtrCell( out, ii );
-    pkappa = FMF_PtrCell( mat, ii );
+    pkappa = FMF_PtrCellX1( mat, ii );
     for (iqp = 0; iqp < nQP; iqp++) {
       detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
       for (ir = 0; ir < sym; ir++) {
@@ -880,7 +880,7 @@ int32 dq_ul_he_stress_mooney_rivlin( FMField *out, FMField *mat,
     geme_mulT2S_AA( vecBB, vecBS );
 
     pstress = FMF_PtrCell( out, ii );
-    pkappa = FMF_PtrCell( mat, ii );
+    pkappa = FMF_PtrCellX1( mat, ii );
     for (iqp = 0; iqp < nQP; iqp++) {
       detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
       for (ir = 0; ir < sym; ir++) {
@@ -928,7 +928,7 @@ int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
     pdetF = FMF_PtrCell( detF, ii );
     pinvC = FMF_PtrCell( vecInvCS, ii );
     pd = FMF_PtrCell( out, ii );
-    pbulk = FMF_PtrCell( mat, ii );
+    pbulk = FMF_PtrCellX1( mat, ii );
 
     geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
     geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
@@ -983,7 +983,7 @@ int32 dq_ul_he_tan_mod_bulk( FMField *out, FMField *mat, FMField *detF )
   for (ii = 0; ii < out->nCell; ii++) {
     pdetF = FMF_PtrCell( detF, ii );
     pd = FMF_PtrCell( out, ii );
-    pbulk = FMF_PtrCell( mat, ii );
+    pbulk = FMF_PtrCellX1( mat, ii );
 
     geme_mulT2ST2S_T4S_ikjl( ikjl, traceVec, traceVec );
     geme_mulT2ST2S_T4S_iljk( iljk, traceVec, traceVec );
@@ -1037,7 +1037,7 @@ int32 dq_tl_he_tan_mod_bulk_active( FMField *out, FMField *mat,
     pdetF = FMF_PtrCell( detF, ii );
     pinvC = FMF_PtrCell( vecInvCS, ii );
     pd = FMF_PtrCell( out, ii );
-    pmat = FMF_PtrCell( mat, ii );
+    pmat = FMF_PtrCellX1( mat, ii );
 
     geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
     geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
@@ -1092,7 +1092,7 @@ int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
     ptrC = FMF_PtrCell( trC, ii );
     pinvC = FMF_PtrCell( vecInvCS, ii );
     pd = FMF_PtrCell( out, ii );
-    pmu = FMF_PtrCell( mat, ii );
+    pmu = FMF_PtrCellX1( mat, ii );
 
     geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
     geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
@@ -1159,7 +1159,7 @@ int32 dq_ul_he_tan_mod_neohook( FMField *out, FMField *mat,
     ptrB = FMF_PtrCell( trB, ii );
     pBG = FMF_PtrCell( vecBS, ii );
     pd = FMF_PtrCell( out, ii );
-    pmu = FMF_PtrCell( mat, ii );
+    pmu = FMF_PtrCellX1( mat, ii );
 
     for (iqp = 0; iqp < nQP; iqp++) {
       detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
@@ -1222,7 +1222,7 @@ int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
     pC = FMF_PtrCell( vecCS, ii );
     FMF_SetCell( vecInvCS, ii );
     pd = FMF_PtrCell( out, ii );
-    pkappa = FMF_PtrCell( mat, ii );
+    pkappa = FMF_PtrCellX1( mat, ii );
 
     geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
     geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
@@ -1308,7 +1308,7 @@ int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
     pB = FMF_PtrCell( vecBS, ii );
     FMF_SetCell( vecBS, ii );
     pd = FMF_PtrCell( out, ii );
-    pkappa = FMF_PtrCell( mat, ii );
+    pkappa = FMF_PtrCellX1( mat, ii );
     pBB = vecBB->val0;
 
     geme_mulT2ST2S_T4S_ikjl( B_ikjl, vecBS, vecBS );
@@ -1745,8 +1745,8 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( mtxF, ii );
     FMF_SetCell( detF, ii );
-    FMF_SetCell( mtxD, ii );
-    FMF_SetCell( ref_porosity, ii );
+    FMF_SetCellX1( mtxD, ii );
+    FMF_SetCellX1( ref_porosity, ii );
 
     // max(0, (1 + (J - 1) / N_f))^2
     for (iqp = 0; iqp < nQP; iqp++) {
@@ -1837,10 +1837,10 @@ int32 d_tl_surface_flux( FMField *out, FMField *pressure_grad,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( pressure_grad, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     FMF_SetCell( mtxFI, ii );
     FMF_SetCell( detF, ii );
-    FMF_SetCell( ref_porosity, ii );
+    FMF_SetCellX1( ref_porosity, ii );
     FMF_SetCell( sg->normal, ii );
     FMF_SetCell( sg->det, ii );
 
@@ -2101,7 +2101,7 @@ int32 he_residuum_from_mtx(FMField *out, FMField *mtxD,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
     ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
 
     fmf_mulAB_nn( out, mtxD, pst );
@@ -2137,7 +2137,7 @@ int32 he_eval_from_mtx(FMField *out, FMField *mtxD,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( mtxD, ii );
+    FMF_SetCellX1( mtxD, ii );
 
     ele_extractNodalValuesDBD( st, stateU, conn + nEP * iel );
     fmf_mulAB_nn( aux, mtxD, pst );
