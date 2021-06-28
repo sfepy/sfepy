@@ -1132,9 +1132,6 @@ class BernsteinTensorProductPolySpace(FEPolySpace):
 
         base = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
         degree = self.order
-        degrees = nm.array([degree] * dim)
-        n_efuns = degrees + 1
-        n_efun = nm.prod(n_efuns)
         n_efuns_max = degree + 1
 
         for iq, qp in enumerate(coors):
