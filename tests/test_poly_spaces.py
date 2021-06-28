@@ -92,7 +92,7 @@ def _gen_common_data(orders, gels, report):
                                     ['lagrange', 'serendipity', 'bernstein',
                                      'lobatto']])]
              + [ii for ii in combine([['2_3', '3_4'],
-                                      ['lagrange']])])
+                                      ['lagrange', 'bernstein']])])
     for geom, poly_space_base in bases:
         order = orders[geom]
         if (geom == '3_8') and (poly_space_base == 'serendipity'):
@@ -202,10 +202,11 @@ class Test(TestCommon):
         ok = True
         orders = {'2_3' : 5, '2_4' : 5, '3_4' : 5, '3_8' : 5}
         bases = (
-            [ii for ii in combine(
-                [['2_4', '3_8'], ['lagrange', 'serendipity', 'bernstein']]
+            [ii for ii in combine([['2_4', '3_8'],
+                                   ['lagrange', 'serendipity', 'bernstein']]
             )]
-            + [ii for ii in combine([['2_3', '3_4'], ['lagrange']])]
+            + [ii for ii in combine([['2_3', '3_4'],
+                                     ['lagrange', 'bernstein']])]
         )
 
         for geom, poly_space_base in bases:
