@@ -1009,6 +1009,90 @@ class LobattoTensorProductPolySpace(FEPolySpace):
 
         return base
 
+class BernsteinSimplexPolySpace(FEPolySpace):
+    """
+    Bernstein polynomial space on simplex domains.
+
+    Notes
+    -----
+    Naive proof-of-concept implementation, does not use recurrent formulas or
+    Duffy transformation to obtain tensor product structure.
+    """
+    name = 'bernstein_simplex'
+
+    def __init__(self, name, geometry, order):
+        PolySpace.__init__(self, name, geometry, order)
+
+        self.nodes, self.nts, self.node_coors = self._define_nodes()
+        self.n_nod = self.nodes.shape[0]
+        self.eval_ctx = None
+
+    def _define_nodes(self):
+        nodes, nts, node_coors = LagrangeSimplexPolySpace._define_nodes(self)
+        return nodes, nts, node_coors
+
+    @staticmethod
+    def _get_barycentric(coors):
+        dim = coors.shape[1]
+
+        bcoors = nm.empty((coors.shape[0], dim + 1))
+        bcoors[:, 0] = 1.0 - coors.sum(axis=1)
+        bcoors[:, 1:] = coors
+        return bcoors
+
+    def _eval_base(self, coors, diff=False, ori=None,
+                   suppress_errors=False, eps=1e-15):
+        """
+        See PolySpace.eval_base().
+        """
+        from scipy.special import factorial
+
+        dim = self.geometry.dim
+        if diff:
+            bdim = dim
+
+            bgrad = nm.zeros((dim + 1, dim), dtype=nm.float64)
+            bgrad[0] = -1
+            bgrad[1:] = nm.eye(dim)
+
+        else:
+            bdim = 1
+
+        base = nm.ones((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+
+        bcoors = self._get_barycentric(coors)
+
+        fs = factorial(nm.arange(0, self.order + 1))
+        of = fs[-1]
+        if not diff:
+            for ii, node in enumerate(self.nodes):
+                coef = of / nm.prod(fs[node])
+                val = coef * nm.prod(nm.power(bcoors, node), axis=1)
+                base[:, 0, ii] = val
+
+        else:
+            for ii, node in enumerate(self.nodes):
+                coef = of / nm.prod(fs[node])
+                for ider in range(dim):
+                    dval = 0.0
+                    for ib in range(dim + 1):
+                        ex = node[ib]
+                        val = coef
+                        for im in range(dim + 1):
+                            if ib == im:
+                                val *= (ex *
+                                        nm.power(bcoors[:, im], ex - 1) *
+                                        bgrad[ib, ider])
+
+                            else:
+                                val *= nm.power(bcoors[:, im], node[im])
+
+                        dval += val
+
+                    base[:, ider, ii] = dval
+
+        return base
+
 class BernsteinTensorProductPolySpace(FEPolySpace):
     """
     Bernstein polynomial space.
