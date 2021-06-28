@@ -1,6 +1,5 @@
 import numpy as nm
 
-from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
@@ -86,7 +85,7 @@ class DotProductVolumeTerm(Term):
         if mode == 'weak':
             if mat is None:
                 n_cell, n_qp, dim, n_n, n_c = self.get_data_shape(state)
-                mat = nm.ones((n_cell, n_qp, 1, 1), dtype=nm.float64)
+                mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
             sgeo, _ = self.get_mapping(state)
 
