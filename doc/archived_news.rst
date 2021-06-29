@@ -3,6 +3,10 @@
 Archived News
 =============
 
+* **31.03.2020** Version 2020.1 released (reading/writing of additional mesh
+  formats by using `meshio <https://github.com/nschloe/meshio>`_), Python 3
+  only from now on, etc.), see :ref:`release notes <2019.4-2020.1>`.
+
 * **23.12.2019** Version 2019.4 released (support surface terms in 1D problems,
   improved Gmsh mesh format support (write .msh files), new updating procedure
   in nonlinear homogenization, improved/faster log plotter, etc.), see

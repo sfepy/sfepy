@@ -1198,6 +1198,7 @@ sfepy.discrete.fem sub-package
    src/sfepy/discrete/fem/fields_base
    src/sfepy/discrete/fem/fields_hierarchic
    src/sfepy/discrete/fem/fields_nodal
+   src/sfepy/discrete/fem/fields_positive
    src/sfepy/discrete/fem/geometry_element
    src/sfepy/discrete/fem/history
    src/sfepy/discrete/fem/lcbc_operators

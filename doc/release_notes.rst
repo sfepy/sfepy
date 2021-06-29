@@ -1,5 +1,173 @@
 # created: 20.07.2007 (-1)
 
+.. _2021.1-2021.2:
+
+from 2021.1 to 2021.2
+=====================
+
+- merge pull request #680 from vlukes/update_doc
+
+  - new example application
+  - add supporting project
+
+- merge pull request #681 from vlukes/new_example_app
+
+  - new example application
+
+- merge pull request #678 from rc/remove-med-mesh-files
+
+  - remove unused meshes/various_formats/{med_2d_tri_quad.med,
+    med_3d_tet_hex.med}
+  - update filename_meshes in tests/test_meshio.py
+
+- merge pull request #682 from vlukes/new_sd_term
+
+  - d_sd_div_grad: only one optional material paremeter
+  - update from_term_arg(): allow for (ndarray, arg_name) arguments
+  - new SDPiezoCouplingTerm(ETermBase) sensitivity term
+  - new tests of sensitivity terms
+
+- merge pull request #683 from vlukes/make_de_convect_evaluable
+
+  - update multilinear terms: make de_convect evaluable
+  - update sensitivity tests: enable test of convect term
+  - update docstring of de_convect term
+
+- merge pull request #684 from vlukes/new_d_sd_surface_ltr
+
+  - fix geme_mulAVSB3py() for calculating over all cells
+  - new sensitivity term: SDLinearTractionTerm
+  - update tests to check SDLinearTractionTerm
+  - fix formating
+  - update docstring for SDLinearTractionTerm() and rename: nel, nqp -> n_el,
+    n_qp
+
+- merge pull request #690 from rc/no-mat-update-in-init-time
+
+  - do not update materials in Problem.init_time() - allows calling
+    Problem.evaluate() in material update functions in time zero with
+    'quasistatic' set to False
+  - update comments in Problem.solve()
+
+- merge pull request #692 from rc/fix-saving-animations, closes #266
+
+  - update Viewer.encode_animation() for current ffmpeg (4.2.4)
+  - postproc.py: update --ffmpeg-options default, update docstring
+  - docs: update postproc.py help message in users guide
+
+- merge pull request #694 from vlukes/new_example_application
+
+  - new example application
+
+- merge pull request #695 from rc/link-example-applications
+
+  - docs: link example application in index.rst, remove applications section
+
+- merge pull request #696 from rc/fix-numpy-indexing-warning
+
+  - fix numpy future warning in TransformToPlane.tensor_plane_stress() - using
+    a non-tuple sequence for multidimensional indexing
+
+- merge pull request #697 from rc/revisit-facet-orientations
+
+  - describe quad face orientation groups in facets.py docstring
+  - add missing permutations in GeometryElement.get_conn_permutations()
+  - permute common quad face in _gen_common_data(), new _permute_quad_face()
+
+    - all keys from _quad_ori_groups in sfepy.discrete.fem.facets are tested
+    - update Test.test_continuity(), .test_gradients()
+
+  - stop after all possible orientations were tested in _gen_common_data()
+
+    - new _get_possible_oris()
+
+- merge pull request #698 from rc/bernstein-basis-new-set-dofs
+
+  - new BernsteinTensorProductPolySpace
+
+    - new .__init__(), ._define_nodes(), _eval_base()
+
+  - check shape of quadrature coordinates in PolySpace.eval_base()
+  - new local argument of VolumeField.get_econn(), create missing surface data
+  - move global basis functions from H1NodalMixin to new GlobalNodalLikeBasis
+
+    - move ._setup_facet_orientations(), ._setup_edge_dofs(),
+      ._setup_face_dofs(), ._setup_facet_dofs(), ._setup_bubble_dofs()
+
+  - new H1BernsteinVolumeField, H1BernsteinSurfaceField (WIP)
+
+    - new H1BernsteinVolumeField.create_basis_context() - same "hack" as in
+      H1HierarchicVolumeField
+
+  - new local argument of IGField.get_econn()
+  - split/fix IGField.set_dofs(), new Field.set_dofs()
+
+    - split IGField.set_dofs() into new IGField.get_surface_basis() (IGField-
+      specific) and project_to_facets() (general)
+    - fixes wrong shape of projected function return value
+    - Field.set_dofs() calls project_to_facets()
+
+  - new GlobalNodalLikeBasis.get_surface_basis()
+
+    - Field.set_dofs() works with H1BernsteinVolumeField
+
+  - update H1NodalMixin.set_dofs(), H1HierarchicVolumeField.set_dofs()
+
+    - according to Field.set_dofs()
+
+  - update tests/test_poly_spaces.py for Bernstein basis
+
+    - update _gen_common_data(), test_partition_of_unity(), test_continuity()
+
+  - new define() in sinbc.py example, update docstring
+
+- merge pull request #699 from vlukes/material_shape_update
+
+  - update materials: allow for (1, N, M) material shape
+  - update terms: replace FMF_SetCell() by FMF_SetCellX1() for material arrays
+  - update piezo term
+  - modify examples to use the newly allowed material shape
+  - update users guide
+
+- merge pull request #700 from vlukes/const_material
+
+  - update material functions
+  - update CMappings
+  - new FMF_PtrCellX1() macro
+  - new make_full_mat_array(): (1, nqp, n, m) -> (nel, nqp, n, m)
+  - update terms
+  - rename and move make_full_mat_array() -> Term.tile_mat()
+
+- merge pull request #701 from rc/bernstein-basis-simplex-naive
+
+  - new BernsteinSimplexPolySpace (naive implementation)
+
+    - new .__init__(), ._define_nodes(), ._get_barycentric(), _eval_base()
+
+  - clean up BernsteinTensorProductPolySpace._eval_base()
+  - update tests/test_poly_spaces.py for simplex Bernstein basis
+
+    - update _gen_common_data(), test_partition_of_unity()
+
+- merge pull request #702 from rc/constant-materials-small-fixes
+
+  - use single cell dummy material in DotProductVolumeTerm.get_fargs()
+  - fix float comparison in PhysicalQPs.get_shape()
+
+- merge pull request #703 from vlukes/fix_d_sd_div_grad
+
+  - fix opt_material in SDDivGradTerm
+
+- merge pull request #704 from vlukes/update_coefs_base
+
+  - update CoefMN.set_variables_default()
+
+- merge pull request #705 from rc/fix-more-c-funs-for-const-mats
+
+  - fix d_of_ns_min_grad() for constant materials
+  - fix dw_st_grad_div() for constant materials
+  - fix actBfT(), sym2nonsym() for constant materials
+
 .. _2020.4-2021.1:
 
 from 2020.4 to 2021.1
