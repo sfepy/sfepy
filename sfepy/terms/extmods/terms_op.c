@@ -69,7 +69,7 @@ int32 actBfT(FMField *out, FMField *bf, FMField *A)
   fmf_fillC(out, 0.0);
   for (iel = 0; iel < out->nCell; iel++) {
     FMF_SetCell(out, iel);
-    FMF_SetCell(A, iel);
+    FMF_SetCellX1(A, iel);
     for (iqp = 0; iqp < bf->nLev; iqp++) {
       pbf = FMF_PtrLevel(bf, iqp);
       pout = FMF_PtrLevel(out, iqp);
@@ -127,7 +127,7 @@ int32 sym2nonsym(FMField *out, FMField *A)
   if (A->nCol == 1) { /* stress mode */
     for (iel = 0; iel < out->nCell; iel++) {
       FMF_SetCell(out, iel);
-      FMF_SetCell(A, iel);
+      FMF_SetCellX1(A, iel);
       for (iqp = 0; iqp < out->nLev; iqp++) {
         pout = FMF_PtrLevel(out, iqp);
         pA = FMF_PtrLevel(A, iqp);
@@ -147,7 +147,7 @@ int32 sym2nonsym(FMField *out, FMField *A)
   else { /* tan mode */
     for (iel = 0; iel < out->nCell; iel++) {
       FMF_SetCell(out, iel);
-      FMF_SetCell(A, iel);
+      FMF_SetCellX1(A, iel);
       for (iqp = 0; iqp < out->nLev; iqp++) {
         pout = FMF_PtrLevel(out, iqp);
         pA0 = FMF_PtrLevel(A, iqp);

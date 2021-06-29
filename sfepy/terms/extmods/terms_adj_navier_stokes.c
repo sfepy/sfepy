@@ -425,7 +425,7 @@ int32 d_of_nsMinGrad( FMField *out, FMField *grad,
   aux = 0.0;
   for (ii = 0; ii < grad->nCell; ii++) {
     FMF_SetCell( grad, ii );
-    FMF_SetCell( viscosity, ii );
+    FMF_SetCellX1( viscosity, ii );
     FMF_SetCell( vg->det, ii );
 
     fmf_mulATB_nn( gvel2, grad, grad );
