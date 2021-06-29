@@ -873,7 +873,9 @@ class CoefMN(MiniAppBase):
             act_set_var = set_var
         else:
             mode2var = {'row': 0, 'col': 1}
-            act_set_var = [set_var[mode2var[mode]]] + set_var[2:]
+            aux = set_var[mode2var[mode]]
+            act_set_var = aux[:] if isinstance(aux, list) else [aux]
+            act_set_var += set_var[2:]
 
         for (var, req, comp) in act_set_var:
             if type(req) is tuple:
