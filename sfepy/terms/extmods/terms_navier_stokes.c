@@ -1095,7 +1095,7 @@ int32 dw_st_grad_div( FMField *out, FMField *div,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCellX1( coef, ii );
     FMF_SetCell( gcl, ii );
     FMF_SetCell( vg->det, ii );
 
