@@ -305,7 +305,7 @@ class SDDivGradTerm(Term):
     :Definition:
 
     .. math::
-        w \nu \int_{\Omega} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
+        \nu \int_{\Omega} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
         (\nabla \cdot \ul{\Vcal})
         - \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} \pdiff{w_i}{x_k}
         - \pdiff{u_i}{x_k} \pdiff{\Vcal_l}{x_k} \pdiff{w_i}{x_k} ]
@@ -319,9 +319,10 @@ class SDDivGradTerm(Term):
     name = 'd_sd_div_grad'
     arg_types = ('opt_material', 'parameter_u', 'parameter_w',
                  'parameter_mv')
-    arg_shapes = {'opt_material' : '1, 1',
-                  'parameter_u' : 'D', 'parameter_w' : 'D',
-                  'parameter_mv' : 'D'}
+    arg_shapes = [{'opt_material' : '1, 1',
+                   'parameter_u' : 'D', 'parameter_w' : 'D',
+                   'parameter_mv' : 'D'},
+                  {'opt_material' : None}]
 
     function = staticmethod(terms.d_sd_div_grad)
 
@@ -333,6 +334,9 @@ class SDDivGradTerm(Term):
         grad_w = grad_as_vector(self.get(par_w, 'grad'))
         div_mv = self.get(par_mv, 'div')
         grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
+
+        if mat is None:
+            mat = nm.ones((1, div_mv.shape[1], 1, 1), dtype=nm.float64)
 
         return (grad_u, grad_w, div_mv, grad_mv, mat, vg,
                 get_default(term_mode, 1))
