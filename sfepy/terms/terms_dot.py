@@ -4,23 +4,30 @@ from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
 
-class DotProductVolumeTerm(Term):
+
+class DotProductTerm(Term):
     r"""
-    Volume :math:`L^2(\Omega)` weighted dot product for both scalar and vector
-    fields. Can be evaluated. Can use derivatives.
+    Volume and surface :math:`L^2()` weighted dot product for both
+    scalar and vector fields. If the region is a surface and
+    either virtual or state variable is a vector, the orientation
+    of the normal vectors is outwards to the parent region of the virtual
+    variable. Can be evaluated. Can use derivatives.
 
     :Definition:
 
     .. math::
-        \int_\Omega q p \mbox{ , } \int_\Omega \ul{v} \cdot \ul{u}
+        \int_{R} q p \mbox{ , } \int_{R} \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w} \\
-        \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u}
+        \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
+        \int_\Gamma q \ul{n} \cdot \ul{u} \mbox{ , }
+        \int_{R} p r \mbox{ , } \int_{R} \ul{u} \cdot \ul{w}
+        \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
+        \int_{R} c q p \mbox{ , } \int_{R} c \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w} \\
-        \int_\Omega \ul{v} \cdot (\ull{M} \ul{u})
+        \int_{R} c p r \mbox{ , } \int_{R} c \ul{u} \cdot \ul{w} \\
+        \int_{R} \ul{v} \cdot \ull{M} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega \ul{u} \cdot (\ull{M} \ul{w})
+        \int_{R} \ul{u} \cdot \ull{M} \cdot \ul{w}
 
     :Arguments 1:
         - material : :math:`c` or :math:`\ull{M}` (optional)
@@ -32,17 +39,33 @@ class DotProductVolumeTerm(Term):
         - parameter_1 : :math:`p` or :math:`\ul{u}`
         - parameter_2 : :math:`r` or :math:`\ul{w}`
     """
-    name = 'dw_volume_dot'
+    name = 'dw_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
                  ('opt_material', 'parameter_1', 'parameter_2'))
-    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
-                   'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
-                  {'opt_material' : None},
-                  {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
-                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
-                  {'opt_material' : 'D, D'},
-                  {'opt_material' : None}]
+    arg_shapes_dict = {
+        'volume': [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
+                    'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
+                   {'opt_material' : None},
+                   {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                    'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                   {'opt_material' : 'D, D'},
+                   {'opt_material' : None}],
+        'surface': [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
+                     'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
+                    {'opt_material' : None},
+                    {'opt_material' : '1, 1', 'virtual' : (1, None),
+                    'state' : 'D'},
+                    {'opt_material' : None},
+                    {'opt_material' : '1, 1', 'virtual' : ('D', None),
+                    'state' : 1},
+                    {'opt_material' : None},
+                    {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
+                    'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
+                    {'opt_material' : 'D, D'},
+                    {'opt_material' : None}]
+    }
     modes = ('weak', 'eval')
+    integration = 'by_region'
 
     @staticmethod
     def dw_dot(out, mat, val_qp, vgeo, sgeo, fun, fmode):
@@ -138,59 +161,8 @@ class DotProductVolumeTerm(Term):
         else:
             self.function = self.d_dot
 
-class DotProductSurfaceTerm(DotProductVolumeTerm):
-    r"""
-    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields. If either virtual or state variable is a vector, the orientation
-    of the normal vectors is outwards to the parent region of the virtual
-    variable.
 
-    :Definition:
-
-    .. math::
-        \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
-        \int_\Gamma q \ul{n} \cdot \ul{u} \mbox{ , }
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
-        \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
-        \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
-        \mbox{ , }
-        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w} \\
-        \int_\Gamma \ul{v} \cdot \ull{M} \cdot \ul{u}
-        \mbox{ , }
-        \int_\Gamma \ul{u} \cdot \ull{M} \cdot \ul{w}
-
-    :Arguments 1:
-        - material : :math:`c` or :math:`\ull{M}` (optional)
-        - virtual  : :math:`q` or :math:`\ul{v}`
-        - state    : :math:`p` or :math:`\ul{u}`
-
-    :Arguments 2:
-        - material    : :math:`c` or :math:`\ull{M}` (optional)
-        - parameter_1 : :math:`p` or :math:`\ul{u}`
-        - parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'dw_surface_dot'
-    arg_types = (('opt_material', 'virtual', 'state'),
-                 ('opt_material', 'parameter_1', 'parameter_2'))
-    arg_shapes = [{'opt_material' : '1, 1', 'virtual' : (1, 'state'),
-                   'state' : 1, 'parameter_1' : 1, 'parameter_2' : 1},
-                  {'opt_material' : None},
-                  {'opt_material' : '1, 1', 'virtual' : (1, None),
-                   'state' : 'D'},
-                  {'opt_material' : None},
-                  {'opt_material' : '1, 1', 'virtual' : ('D', None),
-                   'state' : 1},
-                  {'opt_material' : None},
-                  {'opt_material' : '1, 1', 'virtual' : ('D', 'state'),
-                   'state' : 'D', 'parameter_1' : 'D', 'parameter_2' : 'D'},
-                  {'opt_material' : 'D, D'},
-                  {'opt_material' : None}]
-    modes = ('weak', 'eval')
-    integration = 'surface'
-
-class BCNewtonTerm(DotProductSurfaceTerm):
+class BCNewtonTerm(DotProductTerm):
     r"""
     Newton boundary condition term.
 
@@ -210,12 +182,14 @@ class BCNewtonTerm(DotProductSurfaceTerm):
     arg_shapes = {'material_1' : '1, 1', 'material_2' : '1, 1',
                   'virtual' : (1, 'state'), 'state' : 1}
     mode = 'weak'
+    integration = 'surface'
+    arg_shapes_dict = None
 
     def get_fargs(self, alpha, p_outer, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        fargs = DotProductSurfaceTerm.get_fargs(self, alpha, virtual, state,
-                                                mode, term_mode, diff_var,
-                                                **kwargs)
+        fargs = DotProductTerm.get_fargs(self, alpha, virtual, state,
+                                         mode, term_mode, diff_var,
+                                         **kwargs)
         fargs = fargs[:1] + (fargs[1] - p_outer,) + fargs[2:]
 
         return fargs
@@ -399,7 +373,7 @@ class VectorDotGradScalarTerm(Term):
         self.function = {
             'v_weak' : terms.dw_v_dot_grad_s_vw,
             's_weak' : terms.dw_v_dot_grad_s_sw,
-            'eval' : DotProductVolumeTerm.d_dot,
+            'eval' : DotProductTerm.d_dot,
         }[self.mode]
 
 class VectorDotScalarTerm(Term):

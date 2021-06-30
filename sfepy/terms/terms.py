@@ -1184,7 +1184,13 @@ class Term(Struct):
 
         arg_kinds = get_arg_kinds(self.ats)
 
-        arg_shapes_list = self.arg_shapes
+        if hasattr(self, 'arg_shapes_dict') and \
+                isinstance(self.arg_shapes_dict, dict):
+            integration = self.integration.split('_')[0]
+            arg_shapes_list = self.arg_shapes_dict[integration]
+        else:
+            arg_shapes_list = self.arg_shapes
+
         if not isinstance(arg_shapes_list, list):
             arg_shapes_list = [arg_shapes_list]
 
