@@ -561,10 +561,10 @@ for ch, val in six.iteritems(pb_def['channels']):
             'lcbcs': ['imv' + ch],
             'equations': {
                 'eq_pi': """dw_diffusion.iV.Y%s(mat2%s.k, q%s, p%s)
-                            + dw_volume_dot.iV.Y%s(q%s, ls%s)
+                            + dw_dot.iV.Y%s(q%s, ls%s)
                             = - dw_diffusion.iV.Y%s(mat2%s.k, q%s, Pi_%s)"""
                             % ((ch,) * 11),
-                'eq_imv': 'dw_volume_dot.iV.Y%s(lv%s, p%s) = 0' % ((ch,) * 3),
+                'eq_imv': 'dw_dot.iV.Y%s(lv%s, p%s) = 0' % ((ch,) * 3),
             },
             'dim': pb_def['dim'] - 1,
             'class': cb.CorrDim,
@@ -632,10 +632,10 @@ for ch, val in six.iteritems(pb_def['channels']):
                 'lcbcs': ['imv' + ch],
                 'equations': {
                     'eq_gamma': """dw_diffusion.iV.Y%s(mat2%s.k, q%s, p%s)
-                                   + dw_volume_dot.iV.Y%s(q%s, ls%s)
+                                   + dw_dot.iV.Y%s(q%s, ls%s)
                                    = %e * dw_integrate.iS.bY%s(q%s)"""
                                     % ((ch,) * 7 + (1.0/param_h, io, ch)),
-                    'eq_imv': 'dw_volume_dot.iV.Y%s(lv%s, p%s) = 0'
+                    'eq_imv': 'dw_dot.iV.Y%s(lv%s, p%s) = 0'
                               % ((ch,) * 3),
                 },
                 'class': cb.CorrOne,

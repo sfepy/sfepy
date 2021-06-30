@@ -155,7 +155,7 @@ equation_corrs = {
        - dw_lin_elastic.i.Y(mat.D, v, Pi)""",
     'pressure constraint':
     """- dw_stokes.i.Y(u, q)
-       - dw_volume_dot.i.Y(mat.gamma, q, p) =
+       - dw_dot.i.Y(mat.gamma, q, p) =
        + dw_stokes.i.Y(Pi, q)""",
 }
 
@@ -169,7 +169,7 @@ coefs = {
     },
     'elastic_p': {
         'requires': ['corrs_rs'],
-        'expression': 'dw_volume_dot.i.Y(mat.gamma, Pi1p, Pi2p)',
+        'expression': 'dw_dot.i.Y(mat.gamma, Pi1p, Pi2p)',
         'set_variables': [('Pi1p', 'corrs_rs', 'p'),
                           ('Pi2p', 'corrs_rs', 'p')],
         'class': cb.CoefSymSym,

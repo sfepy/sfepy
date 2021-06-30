@@ -110,22 +110,22 @@ equations = {
     'eq_1' : """
         %e * dw_laplace.5.Omega1(q1, p1)
       + %e * dw_laplace.5.Omega2(q2, p2)
-      - %e * dw_volume_dot.5.Omega1(q1, p1)
-      - %e * dw_volume_dot.5.Omega2(q2, p2)
-      + %s * dw_surface_dot.5.GammaIn(q1, p1)
-      + %s * dw_surface_dot.5.GammaOut(q2, p2)
-      - %s * dw_surface_dot.5.Gamma0_1(q1, g0)
-      + %s * dw_surface_dot.5.Gamma0_2(q2, tr(g0))
+      - %e * dw_dot.5.Omega1(q1, p1)
+      - %e * dw_dot.5.Omega2(q2, p2)
+      + %s * dw_dot.5.GammaIn(q1, p1)
+      + %s * dw_dot.5.GammaOut(q2, p2)
+      - %s * dw_dot.5.Gamma0_1(q1, g0)
+      + %s * dw_dot.5.Gamma0_2(q2, tr(g0))
       = %s * dw_integrate.5.GammaIn(q1)"""\
         % (c2, c2, w2, w2,
            1j * wc, 1j * wc,
            1j * wc2, 1j * wc2,
            2j * wc * p_inc),
     'eq_2' : """
-      - %s * dw_surface_dot.5.Gamma0_1(f0, p1)
-      + %s * dw_surface_dot.5.Gamma0_1(f0, tr(p2))
-      - %e * dw_surface_dot.5.Gamma0_1(ac.F, f0, g0)
-      + %e * dw_surface_dot.5.Gamma0_1(ac.c, f0, w)
+      - %s * dw_dot.5.Gamma0_1(f0, p1)
+      + %s * dw_dot.5.Gamma0_1(f0, tr(p2))
+      - %e * dw_dot.5.Gamma0_1(ac.F, f0, g0)
+      + %e * dw_dot.5.Gamma0_1(ac.c, f0, w)
       = 0"""\
         % (1j * w, 1j * w, w2, w2),
     }

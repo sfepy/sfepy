@@ -223,10 +223,10 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
                 'balance' :
                 """dw_div_grad.5.Omega(m.nu, v, u)
                  - dw_stokes.5.Omega(v, p)
-                 + dw_surface_dot.5.Gamma1_f(m.beta, v, u)
-                 + dw_surface_dot.5.Gamma2_f(m.beta, v, u)
+                 + dw_dot.5.Gamma1_f(m.beta, v, u)
+                 + dw_dot.5.Gamma2_f(m.beta, v, u)
                  =
-                 + dw_surface_dot.5.Gamma1_f(m.beta, v, u_d)""",
+                 + dw_dot.5.Gamma1_f(m.beta, v, u_d)""",
                 'incompressibility' :
                 """dw_laplace.5.Omega(m.mu, q, p)
                  + dw_stokes.5.Omega(u, q) = 0""",
@@ -254,12 +254,12 @@ def define(dims=(3, 1, 0.5), shape=(11, 15, 15), u_order=1, refine=0,
                 'balance' :
                 """dw_div_grad.5.Omega(m.nu, v, u)
                  - dw_stokes.5.Omega(v, p)
-                 + dw_surface_dot.5.Gamma1_f(m.beta, v, u)
-                 + dw_surface_dot.5.Gamma2_f(m.beta, v, u)
+                 + dw_dot.5.Gamma1_f(m.beta, v, u)
+                 + dw_dot.5.Gamma2_f(m.beta, v, u)
                  + dw_non_penetration_p.5.Gamma1_f(m.np_eps, v, u)
                  + dw_non_penetration_p.5.Gamma2_f(m.np_eps, v, u)
                  =
-                 + dw_surface_dot.5.Gamma1_f(m.beta, v, u_d)""",
+                 + dw_dot.5.Gamma1_f(m.beta, v, u_d)""",
                 'incompressibility' :
                 """dw_laplace.5.Omega(m.mu, q, p)
                  + dw_stokes.5.Omega(u, q) = 0""",

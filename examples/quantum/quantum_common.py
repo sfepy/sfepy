@@ -111,8 +111,8 @@ def common(fun_v, get_exact=None, n_eigs=5, tau=0.0):
 
     equations = {
         'lhs' : """dw_laplace.i.Omega(m.val, v, Psi)
-                 + dw_volume_dot.i.Omega(mat_v.V, v, Psi)""",
-        'rhs' : """dw_volume_dot.i.Omega(v, Psi)""",
+                 + dw_dot.i.Omega(mat_v.V, v, Psi)""",
+        'rhs' : """dw_dot.i.Omega(v, Psi)""",
     }
 
     solvers = {

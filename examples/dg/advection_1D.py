@@ -97,7 +97,7 @@ def define(filename_mesh=None,
 
     equations = {
         'Advection': """
-                       dw_volume_dot.i.Omega(v, p)
+                       dw_dot.i.Omega(v, p)
                        - dw_s_dot_mgrad_s.i.Omega(a.val, p[-1], v)
                        + dw_dg_advect_laxfrie_flux.i.Omega(a.flux, a.val, v, p[-1]) = 0
                       """

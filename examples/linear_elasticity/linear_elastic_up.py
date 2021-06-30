@@ -94,7 +94,7 @@ equations = {
        = 0 """,
     'pressure constraint' :
     """- dw_stokes.i.Omega( u, q )
-       - dw_volume_dot.i.Omega( solid.gamma, q, p )
+       - dw_dot.i.Omega( solid.gamma, q, p )
        = 0""",
 }
 #! Solvers
